@@ -24,14 +24,18 @@
 /* The new implementation, based on MurmurHash 3,
      http://code.google.com/p/smhasher/  */
 
+struct hash_internal {
+	uint32 i;
+};
+
 CAMLexport hash_t caml_hash_init(void* a, hash_key k) {
 	hash_t h = (hash_t) a;
-	*h = k;
+	h->i = k;
 	return h;
 }
 
 CAMLexport hash_out caml_hash_final(hash_t h) {
-	uint32 v = *h;
+	uint32 v = h->i;
 	v ^= v >> 16;
 	v *= 0x85ebca6b;
 	v ^= v >> 13;
@@ -46,9 +50,9 @@ CAMLexport hash_out caml_hash_final(hash_t h) {
   d *= 0xcc9e2d51; \
   d = ROTL32(d, 15); \
   d *= 0x1b873593; \
-  *h ^= d; \
-  *h = ROTL32(*h, 13); \
-  *h = (*h) * 5 + 0xe6546b64;
+  h->i ^= d; \
+  h->i = ROTL32(h->i, 13); \
+  h->i = (h->i) * 5 + 0xe6546b64;
 
 
 CAMLexport void caml_hash_mix_uint32(hash_t h, uint32 d)
@@ -162,7 +166,7 @@ CAMLexport void caml_hash_mix_string(hash_t h, value s)
   default: /*skip*/;     /* len & 3 == 0, no extra bytes, do nothing */
   }
   /* Finally, mix in the length.  Ignore the upper 32 bits, generally 0. */
-  *h ^= (uint32) len;
+  h->i ^= (uint32) len;
 }
 
 /* Maximal size of the queue used for breadth-first traversal.  */
