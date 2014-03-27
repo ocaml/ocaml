@@ -539,15 +539,13 @@ let float_array_set arr ofs newval =
 
 (* Length of string block *)
 
-let string_block_length str = Cop(Clsr, [header str; Cconst_int 10])
-
 let string_length exp =
   bind "str" exp (fun str ->
     let tmp_var = Ident.create "tmp" in
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
-                   [string_block_length str;
+                   [get_size str;
                      Cconst_int log2_size_addr]);
               Cconst_int 1]),
          Cop(Csubi,
@@ -1238,7 +1236,7 @@ let strmatch_compile =
   let module S =
     Strmatch.Make
       (struct
-        let string_block_length = string_block_length
+        let string_block_length = get_size
         let transl_switch = transl_int_switch
       end) in
   S.compile
