@@ -556,7 +556,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       p++;
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, Caml_white);  /* color irrelevant. */
+        *p = Make_header(i * 2, Infix_tag, 0);  /* color irrelevant. */
         p++;
         *p = Val_bytecode (pc + pc[i]);
         *--sp = (value) p;
