@@ -88,7 +88,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
     Restore_after_gc;                                                       \
     caml_young_ptr -= Bhsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
+  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), 3<<8 /* FIXME */);    \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
