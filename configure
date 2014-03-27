@@ -1368,7 +1368,7 @@ echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 
 systhread_support=false
 
-if test "$pthread_wanted" = "yes"; then
+if true; then
   case "$target" in
     *-*-solaris*)  pthread_link="-lpthread -lposix4"
                    pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
@@ -1381,8 +1381,8 @@ if test "$pthread_wanted" = "yes"; then
   esac
   if ./hasgot -i pthread.h $pthread_link pthread_self; then
     inf "POSIX threads library supported."
-    systhread_support=true
-    otherlibraries="$otherlibraries systhreads"
+#    systhread_support=true
+#    otherlibraries="$otherlibraries systhreads"
     bytecccompopts="$bytecccompopts -D_REENTRANT"
     nativecccompopts="$nativecccompopts -D_REENTRANT"
     case "$target" in
