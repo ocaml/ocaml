@@ -146,6 +146,30 @@ let make_params env params =
   in
     List.map make_param params
 
+let make_constructor env type_path type_params sargs sret_type =
+  match sret_type with
+  | None ->
+      let targs = List.map (transl_simple_type env true) sargs in
+      let args = List.map (fun cty -> cty.ctyp_type) targs in
+        targs, None, args, None
+  | Some sret_type ->
+      (* if it's a generalized constructor we must first narrow and
+         then widen so as to not introduce any new constraints *)
+      let z = narrow () in
+      reset_type_variables ();
+      let targs = List.map (transl_simple_type env false) sargs in
+      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let tret_type = transl_simple_type env false sret_type in
+      let ret_type = tret_type.ctyp_type in
+      begin
+        match (Ctype.repr ret_type).desc with
+          Tconstr (p', _, _) when Path.same type_path p' -> ()
+        | _ -> raise (Error (sret_type.ptyp_loc, Constraint_failed
+                              (ret_type, Ctype.newconstr type_path type_params)))
+      end;
+      widen z;
+      targs, Some tret_type, args, Some ret_type
+
 let transl_declaration env sdecl id =
   (* Bind type parameters *)
   reset_type_variables();
@@ -161,54 +185,43 @@ let transl_declaration env sdecl id =
   let (tkind, kind) =
     match sdecl.ptype_kind with
         Ptype_abstract -> Ttype_abstract, Type_abstract
-      | Ptype_variant cstrs ->
+      | Ptype_variant scstrs ->
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
             if StringSet.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := StringSet.add name !all_constrs)
-          cstrs;
+          scstrs;
         if List.length
-          (List.filter (fun cd -> cd.pcd_args <> []) cstrs)
+          (List.filter (fun cd -> cd.pcd_args <> []) scstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
-        let make_cstr {pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
-          let name = Ident.create lid.txt in
-          match ret_type with
-            | None ->
-              (name, lid, List.map (transl_simple_type env true) args,
-               None, None, loc, attrs)
-            | Some sty ->
-              (* if it's a generalized constructor we must first narrow and
-                 then widen so as to not introduce any new constraints *)
-              let z = narrow () in
-              reset_type_variables ();
-              let args = List.map (transl_simple_type env false) args in
-              let cty = transl_simple_type env false sty in
-              let ret_type =
-                let ty = cty.ctyp_type in
-                let p = Path.Pident id in
-                match (Ctype.repr ty).desc with
-                  Tconstr (p', _, _) when Path.same p p' -> ty
-                | _ ->
-                    raise (Error (sty.ptyp_loc, Constraint_failed
-                                    (ty, Ctype.newconstr p params)))
-              in
-              widen z;
-              (name, lid, args, Some cty, Some ret_type, loc, attrs)
+        let make_cstr scstr =
+          let name = Ident.create scstr.pcd_name.txt in
+          let targs, tret_type, args, ret_type =
+            make_constructor env (Path.Pident id) params
+                             scstr.pcd_args scstr.pcd_res
+          in
+          let tcstr =
+            { cd_id = name;
+              cd_name = scstr.pcd_name;
+              cd_args = targs;
+              cd_res = tret_type;
+              cd_loc = scstr.pcd_loc;
+              cd_attributes = scstr.pcd_attributes }
+          in
+          let cstr =
+            { Types.cd_id = name;
+              cd_args = args;
+              cd_res = ret_type;
+              cd_loc = scstr.pcd_loc;
+              cd_attributes = scstr.pcd_attributes }
+          in
+            tcstr, cstr
         in
-        let cstrs = List.map make_cstr cstrs in
-        Ttype_variant (List.map (fun (name, lid, ctys, res, _, loc, attrs) ->
-          {cd_id = name; cd_name = lid; cd_args = ctys; cd_res = res;
-           cd_loc = loc; cd_attributes = attrs}
-        ) cstrs),
-        Type_variant (List.map (fun (name, name_loc, ctys, _, option, loc, attrs) ->
-            {Types.cd_id = name; cd_args = List.map (fun cty -> cty.ctyp_type) ctys;
-             cd_res = option;
-             cd_loc = loc; cd_attributes = attrs}
-          ) cstrs)
-
+        let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
+          Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
         let all_labels = ref StringSet.empty in
         List.iter
@@ -1022,7 +1035,7 @@ let transl_extension_constructor env check_open type_decl
   let id = Ident.create sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
-      Pext_decl(args, None) ->
+      Pext_decl(sargs, sret_type) ->
         begin
           match type_decl.type_kind with
             Type_open -> ()
@@ -1031,33 +1044,10 @@ let transl_extension_constructor env check_open type_decl
                 raise (Error(sext.pext_loc, Not_open_type type_path))
           | _ -> assert false
         end;
-        let targs = List.map (transl_simple_type env true) args in
-        let args = List.map (fun cty -> cty.ctyp_type) targs in
-          args, None, Text_decl(targs, None)
-    | Pext_decl(args, Some ret_type) ->
-        begin
-          match type_decl.type_kind with
-            Type_open -> ()
-          | Type_abstract ->
-              if check_open then
-                raise (Error(sext.pext_loc, Not_open_type type_path))
-          | _ -> assert false
-        end;
-        let z = narrow () in
-        reset_type_variables ();
-        let targs = List.map (transl_simple_type env false) args in
-        let args = List.map (fun cty -> cty.ctyp_type) targs in
-        let tret_type = transl_simple_type env false ret_type in
-        let ret_type =
-          let ty = tret_type.ctyp_type in
-          match (Ctype.repr ty).desc with
-              Tconstr (p, _, _) when Path.same type_path p -> ty
-            | _ ->
-              raise(Error(sext.pext_loc,
-                Constraint_failed (ty, Ctype.newconstr type_path type_params)))
+        let targs, tret_type, args, ret_type =
+          make_constructor env type_path type_params sargs sret_type
         in
-          widen z;
-          args, Some ret_type, Text_decl(targs, Some tret_type)
+          args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
       let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
       let usage =
