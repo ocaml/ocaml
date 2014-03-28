@@ -49,7 +49,7 @@ and core_type_desc =
         (*  _ *)
   | Ptyp_var of string
         (* 'a *)
-  | Ptyp_arrow of label * core_type * core_type
+  | Ptyp_arrow of arrow_flag * core_type * core_type
         (* T1 -> T2       (label = "")
            ~l:T1 -> T2    (label = "l")
            ?l:T1 -> T2    (label = "?l")
@@ -196,7 +196,7 @@ and expression_desc =
          *)
   | Pexp_function of case list
         (* function P1 -> E1 | ... | Pn -> En *)
-  | Pexp_fun of label * expression option * pattern * expression
+  | Pexp_fun of arrow_flag * expression option * pattern * expression
         (* fun P -> E1                          (lab = "", None)
            fun ~l:P -> E1                       (lab = "l", None)
            fun ?l:P -> E1                       (lab = "?l", None)
@@ -207,7 +207,7 @@ and expression_desc =
            - "fun P1 P2 .. Pn -> E1" is represented as nested Pexp_fun.
            - "let f P = E" is represented using Pexp_fun.
          *)
-  | Pexp_apply of expression * (label * expression) list
+  | Pexp_apply of expression * (arrow_flag * expression) list
         (* E0 ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
@@ -389,7 +389,7 @@ and class_type_desc =
            ['a1, ..., 'an] c *)
   | Pcty_signature of class_signature
         (* object ... end *)
-  | Pcty_arrow of label * core_type * class_type
+  | Pcty_arrow of arrow_flag * core_type * class_type
         (* T -> CT       (label = "")
            ~l:T -> CT    (label = "l")
            ?l:T -> CT    (label = "?l")
@@ -463,13 +463,13 @@ and class_expr_desc =
            ['a1, ..., 'an] c *)
   | Pcl_structure of class_structure
         (* object ... end *)
-  | Pcl_fun of label * expression option * pattern * class_expr
+  | Pcl_fun of arrow_flag * expression option * pattern * class_expr
         (* fun P -> CE                          (lab = "", None)
            fun ~l:P -> CE                       (lab = "l", None)
            fun ?l:P -> CE                       (lab = "?l", None)
            fun ?l:(P = E0) -> CE                (lab = "?l", Some E0)
          *)
-  | Pcl_apply of class_expr * (label * expression) list
+  | Pcl_apply of class_expr * (arrow_flag * expression) list
         (* CE ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).

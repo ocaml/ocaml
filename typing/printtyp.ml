@@ -85,6 +85,13 @@ let tree_of_rec = function
   | Trec_first -> Orec_first
   | Trec_next -> Orec_next
 
+(* Print arrow lhs flag/label *)
+
+let arrow_flag ppf = function
+  | Simple -> ()
+  | Optional s -> fprintf ppf "?%s" s
+  | Labelled s -> fprintf ppf "%s" s
+
 (* Print a raw type expression, with sharing *)
 
 let raw_list pr ppf = function
@@ -134,8 +141,8 @@ and raw_type_list tl = raw_list raw_type tl
 and raw_type_desc ppf = function
     Tvar name -> fprintf ppf "Tvar %a" print_name name
   | Tarrow(l,t1,t2,c) ->
-      fprintf ppf "@[<hov1>Tarrow(%s,@,%a,@,%a,@,%s)@]"
-        l raw_type t1 raw_type t2
+      fprintf ppf "@[<hov1>Tarrow(%a,@,%a,@,%a,@,%s)@]"
+        arrow_flag l raw_type t1 raw_type t2
         (safe_commu_repr [] c)
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
@@ -525,7 +532,17 @@ let reset_and_mark_loops_list tyl =
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 let print_label ppf l =
-  if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
+  if match l with
+    | Simple -> false
+    | Optional _ -> true
+    | Labelled _ -> !print_labels
+  then
+    fprintf ppf "%a:" arrow_flag l
+
+let raw_label = function
+  | Labelled s when !print_labels -> s
+  | Optional s -> "?" ^ s
+  | Simple | Labelled _ -> ""
 
 let rec tree_of_typexp sch ty =
   let ty = repr ty in
@@ -540,9 +557,7 @@ let rec tree_of_typexp sch ty =
         Otyp_var (is_non_gen sch ty, name_of_type ty)
     | Tarrow(l, ty1, ty2, _) ->
         let pr_arrow l ty1 ty2 =
-          let lab =
-            if !print_labels && l <> "" || is_optional l then l else ""
-          in
+          let lab = raw_label l in
           let t1 =
             if is_optional l then
               match (repr ty1).desc with
@@ -981,7 +996,7 @@ let rec tree_of_class_type sch params =
       in
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
-      let lab = if !print_labels && l <> "" || is_optional l then l else "" in
+      let lab = raw_label l in
       let ty =
        if is_optional l then
          match (repr ty).desc with

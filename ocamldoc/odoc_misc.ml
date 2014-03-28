@@ -471,6 +471,10 @@ let create_index_lists elements string_of_ele =
 
 let is_optional = Btype.is_optional
 let label_name = Btype.label_name
+let label_prefix = function
+  | Asttypes.Simple -> ""
+  | Asttypes.Optional s -> "?" ^ s ^ ":"
+  | Asttypes.Labelled s -> s ^ ":"
 
 let remove_option typ =
   let rec iter t =

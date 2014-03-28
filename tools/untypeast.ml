@@ -235,7 +235,7 @@ and untype_expression exp =
           untype_expression exp)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, untype_pattern p, untype_expression e)
-    | Texp_function ("", cases, _) ->
+    | Texp_function (Simple, cases, _) ->
         Pexp_function (untype_cases cases)
     | Texp_function _ ->
         assert false

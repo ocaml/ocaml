@@ -2240,7 +2240,7 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
   and ntl1 = complete_type_list env n2 lv2 (Mty_ident p1) n1 tl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
-  if eq_package_path env p1 p2 
+  if eq_package_path env p1 p2
   || !package_subtype env p1 n1 tl1 p2 n2 tl2
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
@@ -2776,7 +2776,7 @@ let filter_arrow env t l =
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
-    when l = l' || !Clflags.classic && l = "" && not (is_optional l') ->
+    when l = l' || !Clflags.classic && is_simple l && not (is_optional l') ->
       (t1, t2)
   | _ ->
       raise (Unify [])
@@ -3584,7 +3584,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
         let clty_params =
-          List.fold_right (fun ty cty -> Cty_arrow ("*",ty,cty)) in
+          List.fold_right (fun ty cty -> Cty_arrow (Labelled "*",ty,cty)) in
         match_class_types ~trace:false env
           (clty_params patt_params patt_type)
           (clty_params subj_params subj_type)

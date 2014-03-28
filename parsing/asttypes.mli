@@ -42,8 +42,12 @@ type 'a loc = 'a Location.loc = {
   loc : Location.t;
 }
 
-
 type variance =
   | Covariant
   | Contravariant
   | Invariant
+
+type arrow_flag =
+  | Simple             (*        T -> ... *)
+  | Labelled of string (*  label:T -> ... *)
+  | Optional of string (* ?label:T -> ... *)

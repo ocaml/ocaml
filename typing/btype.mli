@@ -157,11 +157,14 @@ val forget_abbrev:
 
 (**** Utilities for labels ****)
 
-val is_optional : label -> bool
-val label_name : label -> label
+val is_simple : arrow_flag -> bool
+val is_optional : arrow_flag -> bool
+val label_name : arrow_flag -> label
+val label_raw : arrow_flag -> label
+
 val extract_label :
-    label -> (label * 'a) list ->
-    label * 'a * (label * 'a) list * (label * 'a) list
+    label -> (arrow_flag * 'a) list ->
+    arrow_flag * 'a * (arrow_flag * 'a) list * (arrow_flag * 'a) list
     (* actual label, value, before list, after list *)
 
 (**** Utilities for backtracking ****)

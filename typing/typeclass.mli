@@ -81,7 +81,7 @@ type error =
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
-  | Apply_wrong_label of label
+  | Apply_wrong_label of arrow_flag
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t

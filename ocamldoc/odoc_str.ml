@@ -128,11 +128,7 @@ let string_of_class_params c =
       Types.Cty_arrow (label, t, ctype) ->
         let parent = is_arrow_type t in
         Printf.bprintf b "%s%s%s%s -> "
-          (
-           match label with
-             "" -> ""
-           | s -> s^":"
-          )
+          (Odoc_misc.label_prefix label)
           (if parent then "(" else "")
           (Odoc_print.string_of_type_expr
              (if Odoc_misc.is_optional label then

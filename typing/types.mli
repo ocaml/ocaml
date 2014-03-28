@@ -23,7 +23,7 @@ type type_expr =
 
 and type_desc =
     Tvar of string option
-  | Tarrow of label * type_expr * type_expr * commutable
+  | Tarrow of arrow_flag * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
@@ -218,7 +218,7 @@ module Concr : Set.S with type elt = string
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
-  | Cty_arrow of label * type_expr * class_type
+  | Cty_arrow of arrow_flag * type_expr * class_type
 
 and class_signature =
   { csig_self: type_expr;

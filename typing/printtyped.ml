@@ -136,6 +136,11 @@ let string_loc i ppf s = line i ppf "\"%s\"\n" s.txt;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
 
+let arrow_flag f = function
+  | Simple -> fprintf f ""
+  | Optional s -> fprintf f "?%s" s
+  | Labelled s -> fprintf f "%s" s
+
 let attributes i ppf l =
   let i = i + 1 in
   List.iter
@@ -153,8 +158,7 @@ let rec core_type i ppf x =
   | Ttyp_any -> line i ppf "Ptyp_any\n";
   | Ttyp_var (s) -> line i ppf "Ptyp_var %s\n" s;
   | Ttyp_arrow (l, ct1, ct2) ->
-      line i ppf "Ptyp_arrow\n";
-      string i ppf l;
+      line i ppf "Ptyp_arrow \"%a\"\n" arrow_flag l;
       core_type i ppf ct1;
       core_type i ppf ct2;
   | Ttyp_tuple l ->
@@ -281,7 +285,7 @@ and expression i ppf x =
       list i value_binding ppf l;
       expression i ppf e;
   | Texp_function (p, l, _partial) ->
-      line i ppf "Pexp_function \"%s\"\n" p;
+      line i ppf "Pexp_function \"%a\"\n" arrow_flag p;
 (*      option i expression ppf eo; *)
       list i case ppf l;
   | Texp_apply (e, l) ->
@@ -421,7 +425,7 @@ and class_type i ppf x =
       line i ppf "Pcty_signature\n";
       class_signature i ppf cs;
   | Tcty_arrow (l, co, cl) ->
-      line i ppf "Pcty_arrow \"%s\"\n" l;
+      line i ppf "Pcty_arrow \"%a\"\n" arrow_flag l;
       core_type i ppf co;
       class_type i ppf cl;
 
@@ -789,7 +793,7 @@ and longident_x_expression i ppf (li, _, e) =
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l, e, _) =
-  line i ppf "<label> \"%s\"\n" l;
+  line i ppf "<label> \"%a\"\n" arrow_flag l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)
 
 and ident_x_loc_x_expression_def i ppf (l,_, e) =

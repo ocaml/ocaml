@@ -221,17 +221,18 @@ class printer  ()= object(self:'self)
           (self#list (fun f ({txt;_},s) ->
             pp f "%s%a" (type_variance s) self#tyvar txt) ~sep:",") l
 
-  method type_with_label f (label,({ptyp_desc;_}as c) ) =
+  method type_in_arrow f (label,({ptyp_desc;_}as c) ) =
     match label with
-    | "" ->  self#core_type1 f c (* otherwise parenthesize *)
-    | s  ->
-        if s.[0]='?' then
-          match ptyp_desc with
-          | Ptyp_constr ({txt;_}, l) ->
-              assert (is_predef_option txt);
-              pp f "%s:%a" s (self#list self#core_type1) l
-          | _ -> failwith "invalid input in print_type_with_label"
-        else pp f "%s:%a" s self#core_type1 c
+    | Simple ->  self#core_type1 f c (* otherwise parenthesize *)
+    | Optional s ->
+        begin match ptyp_desc with
+        | Ptyp_constr ({txt;_}, l) ->
+            assert (is_predef_option txt);
+            pp f "?%s:%a" s (self#list self#core_type1) l
+        | _ -> failwith "invalid input in print#type_in_arrow"
+        end
+    | Labelled s ->
+        pp f "%s:%a" s self#core_type1 c
   method core_type f x =
     if x.ptyp_attributes <> [] then begin
       pp f "((%a)%a)" self#core_type {x with ptyp_attributes=[]}
@@ -240,7 +241,7 @@ class printer  ()= object(self:'self)
     else match x.ptyp_desc with
     | Ptyp_arrow (l, ct1, ct2) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
-          self#type_with_label (l,ct1) self#core_type ct2
+          self#type_in_arrow (l,ct1) self#core_type ct2
     | Ptyp_alias (ct, s) ->
         pp f "@[<2>%a@;as@;'%s@]" self#core_type1 ct s
     | Ptyp_poly (sl, ct) ->
@@ -411,26 +412,25 @@ class printer  ()= object(self:'self)
     | _ -> self#paren true self#pattern f x
 
   method label_exp f (l,opt,p) =
-    if l = "" then
+    match l with
+    | Simple ->
       pp f "%a@ " self#simple_pattern p (*single case pattern parens needed here *)
-    else
-      if l.[0] = '?' then
-        let len = String.length l - 1 in
-        let rest = String.sub l 1 len in begin
-          match p.ppat_desc with
-          | Ppat_var {txt;_} when txt = rest ->
-              (match opt with
-              |Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
-              | None -> pp f "?%s@ " rest)
-          | _ -> (match opt with
-            | Some o -> pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
-            | None -> pp f "%s:%a@;" l self#simple_pattern p  )
+    | Optional s ->
+        begin match p.ppat_desc with
+        | Ppat_var {txt;_} when txt = s ->
+            (match opt with
+             |Some o -> pp f "?(%s=@;%a)@;" s  self#expression o
+             | None -> pp f "?%s@ " s)
+        | _ -> (match opt with
+            | Some o -> pp f "?%s:(%a=@;%a)@;" s self#pattern1 p self#expression o
+            | None -> pp f "?%s:%a@;" s self#simple_pattern p  )
         end
-      else
-        (match p.ppat_desc with
-        | Ppat_var {txt;_} when txt = l ->
-            pp f "~%s@;" l
-        | _ ->  pp f "~%s:%a@;" l self#simple_pattern p )
+    | Labelled s ->
+        begin match p.ppat_desc with
+        | Ppat_var {txt;_} when txt = s ->
+            pp f "~%s@;" s
+        | _ ->  pp f "~%s:%a@;" s self#simple_pattern p
+        end
   method sugar_expr f e =
     if e.pexp_attributes <> [] then false
       (* should also check attributes underneath *)
@@ -740,7 +740,7 @@ class printer  ()= object(self:'self)
           self#longident_loc li
     | Pcty_arrow (l, co, cl) ->
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
-          self#type_with_label (l,co) self#class_type cl
+          self#type_in_arrow (l,co) self#class_type cl
     | Pcty_extension _ -> assert false
 
 
@@ -837,7 +837,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
     | Pmty_functor (_, None, mt2) ->
-        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2 
+        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
           self#module_type mt1  self#module_type mt2
@@ -976,11 +976,10 @@ class printer  ()= object(self:'self)
     let rec pp_print_pexp_function f x =
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with
+      | Pexp_fun (Simple, eo, p, e) ->
+          pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
       | Pexp_fun (label, eo, p, e) ->
-          if label="" then
-            pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
-          else
-            pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
+          pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
           pp f "(type@ %s)@ %a" str pp_print_pexp_function e
       | _ -> pp f "=@;%a" self#expression x in
@@ -1052,7 +1051,7 @@ class printer  ()= object(self:'self)
             | Pmty_signature (_));_} as mt)) ->
                 pp f " :@;%a@;=@;%a@;"  self#module_type mt self#module_expr  me
             | _ ->
-                pp f " =@ %a"  self#module_expr  me 
+                pp f " =@ %a"  self#module_expr  me
             )) x.pmb_expr
     | Pstr_open (ovf, li, _attrs) ->
         pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
@@ -1199,23 +1198,22 @@ class printer  ()= object(self:'self)
         self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
+    let simple_name = match e.pexp_desc with
+      | Pexp_ident {txt=Lident l;_} -> Some l
+      | _ -> None
+    in
     match l with
-    | ""  -> self#expression2 f e ; (* level 2*)
-    | lbl ->
-        let simple_name = match e.pexp_desc with
-        | Pexp_ident {txt=Lident l;_} -> Some l
-        | _ -> None in
-        if  lbl.[0] = '?' then
-          let str = String.sub lbl 1 (String.length lbl-1) in
-          if Some str = simple_name then
-            pp f "%s" lbl
-          else
-            pp f "%s:%a" lbl self#simple_expr e
+    | Simple -> self#expression2 f e ; (* level 2*)
+    | Optional s ->
+        if Some s = simple_name then
+          pp f "?%s" s
         else
-          if Some lbl = simple_name then
-            pp f "~%s" lbl
-          else
-            pp f "~%s:%a" lbl self#simple_expr e
+          pp f "?%s:%a" s self#simple_expr e
+    | Labelled s ->
+        if Some s = simple_name then
+          pp f "~%s" s
+        else
+          pp f "~%s:%a" s self#simple_expr e
 
   method directive_argument f x =
     (match x with

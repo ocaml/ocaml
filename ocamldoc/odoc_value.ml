@@ -95,26 +95,18 @@ let parameter_list_from_arrows typ =
    so there is nothing to merge. With this dummy list we can merge the
    parameter names from the .ml and the type from the .mli file. *)
 let dummy_parameter_list typ =
-  let normal_name s =
-    match s with
-      "" -> s
-    | _ ->
-        match s.[0] with
-          '?' -> String.sub s 1 ((String.length s) - 1)
-        | _ -> s
-  in
   Printtyp.mark_loops typ;
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
     match t.Types.desc with
     | Types.Ttuple l ->
-        if label = "" then
+        if label = Asttypes.Simple then
           Odoc_parameter.Tuple
-            (List.map (fun t2 -> iter ("", t2)) l, t)
+            (List.map (fun t2 -> iter (Asttypes.Simple, t2)) l, t)
         else
           (* if there is a label, then we don't want to decompose the tuple *)
           Odoc_parameter.Simple_name
-            { Odoc_parameter.sn_name = normal_name label ;
+            { Odoc_parameter.sn_name = Odoc_misc.label_name label ;
               Odoc_parameter.sn_type = t ;
               Odoc_parameter.sn_text = None }
     | Types.Tlink t2
@@ -123,7 +115,7 @@ let dummy_parameter_list typ =
 
     | _ ->
         Odoc_parameter.Simple_name
-          { Odoc_parameter.sn_name = normal_name label ;
+          { Odoc_parameter.sn_name = Odoc_misc.label_name label ;
              Odoc_parameter.sn_type = t ;
             Odoc_parameter.sn_text = None }
   in
