@@ -72,8 +72,7 @@ let free_vars ty =
 
 let constructor_arg ty_res = function
   | Cstr_tuple l -> Cstr_tuple l, List.length l
-  | Cstr_record l -> Cstr_record l, List.length l
-
+  | Cstr_record l -> Cstr_record l, 1 (* check all uses of cstr_arity *)
 
 let constructor_descrs ty_res cstrs priv =
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in

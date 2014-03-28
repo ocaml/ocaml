@@ -3272,10 +3272,34 @@ and type_construct env loc lid sarg ty_expected attrs =
     end;
     generalize_structure ty_res;
   end;
-  let ty_args =
-    match ty_args with
-    | Cstr_tuple l -> l
-    | Cstr_record _ -> (* TODO *) assert false
+  let sargs, ty_args =
+    match sargs, ty_args with
+    | sargs, Cstr_tuple l -> sargs, l
+    | [{pexp_desc = Pexp_record (fields, None)}], Cstr_record l ->
+        (* TODO: check arity *)
+        let l =
+          List.map
+            (fun {Types.ld_id; ld_type; _} ->
+               let id = Ident.name ld_id in
+               let (_, e) =
+                 try
+                   List.find
+                     (function
+                       |  ({txt=Longident.Lident s}, _) when s = id -> true
+                       | _ -> false
+                     )
+                     fields
+                 with Not_found ->
+                   raise(Error(loc, env, Label_missing [Ident.create id]))
+               in
+               e, ld_type
+            )
+            l
+        in
+        List.split l
+
+    | _, Cstr_record _ ->
+        assert false (* TODO: error message *)
   in
   let ty_args0, ty_res =
     match instance_list env (ty_res :: ty_args) with
