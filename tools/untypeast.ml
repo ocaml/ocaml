@@ -138,9 +138,14 @@ and untype_type_declaration decl =
   }
 
 and untype_constructor_declaration cd =
+  let pcd_args =
+    match cd.cd_args with
+    | Tcstr_tuple l -> Pcstr_tuple (List.map untype_core_type l)
+    | Tcstr_record l -> assert false (* TODO *)
+  in
   {
    pcd_name = cd.cd_name;
-   pcd_args = List.map untype_core_type cd.cd_args;
+   pcd_args;
    pcd_res = option untype_core_type cd.cd_res;
    pcd_loc = cd.cd_loc;
    pcd_attributes = cd.cd_attributes;

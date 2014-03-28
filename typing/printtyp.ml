@@ -782,7 +782,10 @@ let rec tree_of_type_decl id decl =
   | Type_variant cstrs ->
       List.iter
         (fun c ->
-          List.iter mark_loops c.cd_args;
+          begin match c.cd_args with
+          | Cstr_tuple l -> List.iter mark_loops l
+          | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+          end;
           may mark_loops c.cd_res)
         cstrs
   | Type_record(l, rep) ->
@@ -842,13 +845,18 @@ let rec tree_of_type_decl id decl =
 
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
+  let args () =
+    match cd.cd_args with
+    | Cstr_tuple l -> tree_of_typlist false l
+    | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+  in
   match cd.cd_res with
-  | None -> (name, tree_of_typlist false cd.cd_args, None)
+  | None -> (name, args (), None)
   | Some res ->
       let nm = !names in
       names := [];
       let ret = tree_of_typexp false res in
-      let args = tree_of_typlist false cd.cd_args in
+      let args = args () in
       names := nm;
       (name, args, Some ret)
 
@@ -870,8 +878,16 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl.exn_args;
-  let tyl = tree_of_typlist false decl.exn_args in
+  let tyl =
+    match decl.exn_args with
+    | Cstr_tuple l ->
+        reset_and_mark_loops_list l;
+        tree_of_typlist false l
+    | Cstr_record l ->
+        reset();
+        List.iter (fun l -> mark_loops l.ld_type) l;
+        [ Otyp_record (List.map tree_of_label l) ]
+  in
   Osig_exception (Ident.name id, tyl)
 
 let exception_declaration id ppf decl =

@@ -361,11 +361,16 @@ and label_declaration =
 and constructor_declaration =
     {
      pcd_name: string loc;
-     pcd_args: core_type list;
+     pcd_args: constructor_arguments;
      pcd_res: core_type option;
      pcd_loc: Location.t;
      pcd_attributes: attributes; (* C [@id1] [@id2] of ... *)
     }
+
+and constructor_arguments =
+  | Pcstr_tuple of core_type list
+  | Pcstr_record of label_declaration list
+
 (*
   | C of T1 * ... * Tn     (res = None)
   | C: T0                  (args = [], res = Some T0)

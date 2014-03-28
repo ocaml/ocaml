@@ -185,7 +185,14 @@ module MakeMap(Map : MapArgument) = struct
       typ_kind = typ_kind; typ_manifest = typ_manifest }
 
   and map_constructor_declaration cd =
-    {cd with cd_args = List.map map_core_type cd.cd_args;
+    let cd_args =
+      match cd.cd_args with
+      | Tcstr_tuple l -> Tcstr_tuple (List.map map_core_type l)
+      | Tcstr_record l ->
+          Tcstr_record (List.map (fun l ->
+              {l with ld_type=map_core_type l.ld_type}) l)
+    in
+    {cd with cd_args;
      cd_res = may_map map_core_type cd.cd_res
     }
 

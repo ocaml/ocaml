@@ -464,8 +464,12 @@ let rec build_as_type env p =
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res = instance_constructor cstr in
-      List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
-        (List.combine pl tyl) ty_args;
+      begin match ty_args with
+      | Cstr_tuple ty_args ->
+          List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
+            (List.combine pl tyl) ty_args
+      | Cstr_record _ -> () (* TODO *)
+      end;
       ty_res
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
@@ -1050,7 +1054,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types_gadt loc env ty_res expected_ty
       else
         unify_pat_types loc !env ty_res expected_ty;
-      let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
+      let args =
+        match ty_args with
+        | Cstr_tuple ty_args ->
+            List.map2 (fun p t -> type_pat p t) sargs ty_args
+        | Cstr_record _ ->
+            assert false
+      in
       rp {
         pat_desc=Tpat_construct(lid, constr, args);
         pat_loc = loc; pat_extra=[];
@@ -3256,9 +3266,17 @@ and type_construct env loc lid sarg ty_expected attrs =
     unify_exp env {texp with exp_type = instance_def ty_res}
                   (instance env ty_expected);
     end_def ();
-    List.iter generalize_structure ty_args;
+    begin match ty_args with
+    | Cstr_tuple l -> List.iter generalize_structure l
+    | Cstr_record l -> List.iter (fun l -> generalize_structure l.Types.ld_type) l
+    end;
     generalize_structure ty_res;
   end;
+  let ty_args =
+    match ty_args with
+    | Cstr_tuple l -> l
+    | Cstr_record _ -> (* TODO *) assert false
+  in
   let ty_args0, ty_res =
     match instance_list env (ty_res :: ty_args) with
       t :: tl -> tl, t

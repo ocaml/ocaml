@@ -705,8 +705,10 @@ class printer  ()= object(self:'self)
   method exception_declaration f cd =
     pp f "@[<hov2>exception@ %s%a@]" cd.pcd_name.txt
       (fun f ed -> match ed with
-      |[] -> ()
-      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) cd.pcd_args
+      | Pcstr_tuple [] -> ()
+      | Pcstr_tuple l -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) l
+      | Pcstr_record _ -> assert false (* TODO *)
+      ) cd.pcd_args
 
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =
@@ -1149,11 +1151,18 @@ class printer  ()= object(self:'self)
     |None ->
         pp f "@\n|@;%s%a" pcd_name.txt
           (fun f l -> match l with
-          | [] -> ()
-          | _ -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) pcd_args
+          | Pcstr_tuple [] -> ()
+          | Pcstr_tuple l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
+          | Pcstr_record _ -> assert false (* TODO *)
+          ) pcd_args
     |Some x ->
-        pp f "@\n|@;%s:@;%a" pcd_name.txt
-          (self#list self#core_type1 ~sep:"@;->@;") (pcd_args@[x]) in
+        begin match pcd_args with
+        | Pcstr_tuple l ->
+            pp f "@\n|@;%s:@;%a" pcd_name.txt
+              (self#list self#core_type1 ~sep:"@;->@;") (l@[x])
+        | Pcstr_record _ -> assert false (* TODO *)
+        end
+    in
     pp f "%a%a@ %a"
       (fun f x -> match (x.ptype_manifest,x.ptype_kind,x.ptype_private) with
       | (None,_,Public) ->  pp f "@;"

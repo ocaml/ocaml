@@ -1596,16 +1596,18 @@ exception_declaration:
       }
 ;
 generalized_constructor_arguments:
-    /*empty*/                                   { ([],None) }
-  | OF core_type_list                           { (List.rev $2,None) }
-  | COLON core_type_list MINUSGREATER simple_core_type
-                                                { (List.rev $2,Some $4) }
+    /*empty*/                     { (Pcstr_tuple [],None) }
+  | OF constructor_arguments      { ($2,None) }
+  | COLON constructor_arguments MINUSGREATER simple_core_type
+                                  { ($2,Some $4) }
   | COLON simple_core_type
-                                                { ([],Some $2) }
+                                  { (Pcstr_tuple [],Some $2) }
 ;
 
-
-
+constructor_arguments:
+  | core_type_list { Pcstr_tuple (List.rev $1) }
+  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2) }
+;
 label_declarations:
     label_declaration                           { [$1] }
   | label_declarations SEMI label_declaration   { $3 :: $1 }

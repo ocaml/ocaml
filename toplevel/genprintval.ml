@@ -260,11 +260,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       | None -> decl.type_params
                     in
                     let ty_args =
+                      match cd_args with
+                      | Cstr_tuple l -> l
+                      | Cstr_record l -> List.map (fun l -> l.ld_type) l
+                                           (* TODO? *)
+                    in
+                    let ty_args =
                       List.map
                         (function ty ->
                            try Ctype.apply env type_params ty ty_list with
                              Ctype.Cannot_apply -> abstract_type)
-                        cd_args in
+                        ty_args in
                     tree_of_constr_with_args (tree_of_constr env path)
                                  (Ident.name cd_id) 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
@@ -370,8 +376,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
            identifier contained in the exception bucket *)
         if not (EVP.same_value slot (EVP.eval_path env path))
         then raise Not_found;
+        let ty_args =
+          match cstr.cstr_args with
+          | Cstr_tuple l -> l
+          | Cstr_record l -> List.map (fun l -> l.ld_type) l
+          (* TODO? *)
+        in
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args
+           (fun x -> Oide_ident x) name 1 depth bucket ty_args
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x

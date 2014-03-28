@@ -768,7 +768,10 @@ and constructor_decl i ppf {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes
   line i ppf "%a\n" fmt_location pcd_loc;
   attributes i ppf pcd_attributes;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
-  list (i+1) core_type ppf pcd_args;
+  begin match pcd_args with
+  | Pcstr_tuple l -> list (i+1) core_type ppf l;
+  | Pcstr_record l -> list (i+1) label_decl ppf l
+  end;
   option (i+1) core_type ppf pcd_res
 
 and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes} =

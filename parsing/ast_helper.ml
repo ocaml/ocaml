@@ -333,7 +333,7 @@ module Type = struct
      ptype_loc = loc;
     }
 
-  let constructor ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
+  let constructor ?(loc = !default_loc) ?(attrs = []) ?(args = Pcstr_tuple []) ?res name =
     {
      pcd_name = name;
      pcd_args = args;

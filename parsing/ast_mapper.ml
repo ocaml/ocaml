@@ -498,9 +498,15 @@ let default_mapper =
 
     constructor_declaration =
       (fun this {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} ->
+        let args =
+          match pcd_args with
+          | Pcstr_tuple l -> Pcstr_tuple (List.map (this.typ this) l)
+          | Pcstr_record l -> Pcstr_record
+                                (List.map (this.label_declaration this) l)
+        in
         Type.constructor
           (map_loc this pcd_name)
-          ~args:(List.map (this.typ this) pcd_args)
+          ~args
           ?res:(map_opt (this.typ this) pcd_res)
           ~loc:(this.location this pcd_loc)
           ~attrs:(this.attributes this pcd_attributes)

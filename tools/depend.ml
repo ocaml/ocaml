@@ -64,7 +64,11 @@ let add_opt add_fn bv = function
   | Some x -> add_fn bv x
 
 let add_constructor_decl bv pcd =
-  List.iter (add_type bv) pcd.pcd_args; Misc.may (add_type bv) pcd.pcd_res
+  begin match pcd.pcd_args with
+  | Pcstr_tuple l -> List.iter (add_type bv) l
+  | Pcstr_record l -> List.iter (fun l -> add_type bv l.pld_type) l
+  end;
+  Misc.may (add_type bv) pcd.pcd_res
 
 let add_type_declaration bv td =
   List.iter
