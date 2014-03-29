@@ -83,6 +83,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Exception_constructor_with_result
 

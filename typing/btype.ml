@@ -361,6 +361,11 @@ let unmark_type_decl decl =
   | Some ty -> unmark_type ty
   end
 
+let unmark_extension_constructor ext =
+  List.iter unmark_type ext.ext_type_params;
+  List.iter unmark_type ext.ext_args;
+  Misc.may unmark_type ext.ext_ret_type
+
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
   Vars.iter (fun l (m, v, t) -> unmark_type t) sign.csig_vars

@@ -43,6 +43,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Exception_constructor_with_result
 
@@ -1160,6 +1161,13 @@ let transl_type_extension check_open env loc styext =
        List.iter Ctype.generalize ext.ext_type.ext_args;
        may Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
+  (* Check that all type variable are closed *)
+  List.iter
+    (fun ext ->
+       match Ctype.closed_extension_constructor ext.ext_type with
+         Some ty -> raise(Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))
+       | None -> ())
+    constructors;
   (* Check variances are correct *)
   List.iter
     (fun ext->
@@ -1493,6 +1501,9 @@ let report_error ppf = function
   | Unbound_type_var_exc (tv, ty) ->
       fprintf ppf "A type variable is unbound in this exception declaration";
       explain_unbound_single ppf (Ctype.repr tv) ty
+  | Unbound_type_var_ext (ty, ext) ->
+      fprintf ppf "A type variable is unbound in this extension constructor";
+      explain_unbound ppf ty ext.ext_args (fun c -> c) "type" (fun _ -> "")
   | Not_open_type path ->
       fprintf ppf "@[%s@ %a@]"
         "Cannot extend type definition"
