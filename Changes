@@ -106,6 +106,8 @@ Features wishes:
 	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
   (patches by Thomas Gazagnaire and Jeremy Yallop, review by Gabriel Scherer)
+- PR#6270: remove need for -I directives to ocamldebug in common case
+  (patch by Josh Watzman)
 
 OCaml 4.01.1:
 -------------
