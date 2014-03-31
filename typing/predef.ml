@@ -106,7 +106,7 @@ let decl_abstr =
 let cstr id args =
   {
     cd_id = id;
-    cd_args = Cstr_tuple args;
+    cd_args = args;
     cd_res = None;
     cd_loc = Location.none;
     cd_attributes = [];
@@ -167,7 +167,7 @@ let build_initial_env add_type add_exception empty_env =
 
   let add_exception id l =
     add_exception id
-      { exn_args = Cstr_tuple l; exn_loc = Location.none; exn_attributes = [] }
+      { exn_args = l; exn_loc = Location.none; exn_attributes = [] }
   in
   add_exception ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (

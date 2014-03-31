@@ -744,10 +744,7 @@ and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc; cd_attr
   line i ppf "%a\n" fmt_location cd_loc;
   attributes i ppf cd_attributes;
   line (i+1) ppf "%a\n" fmt_ident cd_id;
-  begin match cd_args with
-  | Tcstr_tuple l -> list (i+1) core_type ppf l;
-  | Tcstr_record l -> list (i+1) label_decl ppf l
-  end;
+  list (i+1) core_type ppf cd_args;
   option (i+1) core_type ppf cd_res
 
 and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc; ld_attributes} =

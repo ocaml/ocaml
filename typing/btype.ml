@@ -270,11 +270,7 @@ let type_iterators =
     may (it.it_type_expr it) td.type_manifest;
     it.it_type_kind it td.type_kind
   and it_exception_declaration it ed =
-    begin match ed.exn_args with
-    | Cstr_tuple l -> List.iter (it.it_type_expr it) l
-    | Cstr_record l ->
-        List.iter (fun ld -> it.it_type_expr it ld.ld_type) l
-    end
+    List.iter (it.it_type_expr it) ed.exn_args
   and it_module_declaration it md =
     it.it_module_type it md.md_type
   and it_modtype_declaration it mtd =
@@ -315,11 +311,7 @@ let type_iterators =
         List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
     | Type_variant cl ->
         List.iter (fun cd ->
-          begin match cd.cd_args with
-          | Cstr_tuple l -> List.iter (it.it_type_expr it) l
-          | Cstr_record l ->
-              List.iter (fun ld -> it.it_type_expr it ld.ld_type) l
-          end;
+          List.iter (it.it_type_expr it) cd.cd_args;
           may (it.it_type_expr it) cd.cd_res)
           cl
   and it_type_expr it ty =
@@ -453,10 +445,7 @@ let unmark_type_decl decl =
   | Type_variant cstrs ->
       List.iter
         (fun d ->
-          begin match d.cd_args with
-          | Cstr_tuple l -> List.iter unmark_type l
-          | Cstr_record l -> List.iter (fun d -> unmark_type d.ld_type) l
-          end;
+          List.iter unmark_type d.cd_args;
           Misc.may unmark_type d.cd_res)
         cstrs
   | Type_record(lbls, rep) ->

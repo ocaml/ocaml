@@ -18,10 +18,7 @@ let structure sub str =
   List.iter (sub # structure_item) str.str_items
 
 let constructor_decl sub cd =
-  begin match cd.cd_args with
-  | Tcstr_tuple l -> List.iter (sub # core_type) l
-  | Tcstr_record l -> List.iter (fun ld -> sub # core_type ld.ld_type) l
-  end;
+  List.iter (sub # core_type) cd.cd_args;
   opt (sub # core_type) cd.cd_res
 
 let structure_item sub x =

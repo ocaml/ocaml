@@ -100,41 +100,13 @@ and value_kind =
                                         (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
 
-(* Record label descriptions *)
-
-and label_declaration =
-  {
-    ld_id: Ident.t;
-    ld_mutable: mutable_flag;
-    ld_type: type_expr;
-    ld_loc: Location.t;
-    ld_attributes: Parsetree.attributes;
-  }
-
-and label_description =
-  { lbl_name: string;                   (* Short name *)
-    lbl_res: type_expr;                 (* Type of the result *)
-    lbl_arg: type_expr;                 (* Type of the argument *)
-    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
-    lbl_pos: int;                       (* Position in block *)
-    lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag;          (* Read-only field? *)
-    lbl_loc: Location.t;
-    lbl_attributes: Parsetree.attributes;
-  }
-
-and record_representation =
-    Record_regular of int               (* All fields are boxed / tagged *)
-  | Record_float                        (* All fields are floats *)
-
 (* Constructor descriptions *)
 
 type constructor_description =
   { cstr_name: string;                  (* Constructor name *)
     cstr_res: type_expr;                (* Type of the result *)
     cstr_existentials: type_expr list;  (* list of existentials *)
-    cstr_args: constructor_arguments;   (* Type of the arguments *)
+    cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
@@ -152,19 +124,24 @@ and constructor_tag =
   | Cstr_block of int                   (* Regular constructor (a block) *)
   | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
-and constructor_declaration =
-  {
-    cd_id: Ident.t;
-    cd_args: constructor_arguments;
-    cd_res: type_expr option;
-    cd_loc: Location.t;
-    cd_attributes: Parsetree.attributes;
-    cd_inlined: bool;
+(* Record label descriptions *)
+
+type label_description =
+  { lbl_name: string;                   (* Short name *)
+    lbl_res: type_expr;                 (* Type of the result *)
+    lbl_arg: type_expr;                 (* Type of the argument *)
+    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
+    lbl_pos: int;                       (* Position in block *)
+    lbl_all: label_description array;   (* All the labels in this type *)
+    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_private: private_flag;          (* Read-only field? *)
+    lbl_loc: Location.t;
+    lbl_attributes: Parsetree.attributes;
   }
 
-and constructor_arguments =
-  | Cstr_tuple of type_expr list
-  | Cstr_record of label_declaration list
+and record_representation =
+    Record_regular of int               (* All fields are boxed / tagged *)
+  | Record_float                        (* All fields are floats *)
 
 (* Variance *)
 
@@ -206,13 +183,32 @@ and type_kind =
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
 
+and label_declaration =
+  {
+    ld_id: Ident.t;
+    ld_mutable: mutable_flag;
+    ld_type: type_expr;
+    ld_loc: Location.t;
+    ld_attributes: Parsetree.attributes;
+  }
+
+and constructor_declaration =
+  {
+    cd_id: Ident.t;
+    cd_args: type_expr list;
+    cd_res: type_expr option;
+    cd_loc: Location.t;
+    cd_attributes: Parsetree.attributes;
+    cd_inlined: bool;
+  }
+
 and type_transparence =
     Type_public      (* unrestricted expansion *)
   | Type_new         (* "new" type *)
   | Type_private     (* private type *)
 
 type exception_declaration =
-    { exn_args: constructor_arguments;
+    { exn_args: type_expr list;
       exn_loc: Location.t;
       exn_attributes: Parsetree.attributes;
     }

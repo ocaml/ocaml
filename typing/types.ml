@@ -39,7 +39,7 @@ and type_desc =
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
-      row_bound: unit; (* kept for compatibility *)
+      row_bound: unit;
       row_closed: bool;
       row_fixed: bool;
       row_name: (Path.t * type_expr list) option }
@@ -88,47 +88,20 @@ type value_description =
     val_kind: value_kind;
     val_loc: Location.t;
     val_attributes: Parsetree.attributes;
-   }
+ }
 
 and value_kind =
     Val_reg                             (* Regular value *)
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of (Ident.t * type_expr) Meths.t ref *
-                (Ident.t * mutable_flag * virtual_flag * type_expr) Vars.t ref *
+                (Ident.t * Asttypes.mutable_flag *
+                 Asttypes.virtual_flag * type_expr) Vars.t ref *
                 string * type_expr
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
-
-(* Record label descriptions *)
-
-and label_declaration =
-  {
-    ld_id: Ident.t;
-    ld_mutable: mutable_flag;
-    ld_type: type_expr;
-    ld_loc: Location.t;
-    ld_attributes: Parsetree.attributes;
-  }
-
-and label_description =
-  { lbl_name: string;                   (* Short name *)
-    lbl_res: type_expr;                 (* Type of the result *)
-    lbl_arg: type_expr;                 (* Type of the argument *)
-    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
-    lbl_pos: int;                       (* Position in block *)
-    lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag;          (* Read-only field? *)
-    lbl_loc: Location.t;
-    lbl_attributes: Parsetree.attributes;
-  }
-
-and record_representation =
-    Record_regular of int               (* All fields are boxed / tagged *)
-  | Record_float                        (* All fields are floats *)
 
 (* Constructor descriptions *)
 
@@ -136,7 +109,7 @@ type constructor_description =
   { cstr_name: string;                  (* Constructor name *)
     cstr_res: type_expr;                (* Type of the result *)
     cstr_existentials: type_expr list;  (* list of existentials *)
-    cstr_args: constructor_arguments;   (* Type of the arguments *)
+    cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
@@ -154,19 +127,24 @@ and constructor_tag =
   | Cstr_block of int                   (* Regular constructor (a block) *)
   | Cstr_exception of Path.t * Location.t (* Exception constructor *)
 
-and constructor_declaration =
-  {
-    cd_id: Ident.t;
-    cd_args: constructor_arguments;
-    cd_res: type_expr option;
-    cd_loc: Location.t;
-    cd_attributes: Parsetree.attributes;
-    cd_inlined: bool;
-  }
+(* Record label descriptions *)
 
-and constructor_arguments =
-  | Cstr_tuple of type_expr list
-  | Cstr_record of label_declaration list
+type label_description =
+  { lbl_name: string;                   (* Short name *)
+    lbl_res: type_expr;                 (* Type of the result *)
+    lbl_arg: type_expr;                 (* Type of the argument *)
+    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
+    lbl_pos: int;                       (* Position in block *)
+    lbl_all: label_description array;   (* All the labels in this type *)
+    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_private: private_flag;          (* Read-only field? *)
+    lbl_loc: Location.t;
+    lbl_attributes: Parsetree.attributes;
+   }
+
+and record_representation =
+    Record_regular of int               (* All fields are boxed / tagged *)
+  | Record_float                        (* All fields are floats *)
 
 (* Variance *)
 
@@ -207,17 +185,35 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
-    (* covariant, contravariant, weakly contravariant, injective *)
     type_newtype_level: (int * int) option;
-    (* definition level * expansion level *)
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-  }
+ }
 
 and type_kind =
     Type_abstract
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
+
+and label_declaration =
+  {
+    ld_id: Ident.t;
+    ld_mutable: mutable_flag;
+    ld_type: type_expr;
+    ld_loc: Location.t;
+    ld_attributes: Parsetree.attributes;
+  }
+
+and constructor_declaration =
+  {
+    cd_id: Ident.t;
+    cd_args: type_expr list;
+    cd_res: type_expr option;
+    cd_loc: Location.t;
+    cd_attributes: Parsetree.attributes;
+    cd_inlined: bool;
+  }
+
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -225,10 +221,10 @@ and type_transparence =
   | Type_private     (* private type *)
 
 type exception_declaration =
-    { exn_args: constructor_arguments;
+    { exn_args: type_expr list;
       exn_loc: Location.t;
       exn_attributes: Parsetree.attributes;
-    }
+     }
 
 (* Type expressions for the class language *)
 
@@ -254,7 +250,7 @@ type class_declaration =
     cty_variance: Variance.t list;
     cty_loc: Location.t;
     cty_attributes: Parsetree.attributes;
-  }
+ }
 
 type class_type_declaration =
   { clty_params: type_expr list;
@@ -293,7 +289,7 @@ and module_declaration =
 
 and modtype_declaration =
   {
-    mtd_type: module_type option;  (* None: abstract *)
+    mtd_type: module_type option;  (* Nonte: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
   }

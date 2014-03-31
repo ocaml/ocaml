@@ -163,32 +163,25 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
     {Types.cd_id=cstr2; cd_args=arg2; cd_res=ret2}::rem2 ->
       if Ident.name cstr1 <> Ident.name cstr2 then
         [Field_names (n, cstr1, cstr2)]
+      else if List.length arg1 <> List.length arg2 then
+        [Field_arity cstr1]
       else match ret1, ret2 with
       | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
           [Field_type cstr1]
       | Some _, None | None, Some _ ->
           [Field_type cstr1]
       | _ ->
-          match arg1, arg2 with
-          | Cstr_tuple l1, Cstr_tuple l2 ->
-              if List.length l1 <> List.length l2 then
-                [Field_arity cstr1]
-              else if Misc.for_all2
-                  (fun ty1 ty2 ->
-                     Ctype.equal env true (ty1::decl1.type_params)
-                       (ty2::decl2.type_params))
-                  l1 l2
-              then
-                compare_variants env decl1 decl2 (n+1) rem1 rem2
-              else [Field_type cstr1]
-          | Cstr_record l1, Cstr_record l2 ->
-              let r = compare_records env decl1 decl2 1 l1 l2 in
-              if r <> [] then r else compare_variants env decl1 decl2
-                  (n+1) rem1 rem2
-          | _ ->
-              [Field_arity cstr1] (* TODO: better explanation *)
+          if Misc.for_all2
+              (fun ty1 ty2 ->
+                Ctype.equal env true (ty1::decl1.type_params)
+                  (ty2::decl2.type_params))
+              (arg1) (arg2)
+          then
+            compare_variants env decl1 decl2 (n+1) rem1 rem2
+          else [Field_type cstr1]
 
-and compare_records env decl1 decl2 n labels1 labels2 =
+
+let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
   | [], l::_ -> [Field_missing (true, l.ld_id)]
@@ -265,14 +258,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  match ed1.exn_args, ed2.exn_args with
-  | Cstr_tuple l1, Cstr_tuple l2 ->
-      Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
-        l1 l2
-  | Cstr_record l1, Cstr_record l2 ->
-      assert false (* TODO *)
-  | _ ->
-      false
+  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
+    ed1.exn_args ed2.exn_args
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =
