@@ -203,7 +203,7 @@ let transl_labels env fixed lbls =
   lbls, lbls'
 
 
-let transl_declaration env tags inlined sdecl id =
+let transl_declaration env sdecl id =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
@@ -229,7 +229,7 @@ let transl_declaration env tags inlined sdecl id =
           (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) cstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
-        let make_cstr ({pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} as pcd) =
+        let make_cstr {pcd_name = lid; pcd_args = args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
           let name = Ident.create lid.txt in
           let transl_args fixed =
             match args with
@@ -241,6 +241,11 @@ let transl_declaration env tags inlined sdecl id =
                 let lbls, lbls' = transl_labels env fixed l in
                 Tcstr_record lbls,
                 Cstr_record lbls'
+          in
+          let inlined =
+            match args with
+            | Pcstr_tuple [ {ptyp_attributes = [{txt="#inline#"}, _]} ] -> true
+            | _ -> false
           in
           let args, cty, ret_type =
             match ret_type with
@@ -265,7 +270,7 @@ let transl_declaration env tags inlined sdecl id =
                 widen z;
                 args, Some cty, Some ret_type
           in
-          (name, lid, args, cty, ret_type, loc, attrs, List.memq pcd inlined)
+          (name, lid, args, cty, ret_type, loc, attrs, inlined)
         in
         let cstrs = List.map make_cstr cstrs in
         Ttype_variant (List.map (fun (name, lid, (targs, _), res, _, loc, attrs, _) ->
@@ -283,12 +288,13 @@ let transl_declaration env tags inlined sdecl id =
       | Ptype_record lbls ->
         let lbls, lbls' = transl_labels env true lbls in
         let rep =
-          try
-            Record_regular (List.assq sdecl tags)
-          with Not_found ->
-            if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-            then Record_float
-            else Record_regular 0 in
+          match sdecl.ptype_attributes with
+          | [{txt="#tag#"}, PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_int tag)}, _)}]] ->
+              Record_regular tag
+          | _ ->
+              if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+              then Record_float
+              else Record_regular 0 in
         Ttype_record lbls, Type_record(lbls', rep)
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -975,53 +981,54 @@ let transl_type_decl env sdecl_list =
     @ sdecl_list
   in
   (* Add fake record declarations for record constructor arguments *)
-  let extras = ref [] in
-  let inlined = ref [] in
   let rewrite_case tag sdecl pcd =
     match pcd.pcd_args with
     | Pcstr_record lbls ->
         let name = sdecl.ptype_name.txt ^ "#" ^ pcd.pcd_name.txt in
         let ptype_kind = Ptype_record lbls in
         let params = freevars ptype_kind in
+        let ptype_attributes =
+          let open Ast_helper in
+          [
+            mknoloc "#tag#",
+            PStr [ Str.eval (Exp.constant (Const_int !tag)) ]
+          ]
+        in
         let decl =
           {
             ptype_name = mkloc name pcd.pcd_name.loc;
             ptype_params = List.map (fun (s, loc) -> Some (mkloc s loc), Invariant) params;
-            ptype_cstrs = sdecl.ptype_cstrs;
+            ptype_cstrs = [];
             ptype_kind;
             ptype_private  = sdecl.ptype_private;
             ptype_manifest = None;
-            ptype_attributes = [];
+            ptype_attributes;
             ptype_loc = pcd.pcd_loc;
           } in
-        extras := (decl, !tag) :: !extras;
         incr tag;
         let params =
           List.map (fun (s, loc) -> Ast_helper.Typ.var ~loc s) params
         in
         let lid = mknoloc (Longident.Lident name) in
-        let pcd_args = Pcstr_tuple [ Ast_helper.Typ.constr lid params ] in
-        let pcd = {pcd with pcd_args} in
-        inlined := pcd :: !inlined;
-        pcd
-    | Pcstr_tuple [] -> pcd
-    | Pcstr_tuple _ -> incr tag; pcd
+        let attrs = [ mknoloc "#inline#", PStr [] ] in
+        let pcd_args = Pcstr_tuple [Ast_helper.Typ.constr ~attrs lid params] in
+        {pcd with pcd_args}, [decl]
+    | Pcstr_tuple [] -> pcd, []
+    | Pcstr_tuple _ -> incr tag; pcd, []
   in
   let sdecl_list =
     List.map
-      (fun sdecl ->
-         let ptype_kind =
-           match sdecl.ptype_kind with
-           | Ptype_variant cstrs ->
-               let cstrs = List.map (rewrite_case (ref 0) sdecl) cstrs in
-               Ptype_variant cstrs
-           | x -> x
-         in
-         {sdecl with ptype_kind}
+      (function
+        | {ptype_kind = Ptype_variant cstrs} as sdecl ->
+            let cstrs, more =
+              List.split (List.map (rewrite_case (ref 0) sdecl) cstrs)
+            in
+            {sdecl with ptype_kind=Ptype_variant cstrs} :: List.flatten more
+        | x -> [ x ]
       )
       sdecl_list
   in
-  let sdecl_list = sdecl_list @ List.map fst !extras in
+  let sdecl_list = List.flatten sdecl_list in
 
   (* Create identifiers. *)
   let id_list =
@@ -1061,7 +1068,7 @@ let transl_type_decl env sdecl_list =
       id, Some slot
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration temp_env !extras !inlined name_sdecl id in
+    current_slot := slot; transl_declaration temp_env name_sdecl id in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
