@@ -110,6 +110,7 @@ let cstr id args =
     cd_res = None;
     cd_loc = Location.none;
     cd_attributes = [];
+    cd_inlined = false;
   }
 
 let ident_false = ident_create "false"

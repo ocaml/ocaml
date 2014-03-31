@@ -248,7 +248,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let {cd_id;cd_args;cd_res} =
+                    let {cd_id;cd_args;cd_res;cd_inlined} =
                       Datarepr.find_constr_by_tag tag constr_list in
                     let type_params =
                       match cd_res with
@@ -272,7 +272,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                              Ctype.Cannot_apply -> abstract_type)
                         ty_args in
                     tree_of_constr_with_args (tree_of_constr env path)
-                                 (Ident.name cd_id) 0 depth obj ty_args
+                                 (Ident.name cd_id) cd_inlined 0 depth obj
+                                 ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
@@ -352,9 +353,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       tree_list start ty_list
 
       and tree_of_constr_with_args
-             tree_of_cstr cstr_name start depth obj ty_args =
+             tree_of_cstr cstr_name inlined start depth obj ty_args =
         let lid = tree_of_cstr cstr_name in
-        let args = tree_of_val_list start depth obj ty_args in
+        let args =
+          if inlined then
+            match ty_args with
+            | [ty] -> [ tree_of_val (depth - 1) obj ty ]
+            | _ -> assert false
+          else
+            tree_of_val_list start depth obj ty_args
+        in
         Oval_constr (lid, args)
 
     and tree_of_exception depth bucket =
@@ -383,7 +391,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           (* TODO? *)
         in
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name 1 depth bucket ty_args
+           (fun x -> Oide_ident x) name false 1 depth bucket ty_args
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x

@@ -204,6 +204,7 @@ let constructor_declaration s c =
     cd_res = may_map (typexp s) c.cd_res;
     cd_loc = loc s c.cd_loc;
     cd_attributes = attrs s c.cd_attributes;
+    cd_inlined = c.cd_inlined;
   }
 
 let type_declaration s decl =

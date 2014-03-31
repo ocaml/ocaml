@@ -21,7 +21,7 @@ let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
-    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
+    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular 0;
     lbl_private = Public;
     lbl_loc = Location.none;
     lbl_attributes = [];
@@ -83,7 +83,7 @@ let constructor_descrs ty_res cstrs priv =
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
+    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_inlined} :: rem ->
         let ty_res =
           match cd_res with
           | Some ty_res' -> ty_res'
@@ -124,6 +124,7 @@ let constructor_descrs ty_res cstrs priv =
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
+            cstr_inlined = cd_inlined;
           } in
         (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
@@ -143,6 +144,7 @@ let exception_descr path_exc decl =
     cstr_generalized = false;
     cstr_loc = decl.exn_loc;
     cstr_attributes = decl.exn_attributes;
+    cstr_inlined = false;
   }
 
 exception Constr_not_found

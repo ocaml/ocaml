@@ -127,7 +127,7 @@ and label_description =
   }
 
 and record_representation =
-    Record_regular                      (* All fields are boxed / tagged *)
+    Record_regular of int               (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
 
 (* Constructor descriptions *)
@@ -146,6 +146,7 @@ type constructor_description =
     cstr_private: private_flag;         (* Read-only constructor? *)
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
+    cstr_inlined: bool;
    }
 
 and constructor_tag =
@@ -160,6 +161,7 @@ and constructor_declaration =
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
+    cd_inlined: bool;
   }
 
 and constructor_arguments =
