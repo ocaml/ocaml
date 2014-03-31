@@ -17,12 +17,7 @@ open Instruct
 open Debugger_config (* Toplevel *)
 open Program_loading
 
-module StringSet = Set.Make(String)
-
 let modules =
-  ref ([] : string list)
-
-let program_source_dirs =
   ref ([] : string list)
 
 let events =
@@ -57,16 +52,13 @@ let read_symbols' bytecode_file =
     raise Toplevel
   end;
   let num_eventlists = input_binary_int ic in
-  let dirs = ref StringSet.empty in
   let eventlists = ref [] in
   for i = 1 to num_eventlists do
     let orig = input_binary_int ic in
     let evl = (input_value ic : debug_event list) in
     (* Relocate events in event list *)
     List.iter (relocate_event orig) evl;
-    eventlists := evl :: !eventlists;
-    dirs :=
-      List.fold_left (fun s e -> StringSet.add e s) !dirs (input_value ic)
+    eventlists := evl :: !eventlists
   done;
   begin try
     ignore (Bytesections.seek_section ic "CODE")
@@ -76,13 +68,12 @@ let read_symbols' bytecode_file =
     set_launching_function (List.assoc "manual" loading_modes)
   end;
   close_in_noerr ic;
-  !eventlists, !dirs
+  !eventlists
 
 let read_symbols bytecode_file =
-  let all_events, all_dirs = read_symbols' bytecode_file in
+  let all_events = read_symbols' bytecode_file in
 
   modules := []; events := [];
-  program_source_dirs := StringSet.elements all_dirs;
   Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
   Hashtbl.clear all_events_by_module;
 

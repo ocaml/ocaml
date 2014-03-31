@@ -20,8 +20,6 @@ open Instruct
 open Opcodes
 open Cmo_format
 
-module StringSet = Set.Make(String)
-
 (* Buffering of bytecode *)
 
 let out_buffer = ref(LongString.create 1024)
@@ -137,12 +135,8 @@ and slot_for_c_prim name =
 (* Debugging events *)
 
 let events = ref ([] : debug_event list)
-let debug_dirs = ref StringSet.empty
 
 let record_event ev =
-  let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
-  let abspath = Location.absolute_path path in
-  debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -152,7 +146,6 @@ let init () =
   out_position := 0;
   label_table := Array.create 16 (Label_undefined []);
   reloc_info := [];
-  debug_dirs := StringSet.empty;
   events := []
 
 (* Emission of one instruction *)
@@ -372,7 +365,6 @@ let to_file outchan unit_name code =
     if !Clflags.debug then begin
       let p = pos_out outchan in
       output_value outchan !events;
-      output_value outchan (StringSet.elements !debug_dirs);
       (p, pos_out outchan - p)
     end else
       (0, 0) in

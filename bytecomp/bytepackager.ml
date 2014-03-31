@@ -17,8 +17,6 @@ open Misc
 open Instruct
 open Cmo_format
 
-module StringSet = Set.Make(String)
-
 type error =
     Forward_reference of string * Ident.t
   | Multiple_definition of string * Ident.t
@@ -32,7 +30,6 @@ exception Error of error
 
 let relocs = ref ([] : (reloc_info * int) list)
 let events = ref ([] : debug_event list)
-let debug_dirs = ref StringSet.empty
 let primitives = ref ([] : string list)
 let force_link = ref false
 
@@ -140,10 +137,6 @@ let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
       List.iter (relocate_debug ofs prefix subst) (input_value ic);
-      debug_dirs := List.fold_left
-        (fun s e -> StringSet.add e s)
-        !debug_dirs
-        (input_value ic);
     end;
     close_in ic;
     compunit.cu_codesize
@@ -222,7 +215,6 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then
       output_value oc (List.rev !events);
-      output_value oc (StringSet.elements !debug_dirs);
     let pos_final = pos_out oc in
     let imports =
       List.filter

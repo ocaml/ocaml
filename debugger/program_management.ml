@@ -124,8 +124,6 @@ let initialize_loading () =
     raise Toplevel;
   end;
   Symbols.read_symbols !program_name;
-  Config.load_path := !Config.load_path @ !Symbols.program_source_dirs;
-  Envaux.reset_cache ();
   if !debug_loading then
     prerr_endline "Opening a socket...";
   open_connection !socket_name

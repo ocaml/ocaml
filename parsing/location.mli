@@ -69,8 +69,6 @@ val mkloc : 'a -> t -> 'a loc
 val print: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
-val absolute_path: string -> string
-
 val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)

@@ -14,10 +14,6 @@
 (* Modules used by the program. *)
 val modules : string list ref
 
-(* Absolute directories containing source code on machine where source was
- * compiled *)
-val program_source_dirs : string list ref
-
 (* Read debugging info from executable file *)
 val read_symbols : string -> unit
 
