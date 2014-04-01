@@ -55,6 +55,12 @@ let rec assoc3 x l =
   | _ :: t -> assoc3 x t
 ;;
 
+let split s =
+  let i = String.index s '=' in
+  let len = String.length s in
+  String.sub s 0 i, String.sub s (i+1) (len-(i+1))
+;;
+
 let make_symlist prefix sep suffix l =
   match l with
   | [] -> "<none>"
@@ -130,14 +136,24 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   while !current < l do
     let s = argv.(!current) in
     if String.length s >= 1 && s.[0] = '-' then begin
-      let action =
-        try assoc3 s !speclist
-        with Not_found -> stop (Unknown s)
+      let action, follow =
+        try assoc3 s !speclist, None
+        with Not_found ->
+          try
+            let keyword, arg = split s in
+            assoc3 keyword !speclist, Some arg
+          with Not_found -> stop (Unknown s)
       in
-      let no_arg () = () in
+      let no_arg () =
+        match follow with
+        | None -> ()
+        | Some arg -> stop (Wrong (s, arg, "no argument")) in
       let get_arg () =
-        if !current + 1 < l then argv.(!current + 1)
-        else stop (Missing s)
+        match follow with
+        | None ->
+          if !current + 1 < l then argv.(!current + 1)
+          else stop (Missing s)
+        | Some arg -> arg
       in
       begin try
         let rec treat_action = function
