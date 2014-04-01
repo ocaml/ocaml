@@ -942,7 +942,7 @@ let name_recursion sdecl id decl =
 let inline_record_decls tag typname pcd =
   match pcd.pcd_args with
   | Pcstr_record lbls ->
-      let name = typname ^ "#" ^ pcd.pcd_name.txt in
+      let name = typname ^ "." ^ pcd.pcd_name.txt in
       let ptype_kind = Ptype_record lbls in
       let params = freevars ptype_kind in
       let ptype_attributes =

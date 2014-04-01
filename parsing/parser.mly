@@ -1906,8 +1906,12 @@ label_longident:
   | mod_longident DOT LIDENT                    { Ldot($1, $3) }
 ;
 type_longident:
-    LIDENT                                      { Lident $1 }
-  | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
+    type_ident                                  { Lident $1 }
+  | mod_ext_longident DOT type_ident            { Ldot($1, $3) }
+;
+type_ident:
+    LIDENT                                      { $1 }
+  | LIDENT DOT UIDENT                           { print_endline $1; $1 ^ "." ^ $3 }
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }
