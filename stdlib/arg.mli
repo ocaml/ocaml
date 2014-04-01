@@ -25,7 +25,8 @@
     [Unit], [Set] and [Clear] keywords take no argument. A [Rest]
     keyword takes the remaining of the command line as arguments.
     Every other keyword takes the following word on the command line
-    as argument.
+    as argument.  For compatibility with GNU getopt_long, [keyword=arg]
+    is also allowed.
     Arguments not preceded by a keyword are called anonymous arguments.
 
    Examples ([cmd] is assumed to be the command name):
