@@ -34,12 +34,14 @@ struct hash_internal {
 	uint64 v0, v1, v2, v3;
 };
 
-#define cRounds 2
-#define dRounds 4
-
 #define ROTL(x,n) ((x) << n | (x) >> (64-n))
 
-static void sipround(hash_t h) {
+#if __STDC_VERSION__ < 199901L
+# define inline
+# warning "You aren't using a C99 compiler; not enforcing inlining"
+#endif
+
+static inline void sipround(hash_t h) {
 	h->v0 += h->v1;             h->v2 += h->v3;
 	h->v1  = ROTL(h->v1,13);    h->v3  = ROTL(h->v3,13);
 	h->v1 += h->v0;             h->v3 += h->v2;
@@ -65,7 +67,7 @@ CAMLexport hash_t caml_hash_init(void* a, hash_key k) {
 CAMLexport hash_out caml_hash_final(hash_t h) {
 	int i;
 	h->v2 ^= 0xff;
-	for(i=0; i<dRounds; i++) sipround(h);
+	sipround(h); sipround(h); sipround(h); sipround(h);
 	return (h->v0 ^ h->v1 ^ h->v2 ^ h->v3) & 0x3FFFFFFFU;
 }
 
@@ -89,7 +91,7 @@ CAMLexport void caml_hash_mix_int64(hash_t h, int64 d)
 {
   int i;
   h->v3 ^= d;
-  for(i=0; i < cRounds; i++) sipround(h);
+  sipround(h); sipround(h);
   h->v0 ^= d;
 }
 
