@@ -369,12 +369,15 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Pcstr_tuple of core_type list
-  | Pcstr_record of label_declaration list
+  | Pcstr_record of label_declaration list * ((string loc option * variance) list * string loc) option
 
 (*
-  | C of T1 * ... * Tn     (res = None)
-  | C: T0                  (args = [], res = Some T0)
-  | C: T1 * ... * Tn -> T0 (res = Some T0)
+  | C of T1 * ... * Tn     (res = None,    args = Pcstr_tuple [])
+  | C: T0                  (res = Some T0, args = [])
+  | C: T1 * ... * Tn -> T0 (res = Some T0, args = Pcstr_tuple)
+  | C of {...}             (res = None,    args = Pcstr_record)
+  | C: {...} -> T0         (res = Some T0, args = Pcstr_record)
+  | C of {...} as t        (res = None,    args = Pcstr_record)
 *)
 
 (** {2 Class language} *)

@@ -1606,7 +1606,9 @@ generalized_constructor_arguments:
 
 constructor_arguments:
   | core_type_list { Pcstr_tuple (List.rev $1) }
-  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2) }
+  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2, None) }
+  | LBRACE label_declarations RBRACE AS optional_type_parameters LIDENT
+                    { Pcstr_record (List.rev $2, Some ($5, mkrhs $6 6)) }
 ;
 label_declarations:
     label_declaration                           { [$1] }

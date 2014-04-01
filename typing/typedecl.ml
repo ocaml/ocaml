@@ -941,17 +941,22 @@ let name_recursion sdecl id decl =
 (* Add fake record declarations for record constructor arguments *)
 let inline_record_decls params tag typname pcd =
   match pcd.pcd_args with
-  | Pcstr_record lbls ->
-      let name = typname ^ "." ^ pcd.pcd_name.txt in
+  | Pcstr_record (lbls, asdecl) ->
       let ptype_kind = Ptype_record lbls in
-      let bound =
-        List.fold_left (fun acc -> function
-          | Some {txt}, _ -> StringSet.add txt acc
-          | _ -> acc) StringSet.empty params
+      let params, name =
+        match asdecl with
+        | Some (params, s) -> params, s.txt
+        | None ->
+            let bound =
+              List.fold_left (fun acc -> function
+                  | Some {txt}, _ -> StringSet.add txt acc
+                  | _ -> acc) StringSet.empty params
+            in
+            let extra_params = freevars bound ptype_kind in
+            let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
+            params @ List.map prepare_param extra_params,
+            typname ^ "." ^ pcd.pcd_name.txt
       in
-      let extra_params = freevars bound ptype_kind in
-      let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
-      let params = params @ List.map prepare_param extra_params in
       let ptype_attributes =
         let open Ast_helper in
         [
