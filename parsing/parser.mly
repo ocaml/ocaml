@@ -1911,7 +1911,7 @@ type_longident:
 ;
 type_ident:
     LIDENT                                      { $1 }
-  | LIDENT DOT UIDENT                           { print_endline $1; $1 ^ "." ^ $3 }
+  | LIDENT DOT UIDENT                           { $1 ^ "." ^ $3 }
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }
