@@ -1598,7 +1598,9 @@ let make_record_matching all_labels def = function
           let access =
             match lbl.lbl_repres with
               Record_regular _ -> Pfield lbl.lbl_pos
-            | Record_float -> Pfloatfield lbl.lbl_pos in
+            | Record_float -> Pfloatfield lbl.lbl_pos
+            | Record_exception _ -> Pfield (lbl.lbl_pos + 1)
+          in
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias

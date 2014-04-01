@@ -1048,6 +1048,18 @@ let constructors_of_type ty_path decl =
 let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record(labels, rep) ->
+      let rep =
+        match rep with
+        | Record_exception (Pident id) ->
+            begin match ty_path with
+            | Path.Pdot (path, _, pos) ->
+                Record_exception (Path.Pdot (path, Ident.name id, pos))
+            | Path.Pident _ ->
+                rep
+            | Path.Papply _ -> assert false
+            end
+        | rep -> rep
+      in
       Datarepr.label_descrs
         (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
@@ -1064,7 +1076,11 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
   | Sig_type(id, decl, _) :: rem ->
-      let p = Pdot(root, Ident.name id, nopos) in
+      let p = Pdot(root, Ident.name id, pos) in
+      (* the position is used for the type declaration corresponding
+         to a constructor declaration with a record argument
+         (the exception comes immediately after the synthesized type
+         declaration). *)
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)

@@ -145,6 +145,7 @@ type label_description =
 and record_representation =
     Record_regular of int               (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
+  | Record_exception of Path.t
 
 (* Variance *)
 
@@ -224,6 +225,7 @@ type exception_declaration =
     { exn_args: type_expr list;
       exn_loc: Location.t;
       exn_attributes: Parsetree.attributes;
+      exn_inlined: bool;  (* merge with constructor_declaration? *)
      }
 
 (* Type expressions for the class language *)

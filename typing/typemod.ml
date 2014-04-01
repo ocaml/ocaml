@@ -471,6 +471,9 @@ let mksig desc env loc =
 
 (* let signature sg = List.map (fun item -> item.sig_type) sg *)
 
+let prepend_sig_types decls rem =
+  map_rec'' (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem
+
 let rec transl_modtype env smty =
   let loc = smty.pmty_loc in
   match smty.pmty_desc with
@@ -515,7 +518,6 @@ let rec transl_modtype env smty =
   | Pmty_extension (s, _arg) ->
       raise (Error (s.loc, env, Extension s.txt))
 
-
 and transl_signature env sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
@@ -543,16 +545,22 @@ and transl_signature env sg =
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type decls) env loc :: trem,
-            map_rec'' (fun rs td ->
-                Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
+            prepend_sig_types decls rem,
             final_env
         | Psig_exception sarg ->
-            let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
+            let ((tdecls, tenv), arg, decl, newenv) =
+              Typedecl.transl_exception env sarg
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
             let id = arg.cd_id in
-            mksig (Tsig_exception arg) env loc :: trem,
+            let trem = mksig (Tsig_exception arg) tenv loc :: trem in
+            let trem =
+              if tdecls = [] then trem else
+                mksig (Tsig_type tdecls) env loc :: trem
+            in
+            trem,
             (if List.exists (Ident.equal id) (get_exceptions rem) then rem
-             else Sig_exception(id, decl) :: rem),
+             else prepend_sig_types tdecls (Sig_exception(id, decl) :: rem)),
             final_env
         | Psig_module pmd ->
             check "module" item.psig_loc module_names pmd.pmd_name.txt;
@@ -1148,12 +1156,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         Tstr_type decls,
-        map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
-          decls [],
+        prepend_sig_types decls [],
         enrich_type_decls anchor decls env newenv
     | Pstr_exception sarg ->
-        let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
-        Tstr_exception arg, [Sig_exception(arg.cd_id, decl)], newenv
+        let ((tdecls, tenv), arg, decl, newenv) =
+          Typedecl.transl_exception env sarg
+        in
+        (* Note: we should keep tdecls in the typedtree *)
+        Tstr_exception arg,
+        prepend_sig_types tdecls [Sig_exception(arg.cd_id, decl)],
+        newenv
     | Pstr_exn_rebind(name, longid, attrs) ->
         let (path, arg) = Typedecl.transl_exn_rebind env loc longid.txt in
         let (id, newenv) = Env.enter_exception name.txt arg env in

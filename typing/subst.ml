@@ -303,6 +303,7 @@ let exception_declaration s descr =
   { exn_args = List.map (type_expr s) descr.exn_args;
     exn_loc = loc s descr.exn_loc;
     exn_attributes = attrs s descr.exn_attributes;
+    exn_inlined = descr.exn_inlined;
    }
 
 let rec rename_bound_idents s idents = function

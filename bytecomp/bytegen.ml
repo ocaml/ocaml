@@ -146,6 +146,7 @@ let rec size_of_lambda = function
       begin match kind with
       | Record_regular _ -> RHS_block size
       | Record_float -> RHS_floatblock size
+      | Record_exception _ -> RHS_block (size + 1)
       end
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body

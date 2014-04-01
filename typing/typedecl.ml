@@ -177,7 +177,11 @@ let get_args = function
   | Pcstr_tuple l -> l
   | _ -> assert false
 
-let transl_declaration env sdecl id =
+let is_inline_record = function
+  | [ {ptyp_attributes = [{txt="#inline#"}, _]} ] -> true
+  | _ -> false
+
+let transl_declaration ?exnid env sdecl id =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
@@ -206,11 +210,7 @@ let transl_declaration env sdecl id =
         let make_cstr {pcd_name = lid; pcd_args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
           let name = Ident.create lid.txt in
           let args = get_args pcd_args in
-          let inlined =
-            match args with
-            | [ {ptyp_attributes = [{txt="#inline#"}, _]} ] -> true
-            | _ -> false
-          in
+          let inlined = is_inline_record args in
           match ret_type with
             | None ->
               (name, lid, List.map (transl_simple_type env true) args,
@@ -277,7 +277,10 @@ let transl_declaration env sdecl id =
         let rep =
           match sdecl.ptype_attributes with
           | [{txt="#tag#"}, PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_int tag)}, _)}]] ->
-              Record_regular tag
+              begin match exnid with
+              | Some id -> print_endline "XXX"; Record_exception (Path.Pident id)
+              | None -> Record_regular tag
+              end
           | _ ->
               if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
               then Record_float
@@ -935,8 +938,44 @@ let name_recursion sdecl id decl =
     else decl
   | _ -> decl
 
+(* Add fake record declarations for record constructor arguments *)
+let inline_record_decls tag typname pcd =
+  match pcd.pcd_args with
+  | Pcstr_record lbls ->
+      let name = typname ^ "#" ^ pcd.pcd_name.txt in
+      let ptype_kind = Ptype_record lbls in
+      let params = freevars ptype_kind in
+      let ptype_attributes =
+        let open Ast_helper in
+        [
+          mknoloc "#tag#",
+          PStr [ Str.eval (Exp.constant (Const_int !tag)) ]
+        ]
+      in
+      let decl =
+        {
+          ptype_name = mkloc name pcd.pcd_name.loc;
+          ptype_params = List.map (fun (s, loc) -> Some (mkloc s loc), Invariant) params;
+          ptype_cstrs = [];
+          ptype_kind;
+          ptype_private = Public;
+          ptype_manifest = None;
+          ptype_attributes;
+          ptype_loc = pcd.pcd_loc;
+        } in
+      incr tag;
+      let params =
+        List.map (fun (s, loc) -> Ast_helper.Typ.var ~loc s) params
+      in
+      let lid = mknoloc (Longident.Lident name) in
+      let attrs = [ mknoloc "#inline#", PStr [] ] in
+      let pcd_args = Pcstr_tuple [Ast_helper.Typ.constr ~attrs lid params] in
+      {pcd with pcd_args}, [decl]
+  | Pcstr_tuple [] -> pcd, []
+  | Pcstr_tuple _ -> incr tag; pcd, []
+
 (* Translate a set of mutually recursive type declarations *)
-let transl_type_decl env sdecl_list =
+let transl_type_decl ?exnid env sdecl_list =
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =
@@ -947,48 +986,12 @@ let transl_type_decl env sdecl_list =
       fixed_types
     @ sdecl_list
   in
-  (* Add fake record declarations for record constructor arguments *)
-  let rewrite_case tag sdecl pcd =
-    match pcd.pcd_args with
-    | Pcstr_record lbls ->
-        let name = sdecl.ptype_name.txt ^ "#" ^ pcd.pcd_name.txt in
-        let ptype_kind = Ptype_record lbls in
-        let params = freevars ptype_kind in
-        let ptype_attributes =
-          let open Ast_helper in
-          [
-            mknoloc "#tag#",
-            PStr [ Str.eval (Exp.constant (Const_int !tag)) ]
-          ]
-        in
-        let decl =
-          {
-            ptype_name = mkloc name pcd.pcd_name.loc;
-            ptype_params = List.map (fun (s, loc) -> Some (mkloc s loc), Invariant) params;
-            ptype_cstrs = [];
-            ptype_kind;
-            ptype_private  = sdecl.ptype_private;
-            ptype_manifest = None;
-            ptype_attributes;
-            ptype_loc = pcd.pcd_loc;
-          } in
-        incr tag;
-        let params =
-          List.map (fun (s, loc) -> Ast_helper.Typ.var ~loc s) params
-        in
-        let lid = mknoloc (Longident.Lident name) in
-        let attrs = [ mknoloc "#inline#", PStr [] ] in
-        let pcd_args = Pcstr_tuple [Ast_helper.Typ.constr ~attrs lid params] in
-        {pcd with pcd_args}, [decl]
-    | Pcstr_tuple [] -> pcd, []
-    | Pcstr_tuple _ -> incr tag; pcd, []
-  in
   let sdecl_list =
     List.map
       (function
         | {ptype_kind = Ptype_variant cstrs} as sdecl ->
             let cstrs, more =
-              List.split (List.map (rewrite_case (ref 0) sdecl) cstrs)
+              List.split (List.map (inline_record_decls (ref 0) sdecl.ptype_name.txt) cstrs)
             in
             {sdecl with ptype_kind=Ptype_variant cstrs} :: List.flatten more
         | x -> [ x ]
@@ -1035,7 +1038,7 @@ let transl_type_decl env sdecl_list =
       id, Some slot
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration temp_env name_sdecl id in
+    current_slot := slot; transl_declaration ?exnid temp_env name_sdecl id in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
@@ -1117,10 +1120,18 @@ let transl_closed_type env sty =
 
 let transl_exception env excdecl =
   let loc = excdecl.pcd_loc in
+  let id = Ident.create excdecl.pcd_name.txt in
   if excdecl.pcd_res <> None then raise (Error (loc, Exception_constructor_with_result));
+  let excdecl, inlined_records = inline_record_decls (ref 0) "exn" excdecl in
+  let (_, env) as tdecls =
+    match inlined_records with
+    | [] -> ([], env)
+    | decls -> transl_type_decl ~exnid:id env decls
+  in
   reset_type_variables();
   Ctype.begin_def();
-  let ttypes = List.map (transl_closed_type env) (get_args excdecl.pcd_args) in  (* TODO: proper error message, or support record args for exceptions? *)
+  let args = get_args excdecl.pcd_args in
+  let ttypes = List.map (transl_closed_type env) args in
   Ctype.end_def();
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
   List.iter Ctype.generalize types;
@@ -1128,10 +1139,11 @@ let transl_exception env excdecl =
     {
       exn_args = types;
       exn_attributes = excdecl.pcd_attributes;
+      exn_inlined = is_inline_record args;
       Types.exn_loc = loc;
     }
   in
-  let (id, newenv) = Env.enter_exception excdecl.pcd_name.txt exn_decl env in
+  let newenv = Env.add_exception ~check:true id exn_decl env in
   let cd =
     { cd_id = id;
       cd_name = excdecl.pcd_name;
@@ -1141,7 +1153,9 @@ let transl_exception env excdecl =
       cd_attributes = excdecl.pcd_attributes;
      }
   in
-  cd, exn_decl, newenv
+  tdecls, cd, exn_decl, newenv
+
+let transl_type_decl = transl_type_decl ?exnid:None
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc lid =
@@ -1155,6 +1169,7 @@ let transl_exn_rebind env loc lid =
     Cstr_exception (path, _) ->
       (path, {exn_args = cdescr.cstr_args;
               exn_attributes = [];
+              exn_inlined = cdescr.cstr_inlined;
               Types.exn_loc = loc})
   | _ -> raise(Error(loc, Not_an_exception lid))
 

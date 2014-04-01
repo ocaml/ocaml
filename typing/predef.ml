@@ -167,7 +167,9 @@ let build_initial_env add_type add_exception empty_env =
 
   let add_exception id l =
     add_exception id
-      { exn_args = l; exn_loc = Location.none; exn_attributes = [] }
+      { exn_args = l; exn_loc = Location.none; exn_attributes = [];
+        exn_inlined = false;
+      }
   in
   add_exception ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (

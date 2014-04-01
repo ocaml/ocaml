@@ -86,6 +86,7 @@ let record_rep ppf r =
   | Record_regular 0 -> fprintf ppf "regular"
   | Record_regular i -> fprintf ppf "regular (tag %i)" i
   | Record_float -> fprintf ppf "float"
+  | Record_exception p -> fprintf ppf "exn (%s)" (Path.name p)
 ;;
 
 let primitive ppf = function

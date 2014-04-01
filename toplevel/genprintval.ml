@@ -293,7 +293,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                               in
                               (lid, v) :: tree_of_fields (pos + 1) remainder
                         in
-                        Oval_record (tree_of_fields 0 lbl_list)
+                        let pos =
+                          match rep with
+                          | Record_exception _ -> 1
+                          | _ -> 0
+                        in
+                        Oval_record (tree_of_fields pos lbl_list)
                     end
               with
                 Not_found ->                (* raised by Env.find_type *)
@@ -379,7 +384,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if not (EVP.same_value slot (EVP.eval_path env path))
         then raise Not_found;
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name false 1 depth bucket cstr.cstr_args
+           (fun x -> Oide_ident x) name cstr.cstr_inlined 1 depth bucket
+           cstr.cstr_args
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x

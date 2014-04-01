@@ -101,7 +101,7 @@ let exception_descr path_exc decl =
     cstr_generalized = false;
     cstr_loc = decl.exn_loc;
     cstr_attributes = decl.exn_attributes;
-    cstr_inlined = false;
+    cstr_inlined = decl.exn_inlined;
   }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
