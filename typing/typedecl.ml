@@ -150,10 +150,10 @@ let make_params sdecl =
   with Already_bound loc ->
     raise(Error(loc, Repeated_parameter))
 
-let freevars kind =
+let freevars bound kind =
   let open Ast_mapper in
   let vars = ref StringMap.empty in
-  let bound = ref StringSet.empty in
+  let bound = ref bound in
   let super = default_mapper in
   let typ m ct =
     match ct.ptyp_desc with
@@ -939,12 +939,19 @@ let name_recursion sdecl id decl =
   | _ -> decl
 
 (* Add fake record declarations for record constructor arguments *)
-let inline_record_decls tag typname pcd =
+let inline_record_decls params tag typname pcd =
   match pcd.pcd_args with
   | Pcstr_record lbls ->
       let name = typname ^ "." ^ pcd.pcd_name.txt in
       let ptype_kind = Ptype_record lbls in
-      let params = freevars ptype_kind in
+      let bound =
+        List.fold_left (fun acc -> function
+          | Some {txt}, _ -> StringSet.add txt acc
+          | _ -> acc) StringSet.empty params
+      in
+      let extra_params = freevars bound ptype_kind in
+      let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
+      let params = params @ List.map prepare_param extra_params in
       let ptype_attributes =
         let open Ast_helper in
         [
@@ -955,7 +962,7 @@ let inline_record_decls tag typname pcd =
       let decl =
         {
           ptype_name = mkloc name pcd.pcd_name.loc;
-          ptype_params = List.map (fun (s, loc) -> Some (mkloc s loc), Invariant) params;
+          ptype_params = params;
           ptype_cstrs = [];
           ptype_kind;
           ptype_private = Public;
@@ -964,9 +971,11 @@ let inline_record_decls tag typname pcd =
           ptype_loc = pcd.pcd_loc;
         } in
       incr tag;
-      let params =
-        List.map (fun (s, loc) -> Ast_helper.Typ.var ~loc s) params
+      let mk_param = function
+        | (Some {txt;loc}, _) -> Ast_helper.Typ.var ~loc txt
+        | (None, _) -> Ast_helper.Typ.any ()
       in
+      let params = List.map mk_param params in
       let lid = mknoloc (Longident.Lident name) in
       let attrs = [ mknoloc "#inline#", PStr [] ] in
       let pcd_args = Pcstr_tuple [Ast_helper.Typ.constr ~attrs lid params] in
@@ -990,9 +999,11 @@ let transl_type_decl ?exnid env sdecl_list =
     List.map
       (function
         | {ptype_kind = Ptype_variant cstrs} as sdecl ->
-            let cstrs, more =
-              List.split (List.map (inline_record_decls (ref 0) sdecl.ptype_name.txt) cstrs)
-            in
+            let tname = sdecl.ptype_name.txt in
+            let tag = ref 0 in
+            let do_cstr = inline_record_decls sdecl.ptype_params tag tname in
+            let decls = List.map do_cstr cstrs in
+            let cstrs, more = List.split decls in
             {sdecl with ptype_kind=Ptype_variant cstrs} :: List.flatten more
         | x -> [ x ]
       )
@@ -1122,7 +1133,7 @@ let transl_exception env excdecl =
   let loc = excdecl.pcd_loc in
   let id = Ident.create excdecl.pcd_name.txt in
   if excdecl.pcd_res <> None then raise (Error (loc, Exception_constructor_with_result));
-  let excdecl, inlined_records = inline_record_decls (ref 0) "exn" excdecl in
+  let excdecl, inlined_records = inline_record_decls [] (ref 0) "exn" excdecl in
   let (_, env) as tdecls =
     match inlined_records with
     | [] -> ([], env)
