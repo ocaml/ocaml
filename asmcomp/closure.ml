@@ -998,7 +998,7 @@ and close_one_function fenv cenv id funct =
 
 and close_switch fenv cenv cases num_keys default =
   let index = Array.create num_keys 0
-  and store = mk_store Lambda.same in
+  and store = mk_store (fun lam -> lam) Lambda.same in
 
   (* First default case *)
   begin match default with

@@ -696,7 +696,7 @@ let rec comp_expr env exp sz cont =
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
 (* Build indirection vectors *)
-      let store = mk_store Lambda.same in
+      let store = mk_store (fun lam -> lam) Lambda.same in
       let act_consts = Array.create sw.sw_numconsts 0
       and act_blocks = Array.create sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)

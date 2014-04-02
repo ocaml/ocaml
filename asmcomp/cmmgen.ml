@@ -1062,7 +1062,7 @@ let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
 let make_switch_gen arg cases acts =
   let lcases = Array.length cases in
   let new_cases = Array.create lcases 0 in
-  let store = Switch.mk_store (=) in
+  let store = Switch.mk_store (fun x -> x) (=) in
 
   for i = 0 to Array.length cases-1 do
     let act = cases.(i) in

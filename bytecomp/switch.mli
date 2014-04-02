@@ -19,7 +19,19 @@
 
 type 'a t_store =
     {act_get : unit -> 'a array ; act_store : 'a -> int}
-val mk_store : ('a -> 'a -> bool) -> 'a t_store
+
+(* PR6359
+   Actions must be simplified so as to substitute
+   'simple' bindings, ie the ones that would be
+   kept in equal actions.
+     Otherwise, there is a risk binder duplications, in case
+   a shared action is later unshared. (Typically in test trees)
+*)
+
+val mk_store :
+    ('a -> 'a) ->         (* Simplify actions *)
+    ('a -> 'a -> bool) -> (* equality of simplified actions *)
+      'a t_store
 
 (* Arguments to the Make functor *)
 module type S =
