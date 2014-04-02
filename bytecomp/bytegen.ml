@@ -401,6 +401,7 @@ let comp_primitive p args =
   | Pbigstring_set_64(_) -> Kccall("caml_ba_uint8_set64", 3)
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
+  | Pintrin _ -> assert false
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
@@ -620,6 +621,13 @@ let rec comp_expr env exp sz cont =
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  (* Intrinsics are not supported in byte code *)
+  | Lprim(Pintrin _, args) ->
+      comp_args env [] sz
+        ( Kconst(Const_base(Const_string
+            ("Intrinsics not supported in byte code", None))) ::
+          Kccall("caml_failwith", 1) ::
+          discard_dead_code cont )
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->

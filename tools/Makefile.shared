@@ -217,6 +217,7 @@ READ_CMT= \
           ../typing/env.cmo \
           ../typing/ctype.cmo \
           ../typing/oprint.cmo \
+	  ../typing/intrin.cmo \
           ../typing/primitive.cmo \
           ../typing/printtyp.cmo \
           ../typing/mtype.cmo \

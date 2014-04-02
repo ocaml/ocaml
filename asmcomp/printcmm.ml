@@ -19,6 +19,8 @@ let machtype_component ppf = function
   | Addr -> fprintf ppf "addr"
   | Int -> fprintf ppf "int"
   | Float -> fprintf ppf "float"
+  | XMM -> fprintf ppf "xmm"
+  | YMM -> fprintf ppf "ymm"
 
 let machtype ppf mty =
   match Array.length mty with
@@ -47,6 +49,10 @@ let chunk = function
   | Single -> "float32"
   | Double -> "float64"
   | Double_u -> "float64u"
+  | M128 -> "m128"
+  | M128_u -> "m128u"
+  | M256 -> "m256"
+  | M256_u -> "m256u"
 
 let operation = function
   | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
@@ -84,6 +90,7 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
+  | Cintrin intrin -> Intrin.intrin_name intrin
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

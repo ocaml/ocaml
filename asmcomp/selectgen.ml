@@ -29,6 +29,8 @@ let oper_result_type = function
       begin match c with
         Word -> typ_addr
       | Single | Double | Double_u -> typ_float
+      | M128 | M128_u -> typ_xmm
+      | M256 | M256_u -> typ_ymm
       | _ -> typ_int
       end
   | Calloc -> typ_addr
@@ -42,6 +44,13 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
+  | Cintrin intrin ->
+      match intrin.Intrin.result with
+        `Float -> typ_float
+      | `Int64 -> typ_int
+      | `M128  -> typ_xmm
+      | `M256  -> typ_ymm
+      | `Unit  -> typ_void
 
 (* Infer the size in bytes of the result of a simple expression *)
 
@@ -255,6 +264,7 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
+  | (Cintrin _, _) -> fatal_error "amd64 intrinsics not supported"
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
@@ -659,7 +669,13 @@ method emit_stores env data regs_addr =
             Istore(_, _) ->
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
-                let kind = if r.typ = Float then Double_u else Word in
+                let kind =
+                  match r.typ with
+                  | Float -> Double_u
+                  | XMM -> M128
+                  | YMM -> M256
+                  | _ -> Word
+                in
                 self#insert (Iop(Istore(kind, !a)))
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)

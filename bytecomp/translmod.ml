@@ -35,7 +35,7 @@ exception Error of Location.t * error
 let prim_set_oo_id =
   Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
           prim_alloc = false; prim_native_name = "";
-          prim_native_float = false}
+          prim_native_float = false; prim_intrin = None}
 
 let transl_exception path decl =
   let name =

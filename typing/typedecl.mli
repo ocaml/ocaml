@@ -77,6 +77,7 @@ type error =
   | Unbound_type_var_exc of type_expr * type_expr
   | Varying_anonymous
   | Exception_constructor_with_result
+  | Intrin_error of string
 
 exception Error of Location.t * error
 

@@ -63,4 +63,5 @@ val set_of_array: t array -> Set.t
 val reset: unit -> unit
 val all_registers: unit -> t list
 val num_registers: unit -> int
+val reg_size: unit -> int
 val reinit: unit -> unit

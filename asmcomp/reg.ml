@@ -62,12 +62,14 @@ let dummy =
 
 let currstamp = ref 0
 let reg_list = ref([] : t list)
+let reg_size = ref 0
 
 let create ty =
   let r = { raw_name = Raw_name.Anon; stamp = !currstamp; typ = ty;
             loc = Unknown; spill = false; interf = []; prefer = []; degree = 0;
             spill_cost = 0; visited = false; part = None; } in
   reg_list := r :: !reg_list;
+  reg_size := max (size_component ty) !reg_size;
   incr currstamp;
   r
 
@@ -123,10 +125,12 @@ let reset() =
      soft pseudo-registers *)
   if !first_virtual_reg_stamp = -1 then first_virtual_reg_stamp := !currstamp;
   currstamp := !first_virtual_reg_stamp;
-  reg_list := []
+  reg_list := [];
+  reg_size := 0
 
 let all_registers() = !reg_list
 let num_registers() = !currstamp
+let reg_size() = !reg_size
 
 let reinit_reg r =
   r.loc <- Unknown;

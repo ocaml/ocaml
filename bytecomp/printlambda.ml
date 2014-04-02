@@ -229,6 +229,7 @@ let primitive ppf = function
      else fprintf ppf "bigarray.array1.set64"
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
+  | Pintrin intrin -> fprintf ppf "%s" (Intrin.intrin_name intrin)
 
 let rec lam ppf = function
   | Lvar id ->

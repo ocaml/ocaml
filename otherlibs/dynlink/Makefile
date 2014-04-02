@@ -30,7 +30,7 @@ COMPILEROBJS=\
   ../../parsing/location.cmo ../../parsing/longident.cmo \
   ../../parsing/ast_helper.cmo \
   ../../parsing/ast_mapper.cmo \
-  ../../typing/ident.cmo ../../typing/path.cmo \
+  ../../typing/ident.cmo ../../typing/path.cmo ../../typing/intrin.cmo \
   ../../typing/primitive.cmo ../../typing/types.cmo \
   ../../typing/btype.cmo ../../typing/subst.cmo ../../typing/predef.cmo \
   ../../typing/datarepr.cmo ../../typing/cmi_format.cmo ../../typing/env.cmo \

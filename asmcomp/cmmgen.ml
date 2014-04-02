@@ -55,6 +55,8 @@ let string_header len =
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
+let m128_header = block_header Obj.double_tag (16 / size_addr)
+let m256_header = block_header Obj.double_tag (32 / size_addr)
 
 let alloc_block_header tag sz = Cconst_blockheader(block_header tag sz)
 let alloc_float_header = Cconst_blockheader(float_header)
@@ -64,6 +66,8 @@ let alloc_infix_header ofs = Cconst_blockheader(infix_header ofs)
 let alloc_boxedint32_header = Cconst_blockheader(boxedint32_header)
 let alloc_boxedint64_header = Cconst_blockheader(boxedint64_header)
 let alloc_boxedintnat_header = Cconst_blockheader(boxedintnat_header)
+let alloc_m128_header = Cconst_natint(m128_header)
+let alloc_m256_header = Cconst_natint(m256_header)
 
 (* Integers *)
 
@@ -430,6 +434,36 @@ let complex_re c = Cop(Cload Double_u, [c])
 let complex_im c = Cop(Cload Double_u,
                        [Cop(Cadda, [c; Cconst_int size_float])])
 
+(* M128 *)
+
+let box_m128 c = Cop(Calloc, [alloc_m128_header; c])
+
+let rec unbox_m128 = function
+    Cop(Calloc, [header; c]) -> c
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_m128 body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_m128 e1, unbox_m128 e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_m128 e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_m128 el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_m128 e1, unbox_m128 e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_m128 e1, id, unbox_m128 e2)
+  | c -> Cop(Cload M128, [c])
+
+(* M256 *)
+
+let box_m256 c = Cop(Calloc, [alloc_m256_header; c])
+
+let rec unbox_m256 = function
+    Cop(Calloc, [header; c]) -> c
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_m256 body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_m256 e1, unbox_m256 e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_m256 e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_m256 el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_m256 e1, unbox_m256 e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_m256 e1, id, unbox_m256 e2)
+  | c -> Cop(Cload M256, [c])
+
 (* Unit *)
 
 let return_unit c = Csequence(c, Cconst_pointer 1)
@@ -490,9 +524,13 @@ let get_size ptr =
 
 let log2_size_addr = Misc.log2 size_addr
 let log2_size_float = Misc.log2 size_float
+let log2_size_xmm = Misc.log2 (size_float * 2)
+let log2_size_ymm = Misc.log2 (size_float * 4)
 
 let wordsize_shift = 9
 let numfloat_shift = 9 + log2_size_float - log2_size_addr
+let numxmm_shift = 9 + log2_size_xmm - log2_size_addr
+let numymm_shift = 9 + log2_size_ymm - log2_size_addr
 
 let is_addr_array_hdr hdr =
   Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); floatarray_tag])
@@ -998,7 +1036,8 @@ let check_bound unsafe dbg a1 a2 k =
 
 let default_prim name =
   { prim_name = name; prim_arity = 0 (*ignored*);
-    prim_alloc = true; prim_native_name = ""; prim_native_float = false }
+    prim_alloc = true; prim_native_name = ""; prim_native_float = false;
+    prim_intrin = None }
 
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
@@ -1147,6 +1186,8 @@ type unboxed_number_kind =
     No_unboxing
   | Boxed_float
   | Boxed_integer of boxed_integer
+  | Boxed_m128
+  | Boxed_m256
 
 let rec is_unboxed_number = function
     Uconst(Uconst_ref(_, Uconst_float _)) ->
@@ -1188,6 +1229,14 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
+        | Pintrin intrin ->
+            begin match intrin.Intrin.result with
+              `Float -> Boxed_float
+            | `Int64 -> Boxed_integer Pint64
+            | `M128  -> Boxed_m128
+            | `M256  -> Boxed_m256
+            | `Unit  -> No_unboxing
+            end
         | _ -> No_unboxing
       end
   | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
@@ -1319,6 +1368,12 @@ let rec transl = function
                            (if bi = Pint32 then Thirtytwo_signed else Word)
                            size_addr
                            id exp body
+      | Boxed_m128 ->
+          transl_unbox_let box_m128 unbox_m128 transl_unbox_m128 M128 0
+                           id exp body
+      | Boxed_m256 ->
+          transl_unbox_let box_m256 unbox_m256 transl_unbox_m256 M256 0
+                           id exp body
       end
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
@@ -1384,6 +1439,8 @@ let rec transl = function
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
           tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
+      | (Pintrin intrin, args) ->
+          transl_intrin intrin args
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->
@@ -1494,6 +1551,41 @@ let rec transl = function
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
+
+and transl_intrin intrin args =
+  let open Intrin in
+  let rec loop args acc = function
+      [] -> List.rev acc
+    | ocaml_arg :: ocaml_args ->
+        let transl_arg, args =
+          match ocaml_arg.kind, args with
+          | `Array_float, arg :: ofs :: args ->
+              array_indexing log2_size_float (transl arg) (transl ofs), args
+          | `Array_m128, arg :: ofs :: args ->
+              array_indexing log2_size_xmm (transl arg) (transl ofs), args
+          | `Array_m256, arg :: ofs :: args ->
+              array_indexing log2_size_ymm (transl arg) (transl ofs), args
+          | `Float, arg :: args -> transl_unbox_float arg, args
+          | `Imm, Uconst (Uconst_int n) :: args -> Cconst_int n, args
+          | `Int64, arg :: args -> transl_unbox_int Pint64 arg, args
+          | `M128, arg :: args -> transl_unbox_m128 arg, args
+          | `M256, arg :: args -> transl_unbox_m256 arg, args
+          | `Unit, arg :: args -> remove_unit(transl arg), args
+          | _, _ -> fatal_error (Printf.sprintf
+            "Cmmgen.transl_intrin_1 %s" (intrin_name intrin))
+        in
+        loop args (transl_arg :: acc) ocaml_args
+  in
+  let transl_args = loop args [] intrin.args in
+  let box_res =
+    match intrin.result with
+      `Float -> box_float
+    | `Int64 -> box_int Pint64
+    | `M128  -> box_m128
+    | `M256  -> box_m256
+    | `Unit  -> return_unit
+  in
+  box_res(Cop(Cintrin intrin, transl_args))
 
 and transl_prim_1 p arg dbg =
   match p with
@@ -1974,6 +2066,10 @@ and transl_unbox_int bi = function
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
+
+and transl_unbox_m128 exp = unbox_m128(transl exp)
+
+and transl_unbox_m256 exp = unbox_m256(transl exp)
 
 and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset 
                      id exp body =

@@ -10,21 +10,34 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Description of primitive functions *)
+(* Description of intrinsic primitives *)
 
-open Intrin
+exception Intrin_error of string
 
-type description =
-  { prim_name: string;         (* Name of primitive  or C function *)
-    prim_arity: int;           (* Number of arguments *)
-    prim_alloc: bool;          (* Does it allocates or raise? *)
-    prim_native_name: string;  (* Name of C function for the nat. code gen. *)
-    prim_native_float: bool;   (* Does the above operate on unboxed floats? *)
-    prim_intrin: intrin option }
+type arg_kind =
+  [ `Array_float
+  | `Array_m128
+  | `Array_m256
+  | `Float
+  | `Imm
+  | `Int64
+  | `M128
+  | `M256
+  | `Unit ]
 
-val parse_declaration: int -> string list -> description
+type arg = {
+  kind        : arg_kind;
+  cp_to_reg   : [ `No | `Result | `A | `C | `D ];
+  reload      : [ `No | `M64 | `M128 | `M256 ];
+  commutative : bool }
 
-val description_list: description -> string list
+type intrin = {
+  asm         : [ `Emit_string of string | `Emit_arg of int ] list;
+  args        : arg list;
+  result      : [ `Float | `Int64 | `M128 | `M256 | `Unit ];
+  result_reg  : [ `Any | `C ] }
 
-val native_name: description -> string
-val byte_name: description -> string
+val parse_intrin: arg_kind list -> string list -> intrin
+
+val intrin_name : intrin -> string
+val intrin_description : intrin -> string list

@@ -40,7 +40,7 @@ let frame_required () =
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
-      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
+      (!stack_offset + reg_size () * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
       + (if fp then 8 else 0) )
     in Misc.align sz 16
   end else
@@ -51,8 +51,8 @@ let slot_offset loc cl =
     Incoming n -> frame_size() + n
   | Local n ->
       if cl = 0
-      then !stack_offset + n * 8
-      else !stack_offset + (num_stack_slots.(0) + n) * 8
+      then !stack_offset + n * (reg_size ())
+      else !stack_offset + (num_stack_slots.(0) + n) * (reg_size ())
   | Outgoing n -> n
 
 (* Symbols *)
@@ -118,20 +118,26 @@ let reg_low_16_name =
 let reg_low_32_name =
   [| "%eax"; "%ebx"; "%edi"; "%esi"; "%edx"; "%ecx"; "%r8d"; "%r9d";
      "%r12d"; "%r13d"; "%r10d"; "%r11d"; "%ebp" |]
+let reg_ymm_name =
+  [| "%ymm0"; "%ymm1"; "%ymm2"; "%ymm3"; "%ymm4"; "%ymm5"; "%ymm6"; "%ymm7";
+     "%ymm8"; "%ymm9"; "%ymm10"; "%ymm11";
+     "%ymm12"; "%ymm13"; "%ymm14"; "%ymm15" |]
 
-let emit_subreg tbl r =
+let emit_subreg' limit offset tbl r =
   match r.loc with
-    Reg r when r < 13 ->
-      emit_string tbl.(r)
+    Reg r when r - offset < limit ->
+      emit_string tbl.(r - offset)
   | Stack s ->
       let ofs = slot_offset s (register_class r) in
       `{emit_int ofs}(%rsp)`
   | _ ->
       assert false
 
+let emit_subreg = emit_subreg' 13 0
 let emit_reg8 r = emit_subreg reg_low_8_name r
 let emit_reg16 r = emit_subreg reg_low_16_name r
 let emit_reg32 r = emit_subreg reg_low_32_name r
+let emit_ymm r = emit_subreg' 16 100 reg_ymm_name r
 
 (* Output an addressing mode *)
 
@@ -357,6 +363,39 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
+let emit_intrin i intrin iargs =
+  let open Intrin in
+  let arg, res = i.arg, i.res in
+  let instr_to_arg = Array.create (List.length intrin.args) 0 in
+  let _ = List.fold_left (fun (instr_i, arg_i) iarg ->
+    instr_to_arg.(instr_i) <- arg_i;
+    let arg_i = arg_i +
+      match iarg with
+        Iintrin_arg_imm _ -> 0
+      | Iintrin_arg_ord -> 1
+      | Iintrin_arg_addr addr ->
+          match addr with
+            Ibased _ -> 0
+          | Iindexed _
+          | Iscaled _ -> 1
+          | Iindexed2 _
+          | Iindexed2scaled _ -> 2
+    in
+    instr_i + 1, arg_i) (0, 0) iargs
+  in
+  `	`;
+  List.iter (function
+      \`Emit_string s -> emit_string s
+    | \`Emit_arg 0 -> emit_reg res.(0)
+    | \`Emit_arg i ->
+        let i = i - 1 in
+        match List.nth iargs i with
+        | Iintrin_arg_ord -> emit_reg arg.(instr_to_arg.(i))
+        | Iintrin_arg_imm n -> `${emit_int n}`
+        | Iintrin_arg_addr addr -> emit_addressing addr arg instr_to_arg.(i)
+    ) intrin.asm;
+  `\n`
+
 (* Emit an instruction *)
 let emit_instr fallthrough i =
     emit_debug_info i.dbg;
@@ -370,6 +409,10 @@ let emit_instr fallthrough i =
               `	movapd	{emit_reg src}, {emit_reg dst}\n`
           | Float, _, _ ->
               `	movsd	{emit_reg src}, {emit_reg dst}\n`
+          | XMM, _, _ ->
+              `	movupd	{emit_reg src}, {emit_reg dst}\n`
+          | YMM, _, _ ->
+              `	vmovupd	{emit_ymm src}, {emit_ymm dst}\n`
           | _ ->
               `	movq	{emit_reg src}, {emit_reg dst}\n`
         end
@@ -447,6 +490,14 @@ let emit_instr fallthrough i =
             `	cvtss2sd {emit_addressing addr i.arg 0}, {emit_reg dest}\n`
           | Double | Double_u ->
             `	movsd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | M128 ->
+            `	movupd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | M128_u ->
+            `	movapd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | M256 ->
+            `	vmovupd	{emit_addressing addr i.arg 0}, {emit_ymm dest}\n`
+          | M256_u ->
+            `	vmovapd	{emit_addressing addr i.arg 0}, {emit_ymm dest}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         begin match chunk with
@@ -463,6 +514,14 @@ let emit_instr fallthrough i =
             `	movss	%xmm15, {emit_addressing addr i.arg 1}\n`
           | Double | Double_u ->
             `	movsd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | M128 ->
+            `	movupd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | M128_u ->
+            `	movapd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | M256 ->
+            `	vmovupd	{emit_ymm i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | M256_u ->
+            `	vmovapd	{emit_ymm i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -566,6 +625,8 @@ let emit_instr fallthrough i =
         `	sqrtsd	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Ifloatsqrtf addr)) ->
         `	sqrtsd	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific(Iintrin(intrin, iargs))) ->
+        emit_intrin i intrin iargs
     | Lreloadretaddr ->
         ()
     | Lreturn ->

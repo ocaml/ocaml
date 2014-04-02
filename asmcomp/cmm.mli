@@ -16,6 +16,8 @@ type machtype_component =
     Addr
   | Int
   | Float
+  | XMM
+  | YMM
 
 type machtype = machtype_component array
 
@@ -23,6 +25,8 @@ val typ_void: machtype
 val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
+val typ_xmm: machtype
+val typ_ymm: machtype
 
 val size_component: machtype_component -> int
 val size_machtype: machtype -> int
@@ -49,6 +53,10 @@ type memory_chunk =
   | Single
   | Double                              (* 64-bit-aligned 64-bit float *)
   | Double_u                            (* word-aligned 64-bit float *)
+  | M128
+  | M128_u
+  | M256
+  | M256_u
 
 type operation =
     Capply of machtype * Debuginfo.t
@@ -67,6 +75,7 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Cintrin of Intrin.intrin
 
 type expression =
     Cconst_int of int

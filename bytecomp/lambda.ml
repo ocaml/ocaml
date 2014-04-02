@@ -113,6 +113,8 @@ type primitive =
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer
+  (* Intrinsics *)
+  | Pintrin of Intrin.intrin
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

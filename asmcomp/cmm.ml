@@ -14,6 +14,8 @@ type machtype_component =
     Addr
   | Int
   | Float
+  | XMM
+  | YMM
 
 type machtype = machtype_component array
 
@@ -21,11 +23,15 @@ let typ_void = ([||] : machtype_component array)
 let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
+let typ_xmm = [|XMM|]
+let typ_ymm = [|YMM|]
 
 let size_component = function
     Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
+  | XMM -> 16
+  | YMM -> 32
 
 let size_machtype mty =
   let size = ref 0 in
@@ -63,6 +69,10 @@ type memory_chunk =
   | Single
   | Double
   | Double_u
+  | M128
+  | M128_u
+  | M256
+  | M256_u
 
 type operation =
     Capply of machtype * Debuginfo.t
@@ -81,6 +91,7 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Cintrin of Intrin.intrin
 
 type expression =
     Cconst_int of int

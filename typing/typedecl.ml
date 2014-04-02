@@ -41,6 +41,7 @@ type error =
   | Unbound_type_var_exc of type_expr * type_expr
   | Varying_anonymous
   | Exception_constructor_with_result
+  | Intrin_error of string
 
 open Typedtree
 
@@ -1063,6 +1064,49 @@ let transl_exn_rebind env loc lid =
               Types.exn_loc = loc})
   | _ -> raise(Error(loc, Not_an_exception lid))
 
+(** Extracts types of function argument infos to be used by intrinsics. *)
+let intrin_args ty =
+  let open Types in
+  let rec get_types acc ty =
+    match ty.desc with
+    | Tarrow(_, t1, t2, _) -> let acc = get_types acc t1 in get_types acc t2
+    | Tconstr(Path.Pident id, exprs, _) ->
+        let exprs = List.concat (List.map (get_types []) exprs) in
+        (id.Ident.name :: List.concat exprs) :: acc
+    | _ ->
+      raise(Intrin.Intrin_error (Format.asprintf
+        "Unsupported intrinsic parameter %a" Printtyp.type_expr ty))
+  in
+  let rec intrin_types acc = function
+      [] -> acc
+    | k :: l ->
+      let kind, l =
+        let array_index = function
+            ["int"] :: l -> l
+          | _ -> raise(Intrin.Intrin_error (Format.asprintf
+                    "Array intrin parameters must be followed by int"))
+        in
+        match k with
+        | ["array"; "float"] -> `Array_float, array_index l
+        | ["m128d_array"]
+        | ["m128i_array"]    -> `Array_m128, array_index l
+        | ["m256d_array"]
+        | ["m256i_array"]    -> `Array_m256, array_index l
+        | ["float"]          -> `Float, l
+        | ["int"]            -> `Imm, l
+        | ["int64"]          -> `Int64, l
+        | ["m128d"]
+        | ["m128i"]          -> `M128, l
+        | ["m256d"]
+        | ["m256i"]          -> `M256, l
+        | ["unit"]           -> `Unit, l
+        | _ -> raise(Intrin.Intrin_error (Format.asprintf
+                 "Unsupported intrinsic type %s" (String.concat " " k)))
+      in
+      intrin_types (kind :: acc) l
+  in
+  List.rev (intrin_types [] (List.rev (get_types [] ty)))
+
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -1076,11 +1120,25 @@ let transl_value_decl env loc valdecl =
       let arity = Ctype.arity ty in
       if arity = 0 then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      let prim = Primitive.parse_declaration arity decl in
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+      let prim =
+        match decl with
+          "%asm" :: decl ->
+            begin try
+              let intrin = Intrin.parse_intrin (intrin_args ty) decl in
+              {prim_name = "%asm"; prim_arity = arity; prim_alloc = true;
+               prim_native_name = ""; prim_native_float = false;
+               prim_intrin = Some intrin}
+            with Intrin.Intrin_error s ->
+              raise(Error(valdecl.pval_type.ptyp_loc, Intrin_error s))
+            end
+        | _ ->
+            let prim = Primitive.parse_declaration arity decl in
+            if !Clflags.native_code
+            && prim.prim_arity > 5
+            && prim.prim_native_name = ""
+            then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+            prim
+      in
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -1373,6 +1431,8 @@ let report_error ppf = function
         "cannot be checked"
   | Exception_constructor_with_result ->
       fprintf ppf "Exception constructors cannot specify a result type"
+  | Intrin_error s ->
+      fprintf ppf "%s" s
 
 let () =
   Location.register_error_of_exn

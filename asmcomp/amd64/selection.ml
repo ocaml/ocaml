@@ -12,6 +12,7 @@
 
 (* Instruction selection for the AMD64 *)
 
+open Misc
 open Arch
 open Proc
 open Cmm
@@ -77,6 +78,22 @@ let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
 
+let pseudoregs_for_intrin arg res intrin iargs =
+  let open Intrin in
+  let arg = map_intrin_regs arg intrin iargs (fun arg intrin_arg ->
+    match intrin_arg.cp_to_reg with
+      `No  -> arg
+    | `Result -> res.(0)
+    | `A -> rax
+    | `C -> rcx
+    | `D -> rdx ) in
+  let res =
+    match intrin.result_reg with
+    | `Any -> res
+    | `C -> [| rcx |]
+  in
+  arg, res
+
 let pseudoregs_for_operation op arg res =
   match op with
   (* Two-address binary operations: arg.(0) and res.(0) must be the same *)
@@ -99,6 +116,8 @@ let pseudoregs_for_operation op arg res =
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
       (arg', res)
+  | Ispecific(Iintrin(intrin, iargs)) ->
+      pseudoregs_for_intrin arg res intrin iargs
   (* For shifts with variable shift count, second arg must be in rcx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
       ([|res.(0); rcx|], res)
@@ -215,6 +234,62 @@ method! select_operation op args =
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->
       (Iintop Imulh, args)
+  | Cintrin intrin ->
+      let open Intrin in
+      let args =
+        let rec loop acc args iargs =
+          match args, iargs with
+            [], [] -> List.rev acc
+          | arg :: args, iarg :: iargs ->
+              begin match iarg.commutative, iarg.reload, arg with
+                false, _, _ | _, `No, _ | _, _, Cop(Cload _, _) ->
+                  loop (arg :: acc) args iargs
+              | _, _, _ ->
+                  let rec replace_commutative r_arg acc args iargs =
+                    match args, iargs with
+                      [], [] -> r_arg, List.rev acc
+                    | (Cop(Cload _, _) as arg) :: args, iarg :: iargs
+                      when iarg.commutative ->
+                        arg, List.rev_append acc (r_arg :: args)
+                    | arg :: args, iarg :: iargs ->
+                        replace_commutative r_arg (arg :: acc) args iargs
+                    | _, _ -> fatal_error "Selection.select_operation_1"
+                  in
+                  let arg, args = replace_commutative arg [] args iargs in
+                  loop (arg :: acc) args iargs
+              end
+          | _, _ -> fatal_error "Selection.select_operation_2"
+        in
+        loop [] args intrin.args
+      in
+      let args, iargs = List.fold_left2 (fun (args, iargs) arg a ->
+          match a.kind with
+            `Array_float ->
+              let addr, arg = self#select_addressing Double_u arg in
+              arg :: args, Iintrin_arg_addr addr :: iargs
+          | `Array_m128 ->
+              let addr, arg = self#select_addressing M128_u arg in
+              arg :: args, Iintrin_arg_addr addr :: iargs
+          | `Array_m256 ->
+              let addr, arg = self#select_addressing M256_u arg in
+              arg :: args, Iintrin_arg_addr addr :: iargs
+          | `Imm ->
+              begin match arg with
+                Cconst_int n -> args, Iintrin_arg_imm n :: iargs
+              | _ -> fatal_error "Selection.select_operation_2"
+              end
+          | `Unit ->
+              args, Iintrin_arg_imm 0 :: iargs
+          | _ ->
+              match a.reload, arg with
+                `M64 , Cop(Cload (Double|Double_u|M128_u|M256_u as chunk), [loc])
+              | `M128, Cop(Cload (M128_u|M256_u as chunk), [loc])
+              | `M256, Cop(Cload (M256_u as chunk), [loc]) ->
+                  let addr, arg1 = self#select_addressing chunk loc in
+                  arg1 :: args, Iintrin_arg_addr addr :: iargs
+              | _ -> arg :: args, Iintrin_arg_ord :: iargs) ([], []) args intrin.args
+      in
+      Ispecific(Iintrin(intrin, List.rev iargs)), List.rev args
   | _ -> super#select_operation op args
 
 (* Recognize float arithmetic with mem *)

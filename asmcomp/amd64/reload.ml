@@ -62,6 +62,18 @@ class reload = object (self)
 
 inherit Reloadgen.reload_generic as super
 
+method reload_operation_intrin arg res intrin iargs =
+  let open Intrin in
+  let res = ref res in
+  let arg = map_intrin_regs arg intrin iargs (fun arg intrin_arg ->
+    if intrin_arg.cp_to_reg = `Result then begin
+      let r = self#makereg arg in
+      res := [| r |];
+      r
+    end else if intrin_arg.reload = `No then self#makereg arg
+    else arg) in
+  arg, !res
+
 method! reload_operation op arg res =
   match op with
   | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
@@ -96,6 +108,8 @@ method! reload_operation op arg res =
       if !pic_code || !Clflags.dlcode
       then super#reload_operation op arg res
       else (arg, res)
+  | Ispecific(Iintrin(intrin, iargs)) ->
+      self#reload_operation_intrin arg res intrin iargs
   | _ -> (* Other operations: all args and results in registers *)
       super#reload_operation op arg res
 

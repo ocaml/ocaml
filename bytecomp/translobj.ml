@@ -91,7 +91,7 @@ let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+    prim_native_name = ""; prim_native_float = false; prim_intrin = None }
 
 (* Also use it for required globals *)
 let transl_label_init expr =
