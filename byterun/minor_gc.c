@@ -49,6 +49,8 @@
          native code, or [caml_young_trigger].
 */
 
+struct generic_table CAML_TABLE_STRUCT(void);
+
 asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;
 CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
@@ -67,14 +69,15 @@ CAMLexport struct caml_ref_table
 int caml_in_minor_collection = 0;
 
 /* [sz] and [rsv] are numbers of entries */
-void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
+                                 asize_t rsv, asize_t element_size)
 {
-  value **new_table;
+  void *new_table;
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (value **) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                          * sizeof (value *));
+  new_table = (void *) caml_stat_alloc ((tbl->size + tbl->reserve)
+                                        * element_size);
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -83,7 +86,12 @@ void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
   tbl->end = tbl->base + tbl->size + tbl->reserve;
 }
 
-static void reset_table (struct caml_ref_table *tbl)
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv, sizeof (value *));
+}
+
+static void reset_table (struct generic_table *tbl)
 {
   tbl->size = 0;
   tbl->reserve = 0;
@@ -91,7 +99,7 @@ static void reset_table (struct caml_ref_table *tbl)
   tbl->base = tbl->ptr = tbl->threshold = tbl->limit = tbl->end = NULL;
 }
 
-static void clear_table (struct caml_ref_table *tbl)
+static void clear_table (struct generic_table *tbl)
 {
     tbl->ptr = tbl->base;
     tbl->limit = tbl->threshold;
@@ -165,8 +173,8 @@ void caml_set_minor_heap_size (asize_t bsz)
   caml_young_ptr = caml_young_alloc_end;
   caml_minor_heap_wsz = Wsize_bsize (bsz);
 
-  reset_table (&caml_ref_table);
-  reset_table (&caml_weak_ref_table);
+  reset_table ((struct generic_table *) &caml_ref_table);
+  reset_table ((struct generic_table *) &caml_weak_ref_table);
 }
 
 static value oldify_todo_list = 0;
@@ -330,9 +338,9 @@ void caml_empty_minor_heap (void)
     caml_gc_clock += (double) (caml_young_alloc_end - caml_young_ptr)
                      / caml_minor_heap_wsz;
     caml_young_ptr = caml_young_alloc_end;
-    clear_table (&caml_ref_table);
-    clear_table (&caml_weak_ref_table);
-    clear_table (&caml_finalize_table);
+    clear_table ((struct generic_table *) &caml_ref_table);
+    clear_table ((struct generic_table *) &caml_weak_ref_table);
+    clear_table ((struct generic_table *) &caml_finalize_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
@@ -427,16 +435,20 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
   CAMLreturn (extra_root);
 }
 
-void caml_realloc_ref_table (struct caml_ref_table *tbl)
-{                                           Assert (tbl->ptr == tbl->limit);
+static void realloc_generic_table
+(struct generic_table *tbl, asize_t element_size,
+ char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
+{
+                                            Assert (tbl->ptr == tbl->limit);
                                             Assert (tbl->limit <= tbl->end);
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, caml_minor_heap_wsz / 8, 256);
+    alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,
+                         element_size);
   }else if (tbl->limit == tbl->threshold){
-    CAML_INSTR_INT ("request_minor/realloc_ref_table@", 1);
-    caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
+    CAML_INSTR_INT (msg_intr_int, 1);
+    caml_gc_message (0x08, msg_threshold, 0);
     tbl->limit = tbl->end;
     caml_request_minor_gc ();
   }else{
@@ -445,17 +457,25 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     CAMLassert (caml_requested_minor_gc);
 
     tbl->size *= 2;
-    sz = (tbl->size + tbl->reserve) * sizeof (value *);
-    caml_gc_message (0x08, "Growing ref_table to %"
-                           ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-                     (intnat) sz/1024);
-    tbl->base = (value **) realloc ((char *) tbl->base, sz);
+    sz = (tbl->size + tbl->reserve) * element_size;
+    caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
+    tbl->base = (void *) realloc ((char *) tbl->base, sz);
     if (tbl->base == NULL){
-      caml_fatal_error ("Fatal error: ref_table overflow\n");
+      caml_fatal_error (msg_error);
     }
     tbl->end = tbl->base + tbl->size + tbl->reserve;
     tbl->threshold = tbl->base + tbl->size;
     tbl->ptr = tbl->base + cur_ptr;
     tbl->limit = tbl->end;
   }
+}
+
+void caml_realloc_ref_table (struct caml_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (value *),
+     "request_minor/realloc_ref_table@",
+     "ref_table threshold crossed\n",
+     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ref_table overflow\n");
 }

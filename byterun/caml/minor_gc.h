@@ -25,16 +25,18 @@ CAMLextern value *caml_young_trigger;
 extern asize_t caml_minor_heap_wsz;
 extern int caml_in_minor_collection;
 
-struct caml_ref_table {
-  value **base;
-  value **end;
-  value **threshold;
-  value **ptr;
-  value **limit;
-  asize_t size;
-  asize_t reserve;
-};
-CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table,
+#define CAML_TABLE_STRUCT(t) { \
+  t *base;                     \
+  t *end;                      \
+  t *threshold;                \
+  t *ptr;                      \
+  t *limit;                    \
+  asize_t size;                \
+  asize_t reserve;             \
+}
+
+struct caml_ref_table CAML_TABLE_STRUCT(value *);
+CAMLextern struct caml_ref_table caml_ref_table,  caml_weak_ref_table,
                                  caml_finalize_table;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
