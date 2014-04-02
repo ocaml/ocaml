@@ -297,8 +297,6 @@ and signatures env cxt subst sig1 sig2 =
               (* Do not report in case of failure,
                  as the main type will generate an error *)
               Field_type (String.sub s 0 (String.length s - 4)), false
-          | (Sig_type _ | Sig_modtype _ | Sig_class_type _), name2 ->
-              name2, false
           | _ -> name2, true
         in
         begin try
