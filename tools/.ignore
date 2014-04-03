@@ -18,6 +18,7 @@ keywords
 lexer299.ml
 ocaml299to3
 ocamlmklib
+ocamlmklibconfig.ml
 lexer301.ml
 scrapelabels
 addlabels
