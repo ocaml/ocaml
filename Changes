@@ -94,6 +94,7 @@ Features wishes:
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+- PR#6000: add a warning for non-principal coercions to format
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
            (patch by Kaustuv Chaudhuri)
 - PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
