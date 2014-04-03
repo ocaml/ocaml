@@ -270,7 +270,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 | {type_kind = Type_abstract; type_manifest = None} ->
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
-                    nest tree_of_val depth obj
+                    tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
                 | {type_kind = Type_variant constr_list} ->
@@ -359,11 +359,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
           | Tsubst ty ->
-              nest tree_of_val (depth - 1) obj ty
+              tree_of_val (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
-              nest tree_of_val (depth - 1) obj ty
+              tree_of_val (depth - 1) obj ty
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
