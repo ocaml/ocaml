@@ -224,10 +224,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         Oval_ellipsis :: tree_list
                       else if O.is_block obj then
                         let tree =
-                          nest tree_of_val (depth - 1) (O.field obj 0) ty_arg in
+                          nest tree_of_val (depth - 1) (O.field obj 0) ty_arg
+                        in
                         let next_obj = O.field obj 1 in
                         nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
-                          (tree_of_conses (tree :: tree_list)) depth next_obj ty_arg
+                          (tree_of_conses (tree :: tree_list))
+                          depth next_obj ty_arg
                       else tree_list
                     in
                     Oval_list (List.rev (tree_of_conses [] depth obj ty_arg))
@@ -245,7 +247,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         Oval_ellipsis :: tree_list
                       else if i < length then
                         let tree =
-                          nest tree_of_val (depth - 1) (O.field obj i) ty_arg in
+                          nest tree_of_val (depth - 1) (O.field obj i) ty_arg
+                        in
                         tree_of_items (tree :: tree_list) (i + 1)
                       else tree_list
                     in
@@ -255,8 +258,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
               if Lazy.lazy_is_val (O.obj obj)
-              then let v = nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
-                   Oval_constr (Oide_ident "lazy", [v])
+              then let v =
+                     nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg
+                   in
+                     Oval_constr (Oide_ident "lazy", [v])
               else Oval_stuff "<lazy>"
           | Tconstr(path, ty_list, _) ->
               begin try
@@ -335,8 +340,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         match Btype.row_field_repr f with
                         | Rpresent(Some ty) | Reither(_,[ty],_,_) ->
                             let args =
-                              nest tree_of_val (depth - 1) (O.field obj 1) ty in
-                            Oval_variant (l, Some args)
+                              nest tree_of_val (depth - 1) (O.field obj 1) ty
+                            in
+                              Oval_variant (l, Some args)
                         | _ -> find fields
                       else find fields
                   | [] -> Oval_stuff "<variant>" in
