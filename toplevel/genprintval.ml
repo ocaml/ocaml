@@ -181,7 +181,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let nested_values = H.create 8 in
       let nest_gen err f depth obj ty =
         let repr = Obj.repr obj in
-        if Obj.is_block repr then
+        if not (Obj.is_block repr) then
+          f depth obj ty
+        else
           if H.mem nested_values repr then
             err
           else begin
@@ -190,8 +192,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             H.remove nested_values repr;
             ret
           end
-        else f depth obj ty
-        in
+      in
 
       let nest f = nest_gen (Oval_stuff "<cycle>") f in
 
