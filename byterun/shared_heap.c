@@ -11,7 +11,7 @@ typedef uintnat status;
 /* always readable by all threads
    written only by a single thread during STW periods */
 struct global_heap_state {
-  status MARKED, UNMARKED, GARBAGE, FREE;
+  status MARKED, UNMARKED, GARBAGE, NOT_MARKABLE;
 };
 struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8, 3 << 8};
 
@@ -102,7 +102,7 @@ void pool_new(sizeclass sz) {
   value* end = region_end(a);
 
   while (p + wh <= end) {
-    p[0] = (value)Make_header(0, 0, global.FREE);
+    p[0] = (value)Make_header(0, 0, global.NOT_MARKABLE);
     p[1] = (value)a->next_obj;
     a->next_obj = p;
     p += wh;
@@ -124,10 +124,10 @@ void pool_sweep(sizeclass sz) {
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     if (Has_status_hd(hd, global.GARBAGE)) {
-      p[0] = (value)Make_header(0, 0, global.FREE);
+      p[0] = (value)Make_header(0, 0, global.NOT_MARKABLE);
       p[1] = (value)a->next_obj;
       a->next_obj = p;
-    } else if (Has_status_hd(hd, global.FREE)) {
+    } else if (Has_status_hd(hd, global.NOT_MARKABLE)) {
       /* already on freelist, ignore */
     } else {
       all_free = 0;
@@ -235,15 +235,15 @@ CAMLexport value caml_atom(tag_t tag) {
 
 void caml_init_major_heap (asize_t size) {
   int i;
-  for (i=0; i<256; i++) atoms[i] = Make_header(0, i, 0);
+  for (i=0; i<256; i++) atoms[i] = Make_header(0, i, global.NOT_MARKABLE);
 }
 
 void caml_cycle_heap() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-  newg.UNMARKED = oldg.MARKED;
-  newg.GARBAGE = oldg.UNMARKED;
-  newg.MARKED = oldg.GARBAGE; /* should be empty because garbage was swept */
-  newg.FREE = oldg.FREE;
+  newg.UNMARKED     = oldg.MARKED;
+  newg.GARBAGE      = oldg.UNMARKED;
+  newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
+  newg.NOT_MARKABLE = oldg.NOT_MARKABLE;
   global = newg;
 }
