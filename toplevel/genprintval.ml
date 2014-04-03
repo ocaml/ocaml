@@ -50,6 +50,12 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
+module ObjTbl = Hashtbl.Make(struct
+        type t = Obj.t
+        let equal = (==)
+        let hash = Hashtbl.hash
+      end)
+
 module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     type t = O.t
@@ -173,23 +179,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let printer_steps = ref max_steps in
 
-      let module H = Hashtbl.Make(struct
-        type t = Obj.t
-        let equal = (==)
-        let hash = Hashtbl.hash
-      end) in
-      let nested_values = H.create 8 in
+      let nested_values = ObjTbl.create 8 in
       let nest_gen err f depth obj ty =
         let repr = Obj.repr obj in
         if not (Obj.is_block repr) then
           f depth obj ty
         else
-          if H.mem nested_values repr then
+          if ObjTbl.mem nested_values repr then
             err
           else begin
-            H.add nested_values repr ();
+            ObjTbl.add nested_values repr ();
             let ret = f depth obj ty in
-            H.remove nested_values repr;
+            ObjTbl.remove nested_values repr;
             ret
           end
       in
