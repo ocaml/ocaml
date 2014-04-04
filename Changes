@@ -84,6 +84,7 @@ Bug fixes:
 - PR#6262: equality of first-class modules take module aliases into account
 - PR#6293: Assert_failure with invalid package type
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
+- PR#6346: Build failure with latest version of xcode on OSX
 - PR#6352: Automatic removal of optional arguments and sequencing
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
