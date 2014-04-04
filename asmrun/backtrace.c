@@ -338,7 +338,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
       /* In order to prevent the GC to walk through the debug
          information (which have no headers), we transform the
          pointer to a 31/63 bits ocaml integer by shifting it by 1 to
-         the right. We do not lose information the pointer is aligned.
+         the right. We do not lose information as the pointer is aligned.
 
          The assignment below is safe without [caml_initialize], even
          if the trace is large and allocated on the old heap, because
