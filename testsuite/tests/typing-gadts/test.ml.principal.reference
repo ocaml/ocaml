@@ -194,7 +194,7 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a 
        This instance of a is ambiguous:
        it would escape the scope of its equation
-#     Characters 97-98:
+#     Characters 90-91:
     match eq with Eq -> v ;; (* should fail *)
                         ^
 Error: This expression has type [> `A of a ]

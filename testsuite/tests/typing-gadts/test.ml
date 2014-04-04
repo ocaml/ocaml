@@ -341,7 +341,7 @@ let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
   fun Eq o -> o ;; (* fail *)
 
-let f (type a) (type b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
+let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
   match eq with Eq -> v ;; (* should fail *)
 
 let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =

@@ -263,12 +263,13 @@ let varify_constructors var_names t =
   in
   loop t
 
+let mk_newtypes newtypes exp =
+  List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
+    newtypes exp
+
 let wrap_type_annotation newtypes core_type body =
   let exp = mkexp(Pexp_constraint(body,core_type)) in
-  let exp =
-    List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
-      newtypes exp
-  in
+  let exp = mk_newtypes newtypes exp in
   (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
 
 let wrap_exp_attrs body (ext, attrs) =
@@ -1070,8 +1071,8 @@ expr:
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
-  | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
-      { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
+  | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
+      { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH opt_bar match_cases
@@ -1329,8 +1330,8 @@ strict_binding:
       { $2 }
   | labeled_simple_pattern fun_binding
       { let (l, o, p) = $1 in ghexp(Pexp_fun(l, o, p, $2)) }
-  | LPAREN TYPE LIDENT RPAREN fun_binding
-      { mkexp(Pexp_newtype($3, $5)) }
+  | LPAREN TYPE lident_list RPAREN fun_binding
+      { mk_newtypes $3 $5 }
 ;
 match_cases:
     match_case { [$1] }
@@ -1350,8 +1351,8 @@ fun_def:
        let (l,o,p) = $1 in
        ghexp(Pexp_fun(l, o, p, $2))
       }
-  | LPAREN TYPE LIDENT RPAREN fun_def
-      { mkexp(Pexp_newtype($3, $5)) }
+  | LPAREN TYPE lident_list RPAREN fun_def
+      { mk_newtypes $3 $5 }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
