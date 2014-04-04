@@ -278,7 +278,7 @@ let transl_declaration ?exnid env sdecl id =
           match sdecl.ptype_attributes with
           | [{txt="#tag#"}, PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_int tag)}, _)}]] ->
               begin match exnid with
-              | Some id -> print_endline "XXX"; Record_exception (Path.Pident id)
+              | Some id -> Record_exception (Path.Pident id)
               | None -> Record_regular tag
               end
           | _ ->
@@ -1189,20 +1189,43 @@ let transl_exception env excdecl =
 let transl_type_decl = transl_type_decl ?exnid:None
 
 (* Translate an exception rebinding *)
-let transl_exn_rebind env loc lid =
+let transl_exn_rebind env loc name lid =
   let cdescr =
     try
       Env.lookup_constructor lid env
     with Not_found ->
       raise(Error(loc, Unbound_exception lid)) in
   Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
-  match cdescr.cstr_tag with
-    Cstr_exception (path, _) ->
-      (path, {exn_args = cdescr.cstr_args;
-              exn_attributes = [];
-              exn_inlined = cdescr.cstr_inlined;
-              Types.exn_loc = loc})
-  | _ -> raise(Error(loc, Not_an_exception lid))
+  let path =
+    match cdescr.cstr_tag with
+    |  Cstr_exception (path, _) -> path
+    | _ -> raise(Error(loc, Not_an_exception lid))
+  in
+  let tdecls, exn_args =
+    if cdescr.cstr_inlined then
+      match cdescr.cstr_args with
+      | [{desc=Tconstr(p, [], _)} as ty] ->
+          let tdecl =
+            try Env.find_type p env
+            with Not_found -> assert false
+          in
+          let tdecl = {tdecl with type_manifest = Some ty} in
+          let (id, env) =
+            Env.enter_type ("exn." ^ name) tdecl env
+          in
+          ([id, tdecl], env), [ Ctype.newconstr (Path.Pident id) [] ]
+      | _ -> assert false
+    else
+      ([], env), cdescr.cstr_args
+  in
+  let d = {
+    Types.exn_args;
+    exn_attributes = [];
+    exn_inlined = cdescr.cstr_inlined;
+    exn_loc = loc
+  }
+  in
+  (tdecls, path, d)
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =

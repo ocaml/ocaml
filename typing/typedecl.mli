@@ -24,7 +24,7 @@ val transl_exception:
     Parsetree.constructor_declaration -> (Typedtree.type_declaration list * Env.t) * Typedtree.constructor_declaration * exception_declaration * Env.t
 
 val transl_exn_rebind:
-    Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
+    Env.t -> Location.t -> string -> Longident.t -> ((Ident.t * Types.type_declaration) list * Env.t) * Path.t * exception_declaration
 
 val transl_value_decl:
     Env.t -> Location.t ->

@@ -474,6 +474,10 @@ let mksig desc env loc =
 let prepend_sig_types decls rem =
   map_rec'' (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem
 
+let prepend_sig_types' decls rem =
+  map_rec (fun rs (id, td) -> Sig_type(id, td, rs)) decls rem
+
+
 let rec transl_modtype env smty =
   let loc = smty.pmty_loc in
   match smty.pmty_desc with
@@ -1167,10 +1171,12 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         prepend_sig_types tdecls [Sig_exception(arg.cd_id, decl)],
         newenv
     | Pstr_exn_rebind(name, longid, attrs) ->
-        let (path, arg) = Typedecl.transl_exn_rebind env loc longid.txt in
+        let ((tdecls, env), path, arg) =
+          Typedecl.transl_exn_rebind env loc name.txt longid.txt
+        in
         let (id, newenv) = Env.enter_exception name.txt arg env in
         Tstr_exn_rebind(id, name, path, longid, attrs),
-        [Sig_exception(id, arg)],
+        prepend_sig_types' tdecls [Sig_exception(id, arg)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
