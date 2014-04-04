@@ -1597,7 +1597,7 @@ let make_record_matching all_labels def = function
           let lbl = all_labels.(pos) in
           let access =
             match lbl.lbl_repres with
-              Record_regular _ -> Pfield lbl.lbl_pos
+              Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
             | Record_float -> Pfloatfield lbl.lbl_pos
             | Record_exception _ -> Pfield (lbl.lbl_pos + 1)
           in

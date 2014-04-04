@@ -83,8 +83,8 @@ let print_bigarray name unsafe kind ppf layout =
 
 let record_rep ppf r =
   match r with
-  | Record_regular 0 -> fprintf ppf "regular"
-  | Record_regular i -> fprintf ppf "regular (tag %i)" i
+  | Record_regular -> fprintf ppf "regular"
+  | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
   | Record_exception p -> fprintf ppf "exn (%s)" (Path.name p)
 ;;

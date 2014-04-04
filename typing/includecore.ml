@@ -145,8 +145,8 @@ let report_type_mismatch0 first second decl ppf err =
         (Ident.name s) (if b then second else first) decl
   | Record_representation (r1, r2) ->
       let repr = function
-        | Record_regular 0 -> "regular"
-        | Record_regular i -> Printf.sprintf"inline record (tag %i)" i
+        | Record_regular -> "regular"
+        | Record_inlined i -> Printf.sprintf"inlined(tag %i)" i
         | Record_float -> "unboxed float"
         | Record_exception p -> Printf.sprintf "exception %s" (Path.name p)
       in
@@ -204,7 +204,8 @@ let rec compare_records env decl1 decl2 n labels1 labels2 =
 
 let record_representations r1 r2 =
   match r1, r2 with
-  | Record_regular i, Record_regular j -> i = j
+  | Record_regular, Record_regular -> true
+  | Record_inlined i, Record_inlined j -> i = j
   | Record_float, Record_float -> true
   | Record_exception _, Record_exception _ -> true
   (* allow a different path to support exception rebinding *)

@@ -279,12 +279,12 @@ let transl_declaration ?exnid env sdecl id =
           | [{txt="#tag#"}, PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_int tag)}, _)}]] ->
               begin match exnid with
               | Some id -> Record_exception (Path.Pident id)
-              | None -> Record_regular tag
+              | None -> Record_inlined tag
               end
           | _ ->
               if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
               then Record_float
-              else Record_regular 0 in
+              else Record_regular in
         Ttype_record lbls, Type_record(lbls', rep)
       in
     let (tman, man) = match sdecl.ptype_manifest with

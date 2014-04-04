@@ -762,7 +762,7 @@ and transl_exp0 e =
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular _ -> Pfield lbl.lbl_pos
+          Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos
         | Record_exception _ -> Pfield (lbl.lbl_pos + 1)
       in
@@ -770,7 +770,8 @@ and transl_exp0 e =
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
+          Record_regular
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
         | Record_float -> Psetfloatfield lbl.lbl_pos
         | Record_exception _ ->
             Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
@@ -1072,7 +1073,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         for i = 0 to Array.length all_labels - 1 do
           let access =
             match all_labels.(i).lbl_repres with
-              Record_regular _ -> Pfield i
+              Record_regular | Record_inlined _ -> Pfield i
             | Record_exception _ -> Pfield (i + 1)
             | Record_float -> Pfloatfield i in
           lv.(i) <- Lprim(access, [Lvar init_id])
@@ -1091,14 +1092,16 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-          Record_regular tag -> Lconst(Const_block(tag, cl))
+        | Record_regular -> Lconst(Const_block(0, cl))
+        | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
         | Record_exception _ ->
             raise Not_constant
       with Not_constant ->
         match repres with
-          Record_regular tag -> Lprim(Pmakeblock(tag, mut), ll)
+          Record_regular -> Lprim(Pmakeblock(0, mut), ll)
+        | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
         | Record_exception path ->
             let slot = transl_path env path in
@@ -1117,7 +1120,8 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
     let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
-          Record_regular _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
+          Record_regular
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
         | Record_float -> Psetfloatfield lbl.lbl_pos
         | Record_exception _ -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
       in

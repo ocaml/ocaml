@@ -143,9 +143,10 @@ type label_description =
    }
 
 and record_representation =
-    Record_regular of int               (* All fields are boxed / tagged *)
+    Record_regular                      (* All fields are boxed / tagged *)
+  | Record_inlined of int               (* Same, for inlined records *)
   | Record_float                        (* All fields are floats *)
-  | Record_exception of Path.t
+  | Record_exception of Path.t          (* Inlined record under exception *)
 
 (* Variance *)
 
