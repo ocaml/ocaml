@@ -770,7 +770,7 @@ and constructor_decl i ppf {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
   begin match pcd_args with
   | Pcstr_tuple l -> list (i+1) core_type ppf l;
-  | Pcstr_record (l, _asdecl) -> list (i+1) label_decl ppf l (* TODO: print _asdecl *)
+  | Pcstr_record l -> list (i+1) label_decl ppf l
   end;
   option (i+1) core_type ppf pcd_res
 

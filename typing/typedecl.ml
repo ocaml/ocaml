@@ -939,30 +939,44 @@ let name_recursion sdecl id decl =
   | _ -> decl
 
 (* Add fake record declarations for record constructor arguments *)
-let inline_record_decls params tag typname pcd =
+let inline_record_decls params manifest tag typname pcd =
+  let open Ast_helper in
   match pcd.pcd_args with
-  | Pcstr_record (lbls, asdecl) ->
+  | Pcstr_record lbls ->
       let ptype_kind = Ptype_record lbls in
-      let params, name =
-        match asdecl with
-        | Some (params, s) -> params, s.txt
-        | None ->
-            let bound =
-              List.fold_left (fun acc -> function
-                  | Some {txt}, _ -> StringSet.add txt acc
-                  | _ -> acc) StringSet.empty params
-            in
-            let extra_params = freevars bound ptype_kind in
-            let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
-            params @ List.map prepare_param extra_params,
-            typname ^ "." ^ pcd.pcd_name.txt
+      let bound =
+        List.fold_left (fun acc -> function
+            | Some {txt}, _ -> StringSet.add txt acc
+            | _ -> acc) StringSet.empty params
       in
+      let extra_params = freevars bound ptype_kind in
+      let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
+      let params = params @ List.map prepare_param extra_params in
+      let mk_arg = function
+        | (Some {txt;loc}, _) -> Typ.var ~loc txt
+        | (None, _) -> Typ.any ()
+      in
+      let args = List.map mk_arg params in
+      let name = typname ^ "." ^ pcd.pcd_name.txt in
       let ptype_attributes =
-        let open Ast_helper in
         [
           mknoloc "#tag#",
           PStr [ Str.eval (Exp.constant (Const_int !tag)) ]
         ]
+      in
+      let ptype_manifest =
+        match manifest with
+        | Some {ptyp_desc=Ptyp_constr(lid, _args)} ->
+            (* does not make sense with 'as' clause *)
+            let rec append lid =
+              let open Longident in
+              match lid with
+              | Lident s -> Lident (s ^ "." ^ pcd.pcd_name.txt)
+              | Ldot (p, s) -> Ldot (p, s ^ "." ^ pcd.pcd_name.txt)
+              | Lapply (p1, p2) -> Lapply (p1, append p2)
+            in
+            Some (Typ.constr (mknoloc (append lid.txt)) args) (* todo: type parameters *)
+        | _ -> None
       in
       let decl =
         {
@@ -971,19 +985,14 @@ let inline_record_decls params tag typname pcd =
           ptype_cstrs = [];
           ptype_kind;
           ptype_private = Public;
-          ptype_manifest = None;
+          ptype_manifest;
           ptype_attributes;
           ptype_loc = pcd.pcd_loc;
         } in
       incr tag;
-      let mk_param = function
-        | (Some {txt;loc}, _) -> Ast_helper.Typ.var ~loc txt
-        | (None, _) -> Ast_helper.Typ.any ()
-      in
-      let params = List.map mk_param params in
       let lid = mknoloc (Longident.Lident name) in
       let attrs = [ mknoloc "#inline#", PStr [] ] in
-      let pcd_args = Pcstr_tuple [Ast_helper.Typ.constr ~attrs lid params] in
+      let pcd_args = Pcstr_tuple [Typ.constr ~attrs lid args] in
       {pcd with pcd_args}, [decl]
   | Pcstr_tuple [] -> pcd, []
   | Pcstr_tuple _ -> incr tag; pcd, []
@@ -1006,7 +1015,10 @@ let transl_type_decl ?exnid env sdecl_list =
         | {ptype_kind = Ptype_variant cstrs} as sdecl ->
             let tname = sdecl.ptype_name.txt in
             let tag = ref 0 in
-            let do_cstr = inline_record_decls sdecl.ptype_params tag tname in
+            let do_cstr =
+              inline_record_decls sdecl.ptype_params sdecl.ptype_manifest
+                tag tname
+            in
             let decls = List.map do_cstr cstrs in
             let cstrs, more = List.split decls in
             {sdecl with ptype_kind=Ptype_variant cstrs} :: List.flatten more
@@ -1137,8 +1149,11 @@ let transl_closed_type env sty =
 let transl_exception env excdecl =
   let loc = excdecl.pcd_loc in
   let id = Ident.create excdecl.pcd_name.txt in
-  if excdecl.pcd_res <> None then raise (Error (loc, Exception_constructor_with_result));
-  let excdecl, inlined_records = inline_record_decls [] (ref 0) "exn" excdecl in
+  if excdecl.pcd_res <> None then
+    raise (Error (loc, Exception_constructor_with_result));
+  let excdecl, inlined_records =
+    inline_record_decls [] None (ref 0) "exn" excdecl
+  in
   let (_, env) as tdecls =
     match inlined_records with
     | [] -> ([], env)

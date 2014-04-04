@@ -369,7 +369,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Pcstr_tuple of core_type list
-  | Pcstr_record of label_declaration list * ((string loc option * variance) list * string loc) option
+  | Pcstr_record of label_declaration list
 
 (*
   | C of T1 * ... * Tn     (res = None,    args = Pcstr_tuple [])

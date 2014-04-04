@@ -501,17 +501,8 @@ let default_mapper =
         let args =
           match pcd_args with
           | Pcstr_tuple l -> Pcstr_tuple (List.map (this.typ this) l)
-          | Pcstr_record (l, asdecl) ->
-              let asdecl =
-                map_opt
-                  (map_tuple
-                    (List.map (map_fst (map_opt (map_loc this))))
-                    (map_loc this)
-                  )
-                  asdecl
-              in
-              Pcstr_record
-                (List.map (this.label_declaration this) l, asdecl)
+          | Pcstr_record l ->
+              Pcstr_record (List.map (this.label_declaration this) l)
         in
         Type.constructor
           (map_loc this pcd_name)

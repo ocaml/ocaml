@@ -1606,9 +1606,7 @@ generalized_constructor_arguments:
 
 constructor_arguments:
   | core_type_list { Pcstr_tuple (List.rev $1) }
-  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2, None) }
-  | LBRACE label_declarations RBRACE AS optional_type_parameters LIDENT
-                    { Pcstr_record (List.rev $2, Some ($5, mkrhs $6 6)) }
+  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2) }
 ;
 label_declarations:
     label_declaration                           { [$1] }
@@ -1628,7 +1626,7 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type constraints
+    TYPE type_parameters /*label_longident*/ type_longident with_type_binder core_type constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
