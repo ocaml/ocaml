@@ -1964,6 +1964,18 @@ let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
   in_current_module p && decl.type_newtype_level = None
 
+(* Check for datatypes carefully; see PR#6348 *)
+let rec expands_to_datatype env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr (p, _, _) ->
+      begin try
+	is_datatype (Env.find_type p env) ||
+	expands_to_datatype env (try_expand_once env ty)
+      with Not_found | Cannot_expand -> false
+      end
+  | _ -> false
+
 (* mcomp type_pairs subst env t1 t2 does not raise an
    exception if it is possible that t1 and t2 are actually
    equal, assuming the types in type_pairs are equal and
@@ -2396,7 +2408,8 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
           if !umode = Expression || not !generate_equations
           || in_current_module p1 (* || in_pervasives p1 *)
-          || try is_datatype (Env.find_type p1 !env) with Not_found -> false
+          || List.exists (expands_to_datatype !env) [t1'; t1; t2]
+	    (*try is_datatype (Env.find_type p1 !env) with Not_found -> false*)
           then
             unify_list env tl1 tl2
           else
