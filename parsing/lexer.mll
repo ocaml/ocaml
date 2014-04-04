@@ -255,7 +255,7 @@ let () =
 
 }
 
-let newline = ('\013'* '\010' )
+let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']

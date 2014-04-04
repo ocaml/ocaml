@@ -117,12 +117,13 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
 # Compile everything the first time
 world: coldstart all
 
-# Complete bootstrapping cycle
-bootstrap:
+# Core bootstrapping cycle
+coreboot:
 # Save the original bootstrap compiler
 	$(MAKEREC) backup
 # Promote the new compiler but keep the old runtime
-# This compiler runs on boot/ocamlrun and produces bytecode for byterun/ocamlrun
+# This compiler runs on boot/ocamlrun and produces bytecode for
+# byterun/ocamlrun
 	$(MAKEREC) promote-cross
 # Rebuild ocamlc and ocamllex (run on byterun/ocamlrun)
 	$(MAKEREC) partialclean
@@ -131,10 +132,16 @@ bootstrap:
 	$(MAKEREC) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKEREC) promote
-# Rebuild everything, including ocaml and the tools
+# Rebuild the core system
 	$(MAKEREC) partialclean
-	$(MAKEREC) all
+	$(MAKEREC) core
 # Check if fixpoint reached
+	$(MAKEREC) compare
+
+# Do a complete bootstrapping cycle
+bootstrap:
+	$(MAKEREC) coreboot
+	$(MAKEREC) all
 	$(MAKEREC) compare
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
@@ -149,7 +156,7 @@ coldstart:
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core : runtime ocamlc ocamllex ocamlyacc ocamltools library
+core: runtime ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev

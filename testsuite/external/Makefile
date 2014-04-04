@@ -856,20 +856,20 @@ distclean::
 all: ocgi
 
 # http://tech.motion-twin.com/xmllight
-XMLLIGHT=xml-light-2.2
-${XMLLIGHT}.zip:
-	${WGET} http://tech.motion-twin.com/zip/$@
-xmllight: ${XMLLIGHT}.zip
+XMLLIGHT=xml-light.2.3
+${XMLLIGHT}.tar.gz:
+	${WGET} https://github.com/bguil/ocamllibs/releases/download/xml-light.2.3/$@
+xmllight: ${XMLLIGHT}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf xml-light ${XMLLIGHT}
-	unzip ${XMLLIGHT}.zip && mv xml-light ${XMLLIGHT}
+	tar zxf ${XMLLIGHT}.tar.gz
 	./Patcher.sh ${XMLLIGHT}
 	( cd ${XMLLIGHT} && \
 	  export PATH=${PREFIX}/bin:$$PATH && \
 	  ${MAKE} xml_parser.ml && \
 	  ${MAKE} all opt && \
-	  ${MAKE} install )
+	  ${MAKE} install_ocamlfind )
 	echo ${VERSION} >$@
 clean::
 	rm -rf ${XMLLIGHT} xml-light xmllight
@@ -1529,7 +1529,7 @@ distclean::
 	rm -f ${KAPUTT}.tar.gz
 all: kaputt
 
-#http://www.coherentpdf.com/ocaml-libraries.html
+# http://www.coherentpdf.com/ocaml-libraries.html
 CAMLPDF=camlpdf-0.5
 ${CAMLPDF}.tar.bz2:
 	${WGET} http://www.coherentpdf.com/$@
@@ -1549,6 +1549,29 @@ clean::
 distclean::
 	rm -f ${CAMLPDF}.tar.gz
 all: camlpdf
+
+# https://forge.ocamlcore.org/projects/csv
+CSV=csv-1.3.1
+${CSV}.tar.gz:
+	${WGET} https://forge.ocamlcore.org/frs/download.php/1235/$@
+csv: ${CSV}.tar.gz findlib
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CSV}
+	tar zxf ${CSV}.tar.gz
+	./Patcher.sh ${CSV}
+	( cd ${CSV} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ocaml setup.ml -configure --enable-tests --prefix ${PREFIX} && \
+	  ocaml setup.ml -build && \
+	  ocamlfind remove csv && \
+	  ocaml setup.ml -install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CSV} csv
+distclean::
+	rm -f ${CSV}.tar.gz
+all: csv
 
 # disabled: need to be updated for new AST stuff
 # # http://pauillac.inria.fr/~ddr/camlp5/

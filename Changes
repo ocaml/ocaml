@@ -20,7 +20,7 @@ Other libraries:
 Type system:
 * Keep typing of pattern cases independent in principal mode
   (i.e. information from previous cases is no longer used when typing
-  patterns; cf. PR6235' in typing-warnings/records.ml)
+  patterns; cf. 'PR#6235' in testsuite/test/typing-warnings/records.ml)
 - Allow opening a first-class module or applying a generative functor
   in the body of a generative functor. Allow it also in the body of
   an applicative functor if no types are created
@@ -78,10 +78,25 @@ Bug fixes:
 - PR#6062: Fix a regression bug caused by commit 13047
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
+- PR#6165: Alterations to handling of \013 in source files breaking other tools
+- PR#6173: Typing error message is worse that before
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
+- PR#6175: Fix open!
+- PR#6183: enhanced documentation for 'Unix.shutdown_connection'
 - PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
            (report and patch by Jacques-Pascal Deplaix)
+- PR#6194: Incorrect unused warning with first-class modules in patterns
+- PR#6216: inlining of GADT matches generates invalid assembly
+- PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
+- PR#6235: Issue with type information flowing through a variant pattern
+- PR#6239: sometimes wrong stack alignment when raising exceptions
+           in -g mode with backtraces active
+- PR#6240: Fail to expand module type abbreviation during substyping
+- PR#6241: Assumed inequality between paths involving functor arguments
+- PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
 - PR#6262: equality of first-class modules take module aliases into account
+- PR#6267: more information printed by "bt" command of ocamldebug
+- PR#6275: Soundness bug related to type constraints
 - PR#6293: Assert_failure with invalid package type
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
 - PR#6346: Build failure with latest version of xcode on OSX
@@ -110,29 +125,6 @@ Features wishes:
 	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
   (patches by Thomas Gazagnaire and Jeremy Yallop, review by Gabriel Scherer)
-
-OCaml 4.01.1:
--------------
-
-Bug fixes:
-- PR#4855: 'camlp4 -I +dir' accepted, dir is related to 'camlp4 -where'
-- PR#5820: Fix camlp4 lexer roll back problem
-- PR#6062: Fix a regression bug caused by commit 13047
-- PR#6165: Alterations to handling of \013 in source files breaking other tools
-- PR#6173: Typing error message is worse that before
-- PR#6174: OCaml compiler loops on an example using GADTs (non -rectypes)
-- PR#6175: Fix open!
-- PR#6183: enhanced documentation for 'Unix.shutdown_connection'
-- PR#6216: inlining of GADT matches generates invalid assembly
-- PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
-- PR#6235: Issue with type information flowing through a variant pattern
-- PR#6239: sometimes wrong stack alignment when raising exceptions
-           in -g mode with backtraces active
-- PR#6240: Fail to expand module type abbreviation during substyping
-- PR#6241: Assumed inequality between paths involving functor arguments
-- PR#6243: Make "ocamlopt -g" more resistant to ill-formed locations
-- PR#6267: more information printed by "bt" command of ocamldebug
-- PR#6275: Soundness bug related to type constraints
 
 
 OCaml 4.01.0:
@@ -510,6 +502,8 @@ Bug fixes:
   (Jacques Garrigue, report by Leo P. White)
 - PR#6164: segmentation fault on Num.power_num of 0/1
   (Fabrice Le Fessant, report by Johannes Kanig)
+- PR#6210: Camlp4 location error
+  (Hongbo Zhang, report by Jun Furuse)
 
 Feature wishes:
 - PR#5181: Merge common floating point constants in ocamlopt
@@ -703,6 +697,7 @@ Installation procedure:
   (-runtime-variant) to select the debug runtime.
 
 Bug Fixes:
+
 - PR#1643: functions of the Lazy module whose named started with 'lazy_' have
   been deprecated, and new ones without the prefix added
 - PR#3571: in Bigarrays, call msync() before unmapping to commit changes
