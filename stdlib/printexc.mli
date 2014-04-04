@@ -85,15 +85,20 @@ val register_printer: (exn -> string option) -> unit
 
 (** {6 Raw backtraces} *)
 
-type raw_backtrace
+type raw_backtrace_slot
+type raw_backtrace = raw_backtrace_slot array
 
-(** The abstract type [backtrace] stores exception backtraces in
+(** The abstract type [raw_backtrace_slot] stores a slot of a backtrace in
     a low-level format, instead of directly exposing them as string as
     the [get_backtrace()] function does.
 
     This allows delaying the formatting of backtraces to when they are
     actually printed, which might be useful if you record more
     backtraces than you print.
+
+    Elements of type raw_backtrace_slot can be compared and hashed: when two
+    elements are equal, then they represent the same source location (the
+    converse is not necessarily true in presence of inlining, for example).
 *)
 
 val get_raw_backtrace: unit -> raw_backtrace
@@ -115,6 +120,24 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 
     @since 4.02.0
 *)
+
+(** {6 Backtrace slots processing} *)
+
+type backtrace_slot =
+  | Known_location of bool   (* is_raise *)
+                    * string (* filename *)
+                    * int    (* line number *)
+                    * int    (* start char *)
+                    * int    (* end char *)
+  | Unknown_location of bool (*is_raise*)
+
+(** [convert_raw_backtrace_slot] converts one slot of a raw backtrace
+    to an Ocaml algebraic datatype representing to location
+    information in the source file.
+
+    Raises [Failure] if not able to load debug information.
+*)
+val convert_raw_backtrace_slot: raw_backtrace_slot -> backtrace_slot
 
 (** {6 Current call stack} *)
 
