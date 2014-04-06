@@ -103,6 +103,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     caml_backtrace_last_exn = exn;
   }
   if (caml_backtrace_buffer == NULL) {
+    Assert(caml_backtrace_pos == 0);
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
     if (caml_backtrace_buffer == NULL) return;
   }
@@ -458,6 +459,43 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
     intnat i;
     for(i = 0; i < caml_backtrace_pos; i++)
       Field(res, i) = Val_Codet(caml_backtrace_buffer[i]);
+  }
+  CAMLreturn(res);
+}
+
+/* the function below is deprecated: we previously returned directly
+   the OCaml-usable representation, instead of the raw backtrace as an
+   abstract type, but this has a large performance overhead if you
+   store a lot of backtraces and print only some of them.
+
+   It is not used by the Printexc library anymore, or anywhere else in
+   the compiler, but we have kept it in case some user still depends
+   on it as an external.
+*/
+
+CAMLprim value caml_get_exception_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal4(arr, raw_slot, slot, res);
+
+  read_debug_info();
+  if (events == NULL) {
+      res = Val_int(0); /* None */
+  } else {
+      arr = caml_alloc(caml_backtrace_pos, 0);
+      if(caml_backtrace_buffer == NULL) {
+          Assert(caml_backtrace_pos == 0);
+      } else {
+          intnat i;
+          for(i = 0; i < caml_backtrace_pos; i++) {
+              raw_slot = Val_Codet(caml_backtrace_buffer[i]);
+              /* caml_convert_raw_backtrace_slot will not fail with
+               caml_failwith as we checked (events != NULL) already */
+              slot = caml_convert_raw_backtrace_slot(raw_slot);
+              caml_modify(&Field(arr, i), slot);
+          }
+      }
+      res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
   }
   CAMLreturn(res);
 }
