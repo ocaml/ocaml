@@ -1093,7 +1093,7 @@ let intrin_args ty =
         | ["m256d_array"]
         | ["m256i_array"]    -> `Array_m256, array_index l
         | ["float"]          -> `Float, l
-        | ["int"]            -> `Imm, l
+        | ["int"]            -> `Int, l
         | ["int64"]          -> `Int64, l
         | ["m128d"]
         | ["m128i"]          -> `M128, l

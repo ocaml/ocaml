@@ -1235,7 +1235,7 @@ let rec is_unboxed_number = function
             | `Int64 -> Boxed_integer Pint64
             | `M128  -> Boxed_m128
             | `M256  -> Boxed_m256
-            | `Unit  -> No_unboxing
+            | `Int | `Unit  -> No_unboxing
             end
         | _ -> No_unboxing
       end
@@ -1567,6 +1567,7 @@ and transl_intrin intrin args =
               array_indexing log2_size_ymm (transl arg) (transl ofs), args
           | `Float, arg :: args -> transl_unbox_float arg, args
           | `Imm, Uconst (Uconst_int n) :: args -> Cconst_int n, args
+          | `Int, arg :: args -> transl arg, args
           | `Int64, arg :: args -> transl_unbox_int Pint64 arg, args
           | `M128, arg :: args -> transl_unbox_m128 arg, args
           | `M256, arg :: args -> transl_unbox_m256 arg, args
@@ -1580,6 +1581,7 @@ and transl_intrin intrin args =
   let box_res =
     match intrin.result with
       `Float -> box_float
+    | `Int   -> fun x -> x
     | `Int64 -> box_int Pint64
     | `M128  -> box_m128
     | `M256  -> box_m256

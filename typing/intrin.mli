@@ -20,6 +20,7 @@ type arg_kind =
   | `Array_m256
   | `Float
   | `Imm
+  | `Int
   | `Int64
   | `M128
   | `M256
@@ -34,7 +35,7 @@ type arg = {
 type intrin = {
   asm         : [ `Emit_string of string | `Emit_arg of int ] list;
   args        : arg list;
-  result      : [ `Float | `Int64 | `M128 | `M256 | `Unit ];
+  result      : [ `Float | `Int | `Int64 | `M128 | `M256 | `Unit ];
   result_reg  : [ `Any | `C ] }
 
 val parse_intrin: arg_kind list -> string list -> intrin

@@ -20,6 +20,7 @@ type arg_kind =
   | `Array_m256
   | `Float
   | `Imm
+  | `Int
   | `Int64
   | `M128
   | `M256
@@ -34,7 +35,7 @@ type arg = {
 type intrin = {
   asm         : [ `Emit_string of string | `Emit_arg of int ] list;
   args        : arg list;
-  result      : [ `Float | `Int64 | `M128 | `M256 | `Unit ];
+  result      : [ `Float | `Int | `Int64 | `M128 | `M256 | `Unit ];
   result_reg  : [ `Any | `C ] }
 
 (** Parses assembly code given as string with arguments given as %i, for example
@@ -83,6 +84,7 @@ let parse_intrin args decl =
       if List.length args <> List.length params then
         error "The number of arguments and parameters must be the same";
       let args = List.map2 (fun kind param ->
+        let kind = ref kind in
         let cp_to_reg = ref `No in
         let reload = ref `No in
         let commutative = ref false in
@@ -91,6 +93,8 @@ let parse_intrin args decl =
           | 'a' -> cp_to_reg := `A
           | 'c' -> cp_to_reg := `C
           | 'd' -> cp_to_reg := `D
+          | 'i' -> if !kind = `Int then kind := `Imm
+                   else error "Only integer argument can be immediate"
           | 'x' -> commutative := true
           | 'm' ->
               reload := (
@@ -99,7 +103,7 @@ let parse_intrin args decl =
                 | `M64 -> `M128
                 | _    -> `M256)
           | c -> error "Unknown argument modifier '%c'" c) param;
-        { kind;
+        { kind        = !kind;
           cp_to_reg   = !cp_to_reg;
           reload      = !reload;
           commutative = !commutative }) args params in
@@ -111,6 +115,7 @@ let parse_intrin args decl =
         | `Array_m256 -> error "array_m256"
         | `Float -> `Float
         | `Imm -> error "immediate integer"
+        | `Int -> `Int
         | `Int64 -> `Int64
         | `M128 -> `M128
         | `M256 -> `M256

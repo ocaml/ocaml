@@ -47,6 +47,7 @@ let oper_result_type = function
   | Cintrin intrin ->
       match intrin.Intrin.result with
         `Float -> typ_float
+      | `Int   -> typ_int
       | `Int64 -> typ_int
       | `M128  -> typ_xmm
       | `M256  -> typ_ymm
