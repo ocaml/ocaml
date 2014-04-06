@@ -221,63 +221,71 @@ world.opt: coldstart opt.opt
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
+
 install: installbyt installopt
 
 installbyt:
-	mkdir -p $(BINDIR)
-	mkdir -p $(LIBDIR)
-	mkdir -p $(COMPLIBDIR)
+	mkdir -p $(INSTALL_BINDIR)
+	mkdir -p $(INSTALL_LIBDIR)
+	mkdir -p $(INSTALL_STUBLIBDIR)
+	mkdir -p $(INSTALL_COMPLIBDIR)
+	cp VERSION $(INSTALL_LIBDIR)/
 	cd byterun ; $(MAKEREC) install
-	cp ocamlc $(BINDIR)/ocamlc.exe
-	cp ocaml $(BINDIR)/ocaml.exe
+	cp ocamlc $(INSTALL_BINDIR)/ocamlc.exe
+	cp ocaml $(INSTALL_BINDIR)/ocaml.exe
 	cd stdlib ; $(MAKEREC) install
-	cp lex/ocamllex $(BINDIR)/ocamllex.exe
-	cp yacc/ocamlyacc.exe $(BINDIR)/ocamlyacc.exe
+	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex.exe
+	cp yacc/ocamlyacc.exe $(INSTALL_BINDIR)/ocamlyacc.exe
 	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
-	   toplevel/*.cmi $(COMPLIBDIR)
+	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   $(COMPLIBDIR)
-	cp expunge $(LIBDIR)/expunge.exe
-	cp toplevel/topdirs.cmi $(LIBDIR)
+	   $(INSTALL_COMPLIBDIR)
+	cp expunge $(INSTALL_LIBDIR)/expunge.exe
+	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
 	cd tools ; $(MAKEREC) install
+	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
 	  else :; fi
-	mkdir -p $(STUBLIBDIR)
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
-	cp config/Makefile $(LIBDIR)/Makefile.config
-	cp README $(DISTRIB)/Readme.general.txt
-	cp README.win32 $(DISTRIB)/Readme.windows.txt
-	cp LICENSE $(DISTRIB)/License.txt
-	cp Changes $(DISTRIB)/Changes.txt
+	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
+	cp README $(INSTALL_DISTRIB)/Readme.general.txt
+	cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt
+	cp LICENSE $(INSTALL_DISTRIB)/License.txt
+	cp Changes $(INSTALL_DISTRIB)/Changes.txt
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun ; $(MAKEREC) install
-	cp ocamlopt $(BINDIR)/ocamlopt.exe
+	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt.exe
 	cd stdlib ; $(MAKEREC) installopt
-	cp asmcomp/*.cmi driver/*.cmi $(COMPLIBDIR)
-	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
+	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
+	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
 	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
+	cd tools; $(MAKE) installopt
 
 installoptopt:
-	cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE)
-	cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE)
-	cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE)
+	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
+	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
+	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
            compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
            compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
            $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
            $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
-           $(COMPLIBDIR)
+           $(INSTALL_COMPLIBDIR)
 
 clean:: partialclean
 
