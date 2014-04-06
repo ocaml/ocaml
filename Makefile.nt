@@ -226,7 +226,9 @@ install: installbyt installopt
 installbyt:
 	mkdir -p $(BINDIR)
 	mkdir -p $(LIBDIR)
+	mkdir -p $(STUBLIBDIR)
 	mkdir -p $(COMPLIBDIR)
+	cp VERSION $(LIBDIR)/
 	cd byterun ; $(MAKEREC) install
 	cp ocamlc $(BINDIR)/ocamlc.exe
 	cp ocaml $(BINDIR)/ocaml.exe
@@ -241,10 +243,9 @@ installbyt:
 	cp expunge $(LIBDIR)/expunge.exe
 	cp toplevel/topdirs.cmi $(LIBDIR)
 	cd tools ; $(MAKEREC) install
+	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
 	  else :; fi
-	mkdir -p $(STUBLIBDIR)
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
@@ -260,13 +261,14 @@ installopt:
 	cd asmrun ; $(MAKEREC) install
 	cp ocamlopt $(BINDIR)/ocamlopt.exe
 	cd stdlib ; $(MAKEREC) installopt
-	cp asmcomp/*.cmi driver/*.cmi $(COMPLIBDIR)
+	cp asmcomp/*.cmi $(COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
 	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
+	cd tools; $(MAKE) installopt
 
 installoptopt:
 	cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE)
