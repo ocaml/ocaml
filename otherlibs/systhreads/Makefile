@@ -70,21 +70,24 @@ partialclean:
 clean: partialclean
 	rm -f *.o *.a *.so
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
-	cp libthreads.a $(LIBDIR)/libthreads.a
-	cd $(LIBDIR); $(RANLIB) libthreads.a
-	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
-	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
-	rm -f $(LIBDIR)/threads/stdlib.cma
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
-	cp threads.h $(LIBDIR)/caml/threads.h
+	if test -f dllthreads.so; then cp dllthreads.so $(INSTALL_STUBLIBDIR)/dllthreads.so; fi
+	cp libthreads.a $(INSTALL_LIBDIR)/libthreads.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libthreads.a
+	if test -d $(INSTALL_LIBDIR)/threads; then :; else mkdir $(INSTALL_LIBDIR)/threads; fi
+	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(INSTALL_LIBDIR)/threads
+	rm -f $(INSTALL_LIBDIR)/threads/stdlib.cma
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(INSTALL_LIBDIR)
+	cp threads.h $(INSTALL_LIBDIR)/caml/threads.h
 
 installopt:
-	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
-	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
-	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
-	cd $(LIBDIR)/threads; $(RANLIB) threads.a
+	cp libthreadsnat.a $(INSTALL_LIBDIR)/libthreadsnat.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libthreadsnat.a
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(INSTALL_LIBDIR)/threads
+	cd $(INSTALL_LIBDIR)/threads; $(RANLIB) threads.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

@@ -38,15 +38,17 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
 install: install-$(RUNTIMED)
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
-	  $(LIBDIR)
+	  $(INSTALL_LIBDIR)
 
 install-noruntimed:
 .PHONY: install-noruntimed
 
 install-runtimed: camlheaderd
-	cp camlheaderd $(LIBDIR)
+	cp camlheaderd $(INSTALL_LIBDIR)
 .PHONY: install-runtimed
 
 stdlib.cma: $(OBJS)

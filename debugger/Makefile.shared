@@ -22,6 +22,8 @@ CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+
 INCLUDES=\
   -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
   -I $(UNIXDIR)
@@ -84,7 +86,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
+	cp ocamldebug$(EXE) $(INSTALL_BINDIR)/ocamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug$(EXE)
