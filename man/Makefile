@@ -12,10 +12,10 @@
 
 include ../config/Makefile
 
-DIR=$(MANDIR)/man$(MANEXT)
+INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(MANEXT)
 
 install:
-	for i in *.m; do cp $$i $(DIR)/`basename $$i .m`.$(MANEXT); done
-	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' > $(DIR)/ocamlc.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' > $(DIR)/ocamlopt.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/ocamlcp.$(MANEXT)' > $(DIR)/ocamloptp.$(MANEXT)
+	for i in *.m; do cp $$i $(INSTALL_DIR)/`basename $$i .m`.$(MANEXT); done
+	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' > $(INSTALL_DIR)/ocamlc.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' > $(INSTALL_DIR)/ocamlopt.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlcp.$(MANEXT)' > $(INSTALL_DIR)/ocamloptp.$(MANEXT)

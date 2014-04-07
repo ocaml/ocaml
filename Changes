@@ -123,6 +123,8 @@ Features wishes:
 - PR#6246: allow wilcard _ as for-loop index
 - PR#6270: remove need for -I directives to ocamldebug in common case
   (patch by Josh Watzman, review by Xavier Clerc and Alain Frisch)
+- PR#6358: obey DESTDIR in install targets
+  (Gabriel Scherer)
 - ocamllex: user-definable refill action
   (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."

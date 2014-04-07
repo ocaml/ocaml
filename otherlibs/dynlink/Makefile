@@ -70,14 +70,16 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 extract_crc: dynlink.cma extract_crc.cmo
 	$(OCAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
 install:
-	cp dynlink.cmi dynlink.cma dynlink.mli $(LIBDIR)
-	cp extract_crc $(LIBDIR)/extract_crc$(EXE)
+	cp dynlink.cmi dynlink.cma dynlink.mli $(INSTALL_LIBDIR)
+	cp extract_crc $(INSTALL_LIBDIR)/extract_crc$(EXE)
 
 installopt:
 	if $(NATDYNLINK); then \
-	  cp $(NATOBJS) dynlink.cmxa dynlink.$(A) $(LIBDIR) && \
-	  cd $(LIBDIR) && $(RANLIB) dynlink.$(A); \
+	  cp $(NATOBJS) dynlink.cmxa dynlink.$(A) $(INSTALL_LIBDIR) && \
+	  cd $(INSTALL_LIBDIR) && $(RANLIB) dynlink.$(A); \
 	fi
 
 partialclean:
