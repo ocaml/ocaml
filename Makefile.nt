@@ -208,11 +208,11 @@ opt-core:
 
 opt:
 	$(MAKE) -f Makefile.nt opt-core
-	$(MAKE) -f Makefile.nt otherlibrariesopt
+	$(MAKE) -f Makefile.nt otherlibrariesopt ocamltoolsopt
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-	 ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT)
+         ocamltoolsopt ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -274,8 +274,7 @@ installopt:
 	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
-	# does not work yet, as "cd tools; $(MAKE) opt" has not been run previously
-	# cd tools; $(MAKE) installopt
+	cd tools; $(MAKE) installopt
 
 installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
@@ -620,8 +619,13 @@ clean::
 
 ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi asmcomp/printclambda.cmo
 	cd tools ; $(MAKEREC) all
+
+ocamltoolsopt:
+        cd tool; $(MAKEREC) opt
+
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi asmcomp/printclambda.cmx
 	cd tools ; $(MAKEREC) opt.opt
+
 partialclean::
 	cd tools ; $(MAKEREC) clean
 alldepend::
@@ -718,8 +722,8 @@ distclean:
 .PHONY: coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
-.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
-.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
+.PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
