@@ -90,8 +90,8 @@ let constructor_descrs ty_path decl cstrs =
               in
               let type_manifest =
                 match decl.type_manifest with
-                | Some {desc = Tconstr(Path.Pdot (m, _, _), args, _)} ->
-                    let p = Path.Pdot (m, name, Path.nopos) in
+                | Some {desc = Tconstr(Path.Pdot (m, name, _), args, _)} ->
+                    let p = Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos) in
                     Some (newgenty (Tconstr (p, args, ref Mnil)))
                 | Some {desc = Tconstr(Path.Pident _, args, _)} ->
                     None (* looses the identity! *)
