@@ -89,7 +89,7 @@ install::
 	cp profiling.cmi profiling.cmo $(INSTALL_LIBDIR)
 
 installopt::
-	cp profiling.cmx profiling.o $(INSTALL_LIBDIR)
+	cp profiling.cmx profiling.$(O) $(INSTALL_LIBDIR)
 
 clean::
 	rm -f ocamlprof ocamlcp ocamloptp
