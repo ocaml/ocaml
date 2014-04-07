@@ -1033,9 +1033,18 @@ let scrape_alias env mty = scrape_alias env mty
 
 (* Compute constructor descriptions *)
 
-let constructors_of_type ty_path decl =
+let constructors_of_type env ty_path decl =
   match decl.type_kind with
-  | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
+  | Type_variant cstrs ->
+      let resolv s =
+        try
+          let (p, _) = lookup_type (Longident.Lident s) env in
+          match p with
+          | Pident id -> Some id
+          | _ -> None
+        with Not_found -> None
+      in
+      Datarepr.constructor_descrs resolv ty_path decl cstrs
   | Type_record _ | Type_abstract -> [], []
 
 (* Compute label descriptions *)
@@ -1182,7 +1191,7 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constrs, tdecls = constructors_of_type path decl' in
+            let constrs, tdecls = constructors_of_type !env path decl' in
             let constructors = List.map snd constrs in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
@@ -1287,7 +1296,7 @@ and store_type ~check slot id path info env renv =
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors, tdecls = constructors_of_type path info in
+  let constructors, tdecls = constructors_of_type env path info in
   let labels = labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
 

@@ -39,7 +39,7 @@ let free_vars ty =
   unmark_type ty;
   !ret
 
-let constructor_descrs ty_path decl cstrs =
+let constructor_descrs resolv ty_path decl cstrs =
   let ty_res = newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)) in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
@@ -93,9 +93,11 @@ let constructor_descrs ty_path decl cstrs =
                 | Some {desc = Tconstr(Path.Pdot (m, name, _), args, _)} ->
                     let p = Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos) in
                     Some (newgenty (Tconstr (p, args, ref Mnil)))
-                | Some {desc = Tconstr(Path.Pident _, args, _)} ->
-                    None (* looses the identity! *)
-                      (* could we retrieve it in the current environment? *)
+                | Some {desc = Tconstr(Path.Pident id, args, _)} ->
+                    begin match resolv (Ident.name id ^ "." ^ Ident.name cd_id) with
+                    | None -> None
+                    | Some id -> Some (newgenty (Tconstr (Path.Pident id, args, ref Mnil)))
+                    end
                 | _ -> None
               in
               let tdecl =
