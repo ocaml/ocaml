@@ -274,7 +274,8 @@ installopt:
 	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
-	cd tools; $(MAKE) installopt
+	# does not work yet, as "cd tools; $(MAKE) opt" has not been run previously
+	# cd tools; $(MAKE) installopt
 
 installoptopt:
 	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
