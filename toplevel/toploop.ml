@@ -169,50 +169,14 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env items =
-  Printtyp.hide_rec_items items;
-  match items with
-  | Sig_value(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_value_description id decl in
-      let valopt =
-        match decl.val_kind with
-        | Val_prim _ -> None
-        | _ ->
-            let v =
-              outval_of_value env (getvalue (Translmod.toplevel_name id))
-                decl.val_type
-            in
-            Some v
-      in
-      Some (tree, valopt, rem)
-  | Sig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
-      pr_item env rem
-  | Sig_type(id, decl, rs) :: rem ->
-      let tree = Printtyp.tree_of_type_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_exception(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_exception_declaration id decl in
-      Some (tree, None, rem)
-  | Sig_module(id, md, rs) :: rem ->
-      let tree = Printtyp.tree_of_module id md.md_type rs in
-      Some (tree, None, rem)
-  | Sig_modtype(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_modtype_declaration id decl in
-      Some (tree, None, rem)
-  | Sig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_class_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_cltype_declaration id decl rs in
-      Some (tree, None, rem)
-  | _ -> None
-
-let rec item_list env = function
-  | [] -> []
-  | items ->
-     match pr_item env items with
-     | None -> []
-     | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
+let pr_item =
+  Printtyp.print_items
+    (fun env -> function
+      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+          Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
+                  val_type)
+      | _ -> None
+    )
 
 (* The current typing environment for the toplevel *)
 
@@ -261,7 +225,7 @@ let execute_phrase print_outcome ppf phr =
                       let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                       Ophr_eval (outv, ty)
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (item_list newenv sg'))
+                  | _ -> Ophr_signature (pr_item newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

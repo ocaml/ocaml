@@ -739,6 +739,33 @@ let string_of_mutable = function
   | Immutable -> ""
   | Mutable -> "mutable "
 
+
+let inlined_records = ref []
+ (* We don't reset this reference too often, as a hack to make
+    the error message produced by:
+
+    module X : sig type 'a t = A of int end
+             = struct type 'a t = A of {x:int} end
+
+
+    work as expected (the type declaration is printed after
+    the signature, and so the definition of the inlined record is
+    available *)
+
+let get_inlined_record cd =
+  let id, args =
+    match cd.cd_args with
+    | [ {desc = Tconstr(Path.Pident id, args, _)} ] -> id, args
+    | _ -> assert false
+  in
+  try
+    let lbls, params = List.assoc id !inlined_records in
+    lbls, params, args
+  with Not_found -> [], [], []
+    (* This can happen in an error message, where the
+       variant type declaration is displayed on its own *)
+
+
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -781,9 +808,14 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-        (fun c ->
-          List.iter mark_loops c.cd_args;
-          may mark_loops c.cd_res)
+        (fun cd ->
+          if cd.cd_inlined then
+            let lbls, params, args = get_inlined_record cd in
+            List.iter2 link_type params args;
+            List.iter (fun l -> mark_loops l.ld_type) lbls
+          else
+            List.iter mark_loops cd.cd_args;
+          may mark_loops cd.cd_res)
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -842,13 +874,20 @@ let rec tree_of_type_decl id decl =
 
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
+  let arg () =
+    if cd.cd_inlined then
+      let lbls, _, _ = get_inlined_record cd in
+      [ Otyp_record (List.map tree_of_label lbls) ]
+    else
+      tree_of_typlist false cd.cd_args
+  in
   match cd.cd_res with
-  | None -> (name, tree_of_typlist false cd.cd_args, None)
+  | None -> (name, arg (), None)
   | Some res ->
       let nm = !names in
       names := [];
       let ret = tree_of_typexp false res in
-      let args = tree_of_typlist false cd.cd_args in
+      let args = arg () in
       names := nm;
       (name, args, Some ret)
 
@@ -1079,6 +1118,23 @@ let filter_rem_sig item rem =
       ([ctydecl; tydecl1; tydecl2], rem)
   | Sig_class_type _, tydecl1 :: tydecl2 :: rem ->
       ([tydecl1; tydecl2], rem)
+  | Sig_type _, rem ->
+      let rec loop sg = function
+        | (Sig_type (id,
+                    ({type_kind = Type_record (lbls, Record_inlined _)} as td),
+                    Trec_next)) as it :: rem ->
+            let td = Ctype.instance_declaration td in
+            let lbls =
+              match td.type_kind with
+              | Type_record(lbls, _) -> lbls
+              | _ -> assert false
+            in
+            inlined_records := (id, (lbls, td.type_params)) :: !inlined_records;
+            loop (it :: sg) rem
+        | rem ->
+            List.rev sg, rem
+      in
+      loop [] rem
   | _ ->
       ([], rem)
 
@@ -1124,35 +1180,34 @@ and tree_of_signature sg =
 
 and tree_of_signature_rec env' = function
     [] -> []
-  | item :: rem ->
+  | item :: rem as items ->
       begin match item with
         Sig_type (_, _, rs) when rs <> Trec_next -> ()
       | _ -> set_printing_env env'
       end;
       let (sg, rem) = filter_rem_sig item rem in
-      let trees =
-        match item with
-        | Sig_value(id, decl) ->
-            [tree_of_value_description id decl]
-        | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
-            []
-        | Sig_type(id, decl, rs) ->
-            hide_rec_items (item :: rem);
-            [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
-        | Sig_exception(id, decl) ->
-            [tree_of_exception_declaration id decl]
-        | Sig_module(id, md, rs) ->
-            [Osig_module (Ident.name id, tree_of_modtype md.md_type,
-                          tree_of_rec rs)]
-        | Sig_modtype(id, decl) ->
-            [tree_of_modtype_declaration id decl]
-        | Sig_class(id, decl, rs) ->
-            [tree_of_class_declaration id decl rs]
-        | Sig_class_type(id, decl, rs) ->
-            [tree_of_cltype_declaration id decl rs]
-      in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
       let env' = Env.add_signature (item :: sg) env' in
       trees @ tree_of_signature_rec env' rem
+
+and trees_of_sigitem = function
+  | Sig_value(id, decl) ->
+      [tree_of_value_description id decl]
+  | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+      []
+  | Sig_type(id, decl, rs) ->
+      [tree_of_type_declaration id decl rs]
+  | Sig_exception(id, decl) ->
+      [tree_of_exception_declaration id decl]
+  | Sig_module(id, md, rs) ->
+      [tree_of_module id md.md_type rs]
+  | Sig_modtype(id, decl) ->
+      [tree_of_modtype_declaration id decl]
+  | Sig_class(id, decl, rs) ->
+      [tree_of_class_declaration id decl rs]
+  | Sig_class_type(id, decl, rs) ->
+      [tree_of_cltype_declaration id decl rs]
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -1162,12 +1217,27 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty rs =
+and tree_of_module id mty rs =
   Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_modtype_declaration id decl)
+
+(* For the toplevel: merge with tree_of_signature? *)
+let rec print_items showval env = function
+  | [] -> []
+  | item :: rem as items ->
+      let (sg, rem) = filter_rem_sig item rem in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
+      List.map (fun d -> (d, showval env item)) trees @
+      print_items showval env rem
+
+let print_items showval env l =
+  let r = print_items showval env l in
+  inlined_records := [];
+  r
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 

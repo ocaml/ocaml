@@ -223,7 +223,8 @@ and print_simple_out_type ppf =
       print_out_type ppf ty;
       pp_print_char ppf ')';
       pp_close_box ppf ()
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_abstract | Otyp_sum _ | Otyp_manifest (_, _) -> ()
+  | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
       fprintf ppf "@[<1>(module %s" p;
       let first = ref true in
@@ -234,6 +235,9 @@ and print_simple_out_type ppf =
         )
         n tyl;
       fprintf ppf ")@]"
+and print_record_decl ppf lbls =
+  fprintf ppf "{%a@;<1 -2>}"
+    (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
 and print_fields rest ppf =
   function
     [] ->
@@ -278,6 +282,9 @@ and print_typargs ppf =
       pp_print_char ppf ')';
       pp_close_box ppf ();
       pp_print_space ppf ()
+and print_out_label ppf (name, mut, arg) =
+  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+    print_out_type arg
 
 let out_type = ref print_out_type
 
@@ -441,9 +448,9 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
-      fprintf ppf " =%a {%a@;<1 -2>}"
+      fprintf ppf " =%a %a"
         print_private priv
-        (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+        print_record_decl lbls
   | Otyp_sum constrs ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private priv
@@ -476,11 +483,6 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
             (print_typlist print_simple_out_type " *")
             tyl print_simple_out_type ret_type
       end
-
-
-and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
-    !out_type arg
 
 let _ = out_module_type := print_out_module_type
 let _ = out_signature := print_out_signature

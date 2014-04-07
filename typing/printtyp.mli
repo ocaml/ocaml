@@ -42,8 +42,10 @@ val type_scheme_max: ?b_reset_names: bool ->
 (* Fin Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
+(*
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
+*)
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val tree_of_exception_declaration:
     Ident.t -> exception_declaration -> out_sig_item
@@ -80,4 +82,5 @@ val report_ambiguous_type_error:
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
 
 (* for toploop *)
-val hide_rec_items: signature_item list -> unit
+val print_items: (Env.t -> signature_item -> 'a option) ->
+  Env.t -> signature_item list -> (out_sig_item * 'a option) list
