@@ -1053,7 +1053,6 @@ let labels_of_type ty_path decl =
         | Record_exception (Pident id) ->
             begin match ty_path with
             | Path.Pdot (path, _, pos) ->
-                Format.printf "XXX@.";
                 Record_exception (Path.Pdot (path, Ident.name id, pos))
             | Path.Pident _ ->
                 rep
