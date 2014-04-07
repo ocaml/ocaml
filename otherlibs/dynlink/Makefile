@@ -83,7 +83,7 @@ installopt:
 	fi
 
 partialclean:
-	rm -f extract_crc *.cm[ioax] *.cmxa
+	rm -f extract_crc *.cm[ioaxt] *.cmti *.cmxa
 
 clean: partialclean
 	rm -f *.$(A) *.$(O) *.so *.dll dynlink.mlopt
