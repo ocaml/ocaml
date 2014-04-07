@@ -17,8 +17,10 @@ open Asttypes
 open Types
 
 val constructor_descrs:
-  type_expr -> constructor_declaration list ->
-  private_flag -> (Ident.t * constructor_description) list
+  Path.t -> type_declaration -> constructor_declaration list ->
+  (Ident.t * constructor_description) list *
+  (Ident.t * Path.t * type_declaration) list
+
 val exception_descr:
   Path.t -> exception_declaration -> constructor_description
 val label_descrs:

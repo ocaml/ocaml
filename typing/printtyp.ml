@@ -740,44 +740,6 @@ let string_of_mutable = function
   | Mutable -> "mutable "
 
 
-(* Support for inlined records *)
-
-let inlined_records = ref []
- (* We don't reset this reference too often, as a hack to make
-    the error message produced by:
-
-    module X : sig type 'a t = A of int end
-             = struct type 'a t = A of {x:int} end
-
-
-    work as expected (the type declaration is printed after
-    the signature, and so the definition of the inlined record is
-    available *)
-
-let register_inlined_record id td =
-  let td = Ctype.instance_declaration td in
-  let lbls =
-    match td.type_kind with
-    | Type_record(lbls, _) -> lbls
-    | _ -> assert false
-  in
-  inlined_records := (id, (lbls, td.type_params)) :: !inlined_records
-
-let get_inlined_record cd_args =
-  let id, args =
-    match cd_args with
-    | [ {desc = Tconstr(Path.Pident id, args, _)} ] -> id, args
-    | _ -> assert false
-  in
-  try
-    let lbls, params = List.assoc id !inlined_records in
-    lbls, params, args
-  with Not_found -> [], [], []
-    (* This can happen in an error message, where the
-       variant type declaration is displayed on its own *)
-
-
-
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -821,13 +783,10 @@ let rec tree_of_type_decl id decl =
   | Type_variant cstrs ->
       List.iter
         (fun cd ->
-          if cd.cd_inlined then
-            let lbls, params, args = get_inlined_record cd.cd_args in
-            List.iter2 link_type params args;
-            List.iter (fun l -> mark_loops l.ld_type) lbls
-          else
-            List.iter mark_loops cd.cd_args;
-          may mark_loops cd.cd_res)
+           match cd.cd_args with
+           | Cstr_tuple l -> List.iter mark_loops l
+           | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+        )
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -887,11 +846,9 @@ let rec tree_of_type_decl id decl =
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
   let arg () =
-    if cd.cd_inlined then
-      let lbls, _, _ = get_inlined_record cd.cd_args in
-      [ Otyp_record (List.map tree_of_label lbls) ]
-    else
-      tree_of_typlist false cd.cd_args
+    match cd.cd_args with
+    | Cstr_tuple l -> tree_of_typlist false l
+    | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
   in
   match cd.cd_res with
   | None -> (name, arg (), None)
@@ -921,19 +878,8 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  let tyl =
-    if decl.exn_inlined then begin
-      let lbls, params, args = get_inlined_record decl.exn_args in
-      reset ();
-      List.iter2 link_type params args;
-      List.iter (fun l -> mark_loops l.ld_type) lbls;
-      [ Otyp_record (List.map tree_of_label lbls) ]
-    end else begin
-      reset_and_mark_loops_list decl.exn_args;
-      let tyl = tree_of_typlist false decl.exn_args in
-      tyl
-    end
-  in
+  reset_and_mark_loops_list decl.exn_args;
+  let tyl = tree_of_typlist false decl.exn_args in
   Osig_exception (Ident.name id, tyl)
 
 let exception_declaration id ppf decl =
@@ -1141,17 +1087,6 @@ let filter_rem_sig item rem =
       ([ctydecl; tydecl1; tydecl2], rem)
   | Sig_class_type _, tydecl1 :: tydecl2 :: rem ->
       ([tydecl1; tydecl2], rem)
-  | Sig_type _, rem ->
-      let rec loop sg = function
-        | (Sig_type (id,
-                    ({type_kind = Type_record (lbls, Record_inlined _)} as td),
-                    Trec_next)) as it :: rem ->
-            register_inlined_record id td;
-            loop (it :: sg) rem
-        | rem ->
-            List.rev sg, rem
-      in
-      loop [] rem
   | _ ->
       ([], rem)
 
@@ -1213,9 +1148,6 @@ and trees_of_sigitem = function
       [tree_of_value_description id decl]
   | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
       []
-  | Sig_type(id, ({type_kind=Type_record(_, Record_exception _)} as td), _) ->
-      register_inlined_record id td;
-      []
   | Sig_type(id, decl, rs) ->
       [tree_of_type_declaration id decl rs]
   | Sig_exception(id, decl) ->
@@ -1253,11 +1185,6 @@ let rec print_items showval env = function
       let trees = trees_of_sigitem item in
       List.map (fun d -> (d, showval env item)) trees @
       print_items showval env rem
-
-let print_items showval env l =
-  let r = print_items showval env l in
-  inlined_records := [];
-  r
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 

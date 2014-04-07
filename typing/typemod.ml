@@ -552,19 +552,13 @@ and transl_signature env sg =
             prepend_sig_types decls rem,
             final_env
         | Psig_exception sarg ->
-            let ((tdecls, tenv), arg, decl, newenv) =
-              Typedecl.transl_exception env sarg
-            in
+            let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
             let (trem, rem, final_env) = transl_sig newenv srem in
             let id = arg.cd_id in
-            let trem = mksig (Tsig_exception arg) tenv loc :: trem in
-            let trem =
-              if tdecls = [] then trem else
-                mksig (Tsig_type tdecls) env loc :: trem
-            in
+            let trem = mksig (Tsig_exception arg) env loc :: trem in
             trem,
             (if List.exists (Ident.equal id) (get_exceptions rem) then rem
-             else prepend_sig_types tdecls (Sig_exception(id, decl) :: rem)),
+             else Sig_exception(id, decl) :: rem),
             final_env
         | Psig_module pmd ->
             check "module" item.psig_loc module_names pmd.pmd_name.txt;
@@ -1163,20 +1157,17 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         prepend_sig_types decls [],
         enrich_type_decls anchor decls env newenv
     | Pstr_exception sarg ->
-        let ((tdecls, tenv), arg, decl, newenv) =
-          Typedecl.transl_exception env sarg
-        in
-        (* Note: we should keep tdecls in the typedtree *)
+        let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
         Tstr_exception arg,
-        prepend_sig_types tdecls [Sig_exception(arg.cd_id, decl)],
+        [Sig_exception(arg.cd_id, decl)],
         newenv
     | Pstr_exn_rebind(name, longid, attrs) ->
-        let ((tdecls, env), path, arg) =
+        let (path, arg) =
           Typedecl.transl_exn_rebind env loc name.txt longid.txt
         in
         let (id, newenv) = Env.enter_exception name.txt arg env in
         Tstr_exn_rebind(id, name, path, longid, attrs),
-        prepend_sig_types' tdecls [Sig_exception(id, arg)],
+        [Sig_exception(id, arg)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;

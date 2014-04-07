@@ -248,7 +248,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let {cd_id;cd_args;cd_res;cd_inlined} =
+                    let {cd_id;cd_args;cd_res} =
                       Datarepr.find_constr_by_tag tag constr_list in
                     let type_params =
                       match cd_res with
@@ -259,46 +259,41 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           | _ -> assert false end
                       | None -> decl.type_params
                     in
-                    let ty_args =
-                      List.map
-                        (function ty ->
-                           try Ctype.apply env type_params ty ty_list with
-                             Ctype.Cannot_apply -> abstract_type)
-                        cd_args in
-                    tree_of_constr_with_args (tree_of_constr env path)
-                                 (Ident.name cd_id) cd_inlined 0 depth obj
-                                 ty_args
+                    begin
+                      match cd_args with
+                      | Cstr_tuple l ->
+                          let ty_args =
+                            List.map
+                              (function ty ->
+                                try Ctype.apply env type_params ty ty_list with
+                                  Ctype.Cannot_apply -> abstract_type)
+                              l
+                          in
+                          tree_of_constr_with_args (tree_of_constr env path)
+                            (Ident.name cd_id) false 0 depth obj
+                            ty_args
+                      | Cstr_record lbls ->
+                          let r =
+                            tree_of_record_fields depth
+                              env path type_params ty_list
+                              lbls 0
+                          in
+                          Oval_constr(tree_of_constr env path
+                                        (Ident.name cd_id),
+                                      [ r ])
+                    end
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
-                        let rec tree_of_fields pos = function
-                          | [] -> []
-                          | {ld_id; ld_type} :: remainder ->
-                              let ty_arg =
-                                try
-                                  Ctype.apply env decl.type_params ld_type
-                                    ty_list
-                                with
-                                  Ctype.Cannot_apply -> abstract_type in
-                              let name = Ident.name ld_id in
-                              (* PR#5722: print full module path only
-                                 for first record field *)
-                              let lid =
-                                if pos = 0 then tree_of_label env path name
-                                else Oide_ident name
-                              and v =
-                                tree_of_val (depth - 1) (O.field obj pos)
-                                  ty_arg
-                              in
-                              (lid, v) :: tree_of_fields (pos + 1) remainder
-                        in
                         let pos =
                           match rep with
                           | Record_exception _ -> 1
                           | _ -> 0
                         in
-                        Oval_record (tree_of_fields pos lbl_list)
+                        tree_of_record_fields depth
+                          env path decl.type_params ty_list
+                          lbl_list pos
                     end
               with
                 Not_found ->                (* raised by Env.find_type *)
@@ -342,6 +337,31 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
+
+      and tree_of_record_fields depth env path type_params ty_list
+          lbl_list pos =
+        let rec tree_of_fields pos = function
+          | [] -> []
+          | {ld_id; ld_type} :: remainder ->
+              let ty_arg =
+                try
+                  Ctype.apply env type_params ld_type
+                    ty_list
+                with
+                  Ctype.Cannot_apply -> abstract_type in
+              let name = Ident.name ld_id in
+              (* PR#5722: print full module path only
+                 for first record field *)
+              let lid =
+                if pos = 0 then tree_of_label env path name
+                else Oide_ident name
+              and v =
+                tree_of_val (depth - 1) (O.field obj pos)
+                  ty_arg
+              in
+              (lid, v) :: tree_of_fields (pos + 1) remainder
+        in
+        Oval_record (tree_of_fields pos lbl_list)
 
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function

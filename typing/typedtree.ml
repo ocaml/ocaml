@@ -385,11 +385,15 @@ and constructor_declaration =
     {
      cd_id: Ident.t;
      cd_name: string loc;
-     cd_args: core_type list;
+     cd_args: constructor_arguments;
      cd_res: core_type option;
      cd_loc: Location.t;
      cd_attributes: attribute list;
     }
+
+and constructor_arguments =
+  | Cstr_tuple of core_type list
+  | Cstr_record of label_declaration list
 
 and class_type =
     {

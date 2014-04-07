@@ -173,13 +173,35 @@ let freevars bound kind =
   ignore (mapper.type_kind mapper kind);
   StringMap.bindings !vars
 
-let get_args = function
-  | Pcstr_tuple l -> l
-  | _ -> assert false
-
-let is_inline_record = function
-  | [ {ptyp_attributes = [{txt="#inline#"}, _]} ] -> true
-  | _ -> false
+let transl_labels env closed lbls =
+  let all_labels = ref StringSet.empty in
+  List.iter
+    (fun {pld_name = {txt=name; loc}} ->
+       if StringSet.mem name !all_labels then
+         raise(Error(loc, Duplicate_label name));
+       all_labels := StringSet.add name !all_labels)
+    lbls;
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} =
+    let arg = Ast_helper.Typ.force_poly arg in
+    let cty = transl_simple_type env closed arg in
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
+     ld_loc = loc; ld_attributes = attrs}
+  in
+  let lbls = List.map mk lbls in
+  let lbls' =
+    List.map
+      (fun ld ->
+         let ty = ld.ld_type.ctyp_type in
+         let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         {Types.ld_id = ld.ld_id;
+          ld_mutable = ld.ld_mutable;
+          ld_type = ty;
+          ld_loc = ld.ld_loc;
+          ld_attributes = ld.ld_attributes
+         }
+      )
+      lbls in
+  lbls, lbls'
 
 let transl_declaration ?exnid env sdecl id =
   (* Bind type parameters *)
@@ -204,23 +226,32 @@ let transl_declaration ?exnid env sdecl id =
             all_constrs := StringSet.add name !all_constrs)
           cstrs;
         if List.length
-          (List.filter (fun cd -> get_args cd.pcd_args <> []) cstrs)
+          (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) cstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr {pcd_name = lid; pcd_args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
           let name = Ident.create lid.txt in
-          let args = get_args pcd_args in
-          let inlined = is_inline_record args in
+          let args closed =
+            match pcd_args with
+            | Pcstr_tuple l ->
+                let l = List.map (transl_simple_type env closed) l in
+                Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
+                Cstr_tuple l
+            | Pcstr_record l ->
+                let lbls, lbls' = transl_labels env closed l in
+                Types.Cstr_record lbls',
+                Cstr_record lbls
+          in
           match ret_type with
             | None ->
-              (name, lid, List.map (transl_simple_type env true) args,
-               None, None, loc, attrs, inlined)
+              (name, lid, args true,
+               None, None, loc, attrs)
             | Some sty ->
               (* if it's a generalized constructor we must first narrow and
                  then widen so as to not introduce any new constraints *)
               let z = narrow () in
               reset_type_variables ();
-              let args = List.map (transl_simple_type env false) args in
+              let args = args false in
               let cty = transl_simple_type env false sty in
               let ret_type =
                 let ty = cty.ctyp_type in
@@ -232,60 +263,28 @@ let transl_declaration ?exnid env sdecl id =
                                     (ty, Ctype.newconstr p params)))
               in
               widen z;
-              (name, lid, args, Some cty, Some ret_type, loc, attrs, inlined)
+              (name, lid, args, Some cty, Some ret_type, loc, attrs)
         in
         let cstrs = List.map make_cstr cstrs in
-        Ttype_variant (List.map (fun (name, lid, ctys, res, _, loc, attrs, _) ->
-          {cd_id = name; cd_name = lid; cd_args = ctys; cd_res = res;
+        Ttype_variant (List.map (fun (name, lid, (_, args), res, _, loc, attrs) ->
+          {cd_id = name; cd_name = lid; cd_args = args; cd_res = res;
            cd_loc = loc; cd_attributes = attrs}
         ) cstrs),
-        Type_variant (List.map (fun (name, name_loc, ctys, _, option, loc, attrs, inlined) ->
-            {Types.cd_id = name; cd_args = List.map (fun cty -> cty.ctyp_type) ctys;
+        Type_variant (List.map (fun (name, name_loc, (args, _), _, option, loc, attrs) ->
+            {Types.cd_id = name; cd_args = args;
              cd_res = option;
              cd_loc = loc; cd_attributes = attrs;
-             cd_inlined = inlined;
             }
           ) cstrs)
 
       | Ptype_record lbls ->
-        let all_labels = ref StringSet.empty in
-        List.iter
-          (fun {pld_name = {txt=name}} ->
-            if StringSet.mem name !all_labels then
-              raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := StringSet.add name !all_labels)
-          lbls;
-        let lbls = List.map (fun {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} ->
-          let arg = Ast_helper.Typ.force_poly arg in
-          let cty = transl_simple_type env true arg in
-          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
-           ld_loc = loc; ld_attributes = attrs}
-          ) lbls in
-        let lbls' =
-          List.map
-            (fun ld ->
-              let ty = ld.ld_type.ctyp_type in
-              let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
-              {Types.ld_id = ld.ld_id;
-               ld_mutable = ld.ld_mutable;
-               ld_type = ty;
-               ld_loc = ld.ld_loc;
-               ld_attributes = ld.ld_attributes
-              }
-            )
-            lbls in
-        let rep =
-          match sdecl.ptype_attributes with
-          | [{txt="#tag#"}, PStr [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_int tag)}, _)}]] ->
-              begin match exnid with
-              | Some id -> Record_exception (Path.Pident id)
-              | None -> Record_inlined tag
-              end
-          | _ ->
-              if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-              then Record_float
-              else Record_regular in
-        Ttype_record lbls, Type_record(lbls', rep)
+          let lbls, lbls' = transl_labels env true lbls in
+          let rep =
+            if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+            then Record_float
+            else Record_regular
+          in
+          Ttype_record lbls, Type_record(lbls', rep)
       in
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
@@ -345,18 +344,7 @@ let transl_declaration ?exnid env sdecl id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract ->
-      ()
-  | Type_variant v ->
-      List.iter
-        (fun c ->
-          List.iter Ctype.generalize c.Types.cd_args;
-          may Ctype.generalize c.Types.cd_res)
-        v
-  | Type_record(r, rep) ->
-      List.iter (fun l -> Ctype.generalize l.Types.ld_type) r
-  end;
+  Btype.iter_type_expr_kind Ctype.generalize decl.type_kind;
   begin match decl.type_manifest with
   | None    -> ()
   | Some ty -> Ctype.generalize ty
@@ -390,6 +378,17 @@ let rec check_constraints_rec env loc visited ty =
 
 module SMap = Map.Make(String)
 
+let check_constraints_labels env visited l pl =
+  let rec get_loc name = function
+      [] -> assert false
+    | pld :: tl ->
+        if name = pld.pld_name.txt then pld.pld_type.ptyp_loc else get_loc name tl
+  in
+  List.iter
+    (fun {Types.ld_id=name; ld_type=ty} ->
+       check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
+    l
+
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
   begin match decl.type_kind with
@@ -407,14 +406,20 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun {Types.cd_id=name; cd_args=tyl; cd_res=ret_type} ->
+        (fun {Types.cd_id=name; cd_args; cd_res=ret_type} ->
           let {pcd_args; pcd_res = sret_type; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
-          List.iter2
-            (fun sty ty ->
-              check_constraints_rec env sty.ptyp_loc visited ty)
-            (get_args pcd_args) tyl;
+          begin match cd_args, pcd_args with
+          | Cstr_tuple tyl, Pcstr_tuple styl ->
+              List.iter2
+                (fun sty ty ->
+                   check_constraints_rec env sty.ptyp_loc visited ty)
+                styl tyl
+          | Cstr_record tyl, Pcstr_record styl ->
+              check_constraints_labels env visited tyl styl
+          | _ -> assert false
+          end;
           match sret_type, ret_type with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
@@ -427,15 +432,7 @@ let check_constraints env sdecl (_, decl) =
         | Ptype_variant _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
-      let rec get_loc name = function
-          [] -> assert false
-        | pld :: tl ->
-            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc else get_loc name tl
-      in
-      List.iter
-        (fun {Types.ld_id=name; ld_type=ty} ->
-          check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
-        l
+      check_constraints_labels env visited l pl
   end;
   begin match decl.type_manifest with
   | None -> ()
@@ -760,12 +757,19 @@ let constrained env vars ty =
   | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
 
+let for_constr = function
+  | Types.Cstr_tuple l -> add_false l
+  | Types.Cstr_record l ->
+      List.map
+        (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
+        l
+
 let compute_variance_gadt env check (required, loc as rloc) decl
     (tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
       compute_variance_type env check rloc {decl with type_private = Private}
-        (add_false tl)
+        (for_constr tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
       | {desc=Tconstr (path, tyl, _)} ->
@@ -785,7 +789,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
           in
           compute_variance_type env check rloc
             {decl with type_params = tyl; type_private = Private}
-            (add_false tl)
+            (for_constr tl)
       | _ -> assert false
 
 let compute_variance_decl env check decl (required, loc as rloc) =
@@ -806,10 +810,11 @@ let compute_variance_decl env check decl (required, loc as rloc) =
   | Type_variant tll ->
       if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env check rloc decl
-          (mn @ add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
+          (mn @ List.flatten (List.map (fun c -> for_constr c.Types.cd_args)
+                                tll))
       else begin
         let mn =
-          List.map (fun (_,ty) -> ([ty],None)) mn in
+          List.map (fun (_,ty) -> (Types.Cstr_tuple [ty],None)) mn in
         let tll = mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env check rloc decl) tll with
         | vari :: rem ->
@@ -938,65 +943,6 @@ let name_recursion sdecl id decl =
     else decl
   | _ -> decl
 
-(* Add fake record declarations for record constructor arguments *)
-let inline_record_decls params manifest tag typname pcd =
-  let open Ast_helper in
-  match pcd.pcd_args with
-  | Pcstr_record lbls ->
-      let ptype_kind = Ptype_record lbls in
-      let bound =
-        List.fold_left (fun acc -> function
-            | Some {txt}, _ -> StringSet.add txt acc
-            | _ -> acc) StringSet.empty params
-      in
-      let extra_params = freevars bound ptype_kind in
-      let prepare_param (s, loc) = Some (mkloc s loc), Invariant in
-      let params = params @ List.map prepare_param extra_params in
-      let mk_arg = function
-        | (Some {txt;loc}, _) -> Typ.var ~loc txt
-        | (None, _) -> Typ.any ()
-      in
-      let args = List.map mk_arg params in
-      let name = typname ^ "." ^ pcd.pcd_name.txt in
-      let ptype_attributes =
-        [
-          mknoloc "#tag#",
-          PStr [ Str.eval (Exp.constant (Const_int !tag)) ]
-        ]
-      in
-      let ptype_manifest =
-        match manifest with
-        | Some {ptyp_desc=Ptyp_constr(lid, _args)} ->
-            (* does not make sense with 'as' clause *)
-            let rec append lid =
-              let open Longident in
-              match lid with
-              | Lident s -> Lident (s ^ "." ^ pcd.pcd_name.txt)
-              | Ldot (p, s) -> Ldot (p, s ^ "." ^ pcd.pcd_name.txt)
-              | Lapply (p1, p2) -> Lapply (p1, append p2)
-            in
-            Some (Typ.constr (mknoloc (append lid.txt)) args) (* todo: type parameters *)
-        | _ -> None
-      in
-      let decl =
-        {
-          ptype_name = mkloc name pcd.pcd_name.loc;
-          ptype_params = params;
-          ptype_cstrs = [];
-          ptype_kind;
-          ptype_private = Public;
-          ptype_manifest;
-          ptype_attributes;
-          ptype_loc = pcd.pcd_loc;
-        } in
-      incr tag;
-      let lid = mknoloc (Longident.Lident name) in
-      let attrs = [ mknoloc "#inline#", PStr [] ] in
-      let pcd_args = Pcstr_tuple [Typ.constr ~attrs lid args] in
-      {pcd with pcd_args}, [decl]
-  | Pcstr_tuple [] -> pcd, []
-  | Pcstr_tuple _ -> incr tag; pcd, []
-
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl ?exnid env sdecl_list =
   (* Add dummy types for fixed rows *)
@@ -1009,24 +955,6 @@ let transl_type_decl ?exnid env sdecl_list =
       fixed_types
     @ sdecl_list
   in
-  let sdecl_list =
-    List.map
-      (function
-        | {ptype_kind = Ptype_variant cstrs} as sdecl ->
-            let tname = sdecl.ptype_name.txt in
-            let tag = ref 0 in
-            let do_cstr =
-              inline_record_decls sdecl.ptype_params sdecl.ptype_manifest
-                tag tname
-            in
-            let decls = List.map do_cstr cstrs in
-            let cstrs, more = List.split decls in
-            {sdecl with ptype_kind=Ptype_variant cstrs} :: List.flatten more
-        | x -> [ x ]
-      )
-      sdecl_list
-  in
-  let sdecl_list = List.flatten sdecl_list in
 
   (* Create identifiers. *)
   let id_list =
@@ -1151,17 +1079,13 @@ let transl_exception env excdecl =
   let id = Ident.create excdecl.pcd_name.txt in
   if excdecl.pcd_res <> None then
     raise (Error (loc, Exception_constructor_with_result));
-  let excdecl, inlined_records =
-    inline_record_decls [] None (ref 0) "exn" excdecl
-  in
-  let (_, env) as tdecls =
-    match inlined_records with
-    | [] -> ([], env)
-    | decls -> transl_type_decl ~exnid:id env decls
-  in
   reset_type_variables();
   Ctype.begin_def();
-  let args = get_args excdecl.pcd_args in
+  let args =
+    match excdecl.pcd_args with
+    | Pcstr_tuple l -> l
+    | Pcstr_record _ -> assert false
+  in
   let ttypes = List.map (transl_closed_type env) args in
   Ctype.end_def();
   let types = List.map (fun cty -> cty.ctyp_type) ttypes in
@@ -1170,7 +1094,6 @@ let transl_exception env excdecl =
     {
       exn_args = types;
       exn_attributes = excdecl.pcd_attributes;
-      exn_inlined = is_inline_record args;
       Types.exn_loc = loc;
     }
   in
@@ -1178,13 +1101,13 @@ let transl_exception env excdecl =
   let cd =
     { cd_id = id;
       cd_name = excdecl.pcd_name;
-      cd_args = ttypes;
+      cd_args = Cstr_tuple ttypes;
       cd_loc = loc;
       cd_res = None;
       cd_attributes = excdecl.pcd_attributes;
      }
   in
-  tdecls, cd, exn_decl, newenv
+  cd, exn_decl, newenv
 
 let transl_type_decl = transl_type_decl ?exnid:None
 
@@ -1201,31 +1124,14 @@ let transl_exn_rebind env loc name lid =
     |  Cstr_exception (path, _) -> path
     | _ -> raise(Error(loc, Not_an_exception lid))
   in
-  let tdecls, exn_args =
-    if cdescr.cstr_inlined then
-      match cdescr.cstr_args with
-      | [{desc=Tconstr(p, [], _)} as ty] ->
-          let tdecl =
-            try Env.find_type p env
-            with Not_found -> assert false
-          in
-          let tdecl = {tdecl with type_manifest = Some ty} in
-          let (id, env) =
-            Env.enter_type ("exn." ^ name) tdecl env
-          in
-          ([id, tdecl], env), [ Ctype.newconstr (Path.Pident id) [] ]
-      | _ -> assert false
-    else
-      ([], env), cdescr.cstr_args
-  in
+  let exn_args = cdescr.cstr_args in
   let d = {
     Types.exn_args;
     exn_attributes = [];
-    exn_inlined = cdescr.cstr_inlined;
     exn_loc = loc
   }
   in
-  (tdecls, path, d)
+  (path, d)
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1473,7 +1379,11 @@ let report_error ppf = function
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
           explain_unbound ppf ty tl (fun c ->
-            Btype.newgenty (Ttuple c.Types.cd_args))
+              match c.cd_args with
+              | Cstr_tuple tl ->
+                  Btype.newgenty (Ttuple tl)
+              | Cstr_record _ -> assert false
+            )
             "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)

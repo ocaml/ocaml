@@ -123,13 +123,7 @@ and untype_type_declaration decl =
       | Ttype_variant list ->
           Ptype_variant (List.map untype_constructor_declaration list)
       | Ttype_record list ->
-          Ptype_record (List.map (fun ld ->
-                {pld_name=ld.ld_name;
-                 pld_mutable=ld.ld_mutable;
-                 pld_type=untype_core_type ld.ld_type;
-                 pld_loc=ld.ld_loc;
-                 pld_attributes=ld.ld_attributes}
-            ) list)
+          Ptype_record (List.map untype_label_declaration list)
     );
     ptype_private = decl.typ_private;
     ptype_manifest = option untype_core_type decl.typ_manifest;
@@ -137,10 +131,22 @@ and untype_type_declaration decl =
     ptype_loc = decl.typ_loc;
   }
 
+and untype_label_declaration ld =
+  {
+    pld_name=ld.ld_name;
+    pld_mutable=ld.ld_mutable;
+    pld_type=untype_core_type ld.ld_type;
+    pld_loc=ld.ld_loc;
+    pld_attributes=ld.ld_attributes;
+  }
+
 and untype_constructor_declaration cd =
   {
    pcd_name = cd.cd_name;
-   pcd_args = Pcstr_tuple (List.map untype_core_type cd.cd_args);
+   pcd_args = begin match cd.cd_args with
+   | Cstr_tuple l -> Pcstr_tuple (List.map untype_core_type l)
+   | Cstr_record l -> Pcstr_record (List.map untype_label_declaration l)
+   end;
    pcd_res = option untype_core_type cd.cd_res;
    pcd_loc = cd.cd_loc;
    pcd_attributes = cd.cd_attributes;

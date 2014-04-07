@@ -252,6 +252,22 @@ type type_iterators =
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
 
+let iter_type_expr_kind f = function
+  | Type_abstract -> ()
+  | Type_variant cstrs ->
+      List.iter
+        (fun cd ->
+           begin match cd.cd_args with
+           | Cstr_tuple tl -> List.iter f tl
+           | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
+           end;
+           Misc.may f cd.cd_res
+        )
+        cstrs
+  | Type_record(lbls, _) ->
+      List.iter (fun d -> f d.ld_type) lbls
+
+
 let type_iterators =
   let it_signature it =
     List.iter (it.it_signature_item it)
@@ -305,15 +321,8 @@ let type_iterators =
     | Cty_arrow  (_, ty, cty) ->
         it.it_type_expr it ty;
         it.it_class_type it cty
-  and it_type_kind it = function
-      Type_abstract -> ()
-    | Type_record (ll, _) ->
-        List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
-    | Type_variant cl ->
-        List.iter (fun cd ->
-          List.iter (it.it_type_expr it) cd.cd_args;
-          may (it.it_type_expr it) cd.cd_res)
-          cl
+  and it_type_kind it kind =
+    iter_type_expr_kind (it.it_type_expr it) kind
   and it_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match ty.desc with
@@ -440,17 +449,7 @@ let rec unmark_type ty =
 
 let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract -> ()
-  | Type_variant cstrs ->
-      List.iter
-        (fun d ->
-          List.iter unmark_type d.cd_args;
-          Misc.may unmark_type d.cd_res)
-        cstrs
-  | Type_record(lbls, rep) ->
-      List.iter (fun d -> unmark_type d.ld_type) lbls
-  end;
+  iter_type_expr_kind unmark_type decl.type_kind;
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> unmark_type ty

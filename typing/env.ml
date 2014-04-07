@@ -1034,14 +1034,9 @@ let scrape_alias env mty = scrape_alias env mty
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
-  let handle_variants cstrs =
-    Datarepr.constructor_descrs
-      (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-      cstrs decl.type_private
-  in
   match decl.type_kind with
-  | Type_variant cstrs -> handle_variants cstrs
-  | Type_record _ | Type_abstract -> []
+  | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
+  | Type_record _ | Type_abstract -> [], []
 
 (* Compute label descriptions *)
 
@@ -1176,7 +1171,7 @@ and components_of_module_maker (env, sub, path, mty) =
       let pl, sub, _ = prefix_idents_and_subst path sub sg in
       let env = ref env in
       let pos = ref 0 in
-      List.iter2 (fun item path ->
+      let rec aux item path =
         match item with
           Sig_value(id, decl) ->
             let decl' = Subst.value_description sub decl in
@@ -1187,12 +1182,17 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constructors = List.map snd (constructors_of_type path decl') in
+            let constrs, tdecls = constructors_of_type path decl' in
+            let constructors = List.map snd constrs in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
                 ((decl', (constructors, labels)), nopos)
                   c.comp_types;
+            List.iter
+              (fun (id, path, td) ->
+                 aux (Sig_type(id, td, Trec_next)) path;
+              ) tdecls;
             List.iter
               (fun descr ->
                 c.comp_constrs <-
@@ -1234,9 +1234,10 @@ and components_of_module_maker (env, sub, path, mty) =
         | Sig_class_type(id, decl, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
-        sg pl;
-        Structure_comps c
+              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes
+      in
+      List.iter2 aux sg pl;
+      Structure_comps c
   | Mty_functor(param, ty_arg, ty_res) ->
         Functor_comps {
           fcomp_param = param;
@@ -1286,7 +1287,7 @@ and store_type ~check slot id path info env renv =
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors = constructors_of_type path info in
+  let constructors, tdecls = constructors_of_type path info in
   let labels = labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
 
@@ -1310,6 +1311,13 @@ and store_type ~check slot id path info env renv =
       end
       constructors
   end;
+  let env =
+    List.fold_left (fun env (id, path, td) ->
+        store_type ~check:false slot id path td env renv
+      )
+      env
+      tdecls
+  in
   { env with
     constrs =
       List.fold_right

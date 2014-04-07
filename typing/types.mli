@@ -197,12 +197,15 @@ and label_declaration =
 and constructor_declaration =
   {
     cd_id: Ident.t;
-    cd_args: type_expr list;
+    cd_args: constructor_arguments;
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
-    cd_inlined: bool;
   }
+
+and constructor_arguments =
+  | Cstr_tuple of type_expr list
+  | Cstr_record of label_declaration list
 
 and type_transparence =
     Type_public      (* unrestricted expansion *)
@@ -213,7 +216,6 @@ type exception_declaration =
     { exn_args: type_expr list;
       exn_loc: Location.t;
       exn_attributes: Parsetree.attributes;
-      exn_inlined: bool;  (* merge with constructor_declaration? *)
     }
 
 (* Type expressions for the class language *)

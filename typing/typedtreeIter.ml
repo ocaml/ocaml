@@ -164,7 +164,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.leave_value_description v
 
     and iter_constructor_declaration cd =
-      List.iter iter_core_type cd.cd_args;
+      begin match cd.cd_args with
+      | Cstr_tuple l -> List.iter iter_core_type l
+      | Cstr_record l -> List.iter (fun ld -> iter_core_type ld.ld_type) l
+      end;
       option iter_core_type cd.cd_res;
 
     and iter_type_declaration decl =

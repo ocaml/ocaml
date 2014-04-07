@@ -39,16 +39,18 @@ let free_vars ty =
   unmark_type ty;
   !ret
 
-let constructor_descrs ty_res cstrs priv =
+let constructor_descrs ty_path decl cstrs =
+  let ty_res = newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)) in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
     (fun {cd_args; cd_res; _} ->
-      if cd_args = [] then incr num_consts else incr num_nonconsts;
+      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
       if cd_res = None then incr num_normal)
     cstrs;
+  let tdecls = ref [] in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
-    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_inlined} :: rem ->
+    | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
         let ty_res =
           match cd_res with
           | Some ty_res' -> ty_res'
@@ -56,7 +58,7 @@ let constructor_descrs ty_res cstrs priv =
         in
         let (tag, descr_rem) =
           match cd_args with
-            [] -> (Cstr_constant idx_const,
+            Cstr_tuple [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
@@ -65,27 +67,73 @@ let constructor_descrs ty_res cstrs priv =
           | None -> []
           | Some type_ret ->
               let res_vars = free_vars type_ret in
-              let arg_vars = free_vars (newgenty (Ttuple cd_args)) in
+              let tyl =
+                match cd_args with
+                | Cstr_tuple l -> l
+                | Cstr_record l -> List.map (fun l -> l.ld_type) l
+              in
+              (* TODO: handle Tpoly *)
+              let arg_vars = free_vars (newgenty (Ttuple tyl)) in
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
+        in
+        let cstr_args, cstr_inlined =
+          match cd_args with
+          | Cstr_tuple l -> l, false
+          | Cstr_record lbls ->
+              let name = Path.last ty_path ^ "." ^ Ident.name cd_id in
+              let id = Ident.create name in
+              let path =
+                match ty_path with
+                | Path.Pdot(m, _, _) -> Path.Pdot(m, name, Path.nopos)
+                | Path.Pident _ -> Path.Pident id
+                | Path.Papply _ -> assert false
+              in
+              let type_manifest =
+                match decl.type_manifest with
+                | Some {desc = Tconstr(Path.Pdot (m, _, _), args, _)} ->
+                    let p = Path.Pdot (m, name, Path.nopos) in
+                    Some (newgenty (Tconstr (p, args, ref Mnil)))
+                | Some {desc = Tconstr(Path.Pident _, args, _)} ->
+                    None (* looses the identity! *)
+                      (* could we retrieve it in the current environment? *)
+                | _ -> None
+              in
+              let tdecl =
+                {
+                  type_params = decl.type_params; (* TODO: add existentials *)
+                  type_arity = decl.type_arity;
+                  type_kind = Type_record (lbls, Record_inlined idx_nonconst);
+                  type_private = Public;
+                  type_manifest;
+                  type_variance = decl.type_variance;
+                  type_newtype_level = None;
+                  type_loc = Location.none;
+                  type_attributes = [];
+                }
+              in
+              tdecls := (id, path, tdecl) :: !tdecls;
+              [ newgenty (Tconstr(path, decl.type_params, ref Mnil)) ],
+              true
         in
         let cstr =
           { cstr_name = Ident.name cd_id;
             cstr_res = ty_res;
             cstr_existentials = existentials;
-            cstr_args = cd_args;
-            cstr_arity = List.length cd_args;
+            cstr_args;
+            cstr_arity = List.length cstr_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
-            cstr_private = priv;
+            cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
-            cstr_inlined = cd_inlined;
+            cstr_inlined;
           } in
         (cd_id, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  let r = describe_constructors 0 0 cstrs in
+  r, !tdecls
 
 let exception_descr path_exc decl =
   { cstr_name = Path.last path_exc;
@@ -101,7 +149,7 @@ let exception_descr path_exc decl =
     cstr_generalized = false;
     cstr_loc = decl.exn_loc;
     cstr_attributes = decl.exn_attributes;
-    cstr_inlined = decl.exn_inlined;
+    cstr_inlined = false;
   }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
@@ -140,7 +188,7 @@ exception Constr_not_found
 let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
-  | {cd_args = []; _} as c  :: rem ->
+  | {cd_args = Cstr_tuple []; _} as c  :: rem ->
       if tag = Cstr_constant num_const
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
