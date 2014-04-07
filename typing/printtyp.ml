@@ -740,6 +740,8 @@ let string_of_mutable = function
   | Mutable -> "mutable "
 
 
+(* Support for inlined records *)
+
 let inlined_records = ref []
  (* We don't reset this reference too often, as a hack to make
     the error message produced by:
@@ -752,9 +754,18 @@ let inlined_records = ref []
     the signature, and so the definition of the inlined record is
     available *)
 
-let get_inlined_record cd =
+let register_inlined_record id td =
+  let td = Ctype.instance_declaration td in
+  let lbls =
+    match td.type_kind with
+    | Type_record(lbls, _) -> lbls
+    | _ -> assert false
+  in
+  inlined_records := (id, (lbls, td.type_params)) :: !inlined_records
+
+let get_inlined_record cd_args =
   let id, args =
-    match cd.cd_args with
+    match cd_args with
     | [ {desc = Tconstr(Path.Pident id, args, _)} ] -> id, args
     | _ -> assert false
   in
@@ -764,6 +775,7 @@ let get_inlined_record cd =
   with Not_found -> [], [], []
     (* This can happen in an error message, where the
        variant type declaration is displayed on its own *)
+
 
 
 let rec tree_of_type_decl id decl =
@@ -810,7 +822,7 @@ let rec tree_of_type_decl id decl =
       List.iter
         (fun cd ->
           if cd.cd_inlined then
-            let lbls, params, args = get_inlined_record cd in
+            let lbls, params, args = get_inlined_record cd.cd_args in
             List.iter2 link_type params args;
             List.iter (fun l -> mark_loops l.ld_type) lbls
           else
@@ -876,7 +888,7 @@ and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
   let arg () =
     if cd.cd_inlined then
-      let lbls, _, _ = get_inlined_record cd in
+      let lbls, _, _ = get_inlined_record cd.cd_args in
       [ Otyp_record (List.map tree_of_label lbls) ]
     else
       tree_of_typlist false cd.cd_args
@@ -909,8 +921,19 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl.exn_args;
-  let tyl = tree_of_typlist false decl.exn_args in
+  let tyl =
+    if decl.exn_inlined then begin
+      let lbls, params, args = get_inlined_record decl.exn_args in
+      reset ();
+      List.iter2 link_type params args;
+      List.iter (fun l -> mark_loops l.ld_type) lbls;
+      [ Otyp_record (List.map tree_of_label lbls) ]
+    end else begin
+      reset_and_mark_loops_list decl.exn_args;
+      let tyl = tree_of_typlist false decl.exn_args in
+      tyl
+    end
+  in
   Osig_exception (Ident.name id, tyl)
 
 let exception_declaration id ppf decl =
@@ -1123,13 +1146,7 @@ let filter_rem_sig item rem =
         | (Sig_type (id,
                     ({type_kind = Type_record (lbls, Record_inlined _)} as td),
                     Trec_next)) as it :: rem ->
-            let td = Ctype.instance_declaration td in
-            let lbls =
-              match td.type_kind with
-              | Type_record(lbls, _) -> lbls
-              | _ -> assert false
-            in
-            inlined_records := (id, (lbls, td.type_params)) :: !inlined_records;
+            register_inlined_record id td;
             loop (it :: sg) rem
         | rem ->
             List.rev sg, rem
@@ -1195,6 +1212,9 @@ and trees_of_sigitem = function
   | Sig_value(id, decl) ->
       [tree_of_value_description id decl]
   | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+      []
+  | Sig_type(id, ({type_kind=Type_record(_, Record_exception _)} as td), _) ->
+      register_inlined_record id td;
       []
   | Sig_type(id, decl, rs) ->
       [tree_of_type_declaration id decl rs]
