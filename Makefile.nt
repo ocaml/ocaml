@@ -621,7 +621,7 @@ ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi asmcomp/printclambd
 	cd tools ; $(MAKEREC) all
 
 ocamltoolsopt:
-        cd tool; $(MAKEREC) opt
+	cd tool; $(MAKEREC) opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi asmcomp/printclambda.cmx
 	cd tools ; $(MAKEREC) opt.opt
