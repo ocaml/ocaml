@@ -1,0 +1,8 @@
+
+#             module M :
+  sig
+    type 'a t = A of { x : 'a; } | B : { u : 'b; } -> unit t
+    exception Foo of { x : int; }
+  end
+#                   module N : sig exception Foo of { x : int; } end
+# 
