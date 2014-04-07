@@ -104,6 +104,8 @@ Bug fixes:
 - PR#6352: Automatic removal of optional arguments and sequencing
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
+- bound-checking bug in caml_string_{get,set}{16,32,64}
+  (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

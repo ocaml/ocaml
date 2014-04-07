@@ -991,8 +991,22 @@ let unaligned_set_64 ptr idx newval =
                 Cop(Cstore Byte_unsigned,
                     [add_int (add_int ptr idx) (Cconst_int 7); b8]))))
 
+let max_or_zero a =
+  bind "size" a (fun a ->
+    (* equivalent to
+       Cifthenelse(Cop(Ccmpi Cle, [a; Cconst_int 0]), Cconst_int 0, a)
+
+       if a is positive, sign is 0 hence sign_negation is full of 1
+                         so sign_negation&a = a
+       if a is negative, sign is full of 1 hence sign_negation is 0
+                         so sign_negation&a = 0 *)
+    let sign = Cop(Casr, [a; Cconst_int (size_int * 8 - 1)]) in
+    let sign_negation = Cop(Cxor, [sign; Cconst_int (-1)]) in
+    Cop(Cand, [sign_negation; a]))
+
 let check_bound unsafe dbg a1 a2 k =
-  if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k)
+  if unsafe then k
+  else Csequence(make_checkbound dbg [max_or_zero a1;a2], k)
 
 (* Simplification of some primitives into C calls *)
 
