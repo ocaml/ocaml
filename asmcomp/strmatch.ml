@@ -377,6 +377,11 @@ module Make(I:I) = struct
         Ccatch (e,[],k (Cexit (e,[])),arg)
 
     let compile str default cases =
+(* We do not attempt to really optimise default=None *)
+      let cases,default = match cases,default with
+      | (_,e)::cases,None
+      | cases,Some e -> cases,e
+      | [],None -> assert false in
       let cases =
         List.rev_map
           (fun (s,act) -> pat_of_string s,act)

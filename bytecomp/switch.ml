@@ -10,32 +10,82 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Store for actions in object style *)
-exception Found of int
+
+type 'a shared = Shared of 'a | Single of 'a
+
+let share_out = function
+  | Shared act|Single act -> act
+
 
 type 'a t_store =
-    {act_get : unit -> 'a array ; act_store : 'a -> int}
+    {act_get : unit -> 'a array ;
+     act_get_shared : unit -> 'a shared array ;
+     act_store : 'a -> int ;
+     act_store_shared : 'a -> int ; }
 
-let mk_store simplif same =
-  let r_acts = ref [] in
-  let store act =
-    let act = simplif act in
-    let rec store_rec i = function
-      | [] -> i,[act]
-      | act0::rem ->
-          if same act0 act then raise (Found i)
-          else
-            let i,rem = store_rec (i+1) rem in
-            i,act0::rem in
-    try
-      let i,acts = store_rec 0 !r_acts in
-      r_acts := acts ;
-      i
-    with
-    | Found i -> i
+exception Not_simple
 
-  and get () = Array.of_list !r_acts in
-  {act_store=store ; act_get=get}
+module type Stored = sig
+  type t
+  type key
+  val make_key : t -> key option
+end
+
+module Store(A:Stored) = struct
+  module AMap =
+    Map.Make(struct type t = A.key let compare = Pervasives.compare end)
+
+  type intern =
+      { mutable map : (bool * int)  AMap.t ;
+        mutable next : int ;
+        mutable acts : (bool * A.t) list; }
+
+  let mk_store () =
+    let st =
+      { map = AMap.empty ;
+        next = 0 ;
+        acts = [] ; } in
+
+    let add mustshare act =
+      let i = st.next in
+      st.acts <- (mustshare,act) :: st.acts ;
+      st.next <- i+1 ;
+      i in
+
+    let store mustshare act = match A.make_key act with
+    | Some key ->
+        begin try
+          let (shared,i) = AMap.find key st.map in
+          if not shared then st.map <- AMap.add key (true,i) st.map ;
+          i
+        with Not_found ->
+          let i = add mustshare act in
+          st.map <- AMap.add key (mustshare,i) st.map ;
+          i
+        end
+    | None ->
+        add mustshare act
+
+        
+    and get () = Array.of_list (List.rev_map (fun (_,act) -> act) st.acts)
+
+    and get_shared () =      
+      let acts =
+        Array.of_list
+          (List.rev_map
+             (fun (shared,act) ->
+               if shared then Shared act else Single act)
+             st.acts) in
+      AMap.iter
+        (fun _ (shared,i) ->
+          if shared then match acts.(i) with
+          | Single act -> acts.(i) <- Shared act
+          | Shared _ -> ())
+        st.map ;
+      acts in
+    {act_store = store false ; act_store_shared = store true ;
+     act_get = get; act_get_shared = get_shared; }
+end
 
 
 
@@ -56,8 +106,9 @@ module type S =
    val make_isout : act -> act -> act
    val make_isin : act -> act -> act
    val make_if : act -> act -> act -> act
-   val make_switch :
-      act -> int array -> act array -> act
+   val make_switch : act -> int array -> act array -> act
+   val make_catch : act -> int * (act -> act)
+   val make_exit : int -> act
  end
 
 (* The module will ``produce good code for the case statement'' *)
@@ -555,12 +606,12 @@ and enum top cases =
             do_make_if_in
               (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
 
-
     let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
       let lcases = Array.length cases in
       assert(lcases > 0) ;
       if lcases = 1 then
         actions.(get_act cases 0) ctx
+
       else begin
 
         let w,c = opt_count false cases in
@@ -775,7 +826,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
 ;;
 
 
-let zyva (low,high) konst arg cases actions =
+let do_zyva (low,high) konst arg cases actions =
   let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
@@ -791,9 +842,28 @@ let zyva (low,high) konst arg cases actions =
   let r = c_test konst {arg=arg ; off=0} clusters in
   r
 
+let abstract_shared actions =
+  let handlers = ref (fun x -> x) in
+  let actions =
+    Array.map
+      (fun act -> match  act with
+      | Single act -> act
+      | Shared act ->
+          let i,h = Arg.make_catch act in
+          let oh = !handlers in
+          handlers := (fun act -> h (oh act)) ;
+          Arg.make_exit i)
+      actions in
+  !handlers,actions
 
+let zyva lh konst arg cases actions =
+  let actions = actions.act_get_shared () in
+  let hs,actions = abstract_shared actions in
+  hs (do_zyva lh  konst arg cases actions)
 
 and test_sequence konst arg cases actions =
+  let actions = actions.act_get_shared () in
+  let hs,actions = abstract_shared actions in
   let old_ok = !ok_inter in
   ok_inter := false ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
@@ -805,8 +875,7 @@ and test_sequence konst arg cases actions =
   pcases stderr cases ;
   prerr_endline "" ;
 *)
-  let r = c_test konst {arg=arg ; off=0} s in
-  r
+  hs (c_test konst {arg=arg ; off=0} s)
 ;;
 
 end

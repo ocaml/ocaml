@@ -177,7 +177,7 @@ type lambda =
   | Lswitch of lambda * lambda_switch
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
-  | Lstringswitch of lambda * (string * lambda) list * lambda
+  | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -207,7 +207,9 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
-val same: lambda -> lambda -> bool
+(* Sharing key *)
+val make_key: lambda -> lambda option
+
 val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda

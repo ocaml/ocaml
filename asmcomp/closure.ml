@@ -19,6 +19,14 @@ open Lambda
 open Switch
 open Clambda
 
+module Storer =
+  Switch.Store
+    (struct
+      type t = lambda
+      type key = lambda
+      let make_key =  Lambda.make_key
+    end)
+
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -63,7 +71,7 @@ let occurs_var var u =
     | Ustringswitch(arg,sw,d) ->
         occurs arg ||
         List.exists (fun (_,e) -> occurs e) sw ||
-        occurs d
+        (match d with None -> false | Some d -> occurs d)
     | Ustaticfail (_, args) -> List.exists occurs args
     | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
@@ -198,7 +206,7 @@ let lambda_smaller lam threshold =
             size := !size+2 ;
             lambda_size lam)
           sw ;
-        lambda_size d
+        Misc.may lambda_size d
     | Ustaticfail (_,args) -> lambda_list_size args
     | Ucatch(_, _, body, handler) ->
         incr size; lambda_size body; lambda_size handler
@@ -432,7 +440,7 @@ let rec substitute sb ulam =
       Ustringswitch
         (substitute sb arg,
          List.map (fun (s,act) -> s,substitute sb act) sw,
-         substitute sb d)
+         Misc.may_map (substitute sb) d)
   | Ustaticfail (nfail, args) ->
       Ustaticfail (nfail, List.map (substitute sb) args)
   | Ucatch(nfail, ids, u1, u2) ->
@@ -779,18 +787,35 @@ let rec close fenv cenv = function
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args) Debuginfo.none
   | Lswitch(arg, sw) ->
+      let fn fail =
+        let (uarg, _) = close fenv cenv arg in
+        let const_index, const_actions, fconst =
+          close_switch arg fenv cenv sw.sw_consts sw.sw_numconsts fail
+        and block_index, block_actions, fblock =
+          close_switch arg fenv cenv sw.sw_blocks sw.sw_numblocks fail in
+        let ulam =
+          Uswitch
+            (uarg,
+             {us_index_consts = const_index;
+              us_actions_consts = const_actions;
+              us_index_blocks = block_index;
+              us_actions_blocks = block_actions})  in
+        (fconst (fblock ulam),Value_unknown) in
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
-      let (uarg, _) = close fenv cenv arg in
-      let const_index, const_actions =
-        close_switch fenv cenv sw.sw_consts sw.sw_numconsts sw.sw_failaction
-      and block_index, block_actions =
-        close_switch fenv cenv sw.sw_blocks sw.sw_numblocks sw.sw_failaction in
-      (Uswitch(uarg,
-               {us_index_consts = const_index;
-                us_actions_consts = const_actions;
-                us_index_blocks = block_index;
-                us_actions_blocks = block_actions}),
-       Value_unknown)
+      let fail = sw.sw_failaction in
+      begin match fail with
+      | None|Some (Lstaticraise (_,_)) -> fn fail
+      | Some lamfail ->
+          if
+            (sw.sw_numconsts - List.length sw.sw_consts) +
+            (sw.sw_numblocks - List.length sw.sw_blocks) > 1
+          then
+            let i = next_raise_count () in
+            let ubody,_ = fn (Some (Lstaticraise (i,[])))
+            and uhandler,_ = close fenv cenv lamfail in
+            Ucatch (i,[],ubody,uhandler),Value_unknown
+          else fn fail
+      end
   | Lstringswitch(arg,sw,d) ->
       let uarg,_ = close fenv cenv arg in
       let usw = 
@@ -799,7 +824,11 @@ let rec close fenv cenv = function
             let uact,_ = close fenv cenv act in
             s,uact)
           sw in
-      let ud,_ =  close fenv cenv d in
+      let ud =
+        Misc.may_map
+          (fun d ->
+            let ud,_ = close fenv cenv d in
+            ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
@@ -996,14 +1025,15 @@ and close_one_function fenv cenv id funct =
 
 (* Close a switch *)
 
-and close_switch fenv cenv cases num_keys default =
+and close_switch arg fenv cenv cases num_keys default =
+  let ncases = List.length cases in
   let index = Array.create num_keys 0
-  and store = mk_store (fun lam -> lam) Lambda.same in
+  and store = Storer.mk_store () in
 
   (* First default case *)
   begin match default with
-  | Some def when List.length cases < num_keys ->
-      ignore (store.act_store def)
+  | Some def when ncases < num_keys ->
+      assert (store.act_store def = 0)
   | _ -> ()
   end ;
   (* Then all other cases *)
@@ -1011,16 +1041,37 @@ and close_switch fenv cenv cases num_keys default =
     (fun (key,lam) ->
      index.(key) <- store.act_store lam)
     cases ;
-  (* Compile action *)
+
+  (*  Explicit sharing with catch/exit, as switcher compilation may
+      later unshare *)
+  let acts = store.act_get_shared () in
+  let hs = ref (fun e -> e) in 
+
+  (* Compile actions *)
   let actions =
     Array.map
-      (fun lam ->
-        let ulam,_ = close fenv cenv lam in
-        ulam)
-      (store.act_get ()) in
+      (function
+        | Single lam|Shared (Lstaticraise (_,[]) as lam) ->
+            let ulam,_ = close fenv cenv lam in
+            ulam
+        | Shared lam ->
+            let ulam,_ = close fenv cenv lam in
+            let i = next_raise_count () in
+(*
+            let string_of_lambda e =
+              Printlambda.lambda Format.str_formatter e ;
+              Format.flush_str_formatter () in
+            Printf.eprintf "SHARE CLOSURE %i [%s]\n%s\n" i
+                (string_of_lambda arg)
+                (string_of_lambda lam) ;
+*)
+            let ohs = !hs in
+            hs := (fun e -> Ucatch (i,[],ohs e,ulam)) ;
+            Ustaticfail (i,[]))      
+      acts in
   match actions with
-  | [| |] -> [| |], [| |] (* May happen when default is None *)
-  | _     -> index, actions
+  | [| |] -> [| |], [| |], !hs (* May happen when default is None *)
+  | _     -> index, actions, !hs
 
 
 (* Collect exported symbols for structured constants *)
@@ -1065,7 +1116,7 @@ let collect_exported_structured_constants a =
     | Ustringswitch (u,sw,d) ->
         ulam u ;
         List.iter (fun (_,act) -> ulam act) sw ;
-        ulam d
+        Misc.may ulam d
     | Ustaticfail (_, ul) -> List.iter ulam ul
     | Ucatch (_, _, u1, u2)
     | Utrywith (u1, _, u2)

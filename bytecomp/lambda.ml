@@ -166,7 +166,7 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
-  | Lstringswitch of lambda * (string * lambda) list * lambda
+  | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -201,65 +201,83 @@ let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
 
-let rec same l1 l2 =
-  match (l1, l2) with
-  | Lvar v1, Lvar v2 ->
-      Ident.same v1 v2
-  | Lconst (Const_base (Const_string _)), _ ->
-      false  (* do not share strings *)
-  | Lconst c1, Lconst c2 ->
-      c1 = c2
-  | Lapply(a1, bl1, _), Lapply(a2, bl2, _) ->
-      same a1 a2 && samelist same bl1 bl2
-  | Lfunction(k1, idl1, a1), Lfunction(k2, idl2, a2) ->
-      k1 = k2 && samelist Ident.same idl1 idl2 && same a1 a2
-  | Llet(k1, id1, a1, b1), Llet(k2, id2, a2, b2) ->
-      k1 = k2 && Ident.same id1 id2 && same a1 a2 && same b1 b2
-  | Lletrec (bl1, a1), Lletrec (bl2, a2) ->
-      samelist samebinding bl1 bl2 && same a1 a2
-  | Lprim(p1, al1), Lprim(p2, al2) ->
-      p1 = p2 && samelist same al1 al2
-  | Lswitch(a1, s1), Lswitch(a2, s2) ->
-      same a1 a2 && sameswitch s1 s2
-  | Lstaticraise(n1, al1), Lstaticraise(n2, al2) ->
-      n1 = n2 && samelist same al1 al2
-  | Lstaticcatch(a1, (n1, idl1), b1), Lstaticcatch(a2, (n2, idl2), b2) ->
-      same a1 a2 && n1 = n2 && samelist Ident.same idl1 idl2 && same b1 b2
-  | Ltrywith(a1, id1, b1), Ltrywith(a2, id2, b2) ->
-      same a1 a2 && Ident.same id1 id2 && same b1 b2
-  | Lifthenelse(a1, b1, c1), Lifthenelse(a2, b2, c2) ->
-      same a1 a2 && same b1 b2 && same c1 c2
-  | Lsequence(a1, b1), Lsequence(a2, b2) ->
-      same a1 a2 && same b1 b2
-  | Lwhile(a1, b1), Lwhile(a2, b2) ->
-      same a1 a2 && same b1 b2
-  | Lfor(id1, a1, b1, df1, c1), Lfor(id2, a2, b2, df2, c2) ->
-      Ident.same id1 id2 &&  same a1 a2 &&
-      same b1 b2 && df1 = df2 && same c1 c2
-  | Lassign(id1, a1), Lassign(id2, a2) ->
-      Ident.same id1 id2 && same a1 a2
-  | Lsend(k1, a1, b1, cl1, _), Lsend(k2, a2, b2, cl2, _) ->
-      k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
-  | Levent(a1, ev1), Levent(a2, ev2) ->
-      same a1 a2 && ev1.lev_loc = ev2.lev_loc
-  | Lifused(id1, a1), Lifused(id2, a2) ->
-      Ident.same id1 id2 && same a1 a2
-  | _, _ ->
-      false
+exception Not_simple
 
-and samebinding (id1, c1) (id2, c2) =
-  Ident.same id1 id2 && same c1 c2
+let max_raw = 32 
 
-and sameswitch sw1 sw2 =
-  let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
-  sw1.sw_numconsts = sw2.sw_numconsts &&
-  sw1.sw_numblocks = sw2.sw_numblocks &&
-  samelist samecase sw1.sw_consts sw2.sw_consts &&
-  samelist samecase sw1.sw_blocks sw2.sw_blocks &&
-  (match (sw1.sw_failaction, sw2.sw_failaction) with
-    | (None, None) -> true
-    | (Some a1, Some a2) -> same a1 a2
-    | _ -> false)
+let make_key e =
+  let count = ref 0
+  and make_key = Ident.make_key_generator () in
+  let rec tr_rec env e =
+    incr count ;
+    if !count > max_raw then raise Not_simple ;
+    match e with
+    | Lvar id ->
+      begin
+        try Ident.find_same id env
+        with Not_found -> e
+      end
+    | Lconst  (Const_base (Const_string _)|Const_float_array _) ->
+        (* Mutable constants are not shared *)
+        raise Not_simple
+    | Lconst _ -> e
+    | Lapply (e,es,loc) ->
+        Lapply (tr_rec env e,tr_recs env es,Location.none)
+    | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
+        let ex = tr_rec env ex in
+        tr_rec (Ident.add x ex env) e
+    | Llet (str,x,ex,e) ->
+     (* Because of side effects, keep other lets with normalized names *)
+        let ex = tr_rec env ex in
+        let y = make_key x in
+        Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
+    | Lprim (p,es) ->
+        Lprim (p,tr_recs env es)
+    | Lswitch (e,sw) ->
+        Lswitch (tr_rec env e,tr_sw env sw)
+    | Lstringswitch (e,sw,d) ->
+        Lstringswitch
+          (tr_rec env e,
+           List.map (fun (s,e) -> s,tr_rec env e) sw,
+           tr_opt env d)
+    | Lstaticraise (i,es) ->
+        Lstaticraise (i,tr_recs env es)
+    | Lstaticcatch (e1,xs,e2) ->
+        Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
+    | Ltrywith (e1,x,e2) ->
+        Ltrywith (tr_rec env e1,x,tr_rec env e2)
+    | Lifthenelse (cond,ifso,ifnot) ->
+        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot) 
+    | Lsequence (e1,e2) ->
+        Lsequence (tr_rec env e1,tr_rec env e2)
+    | Lassign (x,e) ->
+        Lassign (x,tr_rec env e)
+    | Lsend (m,e1,e2,es,loc) ->
+        Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
+    | Levent (e,evt) ->
+        Levent (tr_rec env e,evt)
+    | Lifused (id,e) -> Lifused (id,tr_rec env e)
+    | Lletrec _|Lfunction _
+    | Lfor _ | Lwhile _  -> 
+        raise Not_simple
+
+  and tr_recs env es = List.map (tr_rec env) es
+
+  and tr_sw env sw =
+    { sw with
+      sw_consts = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_consts ;
+      sw_blocks = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_blocks ;
+      sw_failaction = tr_opt env sw.sw_failaction ; }
+
+  and tr_opt env = function
+    | None -> None
+    | Some e -> Some (tr_rec env e) in
+
+  try
+    Some (tr_rec Ident.empty e)
+  with Not_simple -> None
+
+(***************)
 
 let name_lambda strict arg fn =
   match arg with
@@ -275,6 +293,11 @@ let name_lambda_list args fn =
       let id = Ident.create "let" in
       Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
+
+
+let iter_opt f = function
+  | None -> ()
+  | Some e -> f e
 
 let iter f = function
     Lvar _
@@ -294,14 +317,11 @@ let iter f = function
       f arg;
       List.iter (fun (key, case) -> f case) sw.sw_consts;
       List.iter (fun (key, case) -> f case) sw.sw_blocks;
-      begin match sw.sw_failaction with
-      | None -> ()
-      | Some l -> f l
-      end
+      iter_opt f sw.sw_failaction 
   | Lstringswitch (arg,cases,default) ->
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
-      f default
+      iter_opt f default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, (_,vars), e2) ->
@@ -324,6 +344,7 @@ let iter f = function
       f lam
   | Lifused (v, e) ->
       f e
+
 
 module IdentSet =
   Set.Make(struct
@@ -431,13 +452,10 @@ let subst_lambda s lam =
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction =
-                         match sw.sw_failaction with
-                         | None -> None
-                         | Some l -> Some (subst l)})
+                       sw_failaction = subst_opt  sw.sw_failaction; })
   | Lstringswitch (arg,cases,default) ->
       Lstringswitch
-        (subst arg,List.map subst_strcase cases,subst default)
+        (subst arg,List.map subst_strcase cases,subst_opt default)
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
@@ -453,6 +471,9 @@ let subst_lambda s lam =
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)
+  and subst_opt = function
+    | None -> None
+    | Some e -> Some (subst e)
   in subst lam
 
 
