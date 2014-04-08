@@ -16,9 +16,10 @@
 
 
 #include "misc.h"
+#include "domain.h"
 
-CAMLextern char *caml_young_start, *caml_young_ptr;
-CAMLextern char *caml_young_end, *caml_young_limit;
+CAMLextern char *caml_young_ptr;
+CAMLextern char *caml_young_end, *caml_young_start;
 extern asize_t caml_minor_heap_size;
 extern int caml_in_minor_collection;
 

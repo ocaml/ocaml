@@ -1,12 +1,16 @@
+#include <stdlib.h>
+
 #include "mlvalues.h"
 #include "memory.h"
 #include "fail.h"
 #include "shared_heap.h"
 #include "memory.h"
 #include "roots.h"
+#include "domain.h"
 
 intnat caml_major_collection_slice (intnat work) {
-  caml_finish_major_cycle();
+  if ((rand() % 10) < 2)  caml_trigger_stw_gc();
+  /* caml_finish_major_cycle(); */
   return 100;
 }
 
@@ -83,11 +87,9 @@ static void mark_root(value p, value* ptr) {
   }
 }
 
-void caml_finish_major_cycle () {
-  while (caml_sweep(42) <= 0);
+void caml_finish_marking () {
   caml_do_roots(&mark_root);
   int i;
   for (i = 0 ; i < 256; i ++) caml_mark_object(caml_atom(i));
-  caml_cycle_heap();
 }
 

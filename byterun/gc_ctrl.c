@@ -26,6 +26,7 @@
 #else
 #include "stacks.h"
 #endif
+#include "domain.h"
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -431,7 +432,7 @@ CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
   caml_gc_message (0x1, "Major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
-  caml_finish_major_cycle ();
+  caml_trigger_stw_gc ();
   /* !! caml_final_do_calls (); */
   return Val_unit;
 }
@@ -469,7 +470,8 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
-  caml_init_shared_heap();
+  
+  caml_domain_register_main();
   caml_init_major_gc();
 /*
   caml_major_heap_increment = major_incr;
