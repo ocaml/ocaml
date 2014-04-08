@@ -14,7 +14,8 @@ BASEDIR=../..
 EXECNAME=program$(EXE)
 
 ABCDFILES=backtrace.ml
-OTHERFILES=backtrace2.ml raw_backtrace.ml
+OTHERFILES=backtrace2.ml raw_backtrace.ml \
+           backtrace_deprecated.ml backtrace_slots.ml
 
 default:
 	$(MAKE) byte
