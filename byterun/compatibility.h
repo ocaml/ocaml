@@ -226,15 +226,6 @@
 
 /* **** meta.c */
 
-/* **** minor_gc.c */
-#define young_start caml_young_start
-#define young_end caml_young_end
-#define young_ptr caml_young_ptr
-#define young_limit caml_young_limit
-#define ref_table caml_ref_table
-#define minor_collection caml_minor_collection
-#define check_urgent_gc caml_check_urgent_gc
-
 /* **** misc.c */
 
 /* **** obj.c */

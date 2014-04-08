@@ -29,7 +29,7 @@
 asize_t caml_minor_heap_size;
 static void *caml_young_base = NULL;
 CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
-CAMLexport char *caml_young_ptr = NULL, *caml_young_limit = NULL;
+CAMLexport char *caml_young_ptr = NULL;
 
 CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
@@ -91,7 +91,7 @@ void caml_set_minor_heap_size (asize_t size)
   caml_young_base = new_heap_base;
   caml_young_start = new_heap;
   caml_young_end = new_heap + size;
-  caml_young_limit = caml_young_start;
+  caml_update_young_limit((uintnat)caml_young_start);
   caml_young_ptr = caml_young_end;
   caml_minor_heap_size = size;
 
@@ -248,7 +248,7 @@ void caml_empty_minor_heap (void)
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
     caml_young_ptr = caml_young_end;
-    caml_young_limit = caml_young_start;
+    caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
     caml_gc_message (0x02, ">", 0);
@@ -280,7 +280,7 @@ CAMLexport void caml_minor_collection (void)
   ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
   caml_force_major_slice = 0;
-
+  
   /* !! caml_final_do_calls (); */
 
   caml_empty_minor_heap ();

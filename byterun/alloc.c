@@ -23,6 +23,7 @@
 #include "memory.h"
 #include "mlvalues.h"
 #include "stacks.h"
+#include "domain.h"
 
 #define Setup_for_gc
 #define Restore_after_gc
