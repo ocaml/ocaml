@@ -123,6 +123,18 @@ type backtrace_slot =
 *)
 val convert_raw_backtrace_slot: raw_backtrace_slot -> backtrace_slot
 
+(** [format_backtrace_slot pos slot] returns the string
+    representation of the backtrace slot [slot] as
+    [raw_backtrace_to_string] would format it, assuming it is the
+    [pos]-th element of the backtrace: the 0-th element is
+    pretty-printed differently than the other.
+
+    Note that Printexc's printing function will skip any slot equal to
+    [Unknown_location true]; you should as well if you wish to
+    reproduce its behavior.
+*)
+val format_backtrace_slot : int -> backtrace_slot -> string
+
 (** {6 Current call stack} *)
 
 val get_callstack: int -> raw_backtrace

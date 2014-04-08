@@ -106,7 +106,7 @@ let convert_raw_backtrace rbckt =
   try Some (Array.map convert_raw_backtrace_slot rbckt)
   with Failure _ -> None
 
-let format_loc_info pos li =
+let format_backtrace_slot pos li =
   let is_raise =
     match li with
     | Known_location(is_raise, _, _, _, _) -> is_raise
@@ -133,7 +133,7 @@ let print_exception_backtrace outchan backtrace =
   | Some a ->
       for i = 0 to Array.length a - 1 do
         if a.(i) <> Unknown_location true then
-          fprintf outchan "%s\n" (format_loc_info i a.(i))
+          fprintf outchan "%s\n" (format_backtrace_slot i a.(i))
       done
 
 let print_raw_backtrace outchan raw_backtrace =
@@ -151,7 +151,7 @@ let backtrace_to_string backtrace =
       let b = Buffer.create 1024 in
       for i = 0 to Array.length a - 1 do
         if a.(i) <> Unknown_location true then
-          bprintf b "%s\n" (format_loc_info i a.(i))
+          bprintf b "%s\n" (format_backtrace_slot i a.(i))
       done;
       Buffer.contents b
 
