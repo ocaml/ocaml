@@ -64,9 +64,9 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-        let existentials =
+        let arg_vars, existentials =
           match cd_res with
-          | None -> []
+          | None -> decl.type_params, []
           | Some type_ret ->
               let res_vars = free_vars type_ret in
               let tyl =
@@ -78,6 +78,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                 and thus they are not considered as free, which is
                 what we want. *)
               let arg_vars = free_vars (newgenty (Ttuple tyl)) in
+              TypeSet.elements arg_vars,
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
         in
         let cstr_args, cstr_inlined =
@@ -119,19 +120,19 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
               in
               let tdecl =
                 {
-                  type_params = decl.type_params @ existentials;
+                  type_params = arg_vars;
                   type_arity = decl.type_arity;
                   type_kind = Type_record (lbls, Record_inlined idx_nonconst);
                   type_private = Public;
                   type_manifest;
-                  type_variance = decl.type_variance @ List.map (fun _ -> Variance.full) existentials;
+                  type_variance = List.map (fun _ -> Variance.full) arg_vars;
                   type_newtype_level = None;
                   type_loc = Location.none;
                   type_attributes = [];
                 }
               in
               tdecls := (id, path, tdecl) :: !tdecls;
-              [ newgenconstr path (decl.type_params @ existentials) ],
+              [ newgenconstr path arg_vars ],
               true
         in
         let cstr =

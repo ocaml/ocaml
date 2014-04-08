@@ -4,4 +4,6 @@
 #               module A : sig type t = A of { x : int; } val f : t -> t.A end
 #   module type S = sig type t = A of { x : int; } val f : t -> t.A end
 # module N : sig type t = M.t = A of { x : int; } val f : t -> t.A end
-#     * * * * * * * * * * * * * * * * * *   
+#     type 'a t = A : { x : 'a; y : 'b; } -> 'a t
+# val f : ('a, 'b) t.A -> 'a t = <fun>
+#   * * * * * * * * * * * * * * * * * *   

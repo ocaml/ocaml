@@ -16,6 +16,9 @@ module type S = sig type t = A of {x:int}  val f: t -> t.A end;;
 module N : S with type t = M.t = M;;
 
 
+type 'a t = A: {x : 'a; y : 'b} -> 'a t;;
+let f r = A r;;
+
 (*
 module M = struct
   type 'a t =
