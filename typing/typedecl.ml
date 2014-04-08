@@ -1070,9 +1070,9 @@ let intrin_args ty =
   let rec get_types acc ty =
     match ty.desc with
     | Tarrow(_, t1, t2, _) -> let acc = get_types acc t1 in get_types acc t2
-    | Tconstr(Path.Pident id, exprs, _) ->
+    | Tconstr(path, exprs, _) ->
         let exprs = List.concat (List.map (get_types []) exprs) in
-        (id.Ident.name :: List.concat exprs) :: acc
+        (List.rev (Path.name path :: List.concat exprs)) :: acc
     | _ ->
       raise(Intrin.Intrin_error (Format.asprintf
         "Unsupported intrinsic parameter %a" Printtyp.type_expr ty))
@@ -1087,7 +1087,7 @@ let intrin_args ty =
                     "Array intrin parameters must be followed by int"))
         in
         match k with
-        | ["array"; "float"] -> `Array_float, array_index l
+        | ["float"; "array"] -> `Array_float, array_index l
         | ["m128d_array"]
         | ["m128i_array"]    -> `Array_m128, array_index l
         | ["m256d_array"]
@@ -1100,8 +1100,7 @@ let intrin_args ty =
         | ["m256d"]
         | ["m256i"]          -> `M256, l
         | ["unit"]           -> `Unit, l
-        | _ -> raise(Intrin.Intrin_error (Format.asprintf
-                 "Unsupported intrinsic type %s" (String.concat " " k)))
+        | _                  -> `Int, l (* we'll treat everything else as pointer *)
       in
       intrin_types (kind :: acc) l
   in
