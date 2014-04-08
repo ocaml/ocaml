@@ -102,7 +102,7 @@ Compilers:
 - GPR#270: Make [transl_exception_constructor] generate [Immutable] blocks
   (Mark Shinwell)
 - GPR#275: native-code generator for IBM z System running Linux.
-  In memoriam Gene Amdahl, 1922-2015. 
+  In memoriam Gene Amdahl, 1922-2015.
   (Bill O'Farrell, Tristan Amini, Xavier Leroy)
 - GPR#282: relax short-paths safety check in presence of module aliases, take
   penalty into account while building the printing map.
@@ -319,6 +319,8 @@ Bug fixes:
   (Marc Lasson, review by Alain Frisch)
 
 Features wishes:
+- PR#4518, GPR#29: change location format for reporting errors in ocamldoc
+  (Sergei Lebedev)
 - PR#4714: List.cons
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#6167: OCAMLPARAM support for disabling PIC generation ("pic=0")

@@ -233,6 +233,9 @@ let help = " Display this list of options"
 
 let warning = "Warning"
 
+let error_location file l c =
+  Printf.sprintf "File \"%s\", line %d, character %d:\n" file l c
+
 let bad_magic_number =
   "Bad magic number for this ocamldoc dump!\n"^
   "This dump was not created by this version of OCamldoc."
@@ -244,10 +247,7 @@ let errors_occured n = (string_of_int n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
-  "Syntax error in text:\n"^s^"\n"^
-  "line "^(string_of_int l)^", character "^(string_of_int c)^":\n"^
-  (List.nth lines l)^"\n"^
-  (String.make c ' ')^"^"
+  (List.nth lines l) ^ "\n" ^ (String.make c ' ') ^ "^"
 
 let file_not_found_in_paths paths name =
   Printf.sprintf "No file %s found in the load paths: \n%s"
