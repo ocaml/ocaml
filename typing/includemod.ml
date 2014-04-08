@@ -303,8 +303,24 @@ and signatures env cxt subst sig1 sig2 =
           let (id1, item1, pos1) = Tbl.find name2 comps1 in
           let new_subst =
             match item2 with
-              Sig_type _ ->
-                Subst.add_type id2 (Pident id1) subst
+              Sig_type (id2', decl2, _) ->
+                let subst = Subst.add_type id2 (Pident id1) subst in
+                begin match item1 with
+                | Sig_type (id1', decl1, _) ->
+                    let ids1 = Subst.sub_ids decl1 in
+                    let ids2 = Subst.sub_ids decl2 in
+                    if List.length ids1 = List.length ids2 then
+                      List.fold_left2
+                        (fun sub id1 id2 ->
+                           if Ident.name id1 = Ident.name id2 then
+                             Subst.add_type id2 (Pident id1) sub
+                           else
+                             sub
+                        ) subst ids1 ids2
+                    else
+                      subst
+                | _ -> assert false
+                end
             | Sig_module _ ->
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->

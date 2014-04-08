@@ -55,3 +55,6 @@ val module_declaration: t -> module_declaration -> module_declaration
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 val compose: t -> t -> t
+
+
+val sub_ids: type_declaration -> Ident.t list

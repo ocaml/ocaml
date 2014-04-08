@@ -1,8 +1,7 @@
 
-#             module M :
-  sig
-    type 'a t = A of { x : 'a; } | B : { u : 'b; } -> unit t
-    exception Foo of { x : int; }
-  end
-#                   module N : sig exception Foo of { x : int; } end
-# 
+#       module M : sig type t = A of { x : int; } val f : t -> t.A end
+# - : M.t -> M.t.A = <fun>
+#               module A : sig type t = A of { x : int; } val f : t -> t.A end
+#   module type S = sig type t = A of { x : int; } val f : t -> t.A end
+# module N : sig type t = M.t = A of { x : int; } val f : t -> t.A end
+#     * * * * * * * * * * * * * * * * * *   

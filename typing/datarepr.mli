@@ -17,8 +17,8 @@ open Asttypes
 open Types
 
 val constructor_descrs:
-  (string -> Ident.t option) ->
-  Path.t -> type_declaration -> constructor_declaration list ->
+  Path.t -> type_declaration -> type_declaration option ->
+  constructor_declaration list ->
   (Ident.t * constructor_description) list *
   (Ident.t * Path.t * type_declaration) list
 

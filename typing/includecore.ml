@@ -185,11 +185,9 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
                          (ty2::decl2.type_params))
                     (arg1) (arg2)
                 then [] else [Field_type cstr1]
-            | Cstr_record l1, Cstr_record l2 ->
-                let r = compare_records env decl1 decl2 0 l1 l2 in
-                if r <> [] then Field_type cstr1 :: r else r
-            | _ ->
-                [Field_type cstr1]
+            | Cstr_record (_, l1), Cstr_record (_, l2) ->
+                compare_records env decl1 decl2 0 l1 l2
+            | _ -> assert false (* TODO *)
           in
           if r <> [] then r
           else compare_variants env decl1 decl2 (n+1) rem1 rem2

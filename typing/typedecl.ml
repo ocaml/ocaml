@@ -239,7 +239,8 @@ let transl_declaration ?exnid env sdecl id =
                 Cstr_tuple l
             | Pcstr_record l ->
                 let lbls, lbls' = transl_labels env closed l in
-                Types.Cstr_record lbls',
+                let id = Ident.create (Ident.name id ^ "." ^ lid.txt) in
+                Types.Cstr_record (id, lbls'),
                 Cstr_record lbls
           in
           match ret_type with
@@ -416,9 +417,9 @@ let check_constraints env sdecl (_, decl) =
                 (fun sty ty ->
                    check_constraints_rec env sty.ptyp_loc visited ty)
                 styl tyl
-          | Cstr_record tyl, Pcstr_record styl ->
+          | Cstr_record (_, tyl), Pcstr_record styl ->
               check_constraints_labels env visited tyl styl
-          | _ -> assert false
+          | _ -> assert false (* todo *)
           end;
           match sret_type, ret_type with
           | Some sr, Some r ->
@@ -759,7 +760,7 @@ let constrained env vars ty =
 
 let for_constr = function
   | Types.Cstr_tuple l -> add_false l
-  | Types.Cstr_record l ->
+  | Types.Cstr_record (_, l) ->
       List.map
         (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
         l

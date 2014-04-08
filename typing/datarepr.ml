@@ -39,8 +39,10 @@ let free_vars ty =
   unmark_type ty;
   !ret
 
-let constructor_descrs resolv ty_path decl cstrs =
-  let ty_res = newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)) in
+let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
+
+let constructor_descrs ty_path decl manifest_decl cstrs =
+  let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
     (fun {cd_args; cd_res; _} ->
@@ -70,7 +72,7 @@ let constructor_descrs resolv ty_path decl cstrs =
               let tyl =
                 match cd_args with
                 | Cstr_tuple l -> l
-                | Cstr_record l -> List.map (fun l -> l.ld_type) l
+                | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
               in
               (* TODO: handle Tpoly *)
               let arg_vars = free_vars (newgenty (Ttuple tyl)) in
@@ -79,9 +81,8 @@ let constructor_descrs resolv ty_path decl cstrs =
         let cstr_args, cstr_inlined =
           match cd_args with
           | Cstr_tuple l -> l, false
-          | Cstr_record lbls ->
+          | Cstr_record (id, lbls) ->
               let name = Path.last ty_path ^ "." ^ Ident.name cd_id in
-              let id = Ident.create name in
               let path =
                 match ty_path with
                 | Path.Pdot(m, _, _) -> Path.Pdot(m, name, Path.nopos)
@@ -91,12 +92,26 @@ let constructor_descrs resolv ty_path decl cstrs =
               let type_manifest =
                 match decl.type_manifest with
                 | Some {desc = Tconstr(Path.Pdot (m, name, _), args, _)} ->
-                    let p = Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos) in
-                    Some (newgenty (Tconstr (p, args, ref Mnil)))
-                | Some {desc = Tconstr(Path.Pident id, args, _)} ->
-                    begin match resolv (Ident.name id ^ "." ^ Ident.name cd_id) with
-                    | None -> None
-                    | Some id -> Some (newgenty (Tconstr (Path.Pident id, args, ref Mnil)))
+                    let p =
+                      Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos)
+                    in
+                    Some (newgenconstr p args)
+                | Some {desc = Tconstr(Path.Pident _, args, _)} ->
+                    begin match manifest_decl with
+                    | Some {type_kind = Type_variant cstrs} ->
+                        let c =
+                          try
+                            List.find
+                              (fun c -> Ident.name c.cd_id = Ident.name cd_id)
+                              cstrs
+                          with Not_found -> assert false
+                        in
+                        begin match c.cd_args with
+                        | Cstr_record (id, _) ->
+                            Some (newgenconstr (Path.Pident id) args)
+                        | _ -> assert false
+                        end
+                    | _ -> None
                     end
                 | _ -> None
               in

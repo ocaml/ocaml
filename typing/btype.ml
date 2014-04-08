@@ -259,7 +259,7 @@ let iter_type_expr_kind f = function
         (fun cd ->
            begin match cd.cd_args with
            | Cstr_tuple tl -> List.iter f tl
-           | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
+           | Cstr_record (_, lbls) -> List.iter (fun d -> f d.ld_type) lbls
            end;
            Misc.may f cd.cd_res
         )

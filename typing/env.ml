@@ -1036,15 +1036,15 @@ let scrape_alias env mty = scrape_alias env mty
 let constructors_of_type env ty_path decl =
   match decl.type_kind with
   | Type_variant cstrs ->
-      let resolv s =
-        try
-          let (p, _) = lookup_type (Longident.Lident s) env in
-          match p with
-          | Pident id -> Some id
-          | _ -> None
-        with Not_found -> None
+      let manifest_decl =
+        match decl.type_manifest with
+        | Some {desc = Tconstr((Path.Pident id) as p, _, _)} ->
+            begin try Some (find_type p env)
+            with Not_found -> None
+            end
+        | _ -> None
       in
-      Datarepr.constructor_descrs resolv ty_path decl cstrs
+      Datarepr.constructor_descrs ty_path decl manifest_decl cstrs
   | Type_record _ | Type_abstract -> [], []
 
 (* Compute label descriptions *)
@@ -1085,6 +1085,13 @@ let rec prefix_idents root pos sub = function
          to a constructor declaration with a record argument
          (the exception comes immediately after the synthesized type
          declaration). *)
+      let sub =
+        List.fold_left
+          (fun sub id ->
+             Subst.add_type id (Pdot(root, Ident.name id, pos)) sub
+          )
+          sub (Subst.sub_ids decl)
+      in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)

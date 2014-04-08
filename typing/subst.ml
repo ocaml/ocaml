@@ -208,8 +208,8 @@ let type_declaration s decl =
                       match c.cd_args with
                       | Cstr_tuple l ->
                           Cstr_tuple (List.map (typexp s) l)
-                      | Cstr_record l ->
-                          Cstr_record (List.map (label_declaration s) l)
+                      | Cstr_record (id, l) ->
+                          Cstr_record (id, List.map (label_declaration s) l)
                     in
                     {
                       cd_id = c.cd_id;
@@ -346,6 +346,7 @@ let rec modtype s = function
       Mty_alias(module_path s p)
 
 and signature s sg =
+  (* TODO: rename the Ident.t in Cstr_record *)
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
@@ -398,3 +399,16 @@ let compose s1 s2 =
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = false }
+
+
+let sub_ids decl =
+  match decl.type_kind with
+  | Type_variant cstrs ->
+      List.fold_left
+        (fun l c ->
+           match c.cd_args with
+           | Cstr_record (id, _) -> id :: l
+           | _ -> l
+        )
+        [] cstrs
+  | _ -> []

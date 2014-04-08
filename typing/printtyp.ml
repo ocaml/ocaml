@@ -785,7 +785,7 @@ let rec tree_of_type_decl id decl =
         (fun cd ->
            match cd.cd_args with
            | Cstr_tuple l -> List.iter mark_loops l
-           | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+           | Cstr_record (_, l) -> List.iter (fun l -> mark_loops l.ld_type) l
         )
         cstrs
   | Type_record(l, rep) ->
@@ -848,7 +848,7 @@ and tree_of_constructor cd =
   let arg () =
     match cd.cd_args with
     | Cstr_tuple l -> tree_of_typlist false l
-    | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+    | Cstr_record (_, l) -> [ Otyp_record (List.map tree_of_label l) ]
   in
   match cd.cd_res with
   | None -> (name, arg (), None)
