@@ -74,7 +74,9 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                 | Cstr_tuple l -> l
                 | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
               in
-              (* TODO: handle Tpoly *)
+              (* Note: variables bound by Tpoly are Tvar, not Tunivar,
+                and thus they are not considered as free, which is
+                what we want. *)
               let arg_vars = free_vars (newgenty (Ttuple tyl)) in
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
         in
