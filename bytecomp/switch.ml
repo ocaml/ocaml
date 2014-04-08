@@ -101,6 +101,7 @@ module type S =
    type act
 
    val bind : act -> (act -> act) -> act
+   val make_const : int -> act
    val make_offset : act -> int -> act
    val make_prim : primitive -> act list -> act
    val make_isout : act -> act -> act
@@ -541,72 +542,72 @@ and enum top cases =
   end ;
   !r, !rc
 
-    let make_if_test konst test arg i ifso ifnot =
+    let make_if_test test arg i ifso ifnot =
       Arg.make_if
-        (Arg.make_prim test [arg ; konst i])
+        (Arg.make_prim test [arg ; Arg.make_const i])
         ifso ifnot
 
-    let make_if_lt konst arg i  ifso ifnot = match i with
+    let make_if_lt arg i  ifso ifnot = match i with
     | 1 ->
-        make_if_test konst Arg.leint arg 0 ifso ifnot
+        make_if_test Arg.leint arg 0 ifso ifnot
     | _ ->
-        make_if_test konst Arg.ltint arg i ifso ifnot
+        make_if_test Arg.ltint arg i ifso ifnot
 
-    and make_if_le konst arg i ifso ifnot = match i with
+    and make_if_le arg i ifso ifnot = match i with
     | -1 ->
-        make_if_test konst Arg.ltint arg 0 ifso ifnot
+        make_if_test Arg.ltint arg 0 ifso ifnot
     | _ ->
-        make_if_test konst Arg.leint arg i ifso ifnot
+        make_if_test Arg.leint arg i ifso ifnot
 
-    and make_if_gt konst arg i  ifso ifnot = match i with
+    and make_if_gt arg i  ifso ifnot = match i with
     | -1 ->
-        make_if_test konst Arg.geint arg 0 ifso ifnot
+        make_if_test Arg.geint arg 0 ifso ifnot
     | _ ->
-        make_if_test konst Arg.gtint arg i ifso ifnot
+        make_if_test Arg.gtint arg i ifso ifnot
 
-    and make_if_ge konst arg i  ifso ifnot = match i with
+    and make_if_ge arg i  ifso ifnot = match i with
     | 1 ->
-        make_if_test konst Arg.gtint arg 0 ifso ifnot
+        make_if_test Arg.gtint arg 0 ifso ifnot
     | _ ->
-        make_if_test konst Arg.geint arg i ifso ifnot
+        make_if_test Arg.geint arg i ifso ifnot
 
-    and make_if_eq  konst arg i ifso ifnot =
-      make_if_test konst Arg.eqint arg i ifso ifnot
+    and make_if_eq  arg i ifso ifnot =
+      make_if_test Arg.eqint arg i ifso ifnot
 
-    and make_if_ne  konst arg i ifso ifnot =
-      make_if_test konst Arg.neint arg i ifso ifnot
+    and make_if_ne  arg i ifso ifnot =
+      make_if_test Arg.neint arg i ifso ifnot
 
     let do_make_if_out h arg ifso ifno =
       Arg.make_if (Arg.make_isout h arg) ifso ifno
 
-    let make_if_out konst ctx l d mk_ifso mk_ifno = match l with
+    let make_if_out ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_out
-          (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
+          (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
         Arg.bind
           (Arg.make_offset ctx.arg (-l))
           (fun arg ->
             let ctx = {off= (-l+ctx.off) ; arg=arg} in
             do_make_if_out
-              (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
+              (Arg.make_const d) arg (mk_ifso ctx) (mk_ifno ctx))
 
     let do_make_if_in h arg ifso ifno =
       Arg.make_if (Arg.make_isin h arg) ifso ifno
 
-    let make_if_in konst ctx l d mk_ifso mk_ifno = match l with
+    let make_if_in ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_in
-          (konst d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
+          (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
         Arg.bind
           (Arg.make_offset ctx.arg (-l))
           (fun arg ->
             let ctx = {off= (-l+ctx.off) ; arg=arg} in
             do_make_if_in
-              (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
+              (Arg.make_const d) arg (mk_ifso ctx) (mk_ifno ctx))
 
-    let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
+    let rec c_test ctx ({cases=cases ; actions=actions} as s) =
       let lcases = Array.length cases in
       assert(lcases > 0) ;
       if lcases = 1 then
@@ -631,31 +632,31 @@ and enum top cases =
         if low=high then begin
           if less_tests coutside cinside then
             make_if_eq
-              konst ctx.arg
+              ctx.arg
               (low+ctx.off)
-              (c_test konst ctx {s with cases=inside})
-              (c_test konst ctx {s with cases=outside})
+              (c_test ctx {s with cases=inside})
+              (c_test ctx {s with cases=outside})
           else
             make_if_ne
-              konst ctx.arg
+              ctx.arg
               (low+ctx.off)
-              (c_test konst ctx {s with cases=outside})
-              (c_test konst ctx {s with cases=inside})
+              (c_test ctx {s with cases=outside})
+              (c_test ctx {s with cases=inside})
         end else begin
           if less_tests coutside cinside then
             make_if_in
-              konst ctx
+              ctx
               (low+ctx.off)
               (high-low)
-              (fun ctx -> c_test konst ctx {s with cases=inside})
-              (fun ctx -> c_test konst ctx {s with cases=outside})
+              (fun ctx -> c_test ctx {s with cases=inside})
+              (fun ctx -> c_test ctx {s with cases=outside})
           else
             make_if_out
-              konst ctx
+              ctx
               (low+ctx.off)
               (high-low)
-              (fun ctx -> c_test konst ctx {s with cases=outside})
-              (fun ctx -> c_test konst ctx {s with cases=inside})
+              (fun ctx -> c_test ctx {s with cases=outside})
+              (fun ctx -> c_test ctx {s with cases=inside})
         end
     | Sep i ->
         let lim,left,right = coupe cases i in
@@ -665,17 +666,17 @@ and enum top cases =
         and right = {s with cases=right} in
 
         if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
-          make_if_ne konst
+          make_if_ne
             ctx.arg 0
-            (c_test konst ctx right) (c_test konst ctx left)
+            (c_test ctx right) (c_test ctx left)
         else if less_tests cright cleft then
-          make_if_lt konst
+          make_if_lt
             ctx.arg (lim+ctx.off)
-            (c_test konst ctx left) (c_test konst ctx right)
+            (c_test ctx left) (c_test ctx right)
         else
-          make_if_ge konst
+          make_if_ge
              ctx.arg (lim+ctx.off)
-            (c_test konst ctx right) (c_test konst ctx left)
+            (c_test ctx right) (c_test ctx left)
 
   end
 
@@ -826,7 +827,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
 ;;
 
 
-let do_zyva (low,high) konst arg cases actions =
+let do_zyva (low,high) arg cases actions =
   let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
@@ -839,7 +840,7 @@ let do_zyva (low,high) konst arg cases actions =
 *)
   let n_clusters,k = comp_clusters s in
   let clusters = make_clusters s n_clusters k in
-  let r = c_test konst {arg=arg ; off=0} clusters in
+  let r = c_test {arg=arg ; off=0} clusters in
   r
 
 let abstract_shared actions =
@@ -856,12 +857,12 @@ let abstract_shared actions =
       actions in
   !handlers,actions
 
-let zyva lh konst arg cases actions =
+let zyva lh arg cases actions =
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
-  hs (do_zyva lh  konst arg cases actions)
+  hs (do_zyva lh arg cases actions)
 
-and test_sequence konst arg cases actions =
+and test_sequence arg cases actions =
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   let old_ok = !ok_inter in
@@ -875,7 +876,7 @@ and test_sequence konst arg cases actions =
   pcases stderr cases ;
   prerr_endline "" ;
 *)
-  hs (c_test konst {arg=arg ; off=0} s)
+  hs (c_test {arg=arg ; off=0} s)
 ;;
 
 end

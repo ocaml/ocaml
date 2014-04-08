@@ -65,6 +65,7 @@ module type S =
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
     val bind : act -> (act -> act) -> act
+    val make_const : int -> act
     val make_offset : act -> int -> act
     val make_prim : primitive -> act list -> act
     val make_isout : act -> act -> act
@@ -83,8 +84,7 @@ module type S =
 
 
 (*
-  Make.zyva mk_const arg low high cases actions where
-    - mk_const takes an integer sends a constant action.
+  Make.zyva arg low high cases actions where
     - arg is the argument of the switch.
     - low, high are the interval limits.
     - cases is a list of sub-interval and action indices
@@ -99,7 +99,6 @@ module Make :
 (* Standard entry point, sharing is tracked *)
       val zyva :
           (int * int) ->
-          (int -> Arg.act) ->
            Arg.act ->
            (int * int * int) array ->
            Arg.act t_store ->
@@ -107,7 +106,6 @@ module Make :
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
-          (int -> Arg.act) ->
            Arg.act ->
            (int * int * int) array ->
            Arg.act t_store ->

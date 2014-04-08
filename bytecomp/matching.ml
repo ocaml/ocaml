@@ -1943,6 +1943,7 @@ module SArg = struct
   let make_offset arg n = match n with
   | 0 -> arg
   | _ -> Lprim (Poffsetint n,[arg])
+
   let bind arg body =
     let newvar,newarg = match arg with
     | Lvar v -> v,arg
@@ -1950,7 +1951,7 @@ module SArg = struct
         let newvar = Ident.create "switcher" in
         newvar,Lvar newvar in
     bind Alias newvar arg (body newarg)
-
+  let make_const i = Lconst (Const_base (Const_int i))
   let make_isout h arg = Lprim (Pisout, [h ; arg])
   let make_isin h arg = Lprim (Pnot,[make_isout h arg])
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
@@ -2144,10 +2145,10 @@ let as_interval fail low high l =
   | None -> as_interval_nofail l
   | Some act -> as_interval_canfail act low high l)
 
-let call_switcher konst fail arg low high int_lambda_list =
+let call_switcher fail arg low high int_lambda_list =
   let edges, (cases, actions) =
     as_interval fail low high int_lambda_list in
-  Switcher.zyva edges konst arg cases actions
+  Switcher.zyva edges arg cases actions
 
 
 let exists_ctx ok ctx =
@@ -2302,16 +2303,13 @@ let combine_constant arg cst partial ctx def
         let int_lambda_list =
           List.map (function Const_int n, l -> n,l | _ -> assert false)
             const_lambda_list in
-        call_switcher
-          lambda_of_int fail arg min_int max_int int_lambda_list
+        call_switcher fail arg min_int max_int int_lambda_list
     | Const_char _ ->
         let int_lambda_list =
           List.map (function Const_char c, l -> (Char.code c, l)
             | _ -> assert false)
             const_lambda_list in
-        call_switcher
-          (fun i -> Lconst (Const_base (Const_int i)))
-          fail arg 0 255 int_lambda_list
+        call_switcher fail arg 0 255 int_lambda_list
     | Const_string _ ->
 (* Note as the bytecode compiler may resort to dichotmic search,
    the clauses of strinswitch  are sorted with duplicate removed.
@@ -2419,9 +2417,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
           | (1, 1, [0, act1], [0, act2]) ->
               Lifthenelse(arg, act2, act1)
           | (n,_,_,[])  ->
-              call_switcher
-                (fun i -> Lconst (Const_base (Const_int i)))
-                None arg 0 (n-1) consts
+              call_switcher None arg 0 (n-1) consts
           | (n, _, _, _) ->
               match same_actions nonconsts with
               | None ->
@@ -2437,7 +2433,6 @@ let combine_constructor arg ex_pat cstr partial ctx def
                   Lifthenelse
                     (Lprim (Pisint, [arg]),
                      call_switcher
-                       (fun i -> Lconst (Const_base (Const_int i)))
                        None arg
                        0 (n-1) consts,
                      act) in
@@ -2447,20 +2442,16 @@ let combine_constructor arg ex_pat cstr partial ctx def
 let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) =
     as_interval fail min_int max_int int_lambda_list in
-  Switcher.test_sequence
-    (fun i -> Lconst (Const_base (Const_int i))) arg cases actions
+  Switcher.test_sequence arg cases actions
 
 let call_switcher_variant_constant fail arg int_lambda_list =
-  call_switcher
-    (fun i -> Lconst (Const_base (Const_int i)))
-    fail arg min_int max_int int_lambda_list
+  call_switcher fail arg min_int max_int int_lambda_list
 
 
 let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
   Llet(Alias, v, Lprim(Pfield 0, [arg]),
        call_switcher
-         (fun i -> Lconst (Const_base (Const_int i)))
          fail (Lvar v) min_int max_int int_lambda_list)
 
 let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
@@ -2524,7 +2515,6 @@ let combine_array arg kind partial ctx def
     let newvar = Ident.create "len" in
     let switch =
       call_switcher
-        lambda_of_int
         fail (Lvar newvar)
         0 max_int len_lambda_list in
     bind
