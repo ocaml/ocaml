@@ -97,7 +97,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                     let p =
                       Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos)
                     in
-                    Some (newgenconstr p args)
+                    Some (newgenconstr p (args @ existentials))
                 | Some {desc = Tconstr(Path.Pident _, args, _)} ->
                     begin match manifest_decl with
                     | Some {type_kind = Type_variant cstrs} ->
@@ -110,7 +110,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                         in
                         begin match c.cd_args with
                         | Cstr_record (id, _) ->
-                            Some (newgenconstr (Path.Pident id) args)
+                            Some (newgenconstr (Path.Pident id) (args @ existentials))
                         | _ -> assert false
                         end
                     | _ -> None
@@ -119,19 +119,19 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
               in
               let tdecl =
                 {
-                  type_params = decl.type_params; (* TODO: add existentials *)
+                  type_params = decl.type_params @ existentials;
                   type_arity = decl.type_arity;
                   type_kind = Type_record (lbls, Record_inlined idx_nonconst);
                   type_private = Public;
                   type_manifest;
-                  type_variance = decl.type_variance;
+                  type_variance = decl.type_variance @ List.map (fun _ -> Variance.full) existentials;
                   type_newtype_level = None;
                   type_loc = Location.none;
                   type_attributes = [];
                 }
               in
               tdecls := (id, path, tdecl) :: !tdecls;
-              [ newgenty (Tconstr(path, decl.type_params, ref Mnil)) ],
+              [ newgenconstr path (decl.type_params @ existentials) ],
               true
         in
         let cstr =
