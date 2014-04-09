@@ -365,36 +365,38 @@ let tailrec_entry_point = ref 0
 
 let emit_intrin i intrin iargs =
   let open Intrin in
-  let arg, res = i.arg, i.res in
-  let instr_to_arg = Array.create (List.length intrin.args) 0 in
-  let _ = List.fold_left (fun (instr_i, arg_i) iarg ->
-    instr_to_arg.(instr_i) <- arg_i;
-    let arg_i = arg_i +
-      match iarg with
-        Iintrin_arg_imm _ -> 0
-      | Iintrin_arg_ord -> 1
-      | Iintrin_arg_addr addr ->
-          match addr with
-            Ibased _ -> 0
-          | Iindexed _
-          | Iscaled _ -> 1
-          | Iindexed2 _
-          | Iindexed2scaled _ -> 2
+  if intrin.asm <> [] then begin
+    let arg, res = i.arg, i.res in
+    let instr_to_arg = Array.create (List.length intrin.args) 0 in
+    let _ = List.fold_left (fun (instr_i, arg_i) iarg ->
+      instr_to_arg.(instr_i) <- arg_i;
+      let arg_i = arg_i +
+        match iarg with
+          Iintrin_arg_imm _ -> 0
+        | Iintrin_arg_ord -> 1
+        | Iintrin_arg_addr addr ->
+            match addr with
+              Ibased _ -> 0
+            | Iindexed _
+            | Iscaled _ -> 1
+            | Iindexed2 _
+            | Iindexed2scaled _ -> 2
+      in
+      instr_i + 1, arg_i) (0, 0) iargs
     in
-    instr_i + 1, arg_i) (0, 0) iargs
-  in
-  `	`;
-  List.iter (function
-      \`Emit_string s -> emit_string s
-    | \`Emit_arg 0 -> emit_reg res.(0)
-    | \`Emit_arg i ->
-        let i = i - 1 in
-        match List.nth iargs i with
-        | Iintrin_arg_ord -> emit_reg arg.(instr_to_arg.(i))
-        | Iintrin_arg_imm n -> `${emit_int n}`
-        | Iintrin_arg_addr addr -> emit_addressing addr arg instr_to_arg.(i)
-    ) intrin.asm;
-  `\n`
+    `	`;
+    List.iter (function
+        \`Emit_string s -> emit_string s
+      | \`Emit_arg 0 -> emit_reg res.(0)
+      | \`Emit_arg i ->
+          let i = i - 1 in
+          match List.nth iargs i with
+          | Iintrin_arg_ord -> emit_reg arg.(instr_to_arg.(i))
+          | Iintrin_arg_imm n -> `${emit_int n}`
+          | Iintrin_arg_addr addr -> emit_addressing addr arg instr_to_arg.(i)
+      ) intrin.asm;
+    `\n`
+  end
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =

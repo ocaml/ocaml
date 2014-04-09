@@ -50,7 +50,8 @@ let parse_asm ~nargs asm =
   in
   let rec loop acc s i =
     let len = String.length s in
-    if i + 1 = len then `Emit_string s :: acc
+    if len = 0 then acc
+    else if i + 1 = len then `Emit_string s :: acc
     else
       match s.[i], s.[i + 1] with
       | '%', '%' -> (* Unescape *)
