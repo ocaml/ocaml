@@ -231,7 +231,7 @@ static value int32_deserialize()
   return caml_copy_int32(caml_deserialize_sint_4());
 }
 
-CAMLexport struct custom_operations caml_int32_ops = {
+CAMLexport const struct custom_operations caml_int32_ops = {
   "_i",
   custom_finalize_default,
   int32_cmp,
@@ -425,7 +425,7 @@ static value int64_deserialize()
   return caml_copy_int64(caml_deserialize_sint_8());
 }
 
-CAMLexport struct custom_operations caml_int64_ops = {
+CAMLexport const struct custom_operations caml_int64_ops = {
   "_j",
   custom_finalize_default,
   int64_cmp,
@@ -696,7 +696,7 @@ static value nativeint_deserialize()
   }
 }
 
-CAMLexport struct custom_operations caml_nativeint_ops = {
+CAMLexport const struct custom_operations caml_nativeint_ops = {
   "_n",
   custom_finalize_default,
   nativeint_cmp,
