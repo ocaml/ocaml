@@ -102,7 +102,7 @@ be called from C \\
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
-\item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalised values}
+\item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
 \item \ahref{libref/Genlex.html}{Module \texttt{Genlex}: a generic lexical analyzer}
 \item \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}: hash tables and hash functions}
 \item \ahref{libref/Int32.html}{Module \texttt{Int32}: 32-bit integers}

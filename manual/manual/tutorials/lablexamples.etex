@@ -301,7 +301,7 @@ All these are only suggestions, but keep in mind that the
 choice of labels is essential for readability. Bizarre choices will
 make the program harder to maintain.
 
-In the ideal, the right function name with right labels sould be
+In the ideal, the right function name with right labels should be
 enough to understand the function's meaning. Since one can get this
 information with OCamlBrowser or the "ocaml" toplevel, the documentation
 is only used when a more detailed specification is needed.

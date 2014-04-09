@@ -176,7 +176,7 @@ inherited.
 This ability provides class constructors as can be found in other
 languages. Several constructors can be defined this way to build objects of
 the same class but with different initialization patterns; an
-alternative is to use initializers, as decribed below in section
+alternative is to use initializers, as described below in section
 \ref{ss:initializers}.
 
 \section{Immediate objects}
@@ -404,7 +404,7 @@ appear in this order "method private virtual".
 \label{ss:class-interfaces}
 
 
-%XXX Differencier class type et interface de classe ?
+%XXX Differentiate class type and class interface ?
 
 Class interfaces are inferred from class definitions.  They may also
 be defined directly and used to restrict the type of a class.  Like class
@@ -1027,7 +1027,7 @@ p = q, p = p;;
 \end{caml_example}
 Other generic comparisons such as ("<", "<=", ...) can also be used on
 objects.  The
-relation "<" defines an unspecified but strict ordering on objets.  The
+relation "<" defines an unspecified but strict ordering on objects.  The
 ordering relationship between two objects is fixed once for all after the
 two objects have been created and it is not affected by mutation of fields.
 
@@ -1139,7 +1139,7 @@ class money (x : float) =
     method leq p = repr <= p#value
   end;;
 \end{caml_example}
-% pas expliqué: la mutabilite peut être cachée
+% not explained: mutability can be hidden
 Note that the type "money" is not a subtype of type
 "comparable", as the self type appears in contravariant position
 in the type of method "leq".

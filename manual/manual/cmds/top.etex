@@ -334,7 +334,7 @@ the first error encountered.
 
 \item["#mod_use \""\var{file-name}"\";;"]
 Similar to "#use" but also wrap the code into a top-level module of the
-same name as capitalised file name without extensions, following
+same name as capitalized file name without extensions, following
 semantics of the compiler.
 
 \item["#install_printer "\var{printer-name}";;"]

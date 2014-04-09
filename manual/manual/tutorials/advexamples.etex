@@ -320,7 +320,7 @@ class ostring s =
   end;;
 \end{caml_example}
 However, the method "copy" returns an object of the class "ostring",
-and not an objet of the current class. Hence, if the class is further
+and not an object of the current class. Hence, if the class is further
 extended, the method "copy" will only return an object of the parent
 class.
 \begin{caml_example}
@@ -447,7 +447,7 @@ class type ['a, 'b] hash_table =
     method add : 'a -> 'b -> unit
   end;;
 \end{caml_example}
-A simple implementation, which is quite reasonable for small hastables is
+A simple implementation, which is quite reasonable for small hash tables is
 to use an association list:
 \begin{caml_example}
 class ['a, 'b] small_hashtbl : ['a, 'b] hash_table =
@@ -458,7 +458,7 @@ class ['a, 'b] small_hashtbl : ['a, 'b] hash_table =
   end;;
 \end{caml_example}
 A better implementation, and one that scales up better, is to use a
-true hash tables\ldots\ whose elements are small hash tables!
+true hash table\ldots\ whose elements are small hash tables!
 \begin{caml_example}
 class ['a, 'b] hashtbl size : ['a, 'b] hash_table =
   object (self)

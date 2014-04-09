@@ -568,7 +568,7 @@ let-binding:
 Polymorphic type annotations in @"let"@-definitions behave in a way
 similar to polymorphic methods: they explicitly require the defined
 value to be polymorphic, and allow one to use this polymorphism in
-recursive occurences (when using @"let" "rec"@). Note however that this
+recursive occurrences (when using @"let" "rec"@). Note however that this
 is a normal  polymorphic type, unifiable with any instance of
 itself.
 

@@ -584,7 +584,7 @@ suite, in a format that cannot easily be exploited from C. The second
 field contains a unique object ID, used for comparisons. The remaining
 fields of the object contain the values of the instance variables of
 the object. It is unsafe to access directly instance variables, as the
-type system provides no guaranteee about the instance variables
+type system provides no guarantee about the instance variables
 contained by an object.
 % Instance variables are stored in the order in which they
 % appear in the class definition (taking inherited classes into
@@ -842,9 +842,9 @@ the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
 
 The macros "CAMLreturn", "CAMLreturn0", and "CAMLreturnT" are used to
 replace the C
-keyword "return".  Every occurence of "return x" must be replaced by
+keyword "return".  Every occurrence of "return x" must be replaced by
 "CAMLreturn (x)" if "x" has type "value", or "CAMLreturnT (t, x)"
-(where "t" is the type of "x"); every occurence of "return" without
+(where "t" is the type of "x"); every occurrence of "return" without
 argument must be
 replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
 it returns void), you must insert "CAMLreturn0" at the end (to replace

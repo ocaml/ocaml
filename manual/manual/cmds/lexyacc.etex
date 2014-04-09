@@ -298,7 +298,7 @@ For instance, in
 "string option".
 
 
-In some cases, a sucessful match may not yield a unique set of bindings.
+In some cases, a successful match may not yield a unique set of bindings.
 For instance the matching of \verb+aba+ by the regular expression
 "(('a'|\"ab\") as x) ((\"ba\"|'a') as y)" may result in binding
 either

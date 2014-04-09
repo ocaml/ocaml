@@ -821,9 +821,9 @@ nor contravariant, they are nonvariant, that is they do not propagate
 subtyping.
 
 For user-defined types, the variance is automatically inferred: a
-parameter is covariant if it has only covariant occurences,
-contravariant if it has only contravariant occurences,
-variance-free if it has no occurences, and nonvariant otherwise.
+parameter is covariant if it has only covariant occurrences,
+contravariant if it has only contravariant occurrences,
+variance-free if it has no occurrences, and nonvariant otherwise.
 A variance-free parameter may change freely through subtyping, it does
 not have to be a subtype or a supertype.
 %

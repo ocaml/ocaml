@@ -599,7 +599,7 @@ class of ``syntactic values'', which includes constants, identifiers,
 functions, tuples of syntactic values, etc. In all other cases (for
 instance, \var{expr} is a function application), a polymorphic mutable
 could have been created and generalization is therefore turned off for
-all variables occuring in contravariant or non-variant branches of the
+all variables occurring in contravariant or non-variant branches of the
 type. For instance, if the type of a non-value is "'a list" the
 variable is generalizable ("list" is a covariant type constructor),
 but not in "'a list -> 'a list" (the left branch of "->" is

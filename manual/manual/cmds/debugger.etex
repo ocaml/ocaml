@@ -193,7 +193,7 @@ event is put after the function application.
 \subsection{Starting the debugged program}
 
 The debugger starts executing the debugged program only when needed.
-This allows setting breapoints or assigning debugger variables before
+This allows setting breakpoints or assigning debugger variables before
 execution starts. There are several ways to start execution:
 \begin{options}
 \item["run"] Run the program until a breakpoint is hit, or the program

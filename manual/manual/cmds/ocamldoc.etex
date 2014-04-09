@@ -354,7 +354,7 @@ The following options apply in conjunction with the "-man" option:
 
 \begin{options}
 \item["-man-mini"]
-Generate man pages only for modules, module types, clases and class
+Generate man pages only for modules, module types, classes and class
 types, instead of pages for all elements.
 
 \item["-man-suffix" \var{suffix}]
@@ -485,12 +485,12 @@ exception My_exception of (int -> int) * int
 
 (** Comment for type weather  *)
 type weather =
-| Rain of int (** The comment for construtor Rain *)
+| Rain of int (** The comment for constructor Rain *)
 | Sun (** The comment for constructor Sun *)
 
 (** Comment for type weather2  *)
 type weather2 =
-| Rain of int (** The comment for construtor Rain *)
+| Rain of int (** The comment for constructor Rain *)
 | Sun (** The comment for constructor Sun *)
 (** I can continue the comment for type weather2 here
   because there is already a comment associated to the last constructor.*)
@@ -506,7 +506,7 @@ type my_record = {
 val foo : string
 (** This comment is associated to foo and not to bar. *)
 val bar : string
-(** This comment is assciated to bar. *)
+(** This comment is associated to bar. *)
 
 (** The comment for class my_class *)
 class my_class :
@@ -997,9 +997,9 @@ documentation for a given list of modules~:
 \noindent{}This method will be called with the list of analysed and possibly
 merged "Odoc_info.t_module" structures.
 
-It is recommanded to inherit from the current generator of the same
+It is recommended to inherit from the current generator of the same
 kind as the one you want to define. Doing so, it is possible to
-load various custom generators to combine improvments brought by each one.
+load various custom generators to combine improvements brought by each one.
 
 This is done using first class modules (see chapter \ref{s-first-class-modules}).
 
