@@ -17,16 +17,18 @@ open Asttypes
 (** {2 Extension points} *)
 
 type attribute = string loc * payload
-       (* Metadata containers passed around within the AST.
-        * The compiler ignores unknown attributes.
-         [@id ARG]
-         [@@id ARG]
+       (* [@id ARG]
+          [@@id ARG]
+
+          Metadata containers passed around within the AST.
+          The compiler ignores unknown attributes.
        *)
 
 and extension = string loc * payload
-      (* Sub-language placeholder -- rejected by the typechecker.
-         [%id ARG]
+      (* [%id ARG]
          [%%id ARG]
+
+         Sub-language placeholder -- rejected by the typechecker.
        *)
 
 and attributes = attribute list
@@ -114,11 +116,13 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
 
 and row_field =
   | Rtag of label * bool * core_type list
-        (* true: contains a constant (i.e. empty) constructor
-           [`A]                   ( true,  [] )
+        (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
            [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
+
+           The 2nd field is true if the tag contains a 
+             constant (empty) constructor.
            '&' occurs when several types are used for the same constructor 
              (see 4.2 in the manual)
          *)
@@ -688,8 +692,11 @@ and structure_item_desc =
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
   | Pstr_open of override_flag * Longident.t loc * attributes
-        (* open! X - true (silence 'used identifier shadowing' warning)
-           open  X - false *)
+        (* open! X - true 
+           open  X - false 
+
+           override_flag silences the 'used identifier shadowing' warning
+           *)
   | Pstr_class of class_declaration list
         (* class c1 = ... and ... and cn = ... *)
   | Pstr_class_type of class_type_declaration list
