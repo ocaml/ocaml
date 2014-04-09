@@ -163,8 +163,8 @@ beforedepend:: glob_lexer.ml
 install:
 	$(CP) ocamlbuild.byte $(INSTALL_BINDIR)/ocamlbuild$(EXE)
 	$(CP) ocamlbuild.byte $(INSTALL_BINDIR)/ocamlbuild.byte$(EXE)
-	mkdir -p $(INSTALL_LIBDIR)/ocamlbuild
-	$(CP) $(INSTALL_LIB) $(INSTALL_LIBDIR)/ocamlbuild/
+	mkdir -p $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_LIB) $(INSTALL_LIBDIR)/
 
 installopt:
 	if test -f ocamlbuild.native; then $(MAKE) installopt_really; fi
@@ -172,8 +172,8 @@ installopt:
 installopt_really:
 	$(CP) ocamlbuild.native $(INSTALL_BINDIR)/ocamlbuild$(EXE)
 	$(CP) ocamlbuild.native $(INSTALL_BINDIR)/ocamlbuild.native$(EXE)
-	mkdir -p $(INSTALL_LIBDIR)/ocamlbuild
-	$(CP) $(INSTALL_LIB_OPT) $(INSTALL_LIBDIR)/ocamlbuild/
+	mkdir -p $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_LIB_OPT) $(INSTALL_LIBDIR)/
 
 # The generic rules
 
