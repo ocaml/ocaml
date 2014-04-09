@@ -6,4 +6,11 @@
 # module N : sig type t = M.t = A of { x : int; } val f : t -> t.A end
 #     type 'a t = A : { x : 'a; y : 'b; } -> 'a t
 # val f : ('a, 'b) t.A -> 'a t = <fun>
-#   * * * * * * * * * * * * * * * * * *   
+#               module M :
+  sig
+    type 'a t = A of { x : 'a; } | B : { u : 'b; } -> unit t
+    exception Foo of { x : int; }
+  end
+#                           module N :
+  sig type 'b t = 'b M.t = A of { x : 'b; } | B : { u : 'bla; } -> unit t end
+#   

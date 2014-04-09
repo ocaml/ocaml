@@ -411,7 +411,21 @@ let sub_ids decl =
         (fun l c ->
            match c.cd_args with
            | Cstr_record (id, _) -> id :: l
-           | _ -> l
+           | Cstr_tuple _ -> l
         )
         [] cstrs
   | _ -> []
+
+
+let sub_ids_exn exn =
+  match exn.exn_args with
+  | Cstr_record (id, _) -> [id]
+  | Cstr_tuple _ -> []
+
+
+let add_prefixes root ids sub =
+  List.fold_left
+    (fun sub id ->
+       add_type id (Pdot(root, Ident.name id, nopos)) sub
+    )
+    sub ids

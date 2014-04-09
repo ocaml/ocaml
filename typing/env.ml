@@ -1080,23 +1080,14 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
   | Sig_type(id, decl, _) :: rem ->
-      let p = Pdot(root, Ident.name id, pos) in
-      (* the position is used for the type declaration corresponding
-         to a constructor declaration with a record argument
-         (the exception comes immediately after the synthesized type
-         declaration). *)
-      let sub =
-        List.fold_left
-          (fun sub id ->
-             Subst.add_type id (Pdot(root, Ident.name id, pos)) sub
-          )
-          sub (Subst.sub_ids decl)
-      in
+      let p = Pdot(root, Ident.name id, nopos) in
+      let sub = Subst.add_prefixes root (Subst.sub_ids decl) sub in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Sig_exception(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
+      let sub = Subst.add_prefixes root (Subst.sub_ids_exn decl) sub in
       let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
   | Sig_module(id, mty, _) :: rem ->

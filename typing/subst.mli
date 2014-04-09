@@ -58,3 +58,7 @@ val compose: t -> t -> t
 
 
 val sub_ids: type_declaration -> Ident.t list
+val sub_ids_exn: exception_declaration -> Ident.t list
+
+
+val add_prefixes: Path.t -> Ident.t list -> t -> t

@@ -19,7 +19,6 @@ module N : S with type t = M.t = M;;
 type 'a t = A: {x : 'a; y : 'b} -> 'a t;;
 let f r = A r;;
 
-(*
 module M = struct
   type 'a t =
     | A of {x : 'a}
@@ -29,7 +28,11 @@ module M = struct
 end;;
 
 module N : sig
-  exception Foo of {x : int}
+  type 'b t = 'b M.t =
+    | A of {x : 'b}
+    | B: {u : 'bla} -> unit t
+
+(*  exception Foo of {x : int} *)  (* Does not work yet *)
 end = struct
   type 'b t = 'b M.t =
     | A of {x : 'b}
@@ -37,4 +40,4 @@ end = struct
 
   exception Foo = M.Foo
 end;;
-*)
+
