@@ -193,6 +193,12 @@ let label_declaration s l =
     ld_attributes = attrs s l.ld_attributes;
   }
 
+let constructor_arguments s = function
+  | Cstr_tuple l ->
+      Cstr_tuple (List.map (typexp s) l)
+  | Cstr_record (id, l) ->
+      Cstr_record (id, List.map (label_declaration s) l)
+
 let type_declaration s decl =
   let decl =
     { type_params = List.map (typexp s) decl.type_params;
@@ -204,16 +210,9 @@ let type_declaration s decl =
             Type_variant
               (List.map
                  (fun c ->
-                    let cd_args =
-                      match c.cd_args with
-                      | Cstr_tuple l ->
-                          Cstr_tuple (List.map (typexp s) l)
-                      | Cstr_record (id, l) ->
-                          Cstr_record (id, List.map (label_declaration s) l)
-                    in
                     {
                       cd_id = c.cd_id;
-                      cd_args;
+                      cd_args = constructor_arguments s c.cd_args;
                       cd_res = may_map (typexp s) c.cd_res;
                       cd_loc = loc s c.cd_loc;
                       cd_attributes = attrs s c.cd_attributes;
@@ -304,10 +303,14 @@ let value_description s descr =
    }
 
 let exception_declaration s descr =
-  { exn_args = List.map (type_expr s) descr.exn_args;
-    exn_loc = loc s descr.exn_loc;
-    exn_attributes = attrs s descr.exn_attributes;
-   }
+  let r =
+    { exn_args = constructor_arguments s descr.exn_args;
+      exn_loc = loc s descr.exn_loc;
+      exn_attributes = attrs s descr.exn_attributes;
+    }
+  in
+  cleanup_types ();
+  r
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)

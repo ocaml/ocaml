@@ -213,7 +213,7 @@ and type_transparence =
   | Type_private     (* private type *)
 
 type exception_declaration =
-    { exn_args: type_expr list;
+    { exn_args: constructor_arguments;
       exn_loc: Location.t;
       exn_attributes: Parsetree.attributes;
     }

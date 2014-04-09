@@ -203,7 +203,18 @@ let transl_labels env closed lbls =
       lbls in
   lbls, lbls'
 
-let transl_declaration ?exnid env sdecl id =
+let transl_constructor_arguments env closed ty_name c_name = function
+  | Pcstr_tuple l ->
+      let l = List.map (transl_simple_type env closed) l in
+      Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
+      Cstr_tuple l
+  | Pcstr_record l ->
+      let lbls, lbls' = transl_labels env closed l in
+      let id = Ident.create (ty_name ^ "." ^ c_name) in
+      Types.Cstr_record (id, lbls'),
+      Cstr_record lbls
+
+let transl_declaration env sdecl id =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
@@ -231,28 +242,22 @@ let transl_declaration ?exnid env sdecl id =
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr {pcd_name = lid; pcd_args; pcd_res = ret_type; pcd_loc = loc; pcd_attributes = attrs} =
           let name = Ident.create lid.txt in
-          let args closed =
-            match pcd_args with
-            | Pcstr_tuple l ->
-                let l = List.map (transl_simple_type env closed) l in
-                Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
-                Cstr_tuple l
-            | Pcstr_record l ->
-                let lbls, lbls' = transl_labels env closed l in
-                let id = Ident.create (Ident.name id ^ "." ^ lid.txt) in
-                Types.Cstr_record (id, lbls'),
-                Cstr_record lbls
-          in
           match ret_type with
             | None ->
-              (name, lid, args true,
-               None, None, loc, attrs)
+                let args =
+                  transl_constructor_arguments env true (Ident.name id) lid.txt
+                    pcd_args
+                in
+              (name, lid, args, None, None, loc, attrs)
             | Some sty ->
               (* if it's a generalized constructor we must first narrow and
                  then widen so as to not introduce any new constraints *)
               let z = narrow () in
               reset_type_variables ();
-              let args = args false in
+              let args =
+                transl_constructor_arguments env false (Ident.name id) lid.txt
+                  pcd_args
+              in
               let cty = transl_simple_type env false sty in
               let ret_type =
                 let ty = cty.ctyp_type in
@@ -945,7 +950,7 @@ let name_recursion sdecl id decl =
   | _ -> decl
 
 (* Translate a set of mutually recursive type declarations *)
-let transl_type_decl ?exnid env sdecl_list =
+let transl_type_decl env sdecl_list =
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =
@@ -995,7 +1000,7 @@ let transl_type_decl ?exnid env sdecl_list =
       id, Some slot
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration ?exnid temp_env name_sdecl id in
+    current_slot := slot; transl_declaration temp_env name_sdecl id in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
@@ -1082,35 +1087,34 @@ let transl_exception env excdecl =
     raise (Error (loc, Exception_constructor_with_result));
   reset_type_variables();
   Ctype.begin_def();
-  let args =
-    match excdecl.pcd_args with
-    | Pcstr_tuple l -> l
-    | Pcstr_record _ -> assert false
+  let exn_args, cd_args =
+    transl_constructor_arguments env true "exn" excdecl.pcd_name.txt
+      excdecl.pcd_args
   in
-  let ttypes = List.map (transl_closed_type env) args in
   Ctype.end_def();
-  let types = List.map (fun cty -> cty.ctyp_type) ttypes in
-  List.iter Ctype.generalize types;
-  let exn_decl =
-    {
-      exn_args = types;
-      exn_attributes = excdecl.pcd_attributes;
-      Types.exn_loc = loc;
-    }
-  in
-  let newenv = Env.add_exception ~check:true id exn_decl env in
   let cd =
     { cd_id = id;
       cd_name = excdecl.pcd_name;
-      cd_args = Cstr_tuple ttypes;
+      cd_args;
       cd_loc = loc;
       cd_res = None;
       cd_attributes = excdecl.pcd_attributes;
      }
   in
+  begin match exn_args with
+  | Types.Cstr_tuple l -> List.iter Ctype.generalize l
+  | Types.Cstr_record (_,l) ->
+      List.iter (fun l -> Ctype.generalize l.Types.ld_type) l
+  end;
+  let exn_decl =
+    {
+      exn_args;
+      exn_attributes = excdecl.pcd_attributes;
+      Types.exn_loc = loc;
+    }
+  in
+  let newenv = Env.add_exception ~check:true id exn_decl env in
   cd, exn_decl, newenv
-
-let transl_type_decl = transl_type_decl ?exnid:None
 
 (* Translate an exception rebinding *)
 let transl_exn_rebind env loc name lid =
@@ -1125,9 +1129,9 @@ let transl_exn_rebind env loc name lid =
     |  Cstr_exception (path, _) -> path
     | _ -> raise(Error(loc, Not_an_exception lid))
   in
-  let exn_args = cdescr.cstr_args in
+  (* TODO: re-export inlined record type! *)
   let d = {
-    Types.exn_args;
+    Types.exn_args = Cstr_tuple cdescr.cstr_args;
     exn_attributes = [];
     exn_loc = loc
   }

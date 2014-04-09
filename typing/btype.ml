@@ -286,7 +286,10 @@ let type_iterators =
     may (it.it_type_expr it) td.type_manifest;
     it.it_type_kind it td.type_kind
   and it_exception_declaration it ed =
-    List.iter (it.it_type_expr it) ed.exn_args
+    match ed.exn_args with
+    | Cstr_tuple tl -> List.iter (it.it_type_expr it) tl
+    | Cstr_record (_, lbls) ->
+        List.iter (fun d -> it.it_type_expr it d.ld_type) lbls
   and it_module_declaration it md =
     it.it_module_type it md.md_type
   and it_modtype_declaration it mtd =

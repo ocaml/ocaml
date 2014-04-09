@@ -23,7 +23,10 @@ val constructor_descrs:
   (Ident.t * Path.t * type_declaration) list
 
 val exception_descr:
-  Path.t -> exception_declaration -> constructor_description
+  Path.t -> exception_declaration ->
+  constructor_description * (Ident.t * Path.t * type_declaration) list
+
+
 val label_descrs:
   type_expr -> label_declaration list ->
     record_representation -> private_flag ->

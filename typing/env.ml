@@ -1222,7 +1222,11 @@ and components_of_module_maker (env, sub, path, mty) =
             env := store_type_infos None id path decl !env !env
         | Sig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
-            let cstr = Datarepr.exception_descr path decl' in
+            let cstr, tdecls = Datarepr.exception_descr path decl' in
+            List.iter
+              (fun (id, path, td) ->
+                 aux (Sig_type(id, td, Trec_next)) path;
+              ) tdecls;
             let s = Ident.name id in
             c.comp_constrs <-
               add_to_tbl s (cstr, !pos) c.comp_constrs;
@@ -1298,6 +1302,14 @@ and store_value ?check slot id path decl env renv =
     values = EnvTbl.add "value" slot id (path, decl) env.values renv.values;
     summary = Env_value(env.summary, id, decl) }
 
+and store_extra_tdecls slot tdecls env renv =
+  (* Note: we should probably keep the original summary *)
+  List.fold_left (fun env (id, path, td) ->
+      store_type ~check:false slot id path td env renv
+    )
+    env
+    tdecls
+
 and store_type ~check slot id path info env renv =
   let loc = info.type_loc in
   if check then
@@ -1327,13 +1339,7 @@ and store_type ~check slot id path info env renv =
       end
       constructors
   end;
-  let env =
-    List.fold_left (fun env (id, path, td) ->
-        store_type ~check:false slot id path td env renv
-      )
-      env
-      tdecls
-  in
+  let env = store_extra_tdecls slot tdecls env renv in
   { env with
     constrs =
       List.fold_right
@@ -1383,10 +1389,10 @@ and store_exception ~check slot id path decl env renv =
         )
     end;
   end;
+  let constr, tdecls = Datarepr.exception_descr path decl in
+  let env = store_extra_tdecls slot tdecls env renv in
   { env with
-    constrs = EnvTbl.add "constructor" slot id
-                         (Datarepr.exception_descr path decl) env.constrs
-                         renv.constrs;
+    constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module slot id path md env renv =

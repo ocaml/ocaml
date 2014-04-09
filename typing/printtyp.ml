@@ -740,6 +740,10 @@ let string_of_mutable = function
   | Mutable -> "mutable "
 
 
+let mark_loops_constructor_arguments = function
+  | Cstr_tuple l -> List.iter mark_loops l
+  | Cstr_record (_, l) -> List.iter (fun l -> mark_loops l.ld_type) l
+
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -782,11 +786,7 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-        (fun cd ->
-           match cd.cd_args with
-           | Cstr_tuple l -> List.iter mark_loops l
-           | Cstr_record (_, l) -> List.iter (fun l -> mark_loops l.ld_type) l
-        )
+        (fun cd -> mark_loops_constructor_arguments cd.cd_args)
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -843,13 +843,13 @@ let rec tree_of_type_decl id decl =
   in
   (name, args, ty, priv, constraints)
 
+and tree_of_constructor_arguments = function
+  | Cstr_tuple l -> tree_of_typlist false l
+  | Cstr_record (_, l) -> [ Otyp_record (List.map tree_of_label l) ]
+
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
-  let arg () =
-    match cd.cd_args with
-    | Cstr_tuple l -> tree_of_typlist false l
-    | Cstr_record (_, l) -> [ Otyp_record (List.map tree_of_label l) ]
-  in
+  let arg () = tree_of_constructor_arguments cd.cd_args in
   match cd.cd_res with
   | None -> (name, arg (), None)
   | Some res ->
@@ -878,8 +878,9 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl.exn_args;
-  let tyl = tree_of_typlist false decl.exn_args in
+  reset ();
+  mark_loops_constructor_arguments decl.exn_args;
+  let tyl = tree_of_constructor_arguments decl.exn_args in
   Osig_exception (Ident.name id, tyl)
 
 let exception_declaration id ppf decl =

@@ -131,7 +131,14 @@ let nondep_supertype env mid mty =
       | Sig_exception(id, d) ->
           let d =
             {d with
-             exn_args = List.map (Ctype.nondep_type env mid) d.exn_args
+             exn_args = match d.exn_args with
+             | Cstr_tuple l ->
+                 Cstr_tuple (List.map (Ctype.nondep_type env mid) l)
+             | Cstr_record (id, l) ->
+                 let field l =
+                   {l with ld_type = Ctype.nondep_type env mid l.ld_type}
+                 in
+                 Cstr_record (id, List.map field l)
             }
           in
           Sig_exception(id, d) :: rem'

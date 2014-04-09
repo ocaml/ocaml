@@ -160,7 +160,20 @@ let report_type_mismatch first second decl ppf =
       if err = Manifest then () else
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
-let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
+let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
+  match arg1, arg2 with
+  | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
+      if List.length arg1 <> List.length arg2 then [Field_arity cstr]
+      else if Misc.for_all2
+          (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
+          (arg1) (arg2)
+      then [] else [Field_type cstr]
+  | Types.Cstr_record (_, l1), Types.Cstr_record (_, l2) ->
+      (* TODO: compare with params1/param2 *)
+      compare_records env params1 params2 0 l1 l2
+  | _ -> assert false (* TODO *)
+
+and compare_variants env params1 params2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
   | [], c::_ -> [Field_missing (true, c.Types.cd_id)]
@@ -176,24 +189,14 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
           [Field_type cstr1]
       | _ ->
           let r =
-            match arg1, arg2 with
-            | Cstr_tuple arg1, Cstr_tuple arg2 ->
-                if List.length arg1 <> List.length arg2 then [Field_arity cstr1]
-                else if Misc.for_all2
-                    (fun ty1 ty2 ->
-                       Ctype.equal env true (ty1::decl1.type_params)
-                         (ty2::decl2.type_params))
-                    (arg1) (arg2)
-                then [] else [Field_type cstr1]
-            | Cstr_record (_, l1), Cstr_record (_, l2) ->
-                compare_records env decl1 decl2 0 l1 l2
-            | _ -> assert false (* TODO *)
+            compare_constructor_arguments env cstr1
+              params1 params2 arg1 arg2
           in
           if r <> [] then r
-          else compare_variants env decl1 decl2 (n+1) rem1 rem2
+          else compare_variants env params1 params2 (n+1) rem1 rem2
 
 
-and compare_records env decl1 decl2 n labels1 labels2 =
+and compare_records env params1 params2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
   | [], l::_ -> [Field_missing (true, l.ld_id)]
@@ -203,9 +206,9 @@ and compare_records env decl1 decl2 n labels1 labels2 =
       if Ident.name lab1 <> Ident.name lab2
       then [Field_names (n, lab1, lab2)]
       else if mut1 <> mut2 then [Field_mutable lab1] else
-      if Ctype.equal env true (arg1::decl1.type_params)
-                              (arg2::decl2.type_params)
-      then compare_records env decl1 decl2 (n+1) rem1 rem2
+      if Ctype.equal env true (arg1::params1)
+                              (arg2::params2)
+      then compare_records env params1 params2 (n+1) rem1 rem2
       else [Field_type lab1]
 
 let record_representations r1 r2 =
@@ -235,9 +238,10 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         in
         mark cstrs1 usage name decl1;
         if equality then mark cstrs2 Env.Positive (Ident.name id) decl2;
-        compare_variants env decl1 decl2 1 cstrs1 cstrs2
+        compare_variants env decl1.type_params decl2.type_params 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        let err = compare_records env decl1 decl2 1 labels1 labels2 in
+        let err = compare_records env decl1.type_params decl2.type_params
+            1 labels1 labels2 in
         if err <> [] || record_representations rep1 rep2 then err else
         [Record_representation (rep1, rep2)]
     | (_, _) -> [Kind]
@@ -279,8 +283,11 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
 (* Inclusion between exception declarations *)
 
 let exception_declarations env ed1 ed2 =
-  Misc.for_all2 (fun ty1 ty2 -> Ctype.equal env false [ty1] [ty2])
+  (* note: we use 'Ctype.equal true' now (allow renaming), but
+     since the type are closed, this doesn't matter *)
+  compare_constructor_arguments env (Ident.create "") [] []
     ed1.exn_args ed2.exn_args
+  = []
 
 (* Inclusion between class types *)
 let encode_val (mut, ty) rem =

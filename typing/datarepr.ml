@@ -41,6 +41,55 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
+let constructor_args ty_path type_manifest manifest_decl cd_id arg_vars rep =
+  function
+  | Cstr_tuple l -> l, false, []
+  | Cstr_record (id, lbls) ->
+      let path =
+        match ty_path with
+        | Path.Pdot(m, _, _) -> Path.Pdot(m, Ident.name id, Path.nopos)
+        | Path.Pident _ -> Path.Pident id
+        | Path.Papply _ -> assert false
+      in
+      let type_manifest =
+        match type_manifest, manifest_decl with
+        | Some {desc = Tconstr(Path.Pdot (m, name, _), args, _)}, _ ->
+            let p =
+              Path.Pdot (m, name ^ "." ^ cd_id, Path.nopos)
+            in
+            Some (newgenconstr p arg_vars)
+        | Some {desc = Tconstr(Path.Pident _, args, _)},
+          Some {type_kind = Type_variant cstrs} ->
+            let c =
+              try
+                List.find
+                  (fun c -> Ident.name c.cd_id = cd_id)
+                  cstrs
+              with Not_found -> assert false
+            in
+            begin match c.cd_args with
+            | Cstr_record (id, _) ->
+                Some (newgenconstr (Path.Pident id) arg_vars)
+            | _ -> assert false
+            end
+        | _ -> None
+      in
+      let tdecl =
+        {
+          type_params = arg_vars;
+          type_arity = List.length arg_vars;
+          type_kind = Type_record (lbls, rep);
+          type_private = Public;
+          type_manifest;
+          type_variance = List.map (fun _ -> Variance.full) arg_vars;
+          type_newtype_level = None;
+          type_loc = Location.none;
+          type_attributes = [];
+        }
+      in
+      [ newgenconstr path arg_vars ],
+      true, [ (id, path, tdecl) ]
+
 let constructor_descrs ty_path decl manifest_decl cstrs =
   let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
@@ -81,60 +130,14 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
               TypeSet.elements arg_vars,
               TypeSet.elements (TypeSet.diff arg_vars res_vars)
         in
-        let cstr_args, cstr_inlined =
-          match cd_args with
-          | Cstr_tuple l -> l, false
-          | Cstr_record (id, lbls) ->
-              let name = Path.last ty_path ^ "." ^ Ident.name cd_id in
-              let path =
-                match ty_path with
-                | Path.Pdot(m, _, _) -> Path.Pdot(m, name, Path.nopos)
-                | Path.Pident _ -> Path.Pident id
-                | Path.Papply _ -> assert false
-              in
-              let type_manifest =
-                match decl.type_manifest with
-                | Some {desc = Tconstr(Path.Pdot (m, name, _), args, _)} ->
-                    let p =
-                      Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos)
-                    in
-                    Some (newgenconstr p (args @ existentials))
-                | Some {desc = Tconstr(Path.Pident _, args, _)} ->
-                    begin match manifest_decl with
-                    | Some {type_kind = Type_variant cstrs} ->
-                        let c =
-                          try
-                            List.find
-                              (fun c -> Ident.name c.cd_id = Ident.name cd_id)
-                              cstrs
-                          with Not_found -> assert false
-                        in
-                        begin match c.cd_args with
-                        | Cstr_record (id, _) ->
-                            Some (newgenconstr (Path.Pident id) (args @ existentials))
-                        | _ -> assert false
-                        end
-                    | _ -> None
-                    end
-                | _ -> None
-              in
-              let tdecl =
-                {
-                  type_params = arg_vars;
-                  type_arity = decl.type_arity;
-                  type_kind = Type_record (lbls, Record_inlined idx_nonconst);
-                  type_private = Public;
-                  type_manifest;
-                  type_variance = List.map (fun _ -> Variance.full) arg_vars;
-                  type_newtype_level = None;
-                  type_loc = Location.none;
-                  type_attributes = [];
-                }
-              in
-              tdecls := (id, path, tdecl) :: !tdecls;
-              [ newgenconstr path arg_vars ],
-              true
+        let cstr_args, cstr_inlined, tds =
+          constructor_args ty_path decl.type_manifest manifest_decl
+            (Ident.name cd_id)
+            arg_vars
+            (Record_inlined idx_nonconst)
+            cd_args
         in
+        tdecls := tds @ !tdecls;
         let cstr =
           { cstr_name = Ident.name cd_id;
             cstr_res = ty_res;
@@ -156,11 +159,16 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
   r, !tdecls
 
 let exception_descr path_exc decl =
+  let cstr_args, cstr_inlined, tds =
+    constructor_args path_exc None None (Path.last path_exc) []
+      (Record_exception path_exc)
+      decl.exn_args
+  in
   { cstr_name = Path.last path_exc;
     cstr_res = Predef.type_exn;
     cstr_existentials = [];
-    cstr_args = decl.exn_args;
-    cstr_arity = List.length decl.exn_args;
+    cstr_args;
+    cstr_arity = List.length cstr_args;
     cstr_tag = Cstr_exception (path_exc, decl.exn_loc);
     cstr_consts = -1;
     cstr_nonconsts = -1;
@@ -169,8 +177,8 @@ let exception_descr path_exc decl =
     cstr_generalized = false;
     cstr_loc = decl.exn_loc;
     cstr_attributes = decl.exn_attributes;
-    cstr_inlined = false;
-  }
+    cstr_inlined;
+  }, tds
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
