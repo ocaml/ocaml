@@ -128,7 +128,8 @@ val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_exception: string -> exception_declaration -> t -> Ident.t * t
+val enter_exception:
+  ?rebind:Path.t -> string -> exception_declaration -> t -> Ident.t * t
 val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
     ?arg:bool -> string -> module_declaration -> t -> Ident.t * t

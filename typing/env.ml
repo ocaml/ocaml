@@ -1359,7 +1359,7 @@ and store_type_infos slot id path info env renv =
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_exception ~check slot id path decl env renv =
+and store_exception ?rebind ~check slot id path decl env renv =
   let loc = decl.exn_loc in
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_exception ("", false))
@@ -1380,7 +1380,7 @@ and store_exception ~check slot id path decl env renv =
         )
     end;
   end;
-  let constr, tdecls = Datarepr.exception_descr path decl in
+  let constr, tdecls = Datarepr.exception_descr ?rebind path decl in
   let env = store_extra_tdecls slot tdecls env renv in
   { env with
     constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
@@ -1488,7 +1488,7 @@ let enter store_fun name data env =
 
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
-and enter_exception = enter (store_exception ~check:true)
+and enter_exception ?rebind = enter (store_exception ?rebind ~check:true)
 and enter_module_declaration ?arg name md env =
   let id = Ident.create name in
   (id, add_module_declaration ?arg id md env)

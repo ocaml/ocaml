@@ -1129,14 +1129,31 @@ let transl_exn_rebind env loc name lid =
     |  Cstr_exception (path, _) -> path
     | _ -> raise(Error(loc, Not_an_exception lid))
   in
-  (* TODO: re-export inlined record type! *)
+  let exn_args, manifest_path =
+    if cdescr.cstr_inlined then
+      let p =
+        match cdescr.cstr_args with
+        | [ {desc=Tconstr(p, [], _)} ] -> p
+        | _ -> assert false
+      in
+      let decl =
+        try Env.find_type p env with Not_found -> assert false
+      in
+      let lbls =
+        match decl.type_kind with Type_record (l, _) -> l | _ -> assert false
+      in
+      let id = Ident.create ("exn." ^ name) in
+      Types.Cstr_record (id, lbls), Some p
+    else
+      Types.Cstr_tuple cdescr.cstr_args, None
+  in
   let d = {
-    Types.exn_args = Cstr_tuple cdescr.cstr_args;
+    Types.exn_args;
     exn_attributes = [];
     exn_loc = loc
   }
   in
-  (path, d)
+  (path, d, manifest_path)
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =

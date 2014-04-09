@@ -23,6 +23,7 @@ val constructor_descrs:
   (Ident.t * Path.t * type_declaration) list
 
 val exception_descr:
+  ?rebind:Path.t ->
   Path.t -> exception_declaration ->
   constructor_description * (Ident.t * Path.t * type_declaration) list
 

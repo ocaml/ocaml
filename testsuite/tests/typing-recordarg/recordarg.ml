@@ -32,7 +32,7 @@ module N : sig
     | A of {x : 'b}
     | B: {u : 'bla} -> unit t
 
-(*  exception Foo of {x : int} *)  (* Does not work yet *)
+  exception Foo of {x : int}
 end = struct
   type 'b t = 'b M.t =
     | A of {x : 'b}

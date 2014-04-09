@@ -12,5 +12,8 @@
     exception Foo of { x : int; }
   end
 #                           module N :
-  sig type 'b t = 'b M.t = A of { x : 'b; } | B : { u : 'bla; } -> unit t end
+  sig
+    type 'b t = 'b M.t = A of { x : 'b; } | B : { u : 'bla; } -> unit t
+    exception Foo of { x : int; }
+  end
 #   
