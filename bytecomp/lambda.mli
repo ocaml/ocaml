@@ -21,11 +21,19 @@ type compile_time_constant =
   | Ostype_win32
   | Ostype_cygwin
 
+type loc_kind =
+  | Loc_FILE
+  | Loc_LINE
+  | Loc_MODULE
+  | Loc_LOC
+  | Loc_POS
+
 type primitive =
     Pidentity
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
+  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -245,3 +253,4 @@ val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
+val lam_of_loc : loc_kind -> Location.t -> lambda

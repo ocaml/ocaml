@@ -325,6 +325,11 @@ let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
     | "%apply" -> Pdirapply loc
+    | "%loc_LOC" -> Ploc Loc_LOC
+    | "%loc_FILE" -> Ploc Loc_FILE
+    | "%loc_LINE" -> Ploc Loc_LINE
+    | "%loc_POS" -> Ploc Loc_POS
+    | "%loc_MODULE" -> Ploc Loc_MODULE
     | name -> Hashtbl.find primitives_table name
 
 let transl_prim loc prim args =
@@ -404,10 +409,20 @@ let transl_primitive loc p =
     with Not_found ->
       Pccall p in
   match prim with
-    Plazyforce ->
+  | Plazyforce ->
       let parm = Ident.create "prim" in
       Lfunction(Curried, [parm],
                 Matching.inline_lazy_force (Lvar parm) Location.none)
+  | Ploc kind ->
+    let lam = lam_of_loc kind loc in
+    begin match p.prim_arity with
+      | 0 -> lam
+      | 1 -> (* TODO: we should issue a warning ? *)
+        let param = Ident.create "prim" in
+        Lfunction(Curried, [param],
+          Lprim(Pmakeblock(0, Immutable), [lam; Lvar param]))
+      | _ -> assert false
+    end
   | _ ->
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
@@ -694,6 +709,12 @@ and transl_exp0 e =
                   k
             in
             wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+        | (Ploc kind, []) ->
+          lam_of_loc kind e.exp_loc
+        | (Ploc kind, [arg1]) ->
+          let lam = lam_of_loc kind arg1.exp_loc in
+          Lprim(Pmakeblock(0, Immutable), lam :: argl)
+        | (Ploc _, _) -> assert false
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->

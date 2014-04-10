@@ -21,11 +21,19 @@ type compile_time_constant =
   | Ostype_win32
   | Ostype_cygwin
 
+type loc_kind =
+  | Loc_FILE
+  | Loc_LINE
+  | Loc_MODULE
+  | Loc_LOC
+  | Loc_POS
+
 type primitive =
     Pidentity
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
+  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -203,7 +211,7 @@ let lambda_unit = Lconst const_unit
 
 exception Not_simple
 
-let max_raw = 32 
+let max_raw = 32
 
 let make_key e =
   let count = ref 0
@@ -247,7 +255,7 @@ let make_key e =
     | Ltrywith (e1,x,e2) ->
         Ltrywith (tr_rec env e1,x,tr_rec env e2)
     | Lifthenelse (cond,ifso,ifnot) ->
-        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot) 
+        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot)
     | Lsequence (e1,e2) ->
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
@@ -258,7 +266,7 @@ let make_key e =
         Levent (tr_rec env e,evt)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
-    | Lfor _ | Lwhile _  -> 
+    | Lfor _ | Lwhile _  ->
         raise Not_simple
 
   and tr_recs env es = List.map (tr_rec env) es
@@ -317,7 +325,7 @@ let iter f = function
       f arg;
       List.iter (fun (key, case) -> f case) sw.sw_consts;
       List.iter (fun (key, case) -> f case) sw.sw_blocks;
-      iter_opt f sw.sw_failaction 
+      iter_opt f sw.sw_failaction
   | Lstringswitch (arg,cases,default) ->
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
@@ -422,7 +430,7 @@ let rec transl_normal_path = function
 (* Translation of value identifiers *)
 
 let transl_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path (Some loc) env path) 
+  transl_normal_path (Env.normalize_path (Some loc) env path)
 
 (* Compile a sequence of expressions *)
 
@@ -498,3 +506,26 @@ let raise_kind = function
   | Raise_regular -> "raise"
   | Raise_reraise -> "reraise"
   | Raise_notrace -> "raise_notrace"
+
+let lam_of_loc kind loc =
+  let loc_start = loc.Location.loc_start in
+  let (file, lnum, cnum) = Location.get_pos_info loc_start in
+  let enum = loc.Location.loc_end.Lexing.pos_cnum -
+      loc_start.Lexing.pos_cnum + cnum in
+  match kind with
+  | Loc_POS ->
+    Lconst (Const_block (0, [
+          Const_immstring file;
+          Const_base (Const_int lnum);
+          Const_base (Const_int cnum);
+          Const_base (Const_int enum);
+        ]))
+  | Loc_FILE -> Lconst (Const_immstring file)
+  | Loc_MODULE -> Lconst (Const_immstring
+                      (String.capitalize
+                         (Filename.chop_extension (Filename.basename file))))
+  | Loc_LOC ->
+    let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
+        file lnum cnum enum in
+    Lconst (Const_immstring loc)
+  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
