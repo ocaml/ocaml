@@ -3121,8 +3121,7 @@ and type_application env funct sargs =
             Location.prerr_warning loc w
           end
         in
-        let name = label_name l
-        and optional = if is_optional l then Optional else Required in
+        let optional = if is_optional l then Optional else Required in
         let sargs, more_sargs, arg =
           if ignore_labels && not (is_optional l) then begin
             (* In classic mode, omitted = [] *)
@@ -3142,14 +3141,14 @@ and type_application env funct sargs =
           end else try
             let (l', sarg0, sargs, more_sargs) =
               try
-                let (l', sarg0, sargs1, sargs2) = extract_label name sargs in
+                let (l', sarg0, sargs1, sargs2) = extract_arg l sargs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
                     (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs1 @ sargs2, more_sargs)
               with Not_found ->
                 let (l', sarg0, sargs1, sargs2) =
-                  extract_label name more_sargs in
+                  extract_arg l more_sargs in
                 if sargs1 <> [] || sargs <> [] then
                   may_warn sarg0.pexp_loc
                     (Warnings.Not_principal "commuting this argument");

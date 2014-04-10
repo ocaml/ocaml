@@ -983,8 +983,7 @@ and class_expr cl_num val_env met_env scl =
         match ty_fun, ty_fun0 with
         | Cty_arrow (l, ty, ty_fun), Cty_arrow (_, ty0, ty_fun0)
           when sargs <> [] || more_sargs <> [] ->
-            let name = Btype.label_name l
-            and optional =
+            let optional =
               if Btype.is_optional l then Optional else Required in
             let sargs, more_sargs, arg =
               if ignore_labels && not (Btype.is_optional l) then begin
@@ -1003,11 +1002,11 @@ and class_expr cl_num val_env met_env scl =
                 let (l', sarg0, sargs, more_sargs) =
                   try
                     let (l', sarg0, sargs1, sargs2) =
-                      Btype.extract_label name sargs
+                      Btype.extract_arg l sargs
                     in (l', sarg0, sargs1 @ sargs2, more_sargs)
                   with Not_found ->
                     let (l', sarg0, sargs1, sargs2) =
-                      Btype.extract_label name more_sargs
+                      Btype.extract_arg l more_sargs
                     in (l', sarg0, sargs @ sargs1, sargs2)
                 in
                 if optional = Required && Btype.is_optional l' then

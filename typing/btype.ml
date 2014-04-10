@@ -550,21 +550,23 @@ let is_optional = function
   | _ -> false
 
 let label_name = function
-  | Simple -> ""
-  | Optional s | Labelled s -> s
+  | Simple -> None
+  | Optional s | Labelled s -> Some s
 
 let label_raw = function
   | Simple -> ""
   | Optional s -> "?" ^ s
   | Labelled s -> s
 
-let rec extract_label_aux hd l = function
+let rec extract_arg_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->
-      if label_name l' = l then (l', t, List.rev hd, ls)
-      else extract_label_aux (p::hd) l ls
+      if label_name l' = l then
+        (l', t, List.rev hd, ls)
+      else
+        extract_arg_aux (p::hd) l ls
 
-let extract_label l ls = extract_label_aux [] l ls
+let extract_arg l ls = extract_arg_aux [] (label_name l) ls
 
 
                   (**********************************)

@@ -159,11 +159,11 @@ val forget_abbrev:
 
 val is_simple : arrow_flag -> bool
 val is_optional : arrow_flag -> bool
-val label_name : arrow_flag -> label
+val label_name : arrow_flag -> label option
 val label_raw : arrow_flag -> label
 
-val extract_label :
-    label -> (arrow_flag * 'a) list ->
+val extract_arg :
+    arrow_flag -> (arrow_flag * 'a) list ->
     arrow_flag * 'a * (arrow_flag * 'a) list * (arrow_flag * 'a) list
     (* actual label, value, before list, after list *)
 

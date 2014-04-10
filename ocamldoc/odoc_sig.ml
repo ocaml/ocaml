@@ -222,7 +222,7 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try List.assoc constructor_name name_comment_list 
+              try List.assoc constructor_name name_comment_list
               with Not_found -> None
             in
             {
@@ -1262,7 +1262,7 @@ module Analyser =
             (
              let new_param = Simple_name
                  {
-                   sn_name = Btype.label_name label ;
+                   sn_name = Odoc_misc.label_name' label ;
                    sn_type = Odoc_env.subst_type env type_expr ;
                    sn_text = None ; (* will be updated when the class will be created *)
                  }

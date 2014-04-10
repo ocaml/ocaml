@@ -471,6 +471,11 @@ let create_index_lists elements string_of_ele =
 
 let is_optional = Btype.is_optional
 let label_name = Btype.label_name
+
+let label_name' label = match label_name label with
+  | None -> ""
+  | Some s -> s
+
 let label_prefix = function
   | Asttypes.Simple -> ""
   | Asttypes.Optional s -> "?" ^ s ^ ":"
