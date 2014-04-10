@@ -105,6 +105,9 @@
 #define IS_OCTAL(c)       ((c) >= '0' && (c) <= '7')
 #define NUMERIC_VALUE(c)  ((c) - '0')
 
+#define IS_IDENTCHAR0(c)  ((c) == '_' || islower(c))
+#define IS_IDENTCHAR(c)   ((c) == '_' || (c) == '\'' || isalnum(c))
+
 
 /*  symbol macros  */
 
@@ -138,6 +141,7 @@ struct bucket
     char assoc;
     char entry;
     char true_token;
+    char used_as_ident;
 };
 
 /* TABLE_SIZE is the number of entries in the symbol table.      */
@@ -315,11 +319,13 @@ extern void create_symbol_table (void);
 extern void default_action_error (void);
 extern void done (int k) Noreturn;
 extern void entry_without_type (char *s);
+extern void expecting_symbol (char *ident);
 extern void fatal (char *msg);
 extern void finalize_closure (void);
 extern void free_parser (void);
 extern void free_symbol_table (void);
 extern void free_symbols (void);
+extern void invalid_symbol_ident (char *s);
 extern void illegal_character (char *c_cptr);
 extern void illegal_token_ref (int i, char *name);
 extern void lalr (void);

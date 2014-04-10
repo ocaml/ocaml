@@ -57,6 +57,7 @@ make_bucket(char *name)
     bp->assoc = TOKEN;
     bp->entry = 0;
     bp->true_token = 0;
+    bp->used_as_ident = 0;
 
     if (bp->name == 0) no_space();
     strcpy(bp->name, name);

@@ -158,6 +158,13 @@ be declared to be a token\n", virtual_input_file_name, lineno, s);
 }
 
 
+void invalid_symbol_ident(char *s)
+{
+     fprintf(stderr, "File \"%s\", line %d: `%s' is not a valid identifier\n",
+         virtual_input_file_name, lineno, s);
+     done(1);
+}
+
 void retyped_warning(char *s)
 {
     fprintf(stderr, "File \"%s\", line %d: warning: the type of `%s' has been \
@@ -308,5 +315,12 @@ void polymorphic_entry_point(char *s)
     fprintf(stderr,
             "%s: e - the start symbol `%s' has a polymorphic type\n",
             myname, s);
+    done(1);
+}
+
+void expecting_symbol(char *ident)
+{
+    fprintf(stderr, "File \"%s\", line %d: symbol expected after '%s ='\n",
+            virtual_input_file_name, lineno, ident);
     done(1);
 }

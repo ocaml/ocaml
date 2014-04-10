@@ -36,9 +36,11 @@ bucket *goal;
 int prec;
 int gensym;
 char last_was_action;
+char last_was_ident;
 
 int maxitems;
 bucket **pitem;
+bucket **pident; /* has the same size as pitem */
 
 int maxrules;
 bucket **plhs;
@@ -1064,11 +1066,16 @@ void initialize_grammar(void)
     nitems = 4;
     maxitems = 300;
     pitem = (bucket **) MALLOC(maxitems*sizeof(bucket *));
-    if (pitem == 0) no_space();
+    pident = (bucket **) MALLOC(maxitems*sizeof(bucket *));
+    if (pitem == 0 || pident == 0) no_space();
     pitem[0] = 0;
     pitem[1] = 0;
     pitem[2] = 0;
     pitem[3] = 0;
+    pident[0] = 0;
+    pident[1] = 0;
+    pident[2] = 0;
+    pident[3] = 0;
 
     nrules = 3;
     maxrules = 100;
@@ -1094,7 +1101,8 @@ void expand_items(void)
 {
     maxitems += 300;
     pitem = (bucket **) REALLOC(pitem, maxitems*sizeof(bucket *));
-    if (pitem == 0) no_space();
+    pident = (bucket **) REALLOC(pident, maxitems*sizeof(bucket *));
+    if (pitem == 0 || pident == 0) no_space();
 }
 
 
@@ -1183,6 +1191,7 @@ void end_rule(void)
     last_was_action = 0;
     if (nitems >= maxitems) expand_items();
     pitem[nitems] = 0;
+    pident[nitems] = 0;
     ++nitems;
     ++nrules;
 }
@@ -1242,9 +1251,44 @@ void add_symbol(void)
     if (last_was_action) syntax_error (lineno, line, ecptr);
     last_was_action = 0;
 
-    if (++nitems > maxitems)
-        expand_items();
-    pitem[nitems-1] = bp;
+    if (last_was_ident)
+    {
+        pitem[nitems-1] = bp;
+    }
+    else
+    {
+        if (++nitems > maxitems)
+            expand_items();
+        pitem[nitems-1] = bp;
+        pident[nitems-1] = 0;
+    }
+    last_was_ident = 0;
+}
+
+
+void move_symbol_to_ident(void)
+{
+
+  if (nitems == 0 || last_was_ident)
+    syntax_error (lineno, line, cptr);
+
+  cptr++;
+
+  bucket *symbol = pitem[nitems-1];
+
+  /* The ident used in a "ident = symbol" producer has to be a lowercase
+   * identifier */
+  char *name = symbol->name;
+  if (!IS_IDENTCHAR0(*name))
+    invalid_symbol_ident(symbol->name);
+  for (name++; *name; name++)
+    if (!IS_IDENTCHAR(*name))
+      invalid_symbol_ident(symbol->name);
+
+  symbol->used_as_ident = 1;
+  pident[nitems-1] = symbol;
+
+  last_was_ident = 1;
 }
 
 
@@ -1254,7 +1298,7 @@ void copy_action(void)
     register int i, n;
     int depth;
     int quote;
-    bucket *item;
+    bucket *item, *ident;
     char *tagres;
     register FILE *f = action_file;
     int a_lineno = lineno;
@@ -1278,8 +1322,51 @@ void copy_action(void)
 
     for (i = 1; i <= n; i++) {
       item = pitem[nitems + i - n - 1];
-      if (item->class == TERM && !item->tag) continue;
-      fprintf(f, "    let _%d = ", i);
+      ident = pident[nitems + i - n - 1];
+
+
+      if (ident != NULL)
+      {
+          /* Current symbol is bound to an explicit ident.
+           * Two definitions are emitted:
+           *   let __$name = i    (* __name is bound to the index *)
+           *   let $name   = $i   (* name is bound to the actual value *)
+           *  __$name is used as a quick way to refers to the index in code
+           *  generated from keywords, while guaranteeing alignement with code
+           *  input grammar.
+           *
+           *  E.g. $endpos(ident)  ==>  (_'eP __ident) have the exact same length.
+           *
+           * A directive is emitted so that warnings and errors referring to
+           * the ident on ocaml-side are located to the line of the production
+           * (approximating actual location of the binding declaration).
+           */
+          fprintf(f, "    let __%s = %d in", ident->name, i);
+          fprintf(f, "    let \n");
+          ++outline;
+          fprintf(f, line_format, lineno, input_file_name);
+          ++outline;
+          fprintf(f, "%s\n", ident->name);
+          ++outline;
+          fprintf(f, line_format, ++outline + 1, code_file_name);
+      }
+
+      if (item->class == TERM && !item->tag)
+      {
+        if (ident != NULL)
+        {
+          /* A symbol without payload can still be bound to an ident,
+           * if just for simplifying access to its position. */
+
+          /* Menhir gives () value by default */
+          fprintf(f, " = () in ");
+        }
+        continue;
+      }
+      if (ident != NULL)
+        fprintf(f, " = ");
+      else
+        fprintf(f, "    let _%d = ", i);
       if (item->tag)
         fprintf(f, "(Parsing.peek_val __caml_parser_env %d : %s) in\n", n - i,
                 item->tag);
@@ -1506,6 +1593,10 @@ void read_grammar(void)
         if (isalpha(c) || c == '_' || c == '.' || c == '$' || c == '\'' ||
                 c == '"')
             add_symbol();
+        else if (c == '=')
+            move_symbol_to_ident();
+        else if (last_was_ident)
+            expecting_symbol(pident[nitems-1]->name);
         else if (c == '{')
             copy_action();
         else if (c == '|')
@@ -1576,7 +1667,8 @@ void check_symbols(void)
     {
         if (bp->class == UNKNOWN)
         {
-            undefined_symbol(bp->name);
+            if (bp->used_as_ident == 0)
+                undefined_symbol(bp->name);
             bp->class = TERM;
         }
     }
@@ -1761,8 +1853,12 @@ void make_goal(void)
       bc = lookup(name);
       bc->class = TERM;
       bc->value = (unsigned char) bp->entry;
-      pitem[nitems++] = bc;
-      pitem[nitems++] = bp;
+      pitem[nitems] = bc;
+      pident[nitems] = NULL;
+      nitems++;
+      pitem[nitems] = bp;
+      pident[nitems] = NULL;
+      nitems++;
       if (bp->tag == NULL)
         entry_without_type(bp->name);
       if (is_polymorphic(bp->tag))
