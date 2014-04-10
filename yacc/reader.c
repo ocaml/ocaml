@@ -1506,7 +1506,7 @@ void read_grammar(void)
         if (isalpha(c) || c == '_' || c == '.' || c == '$' || c == '\'' ||
                 c == '"')
             add_symbol();
-        else if (c == '{' || c == '=')
+        else if (c == '{')
             copy_action();
         else if (c == '|')
         {
