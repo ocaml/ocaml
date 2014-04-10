@@ -1198,22 +1198,20 @@ class printer  ()= object(self:'self)
         self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
-    let simple_name = match e.pexp_desc with
-      | Pexp_ident {txt=Lident l;_} -> Some l
-      | _ -> None
+    let print_label c s =
+      let simple_name = match e.pexp_desc with
+        | Pexp_ident {txt=Lident l;_} -> Some l
+        | _ -> None
+      in
+      if Some s = simple_name then
+        pp f "%c%s" c s
+      else
+        pp f "%c%s:%a" c s self#simple_expr e
     in
     match l with
     | Simple -> self#expression2 f e ; (* level 2*)
-    | Optional s ->
-        if Some s = simple_name then
-          pp f "?%s" s
-        else
-          pp f "?%s:%a" s self#simple_expr e
-    | Labelled s ->
-        if Some s = simple_name then
-          pp f "~%s" s
-        else
-          pp f "~%s:%a" s self#simple_expr e
+    | Optional s -> print_label '?' s
+    | Labelled s -> print_label '~' s
 
   method directive_argument f x =
     (match x with
