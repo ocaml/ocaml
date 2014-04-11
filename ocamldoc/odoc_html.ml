@@ -1534,12 +1534,21 @@ class html =
       bs b (Name.simple e.ex_name);
       bs b "</span>";
       (
-       match e.ex_args with
-         [] -> ()
-       | _ ->
-           bs b (" "^(self#keyword "of")^" ");
-           self#html_of_type_expr_list
-             ~par: false b (Name.father e.ex_name) " * " e.ex_args
+        match e.ex_args, e.ex_ret with
+          [], None -> ()
+        | l,None ->
+            bs b (" "^(self#keyword "of")^" ");
+            self#html_of_type_expr_list
+                   ~par: false b (Name.father e.ex_name) " * " e.ex_args
+        | [],Some r ->
+            bs b (" " ^ (self#keyword ":") ^ " ");
+            self#html_of_type_expr b (Name.father e.ex_name) r;
+        | l,Some r ->
+            bs b (" " ^ (self#keyword ":") ^ " ");
+            self#html_of_type_expr_list
+                   ~par: false b (Name.father e.ex_name) " * " l;
+            bs b (" " ^ (self#keyword "->") ^ " ");
+            self#html_of_type_expr b (Name.father e.ex_name) r;
       );
       (
        match e.ex_alias with

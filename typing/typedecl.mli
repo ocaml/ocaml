@@ -21,10 +21,7 @@ val transl_type_decl:
 
 val transl_exception:
     Env.t ->
-    Parsetree.constructor_declaration -> Typedtree.constructor_declaration * exception_declaration * Env.t
-
-val transl_exn_rebind:
-    Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
+    Parsetree.extension_constructor -> Typedtree.extension_constructor * Env.t
 
 val transl_type_extension:
     bool -> Env.t -> Location.t -> Parsetree.type_extension ->
@@ -78,14 +75,11 @@ type error =
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
   | Rebind_private of Longident.t
-  | Not_an_exception of Longident.t
   | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
-  | Unbound_type_var_exc of type_expr * type_expr
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
-  | Exception_constructor_with_result
 
 exception Error of Location.t * error
 

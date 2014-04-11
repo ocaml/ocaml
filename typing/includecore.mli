@@ -39,8 +39,6 @@ val type_declarations:
         type_declaration -> Ident.t -> type_declaration -> type_mismatch list
 val extension_constructors:
     Env.t -> Ident.t -> extension_constructor -> extension_constructor -> bool
-val exception_declarations:
-    Env.t -> exception_declaration -> exception_declaration -> bool
 (*
 val class_types:
         Env.t -> class_type -> class_type -> bool

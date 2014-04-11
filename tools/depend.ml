@@ -240,8 +240,8 @@ and add_sig_item bv item =
       List.iter (add_type_declaration bv) dcls; bv
   | Psig_typext te ->
       add_type_extension bv te; bv
-  | Psig_exception pcd ->
-      add_constructor_decl bv pcd; bv
+  | Psig_exception pext ->
+      add_extension_constructor bv pext; bv
   | Psig_module pmd ->
       add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
   | Psig_recmodule decls ->
@@ -300,10 +300,8 @@ and add_struct_item bv item =
   | Pstr_typext te ->
       add_type_extension bv te;
       bv
-  | Pstr_exception pcd ->
-      add_constructor_decl bv pcd; bv
-  | Pstr_exn_rebind(id, l, _attrs) ->
-      add bv l; bv
+  | Pstr_exception pext ->
+      add_extension_constructor bv pext; bv
   | Pstr_module x ->
       add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
   | Pstr_recmodule bindings ->

@@ -622,10 +622,8 @@ structure_item:
       { mkstr(Pstr_type (List.rev $2) ) }
   | TYPE str_type_extension
       { mkstr(Pstr_typext $2) }
-  | EXCEPTION exception_declaration
+  | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
-  | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -721,7 +719,7 @@ signature_item:
       { mksig(Psig_type (List.rev $2)) }
   | TYPE sig_type_extension
       { mksig(Psig_typext $2) }
-  | EXCEPTION exception_declaration
+  | EXCEPTION sig_exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2)
@@ -1590,11 +1588,23 @@ constructor_declaration:
        Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
       }
 ;
-exception_declaration:
-  | constructor_declaration post_item_attributes
+str_exception_declaration:
+  | extension_constructor_declaration post_item_attributes
       {
-        let cd = $1 in
-        {cd with pcd_attributes = cd.pcd_attributes @ $2}
+        let ext = $1 in
+        {ext with pext_attributes = ext.pext_attributes @ $2}
+      }
+  | extension_constructor_rebind post_item_attributes
+      {
+        let ext = $1 in
+        {ext with pext_attributes = ext.pext_attributes @ $2}
+      }
+;
+sig_exception_declaration:
+  | extension_constructor_declaration post_item_attributes
+      {
+        let ext = $1 in
+        {ext with pext_attributes = ext.pext_attributes @ $2}
       }
 ;
 generalized_constructor_arguments:

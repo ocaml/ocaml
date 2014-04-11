@@ -79,30 +79,12 @@ let constructor_descrs ty_res cstrs priv =
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
             cstr_private = priv;
-            cstr_exception = false;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
           } in
         (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
-
-let exception_descr path_exc decl =
-  { cstr_name = Path.last path_exc;
-    cstr_res = Predef.type_exn;
-    cstr_existentials = [];
-    cstr_args = decl.exn_args;
-    cstr_arity = List.length decl.exn_args;
-    cstr_tag = Cstr_extension(path_exc, decl.exn_args = []);
-    cstr_consts = -1;
-    cstr_nonconsts = -1;
-    cstr_private = Public;
-    cstr_exception = true;
-    cstr_normal = -1;
-    cstr_generalized = false;
-    cstr_loc = decl.exn_loc;
-    cstr_attributes = decl.exn_attributes;
-  }
 
 let extension_descr path_ext ext =
   let ty_res =
@@ -129,7 +111,6 @@ let extension_descr path_ext ext =
       cstr_consts = -1;
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
-      cstr_exception = false;
       cstr_normal = -1;
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;

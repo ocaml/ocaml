@@ -120,10 +120,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_type (List.map map_type_declaration list)
         | Tstr_typext tyext ->
           Tstr_typext (map_type_extension tyext)
-        | Tstr_exception cd ->
-          Tstr_exception (map_constructor_declaration cd)
-        | Tstr_exn_rebind (id, name, path, lid, attrs) ->
-          Tstr_exn_rebind (id, name, path, lid, attrs)
+        | Tstr_exception ext ->
+          Tstr_exception (map_extension_constructor ext)
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -411,8 +409,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_type list -> Tsig_type (List.map map_type_declaration list)
         | Tsig_typext tyext ->
           Tsig_typext (map_type_extension tyext)
-        | Tsig_exception cd ->
-          Tsig_exception (map_constructor_declaration cd)
+        | Tsig_exception ext ->
+          Tsig_exception (map_extension_constructor ext)
         | Tsig_module md ->
           Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
@@ -646,7 +644,6 @@ module DefaultMapArgument = struct
   let enter_type_declaration t = t
   let enter_type_extension t = t
   let enter_extension_constructor t = t
-  let enter_exception_declaration t = t
   let enter_pattern t = t
   let enter_expression t = t
   let enter_package_type t = t
@@ -674,8 +671,6 @@ module DefaultMapArgument = struct
   let leave_type_declaration t = t
   let leave_type_extension t = t
   let leave_extension_constructor t = t
-
-  let leave_exception_declaration t = t
   let leave_pattern t = t
   let leave_expression t = t
   let leave_package_type t = t

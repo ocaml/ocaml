@@ -632,9 +632,9 @@ and signature_item i ppf x =
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
       type_extension i ppf te
-  | Psig_exception cd ->
+  | Psig_exception ext ->
       line i ppf "Psig_exception\n";
-      constructor_decl i ppf cd;
+      extension_constructor i ppf ext;
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
@@ -740,14 +740,9 @@ and structure_item i ppf x =
   | Pstr_typext te ->
       line i ppf "Pstr_typext\n";
       type_extension i ppf te
-  | Pstr_exception cd ->
+  | Pstr_exception ext ->
       line i ppf "Pstr_exception\n";
-      constructor_decl i ppf cd;
-  | Pstr_exn_rebind (s, li, attrs) ->
-      line i ppf "Pstr_exn_rebind\n";
-      attributes i ppf attrs;
-      line (i+1) ppf "%a\n" fmt_string_loc s;
-      line (i+1) ppf "%a\n" fmt_longident_loc li
+      extension_constructor i ppf ext;
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x

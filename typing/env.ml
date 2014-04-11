@@ -107,7 +107,6 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
-  | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_declaration
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
@@ -754,10 +753,6 @@ let mark_extension_used usage ext name =
   try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
   with Not_found -> ()
 
-let mark_exception_used usage ed constr =
-  try Hashtbl.find used_constructors ("exn", ed.exn_loc, constr) usage
-  with Not_found -> ()
-
 let set_value_used_callback name vd callback =
   let key = (name, vd.val_loc) in
   try
@@ -1066,10 +1061,6 @@ let rec prefix_idents root pos sub = function
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
-  | Sig_exception(id, decl) :: rem ->
-      let p = Pdot(root, Ident.name id, pos) in
-      let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
-      (p::pl, final_sub)
   | Sig_module(id, mty, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       let (pl, final_sub) =
@@ -1100,8 +1091,6 @@ let subst_signature sub sg =
           Sig_type(id, Subst.type_declaration sub decl, x)
       | Sig_typext(id, ext, es) ->
           Sig_typext (id, Subst.extension_constructor sub ext, es)
-      | Sig_exception(id, decl) ->
-          Sig_exception (id, Subst.exception_declaration sub decl)
       | Sig_module(id, mty, x) ->
           Sig_module(id, Subst.module_declaration sub mty,x)
       | Sig_modtype(id, decl) ->
@@ -1193,13 +1182,6 @@ and components_of_module_maker (env, sub, path, mty) =
             let descr = Datarepr.extension_descr path ext' in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
-            incr pos
-        | Sig_exception(id, decl) ->
-            let decl' = Subst.exception_declaration sub decl in
-            let cstr = Datarepr.exception_descr path decl' in
-            let s = Ident.name id in
-            c.comp_constrs <-
-              add_to_tbl s (cstr, !pos) c.comp_constrs;
             incr pos
         | Sig_module(id, md, _) ->
             let mty = md.md_type in
@@ -1354,33 +1336,6 @@ and store_extension ~check slot id path ext env renv =
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_exception ~check slot id path decl env renv =
-  let loc = decl.exn_loc in
-  if check && not loc.Location.loc_ghost &&
-    Warnings.is_active (Warnings.Unused_exception ("", false))
-  then begin
-    let ty = "exn" in
-    let c = Ident.name id in
-    let k = (ty, loc, c) in
-    if not (Hashtbl.mem used_constructors k) then begin
-      let used = constructor_usages () in
-      Hashtbl.add used_constructors k (add_constructor_usage used);
-      !add_delayed_check_forward
-        (fun () ->
-          if not env.in_signature && not used.cu_positive then
-            Location.prerr_warning loc
-              (Warnings.Unused_exception
-                 (c, used.cu_pattern)
-              )
-        )
-    end;
-  end;
-  { env with
-    constrs = EnvTbl.add "constructor" slot id
-                         (Datarepr.exception_descr path decl) env.constrs
-                         renv.constrs;
-    summary = Env_exception(env.summary, id, decl) }
-
 and store_module slot id path md env renv =
   { env with
     modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
@@ -1445,9 +1400,6 @@ let add_type ~check id info env =
 and add_extension ~check id ext env =
   store_extension ~check None id (Pident id) ext env env
 
-and add_exception ~check id decl env =
-  store_exception ~check None id (Pident id) decl env env
-
 and add_module_declaration ?arg id md env =
   let path =
     (*match md.md_type with
@@ -1487,7 +1439,6 @@ let enter store_fun name data env =
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
-and enter_exception = enter (store_exception ~check:true)
 and enter_module_declaration ?arg name md env =
   let id = Ident.create name in
   (id, add_module_declaration ?arg id md env)
@@ -1507,7 +1458,6 @@ let add_item comp env =
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_exception(id, decl) -> add_exception ~check:false id decl env
   | Sig_module(id, md, _)  -> add_module_declaration id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
@@ -1537,8 +1487,6 @@ let open_signature slot root sg env0 =
             store_type ~check:false slot (Ident.hide id) p decl env env0
         | Sig_typext(id, ext, _) ->
             store_extension ~check:false slot (Ident.hide id) p ext env env0
-        | Sig_exception(id, decl) ->
-            store_exception ~check:false slot (Ident.hide id) p decl env env0
         | Sig_module(id, mty, _) ->
             store_module slot (Ident.hide id) p mty env env0
         | Sig_modtype(id, decl) ->
@@ -1743,7 +1691,7 @@ and fold_cltypes f =
 let initial =
   Predef.build_initial_env
     (add_type ~check:false)
-    (add_exception ~check:false)
+    (add_extension ~check:false)
     empty
 
 (* Return the environment summary *)

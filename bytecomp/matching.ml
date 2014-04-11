@@ -627,7 +627,7 @@ let rec what_is_cases cases = match cases with
 (* A few operation on default environments *)
 let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-(* For exception matching, record no imformation in matrix *)
+(* For extension matching, record no imformation in matrix *)
 let as_matrix_omega cases =
   get_mins le_pats
     (List.map
@@ -903,7 +903,7 @@ let rec split_or argo cls args def =
 
   do_split [] [] [] cls
 
-(* Ultra-naive spliting, close to semantics, used for exception/extension,
+(* Ultra-naive spliting, close to semantics, used for extension,
    as potential rebind prevents any kind of optimisation *)
 
 and split_naive cls args def k =
@@ -2155,7 +2155,7 @@ let split_extension_cases tag_lambda_list =
 let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
-    (* Special cases for exceptions and extensions *)
+    (* Special cases for extensions *)
     let fail, to_add, local_jumps =
       mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in

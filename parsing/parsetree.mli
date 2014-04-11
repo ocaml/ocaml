@@ -606,7 +606,7 @@ and signature_item_desc =
         (* type t1 = ... and ... and tn = ... *)
   | Psig_typext of type_extension
         (* type t1 += ... *)
-  | Psig_exception of constructor_declaration
+  | Psig_exception of extension_constructor
         (* exception C of T *)
   | Psig_module of module_declaration
         (* module X : MT *)
@@ -709,10 +709,9 @@ and structure_item_desc =
         (* type t1 = ... and ... and tn = ... *)
   | Pstr_typext of type_extension
         (* type t1 += ... *)
-  | Pstr_exception of constructor_declaration
-        (* exception C of T *)
-  | Pstr_exn_rebind of string loc * Longident.t loc * attributes
-        (* exception C = M.X *)
+  | Pstr_exception of extension_constructor
+        (* exception C of T
+           exception C = M.X *)
   | Pstr_module of module_binding
         (* module X = ME *)
   | Pstr_recmodule of module_binding list

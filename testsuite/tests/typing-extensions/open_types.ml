@@ -95,3 +95,8 @@ module type S = sig type 'a foo = .. type 'a bar = 'a foo = .. end
 
 module M_S = (M : S) (* ERROR: Signatures are not compatible *)
 ;;
+
+(* Exn is an open type *)
+
+type exn2 = exn = ..
+;;

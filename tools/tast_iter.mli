@@ -28,6 +28,7 @@ class iter: object
   method class_type_field: class_type_field -> unit
   method core_type: core_type -> unit
   method expression: expression -> unit
+  method extension_constructor: extension_constructor -> unit
   method module_binding: module_binding -> unit
   method module_expr: module_expr -> unit
   method module_type: module_type -> unit
@@ -64,6 +65,7 @@ val class_type_declaration: iter -> class_type_declaration -> unit
 val class_type_field: iter -> class_type_field -> unit
 val core_type: iter -> core_type -> unit
 val expression: iter -> expression -> unit
+val extension_constructor: iter -> extension_constructor -> unit
 val module_binding: iter -> module_binding -> unit
 val module_expr: iter -> module_expr -> unit
 val module_type: iter -> module_type -> unit

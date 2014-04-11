@@ -395,10 +395,11 @@ and print_out_sig_item ppf =
         (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
-  | Osig_typext (ext, _) ->
+  | Osig_typext (ext, Oext_exception) ->
+      fprintf ppf "@[<2>exception %a@]"
+        print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
+  | Osig_typext (ext, es) ->
       print_out_extension_constructor ppf ext
-  | Osig_exception (id, tyl) ->
-      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
   | Osig_modtype (name, Omty_abstract) ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype (name, mty) ->

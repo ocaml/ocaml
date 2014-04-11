@@ -70,4 +70,5 @@ Error: Signature mismatch:
        is not included in
          type 'a foo = ..
        Their variances do not agree.
+#         type exn2 = exn = ..
 # 

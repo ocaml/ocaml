@@ -40,7 +40,6 @@ module Signature_search =
       | C of string
       | CT of string
       | X of string
-      | E of string
       | P of string
 
     type tab = (ele, Types.signature_item) Hashtbl.t
@@ -51,8 +50,6 @@ module Signature_search =
           Hashtbl.add table (V (Name.from_ident ident)) signat
       | Types.Sig_typext (ident, _, _) ->
           Hashtbl.add table (X (Name.from_ident ident)) signat
-      | Types.Sig_exception (ident, _) ->
-          Hashtbl.add table (E (Name.from_ident ident)) signat
       | Types.Sig_type (ident, _, _) ->
           Hashtbl.add table (T (Name.from_ident ident)) signat
       | Types.Sig_class (ident, _, _) ->
@@ -77,12 +74,6 @@ module Signature_search =
     let search_extension table name =
       match Hashtbl.find table (X name) with
       | (Types.Sig_typext (_, ext, _)) -> ext
-      | _ -> assert false
-
-    let search_exception table name =
-      match Hashtbl.find table (E name) with
-      | (Types.Sig_exception (_, type_expr_list)) ->
-          type_expr_list
       | _ -> assert false
 
     let search_type table name =
@@ -642,10 +633,10 @@ module Analyser =
               new_te.te_info <- merge_infos new_te.te_info info_after_opt ;
               (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
 
-        | Parsetree.Psig_exception exception_decl ->
-            let name = exception_decl.Parsetree.pcd_name in
-            let types_excep_decl =
-              try Signature_search.search_exception table name.txt
+        | Parsetree.Psig_exception ext ->
+            let name = ext.Parsetree.pext_name in
+            let types_ext =
+              try Signature_search.search_extension table name.txt
               with Not_found ->
                 raise (Failure (Odoc_messages.exception_not_found current_module_name name.txt))
             in
@@ -653,7 +644,8 @@ module Analyser =
               {
                 ex_name = Name.concat current_module_name name.txt ;
                 ex_info = comment_opt ;
-                ex_args = List.map (Odoc_env.subst_type env) types_excep_decl.exn_args ;
+                ex_args = List.map (Odoc_env.subst_type env) types_ext.ext_args ;
+                ex_ret = may_map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
                 ex_code =
@@ -671,7 +663,7 @@ module Analyser =
                 (get_string_of_file pos_end_ele pos_limit)
             in
             e.ex_info <- merge_infos e.ex_info info_after_opt ;
-            let new_env = Odoc_env.add_exception env e.ex_name in
+            let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
         | Parsetree.Psig_type name_type_decl_list ->

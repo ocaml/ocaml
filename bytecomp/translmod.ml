@@ -30,38 +30,46 @@ type error =
 
 exception Error of Location.t * error
 
-(* Compile an exception definition *)
+(* Keep track of the root path (from the root of the namespace to the
+   currently compiled module expression).  Useful for naming extensions. *)
+
+let global_path glob = Some(Pident glob)
+let functor_path path param =
+  match path with
+    None -> None
+  | Some p -> Some(Papply(p, Pident param))
+let field_path path field =
+  match path with
+    None -> None
+  | Some p -> Some(Pdot(p, Ident.name field, Path.nopos))
+
+(* Compile type extensions *)
 
 let prim_set_oo_id =
   Pccall {Primitive.prim_name = "caml_set_oo_id"; prim_arity = 1;
           prim_alloc = false; prim_native_name = "";
           prim_native_float = false}
 
-let transl_exception path decl =
+let transl_extension_constructor env path ext =
   let name =
     match path with
-      None -> Ident.name decl.cd_id
+      None -> Ident.name ext.ext_id
     | Some p -> Path.name p
   in
-  Lprim(prim_set_oo_id,
-        [Lprim(Pmakeblock(Obj.object_tag, Immutable),
-              [Lconst(Const_base(Const_string (name,None)));
-               Lconst(Const_base(Const_int 0))])])
+    match ext.ext_kind with
+      Text_decl(args, ret) ->
+        Lprim(prim_set_oo_id,
+              [Lprim(Pmakeblock(Obj.object_tag, Immutable),
+                     [Lconst(Const_base(Const_string (name,None)));
+                      Lconst(Const_base(Const_int 0))])])
+    | Text_rebind(path, lid) ->
+        transl_path ~loc:ext.ext_loc env path
 
-(* Compile a type extension *)
-
-let transl_type_extension env tyext body =
+let transl_type_extension env rootpath tyext body =
   List.fold_right
     (fun ext body ->
        let lam =
-         match ext.ext_kind with
-           Text_decl(args, ret) ->
-             Lprim(prim_set_oo_id,
-                   [Lprim(Pmakeblock(Obj.object_tag, Immutable),
-                          [Lconst(Const_base(Const_int 0));
-                           Lconst(Const_base(Const_int 0))])])
-         | Text_rebind(path, lid) ->
-             transl_path ~loc:ext.ext_loc env path
+         transl_extension_constructor env (field_path rootpath ext.ext_id) ext
        in
          Llet(Strict, ext.ext_id, lam, body))
     tyext.tyext_constructors
@@ -145,19 +153,6 @@ let record_primitive = function
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
 
-(* Keep track of the root path (from the root of the namespace to the
-   currently compiled module expression).  Useful for naming exceptions. *)
-
-let global_path glob = Some(Pident glob)
-let functor_path path param =
-  match path with
-    None -> None
-  | Some p -> Some(Papply(p, Pident param))
-let field_path path field =
-  match path with
-    None -> None
-  | Some p -> Some(Pdot(p, Ident.name field, Path.nopos))
-
 (* Utilities for compiling "module rec" definitions *)
 
 let mod_prim name =
@@ -200,8 +195,6 @@ let init_shape modl =
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext(id, ext, _) :: rem ->
-        raise Not_found
-    | Sig_exception(id, edecl) :: rem ->
         raise Not_found
     | Sig_module(id, md, _) :: rem ->
         init_shape_mod env md.md_type ::
@@ -295,7 +288,7 @@ let compile_recmodule compile_rhs bindings cont =
 
 (* Extract the list of "value" identifiers bound by a signature.
    "Value" identifiers are identifiers for signature components that
-   correspond to a run-time value: values, exceptions, modules, classes.
+   correspond to a run-time value: values, extensions, modules, classes.
    Note: manifest primitives do not correspond to a run-time value! *)
 
 let rec bound_value_identifiers = function
@@ -303,7 +296,6 @@ let rec bound_value_identifiers = function
   | Sig_value(id, {val_kind = Val_reg}) :: rem ->
       id :: bound_value_identifiers rem
   | Sig_typext(id, ext, _) :: rem -> id :: bound_value_identifiers rem
-  | Sig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
   | Sig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
   | Sig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
   | _ :: rem -> bound_value_identifiers rem
@@ -386,14 +378,12 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_typext(tyext) ->
       let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-        transl_type_extension item.str_env tyext
+        transl_type_extension item.str_env rootpath tyext
           (transl_structure (List.rev_append ids fields) cc rootpath rem)
-  | Tstr_exception decl ->
-      let id = decl.cd_id in
-      Llet(Strict, id, transl_exception (field_path rootpath id) decl,
-           transl_structure (id :: fields) cc rootpath rem)
-  | Tstr_exn_rebind( id, _, path, {Location.loc=loc}, _) ->
-      Llet(Strict, id, transl_path ~loc item.str_env path,
+  | Tstr_exception ext ->
+      let id = ext.ext_id in
+      let path = field_path rootpath id in
+      Llet(Strict, id, transl_extension_constructor item.str_env path ext,
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module mb ->
       let id = mb.mb_id in
@@ -472,8 +462,7 @@ let rec defined_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
-    | Tstr_exception decl -> decl.cd_id :: defined_idents rem
-    | Tstr_exn_rebind(id, _, path, _, _) -> id :: defined_idents rem
+    | Tstr_exception ext -> ext.ext_id :: defined_idents rem
     | Tstr_module mb -> mb.mb_id :: defined_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ defined_idents rem
@@ -497,7 +486,6 @@ let rec more_idents = function
     | Tstr_type decls -> more_idents rem
     | Tstr_typext tyext -> more_idents rem
     | Tstr_exception _ -> more_idents rem
-    | Tstr_exn_rebind(id, _, path, _, _) -> more_idents rem
     | Tstr_recmodule decls -> more_idents rem
     | Tstr_modtype _ -> more_idents rem
     | Tstr_open _ -> more_idents rem
@@ -521,8 +509,7 @@ and all_idents = function
     | Tstr_typext tyext ->
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ all_idents rem
-    | Tstr_exception decl -> decl.cd_id :: all_idents rem
-    | Tstr_exn_rebind(id, _, path, _, _) -> id :: all_idents rem
+    | Tstr_exception ext -> ext.ext_id :: all_idents rem
     | Tstr_recmodule decls ->
       List.map (fun mb -> mb.mb_id) decls @ all_idents rem
     | Tstr_modtype _ -> all_idents rem
@@ -579,17 +566,16 @@ let transl_store_structure glob map prims str =
       transl_store rootpath subst rem
   | Tstr_typext(tyext) ->
       let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-      let lam = transl_type_extension item.str_env tyext (store_idents ids) in
+      let lam =
+        transl_type_extension item.str_env rootpath tyext (store_idents ids)
+      in
         Lsequence(subst_lambda subst lam,
                   transl_store rootpath (add_idents false ids subst) rem)
-  | Tstr_exception decl ->
-      let id = decl.cd_id in
-      let lam = transl_exception (field_path rootpath id) decl in
-      Lsequence(Llet(Strict, id, lam, store_ident id),
-                transl_store rootpath (add_ident false id subst) rem)
-  | Tstr_exn_rebind( id, _, path, {Location.loc=loc}, _) ->
-      let lam = subst_lambda subst (transl_path ~loc item.str_env path) in
-      Lsequence(Llet(Strict, id, lam, store_ident id),
+  | Tstr_exception ext ->
+      let id = ext.ext_id in
+      let path = field_path rootpath id in
+      let lam = transl_extension_constructor item.str_env path ext in
+      Lsequence(Llet(Strict, id, subst_lambda subst lam, store_ident id),
                 transl_store rootpath (add_ident false id subst) rem)
   | Tstr_module{mb_id=id; mb_expr={mod_desc = Tmod_structure str}} ->
     let lam = transl_store (field_path rootpath id) subst str.str_items in
@@ -801,12 +787,11 @@ let transl_toplevel_item item =
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       in
-        transl_type_extension item.str_env tyext
+        transl_type_extension item.str_env None tyext
           (make_sequence toploop_setvalue_id idents)
-  | Tstr_exception decl ->
-      toploop_setvalue decl.cd_id (transl_exception None decl)
-  | Tstr_exn_rebind(id, _, path, {Location.loc=loc}, _) ->
-      toploop_setvalue id (transl_path ~loc item.str_env path)
+  | Tstr_exception ext ->
+      toploop_setvalue ext.ext_id
+        (transl_extension_constructor item.str_env None ext)
   | Tstr_module {mb_id=id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#1672) *)

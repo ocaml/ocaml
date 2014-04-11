@@ -48,7 +48,7 @@ Error: This expression has type int but an expression was expected of type
 Error: This type int should be an instance of type [> `Var ]
 #         type foo = ..
 #     module M : sig type foo += A of int end
-#     val a1 : foo = <extension>
+#     val a1 : foo = M.A 10
 #     module type S = sig type foo += private A of int end
 #     module M_S : S
 #           val is_s : foo -> bool = <fun>
@@ -101,4 +101,20 @@ Error: In this definition, expected parameter variances are not satisfied.
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This extension does not match the definition of type bar
        Their variances do not agree.
+#                       module M : sig type exn += Foo of int * float | Bar : 'a list -> exn  end
+#                   module M :
+  sig exception Bar : 'a list -> exn exception Foo of int * float end
+#     exception Foo of int * float
+#     exception Bar : 'a list -> exn
+#                   module M : sig type exn += Foo of int * float | Bar : 'a list -> exn  end
+#         type foo = ..
+#         type foo += Foo of int * int option | Bar of int option
+#     val x : foo * foo = (Foo (3, Some 4), Bar (Some 5))
+#     type foo += Foo of string
+#     val y : foo * foo = (<extension>, Bar (Some 5))
+#     exception Foo of int * int option
+#     exception Bar of int option
+#     val x : exn * exn = (Foo (3, Some 4), Bar (Some 5))
+#     type foo += Foo of string
+#     val y : exn * exn = (Foo (3, _), Bar (Some 5))
 # 

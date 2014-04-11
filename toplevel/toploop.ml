@@ -194,9 +194,6 @@ let rec pr_item env items =
   | Sig_typext(id, ext, es) :: rem ->
       let tree = Printtyp.tree_of_extension_constructor id ext es in
       Some (tree, None, rem)
-  | Sig_exception(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_exception_declaration id decl in
-      Some (tree, None, rem)
   | Sig_module(id, md, rs) :: rem ->
       let tree = Printtyp.tree_of_module id md.md_type rs in
       Some (tree, None, rem)

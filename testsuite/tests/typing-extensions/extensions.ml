@@ -211,3 +211,75 @@ type 'a bar = ..
 
 type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)
 ;;
+
+(* Exceptions are compatible with extensions *)
+
+module M : sig
+  type exn +=
+    Foo of int * float
+  | Bar : 'a list -> exn
+end = struct
+  exception Bar : 'a list -> exn
+  exception Foo of int * float
+end
+;;
+
+module M : sig
+  exception Bar : 'a list -> exn
+  exception Foo of int * float
+end = struct
+  type exn +=
+    Foo of int * float
+  | Bar : 'a list -> exn
+end
+;;
+
+exception Foo of int * float
+;;
+
+exception Bar : 'a list -> exn
+;;
+
+module M : sig
+  type exn +=
+    Foo of int * float
+  | Bar : 'a list -> exn
+end = struct
+  exception Bar = Bar
+  exception Foo = Foo
+end
+;;
+
+(* Test toplevel printing *)
+
+type foo = ..
+;;
+
+type foo +=
+  Foo of int * int option
+| Bar of int option
+;;
+
+let x = Foo(3, Some 4), Bar(Some 5) (* Prints Foo and Bar successfully *)
+;;
+
+type foo += Foo of string
+;;
+
+let y = x (* Prints Bar but not Foo (which has been shadowed) *)
+;;
+
+exception Foo of int * int option
+;;
+
+exception Bar of int option
+;;
+
+let x = Foo(3, Some 4), Bar(Some 5) (* Prints Foo and Bar successfully *)
+;;
+
+type foo += Foo of string
+;;
+
+let y = x (* Prints Bar and part of Foo (which has been shadowed) *)
+;;

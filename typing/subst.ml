@@ -304,12 +304,6 @@ let extension_constructor s ext =
     cleanup_types ();
     ext
 
-let exception_declaration s descr =
-  { exn_args = List.map (type_expr s) descr.exn_args;
-    exn_loc = loc s descr.exn_loc;
-    exn_attributes = attrs s descr.exn_attributes;
-   }
-
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
   | Sig_type(id, d, _) :: sg ->
@@ -322,7 +316,7 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_typext(id, _, _) | Sig_exception(id, _) |
+  | (Sig_value(id, _) | Sig_typext(id, _, _) |
      Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
@@ -362,8 +356,6 @@ and signature_component s comp newid =
       Sig_type(newid, type_declaration s d, rs)
   | Sig_typext(id, ext, es) ->
       Sig_typext(newid, extension_constructor s ext, es)
-  | Sig_exception(id, d) ->
-      Sig_exception(newid, exception_declaration s d)
   | Sig_module(id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->

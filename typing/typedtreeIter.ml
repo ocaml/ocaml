@@ -135,8 +135,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type list -> List.iter iter_type_declaration list
         | Tstr_typext tyext -> iter_type_extension tyext
-        | Tstr_exception cd -> iter_constructor_declaration cd
-        | Tstr_exn_rebind _ -> ()
+        | Tstr_exception ext -> iter_extension_constructor ext
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
@@ -355,8 +354,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_value_description vd
         | Tsig_type list ->
             List.iter iter_type_declaration list
-        | Tsig_exception cd ->
-            iter_constructor_declaration cd
+        | Tsig_exception ext ->
+            iter_extension_constructor ext
         | Tsig_typext tyext ->
             iter_type_extension tyext
         | Tsig_module md ->
@@ -592,7 +591,6 @@ module DefaultIteratorArgument = struct
       let enter_type_declaration _ = ()
       let enter_type_extension _ = ()
       let enter_extension_constructor _ = ()
-      let enter_exception_declaration _ = ()
       let enter_pattern _ = ()
       let enter_expression _ = ()
       let enter_package_type _ = ()
@@ -621,7 +619,6 @@ module DefaultIteratorArgument = struct
       let leave_type_declaration _ = ()
       let leave_type_extension _ = ()
       let leave_extension_constructor _ = ()
-      let leave_exception_declaration _ = ()
       let leave_pattern _ = ()
       let leave_expression _ = ()
       let leave_package_type _ = ()

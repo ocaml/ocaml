@@ -55,10 +55,8 @@ and untype_structure_item item =
         Pstr_type (List.map untype_type_declaration list)
     | Tstr_typext tyext ->
         Pstr_typext (untype_type_extension tyext)
-    | Tstr_exception decl ->
-        Pstr_exception (untype_constructor_declaration decl)
-    | Tstr_exn_rebind (_id, name, _p, lid, attrs) ->
-        Pstr_exn_rebind (name, lid, attrs)
+    | Tstr_exception ext ->
+        Pstr_exception (untype_extension_constructor ext)
     | Tstr_module mb ->
         Pstr_module (untype_module_binding mb)
     | Tstr_recmodule list ->
@@ -350,8 +348,8 @@ and untype_signature_item item =
         Psig_type (List.map untype_type_declaration list)
     | Tsig_typext tyext ->
         Psig_typext (untype_type_extension tyext)
-    | Tsig_exception decl ->
-        Psig_exception (untype_constructor_declaration decl)
+    | Tsig_exception ext ->
+        Psig_exception (untype_extension_constructor ext)
     | Tsig_module md ->
         Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
                      pmd_attributes = md.md_attributes; pmd_loc = md.md_loc;
