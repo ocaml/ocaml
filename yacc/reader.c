@@ -1362,6 +1362,7 @@ void copy_action(void)
     int a_lineno = lineno;
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
+    char *kw;
 
     if (last_was_action) syntax_error (lineno, line, cptr);
     last_was_action = 1;
@@ -1457,6 +1458,13 @@ loop:
             if (item->class == TERM && !item->tag)
               illegal_token_ref(i, item->name);
             fprintf(f, "_%d", i);
+            goto loop;
+        }
+
+        /* Check keywords */
+        if ((kw = keyword_process(pident + nitems - n - 1, n, cptr, f)))
+        {
+            cptr = kw;
             goto loop;
         }
     }
@@ -2048,6 +2056,7 @@ void reader(void)
     create_symbol_table();
     read_declarations();
     output_token_type();
+    output_keyword_definitions(output_file);
     read_grammar();
     make_goal();
     free_symbol_table();

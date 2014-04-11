@@ -79,6 +79,30 @@ void syntax_error(int st_lineno, char *st_line, char *st_cptr)
 }
 
 
+void invalid_keyword(int st_lineno, char *st_line, char *st_cptr)
+{
+    fprintf(stderr, "File \"%s\", line %d: invalid keyword\n",
+            virtual_input_file_name, st_lineno);
+    print_pos(st_line, st_cptr);
+    done(1);
+}
+
+void invalid_keyword_arg(int st_lineno, char *st_line, char *st_cptr)
+{
+    fprintf(stderr, "File \"%s\", line %d: invalid or unbound argument\n",
+            virtual_input_file_name, st_lineno);
+    print_pos(st_line, st_cptr);
+    done(1);
+}
+
+void unimplemented_keyword(int st_lineno, char *st_line, char *st_cptr)
+{
+    fprintf(stderr, "File \"%s\", line %d: keyword not implemented\n",
+            virtual_input_file_name, st_lineno);
+    print_pos(st_line, st_cptr);
+    done(1);
+}
+
 void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
 {
     fprintf(stderr, "File \"%s\", line %d: unmatched /*\n",
