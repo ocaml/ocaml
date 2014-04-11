@@ -1343,7 +1343,7 @@ void move_symbol_to_ident(void)
     if (!IS_IDENTCHAR(*name))
       invalid_symbol_ident(symbol->name);
 
-  symbol->used_as_ident = 1;
+  symbol->used_as_ident++;
   pident[nitems-1] = symbol;
 
   last_was_ident = 1;
@@ -1733,7 +1733,7 @@ void check_symbols(void)
     {
         if (bp->class == UNKNOWN)
         {
-            if (bp->used_as_ident == 0)
+            if (bp->used_as_ident <= 0)
                 undefined_symbol(bp->name);
             bp->class = TERM;
         }
