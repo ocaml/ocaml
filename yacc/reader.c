@@ -1026,6 +1026,11 @@ void declare_start(void)
     register int c;
     register bucket *bp;
     static int entry_counter = 0;
+    char *tag = NULL;
+
+    c = nextc();
+    if (c == EOF) unexpected_EOF();
+    if (c == '<') tag = get_tag();
 
     for (;;) {
       c = nextc();
@@ -1035,6 +1040,14 @@ void declare_start(void)
       if (bp->class == TERM)
         terminal_start(bp->name);
       bp->entry = ++entry_counter;
+
+      if (tag != NULL)
+      {
+          if (bp->tag && tag != bp->tag)
+              retyped_warning(bp->name);
+          bp->tag = tag;
+      }
+
       if (entry_counter == 256)
         too_many_entries();
     }
