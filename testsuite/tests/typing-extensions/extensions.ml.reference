@@ -117,4 +117,15 @@ Error: This extension does not match the definition of type bar
 #     val x : exn * exn = (Foo (3, Some 4), Bar (Some 5))
 #     type foo += Foo of string
 #     val y : exn * exn = (Foo (3, _), Bar (Some 5))
+#         type foo = ..
+#         type foo += Foo | Bar of int
+#     val n1 : string = "Foo"
+#     val n2 : string = "Bar"
+#     val t : bool = true
+#     val f : bool = false
+#         val is_foo : 'a -> bool = <fun>
+type foo += Foo
+#     val f : bool = false
+#     Exception: Invalid_argument "Obj.extension_name".
+#     Exception: Invalid_argument "Obj.extension_id".
 # 

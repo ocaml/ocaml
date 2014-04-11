@@ -216,8 +216,8 @@ type +'a bar += D of (int -> 'a) (* ERROR: type variances do not match *)
 
 module M : sig
   type exn +=
-    Foo of int * float
-  | Bar : 'a list -> exn
+      Foo of int * float
+    | Bar : 'a list -> exn
 end = struct
   exception Bar : 'a list -> exn
   exception Foo of int * float
@@ -229,8 +229,8 @@ module M : sig
   exception Foo of int * float
 end = struct
   type exn +=
-    Foo of int * float
-  | Bar : 'a list -> exn
+      Foo of int * float
+    | Bar : 'a list -> exn
 end
 ;;
 
@@ -242,8 +242,8 @@ exception Bar : 'a list -> exn
 
 module M : sig
   type exn +=
-    Foo of int * float
-  | Bar : 'a list -> exn
+      Foo of int * float
+    | Bar : 'a list -> exn
 end = struct
   exception Bar = Bar
   exception Foo = Foo
@@ -256,8 +256,8 @@ type foo = ..
 ;;
 
 type foo +=
-  Foo of int * int option
-| Bar of int option
+    Foo of int * int option
+  | Bar of int option
 ;;
 
 let x = Foo(3, Some 4), Bar(Some 5) (* Prints Foo and Bar successfully *)
@@ -282,4 +282,40 @@ type foo += Foo of string
 ;;
 
 let y = x (* Prints Bar and part of Foo (which has been shadowed) *)
+;;
+
+(* Test Obj functions *)
+
+type foo = ..
+;;
+
+type foo +=
+    Foo
+  | Bar of int
+;;
+
+let n1 = Obj.extension_name Foo
+;;
+
+let n2 = Obj.extension_name (Bar 1)
+;;
+
+let t = (Obj.extension_id (Bar 2)) = (Obj.extension_id (Bar 3)) (* true *)
+;;
+
+let f = (Obj.extension_id (Bar 2)) = (Obj.extension_id Foo) (* false *)
+;;
+
+let is_foo x = (Obj.extension_id Foo) = (Obj.extension_id x)
+
+type foo += Foo
+;;
+
+let f = is_foo Foo
+;;
+
+let _ = Obj.extension_name 7 (* Invald_arg *)
+;;
+
+let _ = Obj.extension_id (object method m = 3 end) (* Invald_arg *)
 ;;
