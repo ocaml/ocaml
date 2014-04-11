@@ -29,7 +29,7 @@ and extension = string loc * payload
          [%%id ARG]
 
          Sub-language placeholder -- rejected by the typechecker.
-       *)
+      *)
 
 and attributes = attribute list
 
@@ -121,11 +121,11 @@ and row_field =
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
            [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
 
-           The 2nd field is true if the tag contains a 
-             constant (empty) constructor.
-           '&' occurs when several types are used for the same constructor 
-             (see 4.2 in the manual)
-         *)
+          - The 2nd field is true if the tag contains a
+            constant (empty) constructor.
+          - '&' occurs when several types are used for the same constructor
+            (see 4.2 in the manual)
+        *)
   | Rinherit of core_type
         (* [ T ] *)
 
@@ -692,8 +692,8 @@ and structure_item_desc =
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
   | Pstr_open of override_flag * Longident.t loc * attributes
-        (* open! X - true 
-           open  X - false 
+        (* open! X - true
+           open  X - false
 
            override_flag silences the 'used identifier shadowing' warning
            *)
