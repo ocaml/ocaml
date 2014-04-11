@@ -155,6 +155,54 @@ void skip_comment(void)
     }
 }
 
+void skip_caml_comment(void)
+{
+    register char *s;
+
+    int st_lineno = lineno;
+    char *st_line = dup_line();
+    char *st_cptr = st_line + (cptr - line);
+    int depth = 1;
+    int in_string = 0;
+
+    s = cptr + 2;
+    for (;;)
+    {
+        if (!in_string && *s == '*' && s[1] == ')')
+        {
+            s += 2;
+            --depth;
+            if (depth == 0)
+            {
+                cptr = s;
+                FREE(st_line);
+                return;
+            }
+            continue;
+        }
+        else if (!in_string && *s == '(' && s[1] == '*')
+        {
+            s += 2;
+            ++depth;
+            continue;
+        }
+        else if (*s == '"')
+          in_string = !in_string;
+        /* skip escaped character */
+        if (*s == '\\')
+          ++s;
+        if (*s == '\n')
+        {
+            get_line();
+            if (line == 0)
+                unterminated_comment(st_lineno, st_line, st_cptr);
+            s = cptr;
+        }
+        else
+            ++s;
+    }
+}
+
 char *substring (char *str, int start, int len)
 {
   int i;
@@ -240,6 +288,16 @@ nextc(void)
         case '\\':
             cptr = s;
             return ('%');
+
+        case '(':
+            cptr = s;
+            if (s[1] == '*')
+            {
+                skip_caml_comment();
+                s = cptr;
+                break;
+            }
+            return (*s);
 
         case '/':
             if (s[1] == '*')
