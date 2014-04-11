@@ -1157,7 +1157,7 @@ expr:
   | OBJECT ext_attributes class_structure END
       { mkexp_attrs (Pexp_object $3) $2 }
   | OBJECT ext_attributes class_structure error
-      { unclosed "object" 1 "end" 3 }
+      { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
 ;
