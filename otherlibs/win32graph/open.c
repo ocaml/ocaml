@@ -344,18 +344,17 @@ CAMLprim value caml_gr_sigio_handler(void)
 
 /* Processing of graphic errors */
 
-static value * graphic_failure_exn = NULL;
 void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
+  value graphic_failure_exn;
+  int graphic_failure_found;
 
-  if (graphic_failure_exn == NULL) {
-    graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
-    if (graphic_failure_exn == NULL)
+  graphic_failure_exn = caml_get_named_value("Graphics.Graphic_failure", &graphic_failure_found);
+  if (!graphic_failure_found)
       invalid_argument("Exception Graphics.Graphic_failure not initialized, must link graphics.cma");
-  }
   sprintf(buffer, fmt, arg);
-  raise_with_string(*graphic_failure_exn, buffer);
+  raise_with_string(graphic_failure_exn, buffer);
 }
 
 void gr_check_open(void)

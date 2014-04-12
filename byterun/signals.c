@@ -126,7 +126,12 @@ CAMLexport void caml_leave_blocking_section(void)
 
 /* Execute a signal handler immediately */
 
-static value caml_signal_handlers = 0;
+static caml_root caml_signal_handlers;
+
+void caml_init_signal_handling() {
+  caml_register_root(&caml_signal_handlers);
+  caml_modify_root(&caml_signal_handlers, caml_alloc(NSIG, 0));
+}
 
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
@@ -140,7 +145,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
   res = caml_callback_exn(
-           Field(caml_signal_handlers, signal_number),
+           Field(caml_read_root(&caml_signal_handlers), signal_number),
            Val_int(caml_rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
@@ -293,17 +298,13 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     break;
   case 2:                       /* was Signal_handle */
     res = caml_alloc_small (1, 0);
-    Field(res, 0) = Field(caml_signal_handlers, sig);
+    Field(res, 0) = Field(caml_read_root(&caml_signal_handlers), sig);
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);
   }
   if (Is_block(action)) {
-    if (caml_signal_handlers == 0) {
-      caml_signal_handlers = caml_alloc(NSIG, 0);
-      caml_register_global_root(&caml_signal_handlers);
-    }
-    caml_modify_field(caml_signal_handlers, sig, Field(action, 0));
+    caml_modify_field(caml_read_root(&caml_signal_handlers), sig, Field(action, 0));
   }
   caml_process_pending_signals();
   CAMLreturn (res);

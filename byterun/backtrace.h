@@ -15,12 +15,13 @@
 #define CAML_BACKTRACE_H
 
 #include "mlvalues.h"
+#include "memory.h"
 
-CAMLextern int caml_backtrace_active;
-CAMLextern int caml_backtrace_pos;
-CAMLextern code_t * caml_backtrace_buffer;
-CAMLextern value caml_backtrace_last_exn;
-CAMLextern char * caml_cds_file;
+CAMLextern __thread int caml_backtrace_active;
+CAMLextern __thread int caml_backtrace_pos;
+CAMLextern __thread code_t * caml_backtrace_buffer;
+CAMLextern __thread caml_root caml_backtrace_last_exn;
+CAMLextern __thread char * caml_cds_file;
 
 CAMLprim value caml_record_backtrace(value vflag);
 #ifndef NATIVE_CODE

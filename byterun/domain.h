@@ -1,5 +1,7 @@
-#include "plat_threads.h"
+#ifndef CAML_DOMAIN_H
+#define CAML_DOMAIN_H
 
+#include "mlvalues.h"
 CAMLextern __thread atomic_uintnat caml_young_limit;
 
 
@@ -18,3 +20,6 @@ CAMLextern void caml_domain_activate(void);
 CAMLextern void caml_domain_deactivate(void);
 
 void caml_domain_register_main(void);
+
+
+#endif /* CAML_DOMAIN_H */

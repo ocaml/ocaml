@@ -27,6 +27,8 @@
 #include "stacks.h"
 #endif
 #include "domain.h"
+#include "globroots.h"
+#include "signals.h"
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -472,6 +474,8 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   
   caml_domain_register_main();
+  caml_init_global_roots();
+  caml_init_signal_handling();
   caml_init_major_gc();
 /*
   caml_major_heap_increment = major_incr;

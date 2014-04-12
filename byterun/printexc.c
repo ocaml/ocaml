@@ -97,8 +97,9 @@ CAMLexport char * caml_format_exception(value exn)
 void caml_fatal_uncaught_exception(value exn)
 {
   char * msg;
-  value * at_exit;
+  value at_exit;
   int saved_backtrace_active, saved_backtrace_pos;
+  int found_do_at_exit;
 
   /* Build a string representation of the exception */
   msg = caml_format_exception(exn);
@@ -107,8 +108,8 @@ void caml_fatal_uncaught_exception(value exn)
   saved_backtrace_active = caml_backtrace_active;
   saved_backtrace_pos = caml_backtrace_pos;
   caml_backtrace_active = 0;
-  at_exit = caml_named_value("Pervasives.do_at_exit");
-  if (at_exit != NULL) caml_callback_exn(*at_exit, Val_unit);
+  at_exit = caml_get_named_value("Pervasives.do_at_exit", &found_do_at_exit);
+  if (found_do_at_exit) caml_callback_exn(at_exit, Val_unit);
   caml_backtrace_active = saved_backtrace_active;
   caml_backtrace_pos = saved_backtrace_pos;
   /* Display the uncaught exception */

@@ -4,7 +4,7 @@
 
 #include <pthread.h>
 #include "mlvalues.h"
-
+#include "memory.h"
 
 /*
 FIXME: This file should use C11 atomics if they are available.
@@ -28,12 +28,6 @@ FIXME: This file should use C11 atomics if they are available.
 #error "no compiler barrier defined for this compiler"
 #endif
 
-
-/* atomic_uintnat is declared as a struct type to prevent accidental
-   accesses that don't use the primitives below */
-typedef struct atomic_uintnat {
-  volatile uintnat val;
-} atomic_uintnat;
 
 
 /* Loads and stores with acquire and release semantics respectively */

@@ -175,7 +175,7 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->backtrace_buffer = backtrace_buffer;
   caml_initialize_field ((value)curr_thread,
                          offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value),
-                         backtrace_last_exn);
+                         caml_read_root(&backtrace_last_exn));
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -314,7 +314,7 @@ static value schedule_thread(void)
   curr_thread->backtrace_buffer = backtrace_buffer;
   caml_modify_field ((value)curr_thread, 
                      offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value), 
-                     backtrace_last_exn);
+                     caml_read_root(&backtrace_last_exn));
 
 try_again:
   /* Find if a thread is runnable.
@@ -507,7 +507,7 @@ try_again:
   caml_trap_sp_off = curr_thread->trap_spoff;
   backtrace_pos = Int_val(curr_thread->backtrace_pos);
   backtrace_buffer = curr_thread->backtrace_buffer;
-  backtrace_last_exn = curr_thread->backtrace_last_exn;
+  caml_modify_root(&backtrace_last_exn, curr_thread->backtrace_last_exn);
   return curr_thread->retval;
 }
 

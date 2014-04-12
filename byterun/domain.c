@@ -46,7 +46,7 @@ static struct domain* Domain_val(value v) {
 
 
 /* A normal OCaml list (cons cells) containing at least the alive domains */
-static value live_domains_list;
+static caml_root live_domains_list;
 static plat_mutex live_domains_lock;
 
 static value domain_alloc() {
@@ -87,8 +87,8 @@ static void domain_init(value cons) {
     
     /* add to live_domains_list */
     plat_mutex_lock(&live_domains_lock);
-    caml_modify_field(cons, 1, live_domains_list);
-    live_domains_list = cons;
+    caml_modify_field(cons, 1, caml_read_root(&live_domains_list));
+    caml_modify_root(&live_domains_list, cons);
     plat_mutex_unlock(&live_domains_lock);
   }
   
@@ -106,7 +106,7 @@ static void domain_mark_live() {
   value last_live, l;
   int first = 1;
   plat_mutex_lock(&live_domains_lock);
-  l = live_domains_list;
+  l = caml_read_root(&live_domains_list);
   while (Is_block(l)) {
     value domain = Field(l, 0);
     value tail = Field(l, 1);
@@ -114,7 +114,7 @@ static void domain_mark_live() {
       caml_mark_object(domain);
       caml_mark_object(l);
       if (first) {
-        live_domains_list = l;
+        caml_modify_root(&live_domains_list, l);
       } else {
         caml_modify_field(last_live, 1, l);
       }
@@ -154,8 +154,7 @@ value caml_domain_create() {
 
 void caml_domain_register_main() {
   caml_init_shared_heap();
-  live_domains_list = Val_unit; /* nil */
-  caml_register_global_root(&live_domains_list);
+  caml_register_root(&live_domains_list);
   plat_mutex_init(&live_domains_lock);
 
   domain_init(domain_alloc());
@@ -203,7 +202,7 @@ static void request_stw() {
   atomic_store_rel(&stw_requested, 1);
   /* interrupt all domains */
   plat_mutex_lock(&live_domains_lock);
-  for (d = live_domains_list; Is_block(d); d = Field(d, 1)) {
+  for (d = caml_read_root(&live_domains_list); Is_block(d); d = Field(d, 1)) {
     caml_interrupt_domain(Field(d, 0));
   }
   plat_mutex_unlock(&live_domains_lock);

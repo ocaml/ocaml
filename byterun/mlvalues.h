@@ -62,6 +62,13 @@ typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
 
+/* atomic_uintnat is declared as a struct type to prevent accidental
+   accesses that don't use the primitives of plat_threads.h */
+typedef struct atomic_uintnat {
+  volatile uintnat val;
+} atomic_uintnat;
+
+
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
 #define Is_block(x)  (((x) & 1) == 0)

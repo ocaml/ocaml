@@ -16,7 +16,6 @@
 
 
 #include "misc.h"
-#include "domain.h"
 
 CAMLextern char *caml_young_ptr;
 CAMLextern char *caml_young_end, *caml_young_start;
