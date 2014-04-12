@@ -818,7 +818,7 @@ let rec close fenv cenv = function
       end
   | Lstringswitch(arg,sw,d) ->
       let uarg,_ = close fenv cenv arg in
-      let usw = 
+      let usw =
         List.map
           (fun (s,act) ->
             let uact,_ = close fenv cenv act in
@@ -1045,7 +1045,7 @@ and close_switch arg fenv cenv cases num_keys default =
   (*  Explicit sharing with catch/exit, as switcher compilation may
       later unshare *)
   let acts = store.act_get_shared () in
-  let hs = ref (fun e -> e) in 
+  let hs = ref (fun e -> e) in
 
   (* Compile actions *)
   let actions =
@@ -1067,7 +1067,7 @@ and close_switch arg fenv cenv cases num_keys default =
 *)
             let ohs = !hs in
             hs := (fun e -> Ucatch (i,[],ohs e,ulam)) ;
-            Ustaticfail (i,[]))      
+            Ustaticfail (i,[]))
       acts in
   match actions with
   | [| |] -> [| |], [| |], !hs (* May happen when default is None *)

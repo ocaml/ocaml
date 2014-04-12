@@ -28,9 +28,11 @@ type mapper = {
   class_signature: mapper -> class_signature -> class_signature;
   class_structure: mapper -> class_structure -> class_structure;
   class_type: mapper -> class_type -> class_type;
-  class_type_declaration: mapper -> class_type_declaration -> class_type_declaration;
+  class_type_declaration: mapper -> class_type_declaration
+                          -> class_type_declaration;
   class_type_field: mapper -> class_type_field -> class_type_field;
-  constructor_declaration: mapper -> constructor_declaration -> constructor_declaration;
+  constructor_declaration: mapper -> constructor_declaration
+                           -> constructor_declaration;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
   label_declaration: mapper -> label_declaration -> label_declaration;
@@ -39,7 +41,8 @@ type mapper = {
   module_declaration: mapper -> module_declaration -> module_declaration;
   module_expr: mapper -> module_expr -> module_expr;
   module_type: mapper -> module_type -> module_type;
-  module_type_declaration: mapper -> module_type_declaration -> module_type_declaration;
+  module_type_declaration: mapper -> module_type_declaration
+                           -> module_type_declaration;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
   signature: mapper -> signature -> signature;

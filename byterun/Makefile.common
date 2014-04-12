@@ -58,7 +58,8 @@ install::
 	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
 	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
-	if test -d $(INSTALL_LIBDIR)/caml; then : ; else mkdir $(INSTALL_LIBDIR)/caml; fi
+	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
+	  else mkdir $(INSTALL_LIBDIR)/caml; fi
 	for i in $(PUBLIC_INCLUDES); do \
 	  sed -f ../tools/cleanup-header $$i > $(INSTALL_LIBDIR)/caml/$$i; \
 	done

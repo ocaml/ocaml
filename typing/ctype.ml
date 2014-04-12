@@ -1970,8 +1970,8 @@ let rec expands_to_datatype env ty =
   match ty.desc with
     Tconstr (p, _, _) ->
       begin try
-	is_datatype (Env.find_type p env) ||
-	expands_to_datatype env (try_expand_once env ty)
+        is_datatype (Env.find_type p env) ||
+        expands_to_datatype env (try_expand_once env ty)
       with Not_found | Cannot_expand -> false
       end
   | _ -> false
@@ -2255,7 +2255,7 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   let ntl2 = complete_type_list env n1 lv2 (Mty_ident p2) n2 tl2
   and ntl1 = complete_type_list env n2 lv2 (Mty_ident p1) n1 tl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
-  if eq_package_path env p1 p2 
+  if eq_package_path env p1 p2
   || !package_subtype env p1 n1 tl1 p2 n2 tl2
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
@@ -2409,7 +2409,7 @@ and unify3 env t1 t1' t2 t2' =
           if !umode = Expression || not !generate_equations
           || in_current_module p1 (* || in_pervasives p1 *)
           || List.exists (expands_to_datatype !env) [t1'; t1; t2]
-	    (*try is_datatype (Env.find_type p1 !env) with Not_found -> false*)
+            (*try is_datatype (Env.find_type p1 !env) with Not_found -> false*)
           then
             unify_list env tl1 tl2
           else

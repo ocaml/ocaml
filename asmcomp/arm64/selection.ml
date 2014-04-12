@@ -37,7 +37,7 @@ let is_offset chunk n =
               / \        / \        / \
               \ /        \ /        \ /
         -0--> [1] --1--> [2] --0--> [3]
-       /     
+       /
      [0]
        \
         -1--> [4] --0--> [5] --1--> [6]
@@ -61,7 +61,7 @@ let auto_table = [|   (* accepting?, next on 0, next on 1 *)
 let rec run_automata nbits state input =
   let (acc, next0, next1) = auto_table.(state) in
   if nbits <= 0
-  then acc 
+  then acc
   else run_automata (nbits - 1)
                     (if input land 1 = 0 then next0 else next1)
                     (input asr 1)
@@ -71,7 +71,7 @@ let rec run_automata nbits state input =
    pattern of this kind. *)
 
 let is_logical_immediate n =
-  n <> 0 && n <> -1 && run_automata 64 0 n  
+  n <> 0 && n <> -1 && run_automata 64 0 n
 
 let is_intconst = function
     Cconst_int _ -> true

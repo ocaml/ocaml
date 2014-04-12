@@ -112,7 +112,7 @@ let f (x : t) : T.t = x ;;
 module A = struct
   module B = struct type t let compare x y = 0 end
   module S = Set.Make(B)
-  let empty = S.empty 
+  let empty = S.empty
 end
 module A1 = A;;
 A1.empty = A.empty;;

@@ -374,7 +374,8 @@ CAMLexport void caml_main(char **argv)
 
   /* Should we really do that at all?  The current executable is ocamlrun
      itself, it's never a bytecode program. */
-  if (fd < 0 && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
+  if (fd < 0
+      && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
   }

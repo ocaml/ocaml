@@ -2,13 +2,19 @@
 open Bigarray
 type bigstring = (char, int8_unsigned_elt, c_layout) Array1.t
 
-external caml_bigstring_get_16 : bigstring -> int -> int = "%caml_bigstring_get16"
-external caml_bigstring_get_32 : bigstring -> int -> int32 = "%caml_bigstring_get32"
-external caml_bigstring_get_64 : bigstring -> int -> int64 = "%caml_bigstring_get64"
+external caml_bigstring_get_16 :
+      bigstring -> int -> int = "%caml_bigstring_get16"
+external caml_bigstring_get_32 :
+      bigstring -> int -> int32 = "%caml_bigstring_get32"
+external caml_bigstring_get_64 :
+      bigstring -> int -> int64 = "%caml_bigstring_get64"
 
-external caml_bigstring_set_16 : bigstring -> int -> int -> unit = "%caml_bigstring_set16"
-external caml_bigstring_set_32 : bigstring -> int -> int32 -> unit = "%caml_bigstring_set32"
-external caml_bigstring_set_64 : bigstring -> int -> int64 -> unit = "%caml_bigstring_set64"
+external caml_bigstring_set_16 :
+      bigstring -> int -> int -> unit = "%caml_bigstring_set16"
+external caml_bigstring_set_32 :
+      bigstring -> int -> int32 -> unit = "%caml_bigstring_set32"
+external caml_bigstring_set_64 :
+      bigstring -> int -> int64 -> unit = "%caml_bigstring_set64"
 
 let bigstring_of_string s =
   let a = Array1.create char c_layout (String.length s) in

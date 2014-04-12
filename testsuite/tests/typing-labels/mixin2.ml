@@ -182,7 +182,9 @@ let rec print = function
 let () =
   let e1 = lambda#eval (`App(`Abs("x",`Var"x"), `Var"y")) in
   let e2 = expr#eval (`Add(`Mult(`Num 3,`Neg(`Num 2)), `Var"x")) in
-  let e3 = lexpr#eval (`Add(`App(`Abs("x",`Mult(`Var"x",`Var"x")),`Num 2), `Num 5)) in
+  let e3 =
+    lexpr#eval (`Add(`App(`Abs("x",`Mult(`Var"x",`Var"x")),`Num 2), `Num 5))
+  in
   print e1; print_newline ();
   print e2; print_newline ();
   print e3; print_newline ()

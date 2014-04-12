@@ -21,7 +21,7 @@
   act_store : store an action, returns index in table
               In case an action with equal key exists, returns index
               of the stored action. Otherwise add entry in table.
-  act_store_shared : This stored action will always be shared. 
+  act_store_shared : This stored action will always be shared.
   act_get   : retrieve table
   act_get_shared : retrieve table, with sharing explicit
 *)

@@ -179,7 +179,8 @@ and pattern_desc =
         (* lazy P *)
   | Ppat_unpack of string loc
         (* (module P)
-           Note: (module P : S) is represented as Ppat_constraint(Ppat_unpack, Ptyp_package)
+           Note: (module P : S) is represented as
+           Ppat_constraint(Ppat_unpack, Ptyp_package)
          *)
   | Ppat_extension of extension
         (* [%id] *)
@@ -276,7 +277,8 @@ and expression_desc =
         (* let module M = ME in E *)
   | Pexp_assert of expression
         (* assert E
-           Note: "assert false" is treated in a special way by the type-checker. *)
+           Note: "assert false" is treated in a special way by the
+           type-checker. *)
   | Pexp_lazy of expression
         (* lazy E *)
   | Pexp_poly of expression * core_type option

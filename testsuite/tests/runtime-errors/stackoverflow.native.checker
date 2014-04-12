@@ -11,4 +11,3 @@
 #########################################################################
 
 $DIFF stackoverflow.native.reference stackoverflow.native.result
-

@@ -61,7 +61,8 @@ extern char * caml_dlerror(void);
    Return 0 on success, -1 on error; set errno in the case of error. */
 extern int caml_read_directory(char * dirname, struct ext_table * contents);
 
-/* Recover executable name if possible (/proc/sef/exe under Linux, GetModuleFileName under Windows). */
+/* Recover executable name if possible (/proc/sef/exe under Linux,
+   GetModuleFileName under Windows). */
 extern int caml_executable_name(char * name, int name_len);
 
 #endif /* CAML_OSDEPS_H */

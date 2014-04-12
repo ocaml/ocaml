@@ -161,9 +161,11 @@ static value * caml_array_bound_error_exn = NULL;
 void caml_array_bound_error(void)
 {
   if (caml_array_bound_error_exn == NULL) {
-    caml_array_bound_error_exn = caml_named_value("Pervasives.array_bound_error");
+    caml_array_bound_error_exn =
+      caml_named_value("Pervasives.array_bound_error");
     if (caml_array_bound_error_exn == NULL) {
-      fprintf(stderr, "Fatal error: exception Invalid_argument(\"index out of bounds\")\n");
+      fprintf(stderr, "Fatal error: exception "
+                      "Invalid_argument(\"index out of bounds\")\n");
       exit(2);
     }
   }

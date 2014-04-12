@@ -1156,7 +1156,7 @@ let transl_int_switch arg low high cases default = match cases with
             if pact = 0 then
               if act = 0 then
                 inters plow i 0 rem
-              else                 
+              else
                 (plow,i-1,pact)::
                 inters i i act rem
             else (* pact <> 0 *)
@@ -1177,7 +1177,6 @@ let transl_int_switch arg low high cases default = match cases with
           a
           (Array.of_list inters) store)
 
-        
 
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
    boxed integers *)
@@ -1279,7 +1278,7 @@ let strmatch_compile =
         let transl_switch = transl_int_switch
       end) in
   S.compile
-    
+
 let rec transl = function
     Uvar id ->
       Cvar id
@@ -2014,7 +2013,7 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
-and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset 
+and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
   let trbody1 = transl body in
@@ -2131,7 +2130,7 @@ and transl_switch arg index cases = match Array.length cases with
     inters := (0, !this_high, !this_act) :: !inters ;
     match !inters with
     | [_] -> cases.(0)
-    | inters -> 
+    | inters ->
         bind "switcher" arg
           (fun a ->
             SwitcherBlocks.zyva
@@ -2230,7 +2229,8 @@ let rec emit_structured_constant symb cst cont =
 and emit_constant cst cont =
   match cst with
   | Uconst_int n | Uconst_ptr n ->
-      Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n) :: cont
+      Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
+      :: cont
   | Uconst_ref (label, _) ->
       Csymbol_address label :: cont
 

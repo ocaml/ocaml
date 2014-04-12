@@ -10,4 +10,5 @@
 #                                                                       #
 #########################################################################
 
-test `grep -E '^-?[0123456789]+$' test7.result | wc -l` = `cat test7.result | wc -l`
+test `grep -E '^-?[0123456789]+$' test7.result | wc -l` \
+     = `cat test7.result | wc -l`

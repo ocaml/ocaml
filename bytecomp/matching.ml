@@ -456,7 +456,7 @@ let pretty_precompiled_res first nexts =
    lambda-code invariant that all bound idents are unique,
    when switchs are compiled to test sequences.
    The definitive fix is the systematic introduction of exit/catch
-   in case action sharing is present.   
+   in case action sharing is present.
 *)
 
 
@@ -488,13 +488,13 @@ let rec as_simple_exit = function
 let make_catch_delayed handler = match as_simple_exit handler with
 | Some i -> i,(fun act -> act)
 | None ->
-    let i = next_raise_count () in    
+    let i = next_raise_count () in
 (*
     Printf.eprintf "SHARE LAMBDA: %i\n%s\n" i (string_of_lam handler);
 *)
     i,
     (fun body -> match body with
-    | Lstaticraise (j,_) -> 
+    | Lstaticraise (j,_) ->
         if i=j then handler else body
     | _ -> Lstaticcatch (body,(i,[]),handler))
 
@@ -735,7 +735,7 @@ let rec explode_or_pat arg patl mk_action rem vars aliases = function
       let env = mk_alpha_env arg (x::aliases) vars in
       (omega::patl,mk_action (List.map snd env))::rem
   | p ->
-      let env = mk_alpha_env arg aliases vars in      
+      let env = mk_alpha_env arg aliases vars in
       (alpha_pat env p::patl,mk_action (List.map snd env))::rem
 
 let pm_free_variables {cases=cases} =
@@ -996,7 +996,7 @@ and split_naive cls args def k =
   | (p::_,_ as cl)::rem ->
       if group_constructor p then
         split_exc (pat_as_constr p) [cl] rem
-      else 
+      else
         split_noexc [cl] rem
   | _ -> assert false
 
@@ -1690,7 +1690,7 @@ let divide_array kind ctx pm =
 
 (*
    Specific string test sequence
-   Will be called by the bytecode compiler, from bytegen.ml.   
+   Will be called by the bytecode compiler, from bytegen.ml.
    The strategy is first dichotomic search (we perform 3-way tests
    with compare_string), then sequence of equality tests
    when there are less then T=strings_test_threshold static strings to match.
@@ -1719,8 +1719,8 @@ let bind_sw arg k = match arg with
 | _ ->
     let id = Ident.create "switch" in
     Llet (Strict,id,arg,k (Lvar id))
-    
-  
+
+
 (* Sequential equality tests *)
 
 let make_string_test_sequence arg sw d =
@@ -1775,7 +1775,7 @@ let rec do_make_string_test_tree arg sw delta d =
           (do_make_string_test_tree arg lt delta d)
           act
           (do_make_string_test_tree arg gt delta d))
-           
+
 (* Entry point *)
 let expand_stringswitch arg sw d = match d with
 | None ->
@@ -1817,7 +1817,7 @@ let share_actions_tree sw d =
   let sw =
     List.map  (fun (cst,act) -> cst,store.Switch.act_store act) sw in
 
-(* Retrieve all actions, includint potentiel default *)   
+(* Retrieve all actions, includint potentiel default *)
   let acts = store.Switch.act_get_shared () in
 
 (* Array of actual actions *)
@@ -1966,7 +1966,7 @@ module SArg = struct
              sw_failaction = None})
   let make_catch  = make_catch_delayed
   let make_exit = make_exit
-    
+
 end
 
 (* Action sharing for Lswitch argument *)
@@ -2025,7 +2025,7 @@ let reintroduce_fail sw = match sw.sw_failaction with
         List.filter
           (fun (_,lam) -> match as_simple_exit lam with
           | Some j -> j <> default
-          | None -> true) in      
+          | None -> true) in
       {sw with
        sw_consts = remove sw.sw_consts ;
        sw_blocks = remove sw.sw_blocks ;
@@ -2033,7 +2033,7 @@ let reintroduce_fail sw = match sw.sw_failaction with
     else sw
 | Some _ -> sw
 
-        
+
 module Switcher = Switch.Make(SArg)
 open Switch
 
@@ -2059,7 +2059,7 @@ let as_interval_canfail fail low high l =
     eprintf "STORE [%s] %i %s\n" tag i (Format.flush_str_formatter ()) ;
 *)
     i in
-  
+
   let rec nofail_rec cur_low cur_high cur_act = function
     | [] ->
         if cur_high = high then
@@ -2078,7 +2078,7 @@ let as_interval_canfail fail low high l =
         else if act_index = 0 then
           (cur_low, cur_high, cur_act)::
           fail_rec (cur_high+1) (cur_high+1) all
-        else 
+        else
           (cur_low, cur_high, cur_act)::
           (cur_high+1,i-1,0)::
           nofail_rec i i act_index rem
@@ -2314,7 +2314,7 @@ let combine_constant arg cst partial ctx def
 (* Note as the bytecode compiler may resort to dichotmic search,
    the clauses of strinswitch  are sorted with duplicate removed.
    This partly applies to the native code compiler, which requires
-   no duplicates *)   
+   no duplicates *)
         let const_lambda_list = sort_lambda_list const_lambda_list in
         let sw =
           List.map

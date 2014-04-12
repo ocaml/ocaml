@@ -18,7 +18,7 @@ OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
-CP       = cp 
+CP        = cp
 COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB)
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
@@ -199,5 +199,5 @@ depend: beforedepend
 
 include .depend
 
-.PHONY: all allopt clean beforedepend 
+.PHONY: all allopt clean beforedepend
 .PHONY: install installopt installopt_really depend

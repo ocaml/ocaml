@@ -58,7 +58,8 @@ let test x s1 s2 =
     (S.elements s1 = List.filter (fun i -> S.mem i s1) testvals);
 
   checkbool "compare"
-    (normalize_cmp (S.compare s1 s2) = normalize_cmp (compare (S.elements s1) (S.elements s2)));
+    (normalize_cmp (S.compare s1 s2)
+     = normalize_cmp (compare (S.elements s1) (S.elements s2)));
 
   checkbool "equal"
     (S.equal s1 s2 = (S.elements s1 = S.elements s2));

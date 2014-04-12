@@ -66,10 +66,9 @@ module Store(A:Stored) = struct
     | None ->
         add mustshare act
 
-        
     and get () = Array.of_list (List.rev_map (fun (_,act) -> act) st.acts)
 
-    and get_shared () =      
+    and get_shared () =
       let acts =
         Array.of_list
           (List.rev_map

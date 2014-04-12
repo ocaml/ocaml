@@ -14,8 +14,10 @@
 include ../../config/Makefile
 
 ROOTDIR=../..
-CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+      -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib \
+        -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot
 
@@ -74,13 +76,16 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(INSTALL_STUBLIBDIR)/dllthreads.so; fi
+	if test -f dllthreads.so; then \
+	  cp dllthreads.so $(INSTALL_STUBLIBDIR)/dllthreads.so; fi
 	cp libthreads.a $(INSTALL_LIBDIR)/libthreads.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libthreads.a
-	if test -d $(INSTALL_LIBDIR)/threads; then :; else mkdir $(INSTALL_LIBDIR)/threads; fi
+	if test -d $(INSTALL_LIBDIR)/threads; then :; \
+	  else mkdir $(INSTALL_LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(INSTALL_LIBDIR)/threads
 	rm -f $(INSTALL_LIBDIR)/threads/stdlib.cma
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(INSTALL_LIBDIR)
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
+	   $(INSTALL_LIBDIR)
 	cp threads.h $(INSTALL_LIBDIR)/caml/threads.h
 
 installopt:

@@ -91,7 +91,8 @@ type error =
 
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
-val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string -> ('a, unit, string, error) format4 -> 'a
+val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
+            -> ('a, unit, string, error) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 

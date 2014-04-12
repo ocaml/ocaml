@@ -38,10 +38,14 @@ let test test_number answer correct_answer =
 
 (* External C and Fortran functions *)
 
-external c_filltab : unit -> (float, float64_elt, c_layout) Array2.t = "c_filltab"
-external c_printtab : (float, float64_elt, c_layout) Array2.t -> unit = "c_printtab"
-external fortran_filltab : unit -> (float, float32_elt, fortran_layout) Array2.t = "fortran_filltab"
-external fortran_printtab : (float, float32_elt, fortran_layout) Array2.t -> unit = "fortran_printtab"
+external c_filltab :
+  unit -> (float, float64_elt, c_layout) Array2.t = "c_filltaab"
+external c_printtab :
+  (float, float64_elt, c_layout) Array2.t -> unit = "c_printtab"
+external fortran_filltab :
+  unit -> (float, float32_elt, fortran_layout) Array2.t = "fortran_filltab"
+external fortran_printtab :
+  (float, float32_elt, fortran_layout) Array2.t -> unit = "fortran_printtab"
 
 let _ =
 

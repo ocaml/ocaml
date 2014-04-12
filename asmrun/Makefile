@@ -77,7 +77,8 @@ install-runtimed:
 .PHONY: install-runtimed
 
 install-noprof:
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a; ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
+	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
+	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
 
 install-prof:
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a

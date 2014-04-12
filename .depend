@@ -1,4 +1,4 @@
-utils/ccomp.cmi :
+putils/ccomp.cmi :
 utils/clflags.cmi :
 utils/config.cmi :
 utils/consistbl.cmi :
