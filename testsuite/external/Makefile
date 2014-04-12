@@ -42,12 +42,12 @@ all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
             camomile zen vsyml extlib fileutils ocamlify ocamlmod \
             calendar dbm ocamlscript coq compcert
 
-all-macos: findlib lablgtk ocamlgraph ounit res pcre core react ocamltext \
-           ocamlssl lwt camlzip cryptokit sqlite menhir hevea \
-           unison ocgi xmllight configfile xmlm lablgtkextras sks omake \
-           altergo boomerang camomile zen vsyml ocamlnet extlib fileutils \
-           odn ocamlify expect ocamlmod oasis calendar camlimages advi \
-           dbm ocsigen ocamlscript coq compcert framac
+all-macos: findlib res pcre react ocamltext \
+           ocamlssl camlzip cryptokit sqlite menhir hevea \
+           xmllight xmlm omake \
+           altergo boomerang vsyml extlib \
+           ocamlify calendar \
+           dbm framac
 
 platform:
 	case `uname -s` in \
@@ -61,7 +61,7 @@ CAMLP4=camlp4-trunk
 ${CAMLP4}.zip:
 	${WGET} https://github.com/ocaml/camlp4/archive/trunk.zip
 	mv trunk.zip ${CAMLP4}.zip
-camlp4: ${CAMLP4}.zip
+xxcamlp4: ${CAMLP4}.zip
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CAMLP4}
@@ -81,10 +81,10 @@ distclean::
 all: camlp4
 
 # http://projects.camlcity.org/projects/findlib.html
-FINDLIB=findlib-1.3.3
+FINDLIB=findlib-1.4.1
 ${FINDLIB}.tar.gz:
 	${WGET} http://download.camlcity.org/download/$@
-findlib: ${FINDLIB}.tar.gz camlp4
+findlib: ${FINDLIB}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${FINDLIB}
@@ -107,7 +107,7 @@ all: findlib
 LABLGTK=lablgtk-2.18.0
 ${LABLGTK}.tar.gz:
 	${WGET} https://forge.ocamlcore.org/frs/download.php/1261/$@
-lablgtk: ${LABLGTK}.tar.gz findlib # TODO: add lablgl
+xxlablgtk: ${LABLGTK}.tar.gz findlib camlp4 # TODO: add lablgl
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${LABLGTK}
@@ -133,7 +133,7 @@ all: lablgtk
 OCAMLGRAPH=ocamlgraph-1.8.2
 ${OCAMLGRAPH}.tar.gz:
 	${WGET} http://ocamlgraph.lri.fr/download/$@
-ocamlgraph: ${OCAMLGRAPH}.tar.gz findlib lablgtk
+ocamlgraph: ${OCAMLGRAPH}.tar.gz findlib
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLGRAPH}
@@ -159,7 +159,7 @@ all: ocamlgraph
 OUNIT=ounit-1.1.2
 ${OUNIT}.tar.gz:
 	${WGET} http://forge.ocamlcore.org/frs/download.php/886/$@
-ounit: ${OUNIT}.tar.gz findlib
+xxounit: ${OUNIT}.tar.gz findlib camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OUNIT}
@@ -229,7 +229,7 @@ all: pcre
 TYPECONV=type_conv-109.28.00
 ${TYPECONV}.tar.gz:
 	${WGET} https://ocaml.janestreet.com/ocaml-core/109.28.00/individual/$@
-typeconv: ${TYPECONV}.tar.gz findlib
+xxtypeconv: ${TYPECONV}.tar.gz findlib camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${TYPECONV}
@@ -252,7 +252,7 @@ all: typeconv
 VARIANTSLIB=variantslib-109.15.00
 ${VARIANTSLIB}.tar.gz:
 	${WGET} https://ocaml.janestreet.com/ocaml-core/109.15.00/individual/$@
-variantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
+xxvariantslib: ${VARIANTSLIB}.tar.gz findlib typeconv
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${VARIANTSLIB}
@@ -460,7 +460,7 @@ all: core
 CORE=core-109.37.00
 ${CORE}.tar.gz:
 	${WGET} https://ocaml.janestreet.com/ocaml-core/109.37.00/individual/$@
-core: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
+xxcore: ${CORE}.tar.gz findlib variantslib sexplib fieldslib binprot comparelib \
       paounit pipebang res ounit corekernel
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
@@ -626,7 +626,7 @@ all: ocamlssl
 LWT=lwt-2.4.0
 ${LWT}.tar.gz:
 	${WGET} http://ocsigen.org/download/$@
-lwt: ${LWT}.tar.gz findlib react ocamltext ocamlssl lablgtk
+xxlwt: ${LWT}.tar.gz findlib react ocamltext ocamlssl camlp4 lablgtk
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${LWT}
@@ -836,7 +836,7 @@ all: mysql
 OCGI=ocgi-0.5
 ${OCGI}.tar.gz:
 	${WGET} http://pauillac.inria.fr/~guesdon/Tools/Tars/$@
-ocgi: ${OCGI}.tar.gz
+ocgi: ${OCGI}.tar.gz camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCGI}
@@ -881,7 +881,7 @@ all: xmllight
 CONFIGFILE=config-file-1.1
 ${CONFIGFILE}.tar.gz:
 	${WGET} https://forge.ocamlcore.org/frs/download.php/845/$@
-configfile: ${CONFIGFILE}.tar.gz
+configfile: ${CONFIGFILE}.tar.gz camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CONFIGFILE}
@@ -950,7 +950,7 @@ all: lablgtkextras
 SKS=sks-1.1.3
 ${SKS}.tgz:
 	${WGET} https://bitbucket.org/skskeyserver/sks-keyserver/downloads/$@
-sks: ${SKS}.tgz
+sks: ${SKS}.tgz camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${SKS}
@@ -1060,7 +1060,7 @@ all: boomerang
 CAMOMILE=camomile-0.8.4
 ${CAMOMILE}.tar.bz2:
 	${WGET} https://github.com/downloads/yoriyuki/Camomile/$@
-camomile: ${CAMOMILE}.tar.bz2
+camomile: ${CAMOMILE}.tar.bz2 camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CAMOMILE}
@@ -1083,7 +1083,7 @@ all: camomile
 ZEN=zen_2.3.2
 ${ZEN}.tar.gz:
 	${WGET} http://sanskrit.inria.fr/ZEN/$@
-zen: ${ZEN}.tar.gz
+zen: ${ZEN}.tar.gz camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${ZEN}
@@ -1125,7 +1125,7 @@ all: vsyml
 OCAMLNET=ocamlnet-3.5.1
 ${OCAMLNET}.tar.gz:
 	${WGET} http://download.camlcity.org/download/$@
-ocamlnet: ${OCAMLNET}.tar.gz findlib pcre lablgtk ocamlssl camlzip cryptokit
+ocamlnet: ${OCAMLNET}.tar.gz findlib pcre camlp4 ocamlssl camlzip cryptokit
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLNET}
@@ -1208,7 +1208,7 @@ all: extlib
 FILEUTILS=ocaml-fileutils-0.4.4
 ${FILEUTILS}.tar.gz:
 	${WGET} http://forge.ocamlcore.org/frs/download.php/892/$@
-fileutils: ${FILEUTILS}.tar.gz findlib ounit
+xxfileutils: ${FILEUTILS}.tar.gz findlib ounit
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${FILEUTILS}
@@ -1370,7 +1370,7 @@ CAMLIMAGES=camlimages-4.0.1
 ${CAMLIMAGES}.tar.gz:
 	${WGET} https://bitbucket.org/camlspotter/camlimages/get/v4.0.1.tar.gz
 	mv v4.0.1.tar.gz $@
-camlimages: ${CAMLIMAGES}.tar.gz findlib omake lablgtk
+xxcamlimages: ${CAMLIMAGES}.tar.gz findlib omake lablgtk
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${CAMLIMAGES}
@@ -1488,7 +1488,7 @@ all: mldonkey
 OCAMLSCRIPT=ocamlscript-2.0.3
 ${OCAMLSCRIPT}.tar.gz:
 	${WGET} http://mjambon.com/releases/ocamlscript/$@
-ocamlscript: ${OCAMLSCRIPT}.tar.gz findlib
+ocamlscript: ${OCAMLSCRIPT}.tar.gz findlib camlp4
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${OCAMLSCRIPT}
@@ -1622,7 +1622,7 @@ all: csv
 COQ=coq-8.4pl2
 ${COQ}.tar.gz:
 	${WGET} http://coq.inria.fr/distrib/V8.4pl2/files/$@
-coq: ${COQ}.tar.gz
+xxcoq: ${COQ}.tar.gz camlp5
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${COQ}
@@ -1692,7 +1692,7 @@ all: compcert
 FRAMAC=frama-c-Oxygen-20120901
 ${FRAMAC}.tar.gz:
 	${WGET} http://frama-c.com/download/$@
-framac: ${FRAMAC}.tar.gz lablgtk ocamlgraph altergo coq
+framac: ${FRAMAC}.tar.gz
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${FRAMAC}
