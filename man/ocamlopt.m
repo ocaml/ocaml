@@ -631,6 +631,41 @@ Generate SPARC version 9 code.
 The default is to generate code for SPARC version 7, which runs on all
 SPARC processors.
 
+.SH OPTIONS FOR THE ARM ARCHITECTURE
+The ARM code generator supports the following additional options:
+.TP
+.B \-farch=armv4|armv5|armv5te|armv6|armv6t2|armv7
+Select the ARM target architecture
+.TP
+.B \-ffpu=soft|vfpv2|vfpv3\-d16|vfpv3
+Select the floating-point hardware
+.TP
+.B \-fPIC
+Generate position-independent machine code.
+.TP
+.B \-fno\-PIC
+Generate position-dependent machine code.  This is the default.
+.TP
+.B \-fthumb
+Enable Thumb/Thumb-2 code generation
+.TP
+.B \-fno\-thumb
+Disable Thumb/Thumb-2 code generation
+.P
+The default values for target architecture, floating-point hardware
+and thumb usage were selected at configure-time when building
+.BR ocamlopt 
+itself. This configuration can be inspected using 
+.BR ocamlopt
+.BR \-config .
+Target architecture depends on the "model" setting, while
+floating-point hardware and thumb support are determined from the ABI
+setting in "system" (
+.BR linux_eabi
+or
+.BR linux_eabihf
+).
+
 .SH SEE ALSO
 .BR ocamlc (1).
 .br
