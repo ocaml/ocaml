@@ -29,6 +29,7 @@ CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
 extern int volatile caml_force_major_slice;
+void caml_init_signal_handling(void);
 /* </private> */
 
 CAMLextern void caml_enter_blocking_section (void);

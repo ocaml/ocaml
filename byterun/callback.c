@@ -18,6 +18,7 @@
 #include "fail.h"
 #include "memory.h"
 #include "mlvalues.h"
+#include "plat_threads.h"
 
 #ifndef NATIVE_CODE
 
@@ -28,7 +29,7 @@
 #include "fix_code.h"
 #include "stacks.h"
 
-CAMLexport int caml_callback_depth = 0;
+CAMLexport __thread int caml_callback_depth = 0;
 
 #ifndef LOCAL_CALLBACK_BYTECODE
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
@@ -37,19 +38,16 @@ static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
 #ifdef THREADED_CODE
 
-static int callback_code_threaded = 0;
-
-static void thread_callback(void)
+static void init_callback_code(void)
 {
   caml_thread_code(callback_code, sizeof(callback_code));
-  callback_code_threaded = 1;
 }
-
-#define Init_callback() if (!callback_code_threaded) thread_callback()
 
 #else
 
-#define Init_callback()
+static void init_callback_code(void)
+{
+}
 
 #endif
 
@@ -74,7 +72,6 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   caml_extern_sp[narg + 1] = Val_unit;    /* environment */
   caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
   caml_extern_sp[narg + 3] = closure;
-  Init_callback();
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
@@ -196,7 +193,7 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 /* Naming of OCaml values */
 
 struct named_value {
-  value val;
+  caml_root val;
   struct named_value * next;
   char name[1];
 };
@@ -204,6 +201,12 @@ struct named_value {
 #define Named_value_size 13
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
+static plat_mutex named_value_lock;
+
+void caml_init_callbacks() {
+  plat_mutex_init(&named_value_lock);
+  init_callback_code();
+}
 
 static unsigned int hash_value_name(char const *name)
 {
@@ -217,30 +220,46 @@ CAMLprim value caml_register_named_value(value vname, value val)
   struct named_value * nv;
   char * name = String_val(vname);
   unsigned int h = hash_value_name(name);
+  int found = 0;
 
+  plat_mutex_lock(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      nv->val = val;
-      return Val_unit;
+      caml_modify_root(&nv->val, val);
+      found = 1;
+      break;
     }
   }
-  nv = (struct named_value *)
-         caml_stat_alloc(sizeof(struct named_value) + strlen(name));
-  strcpy(nv->name, name);
-  nv->val = val;
-  nv->next = named_value_table[h];
-  named_value_table[h] = nv;
-  caml_register_global_root(&nv->val);
+  if (!found) {
+    nv = (struct named_value *)
+      caml_stat_alloc(sizeof(struct named_value) + strlen(name));
+    strcpy(nv->name, name);
+    caml_register_root(&nv->val);
+    caml_modify_root(&nv->val, val);
+    nv->next = named_value_table[h];
+    named_value_table[h] = nv;
+  }
+  plat_mutex_unlock(&named_value_lock);
   return Val_unit;
 }
 
-CAMLexport value * caml_named_value(char const *name)
+CAMLexport value caml_get_named_value(char const *name, int* found_res)
 {
   struct named_value * nv;
+  int found = 0;
+  value ret = Val_unit;
+  plat_mutex_lock(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
-    if (strcmp(name, nv->name) == 0) return &nv->val;
+    if (strcmp(name, nv->name) == 0){
+      ret = caml_read_root(&nv->val);
+      found = 1;
+      break;
+    }
   }
-  return NULL;
+  plat_mutex_unlock(&named_value_lock);
+
+  if (found_res) *found_res = found;
+  return ret;
 }

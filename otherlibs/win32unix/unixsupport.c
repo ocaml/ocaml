@@ -253,8 +253,9 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     name = copy_string(cmdname);
     err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
-      unix_error_exn = caml_named_value("Unix.Unix_error");
-      if (unix_error_exn == NULL)
+      int unix_error_found;
+      unix_error_exn = caml_get_named_value("Unix.Unix_error", &unix_error_found);
+      if (!unix_error_found)
         invalid_argument("Exception Unix.Unix_error not initialized,"
                          " please link unix.cma");
     }

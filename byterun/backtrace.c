@@ -36,11 +36,11 @@
 #include "sys.h"
 #include "backtrace.h"
 
-CAMLexport int caml_backtrace_active = 0;
-CAMLexport int caml_backtrace_pos = 0;
-CAMLexport code_t * caml_backtrace_buffer = NULL;
-CAMLexport value caml_backtrace_last_exn = Val_unit;
-CAMLexport char * caml_cds_file = NULL;
+CAMLexport __thread int caml_backtrace_active = 0;
+CAMLexport __thread int caml_backtrace_pos = 0;
+CAMLexport __thread code_t * caml_backtrace_buffer = NULL;
+CAMLexport __thread caml_root caml_backtrace_last_exn;
+CAMLexport __thread char * caml_cds_file = NULL;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Location of fields in the Instruct.debug_event record */
@@ -72,9 +72,9 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
-      caml_register_global_root(&caml_backtrace_last_exn);
+      caml_register_root(&caml_backtrace_last_exn);
     } else {
-      caml_remove_global_root(&caml_backtrace_last_exn);
+      caml_remove_root(&caml_backtrace_last_exn);
     }
     /* Note: lazy initialization of caml_backtrace_buffer in
        caml_stash_backtrace to simplify the interface with the thread
@@ -97,9 +97,9 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
   if (pc != NULL) pc = pc - 1;
-  if (exn != caml_backtrace_last_exn || !reraise) {
+  if (exn != caml_read_root(&caml_backtrace_last_exn) || !reraise) {
     caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
+    caml_modify_root(&caml_backtrace_last_exn, exn);
   }
   if (caml_backtrace_buffer == NULL) {
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));

@@ -25,6 +25,7 @@
 #include "roots.h"
 #include "signals.h"
 #include "weak.h"
+#include "domain.h"
 
 asize_t caml_minor_heap_size;
 static void *caml_young_base = NULL;

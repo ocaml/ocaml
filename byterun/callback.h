@@ -20,10 +20,13 @@
 #include "compatibility.h"
 #endif
 #include "mlvalues.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void caml_init_callbacks (void);
 
 CAMLextern value caml_callback (value closure, value arg);
 CAMLextern value caml_callback2 (value closure, value arg1, value arg2);
@@ -41,12 +44,12 @@ CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-CAMLextern value * caml_named_value (char const * name);
+CAMLextern value caml_get_named_value (char const * name, int* found);
 
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);
 
-CAMLextern int caml_callback_depth;
+CAMLextern __thread int caml_callback_depth;
 
 #ifdef __cplusplus
 }
