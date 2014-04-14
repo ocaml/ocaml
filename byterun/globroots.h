@@ -23,6 +23,7 @@
 void caml_init_global_roots(void);
 
 void caml_scan_global_roots(scanning_action f);
-void caml_scan_global_young_roots(scanning_action f);
+
+void caml_cleanup_deleted_roots(void);
 
 #endif /* CAML_GLOBROOTS_H */

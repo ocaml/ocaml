@@ -366,31 +366,25 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #define End_roots() caml_local_roots = caml__roots_block.next; }
 
 
-typedef struct caml_root {
-  atomic_uintnat value;
-} caml_root;
+typedef struct caml_root_private* caml_root;
 
-/* [caml_register_root] registers a caml_root as a memory root
-   for the duration of the program, or until [caml_remove_root] is called.
-   The value stored in this root may only be read and written with
-   [caml_read_root] and [caml_modify_root].
-   This function initialises the root to Val_unit, and must be called
-   before any use of [caml_read_root] or [caml_modify_root]. */
+/* [caml_create_root] creates a new GC root, initialised to the given
+   value.  The value stored in this root may only be read and written
+   with [caml_read_root] and [caml_modify_root]. */
 
-CAMLextern void caml_register_root (caml_root*);
+CAMLextern caml_root caml_create_root (value);
 
-/* [caml_remove_root] removes a memory root registered with
-   [caml_register_root]. */
+/* [caml_delete_root] deletes a root created by caml_create_root */
 
-CAMLextern void caml_remove_root (caml_root *);
+CAMLextern void caml_delete_root (caml_root);
 
-/* [caml_read_root] loads the value stored in a registered root */
+/* [caml_read_root] loads the value stored in a root */
 
-CAMLextern value caml_read_root (caml_root *);
+CAMLextern value caml_read_root (caml_root);
 
-/* [caml_modify_root] stores a new value in a registered root */
+/* [caml_modify_root] stores a new value in a root */
 
-CAMLextern void caml_modify_root (caml_root *, value);
+CAMLextern void caml_modify_root (caml_root, value);
 
 
 

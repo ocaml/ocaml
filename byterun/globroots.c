@@ -20,255 +20,104 @@
 #include "globroots.h"
 #include "callback.h"
 #include "plat_threads.h"
+#include "alloc.h"
 
-/* The sets of global memory roots are represented as skip lists
-   (see William Pugh, "Skip lists: a probabilistic alternative to
-   balanced binary trees", Comm. ACM 33(6), 1990). */
+/* A caml_root is in fact a value. We don't expose that fact outside
+   of this file so that C code doesn't attempt to directly modify it.
+   The value points to a block on the shared heap with the following
+   fields:
 
-struct global_root {
-  caml_root * root;                /* the address of the root */
-  struct global_root * forward[1]; /* variable-length array */
-};
+    0: the actual root, as set by caml_modify_root
+    1: an integer flag stating whether this root has been deleted
+    2: the next root in roots_all
 
-#define NUM_LEVELS 17
+   The roots are not scanned during minor GC. Instead, since the root
+   blocks are all on the shared heap, pointers from roots to a minor
+   heap will be detected using the normal inter-generational pointer
+   mechanism. */
 
-struct global_root_list {
-  caml_root * root;             /* dummy value for layout compatibility */
-  struct global_root * forward[NUM_LEVELS]; /* forward chaining */
-  int level;                    /* max used level */
-};
+static plat_mutex roots_mutex;
+static value roots_all = Val_unit;
 
-/* Generate a random level for a new node: 0 with probability 3/4,
-   1 with probability 3/16, 2 with probability 3/64, etc.
-   We use a simple linear congruential PRNG (see Knuth vol 2) instead
-   of random(), because we need exactly 32 bits of pseudo-random data
-   (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
-   is faster and guaranteed to be deterministic (to reproduce bugs). */
 
-static __thread uint32 random_seed = 0;
-
-static int random_level(void)
+void caml_init_global_roots() 
 {
-  uint32 r;
-  int level = 0;
-
-  /* Linear congruence with modulus = 2^32, multiplier = 69069
-     (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
-  r = random_seed = random_seed * 69069 + 25173;
-  /* Knuth (vol 2 p. 13) shows that the least significant bits are
-     "less random" than the most significant bits with a modulus of 2^m,
-     so consume most significant bits first */
-  while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
-  Assert(level < NUM_LEVELS);
-  return level;
+  plat_mutex_init(&roots_mutex);
 }
 
-/* Insertion in a global root list */
-
-static void caml_insert_global_root(struct global_root_list * rootlist,
-                                    caml_root * r)
+CAMLexport caml_root caml_create_root(value init) 
 {
-  struct global_root * update[NUM_LEVELS];
-  struct global_root * e, * f;
-  int i, new_level;
+  CAMLparam1(init);
+  value v = caml_alloc_shr(3, 0);
+  caml_initialize_field(v, 0, init);
+  caml_initialize_field(v, 1, Val_int(1));
+  
+  plat_mutex_lock(&roots_mutex);
+  caml_initialize_field(v, 2, roots_all);
+  roots_all = v;
+  plat_mutex_unlock(&roots_mutex);
 
-  /* Init "cursor" to list head */
-  e = (struct global_root *) rootlist;
-  /* Find place to insert new node */
-  for (i = rootlist->level; i >= 0; i--) {
-    while (1) {
-      f = e->forward[i];
-      if (f == NULL || f->root >= r) break;
-      e = f;
-    }
-    update[i] = e;
-  }
-  e = e->forward[0];
-  /* If already present, don't do anything */
-  if (e != NULL && e->root == r) return;
-  /* Insert additional element, updating list level if necessary */
-  new_level = random_level();
-  if (new_level > rootlist->level) {
-    for (i = rootlist->level + 1; i <= new_level; i++)
-      update[i] = (struct global_root *) rootlist;
-    rootlist->level = new_level;
-  }
-  e = caml_stat_alloc(sizeof(struct global_root) +
-                      new_level * sizeof(struct global_root *));
-  e->root = r;
-  for (i = 0; i <= new_level; i++) {
-    e->forward[i] = update[i]->forward[i];
-    update[i]->forward[i] = e;
-  }
+  CAMLreturnT(caml_root, (caml_root)v);
 }
 
-/* Deletion in a global root list */
-
-static void caml_delete_global_root(struct global_root_list * rootlist,
-                                    caml_root * r)
+CAMLexport void caml_delete_root(caml_root root)
 {
-  struct global_root * update[NUM_LEVELS];
-  struct global_root * e, * f;
-  int i;
-
-  /* Init "cursor" to list head */
-  e = (struct global_root *) rootlist;
-  /* Find element in list */
-  for (i = rootlist->level; i >= 0; i--) {
-    while (1) {
-      f = e->forward[i];
-      if (f == NULL || f->root >= r) break;
-      e = f;
-    }
-    update[i] = e;
-  }
-  e = e->forward[0];
-  /* If not found, nothing to do */
-  if (e == NULL || e->root != r) return;
-  /* Rebuild list without node */
-  for (i = 0; i <= rootlist->level; i++) {
-    if (update[i]->forward[i] == e)
-      update[i]->forward[i] = e->forward[i];
-  }
-  /* Reclaim list element */
-  caml_stat_free(e);
-  /* Down-correct list level */
-  while (rootlist->level > 0 &&
-         rootlist->forward[rootlist->level] == NULL)
-    rootlist->level--;
+  value v = (value)root;
+  Assert(root);
+  /* the root will be removed from roots_all and freed at the next GC */
+  caml_modify_field(v, 0, Val_unit);
+  caml_modify_field(v, 1, Val_int(0));
 }
 
-/* Iterate over a global root list */
-
-static void caml_iterate_global_roots(scanning_action f,
-                                      struct global_root_list * rootlist)
+CAMLexport value caml_read_root(caml_root root)
 {
-  struct global_root * gr;
-
-  for (gr = rootlist->forward[0]; gr != NULL; gr = gr->forward[0]) {
-    value v = (value)gr->root->value.val;
-    f(v, &v);
-    if (v != (value)gr->root->value.val) {
-      gr->root->value.val = (uintnat)v;
-    }
-  }
+  value v = (value)root;
+  Assert(root);
+  return Field(v, 0);
 }
 
-/* Empty a global root list */
-
-static void caml_empty_global_roots(struct global_root_list * rootlist)
+CAMLexport void caml_modify_root(caml_root root, value newv)
 {
-  struct global_root * gr, * next;
-  int i;
-
-  for (gr = rootlist->forward[0]; gr != NULL; /**/) {
-    next = gr->forward[0];
-    caml_stat_free(gr);
-    gr = next;
-  }
-  for (i = 0; i <= rootlist->level; i++) rootlist->forward[i] = NULL;
-  rootlist->level = 0;
+  value v = (value)root;
+  Assert(root);
+  caml_modify_field(v, 0, newv);
 }
-
-/* The three global root lists */
-
-static struct global_root_list caml_global_roots_young = { NULL, { NULL, }, 0 };
-                 /* generational roots pointing to minor or major heap */
-static struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
-                  /* generational roots pointing to major heap */
-
-static plat_mutex global_roots_mutex;
-
-void caml_init_global_roots() {
-  plat_mutex_init(&global_roots_mutex);
-}
-
-/* Register a global C root */
-
-CAMLexport void caml_register_root(caml_root *r)
-{
-  r->value.val = (uintnat)Val_unit;
-}
-
-/* Un-register a global C root */
-
-CAMLexport void caml_remove_root(caml_root *r)
-{
-  value v = caml_read_root(r);
-  if (Is_block(v)) {
-    if (Is_young(v))
-      caml_delete_global_root(&caml_global_roots_young, r);
-    else
-      caml_delete_global_root(&caml_global_roots_old, r);
-  }
-}
-
-/* Read the value of a global C root */
-
-CAMLexport value caml_read_root(caml_root *r) 
-{
-  return (value)r->value.val;
-}
-
-/* Modify the value of a global C root */
-
-CAMLexport void caml_modify_root(caml_root *r, value newval)
-{
-  value oldval = caml_read_root(r);
-
-  /* It is OK to have a root in roots_young that suddenly points to
-     the old generation -- the next minor GC will take care of that.
-     What needs corrective action is a root in roots_old that suddenly
-     points to the young generation. */
-  if (Is_block(newval) && Is_young(newval) &&
-      Is_block(oldval) && !Is_young(oldval)) /* !! */ {
-    caml_delete_global_root(&caml_global_roots_old, r);
-    caml_insert_global_root(&caml_global_roots_young, r);
-  }
-  /* PR#4704 */
-  else if (!Is_block(oldval) && Is_block(newval)) {
-    /* The previous value in the root was unboxed but now it is boxed.
-       The root won't appear in any of the root lists thus far (by virtue
-       of the operation of [caml_register_generational_global_root]), so we
-       need to make sure it gets in, or else it will never be scanned. */
-    if (Is_young(newval))
-      caml_insert_global_root(&caml_global_roots_young, r);
-    else
-      caml_insert_global_root(&caml_global_roots_old, r);
-  }
-  else if (Is_block(oldval) && !Is_block(newval)) {
-    /* The previous value in the root was boxed but now it is unboxed, so
-       the root should be removed. If [oldval] is young, this will happen
-       anyway at the next minor collection, but it is safer to delete it
-       here. */
-    if (Is_young(oldval))
-      caml_delete_global_root(&caml_global_roots_young, r);
-    else
-      caml_delete_global_root(&caml_global_roots_old, r);
-  }
-  /* end PR#4704 */
-  r->value.val = (uintnat)newval;
-}
-
-/* Scan all global roots */
 
 void caml_scan_global_roots(scanning_action f)
 {
-  caml_iterate_global_roots(f, &caml_global_roots_young);
-  caml_iterate_global_roots(f, &caml_global_roots_old);
+  value r, newr;
+  plat_mutex_lock(&roots_mutex);
+  r = roots_all;
+  plat_mutex_unlock(&roots_mutex);
+  
+  Assert(!Is_young(r));
+  newr = r;
+  f(newr, &newr);
+  Assert(r == newr); /* GC should not move r, it is not young */
 }
 
-/* Scan global roots for a minor collection */
-
-void caml_scan_global_young_roots(scanning_action f)
+void caml_cleanup_deleted_roots()
 {
-  struct global_root * gr;
+  value r, prev;
+  int first = 1;
+  plat_mutex_lock(&roots_mutex);
 
-  caml_iterate_global_roots(f, &caml_global_roots_young);
-  /* Move young roots to old roots */
-  for (gr = caml_global_roots_young.forward[0];
-       gr != NULL; gr = gr->forward[0]) {
-    caml_insert_global_root(&caml_global_roots_old, gr->root);
+  r = roots_all;
+  while (Is_block(r)) {
+    value next = Field(r, 2);
+    if (Field(r, 1) == Val_int(0)) {
+      /* root was deleted, remove from list */
+      if (first) {
+        roots_all = next;
+      } else {
+        caml_modify_field(prev, 2, next);
+      }
+    }
+
+    prev = r;
+    first = 0;
+    r = next;
   }
-  caml_empty_global_roots(&caml_global_roots_young);
+
+  plat_mutex_unlock(&roots_mutex);
 }

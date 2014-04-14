@@ -52,8 +52,6 @@ void caml_oldify_local_roots (void)
       }
     }
   }
-  /* Global C roots */
-  caml_scan_global_young_roots(&caml_oldify_one);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
