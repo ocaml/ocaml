@@ -215,6 +215,7 @@ static uintnat minor_heap_init = Minor_heap_def;
 static uintnat heap_chunk_init = Heap_chunk_def;
 static uintnat heap_size_init = Init_heap_def;
 static uintnat max_stack_init = Max_stack_def;
+static int backtrace_enabled_init = 0;
 
 /* Parse options on the command line */
 
@@ -292,7 +293,7 @@ static void parse_camlrunparam(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'b': caml_record_backtrace(Val_true); break;
+      case 'b': backtrace_enabled_init = 1; break;
       case 'h': scanmult (opt, &heap_size_init); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'l': scanmult (opt, &max_stack_init); break;
@@ -385,6 +386,7 @@ CAMLexport void caml_main(char **argv)
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
+  if (backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -466,6 +468,7 @@ CAMLexport void caml_startup_code(
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   caml_init_stack (max_stack_init);
+  if (backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

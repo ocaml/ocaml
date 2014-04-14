@@ -164,11 +164,10 @@ void caml_debugger_init(void)
   value flags;
   int n;
 
-  caml_register_root(&marshal_flags);
   flags = caml_alloc(2, Tag_cons);
   Store_field(flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(flags, 1, Val_emptylist);
-  caml_modify_root(&marshal_flags, flags);
+  marshal_flags = caml_create_root(flags);
 
   address = getenv("CAML_DEBUG_SOCKET");
   if (address == NULL) return;
@@ -238,7 +237,7 @@ static void safe_output_value(struct channel *chan, value val)
   saved_external_raise = caml_external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
     caml_external_raise = &raise_buf;
-    caml_output_val(chan, val, caml_read_root(&marshal_flags));
+    caml_output_val(chan, val, caml_read_root(marshal_flags));
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */
     caml_really_putblock(chan, "\000\000\000\000", 4);

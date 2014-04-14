@@ -72,9 +72,10 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
-      caml_register_root(&caml_backtrace_last_exn);
+      caml_backtrace_last_exn = caml_create_root(Val_unit);
     } else {
-      caml_remove_root(&caml_backtrace_last_exn);
+      caml_delete_root(caml_backtrace_last_exn);
+      caml_backtrace_last_exn = NULL;
     }
     /* Note: lazy initialization of caml_backtrace_buffer in
        caml_stash_backtrace to simplify the interface with the thread
@@ -97,9 +98,9 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 {
   code_t end_code = (code_t) ((char *) caml_start_code + caml_code_size);
   if (pc != NULL) pc = pc - 1;
-  if (exn != caml_read_root(&caml_backtrace_last_exn) || !reraise) {
+  if (exn != caml_read_root(caml_backtrace_last_exn) || !reraise) {
     caml_backtrace_pos = 0;
-    caml_modify_root(&caml_backtrace_last_exn, exn);
+    caml_modify_root(caml_backtrace_last_exn, exn);
   }
   if (caml_backtrace_buffer == NULL) {
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));

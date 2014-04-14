@@ -238,6 +238,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     caml_instr_table = (char **) jumptable;
     caml_instr_base = Jumptbl_base;
 #endif
+    caml_global_data = caml_create_root(Val_unit);
     caml_init_callbacks();
     return Val_unit;
   }

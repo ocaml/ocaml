@@ -225,7 +225,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   plat_mutex_lock(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
-      caml_modify_root(&nv->val, val);
+      caml_modify_root(nv->val, val);
       found = 1;
       break;
     }
@@ -234,8 +234,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
     nv = (struct named_value *)
       caml_stat_alloc(sizeof(struct named_value) + strlen(name));
     strcpy(nv->name, name);
-    caml_register_root(&nv->val);
-    caml_modify_root(&nv->val, val);
+    nv->val = caml_create_root(val);
     nv->next = named_value_table[h];
     named_value_table[h] = nv;
   }
@@ -253,7 +252,7 @@ CAMLexport value caml_get_named_value(char const *name, int* found_res)
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0){
-      ret = caml_read_root(&nv->val);
+      ret = caml_read_root(nv->val);
       found = 1;
       break;
     }
