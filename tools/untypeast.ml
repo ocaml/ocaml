@@ -30,6 +30,11 @@ Some notes:
 
 *)
 
+let string_is_prefix ?(from=0) sub str =
+  let sublen = String.length sub in
+  try 
+    String.sub str from sublen = sub
+  with _ -> false
 
 let option f = function None -> None | Some e -> Some (f e)
 
@@ -156,6 +161,20 @@ and untype_pattern pat =
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
         Ppat_constraint (untype_pattern { pat with pat_extra=rem },
                          untype_core_type ct)
+    | { pat_extra; pat_desc = Tpat_alias ( { pat_desc = Tpat_any; pat_loc }, id, name ) } when pat_loc = Location.none ->
+        (* let (x : t) = ... x is unused ...
+           => let ((_ as x) : t) = ... x is unused ...
+
+           Since ocamlc gives different warnings for the former and the latter at stdlib/parsing.ml,
+           we need to recover the original.
+        *)
+        begin
+          match (Ident.name id).[0] with
+            'A'..'Z' ->
+              Ppat_unpack name
+          | _ ->
+              Ppat_var name
+        end
     | _ ->
     match pat.pat_desc with
       Tpat_any -> Ppat_any
@@ -235,6 +254,24 @@ and untype_expression exp =
         Pexp_let (rec_flag,
           List.map untype_binding list,
           untype_expression exp)
+(*
+    | Texp_function 
+        (label, 
+         [ { pat_desc = Tpat_var (_, {txt = "*opt*"}) }, 
+           { exp_desc = 
+               Texp_let (Default, 
+                         [pat, { exp_desc = Texp_match(_, [_ (* Some *); (_, default) ], _) }], 
+                         exp)
+           } 
+         ],
+         _)
+        when Btype.is_optional label ->
+
+        let pat = untype_pattern pat in
+        let default = untype_expression default in
+        let exp = untype_expression exp in
+        Pexp_function(label, Some default, [pat, exp])
+*)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, untype_pattern p, untype_expression e)
     | Texp_function ("", cases, _) ->
@@ -389,7 +426,8 @@ and untype_module_type mty =
           untype_module_type mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
-          List.map (fun (_path, lid, withc) ->
+          (* CR jfuruse: this rev is required since the typer reverses the things. The typer should be fixed rather than the untyper *)
+          List.rev_map (fun (_path, lid, withc) ->
               untype_with_constraint lid withc
           ) list)
     | Tmty_typeof mexpr ->
@@ -524,6 +562,14 @@ and untype_core_type ct =
   Typ.mk ~loc:ct.ctyp_loc desc
 
 and untype_class_structure cs =
+(*
++  let rec remove_self_pcstr_pat = function
++    | { pat_desc = Tpat_alias (p, id, s) } when string_is_prefix "selfpat-" id.Ident.name ->
++        remove_self_pcstr_pat p
++    | p -> p
++  in
++  { pcstr_pat = untype_pattern (remove_self_pcstr_pat cs.cstr_pat);
+*)
   { pcstr_self = untype_pattern cs.cstr_self;
     pcstr_fields = List.map untype_class_field cs.cstr_fields;
   }
@@ -533,6 +579,11 @@ and untype_row_field rf =
     Ttag (label, bool, list) ->
       Rtag (label, bool, List.map untype_core_type list)
   | Tinherit ct -> Rinherit (untype_core_type ct)
+
+and is_self_pat = function
+  | { pat_desc = Tpat_alias(_pat, id, _) } ->
+      string_is_prefix "self-" (Ident.name id)
+  | _ -> false
 
 and untype_class_field cf =
   let desc = match cf.cf_desc with
@@ -547,7 +598,22 @@ and untype_class_field cf =
     | Tcf_method (lab, priv, Tcfk_virtual cty) ->
         Pcf_method (lab, priv, Cfk_virtual (untype_core_type cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
+(*
++          let remove_fun_self_Pcf_meth = function
++            | { exp_desc = Texp_function("", [(pat, expr)], _) } when is_self_pat pat -> expr
++            | e -> e
++          in
++          let exp = remove_fun_self_Pcf_meth exp in
+*)
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
-    | Tcf_initializer exp -> Pcf_initializer (untype_expression exp)
+    | Tcf_initializer exp -> 
+(*
++      let remove_fun_self_Tcf_init = function
++        | { exp_desc = Texp_function("", [(pat, expr)], _) } when is_self_pat pat -> expr
++        | e -> e
++      in
++      Pcf_init (untype_expression (remove_fun_self_Tcf_init exp))
+*)
+         Pcf_initializer (untype_expression exp)
   in
   { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }
