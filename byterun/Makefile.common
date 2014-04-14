@@ -22,7 +22,7 @@ COMMONOBJS=\
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o finalise.o custom.o \
-  dynlink.o addrmap.o domain.o
+  dynlink.o addrmap.o domain.o minor_heap.o
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \

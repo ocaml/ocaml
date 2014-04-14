@@ -128,10 +128,14 @@ typedef struct { uint32 l, h; } uint64, int64;
    This must be at least [Max_young_wosize + 1]. */
 #define Minor_heap_min (Max_young_wosize + 1)
 
-/* Maximum size of the minor zone (words).
-   Must be greater than or equal to [Minor_heap_min].
-*/
-#define Minor_heap_max (1 << 28)
+/* There may be at most 1<<Minor_heap_sel_bits minor
+   heaps allocated */
+#define Minor_heap_sel_bits 8
+
+/* An entire minor heap must fit inside one region
+   of size 1 << Minor_heap_align_bits, which determines
+   the maximum size of the heap */
+#define Minor_heap_align_bits 24
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
