@@ -78,10 +78,11 @@ Attributes on items:
     let x1 = ... [@@id1] [@@id2] and x2 = ... [@@id3] [@@id4]
 
 
-  The [@@id s] form, when used at the beginning of a signature or
-  structure, or after a double semi-colon (;;), defines an attribute
-  which stands as a stand-alone signature or structure item (not
-  attached to another item).
+Floating attributes:
+
+  The [@@@id s] form defines an attribute which stands as a
+  stand-alone signature or structure item (not attached to another
+  item).
 
   Example:
 
@@ -89,13 +90,13 @@ Attributes on items:
     [@@id1]
     type t
     [@@id2]
-    ;; [@@id3] [@@id4]
-    ;; [@@id5]
+    [@@@id3] [@@@id4]
+    [@@@id5]
     type s
     [@@id6]
   end
 
-  Here, id1, id3, id4, id5 are stand-alone attributes, while
+  Here, id1, id3, id4, id5 are floating attributes, while
   id2 is attached to the type t and id6 is attached to the type s.
 
 === Extension nodes
@@ -249,9 +250,21 @@ to represent attributes.
 It is now possible to start a signature or a structure with a ";;" token and to have two successive ";;" tokens.
 
 Rationale:
-   It makes it possible to always prefix a "standalone" attribute by ";;" independently
-   from its context (this will work at the beginning of the signature/structure and after
-   another item finished with ";;").
+   In an intermediate version of this branch, floating attributes shared
+   the same syntax as item attributes, with the constraints that they
+   had to appear either at the beginning of their structure or signature,
+   or after ";;".  The relaxation above made is possible to always prefix
+   a floating attributes by ";;" independently of its context.
+
+   Floating attributes now have a custom syntax [@@@id], but this changes
+   is harmless, and the same argument holds for toplevel expressions:
+   it is always possile to write:
+
+     ;; print_endline "bla";;
+
+   without having to care about whether the previous structure item
+   ends with ";;" or not.
+
 
 -- Relaxing the syntax for exception declarations
 

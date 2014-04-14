@@ -354,6 +354,7 @@ let mkexp_attrs d attrs =
 %token LPAREN
 %token LBRACKETAT
 %token LBRACKETATAT
+%token LBRACKETATATAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -500,8 +501,7 @@ toplevel_phrase:
   | EOF                                  { raise End_of_file }
 ;
 top_structure:
-    str_attribute top_structure   { $1 :: $2 }
-  | seq_expr post_item_attributes { [mkstrexp $1 $2] }
+    seq_expr post_item_attributes { [mkstrexp $1 $2] }
   | top_structure_tail            { $1 }
 ;
 top_structure_tail:
@@ -603,17 +603,13 @@ module_expr:
 ;
 
 structure:
-    str_attribute structure { $1 :: $2 }
-  | seq_expr post_item_attributes structure_tail { mkstrexp $1 $2 :: $3 }
+    seq_expr post_item_attributes structure_tail { mkstrexp $1 $2 :: $3 }
   | structure_tail { $1 }
 ;
 structure_tail:
     /* empty */          { [] }
   | SEMISEMI structure   { $2 }
   | structure_item structure_tail { $1 :: $2 }
-;
-str_attribute:
-    post_item_attribute { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
     LET ext_attributes rec_flag let_bindings
@@ -661,6 +657,8 @@ structure_item:
       { mkstr(Pstr_include ($2, $3)) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
+  | floating_attribute
+      { mkstr(Pstr_attribute $1) }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -708,16 +706,9 @@ module_type:
       { Mty.attr $1 $2 }
 ;
 signature:
-    sig_attribute signature { $1 :: $2 }
-  | signature_tail { $1 }
-;
-signature_tail:
     /* empty */          { [] }
   | SEMISEMI signature   { $2 }
-  | signature_item signature_tail { $1 :: $2 }
-;
-sig_attribute:
-    post_item_attribute { mksig(Psig_attribute $1) }
+  | signature_item signature { $1 :: $2 }
 ;
 signature_item:
     VAL val_ident COLON core_type post_item_attributes
@@ -760,6 +751,8 @@ signature_item:
       { mksig(Psig_class_type (List.rev $3)) }
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, $2)) }
+  | floating_attribute
+      { mksig(Psig_attribute $1) }
 ;
 
 module_declaration:
@@ -2068,6 +2061,9 @@ attribute:
 ;
 post_item_attribute:
   LBRACKETATAT attr_id payload RBRACKET { ($2, $3) }
+;
+floating_attribute:
+  LBRACKETATATAT attr_id payload RBRACKET { ($2, $3) }
 ;
 post_item_attributes:
     /* empty */  { [] }
