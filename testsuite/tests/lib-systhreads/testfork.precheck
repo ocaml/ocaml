@@ -14,4 +14,3 @@ case `sed -n -e '/OTHERLIBRARIES=/s// /p' ../../../config/Makefile` in
   *' unix '*) exit 0;;
   *) exit 3;;
 esac
-

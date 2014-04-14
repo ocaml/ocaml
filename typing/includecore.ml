@@ -230,7 +230,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         let mark cstrs usage name decl =
           List.iter
             (fun c ->
-              Env.mark_constructor_used usage name decl (Ident.name c.Types.cd_id))
+              Env.mark_constructor_used usage name decl
+                                        (Ident.name c.Types.cd_id))
             cstrs
         in
         let usage =

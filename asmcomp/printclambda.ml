@@ -51,7 +51,7 @@ let rec lam ppf = function
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Ident.print)in
       let one_fun ppf f =
-        fprintf ppf "(fun@ %s@ %d @[<2>%a@] @[<2>%a@])"
+        fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
           f.label f.arity idents f.params lam f.body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
@@ -83,22 +83,20 @@ let rec lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
   | Uswitch(larg, sw) ->
-      let switch ppf sw =
-        let spc = ref false in
-        for i = 0 to Array.length sw.us_index_consts - 1 do
-          let n = sw.us_index_consts.(i) in
-          let l = sw.us_actions_consts.(n) in
-          if !spc then fprintf ppf "@ " else spc := true;
-          fprintf ppf "@[<hv 1>case int %i:@ %a@]" i lam l;
-        done;
-        for i = 0 to Array.length sw.us_index_blocks - 1 do
-          let n = sw.us_index_blocks.(i) in
-          let l = sw.us_actions_blocks.(n) in
-          if !spc then fprintf ppf "@ " else spc := true;
-          fprintf ppf "@[<hv 1>case tag %i:@ %a@]" i lam l;
+      let print_case tag index i ppf =
+        for j = 0 to Array.length index - 1 do
+          if index.(j) = i then fprintf ppf "case %s %i:" tag j
         done in
+      let print_cases tag index cases ppf =
+        for i = 0 to Array.length cases - 1 do
+          fprintf ppf "@ @[<2>%t@ %a@]"
+            (print_case tag index i) sequence cases.(i)
+        done in
+      let switch ppf sw =
+        print_cases "int" sw.us_index_consts sw.us_actions_consts ppf ;
+        print_cases "tag" sw.us_index_blocks sw.us_actions_blocks ppf  in
       fprintf ppf
-       "@[<1>(switch %a@ @[<v 0>%a@])@]"
+       "@[<v 0>@[<2>(switch@ %a@ @]%a)@]"
         lam larg switch sw
   | Ustringswitch(larg,sw,d) ->
       let switch ppf sw =
@@ -109,8 +107,12 @@ let rec lam ppf = function
             fprintf ppf "@[<hv 1>case \"%s\":@ %a@]"
               (String.escaped s) lam l)
           sw ;
-        if !spc then fprintf ppf "@ " else spc := true;
-        fprintf ppf "@[<hv 1>default:@ %a@]" lam d in
+        begin match d with
+        | Some d ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>default:@ %a@]" lam d
+        | None -> ()
+        end in
       fprintf ppf
         "@[<1>(switch %a@ @[<v 0>%a@])@]" lam larg switch sw
   | Ustaticfail (i, ls)  ->
@@ -186,4 +188,3 @@ let rec approx ppf = function
       fprintf ppf "@[const(%a)@]" uconstant c
   | Value_global_field (s, i) ->
       fprintf ppf "@[global(%s,%i)@]" s i
-

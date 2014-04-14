@@ -71,7 +71,7 @@ and strengthen_sig env sg p =
       let newdecl =
         match decl.mtd_type with
           None ->
-            {decl with mtd_type = Some(Mty_ident(Pdot(p, Ident.name id, nopos)))}
+            {decl with mtd_type = Some(Mty_ident(Pdot(p,Ident.name id,nopos)))}
         | Some _ ->
             decl
       in

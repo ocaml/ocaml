@@ -239,4 +239,3 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     close_out oc;
   end;
   clear ()
-

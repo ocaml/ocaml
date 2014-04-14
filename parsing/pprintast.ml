@@ -60,7 +60,8 @@ let needs_parens txt =
   is_infix (fixity_of_string txt)
   || List.mem txt.[0] prefix_symbols
 
-(* some infixes need spaces around parens to avoid clashes with comment syntax *)
+(* some infixes need spaces around parens to avoid clashes with comment
+   syntax *)
 let needs_spaces txt =
   txt.[0]='*' || txt.[String.length txt - 1] = '*'
 
@@ -353,7 +354,8 @@ class printer  ()= object(self:'self)
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p protect_ident s.txt (* RA*)
     | Ppat_or (p1, p2) -> (* *)
-        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
+        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
+           (list_of_pattern [] x)
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
     let rec pattern_list_helper f  =  function
@@ -422,11 +424,13 @@ class printer  ()= object(self:'self)
           match p.ppat_desc with
           | Ppat_var {txt;_} when txt = rest ->
               (match opt with
-              |Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
-              | None -> pp f "?%s@ " rest)
-          | _ -> (match opt with
-            | Some o -> pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
-            | None -> pp f "%s:%a@;" l self#simple_pattern p  )
+               | Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
+               | None -> pp f "?%s@ " rest)
+          | _ ->
+              (match opt with
+               | Some o ->
+                   pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
+               | None -> pp f "%s:%a@;" l self#simple_pattern p)
         end
       else
         (match p.ppat_desc with
@@ -466,7 +470,8 @@ class printer  ()= object(self:'self)
     end
     | Pexp_apply
         ({pexp_desc=Pexp_ident
-                     {txt= Ldot (Ldot (Lident "Bigarray", array), ("get"|"set" as gs)) ;_};_},
+                     {txt= Ldot (Ldot (Lident "Bigarray", array),
+                                 ("get"|"set" as gs)) ;_};_},
          label_exprs) ->
            begin match array,gs with
            | "Genarray","get"   ->
@@ -495,7 +500,8 @@ class printer  ()= object(self:'self)
                      | (_,v)::rest ->
                          let args = List.map snd (List.rev rest) in
                          pp f "@[%a.{%a}@ <-@ %a@]"
-                           self#simple_expr a (self#list ~sep:"," self#simple_expr)
+                           self#simple_expr a (self#list ~sep:","
+                                                         self#simple_expr)
                            args self#simple_expr v;
                          true
                      | _ -> assert false
@@ -841,7 +847,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
     | Pmty_functor (_, None, mt2) ->
-        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2 
+        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
           self#module_type mt1  self#module_type mt2
@@ -1052,7 +1058,7 @@ class printer  ()= object(self:'self)
             | Pmty_signature (_));_} as mt)) ->
                 pp f " :@;%a@;=@;%a@;"  self#module_type mt self#module_expr  me
             | _ ->
-                pp f " =@ %a"  self#module_expr  me 
+                pp f " =@ %a"  self#module_expr  me
             )) x.pmb_expr
     | Pstr_open (ovf, li, _attrs) ->
         pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;

@@ -1020,11 +1020,11 @@ let rec scrape_alias env ?path mty =
       begin try
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
-        Location.prerr_warning Location.none 
+        Location.prerr_warning Location.none
           (Warnings.Deprecated
              ("module " ^ Path.name path ^ " cannot be accessed"));
         mty
-      end      
+      end
   | mty, Some path ->
       !strengthen env mty path
   | _ -> mty
@@ -1781,7 +1781,8 @@ open Format
 
 let report_error ppf = function
   | Illegal_renaming(name, modname, filename) -> fprintf ppf
-      "Wrong file naming: %a@ contains the compiled interface for @ %s when %s was expected"
+      "Wrong file naming: %a@ contains the compiled interface for @ \
+       %s when %s was expected"
       Location.print_filename filename name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
@@ -1810,4 +1811,3 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
-

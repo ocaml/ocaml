@@ -1911,8 +1911,9 @@ and type_expect ?in_function env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let prev_warnings = Typetexp.warning_attribute sexp.pexp_attributes in
   let exp = type_expect_ ?in_function env sexp ty_expected in
-  begin match prev_warnings with Some x -> Warnings.restore x | None -> () end;
-  Cmt_format.set_saved_types (Cmt_format.Partial_expression exp :: previous_saved_types);
+  may Warnings.restore prev_warnings;
+  Cmt_format.set_saved_types
+    (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
 and type_expect_ ?in_function env sexp ty_expected =
@@ -1966,16 +1967,21 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_env = env }
       end
   | Pexp_constant(Const_string (s, _) as cst) ->
+      let ty_exp = expand_head env ty_expected in
+      let ty =
+        (* Terrible hack for format strings *)
+        match ty_exp.desc with
+          Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
+            if !Clflags.principal && ty_exp.level <> generic_level then
+              Location.prerr_warning loc
+                (Warnings.Not_principal "this coercion to format6");
+            type_format loc s
+        | _ -> instance_def Predef.type_string
+      in
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
-        exp_type =
-        (* Terrible hack for format strings *)
-           begin match (repr (expand_head env ty_expected)).desc with
-             Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
-               type_format loc s
-           | _ -> instance_def Predef.type_string
-           end;
+        exp_type = ty;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_constant cst ->
@@ -2953,8 +2959,10 @@ and type_argument env sarg ty_expected' ty_expected =
   in
   let rec is_inferred sexp =
     match sexp.pexp_desc with
-      Pexp_ident _ | Pexp_apply _ | Pexp_send _ | Pexp_field _ -> true
-    | Pexp_open (_, _, e) -> is_inferred e
+      Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+    | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
+    | Pexp_sequence (_, e) | Pexp_open (_, _, e) -> is_inferred e
+    | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
     | _ -> false
   in
   match expand_head env ty_expected' with

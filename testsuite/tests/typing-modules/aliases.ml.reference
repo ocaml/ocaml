@@ -347,4 +347,8 @@ Error: In this `with' constraint, the new definition of I
     module Q :
       sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq end
   end
+#     module type S = sig module M : sig type t val x : t end end
+# module H : sig type t = A val x : t end
+# module H' = H
+# module type S' = sig module M : sig type t = H.t = A val x : t end end
 # 

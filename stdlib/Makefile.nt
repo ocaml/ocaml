@@ -16,7 +16,7 @@ include Makefile.shared
 allopt: stdlib.cmxa std_exit.cmx
 
 installopt:
-	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx $(LIBDIR)
+	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx $(INSTALL_LIBDIR)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
 	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \

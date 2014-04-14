@@ -23,7 +23,7 @@ INCLUDES=\
 
 OTHEROBJS=\
   $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
-  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma 
+  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
 

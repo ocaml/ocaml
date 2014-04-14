@@ -562,7 +562,8 @@ module_expr:
   | STRUCT structure error
       { unclosed "struct" 1 "end" 3 }
   | FUNCTOR functor_args MINUSGREATER module_expr
-      { List.fold_left (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc))) $4 $2 }
+      { List.fold_left (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
+                       $4 $2 }
   | module_expr LPAREN module_expr RPAREN
       { mkmod(Pmod_apply($1, $3)) }
   | module_expr LPAREN RPAREN
@@ -689,7 +690,8 @@ module_type:
       { unclosed "sig" 1 "end" 3 }
   | FUNCTOR functor_args MINUSGREATER module_type
       %prec below_WITH
-      { List.fold_left (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc))) $4 $2 }
+      { List.fold_left (fun acc (n, t) -> mkmty(Pmty_functor(n, t, acc)))
+                       $4 $2 }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
@@ -784,7 +786,8 @@ class_declarations:
   | class_declaration                           { [$1] }
 ;
 class_declaration:
-    virtual_flag class_type_parameters LIDENT class_fun_binding post_item_attributes
+    virtual_flag class_type_parameters LIDENT class_fun_binding
+    post_item_attributes
       {
        Ci.mk (mkrhs $3 3) $4
          ~virt:$1 ~params:$2
@@ -904,13 +907,16 @@ method_:
       { if $1 = Override then syntax_error ();
         mkloc $4 (rhs_loc 4), $3, Cfk_virtual $6 }
   | override_flag private_flag label strict_binding
-      { mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly ($4, None))) }
+      { mkloc $3 (rhs_loc 3), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly ($4, None))) }
   | override_flag private_flag label COLON poly_type EQUAL seq_expr
-      { mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly($7, Some $5))) }
+      { mkloc $3 (rhs_loc 3), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly($7, Some $5))) }
   | override_flag private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $6 $8 $10 in
-        mkloc $3 (rhs_loc 3), $2, Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly))) }
+        mkloc $3 (rhs_loc 3), $2,
+        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly))) }
 ;
 
 /* Class types */
@@ -918,7 +924,8 @@ method_:
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
+  | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
+    class_type
       { mkcty(Pcty_arrow("?" ^ $2 , mkoption $4, $6)) }
   | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_arrow("?" ^ $1, mkoption $2, $4)) }
@@ -986,7 +993,8 @@ class_descriptions:
   | class_description                           { [$1] }
 ;
 class_description:
-    virtual_flag class_type_parameters LIDENT COLON class_type post_item_attributes
+    virtual_flag class_type_parameters LIDENT COLON class_type
+    post_item_attributes
       {
        Ci.mk (mkrhs $3 3) $5
          ~virt:$1 ~params:$2
@@ -998,7 +1006,8 @@ class_type_declarations:
   | class_type_declaration                              { [$1] }
 ;
 class_type_declaration:
-    virtual_flag class_type_parameters LIDENT EQUAL class_signature post_item_attributes
+    virtual_flag class_type_parameters LIDENT EQUAL class_signature
+    post_item_attributes
       {
        Ci.mk (mkrhs $3 3) $5
          ~virt:$1 ~params:$2
@@ -1090,7 +1099,8 @@ expr:
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
   | WHILE ext_attributes seq_expr DO seq_expr DONE
       { mkexp_attrs (Pexp_while($3, $5)) $2 }
-  | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
+  | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO
+    seq_expr DONE
       { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
@@ -1157,7 +1167,7 @@ expr:
   | OBJECT ext_attributes class_structure END
       { mkexp_attrs (Pexp_object $3) $2 }
   | OBJECT ext_attributes class_structure error
-      { unclosed "object" 1 "end" 3 }
+      { unclosed "object" 1 "end" 4 }
   | expr attribute
       { Exp.attr $1 $2 }
 ;
@@ -1245,7 +1255,7 @@ simple_expr:
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list opt_semi GREATERRBRACE
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override(List.rev $4)))) }
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override(List.rev $4))))}
   | mod_longident DOT LBRACELESS field_expr_list opt_semi error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
@@ -1808,7 +1818,7 @@ core_type_list_no_attr:
   | core_type_list STAR simple_core_type_no_attr { $3 :: $1 }
 ;
 meth_list:
-    field SEMI meth_list                        { let (f, c) = $3 in ($1 :: f, c) }
+    field SEMI meth_list                     { let (f, c) = $3 in ($1 :: f, c) }
   | field opt_semi                              { [$1], Closed }
   | DOTDOT                                      { [], Open }
 ;
@@ -1822,13 +1832,13 @@ label:
 /* Constants */
 
 constant:
-    INT                                         { Const_int $1 }
-  | CHAR                                        { Const_char $1 }
-  | STRING                                      { let (s, d) = $1 in Const_string (s, d) }
-  | FLOAT                                       { Const_float $1 }
-  | INT32                                       { Const_int32 $1 }
-  | INT64                                       { Const_int64 $1 }
-  | NATIVEINT                                   { Const_nativeint $1 }
+    INT                               { Const_int $1 }
+  | CHAR                              { Const_char $1 }
+  | STRING                            { let (s, d) = $1 in Const_string (s, d) }
+  | FLOAT                             { Const_float $1 }
+  | INT32                             { Const_int32 $1 }
+  | INT64                             { Const_int64 $1 }
+  | NATIVEINT                         { Const_nativeint $1 }
 ;
 signed_constant:
     constant                               { $1 }

@@ -454,7 +454,8 @@ let rec defined_idents = function
     | Tstr_class cl_list ->
       List.map (fun (ci, _, _) -> ci.ci_id_class) cl_list @ defined_idents rem
     | Tstr_class_type cl_list -> defined_idents rem
-    | Tstr_include(modl, sg, _) -> bound_value_identifiers sg @ defined_idents rem
+    | Tstr_include(modl, sg, _) ->
+        bound_value_identifiers sg @ defined_idents rem
     | Tstr_attribute _ -> defined_idents rem
 
 (* second level idents (module M = struct ... let id = ... end),
@@ -868,7 +869,7 @@ let transl_store_package component_names target_name coercion =
                        [Lprim(Pgetglobal target_name, []);
                         Lprim(Pfield pos, [Lvar blk])]))
                0 pos_cc_list))
-  (*    
+  (*
               (* ignore id_pos_list as the ids are already bound *)
       let id = Array.of_list component_names in
       (List.length pos_cc_list,

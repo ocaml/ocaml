@@ -89,11 +89,19 @@ let record_rep ppf r =
   | Record_exception p -> fprintf ppf "exn (%s)" (Path.name p)
 ;;
 
+let string_of_loc_kind = function
+  | Loc_FILE -> "loc_FILE"
+  | Loc_LINE -> "loc_LINE"
+  | Loc_MODULE -> "loc_MODULE"
+  | Loc_POS -> "loc_POS"
+  | Loc_LOC -> "loc_LOC"
+
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
   | Prevapply _ -> fprintf ppf "revapply"
   | Pdirapply _ -> fprintf ppf "dirapply"
+  | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
@@ -313,8 +321,12 @@ let rec lam ppf = function
            if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case \"%s\":@ %a@]" (String.escaped s) lam l)
           cases;
-        if !spc then fprintf ppf "@ " else spc := true;
-        fprintf ppf "@[<hv 1>default:@ %a@]" lam default in
+        begin match default with
+        | Some default ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>default:@ %a@]" lam default
+        | None -> ()
+        end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
   | Lstaticraise (i, ls)  ->

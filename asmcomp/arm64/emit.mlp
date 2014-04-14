@@ -104,7 +104,7 @@ let emit_stack r =
 (* Output an addressing mode *)
 
 let emit_symbol_offset s ofs =
-  emit_symbol s; 
+  emit_symbol s;
   if ofs > 0 then `+{emit_int ofs}`
   else if ofs < 0 then `-{emit_int (-ofs)}`
   else ()
@@ -578,7 +578,7 @@ let emit_instr i =
         for j = 0 to Array.length jumptbl - 1 do
             `	b	{emit_label jumptbl.(j)}\n`
         done
-(* Alternative: 
+(* Alternative:
         let lbltbl = new_label() in
         `	adr	{emit_reg reg_tmp1}, {emit_label lbltbl}\n`;
         `	ldr	{emit_wreg reg_tmp2}, [{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsl #2]\n`;
@@ -652,7 +652,7 @@ let fundecl fundecl =
   cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
-  if n > 0 then 
+  if n > 0 then
     emit_stack_adjustment (-n);
   if !contains_calls then
     `	str	x30, [sp, #{emit_int (n-8)}]\n`;

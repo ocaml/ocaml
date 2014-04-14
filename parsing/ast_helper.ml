@@ -29,7 +29,8 @@ let with_default_loc l f =
   with exn -> default_loc := old; raise exn
 
 module Typ = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) d = {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
+    {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ptyp_any
@@ -52,7 +53,8 @@ module Typ = struct
 end
 
 module Pat = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) d = {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
+    {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
   let attr d a = {d with ppat_attributes = d.ppat_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ppat_any
@@ -74,7 +76,8 @@ module Pat = struct
 end
 
 module Exp = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) d = {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
+    {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
   let attr d a = {d with pexp_attributes = d.pexp_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
@@ -121,7 +124,8 @@ module Exp = struct
 end
 
 module Mty = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) d = {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
+  let mk ?(loc = !default_loc) ?(attrs = []) d =
+    {pmty_desc = d; pmty_loc = loc; pmty_attributes = attrs}
   let attr d a = {d with pmty_attributes = d.pmty_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pmty_ident a)
@@ -134,12 +138,14 @@ module Mty = struct
 end
 
 module Mod = struct
-let mk ?(loc = !default_loc) ?(attrs = []) d = {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
+let mk ?(loc = !default_loc) ?(attrs = []) d =
+  {pmod_desc = d; pmod_loc = loc; pmod_attributes = attrs}
   let attr d a = {d with pmod_attributes = d.pmod_attributes @ [a]}
 
   let ident ?loc ?attrs x = mk ?loc ?attrs (Pmod_ident x)
   let structure ?loc ?attrs x = mk ?loc ?attrs (Pmod_structure x)
-  let functor_ ?loc ?attrs arg arg_ty body = mk ?loc ?attrs (Pmod_functor (arg, arg_ty, body))
+  let functor_ ?loc ?attrs arg arg_ty body =
+    mk ?loc ?attrs (Pmod_functor (arg, arg_ty, body))
   let apply ?loc ?attrs m1 m2 = mk ?loc ?attrs (Pmod_apply (m1, m2))
   let constraint_ ?loc ?attrs m mty = mk ?loc ?attrs (Pmod_constraint (m, mty))
   let unpack ?loc ?attrs e = mk ?loc ?attrs (Pmod_unpack e)
@@ -171,7 +177,8 @@ module Str = struct
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
-  let exn_rebind ?loc ?(attrs = []) a b = mk ?loc (Pstr_exn_rebind (a, b, attrs))
+  let exn_rebind ?loc ?(attrs = []) a b =
+    mk ?loc (Pstr_exn_rebind (a, b, attrs))
   let module_ ?loc a = mk ?loc (Pstr_module a)
   let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
   let modtype ?loc a = mk ?loc (Pstr_modtype a)
@@ -303,7 +310,8 @@ module Vb = struct
 end
 
 module Ci = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(virt = Concrete) ?(params = []) name expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(virt = Concrete) ?(params = [])
+         name expr =
     {
      pci_virt = virt;
      pci_params = params;
@@ -398,7 +406,8 @@ module Convenience = struct
 
   let pvar s = Pat.var (mkloc s !default_loc)
   let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args)
-  let precord ?(closed = Open) l = Pat.record (List.map (fun (s, e) -> (lid s, e)) l) closed
+  let precord ?(closed = Open) l =
+    Pat.record (List.map (fun (s, e) -> (lid s, e)) l) closed
   let pnil () = pconstr "[]" []
   let pcons hd tl = pconstr "::" [hd; tl]
   let punit () = pconstr "()" []

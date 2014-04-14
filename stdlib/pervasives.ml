@@ -37,6 +37,20 @@ exception Exit
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
+(* Debugging *)
+
+external __LOC__ : string = "%loc_LOC"
+external __FILE__ : string = "%loc_FILE"
+external __LINE__ : int = "%loc_LINE"
+external __MODULE__ : string = "%loc_MODULE"
+external __POS__ : string * int * int * int = "%loc_POS"
+
+external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
+external __FILE_OF__ : 'a -> string * 'a = "%loc_FILE"
+external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
+external __MODULE_OF__ : 'a -> string * 'a = "%loc_MODULE"
+external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
+
 (* Comparisons *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
