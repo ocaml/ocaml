@@ -29,6 +29,7 @@
 #include "domain.h"
 #include "globroots.h"
 #include "signals.h"
+#include "minor_heap.h"
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -360,13 +361,6 @@ static uintnat norm_pmax (uintnat p)
   return p;
 }
 
-static intnat norm_minsize (intnat s)
-{
-  if (s < Minor_heap_min) s = Minor_heap_min;
-  if (s > Minor_heap_max) s = Minor_heap_max;
-  return s;
-}
-
 CAMLprim value caml_gc_set(value v)
 {
   return Val_unit;
@@ -414,7 +408,7 @@ CAMLprim value caml_gc_set(value v)
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminsize = Bsize_wsize (norm_minsize (Long_val (Field (v, 0))));
+  newminsize = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
   if (newminsize != caml_minor_heap_size){
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
@@ -471,7 +465,8 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
-  caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
+  caml_init_minor_heaps();
+  caml_set_minor_heap_size (caml_norm_minor_heap_size (minor_size));
   
   caml_domain_register_main();
   caml_init_global_roots();

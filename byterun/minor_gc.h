@@ -16,9 +16,9 @@
 
 
 #include "misc.h"
+#include "minor_heap.h"
 
 CAMLextern char *caml_young_ptr;
-CAMLextern char *caml_young_end, *caml_young_start;
 extern asize_t caml_minor_heap_size;
 extern int caml_in_minor_collection;
 
@@ -33,9 +33,6 @@ struct caml_ref_table {
 };
 CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table;
 
-#define Is_young(val) \
-  (Assert (Is_block (val)), \
-   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);

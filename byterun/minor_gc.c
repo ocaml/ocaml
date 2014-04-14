@@ -26,10 +26,9 @@
 #include "signals.h"
 #include "weak.h"
 #include "domain.h"
+#include "minor_heap.h"
 
 asize_t caml_minor_heap_size;
-static void *caml_young_base = NULL;
-CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
 CAMLexport char *caml_young_ptr = NULL;
 
 CAMLexport struct caml_ref_table
@@ -75,23 +74,14 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  char *new_heap;
-  void *new_heap_base;
-
-  Assert (size >= Bsize_wsize(Minor_heap_min));
-  Assert (size <= Bsize_wsize(Minor_heap_max));
-  Assert (size % sizeof (value) == 0);
   if (caml_young_ptr != caml_young_end) caml_minor_collection ();
-                                    Assert (caml_young_ptr == caml_young_end);
-  new_heap = caml_aligned_malloc(size, 0, &new_heap_base);
-  if (new_heap == NULL) caml_raise_out_of_memory();
-  
+  Assert (caml_young_ptr == caml_young_end);
   if (caml_young_start != NULL){
-    free (caml_young_base);
+    caml_free_minor_heap ();
   }
-  caml_young_base = new_heap_base;
-  caml_young_start = new_heap;
-  caml_young_end = new_heap + size;
+
+  caml_allocate_minor_heap(size);
+
   caml_update_young_limit((uintnat)caml_young_start);
   caml_young_ptr = caml_young_end;
   caml_minor_heap_size = size;

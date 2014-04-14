@@ -93,10 +93,6 @@ extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern uintnat caml_verb_gc;
 void caml_gc_message (int, char *, uintnat);
 
-/* Memory routines */
-
-char *caml_aligned_malloc (asize_t, int, void **);
-
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
 #define Debug_tag(x) (0xD700D7D7D700D6D7ul \
