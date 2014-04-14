@@ -426,8 +426,7 @@ and untype_module_type mty =
           untype_module_type mtype2)
     | Tmty_with (mtype, list) ->
         Pmty_with (untype_module_type mtype,
-          (* CR jfuruse: this rev is required since the typer reverses the things. The typer should be fixed rather than the untyper *)
-          List.rev_map (fun (_path, lid, withc) ->
+          List.map (fun (_path, lid, withc) ->
               untype_with_constraint lid withc
           ) list)
     | Tmty_typeof mexpr ->
@@ -562,15 +561,12 @@ and untype_core_type ct =
   Typ.mk ~loc:ct.ctyp_loc desc
 
 and untype_class_structure cs =
-(*
-+  let rec remove_self_pcstr_pat = function
-+    | { pat_desc = Tpat_alias (p, id, s) } when string_is_prefix "selfpat-" id.Ident.name ->
-+        remove_self_pcstr_pat p
-+    | p -> p
-+  in
-+  { pcstr_pat = untype_pattern (remove_self_pcstr_pat cs.cstr_pat);
-*)
-  { pcstr_self = untype_pattern cs.cstr_self;
+  let rec remove_self = function
+    | { pat_desc = Tpat_alias (p, id, s) } when string_is_prefix "selfpat-" id.Ident.name ->
+        remove_self p
+    | p -> p
+  in
+  { pcstr_self = untype_pattern (remove_self cs.cstr_self);
     pcstr_fields = List.map untype_class_field cs.cstr_fields;
   }
 
@@ -598,22 +594,18 @@ and untype_class_field cf =
     | Tcf_method (lab, priv, Tcfk_virtual cty) ->
         Pcf_method (lab, priv, Cfk_virtual (untype_core_type cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
-(*
-+          let remove_fun_self_Pcf_meth = function
-+            | { exp_desc = Texp_function("", [(pat, expr)], _) } when is_self_pat pat -> expr
-+            | e -> e
-+          in
-+          let exp = remove_fun_self_Pcf_meth exp in
-*)
+        let remove_fun_self = function
+          | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | e -> e
+        in
+        let exp = remove_fun_self exp in
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
     | Tcf_initializer exp -> 
-(*
-+      let remove_fun_self_Tcf_init = function
-+        | { exp_desc = Texp_function("", [(pat, expr)], _) } when is_self_pat pat -> expr
-+        | e -> e
-+      in
-+      Pcf_init (untype_expression (remove_fun_self_Tcf_init exp))
-*)
-         Pcf_initializer (untype_expression exp)
+        let remove_fun_self = function
+          | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | e -> e
+        in
+        let exp = remove_fun_self exp in
+        Pcf_initializer (untype_expression exp)
   in
   { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }

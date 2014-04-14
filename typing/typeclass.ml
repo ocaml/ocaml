@@ -432,7 +432,7 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
-  let (fields, val_sig, concr_meths, inher) =
+  let (rev_fields, val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       ([], Vars.empty, Concr.empty, [])
       sign
@@ -443,9 +443,9 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
    csig_inher = inher}
   in
   { csig_self = self_cty;
-    csig_fields = fields;
+    csig_fields = List.rev rev_fields;
     csig_type = cty;
-    }
+  }
 
 and class_type env scty =
   let cltyp desc typ =

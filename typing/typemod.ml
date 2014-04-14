@@ -194,23 +194,23 @@ let merge_constraint initial_env loc sg constr =
         real_id := Some id;
         (Pident id, lid, Twith_typesubst tdecl),
         make_next_first rs rem
-    | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid))
+    | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid'))
       when Ident.name id = s ->
-        let path = Typetexp.find_module initial_env loc lid.txt in
+        let path = Typetexp.find_module initial_env loc lid'.txt in
         let md' = Env.find_module path env in
         let md'' = {md' with md_type = Mtype.remove_aliases env md'.md_type} in
         let newmd = Mtype.strengthen_decl env md'' path in
         ignore(Includemod.modtypes env newmd.md_type md.md_type);
-        (Pident id, lid, Twith_module (path, lid)),
+        (Pident id, lid, Twith_module (path, lid')),
         Sig_module(id, newmd, rs) :: rem
-    | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid))
+    | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
-        let path = Typetexp.find_module initial_env loc lid.txt in
+        let path = Typetexp.find_module initial_env loc lid'.txt in
         let md' = Env.find_module path env in
         let newmd = Mtype.strengthen_decl env md' path in
         ignore(Includemod.modtypes env newmd.md_type md.md_type);
         real_id := Some id;
-        (Pident id, lid, Twith_modsubst (path, lid)),
+        (Pident id, lid, Twith_modsubst (path, lid')),
         make_next_first rs rem
     | (Sig_module(id, md, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
@@ -499,15 +499,15 @@ let rec transl_modtype env smty =
   | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
-      let (tcstrs, final_sg) =
+      let (rev_tcstrs, final_sg) =
         List.fold_left
-          (fun (tcstrs,sg) sdecl ->
+          (fun (rev_tcstrs,sg) sdecl ->
             let (tcstr, sg) = merge_constraint env smty.pmty_loc sg sdecl
             in
-            (tcstr :: tcstrs, sg)
+            (tcstr :: rev_tcstrs, sg)
         )
         ([],init_sg) constraints in
-      mkmty (Tmty_with ( body, tcstrs))
+      mkmty (Tmty_with ( body, List.rev rev_tcstrs))
         (Mtype.freshen (Mty_signature final_sg)) env loc
         smty.pmty_attributes
   | Pmty_typeof smod ->
