@@ -640,8 +640,8 @@ and open_description =
      popen_override: override_flag;
      popen_attributes: attributes;
     }
-(* open! X - popen_override = Override (silences the 'used identifier shadowing'
-                                        warning)
+(* open! X - popen_override = Override (silences the 'used identifier
+                              shadowing' warning)
    open  X - popen_override = Fresh
  *)
 
