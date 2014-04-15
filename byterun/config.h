@@ -25,29 +25,8 @@
 #include "compatibility.h"
 #endif
 
-/* Types for signed chars, 32-bit integers, 64-bit integers,
+/* Types for 32-bit integers, 64-bit integers,
    native integers (as wide as a pointer type) */
-
-typedef signed char schar;
-
-#if SIZEOF_PTR == SIZEOF_LONG
-/* Standard models: ILP32 or I32LP64 */
-typedef long intnat;
-typedef unsigned long uintnat;
-#define ARCH_INTNAT_PRINTF_FORMAT "l"
-#elif SIZEOF_PTR == SIZEOF_INT
-/* Hypothetical IP32L64 model */
-typedef int intnat;
-typedef unsigned int uintnat;
-#define ARCH_INTNAT_PRINTF_FORMAT ""
-#elif SIZEOF_PTR == 8 && defined(ARCH_INT64_TYPE)
-/* Win64 model: IL32LLP64 */
-typedef ARCH_INT64_TYPE intnat;
-typedef ARCH_UINT64_TYPE uintnat;
-#define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
-#else
-#error "No integer type available to represent pointers"
-#endif
 
 #if SIZEOF_INT == 4
 typedef int int32;
@@ -68,12 +47,35 @@ typedef unsigned short uint32;
 #if defined(ARCH_INT64_TYPE)
 typedef ARCH_INT64_TYPE int64;
 typedef ARCH_UINT64_TYPE uint64;
+#elif SIZEOF_LONG == 8
+typedef long int64;
+typedef unsigned long uint64;
+#define ARCH_INT64_PRINTF_FORMAT "l"
+#elif SIZEOF_LONGLONG == 8
+typedef long long int64;
+typedef unsigned long long uint64;
+#define ARCH_INT64_PRINTF_FORMAT "ll"
 #else
-#  ifdef ARCH_BIG_ENDIAN
-typedef struct { uint32 h, l; } uint64, int64;
-#  else
-typedef struct { uint32 l, h; } uint64, int64;
-#  endif
+#error "No 64-bit integer type available"
+#endif
+
+#if SIZEOF_PTR == SIZEOF_LONG
+/* Standard models: ILP32 or I32LP64 */
+typedef long intnat;
+typedef unsigned long uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT "l"
+#elif SIZEOF_PTR == SIZEOF_INT
+/* Hypothetical IP32L64 model */
+typedef int intnat;
+typedef unsigned int uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT ""
+#elif SIZEOF_PTR == 8
+/* Win64 model: IL32LLP64 */
+typedef int64 intnat;
+typedef uint64 uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
+#else
+#error "No integer type available to represent pointers"
 #endif
 
 /* Endianness of floats */

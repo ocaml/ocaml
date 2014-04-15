@@ -125,7 +125,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   flags = caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
@@ -156,7 +156,7 @@ CAMLprim value caml_sys_file_exists(value name)
   char * p;
   int ret;
 
-  p = caml_stat_alloc_string(name);
+  p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = stat(p, &st);
   caml_leave_blocking_section();
@@ -172,7 +172,7 @@ CAMLprim value caml_sys_is_directory(value name)
   char * p;
   int ret;
 
-  p = caml_stat_alloc_string(name);
+  p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = stat(p, &st);
   caml_leave_blocking_section();
@@ -191,7 +191,7 @@ CAMLprim value caml_sys_remove(value name)
   CAMLparam1(name);
   char * p;
   int ret;
-  p = caml_stat_alloc_string(name);
+  p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
   ret = unlink(p);
   caml_leave_blocking_section();
@@ -205,8 +205,8 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   char * p_old;
   char * p_new;
   int ret;
-  p_old = caml_stat_alloc_string(oldname);
-  p_new = caml_stat_alloc_string(newname);
+  p_old = caml_strdup(String_val(oldname));
+  p_new = caml_strdup(String_val(newname));
   caml_enter_blocking_section();
   ret = rename(p_old, p_new);
   caml_leave_blocking_section();
@@ -222,7 +222,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLparam1(dirname);
   char * p;
   int ret;
-  p = caml_stat_alloc_string(dirname);
+  p = caml_strdup(String_val(dirname));
   caml_enter_blocking_section();
   ret = chdir(p);
   caml_leave_blocking_section();
@@ -289,7 +289,7 @@ CAMLprim value caml_sys_system_command(value command)
   int status, retcode;
   char *buf;
 
-  buf = caml_stat_alloc_string(command);
+  buf = caml_strdup(String_val(command));
   caml_enter_blocking_section ();
   status = system(buf);
   caml_leave_blocking_section ();
@@ -430,7 +430,7 @@ CAMLprim value caml_sys_read_directory(value path)
   int ret;
 
   caml_ext_table_init(&tbl, 50);
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = caml_read_directory(p, &tbl);
   caml_leave_blocking_section();

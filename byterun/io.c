@@ -791,21 +791,3 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   Unlock(channel);
   CAMLreturn (Val_long(res));
 }
-
-/* Conversion between file_offset and int64 */
-
-#ifndef ARCH_INT64_TYPE
-CAMLexport value caml_Val_file_offset(file_offset fofs)
-{
-  int64 ofs;
-  ofs.l = fofs;
-  ofs.h = 0;
-  return caml_copy_int64(ofs);
-}
-
-CAMLexport file_offset caml_File_offset_val(value v)
-{
-  int64 ofs = Int64_val(v);
-  return (file_offset) ofs.l;
-}
-#endif

@@ -470,38 +470,39 @@ fi
 echo "CAMLRUN=$CAMLRUN" >> Makefile
 
 # Check the sizes of data types
-# OCaml needs a 32 or 64bit architectue and a 32-bit integer type.
+# OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
+# a 64-bit integer type
 
 inf "Checking the sizes of integers and pointers..."
 ret=`sh ./runtest sizes.c`
+# $1 = sizeof(int)
+# $2 = sizeof(long)
+# $3 = sizeof(pointers)
+# $4 = sizeof(short)
+# $5 = sizeof(long long)
 
 if test "$?" -eq 0; then
   set $ret
-  case "$2,$3" in
-    4,4) inf "OK, this is a regular 32 bit architecture."
-         echo "#undef ARCH_SIXTYFOUR" >> m.h
-         arch64=false;;
-    *,8) inf "Wow! A 64 bit architecture!"
-         echo "#define ARCH_SIXTYFOUR" >> m.h
-         arch64=true
-         if test $1 != 4 && test $2 != 4 && test $4 != 4; then
-           err "Sorry, we can't find a 32-bit integer type\n" \
-               "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)\n" \
-               "OCaml won't run on this architecture."
-         fi;;
-    *,*) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
-             "OCaml won't run on this architecture.";;
+  case "$3" in
+    4) inf "OK, this is a regular 32 bit architecture."
+       echo "#undef ARCH_SIXTYFOUR" >> m.h
+       arch64=false;;
+    8) inf "Wow! A 64 bit architecture!"
+       echo "#define ARCH_SIXTYFOUR" >> m.h
+       arch64=true;;
+    *) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
+           "OCaml won't run on this architecture.";;
   esac
 else
   # For cross-compilation, runtest always fails: add special handling.
   case "$target" in
     i686-*-mingw*) inf "OK, this is a regular 32 bit architecture."
                    echo "#undef ARCH_SIXTYFOUR" >> m.h
-                   set 4 4 4 2
+                   set 4 4 4 2 8
                    arch64=false;;
     x86_64-*-mingw*) inf "Wow! A 64 bit architecture!"
                      echo "#define ARCH_SIXTYFOUR" >> m.h
-                     set 4 4 8 2
+                     set 4 4 8 2 8
                      arch64=true;;
     *) err "Since datatype sizes cannot be guessed when cross-compiling,\n" \
            "a hardcoded list is used but your architecture isn't known yet.\n" \
@@ -510,56 +511,23 @@ else
   esac
 fi
 
+if test $1 != 4 && test $2 != 4 && test $4 != 4; then
+  err "Sorry, we can't find a 32-bit integer type\n" \
+      "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)\n" \
+     "OCaml won't run on this architecture."
+fi
+
+if test $2 != 8 && test $5 != 8; then
+  err "Sorry, we can't find a 64-bit integer type\n" \
+      "(sizeof(long) = $2, sizeof(long long) = $5)\n" \
+     "OCaml won't run on this architecture."
+fi
+
 echo "#define SIZEOF_INT $1" >> m.h
 echo "#define SIZEOF_LONG $2" >> m.h
 echo "#define SIZEOF_PTR $3" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
-
-if test $2 = 8; then
-     echo "#define ARCH_INT64_TYPE long" >> m.h
-     echo "#define ARCH_UINT64_TYPE unsigned long" >> m.h
-     echo '#define ARCH_INT64_PRINTF_FORMAT "l"' >> m.h
-     int64_native=true
-else
-  sh ./runtest longlong.c
-  case $? in
-  0) inf "64-bit \"long long\" integer type found (printf with \"%ll\")."
-     echo "#define ARCH_INT64_TYPE long long" >> m.h
-     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
-     echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
-     int64_native=true;;
-  1) inf "64-bit \"long long\" integer type found (printf with \"%q\")."
-     echo "#define ARCH_INT64_TYPE long long" >> m.h
-     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
-     echo '#define ARCH_INT64_PRINTF_FORMAT "q"' >> m.h
-     int64_native=true;;
-  2) inf "64-bit \"long long\" integer type found (but no printf)."
-     echo "#define ARCH_INT64_TYPE long long" >> m.h
-     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
-     echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
-     int64_native=true;;
-  *)
-     case "$target" in
-       *-*-mingw*)
-         inf "No suitable 64-bit integer type found, will use software emulation."
-         echo "#define ARCH_INT64_TYPE long long" >> m.h
-         echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
-         echo '#define ARCH_INT64_PRINTF_FORMAT "I64"' >> m.h
-         int64_native=true;;
-       *)
-         wrn "No suitable 64-bit integer type found, will use software emulation."
-         echo "#undef ARCH_INT64_TYPE" >> m.h
-         echo "#undef ARCH_UINT64_TYPE" >> m.h
-         echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
-         int64_native=false;;
-     esac;;
-  esac
-fi
-
-if test $3 = 8 && test $int64_native = false; then
-  err "This architecture has 64-bit pointers but no 64-bit integer type.\n" \
-      "OCaml won't run on this architecture."
-fi
+echo "#define SIZEOF_LONGLONG $5" >> m.h
 
 # Determine endianness
 
@@ -617,36 +585,32 @@ case "$target" in
     esac;;
 esac
 
-if $int64_native; then
-  case "$target" in
-    # PR#5088: autodetection is unreliable on ARM.  PR#5280: also on MIPS.
-    sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
-      if test $2 = 8; then
-        inf "64-bit integers can be word-aligned."
-        echo "#undef ARCH_ALIGN_INT64" >> m.h
-      else
-        inf "64-bit integers must be doubleword-aligned."
-        echo "#define ARCH_ALIGN_INT64" >> m.h
-      fi;;
-    *-*-mingw*) true;; # Nothing is in config/m-nt.h so don't add anything.
-    *)
-      sh ./runtest int64align.c
-      case $? in
-        0) inf "64-bit integers can be word-aligned."
-           echo "#undef ARCH_ALIGN_INT64" >> m.h;;
-        1) inf "64-bit integers must be doubleword-aligned."
-           echo "#define ARCH_ALIGN_INT64" >> m.h;;
-        *) wrn "Something went wrong during alignment determination for\n" \
-               "64-bit integers. I'm going to assume this architecture has\n" \
-               "alignment constraints. That's a safe bet: OCaml will work\n" \
-               "even if this architecture has actually no alignment\n" \
-               "constraints." \
-           echo "#define ARCH_ALIGN_INT64" >> m.h;;
-      esac
-  esac
-else
-  echo "#undef ARCH_ALIGN_INT64" >> m.h
-fi
+case "$target" in
+  # PR#5088: autodetection is unreliable on ARM.  PR#5280: also on MIPS.
+  sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
+    if test $2 = 8; then
+      inf "64-bit integers can be word-aligned."
+      echo "#undef ARCH_ALIGN_INT64" >> m.h
+    else
+      inf "64-bit integers must be doubleword-aligned."
+      echo "#define ARCH_ALIGN_INT64" >> m.h
+    fi;;
+  *-*-mingw*) true;; # Nothing is in config/m-nt.h so don't add anything.
+  *)
+    sh ./runtest int64align.c
+    case $? in
+      0) inf "64-bit integers can be word-aligned."
+         echo "#undef ARCH_ALIGN_INT64" >> m.h;;
+      1) inf "64-bit integers must be doubleword-aligned."
+         echo "#define ARCH_ALIGN_INT64" >> m.h;;
+      *) wrn "Something went wrong during alignment determination for\n" \
+             "64-bit integers. I'm going to assume this architecture has\n" \
+             "alignment constraints. That's a safe bet: OCaml will work\n" \
+             "even if this architecture has actually no alignment\n" \
+             "constraints." \
+         echo "#define ARCH_ALIGN_INT64" >> m.h;;
+    esac
+esac
 
 # Check semantics of division and modulus
 

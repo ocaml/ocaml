@@ -16,9 +16,19 @@
 #include <setjmp.h>
 #include "m.h"
 
-ARCH_INT64_TYPE foo;
+#if defined(ARCH_INT64_TYPE)
+typedef ARCH_INT64_TYPE int64;
+#elif SIZEOF_LONG == 8
+typedef long int64;
+#elif SIZEOF_LONGLONG == 8
+typedef long long int64;
+#else
+#error "No 64-bit integer type available"
+#endif
 
-void access_int64(ARCH_INT64_TYPE *p)
+int64 foo;
+
+void access_int64(int64 *p)
 {
   foo = *p;
 }
@@ -39,8 +49,8 @@ int main(void)
   signal(SIGBUS, sig_handler);
 #endif
   if(setjmp(failure) == 0) {
-    access_int64((ARCH_INT64_TYPE *) n);
-    access_int64((ARCH_INT64_TYPE *) (n+1));
+    access_int64((int64 *) n);
+    access_int64((int64 *) (n+1));
     res = 0;
   } else {
     res = 1;

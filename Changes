@@ -55,6 +55,11 @@ Runtime system:
   increments proportional to heap size
 - PR#4765: Structural equality should treat exception specifically
 - PR#5009: Extending exception tag blocks
+- PR#6075: avoid using unsafe C library functions (strcpy, strcat, sprintf)
+- An ISO C99-compliant C compiler and standard library is now assumed.
+  (Plus special exceptions for MSVC.)  In particular, emulation code for
+  64-bit integer arithmetic was removed, the C compiler must support a
+  64-bit integer type.
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
