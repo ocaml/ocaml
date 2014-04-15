@@ -122,6 +122,7 @@ As other structure item, signature item, class field or class type
 field, attributes can be attached to a [%%id s] extension node.
 
 
+
 === Alternative syntax for attributes and extensions on specific kinds of nodes
 
 All expression constructions starting with a keyword (EXPR = KW REST) support an
@@ -164,6 +165,10 @@ let[@foo] x = 2 in x + 1   ====   (let x = 2 in x + 1)[@foo]
 begin[@foo] ... end        ====   (begin ... end)[@foo]
 match%foo e with ...       ====   [%foo match e with ...]
 
+
+The let-binding form of structure items also supports this form:
+
+let%foo x = ...            ====   [%%foo let x = ...]
 
 === Quoted strings
 

@@ -67,6 +67,7 @@ let ghexp d = Exp.mk ~loc:(symbol_gloc ()) d
 let ghpat d = Pat.mk ~loc:(symbol_gloc ()) d
 let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
+let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 
 let ghunit () =
   ghexp (Pexp_construct (mknoloc (Lident "()"), None))
@@ -620,11 +621,12 @@ structure_item:
             let exp = wrap_exp_attrs exp $2 in
             mkstr(Pstr_eval (exp, attrs))
         | l ->
-            begin match $2 with
-            | None, [] -> mkstr(Pstr_value($3, List.rev l))
-            | Some _, _ -> not_expecting 2 "extension"
-            | None, _ :: _ -> not_expecting 2 "attribute"
-            end
+            let str = mkstr(Pstr_value($3, List.rev l)) in
+            let (ext, attrs) = $2 in
+            if attrs <> [] then not_expecting 2 "attribute";
+            match ext with
+            | None -> str
+            | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
     post_item_attributes
