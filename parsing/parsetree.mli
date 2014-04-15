@@ -518,7 +518,7 @@ and class_field =
     {
      pcf_desc: class_field_desc;
      pcf_loc: Location.t;
-     pcf_attributes: attributes; (* ... [@id1] [@id2] *)
+     pcf_attributes: attributes; (* ... [@@id1] [@@id2] *)
     }
 
 and class_field_desc =
