@@ -680,7 +680,7 @@ section~\ref{s:explicit-overriding}.
 \ikwd{with\@\texttt{with}}
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
-introduced in 4.00)
+introduced in 4.00; structural comparison of package types introduced in 4.02.)
 
 \begin{syntax}
 typexpr:
@@ -734,10 +734,10 @@ The @package-type@ syntactic class appearing in the  @'(' 'module'
 package-type ')'@ type expression and in the annotated forms represents a
 subset of module types.
 This subset consists of named module types with optional constraints
-of a limited form: only non-parametrized types can be specified.  For
-type-checking purposes, package types are compared by path equality on
-the module type name component, and normal type equality for
-constraints.
+of a limited form: only non-parametrized types can be specified.
+
+For type-checking purposes (and starting from OCaml 4.02), package types
+are compared using the structural comparison of module types.
 
 The module expression @'(' "val" expr ":" package-type ')'@ cannot be used
 in the
