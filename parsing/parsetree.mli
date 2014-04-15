@@ -610,9 +610,7 @@ and signature_item_desc =
   | Psig_class_type of class_type_declaration list
         (* class type ct1 = ... and ... and ctn = ... *)
   | Psig_attribute of attribute
-        (* [@@id]
-           (not attached to another item, i.e. after ";;" or at the beginning
-           of the signature) *)
+        (* [@@@id] *)
   | Psig_extension of extension * attributes
         (* [%%id] *)
 
@@ -735,9 +733,7 @@ and structure_item_desc =
   | Pstr_include of include_declaration
         (* include ME *)
   | Pstr_attribute of attribute
-        (* [@@id]
-           (not attached to another item, i.e. after ";;" or at the beginning
-           of the structure) *)
+        (* [@@@id] *)
   | Pstr_extension of extension * attributes
         (* [%%id] *)
 
