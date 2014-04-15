@@ -296,7 +296,9 @@ and expression_desc =
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
   | Pexp_open of override_flag * Longident.t loc * expression
-        (* let open M in E *)
+        (* let open M in E
+           let! open M in E 
+        *)
   | Pexp_extension of extension
         (* [%id] *)
 
@@ -640,10 +642,9 @@ and open_description =
      popen_override: override_flag;
      popen_attributes: attributes;
     }
-(* open! X - popen_override: true
-   open  X - popen_override: false
-
-     popen_override silences the 'used identifier shadowing' warning
+(* open! X - popen_override = Override (silences the 'used identifier shadowing'
+                                        warning)
+   open  X - popen_override = Fresh
  *)
 
 and 'a include_infos =
