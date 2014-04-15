@@ -384,6 +384,14 @@ and constructor_declaration =
   | C: T1 * ... * Tn -> T0 (res = Some T0)
 *)
 
+and exception_rebind =
+    {
+     pexrb_name: string loc;
+     pexrb_lid: Longident.t loc;
+     pexrb_attributes: attributes;
+    }
+(* exception C = M.X *)
+
 (** {2 Class language} *)
 
 (* Type expressions for the class language *)
@@ -591,9 +599,9 @@ and signature_item_desc =
   | Psig_modtype of module_type_declaration
         (* module type S = MT
            module type S *)
-  | Psig_open of override_flag * Longident.t loc * attributes
+  | Psig_open of open_description
         (* open X *)
-  | Psig_include of module_type * attributes
+  | Psig_include of include_description
         (* include MT *)
   | Psig_class of class_description list
         (* class c1 : ... and ... and cn : ... *)
@@ -625,6 +633,30 @@ and module_type_declaration =
 (* S = MT
    S       (abstract module type declaration, pmtd_type = None)
 *)
+
+and open_description =
+    {
+     popen_lid: Longident.t loc;
+     popen_override: override_flag;
+     popen_attributes: attributes;
+    }
+(* open! X - popen_override: true
+   open  X - popen_override: false
+
+     popen_override silences the 'used identifier shadowing' warning
+ *)
+
+and 'a include_infos =
+    {
+     pincl_mod: 'a;
+     pincl_attributes: attributes;
+    }
+
+and include_description = module_type include_infos
+(* include MT *)
+
+and include_declaration = module_expr include_infos
+(* include ME *)
 
 and with_constraint =
   | Pwith_type of Longident.t loc * type_declaration
@@ -685,7 +717,7 @@ and structure_item_desc =
         (* type t1 = ... and ... and tn = ... *)
   | Pstr_exception of constructor_declaration
         (* exception C of T *)
-  | Pstr_exn_rebind of string loc * Longident.t loc * attributes
+  | Pstr_exn_rebind of exception_rebind
         (* exception C = M.X *)
   | Pstr_module of module_binding
         (* module X = ME *)
@@ -693,17 +725,13 @@ and structure_item_desc =
         (* module rec X1 = ME1 and ... and Xn = MEn *)
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
-  | Pstr_open of override_flag * Longident.t loc * attributes
-        (* open! X - true
-           open  X - false
-
-           override_flag silences the 'used identifier shadowing' warning
-           *)
+  | Pstr_open of open_description
+        (* open X *)
   | Pstr_class of class_declaration list
         (* class c1 = ... and ... and cn = ... *)
   | Pstr_class_type of class_type_declaration list
         (* class type ct1 = ... and ... and ctn = ... *)
-  | Pstr_include of module_expr * attributes
+  | Pstr_include of include_declaration
         (* include ME *)
   | Pstr_attribute of attribute
         (* [@@id]

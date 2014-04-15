@@ -190,8 +190,8 @@ module Sig:
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> signature_item
-    val include_: ?loc:loc -> ?attrs:attrs -> module_type -> signature_item
+    val open_: ?loc:loc -> open_description -> signature_item
+    val include_: ?loc:loc -> include_description -> signature_item
     val class_: ?loc:loc -> class_description list -> signature_item
     val class_type: ?loc:loc -> class_type_declaration list -> signature_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> signature_item
@@ -208,14 +208,14 @@ module Str:
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
     val exception_: ?loc:loc -> constructor_declaration -> structure_item
-    val exn_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> structure_item
+    val exn_rebind: ?loc:loc -> exception_rebind -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> structure_item
+    val open_: ?loc:loc -> open_description -> structure_item
     val class_: ?loc:loc -> class_declaration list -> structure_item
     val class_type: ?loc:loc -> class_type_declaration list -> structure_item
-    val include_: ?loc:loc -> ?attrs:attrs -> module_expr -> structure_item
+    val include_: ?loc:loc -> include_declaration -> structure_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
   end
@@ -236,6 +236,18 @@ module Mtd:
 module Mb:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> module_binding
+  end
+
+(* Opens *)
+module Opn:
+  sig
+    val mk: ?attrs:attrs -> ?override:override_flag -> lid -> open_description
+  end
+
+(* Includes *)
+module Incl:
+  sig
+    val mk: ?attrs:attrs -> 'a -> 'a include_infos
   end
 
 (** Value bindings *)
@@ -322,6 +334,12 @@ module Cstr:
   sig
     val mk: pattern -> class_field list -> class_structure
   end
+
+(** Exception rebinding *)
+module Exrb:
+  sig
+    val mk: ?attrs:attrs -> str -> lid -> exception_rebind
+end
 
 
 (** {2 Convenience functions} *)
