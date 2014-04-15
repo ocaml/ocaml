@@ -291,6 +291,9 @@ let extract_label_names sexp env ty =
   with Not_found ->
     assert false
 
+let explicit_arity =
+  List.exists (fun (s, _) -> s.txt = "ocaml.explicit_arity")
+
 (* Typing of patterns *)
 
 (* unification inside type_pat*)
@@ -1033,7 +1036,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some {ppat_desc = Ppat_tuple spl} when
+            constr.cstr_arity > 1 || explicit_arity sp.ppat_attributes
+          -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
@@ -3243,7 +3248,9 @@ and type_construct env loc lid sarg ty_expected attrs =
   let sargs =
     match sarg with
       None -> []
-    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when
+        constr.cstr_arity > 1 || explicit_arity attrs
+      -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch
