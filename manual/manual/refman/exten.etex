@@ -243,6 +243,8 @@ It then returns the value of @expr@.  For example:
 
 (Introduced in Objective Caml 3.07)
 
+% TODO: relaxed syntax
+
 \begin{syntax}
 definition:
         ...
@@ -1254,3 +1256,195 @@ The short expressions are translated into calls to functions of the
 \end{tableau}
 
 The last two entries are valid for any $n > 3$.
+
+\section{Attributes}\label{s:attributes}
+
+(Introduced in OCaml 4.02)
+
+Attributes are ``decorations'' of the syntax tree which are mostly
+ignored by the type-checker but can be used by external tools.  An
+attribute is made of an identifier and a payload, which can be a
+structure, a type expression (prefixed with ":") or a pattern
+(prefixed with "?") optionally followed by a "when" clause:
+
+
+\begin{syntax}
+attr-id:
+    lowercase-ident
+ |  capitalized-ident
+ |  attr-id '.' attr-id
+;
+attr-payload:
+    [ module-items ]
+ |  ':' typexpr
+ |  '?' pattern ['when' expr]
+;
+\end{syntax}
+
+The first form of attributes is attached with a postfix notation on
+"algebraic" categories:
+
+\begin{syntax}
+attribute:
+    '[@' attr-id attr-payload ']'
+;
+expr: ...
+     | expr attribute
+;
+typexpr: ...
+     | typexpr attribute
+;
+pattern: ...
+     | pattern attribute
+;
+module-expr: ...
+     | module-expr attribute
+;
+module-type: ...
+     | module-type attribute
+;
+class-expr: ...
+     | class-expr attribute
+;
+class-type: ...
+     | class-type attribute
+;
+\end{syntax}
+
+The same syntactic form is also used to attach attributes to labels and
+constructors in type declarations:
+
+\begin{syntax}
+field-decl:
+          ['mutable'] field-name {attribute} ':' poly-typexpr
+;
+constr-decl:
+          (constr-name || '()') {attribute} [ 'of' typexpr { '*' typexpr } ]
+;
+\end{syntax}
+
+
+The second form of attributes are attached to ``blocks'' such as type
+declarations, class fields, etc:
+
+\begin{syntax}
+item-attribute:
+    '[@@' attr-id attr-payload ']'
+;
+typedef: ...
+   | typedef item-attribute
+;
+class-binding: ...
+   | class-binding item-attribute
+;
+classtype-def: ...
+   | classtype-definition item-attribute
+;
+exception-definition:
+        'exception' constr-name { attribute } [ 'of' typexpr { '*' typexpr } ]
+      | 'exception' constr-name '=' constr
+;
+module-items:
+        [';;'] ( definition || expr { item-attribute } ) { [';;'] definition || ';;' expr { item-attribute } } [';;']
+;
+class-spec: ...
+   | class-spec item-attribute
+;
+classtype-def: ...
+   | classtype-def item-attribute
+;
+definition:
+          'let' ['rec'] let-binding { 'and' let-binding }
+        | 'external' value-name ':' typexpr '=' external-declaration { item-attribute }
+        | type-definition
+        | exception-definition { item-attribute }
+        | class-definition
+        | classtype-definition
+        | 'module' module-name { '(' module-name ':' module-type ')' }
+                   [ ':' module-type ] \\ '=' module-expr { item-attribute }
+        | 'module' 'type' modtype-name '=' module-type { item-attribute }
+        | 'open' module-path { item-attribute }
+        | 'include' module-expr { item-attribute }
+        | 'module' 'rec' module-name ':' module-type '=' \\
+          module-expr { item-attribute } \\
+          { 'and' module-name ':' module-type '=' module-expr \\
+          { item-attribute } }
+;
+specification:
+          'val' value-name ':' typexpr { item-attribute }
+        | 'external' value-name ':' typexpr '=' external-declaration { item-attribute }
+        | type-definition
+        | 'exception' constr-decl { item-attribute }
+        | class-specification
+        | classtype-definition
+        | 'module' module-name ':' module-type { item-attribute }
+        | 'module' module-name { '(' module-name ':' module-type ')' }
+          ':' module-type { item-attribute }
+        | 'module' 'type' modtype-name { item-attribute }
+        | 'module' 'type' modtype-name '=' module-type { item-attribute }
+        | 'open' module-path { item-attribute }
+        | 'include' module-type { item-attribute }
+;
+class-field-spec: ...
+        | class-field-spec item-attribute
+;
+class-field: ...
+        | class-field item-attribute
+;
+\end{syntax}
+
+A third form of attributes appear as stand-alome structure or
+signature items, not attached to any specific node in the syntax tree:
+
+\begin{syntax}
+floating-attribute:
+    '[@@@' attr-id attr-payload ']'
+;
+definition: ...
+   | floating-attribute
+;
+specification:
+   | floating-attribute
+;
+\end{syntax}
+
+
+It is also possible to specify attributes on expressions using an
+infix syntax.  This applies to all expressions which start with one or
+two keywords: "assert", "begin", "for", "fun", "function", "if",
+"lazy", "let", "let module", "let open", "match", "new", "object",
+"try", "while".  Those expressions supports adding one or several
+attributes just after those initial keyword(s).  For instance:
+
+\begin{verbatim}
+let [@foo][@bar x] x = 2 in x + 1 === (let x = 2 in x + 1)[@foo][@bar x]
+begin[@foo] ... end               === (begin ... end)[@foo]
+\end{verbatim}
+
+\subsection{Built-in attributes}
+
+TODO
+
+Some attributes are understood by the type-checker:
+\begin{itemize}
+\item
+  ``ocaml.warning''
+\item
+  ``ocaml.deprecated''
+\end{itemize}
+
+\section{Extension nodes}\label{s:extension-nodes}
+
+(Introduced in OCaml 4.02)
+
+Extension nodes are generic placeholders in the syntax tree. They are
+rejected by the type-checker and are intended to be ``expanded'' by external
+tools such as "-ppx" rewriters.
+
+TODO
+
+\section{Quoted strings}\label{s:quoted-strings}
+
+(Introduced in OCaml 4.02)
+
+TODO
