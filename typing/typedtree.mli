@@ -210,8 +210,7 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
   | Tstr_typext of type_extension
-  | Tstr_exception of constructor_declaration
-  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attributes
+  | Tstr_exception of extension_constructor
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
@@ -276,7 +275,7 @@ and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of type_declaration list
   | Tsig_typext of type_extension
-  | Tsig_exception of constructor_declaration
+  | Tsig_exception of extension_constructor
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration

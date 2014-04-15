@@ -914,21 +914,12 @@ let tree_of_extension_constructor id ext es =
     match es with
         Text_first -> Oext_first
       | Text_next -> Oext_next
+      | Text_exception -> Oext_exception
   in
     Osig_typext (ext, es)
 
 let extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
-
-(* Print an exception declaration *)
-
-let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl.exn_args;
-  let tyl = tree_of_typlist false decl.exn_args in
-  Osig_exception (Ident.name id, tyl)
-
-let exception_declaration id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_exception_declaration id decl)
 
 (* Print a value declaration *)
 
@@ -1194,8 +1185,6 @@ and tree_of_signature_rec env' = function
             [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
         | Sig_typext(id, ext, es) ->
             [tree_of_extension_constructor id ext es]
-        | Sig_exception(id, decl) ->
-            [tree_of_exception_declaration id decl]
         | Sig_module(id, md, rs) ->
             [Osig_module (Ident.name id, tree_of_modtype md.md_type,
                           tree_of_rec rs)]

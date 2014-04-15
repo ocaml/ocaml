@@ -17,10 +17,6 @@ let opt f = function None -> () | Some x -> f x
 let structure sub str =
   List.iter (sub # structure_item) str.str_items
 
-let constructor_decl sub cd =
-  List.iter (sub # core_type) cd.cd_args;
-  opt (sub # core_type) cd.cd_res
-
 let structure_item sub x =
   match x.str_desc with
   | Tstr_eval (exp, _attrs) -> sub # expression exp
@@ -28,8 +24,7 @@ let structure_item sub x =
   | Tstr_primitive v -> sub # value_description v
   | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_typext te -> sub # type_extension te
-  | Tstr_exception decl -> constructor_decl sub decl
-  | Tstr_exn_rebind (_id, _, _p, _, _) -> ()
+  | Tstr_exception ext -> sub # extension_constructor ext
   | Tstr_module mb -> sub # module_binding mb
   | Tstr_recmodule list -> List.iter (sub # module_binding) list
   | Tstr_modtype mtd -> opt (sub # module_type) mtd.mtd_type
@@ -44,6 +39,13 @@ let structure_item sub x =
 let value_description sub x =
   sub # core_type x.val_desc
 
+let constructor_decl sub cd =
+  List.iter (sub # core_type) cd.cd_args;
+  opt (sub # core_type) cd.cd_res
+
+let label_decl sub ld =
+  sub # core_type ld.ld_type
+
 let type_declaration sub decl =
   List.iter
     (fun (ct1, ct2, _loc) -> sub # core_type ct1; sub # core_type ct2)
@@ -53,20 +55,20 @@ let type_declaration sub decl =
   | Ttype_variant list ->
       List.iter (constructor_decl sub) list
   | Ttype_record list ->
-      List.iter (fun ld -> sub # core_type ld.ld_type) list
+      List.iter (label_decl sub) list
   | Ttype_open -> ()
   end;
   opt (sub # core_type) decl.typ_manifest
 
 let type_extension sub te =
-  let extension_constructors ext =
-    match ext.ext_kind with
-      Text_decl(ctl, cto) ->
-        List.iter (sub # core_type) ctl;
-        opt (sub # core_type) cto
-    | Text_rebind _ -> ()
-  in
-    List.iter extension_constructors te.tyext_constructors
+  List.iter (sub # extension_constructor) te.tyext_constructors
+
+let extension_constructor sub ext =
+  match ext.ext_kind with
+    Text_decl(ctl, cto) ->
+      List.iter (sub # core_type) ctl;
+      opt (sub # core_type) cto
+  | Text_rebind _ -> ()
 
 let pattern sub pat =
   let extra = function
@@ -180,8 +182,8 @@ let signature_item sub item =
       List.iter (sub # type_declaration) list
   | Tsig_typext te ->
       sub # type_extension te
-  | Tsig_exception decl ->
-      constructor_decl sub decl
+  | Tsig_exception ext ->
+      sub # extension_constructor ext
   | Tsig_module md ->
       sub # module_type md.md_type
   | Tsig_recmodule list ->
@@ -367,6 +369,7 @@ class iter = object(this)
   method class_type_field = class_type_field this
   method core_type = core_type this
   method expression = expression this
+  method extension_constructor = extension_constructor this
   method module_binding = module_binding this
   method module_expr = module_expr this
   method module_type = module_type this

@@ -114,7 +114,6 @@ type constructor_description =
     cstr_normal: int;                   (* Number of non generalized constrs *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
-    cstr_exception: bool;               (* Exception constructor? *)
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
    }
@@ -219,12 +218,6 @@ and type_transparence =
   | Type_new         (* "new" type *)
   | Type_private     (* private type *)
 
-type exception_declaration =
-    { exn_args: type_expr list;
-      exn_loc: Location.t;
-      exn_attributes: Parsetree.attributes;
-    }
-
 (* Type expressions for the class language *)
 
 module Concr : Set.S with type elt = string
@@ -274,7 +267,6 @@ and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
   | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_exception of Ident.t * exception_declaration
   | Sig_module of Ident.t * module_declaration * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
   | Sig_class of Ident.t * class_declaration * rec_status
@@ -302,3 +294,4 @@ and rec_status =
 and ext_status =
     Text_first                     (* first constructor in an extension *)
   | Text_next                      (* not first constructor in an extension *)
+  | Text_exception

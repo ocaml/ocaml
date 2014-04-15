@@ -51,10 +51,6 @@ let rec env_from_summary sum subst =
           Env.add_extension ~check:false id
             (Subst.extension_constructor subst desc)
             (env_from_summary s subst)
-      | Env_exception(s, id, desc) ->
-          Env.add_exception ~check:false id
-            (Subst.exception_declaration subst desc)
-            (env_from_summary s subst)
       | Env_module(s, id, desc) ->
           Env.add_module_declaration id
             (Subst.module_declaration subst desc)

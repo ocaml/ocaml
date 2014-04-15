@@ -40,16 +40,6 @@ module Typedtree_search :
          @raise Not_found if the extension was not found.*)
       val search_extension : tab -> string -> Typedtree.type_extension
 
-      (** This function returns the [Typedtree.exception_declaration] associated to the given exception name,
-         in the given table.
-         @raise Not_found if the exception was not found.*)
-      val search_exception : tab -> string -> Typedtree.constructor_declaration
-
-      (** This function returns the [Path.t] associated to the given exception rebind name,
-         in the table.
-         @raise Not_found if the exception rebind was not found.*)
-      val search_exception_rebind : tab -> string -> Path.t
-
       (** This function returns the [Typedtree.type_declaration] associated to the given type name,
          in the given table.
          @raise Not_found if the type was not found. *)

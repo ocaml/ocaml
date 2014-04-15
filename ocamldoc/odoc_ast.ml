@@ -51,7 +51,6 @@ module Typedtree_search =
       | CT of string
       | X of string
       | E of string
-      | ER of string
       | P of string
       | IM of string
 
@@ -82,10 +81,8 @@ module Typedtree_search =
             [] -> assert false
           | ext :: _ -> Hashtbl.add table (X (Name.from_ident ext.ext_id)) tt
         end
-      | Typedtree.Tstr_exception decl ->
-          Hashtbl.add table (E (Name.from_ident decl.cd_id)) tt
-      | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
-          Hashtbl.add table (ER (Name.from_ident ident)) tt
+      | Typedtree.Tstr_exception ext ->
+          Hashtbl.add table (E (Name.from_ident ext.ext_id)) tt
       | Typedtree.Tstr_type ident_type_decl_list ->
           List.iter
             (fun td ->
@@ -143,12 +140,7 @@ module Typedtree_search =
 
     let search_exception table name =
       match Hashtbl.find table (E name) with
-      | (Typedtree.Tstr_exception decl) -> decl
-      | _ -> assert false
-
-    let search_exception_rebind table name =
-      match Hashtbl.find table (ER name) with
-      | (Typedtree.Tstr_exn_rebind (_, _, p, _, _)) -> p
+      | (Typedtree.Tstr_exception ext) -> ext
       | _ -> assert false
 
     let search_type_declaration table name =
@@ -1001,7 +993,7 @@ module Analyser =
               else (fun _ -> false)
         | Element_exception e ->
             (function
-                Types.Sig_exception (ident,_) ->
+                Types.Sig_typext (ident,_,_) ->
                   let n1 = Name.simple e.ex_name
                   and n2 = Ident.name ident in
                   n1 = n2
@@ -1364,61 +1356,59 @@ module Analyser =
               new_te.te_constructors <- exts;
               (maybe_more, new_env, [ Element_type_extension new_te ])
 
-      | Parsetree.Pstr_exception excep_decl ->
-          let name = excep_decl.Parsetree.pcd_name in
+      | Parsetree.Pstr_exception ext ->
+          let name = ext.Parsetree.pext_name in
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
           (* we get the exception declaration in the typed tree *)
-          let tt_excep_decl =
+          let tt_ext =
             try Typedtree_search.search_exception table name.txt
             with Not_found ->
               raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
           in
-          let new_env = Odoc_env.add_exception env complete_name in
-          let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
-          let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
-          let new_ex =
-            {
-              ex_name = complete_name ;
-              ex_info = comment_opt ;
-              ex_args = List.map (fun ctyp ->
-                Odoc_env.subst_type new_env ctyp.ctyp_type)
-                tt_excep_decl.cd_args;
-              ex_alias = None ;
-              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
-              ex_code =
-                (
-                 if !Odoc_global.keep_code then
-                   Some (get_string_of_file loc_start loc_end)
-                 else
-                   None
-                ) ;
-            }
+          let new_env = Odoc_env.add_extension env complete_name in
+          let new_ext =
+            match tt_ext.ext_kind with
+              Text_decl(tt_args, tt_ret_type) ->
+                let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+                let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+                {
+                  ex_name = complete_name ;
+                  ex_info = comment_opt ;
+                  ex_args =
+                    List.map
+                      (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type)
+                      tt_args;
+                  ex_ret =
+                    Misc.may_map
+                      (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type)
+                      tt_ret_type;
+                  ex_alias = None ;
+                  ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
+                  ex_code =
+                    (
+                      if !Odoc_global.keep_code then
+                        Some (get_string_of_file loc_start loc_end)
+                      else
+                        None
+                    ) ;
+                }
+            | Text_rebind(tt_path, _) ->
+                {
+                  ex_name = complete_name ;
+                  ex_info = comment_opt ;
+                  ex_args = [] ;
+                  ex_ret = None ;
+                  ex_alias =
+                    Some { ea_name =
+                             Odoc_env.full_extension_constructor_name
+                               env (Name.from_path tt_path) ;
+                           ea_ex = None ; } ;
+                  ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
+                  ex_code = None ;
+                }
           in
-          (0, new_env, [ Element_exception new_ex ])
-
-      | Parsetree.Pstr_exn_rebind (name,  _, _) ->
-          (* a new exception is defined *)
-          let complete_name = Name.concat current_module_name name.txt in
-          (* we get the exception rebind in the typed tree *)
-          let tt_path =
-            try Typedtree_search.search_exception_rebind table name.txt
-            with Not_found ->
-              raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
-          in
-          let new_env = Odoc_env.add_exception env complete_name in
-          let new_ex =
-            {
-              ex_name = complete_name ;
-              ex_info = comment_opt ;
-              ex_args = [] ;
-              ex_alias = Some { ea_name = (Odoc_env.full_exception_name env (Name.from_path tt_path)) ;
-                                ea_ex = None ; } ;
-              ex_loc = { loc_impl = Some loc ; loc_inter = None } ;
-              ex_code = None ;
-            }
-          in
-          (0, new_env, [ Element_exception new_ex ])
+            (0, new_env, [ Element_exception new_ext ])
 
       | Parsetree.Pstr_module {Parsetree.pmb_name=name; pmb_expr=module_expr} ->
           (

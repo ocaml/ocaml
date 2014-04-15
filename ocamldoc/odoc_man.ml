@@ -497,13 +497,23 @@ class man =
       bs b (Name.simple e.ex_name);
       bs b " \n";
       (
-       match e.ex_args with
-         [] -> ()
-       | _ ->
+        match e.ex_args, e.ex_ret with
+        | [], None -> ()
+        | l, None ->
            bs b ".B of ";
            self#man_of_type_expr_list
              ~par: false
              b (Name.father e.ex_name) " * " e.ex_args
+        | [], Some r ->
+            bs b ".B : ";
+            self#man_of_type_expr b (Name.father e.ex_name) r
+        | l, Some r ->
+            bs b ".B : ";
+            self#man_of_type_expr_list
+                   ~par: false
+                   b (Name.father e.ex_name) " * " l;
+            bs b ".B -> ";
+            self#man_of_type_expr b (Name.father e.ex_name) r
       );
       (
        match e.ex_alias with

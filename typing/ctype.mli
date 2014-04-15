@@ -249,6 +249,7 @@ val closed_schema: type_expr -> bool
 val free_variables: ?env:Env.t -> type_expr -> type_expr list
         (* If env present, then check for incomplete definitions too *)
 val closed_type_decl: type_declaration -> type_expr option
+val closed_extension_constructor: extension_constructor -> type_expr option
 type closed_class_failure =
     CC_Method of type_expr * bool * string * type_expr
   | CC_Value of type_expr * bool * string * type_expr

@@ -227,6 +227,7 @@ module Exception :
           ex_name : Name.t ;
           mutable ex_info : info option ; (** Information found in the optional associated comment. *)
           ex_args : Types.type_expr list ; (** The types of the parameters. *)
+          ex_ret : Types.type_expr option ; (** The the optional return type of the exception. *)
           ex_alias : exception_alias option ; (** [None] when the exception is not a rebind. *)
           mutable ex_loc : location ;
           mutable ex_code : string option ;

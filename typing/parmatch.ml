@@ -662,7 +662,7 @@ let clean_env env =
 
 let full_match ignore_generalized closing env =  match env with
 | ({pat_desc = Tpat_construct(_,c,_);pat_type=typ},_) :: _ ->
-    if c.cstr_consts < 0 then false (* exceptions and extensions *)
+    if c.cstr_consts < 0 then false (* extensions *)
     else
       if ignore_generalized then
         (* remove generalized constructors;
@@ -827,10 +827,7 @@ let build_other_constant proj make first next p env =
 let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct (lid,
       ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
-    let id =
-      if c.cstr_exception then Ident.create "*exception*"
-      else Ident.create "*extension*"
-    in
+    let id = Ident.create "*extension*" in
     let c = {c with cstr_tag = Cstr_extension(Path.Pident id, true)} in
       make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->

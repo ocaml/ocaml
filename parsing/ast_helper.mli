@@ -188,7 +188,7 @@ module Sig:
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> type_declaration list -> signature_item
     val type_extension: ?loc:loc -> type_extension -> signature_item
-    val exception_: ?loc:loc -> constructor_declaration -> signature_item
+    val exception_: ?loc:loc -> extension_constructor -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
@@ -210,8 +210,7 @@ module Str:
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
     val type_extension: ?loc:loc -> type_extension -> structure_item
-    val exception_: ?loc:loc -> constructor_declaration -> structure_item
-    val exn_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> structure_item
+    val exception_: ?loc:loc -> extension_constructor -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item

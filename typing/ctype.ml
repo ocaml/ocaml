@@ -577,6 +577,19 @@ let closed_type_decl decl =
     unmark_type_decl decl;
     Some ty
 
+let closed_extension_constructor ext =
+  try
+    List.iter mark_type ext.ext_type_params;
+    begin match ext.ext_ret_type with
+    | Some _ -> ()
+    | None -> List.iter closed_type ext.ext_args
+    end;
+    unmark_extension_constructor ext;
+    None
+  with Non_closed (ty, _) ->
+    unmark_extension_constructor ext;
+    Some ty
+
 type closed_class_failure =
     CC_Method of type_expr * bool * string * type_expr
   | CC_Value of type_expr * bool * string * type_expr

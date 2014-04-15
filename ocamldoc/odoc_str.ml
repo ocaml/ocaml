@@ -308,12 +308,21 @@ let string_of_type_extension te =
 let string_of_exception e =
   let module M = Odoc_exception in
   "exception "^(Name.simple e.M.ex_name)^
-  (match e.M.ex_args with
-    [] -> ""
-  | _ ->" : "^
-      (String.concat " -> "
-         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") e.M.ex_args)
-      )
+  (match e.M.ex_args, e.M.ex_ret with
+     [], None -> ""
+   | l,None ->
+       " of "^
+       (String.concat " * "
+         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
+   | [],Some r ->
+       " : "^
+       (Odoc_print.string_of_type_expr r)
+   | l,Some r ->
+       " : "^
+       (String.concat " * "
+         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))^
+       " -> "^
+       (Odoc_print.string_of_type_expr r)
   )^
   (match e.M.ex_alias with
     None -> ""

@@ -27,7 +27,6 @@ type env = {
     env_modules : env_element list ;
     env_module_types : env_element list ;
     env_extensions : env_element list ;
-    env_exceptions : env_element list ;
   }
 
 let empty = {
@@ -38,7 +37,6 @@ let empty = {
   env_modules = [] ;
   env_module_types = [] ;
   env_extensions = [] ;
-  env_exceptions = [] ;
   }
 
 (** Add a signature to an environment.  *)
@@ -55,7 +53,6 @@ let rec add_signature env root ?rel signat =
       Types.Sig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
     | Types.Sig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
     | Types.Sig_typext (ident, _, _) -> { env with env_extensions = (rel_name ident, qualify ident) :: env.env_extensions }
-    | Types.Sig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
     | Types.Sig_module (ident, md, _) ->
         let env2 =
           match md.Types.md_type with (* A VOIR : le cas ou c'est un identificateur, dans ce cas on n'a pas de signature *)
@@ -83,10 +80,6 @@ let rec add_signature env root ?rel signat =
 let add_extension env full_name =
   let simple_name = Name.simple full_name in
   { env with env_extensions = (simple_name, full_name) :: env.env_extensions }
-
-let add_exception env full_name =
-  let simple_name = Name.simple full_name in
-  { env with env_exceptions = (simple_name, full_name) :: env.env_exceptions }
 
 let add_type env full_name =
   let simple_name = Name.simple full_name in
@@ -158,13 +151,6 @@ let full_extension_constructor_name env n =
   with Not_found ->
     print_DEBUG ("Extension "^n^" not found with env=");
     List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_extensions;
-    n
-
-let full_exception_name env n =
-  try List.assoc n env.env_exceptions
-  with Not_found ->
-    print_DEBUG ("Exception "^n^" not found with env=");
-    List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_exceptions;
     n
 
 let full_class_name env n =

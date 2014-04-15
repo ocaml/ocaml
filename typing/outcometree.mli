@@ -88,7 +88,6 @@ and out_sig_item =
       bool * string * (string * (bool * bool)) list * out_class_type *
         out_rec_status
   | Osig_typext of out_extension_constructor * out_ext_status
-  | Osig_exception of string * out_type list
   | Osig_modtype of string * out_module_type
   | Osig_module of string * out_module_type * out_rec_status
   | Osig_type of out_type_decl * out_rec_status
@@ -118,6 +117,7 @@ and out_rec_status =
 and out_ext_status =
   | Oext_first
   | Oext_next
+  | Oext_exception
 
 type out_phrase =
   | Ophr_eval of out_value * out_type

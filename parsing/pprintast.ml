@@ -695,11 +695,8 @@ class printer  ()= object(self:'self)
         end) x
 
 
-  method exception_declaration f cd =
-    pp f "@[<hov2>exception@ %s%a@]" cd.pcd_name.txt
-      (fun f ed -> match ed with
-      |[] -> ()
-      |_ -> pp f "@ of@ %a" (self#list ~sep:"*" self#core_type) ed) cd.pcd_args
+  method exception_declaration f ext =
+    pp f "@[<hov2>exception@ %a@]" self#extension_constructor ext
 
   method class_signature f { pcsig_self = ct; pcsig_fields = l ;_} =
     let class_type_field f x =
@@ -1109,8 +1106,6 @@ class printer  ()= object(self:'self)
           self#value_description  vd
     | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me
-    | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
-        pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->
@@ -1195,23 +1190,8 @@ class printer  ()= object(self:'self)
   end
 
   method type_extension f x =
-    let extension_constructor f x = match x.pext_kind with
-    | Pext_decl(l, None) ->
-        pp f "@\n|@;%s%a" x.pext_name.txt
-          (fun f -> function
-                 | [] -> ()
-                 | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
-    | Pext_decl(l, Some r) ->
-        pp f "@\n|@;%s:@;%a" x.pext_name.txt
-          (fun f -> function
-                 | [] -> self#core_type1 f r
-                 | l -> pp f "%a@;->@;%a"
-                           (self#list self#core_type1 ~sep:"*@;") l
-                           self#core_type1 r)
-          l
-    | Pext_rebind li ->
-        pp f "@\n|@;%s@ = @ %a" x.pext_name.txt
-           self#longident_loc li
+    let extension_constructor f x =
+      pp f "@\n|@;%a" self#extension_constructor x
     in
       pp f "@[<2>type %a%a +=@;%a@]"
          (fun f -> function
@@ -1221,6 +1201,25 @@ class printer  ()= object(self:'self)
          self#longident_loc x.ptyext_path
          (self#list ~sep:"" extension_constructor)
          x.ptyext_constructors
+
+  method extension_constructor f x =
+    match x.pext_kind with
+    | Pext_decl(l, None) ->
+        pp f "%s%a" x.pext_name.txt
+          (fun f -> function
+                 | [] -> ()
+                 | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
+    | Pext_decl(l, Some r) ->
+        pp f "%s:@;%a" x.pext_name.txt
+          (fun f -> function
+                 | [] -> self#core_type1 f r
+                 | l -> pp f "%a@;->@;%a"
+                           (self#list self#core_type1 ~sep:"*@;") l
+                           self#core_type1 r)
+          l
+    | Pext_rebind li ->
+        pp f "%s@ = @ %a" x.pext_name.txt
+           self#longident_loc li
 
   method case_list f l : unit =
     let aux f {pc_lhs; pc_guard; pc_rhs} =

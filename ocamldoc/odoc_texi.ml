@@ -760,7 +760,7 @@ class texi =
         [ self#fixedblock
             ( [ Newline ; minus ; Raw "exception " ;
                 Raw (Name.simple e.ex_name) ;
-                Raw (self#string_of_type_args e.ex_args None) ] @
+                Raw (self#string_of_type_args e.ex_args e.ex_ret) ] @
               (match e.ex_alias with
               | None -> []
               | Some ea -> [ Raw " = " ; Raw

@@ -119,7 +119,7 @@ and ident_nil = ident_create "[]"
 and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
-let build_initial_env add_type add_exception empty_env =
+let build_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
@@ -128,7 +128,7 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_variant([cstr ident_void []])}
   and decl_exn =
     {decl_abstr with
-     type_kind = Type_variant []}
+     type_kind = Type_open}
   and decl_array =
     let tvar = newgenvar() in
     {decl_abstr with
@@ -164,24 +164,30 @@ let build_initial_env add_type add_exception empty_env =
      type_variance = [Variance.covariant]}
   in
 
-  let add_exception id l =
-    add_exception id
-      { exn_args = l; exn_loc = Location.none; exn_attributes = [] }
+  let add_extension id l =
+    add_extension id
+      { ext_type_path = path_exn;
+        ext_type_params = [];
+        ext_args = l;
+        ext_ret_type = None;
+        ext_private = Asttypes.Public;
+        ext_loc = Location.none;
+        ext_attributes = [] }
   in
-  add_exception ident_match_failure
+  add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_exception ident_out_of_memory [] (
-  add_exception ident_stack_overflow [] (
-  add_exception ident_invalid_argument [type_string] (
-  add_exception ident_failure [type_string] (
-  add_exception ident_not_found [] (
-  add_exception ident_sys_blocked_io [] (
-  add_exception ident_sys_error [type_string] (
-  add_exception ident_end_of_file [] (
-  add_exception ident_division_by_zero [] (
-  add_exception ident_assert_failure
+  add_extension ident_out_of_memory [] (
+  add_extension ident_stack_overflow [] (
+  add_extension ident_invalid_argument [type_string] (
+  add_extension ident_failure [type_string] (
+  add_extension ident_not_found [] (
+  add_extension ident_sys_blocked_io [] (
+  add_extension ident_sys_error [type_string] (
+  add_extension ident_end_of_file [] (
+  add_extension ident_division_by_zero [] (
+  add_extension ident_assert_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_exception ident_undefined_recursive_module
+  add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
