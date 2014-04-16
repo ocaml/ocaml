@@ -1938,14 +1938,18 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-    SHARP ident                 { Ptop_dir($2, Pdir_none) }
-  | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
-  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
-  | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
-  | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
-  | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }
+    SHARP ident toplevel_directive_args    { Ptop_dir($2, $3) }
 ;
-
+toplevel_directive_arg:
+  | STRING          { Pdir_string (fst $1) }
+  | INT             { Pdir_int $1 }
+  | val_longident   { Pdir_ident $1 }
+  | FALSE           { Pdir_bool false }
+  | TRUE            { Pdir_bool true }
+toplevel_directive_args:
+  | /*empty*/ { [] }
+  | toplevel_directive_arg toplevel_directive_args { $1 :: $2 }
+;
 /* Miscellaneous */
 
 name_tag:

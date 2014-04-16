@@ -50,6 +50,9 @@ Compilers:
 - PR#6345: Better compilation of optional arguments with default values
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
 
+Toplevel interactive system:
+- Support for directive with multiple arguments
+
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
   increments proportional to heap size
