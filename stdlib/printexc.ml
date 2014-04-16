@@ -184,3 +184,64 @@ let exn_slot_id x =
 let exn_slot_name x =
   let slot = exn_slot x in
   (Obj.obj (Obj.field slot 0) : string)
+
+
+let uncaught_exception_handler = ref None
+
+let set_uncaught_exception_handler fn = uncaught_exception_handler := Some fn
+
+let empty_backtrace : raw_backtrace = Obj.obj (Obj.new_block Obj.abstract_tag 0)
+
+let try_get_raw_backtrace () =
+  try
+    get_raw_backtrace ()
+  with _ (* Out_of_memory? *) ->
+    empty_backtrace
+
+let handle_uncaught_exception' exn debugger_in_use =
+  try
+    (* Get the backtrace now, in case one of the [at_exit] function
+       destroys it. *)
+    let raw_backtrace =
+      if debugger_in_use (* Same test as in [byterun/printexc.c] *) then
+        empty_backtrace
+      else
+        try_get_raw_backtrace ()
+    in
+    (try Pervasives.do_at_exit () with _ -> ());
+    match !uncaught_exception_handler with
+    | None ->
+        eprintf "Fatal error: exception %s\n" (to_string exn);
+        print_raw_backtrace stderr raw_backtrace;
+        flush stderr
+    | Some handler ->
+        try
+          handler exn raw_backtrace
+        with exn' ->
+          let raw_backtrace' = try_get_raw_backtrace () in
+          eprintf "Fatal error: exception %s\n" (to_string exn);
+          print_raw_backtrace stderr raw_backtrace;
+          eprintf "Fatal error in uncaught exception handler: exception %s\n"
+            (to_string exn');
+          print_raw_backtrace stderr raw_backtrace';
+          flush stderr
+  with
+    | Out_of_memory ->
+        prerr_endline
+          "Fatal error: out of memory in uncaught exception handler"
+
+(* This function is called by [caml_fatal_uncaught_exception] in
+   [byterun/printexc.c] which expects no exception is raised. *)
+let handle_uncaught_exception exn debugger_in_use =
+  try
+    handle_uncaught_exception' exn debugger_in_use
+  with _ ->
+    (* There is not much we can do at this point *)
+    ()
+
+external register_named_value : string -> 'a -> unit
+  = "caml_register_named_value"
+
+let () =
+  register_named_value "Printexc.handle_uncaught_exception"
+    handle_uncaught_exception

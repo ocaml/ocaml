@@ -100,6 +100,21 @@ val get_raw_backtrace: unit -> raw_backtrace
 val print_raw_backtrace: out_channel -> raw_backtrace -> unit
 val raw_backtrace_to_string: raw_backtrace -> string
 
+(** {6 Uncaught exceptions} *)
+
+val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
+(** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
+    for uncaught exceptions. The default handler prints the exception and
+    backtrace on standard error output.
+
+    Note that when [fn] is called all the functions registered with
+    {!Pervasives.at_exit} have already been called. Because of this you must
+    make sure any output channel [fn] writes on is flushed.
+
+    If [fn] raises an exception, it is ignored.
+
+    @since 4.01.0
+*)
 
 (** {6 Current call stack} *)
 
