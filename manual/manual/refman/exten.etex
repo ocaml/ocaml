@@ -1282,7 +1282,7 @@ attr-payload:
 \end{syntax}
 
 The first form of attributes is attached with a postfix notation on
-"algebraic" categories:
+``algebraic'' categories:
 
 \begin{syntax}
 attribute:
@@ -1334,18 +1334,15 @@ item-attribute:
 typedef: ...
    | typedef item-attribute
 ;
-class-binding: ...
-   | class-binding item-attribute
-;
-classtype-def: ...
-   | classtype-definition item-attribute
-;
 exception-definition:
         'exception' constr-name { attribute } [ 'of' typexpr { '*' typexpr } ]
       | 'exception' constr-name '=' constr
 ;
 module-items:
         [';;'] ( definition || expr { item-attribute } ) { [';;'] definition || ';;' expr { item-attribute } } [';;']
+;
+class-binding: ...
+   | class-binding item-attribute
 ;
 class-spec: ...
    | class-spec item-attribute
@@ -1410,7 +1407,7 @@ specification:
 
 
 It is also possible to specify attributes on expressions using an
-infix syntax.  This applies to all expressions which start with one or
+infix syntax.  This applies to all expressions starting with one or
 two keywords: "assert", "begin", "for", "fun", "function", "if",
 "lazy", "let", "let module", "let open", "match", "new", "object",
 "try", "while".  Those expressions supports adding one or several
@@ -1441,10 +1438,105 @@ Extension nodes are generic placeholders in the syntax tree. They are
 rejected by the type-checker and are intended to be ``expanded'' by external
 tools such as "-ppx" rewriters.
 
-TODO
+Extension nodes share the same notion of identifier and payload as
+attributes~\ref{s:attributes}.
+
+The first form of extension node is used for ``algebraic'' categories:
+
+\begin{syntax}
+extension:
+    '[%' attr-id attr-payload ']'
+;
+expr: ...
+     | extension
+;
+typexpr: ...
+     | extension
+;
+pattern: ...
+     | extension
+;
+module-expr: ...
+     | extension
+;
+module-type: ...
+     | extension
+;
+class-expr: ...
+     | extension
+;
+class-type: ...
+     | extension
+;
+\end{syntax}
+
+A second form of extension node can be used in structures and
+signatures, both in the module and object languages:
+
+\begin{syntax}
+item-extension:
+    '[%%' attr-id attr-payload ']'
+;
+definition: ...
+   | item-extension
+;
+specification: ...
+   | item-extension
+;
+class-field-spec: ...
+   | item-extension
+;
+class-field:
+   | item-extension
+;
+\end{syntax}
+
+An infix form is available for extension nodes as expressions, when
+the payload is a single expression.  This form applies to all
+expressions starting with one or two keywords: the percent sign and then
+and extension identifier follow immediately the initial keyword(s).
+
+Examples:
+
+\begin{verbatim}
+let%foo x = 2 in x + 1     === [%foo let x = 2 in x + 1]
+begin%foo ... end          === [%foo begin ... end]
+\end{verbatim}
+
+When this form is used together with the infix syntax for attributes,
+the attributes are considered to apply to the payload:
+
+\begin{verbatim}
+begin%foo[@bar] ... end     === [%foo (let x = 2 in x + 1) [@bar]]
+\end{verbatim}
 
 \section{Quoted strings}\label{s:quoted-strings}
 
 (Introduced in OCaml 4.02)
 
-TODO
+Quoted strings provide a different lexical syntax to write string
+literals in OCaml code.  This can be used to embed pieces of foreign
+syntax fragments in OCaml code, to be interpret by a "-ppx" filter or
+just a library.
+
+\begin{syntax}
+string-literal: ...
+     |  '{' quoted-string-id '|'  ........ '|' quoted-string-id '}'
+;
+quoted-string-id:
+     { 'a'...'z' || '_' }
+;
+\end{syntax}
+
+The opening delimiter has the form "{id|" where "id" is a (possibly
+  empty) sequence of lowercase letters and/or underscores.  The
+  corresponding closing delimiter is "|id}" (with the same
+identifier).  Contrary to regular OCaml string literals, quoted
+strings do not interpret any character in a special way.
+
+Example:
+
+\begin{verbatim}
+String.length {|\"|}         (* returns 2 *)
+String.length {foo|\"|foo}   (* returns 2 *)
+\end{verbatim}
