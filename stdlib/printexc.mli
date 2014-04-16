@@ -113,7 +113,7 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 
     If [fn] raises an exception, it is ignored.
 
-    @since 4.01.0
+    @since 4.02.0
 *)
 
 (** {6 Current call stack} *)
