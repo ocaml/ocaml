@@ -525,9 +525,9 @@ the revised syntax to distinguish "A x y" from "A (x, y)" (the second one
 being wrapped in an extra fake tuple) and get a proper error message
 if "A (x, y)" was used with a constructor expecting two arguments.
 
-If really required, the same feature could be restored by storing the
-flag as an attribute (with very light support in the type-checker), in
-order to avoid polluting the official Parsetree.
+The feature has been preserved, but the information that a
+Pexp_construct/Ppat_constructo node has an "exact arity" is now
+propagated used as am attribute "ocaml.explicit_arity" on that node.
 
 --- Split Pexp_function into Pexp_function/Pexp_fun
 

@@ -541,7 +541,7 @@ and class_field_desc =
   | Pcf_initializer of expression
         (* initializer E *)
   | Pcf_extension of extension
-        (* [%id] *)
+        (* [%%id] *)
 
 and class_field_kind =
   | Cfk_virtual of core_type
