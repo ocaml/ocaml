@@ -111,6 +111,8 @@ Bug fixes:
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
+- sometimes wrong stack alignment at out-of-bounds array access
+  (Gabriel Scherer, review by Xavier Leroy, report by Pierre Chambart)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

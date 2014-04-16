@@ -234,6 +234,9 @@ method select_floatarith commutative regular_op mem_op args =
   | _ ->
       assert false
 
+method! mark_c_tailcall =
+  Proc.contains_calls := true
+
 (* Deal with register constraints *)
 
 method! insert_op_debug op dbg rs rd =

@@ -288,6 +288,9 @@ method select_push exp =
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
+method! mark_c_tailcall =
+  Proc.contains_calls := true
+
 method! emit_extcall_args env args =
   let rec size_pushes = function
   | [] -> 0
