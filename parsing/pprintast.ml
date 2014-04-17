@@ -1222,11 +1222,12 @@ class printer  ()= object(self:'self)
             pp f "~%s:%a" lbl self#simple_expr e
 
   method directive_argument f x =
-    (match x with
+    match x with
     | Pdir_string (s) -> pp f "@ %S" s
     | Pdir_int (i) -> pp f "@ %d" i
     | Pdir_ident (li) -> pp f "@ %a" self#longident li
-    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b))
+    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b)
+    | Pdir_keyword s -> pp f "@ %s" s
 
   method toplevel_phrase f x =
     match x with

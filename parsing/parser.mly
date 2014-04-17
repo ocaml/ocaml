@@ -520,9 +520,9 @@ use_file_tail:
   | SEMISEMI seq_expr post_item_attributes use_file_tail
                                               { Ptop_def[mkstrexp $2 $3] :: $4 }
   | SEMISEMI structure_item use_file_tail     { Ptop_def[$2] :: $3 }
-  | SEMISEMI toplevel_directive use_file_tail { $2 :: $3 }
+  | SEMISEMI toplevel_directive SEMISEMI use_file_tail { $2 :: $4 }
   | structure_item use_file_tail              { Ptop_def[$1] :: $2 }
-  | toplevel_directive use_file_tail          { $1 :: $2 }
+  | toplevel_directive SEMISEMI use_file_tail          { $1 :: $3 }
 ;
 parse_core_type:
     core_type EOF { $1 }
@@ -1944,8 +1944,13 @@ toplevel_directive_arg:
   | STRING          { Pdir_string (fst $1) }
   | INT             { Pdir_int $1 }
   | val_longident   { Pdir_ident $1 }
-  | FALSE           { Pdir_bool false }
-  | TRUE            { Pdir_bool true }
+  | mod_longident   { Pdir_ident $1 }
+  | keyword         {
+    match $1 with
+    | "true" -> Pdir_bool true
+    | "false" -> Pdir_bool false
+    | s -> Pdir_keyword s
+  }
 toplevel_directive_args:
   | /*empty*/ { [] }
   | toplevel_directive_arg toplevel_directive_args { $1 :: $2 }
@@ -2005,9 +2010,7 @@ additive:
 
 /* Attributes and extensions */
 
-single_attr_id:
-    LIDENT { $1 }
-  | UIDENT { $1 }
+keyword:
   | AND { "and" }
   | AS { "as" }
   | ASSERT { "assert" }
@@ -2057,6 +2060,11 @@ single_attr_id:
   | WHILE { "while" }
   | WITH { "with" }
 /* mod/land/lor/lxor/lsl/lsr/asr are not supported for now */
+;
+single_attr_id:
+    LIDENT { $1 }
+  | UIDENT { $1 }
+  | keyword { $1 }
 ;
 
 attr_id:

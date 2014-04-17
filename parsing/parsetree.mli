@@ -767,3 +767,4 @@ and directive_argument =
   | Pdir_int of int
   | Pdir_ident of Longident.t
   | Pdir_bool of bool
+  | Pdir_keyword of string

@@ -846,6 +846,7 @@ and directive_argument i ppf x =
   | Pdir_int (i) -> line i ppf "Pdir_int %d\n" i;
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
+  | Pdir_keyword s -> line i ppf "Pdir_keyword %s\n" s;
 ;;
 
 let interface ppf x = list 0 signature_item ppf x;;
