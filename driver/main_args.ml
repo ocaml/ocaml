@@ -267,7 +267,7 @@ let mk_thread f =
 
 let mk_trans_mod f =
   "-trans-mod", Arg.Unit f,
-  " Make typing and linking only depend on normalized paths"
+  " Do not import unused module aliases"
 
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
