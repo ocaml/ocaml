@@ -863,9 +863,8 @@ value varify_constructors var_names =
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
-    | ExOpI loc i ov e ->
-        let fresh = override_flag loc ov in 
-        mkexp loc (Pexp_open fresh (long_uident i) (expr e))
+    | <:expr@loc< let open $i$ in $e$ >> ->
+        mkexp loc (Pexp_open Fresh (long_uident i) (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
         mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
                     Some (mktyp loc (Ptyp_package (package_type pt))), None))
@@ -1075,9 +1074,8 @@ value varify_constructors var_names =
     | StRecMod loc mb ->
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
     | StMty loc n mt -> [mkstr loc (Pstr_modtype (with_loc n loc) (module_type mt)) :: l]
-    | StOpn loc ov id ->
-        let fresh = override_flag loc ov in
-        [mkstr loc (Pstr_open fresh (long_uident id)) :: l]
+    | StOpn loc id ->
+        [mkstr loc (Pstr_open Fresh (long_uident id)) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
         [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]

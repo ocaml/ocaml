@@ -248,7 +248,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         defined.val := list_remove x defined.val;
       }
     with
-    [ Struct.Grammar.Delete.Rule_not_found _ ->  () ];
+    [ Not_found -> () ];
 
   value parse_def s =
     match Gram.parse_string expr (Loc.mk "<command line>") s with
