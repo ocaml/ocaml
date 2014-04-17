@@ -404,6 +404,8 @@ let mkexp_attrs d attrs =
 %token WITH
 %token <string * Location.t> COMMENT
 
+%token EOL
+
 /* Precedences and associativities.
 
 Tokens and rules have precedences.  A reduce/reduce conflict is resolved
