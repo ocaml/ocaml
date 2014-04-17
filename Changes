@@ -52,6 +52,7 @@ Compilers:
 
 Toplevel interactive system:
 - Support for directive with multiple arguments
+- PR#5377: New "#show" directive
 
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
