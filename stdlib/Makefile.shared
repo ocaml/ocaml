@@ -18,7 +18,6 @@ CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib -g -bin-annot
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo $(OTHERS)
@@ -75,10 +74,10 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
+	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler
 $(OBJS) std_exit.cmo: $(COMPILER)
