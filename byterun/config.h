@@ -47,14 +47,14 @@ typedef unsigned short uint32;
 #if defined(ARCH_INT64_TYPE)
 typedef ARCH_INT64_TYPE int64;
 typedef ARCH_UINT64_TYPE uint64;
-#elif SIZEOF_LONG == 8
-typedef long int64;
-typedef unsigned long uint64;
-#define ARCH_INT64_PRINTF_FORMAT "l"
 #elif SIZEOF_LONGLONG == 8
 typedef long long int64;
 typedef unsigned long long uint64;
 #define ARCH_INT64_PRINTF_FORMAT "ll"
+#elif SIZEOF_LONG == 8
+typedef long int64;
+typedef unsigned long uint64;
+#define ARCH_INT64_PRINTF_FORMAT "l"
 #else
 #error "No 64-bit integer type available"
 #endif
