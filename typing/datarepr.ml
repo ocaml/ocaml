@@ -17,16 +17,22 @@ open Asttypes
 open Types
 open Btype
 
-(* Simplified version of Ctype.free_vars *)
+(* Simplified version of Ctype.free_vars.  Also compute
+   an ordered sequence of type variables (in the order in which
+   they appear, syntactically). *)
 let free_vars ty =
   let ret = ref TypeSet.empty in
+  let l = ref [] in
   let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
       match ty.desc with
       | Tvar _ ->
-          ret := TypeSet.add ty !ret
+          if not (TypeSet.mem ty !ret) then begin
+            ret := TypeSet.add ty !ret;
+            l := ty :: !l
+          end;
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
@@ -37,7 +43,7 @@ let free_vars ty =
   in
   loop ty;
   unmark_type ty;
-  !ret
+  !ret, List.rev !l
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
@@ -95,22 +101,22 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-        let arg_vars, existentials =
+        let tyl =
+          match cd_args with
+          | Cstr_tuple l -> l
+          | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
+        in
+        (* Note: variables bound by Tpoly are Tvar, not Tunivar,
+           and thus they are not considered as free, which is
+           what we want. *)
+        let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
+        let existentials =
           match cd_res with
-          | None -> decl.type_params, []
+          | None ->
+              []
           | Some type_ret ->
-              let res_vars = free_vars type_ret in
-              let tyl =
-                match cd_args with
-                | Cstr_tuple l -> l
-                | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
-              in
-              (* Note: variables bound by Tpoly are Tvar, not Tunivar,
-                and thus they are not considered as free, which is
-                what we want. *)
-              let arg_vars = free_vars (newgenty (Ttuple tyl)) in
-              TypeSet.elements arg_vars,
-              TypeSet.elements (TypeSet.diff arg_vars res_vars)
+              let res_vars, _ = free_vars type_ret in
+              TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
         in
         let type_manifest () =
           match decl.type_manifest, manifest_decl with
