@@ -599,12 +599,13 @@ end) = struct
         then get_name d else "") env lid
 
   let lookup_from_type env tpath lid =
-    let descrs = get_descrs (Env.find_type_descrs tpath env) in
+    let (_, _, inlined) as descrs = Env.find_type_descrs tpath env in
+    let descrs = get_descrs descrs in
     Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
         try
-          List.find (fun nd -> get_name nd = s) descrs
+          List.find (fun nd -> get_name nd = s) descrs, inlined
         with Not_found ->
           raise (Error (lid.loc, env,
                         Wrong_name ("", newvar (), type_kind, tpath, lid.txt)))
@@ -636,7 +637,7 @@ end) = struct
   let disambiguate ?(warn=Location.prerr_warning) ?(check_lk=fun _ _ -> ())
       ?scope lid env opath lbls =
     let scope = match scope with None -> lbls | Some l -> l in
-    let lbl = match opath with
+    let lbl, inlined = match opath with
       None ->
         begin match lbls with
           [] -> unbound_name_error env lid
@@ -647,7 +648,7 @@ end) = struct
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                           paths, false));
-            lbl
+            lbl, false
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
@@ -673,15 +674,17 @@ end) = struct
                       (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                                 paths, false))
           end;
-          lbl
+          lbl, false
         with Not_found -> try
-          let lbl = lookup_from_type env tpath lid in
+          let lbl, inlined = lookup_from_type env tpath lid in
           check_lk tpath lbl;
-          let s = Printtyp.string_of_path tpath in
-          warn lid.loc
-            (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
+          if not inlined then begin
+            let s = Printtyp.string_of_path tpath in
+            warn lid.loc
+              (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
+          end;
           if not pr then warn_pr ();
-          lbl
+          lbl, inlined
         with Not_found ->
           if lbls = [] then unbound_name_error env lid else
           let tp = (tpath0, expand_path env tpath) in
@@ -696,12 +699,13 @@ end) = struct
           raise (Error (lid.loc, env,
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
     in
-    begin match scope with
-      (lab1,_)::_ when lab1 == lbl -> ()
-    | _ ->
-        Location.prerr_warning lid.loc
-          (Warnings.Disambiguated_name(get_name lbl))
-    end;
+    if not inlined then
+      begin match scope with
+        (lab1,_)::_ when lab1 == lbl -> ()
+      | _ ->
+          Location.prerr_warning lid.loc
+            (Warnings.Disambiguated_name(get_name lbl))
+      end;
     lbl
 end
 
@@ -714,7 +718,7 @@ module Label = NameChoice (struct
   let type_kind = "record"
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
-  let get_descrs = snd
+  let get_descrs (_, x, _) = x
   let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
 end)
@@ -861,19 +865,12 @@ let check_recordpat_labels loc lbl_pat_list closed =
 
 (* Constructors *)
 
-let lookup_constructor_from_type env tpath lid =
-  let (constructors, _) = Env.find_type_descrs tpath env in
-    match lid with
-      Longident.Lident s ->
-        List.find (fun cstr -> cstr.cstr_name = s) constructors
-    | _ -> raise Not_found
-
 module Constructor = NameChoice (struct
   type t = constructor_description
   let type_kind = "variant"
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
-  let get_descrs = fst
+  let get_descrs (x, _, _) = x
   let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
 end)

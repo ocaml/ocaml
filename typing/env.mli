@@ -33,7 +33,9 @@ val initial: t
 val diff: t -> t -> Ident.t list
 
 type type_descriptions =
-    constructor_description list * label_description list
+    constructor_description list * label_description list * bool
+    (* true -> inlined record *)
+
 
 (* For short-paths *)
 val iter_types:

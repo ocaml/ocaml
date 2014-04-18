@@ -796,7 +796,7 @@ let complete_constrs p all_tags =
   | Tpat_construct (_,c,_) ->
       begin try
         let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-        let (constrs, _) =
+        let (constrs, _, _) =
           Env.find_type_descrs (adt_path p.pat_env p.pat_type) p.pat_env in
         map_filter
           (fun cnstr ->

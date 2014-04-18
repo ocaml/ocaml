@@ -162,7 +162,7 @@ module EnvTbl =
   end
 
 type type_descriptions =
-    constructor_description list * label_description list
+    constructor_description list * label_description list * bool
 
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
@@ -1194,7 +1194,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
-                ((decl', (constructors, labels)), nopos)
+                ((decl', (constructors, labels, false)), nopos)
                   c.comp_types;
             List.iter
               (fun (id, path, td) ->
@@ -1294,12 +1294,24 @@ and store_value ?check slot id path decl env renv =
     summary = Env_value(env.summary, id, decl) }
 
 and store_extra_tdecls slot tdecls env renv =
-  (* Note: we should probably keep the original summary *)
-  List.fold_left (fun env (id, path, td) ->
-      store_type ~check:false slot id path td env renv
-    )
-    env
-    tdecls
+  List.fold_left
+    (fun env (id, path, td) -> store_extra_tdecl slot id path td env renv)
+    env tdecls
+
+and store_extra_tdecl slot id path info env renv =
+  (* Simplified version of store_type, used to insert
+     synthesized inlined record types.  We don't update the summary
+     (since inserting again the main sum type will result in the synthesized
+     record to be inserted) and we don't add labels to
+     the environment (this could only be used through type-based
+     selection). *)
+
+  let labels = labels_of_type path info in
+  let descrs = ([], List.map snd labels, true) in
+  { env with
+    types = EnvTbl.add "type" slot id (path, (info, descrs)) env.types
+        renv.types
+  }
 
 and store_type ~check slot id path info env renv =
   let loc = info.type_loc in
@@ -1308,7 +1320,7 @@ and store_type ~check slot id path info env renv =
       type_declarations;
   let constructors, tdecls = constructors_of_type env path info in
   let labels = labels_of_type path info in
-  let descrs = (List.map snd constructors, List.map snd labels) in
+  let descrs = (List.map snd constructors, List.map snd labels, false) in
 
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
@@ -1355,7 +1367,7 @@ and store_type_infos slot id path info env renv =
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
   { env with
-    types = EnvTbl.add "type" slot id (path, (info,([],[]))) env.types
+    types = EnvTbl.add "type" slot id (path, (info,([],[],false))) env.types
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 
