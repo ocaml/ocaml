@@ -51,13 +51,18 @@ let constructor_args ty_path type_manifest arg_vars rep =
         | Path.Pident _ -> Path.Pident id
         | Path.Papply _ -> assert false
       in
+      let type_manifest =
+        match type_manifest () with
+        | Some p -> Some (newgenconstr p arg_vars)
+        | None -> None
+      in
       let tdecl =
         {
           type_params = arg_vars;
           type_arity = List.length arg_vars;
           type_kind = Type_record (lbls, rep);
           type_private = Public;
-          type_manifest = type_manifest ();
+          type_manifest;
           type_variance = List.map (fun _ -> Variance.full) arg_vars;
           type_newtype_level = None;
           type_loc = Location.none;
@@ -110,10 +115,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
         let type_manifest () =
           match decl.type_manifest, manifest_decl with
           | Some {desc = Tconstr(Path.Pdot (m, name, _), _, _)}, _ ->
-              let p =
-                Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos)
-              in
-              Some (newgenconstr p arg_vars)
+              Some (Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos))
           | Some {desc = Tconstr(Path.Pident _, _, _)},
             Some {type_kind = Type_variant cstrs} ->
               let c =
@@ -124,8 +126,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
                 with Not_found -> assert false
               in
               begin match c.cd_args with
-              | Cstr_record (id, _) ->
-                  Some (newgenconstr (Path.Pident id) arg_vars)
+              | Cstr_record (id, _) -> Some (Path.Pident id)
               | _ -> assert false
               end
           | _ -> None
@@ -158,11 +159,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
   r, !tdecls
 
 let exception_descr ?rebind path_exc decl =
-  let type_manifest () =
-    match rebind with
-    | None -> None
-    | Some p -> Some (newgenconstr p [])
-  in
+  let type_manifest () = rebind in
   let cstr_args, cstr_inlined, tds =
     constructor_args path_exc type_manifest []
       (Record_exception path_exc)
