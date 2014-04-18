@@ -181,6 +181,7 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
+html_doc: stdlib_html/Pervasives.html
 
 dot: $(EXECMOFILES)
 	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
@@ -305,6 +306,13 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
 	$(STDLIB_MLIS)
+
+stdlib_html/Pervasives.html: $(STDLIB_MLIS)
+	$(MKDIR) stdlib_html
+	$(OCAMLDOC_RUN) -d stdlib_html -html $(INCLUDES) \
+	-t "OCaml library" \
+	$(STDLIB_MLIS)
+
 
 autotest_stdlib: dummy
 	$(MKDIR) $@

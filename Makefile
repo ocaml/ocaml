@@ -723,6 +723,12 @@ ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	cd ocamldoc && $(MAKE) opt.opt
 
+# Documentation
+
+html_doc: ocamldoc
+	make -C ocamldoc html_doc
+	@echo "documentation is in ./ocamldoc/stdlib_html/"
+
 partialclean::
 	cd ocamldoc && $(MAKE) clean
 
