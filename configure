@@ -529,19 +529,6 @@ echo "#define SIZEOF_PTR $3" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 echo "#define SIZEOF_LONGLONG $5" >> m.h
 
-# Temporary fix: some OCaml programs, e.g. Coq, assume that
-# ARCH_INT64_TYPE is defined in config/m.h.  Put a definition
-# there, even if it duplicates the logic present in config.h
-if test $5 = 8; then
-  echo '#define ARCH_INT64_TYPE long long' >> m.h
-  echo '#define ARCH_UINT64_TYPE unsigned long long' >> m.h
-  echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
-else
-  echo '#define ARCH_INT64_TYPE long' >> m.h
-  echo '#define ARCH_UINT64_TYPE unsigned long' >> m.h
-  echo '#define ARCH_INT64_PRINTF_FORMAT "l"' >> m.h
-fi
-
 # Determine endianness
 
 sh ./runtest endian.c
