@@ -42,7 +42,7 @@ let blit src srcoff dst dstoff len =
              || dstoff < 0 || dstoff > (String.length dst) - len
   then invalid_arg "Buffer.blit"
   else
-    String.blit src.buffer srcoff dst dstoff len
+    String.unsafe_blit src.buffer srcoff dst dstoff len
 ;;
 
 let nth b ofs =
@@ -69,7 +69,7 @@ let resize b more =
     else failwith "Buffer.add: cannot grow buffer"
   end;
   let new_buffer = String.create !new_len in
-  String.blit b.buffer 0 new_buffer 0 b.position;
+  String.unsafe_blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
   b.length <- !new_len
 
