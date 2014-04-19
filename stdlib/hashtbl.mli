@@ -187,6 +187,27 @@ val stats : ('a, 'b) t -> statistics
 
 (** {6 Functorial interface} *)
 
+(** The functorial interface allows to use specific comparison
+    and hash functions, either for performance/security concerns,
+    or because keys are not hashable/comparable with the polymorphic builtins.
+
+    For instance, one might want to specialize a table for integer keys:
+    {[
+      module IntHash =
+        struct
+          type t = int
+          let equal i j = i=j
+          let hash i = i land max_int
+        end
+
+      module IntHashtbl = Hashtbl.Make(IntHash)
+
+      let h = IntHashtbl.create 17 in
+      IntHashtbl.add h 12 "hello";;  (* works *)
+
+      let h' = IntHashtbl.create 17 in
+      IntHashtbl.add h false "world";; (* won't typecheck *)
+    ]} *)
 
 module type HashedType =
   sig
