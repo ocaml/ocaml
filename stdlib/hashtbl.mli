@@ -213,7 +213,7 @@ val stats : ('a, 'b) t -> statistics
     Note that the new type ['a IntHashtbl.t] is not compatible with
     the type [('a,'b) Hashtbl.t] of the generic interface. For
     example, [Hashtbl.length h] would not type-check, you must use
-    [IntHahstbl.length].
+    [IntHashtbl.length].
 *)
 
 module type HashedType =
