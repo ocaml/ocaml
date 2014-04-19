@@ -187,7 +187,7 @@ val stats : ('a, 'b) t -> statistics
 
 (** {6 Functorial interface} *)
 
-(** The functorial interface allows to use specific comparison
+(** The functorial interface allows the use of specific comparison
     and hash functions, either for performance/security concerns,
     or because keys are not hashable/comparable with the polymorphic builtins.
 
@@ -203,11 +203,18 @@ val stats : ('a, 'b) t -> statistics
       module IntHashtbl = Hashtbl.Make(IntHash)
 
       let h = IntHashtbl.create 17 in
-      IntHashtbl.add h 12 "hello";;  (* works *)
+      IntHashtbl.add h 12 "hello";;
+    ]}
 
-      let h' = IntHashtbl.create 17 in
-      IntHashtbl.add h false "world";; (* won't typecheck *)
-    ]} *)
+    This creates a new module [IntHashtbl], with a new type ['a
+    IntHashtbl.t] of tables from [int] to ['a]. In this example, [h]
+    contains [string] values so its type is [string IntHashtbl.t].
+
+    Note that the new type ['a IntHashtbl.t] is not compatible with
+    the type [('a,'b) Hashtbl.t] of the generic interface. For
+    example, [Hashtbl.length h] would not type-check, you must use
+    [IntHahstbl.length].
+*)
 
 module type HashedType =
   sig
