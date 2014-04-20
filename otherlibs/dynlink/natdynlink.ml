@@ -41,7 +41,7 @@ exception Error of error
 open Cmx_format
 
 (* Copied from config.ml to avoid dependencies *)
-let cmxs_magic_number = "Caml2007D001"
+let cmxs_magic_number = "Caml2007D002"
 
 let dll_filename fname =
   if Filename.is_implicit fname then Filename.concat (Sys.getcwd ()) fname
