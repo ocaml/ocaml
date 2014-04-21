@@ -156,7 +156,7 @@ method! select_store addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
-  | Cconst_natint n when self#is_immediate_natint n ->
+  | (Cconst_natint n | Cconst_blockheader n) when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
