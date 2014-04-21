@@ -47,7 +47,8 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-      Cconst_int _ | Cconst_natint _ -> Arch.size_int
+      Cconst_int _ | Cconst_natint _
+    | Cconst_blockheader _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
@@ -178,6 +179,7 @@ class virtual selector_generic = object (self)
 method is_simple_expr = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
+  | Cconst_blockheader _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
   | Cconst_pointer _ -> true
