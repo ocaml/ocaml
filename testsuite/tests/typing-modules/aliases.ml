@@ -198,3 +198,9 @@ module type S = sig module M : sig type t val x : t end end;;
 module H = struct type t = A let x = A end;;
 module H' = H;;
 module type S' = S with module M = H';; (* shouldn't introduce an alias *)
+
+(* PR#6376 *)
+module type Alias = sig module N : sig end module M = N end;;
+module F (X : sig end) = struct type t end;;
+module type A = Alias with module N := F(List);;
+module rec Bad : A = Bad;;
