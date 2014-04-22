@@ -434,6 +434,11 @@ let check cl loc set_ref name =
 let check_name cl set_ref name =
   check cl name.loc set_ref name.txt
 
+let check_exn_decl loc type_names decl =
+  List.iter
+    (fun id -> check "type" loc type_names (Ident.name id))
+    (Subst.sub_ids_exn decl)
+
 let check_sig_item type_names module_names modtype_names loc = function
     Sig_type(id, _, _) ->
       check "type" loc type_names (Ident.name id)
@@ -441,6 +446,8 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module" loc module_names (Ident.name id)
   | Sig_modtype(id, _) ->
       check "module type" loc modtype_names (Ident.name id)
+  | Sig_exception(_, decl) ->
+      check_exn_decl loc type_names decl
   | _ -> ()
 
 let rec remove_duplicates val_ids exn_ids  = function
@@ -448,8 +455,8 @@ let rec remove_duplicates val_ids exn_ids  = function
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
       remove_duplicates val_ids exn_ids rem
-  | Sig_exception(id, _) :: rem
-    when List.exists (Ident.equal id) exn_ids ->
+  | Sig_exception(id, decl) :: rem
+    when List.exists (Ident.equal id) exn_ids && Subst.sub_ids_exn decl = [] ->
       remove_duplicates val_ids exn_ids rem
   | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
 
@@ -460,7 +467,7 @@ let rec get_values = function
 
 let rec get_exceptions = function
     [] -> []
-  | Sig_exception (id, _) :: rem -> id :: get_exceptions rem
+  | Sig_exception (id, decl) :: rem -> id :: get_exceptions rem
   | f :: rem -> get_exceptions rem
 
 
@@ -573,11 +580,13 @@ and transl_signature env sg =
             final_env
         | Psig_exception sarg ->
             let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
+            check_exn_decl sarg.pcd_name.loc type_names decl;
             let (trem, rem, final_env) = transl_sig newenv srem in
             let id = arg.cd_id in
             let trem = mksig (Tsig_exception arg) env loc :: trem in
             trem,
-            (if List.exists (Ident.equal id) (get_exceptions rem) then rem
+            (if List.exists (Ident.equal id) (get_exceptions rem)
+                && Subst.sub_ids_exn decl = [] then rem
              else Sig_exception(id, decl) :: rem),
             final_env
         | Psig_module pmd ->
@@ -1183,11 +1192,13 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         enrich_type_decls anchor decls env newenv
     | Pstr_exception sarg ->
         let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
+        check_exn_decl sarg.pcd_name.loc type_names decl;
         Tstr_exception arg,
         [Sig_exception(arg.cd_id, decl)],
         newenv
     | Pstr_exn_rebind ser ->
         let (er, newenv) = Typedecl.transl_exn_rebind env ser in
+        check_exn_decl ser.pexrb_name.loc type_names er.exrb_type;
         Tstr_exn_rebind er,
         [Sig_exception(er.exrb_id, er.exrb_type)],
         newenv
@@ -1435,7 +1446,8 @@ and simplify_signature sg =
   | (Sig_exception(id, decl) as component) :: sg ->
       let name = Ident.name id in
       simplif val_names (StringSet.add name exn_names)
-              (if StringSet.mem name exn_names then res else component :: res)
+              (if StringSet.mem name exn_names && Subst.sub_ids_exn decl = []
+               then res else component :: res)
               sg
   | Sig_module(id, md, rs) :: sg ->
       let md = {md with md_type = simplify_modtype md.md_type} in

@@ -47,3 +47,39 @@ module type S = sig exception A of {x:int}  end;;
 module F (X : sig val x : (module S) end) = struct
   module A = (val X.x)
 end;;
+
+
+module type S = sig
+  exception A of {x : int}
+  exception A of {x : string}
+end;;
+
+module M = struct
+  exception A of {x : int}
+  exception A of {x : string}
+end;;
+
+
+module M1 = struct
+  exception A of {x : int}
+end;;
+
+module M = struct
+  include M1
+  include M1
+end;;
+
+
+module type S1 = sig
+  exception A of {x : int}
+end;;
+
+module type S = sig
+  include S1
+  include S1
+end;;
+
+module M = struct
+  exception A = M1.A
+  exception A
+end;;
