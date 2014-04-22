@@ -163,9 +163,9 @@ CAMLprim value caml_sys_file_exists(value name)
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
-  ret = stat(p, &st);
-#else
   ret = _stati64(p, &st);
+#else
+  ret = stat(p, &st);
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
@@ -187,9 +187,9 @@ CAMLprim value caml_sys_is_directory(value name)
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
 #ifdef _WIN32
-  ret = stat(p, &st);
-#else
   ret = _stati64(p, &st);
+#else
+  ret = stat(p, &st);
 #endif
   caml_leave_blocking_section();
   caml_stat_free(p);
