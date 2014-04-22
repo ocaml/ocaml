@@ -296,7 +296,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     template = caml_strconcat(2, dirname, "\\*.*");
   h = _findfirst(template, &fileinfo);
   if (h == -1) {
-    caml_strbuf_free(&template);
+    caml_stat_free(template);
     return errno == ENOENT ? 0 : -1;
   }
   do {
