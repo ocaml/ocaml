@@ -333,6 +333,12 @@ let rec transl_type env policy styp =
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let stl =
+        match stl with
+        | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
+            List.map (fun _ -> t) decl.type_params
+        | _ -> stl
+      in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,

@@ -3032,7 +3032,9 @@ and type_argument env sarg ty_expected' ty_expected =
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
-                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}],
+                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
+                       vb_loc=Location.none;
+                      }],
                      func let_var) }
       end
   | _ ->
@@ -3624,7 +3626,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let l =
     List.map2
       (fun (p, e) pvb ->
-        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
+        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
+         vb_loc=pvb.pvb_loc;
+        })
       l spat_sexp_list
   in
   (l, new_env, unpacks)

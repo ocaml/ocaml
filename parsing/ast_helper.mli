@@ -241,20 +241,20 @@ module Mb:
 (* Opens *)
 module Opn:
   sig
-    val mk: ?attrs:attrs -> ?override:override_flag -> lid -> open_description
+    val mk: ?loc: loc -> ?attrs:attrs -> ?override:override_flag -> lid -> open_description
   end
 
 (* Includes *)
 module Incl:
   sig
-    val mk: ?attrs:attrs -> 'a -> 'a include_infos
+    val mk: ?loc: loc -> ?attrs:attrs -> 'a -> 'a include_infos
   end
 
 (** Value bindings *)
 
 module Vb:
   sig
-    val mk: ?attrs:attrs -> pattern -> expression -> value_binding
+    val mk: ?loc: loc -> ?attrs:attrs -> pattern -> expression -> value_binding
   end
 
 
@@ -338,7 +338,7 @@ module Cstr:
 (** Exception rebinding *)
 module Exrb:
   sig
-    val mk: ?attrs:attrs -> str -> lid -> exception_rebind
+    val mk: ?loc:loc -> ?attrs:attrs -> str -> lid -> exception_rebind
 end
 
 

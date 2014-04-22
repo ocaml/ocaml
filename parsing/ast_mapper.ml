@@ -13,7 +13,7 @@
 (* A generic Parsetree mapping class *)
 
 (*
-[@@@warning "+9"]
+[@@@ocaml.warning "+9"]
   (* Ensure that record patterns don't miss any field. *)
 *)
 
@@ -495,31 +495,35 @@ let default_mapper =
 
 
     open_description =
-      (fun this {popen_lid; popen_override; popen_attributes} ->
+      (fun this {popen_lid; popen_override; popen_attributes; popen_loc} ->
          Opn.mk (map_loc this popen_lid)
            ~override:popen_override
+           ~loc:(this.location this popen_loc)
            ~attrs:(this.attributes this popen_attributes)
       );
 
 
     include_description =
-      (fun this {pincl_mod; pincl_attributes} ->
+      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
          Incl.mk (this.module_type this pincl_mod)
+           ~loc:(this.location this pincl_loc)
            ~attrs:(this.attributes this pincl_attributes)
       );
 
     include_declaration =
-      (fun this {pincl_mod; pincl_attributes} ->
+      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
          Incl.mk (this.module_expr this pincl_mod)
+           ~loc:(this.location this pincl_loc)
            ~attrs:(this.attributes this pincl_attributes)
       );
 
 
     value_binding =
-      (fun this {pvb_pat; pvb_expr; pvb_attributes} ->
+      (fun this {pvb_pat; pvb_expr; pvb_attributes; pvb_loc} ->
          Vb.mk
            (this.pat this pvb_pat)
            (this.expr this pvb_expr)
+           ~loc:(this.location this pvb_loc)
            ~attrs:(this.attributes this pvb_attributes)
       );
 
@@ -551,10 +555,11 @@ let default_mapper =
       );
 
     exception_rebind =
-      (fun this {pexrb_name; pexrb_lid; pexrb_attributes} ->
+      (fun this {pexrb_name; pexrb_lid; pexrb_attributes; pexrb_loc} ->
          Exrb.mk
            (map_loc this pexrb_name)
            (map_loc this pexrb_lid)
+           ~loc:(this.location this pexrb_loc)
            ~attrs:(this.attributes this pexrb_attributes)
       );
 

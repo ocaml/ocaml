@@ -795,7 +795,9 @@ class printer  ()= object(self:'self)
           | Pexp_poly (e,None) ->
               self#binding f {pvb_pat={ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
                               pvb_expr=e;
-                              pvb_attributes=[]}
+                              pvb_attributes=[];
+                              pvb_loc=Location.none;
+                             }
           | _ ->
               self#expression f e ) e
     | Pcf_constraint (ct1, ct2) ->
