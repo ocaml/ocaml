@@ -77,6 +77,8 @@ OCamldoc:
            record fields
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
            (patch by Anil Madhavapeddy)
+- PR#6273: fix Sys.file_exists on large files (Win32)
+           (patch by Christoph Bauer)
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)

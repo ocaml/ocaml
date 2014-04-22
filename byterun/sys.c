@@ -152,13 +152,21 @@ CAMLprim value caml_sys_close(value fd)
 
 CAMLprim value caml_sys_file_exists(value name)
 {
+#ifdef _WIN32
+  struct _stati64 st;
+#else
   struct stat st;
+#endif
   char * p;
   int ret;
 
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
+#ifdef _WIN32
   ret = stat(p, &st);
+#else
+  ret = _stati64(p, &st);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -168,13 +176,21 @@ CAMLprim value caml_sys_file_exists(value name)
 CAMLprim value caml_sys_is_directory(value name)
 {
   CAMLparam1(name);
+#ifdef _WIN32
+  struct _stati64 st;
+#else
   struct stat st;
+#endif
   char * p;
   int ret;
 
   p = caml_strdup(String_val(name));
   caml_enter_blocking_section();
+#ifdef _WIN32
   ret = stat(p, &st);
+#else
+  ret = _stati64(p, &st);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 
