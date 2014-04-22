@@ -50,11 +50,20 @@ Compilers:
 - PR#6345: Better compilation of optional arguments with default values
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
 
+Toplevel interactive system:
+- Support for directive with multiple arguments
+- PR#5377: New "#show" directive
+
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
   increments proportional to heap size
 - PR#4765: Structural equality should treat exception specifically
 - PR#5009: Extending exception tag blocks
+- PR#6075: avoid using unsafe C library functions (strcpy, strcat, sprintf)
+- An ISO C99-compliant C compiler and standard library is now assumed.
+  (Plus special exceptions for MSVC.)  In particular, emulation code for
+  64-bit integer arithmetic was removed, the C compiler must support a
+  64-bit integer type.
 
 Standard library:
 - PR#4986: add List.sort_uniq and Set.of_list
@@ -68,6 +77,8 @@ OCamldoc:
            record fields
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
            (patch by Anil Madhavapeddy)
+- PR#6273: fix Sys.file_exists on large files (Win32)
+           (patch by Christoph Bauer)
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
@@ -106,6 +117,8 @@ Bug fixes:
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
+- sometimes wrong stack alignment at out-of-bounds array access
+  (Gabriel Scherer, review by Xavier Leroy, report by Pierre Chambart)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable

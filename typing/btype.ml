@@ -249,6 +249,7 @@ type type_iterators =
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
+    it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
 
@@ -326,7 +327,7 @@ let type_iterators =
         it.it_class_type it cty
   and it_type_kind it kind =
     iter_type_expr_kind (it.it_type_expr it) kind
-  and it_type_expr it ty =
+  and it_do_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match ty.desc with
       Tconstr (p, _, _)
@@ -338,7 +339,8 @@ let type_iterators =
     | _ -> ()
   and it_path p = ()
   in
-  { it_path; it_type_expr; it_type_kind; it_class_type; it_module_type;
+  { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
+    it_type_kind; it_class_type; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
     it_modtype_declaration; it_module_declaration; it_exception_declaration;
     it_type_declaration; it_value_description; it_signature_item; }
@@ -442,6 +444,17 @@ let mark_type_node ty =
 let mark_type_params ty =
   iter_type_expr mark_type ty
 
+let type_iterators =
+  let it_type_expr it ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      mark_type_node ty;
+      it.it_do_type_expr it ty;
+    end
+  in
+  {type_iterators with it_type_expr}
+
+
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
@@ -450,26 +463,19 @@ let rec unmark_type ty =
     iter_type_expr unmark_type ty
   end
 
+let unmark_iterators =
+  let it_type_expr it ty = unmark_type ty in
+  {type_iterators with it_type_expr}
+
 let unmark_type_decl decl =
-  List.iter unmark_type decl.type_params;
-  iter_type_expr_kind unmark_type decl.type_kind;
-  begin match decl.type_manifest with
-    None    -> ()
-  | Some ty -> unmark_type ty
-  end
+  unmark_iterators.it_type_declaration unmark_iterators decl
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
   Vars.iter (fun l (m, v, t) -> unmark_type t) sign.csig_vars
 
-let rec unmark_class_type =
-  function
-    Cty_constr (p, tyl, cty) ->
-      List.iter unmark_type tyl; unmark_class_type cty
-  | Cty_signature sign ->
-      unmark_class_signature sign
-  | Cty_arrow (_, ty, cty) ->
-      unmark_type ty; unmark_class_type cty
+let unmark_class_type cty =
+  unmark_iterators.it_class_type unmark_iterators cty
 
 
                   (*******************************************)

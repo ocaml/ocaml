@@ -84,7 +84,7 @@ char * caml_instr_string (code_t pc)
   char *nam;
 
   nam = (instr < 0 || instr > STOP)
-    ? (sprintf (nambuf, "???%d", instr), nambuf)
+    ? (snprintf (nambuf, sizeof(nambuf), "???%d", instr), nambuf)
     : names_of_instructions[instr];
   pc++;
   switch (instr) {
@@ -125,7 +125,7 @@ char * caml_instr_string (code_t pc)
   case OFFSETREF:
   case OFFSETCLOSURE:
   case PUSHOFFSETCLOSURE:
-    sprintf(buf, "%s %d", nam, pc[0]);
+    snprintf(buf, sizeof(buf), "%s %d", nam, pc[0]);
     break;
     /* Instructions with two operands */
   case APPTERM:
@@ -142,16 +142,16 @@ char * caml_instr_string (code_t pc)
   case BGEINT:
   case BULTINT:
   case BUGEINT:
-    sprintf(buf, "%s %d, %d", nam, pc[0], pc[1]);
+    snprintf(buf, sizeof(buf), "%s %d, %d", nam, pc[0], pc[1]);
     break;
   case SWITCH:
-    sprintf(buf, "SWITCH sz%#lx=%ld::ntag%ld nint%ld",
+    snprintf(buf, sizeof(buf), "SWITCH sz%#lx=%ld::ntag%ld nint%ld",
             (long) pc[0], (long) pc[0], (unsigned long) pc[0] >> 16,
             (unsigned long) pc[0] & 0xffff);
     break;
     /* Instructions with a C primitive as operand */
   case C_CALLN:
-    sprintf(buf, "%s %d,", nam, pc[0]);
+    snprintf(buf, sizeof(buf), "%s %d,", nam, pc[0]);
     pc++;
     /* fallthrough */
   case C_CALL1:
@@ -160,12 +160,13 @@ char * caml_instr_string (code_t pc)
   case C_CALL4:
   case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
-      sprintf(buf, "%s unknown primitive %d", nam, pc[0]);
+      snprintf(buf, sizeof(buf), "%s unknown primitive %d", nam, pc[0]);
     else
-      sprintf(buf, "%s %s", nam, (char *) caml_prim_name_table.contents[pc[0]]);
+      snprintf(buf, sizeof(buf), "%s %s",
+               nam, (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   default:
-    sprintf(buf, "%s", nam);
+    snprintf(buf, sizeof(buf), "%s", nam);
     break;
   };
   return buf;

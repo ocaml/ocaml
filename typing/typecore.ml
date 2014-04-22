@@ -190,7 +190,7 @@ let iter_expression f e =
     | Pstr_attribute _
     | Pstr_extension _
     | Pstr_exn_rebind _ -> ()
-    | Pstr_include (me, _)
+    | Pstr_include {pincl_mod = me}
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
@@ -290,6 +290,9 @@ let extract_label_names sexp env ty =
     List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
+
+let explicit_arity =
+  List.exists (fun (s, _) -> s.txt = "ocaml.explicit_arity")
 
 (* Typing of patterns *)
 
@@ -1030,7 +1033,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some {ppat_desc = Ppat_tuple spl} when
+            constr.cstr_arity > 1 || explicit_arity sp.ppat_attributes
+          -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
@@ -1429,7 +1434,7 @@ and is_nonexpansive_mod mexp =
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
           | Tstr_module {mb_expr=m;_}
-          | Tstr_include (m, _, _) -> is_nonexpansive_mod m
+          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
@@ -3240,7 +3245,9 @@ and type_construct env loc lid sarg ty_expected attrs =
   let sargs =
     match sarg with
       None -> []
-    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when
+        constr.cstr_arity > 1 || explicit_arity attrs
+      -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch

@@ -621,15 +621,15 @@ and signature_item i ppf x =
       line i ppf "Psig_modtype %a\n" fmt_string_loc x.pmtd_name;
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
-  | Psig_open (ovf, li, attrs) ->
+  | Psig_open od ->
       line i ppf "Psig_open %a %a\n"
-        fmt_override_flag ovf
-        fmt_longident_loc li;
-      attributes i ppf attrs
-  | Psig_include (mt, attrs) ->
+        fmt_override_flag od.popen_override
+        fmt_longident_loc od.popen_lid;
+      attributes i ppf od.popen_attributes
+  | Psig_include incl ->
       line i ppf "Psig_include\n";
-      module_type i ppf mt;
-      attributes i ppf attrs
+      module_type i ppf incl.pincl_mod;
+      attributes i ppf incl.pincl_attributes
   | Psig_class (l) ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;
@@ -715,11 +715,11 @@ and structure_item i ppf x =
   | Pstr_exception cd ->
       line i ppf "Pstr_exception\n";
       constructor_decl i ppf cd;
-  | Pstr_exn_rebind (s, li, attrs) ->
+  | Pstr_exn_rebind er ->
       line i ppf "Pstr_exn_rebind\n";
-      attributes i ppf attrs;
-      line (i+1) ppf "%a\n" fmt_string_loc s;
-      line (i+1) ppf "%a\n" fmt_longident_loc li
+      attributes i ppf er.pexrb_attributes;
+      line (i+1) ppf "%a\n" fmt_string_loc er.pexrb_name;
+      line (i+1) ppf "%a\n" fmt_longident_loc er.pexrb_lid
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x
@@ -730,21 +730,21 @@ and structure_item i ppf x =
       line i ppf "Pstr_modtype %a\n" fmt_string_loc x.pmtd_name;
       attributes i ppf x.pmtd_attributes;
       modtype_declaration i ppf x.pmtd_type
-  | Pstr_open (ovf, li, attrs) ->
+  | Pstr_open od ->
       line i ppf "Pstr_open %a %a\n"
-        fmt_override_flag ovf
-        fmt_longident_loc li;
-      attributes i ppf attrs
+        fmt_override_flag od.popen_override
+        fmt_longident_loc od.popen_lid;
+      attributes i ppf od.popen_attributes
   | Pstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf l;
   | Pstr_class_type (l) ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf l;
-  | Pstr_include (me, attrs) ->
+  | Pstr_include incl ->
       line i ppf "Pstr_include";
-      attributes i ppf attrs;
-      module_expr i ppf me
+      attributes i ppf incl.pincl_attributes;
+      module_expr i ppf incl.pincl_mod
   | Pstr_extension ((s, arg), attrs) ->
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
@@ -841,15 +841,15 @@ let rec toplevel_phrase i ppf x =
       structure (i+1) ppf s;
   | Ptop_dir (s, da) ->
       line i ppf "Ptop_dir \"%s\"\n" s;
-      directive_argument i ppf da;
+      list i directive_argument ppf da;
 
 and directive_argument i ppf x =
   match x with
-  | Pdir_none -> line i ppf "Pdir_none\n"
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
   | Pdir_int (i) -> line i ppf "Pdir_int %d\n" i;
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
+  | Pdir_keyword s -> line i ppf "Pdir_keyword %s\n" s;
 ;;
 
 let interface ppf x = list 0 signature_item ppf x;;

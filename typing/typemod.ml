@@ -361,10 +361,13 @@ and approx_sig env ssg =
           let info = approx_modtype_info env d in
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
-      | Psig_open (ovf, lid, _attrs) ->
-          let (path, mty) = type_open ovf env item.psig_loc lid in
+      | Psig_open sod ->
+          let (path, mty) =
+            type_open sod.popen_override env item.psig_loc sod.popen_lid
+          in
           approx_sig mty srem
-      | Psig_include (smty, _attrs) ->
+      | Psig_include sincl ->
+          let smty = sincl.pincl_mod in
           let mty = approx_modtype env smty in
           let sg = Subst.signature Subst.identity
                      (extract_sig env smty.pmty_loc mty) in
@@ -604,12 +607,23 @@ and transl_signature env sg =
             mksig (Tsig_modtype mtd) env loc :: trem,
             sg :: rem,
             final_env
-        | Psig_open (ovf, lid, attrs) ->
-            let (path, newenv) = type_open ovf env item.psig_loc lid in
+        | Psig_open sod ->
+            let (path, newenv) =
+              type_open sod.popen_override env item.psig_loc sod.popen_lid
+            in
+            let od =
+              {
+               open_override = sod.popen_override;
+               open_path = path;
+               open_txt = sod.popen_lid;
+               open_attributes = sod.popen_attributes;
+              }
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open (ovf, path,lid,attrs)) env loc :: trem,
+            mksig (Tsig_open od) env loc :: trem,
             rem, final_env
-        | Psig_include (smty, attrs) ->
+        | Psig_include sincl ->
+            let smty = sincl.pincl_mod in
             let tmty = transl_modtype env smty in
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity
@@ -619,8 +633,13 @@ and transl_signature env sg =
                               item.psig_loc)
               sg;
             let newenv = Env.add_signature sg env in
+            let incl =
+              { incl_mod = tmty;
+                incl_type = sg;
+                incl_attributes = sincl.pincl_attributes }
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_include (tmty, sg, attrs)) env loc :: trem,
+            mksig (Tsig_include incl) env loc :: trem,
             remove_duplicates (get_values rem) (get_exceptions rem) sg @ rem,
             final_env
         | Psig_class cl ->
@@ -1162,13 +1181,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_exception arg,
         [Sig_exception(arg.cd_id, decl)],
         newenv
-    | Pstr_exn_rebind(name, longid, attrs) ->
-        let (path, arg, rebind) =
-          Typedecl.transl_exn_rebind env loc name.txt longid.txt
-        in
-        let (id, newenv) = Env.enter_exception ?rebind name.txt arg env in
-        Tstr_exn_rebind(id, name, path, longid, attrs),
-        [Sig_exception(id, arg)],
+    | Pstr_exn_rebind ser ->
+        let (er, newenv) = Typedecl.transl_exn_rebind env loc ser in
+        Tstr_exn_rebind er,
+        [Sig_exception(er.exrb_id, er.exrb_type)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
@@ -1251,9 +1267,19 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           transl_modtype_decl modtype_names env loc pmtd
         in
         Tstr_modtype mtd, [sg], newenv
-    | Pstr_open (ovf, lid, attrs) ->
-        let (path, newenv) = type_open ovf ~toplevel env loc lid in
-        Tstr_open (ovf, path, lid, attrs), [], newenv
+    | Pstr_open sod ->
+        let (path, newenv) =
+          type_open sod.popen_override ~toplevel env loc sod.popen_lid
+        in
+        let od =
+          {
+           open_override = sod.popen_override;
+           open_path = path;
+           open_txt = sod.popen_lid;
+           open_attributes = sod.popen_attributes;
+          }
+        in
+        Tstr_open od, [], newenv
     | Pstr_class cl ->
         List.iter
           (fun {pci_name = name} -> check "type" loc type_names name.txt)
@@ -1302,7 +1328,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                  Sig_type(i'', d'', rs)])
              classes []),
         new_env
-    | Pstr_include (smodl, attrs) ->
+    | Pstr_include sincl ->
+        let smodl = sincl.pincl_mod in
         let modl = type_module true funct_body None env smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
@@ -1331,7 +1358,12 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.iter
           (check_sig_item type_names module_names modtype_names loc) sg;
         let new_env = Env.add_signature sg env in
-        Tstr_include (modl, sg, attrs), sg, new_env
+        let incl =
+          { incl_mod = modl;
+            incl_type = sg;
+            incl_attributes = sincl.pincl_attributes }
+        in
+        Tstr_include incl, sg, new_env
     | Pstr_extension ((s, _), _) ->
         raise (Error (s.loc, env, Extension s.txt))
     | Pstr_attribute x ->

@@ -41,6 +41,7 @@ type symptom =
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
+  | Invalid_module_alias of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t

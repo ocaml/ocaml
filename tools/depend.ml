@@ -248,10 +248,10 @@ and add_sig_item bv item =
       | Some mty -> add_modtype bv mty
       end;
       bv
-  | Psig_open (_ovf, lid, _) ->
-      addmodule bv lid; bv
-  | Psig_include (mty, _) ->
-      add_modtype bv mty; bv
+  | Psig_open od ->
+      addmodule bv od.popen_lid; bv
+  | Psig_include incl ->
+      add_modtype bv incl.pincl_mod; bv
   | Psig_class cdl ->
       List.iter (add_class_description bv) cdl; bv
   | Psig_class_type cdtl ->
@@ -290,8 +290,8 @@ and add_struct_item bv item =
       List.iter (add_type_declaration bv) dcls; bv
   | Pstr_exception pcd ->
       add_constructor_decl bv pcd; bv
-  | Pstr_exn_rebind(id, l, _attrs) ->
-      add bv l; bv
+  | Pstr_exn_rebind er ->
+      add bv er.pexrb_lid; bv
   | Pstr_module x ->
       add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
   | Pstr_recmodule bindings ->
@@ -308,14 +308,14 @@ and add_struct_item bv item =
       | Some mty -> add_modtype bv mty
       end;
       bv
-  | Pstr_open (_ovf, l, _attrs) ->
-      addmodule bv l; bv
+  | Pstr_open od ->
+      addmodule bv od.popen_lid; bv
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
-  | Pstr_include (modl, _attrs) ->
-      add_module bv modl; bv
+  | Pstr_include incl ->
+      add_module bv incl.pincl_mod; bv
   | Pstr_attribute _ | Pstr_extension _ ->
       bv
 

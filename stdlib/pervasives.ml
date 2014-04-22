@@ -194,6 +194,15 @@ external ignore : 'a -> unit = "%ignore"
 external fst : 'a * 'b -> 'a = "%field0"
 external snd : 'a * 'b -> 'b = "%field1"
 
+(* References *)
+
+type 'a ref = { mutable contents : 'a }
+external ref : 'a -> 'a ref = "%makemutable"
+external ( ! ) : 'a ref -> 'a = "%field0"
+external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
+external incr : int ref -> unit = "%incr"
+external decr : int ref -> unit = "%decr"
+
 (* String conversion functions *)
 
 external format_int : string -> int -> string = "caml_format_int"
@@ -423,15 +432,6 @@ module LargeFile =
     external pos_in : in_channel -> int64 = "caml_ml_pos_in_64"
     external in_channel_length : in_channel -> int64 = "caml_ml_channel_size_64"
   end
-
-(* References *)
-
-type 'a ref = { mutable contents : 'a }
-external ref : 'a -> 'a ref = "%makemutable"
-external ( ! ) : 'a ref -> 'a = "%field0"
-external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
-external incr : int ref -> unit = "%incr"
-external decr : int ref -> unit = "%decr"
 
 (* Formats *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6

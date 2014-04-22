@@ -913,11 +913,13 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           pmd.pmd_name.txt
           self#module_type  pmd.pmd_type
-    | Psig_open (ovf, li, _attrs) ->
-        pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
-    | Psig_include (mt, _attrs) ->
+    | Psig_open od ->
+        pp f "@[<hov2>open%s@ %a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid
+    | Psig_include incl ->
         pp f "@[<hov2>include@ %a@]"
-          self#module_type  mt
+          self#module_type incl.pincl_mod
     | Psig_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1060,8 +1062,10 @@ class printer  ()= object(self:'self)
             | _ ->
                 pp f " =@ %a"  self#module_expr  me
             )) x.pmb_expr
-    | Pstr_open (ovf, li, _attrs) ->
-        pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
+    | Pstr_open od ->
+        pp f "@[<2>open%s@;%a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid;
     | Pstr_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1109,10 +1113,12 @@ class printer  ()= object(self:'self)
     | Pstr_primitive vd ->
         pp f "@[<hov2>external@ %a@ :@ %a@]" protect_ident vd.pval_name.txt
           self#value_description  vd
-    | Pstr_include (me, _attrs) ->
-        pp f "@[<hov2>include@ %a@]"  self#module_expr  me
-    | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
-        pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li
+    | Pstr_include incl ->
+        pp f "@[<hov2>include@ %a@]"  self#module_expr  incl.pincl_mod
+    | Pstr_exn_rebind er ->        (* todo: check this *)
+        pp f "@[<hov2>exception@ %s@ =@ %a@]"
+           er.pexrb_name.txt
+           self#longident_loc er.pexrb_lid
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->
@@ -1225,12 +1231,12 @@ class printer  ()= object(self:'self)
             pp f "~%s:%a" lbl self#simple_expr e
 
   method directive_argument f x =
-    (match x with
-    | Pdir_none -> ()
+    match x with
     | Pdir_string (s) -> pp f "@ %S" s
     | Pdir_int (i) -> pp f "@ %d" i
     | Pdir_ident (li) -> pp f "@ %a" self#longident li
-    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b))
+    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b)
+    | Pdir_keyword s -> pp f "@ %s" s
 
   method toplevel_phrase f x =
     match x with
@@ -1239,7 +1245,8 @@ class printer  ()= object(self:'self)
         self#list self#structure_item f s ;
         pp_close_box f ();
     | Ptop_dir (s, da) ->
-        pp f "@[<hov2>#%s@ %a@]" s self#directive_argument da
+        pp f "@[<hov2>#%s@ %a@]" s
+          (self#list ~sep:" " self#directive_argument) da
 end;;
 
 
@@ -1253,7 +1260,8 @@ let toplevel_phrase f x =
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)
   | Ptop_dir (s, da) ->
-   pp f "@[<hov2>#%s@ %a@]" s default#directive_argument da
+   pp f "@[<hov2>#%s@ %a@]" s
+     (default#list ~sep:" " default#directive_argument) da
    (* pp f "@[<hov2>#%s@ %a@]" s directive_argument da *)
 
 let expression f x =

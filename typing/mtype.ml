@@ -350,6 +350,7 @@ let collect_arg_paths mty =
   in
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
+  it.it_module_type unmark_iterators mty;
   PathSet.fold (fun p -> IdentSet.union (collect_ids !subst !bindings p))
     !paths IdentSet.empty
 

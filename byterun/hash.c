@@ -21,12 +21,6 @@
 #include "memory.h"
 #include "hash.h"
 
-#ifdef ARCH_INT64_TYPE
-#include "int64_native.h"
-#else
-#include "int64_emul.h"
-#endif
-
 /* The new implementation, based on MurmurHash 3,
      http://code.google.com/p/smhasher/  */
 
@@ -77,9 +71,7 @@ CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 
 CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
 {
-  uint32 hi, lo;
-
-  I64_split(d, hi, lo);
+  uint32 hi = (uint32) (d >> 32), lo = (uint32) d;
   MIX(h, lo);
   MIX(h, hi);
   return h;

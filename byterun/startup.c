@@ -459,7 +459,7 @@ CAMLexport void caml_startup_code(
            char **argv)
 {
   value res;
-  char* cds_file;
+  char * cds_file;
   char * exe_name;
   static char proc_self_exe[256];
 
@@ -473,8 +473,7 @@ CAMLexport void caml_startup_code(
 #endif
   cds_file = getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
-    caml_cds_file = caml_stat_alloc(strlen(cds_file) + 1);
-    strcpy(caml_cds_file, cds_file);
+    caml_cds_file = caml_strdup(cds_file);
   }
   parse_camlrunparam();
   exe_name = argv[0];

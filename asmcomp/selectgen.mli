@@ -58,6 +58,30 @@ class virtual selector_generic : object
     (* Fill a freshly allocated block.  Can be overridden for architectures
        that do not provide Arch.offset_addressing. *)
 
+  method mark_call : unit
+  (* informs the code emitter that the current function is non-leaf:
+     it may perform a (non-tail) call; by default, sets
+     [Proc.contains_calls := true] *)
+
+  method mark_tailcall : unit
+  (* informs the code emitter that the current function may end with
+     a tail-call; by default, does nothing *)
+
+  method mark_c_tailcall : unit
+  (* informs the code emitter that the current function may call
+     a C function that never returns; by default, does nothing.
+
+     It is unecessary to save the stack pointer in this situation
+     (which is the main purpose of tracking leaf functions) but some
+     architectures still need to ensure that the stack is properly
+     aligned when the C function is called. This is achieved by
+     overloading this method to set [Proc.contains_calls := true] *)
+
+  method mark_instr : Mach.instruction_desc -> unit
+  (* dispatches on instructions to call one of the marking function
+     above; overloading this is useful if Ispecific instructions need
+     marking *)
+
   (* The following method is the entry point and should not be overridden *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 

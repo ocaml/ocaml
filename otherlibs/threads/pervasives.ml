@@ -27,6 +27,7 @@ let () =
   register_named_value "Pervasives.array_bound_error"
     (Invalid_argument "index out of bounds")
 
+
 external raise : exn -> 'a = "%raise"
 external raise_notrace : exn -> 'a = "%raise_notrace"
 
@@ -37,7 +38,7 @@ exception Exit
 
 (* Composition operators *)
 
-external (|>) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 (* Debugging *)
@@ -56,63 +57,63 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 
 (* Comparisons *)
 
-external (=) : 'a -> 'a -> bool = "%equal"
-external (<>) : 'a -> 'a -> bool = "%notequal"
-external (<) : 'a -> 'a -> bool = "%lessthan"
-external (>) : 'a -> 'a -> bool = "%greaterthan"
-external (<=) : 'a -> 'a -> bool = "%lessequal"
-external (>=) : 'a -> 'a -> bool = "%greaterequal"
-external compare: 'a -> 'a -> int = "%compare"
+external ( = ) : 'a -> 'a -> bool = "%equal"
+external ( <> ) : 'a -> 'a -> bool = "%notequal"
+external ( < ) : 'a -> 'a -> bool = "%lessthan"
+external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+external compare : 'a -> 'a -> int = "%compare"
 
 let min x y = if x <= y then x else y
 let max x y = if x >= y then x else y
 
-external (==) : 'a -> 'a -> bool = "%eq"
-external (!=) : 'a -> 'a -> bool = "%noteq"
+external ( == ) : 'a -> 'a -> bool = "%eq"
+external ( != ) : 'a -> 'a -> bool = "%noteq"
 
 (* Boolean operations *)
 
 external not : bool -> bool = "%boolnot"
-external (&) : bool -> bool -> bool = "%sequand"
-external (&&) : bool -> bool -> bool = "%sequand"
-external (or) : bool -> bool -> bool = "%sequor"
-external (||) : bool -> bool -> bool = "%sequor"
+external ( & ) : bool -> bool -> bool = "%sequand"
+external ( && ) : bool -> bool -> bool = "%sequand"
+external ( or ) : bool -> bool -> bool = "%sequor"
+external ( || ) : bool -> bool -> bool = "%sequor"
 
 (* Integer operations *)
 
-external (~-) : int -> int = "%negint"
-external (~+) : int -> int = "%identity"
+external ( ~- ) : int -> int = "%negint"
+external ( ~+ ) : int -> int = "%identity"
 external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
-external (+) : int -> int -> int = "%addint"
-external (-) : int -> int -> int = "%subint"
-external ( * ) : int -> int -> int = "%mulint"
-external (/) : int -> int -> int = "%divint"
-external (mod) : int -> int -> int = "%modint"
+external ( + ) : int -> int -> int = "%addint"
+external ( - ) : int -> int -> int = "%subint"
+external ( *  ) : int -> int -> int = "%mulint"
+external ( / ) : int -> int -> int = "%divint"
+external ( mod ) : int -> int -> int = "%modint"
 
 let abs x = if x >= 0 then x else -x
 
-external (land) : int -> int -> int = "%andint"
-external (lor) : int -> int -> int = "%orint"
-external (lxor) : int -> int -> int = "%xorint"
+external ( land ) : int -> int -> int = "%andint"
+external ( lor ) : int -> int -> int = "%orint"
+external ( lxor ) : int -> int -> int = "%xorint"
 
 let lnot x = x lxor (-1)
 
-external (lsl) : int -> int -> int = "%lslint"
-external (lsr) : int -> int -> int = "%lsrint"
-external (asr) : int -> int -> int = "%asrint"
+external ( lsl ) : int -> int -> int = "%lslint"
+external ( lsr ) : int -> int -> int = "%lsrint"
+external ( asr ) : int -> int -> int = "%asrint"
 
-let min_int = 1 lsl (if 1 lsl 31 = 0 then 30 else 62)
-let max_int = min_int - 1
+let max_int = (-1) lsr 1
+let min_int = max_int + 1
 
 (* Floating-point operations *)
 
-external (~-.) : float -> float = "%negfloat"
-external (~+.) : float -> float = "%identity"
-external (+.) : float -> float -> float = "%addfloat"
-external (-.) : float -> float -> float = "%subfloat"
+external ( ~-. ) : float -> float = "%negfloat"
+external ( ~+. ) : float -> float = "%identity"
+external ( +. ) : float -> float -> float = "%addfloat"
+external ( -. ) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
-external (/.) : float -> float -> float = "%divfloat"
+external ( /. ) : float -> float -> float = "%divfloat"
 external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
 external exp : float -> float = "caml_exp_float" "exp" "float"
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
@@ -121,7 +122,7 @@ external asin : float -> float = "caml_asin_float" "asin" "float"
 external atan : float -> float = "caml_atan_float" "atan" "float"
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
 external hypot : float -> float -> float
-   = "caml_hypot_float" "caml_hypot" "float"
+               = "caml_hypot_float" "caml_hypot" "float"
 external cos : float -> float = "caml_cos_float" "cos" "float"
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 external log : float -> float = "caml_log_float" "log" "float"
@@ -136,7 +137,7 @@ external ceil : float -> float = "caml_ceil_float" "ceil" "float"
 external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
 external copysign : float -> float -> float
-   = "caml_copysign_float" "caml_copysign" "float"
+                  = "caml_copysign_float" "caml_copysign" "float"
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 external frexp : float -> float * int = "caml_frexp_float"
 external ldexp : float -> int -> float = "caml_ldexp_float"
@@ -165,16 +166,16 @@ type fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
-external classify_float: float -> fpclass = "caml_classify_float"
+external classify_float : float -> fpclass = "caml_classify_float"
 
 (* String operations -- more in module String *)
 
 external string_length : string -> int = "%string_length"
-external string_create: int -> string = "caml_create_string"
+external string_create : int -> string = "caml_create_string"
 external string_blit : string -> int -> string -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
 
-let (^) s1 s2 =
+let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
   let s = string_create (l1 + l2) in
   string_blit s1 0 s 0 l1;
@@ -199,17 +200,17 @@ external snd : 'a * 'b -> 'b = "%field1"
 
 (* References *)
 
-type 'a ref = { mutable contents: 'a }
-external ref: 'a -> 'a ref = "%makemutable"
-external (!): 'a ref -> 'a = "%field0"
-external (:=): 'a ref -> 'a -> unit = "%setfield0"
-external incr: int ref -> unit = "%incr"
-external decr: int ref -> unit = "%decr"
+type 'a ref = { mutable contents : 'a }
+external ref : 'a -> 'a ref = "%makemutable"
+external ( ! ) : 'a ref -> 'a = "%field0"
+external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
+external incr : int ref -> unit = "%incr"
+external decr : int ref -> unit = "%decr"
 
 (* String conversion functions *)
 
-external format_int: string -> int -> string = "caml_format_int"
-external format_float: string -> float -> string = "caml_format_float"
+external format_int : string -> int -> string = "caml_format_int"
+external format_float : string -> float -> string = "caml_format_float"
 
 let string_of_bool b =
   if b then "true" else "false"
@@ -228,7 +229,7 @@ let valid_float_lexem s =
   let rec loop i =
     if i >= l then s ^ "." else
     match s.[i] with
-    | '0' .. '9' | '-' -> loop (i+1)
+    | '0' .. '9' | '-' -> loop (i + 1)
     | _ -> s
   in
   loop 0
@@ -240,7 +241,7 @@ external float_of_string : string -> float = "caml_float_of_string"
 
 (* List operations -- more in module List *)
 
-let rec (@) l1 l2 =
+let rec ( @ ) l1 l2 =
   match l1 with
     [] -> l2
   | hd :: tl -> hd :: (tl @ l2)
@@ -250,8 +251,9 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "caml_ml_open_descriptor_out"
-external open_descriptor_in: int -> in_channel = "caml_ml_open_descriptor_in"
+external open_descriptor_out : int -> out_channel
+                             = "caml_ml_open_descriptor_out"
+external open_descriptor_in : int -> in_channel = "caml_ml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -281,7 +283,7 @@ type open_flag =
   | Open_creat | Open_trunc | Open_excl
   | Open_binary | Open_text | Open_nonblock
 
-external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
+external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
 
 let open_out_gen mode perm name =
   open_descriptor_out(open_desc name mode perm)
@@ -422,7 +424,7 @@ let rec unsafe_really_input ic s ofs len =
     let r = unsafe_input ic s ofs len in
     if r = 0
     then raise End_of_file
-    else unsafe_really_input ic s (ofs+r) (len-r)
+    else unsafe_really_input ic s (ofs + r) (len - r)
   end
 
 let really_input ic s ofs len =

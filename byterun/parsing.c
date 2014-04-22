@@ -63,7 +63,7 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
 #if defined(ARCH_BIG_ENDIAN) || SIZEOF_SHORT != 2
 #define Short(tbl,n) \
   (*((unsigned char *)((tbl) + (n) * 2)) + \
-          (*((schar *)((tbl) + (n) * 2 + 1)) << 8))
+          (*((signed char *)((tbl) + (n) * 2 + 1)) << 8))
 #else
 #define Short(tbl,n) (((short *)(tbl))[n])
 #endif

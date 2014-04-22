@@ -1117,19 +1117,21 @@ let transl_exception env excdecl =
   cd, exn_decl, newenv
 
 (* Translate an exception rebinding *)
-let transl_exn_rebind env loc name lid =
+let transl_exn_rebind env loc ser =
+  let name = ser.pexrb_name in
+  let lid = ser.pexrb_lid in
   let cdescr =
     try
-      Env.lookup_constructor lid env
+      Env.lookup_constructor lid.txt env
     with Not_found ->
-      raise(Error(loc, Unbound_exception lid)) in
-  Env.mark_constructor Env.Positive env (Longident.last lid) cdescr;
+      raise(Error(loc, Unbound_exception lid.txt)) in
+  Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
   let path =
     match cdescr.cstr_tag with
-    |  Cstr_exception (path, _) -> path
-    | _ -> raise(Error(loc, Not_an_exception lid))
+      Cstr_exception (path, _) -> path
+    | _ -> raise(Error(loc, Not_an_exception lid.txt))
   in
-  let exn_args, manifest_path =
+  let exn_args, rebind =
     if cdescr.cstr_inlined then
       let p =
         match cdescr.cstr_args with
@@ -1142,18 +1144,28 @@ let transl_exn_rebind env loc name lid =
       let lbls =
         match decl.type_kind with Type_record (l, _) -> l | _ -> assert false
       in
-      let id = Ident.create ("exn." ^ name) in
+      let id = Ident.create ("exn." ^ name.txt) in
       Types.Cstr_record (id, lbls), Some p
     else
       Types.Cstr_tuple cdescr.cstr_args, None
   in
-  let d = {
-    Types.exn_args;
+  let exn_decl = {
+    exn_args;
     exn_attributes = [];
-    exn_loc = loc
+    Types.exn_loc = loc
   }
   in
-  (path, d, manifest_path)
+  let (id, newenv) = Env.enter_exception ?rebind name.txt exn_decl env in
+  let er =
+    { exrb_id = id;
+      exrb_name = name;
+      exrb_path = path;
+      exrb_txt = lid;
+      exrb_type = exn_decl;
+      exrb_attributes = ser.pexrb_attributes;
+     }
+  in
+    er, newenv
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =

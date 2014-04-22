@@ -215,6 +215,8 @@ let update_loc lexbuf file line absolute chars =
   }
 ;;
 
+let preprocessor = ref None
+
 (* Warn about Latin-1 characters used in idents *)
 
 let warn_latin1 lexbuf =
@@ -283,9 +285,19 @@ let float_literal =
   (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
 
 rule token = parse
+  | "\\" newline {
+      match !preprocessor with
+      | None ->
+        raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
+                     Location.curr lexbuf))
+      | Some _ ->
+        update_loc lexbuf None 1 false 0;
+        token lexbuf }
   | newline
       { update_loc lexbuf None 1 false 0;
-        token lexbuf
+        match !preprocessor with
+        | None -> token lexbuf
+        | Some _ -> EOL
       }
   | blank +
       { token lexbuf }
@@ -446,6 +458,7 @@ rule token = parse
   | "[%" { LBRACKETPERCENT }
   | "[%%" { LBRACKETPERCENTPERCENT }
   | "[@@" { LBRACKETATAT }
+  | "[@@@" { LBRACKETATATAT }
   | "!"  { BANG }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
@@ -633,7 +646,11 @@ and skip_sharp_bang = parse
   | "" { () }
 
 {
-  let token_with_comments = token
+
+  let token_with_comments lexbuf =
+    match !preprocessor with
+    | None -> token lexbuf
+    | Some (_init, preprocess) -> preprocess token lexbuf
 
   let last_comments = ref []
   let rec token lexbuf =
@@ -643,9 +660,16 @@ and skip_sharp_bang = parse
           token lexbuf
       | tok -> tok
   let comments () = List.rev !last_comments
+
   let init () =
     is_in_string := false;
     last_comments := [];
-    comment_start_loc := []
+    comment_start_loc := [];
+    match !preprocessor with
+    | None -> ()
+    | Some (init, _preprocess) -> init ()
+
+  let set_preprocessor init preprocess =
+    preprocessor := Some (init, preprocess)
 
 }

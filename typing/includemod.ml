@@ -36,6 +36,7 @@ type symptom =
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
+  | Invalid_module_alias of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
@@ -190,6 +191,8 @@ let rec modtypes env cxt subst mty1 mty2 =
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
   | (Mty_alias p1, Mty_alias p2) ->
+      if Env.is_functor_arg p2 env then
+        raise (Error[cxt, env, Invalid_module_alias p2]);
       if Path.same p1 p2 then Tcoerce_none else
       let p1 = Env.normalize_path None env p1
       and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
@@ -513,6 +516,8 @@ let include_err ppf = function
       fprintf ppf "Unbound module type %a" Printtyp.path path
   | Unbound_module_path path ->
       fprintf ppf "Unbound module %a" Printtyp.path path
+  | Invalid_module_alias path ->
+      fprintf ppf "Module %a cannot be aliased" Printtyp.path path
 
 let rec context ppf = function
     Module id :: rem ->

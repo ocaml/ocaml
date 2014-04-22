@@ -114,8 +114,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_type (List.map map_type_declaration list)
         | Tstr_exception cd ->
           Tstr_exception (map_constructor_declaration cd)
-        | Tstr_exn_rebind (id, name, path, lid, attrs) ->
-          Tstr_exn_rebind (id, name, path, lid, attrs)
+        | Tstr_exn_rebind er ->
+          Tstr_exn_rebind er
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -123,7 +123,7 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_recmodule list
         | Tstr_modtype mtd ->
           Tstr_modtype (map_module_type_declaration mtd)
-        | Tstr_open (ovf, path, lid, attrs) -> Tstr_open (ovf, path, lid, attrs)
+        | Tstr_open od -> Tstr_open od
         | Tstr_class list ->
           let list =
             List.map (fun (ci, string_list, virtual_flag) ->
@@ -141,8 +141,8 @@ module MakeMap(Map : MapArgument) = struct
             (id, name, Map.leave_class_infos { ct with ci_expr = ci_expr})
           ) list in
           Tstr_class_type list
-        | Tstr_include (mexpr, sg, attrs) ->
-          Tstr_include (map_module_expr mexpr, sg, attrs)
+        | Tstr_include incl ->
+          Tstr_include {incl with incl_mod = map_module_expr incl.incl_mod}
         | Tstr_attribute x -> Tstr_attribute x
     in
     Map.leave_structure_item { item with str_desc = str_desc}
@@ -404,7 +404,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_modtype mtd ->
           Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open _ -> item.sig_desc
-        | Tsig_include (mty, sg, attrs) -> Tsig_include (map_module_type mty, sg, attrs)
+        | Tsig_include incl ->
+          Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
           Tsig_class_type (List.map map_class_type_declaration list)

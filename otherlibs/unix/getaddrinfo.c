@@ -16,6 +16,7 @@
 #include <alloc.h>
 #include <fail.h>
 #include <memory.h>
+#include <misc.h>
 #include <signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
@@ -56,27 +57,22 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
 {
   CAMLparam3(vnode, vserv, vopts);
   CAMLlocal3(vres, v, e);
-  mlsize_t len;
   char * node, * serv;
   struct addrinfo hints;
   struct addrinfo * res, * r;
   int retcode;
 
   /* Extract "node" parameter */
-  len = string_length(vnode);
-  if (len == 0) {
+  if (caml_string_length(vnode) == 0) {
     node = NULL;
   } else {
-    node = caml_stat_alloc(len + 1);
-    strcpy(node, String_val(vnode));
+    node = caml_strdup(String_val(vnode));
   }
   /* Extract "service" parameter */
-  len = string_length(vserv);
-  if (len == 0) {
+  if (caml_string_length(vserv) == 0) {
     serv = NULL;
   } else {
-    serv = caml_stat_alloc(len + 1);
-    strcpy(serv, String_val(vserv));
+    serv = caml_strdup(String_val(vserv));
   }
   /* Parse options, set hints */
   memset(&hints, 0, sizeof(hints));
