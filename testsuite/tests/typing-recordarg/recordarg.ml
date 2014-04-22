@@ -41,3 +41,9 @@ end = struct
   exception Foo = M.Foo
 end;;
 
+
+module type S = sig exception A of {x:int}  end;;
+
+module F (X : sig val x : (module S) end) = struct
+  module A = (val X.x)
+end;;

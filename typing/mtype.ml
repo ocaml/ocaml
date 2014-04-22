@@ -266,7 +266,8 @@ and contains_type_sig env = List.iter (contains_type_item env)
 and contains_type_item env = function
     Sig_type (_,({type_manifest = None} |
                  {type_kind = Type_abstract; type_private = Private}),_)
-  | Sig_modtype _ ->
+  | Sig_modtype _
+  | Sig_exception (_, {exn_args = Cstr_record _}) ->
       raise Exit
   | Sig_module (_, {md_type = mty}, _) ->
       contains_type env mty
