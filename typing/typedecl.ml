@@ -1056,12 +1056,12 @@ let transl_exn_rebind env loc ser =
     try
       Env.lookup_constructor lid.txt env
     with Not_found ->
-      raise(Error(loc, Unbound_exception lid.txt)) in
+      raise(Error(lid.loc, Unbound_exception lid.txt)) in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) cdescr;
   let path =
     match cdescr.cstr_tag with
       Cstr_exception (path, _) -> path
-    | _ -> raise(Error(loc, Not_an_exception lid.txt))
+    | _ -> raise(Error(lid.loc, Not_an_exception lid.txt))
   in
   let exn_decl =
     {
@@ -1341,9 +1341,9 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this exception declaration";
       explain_unbound_single ppf (Ctype.repr tv) ty
   | Unbound_exception lid ->
-      fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
+      fprintf ppf "Unbound exception constructor %a" Printtyp.longident lid
   | Not_an_exception lid ->
-      fprintf ppf "The constructor@ %a@ is not an exception"
+      fprintf ppf "The constructor %a is not an exception"
         Printtyp.longident lid
   | Bad_variance (n, v1, v2) ->
       let variance (p,n,i) =
