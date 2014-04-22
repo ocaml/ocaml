@@ -886,7 +886,12 @@ case "$arch,$system" in
   sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
-                              *) aspp="${TOOLPREF}as -P";;
+                    *) aspp="${TOOLPREF}as -P";;
+                  esac;;
+  *,freebsd)      as="${TOOLPREF}as"
+                  case "$cc" in
+                    *gcc*) aspp="${TOOLPREF}gcc -c";; # freebsd<10 or gcc
+                    *) aspp="${TOOLPREF}cc -c";;      # freebsd10 and clang
                   esac;;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
