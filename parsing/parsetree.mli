@@ -297,7 +297,7 @@ and expression_desc =
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
   | Pexp_open of override_flag * Longident.t loc * expression
         (* let open M in E
-           let! open M in E 
+           let! open M in E
         *)
   | Pexp_extension of extension
         (* [%id] *)
@@ -390,6 +390,7 @@ and exception_rebind =
     {
      pexrb_name: string loc;
      pexrb_lid: Longident.t loc;
+     pexrb_loc: Location.t;
      pexrb_attributes: attributes;
     }
 (* exception C = M.X *)
@@ -638,6 +639,7 @@ and open_description =
     {
      popen_lid: Longident.t loc;
      popen_override: override_flag;
+     popen_loc: Location.t;
      popen_attributes: attributes;
     }
 (* open! X - popen_override = Override (silences the 'used identifier
@@ -648,6 +650,7 @@ and open_description =
 and 'a include_infos =
     {
      pincl_mod: 'a;
+     pincl_loc: Location.t;
      pincl_attributes: attributes;
     }
 
@@ -742,6 +745,7 @@ and value_binding =
     pvb_pat: pattern;
     pvb_expr: expression;
     pvb_attributes: attributes;
+    pvb_loc: Location.t;
   }
 
 and module_binding =

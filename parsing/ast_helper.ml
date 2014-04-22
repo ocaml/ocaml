@@ -300,28 +300,31 @@ module Mb = struct
 end
 
 module Opn = struct
-  let mk ?(attrs = []) ?(override = Fresh) lid =
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(override = Fresh) lid =
     {
      popen_lid = lid;
      popen_override = override;
+     popen_loc = loc;
      popen_attributes = attrs;
     }
 end
 
 module Incl = struct
-  let mk ?(attrs = []) mexpr =
+  let mk ?(loc = !default_loc) ?(attrs = []) mexpr =
     {
      pincl_mod = mexpr;
+     pincl_loc = loc;
      pincl_attributes = attrs;
     }
 end
 
 module Vb = struct
-  let mk ?(attrs = []) pat expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) pat expr =
     {
      pvb_pat = pat;
      pvb_expr = expr;
      pvb_attributes = attrs;
+     pvb_loc = loc;
     }
 end
 
@@ -393,11 +396,12 @@ module Cstr = struct
 end
 
 module Exrb = struct
-  let mk ?(attrs = []) name lid =
+  let mk ?(loc  = !default_loc) ?(attrs = []) name lid =
     {
      pexrb_name = name;
      pexrb_lid = lid;
      pexrb_attributes = attrs;
+     pexrb_loc = loc;
     }
 end
 

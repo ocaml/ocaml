@@ -67,11 +67,26 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open ?toplevel ovf env loc lid =
-  let path = Typetexp.find_module env loc lid.txt in
+let type_open_ ?toplevel ovf env loc lid =
+  let path = Typetexp.find_module env lid.loc lid.txt in
   let md = Env.find_module path env in
-  let sg = extract_sig_open env loc md.md_type in
+  let sg = extract_sig_open env lid.loc md.md_type in
   path, Env.open_signature ~loc ?toplevel ovf path sg env
+
+let type_open ?toplevel env sod =
+  let (path, newenv) =
+    type_open_ ?toplevel sod.popen_override env sod.popen_loc sod.popen_lid
+  in
+  let od =
+    {
+      open_override = sod.popen_override;
+      open_path = path;
+      open_txt = sod.popen_lid;
+      open_attributes = sod.popen_attributes;
+      open_loc = sod.popen_loc;
+    }
+  in
+  (path, newenv, od)
 
 (* Record a module type *)
 let rm node =
@@ -362,9 +377,7 @@ and approx_sig env ssg =
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open sod ->
-          let (path, mty) =
-            type_open sod.popen_override env item.psig_loc sod.popen_lid
-          in
+          let (path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
           let smty = sincl.pincl_mod in
@@ -602,17 +615,7 @@ and transl_signature env sg =
             sg :: rem,
             final_env
         | Psig_open sod ->
-            let (path, newenv) =
-              type_open sod.popen_override env item.psig_loc sod.popen_lid
-            in
-            let od =
-              {
-               open_override = sod.popen_override;
-               open_path = path;
-               open_txt = sod.popen_lid;
-               open_attributes = sod.popen_attributes;
-              }
-            in
+            let (path, newenv, od) = type_open env sod in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_open od) env loc :: trem,
             rem, final_env
@@ -630,7 +633,9 @@ and transl_signature env sg =
             let incl =
               { incl_mod = tmty;
                 incl_type = sg;
-                incl_attributes = sincl.pincl_attributes }
+                incl_attributes = sincl.pincl_attributes;
+                incl_loc = sincl.pincl_loc;
+              }
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include incl) env loc :: trem,
@@ -1175,7 +1180,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
         Tstr_exception arg, [Sig_exception(arg.cd_id, decl)], newenv
     | Pstr_exn_rebind ser ->
-        let (er, newenv) = Typedecl.transl_exn_rebind env loc ser in
+        let (er, newenv) = Typedecl.transl_exn_rebind env ser in
         Tstr_exn_rebind er,
         [Sig_exception(er.exrb_id, er.exrb_type)],
         newenv
@@ -1261,17 +1266,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
-        let (path, newenv) =
-          type_open sod.popen_override ~toplevel env loc sod.popen_lid
-        in
-        let od =
-          {
-           open_override = sod.popen_override;
-           open_path = path;
-           open_txt = sod.popen_lid;
-           open_attributes = sod.popen_attributes;
-          }
-        in
+        let (path, newenv, od) = type_open ~toplevel env sod in
         Tstr_open od, [], newenv
     | Pstr_class cl ->
         List.iter
@@ -1354,7 +1349,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let incl =
           { incl_mod = modl;
             incl_type = sg;
-            incl_attributes = sincl.pincl_attributes }
+            incl_attributes = sincl.pincl_attributes;
+            incl_loc = sincl.pincl_loc;
+          }
         in
         Tstr_include incl, sg, new_env
     | Pstr_extension ((s, _), _) ->
@@ -1518,7 +1515,7 @@ let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open ?toplevel:None;
+  Typecore.type_open := type_open_ ?toplevel:None;
   Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 

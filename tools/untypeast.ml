@@ -67,7 +67,9 @@ and untype_structure_item item =
                       pmtd_loc=mtd.mtd_loc;pmtd_attributes=mtd.mtd_attributes;}
     | Tstr_open od ->
         Pstr_open {popen_lid = od.open_txt; popen_override = od.open_override;
-                   popen_attributes = od.open_attributes}
+                   popen_attributes = od.open_attributes;
+                   popen_loc = od.open_loc;
+                  }
     | Tstr_class list ->
         Pstr_class (List.map (fun (ci, _, _) ->
               { pci_virt = ci.ci_virt;
@@ -91,7 +93,9 @@ and untype_structure_item item =
           ) list)
     | Tstr_include incl ->
         Pstr_include {pincl_mod = untype_module_expr incl.incl_mod;
-                      pincl_attributes = incl.incl_attributes}
+                      pincl_attributes = incl.incl_attributes;
+                      pincl_loc = incl.incl_loc;
+                     }
     | Tstr_attribute x ->
         Pstr_attribute x
   in
@@ -155,6 +159,7 @@ and untype_exception_rebind er =
    pexrb_name = er.exrb_name;
    pexrb_lid = er.exrb_txt;
    pexrb_attributes = er.exrb_attributes;
+   pexrb_loc = er.exrb_loc;
   }
 
 and untype_pattern pat =
@@ -229,11 +234,12 @@ and untype_case {c_lhs; c_guard; c_rhs} =
    pc_rhs = untype_expression c_rhs;
   }
 
-and untype_binding {vb_pat; vb_expr; vb_attributes} =
+and untype_binding {vb_pat; vb_expr; vb_attributes; vb_loc} =
   {
     pvb_pat = untype_pattern vb_pat;
     pvb_expr = untype_expression vb_expr;
     pvb_attributes = vb_attributes;
+    pvb_loc = vb_loc;
   }
 
 and untype_expression exp =
@@ -358,10 +364,14 @@ and untype_signature_item item =
     | Tsig_open od ->
         Psig_open {popen_lid = od.open_txt;
                    popen_override = od.open_override;
-                   popen_attributes = od.open_attributes}
+                   popen_attributes = od.open_attributes;
+                   popen_loc = od.open_loc;
+                  }
     | Tsig_include incl ->
         Psig_include {pincl_mod = untype_module_type incl.incl_mod;
-                      pincl_attributes = incl.incl_attributes}
+                      pincl_attributes = incl.incl_attributes;
+                      pincl_loc = incl.incl_loc;
+                     }
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->

@@ -1049,7 +1049,7 @@ let transl_exception env excdecl =
   cd, exn_decl, newenv
 
 (* Translate an exception rebinding *)
-let transl_exn_rebind env loc ser =
+let transl_exn_rebind env ser =
   let name = ser.pexrb_name in
   let lid = ser.pexrb_lid in
   let cdescr =
@@ -1067,7 +1067,7 @@ let transl_exn_rebind env loc ser =
     {
      exn_args = cdescr.cstr_args;
      exn_attributes = [];
-     Types.exn_loc = loc
+     Types.exn_loc = ser.pexrb_loc;
     }
   in
   let (id, newenv) = Env.enter_exception name.txt exn_decl env in
@@ -1078,6 +1078,7 @@ let transl_exn_rebind env loc ser =
       exrb_txt = lid;
       exrb_type = exn_decl;
       exrb_attributes = ser.pexrb_attributes;
+      exrb_loc = ser.pexrb_loc;
      }
   in
     er, newenv

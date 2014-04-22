@@ -86,6 +86,7 @@ module MakeMap(Map : MapArgument) = struct
       vb_pat = map_pattern vb.vb_pat;
       vb_expr = map_expression vb.vb_expr;
       vb_attributes = vb.vb_attributes;
+      vb_loc = vb.vb_loc;
     }
 
   and map_bindings rec_flag list =
