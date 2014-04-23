@@ -48,7 +48,7 @@ static void compare_free_stack(void)
 /* Same, then raise Out_of_memory */
 static void compare_stack_overflow(void)
 {
-  caml_gc_message (0x04, "Stack overflow in structural comparison\n", 0);
+  caml_gc_log ("Stack overflow in structural comparison");
   compare_free_stack();
   caml_raise_out_of_memory();
 }

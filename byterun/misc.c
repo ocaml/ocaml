@@ -12,9 +12,11 @@
 /***********************************************************************/
 
 #include <stdio.h>
+#include <stdarg.h>
 #include "config.h"
 #include "misc.h"
 #include "memory.h"
+#include "domain.h"
 
 #ifdef DEBUG
 
@@ -39,12 +41,19 @@ void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
 
 uintnat caml_verb_gc = 0;
 
-void caml_gc_message (int level, char *msg, uintnat arg)
+void caml_gc_log (char *msg, ...)
 {
-  if (level < 0 || (caml_verb_gc & level) != 0){
-    fprintf (stderr, msg, arg);
-    fflush (stderr);
+  va_list args;
+  va_start (args, msg);
+
+  char fmtbuf[512];
+
+  if (caml_verb_gc) {
+    sprintf(fmtbuf, "[%02d] %s\n", caml_domain_id(), msg);
+    vfprintf(stderr, fmtbuf, args);
   }
+
+  va_end (args);
 }
 
 CAMLexport void caml_fatal_error (char *msg)

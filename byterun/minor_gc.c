@@ -219,7 +219,7 @@ void caml_empty_minor_heap (void)
 
   if (caml_young_ptr != caml_young_end){
     caml_in_minor_collection = 1;
-    caml_gc_message (0x02, "<", 0);
+    caml_gc_log ("Minor collection starting");
     caml_oldify_local_roots();
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       caml_oldify_one (**r, *r);
@@ -242,7 +242,7 @@ void caml_empty_minor_heap (void)
     caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
-    caml_gc_message (0x02, ">", 0);
+    caml_gc_log ("Minor collection");
     caml_in_minor_collection = 0;
   }
   
@@ -292,7 +292,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
   if (tbl->base == NULL){
     caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
-    caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
+    caml_gc_log ("ref_table threshold crossed");
     tbl->limit = tbl->end;
     caml_urge_major_slice ();
   }else{ /* This will almost never happen with the bytecode interpreter. */
@@ -302,8 +302,8 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * sizeof (value *);
-    caml_gc_message (0x08, "Growing ref_table to %"
-                           ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+    caml_gc_log ("Growing ref_table to %"
+                 ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
                      (intnat) sz/1024);
     tbl->base = (value **) realloc ((char *) tbl->base, sz);
     if (tbl->base == NULL){

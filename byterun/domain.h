@@ -21,5 +21,6 @@ CAMLextern void caml_domain_deactivate(void);
 
 void caml_domain_register_main(void);
 
+int caml_domain_id(void);
 
 #endif /* CAML_DOMAIN_H */

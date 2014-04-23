@@ -94,25 +94,24 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
 
   truename = caml_search_exe_in_path(*name);
   *name = truename;
-  caml_gc_message(0x100, "Opening bytecode executable %s\n",
-                  (uintnat) truename);
+  caml_gc_log("Opening bytecode executable %s", truename);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
-    caml_gc_message(0x100, "Cannot open file\n", 0);
+    caml_gc_log("Cannot open file");
     return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
     err = read (fd, buf, 2);
     if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
       close(fd);
-      caml_gc_message(0x100, "Rejected #! script\n", 0);
+      caml_gc_log("Rejected #! script");
       return BAD_BYTECODE;
     }
   }
   err = read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
-    caml_gc_message(0x100, "Not a bytecode executable\n", 0);
+    caml_gc_log("Not a bytecode executable");
     return err;
   }
   return fd;

@@ -426,7 +426,7 @@ CAMLprim value caml_gc_minor(value v)
 
 CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
-  caml_gc_message (0x1, "Major GC cycle requested\n", 0);
+  caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heap ();
   caml_trigger_stw_gc ();
   /* !! caml_final_do_calls (); */
