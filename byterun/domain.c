@@ -25,6 +25,8 @@ struct domain {
 
   atomic_uintnat* interrupt_word_address;
   int is_main;
+
+  int id;
 };
 
 __thread struct domain* domain_self;
@@ -48,6 +50,7 @@ static struct domain* Domain_val(value v) {
 
 /* A normal OCaml list (cons cells) containing at least the alive domains */
 static caml_root live_domains_list;
+static int next_domain_id;
 static plat_mutex live_domains_lock;
 
 static value domain_alloc() {
@@ -61,6 +64,7 @@ static value domain_alloc() {
   atomic_store_rel(&d->is_active, 0);
   atomic_store_rel(&d->is_alive, 1);
   d->is_main = 0;
+  d->id = -1;
 
   /* this object will eventually be placed into live_domains_list. We
      allocate the cons cell now, because domain_init is a bad time to 
@@ -90,6 +94,7 @@ static void domain_init(value cons) {
     plat_mutex_lock(&live_domains_lock);
     caml_modify_field(cons, 1, caml_read_root(live_domains_list));
     caml_modify_root(live_domains_list, cons);
+    d->id = next_domain_id++;
     plat_mutex_unlock(&live_domains_lock);
   }
   
@@ -133,8 +138,8 @@ static void* domain_thread_func(void* v) {
   domain_init((value)v);
 
   while (1) {
-    sleep(3);
-    fprintf(stderr, "%%");
+    usleep(3);
+    /*fprintf(stderr, "%%"); */
     poll_interrupts();
   }
 
@@ -167,6 +172,10 @@ void caml_domain_register_main() {
   caml_domain_create(); /* for testing */
 }
 
+int caml_domain_id() {
+  if (!domain_self) return -1;
+  return domain_self->id;
+}
 
 
 
@@ -338,6 +347,7 @@ static void stw_phase() {
   
   if (barrier_enter(1)) {
     /* nothing to do here, just verify filter_remembered_sets is globally done */
+    caml_gc_log("GC cycle completed");
     barrier_release(1);
   }
 }

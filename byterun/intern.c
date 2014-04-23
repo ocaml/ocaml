@@ -199,11 +199,11 @@ static void stack_free(struct intern_stack* s) {
 static void stack_realloc(struct intern_stack* s, value save) {
   CAMLparam1(save);
   /* reallocate stack */
-  caml_gc_message(0x04, "stack realloc\n", 0);
+  caml_gc_log("stack realloc");
   int i;
   int new_len = s->len * 2;
   if (new_len >= INTERN_STACK_MAX_SIZE) {
-    caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
+    caml_gc_log ("Stack overflow in un-marshaling value");
     stack_free(s);
     caml_raise_out_of_memory();
   }

@@ -18,6 +18,8 @@ intnat caml_major_collection_slice (intnat work) {
 static __thread value* mark_stack;
 static __thread int mark_stack_count;
 
+static __thread uintnat stat_blocks_marked = 0;
+
 void caml_init_major_gc() {
   mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
   mark_stack_count = 0;
@@ -46,6 +48,7 @@ void mark(value initial) {
     header_t hd_v = Hd_val(v);
     found_next = 0;
 
+    stat_blocks_marked++;
     /* mark the current object */
     if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
@@ -54,7 +57,7 @@ void mark(value initial) {
         if (Is_block(child) && !Is_young(child)) {
           header_t hd_child = Hd_val(child);
           if (Tag_hd (hd_child) == Forward_tag) {
-            /* FIMXE: short-circuiting lazy values is a useful optimisation */
+            /* FIXME: short-circuiting lazy values is a useful optimisation */
           } else if (Tag_hd (hd_child) == Infix_tag) {
             child -= Infix_offset_val(child);
             hd_child = Hd_val(child);
@@ -91,5 +94,8 @@ void caml_finish_marking () {
   caml_do_roots(&mark_root);
   int i;
   for (i = 0 ; i < 256; i ++) caml_mark_object(caml_atom(i));
+
+  caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
+  stat_blocks_marked = 0;
 }
 
