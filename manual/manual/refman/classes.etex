@@ -21,7 +21,8 @@ specify the general shape and type properties of classes.
 
 \begin{syntax}
 class-type:
-      {[['?']label-name':'] typexpr '->'} class-body-type
+      [['?']label-name':'] typexpr '->' class-type
+  |   class-body-type
 ;
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
