@@ -37,8 +37,8 @@
    should not be pattern-matched over through [match ... with] or [try
    ... with], because unmarshalling does not preserve the information
    required for matching their exception constructor. Structural
-   equalities with other exception values, or most other uses such as
-   Printexc.to_string, will still work as expected.
+   equalities with other exception values does not work either.  Most
+   other uses such as Printexc.to_string, will still work as expected.
 
    The representation of marshaled values is not human-readable,
    and uses bytes that are not printable characters. Therefore,
