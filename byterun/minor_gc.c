@@ -35,8 +35,6 @@ CAMLexport struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
   caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
-int caml_in_minor_collection = 0;
-
 #ifdef DEBUG
 static unsigned long minor_gc_counter = 0;
 #endif
@@ -218,7 +216,6 @@ void caml_empty_minor_heap (void)
   value **r;
 
   if (caml_young_ptr != caml_young_end){
-    caml_in_minor_collection = 1;
     caml_gc_log ("Minor collection starting");
     caml_oldify_local_roots();
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
@@ -243,7 +240,6 @@ void caml_empty_minor_heap (void)
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
     caml_gc_log ("Minor collection");
-    caml_in_minor_collection = 0;
   }
   
 #ifdef DEBUG

@@ -20,7 +20,6 @@
 
 CAMLextern char *caml_young_ptr;
 extern asize_t caml_minor_heap_size;
-extern int caml_in_minor_collection;
 
 struct caml_ref_table {
   value **base;
