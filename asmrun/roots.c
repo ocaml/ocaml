@@ -29,8 +29,6 @@
 
 struct caml__roots_block *caml_local_roots = NULL;
 
-void (*caml_scan_roots_hook) (scanning_action) = NULL;
-
 /* The hashtable of frame descriptors */
 
 frame_descr ** caml_frame_descriptors = NULL;
@@ -241,8 +239,6 @@ void caml_oldify_local_roots (void)
   caml_scan_global_young_roots(&caml_oldify_one);
   /* Finalised values */
   caml_final_do_young_roots (&caml_oldify_one);
-  /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
 void caml_do_roots (scanning_action f)
@@ -274,8 +270,6 @@ void caml_do_roots (scanning_action f)
   caml_scan_global_roots(f);
   /* Finalised values */
   caml_final_do_strong_roots (f);
-  /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
