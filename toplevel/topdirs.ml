@@ -383,13 +383,9 @@ let () =
 let () =
   reg_show_prim "show_exception"
     (fun env loc id lid ->
-       let id = id lid in
        let desc = Typetexp.find_constructor env loc lid in
        if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
-         begin
-           fprintf ppf "@[This constructor is not an exception.@]@.";
-           raise Exit
-         end;
+         raise Not_found;
        let ret_type =
          if desc.cstr_generalized then Some Predef.type_exn
          else None
@@ -403,7 +399,7 @@ let () =
            Types.ext_loc = desc.cstr_loc;
            Types.ext_attributes = desc.cstr_attributes; }
        in
-         Sig_typext (id, ext, Text_exception)
+         [Sig_typext (id, ext, Text_exception)]
     )
 
 let () =
