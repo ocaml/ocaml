@@ -239,7 +239,6 @@
 
 /* **** roots.c */
 #define local_roots caml_local_roots
-#define scan_roots_hook caml_scan_roots_hook
 #define do_local_roots caml_do_local_roots
 
 /* **** signals.c */
