@@ -241,7 +241,7 @@ type type_iterators =
     it_signature_item: type_iterators -> signature_item -> unit;
     it_value_description: type_iterators -> value_description -> unit;
     it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_exception_declaration: type_iterators -> exception_declaration -> unit;
+    it_extension_constructor: type_iterators -> extension_constructor -> unit;
     it_module_declaration: type_iterators -> module_declaration -> unit;
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
@@ -258,7 +258,7 @@ let type_iterators =
   and it_signature_item it = function
       Sig_value (_, vd)     -> it.it_value_description it vd
     | Sig_type (_, td, _)   -> it.it_type_declaration it td
-    | Sig_exception (_, ed) -> it.it_exception_declaration it ed
+    | Sig_typext (_, td, _) -> it.it_extension_constructor it td
     | Sig_module (_, md, _) -> it.it_module_declaration it md
     | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
     | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
@@ -269,8 +269,11 @@ let type_iterators =
     List.iter (it.it_type_expr it) td.type_params;
     may (it.it_type_expr it) td.type_manifest;
     it.it_type_kind it td.type_kind
-  and it_exception_declaration it ed =
-    List.iter (it.it_type_expr it) ed.exn_args
+  and it_extension_constructor it td =
+    it.it_path td.ext_type_path;
+    List.iter (it.it_type_expr it) td.ext_type_params;
+    List.iter (it.it_type_expr it) td.ext_args;
+    may (it.it_type_expr it) td.ext_ret_type
   and it_module_declaration it md =
     it.it_module_type it md.md_type
   and it_modtype_declaration it mtd =
@@ -314,6 +317,7 @@ let type_iterators =
           List.iter (it.it_type_expr it) cd.cd_args;
           may (it.it_type_expr it) cd.cd_res)
           cl
+    | Type_open -> ()
   and it_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match ty.desc with
@@ -328,7 +332,7 @@ let type_iterators =
   in
   { it_path; it_type_expr; it_type_kind; it_class_type; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
-    it_modtype_declaration; it_module_declaration; it_exception_declaration;
+    it_modtype_declaration; it_module_declaration; it_extension_constructor;
     it_type_declaration; it_value_description; it_signature_item; }
 
 let copy_row f fixed row keep more =

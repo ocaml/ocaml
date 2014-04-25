@@ -56,22 +56,22 @@ let transl_extension_constructor env path ext =
       None -> Ident.name ext.ext_id
     | Some p -> Path.name p
   in
-    match ext.ext_kind with
-      Text_decl(args, ret) ->
-        Lprim(prim_set_oo_id,
-              [Lprim(Pmakeblock(Obj.object_tag, Mutable),
-                     [Lconst(Const_base(Const_string (name,None)));
-                      Lconst(Const_base(Const_int 0))])])
-    | Text_rebind(path, lid) ->
-        transl_path ~loc:ext.ext_loc env path
+  match ext.ext_kind with
+    Text_decl(args, ret) ->
+      Lprim(prim_set_oo_id,
+            [Lprim(Pmakeblock(Obj.object_tag, Mutable),
+                   [Lconst(Const_base(Const_string (name,None)));
+                    Lconst(Const_base(Const_int 0))])])
+  | Text_rebind(path, lid) ->
+      transl_path ~loc:ext.ext_loc env path
 
 let transl_type_extension env rootpath tyext body =
   List.fold_right
     (fun ext body ->
-       let lam =
-         transl_extension_constructor env (field_path rootpath ext.ext_id) ext
-       in
-         Llet(Strict, ext.ext_id, lam, body))
+      let lam =
+        transl_extension_constructor env (field_path rootpath ext.ext_id) ext
+      in
+      Llet(Strict, ext.ext_id, lam, body))
     tyext.tyext_constructors
     body
 
@@ -379,8 +379,8 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_typext(tyext) ->
       let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-        transl_type_extension item.str_env rootpath tyext
-          (transl_structure (List.rev_append ids fields) cc rootpath rem)
+      transl_type_extension item.str_env rootpath tyext
+        (transl_structure (List.rev_append ids fields) cc rootpath rem)
   | Tstr_exception ext ->
       let id = ext.ext_id in
       let path = field_path rootpath id in
