@@ -335,15 +335,16 @@ let output_epilogue f =
 
 (* Floating-point constants *)
 
-let float_constants = ref ([] : (string * int) list)
+let float_constants = ref ([] : (int64 * int) list)
 
 let add_float_constant cst =
+  let repr = Int64.bits_of_float cst in
   try
-    List.assoc cst !float_constants
+    List.assoc repr !float_constants
   with
     Not_found ->
       let lbl = new_label() in
-      float_constants := (cst, lbl) :: !float_constants;
+      float_constants := (repr, lbl) :: !float_constants;
       lbl
 
 let emit_float_constant (cst, lbl) =
@@ -382,12 +383,12 @@ let emit_instr fallthrough i =
           `	movq	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else
           `	movabsq	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iconst_float s) ->
-        begin match Int64.bits_of_float (float_of_string s) with
+    | Lop(Iconst_float f) ->
+        begin match Int64.bits_of_float f with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	xorpd	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
         | _ ->
-          let lbl = add_float_constant s in
+          let lbl = add_float_constant f in
           `	movsd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -764,9 +765,9 @@ let emit_item = function
   | Cint n ->
       `	.quad	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive ".long" f
+      emit_float32_directive ".long" (Int32.bits_of_float f)
   | Cdouble f ->
-      emit_float64_directive ".quad" f
+      emit_float64_directive ".quad" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl ->

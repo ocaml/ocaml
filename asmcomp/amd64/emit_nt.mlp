@@ -321,36 +321,21 @@ let output_epilogue () =
 
 (* Floating-point constants *)
 
-let float_constants = ref ([] : (string * int) list)
+let float_constants = ref ([] : (int64 * int) list)
 
 let add_float_constant cst =
+  let repr = Int64.bits_of_float cst in
   try
-    List.assoc cst !float_constants
+    List.assoc repr !float_constants
   with
     Not_found ->
       let lbl = new_label() in
-      float_constants := (cst, lbl) :: !float_constants;
+      float_constants := (repr, lbl) :: !float_constants;
       lbl
 
-let emit_float s =
-  (* MASM doesn't like floating-point constants such as 2e9.
-     Turn them into 2.0e9. *)
-  let pos_e = ref (-1) and pos_dot = ref (-1) in
-  for i = 0 to String.length s - 1 do
-    match s.[i] with
-      'e'|'E' -> pos_e := i
-    | '.'     -> pos_dot := i
-    | _       -> ()
-  done;
-  if !pos_dot < 0 && !pos_e >= 0 then begin
-    emit_string (String.sub s 0 !pos_e);
-    emit_string ".0";
-    emit_string (String.sub s !pos_e (String.length s - !pos_e))
-  end else
-    emit_string s
-
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}     REAL8   {emit_float cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_directive "QWORD" cst
 
 let emit_movabs reg n =
   (* force ml64 to use mov reg, imm64 instruction *)
@@ -721,9 +706,9 @@ let emit_item = function
   | Cint n ->
       `	QWORD	{emit_nativeint n}\n`
   | Csingle f ->
-      `	REAL4	{emit_float f}\n`
+      emit_float32_directive "DWORD" (Int32.bits_of_float f)
   | Cdouble f ->
-      `	REAL8	{emit_float f}\n`
+      emit_float64_directive "QWORD" (Int64.bits_of_float f)
   | Csymbol_address s ->
       add_used_symbol s;
       `	QWORD	{emit_symbol s}\n`

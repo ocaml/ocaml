@@ -19,12 +19,12 @@ open Lambda
 type function_label = string
 
 type ustructured_constant =
-  | Uconst_float of string
+  | Uconst_float of float
   | Uconst_int32 of int32
   | Uconst_int64 of int64
   | Uconst_nativeint of nativeint
   | Uconst_block of int * uconstant list
-  | Uconst_float_array of string list
+  | Uconst_float_array of float list
   | Uconst_string of string
 
 and uconstant =
@@ -74,7 +74,9 @@ type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
-    mutable fun_inline: (Ident.t list * ulambda) option }
+    mutable fun_inline: (Ident.t list * ulambda) option;
+    mutable fun_float_const_prop: bool  (* Can propagate FP consts *)
+  }
 
 (* Approximation of values *)
 

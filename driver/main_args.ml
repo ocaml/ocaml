@@ -154,6 +154,10 @@ let mk_no_app_funct f =
   "-no-app-funct", Arg.Unit f, " Deactivate applicative functors"
 ;;
 
+let mk_no_float_const_prop f =
+  "-no-float-const-prop", Arg.Unit f, " Deactivate constant propagation for floating-point operations"
+;;
+
 let mk_noassert f =
   "-noassert", Arg.Unit f, " Do not compile assertion checks"
 ;;
@@ -554,6 +558,7 @@ module type Optcomp_options = sig
   val _labels : unit -> unit
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit
+  val _no_float_const_prop : unit -> unit
   val _noassert : unit -> unit
   val _noautolink : unit -> unit
   val _nodynlink : unit -> unit
@@ -801,6 +806,7 @@ struct
     mk_labels F._labels;
     mk_linkall F._linkall;
     mk_no_app_funct F._no_app_funct;
+    mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;

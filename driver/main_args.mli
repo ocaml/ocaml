@@ -136,6 +136,7 @@ module type Optcomp_options = sig
   val _labels : unit -> unit
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit
+  val _no_float_const_prop : unit -> unit
   val _noassert : unit -> unit
   val _noautolink : unit -> unit
   val _nodynlink : unit -> unit

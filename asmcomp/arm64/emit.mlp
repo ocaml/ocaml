@@ -286,7 +286,7 @@ let emit_literals() =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.quad	`; emit_printf "0x%Lx\n" f)
+        `{emit_label lbl}:`; emit_float64_directive ".quad" f)
       !float_literals;
     float_literals := []
   end
@@ -326,7 +326,7 @@ let emit_instr i =
     | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
-        let b = Int64.bits_of_float(float_of_string f) in
+        let b = Int64.bits_of_float f in
         if b = 0L then
           `	fmov	{emit_reg i.res.(0)}, xzr	/* {emit_string f} */\n`
         else if is_immediate_float b then
@@ -334,7 +334,7 @@ let emit_instr i =
         else begin
           let lbl = float_literal b in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
-          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]	/* {emit_string f} */\n`
+          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
@@ -675,8 +675,8 @@ let emit_item = function
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_nativeint n}\n`
   | Cint n -> `	.quad	{emit_nativeint n}\n`
-  | Csingle f -> emit_float32_directive ".long" f
-  | Cdouble f -> emit_float64_directive ".quad" f
+  | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
+  | Cdouble f -> emit_float64_directive ".quad" (Int64.bits_of_float f)
   | Csymbol_address s -> `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl -> `	.quad	{emit_data_label lbl}\n`
   | Cstring s -> emit_string_directive "	.ascii  " s

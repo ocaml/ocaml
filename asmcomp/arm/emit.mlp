@@ -273,7 +273,7 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 (* Pending floating-point literals *)
-let float_literals = ref ([] : (string * label) list)
+let float_literals = ref ([] : (int64 * label) list)
 (* Pending relative references to the global offset table *)
 let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
@@ -283,12 +283,13 @@ let num_literals = ref 0
 
 (* Label a floating-point literal *)
 let float_literal f =
+  let repr = Int64.bits_of_float cst in
   try
-    List.assoc f !float_literals
+    List.assoc repr !float_literals
   with Not_found ->
     let lbl = new_label() in
     num_literals := !num_literals + 2;
-    float_literals := (f, lbl) :: !float_literals;
+    float_literals := (repr, lbl) :: !float_literals;
     lbl
 
 (* Label a GOTREL literal *)
@@ -314,7 +315,7 @@ let emit_literals() =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.double	{emit_string f}\n`)
+        `{emit_label lbl}:`; emit_float64_split_directive ".long" f)
       !float_literals;
     float_literals := []
   end;
@@ -874,8 +875,8 @@ let emit_item = function
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
   | Cint n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
-  | Csingle f -> `	.single	{emit_string f}\n`
-  | Cdouble f -> `	.double	{emit_string f}\n`
+  | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
+  | Cdouble f -> emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s -> `	.word	{emit_symbol s}\n`
   | Clabel_address lbl -> `	.word	{emit_data_label lbl}\n`
   | Cstring s -> emit_string_directive "	.ascii  " s

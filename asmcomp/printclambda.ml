@@ -16,17 +16,20 @@ open Asttypes
 open Clambda
 
 let rec structured_constant ppf = function
-  | Uconst_float x -> fprintf ppf "%s" x
-  | Uconst_int32 x -> fprintf ppf "%ld" x
-  | Uconst_int64 x -> fprintf ppf "%Ld" x
-  | Uconst_nativeint x -> fprintf ppf "%nd" x
+  | Uconst_float x -> fprintf ppf "%F" x
+  | Uconst_int32 x -> fprintf ppf "%ldl" x
+  | Uconst_int64 x -> fprintf ppf "%LdL" x
+  | Uconst_nativeint x -> fprintf ppf "%ndn" x
   | Uconst_block (tag, l) ->
       fprintf ppf "block(%i" tag;
       List.iter (fun u -> fprintf ppf ",%a" uconstant u) l;
       fprintf ppf ")"
-  | Uconst_float_array sl ->
-      fprintf ppf "floatarray(%s)"
-        (String.concat "," sl)
+  | Uconst_float_array [] ->
+      fprintf ppf "floatarray()"
+  | Uconst_float_array (f1 :: fl) ->
+      fprintf ppf "floatarray(%F" f1;
+      List.iter (fun f -> fprintf ppf ",%F" f) fl;
+      fprintf ppf ")"
   | Uconst_string s -> fprintf ppf "%S" s
 
 and uconstant ppf = function
