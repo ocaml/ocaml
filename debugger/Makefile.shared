@@ -12,7 +12,8 @@
 
 include ../config/Makefile
 
-CAMLC=../ocamlcomp.sh
+ROOTDIR=..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=-linkall -I $(UNIXDIR)
 CAMLYACC=../boot/ocamlyacc

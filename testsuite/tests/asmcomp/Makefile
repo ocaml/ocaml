@@ -47,6 +47,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
+MLCASES=optargs staticalloc
+
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
 ARGS_fib=-DINT_INT -DFUN=fib main.c
@@ -67,19 +69,21 @@ tests: $(CASES:=.o)
 	  printf " ... testing '$$c':"; \
 	  $(MAKE) one CC="$(CC) $(CFLAGS)" NAME=$$c; \
 	done
-	$(MAKE) optargs
+	@for c in $(MLCASES); do \
+	  printf " ... testing '$$c':"; \
+          $(MAKE) one_ml NAME=$$c; \
+        done
 
-optargs:
-	@$(OCAMLOPT) -o optargs.exe optargs.ml
-	@printf " ... testing 'optargs':"
-	@./optargs.exe && echo " => passed" || echo " => failed"
+one_ml:
+	@$(OCAMLOPT) -o $(NAME).exe $(NAME).ml && \
+	./$(NAME).exe && echo " => passed" || echo " => failed"
 
 one:
 	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
-	@rm -f ./codegen *.out
+	@rm -f ./codegen *.out *.o *.obj *.exe
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
 	@rm -f $(CASES:=.s)
 

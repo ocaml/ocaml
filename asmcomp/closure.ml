@@ -60,6 +60,10 @@ let occurs_var var u =
     | Uswitch(arg, s) ->
         occurs arg ||
         occurs_array s.us_actions_consts || occurs_array s.us_actions_blocks
+    | Ustringswitch(arg,sw,d) ->
+        occurs arg ||
+        List.exists (fun (_,e) -> occurs e) sw ||
+        occurs d
     | Ustaticfail (_, args) -> List.exists occurs args
     | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
@@ -186,6 +190,15 @@ let lambda_smaller lam threshold =
         lambda_size lam;
         lambda_array_size cases.us_actions_consts ;
         lambda_array_size cases.us_actions_blocks
+    | Ustringswitch (lam,sw,d) ->
+        lambda_size lam ;
+       (* as ifthenelse *)
+        List.iter
+          (fun (_,lam) ->
+            size := !size+2 ;
+            lambda_size lam)
+          sw ;
+        lambda_size d
     | Ustaticfail (_,args) -> lambda_list_size args
     | Ucatch(_, _, body, handler) ->
         incr size; lambda_size body; lambda_size handler
@@ -415,6 +428,11 @@ let rec substitute sb ulam =
                 us_actions_blocks =
                   Array.map (substitute sb) sw.us_actions_blocks;
                })
+  | Ustringswitch(arg,sw,d) ->
+      Ustringswitch
+        (substitute sb arg,
+         List.map (fun (s,act) -> s,substitute sb act) sw,
+         substitute sb d)
   | Ustaticfail (nfail, args) ->
       Ustaticfail (nfail, List.map (substitute sb) args)
   | Ucatch(nfail, ids, u1, u2) ->
@@ -773,6 +791,16 @@ let rec close fenv cenv = function
                 us_index_blocks = block_index;
                 us_actions_blocks = block_actions}),
        Value_unknown)
+  | Lstringswitch(arg,sw,d) ->
+      let uarg,_ = close fenv cenv arg in
+      let usw = 
+        List.map
+          (fun (s,act) ->
+            let uact,_ = close fenv cenv act in
+            s,uact)
+          sw in
+      let ud,_ =  close fenv cenv d in
+      Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
@@ -970,7 +998,7 @@ and close_one_function fenv cenv id funct =
 
 and close_switch fenv cenv cases num_keys default =
   let index = Array.create num_keys 0
-  and store = mk_store Lambda.same in
+  and store = mk_store (fun lam -> lam) Lambda.same in
 
   (* First default case *)
   begin match default with
@@ -1034,6 +1062,10 @@ let collect_exported_structured_constants a =
         ulam u;
         Array.iter ulam sl.us_actions_consts;
         Array.iter ulam sl.us_actions_blocks
+    | Ustringswitch (u,sw,d) ->
+        ulam u ;
+        List.iter (fun (_,act) -> ulam act) sw ;
+        ulam d
     | Ustaticfail (_, ul) -> List.iter ulam ul
     | Ucatch (_, _, u1, u2)
     | Utrywith (u1, _, u2)

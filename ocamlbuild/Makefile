@@ -12,11 +12,12 @@
 
 include ../config/Makefile
 
-OCAMLRUN = ../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(OCAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(OCAMLRUN) ../boot/ocamllex
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 CP       = cp 
 COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB)
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
@@ -105,17 +106,17 @@ ocamlbuild.native: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
 
 # The libraries
 
-ocamlbuildlib.cma: ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+ocamlbuildlib.cma: ocamlbuild_pack.cmo $(EXTRA_CMO)
 	$(OCAMLC) -a -o ocamlbuildlib.cma \
-          ocamlbuild_pack.cmo $(EXTRA_CMO) ocamlbuild.cmo
+          ocamlbuild_pack.cmo $(EXTRA_CMO)
 
 ocamlbuildlightlib.cma: ocamlbuild_pack.cmo ocamlbuildlight.cmo
 	$(OCAMLC) -a -o ocamlbuildlightlib.cma \
           ocamlbuild_pack.cmo ocamlbuildlight.cmo
 
-ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+ocamlbuildlib.cmxa: ocamlbuild_pack.cmx $(EXTRA_CMX)
 	$(OCAMLOPT) -a -o ocamlbuildlib.cmxa \
-          ocamlbuild_pack.cmx $(EXTRA_CMX) ocamlbuild.cmx
+          ocamlbuild_pack.cmx $(EXTRA_CMX)
 
 # The packs
 

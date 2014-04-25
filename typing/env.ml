@@ -208,7 +208,8 @@ and functor_components = {
   fcomp_res: module_type;               (* Result signature *)
   fcomp_env: t;     (* Environment in which the result signature makes sense *)
   fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
-  fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
+  fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
+  fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
 }
 
 let subst_modtype_maker (subst, mty) = Subst.modtype subst mty
@@ -452,7 +453,7 @@ let find_type p env =
 let find_type_descrs p env =
   snd (find_type_full p env)
 
-let find_module path env =
+let find_module ~alias path env =
   match path with
     Pident id ->
       begin try
@@ -478,10 +479,21 @@ let find_module path env =
       let desc1 = find_module_descr p1 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
-          let mty =
-            Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
-              f.fcomp_res in
-          md mty
+          md begin match f.fcomp_res with
+          | Mty_alias p ->
+              Mty_alias (Subst.module_path f.fcomp_subst p)
+          | mty ->
+              if alias then mty else
+              try
+                Hashtbl.find f.fcomp_subst_cache p2
+              with Not_found ->
+                let mty =
+                  Subst.modtype
+                    (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+                    f.fcomp_res in
+                Hashtbl.add f.fcomp_subst_cache p2 mty;
+                mty
+          end
       | Structure_comps c ->
           raise Not_found
       end
@@ -503,7 +515,7 @@ let rec normalize_path lax env path =
         Papply(normalize_path lax env p1, normalize_path true env p2)
     | _ -> path
   in
-  try match find_module path env with
+  try match find_module ~alias:true path env with
     {md_type=Mty_alias path1} ->
       let path' = normalize_path lax env path1 in
       if lax || !Clflags.transparent_modules then path' else
@@ -522,6 +534,8 @@ let normalize_path oloc env path =
     match oloc with None -> assert false
     | Some loc ->
         raise (Error(Missing_module(loc, path, normalize_path true env path)))
+
+let find_module = find_module ~alias:false
 
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
@@ -999,9 +1013,9 @@ let add_gadt_instance_chain env lv t =
 
 let rec scrape_alias env ?path mty =
   match mty, path with
-    Mty_ident path, _ ->
+    Mty_ident p, _ ->
       begin try
-        scrape_alias env (find_modtype_expansion path env)
+        scrape_alias env (find_modtype_expansion p env) ?path
       with Not_found ->
         mty
       end
@@ -1219,7 +1233,8 @@ and components_of_module_maker (env, sub, path, mty) =
           fcomp_res = ty_res;
           fcomp_env = env;
           fcomp_subst = sub;
-          fcomp_cache = Hashtbl.create 17 }
+          fcomp_cache = Hashtbl.create 17;
+          fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
   | Mty_alias _ ->
         Structure_comps {

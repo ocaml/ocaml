@@ -100,6 +100,19 @@ let rec lam ppf = function
       fprintf ppf
        "@[<1>(switch %a@ @[<v 0>%a@])@]"
         lam larg switch sw
+  | Ustringswitch(larg,sw,d) ->
+      let switch ppf sw =
+        let spc = ref false in
+        List.iter
+          (fun (s,l) ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>case \"%s\":@ %a@]"
+              (String.escaped s) lam l)
+          sw ;
+        if !spc then fprintf ppf "@ " else spc := true;
+        fprintf ppf "@[<hv 1>default:@ %a@]" lam d in
+      fprintf ppf
+        "@[<1>(switch %a@ @[<v 0>%a@])@]" lam larg switch sw
   | Ustaticfail (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

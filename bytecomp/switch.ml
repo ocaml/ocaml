@@ -16,9 +16,10 @@ exception Found of int
 type 'a t_store =
     {act_get : unit -> 'a array ; act_store : 'a -> int}
 
-let mk_store same =
+let mk_store simplif same =
   let r_acts = ref [] in
   let store act =
+    let act = simplif act in
     let rec store_rec i = function
       | [] -> i,[act]
       | act0::rem ->

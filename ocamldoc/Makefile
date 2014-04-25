@@ -14,14 +14,15 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-CAMLRUN=../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
-OCAMLYACC= ../boot/ocamlyacc
-OCAMLLIB = $(LIBDIR)
-OCAMLBIN = $(BINDIR)
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
+OCAMLLIB  = $(LIBDIR)
+OCAMLBIN  = $(BINDIR)
 
 OCAMLPP=-pp './remove_DEBUG'
 

@@ -35,6 +35,8 @@ Type system:
   representation is unchanged.
 
 Compilers:
+- PR#6269 Optimization of string matching (patch by Benoit Vaugon
+  and Luc Maranget)
 - Experimental native code generator for AArch64 (ARM 64 bits)
 - Optimization of integer division and modulus by constant divisors
   (feature wish PR#6042)
@@ -46,6 +48,7 @@ Compilers:
 - PR#6203: Constant exception constructor no longer allocate
 - PR#6311: Improve signature mismatch error messages
 - PR#6345: Better compilation of optional arguments with default values
+- PR#6260: Unnecessary boxing in let (patch by vbrankov)
 
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
@@ -76,9 +79,15 @@ Bug fixes:
 - PR#6109: Typos in ocamlbuild error messages
 - PR#6116: more efficient implementation of Digest.to_hex (patch by ygrek)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
+- PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
+           (report and patch by Jacques-Pascal Deplaix)
 - PR#6262: equality of first-class modules take module aliases into account
 - PR#6293: Assert_failure with invalid package type
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
+- PR#6346: Build failure with latest version of xcode on OSX
+- PR#6352: Automatic removal of optional arguments and sequencing
+- fix -dsource printing of "external _pipe = ..."
+  (Gabriel Scherer)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
@@ -87,14 +96,19 @@ Features wishes:
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
 - PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+- PR#6000: add a warning for non-principal coercions to format
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
            (patch by Kaustuv Chaudhuri)
 - PR#6064: GADT representation for Bigarray.kind + CAML_BA_CHAR runtime kind
 - PR#6071: Add a -noinit option to the toplevel (patch by David Sheets)
 - PR#6166: document -ocamldoc option of ocamlbuild
+- PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
+	   (patch by Jacques-Pascal Deplaix)
 - PR#6246: allow wilcard _ as for-loop index
 - ocamllex: user-definable refill action
-	    (patch by Frédéric Bour)
+	    (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
+- shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
+  (patches by Thomas Gazagnaire and Jeremy Yallop, review by Gabriel Scherer)
 
 OCaml 4.01.1:
 -------------

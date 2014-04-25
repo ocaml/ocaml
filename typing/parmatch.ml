@@ -58,7 +58,7 @@ let const_compare x y =
   | Const_float f1, Const_float f2 ->
       Pervasives.compare (float_of_string f1) (float_of_string f2)
   | Const_string (s1, _), Const_string (s2, _) ->
-      Pervasives.compare s1 s2
+      String.compare s1 s2
   | _, _ -> Pervasives.compare x y
 
 let records_args l1 l2 =

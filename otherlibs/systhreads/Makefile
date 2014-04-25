@@ -13,8 +13,9 @@
 
 include ../../config/Makefile
 
-CAMLC=../../ocamlcomp.sh -I ../unix
-CAMLOPT=../../ocamlcompopt.sh -I ../unix
+ROOTDIR=../..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot
 

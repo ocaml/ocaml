@@ -15,7 +15,8 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
-CAMLC=../../ocamlcomp.sh -I ../unix
+ROOTDIR=../..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot
 
@@ -114,9 +115,6 @@ installopt:
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
-
-.ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

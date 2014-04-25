@@ -40,7 +40,7 @@ let spill_reg r =
   with Not_found ->
     let spill_r = Reg.create r.typ in
     spill_r.spill <- true;
-    spill_r.raw_name <- r.raw_name;
+    if not (Reg.anonymous r) then spill_r.raw_name <- r.raw_name;
     spill_env := Reg.Map.add r spill_r !spill_env;
     spill_r
 

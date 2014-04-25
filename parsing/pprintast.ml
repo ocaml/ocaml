@@ -31,7 +31,6 @@ let numeric_chars  = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9' ]
 
 (* type fixity = Infix| Prefix  *)
 
-
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
 
@@ -55,6 +54,30 @@ let is_infix  = function  | `Infix _ -> true | _  -> false
 let is_predef_option = function
   | (Ldot (Lident "*predef*","option")) -> true
   | _ -> false
+
+(* which identifiers are in fact operators needing parentheses *)
+let needs_parens txt =
+  is_infix (fixity_of_string txt)
+  || List.mem txt.[0] prefix_symbols
+
+(* some infixes need spaces around parens to avoid clashes with comment syntax *)
+let needs_spaces txt =
+  txt.[0]='*' || txt.[String.length txt - 1] = '*'
+
+(* add parentheses to binders when they are in fact infix or prefix operators *)
+let protect_ident ppf txt =
+  let format : (_, _, _) format =
+    if not (needs_parens txt) then "%s"
+    else if needs_spaces txt then "(@;%s@;)"
+    else "(%s)"
+  in fprintf ppf format txt
+
+let protect_longident ppf print_longident longprefix txt =
+  let format : (_, _, _) format =
+    if not (needs_parens txt) then "%a.%s"
+    else if needs_spaces txt then  "(@;%a.%s@;)"
+    else "(%a.%s)" in
+  fprintf ppf format print_longident longprefix txt
 
 type space_formatter = (unit, Format.formatter, unit) format
 
@@ -160,17 +183,8 @@ class printer  ()= object(self:'self)
 
 
   method longident f = function
-    | Lident s ->
-        (match s.[0] with
-        | 'a' .. 'z' | 'A' .. 'Z' | '_'
-          when not (is_infix (fixity_of_string s)) ->
-            pp f "%s" s
-        | _ -> pp f "(@;%s@;)" s )
-    | Ldot(y,s) -> (match s.[0] with
-      | 'a'..'z' | 'A' .. 'Z' | '_' when not(is_infix (fixity_of_string s)) ->
-          pp f "%a.%s" self#longident y s
-      | _ ->
-          pp f "%a.(@;%s@;)@ " self#longident y s)
+    | Lident s -> protect_ident f s
+    | Ldot(y,s) -> protect_longident f self#longident y s
     | Lapply (y,s) ->
         pp f "%a(%a)" self#longident y self#longident s
   method longident_loc f x = pp f "%a" self#longident x.txt
@@ -332,12 +346,7 @@ class printer  ()= object(self:'self)
     end
     else match x.ppat_desc with
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
-          self#pattern p
-          (fun f s->
-            if is_infix (fixity_of_string s.txt)
-               || List.mem s.txt.[0] prefix_symbols
-            then pp f "( %s )" s.txt
-            else pp f "%s" s.txt ) s (* RA*)
+          self#pattern p protect_ident s.txt (* RA*)
     | Ppat_or (p1, p2) -> (* *)
         pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
     | _ -> self#pattern1 f x
@@ -367,14 +376,7 @@ class printer  ()= object(self:'self)
     match x.ppat_desc with
     | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
     | Ppat_any -> pp f "_";
-    | Ppat_var ({txt = txt;_}) ->
-        if (is_infix (fixity_of_string txt)) || List.mem txt.[0] prefix_symbols then
-          if txt.[0]='*' || txt.[String.length txt - 1] = '*' then
-            pp f "(@;%s@;)@ " txt
-          else
-            pp f "(%s)" txt
-        else
-          pp f "%s" txt
+    | Ppat_var ({txt = txt;_}) -> protect_ident f txt
     | Ppat_array l ->
         pp f "@[<2>[|%a|]@]"  (self#list self#pattern1 ~sep:";") l
     | Ppat_unpack (s) ->
@@ -869,11 +871,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>%a@]"
           (fun f vd ->
             let intro = if vd.pval_prim = [] then "val" else "external" in
-            if (is_infix (fixity_of_string vd.pval_name.txt))
-            || List.mem vd.pval_name.txt.[0] prefix_symbols then
-              pp f "%s@ (@ %s@ )@ :@ " intro vd.pval_name.txt
-            else
-              pp f "%s@ %s@ :@ " intro vd.pval_name.txt;
+            pp f "%s@ %a@ :@ " intro protect_ident vd.pval_name.txt;
             self#value_description f vd;) vd
     | Psig_typext te ->
         self#type_extension f te
@@ -1096,13 +1094,7 @@ class printer  ()= object(self:'self)
     | Pstr_class_type (l) ->
         self#class_type_declaration_list f l ;
     | Pstr_primitive vd ->
-        let need_parens =
-          match vd.pval_name.txt with
-          | "or" | "mod" | "land"| "lor" | "lxor" | "lsl" | "lsr" | "asr" -> true
-          | _ -> match vd.pval_name.txt.[0] with
-              'a'..'z' -> false | _ -> true in
-        pp f "@[<hov2>external@ %s@ :@ %a@]"
-          (if need_parens then "( "^vd.pval_name.txt^" )" else vd.pval_name.txt)
+        pp f "@[<hov2>external@ %a@ :@ %a@]" protect_ident vd.pval_name.txt
           self#value_description  vd
     | Pstr_include (me, _attrs) ->
         pp f "@[<hov2>include@ %a@]"  self#module_expr  me

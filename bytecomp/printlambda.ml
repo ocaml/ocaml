@@ -299,11 +299,22 @@ let rec lam ppf = function
             if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<hv 1>default:@ %a@]" lam l
         end in
-
       fprintf ppf
        "@[<1>(%s %a@ @[<v 0>%a@])@]"
        (match sw.sw_failaction with None -> "switch*" | _ -> "switch")
        lam larg switch sw
+  | Lstringswitch(arg, cases, default) ->
+      let switch ppf cases =
+        let spc = ref false in
+        List.iter
+         (fun (s, l) ->
+           if !spc then fprintf ppf "@ " else spc := true;
+           fprintf ppf "@[<hv 1>case \"%s\":@ %a@]" (String.escaped s) lam l)
+          cases;
+        if !spc then fprintf ppf "@ " else spc := true;
+        fprintf ppf "@[<hv 1>default:@ %a@]" lam default in
+      fprintf ppf
+       "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
   | Lstaticraise (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

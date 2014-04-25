@@ -537,13 +537,15 @@ let float_array_set arr ofs newval =
 
 (* String length *)
 
+(* Length of string block *)
+
 let string_length exp =
   bind "str" exp (fun str ->
     let tmp_var = Ident.create "tmp" in
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
-                   [Cop(Clsr, [header str; Cconst_int 10]);
+                   [get_size str;
                      Cconst_int log2_size_addr]);
               Cconst_int 1]),
          Cop(Csubi,
@@ -1060,7 +1062,7 @@ let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
 let make_switch_gen arg cases acts =
   let lcases = Array.length cases in
   let new_cases = Array.create lcases 0 in
-  let store = Switch.mk_store (=) in
+  let store = Switch.mk_store (fun x -> x) (=) in
 
   for i = 0 to Array.length cases-1 do
     let act = cases.(i) in
@@ -1103,6 +1105,41 @@ end
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
 
+(* Int switcher, arg in [low..high],
+   cases is list of individual cases, and is sorted by first component *)
+
+let transl_int_switch arg low high cases default = match cases with
+| [] -> assert false
+| (k0,_)::_ ->    
+    let nacts = List.length cases + 1 in
+    let actions = Array.create nacts default in
+    let rec set_acts idx = function
+      | [] -> assert false
+      | [i,act] ->
+          actions.(idx) <- act ;
+          if i = high then [(i,i,idx)]
+          else [(i,i,idx); (i+1,max_int,0)]
+      | (i,act)::((j,_)::_ as rem) ->
+          actions.(idx) <- act ;
+          let inters = set_acts (idx+1) rem in
+          (i,i,idx)::
+          begin
+            if j = i+1 then inters
+            else (i+1,j-1,0)::inters
+          end in
+    let inters = set_acts 1 cases in
+    let inters =
+      if k0 = low then inters else (low,k0-1,0)::inters in
+      bind "switcher" arg
+        (fun a ->
+          SwitcherBlocks.zyva
+            (low,high)
+            (fun i -> Cconst_int i)
+            a
+            (Array.of_list inters) actions)
+
+        
+
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
    boxed integers *)
 
@@ -1111,7 +1148,7 @@ type unboxed_number_kind =
   | Boxed_float
   | Boxed_integer of boxed_integer
 
-let is_unboxed_number = function
+let rec is_unboxed_number = function
     Uconst(Uconst_ref(_, Uconst_float _)) ->
       Boxed_float
   | Uprim(p, _, _) ->
@@ -1153,6 +1190,7 @@ let is_unboxed_number = function
         | Pbbswap bi -> Boxed_integer bi
         | _ -> No_unboxing
       end
+  | Ulet (_, _, e) | Usequence (_, e) -> is_unboxed_number e
   | _ -> No_unboxing
 
 let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
@@ -1194,6 +1232,15 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
 
 let functions = (Queue.create() : ufunction Queue.t)
 
+let strmatch_compile =
+  let module S =
+    Strmatch.Make
+      (struct
+        let string_block_length = get_size
+        let transl_switch = transl_int_switch
+      end) in
+  S.compile
+    
 let rec transl = function
     Uvar id ->
       Cvar id
@@ -1367,6 +1414,11 @@ let rec transl = function
             (untag_int arg) s.us_index_consts s.us_actions_consts,
           transl_switch
             (get_tag arg) s.us_index_blocks s.us_actions_blocks))
+  | Ustringswitch(arg,sw,d) ->
+      bind "switch" (transl arg)
+        (fun arg ->
+          strmatch_compile arg (transl d)
+            (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map transl args)
   | Ucatch(nfail, [], body, handler) ->

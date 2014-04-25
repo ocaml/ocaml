@@ -175,6 +175,9 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
+(* switch on strings, clauses are sorted by string order,
+   strings are pairwise distinct *)
+  | Lstringswitch of lambda * (string * lambda) list * lambda
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
