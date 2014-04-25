@@ -466,8 +466,8 @@ let emit_instr fallthrough i =
           | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
         end else
           `	movl	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iconst_float s) ->
-        begin match Int64.bits_of_float (float_of_string s) with
+    | Lop(Iconst_float f) ->
+        begin match Int64.bits_of_float f with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	fldz\n`
         | 0x8000_0000_0000_0000L ->       (* -0.0 *)
@@ -477,7 +477,7 @@ let emit_instr fallthrough i =
         | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
           `	fld1\n	fchs\n`
         | _ ->
-          let lbl = add_float_constant s in
+          let lbl = add_float_constant f in
           `	fldl	{emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
