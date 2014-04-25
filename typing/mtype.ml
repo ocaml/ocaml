@@ -71,7 +71,7 @@ and strengthen_sig env sg p =
       let newdecl =
         match decl.mtd_type with
           None ->
-            {decl with mtd_type = Some(Mty_ident(Pdot(p, Ident.name id, nopos)))}
+            {decl with mtd_type = Some(Mty_ident(Pdot(p,Ident.name id,nopos)))}
         | Some _ ->
             decl
       in
@@ -338,6 +338,7 @@ let collect_arg_paths mty =
   in
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
+  it.it_module_type unmark_iterators mty;
   PathSet.fold (fun p -> IdentSet.union (collect_ids !subst !bindings p))
     !paths IdentSet.empty
 

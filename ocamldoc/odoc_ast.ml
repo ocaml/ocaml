@@ -894,10 +894,10 @@ module Analyser =
     let tt_get_included_module_list tt_structure =
       let f acc item =
         match item.str_desc with
-          Typedtree.Tstr_include (mod_expr, _, _) ->
+          Typedtree.Tstr_include incl ->
             acc @ [
                   { (* A VOIR : chercher dans les modules et les module types, avec quel env ? *)
-                    im_name = tt_name_from_module_expr mod_expr ;
+                    im_name = tt_name_from_module_expr incl.incl_mod ;
                     im_module = None ;
                     im_info = None ;
                   }
@@ -1550,7 +1550,7 @@ module Analyser =
           in
           (0, new_env2, [ Element_module_type mt ])
 
-      | Parsetree.Pstr_open (_ovf, longident, _attrs) ->
+      | Parsetree.Pstr_open _ ->
           (* A VOIR : enrichir l'environnement quand open ? *)
           let ele_comments = match comment_opt with
             None -> []
@@ -1660,7 +1660,7 @@ module Analyser =
           in
           (0, new_env, f ~first: true loc.Location.loc_start.Lexing.pos_cnum class_type_decl_list)
 
-      | Parsetree.Pstr_include (module_expr, _attrs) ->
+      | Parsetree.Pstr_include incl ->
           (* we add a dummy included module which will be replaced by a correct
              one at the end of the module analysis,
              to use the Path.t of the included modules in the typdtree. *)

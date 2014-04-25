@@ -102,7 +102,8 @@ val add_saved_type : binary_part -> unit
 val get_saved_types : unit -> binary_part list
 val set_saved_types : binary_part list -> unit
 
-val record_value_dependency: Types.value_description -> Types.value_description -> unit
+val record_value_dependency:
+  Types.value_description -> Types.value_description -> unit
 
 
 (*

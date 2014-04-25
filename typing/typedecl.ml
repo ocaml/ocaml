@@ -1222,9 +1222,9 @@ let transl_value_decl env loc valdecl =
         val_attributes = valdecl.pval_attributes }
   | decl ->
       let arity = Ctype.arity ty in
-      if arity = 0 then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       let prim = Primitive.parse_declaration arity decl in
+      if arity = 0 && prim.prim_name.[0] <> '%' then
+        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""

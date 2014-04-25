@@ -628,13 +628,15 @@ and signature_item i ppf x =
       line i ppf "Psig_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
-  | Tsig_open (ovf, li,_,attrs) ->
-      line i ppf "Psig_open %a %a\n" fmt_override_flag ovf  fmt_path li;
-      attributes i ppf attrs
-  | Tsig_include (mt, _, attrs) ->
+  | Tsig_open od ->
+      line i ppf "Psig_open %a %a\n"
+           fmt_override_flag od.open_override
+           fmt_path od.open_path;
+      attributes i ppf od.open_attributes
+  | Tsig_include incl ->
       line i ppf "Psig_include\n";
-      attributes i ppf attrs;
-      module_type i ppf mt
+      attributes i ppf incl.incl_attributes;
+      module_type i ppf incl.incl_mod
   | Tsig_class (l) ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;
@@ -734,19 +736,21 @@ and structure_item i ppf x =
       line i ppf "Pstr_modtype \"%a\"\n" fmt_ident x.mtd_id;
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
-  | Tstr_open (ovf, li, _, attrs) ->
-      line i ppf "Pstr_open %a %a\n" fmt_override_flag ovf fmt_path li;
-      attributes i ppf attrs
+  | Tstr_open od ->
+      line i ppf "Pstr_open %a %a\n"
+           fmt_override_flag od.open_override
+           fmt_path od.open_path;
+      attributes i ppf od.open_attributes
   | Tstr_class (l) ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf (List.map (fun (cl, _,_) -> cl) l);
   | Tstr_class_type (l) ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf (List.map (fun (_, _, cl) -> cl) l);
-  | Tstr_include (me, _, attrs) ->
+  | Tstr_include incl ->
       line i ppf "Pstr_include";
-      attributes i ppf attrs;
-      module_expr i ppf me;
+      attributes i ppf incl.incl_attributes;
+      module_expr i ppf incl.incl_mod;
   | Tstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s.txt;
       Printast.payload i ppf arg

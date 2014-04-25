@@ -950,7 +950,7 @@ module Analyser =
             in
             (maybe_more, new_env2, [ Element_module_type mt ])
 
-        | Parsetree.Psig_include (module_type, _attrs) ->
+        | Parsetree.Psig_include incl ->
             let rec f = function
                 Parsetree.Pmty_ident longident ->
                   Name.from_longident longident.txt
@@ -969,7 +969,7 @@ module Analyser =
                   end
               | Parsetree.Pmty_extension _ -> assert false
             in
-            let name = f module_type.Parsetree.pmty_desc in
+            let name = f incl.Parsetree.pincl_mod.Parsetree.pmty_desc in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
             let im =
               {

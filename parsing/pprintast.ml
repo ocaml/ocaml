@@ -60,7 +60,8 @@ let needs_parens txt =
   is_infix (fixity_of_string txt)
   || List.mem txt.[0] prefix_symbols
 
-(* some infixes need spaces around parens to avoid clashes with comment syntax *)
+(* some infixes need spaces around parens to avoid clashes with comment
+   syntax *)
 let needs_spaces txt =
   txt.[0]='*' || txt.[String.length txt - 1] = '*'
 
@@ -348,7 +349,8 @@ class printer  ()= object(self:'self)
     | Ppat_alias (p, s) -> pp f "@[<2>%a@;as@;%a@]"
           self#pattern p protect_ident s.txt (* RA*)
     | Ppat_or (p1, p2) -> (* *)
-        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern) (list_of_pattern [] x)
+        pp f "@[<hov0>%a@]" (self#list ~sep:"@,|" self#pattern)
+           (list_of_pattern [] x)
     | _ -> self#pattern1 f x
   method pattern1 (f:Format.formatter) (x:pattern) :unit =
     let rec pattern_list_helper f  =  function
@@ -417,11 +419,13 @@ class printer  ()= object(self:'self)
           match p.ppat_desc with
           | Ppat_var {txt;_} when txt = rest ->
               (match opt with
-              |Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
-              | None -> pp f "?%s@ " rest)
-          | _ -> (match opt with
-            | Some o -> pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
-            | None -> pp f "%s:%a@;" l self#simple_pattern p  )
+               | Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
+               | None -> pp f "?%s@ " rest)
+          | _ ->
+              (match opt with
+               | Some o ->
+                   pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
+               | None -> pp f "%s:%a@;" l self#simple_pattern p)
         end
       else
         (match p.ppat_desc with
@@ -461,7 +465,8 @@ class printer  ()= object(self:'self)
     end
     | Pexp_apply
         ({pexp_desc=Pexp_ident
-                     {txt= Ldot (Ldot (Lident "Bigarray", array), ("get"|"set" as gs)) ;_};_},
+                     {txt= Ldot (Ldot (Lident "Bigarray", array),
+                                 ("get"|"set" as gs)) ;_};_},
          label_exprs) ->
            begin match array,gs with
            | "Genarray","get"   ->
@@ -490,7 +495,8 @@ class printer  ()= object(self:'self)
                      | (_,v)::rest ->
                          let args = List.map snd (List.rev rest) in
                          pp f "@[%a.{%a}@ <-@ %a@]"
-                           self#simple_expr a (self#list ~sep:"," self#simple_expr)
+                           self#simple_expr a (self#list ~sep:","
+                                                         self#simple_expr)
                            args self#simple_expr v;
                          true
                      | _ -> assert false
@@ -779,7 +785,9 @@ class printer  ()= object(self:'self)
           | Pexp_poly (e,None) ->
               self#binding f {pvb_pat={ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
                               pvb_expr=e;
-                              pvb_attributes=[]}
+                              pvb_attributes=[];
+                              pvb_loc=Location.none;
+                             }
           | _ ->
               self#expression f e ) e
     | Pcf_constraint (ct1, ct2) ->
@@ -831,7 +839,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
           (self#list self#signature_item  ) s (* FIXME wrong indentation*)
     | Pmty_functor (_, None, mt2) ->
-        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2 
+        pp f "@[<hov2>functor () ->@ %a@]" self#module_type mt2
     | Pmty_functor (s, Some mt1, mt2) ->
         pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
           self#module_type mt1  self#module_type mt2
@@ -899,11 +907,13 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           pmd.pmd_name.txt
           self#module_type  pmd.pmd_type
-    | Psig_open (ovf, li, _attrs) ->
-        pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
-    | Psig_include (mt, _attrs) ->
+    | Psig_open od ->
+        pp f "@[<hov2>open%s@ %a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid
+    | Psig_include incl ->
         pp f "@[<hov2>include@ %a@]"
-          self#module_type  mt
+          self#module_type incl.pincl_mod
     | Psig_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1045,10 +1055,12 @@ class printer  ()= object(self:'self)
             | Pmty_signature (_));_} as mt)) ->
                 pp f " :@;%a@;=@;%a@;"  self#module_type mt self#module_expr  me
             | _ ->
-                pp f " =@ %a"  self#module_expr  me 
+                pp f " =@ %a"  self#module_expr  me
             )) x.pmb_expr
-    | Pstr_open (ovf, li, _attrs) ->
-        pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
+    | Pstr_open od ->
+        pp f "@[<2>open%s@;%a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid;
     | Pstr_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1096,8 +1108,8 @@ class printer  ()= object(self:'self)
     | Pstr_primitive vd ->
         pp f "@[<hov2>external@ %a@ :@ %a@]" protect_ident vd.pval_name.txt
           self#value_description  vd
-    | Pstr_include (me, _attrs) ->
-        pp f "@[<hov2>include@ %a@]"  self#module_expr  me
+    | Pstr_include incl ->
+        pp f "@[<hov2>include@ %a@]"  self#module_expr  incl.pincl_mod
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->
@@ -1238,12 +1250,12 @@ class printer  ()= object(self:'self)
             pp f "~%s:%a" lbl self#simple_expr e
 
   method directive_argument f x =
-    (match x with
-    | Pdir_none -> ()
+    match x with
     | Pdir_string (s) -> pp f "@ %S" s
     | Pdir_int (i) -> pp f "@ %d" i
     | Pdir_ident (li) -> pp f "@ %a" self#longident li
-    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b))
+    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b)
+    | Pdir_keyword s -> pp f "@ %s" s
 
   method toplevel_phrase f x =
     match x with
@@ -1252,7 +1264,8 @@ class printer  ()= object(self:'self)
         self#list self#structure_item f s ;
         pp_close_box f ();
     | Ptop_dir (s, da) ->
-        pp f "@[<hov2>#%s@ %a@]" s self#directive_argument da
+        pp f "@[<hov2>#%s@ %a@]" s
+          (self#list ~sep:" " self#directive_argument) da
 end;;
 
 
@@ -1266,7 +1279,8 @@ let toplevel_phrase f x =
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)
   | Ptop_dir (s, da) ->
-   pp f "@[<hov2>#%s@ %a@]" s default#directive_argument da
+   pp f "@[<hov2>#%s@ %a@]" s
+     (default#list ~sep:" " default#directive_argument) da
    (* pp f "@[<hov2>#%s@ %a@]" s directive_argument da *)
 
 let expression f x =

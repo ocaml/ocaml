@@ -48,7 +48,8 @@ HFONT CreationFont(char *name)
    CurrentFont.lfWeight = FW_NORMAL;
    CurrentFont.lfHeight = grwindow.CurrentFontSize;
    CurrentFont.lfPitchAndFamily = (BYTE) (FIXED_PITCH | FF_MODERN);
-   strcpy(CurrentFont.lfFaceName, name);  /* Courier */
+   strncpy(CurrentFont.lfFaceName, name, sizeof(CurrentFont.lfFaceName));
+   CurrentFont.lfFaceName[sizeof(CurrentFont.lfFaceName) - 1] = 0;
    return (CreateFontIndirect(&CurrentFont));
 }
 
@@ -99,7 +100,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
                 // End application
         case WM_DESTROY:
                 ResetForClose(hwnd);
-		gr_check_open();
+                gr_check_open();
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);

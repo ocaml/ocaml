@@ -244,9 +244,9 @@ Error: Signature mismatch:
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
-#   Characters 32-55:
+#   Characters 38-39:
   module M = struct type t = int class t () = object end end;;
-                                 ^^^^^^^^^^^^^^^^^^^^^^^
+                                       ^
 Error: Multiple definition of the type name t.
        Names must be unique in a given structure or signature.
 #   - : < m : (< m : 'a > as 'b) -> 'b as 'a; .. > -> 'b = <fun>

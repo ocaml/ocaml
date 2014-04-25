@@ -37,8 +37,8 @@
    should not be pattern-matched over through [match ... with] or [try
    ... with], because unmarshalling does not preserve the information
    required for matching their exception constructor. Structural
-   equalities with other exception values, or most other uses such as
-   Printexc.to_string, will still work as expected.
+   equalities with other exception values does not work either.  Most
+   other uses such as Printexc.to_string, will still work as expected.
 
    The representation of marshaled values is not human-readable,
    and uses bytes that are not printable characters. Therefore,
@@ -74,17 +74,26 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    byte representations if [v] actually contains sharing,
    or even non-termination if [v] contains cycles.
 
-   If [flags] does not contain [Marshal.Closures],
-   marshaling fails when it encounters a functional value
-   inside [v]: only 'pure' data structures, containing neither
-   functions nor objects, can safely be transmitted between
-   different programs. If [flags] contains [Marshal.Closures],
-   functional values will be marshaled as a position in the code
-   of the program. In this case, the output of marshaling can
-   only be read back in processes that run exactly the same program,
-   with exactly the same compiled code. (This is checked
-   at un-marshaling time, using an MD5 digest of the code
-   transmitted along with the code position.)
+   If [flags] does not contain [Marshal.Closures], marshaling fails
+   when it encounters a functional value inside [v]: only 'pure' data
+   structures, containing neither functions nor objects, can safely be
+   transmitted between different programs. If [flags] contains
+   [Marshal.Closures], functional values will be marshaled as a the
+   position in the code of the program together with the values
+   corresponding to the free variables captured in the closure.  In
+   this case, the output of marshaling can only be read back in
+   processes that run exactly the same program, with exactly the same
+   compiled code. (This is checked at un-marshaling time, using an MD5
+   digest of the code transmitted along with the code position.)
+
+   The exact definition of which free variables are captured in a
+   closure is not specified and can very between bytecode and native
+   code (and according to optimization flags).  In particular, a
+   function value accessing a global reference may or may not include
+   the reference in its closure.  If it does, unmarshaling the
+   corresponding closure will create a new reference, different from
+   the global one.
+
 
    If [flags] contains [Marshal.Compat_32], marshaling fails when
    it encounters an integer value outside the range [[-2{^30}, 2{^30}-1]]

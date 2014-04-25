@@ -92,6 +92,7 @@ module MakeMap(Map : MapArgument) = struct
       vb_pat = map_pattern vb.vb_pat;
       vb_expr = map_expression vb.vb_expr;
       vb_attributes = vb.vb_attributes;
+      vb_loc = vb.vb_loc;
     }
 
   and map_bindings rec_flag list =
@@ -129,7 +130,7 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_recmodule list
         | Tstr_modtype mtd ->
           Tstr_modtype (map_module_type_declaration mtd)
-        | Tstr_open (ovf, path, lid, attrs) -> Tstr_open (ovf, path, lid, attrs)
+        | Tstr_open od -> Tstr_open od
         | Tstr_class list ->
           let list =
             List.map
@@ -146,8 +147,8 @@ module MakeMap(Map : MapArgument) = struct
               list
           in
             Tstr_class_type list
-        | Tstr_include (mexpr, sg, attrs) ->
-          Tstr_include (map_module_expr mexpr, sg, attrs)
+        | Tstr_include incl ->
+          Tstr_include {incl with incl_mod = map_module_expr incl.incl_mod}
         | Tstr_attribute x -> Tstr_attribute x
     in
     Map.leave_structure_item { item with str_desc = str_desc}
@@ -422,7 +423,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_modtype mtd ->
           Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open _ -> item.sig_desc
-        | Tsig_include (mty, sg, attrs) -> Tsig_include (map_module_type mty, sg, attrs)
+        | Tsig_include incl ->
+          Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
           Tsig_class_type (List.map map_class_type_declaration list)

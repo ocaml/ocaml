@@ -45,7 +45,7 @@ module Make(I:I) = struct
       if Arch.big_endian then ds else List.rev ds in
     String.concat "" ds
 
-  let do_pp_cases chan cases =        
+  let do_pp_cases chan cases =
     List.iter
       (fun (ps,_) ->
         Printf.fprintf chan "  [%s]\n"
@@ -168,7 +168,7 @@ module Make(I:I) = struct
         (fun set (ps,_) -> IntSet.add (List.length ps) set)
         IntSet.empty cases in
     IntSet.cardinal set
-      
+
   let best_col =
     let rec do_rec kbest best k = function
       | [] -> kbest
@@ -225,7 +225,6 @@ module Make(I:I) = struct
       try OMap.find key env
       with Not_found -> assert false
 
-          
     let divide cases =
       let env =
         List.fold_left
@@ -290,7 +289,6 @@ module Make(I:I) = struct
           let lt,midkey,ge = split_env len env in
           mk_lt id midkey (comp_rec lt) (comp_rec ge) in
       mk_let_cell id str idx (comp_rec env)
-        
 
 (*
   Recursive 'list of cells' compile function:
@@ -319,7 +317,7 @@ module Make(I:I) = struct
 
 
 (* Group by size *)
-            
+
     module DivideInt = Divide(IntArg)
 
 
@@ -353,8 +351,8 @@ module Make(I:I) = struct
 (*
   Compilation entry point: we choose to switch
   either on size or on first cell, using the
-  'least discriminant' heuristics.  
- *)      
+  'least discriminant' heuristics.
+ *)
     let top_compile str default cases =
       let a_len = count_arities_length cases
       and a_fst = count_arities_first cases in
@@ -377,6 +375,11 @@ module Make(I:I) = struct
         Ccatch (e,[],k (Cexit (e,[])),arg)
 
     let compile str default cases =
+(* We do not attempt to really optimise default=None *)
+      let cases,default = match cases,default with
+      | (_,e)::cases,None
+      | cases,Some e -> cases,e
+      | [],None -> assert false in
       let cases =
         List.rev_map
           (fun (s,act) -> pat_of_string s,act)

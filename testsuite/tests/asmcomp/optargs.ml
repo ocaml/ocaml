@@ -18,6 +18,4 @@ let () =
   done;
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
-     (* check that we did not allocated anything between x1 and x2 *)
-
-
+     (* check that we have not allocated anything between x1 and x2 *)

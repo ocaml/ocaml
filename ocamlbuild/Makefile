@@ -18,7 +18,7 @@ OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
-CP       = cp 
+CP        = cp
 COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB)
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
@@ -85,6 +85,9 @@ INSTALL_LIB_OPT=\
   ocamlbuild.cmx ocamlbuild.$(O) \
   ocamlbuild_pack.cmx \
   $(EXTRA_CMO:.cmo=.cmx) $(EXTRA_CMO:.cmo=.$(O))
+
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)/ocamlbuild
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 
 all: ocamlbuild.byte ocamlbuildlib.cma
                  # ocamlbuildlight.byte ocamlbuildlightlib.cma
@@ -158,19 +161,19 @@ beforedepend:: glob_lexer.ml
 # Installation
 
 install:
-	$(CP) ocamlbuild.byte $(BINDIR)/ocamlbuild$(EXE)
-	$(CP) ocamlbuild.byte $(BINDIR)/ocamlbuild.byte$(EXE)
-	mkdir -p $(LIBDIR)/ocamlbuild
-	$(CP) $(INSTALL_LIB) $(LIBDIR)/ocamlbuild/
+	$(CP) ocamlbuild.byte $(INSTALL_BINDIR)/ocamlbuild$(EXE)
+	$(CP) ocamlbuild.byte $(INSTALL_BINDIR)/ocamlbuild.byte$(EXE)
+	mkdir -p $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_LIB) $(INSTALL_LIBDIR)/
 
 installopt:
 	if test -f ocamlbuild.native; then $(MAKE) installopt_really; fi
 
 installopt_really:
-	$(CP) ocamlbuild.native $(BINDIR)/ocamlbuild$(EXE)
-	$(CP) ocamlbuild.native $(BINDIR)/ocamlbuild.native$(EXE)
-	mkdir -p $(LIBDIR)/ocamlbuild
-	$(CP) $(INSTALL_LIB_OPT) $(LIBDIR)/ocamlbuild/
+	$(CP) ocamlbuild.native $(INSTALL_BINDIR)/ocamlbuild$(EXE)
+	$(CP) ocamlbuild.native $(INSTALL_BINDIR)/ocamlbuild.native$(EXE)
+	mkdir -p $(INSTALL_LIBDIR)
+	$(CP) $(INSTALL_LIB_OPT) $(INSTALL_LIBDIR)/
 
 # The generic rules
 
@@ -196,5 +199,5 @@ depend: beforedepend
 
 include .depend
 
-.PHONY: all allopt clean beforedepend 
+.PHONY: all allopt clean beforedepend
 .PHONY: install installopt installopt_really depend

@@ -33,7 +33,7 @@ let structure_item sub x =
       List.iter (fun (ci, _, _) -> sub # class_expr ci.ci_expr) list
   | Tstr_class_type list ->
       List.iter (fun (_id, _, ct) -> sub # class_type ct.ci_expr) list
-  | Tstr_include (mexpr, _, _) -> sub # module_expr mexpr
+  | Tstr_include incl -> sub # module_expr incl.incl_mod
   | Tstr_attribute _ -> ()
 
 let value_description sub x =
@@ -191,7 +191,7 @@ let signature_item sub item =
   | Tsig_modtype mtd ->
       opt (sub # module_type) mtd.mtd_type
   | Tsig_open _ -> ()
-  | Tsig_include (mty,_,_) -> sub # module_type mty
+  | Tsig_include incl -> sub # module_type incl.incl_mod
   | Tsig_class list ->
       List.iter (sub # class_description) list
   | Tsig_class_type list ->

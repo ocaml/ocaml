@@ -190,7 +190,7 @@ let iter_expression f e =
     | Pstr_class_type _
     | Pstr_attribute _
     | Pstr_extension _ -> ()
-    | Pstr_include (me, _)
+    | Pstr_include {pincl_mod = me}
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
@@ -289,6 +289,9 @@ let extract_label_names sexp env ty =
     List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
+
+let explicit_arity =
+  List.exists (fun (s, _) -> s.txt = "ocaml.explicit_arity")
 
 (* Typing of patterns *)
 
@@ -1032,7 +1035,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some {ppat_desc = Ppat_tuple spl} when
+            constr.cstr_arity > 1 || explicit_arity sp.ppat_attributes
+          -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
@@ -1431,7 +1436,7 @@ and is_nonexpansive_mod mexp =
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
           | Tstr_module {mb_expr=m;_}
-          | Tstr_include (m, _, _) -> is_nonexpansive_mod m
+          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
@@ -3036,7 +3041,9 @@ and type_argument env sarg ty_expected' ty_expected =
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
-                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}],
+                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
+                       vb_loc=Location.none;
+                      }],
                      func let_var) }
       end
   | _ ->
@@ -3249,7 +3256,9 @@ and type_construct env loc lid sarg ty_expected attrs =
   let sargs =
     match sarg with
       None -> []
-    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when
+        constr.cstr_arity > 1 || explicit_arity attrs
+      -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch
@@ -3626,7 +3635,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let l =
     List.map2
       (fun (p, e) pvb ->
-        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
+        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
+         vb_loc=pvb.pvb_loc;
+        })
       l spat_sexp_list
   in
   (l, new_env, unpacks)

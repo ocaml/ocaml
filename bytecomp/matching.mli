@@ -37,13 +37,7 @@ exception Cannot_flatten
 val flatten_pattern: int -> pattern -> pattern list
 
 (* Expand stringswitch to  string test tree *)
-
-val expand_stringswitch: lambda -> (string * lambda) list -> lambda -> lambda
-
-(*
-val make_test_sequence:
-        lambda option -> primitive -> primitive -> lambda ->
-        (Asttypes.constant * lambda) list -> lambda
-*)
+val expand_stringswitch:
+    lambda -> (string * lambda) list -> lambda option -> lambda
 
 val inline_lazy_force : lambda -> Location.t -> lambda

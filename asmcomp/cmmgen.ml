@@ -991,8 +991,22 @@ let unaligned_set_64 ptr idx newval =
                 Cop(Cstore Byte_unsigned,
                     [add_int (add_int ptr idx) (Cconst_int 7); b8]))))
 
+let max_or_zero a =
+  bind "size" a (fun a ->
+    (* equivalent to
+       Cifthenelse(Cop(Ccmpi Cle, [a; Cconst_int 0]), Cconst_int 0, a)
+
+       if a is positive, sign is 0 hence sign_negation is full of 1
+                         so sign_negation&a = a
+       if a is negative, sign is full of 1 hence sign_negation is 0
+                         so sign_negation&a = 0 *)
+    let sign = Cop(Casr, [a; Cconst_int (size_int * 8 - 1)]) in
+    let sign_negation = Cop(Cxor, [sign; Cconst_int (-1)]) in
+    Cop(Cand, [sign_negation; a]))
+
 let check_bound unsafe dbg a1 a2 k =
-  if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k)
+  if unsafe then k
+  else Csequence(make_checkbound dbg [max_or_zero a1;a2], k)
 
 (* Simplification of some primitives into C calls *)
 
@@ -1055,28 +1069,9 @@ let simplif_primitive p =
 
 (* Build switchers both for constants and blocks *)
 
-(* constants first *)
-
 let transl_isout h arg = tag_int (Cop(Ccmpa Clt, [h ; arg]))
 
-let make_switch_gen arg cases acts =
-  let lcases = Array.length cases in
-  let new_cases = Array.create lcases 0 in
-  let store = Switch.mk_store (fun x -> x) (=) in
-
-  for i = 0 to Array.length cases-1 do
-    let act = cases.(i) in
-    let new_act = store.Switch.act_store act in
-    new_cases.(i) <- new_act
-  done ;
-  Cswitch
-    (arg, new_cases,
-     Array.map
-       (fun n -> acts.(n))
-       (store.Switch.act_get ()))
-
-
-(* Then for blocks *)
+(* Build an actual switch (ie jump table) *)
 
 module SArgBlocks =
 struct
@@ -1092,16 +1087,46 @@ struct
   type act = expression
 
   let default = Cexit (0,[])
+  let make_const i =  Cconst_int i
   let make_prim p args = Cop (p,args)
   let make_offset arg n = add_const arg n
   let make_isout h arg =  Cop (Ccmpa Clt, [h ; arg])
   let make_isin h arg =  Cop (Ccmpa Cge, [h ; arg])
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch arg cases actions =
-    make_switch_gen arg cases actions
+  let make_switch arg cases actions = Cswitch (arg,cases,actions)
   let bind arg body = bind "switcher" arg body
 
+  let make_catch handler = match handler with
+  | Cexit (i,[]) -> i,fun e -> e
+  | _ ->
+      let i = next_raise_count () in
+(*
+      Printf.eprintf  "SHARE CMM: %i\n" i ;
+      Printcmm.expression Format.str_formatter handler ;
+      Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
+*)
+      i,
+      (fun body -> match body with
+      | Cexit (j,_) ->
+          if i=j then handler
+          else body
+      | _ ->  Ccatch (i,[],body,handler))
+
+  let make_exit i = Cexit (i,[])
+
 end
+
+(* cmm store, as sharing as normally been detected in previous
+   phases, we only share exits *)
+module StoreExp =
+  Switch.Store
+    (struct
+      type t = expression
+      type key = int
+      let make_key = function
+        | Cexit (i,[]) -> Some i
+        | _ -> None
+    end)
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
 
@@ -1110,35 +1135,48 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 
 let transl_int_switch arg low high cases default = match cases with
 | [] -> assert false
-| (k0,_)::_ ->    
-    let nacts = List.length cases + 1 in
-    let actions = Array.create nacts default in
-    let rec set_acts idx = function
-      | [] -> assert false
-      | [i,act] ->
-          actions.(idx) <- act ;
-          if i = high then [(i,i,idx)]
-          else [(i,i,idx); (i+1,max_int,0)]
-      | (i,act)::((j,_)::_ as rem) ->
-          actions.(idx) <- act ;
-          let inters = set_acts (idx+1) rem in
-          (i,i,idx)::
-          begin
-            if j = i+1 then inters
-            else (i+1,j-1,0)::inters
-          end in
-    let inters = set_acts 1 cases in
-    let inters =
-      if k0 = low then inters else (low,k0-1,0)::inters in
-      bind "switcher" arg
-        (fun a ->
-          SwitcherBlocks.zyva
-            (low,high)
-            (fun i -> Cconst_int i)
-            a
-            (Array.of_list inters) actions)
+| _::_ ->
+    let store = StoreExp.mk_store () in
+    assert (store.Switch.act_store default = 0) ;
+    let cases =
+      List.map
+        (fun (i,act) -> i,store.Switch.act_store act)
+        cases in
+    let rec inters plow phigh pact = function
+      | [] ->
+          if phigh = high then [plow,phigh,pact]
+          else [(plow,phigh,pact); (phigh+1,high,0) ]
+      | (i,act)::rem ->
+          if i = phigh+1 then
+            if pact = act then
+              inters plow i pact rem
+            else
+              (plow,phigh,pact)::inters i i act rem
+          else (* insert default *)
+            if pact = 0 then
+              if act = 0 then
+                inters plow i 0 rem
+              else
+                (plow,i-1,pact)::
+                inters i i act rem
+            else (* pact <> 0 *)
+              (plow,phigh,pact)::
+              begin
+                if act = 0 then inters (phigh+1) i 0 rem
+                else (phigh+1,i-1,0)::inters i i act rem
+              end in
+    let inters = match cases with
+    | [] -> assert false
+    | (k0,act0)::rem ->
+        if k0 = low then inters k0 k0 act0 rem
+        else inters low (k0-1) 0 cases in
+    bind "switcher" arg
+      (fun a ->
+        SwitcherBlocks.zyva
+          (low,high)
+          a
+          (Array.of_list inters) store)
 
-        
 
 (* Auxiliary functions for optimizing "let" of boxed numbers (floats and
    boxed integers *)
@@ -1240,7 +1278,7 @@ let strmatch_compile =
         let transl_switch = transl_int_switch
       end) in
   S.compile
-    
+
 let rec transl = function
     Uvar id ->
       Cvar id
@@ -1417,7 +1455,7 @@ let rec transl = function
   | Ustringswitch(arg,sw,d) ->
       bind "switch" (transl arg)
         (fun arg ->
-          strmatch_compile arg (transl d)
+          strmatch_compile arg (Misc.may_map transl d)
             (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map transl args)
@@ -1975,7 +2013,7 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
-and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset 
+and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
   let trbody1 = transl body in
@@ -2067,9 +2105,13 @@ and transl_switch arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
 | 1 -> transl cases.(0)
 | _ ->
+    let cases = Array.map transl cases in
+    let store = StoreExp.mk_store () in
+    let index =
+      Array.map
+        (fun j -> store.Switch.act_store cases.(j))
+        index in
     let n_index = Array.length index in
-    let actions = Array.map transl cases in
-
     let inters = ref []
     and this_high = ref (n_index-1)
     and this_low = ref (n_index-1)
@@ -2086,13 +2128,15 @@ and transl_switch arg index cases = match Array.length cases with
       end
     done ;
     inters := (0, !this_high, !this_act) :: !inters ;
-    bind "switcher" arg
-      (fun a ->
-        SwitcherBlocks.zyva
-          (0,n_index-1)
-          (fun i -> Cconst_int i)
-          a
-          (Array.of_list !inters) actions)
+    match !inters with
+    | [_] -> cases.(0)
+    | inters ->
+        bind "switcher" arg
+          (fun a ->
+            SwitcherBlocks.zyva
+              (0,n_index-1)
+              a
+              (Array.of_list inters) store)
 
 and transl_letrec bindings cont =
   let bsz =
@@ -2185,7 +2229,8 @@ let rec emit_structured_constant symb cst cont =
 and emit_constant cst cont =
   match cst with
   | Uconst_int n | Uconst_ptr n ->
-      Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n) :: cont
+      Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
+      :: cont
   | Uconst_ref (label, _) ->
       Csymbol_address label :: cont
 

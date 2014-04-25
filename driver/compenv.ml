@@ -126,6 +126,10 @@ let setter ppf f name options s =
       (Warnings.Bad_env_variable ("OCAMLPARAM",
                                   Printf.sprintf "bad value for %s" name))
 
+(* 'can-discard=' specifies which arguments can be discarded without warning
+   because they are not understood by some versions of OCaml. *)
+let can_discard = ref []
+
 let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
@@ -137,7 +141,6 @@ let read_OCAMLPARAM ppf position =
            (Warnings.Bad_env_variable ("OCAMLPARAM", s));
          [],[]
     in
-
     let set name options s =  setter ppf (fun b -> b) name options s in
     let clear name options s = setter ppf (fun b -> not b) name options s in
     List.iter (fun (name, v) ->
@@ -251,10 +254,16 @@ let read_OCAMLPARAM ppf position =
             first_objfiles := v :: !first_objfiles
         end
 
+      | "can-discard" ->
+        can_discard := v ::!can_discard
+
       | _ ->
-        Printf.eprintf
+        if not (List.mem name !can_discard) then begin
+          can_discard := name :: !can_discard;
+          Printf.eprintf
             "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
             name
+        end
     ) (match position with
         Before_args -> before
       | Before_compile | Before_link -> after)

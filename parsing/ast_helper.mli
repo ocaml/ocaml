@@ -38,15 +38,19 @@ module Typ :
 
     val any: ?loc:loc -> ?attrs:attrs -> unit -> core_type
     val var: ?loc:loc -> ?attrs:attrs -> string -> core_type
-    val arrow: ?loc:loc -> ?attrs:attrs -> label -> core_type -> core_type -> core_type
+    val arrow: ?loc:loc -> ?attrs:attrs -> label -> core_type -> core_type
+               -> core_type
     val tuple: ?loc:loc -> ?attrs:attrs -> core_type list -> core_type
     val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
-    val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list -> closed_flag -> core_type
+    val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list
+                 -> closed_flag -> core_type
     val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
     val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
-    val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag -> label list option -> core_type
+    val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag
+                 -> label list option -> core_type
     val poly: ?loc:loc -> ?attrs:attrs -> string list -> core_type -> core_type
-    val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list -> core_type
+    val package: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list
+                 -> core_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> core_type
 
     val force_poly: core_type -> core_type
@@ -66,7 +70,8 @@ module Pat:
     val tuple: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> pattern option -> pattern
     val variant: ?loc:loc -> ?attrs:attrs -> label -> pattern option -> pattern
-    val record: ?loc:loc -> ?attrs:attrs -> (lid * pattern) list -> closed_flag -> pattern
+    val record: ?loc:loc -> ?attrs:attrs -> (lid * pattern) list -> closed_flag
+                -> pattern
     val array: ?loc:loc -> ?attrs:attrs -> pattern list -> pattern
     val or_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern -> pattern
     val constraint_: ?loc:loc -> ?attrs:attrs -> pattern -> core_type -> pattern
@@ -84,14 +89,19 @@ module Exp:
 
     val ident: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
-    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> value_binding list -> expression -> expression
-    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern -> expression -> expression
+    val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> value_binding list
+              -> expression -> expression
+    val fun_: ?loc:loc -> ?attrs:attrs -> label -> expression option -> pattern
+              -> expression -> expression
     val function_: ?loc:loc -> ?attrs:attrs -> case list -> expression
-    val apply: ?loc:loc -> ?attrs:attrs -> expression -> (label * expression) list -> expression
-    val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
+    val apply: ?loc:loc -> ?attrs:attrs -> expression
+               -> (label * expression) list -> expression
+    val match_: ?loc:loc -> ?attrs:attrs -> expression -> case list
+                -> expression
     val try_: ?loc:loc -> ?attrs:attrs -> expression -> case list -> expression
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
-    val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option -> expression
+    val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option
+                   -> expression
     val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
     val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list -> expression option -> expression
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
@@ -192,8 +202,8 @@ module Sig:
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> signature_item
-    val include_: ?loc:loc -> ?attrs:attrs -> module_type -> signature_item
+    val open_: ?loc:loc -> open_description -> signature_item
+    val include_: ?loc:loc -> include_description -> signature_item
     val class_: ?loc:loc -> class_description list -> signature_item
     val class_type: ?loc:loc -> class_type_declaration list -> signature_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> signature_item
@@ -214,10 +224,10 @@ module Str:
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> structure_item
+    val open_: ?loc:loc -> open_description -> structure_item
     val class_: ?loc:loc -> class_declaration list -> structure_item
     val class_type: ?loc:loc -> class_type_declaration list -> structure_item
-    val include_: ?loc:loc -> ?attrs:attrs -> module_expr -> structure_item
+    val include_: ?loc:loc -> include_declaration -> structure_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
   end
@@ -240,11 +250,23 @@ module Mb:
     val mk: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> module_binding
   end
 
+(* Opens *)
+module Opn:
+  sig
+    val mk: ?loc: loc -> ?attrs:attrs -> ?override:override_flag -> lid -> open_description
+  end
+
+(* Includes *)
+module Incl:
+  sig
+    val mk: ?loc: loc -> ?attrs:attrs -> 'a -> 'a include_infos
+  end
+
 (** Value bindings *)
 
 module Vb:
   sig
-    val mk: ?attrs:attrs -> pattern -> expression -> value_binding
+    val mk: ?loc: loc -> ?attrs:attrs -> pattern -> expression -> value_binding
   end
 
 
@@ -325,70 +347,8 @@ module Cstr:
     val mk: pattern -> class_field list -> class_structure
   end
 
-
-(** {2 Convenience functions} *)
-
-(** Convenience functions to help build and deconstruct AST fragments. *)
-module Convenience :
+(** Exception rebinding *)
+module Exrb:
   sig
-
-    (** {2 Misc} *)
-
-    val lid: string -> lid
-
-    (** {2 Expressions} *)
-
-    val evar: string -> expression
-    val let_in: ?recursive:bool -> value_binding list -> expression -> expression
-
-    val constr: string -> expression list -> expression
-    val record: ?over:expression -> (string * expression) list -> expression
-    val tuple: expression list -> expression
-
-    val nil: unit -> expression
-    val cons: expression -> expression -> expression
-    val list: expression list -> expression
-
-    val unit: unit -> expression
-
-    val func: (pattern * expression) list -> expression
-    val lam: ?label:string -> ?default:expression -> pattern -> expression -> expression
-    val app: expression -> expression list -> expression
-
-    val str: string -> expression
-    val int: int -> expression
-    val char: char -> expression
-    val float: float -> expression
-
-    (** {2 Patterns} *)
-
-    val pvar: string -> pattern
-    val pconstr: string -> pattern list -> pattern
-    val precord: ?closed:closed_flag -> (string * pattern) list -> pattern
-    val ptuple: pattern list -> pattern
-
-    val pnil: unit -> pattern
-    val pcons: pattern -> pattern -> pattern
-    val plist: pattern list -> pattern
-
-    val pstr: string -> pattern
-    val pint: int -> pattern
-    val pchar: char -> pattern
-    val pfloat: float -> pattern
-
-    val punit: unit -> pattern
-
-
-    (** {2 Types} *)
-
-    val tconstr: string -> core_type list -> core_type
-
-    (** {2 AST deconstruction} *)
-
-    val get_str: expression -> string option
-    val get_lid: expression -> string option
-
-    val has_attr: string -> attributes -> bool
-    val find_attr: string -> attributes -> payload option
-    val find_attr_expr: string -> attributes -> expression option
-  end
+    val mk: ?loc:loc -> ?attrs:attrs -> str -> lid -> exception_rebind
+end

@@ -37,10 +37,11 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(OCAMLBIN)
-INSTALL_MANODIR=$(MANDIR)/man3
+INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
+#MANO: man ocamldoc
+INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -181,6 +182,7 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
+html_doc: stdlib_html/Pervasives.html
 
 dot: $(EXECMOFILES)
 	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
@@ -305,6 +307,13 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
 	$(STDLIB_MLIS)
+
+stdlib_html/Pervasives.html: $(STDLIB_MLIS)
+	$(MKDIR) stdlib_html
+	$(OCAMLDOC_RUN) -d stdlib_html -html $(INCLUDES) \
+	-t "OCaml library" \
+	$(STDLIB_MLIS)
+
 
 autotest_stdlib: dummy
 	$(MKDIR) $@

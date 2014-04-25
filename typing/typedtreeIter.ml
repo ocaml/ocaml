@@ -146,8 +146,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter
               (fun (id, _, ct) -> iter_class_type_declaration ct)
               list
-        | Tstr_include (mexpr, _, _attrs) ->
-            iter_module_expr mexpr
+        | Tstr_include incl -> iter_module_expr incl.incl_mod
         | Tstr_attribute _ ->
             ()
       end;
@@ -365,7 +364,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tsig_modtype mtd ->
             iter_module_type_declaration mtd
         | Tsig_open _ -> ()
-        | Tsig_include (mty, _, _attrs) -> iter_module_type mty
+        | Tsig_include incl -> iter_module_type incl.incl_mod
         | Tsig_class list ->
             List.iter iter_class_description list
         | Tsig_class_type list ->

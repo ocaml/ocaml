@@ -433,7 +433,8 @@ let _ =
     (check_array2 (make_array2 float64 c_layout 0 10 20 float)
                   0 10 20 float);
   test 6 true
-    (check_array2 (make_array2 int16_signed fortran_layout 1 10 20 id) 1 10 20 id);
+    (check_array2 (make_array2 int16_signed fortran_layout 1 10 20 id)
+                  1 10 20 id);
   test 7 true
     (check_array2 (make_array2 int fortran_layout 1 10 20 id) 1 10 20 id);
   test 8 true
@@ -494,10 +495,14 @@ let _ =
   test 1 true !ok;
 
   let b = Array2.create float32 fortran_layout 3 3 in
-  for i = 1 to 3 do for j = 1 to 3 do Array2.unsafe_set b i j (float(i-j)) done done;
+  for i = 1 to 3 do
+    for j = 1 to 3 do Array2.unsafe_set b i j (float(i-j)) done
+  done;
   let ok = ref true in
   for i = 1 to 3 do
-    for j = 1 to 3 do if Array2.unsafe_get b i j <> float(i-j) then ok := false done
+    for j = 1 to 3 do
+      if Array2.unsafe_get b i j <> float(i-j) then ok := false
+    done
   done;
   test 2 true !ok;
 
@@ -541,9 +546,12 @@ let _ =
   test 4 (Array2.slice_left a 3) (from_list int [3000;3001;3002]);
   test 5 (Array2.slice_left a 4) (from_list int [4000;4001;4002]);
   let a = make_array2 int fortran_layout 1 5 3 id in
-  test 6 (Array2.slice_right a 1) (from_list_fortran int [1001;2001;3001;4001;5001]);
-  test 7 (Array2.slice_right a 2) (from_list_fortran int [1002;2002;3002;4002;5002]);
-  test 8 (Array2.slice_right a 3) (from_list_fortran int [1003;2003;3003;4003;5003]);
+  test 6 (Array2.slice_right a 1)
+       (from_list_fortran int [1001;2001;3001;4001;5001]);
+  test 7 (Array2.slice_right a 2)
+       (from_list_fortran int [1002;2002;3002;4002;5002]);
+  test 8 (Array2.slice_right a 3)
+       (from_list_fortran int [1003;2003;3003;4003;5003]);
 
 (* Tri-dimensional arrays *)
 
@@ -587,7 +595,8 @@ let _ =
     (check_array3 (make_array3 float64 c_layout 0 4 5 6 float)
                   0 4 5 6 float);
   test 6 true
-    (check_array3 (make_array3 int16_signed fortran_layout 1 4 5 6 id) 1 4 5 6 id);
+    (check_array3 (make_array3 int16_signed fortran_layout 1 4 5 6 id)
+                  1 4 5 6 id);
   test 7 true
     (check_array3 (make_array3 int fortran_layout 1 4 5 6 id) 1 4 5 6 id);
   test 8 true
@@ -641,7 +650,8 @@ let _ =
   done done done;
   let ok = ref true in
   for i = 0 to 1 do for j = 0 to 2 do for k = 0 to 3 do
-     if Int32.to_int (Array3.unsafe_get a i j k) <> (i lsl 4) + (j lsl 2) + k then ok := false
+     if Int32.to_int (Array3.unsafe_get a i j k) <> (i lsl 4) + (j lsl 2) + k
+     then ok := false
   done done done;
   test 1 true !ok;
 
@@ -675,7 +685,8 @@ let _ =
   let c = reshape_1 (genarray_of_array2 a) 12 in
   test 1 c (from_list int [0;1;2;3;1000;1001;1002;1003;2000;2001;2002;2003]);
   let d = reshape_1 (genarray_of_array2 b) 12 in
-  test 2 d (from_list_fortran int [1001;2001;3001;1002;2002;3002;1003;2003;3003;1004;2004;3004]);
+  test 2 d (from_list_fortran int
+              [1001;2001;3001;1002;2002;3002;1003;2003;3003;1004;2004;3004]);
   testing_function "reshape_2";
   let c = reshape_2 (genarray_of_array2 a) 4 3 in
   test 1 (Array2.slice_left c 0) (from_list int [0;1;2]);
@@ -718,7 +729,8 @@ let _ =
   test_structured_io 11 (make_array3 int32 c_layout 0 20 30 40 Int32.of_int);
   test_structured_io 12 (make_array3 float32 fortran_layout 1 10 50 100 float);
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
-  test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30 makecomplex);
+  test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
+                                     makecomplex);
 
   testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in

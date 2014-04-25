@@ -58,7 +58,7 @@ exception Error of Location.t * Env.t * error
 let check_deprecated loc attrs s =
   if
     List.exists
-      (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+      (function ({txt = "ocaml.deprecated"; _}, _) -> true | _ ->  false)
       attrs
   then
     Location.prerr_warning loc (Warnings.Deprecated s)
@@ -67,7 +67,7 @@ let warning_attribute attrs =
   let prev_warnings = ref None in
   List.iter
     (function
-      | ({txt = "warning"; loc}, payload) ->
+      | ({txt = "ocaml.warning"; loc}, payload) ->
           begin match payload with
           | PStr [{pstr_desc=Pstr_eval
                      ({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
@@ -77,13 +77,13 @@ let warning_attribute attrs =
               with Arg.Bad _ ->
                 Location.prerr_warning loc
                   (Warnings.Attribute_payload
-                     ("warning",
+                     ("ocaml.warning",
                       "Ill-formed list of warnings"))
               end
           | _ ->
               Location.prerr_warning loc
                 (Warnings.Attribute_payload
-                   ("warning",
+                   ("ocaml.warning",
                     "A single string literal is expected"))
           end
       | _ ->
@@ -344,6 +344,12 @@ let rec transl_type env policy styp =
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let stl =
+        match stl with
+        | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
+            List.map (fun _ -> t) decl.type_params
+        | _ -> stl
+      in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
@@ -854,8 +860,8 @@ let report_error env ppf = function
       fprintf ppf "The present constructor %s has no type" l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env env (fun ()  ->
-	Printtyp.reset_and_mark_loops_list [ty; ty'];
-	fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
+        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           Printtyp.type_expr ty
           "which should be"
@@ -891,7 +897,7 @@ let report_error env ppf = function
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" longident lid;
       spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
-	env lid;
+        env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" longident lid;
       spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
@@ -919,4 +925,3 @@ let () =
       | _ ->
         None
     )
-

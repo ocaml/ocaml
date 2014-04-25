@@ -215,10 +215,10 @@ and structure_item_desc =
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
-  | Tstr_open of override_flag * Path.t * Longident.t loc * attribute list
+  | Tstr_open of open_description
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
-  | Tstr_include of module_expr * Types.signature * attribute list
+  | Tstr_include of include_declaration
   | Tstr_attribute of attribute
 
 and module_binding =
@@ -235,6 +235,7 @@ and value_binding =
     vb_pat: pattern;
     vb_expr: expression;
     vb_attributes: attributes;
+    vb_loc: Location.t;
   }
 
 and module_coercion =
@@ -280,8 +281,8 @@ and signature_item_desc =
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
-  | Tsig_open of override_flag * Path.t * Longident.t loc * attribute list
-  | Tsig_include of module_type * Types.signature * attribute list
+  | Tsig_open of open_description
+  | Tsig_include of include_description
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
   | Tsig_attribute of attribute
@@ -303,6 +304,27 @@ and module_type_declaration =
      mtd_attributes: attribute list;
      mtd_loc: Location.t;
     }
+
+and open_description =
+    {
+     open_path: Path.t;
+     open_txt: Longident.t loc;
+     open_override: override_flag;
+     open_loc: Location.t;
+     open_attributes: attribute list;
+    }
+
+and 'a include_infos =
+    {
+     incl_mod: 'a;
+     incl_type: Types.signature;
+     incl_loc: Location.t;
+     incl_attributes: attribute list;
+    }
+
+and include_description = module_type include_infos
+
+and include_declaration = module_expr include_infos
 
 and with_constraint =
     Twith_type of type_declaration

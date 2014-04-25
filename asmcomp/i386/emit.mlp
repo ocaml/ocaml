@@ -412,15 +412,16 @@ let emit_floatspecial = function
 
 (* Floating-point constants *)
 
-let float_constants = ref ([] : (string * int) list)
+let float_constants = ref ([] : (int64 * int) list)
 
 let add_float_constant cst =
+  let repr = Int64.bits_of_float cst in
   try
-    List.assoc cst !float_constants
+    List.assoc repr !float_constants
   with
     Not_found ->
       let lbl = new_label() in
-      float_constants := (cst, lbl) :: !float_constants;
+      float_constants := (repr, lbl) :: !float_constants;
       lbl
 
 let emit_float_constant (cst, lbl) =
@@ -960,9 +961,9 @@ let emit_item = function
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive ".long" f
+      emit_float32_directive ".long" (Int32.bits_of_float f)
   | Cdouble f ->
-      emit_float64_split_directive ".long" f
+      emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->

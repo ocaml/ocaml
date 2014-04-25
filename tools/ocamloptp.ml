@@ -65,6 +65,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _no_app_funct = option "-no-app-funct"
+  let _no_float_const_prop = option "-no-float-const-prop"
   let _noassert = option "-noassert"
   let _noautolink = option "-noautolink"
   let _nodynlink = option "-nodynlink"
