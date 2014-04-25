@@ -67,6 +67,12 @@ tests: $(CASES:=.o)
 	  printf " ... testing '$$c':"; \
 	  $(MAKE) one CC="$(CC) $(CFLAGS)" NAME=$$c; \
 	done
+	$(MAKE) optargs
+
+optargs:
+	@$(OCAMLOPT) -o optargs.exe optargs.ml
+	@printf " ... testing 'optargs':"
+	@./optargs.exe && echo " => passed" || echo " => failed"
 
 one:
 	@$(CC) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).o $(ARCH).o \

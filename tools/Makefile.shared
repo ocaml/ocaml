@@ -276,9 +276,9 @@ objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
 	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
           objinfo_helper.c $(LIBBFD_LINK)
 
-OBJINFO=../utils/misc.cmo ../utils/config.cmo \
-        ../utils/warnings.cmo ../parsing/location.cmo \
-        ../typing/cmi_format.cmo ../bytecomp/bytesections.cmo \
+OBJINFO=../compilerlibs/ocamlcommon.cma \
+        ../compilerlibs/ocamlbytecomp.cma \
+        ../asmcomp/printclambda.cmo \
         objinfo.cmo
 
 objinfo: objinfo_helper$(EXE) $(OBJINFO)

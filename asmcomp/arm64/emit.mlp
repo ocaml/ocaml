@@ -323,7 +323,7 @@ let emit_instr i =
           | _ ->
               assert false
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
         let b = Int64.bits_of_float(float_of_string f) in

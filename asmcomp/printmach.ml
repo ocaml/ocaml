@@ -18,8 +18,8 @@ open Reg
 open Mach
 
 let reg ppf r =
-  if String.length r.name > 0 then
-    fprintf ppf "%s" r.name
+  if not (Reg.anonymous r) then
+    fprintf ppf "%s" (Reg.name r)
   else
     fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
   fprintf ppf "/%i" r.stamp;
@@ -103,7 +103,8 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_int n
+  | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float s -> fprintf ppf "%s" s
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
   | Icall_ind -> fprintf ppf "call %a" regs arg

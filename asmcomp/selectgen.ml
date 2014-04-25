@@ -85,7 +85,7 @@ let swap_intcomp = function
 let all_regs_anonymous rv =
   try
     for i = 0 to Array.length rv - 1 do
-      if String.length rv.(i).name > 0 then raise Exit
+      if not (Reg.anonymous rv.(i)) then raise Exit
     done;
     true
   with Exit ->
@@ -93,10 +93,11 @@ let all_regs_anonymous rv =
 
 let name_regs id rv =
   if Array.length rv = 1 then
-    rv.(0).name <- Ident.name id
+    rv.(0).raw_name <- Raw_name.create_from_ident id
   else
     for i = 0 to Array.length rv - 1 do
-      rv.(i).name <- Ident.name id ^ "#" ^ string_of_int i
+      rv.(i).raw_name <- Raw_name.create_from_ident id;
+      rv.(i).part <- Some i
     done
 
 (* "Join" two instruction sequences, making sure they return their results
@@ -111,10 +112,10 @@ let join opt_r1 seq1 opt_r2 seq2 =
       assert (l1 = Array.length r2);
       let r = Array.create l1 Reg.dummy in
       for i = 0 to l1-1 do
-        if String.length r1.(i).name = 0 then begin
+        if Reg.anonymous r1.(i) then begin
           r.(i) <- r1.(i);
           seq2#insert_move r2.(i) r1.(i)
-        end else if String.length r2.(i).name = 0 then begin
+        end else if Reg.anonymous r2.(i) then begin
           r.(i) <- r2.(i);
           seq1#insert_move r1.(i) r2.(i)
         end else begin
@@ -391,6 +392,9 @@ method emit_expr env exp =
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int n) [||] r)
+  | Cconst_blockheader n ->
+      let r = self#regs_for typ_int in
+      Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float n) [||] r)

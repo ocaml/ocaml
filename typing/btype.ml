@@ -12,6 +12,7 @@
 
 (* Basic operations on core types *)
 
+open Misc
 open Types
 
 (**** Sets, maps and hashtables of types ****)
@@ -234,6 +235,101 @@ let rec iter_abbrev f = function
     Mnil                   -> ()
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
+
+type type_iterators =
+  { it_signature: type_iterators -> signature -> unit;
+    it_signature_item: type_iterators -> signature_item -> unit;
+    it_value_description: type_iterators -> value_description -> unit;
+    it_type_declaration: type_iterators -> type_declaration -> unit;
+    it_exception_declaration: type_iterators -> exception_declaration -> unit;
+    it_module_declaration: type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: type_iterators -> class_declaration -> unit;
+    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_module_type: type_iterators -> module_type -> unit;
+    it_class_type: type_iterators -> class_type -> unit;
+    it_type_kind: type_iterators -> type_kind -> unit;
+    it_type_expr: type_iterators -> type_expr -> unit;
+    it_path: Path.t -> unit; }
+
+let type_iterators =
+  let it_signature it =
+    List.iter (it.it_signature_item it)
+  and it_signature_item it = function
+      Sig_value (_, vd)     -> it.it_value_description it vd
+    | Sig_type (_, td, _)   -> it.it_type_declaration it td
+    | Sig_exception (_, ed) -> it.it_exception_declaration it ed
+    | Sig_module (_, md, _) -> it.it_module_declaration it md
+    | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
+    | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
+    | Sig_class_type (_, ctd, _) -> it.it_class_type_declaration it ctd
+  and it_value_description it vd =
+    it.it_type_expr it vd.val_type
+  and it_type_declaration it td =
+    List.iter (it.it_type_expr it) td.type_params;
+    may (it.it_type_expr it) td.type_manifest;
+    it.it_type_kind it td.type_kind
+  and it_exception_declaration it ed =
+    List.iter (it.it_type_expr it) ed.exn_args
+  and it_module_declaration it md =
+    it.it_module_type it md.md_type
+  and it_modtype_declaration it mtd =
+    may (it.it_module_type it) mtd.mtd_type
+  and it_class_declaration it cd =
+    List.iter (it.it_type_expr it) cd.cty_params;
+    it.it_class_type it cd.cty_type;
+    may (it.it_type_expr it) cd.cty_new;
+    it.it_path cd.cty_path
+  and it_class_type_declaration it ctd =
+    List.iter (it.it_type_expr it) ctd.clty_params;
+    it.it_class_type it ctd.clty_type;
+    it.it_path ctd.clty_path
+  and it_module_type it = function
+      Mty_ident p
+    | Mty_alias p -> it.it_path p
+    | Mty_signature sg -> it.it_signature it sg
+    | Mty_functor (_, mto, mt) ->
+        may (it.it_module_type it) mto;
+        it.it_module_type it mt
+  and it_class_type it = function
+      Cty_constr (p, tyl, cty) ->
+        it.it_path p;
+        List.iter (it.it_type_expr it) tyl;
+        it.it_class_type it cty
+    | Cty_signature cs ->
+        it.it_type_expr it cs.csig_self;
+        Vars.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_vars;
+        List.iter
+          (fun (p, tl) -> it.it_path p; List.iter (it.it_type_expr it) tl)
+          cs.csig_inher
+    | Cty_arrow  (_, ty, cty) ->
+        it.it_type_expr it ty;
+        it.it_class_type it cty
+  and it_type_kind it = function
+      Type_abstract -> ()
+    | Type_record (ll, _) ->
+        List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
+    | Type_variant cl ->
+        List.iter (fun cd ->
+          List.iter (it.it_type_expr it) cd.cd_args;
+          may (it.it_type_expr it) cd.cd_res)
+          cl
+  and it_type_expr it ty =
+    iter_type_expr (it.it_type_expr it) ty;
+    match ty.desc with
+      Tconstr (p, _, _)
+    | Tobject (_, {contents=Some (p, _)})
+    | Tpackage (p, _, _) ->
+        it.it_path p
+    | Tvariant row ->
+        may (fun (p,_) -> it.it_path p) (row_repr row).row_name
+    | _ -> ()
+  and it_path p = ()
+  in
+  { it_path; it_type_expr; it_type_kind; it_class_type; it_module_type;
+    it_signature; it_class_type_declaration; it_class_declaration;
+    it_modtype_declaration; it_module_declaration; it_exception_declaration;
+    it_type_declaration; it_value_description; it_signature_item; }
 
 let copy_row f fixed row keep more =
   let fields = List.map

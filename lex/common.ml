@@ -159,5 +159,13 @@ let output_env ic oc tr env =
 let output_args oc args =
   List.iter (fun x -> (output_string oc x; output_char oc ' ')) args
 
+let output_refill_handler ic oc oci = function
+  | None -> false
+  | Some location ->
+    output_string oc "let __ocaml_lex_refill : \
+                      (Lexing.lexbuf -> 'a) -> (Lexing.lexbuf -> 'a) =\n";
+    copy_chunk ic oc oci location true;
+    true
+
 (* quiet flag *)
 let quiet_mode = ref false;;

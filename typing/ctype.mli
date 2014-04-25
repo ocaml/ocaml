@@ -269,3 +269,8 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
 
 val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
+
+(* Stubs *)
+val package_subtype :
+    (Env.t -> Path.t -> Longident.t list -> type_expr list ->
+      Path.t -> Longident.t list -> type_expr list -> bool) ref
