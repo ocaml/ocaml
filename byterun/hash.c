@@ -213,7 +213,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         for (i = 0, len = Wosize_val(v) / Double_wosize; i < len; i++) {
           h = caml_hash_mix_double(h, Double_field(v, i));
           num--;
-          if (num < 0) break;
+          if (num <= 0) break;
         }
         break;
       case Abstract_tag:
@@ -227,6 +227,9 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         goto again;
       case Forward_tag:
         v = Forward_val(v);
+        /* PR#6361: this should count as 1, otherwise we can get into a loop */
+        num--;
+        if (num <= 0) break;
         goto again;
       case Object_tag:
         h = caml_hash_mix_intnat(h, Oid_val(v));
