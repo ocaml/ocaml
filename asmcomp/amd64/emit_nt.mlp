@@ -53,9 +53,10 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
-(* Output a 32 bit integer in hex *)
+(* Output a 32 or 64 bit integer in hex *)
 
 let emit_int32 n = emit_printf "0%lxh" n
+let emit_int64 n = emit_printf "0%Lxh" n
 
 (* Symbols *)
 
@@ -334,8 +335,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:`;
-  emit_float64_directive "QWORD" cst
+  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
 
 let emit_movabs reg n =
   (* force ml64 to use mov reg, imm64 instruction *)
@@ -706,9 +706,9 @@ let emit_item = function
   | Cint n ->
       `	QWORD	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive "DWORD" (Int32.bits_of_float f)
+      `	DWORD	{emit_int32 (Int32.bits_of_float f)}\n`
   | Cdouble f ->
-      emit_float64_directive "QWORD" (Int64.bits_of_float f)
+      `	QWORD	{emit_int64 (Int64.bits_of_float f)}\n`
   | Csymbol_address s ->
       add_used_symbol s;
       `	QWORD	{emit_symbol s}\n`

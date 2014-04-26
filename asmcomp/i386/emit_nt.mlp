@@ -62,7 +62,10 @@ let add_used_symbol s =
 let emit_symbol s =
   emit_string "_"; Emitaux.emit_symbol '$' s
 
+(* Output a 32 or 64 bit integer in hex *)
+
 let emit_int32 n = emit_printf "0%lxh" n
+let emit_int64 n = emit_printf "0%Lxh" n
 
 (* Output a label *)
 
@@ -374,8 +377,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:`;
-  emit_float64_directive "QWORD" cst
+  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
 
 (* Output the assembly code for an instruction *)
 
@@ -801,9 +803,9 @@ let emit_item = function
   | Cint32 n ->
       `	DWORD	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive "DWORD" (Int32.bits_of_float f)
+      `	DWORD	{emit_int32 (Int32.bits_of_float f)}\n`
   | Cdouble f ->
-      emit_float64_directive "QWORD" (Int64.bits_of_float f)
+      `	QWORD	{emit_int64 (Int64.bits_of_float f)}\n`
   | Csymbol_address s ->
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`
