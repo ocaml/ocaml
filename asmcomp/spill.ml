@@ -233,7 +233,12 @@ let rec reload i before =
       (i, Reg.Set.empty)
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
-      let (new_handler, after_handler) = reload handler handler.live in
+      (* All registers live at the beginning of the handler are destroyed,
+         except the exception bucket *)
+      let before_handler = 
+        Reg.Set.remove Proc.loc_exn_bucket
+                       (Reg.add_set_array handler.live handler.arg) in
+      let (new_handler, after_handler) = reload handler before_handler in
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_body after_handler) in
       (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,

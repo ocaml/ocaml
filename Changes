@@ -39,6 +39,8 @@ Compilers:
   int32/int64/nativeint arithmetic.  Constant propagation for floats
   can be turned off with option -no-float-const-prop, for codes that
   change FP rounding modes at run-time.
+- New back-end optimization pass: dead code elimination.
+  (Removes arithmetic and load instructions whose results are unused.)
 - PR#6269 Optimization of string matching (patch by Benoit Vaugon
   and Luc Maranget)
 - Experimental native code generator for AArch64 (ARM 64 bits)
