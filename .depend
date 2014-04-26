@@ -576,6 +576,7 @@ bytecomp/typeopt.cmo : typing/types.cmi typing/typedtree.cmi \
 bytecomp/typeopt.cmx : typing/types.cmx typing/typedtree.cmx \
     typing/predef.cmx typing/path.cmx bytecomp/lambda.cmx typing/ident.cmx \
     typing/env.cmx typing/ctype.cmx bytecomp/typeopt.cmi
+asmcomp/CSEgen.cmi : asmcomp/mach.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi asmcomp/cmm.cmi
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmi : asmcomp/cmx_format.cmi
@@ -618,6 +619,10 @@ asmcomp/selection.cmi : asmcomp/mach.cmi asmcomp/cmm.cmi
 asmcomp/spill.cmi : asmcomp/mach.cmi
 asmcomp/split.cmi : asmcomp/mach.cmi
 asmcomp/strmatch.cmi : asmcomp/cmm.cmi
+asmcomp/CSE.cmo : asmcomp/mach.cmi asmcomp/CSEgen.cmi asmcomp/arch.cmo
+asmcomp/CSE.cmx : asmcomp/mach.cmx asmcomp/CSEgen.cmx asmcomp/arch.cmx
+asmcomp/CSEgen.cmo : asmcomp/reg.cmi asmcomp/mach.cmi asmcomp/CSEgen.cmi
+asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/mach.cmx asmcomp/CSEgen.cmi
 asmcomp/arch.cmo :
 asmcomp/arch.cmx :
 asmcomp/asmgen.cmo : bytecomp/translmod.cmi asmcomp/split.cmi \
@@ -629,7 +634,7 @@ asmcomp/asmgen.cmo : bytecomp/translmod.cmi asmcomp/split.cmi \
     asmcomp/emitaux.cmi asmcomp/emit.cmi asmcomp/deadcode.cmi \
     utils/config.cmi asmcomp/compilenv.cmi asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
-    asmcomp/closure.cmi utils/clflags.cmi asmcomp/asmgen.cmi
+    asmcomp/closure.cmi utils/clflags.cmi asmcomp/CSE.cmo asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : bytecomp/translmod.cmx asmcomp/split.cmx \
     asmcomp/spill.cmx asmcomp/selection.cmx asmcomp/scheduling.cmx \
     asmcomp/reload.cmx asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
@@ -639,7 +644,7 @@ asmcomp/asmgen.cmx : bytecomp/translmod.cmx asmcomp/split.cmx \
     asmcomp/emitaux.cmx asmcomp/emit.cmx asmcomp/deadcode.cmx \
     utils/config.cmx asmcomp/compilenv.cmx asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
-    asmcomp/closure.cmx utils/clflags.cmx asmcomp/asmgen.cmi
+    asmcomp/closure.cmx utils/clflags.cmx asmcomp/CSE.cmx asmcomp/asmgen.cmi
 asmcomp/asmlibrarian.cmo : utils/misc.cmi parsing/location.cmi \
     utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
     utils/clflags.cmi asmcomp/clambda.cmi utils/ccomp.cmi asmcomp/asmlink.cmi \

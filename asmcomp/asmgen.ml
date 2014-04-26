@@ -64,6 +64,8 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_selection "After instruction selection"
   ++ Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
+  ++ CSE.fundecl
+  ++ pass_dump_if ppf dump_cse "After CSE"
   ++ liveness ppf
   ++ Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"

@@ -480,7 +480,7 @@ let emit_instr i =
           | Double | Double_u ->
             `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         begin match chunk with
           | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
             `	mov	DWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
@@ -618,9 +618,9 @@ let emit_instr i =
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_reg i.res.(0)}, DWORD PTR {emit_addressing addr i.arg 0}\n`
-    | Lop(Ispecific(Istore_int(n, addr))) ->
+    | Lop(Ispecific(Istore_int(n, addr, _))) ->
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},{emit_nativeint n}\n`
-    | Lop(Ispecific(Istore_symbol(s, addr))) ->
+    | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
         add_used_symbol s ;
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},OFFSET {emit_symbol s}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->

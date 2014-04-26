@@ -333,7 +333,7 @@ let instr_size = function
       if chunk = Byte_signed
       then load_store_size addr + 1
       else load_store_size addr
-  | Lop(Istore(chunk, addr)) -> load_store_size addr
+  | Lop(Istore(chunk, addr, _)) -> load_store_size addr
   | Lop(Ialloc n) -> 4
   | Lop(Ispecific(Ialloc_far n)) -> 5
   | Lop(Iintop Imod) -> 3
@@ -548,7 +548,7 @@ let rec emit_instr i dslot =
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =
           match chunk with
             Byte_unsigned | Byte_signed -> "stb"

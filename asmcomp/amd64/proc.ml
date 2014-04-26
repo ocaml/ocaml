@@ -259,7 +259,7 @@ let destroyed_at_oper = function
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
-  | Iop(Istore(Single, _)) -> [| rxmm15 |]
+  | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
@@ -290,7 +290,7 @@ let max_register_pressure = function
     if fp then [| 10; 16 |] else [| 11; 16 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
     if fp then [| 11; 16 |] else [| 12; 16 |]
-  | Istore(Single, _) ->
+  | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
 

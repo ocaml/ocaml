@@ -449,7 +449,7 @@ let emit_instr fallthrough i =
           | Double | Double_u ->
             `	movsd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         begin match chunk with
           | Word ->
             `	movq	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
@@ -542,9 +542,9 @@ let emit_instr fallthrough i =
         `	cvttsd2siq	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Ilea addr)) ->
         `	leaq	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
-    | Lop(Ispecific(Istore_int(n, addr))) ->
+    | Lop(Ispecific(Istore_int(n, addr, _))) ->
         `	movq	${emit_nativeint n}, {emit_addressing addr i.arg 0}\n`
-    | Lop(Ispecific(Istore_symbol(s, addr))) ->
+    | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
         assert (not !pic_code && not !Clflags.dlcode);
         `	movq	${emit_symbol s}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
