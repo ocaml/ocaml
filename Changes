@@ -874,6 +874,8 @@ Compilers:
 Toplevel interactive system:
 - PR#5377: New "#show_*" directives
   (ygrek, Jacques Garrigue and Alain Frisch)
+- PR#6113: Add descriptions to directives, and display them via #help
+  (Berke Durak)
 
 Runtime system:
 - New configure option "-no-naked-pointers" to improve performance by
