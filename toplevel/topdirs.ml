@@ -368,16 +368,25 @@ let dir_show ppf args =
       | [ Pdir_keyword "exception"; Pdir_ident lid ] ->
           let id = id lid in
           let desc = Typetexp.find_constructor env loc lid in
-          begin match desc.cstr_tag with
-          | Cstr_constant _ | Cstr_block _ ->
-              fprintf ppf "@[This constructor is not an exception.@]@.";
-              raise Exit
-          | Cstr_exception _ ->
-              Sig_exception (id, {exn_args=desc.cstr_args;
-                                  exn_loc=desc.cstr_loc;
-                                  exn_attributes=desc.cstr_attributes;
-                                 })
-          end
+          if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
+          begin
+            fprintf ppf "@[This constructor is not an exception.@]@.";
+            raise Exit
+          end;
+          let ret_type =
+            if desc.cstr_generalized then Some Predef.type_exn
+            else None
+          in
+          let ext =
+            { ext_type_path = Predef.path_exn;
+              ext_type_params = [];
+              ext_args = desc.cstr_args;
+              ext_ret_type = ret_type;
+              ext_private = Asttypes.Public;
+              Types.ext_loc = desc.cstr_loc;
+              Types.ext_attributes = desc.cstr_attributes; }
+          in
+            Sig_typext (id, ext, Text_exception)
       | [ Pdir_keyword "module"; Pdir_ident lid ] ->
           let id = id lid in
           let path = Typetexp.find_module env loc lid in

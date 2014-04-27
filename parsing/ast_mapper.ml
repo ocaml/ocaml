@@ -39,7 +39,6 @@ type mapper = {
   class_type_field: mapper -> class_type_field -> class_type_field;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
-  exception_rebind: mapper -> exception_rebind -> exception_rebind;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
   extension_constructor : mapper -> extension_constructor -> extension_constructor;
@@ -581,15 +580,6 @@ let default_mapper =
            ~mut:pld_mutable
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)
-      );
-
-    exception_rebind =
-      (fun this {pexrb_name; pexrb_lid; pexrb_attributes; pexrb_loc} ->
-         Exrb.mk
-           (map_loc this pexrb_name)
-           (map_loc this pexrb_lid)
-           ~loc:(this.location this pexrb_loc)
-           ~attrs:(this.attributes this pexrb_attributes)
       );
 
     cases = (fun this l -> List.map (this.case this) l);

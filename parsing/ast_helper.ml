@@ -432,13 +432,3 @@ module Cstr = struct
      pcstr_fields = fields;
     }
 end
-
-module Exrb = struct
-  let mk ?(loc  = !default_loc) ?(attrs = []) name lid =
-    {
-     pexrb_name = name;
-     pexrb_lid = lid;
-     pexrb_attributes = attrs;
-     pexrb_loc = loc;
-    }
-end

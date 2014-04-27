@@ -346,9 +346,3 @@ module Cstr:
   sig
     val mk: pattern -> class_field list -> class_structure
   end
-
-(** Exception rebinding *)
-module Exrb:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> str -> lid -> exception_rebind
-end
