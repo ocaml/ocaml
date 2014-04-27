@@ -520,7 +520,7 @@ partialclean::
 beforedepend:: asmcomp/selection.ml
 
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	cp $(ARCH)/CSE.ml asmcomp/CSE.ml
+	cp asmcomp/$(ARCH)/CSE.ml asmcomp/CSE.ml
 
 partialclean::
 	rm -f asmcomp/CSE.ml
