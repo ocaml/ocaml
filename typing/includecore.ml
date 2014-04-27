@@ -274,7 +274,10 @@ let extension_constructors env id ext1 ext2 =
   let ty2 =
     Btype.newgenty (Tconstr(ext2.ext_type_path, ext2.ext_type_params, ref Mnil))
   in
-  if Ctype.equal env true [ty1] [ty2] then
+  if Ctype.equal env true
+       (ty1 :: ext1.ext_type_params)
+       (ty2 :: ext2.ext_type_params)
+  then
     if List.length ext1.ext_args = List.length ext2.ext_args then
       if match ext1.ext_ret_type, ext2.ext_ret_type with
           Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> false

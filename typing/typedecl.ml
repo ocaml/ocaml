@@ -37,6 +37,7 @@ type error =
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Bad_variance of int * (bool * bool * bool) * (bool * bool * bool)
   | Unavailable_type_constructor of Path.t
@@ -1048,11 +1049,10 @@ let transl_extension_constructor env check_open type_path type_params
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
-            let res =
-              Ctype.newconstr type_path
-                (Ctype.instance_list env type_params)
-            in
-              res, Some res
+            let params = Ctype.instance_list env type_params in
+            let res = Ctype.newconstr type_path params in
+            let ret_type = Some (Ctype.newconstr type_path params) in
+              res, ret_type
           else (Ctype.newconstr type_path typext_params), None
         in
         begin
@@ -1073,6 +1073,27 @@ let transl_extension_constructor env check_open type_path type_params
                         | _ -> ())
               typext_params
         end;
+        (* Ensure that constructor's type matches the type being extended *)
+        let cstr_type_path, cstr_type_params =
+          match cdescr.cstr_res.desc with
+            Tconstr (p, _, _) ->
+              let decl = Env.find_type p env in
+                p, decl.type_params
+          | _ -> assert false
+        in
+        let cstr_types =
+          (Btype.newgenty
+             (Tconstr(cstr_type_path, cstr_type_params, ref Mnil)))
+          :: cstr_type_params
+        in
+        let ext_types =
+          (Btype.newgenty
+             (Tconstr(type_path, type_params, ref Mnil)))
+          :: type_params
+        in
+        if not (Ctype.equal env true cstr_types ext_types) then
+          raise (Error(lid.loc,
+                       Rebind_mismatch(lid.txt, cstr_type_path, type_path)));
         (* Disallow rebinding private constructors to non-private *)
         begin
           match cdescr.cstr_private, priv with
@@ -1493,6 +1514,13 @@ let report_error ppf = function
             Printtyp.longident lid)
         (function ppf ->
            fprintf ppf "but was expected to be of type")
+  | Rebind_mismatch (lid, p, p') ->
+      fprintf ppf
+        "@[%s@ %a@ %s@ %s@ %s@ %s@ %s@]"
+        "The constructor" Printtyp.longident lid
+        "extends type" (Path.name p)
+        "whose declaration does not match"
+        "the declaration of type" (Path.name p')
   | Rebind_private lid ->
       fprintf ppf "@[%s@ %a@ %s@]"
         "The constructor"
