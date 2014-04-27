@@ -389,6 +389,10 @@ let mk_dcombine f =
   "-dcombine", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dcse f =
+  "-dcse", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
 ;;
@@ -599,6 +603,7 @@ module type Optcomp_options = sig
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
+  val _dcse : unit -> unit
   val _dlive : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
@@ -651,6 +656,7 @@ module type Opttop_options = sig
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
+  val _dcse : unit -> unit
   val _dlive : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
@@ -848,6 +854,7 @@ struct
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
+    mk_dcse F._dcse;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
@@ -900,6 +907,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
+    mk_dcse F._dcse;
     mk_dlive F._dlive;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;

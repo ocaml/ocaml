@@ -135,6 +135,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
+  let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split

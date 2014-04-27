@@ -62,7 +62,10 @@ let add_used_symbol s =
 let emit_symbol s =
   emit_string "_"; Emitaux.emit_symbol '$' s
 
+(* Output a 32 or 64 bit integer in hex *)
+
 let emit_int32 n = emit_printf "0%lxh" n
+let emit_int64 n = emit_printf "0%Lxh" n
 
 (* Output a label *)
 
@@ -374,8 +377,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:`;
-  emit_float64_directive "QWORD" cst
+  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
 
 (* Output the assembly code for an instruction *)
 
@@ -411,8 +413,8 @@ let emit_instr i =
           | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
         end else
           `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
-    | Lop(Iconst_float s) ->
-        begin match Int64.bits_of_float (float_of_string s) with
+    | Lop(Iconst_float f) ->
+        begin match Int64.bits_of_float f with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	fldz\n`
         | 0x8000_0000_0000_0000L ->       (* -0.0 *)
@@ -422,7 +424,7 @@ let emit_instr i =
         | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
           `	fld1\n	fchs\n`
         | _ ->
-          let lbl = add_float_constant s in
+          let lbl = add_float_constant f in
           `	fld	{emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -478,7 +480,7 @@ let emit_instr i =
           | Double | Double_u ->
             `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         begin match chunk with
           | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
             `	mov	DWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
@@ -616,9 +618,9 @@ let emit_instr i =
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_reg i.res.(0)}, DWORD PTR {emit_addressing addr i.arg 0}\n`
-    | Lop(Ispecific(Istore_int(n, addr))) ->
+    | Lop(Ispecific(Istore_int(n, addr, _))) ->
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},{emit_nativeint n}\n`
-    | Lop(Ispecific(Istore_symbol(s, addr))) ->
+    | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
         add_used_symbol s ;
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},OFFSET {emit_symbol s}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
@@ -801,9 +803,9 @@ let emit_item = function
   | Cint32 n ->
       `	DWORD	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive "DWORD" (Int32.bits_of_float f)
+      `	DWORD	{emit_int32 (Int32.bits_of_float f)}\n`
   | Cdouble f ->
-      emit_float64_directive "QWORD" (Int64.bits_of_float f)
+      `	QWORD	{emit_int64 (Int64.bits_of_float f)}\n`
   | Csymbol_address s ->
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`

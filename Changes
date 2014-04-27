@@ -39,6 +39,10 @@ Compilers:
   int32/int64/nativeint arithmetic.  Constant propagation for floats
   can be turned off with option -no-float-const-prop, for codes that
   change FP rounding modes at run-time.
+- New back-end optimization pass: common subexpression elimination (CSE).
+  (Reuses results of previous computations instead of recomputing them.)
+- New back-end optimization pass: dead code elimination.
+  (Removes arithmetic and load instructions whose results are unused.)
 - PR#6269 Optimization of string matching (patch by Benoit Vaugon
   and Luc Maranget)
 - Experimental native code generator for AArch64 (ARM 64 bits)
@@ -117,6 +121,7 @@ Bug fixes:
 - PR#6346: Build failure with latest version of xcode on OSX
 - PR#6348: Unification failure for GADT when original definition is hidden
 - PR#6352: Automatic removal of optional arguments and sequencing
+- PR#6361: Hashtbl.hash not terminating on some lazy values w/ recursive types
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}

@@ -87,7 +87,7 @@ external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"
 external ( - ) : int -> int -> int = "%subint"
-external ( *  ) : int -> int -> int = "%mulint"
+external ( * ) : int -> int -> int = "%mulint"
 external ( / ) : int -> int -> int = "%divint"
 external ( mod ) : int -> int -> int = "%modint"
 

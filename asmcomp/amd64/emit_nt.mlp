@@ -53,9 +53,10 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
-(* Output a 32 bit integer in hex *)
+(* Output a 32 or 64 bit integer in hex *)
 
 let emit_int32 n = emit_printf "0%lxh" n
+let emit_int64 n = emit_printf "0%Lxh" n
 
 (* Symbols *)
 
@@ -334,8 +335,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:`;
-  emit_float64_directive "QWORD" cst
+  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
 
 let emit_movabs reg n =
   (* force ml64 to use mov reg, imm64 instruction *)
@@ -374,12 +374,12 @@ let emit_instr fallthrough i =
           `	mov	{emit_reg32 i.res.(0)}, {emit_nativeint n}\n`
         else
           emit_movabs i.res.(0) n
-    | Lop(Iconst_float s) ->
-        begin match Int64.bits_of_float (float_of_string s) with
+    | Lop(Iconst_float f) ->
+        begin match Int64.bits_of_float f with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	xorpd	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
         | _ ->
-          let lbl = add_float_constant s in
+          let lbl = add_float_constant f in
           `	movsd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -443,7 +443,7 @@ let emit_instr fallthrough i =
           | Double | Double_u ->
             `	movsd	{emit_reg dest}, REAL8 PTR {emit_addressing addr i.arg 0}\n`
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         begin match chunk with
           | Word ->
             `	mov	QWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
@@ -532,9 +532,9 @@ let emit_instr fallthrough i =
         `	cvttsd2si	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
-    | Lop(Ispecific(Istore_int(n, addr))) ->
+    | Lop(Ispecific(Istore_int(n, addr, _))) ->
         `	mov	QWORD PTR {emit_addressing addr i.arg 0}, {emit_nativeint n}\n`
-    | Lop(Ispecific(Istore_symbol(s, addr))) ->
+    | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
         assert (not !pic_code);
 	add_used_symbol s;
         `	mov	QWORD PTR {emit_addressing addr i.arg 0}, OFFSET {emit_symbol s}\n`
@@ -706,9 +706,9 @@ let emit_item = function
   | Cint n ->
       `	QWORD	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive "DWORD" (Int32.bits_of_float f)
+      `	DWORD	{emit_int32 (Int32.bits_of_float f)}\n`
   | Cdouble f ->
-      emit_float64_directive "QWORD" (Int64.bits_of_float f)
+      `	QWORD	{emit_int64 (Int64.bits_of_float f)}\n`
   | Csymbol_address s ->
       add_used_symbol s;
       `	QWORD	{emit_symbol s}\n`

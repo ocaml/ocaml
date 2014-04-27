@@ -44,10 +44,10 @@ all-cygwin: findlib ounit res pcre react ocamltext ocamlssl camlzip cryptokit \
 
 all-macos: findlib res pcre react ocamltext \
            ocamlssl camlzip cryptokit sqlite menhir hevea \
-           xmllight xmlm omake \
+           xmllight xmlm omake zen \
            altergo boomerang vsyml extlib \
            ocamlify calendar \
-           dbm framac
+           dbm geneweb framac coq compcert
 
 platform:
 	case `uname -s` in \
@@ -1573,56 +1573,53 @@ distclean::
 	rm -f ${CSV}.tar.gz
 all: csv
 
-# disabled: need to be updated for new AST stuff
-# # http://pauillac.inria.fr/~ddr/camlp5/
-# CAMLP5=camlp5-6.10
-# ${CAMLP5}.tgz:
-# 	${WGET} http://pauillac.inria.fr/~ddr/camlp5/distrib/src/$@
-# camlp5: ${CAMLP5}.tgz
-# 	printf "%s " "$@" >/dev/tty
-# 	test -d ${PREFIX}
-# 	rm -rf ${CAMLP5}
-# 	tar zxf ${CAMLP5}.tgz
-# 	./Patcher.sh ${CAMLP5}
-# 	( cd ${CAMLP5} && \
-# 	  export PATH=${PREFIX}/bin:$$PATH && \
-# 	  ./configure --transitional && \
-# 	  ${MAKE} world.opt && \
-# 	  ${MAKE} install )
-# 	echo ${VERSION} >$@
-# clean::
-# 	rm -rf ${CAMLP5} camlp5
-# distclean::
-# 	rm -f ${CAMLP5}.tgz
-# all: camlp5
+# http://pauillac.inria.fr/~ddr/camlp5/
+CAMLP5=camlp5-git
+camlp5:
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${CAMLP5}
+	git clone git://scm.gforge.inria.fr/camlp5/camlp5.git ${CAMLP5}
+	./Patcher.sh ${CAMLP5}
+	( cd ${CAMLP5} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  ./configure --transitional && \
+	  ${MAKE} world.opt && \
+	  ${MAKE} install )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${CAMLP5} camlp5
+distclean::
+	rm -f ${CAMLP5}-git
+all: camlp5
 
-# disabled: depends on camlp5
-# # http://opensource.geneanet.org/projects/geneweb
-# GENEWEB=gw-6.05-src
-# ${GENEWEB}.tgz:
-# 	${WGET} http://opensource.geneanet.org/attachments/download/190/$@
-# geneweb: ${GENEWEB}.tgz camlp5
-# 	printf "%s " "$@" >/dev/tty
-# 	test -d ${PREFIX}
-# 	rm -rf ${GENEWEB}
-# 	tar zxf ${GENEWEB}.tgz
-# 	./Patcher.sh ${GENEWEB}
-# 	( cd ${GENEWEB} && \
-# 	  export PATH=${PREFIX}/bin:$$PATH && \
-# 	  sh ./configure && \
-# 	  ${MAKE} )
-# 	echo ${VERSION} >$@
-# clean::
-# 	rm -rf ${GENEWEB} geneweb
-# distclean::
-# 	rm -f ${GENEWEB}.tgz
-# all: geneweb
+disabled: depends on camlp5
+# http://opensource.geneanet.org/projects/geneweb
+GENEWEB=gw-6.05-src
+${GENEWEB}.tgz:
+	${WGET} http://opensource.geneanet.org/attachments/download/190/$@
+geneweb: ${GENEWEB}.tgz camlp5
+	printf "%s " "$@" >/dev/tty
+	test -d ${PREFIX}
+	rm -rf ${GENEWEB}
+	tar zxf ${GENEWEB}.tgz
+	./Patcher.sh ${GENEWEB}
+	( cd ${GENEWEB} && \
+	  export PATH=${PREFIX}/bin:$$PATH && \
+	  sh ./configure && \
+	  ${MAKE} )
+	echo ${VERSION} >$@
+clean::
+	rm -rf ${GENEWEB} geneweb
+distclean::
+	rm -f ${GENEWEB}.tgz
+all: geneweb
 
 # http://coq.inria.fr/download
 COQ=coq-8.4pl2
 ${COQ}.tar.gz:
 	${WGET} http://coq.inria.fr/distrib/V8.4pl2/files/$@
-xxcoq: ${COQ}.tar.gz camlp5
+coq: ${COQ}.tar.gz camlp5
 	printf "%s " "$@" >/dev/tty
 	test -d ${PREFIX}
 	rm -rf ${COQ}

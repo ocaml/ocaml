@@ -209,8 +209,8 @@ method virtual select_addressing :
 
 (* Default instruction selection for stores (of words) *)
 
-method select_store addr arg =
-  (Istore(Word, addr), arg)
+method select_store is_assign addr arg =
+  (Istore(Word, addr, is_assign), arg)
 
 (* call marking methods, documented in selectgen.mli *)
 
@@ -256,10 +256,10 @@ method select_operation op args =
   | (Cstore chunk, [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word then begin
-        let (op, newarg2) = self#select_store addr arg2 in
+        let (op, newarg2) = self#select_store true addr arg2 in
         (op, [newarg2; eloc])
       end else begin
-        (Istore(chunk, addr), [arg2; eloc])
+        (Istore(chunk, addr, true), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
   | (Calloc, _) -> (Ialloc 0, args)
@@ -677,16 +677,16 @@ method emit_stores env data regs_addr =
     ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
     (fun e ->
-      let (op, arg) = self#select_store !a e in
+      let (op, arg) = self#select_store false !a e in
       match self#emit_expr env arg with
         None -> assert false
       | Some regs ->
           match op with
-            Istore(_, _) ->
+            Istore(_, _, _) ->
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
                 let kind = if r.typ = Float then Double_u else Word in
-                self#insert (Iop(Istore(kind, !a)))
+                self#insert (Iop(Istore(kind, !a, false)))
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)
               done

@@ -177,7 +177,7 @@ let destroyed_at_oper = function
       destroyed_at_c_call
   | Iop(Ialloc _) ->
       [| reg_x15 |]
-  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _)) ->
+  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -194,8 +194,18 @@ let max_register_pressure = function
   | Iextcall(_, _) -> [| 10; 8 |]
   | Ialloc _ -> [| 25; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _) -> [| 26; 31 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]
   | _ -> [| 26; 32 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Ispecific(Ishiftcheckbound _) -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

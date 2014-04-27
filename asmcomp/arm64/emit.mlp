@@ -328,9 +328,9 @@ let emit_instr i =
     | Lop(Iconst_float f) ->
         let b = Int64.bits_of_float f in
         if b = 0L then
-          `	fmov	{emit_reg i.res.(0)}, xzr	/* {emit_string f} */\n`
+          `	fmov	{emit_reg i.res.(0)}, xzr\n`
         else if is_immediate_float b then
-          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" b}	/* {emit_string f} */\n`
+          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" b}\n`
         else begin
           let lbl = float_literal b in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
@@ -388,7 +388,7 @@ let emit_instr i =
         | Word | Double | Double_u ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
         end
-    | Lop(Istore(size, addr)) ->
+    | Lop(Istore(size, addr, _)) ->
         let src = i.arg.(0) in
         let base =
           match addr with
