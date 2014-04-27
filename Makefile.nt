@@ -519,6 +519,14 @@ partialclean::
 
 beforedepend:: asmcomp/selection.ml
 
+asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
+	cp $(ARCH)/CSE.ml asmcomp/CSE.ml
+
+partialclean::
+	rm -f asmcomp/CSE.ml
+
+beforedepend:: asmcomp/CSE.ml
+
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	cp asmcomp/$(ARCH)/reload.ml asmcomp/reload.ml
 
