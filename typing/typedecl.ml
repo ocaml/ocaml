@@ -1039,11 +1039,11 @@ let transl_extension_constructor env check_open type_path type_params
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
-      let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
-      let usage =
-        if cdescr.cstr_private = Private || priv = Public
-        then Env.Positive else Env.Privatize
-      in
+        let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
+        let usage =
+          if cdescr.cstr_private = Private || priv = Public
+          then Env.Positive else Env.Privatize
+        in
         Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
@@ -1055,37 +1055,37 @@ let transl_extension_constructor env check_open type_path type_params
               res, Some res
           else (Ctype.newconstr type_path typext_params), None
         in
-          begin
-            try
-              Ctype.unify env cstr_res res
-            with Ctype.Unify trace ->
-              raise (Error(lid.loc,
+        begin
+          try
+            Ctype.unify env cstr_res res
+          with Ctype.Unify trace ->
+            raise (Error(lid.loc,
                      Rebind_wrong_type(lid.txt, env, trace)))
-          end;
-          (* Remove "_" names from parameters which appear in constructor arguments *)
-          if not cdescr.cstr_generalized then begin
-            let vars =
-              Ctype.free_variables (Btype.newgenty (Ttuple args))
-            in
-              List.iter
-                (function {desc = Tvar (Some "_")} as ty ->
-                          if List.memq ty vars then ty.desc <- Tvar None
-                          | _ -> ())
-                typext_params
-          end;
-          (* Disallow rebinding private constructors to non-private *)
-          begin
-            match cdescr.cstr_private, priv with
-              Private, Public ->
-                raise (Error(lid.loc, Rebind_private lid.txt))
-            | _ -> ()
-          end;
-          let path =
-            match cdescr.cstr_tag with
-              Cstr_extension(path, _) -> path
-            | _ -> assert false
+        end;
+        (* Remove "_" names from parameters used in the constructor *)
+        if not cdescr.cstr_generalized then begin
+          let vars =
+            Ctype.free_variables (Btype.newgenty (Ttuple args))
           in
-            args, ret_type, Text_rebind(path, lid)
+            List.iter
+              (function {desc = Tvar (Some "_")} as ty ->
+                          if List.memq ty vars then ty.desc <- Tvar None
+                        | _ -> ())
+              typext_params
+        end;
+        (* Disallow rebinding private constructors to non-private *)
+        begin
+          match cdescr.cstr_private, priv with
+            Private, Public ->
+              raise (Error(lid.loc, Rebind_private lid.txt))
+          | _ -> ()
+        end;
+        let path =
+          match cdescr.cstr_tag with
+            Cstr_extension(path, _) -> path
+          | _ -> assert false
+        in
+          args, ret_type, Text_rebind(path, lid)
   in
   let ext =
     { ext_type_path = type_path;
