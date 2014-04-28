@@ -18,7 +18,7 @@ CC=$(BYTECC)
 CFLAGS=-O -DNDEBUG $(BYTECCCOMPOPTS)
 
 OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
-  skeleton.o symtab.o verbose.o warshall.o
+  skeleton.o symtab.o verbose.o warshall.o keyword.o
 
 all: ocamlyacc$(EXE)
 
