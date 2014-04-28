@@ -1224,12 +1224,12 @@ class printer  ()= object(self:'self)
             pp f "~%s:%a" lbl self#simple_expr e
 
   method directive_argument f x =
-    match x with
+    (match x with
+    | Pdir_none -> ()
     | Pdir_string (s) -> pp f "@ %S" s
     | Pdir_int (i) -> pp f "@ %d" i
     | Pdir_ident (li) -> pp f "@ %a" self#longident li
-    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b)
-    | Pdir_keyword s -> pp f "@ %s" s
+    | Pdir_bool (b) -> pp f "@ %s" (string_of_bool b))
 
   method toplevel_phrase f x =
     match x with
@@ -1238,8 +1238,7 @@ class printer  ()= object(self:'self)
         self#list self#structure_item f s ;
         pp_close_box f ();
     | Ptop_dir (s, da) ->
-        pp f "@[<hov2>#%s@ %a@]" s
-          (self#list ~sep:" " self#directive_argument) da
+        pp f "@[<hov2>#%s@ %a@]" s self#directive_argument da
 end;;
 
 
@@ -1253,8 +1252,7 @@ let toplevel_phrase f x =
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)
   | Ptop_dir (s, da) ->
-   pp f "@[<hov2>#%s@ %a@]" s
-     (default#list ~sep:" " default#directive_argument) da
+   pp f "@[<hov2>#%s@ %a@]" s default#directive_argument da
    (* pp f "@[<hov2>#%s@ %a@]" s directive_argument da *)
 
 let expression f x =

@@ -28,7 +28,6 @@ type directive_fun =
    | Directive_int of (int -> unit)
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
-   | Directive_generic of (Parsetree.directive_argument list -> unit)
 
 (* The table of toplevel value bindings and its accessors *)
 
@@ -291,12 +290,11 @@ let execute_phrase print_outcome ppf phr =
           false
       | Some d ->
           match d, dir_arg with
-          | Directive_none f, [] -> f (); true
-          | Directive_string f, [Pdir_string s] -> f s; true
-          | Directive_int f, [Pdir_int n] -> f n; true
-          | Directive_ident f, [Pdir_ident lid] -> f lid; true
-          | Directive_bool f, [Pdir_bool b] -> f b; true
-          | Directive_generic f, l -> f l; true
+          | Directive_none f, Pdir_none -> f (); true
+          | Directive_string f, Pdir_string s -> f s; true
+          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_ident f, Pdir_ident lid -> f lid; true
+          | Directive_bool f, Pdir_bool b -> f b; true
           | _ ->
               fprintf ppf "Wrong type of argument for directive `%s'.@."
                 dir_name;

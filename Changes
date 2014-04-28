@@ -59,8 +59,7 @@ Compilers:
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
 
 Toplevel interactive system:
-- Support for directive with multiple arguments
-- PR#5377: New "#show" directive
+- PR#5377: New "#show_*" directives
 
 Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
