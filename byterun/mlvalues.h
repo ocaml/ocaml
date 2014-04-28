@@ -304,10 +304,6 @@ CAMLextern value caml_atom(tag_t);
 #define Val_emptylist Val_int(0)
 #define Tag_cons 0
 
-/* The table of global identifiers */
-
-extern value caml_global_data;
-
 #ifdef __cplusplus
 }
 #endif

@@ -54,8 +54,6 @@ void caml_oldify_local_roots (void)
 
 void caml_do_roots (scanning_action f)
 {
-  /* Global variables */
-  f(caml_global_data, &caml_global_data);
   /* The stack and the local C roots */
   caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
   /* Global C roots */

@@ -32,7 +32,7 @@
 
 CAMLprim value caml_get_global_data(value unit)
 {
-  return caml_global_data;
+  return caml_read_root(caml_global_data);
 }
 
 char * caml_section_table = NULL;
@@ -74,21 +74,22 @@ CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
 CAMLprim value caml_realloc_global(value size)
 {
   mlsize_t requested_size, actual_size, i;
+  value old_global_data = caml_read_root(caml_global_data);
   value new_global_data;
 
   requested_size = Long_val(size);
-  actual_size = Wosize_val(caml_global_data);
+  actual_size = Wosize_val(old_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
     caml_gc_log ("Growing global data to %u entries",
                  (unsigned)requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
-      caml_initialize_field(new_global_data, i, Field(caml_global_data, i));
+      caml_initialize_field(new_global_data, i, Field(old_global_data, i));
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    caml_global_data = new_global_data;
+    caml_modify_root(caml_global_data, new_global_data);
   }
   return Val_unit;
 }
