@@ -21,6 +21,11 @@
 #include "mlvalues.h"
 #include "memory.h"
 
+
+/* The table of global identifiers */
+
+extern caml_root caml_global_data;
+
 CAMLextern value * caml_stack_low;
 CAMLextern value * caml_stack_high;
 CAMLextern value * caml_stack_threshold;

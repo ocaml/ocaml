@@ -405,12 +405,9 @@ CAMLexport void caml_main(char **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  caml_global_data = caml_input_val(chan);
+  caml_modify_root(caml_global_data, caml_input_val(chan));
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
-  /* Ensure that the globals are in the major heap. */
-  caml_oldify_one (caml_global_data, &caml_global_data);
-  caml_oldify_mopup ();
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
@@ -488,10 +485,7 @@ CAMLexport void caml_startup_code(
   /* Use the builtin table of primitives */
   caml_build_primitive_table_builtin();
   /* Load the globals */
-  caml_global_data = caml_input_value_from_block(data, data_size);
-  /* Ensure that the globals are in the major heap. */
-  caml_oldify_one (caml_global_data, &caml_global_data);
-  caml_oldify_mopup ();
+  caml_modify_root(caml_global_data, caml_input_value_from_block(data, data_size));
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_section_table = section_table;
   caml_section_table_size = section_table_size;

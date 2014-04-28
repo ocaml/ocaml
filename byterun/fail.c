@@ -82,22 +82,25 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 /* PR#5115: Failure and Invalid_argument can be triggered by
    input_value while reading the initial value of [caml_global_data]. */
 
-CAMLexport void caml_failwith (char const *msg)
+static value get_exception(int exn, const char* exn_name) 
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception Failure(\"%s\")\n", msg);
+  if (caml_global_data == 0 || !Is_block(caml_read_root(caml_global_data))) {
+    fprintf(stderr, "Fatal error %s during initialisation\n", exn_name);
     exit(2);
   }
-  caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
+  return Field(caml_read_root(caml_global_data), exn);
+}
+
+#define GET_EXCEPTION(exn) get_exception(exn, #exn)
+
+CAMLexport void caml_failwith (char const *msg)
+{
+  caml_raise_with_string(GET_EXCEPTION(FAILURE_EXN), msg);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: exception Invalid_argument(\"%s\")\n", msg);
-    exit(2);
-  }
-  caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
+  caml_raise_with_string(GET_EXCEPTION(INVALID_EXN), msg);
 }
 
 CAMLexport void caml_array_bound_error(void)
@@ -107,45 +110,41 @@ CAMLexport void caml_array_bound_error(void)
 
 CAMLexport void caml_raise_out_of_memory(void)
 {
-  if (caml_global_data == 0) {
-    fprintf(stderr, "Fatal error: out of memory during initialisation\n");
-    exit(2);
-  }
-  caml_raise_constant(Field(caml_global_data, OUT_OF_MEMORY_EXN));
+  caml_raise_constant(GET_EXCEPTION(OUT_OF_MEMORY_EXN));
 }
 
 CAMLexport void caml_raise_stack_overflow(void)
 {
-  caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
+  caml_raise_constant(GET_EXCEPTION(STACK_OVERFLOW_EXN));
 }
 
 CAMLexport void caml_raise_sys_error(value msg)
 {
-  caml_raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
+  caml_raise_with_arg(GET_EXCEPTION(SYS_ERROR_EXN), msg);
 }
 
 CAMLexport void caml_raise_end_of_file(void)
 {
-  caml_raise_constant(Field(caml_global_data, END_OF_FILE_EXN));
+  caml_raise_constant(GET_EXCEPTION(END_OF_FILE_EXN));
 }
 
 CAMLexport void caml_raise_zero_divide(void)
 {
-  caml_raise_constant(Field(caml_global_data, ZERO_DIVIDE_EXN));
+  caml_raise_constant(GET_EXCEPTION(ZERO_DIVIDE_EXN));
 }
 
 CAMLexport void caml_raise_not_found(void)
 {
-  caml_raise_constant(Field(caml_global_data, NOT_FOUND_EXN));
+  caml_raise_constant(GET_EXCEPTION(NOT_FOUND_EXN));
 }
 
 CAMLexport void caml_raise_sys_blocked_io(void)
 {
-  caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
+  caml_raise_constant(GET_EXCEPTION(SYS_BLOCKED_IO));
 }
 
 int caml_is_special_exception(value exn) {
-  return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
-    || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
-    || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);
+  return exn == GET_EXCEPTION(MATCH_FAILURE_EXN)
+    || exn == GET_EXCEPTION(ASSERT_FAILURE_EXN)
+    || exn == GET_EXCEPTION(UNDEFINED_RECURSIVE_MODULE_EXN);
 }
