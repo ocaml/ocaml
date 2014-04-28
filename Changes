@@ -7,6 +7,7 @@ Language features:
 - Attributes and extension nodes
 - Generative functors
 - Module aliases
+* Alternative syntax for string literals {id|...|id} (can break comments)
 
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
