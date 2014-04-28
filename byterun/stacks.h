@@ -21,17 +21,17 @@
 #include "mlvalues.h"
 #include "memory.h"
 
+CAMLextern __thread value * caml_stack_low;
+CAMLextern __thread value * caml_stack_high;
+CAMLextern __thread value * caml_stack_threshold;
+CAMLextern __thread value * caml_extern_sp;
+CAMLextern __thread intnat caml_trap_sp_off;
+CAMLextern __thread intnat caml_trap_barrier_off;
 
 /* The table of global identifiers */
 
 extern caml_root caml_global_data;
 
-CAMLextern value * caml_stack_low;
-CAMLextern value * caml_stack_high;
-CAMLextern value * caml_stack_threshold;
-CAMLextern value * caml_extern_sp;
-CAMLextern intnat caml_trap_sp_off;
-CAMLextern intnat caml_trap_barrier_off;
 
 #define Val_off(off) (caml_stack_high + Long_val (off))
 #define Off_val(p) Val_long (caml_stack_high - Long_val (p))

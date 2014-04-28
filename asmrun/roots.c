@@ -27,7 +27,7 @@
 
 /* Roots registered from C functions */
 
-struct caml__roots_block *caml_local_roots = NULL;
+__thread struct caml__roots_block *caml_local_roots = NULL;
 
 /* The hashtable of frame descriptors */
 

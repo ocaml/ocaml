@@ -19,7 +19,7 @@ void caml_trigger_stw_gc(void);
 CAMLextern void caml_domain_activate(void);
 CAMLextern void caml_domain_deactivate(void);
 
-void caml_domain_register_main(void);
+void caml_domain_register_main(uintnat minor_heap_size);
 
 int caml_domain_id(void);
 

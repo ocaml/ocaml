@@ -23,7 +23,7 @@
 #include "roots.h"
 #include "stacks.h"
 
-CAMLexport struct caml__roots_block *caml_local_roots = NULL;
+CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
 /* FIXME should rename to [caml_oldify_young_roots] and synchronise with
    asmrun/roots.c */

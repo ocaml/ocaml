@@ -429,6 +429,7 @@ CAMLprim value caml_gc_major(value v)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heap ();
   caml_trigger_stw_gc ();
+  caml_handle_gc_interrupt ();
   /* !! caml_final_do_calls (); */
   return Val_unit;
 }
@@ -462,16 +463,13 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
 {
-  uintnat major_heap_size =
+  uintnat 
+major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   caml_init_minor_heaps();
-  caml_set_minor_heap_size (caml_norm_minor_heap_size (minor_size));
   
-  caml_domain_register_main();
-  caml_init_global_roots();
-  caml_init_signal_handling();
-  caml_init_major_gc();
+  caml_domain_register_main(minor_size);
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);

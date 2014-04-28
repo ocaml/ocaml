@@ -65,6 +65,12 @@ void caml_init_minor_heaps()
   heaps_base = (char*)aligned;
 }
 
+void caml_init_young_ptrs ()
+{
+  Assert (caml_young_start == 0);
+  Assert (heaps_base);
+  caml_young_start = caml_young_end = (char*)heaps_base;
+}
 
 void caml_allocate_minor_heap (asize_t heap_size)
 {
@@ -106,24 +112,25 @@ void caml_free_minor_heap ()
   uintnat heap = (uintnat)caml_young_start;
 
   Assert(caml_young_start != NULL && caml_young_end != NULL);
-
-  /* this should be a pointer just past the guard page */
-  heap -= sysconf(_SC_PAGESIZE);
-  Assert ((heap & ((1 << Minor_heap_align_bits) - 1)) == 0);
-
-  /* instead of unmapping the heap, we map PROT_NONE space over it, so
-     there's no race whereby other code could attempt to reuse the memory. */
-  if (mmap((void*)heap, (1 << Minor_heap_align_bits), PROT_NONE,
-           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0) == MAP_FAILED) {
-    /* if that fails, your OS is broken */
-    caml_fatal_error("wtf");
+  
+  if (caml_young_end != (char*)heaps_base) {
+    /* this should be a pointer just past the guard page */
+    heap -= sysconf(_SC_PAGESIZE);
+    Assert ((heap & ((1 << Minor_heap_align_bits) - 1)) == 0);
+  
+    /* instead of unmapping the heap, we map PROT_NONE space over it, so
+       there's no race whereby other code could attempt to reuse the memory. */
+    if (mmap((void*)heap, (1 << Minor_heap_align_bits), PROT_NONE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0) == MAP_FAILED) {
+      /* if that fails, your OS is broken */
+      caml_fatal_error("wtf");
+    }
+  
+    plat_mutex_lock(&heaps_lock);
+    Assert (heaps_allocated > 0);
+    heaps_allocated--;
+    next_heap[heaps_allocated] = (heap - (uintnat)heaps_base) / (1 << Minor_heap_align_bits);
+    plat_mutex_unlock(&heaps_lock);
   }
-
-  plat_mutex_lock(&heaps_lock);
-  Assert (heaps_allocated > 0);
-  heaps_allocated--;
-  next_heap[heaps_allocated] = (heap - (uintnat)heaps_base) / (1 << Minor_heap_align_bits);
-  plat_mutex_unlock(&heaps_lock);
-
   caml_young_start = caml_young_end = NULL;
 }

@@ -9,6 +9,8 @@
 #include "memory.h"
 #include "fail.h"
 #include "globroots.h"
+#include "signals.h"
+#include "alloc.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -27,6 +29,8 @@ struct domain {
   int is_main;
 
   int id;
+
+  uintnat initial_minor_heap_size;
 };
 
 __thread struct domain* domain_self;
@@ -53,7 +57,7 @@ static caml_root live_domains_list;
 static int next_domain_id;
 static plat_mutex live_domains_lock;
 
-static value domain_alloc() {
+static value domain_alloc(uintnat initial_minor_heap_size) {
   CAMLparam0();
   CAMLlocal2(result, cons);
   /* these really shouldn't be on the minor heap, so we allocate manually */
@@ -65,6 +69,7 @@ static value domain_alloc() {
   atomic_store_rel(&d->is_alive, 1);
   d->is_main = 0;
   d->id = -1;
+  d->initial_minor_heap_size = initial_minor_heap_size;
 
   /* this object will eventually be placed into live_domains_list. We
      allocate the cons cell now, because domain_init is a bad time to 
@@ -82,21 +87,22 @@ static void domain_init(value cons) {
   struct domain* d = Domain_val(Field(cons, 0));
   Assert (domain_self == 0);
   domain_self = d;
-  caml_init_shared_heap();
   d->interrupt_word_address = &caml_young_limit;
+}
 
-  {
-    /* ORD: is_alive = 1 visible before being added to live_domains_list */
-
-    /* FIXME: what are the ordering constraints of plat_mutex_lock, exactly? */
-    
-    /* add to live_domains_list */
-    plat_mutex_lock(&live_domains_lock);
-    caml_modify_field(cons, 1, caml_read_root(live_domains_list));
-    caml_modify_root(live_domains_list, cons);
-    d->id = next_domain_id++;
-    plat_mutex_unlock(&live_domains_lock);
-  }
+/* must be run on the domain's thread */
+static void domain_register(value cons) {
+  struct domain* d = Domain_val(Field(cons, 0));
+  /* ORD: is_alive = 1 visible before being added to live_domains_list */
+  
+  /* FIXME: what are the ordering constraints of plat_mutex_lock, exactly? */
+  
+  /* add to live_domains_list */
+  plat_mutex_lock(&live_domains_lock);
+  caml_modify_field(cons, 1, caml_read_root(live_domains_list));
+  caml_modify_root(live_domains_list, cons);
+  d->id = next_domain_id++;
+  plat_mutex_unlock(&live_domains_lock);
   
   caml_domain_activate();
 }
@@ -135,11 +141,19 @@ static void domain_mark_live() {
 
 static void poll_interrupts();
 static void* domain_thread_func(void* v) {
+  caml_init_young_ptrs();
+  caml_init_shared_heap();
+  caml_init_major_gc();
+
   domain_init((value)v);
+  domain_register((value)v);
+  caml_set_minor_heap_size (caml_norm_minor_heap_size (domain_self->initial_minor_heap_size));
 
   while (1) {
-    usleep(3);
-    /*fprintf(stderr, "%%"); */
+    usleep(10000);
+    /* if (rand() % 10 <= 10) caml_alloc(10, 0); 
+       poll_interrupts(); */
+    caml_trigger_stw_gc();
     poll_interrupts();
   }
 
@@ -147,8 +161,8 @@ static void* domain_thread_func(void* v) {
   return 0;
 }
 
-value caml_domain_create() {
-  value newdom = domain_alloc();
+value caml_domain_create(uintnat minor_size) {
+  value newdom = domain_alloc(minor_size);
   pthread_t th;
   int err = pthread_create(&th, 0, domain_thread_func, (void*)newdom);
   if (err) {
@@ -158,18 +172,27 @@ value caml_domain_create() {
   return newdom;
 }
 
-void caml_domain_register_main() {
+void caml_domain_register_main(uintnat minor_size) {
+  caml_init_young_ptrs();
   caml_init_shared_heap();
-  caml_init_global_roots();
-  live_domains_list = caml_create_root(Val_unit);
   caml_init_major_gc();
 
-  plat_mutex_init(&live_domains_lock);
   value dom = domain_alloc(minor_size);
   domain_init(dom);
   domain_self->is_main = 1;
 
-  caml_domain_create(); /* for testing */
+  caml_init_global_roots();
+  live_domains_list = caml_create_root();
+  plat_mutex_init(&live_domains_lock);
+
+  domain_register(dom);
+
+  caml_set_minor_heap_size (caml_norm_minor_heap_size (minor_size));
+
+  caml_init_signal_handling();
+
+
+  caml_domain_create(minor_size); /* for testing */
 }
 
 int caml_domain_id() {
@@ -224,7 +247,6 @@ static void request_stw() {
 
 void caml_trigger_stw_gc() {
   request_stw();
-  poll_interrupts();
 }
 
 static void stw_phase(void);
@@ -326,14 +348,15 @@ static void barrier_release(int phase) {
 
 
 
-
 static void stw_phase() {
   if (domain_self->is_main) {
     while (caml_sweep(42) <= 0);
 
-    caml_empty_minor_heap();
-    caml_finish_marking();
+
   }
+
+  caml_empty_minor_heap();
+  caml_finish_marking();
 
   if (barrier_enter(0)) {
     domain_mark_live();

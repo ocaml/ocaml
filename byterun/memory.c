@@ -5,20 +5,44 @@
 #include "fail.h"
 #include "memory.h"
 #include "shared_heap.h"
+#include "domain.h"
 
 CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
+  Assert (!Is_foreign(obj));
+  Assert (!Is_foreign(val));
+  /* 
+     FIXME: should have an is_marking check
+     don't want to do this all the time
+     
+     unconditionally mark new value
+  */
+
+  if (Is_block(val) && !Is_young(val)) {
+    caml_darken(val);
+  }
+
+
+      Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
+
+
+  if (!Is_young(obj)) {
+    
+    if (Is_block(val) && Is_young(val)) {
+
+
+
+      /* Add [fp] to remembered set */
+      if (caml_ref_table.ptr >= caml_ref_table.limit){
+        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
+        caml_realloc_ref_table (&caml_ref_table);
+      }
+      *caml_ref_table.ptr++ = &Field(obj, field);      
+    }
+  }
 
   Field(obj, field) = val;
-  if (!Is_young(obj) && Is_block(val) && Is_young(val)) {
-    /* Add [fp] to remembered set */
-    if (caml_ref_table.ptr >= caml_ref_table.limit){
-      CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
-      caml_realloc_ref_table (&caml_ref_table);
-    }
-    *caml_ref_table.ptr++ = &Field(obj, field);
-  }
 }
 
 CAMLexport void caml_initialize_field (value obj, int field, value val)
