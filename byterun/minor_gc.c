@@ -27,16 +27,17 @@
 #include "weak.h"
 #include "domain.h"
 #include "minor_heap.h"
+#include "shared_heap.h"
 
-asize_t caml_minor_heap_size;
-CAMLexport char *caml_young_ptr = NULL;
+asize_t __thread caml_minor_heap_size;
+CAMLexport __thread char *caml_young_ptr = NULL;
 
-CAMLexport struct caml_ref_table
+CAMLexport __thread struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
   caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
 #ifdef DEBUG
-static unsigned long minor_gc_counter = 0;
+static __thread unsigned long minor_gc_counter = 0;
 #endif
 
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
@@ -74,9 +75,7 @@ void caml_set_minor_heap_size (asize_t size)
 {
   if (caml_young_ptr != caml_young_end) caml_minor_collection ();
   Assert (caml_young_ptr == caml_young_end);
-  if (caml_young_start != NULL){
-    caml_free_minor_heap ();
-  }
+  caml_free_minor_heap ();
 
   caml_allocate_minor_heap(size);
 
@@ -88,7 +87,17 @@ void caml_set_minor_heap_size (asize_t size)
   reset_table (&caml_weak_ref_table);
 }
 
-static value oldify_todo_list = 0;
+static __thread value oldify_todo_list = 0;
+static __thread uintnat stat_live_bytes = 0;
+
+static value alloc_shared(mlsize_t wosize, tag_t tag)
+{
+  void* mem = caml_shared_try_alloc(wosize, tag);
+  if (mem == NULL) {
+    caml_fatal_error("allocation failure during minor GC");
+  }
+  return Val_hp(mem);
+}
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -114,7 +123,8 @@ void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        stat_live_bytes += Bhsize_wosize(sz);
+        result = alloc_shared (sz, tag);
         *p = result;
         field0 = Field (v, 0);
         Hd_val (v) = 0;            /* Set forward flag */
@@ -131,7 +141,7 @@ void caml_oldify_one (value v, value *p)
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
-        result = caml_alloc_shr (sz, tag);
+        result = alloc_shared(sz, tag);
         for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
         Hd_val (v) = 0;            /* Set forward flag */
         Field (v, 0) = result;     /*  and forward pointer. */
@@ -160,7 +170,7 @@ void caml_oldify_one (value v, value *p)
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
-          result = caml_alloc_shr (1, Forward_tag);
+          result = alloc_shared (1, Forward_tag);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
           Field (v, 0) = result;      /*  and forward pointer. */
@@ -213,15 +223,41 @@ void caml_oldify_mopup (void)
 */
 void caml_empty_minor_heap (void)
 {
+  uintnat minor_allocated_bytes = caml_young_end - caml_young_ptr;
   value **r;
 
-  if (caml_young_ptr != caml_young_end){
+  if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
+    stat_live_bytes = 0;
     caml_oldify_local_roots();
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
-      caml_oldify_one (**r, *r);
+      value x;
+      caml_oldify_one (**r, &x);
     }
     caml_oldify_mopup ();
+
+    for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
+      if (Is_block(**r) && Is_young(**r)) {
+        Assert (Hp_val (**r) >= caml_young_ptr);
+        value v = **r, vnew;
+        header_t hd = Hd_val(v);
+        int offset = 0;
+        if (Tag_hd(hd) == Infix_tag) {
+          offset = Infix_offset_hd(hd);
+          v -= offset;
+        } 
+        
+        Assert (Hd_val (v) == 0);
+        vnew = Field(v, 0) + offset;
+        Assert(Is_block(vnew) && !Is_young(vnew));
+        Assert(Hd_val(vnew));
+        if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
+        **r = vnew;
+        caml_darken(vnew);
+      }
+    }
+
+
     #if 0
     for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
@@ -234,12 +270,13 @@ void caml_empty_minor_heap (void)
     }
 #endif
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
-    caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
+    caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     caml_young_ptr = caml_young_end;
     caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
-    caml_gc_log ("Minor collection");
+    caml_gc_log ("Minor collection completed: %u of %u kb live",
+                 (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024);
   }
   
 #ifdef DEBUG

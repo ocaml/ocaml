@@ -90,7 +90,7 @@ void caml_scan_global_roots(scanning_action f)
   r = roots_all;
   plat_mutex_unlock(&roots_mutex);
   
-  Assert(!Is_young(r));
+  Assert(!Is_minor(r));
   newr = r;
   f(newr, &newr);
   Assert(r == newr); /* GC should not move r, it is not young */

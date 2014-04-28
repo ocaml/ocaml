@@ -20,13 +20,13 @@
 #include "mlvalues.h"
 #include "stacks.h"
 
+CAMLexport __thread value * caml_stack_low; /* allocation base */
+CAMLexport __thread value * caml_stack_high; /* one-past-the-end */
+CAMLexport __thread value * caml_stack_threshold; /* low + Stack_threshold */
+CAMLexport __thread value * caml_extern_sp;
+CAMLexport __thread intnat caml_trap_sp_off;
+CAMLexport __thread intnat caml_trap_barrier_off;
 caml_root caml_global_data;
-CAMLexport value * caml_stack_low;
-CAMLexport value * caml_stack_high;
-CAMLexport value * caml_stack_threshold;
-CAMLexport value * caml_extern_sp;
-CAMLexport intnat caml_trap_sp_off;
-CAMLexport intnat caml_trap_barrier_off;
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
 

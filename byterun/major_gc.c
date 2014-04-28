@@ -39,29 +39,42 @@ static int mark_stack_pop(value* ret) {
   return 1;
 }
 
+#define Is_markable(v) (Is_block(v) && !Is_minor(v))
+
+static value mark_normalise(value v) {
+  Assert(Is_markable(v));
+  if (Tag_val(v) == Forward_tag) {
+    /* FIXME: short-circuiting lazy values is a useful optimisation */
+  } else if (Tag_val(v) == Infix_tag) {
+    v -= Infix_offset_val(v);
+  }
+  return v;
+}
+
 void mark(value initial) {
-  Assert(Is_block(initial));
-  value next = initial;
-  int found_next = 1;
+  value next;
+  int found_next;
+  if (!Is_markable(initial)) return;
+  next = mark_normalise(initial);
+  if (!caml_mark_object(next)) return;
+  found_next = 1;
   while (found_next) {
     value v = next;
-    header_t hd_v = Hd_val(v);
+    header_t hd_v;
     found_next = 0;
+
+    Assert(Is_markable(v));
+    Assert(Tag_val(v) != Infix_tag);
 
     stat_blocks_marked++;
     /* mark the current object */
+    hd_v = Hd_val(v);
     if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
         value child = Field(v, i);
-        if (Is_block(child) && !Is_young(child)) {
-          header_t hd_child = Hd_val(child);
-          if (Tag_hd (hd_child) == Forward_tag) {
-            /* FIXME: short-circuiting lazy values is a useful optimisation */
-          } else if (Tag_hd (hd_child) == Infix_tag) {
-            child -= Infix_offset_val(child);
-            hd_child = Hd_val(child);
-          }
+        if (Is_markable(child)) {
+          child = mark_normalise(child);
           if (caml_mark_object(child)) {
             if (!found_next) {
               next = child;
@@ -83,17 +96,23 @@ void mark(value initial) {
 
 static void mark_root(value p, value* ptr) {
   if (!p) return;
-  /* fixme infix, etc */
-  if (Is_block(p) && !Is_young(p)) {
-    if (Tag_hd (Hd_val(p)) == Infix_tag) p -= Infix_offset_val(p);
-    if (caml_mark_object(p)) mark(p);
-  }
+  mark(p);
+}
+
+void caml_darken(value v) {
+  Assert (Is_markable(v));
+  v = mark_normalise(v);
+  if (caml_mark_object(v)) mark_stack_push(v);
 }
 
 void caml_finish_marking () {
-  caml_do_roots(&mark_root);
+  value v;
   int i;
+
+  caml_do_roots(&mark_root);
   for (i = 0 ; i < 256; i ++) caml_mark_object(caml_atom(i));
+
+  while (mark_stack_pop(&v)) mark(v);
 
   caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
   stat_blocks_marked = 0;
