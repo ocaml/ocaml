@@ -58,7 +58,7 @@ and as a
 
 \part{The OCaml tools}
 \label{p:commands}
- 
+
 \input{comp.tex}
 \input{top.tex}
 \input{runtime.tex}
