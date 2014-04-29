@@ -1,5 +1,10 @@
 
-#   type t = { x : int; y : int; }
+#   type xxx = { lazy y : int; }
+#   val xxx : xxx = {y = <lazy>}
+# val yyy : xxx = {y = <lazy>}
+# foo
+val zzz : int = 2
+#     type t = { x : int; y : int; }
 # Characters 5-6:
   {x=3;z=2};;
        ^

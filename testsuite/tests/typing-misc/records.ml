@@ -1,3 +1,10 @@
+(* lazy fields *)
+type xxx = { lazy y: int };;
+
+let xxx = { y = (print_string "foo\n"; 2) };;
+let yyy = { y = (print_string "bar\n"; 2 + xxx.y) };;
+let zzz = xxx.y;;
+
 (* undefined labels *)
 type t = {x:int;y:int};;
 {x=3;z=2};;
