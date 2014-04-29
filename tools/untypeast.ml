@@ -134,6 +134,7 @@ and untype_type_declaration decl =
           Ptype_record (List.map (fun ld ->
                 {pld_name=ld.ld_name;
                  pld_mutable=ld.ld_mutable;
+                 pld_lazy=ld.ld_lazy;
                  pld_type=untype_core_type ld.ld_type;
                  pld_loc=ld.ld_loc;
                  pld_attributes=ld.ld_attributes}

@@ -12,6 +12,7 @@
 
 open Format
 open Outcometree
+open Asttypes
 
 exception Ellipsis
 
@@ -478,8 +479,11 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
       end
 
 
-and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+and print_out_label ppf (name, mut, laz, arg) =
+  fprintf ppf "@[<2>%s%s%s :@ %a@];"
+    (if mut = Mutable then "mutable " else "")
+    (if laz = Lazy then "lazy " else "")
+    name
     !out_type arg
 
 let _ = out_module_type := print_out_module_type

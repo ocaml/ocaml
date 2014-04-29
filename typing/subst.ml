@@ -210,6 +210,7 @@ let type_declaration s decl =
                    {
                      ld_id = l.ld_id;
                      ld_mutable = l.ld_mutable;
+                     ld_lazy = l.ld_lazy;
                      ld_type = typexp s l.ld_type;
                      ld_loc = loc s l.ld_loc;
                      ld_attributes = attrs s l.ld_attributes;

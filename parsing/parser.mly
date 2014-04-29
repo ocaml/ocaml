@@ -1618,15 +1618,21 @@ generalized_constructor_arguments:
 ;
 
 
+field_flag:
+    /* empty */      { Immutable, Strict }
+  | MUTABLE          { Mutable  , Strict }
+  | LAZY             { Immutable, Lazy   }
+;
 
 label_declarations:
     label_declaration                           { [$1] }
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label attributes COLON poly_type
+    field_flag label attributes COLON poly_type
       {
-       Type.field (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
+        let mut, laz = $1 in
+        Type.field ~attrs:$3 ~loc:(symbol_rloc()) ~mut ~laz (mkrhs $2 2) $5
       }
 ;
 

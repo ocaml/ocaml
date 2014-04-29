@@ -71,6 +71,18 @@ let fmt_mutable_flag f x =
   | Mutable -> fprintf f "Mutable";
 ;;
 
+let fmt_lazy_flag f x =
+  match x with
+  | Strict -> fprintf f "Strict";
+  | Lazy -> fprintf f "Lazy";
+;;
+
+let fmt_lazy_flag f x =
+  match x with
+  | Strict -> fprintf f "Strict";
+  | Lazy   -> fprintf f "Lazy";
+;;
+
 let fmt_virtual_flag f x =
   match x with
   | Virtual -> fprintf f "Virtual";
@@ -753,10 +765,11 @@ and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc; cd_attr
   list (i+1) core_type ppf cd_args;
   option (i+1) core_type ppf cd_res
 
-and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc; ld_attributes} =
+and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_lazy; ld_type; ld_loc; ld_attributes} =
   line i ppf "%a\n" fmt_location ld_loc;
   attributes i ppf ld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
+  line (i+1) ppf "%a\n" fmt_lazy_flag ld_lazy;
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
 

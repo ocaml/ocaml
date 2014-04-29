@@ -142,7 +142,7 @@ module Type:
     val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
 
     val constructor: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
-    val field: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
+    val field: ?loc:loc -> ?attrs:attrs -> mut:mutable_flag -> laz:lazy_flag -> str -> core_type -> label_declaration
   end
 
 (** {2 Module language} *)

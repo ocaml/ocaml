@@ -205,6 +205,9 @@ class printer  ()= object(self:'self)
   method mutable_flag f   = function
     | Immutable -> ()
     | Mutable -> pp f "mutable@;"
+  method lazy_flag f   = function
+    | Strict -> ()
+    | Lazy -> pp f "lazy@;"
   method virtual_flag f  = function
     | Concrete -> ()
     | Virtual -> pp f "virtual@;"
@@ -1189,7 +1192,10 @@ class printer  ()= object(self:'self)
       | Ptype_abstract -> ()
       | Ptype_record l ->
           let type_record_field f pld =
-            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
+            pp f "@[<2>%a%a%s:@;%a@]"
+              self#mutable_flag pld.pld_mutable
+              self#lazy_flag pld.pld_lazy
+              pld.pld_name.txt self#core_type pld.pld_type in
           pp f "{@\n%a}"
             (self#list type_record_field ~sep:";@\n" )  l ;
       ) x

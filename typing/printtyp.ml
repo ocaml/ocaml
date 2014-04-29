@@ -859,7 +859,7 @@ and tree_of_constructor_ret =
     | Some ret_type -> Some (tree_of_typexp false ret_type)
 
 and tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
+  (Ident.name l.ld_id, l.ld_mutable, l.ld_lazy, tree_of_typexp false l.ld_type)
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
