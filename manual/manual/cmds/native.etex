@@ -156,7 +156,8 @@ Print the version number of "ocamlopt" and a detailed summary of its
 configuration, then exit.
 
 \item["-for-pack" \var{module-path}]
-Generate an object file (".cmx" and ".o"/".obj" files) that can later be included
+Generate an object file (".cmx" and ".o"/".obj" files) that can later be
+included
 as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance, "ocamlopt -for-pack P -c A.ml"
 will generate "a.cmx" and "a.o" files that can later be used with
@@ -374,6 +375,11 @@ been compiled without the "-nodynlink" flag. Some constraints might also
 apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 
+\item["-safe-string"]
+Enforce the separation between types "string" and "bytes",
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
+
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -395,6 +401,12 @@ check for zero divisor in integer division and modulus operations.
 With "-unsafe", an integer division (or modulus) by zero can halt the
 program or continue with an unspecified result instead of raising a
 "Division_by_zero" exception.
+
+\item["-unsafe-string"]
+Identify the types "string" and "bytes",
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
 
 \item["-v"]
 Print the version number of the compiler and the location of the
