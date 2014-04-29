@@ -383,7 +383,7 @@ let read_input_default prompt buffer len =
     while true do
       if !i >= len then raise Exit;
       let c = input_char Pervasives.stdin in
-      buffer.[!i] <- c;
+      Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;
     done;

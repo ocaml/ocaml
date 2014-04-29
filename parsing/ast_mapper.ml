@@ -586,8 +586,9 @@ let default_mapper =
 
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
-  let magic = String.create (String.length Config.ast_impl_magic_number) in
-  really_input ic magic 0 (String.length magic);
+  let magic =
+    really_input_string ic (String.length Config.ast_impl_magic_number)
+  in
   if magic <> Config.ast_impl_magic_number
   && magic <> Config.ast_intf_magic_number then
     failwith "Ast_mapper: unknown magic number";

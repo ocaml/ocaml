@@ -625,15 +625,15 @@ let square_big_int bi =
    else s <- the round number and the result_int is false *)
 let round_futur_last_digit s off_set length =
  let l = pred (length + off_set) in
-  if Char.code(String.get s l) >= Char.code '5'
+  if Char.code(Bytes.get s l) >= Char.code '5'
     then
      let rec round_rec l =
        if l < off_set then true else begin
-         let current_char = String.get s l in
+         let current_char = Bytes.get s l in
          if current_char = '9' then
-           (String.set s l '0'; round_rec (pred l))
+           (Bytes.set s l '0'; round_rec (pred l))
          else
-           (String.set s l (Char.chr (succ (Char.code current_char)));
+           (Bytes.set s l (Char.chr (succ (Char.code current_char)));
             false)
        end
      in round_rec (pred l)
@@ -652,17 +652,19 @@ let approx_big_int prec bi =
                                       (big_int_of_string "963295986"))
                         (big_int_of_string "100000000")))) in
   let s =
-    string_of_big_int (div_big_int bi (power_int_positive_int 10 n)) in
+    Bytes.unsafe_of_string
+      (string_of_big_int (div_big_int bi (power_int_positive_int 10 n)))
+  in
   let (sign, off, len) =
-    if String.get s 0 = '-'
+    if Bytes.get s 0 = '-'
        then ("-", 1, succ prec)
        else ("", 0, prec) in
   if (round_futur_last_digit s off (succ prec))
        then (sign^"1."^(String.make prec '0')^"e"^
-             (string_of_int (n + 1 - off + String.length s)))
-       else (sign^(String.sub s off 1)^"."^
-             (String.sub s (succ off) (pred prec))
-             ^"e"^(string_of_int (n - succ off + String.length s)))
+             (string_of_int (n + 1 - off + Bytes.length s)))
+       else (sign^(Bytes.sub_string s off 1)^"."^
+             (Bytes.sub_string s (succ off) (pred prec))
+             ^"e"^(string_of_int (n - succ off + Bytes.length s)))
 
 (* Logical operations *)
 

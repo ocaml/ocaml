@@ -40,7 +40,9 @@ let input_cmi ic =
 let read_cmi filename =
   let ic = open_in_bin filename in
   try
-    let buffer = Misc.input_bytes ic (String.length Config.cmi_magic_number) in
+    let buffer =
+      really_input_string ic (String.length Config.cmi_magic_number)
+    in
     if buffer <> Config.cmi_magic_number then begin
       close_in ic;
       let pre_len = String.length Config.cmi_magic_number - 3 in

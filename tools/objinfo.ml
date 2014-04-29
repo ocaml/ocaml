@@ -31,7 +31,7 @@ let input_stringlist ic len =
       else acc
     in fold 0 0 []
   in
-  let sect = Misc.input_bytes ic len in
+  let sect = really_input_string ic len in
   get_string_list sect len
 
 let print_name_crc (name, crc) =
@@ -189,7 +189,7 @@ let dump_obj filename =
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
   let len_magic_number = String.length cmo_magic_number in
-  let magic_number = Misc.input_bytes ic len_magic_number in
+  let magic_number = really_input_string ic len_magic_number in
   if magic_number = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;
@@ -219,7 +219,7 @@ let dump_obj filename =
   end else begin
     let pos_trailer = in_channel_length ic - len_magic_number in
     let _ = seek_in ic pos_trailer in
-    let _ = really_input ic magic_number 0 len_magic_number in
+    let magic_number = really_input_string ic len_magic_number in
     if magic_number = Config.exec_magic_number then begin
       dump_byte ic;
       close_in ic

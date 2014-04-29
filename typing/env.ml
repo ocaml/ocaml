@@ -1700,8 +1700,7 @@ and fold_cltypes f =
 
 
 (* Make the initial environment *)
-
-let initial =
+let (initial_safe_string, initial_unsafe_string) =
   Predef.build_initial_env
     (add_type ~check:false)
     (add_exception ~check:false)

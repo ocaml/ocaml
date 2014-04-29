@@ -566,6 +566,9 @@ val print_char : char -> unit
 val print_string : string -> unit
 (** Print a string on standard output. *)
 
+val print_bytes : bytes -> unit
+(** Print a byte sequence on standard output. *)
+
 val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
 
@@ -597,8 +600,8 @@ val prerr_float : float -> unit
 (** Print a floating-point number, in decimal, on standard error. *)
 
 val prerr_endline : string -> unit
-(** Print a string, followed by a newline character on standard error
-   and flush standard error. *)
+(** Print a string, followed by a newline character on standard
+   error and flush standard error. *)
 
 val prerr_newline : unit -> unit
 (** Print a newline character on standard error, and flush
@@ -674,11 +677,18 @@ val output_char : out_channel -> char -> unit
 val output_string : out_channel -> string -> unit
 (** Write the string on the given output channel. *)
 
-val output : out_channel -> string -> int -> int -> unit
-(** [output oc buf pos len] writes [len] characters from string [buf],
+val output_bytes : out_channel -> bytes -> unit
+(** Write the byte sequence on the given output channel. *)
+
+val output : out_channel -> bytes -> int -> int -> unit
+(** [output oc buf pos len] writes [len] characters from byte sequence [buf],
    starting at offset [pos], to the given output channel [oc].
    Raise [Invalid_argument "output"] if [pos] and [len] do not
-   designate a valid substring of [buf]. *)
+   designate a valid range of [buf]. *)
+
+val output_substring : out_channel -> string -> int -> int -> unit
+(** Same as [output] but take a string as argument instead of
+   a byte sequence. *)
 
 val output_byte : out_channel -> int -> unit
 (** Write one 8-bit integer (as the single character with that code)
@@ -769,9 +779,9 @@ val input_line : in_channel -> string
    Raise [End_of_file] if the end of the file is reached
    at the beginning of line. *)
 
-val input : in_channel -> string -> int -> int -> int
+val input : in_channel -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from
-   the given channel [ic], storing them in string [buf], starting at
+   the given channel [ic], storing them in byte sequence [buf], starting at
    character number [pos].
    It returns the actual number of characters read, between 0 and
    [len] (inclusive).
@@ -784,15 +794,21 @@ val input : in_channel -> string -> int -> int -> int
    if desired.  (See also {!Pervasives.really_input} for reading
    exactly [len] characters.)
    Exception [Invalid_argument "input"] is raised if [pos] and [len]
-   do not designate a valid substring of [buf]. *)
+   do not designate a valid range of [buf]. *)
 
-val really_input : in_channel -> string -> int -> int -> unit
+val really_input : in_channel -> bytes -> int -> int -> unit
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
-   storing them in string [buf], starting at character number [pos].
+   storing them in byte sequence [buf], starting at character number [pos].
    Raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
    Raise [Invalid_argument "really_input"] if
-   [pos] and [len] do not designate a valid substring of [buf]. *)
+   [pos] and [len] do not designate a valid range of [buf]. *)
+
+val really_input_string : in_channel -> int -> string
+(** [really_input_string ic len] reads [len] characters from channel [ic]
+   and returns them in a new string.
+   Raise [End_of_file] if the end of file is reached before [len]
+   characters have been read. *)
 
 val input_byte : in_channel -> int
 (** Same as {!Pervasives.input_char}, but return the 8-bit integer representing
@@ -1016,6 +1032,6 @@ val at_exit : (unit -> unit) -> unit
 
 val valid_float_lexem : string -> string
 
-val unsafe_really_input : in_channel -> string -> int -> int -> unit
+val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit

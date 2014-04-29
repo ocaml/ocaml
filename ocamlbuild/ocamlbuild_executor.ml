@@ -59,7 +59,7 @@ let output_lines prefix oc buffer =
   let m = String.length u in
   let output_line i j =
     output_string oc prefix;
-    output oc u i (j - i);
+    output_substring oc u i (j - i);
     output_char oc '\n'
   in
   let rec loop i =
@@ -190,7 +190,7 @@ let execute
   (* ***)
   (*** do_read *)
   let do_read =
-    let u = String.create 4096 in
+    let u = Bytes.create 4096 in
     fun ?(loop=false) fd job ->
       (*if job.job_dying then
         ()
@@ -199,7 +199,7 @@ let execute
           let rec iteration () =
             let m =
               try
-                read fd u 0 (String.length u)
+                read fd u 0 (Bytes.length u)
               with
               | Unix.Unix_error(_,_,_) -> 0
             in
@@ -210,7 +210,7 @@ let execute
                 terminate job
             else
               begin
-                Buffer.add_substring job.job_buffer u 0 m;
+                Buffer.add_subbytes job.job_buffer u 0 m;
                 if loop then
                   iteration ()
                 else

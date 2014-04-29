@@ -1,63 +1,103 @@
-color.o: color.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h
-draw.o: draw.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h
-dump_img.o: dump_img.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h image.h ../../byterun/alloc.h \
- ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/gc.h \
- ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h
-events.o: events.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
- ../../byterun/signals.h
-fill.o: fill.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/memory.h ../../byterun/gc.h \
- ../../byterun/mlvalues.h ../../byterun/major_gc.h \
- ../../byterun/freelist.h ../../byterun/minor_gc.h
-image.o: image.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h image.h ../../byterun/alloc.h \
- ../../byterun/mlvalues.h ../../byterun/custom.h
-make_img.o: make_img.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h image.h ../../byterun/memory.h ../../byterun/gc.h \
- ../../byterun/mlvalues.h ../../byterun/major_gc.h \
- ../../byterun/freelist.h ../../byterun/minor_gc.h
-open.o: open.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
- ../../byterun/callback.h ../../byterun/fail.h ../../byterun/memory.h \
- ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h
-point_col.o: point_col.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h
-sound.o: sound.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h
-subwindow.o: subwindow.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h
-text.o: text.c libgraph.h ../../byterun/mlvalues.h \
- ../../byterun/compatibility.h ../../byterun/config.h \
- ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h
+color.o: color.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h \
+ 
+draw.o: draw.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
+  ../../byterun/mlvalues.h
+dump_img.o: dump_img.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h image.h \
+  ../../byterun/alloc.h ../../byterun/mlvalues.h ../../byterun/memory.h \
+  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
+  ../../byterun/minor_gc.h
+events.o: events.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
+  ../../byterun/mlvalues.h ../../byterun/signals.h
+fill.o: fill.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/memory.h \
+  ../../byterun/gc.h ../../byterun/mlvalues.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h
+image.o: image.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h image.h \
+  ../../byterun/alloc.h ../../byterun/mlvalues.h ../../byterun/custom.h
+make_img.o: make_img.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h image.h \
+  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/mlvalues.h \
+  ../../byterun/major_gc.h ../../byterun/freelist.h \
+  ../../byterun/minor_gc.h
+open.o: open.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
+  ../../byterun/mlvalues.h ../../byterun/callback.h ../../byterun/fail.h \
+  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h
+point_col.o: point_col.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h
+sound.o: sound.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h
+subwindow.o: subwindow.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h
+text.o: text.c libgraph.h \
+  \
+  \
+  \
+  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
+  ../../byterun/mlvalues.h
 graphics.cmi :
 graphicsX11.cmi :
 graphics.cmo : graphics.cmi

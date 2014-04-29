@@ -475,6 +475,12 @@ code for the source file
 is saved in the file
 .IR x .s.
 .TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
+.TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
 the
@@ -521,6 +527,13 @@ an integer division (or modulus) by zero can halt the
 program or continue with an unspecified result instead of raising a
 .B Division_by_zero
 exception.
+.TP
+.B \-unsafe\-string
+Identify the types
+.BR string \ and\  bytes ,
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
 .TP
 .B \-v
 Print the version number of the compiler and the location of the

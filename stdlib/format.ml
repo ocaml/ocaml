@@ -657,9 +657,7 @@ let pp_print_bool state b = pp_print_string state (string_of_bool b);;
 
 (* To format a char. *)
 let pp_print_char state c =
-  let s = String.create 1 in
-  s.[0] <- c;
-  pp_print_as state 1 s
+  pp_print_as state 1 (String.make 1 c)
 ;;
 
 (* Opening boxes. *)
@@ -901,7 +899,7 @@ let rec display_blanks state n =
 ;;
 
 let pp_set_formatter_out_channel state os =
-  state.pp_out_string <- output os;
+  state.pp_out_string <- output_substring os;
   state.pp_out_flush <- (fun () -> flush os);
   state.pp_out_newline <- display_newline state;
   state.pp_out_spaces <- display_blanks state;
@@ -967,7 +965,7 @@ let make_formatter output flush =
 ;;
 
 let formatter_of_out_channel oc =
-  make_formatter (output oc) (fun () -> flush oc)
+  make_formatter (output_substring oc) (fun () -> flush oc)
 ;;
 
 let formatter_of_buffer b =

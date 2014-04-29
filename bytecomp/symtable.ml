@@ -198,7 +198,7 @@ let gen_patch_object str_set buff patchlist =
           gen_patch_int str_set buff pos (num_of_prim name))
     patchlist
 
-let patch_object = gen_patch_object String.unsafe_set
+let patch_object = gen_patch_object Bytes.unsafe_set
 let ls_patch_object = gen_patch_object LongString.set
 
 (* Translate structured constants *)

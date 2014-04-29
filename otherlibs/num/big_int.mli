@@ -187,5 +187,5 @@ val nat_of_big_int : big_int -> nat
 val big_int_of_nat : nat -> big_int
 val base_power_big_int: int -> int -> big_int -> big_int
 val sys_big_int_of_string: string -> int -> int -> big_int
-val round_futur_last_digit : string -> int -> int -> bool
+val round_futur_last_digit : bytes -> int -> int -> bool
 val approx_big_int: int -> big_int -> string

@@ -11,17 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Standard labeled libraries.
+(* Module [BytesLabels]: labelled Bytes module *)
 
-   This meta-module provides labelized version of the {!Array},
-   {!List} and {!String} modules.
-
-   They only differ by their labels. Detailed interfaces can be found
-   in [arrayLabels.mli], [bytesLabels.mli], [listLabels.mli]
-   and [stringLabels.mli].
-*)
-
-module Array = ArrayLabels
-module Bytes = BytesLabels
-module List = ListLabels
-module String = StringLabels
+include Bytes

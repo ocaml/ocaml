@@ -83,7 +83,7 @@ let highlight_terminfo ppf num_lines lb locs =
   (* Count number of lines in phrase *)
   let lines = ref !num_loc_lines in
   for i = pos0 to lb.lex_buffer_len - 1 do
-    if lb.lex_buffer.[i] = '\n' then incr lines
+    if Bytes.get lb.lex_buffer i = '\n' then incr lines
   done;
   (* If too many lines, give up *)
   if !lines >= num_lines - 2 then raise Exit;
@@ -98,7 +98,7 @@ let highlight_terminfo ppf num_lines lb locs =
       Terminfo.standout true;
     if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
       Terminfo.standout false;
-    let c = lb.lex_buffer.[pos + pos0] in
+    let c = Bytes.get lb.lex_buffer (pos + pos0) in
     print_char c;
     bol := (c = '\n')
   done;
@@ -119,7 +119,7 @@ let highlight_dumb ppf lb loc =
   (* Determine line numbers for the start and end points *)
   let line_start = ref 0 and line_end = ref 0 in
   for pos = 0 to end_pos do
-    if lb.lex_buffer.[pos + pos0] = '\n' then begin
+    if Bytes.get lb.lex_buffer (pos + pos0) = '\n' then begin
       if loc.loc_start.pos_cnum > pos then incr line_start;
       if loc.loc_end.pos_cnum   > pos then incr line_end;
     end
@@ -132,7 +132,7 @@ let highlight_dumb ppf lb loc =
   let line = ref 0 in
   let pos_at_bol = ref 0 in
   for pos = 0 to end_pos do
-    match lb.lex_buffer.[pos + pos0] with
+    match Bytes.get lb.lex_buffer (pos + pos0) with
     | '\n' ->
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)

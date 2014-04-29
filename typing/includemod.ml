@@ -401,9 +401,9 @@ let _ = Env.check_modtype_inclusion := check_modtype_inclusion
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
-let compunit impl_name impl_sig intf_name intf_sig =
+let compunit env impl_name impl_sig intf_name intf_sig =
   try
-    signatures Env.initial [] Subst.identity impl_sig intf_sig
+    signatures env [] Subst.identity impl_sig intf_sig
   with Error reasons ->
     raise(Error(([], Env.empty,Interface_mismatch(impl_name, intf_name))
                 :: reasons))
@@ -535,12 +535,12 @@ let include_err ppf (cxt, env, err) =
   Printtyp.wrap_printing_env env (fun () ->
     fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
 
-let buffer = ref ""
+let buffer = ref Bytes.empty
 let is_big obj =
   let size = !Clflags.error_size in
   size > 0 &&
   begin
-    if String.length !buffer < size then buffer := String.create size;
+    if Bytes.length !buffer < size then buffer := Bytes.create size;
     try ignore (Marshal.to_buffer !buffer 0 size obj []); false
     with _ -> true
   end
