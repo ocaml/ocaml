@@ -864,13 +864,6 @@ let check_recordpat_labels loc lbl_pat_list closed =
 
 (* Constructors *)
 
-let lookup_constructor_from_type env tpath lid =
-  let (constructors, _) = Env.find_type_descrs tpath env in
-    match lid with
-      Longident.Lident s ->
-        List.find (fun cstr -> cstr.cstr_name = s) constructors
-    | _ -> raise Not_found
-
 module Constructor = NameChoice (struct
   type t = constructor_description
   let type_kind = "variant"
