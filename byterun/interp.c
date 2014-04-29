@@ -640,7 +640,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Field(block, 0) = accu;
         for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
       } else {
+        Setup_for_gc;
         block = caml_alloc_shr(wosize, tag);
+        Restore_after_gc;
         caml_initialize_field(block, 0, accu);
         for (i = 1; i < wosize; i++) caml_initialize_field(block, i, *sp++);
       }
@@ -683,7 +685,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag);
       } else {
+        Setup_for_gc;
         block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
+        Restore_after_gc;
       }
       Store_double_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
