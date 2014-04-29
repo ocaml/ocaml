@@ -26,13 +26,19 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 256
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
 
-static struct compare_item compare_stack_init[COMPARE_STACK_INIT_SIZE];
+static __thread struct compare_item compare_stack_init[COMPARE_STACK_INIT_SIZE];
 
-static struct compare_item * compare_stack = compare_stack_init;
-static struct compare_item * compare_stack_limit = compare_stack_init
-                                                   + COMPARE_STACK_INIT_SIZE;
+static __thread struct compare_item * compare_stack;
+static __thread struct compare_item * compare_stack_limit;
 
-CAMLexport int caml_compare_unordered;
+static void compare_init_stack(void)
+{
+  compare_stack = compare_stack_init;
+  compare_stack_limit = compare_stack + COMPARE_STACK_INIT_SIZE;
+}
+
+
+CAMLexport __thread int caml_compare_unordered;
 
 /* Free the compare stack if needed */
 static void compare_free_stack(void)
@@ -40,8 +46,7 @@ static void compare_free_stack(void)
   if (compare_stack != compare_stack_init) {
     free(compare_stack);
     /* Reinitialize the globals for next time around */
-    compare_stack = compare_stack_init;
-    compare_stack_limit = compare_stack + COMPARE_STACK_INIT_SIZE;
+    compare_init_stack();
   }
 }
 
@@ -93,6 +98,8 @@ static intnat compare_val(value v1, value v2, int total)
 {
   struct compare_item * sp;
   tag_t t1, t2;
+
+  if (!compare_stack) compare_init_stack();
 
   sp = compare_stack;
   while (1) {
