@@ -478,94 +478,95 @@ print_expr e; print_newline ();;
 print_expr (deriv e "x"); print_newline ();;
 \end{caml_example}
 
-Parsing (transforming concrete syntax into abstract syntax) is usually
-more delicate. OCaml offers several tools to help write parsers:
-on the one hand, OCaml versions of the lexer generator Lex and the
-parser generator Yacc (see chapter~\ref{c:ocamlyacc}), which handle
-LALR(1) languages using push-down automata; on the other hand, a
-predefined type of streams (of characters or tokens) and
-pattern-matching over streams, which facilitate the writing of
-recursive-descent parsers for LL(1) languages. An example using
-"ocamllex" and "ocamlyacc" is given in
-chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
-The syntactic support for stream parsers is provided by the Camlp4
-preprocessor, which can be loaded into the interactive toplevel via
-the "#load" directives below.
-
-\begin{caml_example}
-#load "dynlink.cma";;
-#load "camlp4o.cma";;
-open Genlex;;
-let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
-\end{caml_example}
-For the lexical analysis phase (transformation of the input text into
-a stream of tokens), we use a ``generic'' lexer provided in the
-standard library module "Genlex". The "make_lexer" function takes a
-list of keywords and returns a lexing function that ``tokenizes'' an
-input stream of characters. Tokens are either identifiers, keywords,
-or literals (integer, floats, characters, strings). Whitespace and
-comments are skipped.
-\begin{caml_example}
-let token_stream = lexer (Stream.of_string "1.0 +x");;
-Stream.next token_stream;;
-Stream.next token_stream;;
-Stream.next token_stream;;
-\end{caml_example}
-
-The parser itself operates by pattern-matching on the stream of
-tokens. As usual with recursive descent parsers, we use several
-intermediate parsing functions to reflect the precedence and
-associativity of operators. Pattern-matching over streams is more
-powerful than on regular data structures, as it allows recursive calls
-to parsing functions inside the patterns, for matching sub-components of
-the input stream. See the Camlp4 documentation for more details.
-
-%Already said above
-%In order to use stream parsers at toplevel, we must first load the
-%"camlp4" preprocessor.
-%\begin{caml_example}
-%#load"camlp4o.cma";;
-%\end{caml_example}
-%Then we are ready to define our parser.
-\begin{caml_example}
-let rec parse_expr = parser
-    [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
-and parse_more_adds e1 = parser
-    [< 'Kwd "+"; e2 = parse_mult; e = parse_more_adds (Sum(e1, e2)) >] -> e
-  | [< 'Kwd "-"; e2 = parse_mult; e = parse_more_adds (Diff(e1, e2)) >] -> e
-  | [< >] -> e1
-and parse_mult = parser
-    [< e1 = parse_simple; e = parse_more_mults e1 >] -> e
-and parse_more_mults e1 = parser
-    [< 'Kwd "*"; e2 = parse_simple; e = parse_more_mults (Prod(e1, e2)) >] -> e
-  | [< 'Kwd "/"; e2 = parse_simple; e = parse_more_mults (Quot(e1, e2)) >] -> e
-  | [< >] -> e1
-and parse_simple = parser
-    [< 'Ident s >] -> Var s
-  | [< 'Int i >] -> Const(float i)
-  | [< 'Float f >] -> Const f
-  | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
-let parse_expression = parser [< e = parse_expr; _ = Stream.empty >] -> e;;
-\end{caml_example}
-
-Composing the lexer and parser, we finally obtain a function to read
-an expression from a character string:
-\begin{caml_example}
-let read_expression s = parse_expression (lexer (Stream.of_string s));;
-read_expression "2*(x+y)";;
-\end{caml_example}
-A small puzzle: why do we get different results in the following two
-examples?
-\begin{caml_example}
-read_expression "x - 1";;
-read_expression "x-1";;
-\end{caml_example}
-Answer: the generic lexer provided by "Genlex" recognizes negative
-integer literals as one integer token.  Hence, "x-1" is read as
-the token "Ident \"x\"" followed by the token "Int(-1)"; this sequence
-does not match any of the parser rules.  On the other hand,
-the second space in "x - 1" causes the lexer to return the three
-expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
+%%%%%%%%%%% Should be moved to the camlp4 documentation.
+%% Parsing (transforming concrete syntax into abstract syntax) is usually
+%% more delicate. OCaml offers several tools to help write parsers:
+%% on the one hand, OCaml versions of the lexer generator Lex and the
+%% parser generator Yacc (see chapter~\ref{c:ocamlyacc}), which handle
+%% LALR(1) languages using push-down automata; on the other hand, a
+%% predefined type of streams (of characters or tokens) and
+%% pattern-matching over streams, which facilitate the writing of
+%% recursive-descent parsers for LL(1) languages. An example using
+%% "ocamllex" and "ocamlyacc" is given in
+%% chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
+%% The syntactic support for stream parsers is provided by the Camlp4
+%% preprocessor, which can be loaded into the interactive toplevel via
+%% the "#load" directives below.
+%%
+%% \begin{caml_example}
+%% #load "dynlink.cma";;
+%% #load "camlp4o.cma";;
+%% open Genlex;;
+%% let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
+%% \end{caml_example}
+%% For the lexical analysis phase (transformation of the input text into
+%% a stream of tokens), we use a ``generic'' lexer provided in the
+%% standard library module "Genlex". The "make_lexer" function takes a
+%% list of keywords and returns a lexing function that ``tokenizes'' an
+%% input stream of characters. Tokens are either identifiers, keywords,
+%% or literals (integer, floats, characters, strings). Whitespace and
+%% comments are skipped.
+%% \begin{caml_example}
+%% let token_stream = lexer (Stream.of_string "1.0 +x");;
+%% Stream.next token_stream;;
+%% Stream.next token_stream;;
+%% Stream.next token_stream;;
+%% \end{caml_example}
+%%
+%% The parser itself operates by pattern-matching on the stream of
+%% tokens. As usual with recursive descent parsers, we use several
+%% intermediate parsing functions to reflect the precedence and
+%% associativity of operators. Pattern-matching over streams is more
+%% powerful than on regular data structures, as it allows recursive calls
+%% to parsing functions inside the patterns, for matching sub-components of
+%% the input stream. See the Camlp4 documentation for more details.
+%%
+%% %Already said above
+%% %In order to use stream parsers at toplevel, we must first load the
+%% %"camlp4" preprocessor.
+%% %\begin{caml_example}
+%% %#load"camlp4o.cma";;
+%% %\end{caml_example}
+%% %Then we are ready to define our parser.
+%% \begin{caml_example}
+%% let rec parse_expr = parser
+%%     [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
+%% and parse_more_adds e1 = parser
+%%     [< 'Kwd "+"; e2 = parse_mult; e = parse_more_adds (Sum(e1, e2)) >] -> e
+%%   | [< 'Kwd "-"; e2 = parse_mult; e = parse_more_adds (Diff(e1, e2)) >] -> e
+%%   | [< >] -> e1
+%% and parse_mult = parser
+%%     [< e1 = parse_simple; e = parse_more_mults e1 >] -> e
+%% and parse_more_mults e1 = parser
+%%     [< 'Kwd "*"; e2 = parse_simple; e = parse_more_mults (Prod(e1, e2)) >] -> e
+%%   | [< 'Kwd "/"; e2 = parse_simple; e = parse_more_mults (Quot(e1, e2)) >] -> e
+%%   | [< >] -> e1
+%% and parse_simple = parser
+%%     [< 'Ident s >] -> Var s
+%%   | [< 'Int i >] -> Const(float i)
+%%   | [< 'Float f >] -> Const f
+%%   | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
+%% let parse_expression = parser [< e = parse_expr; _ = Stream.empty >] -> e;;
+%% \end{caml_example}
+%%
+%% Composing the lexer and parser, we finally obtain a function to read
+%% an expression from a character string:
+%% \begin{caml_example}
+%% let read_expression s = parse_expression (lexer (Stream.of_string s));;
+%% read_expression "2*(x+y)";;
+%% \end{caml_example}
+%% A small puzzle: why do we get different results in the following two
+%% examples?
+%% \begin{caml_example}
+%% read_expression "x - 1";;
+%% read_expression "x-1";;
+%% \end{caml_example}
+%% Answer: the generic lexer provided by "Genlex" recognizes negative
+%% integer literals as one integer token.  Hence, "x-1" is read as
+%% the token "Ident \"x\"" followed by the token "Int(-1)"; this sequence
+%% does not match any of the parser rules.  On the other hand,
+%% the second space in "x - 1" causes the lexer to return the three
+%% expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
 \section{Standalone OCaml programs}
 \pdfsection{Standalone OCaml programs}
