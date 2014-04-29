@@ -377,7 +377,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
+  `{emit_label lbl}	QWORD	{emit_int64 cst}\n`
 
 (* Output the assembly code for an instruction *)
 

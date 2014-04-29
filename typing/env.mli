@@ -29,7 +29,8 @@ type summary =
 type t
 
 val empty: t
-val initial: t
+val initial_safe_string: t
+val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
 
 type type_descriptions =

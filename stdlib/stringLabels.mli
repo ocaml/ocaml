@@ -17,61 +17,65 @@ external length : string -> int = "%string_length"
 (** Return the length (number of characters) of the given string. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns character number [n] in string [s].
-   The first character is character number 0.
-   The last character is character number [String.length s - 1].
+(** [String.get s n] returns the character at index [n] in string [s].
    You can also write [s.[n]] instead of [String.get s n].
 
-   Raise [Invalid_argument "index out of bounds"]
-   if [n] is outside the range 0 to [(String.length s - 1)]. *)
+   Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
-
-external set : string -> int -> char -> unit = "%string_safe_set"
-(** [String.set s n c] modifies string [s] in place,
-   replacing the character number [n] by [c].
+external set : bytes -> int -> char -> unit = "%string_safe_set"
+  [@@ocaml.deprecated]
+(** [String.set s n c] modifies byte sequence [s] in place,
+   replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
-   Raise [Invalid_argument "index out of bounds"]
-   if [n] is outside the range 0 to [(String.length s - 1)]. *)
 
-external create : int -> string = "caml_create_string"
-(** [String.create n] returns a fresh string of length [n].
-   The string initially contains arbitrary characters.
-   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_string_length].
-*)
+   Raise [Invalid_argument] if [n] is not a valid index in [s].
+
+   @deprecated This is a deprecated alias of {!Bytes.set}. *)
+
+external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
+(** [String.create n] returns a fresh byte sequence of length [n].
+   The sequence is uninitialized and contains arbitrary bytes.
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+   @deprecated This is a deprecated alias of {!Bytes.create}. *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
    filled with the character [c].
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.*)
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val copy : string -> string
 (** Return a copy of the given string. *)
 
 val sub : string -> pos:int -> len:int -> string
 (** [String.sub s start len] returns a fresh string of length [len],
-   containing the characters number [start] to [start + len - 1]
-   of string [s].
-   Raise [Invalid_argument] if [start] and [len] do not
-   designate a valid substring of [s]; that is, if [start < 0],
-   or [len < 0], or [start + len > ]{!StringLabels.length}[ s]. *)
+   containing the substring of [s] that starts at position [start] and
+   has length [len].
 
-val fill : string -> pos:int -> len:int -> char -> unit
-(** [String.fill s start len c] modifies string [s] in place,
-   replacing the characters number [start] to [start + len - 1]
-   by [c].
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid substring of [s]. *)
 
+val fill : bytes -> pos:int -> len:int -> char -> unit [@@ocaml.deprecated]
+(** [String.fill s start len c] modifies byte sequence [s] in place,
+   replacing [len] bytes by [c], starting at [start].
+
+   Raise [Invalid_argument] if [start] and [len] do not
+   designate a valid substring of [s].
+
+   @deprecated This is a deprecated alias of {!Bytes.fill}. *)
+
 val blit :
-  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
-(** [String.blit src srcoff dst dstoff len] copies [len] characters
-   from string [src], starting at character number [srcoff], to
-   string [dst], starting at character number [dstoff]. It works
-   correctly even if [src] and [dst] are the same string,
-   and the source and destination chunks overlap.
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
+  -> unit
+(** [String.blit src srcoff dst dstoff len] copies [len] bytes
+   from the string [src], starting at index [srcoff],
+   to byte sequence [dst], starting at character number [dstoff].
+
    Raise [Invalid_argument] if [srcoff] and [len] do not
-   designate a valid substring of [src], or if [dstoff] and [len]
-   do not designate a valid substring of [dst]. *)
+   designate a valid range of [src], or if [dstoff] and [len]
+   do not designate a valid range of [dst]. *)
 
 val concat : sep:string -> string list -> string
 (** [String.concat sep sl] concatenates the list of strings [sl],
@@ -86,8 +90,7 @@ val iteri : f:(int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
    function is applied to the index of the element as first argument
    (counting from 0), and the character itself as second argument.
-   @since 4.00.0
-*)
+   @since 4.00.0 *)
 
 val map : f:(char -> char) -> string -> string
 (** [String.map f s] applies function [f] in turn to all
@@ -96,10 +99,11 @@ val map : f:(char -> char) -> string -> string
    @since 4.00.0 *)
 
 val trim : string -> string
-(** Return a copy of the argument, without leading and trailing whitespace.
-   The characters regarded as whitespace are: [' '], ['\012'], ['\n'],
-   ['\r'], and ['\t'].  If there is no whitespace character in the argument,
-   return the original string itself, not a copy.
+(** Return a copy of the argument, without leading and trailing
+   whitespace.  The characters regarded as whitespace are: [' '],
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
+   trailing whitespace character in the argument, return the original
+   string itself, not a copy.
    @since 4.00.0 *)
 
 val escaped : string -> string
@@ -107,28 +111,36 @@ val escaped : string -> string
    represented by escape sequences, following the lexical
    conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
-   not a copy. *)
+   not a copy. Its inverse function is Scanf.unescaped. *)
 
 val index : string -> char -> int
-(** [String.index s c] returns the position of the leftmost
+(** [String.index s c] returns the index of the first
    occurrence of character [c] in string [s].
+
    Raise [Not_found] if [c] does not occur in [s]. *)
 
 val rindex : string -> char -> int
-(** [String.rindex s c] returns the position of the rightmost
+(** [String.rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
+
    Raise [Not_found] if [c] does not occur in [s]. *)
 
 val index_from : string -> int -> char -> int
-(** Same as {!StringLabels.index}, but start
-   searching at the character position given as second argument.
-   [String.index s c] is equivalent to [String.index_from s 0 c].*)
+(** [String.index_from s i c] returns the index of the
+   first occurrence of character [c] in string [s] after position [i].
+   [String.index s c] is equivalent to [String.index_from s 0 c].
+
+   Raise [Invalid_argument] if [i] is not a valid position in [s].
+   Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
 val rindex_from : string -> int -> char -> int
-(** Same as {!StringLabels.rindex}, but start
-   searching at the character position given as second argument.
+(** [String.rindex_from s i c] returns the index of the
+   last occurrence of character [c] in string [s] before position [i+1].
    [String.rindex s c] is equivalent to
-   [String.rindex_from s (String.length s - 1) c]. *)
+   [String.rindex_from s (String.length s - 1) c].
+
+   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+   Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
 
 val contains : string -> char -> bool
 (** [String.contains s c] tests if character [c]
@@ -136,15 +148,18 @@ val contains : string -> char -> bool
 
 val contains_from : string -> int -> char -> bool
 (** [String.contains_from s start c] tests if character [c]
-   appears in the substring of [s] starting from [start] to the end
-   of [s].
-   Raise [Invalid_argument] if [start] is not a valid index of [s]. *)
+   appears in [s] after position [start].
+   [String.contains s c] is equivalent to
+   [String.contains_from s 0 c].
+
+   Raise [Invalid_argument] if [start] is not a valid position in [s]. *)
 
 val rcontains_from : string -> int -> char -> bool
 (** [String.rcontains_from s stop c] tests if character [c]
-   appears in the substring of [s] starting from the beginning
-   of [s] to index [stop].
-   Raise [Invalid_argument] if [stop] is not a valid index of [s]. *)
+   appears in [s] before position [stop+1].
+
+   Raise [Invalid_argument] if [stop < 0] or [stop+1] is not a valid
+   position in [s]. *)
 
 val uppercase : string -> string
 (** Return a copy of the argument, with all lowercase letters
@@ -176,9 +191,11 @@ val compare: t -> t -> int
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+  [@@ocaml.deprecated]
 external unsafe_blit :
-  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
-  string -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
+  [@@ocaml.deprecated]

@@ -161,7 +161,7 @@ let package_object_files ppf files targetcmx
 
 (* The entry point *)
 
-let package_files ppf files targetcmx =
+let package_files ppf initial_env files targetcmx =
   let files =
     List.map
       (fun f ->
@@ -177,7 +177,8 @@ let package_files ppf files targetcmx =
   (* Set the name of the current compunit *)
   Compilenv.reset ?packname:!Clflags.for_package targetname;
   try
-    let coercion = Typemod.package_units files targetcmi targetname in
+    let coercion =
+      Typemod.package_units initial_env files targetcmi targetname in
     package_object_files ppf files targetcmx targetobj targetname coercion
   with x ->
     remove_file targetcmx; remove_file targetobj;

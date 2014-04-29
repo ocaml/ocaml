@@ -48,12 +48,14 @@ module type Bytecomp_options =
     val _principal : unit -> unit
     val _rectypes : unit -> unit
     val _runtime_variant : string -> unit
+    val _safe_string : unit -> unit
     val _short_paths : unit -> unit
     val _strict_sequence : unit -> unit
     val _trans_mod : unit -> unit
     val _thread : unit -> unit
     val _vmthread : unit -> unit
     val _unsafe : unit -> unit
+    val _unsafe_string : unit -> unit
     val _use_runtime : string -> unit
     val _v : unit -> unit
     val _version : unit -> unit
@@ -92,11 +94,13 @@ module type Bytetop_options = sig
   val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
@@ -152,12 +156,14 @@ module type Optcomp_options = sig
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _S : unit -> unit
+  val _safe_string : unit -> unit
   val _shared : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _version : unit -> unit
@@ -210,11 +216,13 @@ module type Opttop_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
+  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit

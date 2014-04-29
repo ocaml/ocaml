@@ -49,7 +49,7 @@ val current_prompt : string ref
 (* Where the user input come from. *)
 val user_channel : io_channel ref
 
-val read_user_input : string -> int -> int
+val read_user_input : bytes -> int -> int
 
 (* Stop reading user input. *)
 val stop_user_input : unit -> unit

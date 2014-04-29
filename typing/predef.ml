@@ -41,6 +41,7 @@ and ident_nativeint = ident_create "nativeint"
 and ident_int32 = ident_create "int32"
 and ident_int64 = ident_create "int64"
 and ident_lazy_t = ident_create "lazy_t"
+and ident_bytes = ident_create "bytes"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -57,6 +58,7 @@ and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
+and path_bytes = Pident ident_bytes
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -72,6 +74,7 @@ and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
+and type_bytes = newgenty (Tconstr(path_bytes, [], ref Mnil))
 
 let ident_match_failure = ident_create_predef_exn "Match_failure"
 and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
@@ -119,7 +122,7 @@ and ident_nil = ident_create "[]"
 and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
-let build_initial_env add_type add_extension empty_env =
+let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
@@ -205,6 +208,13 @@ let build_initial_env add_type add_extension empty_env =
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))))
+
+let build_initial_env add_type add_exception empty_env =
+  let common = common_initial_env add_type add_exception empty_env in
+  let safe_string = add_type ident_bytes decl_abstr common in
+  let decl_bytes_unsafe = {decl_abstr with type_manifest = Some type_string} in
+  let unsafe_string = add_type ident_bytes decl_bytes_unsafe common in
+  (safe_string, unsafe_string)
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

@@ -791,12 +791,12 @@ and module_binding =
 
 type toplevel_phrase =
   | Ptop_def of structure
-  | Ptop_dir of string * directive_argument list
+  | Ptop_dir of string * directive_argument
      (* #use, #load ... *)
 
 and directive_argument =
+  | Pdir_none
   | Pdir_string of string
   | Pdir_int of int
   | Pdir_ident of Longident.t
   | Pdir_bool of bool
-  | Pdir_keyword of string

@@ -64,7 +64,7 @@ let apply_rewriter magic fn_in ppx =
   (* check magic before passing to the next ppx *)
   let ic = open_in_bin fn_out in
   let buffer =
-    try Misc.input_bytes ic (String.length magic) with End_of_file -> "" in
+    try really_input_string ic (String.length magic) with End_of_file -> "" in
   close_in ic;
   if buffer <> magic then begin
     Misc.remove_file fn_out;
@@ -75,7 +75,7 @@ let apply_rewriter magic fn_in ppx =
 let read_ast magic fn =
   let ic = open_in_bin fn in
   try
-    let buffer = Misc.input_bytes ic (String.length magic) in
+    let buffer = really_input_string ic (String.length magic) in
     assert(buffer = magic); (* already checked by apply_rewriter *)
     Location.input_name := input_value ic;
     let ast = input_value ic in
@@ -105,7 +105,7 @@ let file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
-      let buffer = Misc.input_bytes ic (String.length ast_magic) in
+      let buffer = really_input_string ic (String.length ast_magic) in
       if buffer = ast_magic then true
       else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
         raise Outdated_version

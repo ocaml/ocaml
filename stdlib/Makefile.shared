@@ -15,13 +15,14 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib
+COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
+          -safe-string
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo $(OTHERS)
-OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
+OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
@@ -33,7 +34,8 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   filename.cmo complex.cmo \
-  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
+  stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

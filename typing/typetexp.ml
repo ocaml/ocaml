@@ -126,7 +126,7 @@ let find_component lookup make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial
+        lookup (Longident.Lident s) Env.initial_safe_string
     | _ -> lookup lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
@@ -409,7 +409,7 @@ let rec transl_type env policy styp =
           let (path, decl) = Env.lookup_type lid2 env in
           (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, env, Unbound_class lid.txt))
+          ignore (find_class env styp.ptyp_loc lid.txt); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,

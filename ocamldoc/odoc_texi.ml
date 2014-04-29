@@ -43,24 +43,20 @@ let is = function
 
 let pad_to n s =
   let len = String.length s in
-  if len < n
-  then
-    let s' = String.make n ' ' in
-    String.blit s 0 s' 0 len ; s'
-  else s
+  if len < n then s ^ String.make (n - len) ' ' else s
 
 let indent nb_sp s =
   let c = ref 0 in
   let len = pred (String.length s) in
   for i = 0 to len do if s.[i] = '\n' then incr c done ;
-  let s' = String.make (succ len + (succ !c) * nb_sp ) ' ' in
+  let s' = Bytes.make (succ len + (succ !c) * nb_sp ) ' ' in
   c := nb_sp ;
   for i = 0 to len do
-    s'.[!c] <- s.[i] ;
+    Bytes.set s' !c s.[i] ;
     if s.[i] = '\n' then c := !c + nb_sp ;
     incr c
   done ;
-  s'
+  Bytes.to_string s'
 
 type subparts = [
   | `Module of Odoc_info.Module.t_module
@@ -449,8 +445,7 @@ class texi =
     method private soft_fix_linebreaks =
       let re = Str.regexp "\n[ \t]*" in
       fun ind t ->
-        let rep = String.make (succ ind) ' ' in
-        rep.[0] <- '\n' ;
+        let rep = "\n" ^ String.make ind ' ' in
         List.map
           (function
             | Raw s -> Raw (Str.global_replace re rep s)

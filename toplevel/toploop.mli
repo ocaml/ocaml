@@ -39,7 +39,6 @@ type directive_fun =
    | Directive_int of (int -> unit)
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
-   | Directive_generic of (Parsetree.directive_argument list -> unit)
 
 val directive_table : (string, directive_fun) Hashtbl.t
         (* Table of known directives, with their execution function *)
@@ -104,7 +103,7 @@ val print_out_phrase :
 
 (* Hooks for external line editor *)
 
-val read_interactive_input : (string -> string -> int -> int * bool) ref
+val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 
 (* Hooks for initialization *)
 

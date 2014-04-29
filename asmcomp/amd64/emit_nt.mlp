@@ -335,7 +335,7 @@ let add_float_constant cst =
       lbl
 
 let emit_float_constant (cst, lbl) =
-  `{emit_label lbl}:	QWORD	{emit_int64 cst}\n`
+  `{emit_label lbl}	QWORD	{emit_int64 cst}\n`
 
 let emit_movabs reg n =
   (* force ml64 to use mov reg, imm64 instruction *)

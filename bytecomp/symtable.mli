@@ -17,7 +17,7 @@ open Cmo_format
 (* Functions for batch linking *)
 
 val init: unit -> unit
-val patch_object: string -> (reloc_info * int) list -> unit
+val patch_object: bytes -> (reloc_info * int) list -> unit
 val ls_patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
 val require_primitive: string -> unit
 val initial_global_table: unit -> Obj.t array

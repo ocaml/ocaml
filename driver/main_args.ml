@@ -247,6 +247,14 @@ let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
 
+let mk_safe_string f =
+  "-safe-string", Arg.Unit f, " Make strings immutable"
+;;
+
+let mk_shared f =
+  "-shared", Arg.Unit f, " Produce a dynlinkable plugin"
+;;
+
 let mk_short_paths f =
   "-short-paths", Arg.Unit f, " Shorten paths in types"
 ;;
@@ -258,10 +266,6 @@ let mk_stdin f =
 let mk_strict_sequence f =
   "-strict-sequence", Arg.Unit f,
   " Left-hand part of a sequence must have type unit"
-;;
-
-let mk_shared f =
-  "-shared", Arg.Unit f, " Produce a dynlinkable plugin"
 ;;
 
 let mk_thread f =
@@ -276,6 +280,10 @@ let mk_trans_mod f =
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
+;;
+
+let mk_unsafe_string f =
+  "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
 
 let mk_use_runtime f =
@@ -475,12 +483,14 @@ module type Bytecomp_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _thread : unit -> unit
   val _vmthread : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _use_runtime : string -> unit
   val _v : unit -> unit
   val _version : unit -> unit
@@ -518,11 +528,13 @@ module type Bytetop_options = sig
   val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _stdin: unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
@@ -578,12 +590,14 @@ module type Optcomp_options = sig
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
   val _S : unit -> unit
+  val _safe_string : unit -> unit
   val _shared : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _version : unit -> unit
@@ -636,11 +650,13 @@ module type Opttop_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _S : unit -> unit
+  val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _stdin : unit -> unit
   val _strict_sequence : unit -> unit
   val _trans_mod : unit -> unit
   val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
   val _w : string -> unit
@@ -719,11 +735,13 @@ struct
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
+    mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
+    mk_unsafe_string F._unsafe_string;
     mk_use_runtime F._use_runtime;
     mk_use_runtime_2 F._use_runtime;
     mk_v F._v;
@@ -765,11 +783,13 @@ struct
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
+    mk_unsafe_string F._unsafe_string;
     mk_version F._version;
     mk_vnum F._vnum;
     mk_w F._w;
@@ -828,12 +848,14 @@ struct
     mk_rectypes F._rectypes;
     mk_runtime_variant F._runtime_variant;
     mk_S F._S;
+    mk_safe_string F._safe_string;
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
     mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
+    mk_unsafe_string F._unsafe_string;
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
@@ -887,11 +909,13 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_principal F._principal;
     mk_rectypes F._rectypes;
     mk_S F._S;
+    mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
     mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
+    mk_unsafe_string F._unsafe_string;
     mk_version F._version;
     mk_vnum F._vnum;
     mk_w F._w;

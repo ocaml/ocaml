@@ -523,9 +523,9 @@ use_file_tail:
   | SEMISEMI seq_expr post_item_attributes use_file_tail
                                               { Ptop_def[mkstrexp $2 $3] :: $4 }
   | SEMISEMI structure_item use_file_tail     { Ptop_def[$2] :: $3 }
-  | SEMISEMI toplevel_directive SEMISEMI use_file_tail { $2 :: $4 }
+  | SEMISEMI toplevel_directive use_file_tail { $2 :: $3 }
   | structure_item use_file_tail              { Ptop_def[$1] :: $2 }
-  | toplevel_directive SEMISEMI use_file_tail          { $1 :: $3 }
+  | toplevel_directive use_file_tail          { $1 :: $2 }
 ;
 parse_core_type:
     core_type EOF { $1 }
@@ -2005,23 +2005,15 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-    SHARP ident toplevel_directive_args    { Ptop_dir($2, $3) }
+    SHARP ident                 { Ptop_dir($2, Pdir_none) }
+  | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
+  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
+  | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
+  | SHARP ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
+  | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
+  | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }
 ;
-toplevel_directive_arg:
-  | STRING          { Pdir_string (fst $1) }
-  | INT             { Pdir_int $1 }
-  | val_longident   { Pdir_ident $1 }
-  | mod_longident   { Pdir_ident $1 }
-  | keyword         {
-    match $1 with
-    | "true" -> Pdir_bool true
-    | "false" -> Pdir_bool false
-    | s -> Pdir_keyword s
-  }
-toplevel_directive_args:
-  | /*empty*/ { [] }
-  | toplevel_directive_arg toplevel_directive_args { $1 :: $2 }
-;
+
 /* Miscellaneous */
 
 name_tag:
@@ -2077,7 +2069,9 @@ additive:
 
 /* Attributes and extensions */
 
-keyword:
+single_attr_id:
+    LIDENT { $1 }
+  | UIDENT { $1 }
   | AND { "and" }
   | AS { "as" }
   | ASSERT { "assert" }
@@ -2127,11 +2121,6 @@ keyword:
   | WHILE { "while" }
   | WITH { "with" }
 /* mod/land/lor/lxor/lsl/lsr/asr are not supported for now */
-;
-single_attr_id:
-    LIDENT { $1 }
-  | UIDENT { $1 }
-  | keyword { $1 }
 ;
 
 attr_id:

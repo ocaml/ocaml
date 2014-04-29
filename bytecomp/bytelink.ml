@@ -113,7 +113,7 @@ let scan_file obj_name tolink =
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = input_bytes ic (String.length cmo_magic_number) in
+    let buffer = really_input_string ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       (* This is a .cmo file. It must be linked in any case.
          Read the relocation information to see which modules it
@@ -256,7 +256,7 @@ let output_debug_info oc =
   List.iter
     (fun (ofs, evl) ->
       output_binary_int oc ofs;
-      Array.iter (output_string oc) evl)
+      Array.iter (output_bytes oc) evl)
     !debug_info;
   debug_info := []
 
@@ -317,7 +317,7 @@ let link_bytecode ppf tolink exec_name standalone =
       try Dll.open_dlls Dll.For_checking sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
     end;
-    let output_fun = output_string outchan
+    let output_fun = output_bytes outchan
     and currpos_fun () = pos_out outchan - start_code in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
     if check_dlls then Dll.close_all_dlls();
@@ -371,12 +371,12 @@ let output_code_string_counter = ref 0
 
 let output_code_string outchan code =
   let pos = ref 0 in
-  let len = String.length code in
+  let len = Bytes.length code in
   while !pos < len do
-    let c1 = Char.code(code.[!pos]) in
-    let c2 = Char.code(code.[!pos + 1]) in
-    let c3 = Char.code(code.[!pos + 2]) in
-    let c4 = Char.code(code.[!pos + 3]) in
+    let c1 = Char.code(Bytes.get code !pos) in
+    let c2 = Char.code(Bytes.get code (!pos + 1)) in
+    let c3 = Char.code(Bytes.get code (!pos + 2)) in
+    let c4 = Char.code(Bytes.get code (!pos + 3)) in
     pos := !pos + 4;
     Printf.fprintf outchan "0x%02x%02x%02x%02x, " c4 c3 c2 c1;
     incr output_code_string_counter;
@@ -444,7 +444,7 @@ let link_bytecode_as_c ppf tolink outfile =
     let currpos = ref 0 in
     let output_fun code =
       output_code_string outchan code;
-      currpos := !currpos + String.length code
+      currpos := !currpos + Bytes.length code
     and currpos_fun () = !currpos in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
     (* The final STOP instruction *)

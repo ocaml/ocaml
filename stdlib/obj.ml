@@ -33,9 +33,9 @@ external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 
 let marshal (obj : t) =
-  Marshal.to_string obj []
+  Marshal.to_bytes obj []
 let unmarshal str pos =
-  (Marshal.from_string str pos, pos + Marshal.total_size str pos)
+  (Marshal.from_bytes str pos, pos + Marshal.total_size str pos)
 
 let lazy_tag = 246
 let closure_tag = 247
