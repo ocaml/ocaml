@@ -554,8 +554,8 @@ and untype_class_structure cs =
 
 and untype_row_field rf =
   match rf with
-    Ttag (label, bool, list) ->
-      Rtag (label, bool, List.map untype_core_type list)
+    Ttag (label, attrs, bool, list) ->
+      Rtag (label, attrs, bool, List.map untype_core_type list)
   | Tinherit ct -> Rinherit (untype_core_type ct)
 
 and untype_class_field cf =

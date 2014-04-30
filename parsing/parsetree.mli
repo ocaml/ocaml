@@ -115,7 +115,7 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
        *)
 
 and row_field =
-  | Rtag of label * bool * core_type list
+  | Rtag of label * attributes * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
@@ -125,6 +125,8 @@ and row_field =
             constant (empty) constructor.
           - '&' occurs when several types are used for the same constructor
             (see 4.2 in the manual)
+
+          - TODO: switch to a record representation, and keep location
         *)
   | Rinherit of core_type
         (* [ T ] *)

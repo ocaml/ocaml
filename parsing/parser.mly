@@ -257,8 +257,8 @@ let varify_constructors var_names t =
     {t with ptyp_desc = desc}
   and loop_row_field  =
     function
-      | Rtag(label,flag,lst) ->
-          Rtag(label,flag,List.map loop lst)
+      | Rtag(label,attrs,flag,lst) ->
+          Rtag(label,attrs,flag,List.map loop lst)
       | Rinherit t ->
           Rinherit (loop t)
   in
@@ -1777,10 +1777,10 @@ row_field:
   | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
-    name_tag OF opt_ampersand amper_type_list
-      { Rtag ($1, $3, List.rev $4) }
-  | name_tag
-      { Rtag ($1, true, []) }
+    name_tag attributes OF opt_ampersand amper_type_list
+      { Rtag ($1, $2, $4, List.rev $5) }
+  | name_tag attributes
+      { Rtag ($1, $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }

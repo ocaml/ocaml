@@ -48,7 +48,7 @@ let rec add_type bv ty =
   | Ptyp_alias(t, s) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter
-        (function Rtag(_,_,stl) -> List.iter (add_type bv) stl
+        (function Rtag(_,_,_,stl) -> List.iter (add_type bv) stl
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t

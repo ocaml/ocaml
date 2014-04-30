@@ -531,7 +531,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_row_field rf =
       match rf with
-        Ttag (label, bool, list) ->
+        Ttag (label, _attrs, bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
 

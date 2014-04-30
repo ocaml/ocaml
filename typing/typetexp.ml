@@ -508,7 +508,7 @@ let rec transl_type env policy styp =
           Hashtbl.add hfields h (l,f)
       in
       let add_field = function
-          Rtag (l, c, stl) ->
+          Rtag (l, attrs, c, stl) ->
             name := None;
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
@@ -523,7 +523,7 @@ let rec transl_type env policy styp =
                       Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l f;
-              Ttag (l,c,tl)
+              Ttag (l,attrs,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
             let ty = cty.ctyp_type in
