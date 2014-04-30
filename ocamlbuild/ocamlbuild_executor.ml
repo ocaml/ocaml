@@ -63,18 +63,15 @@ let output_lines prefix oc buffer =
     output_char oc '\n'
   in
   let rec loop i =
-    if i = m then
-      ()
+    if i < m then
+      let j =
+        try String.index_from u i '\n'
+        with Not_found -> m
+      in
+      output_line i j;
+      loop (j + 1)
     else
-      begin
-        try
-          let j = String.index_from u i '\n' in
-          output_line i j;
-          loop (j + 1)
-        with
-        | Not_found ->
-            output_line i m
-      end
+      ()
   in
   loop 0
 ;;
