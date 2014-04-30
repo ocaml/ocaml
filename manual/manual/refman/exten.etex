@@ -1311,6 +1311,10 @@ class-type: ...
 ;
 \end{syntax}
 
+This form of attributes can also be inserted after the @'`'tag-name@
+in polymorphic variant type expressions (@tag-spec-first@, @tag-spec@,
+@tag-spec-full@).
+
 The same syntactic form is also used to attach attributes to labels and
 constructors in type declarations:
 

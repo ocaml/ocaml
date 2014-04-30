@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set +v
+
 # usage: fix_index.sh <file>.idx
 
 # This script works around a hyperref bug: hyperref does not handle
@@ -48,5 +50,5 @@ EOF
 
 case $? in
   0) echo "fix_index.sh: fixed $1 successfully.";;
-  *) echo "fix_index.sh: some error occurred."; exit 2;;
+  *) echo "fix_index.sh: some error occurred.";;
 esac
