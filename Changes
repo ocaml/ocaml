@@ -65,6 +65,8 @@ Toplevel interactive system:
 - PR#5377: New "#show_*" directives
 
 Runtime system:
+- Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
+  [Val_unit] rather than zero.
 - Fixed a major performance problem on large heaps (~1GB) by making heap
   increments proportional to heap size
 - PR#4765: Structural equality should treat exception specifically
