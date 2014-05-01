@@ -79,10 +79,6 @@ val cache_unit_info: unit_infos -> unit
            honored by [symbol_for_global] and [global_approx]
            without looking at the corresponding .cmx file. *)
 
-val cmx_not_found_crc: Digest.t
-        (* Special digest used in the [ui_imports_cmx] list to signal
-           that no [.cmx] file was found and used for the imported unit *)
-
 val read_library_info: string -> library_infos
 
 type error =
