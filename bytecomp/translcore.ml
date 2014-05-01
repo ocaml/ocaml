@@ -397,6 +397,11 @@ let transl_prim loc prim args =
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
 
+let transl_lazyforce () =
+  let parm = Ident.create "prim" in
+  Lfunction(Curried, [parm],
+            Matching.inline_lazy_force (Lvar parm) Location.none)
+
 let transl_primitive loc p =
   let prim =
     try
@@ -409,10 +414,7 @@ let transl_primitive loc p =
     with Not_found ->
       Pccall p in
   match prim with
-  | Plazyforce ->
-      let parm = Ident.create "prim" in
-      Lfunction(Curried, [parm],
-                Matching.inline_lazy_force (Lvar parm) Location.none)
+  | Plazyforce -> transl_lazyforce ()
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
@@ -785,7 +787,11 @@ and transl_exp0 e =
         match lbl.lbl_repres with
           Record_regular -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos in
-      Lprim(access, [transl_exp arg])
+      let access = Lprim(access, [transl_exp arg]) in
+      let access = match lbl.lbl_lazy with
+        | Strict -> access
+        | Lazy   -> Lapply (transl_lazyforce (), [access], e.exp_loc) in
+      access
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
@@ -1094,8 +1100,12 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         done
     end;
     List.iter
-      (fun (_, lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
-      lbl_expr_list;
+      (fun (_, lbl, expr) ->
+         let expr = match lbl.lbl_lazy with
+            | Strict -> expr
+            | Lazy   -> { expr with exp_desc = Texp_lazy expr } in
+         lv.(lbl.lbl_pos) <- transl_exp expr
+      ) lbl_expr_list;
     let ll = Array.to_list lv in
     let mut =
       if List.exists (fun (_, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list

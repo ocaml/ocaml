@@ -273,7 +273,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let rec tree_of_fields pos = function
                           | [] -> []
-                          | {ld_id; ld_type} :: remainder ->
+                          | {ld_id; ld_type; ld_lazy} :: remainder ->
                               let ty_arg =
                                 try
                                   Ctype.apply env decl.type_params ld_type
@@ -286,9 +286,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                               let lid =
                                 if pos = 0 then tree_of_label env path name
                                 else Oide_ident name
-                              and v =
-                                tree_of_val (depth - 1) (O.field obj pos)
-                                  ty_arg
+                              and v = if ld_lazy = Asttypes.Lazy then Oval_stuff "<lazy>"
+                                else tree_of_val (depth - 1) (O.field obj pos) ty_arg
                               in
                               (lid, v) :: tree_of_fields (pos + 1) remainder
                         in

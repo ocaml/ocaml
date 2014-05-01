@@ -110,6 +110,7 @@ let dummy_label =
     lbl_private = Public;
     lbl_loc = Location.none;
     lbl_attributes = [];
+    lbl_lazy = Strict;
   }
 
 let label_descrs ty_res lbls repres priv =
@@ -122,6 +123,7 @@ let label_descrs ty_res lbls repres priv =
             lbl_res = ty_res;
             lbl_arg = l.ld_type;
             lbl_mut = l.ld_mutable;
+            lbl_lazy = l.ld_lazy;
             lbl_pos = num;
             lbl_all = all_labels;
             lbl_repres = repres;

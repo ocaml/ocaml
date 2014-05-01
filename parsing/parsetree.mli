@@ -363,13 +363,15 @@ and label_declaration =
     {
      pld_name: string loc;
      pld_mutable: mutable_flag;
+     pld_lazy: lazy_flag;
      pld_type: core_type;
      pld_loc: Location.t;
      pld_attributes: attributes; (* l [@id1] [@id2] : T *)
     }
 
-(*  { ...; l: T; ... }            (mutable=Immutable)
-    { ...; mutable l: T; ... }    (mutable=Mutable)
+(*  { ...; l: T; ... }            (lazy=Strict) (mutable=Immutable)
+    { ...; mutable l: T; ... }    (lazy=Strict) (mutable=Mutable)
+    { ...; lazy l: T; ... }       (lazy=Lazy)   (mutable=Immutable)
 
     Note: T can be a Pexp_poly.
 *)

@@ -65,6 +65,7 @@ class printer :
     method module_expr : Format.formatter -> Parsetree.module_expr -> unit
     method module_type : Format.formatter -> Parsetree.module_type -> unit
     method mutable_flag : Format.formatter -> Asttypes.mutable_flag -> unit
+    method lazy_flag : Format.formatter -> Asttypes.lazy_flag -> unit
     method option :
       ?first:space_formatter ->
       ?last:space_formatter ->

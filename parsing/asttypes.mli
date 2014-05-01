@@ -29,6 +29,8 @@ type private_flag = Private | Public
 
 type mutable_flag = Immutable | Mutable
 
+type lazy_flag = Strict | Lazy
+
 type virtual_flag = Virtual | Concrete
 
 type override_flag = Override | Fresh
