@@ -1533,9 +1533,9 @@ quoted-string-id:
 \end{syntax}
 
 The opening delimiter has the form "{id|" where "id" is a (possibly
-  empty) sequence of lowercase letters and/or underscores.  The
+  empty) sequence of lowercase letters and underscores.  The
   corresponding closing delimiter is "|id}" (with the same
-identifier).  Contrary to regular OCaml string literals, quoted
+identifier).  Unlike regular OCaml string literals, quoted
 strings do not interpret any character in a special way.
 
 Example:

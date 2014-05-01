@@ -585,6 +585,11 @@ the string denoted by @expr_1@, replacing character number @expr_2@ by
 the value of @expr_3@. The exception "Invalid_argument" is raised if
 the access is out of bounds. The value of the whole expression is @'()'@.
 
+{\bf Note:} this possibility is offered only for backward
+compatibility with older versions of OCaml and will be removed in a
+future version. New code should use byte sequences and the "Bytes.set"
+function.
+
 \subsection{Operators}
 
 Symbols from the class @infix-symbol@, as well as the keywords

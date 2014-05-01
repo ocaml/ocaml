@@ -233,7 +233,8 @@ created. Erase and rebuild it.
 The program being executed contains a ``stray'' exception. That is,
 it raises an exception at some point, and this exception is never
 caught. This causes immediate termination of the program. The name of
-the exception is printed, along with its string and integer arguments
+the exception is printed, along with its string, byte sequence, and
+integer arguments
 (arguments of more complex types are not correctly printed).
 To locate the context of the uncaught exception, compile the program
 with the "-g" option and either run it again under the "ocamldebug"
@@ -247,9 +248,9 @@ contains too many nested function calls, and the stack overflows.  In
 some cases, your program is perfectly correct, it just requires more
 memory than your machine provides. In other cases, the ``out of
 memory'' message reveals an error in your program: non-terminating
-recursive function, allocation of an excessively large array or
-string, attempts to build an infinite list or other data structure,
-\ldots
+recursive function, allocation of an excessively large array,
+string or byte sequence, attempts to build an infinite list or other
+data structure, \ldots
 
 To help you diagnose this error, run your program with the "-v" option
 to "ocamlrun", or with the "OCAMLRUNPARAM" environment variable set to
@@ -260,6 +261,6 @@ growing slowly, this is probably an attempt to construct a data
 structure with too many (infinitely many?) cells. If it displays few
 ``"Growing heap"\ldots'' messages, but with a huge increment in the
 heap size, this is probably an attempt to build an excessively large
-array or string.
+array, string or byte sequence.
 
 \end{options}

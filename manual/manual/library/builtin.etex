@@ -26,11 +26,19 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
+ type bytes
+\end{ocamldoccode}
+\index{bytes@\verb`bytes`}
+\begin{ocamldocdescription}
+ The type of (writable) byte sequences.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
  type string
 \end{ocamldoccode}
 \index{string@\verb`string`}
 \begin{ocamldocdescription}
- The type of character strings.
+ The type of (read-only) character strings.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}

@@ -35,10 +35,11 @@ Here is a short listing, by theme, of the standard library modules.
 \begin{tabular}{lll}
 "Char" & p.~\pageref{Char} & character operations \\
 "String" & p.~\pageref{String} & string operations \\
+"Bytes" & p.~\pageref{Bytes} & operations on byte sequences\\
 "Array" & p.~\pageref{Array} & array operations \\
 "List" & p.~\pageref{List} & list operations \\
 "StdLabels" &p.~\pageref{StdLabels} & labelized versions of
-the above 3 modules \\
+the above 4 modules \\
 "Sort" & p.~\pageref{Sort} & sorting and merging lists \\
 "Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\pageref{Random} & pseudo-random number generator \\
@@ -49,7 +50,7 @@ the above 3 modules \\
 "Oo" & p.~\pageref{Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{Queue} & first-in first-out queues \\
-"Buffer" & p.~\pageref{Buffer} & string buffers that grow on demand \\
+"Buffer" & p.~\pageref{Buffer} & buffers that grow on demand \\
 "Lazy"  & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
 from being garbage-collected
@@ -95,7 +96,8 @@ be called from C \\
 \item \ahref{libref/Arg.html}{Module \texttt{Arg}: parsing of command line arguments}
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
-\item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible string buffers}
+\item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
+\item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
 \item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering OCaml values with the C runtime}
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
@@ -136,6 +138,7 @@ be called from C \\
 \input{Arg.tex}
 \input{Array.tex}
 \input{Buffer.tex}
+\input{Bytes.tex}
 \input{Callback.tex}
 \input{Char.tex}
 \input{Complex.tex}

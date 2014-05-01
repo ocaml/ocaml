@@ -257,7 +257,7 @@ often be given by the type itself. Obscure abbreviations should be
 avoided.
 \begin{alltt}
 "ListLabels.map : f:('a -> 'b) -> 'a list -> 'b list"
-UnixLabels.write : file_descr -> buf:string -> pos:int -> len:int -> unit
+UnixLabels.write : file_descr -> buf:bytes -> pos:int -> len:int -> unit
 \end{alltt}
 
 When there are several objects of same nature and role, they are all
@@ -268,13 +268,13 @@ left unlabeled.
 
 When there is no preferable object, all arguments are labeled.
 \begin{alltt}
-StringLabels.blit :
-  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
+BytesLabels.blit :
+  src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
 \end{alltt}
 
 However, when there is only one argument, it is often left unlabeled.
 \begin{alltt}
-StringLabels.create : int -> string
+BytesLabels.create : int -> bytes
 \end{alltt}
 This principle also applies to functions of several arguments whose
 return type is a type variable, as long as the role of each argument
@@ -287,9 +287,9 @@ libraries.
 
 \begin{tableau}{|l|l|}{Label}{Meaning}
 \entree{"f:"}{a function to be applied}
-\entree{"pos:"}{a position in a string or array}
+\entree{"pos:"}{a position in a string, array or byte sequence}
 \entree{"len:"}{a length}
-\entree{"buf:"}{a string used as buffer}
+\entree{"buf:"}{a byte sequence or string used as buffer}
 \entree{"src:"}{the source of an operation}
 \entree{"dst:"}{the destination of an operation}
 \entree{"init:"}{the initial value for an iterator}

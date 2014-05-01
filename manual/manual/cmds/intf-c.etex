@@ -28,7 +28,7 @@ This defines the value name \var{name} as a function with type
 For instance, here is how the "input" primitive is declared in the
 standard library module "Pervasives":
 \begin{verbatim}
-        external input : in_channel -> string -> int -> int -> int
+        external input : in_channel -> bytes -> int -> int -> int
                        = "input"
 \end{verbatim}
 Primitives with several arguments are always curried. The C function
@@ -57,7 +57,7 @@ counting the number of function arrows in the type.  For instance,
 "input" above has arity 4, and the "input" C function is called with
 four arguments.  Similarly,
 \begin{verbatim}
-    external input2 : in_channel * string * int * int -> int = "input2"
+    external input2 : in_channel * bytes * int * int -> int = "input2"
 \end{verbatim}
 has arity 1, and the "input2" C function receives one argument (which
 is a quadruple of OCaml values).
@@ -468,7 +468,7 @@ OCaml objects). Each field is a "value".}
 \entree{"Closure_tag"}{A closure representing a functional value. The first
 word is a pointer to a piece of code, the remaining words are
 "value" containing the environment.}
-\entree{"String_tag"}{A character string.}
+\entree{"String_tag"}{A character string or a byte sequence.}
 \entree{"Double_tag"}{A double-precision floating-point number.}
 \entree{"Double_array_tag"}{An array or record of double-precision
 floating-point numbers.}
@@ -508,6 +508,7 @@ This section describes how OCaml data types are encoded in the
 \entree{"int"}{Unboxed integer values.}
 \entree{"char"}{Unboxed integer values (ASCII code).}
 \entree{"float"}{Blocks with tag "Double_tag".}
+\entree{"bytes"}{Blocks with tag "String_tag".}
 \entree{"string"}{Blocks with tag "String_tag".}
 \entree{"int32"}{Blocks with tag "Custom_tag".}
 \entree{"int64"}{Blocks with tag "Custom_tag".}
@@ -663,17 +664,18 @@ $\hbox{"Wosize_val"}(v)-1$.
 structured block.
 \item "Code_val("\var{v}")" returns the code part of the closure \var{v}.
 \item "caml_string_length("\var{v}")" returns the length (number of bytes)
-of the string \var{v}.
+of the string or byte sequence \var{v}.
 \item "Byte("\var{v}", "\var{n}")" returns the $n\th$ byte of the string
-\var{v}, with type "char". Characters are numbered from 0 to
+or byte sequence \var{v}, with type "char". Bytes are numbered from 0 to
 $\hbox{"string_length"}(v)-1$.
 \item "Byte_u("\var{v}", "\var{n}")" returns the $n\th$ byte of the string
-\var{v}, with type "unsigned char". Characters are numbered from 0 to
-$\hbox{"string_length"}(v)-1$.
+or byte sequence \var{v}, with type "unsigned char". Bytes are
+numbered from 0 to $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
-\var{v}, with type "char *". This pointer is a valid C string: there is a
+or byte sequence \var{v}, with type "char *". This pointer is a valid C
+string: there is a
 null byte after the last byte in the string. However, OCaml
-strings can contain embedded null bytes, which will confuse
+strings and byte sequences can contain embedded null bytes, which will confuse
 the usual C functions over strings.
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
@@ -721,11 +723,11 @@ satisfy the GC constraints.
 "caml_alloc_tuple("\var{n}")" returns a fresh block of size
 \var{n} words, with tag 0.
 \item
-"caml_alloc_string("\var{n}")" returns a string value of length \var{n} bytes.
-The string initially contains garbage.
+"caml_alloc_string("\var{n}")" returns a byte sequence (or string) value of
+length \var{n} bytes. The sequence initially contains uninitialized bytes.
 \item
-"caml_copy_string("\var{s}")" returns a string value containing a copy of
-the null-terminated C string \var{s} (a "char *").
+"caml_copy_string("\var{s}")" returns a string or byte sequence value
+containing a copy of the null-terminated C string \var{s} (a "char *").
 \item
 "caml_copy_double("\var{d}")" returns a floating-point value initialized
 with the "double" \var{d}.
@@ -744,9 +746,9 @@ returns a value. The zero-tagged block returned by
 successive calls to \var{f}.  (This function must not be used to build
 an array of floating-point numbers.)
 \item
-"caml_copy_string_array("\var{p}")" allocates an array of strings, copied from
-the pointer to a string array \var{p} (a \verb"char **").  \var{p} must
-be NULL-terminated.
+"caml_copy_string_array("\var{p}")" allocates an array of strings or byte
+sequences, copied from the pointer to a string array \var{p}
+(a \verb"char **").  \var{p} must be NULL-terminated.
 \end{itemize}
 
 \subsubsection{Low-level interface}

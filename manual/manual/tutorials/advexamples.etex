@@ -314,7 +314,6 @@ A naive definition of strings as objects could be:
 class ostring s =
   object
      method get n = String.get s n
-     method set n c = String.set s n c
      method print = print_string s
      method copy = new ostring (String.copy s)
   end;;
@@ -338,7 +337,6 @@ class better_string s =
   object
      val repr = s
      method get n = String.get repr n
-     method set n c = String.set repr n c
      method print = print_string repr
      method copy = {< repr = String.copy repr >}
      method sub start len = {< repr = String.sub s  start len >}
@@ -358,17 +356,16 @@ class ostring s =
      val repr = s
      method repr = repr
      method get n = String.get repr n
-     method set n c = String.set repr n c
      method print = print_string repr
      method copy = {< repr = String.copy repr >}
      method sub start len = {< repr = String.sub s start len >}
      method concat (t : 'mytype) = {< repr = repr ^ t#repr >}
   end;;
 \end{caml_example}
-Another constructor of the class string can be defined to return an
-uninitialized string of a given length:
+Another constructor of the class string can be defined to return a new
+string of a given length:
 \begin{caml_example}
-class cstring n = ostring (String.create n);;
+class cstring n = ostring (String.make n ' ');;
 \end{caml_example}
 Here, exposing the representation of strings is probably harmless.  We do
 could also hide the representation of strings as we hid the currency in the

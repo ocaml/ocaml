@@ -7,7 +7,8 @@ STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
   MoreLabels.tex Nativeint.tex Obj.tex Oo.tex \
   Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Scanf.tex \
   Set.tex Sort.tex Stack.tex Stream.tex String.tex StringLabels.tex Sys.tex \
-  Weak.tex Callback.tex Buffer.tex StdLabels.tex
+  Weak.tex Callback.tex Buffer.tex StdLabels.tex \
+  Bytes.tex BytesLabels.tex
 
 OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
   Num.tex Arithstatus.tex Bigint.tex \
