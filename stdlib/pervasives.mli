@@ -14,8 +14,8 @@
 (** The initially opened module.
 
    This module provides the basic operations over the built-in types
-   (numbers, booleans, strings, exceptions, references, lists, arrays,
-   input-output channels, ...).
+   (numbers, booleans, byte sequences, strings, exceptions, references,
+   lists, arrays, input-output channels, ...).
 
    This module is automatically opened at the beginning of each compilation.
    All components of this module can therefore be referred by their short
@@ -68,7 +68,7 @@ external ( <= ) : 'a -> 'a -> bool = "%lessequal"
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
-   the usual orderings over integers, characters, strings
+   the usual orderings over integers, characters, strings, byte sequences
    and floating-point numbers, and extend them to a
    total ordering over all types.
    The ordering is compatible with [( = )]. As in the case
@@ -107,7 +107,7 @@ val max : 'a -> 'a -> 'a
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
-   On mutable types such as references, arrays, strings, records with
+   On mutable types such as references, arrays, byte sequences, records with
    mutable fields and objects with mutable instance variables,
    [e1 == e2] is true if and only if physical modification of [e1]
    also affects [e2].
@@ -617,6 +617,9 @@ val prerr_char : char -> unit
 
 val prerr_string : string -> unit
 (** Print a string on standard error. *)
+
+val prerr_bytes : bytes -> unit
+(** Print a byte sequence on standard error. *)
 
 val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)

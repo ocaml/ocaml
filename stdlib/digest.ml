@@ -23,10 +23,14 @@ external channel: in_channel -> int -> t = "caml_md5_chan"
 let string str =
   unsafe_string str 0 (String.length str)
 
+let bytes b = string (Bytes.unsafe_to_string b)
+
 let substring str ofs len =
   if ofs < 0 || len < 0 || ofs > String.length str - len
   then invalid_arg "Digest.substring"
   else unsafe_string str ofs len
+
+let subbytes b ofs len = substring (Bytes.unsafe_to_string b) ofs len
 
 let file filename =
   let ic = open_in_bin filename in

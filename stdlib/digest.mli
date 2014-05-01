@@ -36,10 +36,16 @@ val compare : t -> t -> int
 val string : string -> t
 (** Return the digest of the given string. *)
 
+val bytes : bytes -> t
+(** Return the digest of the given byte sequence. *)
+
 val substring : string -> int -> int -> t
 (** [Digest.substring s ofs len] returns the digest of the substring
-   of [s] starting at character number [ofs] and containing [len]
-   characters. *)
+   of [s] starting at index [ofs] and containing [len] characters. *)
+
+val subbytes : bytes -> int -> int -> t
+(** [Digest.subbytes s ofs len] returns the digest of the subsequence
+   of [s] starting at index [ofs] and containing [len] bytes. *)
 
 external channel : in_channel -> int -> t = "caml_md5_chan"
 (** If [len] is nonnegative, [Digest.channel ic len] reads [len]

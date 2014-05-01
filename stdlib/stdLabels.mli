@@ -14,7 +14,7 @@
 (** Standard labeled libraries.
 
    This meta-module provides labelized version of the {!Array},
-   {!List} and {!String} modules.
+   {!Bytes}, {!List} and {!String} modules.
 
    They only differ by their labels. Detailed interfaces can be found
    in [arrayLabels.mli], [bytesLabels.mli], [listLabels.mli]

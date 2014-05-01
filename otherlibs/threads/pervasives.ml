@@ -518,6 +518,7 @@ let print_newline () = output_char stdout '\n'; flush stdout
 
 let prerr_char c = output_char stderr c
 let prerr_string s = output_string stderr s
+let prerr_bytes s = output_bytes stderr s
 let prerr_int i = output_string stderr (string_of_int i)
 let prerr_float f = output_string stderr (string_of_float f)
 let prerr_endline s =

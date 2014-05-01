@@ -17,7 +17,7 @@
   fixed-length sequence of (single-byte) characters. Each character
   can be accessed in constant time through its index.
 
-  Given a string [s] of length [l], we can acces each of the [l]
+  Given a string [s] of length [l], we can access each of the [l]
   characters of [s] via its index in the sequence. Indexes start at
   [0], and we will call an index valid in [s] if it falls within the
   range [[0...l-1]] (inclusive). A position is the point between two
@@ -64,7 +64,7 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
 
    Raise [Invalid_argument] if [n] is not a valid index in [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.set}. *)
+   @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
 
 external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
 (** [String.create n] returns a fresh byte sequence of length [n].
@@ -72,7 +72,7 @@ external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
 
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
 
-   @deprecated This is a deprecated alias of {!Bytes.create}. *)
+   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
@@ -98,7 +98,7 @@ val fill : bytes -> int -> int -> char -> unit [@@ocaml.deprecated]
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid range of [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.fill}. *)
+   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
 
 val blit : string -> int -> bytes -> int -> int -> unit
 (** [String.blit src srcoff dst dstoff len] copies [len] characters
@@ -133,7 +133,7 @@ val map : (char -> char) -> string -> string
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
    trailing whitespace character in the argument, return the original
    string itself, not a copy.
    @since 4.00.0 *)
