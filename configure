@@ -888,6 +888,13 @@ case "$arch,$system" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
                               *) aspp="${TOOLPREF}as -P";;
                   esac;;
+  *,freebsd)      if ./searchpath clang; then
+                    as="clang -c"
+                    aspp="clang -c"
+                  else
+                    as="${TOOLPREF}as"
+                    aspp="${TOOLPREF}gcc -c"
+                  fi ;;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
