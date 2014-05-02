@@ -639,7 +639,11 @@ and lookup_module lid env : Path.t =
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-        ignore (find_pers_struct ~check:false s);
+	if !Clflags.transparent_modules then
+	  try ignore (find_in_path_uncap !load_path (s ^ ".cmi"))
+          with Not_found ->
+	    Location.prerr_warning Location.none (Warnings.No_cmi_file s)
+	else ignore (find_pers_struct ~check:false s);
         Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
@@ -1021,8 +1025,7 @@ let rec scrape_alias env ?path mty =
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
         Location.prerr_warning Location.none
-          (Warnings.Deprecated
-             ("module " ^ Path.name path ^ " cannot be accessed"));
+	  (Warnings.No_cmi_file (Path.name path));
         mty
       end
   | mty, Some path ->
@@ -1337,9 +1340,7 @@ and store_exception ~check slot id path decl env renv =
         (fun () ->
           if not env.in_signature && not used.cu_positive then
             Location.prerr_warning loc
-              (Warnings.Unused_exception
-                 (c, used.cu_pattern)
-              )
+              (Warnings.Unused_exception (c, used.cu_pattern))
         )
     end;
   end;
