@@ -286,7 +286,11 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLlocalN(x, size) \
-  value x [(size)] = { Val_unit, /* Val_unit, Val_unit, ... */ }; \
+  value x [(size)]; \
+  int caml__i_##x; \
+  for (caml__i_##x = 0; caml__i_##x < size; caml__i_##x ++) { \
+    x[caml__i_##x] = Val_unit; \
+  } \
   CAMLxparamN (x, (size))
 
 
