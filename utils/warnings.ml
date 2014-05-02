@@ -67,6 +67,7 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Documentation of string           (* 50 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -125,9 +126,10 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
+  | Documentation _ -> 50
 ;;
 
-let last_warning_number = 49
+let last_warning_number = 50
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -370,6 +372,7 @@ let message = function
         (String.concat ", " sl)
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
+  | Documentation s -> s
 ;;
 
 let nerrors = ref 0;;
@@ -465,6 +468,7 @@ let descriptions =
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
    49, "Absent cmi file when looking up module alias.";
+   50, "Documentation errors."
   ]
 ;;
 

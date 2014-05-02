@@ -62,6 +62,7 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Documentation of string                 (* 50 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

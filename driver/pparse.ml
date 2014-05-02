@@ -134,7 +134,7 @@ let file ppf inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ast_magic ast
+  ast
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -151,11 +151,18 @@ let () =
       | _ -> None
     )
 
-let parse_all parse_fun magic ppf sourcefile =
+let parse_all parse_fun doc_fun magic ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    try file ppf inputfile parse_fun magic
+    try
+      let ast = file ppf inputfile parse_fun magic in
+      let ast =
+        if !Clflags.include_documentation then
+          doc_fun sourcefile ast
+        else ast
+      in
+      apply_rewriters magic ast
     with exn ->
       remove_preprocessed inputfile;
       raise exn
@@ -164,6 +171,8 @@ let parse_all parse_fun magic ppf sourcefile =
   ast
 
 let parse_implementation ppf sourcefile =
-  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile
+  parse_all Parse.implementation Parsedoc.implementation
+            Config.ast_impl_magic_number ppf sourcefile
 let parse_interface ppf sourcefile =
-  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile
+  parse_all Parse.interface Parsedoc.interface
+            Config.ast_intf_magic_number ppf sourcefile

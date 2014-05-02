@@ -48,7 +48,10 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/printdoc.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
-  parsing/ast_mapper.cmo
+  parsing/ast_mapper.cmo \
+  parsing/docerr.cmo parsing/comments.cmo \
+  parsing/docparser.cmo parsing/doclexer.cmo \
+  parsing/parsedoc.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -495,6 +498,36 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
+
+# The documentation parser
+
+parsing/docparser.mli parsing/docparser.ml: parsing/docparser.mly
+	$(CAMLYACC) $(YACCFLAGS) parsing/docparser.mly
+
+partialclean::
+	rm -f parsing/docparser.mli parsing/docparser.ml parsing/docparser.output
+
+beforedepend:: parsing/docparser.mli parsing/docparser.ml
+
+# The documentation lexer
+
+parsing/doclexer.ml: parsing/doclexer.mll
+	$(CAMLLEX) parsing/doclexer.mll
+
+partialclean::
+	rm -f parsing/doclexer.ml
+
+beforedepend:: parsing/doclexer.ml
+
+# The comment lexer
+
+parsing/comments.ml: parsing/comments.mll
+	$(CAMLLEX) parsing/comments.mll
+
+partialclean::
+	rm -f parsing/comments.ml
+
+beforedepend:: parsing/comments.ml
 
 # Shared parts of the system compiled with the native-code compiler
 

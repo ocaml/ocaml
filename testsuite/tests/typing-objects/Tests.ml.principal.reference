@@ -295,12 +295,12 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
-#       - : int = 94
-# - : int = 95
+#       - : int = 95
 # - : int = 96
-#         - : int * int * int = (97, 98, 99)
-#           - : int * int * int * int * int = (100, 101, 102, 33, 33)
-#           - : int * int * int * int * int = (103, 104, 105, 33, 33)
+# - : int = 97
+#         - : int * int * int = (98, 99, 100)
+#           - : int * int * int * int * int = (101, 102, 103, 33, 33)
+#           - : int * int * int * int * int = (104, 105, 106, 33, 33)
 #         Characters 42-69:
   class a = let _ = new b in object end
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -73,6 +73,10 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
+let mk_doc f =
+  "-doc", Arg.Unit f, " Include documentation"
+;;
+
 let mk_for_pack_byt () =
   "-for-pack", Arg.String ignore,
   "<ident>  Ignored (for compatibility with ocamlopt)"
@@ -460,6 +464,7 @@ module type Bytecomp_options = sig
   val _custom : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
+  val _doc : unit -> unit
   val _g : unit -> unit
   val _i : unit -> unit
   val _I : string -> unit
@@ -562,6 +567,7 @@ module type Optcomp_options = sig
   val _ccopt : string -> unit
   val _compact : unit -> unit
   val _config : unit -> unit
+  val _doc : unit -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
   val _i : unit -> unit
@@ -708,6 +714,7 @@ struct
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
+    mk_doc F._doc;
     mk_for_pack_byt ();
     mk_g_byt F._g;
     mk_i F._i;
@@ -820,6 +827,7 @@ struct
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
+    mk_doc F._doc;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_i F._i;

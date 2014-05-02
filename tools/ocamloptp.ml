@@ -53,6 +53,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _ccopt s = option_with_arg "-ccopt" s
   let _compact = option "-compact"
   let _config = option "-config"
+  let _doc = option "-doc"
   let _for_pack s = option_with_arg "-for-pack" s
   let _g = option "-g"
   let _i = option "-i"

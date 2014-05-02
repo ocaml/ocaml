@@ -28,11 +28,14 @@ parsing/ast_helper.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/asttypes.cmi
 parsing/ast_mapper.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/asttypes.cmi : parsing/location.cmi
+parsing/docerr.cmi : parsing/location.cmi
+parsing/docparser.cmi : parsing/documentation.cmi
 parsing/documentation.cmi :
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmi :
 parsing/parse.cmi : parsing/parsetree.cmi
+parsing/parsedoc.cmi : parsing/parsetree.cmi
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/parsetree.cmi : parsing/longident.cmi parsing/location.cmi \
     parsing/documentation.cmi parsing/asttypes.cmi
@@ -47,6 +50,18 @@ parsing/ast_helper.cmx : parsing/parsetree.cmi parsing/longident.cmx \
     parsing/location.cmx parsing/asttypes.cmi parsing/ast_helper.cmi
 parsing/ast_mapper.cmo : parsing/ast_mapper.cmi
 parsing/ast_mapper.cmx : parsing/ast_mapper.cmi
+parsing/comments.cmo : parsing/location.cmi parsing/docerr.cmi
+parsing/comments.cmx : parsing/location.cmx parsing/docerr.cmx
+parsing/docerr.cmo : parsing/location.cmi parsing/docerr.cmi
+parsing/docerr.cmx : parsing/location.cmx parsing/docerr.cmi
+parsing/doclexer.cmo : parsing/location.cmi parsing/documentation.cmi \
+    parsing/docparser.cmi parsing/docerr.cmi
+parsing/doclexer.cmx : parsing/location.cmx parsing/documentation.cmi \
+    parsing/docparser.cmx parsing/docerr.cmx
+parsing/docparser.cmo : parsing/location.cmi parsing/documentation.cmi \
+    parsing/docerr.cmi parsing/docparser.cmi
+parsing/docparser.cmx : parsing/location.cmx parsing/documentation.cmi \
+    parsing/docerr.cmx parsing/docparser.cmi
 parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
     parsing/location.cmi parsing/lexer.cmi
 parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
@@ -61,6 +76,14 @@ parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser.cmi \
     parsing/location.cmi parsing/lexer.cmi parsing/parse.cmi
 parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser.cmx \
     parsing/location.cmx parsing/lexer.cmx parsing/parse.cmi
+parsing/parsedoc.cmo : parsing/parsetree.cmi utils/misc.cmi \
+    parsing/location.cmi parsing/documentation.cmi parsing/docparser.cmi \
+    parsing/doclexer.cmo parsing/comments.cmo parsing/asttypes.cmi \
+    parsing/parsedoc.cmi
+parsing/parsedoc.cmx : parsing/parsetree.cmi utils/misc.cmx \
+    parsing/location.cmx parsing/documentation.cmi parsing/docparser.cmx \
+    parsing/doclexer.cmx parsing/comments.cmx parsing/asttypes.cmi \
+    parsing/parsedoc.cmi
 parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
     parsing/longident.cmi parsing/location.cmi utils/clflags.cmi \
     parsing/asttypes.cmi parsing/ast_helper.cmi parsing/parser.cmi
@@ -917,10 +940,12 @@ driver/optmain.cmx : utils/warnings.cmx asmcomp/printmach.cmx \
     driver/compenv.cmx utils/clflags.cmx asmcomp/asmpackager.cmx \
     asmcomp/asmlink.cmx asmcomp/asmlibrarian.cmx asmcomp/arch.cmx \
     driver/optmain.cmi
-driver/pparse.cmo : parsing/parse.cmi utils/misc.cmi parsing/location.cmi \
-    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi driver/pparse.cmi
-driver/pparse.cmx : parsing/parse.cmx utils/misc.cmx parsing/location.cmx \
-    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx driver/pparse.cmi
+driver/pparse.cmo : parsing/parsedoc.cmi parsing/parse.cmi utils/misc.cmi \
+    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
+    driver/pparse.cmi
+driver/pparse.cmx : parsing/parsedoc.cmx parsing/parse.cmx utils/misc.cmx \
+    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
+    driver/pparse.cmi
 toplevel/genprintval.cmi : typing/types.cmi typing/path.cmi \
     typing/outcometree.cmi typing/env.cmi
 toplevel/opttopdirs.cmi : parsing/longident.cmi
