@@ -33,12 +33,13 @@
    Anything can happen at run-time if the object in the file does not
    belong to the given type.
 
-   OCaml exception values (of type [exn]) returned by the unmarhsaller
-   should not be pattern-matched over through [match ... with] or [try
-   ... with], because unmarshalling does not preserve the information
-   required for matching their exception constructor. Structural
-   equalities with other exception values does not work either.  Most
-   other uses such as Printexc.to_string, will still work as expected.
+   Values of extensible variant types, for example exceptions (of
+   extensible type [exn]), returned by the unmarhsaller should not be
+   pattern-matched over through [match ... with] or [try ... with],
+   because unmarshalling does not preserve the information required for
+   matching their constructors. Structural equalities with other
+   extensible variant values does not work either.  Most other uses such
+   as Printexc.to_string, will still work as expected.
 
    The representation of marshaled values is not human-readable,
    and uses bytes that are not printable characters. Therefore,
@@ -47,7 +48,7 @@
    [open_out_bin] or [open_in_bin]; channels opened in text mode will
    cause unmarshaling errors on platforms where text channels behave
    differently than binary channels, e.g. Windows.
-*)
+ *)
 
 type extern_flags =
     No_sharing                          (** Don't preserve sharing *)
