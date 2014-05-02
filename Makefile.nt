@@ -26,9 +26,6 @@ CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 
-OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
-OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
-
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
@@ -111,8 +108,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
-  $(WITH_OCAMLDOC)
+  otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -215,7 +211,7 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt $(OCAMLBUILDNATIVE) $(OCAMLDOC_OPT)
+         ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
 
 # Complete build using fast compilers
 world.opt: coldstart opt.opt
@@ -257,8 +253,6 @@ installbyt:
 	  else :; fi
 	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
 	   else :; fi
-	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
-	   else :; fi
 	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
 	cp README $(INSTALL_DISTRIB)/Readme.general.txt
 	cp README.win32 $(INSTALL_DISTRIB)/Readme.windows.txt
@@ -273,8 +267,6 @@ installopt:
 	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
-	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
-	   else :; fi
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKE) installopt
@@ -677,20 +669,6 @@ partialclean::
 alldepend::
 	cd debugger; $(MAKEREC) depend
 
-# Ocamlbuild
-
-ocamlbuild.byte: ocamlc otherlibraries
-	cd ocamlbuild && $(MAKE) all
-
-ocamlbuild.native: ocamlopt otherlibrariesopt
-	cd ocamlbuild && $(MAKE) allopt
-
-partialclean::
-	cd ocamlbuild && $(MAKE) clean
-
-alldepend::
-	cd ocamlbuild && $(MAKE) depend
-
 # Make clean in the test suite
 
 clean::
@@ -739,8 +717,8 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt
-.PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
-.PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
+.PHONY: library library-cross libraryopt
+.PHONY: ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltoolsopt
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt promote promote-cross

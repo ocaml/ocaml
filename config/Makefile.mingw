@@ -20,9 +20,6 @@ PREFIX=C:/ocamlmgw
 ### Remove this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
-### Remove this to disable compiling ocamlbuild
-WITH_OCAMLBUILD=ocamlbuild
-
 ### Remove this to disable compiling ocamldoc
 WITH_OCAMLDOC=ocamldoc
 
