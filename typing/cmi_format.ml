@@ -22,7 +22,7 @@ exception Error of error
 type cmi_infos = {
     cmi_name : string;
     cmi_sign : Types.signature_item list;
-    cmi_crcs : (string * Digest.t option) list;
+    cmi_crcs : (string * Digest.t) list;
     cmi_flags : pers_flags list;
 }
 
@@ -72,7 +72,7 @@ let output_cmi filename oc cmi =
   output_value oc (cmi.cmi_name, cmi.cmi_sign);
   flush oc;
   let crc = Digest.file filename in
-  let crcs = (cmi.cmi_name, Some crc) :: cmi.cmi_crcs in
+  let crcs = (cmi.cmi_name, crc) :: cmi.cmi_crcs in
   output_value oc crcs;
   output_value oc cmi.cmi_flags;
   crc

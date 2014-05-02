@@ -34,15 +34,8 @@ let input_stringlist ic len =
   let sect = really_input_string ic len in
   get_string_list sect len
 
-let dummy_crc = String.make 32 '-'
-
-let print_name_crc (name, crco) =
-  let crc =
-    match crco with
-      None -> dummy_crc
-    | Some crc -> Digest.to_hex crc
-  in
-    printf "\t%s\t%s\n" crc name
+let print_name_crc (name, crc) =
+  printf "\t%s\t%s\n" (Digest.to_hex crc) name
 
 let print_line name =
   printf "\t%s\n" name
@@ -150,7 +143,7 @@ let dump_byte ic =
            | "CRCS" ->
                p_section
                  "Imported units"
-                 (input_value ic : (string * Digest.t option) list)
+                 (input_value ic : (string * Digest.t) list)
            | "DLLS" ->
                p_list
                  "Used DLLs"

@@ -27,8 +27,6 @@ let arg_list = [
 let arg_usage =
   "read_cmt [OPTIONS] FILE.cmt : read FILE.cmt and print related information"
 
-let dummy_crc = String.make 32 '-'
-
 let print_info cmt =
   let open Cmt_format in
       Printf.printf "module name: %s\n" cmt.cmt_modname;
@@ -62,13 +60,8 @@ let print_info cmt =
         | Some digest ->
             Printf.printf "interface digest: %s\n" (Digest.to_hex digest);
       end;
-      List.iter (fun (name, crco) ->
-        let crc =
-          match crco with
-            None -> dummy_crc
-          | Some crc -> Digest.to_hex crc
-        in
-          Printf.printf "import: %s %s\n" name crc;
+      List.iter (fun (name, digest) ->
+        Printf.printf "import: %s %s\n" name (Digest.to_hex digest);
       ) (List.sort compare cmt.cmt_imports);
       Printf.printf "%!";
       ()

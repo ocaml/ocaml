@@ -158,20 +158,15 @@ let scan_file obj_name tolink =
 (* Consistency check between interfaces *)
 
 let crc_interfaces = Consistbl.create ()
-let interfaces = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency ppf file_name cu =
   begin try
     List.iter
-      (fun (name, crco) ->
-        interfaces := name :: !interfaces;
-        match crco with
-          None -> ()
-        | Some crc ->
-            if name = cu.cu_name
-            then Consistbl.set crc_interfaces name crc file_name
-            else Consistbl.check crc_interfaces name crc file_name)
+      (fun (name, crc) ->
+        if name = cu.cu_name
+        then Consistbl.set crc_interfaces name crc file_name
+        else Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_import(name, user, auth)))
@@ -188,11 +183,7 @@ let check_consistency ppf file_name cu =
     (cu.cu_name, file_name) :: !implementations_defined
 
 let extract_crc_interfaces () =
-  Consistbl.extract !interfaces crc_interfaces
-
-let clear_crc_interfaces () =
-  Consistbl.clear crc_interfaces;
-  interfaces := []
+  Consistbl.extract crc_interfaces
 
 (* Record compilation events *)
 
@@ -316,7 +307,7 @@ let link_bytecode ppf tolink exec_name standalone =
     (* The bytecode *)
     let start_code = pos_out outchan in
     Symtable.init();
-    clear_crc_interfaces ();
+    Consistbl.clear crc_interfaces;
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     let check_dlls = standalone && Config.target = Config.host in
     if check_dlls then begin
@@ -449,7 +440,7 @@ let link_bytecode_as_c ppf tolink outfile =
 \n           char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
-    clear_crc_interfaces ();
+    Consistbl.clear crc_interfaces;
     let currpos = ref 0 in
     let output_fun code =
       output_code_string outchan code;

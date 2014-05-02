@@ -153,7 +153,7 @@ val read_signature: string -> string -> signature
 val save_signature: signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t option) list -> signature
+    signature -> string -> string -> (string * Digest.t) list -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
@@ -163,12 +163,11 @@ val crc_of_unit: string -> Digest.t
 
 (* Return the set of compilation units imported, with their CRC *)
 
-val imports: unit -> (string * Digest.t option) list
+val imported_units: unit -> (string * Digest.t) list
 
 (* Direct access to the table of imported compilation units with their CRC *)
 
 val crc_units: Consistbl.t
-val imported_units: string list ref
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)

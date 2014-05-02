@@ -538,9 +538,6 @@ Compile or link multithreaded programs, in combination with the
 system "threads" library described in
 .IR The\ OCaml\ user's\ manual .
 .TP
-.B \-trans-mod
-Do not import unused module aliases.
-.TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
 .BR v.(i) and s.[i]

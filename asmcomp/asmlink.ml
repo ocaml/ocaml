@@ -33,37 +33,31 @@ exception Error of error
 (* Consistency check between interfaces and implementations *)
 
 let crc_interfaces = Consistbl.create ()
-let interfaces = ref ([] : string list)
 let crc_implementations = Consistbl.create ()
-let implementations = ref ([] : string list)
+let extra_implementations = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
 let cmx_required = ref ([] : string list)
 
 let check_consistency file_name unit crc =
   begin try
     List.iter
-      (fun (name, crco) ->
-        interfaces := name :: !interfaces;
-        match crco with
-          None -> ()
-        | Some crc ->
-            if name = unit.ui_name
-            then Consistbl.set crc_interfaces name crc file_name
-            else Consistbl.check crc_interfaces name crc file_name)
+      (fun (name, crc) ->
+        if name = unit.ui_name
+        then Consistbl.set crc_interfaces name crc file_name
+        else Consistbl.check crc_interfaces name crc file_name)
       unit.ui_imports_cmi
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_interface(name, user, auth)))
   end;
   begin try
     List.iter
-      (fun (name, crco) ->
-        implementations := name :: !implementations;
-        match crco with
-            None ->
-              if List.mem name !cmx_required then
-                raise(Error(Missing_cmx(file_name, name)))
-          | Some crc ->
-              Consistbl.check crc_implementations name crc file_name)
+      (fun (name, crc) ->
+        if crc <> cmx_not_found_crc then
+          Consistbl.check crc_implementations name crc file_name
+        else if List.mem name !cmx_required then
+          raise(Error(Missing_cmx(file_name, name)))
+        else
+          extra_implementations := name :: !extra_implementations)
       unit.ui_imports_cmx
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_implementation(name, user, auth)))
@@ -73,7 +67,6 @@ let check_consistency file_name unit crc =
     raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
   with Not_found -> ()
   end;
-  implementations := unit.ui_name :: !implementations;
   Consistbl.set crc_implementations unit.ui_name crc file_name;
   implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
@@ -81,9 +74,13 @@ let check_consistency file_name unit crc =
     cmx_required := unit.ui_name :: !cmx_required
 
 let extract_crc_interfaces () =
-  Consistbl.extract !interfaces crc_interfaces
+  Consistbl.extract crc_interfaces
 let extract_crc_implementations () =
-  Consistbl.extract !implementations crc_implementations
+  List.fold_left
+    (fun ncl n ->
+      if List.mem_assoc n ncl then ncl else (n, cmx_not_found_crc) :: ncl)
+    (Consistbl.extract crc_implementations)
+    !extra_implementations
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
@@ -217,14 +214,10 @@ let make_startup_file ppf filename units_list =
     (Cmmgen.globals_map
        (List.map
           (fun (unit,_,crc) ->
-               let intf_crc =
-                 try
-                   match List.assoc unit.ui_name unit.ui_imports_cmi with
-                     None -> assert false
-                   | Some crc -> crc
-                 with Not_found -> assert false
-               in
-                 (unit.ui_name, intf_crc, crc, unit.ui_defines))
+             try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi,
+                  crc,
+                  unit.ui_defines)
+             with Not_found -> assert false)
           units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));

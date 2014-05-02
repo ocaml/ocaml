@@ -26,9 +26,8 @@ type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
     mutable ui_symbol: string;            (* Prefix for symbols *)
     mutable ui_defines: string list;      (* Unit and sub-units implemented *)
-    mutable ui_imports_cmi:
-              (string * Digest.t option) list; (* Interfaces imported *)
-    mutable ui_imports_cmx:(string * Digest.t option) list; (* Infos imported *)
+    mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
+    mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: Clambda.value_approximation; (* Approx of the structure*)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
@@ -50,8 +49,8 @@ type library_infos =
 type dynunit = {
   dynu_name: string;
   dynu_crc: Digest.t;
-  dynu_imports_cmi: (string * Digest.t option) list;
-  dynu_imports_cmx: (string * Digest.t option) list;
+  dynu_imports_cmi: (string * Digest.t) list;
+  dynu_imports_cmx: (string * Digest.t) list;
   dynu_defines: string list;
 }
 

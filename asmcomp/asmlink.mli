@@ -21,8 +21,8 @@ val link_shared: formatter -> string list -> string -> unit
 val call_linker_shared: string list -> string -> unit
 
 val check_consistency: string -> Cmx_format.unit_infos -> Digest.t -> unit
-val extract_crc_interfaces: unit -> (string * Digest.t option) list
-val extract_crc_implementations: unit -> (string * Digest.t option) list
+val extract_crc_interfaces: unit -> (string * Digest.t) list
+val extract_crc_implementations: unit -> (string * Digest.t) list
 
 type error =
     File_not_found of string
