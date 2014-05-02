@@ -336,29 +336,36 @@ class virtual to_text =
     (** @return [text] value for an exception. *)
     method text_of_exception e =
       let s_name = Name.simple e.ex_name in
+      let father = Name.father e.ex_name in
       Format.fprintf Format.str_formatter "@[<hov 2>exception %s" s_name ;
-        (match e.ex_args with
-          [] -> ()
-        | _ ->
-            Format.fprintf Format.str_formatter "@ of "
-        );
-      let s = self#normal_type_list
-          ~par: false (Name.father e.ex_name) " * " e.ex_args
-      in
-      let s2 =
-        Format.fprintf Format.str_formatter "%s" s ;
-        (match e.ex_alias with
-          None -> ()
-        | Some ea ->
-            Format.fprintf Format.str_formatter " = %s"
-              (
-               match ea.ea_ex with
-                 None -> ea.ea_name
-               | Some e -> e.ex_name
-              )
-        );
-        Format.flush_str_formatter ()
-      in
+      (match e.ex_args, e.ex_ret with
+         [], None -> ()
+       | l, None ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             "of"
+             (self#normal_type_list ~par: false father " * " l)
+       | [], Some r ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             ":"
+             (self#normal_type father r)
+       | l, Some r ->
+           Format.fprintf Format.str_formatter " %s@ %s@ %s@ %s"
+             ":"
+             (self#normal_type_list ~par: false father " * " l)
+             "->"
+             (self#normal_type father r)
+      );
+      (match e.ex_alias with
+         None -> ()
+       | Some ea ->
+           Format.fprintf Format.str_formatter " = %s"
+            (
+              match ea.ea_ex with
+                None -> ea.ea_name
+              | Some e -> e.ex_name
+            )
+      );
+      let s2 = Format.flush_str_formatter () in
       [ CodePre s2 ] @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info e.ex_info)

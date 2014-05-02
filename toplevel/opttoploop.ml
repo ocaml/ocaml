@@ -92,6 +92,7 @@ let print_out_value = Oprint.out_value
 let print_out_type = Oprint.out_type
 let print_out_class_type = Oprint.out_class_type
 let print_out_module_type = Oprint.out_module_type
+let print_out_type_extension = Oprint.out_type_extension
 let print_out_sig_item = Oprint.out_sig_item
 let print_out_signature = Oprint.out_signature
 let print_out_phrase = Oprint.out_phrase
@@ -171,8 +172,8 @@ let rec pr_item env = function
   | Sig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
-  | Sig_exception(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_exception_declaration id decl in
+  | Sig_typext(id, ext, es) :: rem ->
+      let tree = Printtyp.tree_of_extension_constructor id ext es in
       Some (tree, None, rem)
   | Sig_module(id, mty, rs) :: rem ->
       let tree = Printtyp.tree_of_module id mty rs in

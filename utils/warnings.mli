@@ -50,7 +50,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool (* 37 *)
-  | Unused_exception of string * bool       (* 38 *)
+  | Unused_extension of string * bool * bool   (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
   | Ambiguous_name of string list * string list * bool (* 41 *)

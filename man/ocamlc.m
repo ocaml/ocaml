@@ -786,7 +786,7 @@ mutually recursive types.
 \ \ Unused constructor.
 
 38
-\ \ Unused exception constructor.
+\ \ Unused extension constructor.
 
 39
 \ \ Unused rec flag.

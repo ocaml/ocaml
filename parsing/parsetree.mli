@@ -334,7 +334,7 @@ and value_description =
 and type_declaration =
     {
      ptype_name: string loc;
-     ptype_params: (string loc option * variance) list;
+     ptype_params: (core_type * variance) list;
            (* ('a1,...'an) t; None represents  _*)
      ptype_cstrs: (core_type * core_type * Location.t) list;
            (* ... constraint T1=T1'  ... constraint Tn=Tn' *)
@@ -352,12 +352,14 @@ and type_declaration =
   type t = T0 = C of T | ... (variant,  manifest=T0)
   type t = {l: T; ...}       (record,   no manifest)
   type t = T0 = {l : T; ...} (record,   manifest=T0)
+  type t = ..                (open,     no manifest)
 *)
 
 and type_kind =
   | Ptype_abstract
   | Ptype_variant of constructor_declaration list
   | Ptype_record of label_declaration list
+  | Ptype_open
 
 and label_declaration =
     {
@@ -388,14 +390,37 @@ and constructor_declaration =
   | C: T1 * ... * Tn -> T0 (res = Some T0)
 *)
 
-and exception_rebind =
+and type_extension =
     {
-     pexrb_name: string loc;
-     pexrb_lid: Longident.t loc;
-     pexrb_loc: Location.t;
-     pexrb_attributes: attributes;
+     ptyext_path: Longident.t loc;
+     ptyext_params: (core_type * variance) list;
+     ptyext_constructors: extension_constructor list;
+     ptyext_private: private_flag;
+     ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
     }
-(* exception C = M.X *)
+(*
+  type t += ...
+*)
+
+and extension_constructor =
+    {
+     pext_name: string loc;
+     pext_kind : extension_constructor_kind;
+     pext_loc : Location.t;
+     pext_attributes: attributes; (* C [@id1] [@id2] of ... *)
+    }
+
+and extension_constructor_kind =
+    Pext_decl of core_type list * core_type option
+      (*
+         | C of T1 * ... * Tn     ([T1; ...; Tn], None)
+         | C: T0                  ([], Some T0)
+         | C: T1 * ... * Tn -> T0 ([T1; ...; Tn], Some T0)
+       *)
+  | Pext_rebind of Longident.t loc
+      (*
+         | C = D
+       *)
 
 (** {2 Class language} *)
 
@@ -456,7 +481,7 @@ and class_type_field_desc =
 and 'a class_infos =
     {
      pci_virt: virtual_flag;
-     pci_params: (string loc * variance) list;
+     pci_params: (core_type * variance) list;
      pci_name: string loc;
      pci_expr: 'a;
      pci_loc: Location.t;
@@ -595,7 +620,9 @@ and signature_item_desc =
          *)
   | Psig_type of type_declaration list
         (* type t1 = ... and ... and tn = ... *)
-  | Psig_exception of constructor_declaration
+  | Psig_typext of type_extension
+        (* type t1 += ... *)
+  | Psig_exception of extension_constructor
         (* exception C of T *)
   | Psig_module of module_declaration
         (* module X : MT *)
@@ -719,10 +746,11 @@ and structure_item_desc =
         (* external x: T = "s1" ... "sn" *)
   | Pstr_type of type_declaration list
         (* type t1 = ... and ... and tn = ... *)
-  | Pstr_exception of constructor_declaration
-        (* exception C of T *)
-  | Pstr_exn_rebind of exception_rebind
-        (* exception C = M.X *)
+  | Pstr_typext of type_extension
+        (* type t1 += ... *)
+  | Pstr_exception of extension_constructor
+        (* exception C of T
+           exception C = M.X *)
   | Pstr_module of module_binding
         (* module X = ME *)
   | Pstr_recmodule of module_binding list
