@@ -50,9 +50,7 @@ external __MODULE__ : string = "%loc_MODULE"
 external __POS__ : string * int * int * int = "%loc_POS"
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
-external __FILE_OF__ : 'a -> string * 'a = "%loc_FILE"
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
-external __MODULE_OF__ : 'a -> string * 'a = "%loc_MODULE"
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 
 (* Comparisons *)
@@ -520,6 +518,7 @@ let print_newline () = output_char stdout '\n'; flush stdout
 
 let prerr_char c = output_char stderr c
 let prerr_string s = output_string stderr s
+let prerr_bytes s = output_bytes stderr s
 let prerr_int i = output_string stderr (string_of_int i)
 let prerr_float f = output_string stderr (string_of_float f)
 let prerr_endline s =

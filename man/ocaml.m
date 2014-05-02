@@ -196,7 +196,7 @@ Print version string and exit.
 .B \-vnum
 Print short version number and exit.
 .TP
-.BI \-w \ warning-list
+.BI \-w \ warning\-list
 Enable or disable warnings according to the argument
 .IR warning-list .
 See
@@ -205,7 +205,7 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
-.BI \-warn-error \ warning-list
+.BI \-warn\-error \ warning\-list
 Mark as fatal the warnings described by the argument
 .IR warning\-list .
 Note that a warning is not triggered (and does not trigger an error) if

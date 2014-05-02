@@ -255,3 +255,7 @@ CAMLprim value caml_set_oo_id (value obj) {
   oo_last_id += 2;
   return obj;
 }
+
+CAMLprim value caml_int_as_pointer (value n) {
+  return n - 1;
+}

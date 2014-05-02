@@ -613,8 +613,8 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_row_field rf =
     match rf with
-        Ttag (label, bool, list) ->
-          Ttag (label, bool, List.map map_core_type list)
+        Ttag (label, attrs, bool, list) ->
+          Ttag (label, attrs, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
 
   and map_class_field cf =

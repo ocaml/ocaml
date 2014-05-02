@@ -362,7 +362,7 @@ and package_type = {
 }
 
 and row_field =
-    Ttag of label * bool * core_type list
+    Ttag of label * attributes * bool * core_type list
   | Tinherit of core_type
 
 and value_description =

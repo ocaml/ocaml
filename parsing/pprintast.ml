@@ -281,7 +281,7 @@ class printer  ()= object(self:'self)
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x with
-          | Rtag (l, _, ctl) -> pp f "@[<2>%a%a@]"  self#string_quot l
+          | Rtag (l, _attrs, _, ctl) -> pp f "@[<2>%a%a@]"  self#string_quot l
                 (fun f l -> match l with
                 |[] -> ()
                 | _ -> pp f "@;of@;%a"

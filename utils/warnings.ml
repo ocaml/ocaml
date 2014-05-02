@@ -66,6 +66,7 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
+  | No_cmi_file of string                   (* 49 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -123,9 +124,10 @@ let number = function
   | Bad_env_variable _ -> 46
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
+  | No_cmi_file _ -> 49
 ;;
 
-let last_warning_number = 48
+let last_warning_number = 49
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -369,6 +371,8 @@ let message = function
       Printf.sprintf "implicit elimination of optional argument%s %s"
         (if List.length sl = 1 then "" else "s")
         (String.concat ", " sl)
+  | No_cmi_file s ->
+      "no cmi file was found in path for module " ^ s
 ;;
 
 let nerrors = ref 0;;
@@ -460,9 +464,10 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Illegal environment variable";
-   47, "Illegal attribute payload";
-   48, "Implicit elimination of optional arguments";
+   46, "Illegal environment variable.";
+   47, "Illegal attribute payload.";
+   48, "Implicit elimination of optional arguments.";
+   49, "Absent cmi file when looking up module alias.";
   ]
 ;;
 

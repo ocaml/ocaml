@@ -843,8 +843,9 @@ and label_x_expression i ppf (l,e) =
 
 and label_x_bool_x_core_type_list i ppf x =
   match x with
-    Rtag (l, b, ctl) ->
+    Rtag (l, attrs, b, ctl) ->
       line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
+      attributes (i+1) ppf attrs;
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->
       line i ppf "Rinherit\n";

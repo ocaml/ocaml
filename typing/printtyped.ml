@@ -824,8 +824,9 @@ and ident_x_loc_x_expression_def i ppf (l,_, e) =
 
 and label_x_bool_x_core_type_list i ppf x =
   match x with
-    Ttag (l, b, ctl) ->
+    Ttag (l, attrs, b, ctl) ->
       line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
+      attributes (i+1) ppf attrs;
       list (i+1) core_type ppf ctl
   | Tinherit (ct) ->
       line i ppf "Rinherit\n";

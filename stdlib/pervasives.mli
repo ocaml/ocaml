@@ -14,8 +14,8 @@
 (** The initially opened module.
 
    This module provides the basic operations over the built-in types
-   (numbers, booleans, strings, exceptions, references, lists, arrays,
-   input-output channels, ...).
+   (numbers, booleans, byte sequences, strings, exceptions, references,
+   lists, arrays, input-output channels, ...).
 
    This module is automatically opened at the beginning of each compilation.
    All components of this module can therefore be referred by their short
@@ -68,7 +68,7 @@ external ( <= ) : 'a -> 'a -> bool = "%lessequal"
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
-   the usual orderings over integers, characters, strings
+   the usual orderings over integers, characters, strings, byte sequences
    and floating-point numbers, and extend them to a
    total ordering over all types.
    The ordering is compatible with [( = )]. As in the case
@@ -107,7 +107,7 @@ val max : 'a -> 'a -> 'a
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
-   On mutable types such as references, arrays, strings, records with
+   On mutable types such as references, arrays, byte sequences, records with
    mutable fields and objects with mutable instance variables,
    [e1 == e2] is true if and only if physical modification of [e1]
    also affects [e2].
@@ -143,16 +143,41 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 (** {6 Debugging} *)
 
 external __LOC__ : string = "%loc_LOC"
+(** [__LOC__] returns the location at which this expression appears in
+    the file currently being parsed by the compiler, with the standard
+    error format of OCaml: "File %S, line %d, characters %d-%d" *)
 external __FILE__ : string = "%loc_FILE"
+(** [__FILE__] returns the name of the file currently being
+    parsed by the compiler. *)
 external __LINE__ : int = "%loc_LINE"
+(** [__LINE__] returns the line number at which this expression
+    appears in the file currently being parsed by the compiler. *)
 external __MODULE__ : string = "%loc_MODULE"
+(** [__MODULE__] returns the module name of the file being
+    parsed by the compiler. *)
 external __POS__ : string * int * int * int = "%loc_POS"
+(** [__POS__] returns a tuple [(file,lnum,cnum,enum)], corresponding
+    to the location at which this expression appears in the file
+    currently being parsed by the compiler. [file] is the current
+    filename, [lnum] the line number, [cnum] the character position in
+    the line and [enum] the last character position in the line. *)
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
-external __FILE_OF__ : 'a -> string * 'a = "%loc_FILE"
+(** [__LOC_OF__ expr] returns a pair [(loc, expr)] where [loc] is the
+    location of [expr] in the file currently being parsed by the
+    compiler, with the standard error format of OCaml: "File %S, line
+    %d, characters %d-%d" *)
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
-external __MODULE_OF__ : 'a -> string * 'a = "%loc_MODULE"
+(** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
+    line number at which the expression [expr] appears in the file
+    currently being parsed by the compiler. *)
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
+(** [__POS_OF__ expr] returns a pair [(expr,loc)], where [loc] is a
+    tuple [(file,lnum,cnum,enum)] corresponding to the location at
+    which the expression [expr] appears in the file currently being
+    parsed by the compiler. [file] is the current filename, [lnum] the
+    line number, [cnum] the character position in the line and [enum]
+    the last character position in the line. *)
 
 (** {6 Composition operators} *)
 
@@ -592,6 +617,9 @@ val prerr_char : char -> unit
 
 val prerr_string : string -> unit
 (** Print a string on standard error. *)
+
+val prerr_bytes : bytes -> unit
+(** Print a byte sequence on standard error. *)
 
 val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)

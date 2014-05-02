@@ -110,7 +110,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
 
 external to_bytes :
   'a -> extern_flags list -> bytes = "caml_output_value_to_string"
-(** [Marshal.to_string v flags] returns a byte sequence containing
+(** [Marshal.to_bytes v flags] returns a byte sequence containing
    the representation of [v].
    The [flags] argument has the same meaning as for
    {!Marshal.to_channel}. *)
@@ -139,7 +139,7 @@ val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
    like {!Marshal.from_channel} does, except that the byte
    representation is not read from a channel, but taken from
-   the string [buff], starting at position [ofs]. *)
+   the byte sequence [buff], starting at position [ofs]. *)
 
 val from_string : string -> int -> 'a
 (** Same as [from_bytes] but take a string as argument instead of a
