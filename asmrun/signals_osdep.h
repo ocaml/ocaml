@@ -288,6 +288,7 @@
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_PC])
     /* Local register number N is saved on the stack N words
        after the stack pointer */
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_SP])
   #define SPARC_L_REG(n) ((long *)(context->uc_mcontext.gregs[REG_SP]))[n]
   #define CONTEXT_EXCEPTION_POINTER (SPARC_L_REG(5))
   #define CONTEXT_YOUNG_LIMIT (SPARC_L_REG(7))
