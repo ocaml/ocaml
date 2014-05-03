@@ -32,7 +32,7 @@ let word_size = word_size ()
 let unix = unix ()
 let win32 = win32 ()
 let cygwin = cygwin ()
-let max_array_length = (1 lsl (word_size - 10)) - 1;;
+let max_array_length = (1 lsl (min (word_size - 10) 32)) - 1;;
 let max_string_length = word_size / 8 * max_array_length - 1;;
 
 external file_exists: string -> bool = "caml_sys_file_exists"
