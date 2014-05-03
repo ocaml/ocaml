@@ -338,7 +338,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     caml_gc_log ("Growing ref_table to %"
                  ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
                      (intnat) sz/1024);
-    tbl->base = (value **) realloc ((char *) tbl->base, sz);
+    tbl->base = (value **) caml_stat_resize ((char *) tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error ("Fatal error: ref_table overflow\n");
     }
