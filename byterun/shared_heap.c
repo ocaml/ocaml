@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "plat_threads.h"
 #include "mlvalues.h"
 #include "gc.h"
@@ -246,4 +248,53 @@ void caml_cycle_heap() {
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
   newg.NOT_MARKABLE = oldg.NOT_MARKABLE;
   global = newg;
+}
+
+
+
+
+#define STAT_ALLOC_MAGIC 0x314159
+CAMLexport void * caml_stat_alloc (asize_t sz)
+{
+  void* result = malloc (sizeof(value) + sz);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  Hd_hp(result) = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, global.NOT_MARKABLE);
+#ifdef DEBUG
+  memset ((void*)Val_hp(result), Debug_uninit_stat, sz);
+#endif
+  return (void*)Val_hp(result);
+}
+
+CAMLexport char * caml_stat_alloc_string(value str)
+{
+  mlsize_t sz = caml_string_length(str) + 1;
+  char * p = caml_stat_alloc(sz);
+  memcpy(p, String_val(str), sz);
+  return p;
+}
+
+CAMLexport void caml_stat_free (void * p)
+{
+  if (p == NULL) return;
+  Assert(Wosize_val((value)p) == STAT_ALLOC_MAGIC);
+  Assert(Tag_val((value)p) == Abstract_tag);
+  free (Hp_val((value)p));
+}
+
+CAMLexport void * caml_stat_resize (void * p, asize_t sz)
+{
+  void * result;
+
+  if (p == NULL)
+    return caml_stat_alloc(sz);
+
+  result = realloc (Hp_val((value)p), sizeof(value) + sz);
+
+  if (result == NULL) {
+    caml_stat_free(p);
+    caml_raise_out_of_memory ();
+  }
+
+  return (void*)Val_hp(result);
 }

@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "config.h"
 #include "memory.h"
 #include "addrmap.h"
