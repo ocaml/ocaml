@@ -118,7 +118,7 @@ bits  63    10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
-#define Max_wosize (((intnat)1 << 54) - 1)
+#define Max_wosize (((intnat)1 << 32) - 1)
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif
