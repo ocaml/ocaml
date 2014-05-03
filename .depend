@@ -28,16 +28,18 @@ parsing/ast_helper.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/asttypes.cmi
 parsing/ast_mapper.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/asttypes.cmi : parsing/location.cmi
+parsing/documentation.cmi :
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmi :
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/parsetree.cmi : parsing/longident.cmi parsing/location.cmi \
-    parsing/asttypes.cmi
+    parsing/documentation.cmi parsing/asttypes.cmi
 parsing/pprintast.cmi : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/asttypes.cmi
 parsing/printast.cmi : parsing/parsetree.cmi
+parsing/printdoc.cmi : parsing/documentation.cmi
 parsing/syntaxerr.cmi : parsing/location.cmi
 parsing/ast_helper.cmo : parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/asttypes.cmi parsing/ast_helper.cmi
@@ -71,12 +73,14 @@ parsing/pprintast.cmo : parsing/parsetree.cmi utils/misc.cmi \
 parsing/pprintast.cmx : parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx parsing/asttypes.cmi \
     parsing/pprintast.cmi
-parsing/printast.cmo : parsing/parsetree.cmi utils/misc.cmi \
-    parsing/longident.cmi parsing/location.cmi parsing/asttypes.cmi \
-    parsing/printast.cmi
-parsing/printast.cmx : parsing/parsetree.cmi utils/misc.cmx \
-    parsing/longident.cmx parsing/location.cmx parsing/asttypes.cmi \
-    parsing/printast.cmi
+parsing/printast.cmo : parsing/printdoc.cmi parsing/parsetree.cmi \
+    utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
+    parsing/asttypes.cmi parsing/printast.cmi
+parsing/printast.cmx : parsing/printdoc.cmx parsing/parsetree.cmi \
+    utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
+    parsing/asttypes.cmi parsing/printast.cmi
+parsing/printdoc.cmo : parsing/documentation.cmi parsing/printdoc.cmi
+parsing/printdoc.cmx : parsing/documentation.cmi parsing/printdoc.cmi
 parsing/syntaxerr.cmo : parsing/location.cmi parsing/syntaxerr.cmi
 parsing/syntaxerr.cmx : parsing/location.cmx parsing/syntaxerr.cmi
 typing/annot.cmi : parsing/location.cmi

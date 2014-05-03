@@ -402,7 +402,9 @@ and payload i ppf = function
     pattern i ppf x;
     line i ppf "<when>\n";
     expression (i + 1) ppf g
-
+  | PDoc(x, loc) ->
+      line i ppf "<documentation> %a\n" fmt_location loc;
+      Printdoc.documentation (i + 1) ppf x
 
 and type_kind i ppf x =
   match x with

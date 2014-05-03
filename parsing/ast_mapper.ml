@@ -39,6 +39,7 @@ type mapper = {
   class_type_field: mapper -> class_type_field -> class_type_field;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
+  documentation: mapper -> Documentation.t -> Documentation.t;
   exception_rebind: mapper -> exception_rebind -> exception_rebind;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
@@ -573,6 +574,7 @@ let default_mapper =
 
 
     location = (fun this l -> l);
+    documentation = (fun this d -> d);
 
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
     attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));
@@ -582,6 +584,8 @@ let default_mapper =
          | PStr x -> PStr (this.structure this x)
          | PTyp x -> PTyp (this.typ this x)
          | PPat (x, g) -> PPat (this.pat this x, map_opt (this.expr this) g)
+         | PDoc (x, loc) ->
+             PDoc(this.documentation this x, this.location this loc)
       );
   }
 

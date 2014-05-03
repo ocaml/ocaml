@@ -33,6 +33,7 @@ type mapper = {
   class_type_field: mapper -> class_type_field -> class_type_field;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
+  documentation: mapper -> Documentation.t -> Documentation.t;
   exception_rebind: mapper -> exception_rebind -> exception_rebind;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
