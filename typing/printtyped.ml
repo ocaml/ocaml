@@ -449,6 +449,9 @@ and class_type_field i ppf x =
       line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
+  | Tctf_attribute (s, arg) ->
+      line i ppf "Pctf_attribute \"%s\"\n" s.txt;
+      Printast.payload i ppf arg
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.ci_loc;

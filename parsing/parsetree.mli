@@ -450,6 +450,8 @@ and class_type_field_desc =
          *)
   | Pctf_constraint  of (core_type * core_type)
         (* constraint T1 = T2 *)
+  | Pctf_attribute of attribute
+        (* [@@@id] *)
   | Pctf_extension of extension
         (* [%%id] *)
 
@@ -543,6 +545,8 @@ and class_field_desc =
         (* constraint T1 = T2 *)
   | Pcf_initializer of expression
         (* initializer E *)
+  | Pcf_attribute of attribute
+        (* [@@@id] *)
   | Pcf_extension of extension
         (* [%%id] *)
 

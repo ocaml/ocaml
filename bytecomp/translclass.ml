@@ -145,7 +145,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                | Tcf_val (_, _, id, Tcfk_concrete (_, exp), _) ->
                    (inh_init, lsequence (set_inst_var obj id exp) obj_init,
                     has_init)
-               | Tcf_method _ | Tcf_val _ | Tcf_constraint _ ->
+               | Tcf_method _ | Tcf_val _ | Tcf_constraint _ | Tcf_attribute _ ->
                    (inh_init, obj_init, has_init)
                | Tcf_initializer _ ->
                    (inh_init, obj_init, true)
@@ -305,7 +305,9 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                  Lsequence(mkappl (oo_prim "add_initializer",
                                    Lvar cla :: msubst false (transl_exp exp)),
                            cl_init),
-                 methods, values))
+                 methods, values)
+            | Tcf_attribute _ ->
+                (inh_init, cl_init, methods, values))
           str.cstr_fields
           (inh_init, cl_init, [], [])
       in

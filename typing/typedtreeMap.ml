@@ -542,6 +542,7 @@ module MakeMap(Map : MapArgument) = struct
           Tctf_method (s, priv, virt, map_core_type ct)
         | Tctf_constraint (ct1, ct2) ->
           Tctf_constraint (map_core_type ct1, map_core_type ct2)
+        | Tctf_attribute _ as x -> x
     in
     Map.leave_class_type_field { ctf with ctf_desc = ctf_desc }
 
@@ -597,6 +598,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
           Tcf_method (lab, priv, Tcfk_concrete (o, map_expression exp))
         | Tcf_initializer exp -> Tcf_initializer (map_expression exp)
+        | Tcf_attribute _ as x -> x
     in
     Map.leave_class_field { cf with cf_desc = cf_desc }
 end

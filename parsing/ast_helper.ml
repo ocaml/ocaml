@@ -236,6 +236,7 @@ module Ctf = struct
   let method_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_method (a, b, c, d))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pctf_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pctf_extension a)
+  let attribute ?loc a = mk ?loc (Pctf_attribute a)
 end
 
 module Cf = struct
@@ -253,6 +254,7 @@ module Cf = struct
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constraint (a, b))
   let initializer_ ?loc ?attrs a = mk ?loc ?attrs (Pcf_initializer a)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcf_extension a)
+  let attribute ?loc a = mk ?loc (Pcf_attribute a)
 
   let virtual_ ct = Cfk_virtual ct
   let concrete o e = Cfk_concrete (o, e)

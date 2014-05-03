@@ -215,7 +215,7 @@ let iter_expression f e =
     | Pcf_val (_, _, Cfk_concrete (_, e))
     | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
     | Pcf_initializer e -> expr e
-    | Pcf_extension _ -> ()
+    | Pcf_attribute _ | Pcf_extension _ -> ()
 
   in
   expr e
@@ -1405,7 +1405,8 @@ let rec is_nonexpansive exp =
               incr count; true
           | Tcf_initializer e -> is_nonexpansive e
           | Tcf_constraint _ -> true
-          | Tcf_inherit _ -> false)
+          | Tcf_inherit _ -> false
+          | Tcf_attribute _ -> true)
         fields &&
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&

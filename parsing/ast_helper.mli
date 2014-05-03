@@ -283,6 +283,7 @@ module Ctf:
     val method_: ?loc:loc -> ?attrs:attrs -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_type_field
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type_field
+    val attribute: ?loc:loc -> attribute -> class_type_field
   end
 
 (** Class expressions *)
@@ -312,6 +313,7 @@ module Cf:
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_field
     val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_field
+    val attribute: ?loc:loc -> attribute -> class_field
 
     val virtual_: core_type -> class_field_kind
     val concrete: override_flag -> expression -> class_field_kind

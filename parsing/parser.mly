@@ -282,6 +282,12 @@ let wrap_exp_attrs body (ext, attrs) =
 let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
 
+let mkcf_attrs d attrs =
+  Cf.mk ~loc:(symbol_rloc()) ~attrs d
+
+let mkctf_attrs d attrs =
+  Ctf.mk ~loc:(symbol_rloc()) ~attrs d
+
 %}
 
 /* Tokens */
@@ -863,19 +869,20 @@ class_fields:
       { $2 :: $1 }
 ;
 class_field:
-  | INHERIT override_flag class_expr parent_binder
-      { mkcf (Pcf_inherit ($2, $3, $4)) }
-  | VAL value
-      { mkcf (Pcf_val $2) }
-  | METHOD method_
-      { mkcf (Pcf_method $2) }
-  | CONSTRAINT constrain_field
-      { mkcf (Pcf_constraint $2) }
-  | INITIALIZER seq_expr
-      { mkcf (Pcf_initializer $2) }
-  | class_field post_item_attribute
-      { Cf.attr $1 $2 }
-  | item_extension { mkcf(Pcf_extension $1) }
+  | INHERIT override_flag class_expr parent_binder post_item_attributes
+      { mkcf_attrs (Pcf_inherit ($2, $3, $4)) $5 }
+  | VAL value post_item_attributes
+      { mkcf_attrs (Pcf_val $2) $3 }
+  | METHOD method_ post_item_attributes
+      { mkcf_attrs (Pcf_method $2) $3 }
+  | CONSTRAINT constrain_field post_item_attributes
+      { mkcf_attrs (Pcf_constraint $2) $3 }
+  | INITIALIZER seq_expr post_item_attributes
+      { mkcf_attrs (Pcf_initializer $2) $3 }
+  | item_extension post_item_attributes
+      { mkcf_attrs (Pcf_extension $1) $2 }
+  | floating_attribute
+      { mkcf (Pcf_attribute $1) }
 ;
 parent_binder:
     AS LIDENT
@@ -963,16 +970,21 @@ class_sig_fields:
 | class_sig_fields class_sig_field     { $2 :: $1 }
 ;
 class_sig_field:
-    INHERIT class_signature       { mkctf (Pctf_inherit $2) }
-  | VAL value_type              { mkctf (Pctf_val $2) }
-  | METHOD private_virtual_flags label COLON poly_type
+    INHERIT class_signature post_item_attributes
+      { mkctf_attrs (Pctf_inherit $2) $3 }
+  | VAL value_type post_item_attributes
+      { mkctf_attrs (Pctf_val $2) $3 }
+  | METHOD private_virtual_flags label COLON poly_type post_item_attributes
       {
        let (p, v) = $2 in
-       mkctf (Pctf_method ($3, p, v, $5))
+       mkctf_attrs (Pctf_method ($3, p, v, $5)) $6
       }
-  | CONSTRAINT constrain_field        { mkctf (Pctf_constraint $2) }
-  | class_sig_field post_item_attribute { Ctf.attr $1 $2 }
-  | item_extension { mkctf(Pctf_extension $1) }
+  | CONSTRAINT constrain_field post_item_attributes
+      { mkctf_attrs (Pctf_constraint $2) $3 }
+  | item_extension post_item_attributes
+      { mkctf_attrs (Pctf_extension $1) $2 }
+  | floating_attribute
+      { mkctf(Pctf_attribute $1) }
 ;
 value_type:
     VIRTUAL mutable_flag label COLON core_type
