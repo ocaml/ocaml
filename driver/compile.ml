@@ -24,7 +24,7 @@ open Compenv
 let interface ppf sourcefile outputprefix =
   Compmisc.init_path false;
   let modulename =
-    String.capitalize(Filename.basename(chop_extension_if_any outputprefix)) in
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let initial_env = Compmisc.initial_env () in
@@ -58,7 +58,7 @@ let (++) x f = f x
 let implementation ppf sourcefile outputprefix =
   Compmisc.init_path false;
   let modulename =
-    String.capitalize(Filename.basename(chop_extension_if_any outputprefix)) in
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   check_unit_name ppf sourcefile modulename;
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
