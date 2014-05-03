@@ -19,6 +19,27 @@
    The implementation uses balanced binary trees, and is therefore
    reasonably efficient: insertion and membership take time
    logarithmic in the size of the set, for instance.
+
+   The [Make] functor constructs implementations for any type, given a
+   [compare] function.
+   For instance:
+   {[
+     module IntPairs =
+       struct
+         type t = int * int
+         let compare (x0,y0) (x1,y1) =
+           match Pervasives.compare x0 x1 with
+               0 -> Pervasives.compare y0 y1
+             | c -> c
+       end
+
+     module PairsSet = Set.Make(IntPairs)
+
+     let m = PairsSet.(empty |> add (2,3) |> add (5,7) |> add (11,13))
+   ]}
+
+   This creates a new module [PairsSet], with a new type [PairsSet.t]
+   of sets of [int * int].
 *)
 
 module type OrderedType =
