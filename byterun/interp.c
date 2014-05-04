@@ -1112,6 +1112,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 /* Debugging and machine control */
 
+    Instruct(FIRST_UNIMPLEMENTED_OP):
     Instruct(STOP):
       caml_external_raise = initial_external_raise;
       caml_extern_sp = sp;
