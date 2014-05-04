@@ -728,6 +728,7 @@ class printer  ()= object(self:'self)
       | Pctf_constraint (ct1, ct2) ->
           pp f "@[<2>constraint@ %a@ =@ %a@]"
             self#core_type ct1 self#core_type ct2
+      | Pctf_attribute _ -> ()
       | Pctf_extension _ -> assert false
     in
     pp f "@[<hv0>@[<hv2>object @[<1>%a@]@ %a@]@ end@]"
@@ -802,6 +803,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>constraint %a =@;%a@]" self#core_type  ct1 self#core_type  ct2
     | Pcf_initializer (e) ->
         pp f "@[<2>initializer@ %a@]" self#expression e
+    | Pcf_attribute _ -> ()
     | Pcf_extension _ -> assert false
 
   method class_structure f { pcstr_self = p; pcstr_fields =  l } =

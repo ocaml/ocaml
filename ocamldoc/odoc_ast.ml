@@ -679,6 +679,9 @@ module Analyser =
         | (Parsetree.Pcf_initializer exp) ->
             iter acc_inher acc_fields exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum q
 
+        | Parsetree.Pcf_attribute _ ->
+            iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
+
         | Parsetree.Pcf_extension _ -> assert false
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)

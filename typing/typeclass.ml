@@ -410,6 +410,10 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_constraint (cty, cty')) :: fields,
         val_sig, concr_meths, inher)
 
+  | Pctf_attribute x ->
+      (mkctf (Tctf_attribute x) :: fields,
+        val_sig, concr_meths, inher)
+
   | Pctf_extension (s, _arg) ->
       raise (Error (s.loc, env, Extension s.txt))
 
@@ -700,7 +704,10 @@ let rec class_field self_loc cl_num self_type meths vars
         end in
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
        inher, local_meths, local_vals)
-
+  | Pcf_attribute x ->
+      (val_env, met_env, par_env,
+        lazy (mkcf (Tcf_attribute x)) :: fields,
+        concr_meths, warn_vals, inher, local_meths, local_vals)
   | Pcf_extension (s, _arg) ->
       raise (Error (s.loc, val_env, Extension s.txt))
 

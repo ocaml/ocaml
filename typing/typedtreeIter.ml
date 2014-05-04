@@ -494,6 +494,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tctf_constraint  (ct1, ct2) ->
             iter_core_type ct1;
             iter_core_type ct2
+        | Tctf_attribute _ -> ()
       end;
       Iter.leave_class_type_field ctf
 
@@ -554,6 +555,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           iter_expression exp
       | Tcf_initializer exp ->
           iter_expression exp
+      | Tcf_attribute _ -> ()
       end;
       Iter.leave_class_field cf;
   end

@@ -297,7 +297,8 @@ module Analyser =
             match ele2.Parsetree.pctf_desc with
               Parsetree.Pctf_val (_, _, _, _)
             | Parsetree.Pctf_method (_, _, _, _)
-            | Parsetree.Pctf_constraint (_, _) -> loc.Location.loc_start.Lexing.pos_cnum
+            | Parsetree.Pctf_constraint (_, _)
+            | Parsetree.Pctf_attribute _ -> loc.Location.loc_start.Lexing.pos_cnum
             | Parsetree.Pctf_inherit class_type ->
                 class_type.Parsetree.pcty_loc.Location.loc_start.Lexing.pos_cnum
             | Parsetree.Pctf_extension _ -> assert false
@@ -456,6 +457,11 @@ module Analyser =
             in
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inh :: inher_l , eles_comments @ eles)
+        | Parsetree.Pctf_attribute _ ->
+            let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (inher_l, eles) = f loc.Location.loc_end.Lexing.pos_cnum q in
+            (inher_l, eles_comments @ eles)
+
         | Parsetree.Pctf_extension _ -> assert false
       in
       f last_pos class_type_field_list

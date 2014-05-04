@@ -344,6 +344,7 @@ and rewrite_class_field iflag cf =
   | Pcf_method (_, _, Cfk_virtual _)
   | Pcf_val (_, _, Cfk_virtual _)
   | Pcf_constraint _  -> ()
+  | Pcf_attribute _ -> ()
   | Pcf_extension _ -> ()
 
 and rewrite_class_expr iflag cexpr =

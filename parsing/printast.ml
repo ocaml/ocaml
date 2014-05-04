@@ -459,6 +459,9 @@ and class_type_field i ppf x =
       line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
+  | Pctf_attribute (s, arg) ->
+      line i ppf "Pctf_attribute \"%s\"\n" s.txt;
+      payload i ppf arg
   | Pctf_extension (s, arg) ->
       line i ppf "Pctf_extension \"%s\"\n" s.txt;
      payload i ppf arg
@@ -547,6 +550,9 @@ and class_field i ppf x =
   | Pcf_initializer (e) ->
       line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
+  | Pcf_attribute (s, arg) ->
+      line i ppf "Pcf_attribute \"%s\"\n" s.txt;
+      payload i ppf arg
   | Pcf_extension (s, arg) ->
       line i ppf "Pcf_extension \"%s\"\n" s.txt;
       payload i ppf arg

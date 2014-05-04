@@ -274,6 +274,7 @@ let class_type_field sub ctf =
   | Tctf_constraint  (ct1, ct2) ->
       sub # core_type ct1;
       sub # core_type ct2
+  | Tctf_attribute _ -> ()
 
 let core_type sub ct =
   match ct.ctyp_desc with
@@ -322,6 +323,7 @@ let class_field sub cf =
       sub # expression exp
   | Tcf_initializer exp ->
       sub # expression exp
+  | Tcf_attribute _ -> ()
 
 let bindings sub (_rec_flag, list) =
   List.iter (sub # binding) list

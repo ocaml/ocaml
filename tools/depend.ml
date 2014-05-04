@@ -96,6 +96,7 @@ and add_class_type_field bv pctf =
   | Pctf_val(_, _, _, ty) -> add_type bv ty
   | Pctf_method(_, _, _, ty) -> add_type bv ty
   | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pctf_attribute _ -> ()
   | Pctf_extension _ -> ()
 
 let add_class_description bv infos =
@@ -351,7 +352,7 @@ and add_class_field bv pcf =
   | Pcf_method(_, _, Cfk_virtual ty) -> add_type bv ty
   | Pcf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
   | Pcf_initializer e -> add_expr bv e
-  | Pcf_extension _ -> ()
+  | Pcf_attribute _ | Pcf_extension _ -> ()
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr

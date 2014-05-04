@@ -517,6 +517,7 @@ and untype_class_type_field ctf =
         Pctf_method  (s, priv, virt, untype_core_type ct)
     | Tctf_constraint  (ct1, ct2) ->
         Pctf_constraint (untype_core_type ct1, untype_core_type ct2)
+    | Tctf_attribute x -> Pctf_attribute x
   in
   {
     pctf_desc = desc;
@@ -573,5 +574,6 @@ and untype_class_field cf =
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
     | Tcf_initializer exp -> Pcf_initializer (untype_expression exp)
+    | Tcf_attribute x -> Pcf_attribute x
   in
   { pcf_desc = desc; pcf_loc = cf.cf_loc; pcf_attributes = cf.cf_attributes }

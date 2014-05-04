@@ -169,6 +169,7 @@ and class_field_desc =
   | Tcf_method of string loc * private_flag * class_field_kind
   | Tcf_constraint of core_type * core_type
   | Tcf_initializer of expression
+  | Tcf_attribute of attribute
 
 (* Value expressions for the module language *)
 
@@ -454,6 +455,7 @@ and class_type_field_desc =
   | Tctf_val of (string * mutable_flag * virtual_flag * core_type)
   | Tctf_method of (string * private_flag * virtual_flag * core_type)
   | Tctf_constraint of (core_type * core_type)
+  | Tctf_attribute of attribute
 
 and class_declaration =
   class_expr class_infos
