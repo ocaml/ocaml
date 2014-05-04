@@ -759,10 +759,12 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception (path, _) ->
-          let slot = transl_path ~loc:e.exp_loc e.exp_env path in
-          if cstr.cstr_arity = 0 then slot
-          else Lprim(Pmakeblock(0, Immutable), slot :: ll)
+      | Cstr_extension(path, is_const) ->
+          if is_const then
+            transl_path e.exp_env path
+          else
+            Lprim(Pmakeblock(0, Immutable),
+                  transl_path e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in

@@ -363,12 +363,7 @@ and value_description i ppf x =
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim
 
-and type_parameter i ppf (x, _variance) =
-  match x with
-  | Some x ->
-      string_loc i ppf x
-  | None ->
-      string i ppf "_"
+and type_parameter i ppf (x, _variance) = core_type i ppf x
 
 and type_declaration i ppf x =
   line i ppf "type_declaration %a %a\n" fmt_string_loc x.ptype_name
@@ -414,6 +409,37 @@ and type_kind i ppf x =
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
       list (i+1) label_decl ppf l;
+  | Ptype_open ->
+      line i ppf "Ptype_open\n";
+
+and type_extension i ppf x =
+  line i ppf "type_extension\n";
+  attributes i ppf x.ptyext_attributes;
+  let i = i+1 in
+  line i ppf "ptyext_path = %a\n" fmt_longident_loc x.ptyext_path;
+  line i ppf "ptyext_params =\n";
+  list (i+1) type_parameter ppf x.ptyext_params;
+  line i ppf "ptyext_constructors =\n";
+  list (i+1) extension_constructor ppf x.ptyext_constructors;
+  line i ppf "ptyext_private = %a\n" fmt_private_flag x.ptyext_private;
+
+and extension_constructor i ppf x =
+  line i ppf "extension_constructor %a\n" fmt_location x.pext_loc;
+  attributes i ppf x.pext_attributes;
+  let i = i + 1 in
+  line i ppf "pext_name = \"%s\"\n" x.pext_name.txt;
+  line i ppf "pext_kind =\n";
+  extension_constructor_kind (i + 1) ppf x.pext_kind;
+
+and extension_constructor_kind i ppf x =
+  match x with
+      Pext_decl(a, r) ->
+        line i ppf "Pext_decl\n";
+        list (i+1) core_type ppf a;
+        option (i+1) core_type ppf r;
+    | Pext_rebind li ->
+        line i ppf "Pext_rebind\n";
+        line (i+1) ppf "%a\n" fmt_longident_loc li;
 
 and class_type i ppf x =
   line i ppf "class_type %a\n" fmt_location x.pcty_loc;
@@ -472,7 +498,7 @@ and class_description i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  cl_type_parameters (i+1) ppf x.pci_params;
+  list (i+1) type_parameter ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
@@ -483,7 +509,7 @@ and class_type_declaration i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  cl_type_parameters (i+1) ppf x.pci_params;
+  list (i+1) type_parameter ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_type (i+1) ppf x.pci_expr;
@@ -571,7 +597,7 @@ and class_declaration i ppf x =
   let i = i+1 in
   line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
   line i ppf "pci_params =\n";
-  cl_type_parameters (i+1) ppf x.pci_params;
+  list (i+1) type_parameter ppf x.pci_params;
   line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
   line i ppf "pci_expr =\n";
   class_expr (i+1) ppf x.pci_expr;
@@ -613,9 +639,12 @@ and signature_item i ppf x =
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
       list i type_declaration ppf l;
-  | Psig_exception cd ->
+  | Psig_typext te ->
+      line i ppf "Psig_typext\n";
+      type_extension i ppf te
+  | Psig_exception ext ->
       line i ppf "Psig_exception\n";
-      constructor_decl i ppf cd;
+      extension_constructor i ppf ext;
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
@@ -718,14 +747,12 @@ and structure_item i ppf x =
   | Pstr_type l ->
       line i ppf "Pstr_type\n";
       list i type_declaration ppf l;
-  | Pstr_exception cd ->
+  | Pstr_typext te ->
+      line i ppf "Pstr_typext\n";
+      type_extension i ppf te
+  | Pstr_exception ext ->
       line i ppf "Pstr_exception\n";
-      constructor_decl i ppf cd;
-  | Pstr_exn_rebind er ->
-      line i ppf "Pstr_exn_rebind\n";
-      attributes i ppf er.pexrb_attributes;
-      line (i+1) ppf "%a\n" fmt_string_loc er.pexrb_name;
-      line (i+1) ppf "%a\n" fmt_longident_loc er.pexrb_lid
+      extension_constructor i ppf ext;
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x
@@ -788,13 +815,6 @@ and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line (i+1) ppf "%a\n" fmt_mutable_flag pld_mutable;
   line (i+1) ppf "%a" fmt_string_loc pld_name;
   core_type (i+1) ppf pld_type
-
-and cl_type_parameters i ppf l =
-  line i ppf "<params>\n";
-  list (i+1) cl_type_parameter ppf l;
-
-and cl_type_parameter i ppf (x, _variance) =
-  string_loc i ppf x
 
 and longident_x_pattern i ppf (li, p) =
   line i ppf "%a\n" fmt_longident_loc li;

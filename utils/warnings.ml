@@ -55,7 +55,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_exception of string * bool       (* 38 *)
+  | Unused_extension of string * bool * bool    (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -113,7 +113,7 @@ let number = function
   | Unused_for_index _ -> 35
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
-  | Unused_exception _ -> 38
+  | Unused_extension _ -> 38
   | Unused_rec_flag -> 39
   | Name_out_of_scope _ -> 40
   | Ambiguous_name _ -> 41
@@ -322,12 +322,15 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_exception (s, false) ->
-      "unused exception constructor " ^ s ^ "."
-  | Unused_exception (s, true) ->
-      "exception constructor " ^ s ^
-      " is never raised or used to build values.\n\
+  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, true, _) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
         (However, this constructor appears in patterns.)"
+  | Unused_extension (s, false, true) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        It is exported or rebound as a private extension."
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -453,7 +456,7 @@ let descriptions =
    35, "Unused for-loop index.";
    36, "Unused ancestor variable.";
    37, "Unused constructor.";
-   38, "Unused exception constructor.";
+   38, "Unused extension constructor.";
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";

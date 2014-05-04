@@ -25,14 +25,15 @@ val transl_simple_type_delayed:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val reset_type_variables: unit -> unit
-val enter_type_variable: string Location.loc -> type_expr
 val type_variable: Location.t -> string -> type_expr
+val transl_type_param:
+  Env.t -> Parsetree.core_type -> Typedtree.core_type
 
 type variable_context
 val narrow: unit -> variable_context
 val widen: variable_context -> unit
 
-exception Already_bound of Location.t
+exception Already_bound
 
 type error =
     Unbound_type_variable of string
