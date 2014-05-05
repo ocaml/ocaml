@@ -10,6 +10,7 @@ Language features:
 * Alternative syntax for string literals {id|...|id} (can break comments)
 - Separation between read-only strings (type string) and read-write byte
   sequences (type bytes). Activated by command-line option -safe-string.
+- Exception cases in pattern matching (patch by Jeremy Yallop).
 
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
