@@ -1394,8 +1394,9 @@ class-field: ...
 ;
 \end{syntax}
 
-A third form of attributes appear as stand-alome structure or
-signature items, not attached to any specific node in the syntax tree:
+A third form of attributes appears as stand-alone structure or
+signature items in the module or class sub-languages.  They are not
+attached to any specific node in the syntax tree:
 
 \begin{syntax}
 floating-attribute:
@@ -1404,10 +1405,20 @@ floating-attribute:
 definition: ...
    | floating-attribute
 ;
-specification:
+specification: ...
+   | floating-attribute
+;
+class-field-spec: ...
+   | floating-attribute
+;
+class-field: ...
    | floating-attribute
 ;
 \end{syntax}
+
+(Note: contrary to what the grammar above describes, @item-attributes@
+cannot be attached to these floating attributes in @class-field-spec@
+and @class-field@.)
 
 
 It is also possible to specify attributes on expressions using an
