@@ -157,8 +157,9 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
       List.iter
-        (fun (s, t) ->
-          line i ppf "method %s" s;
+        (fun (s, attrs, t) ->
+          line i ppf "method %s\n" s;
+          attributes i ppf attrs;
           core_type (i + 1) ppf t
         )
         l

@@ -536,7 +536,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_constr (path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_object (list, o) ->
-            List.iter (fun (_, t) -> iter_core_type t) list
+            List.iter (fun (_, _, t) -> iter_core_type t) list
         | Ttyp_class (path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_alias (ct, s) ->

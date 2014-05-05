@@ -237,7 +237,8 @@ let varify_constructors var_names t =
       | Ptyp_constr(longident, lst) ->
           Ptyp_constr(longident, List.map loop lst)
       | Ptyp_object (lst, o) ->
-          Ptyp_object (List.map (fun (s, t) -> (s, loop t)) lst, o)
+          Ptyp_object
+            (List.map (fun (s, attrs, t) -> (s, attrs, loop t)) lst, o)
       | Ptyp_class (longident, lst) ->
           Ptyp_class (longident, List.map loop lst)
       | Ptyp_alias(core_type, string) ->
@@ -1894,7 +1895,7 @@ meth_list:
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label COLON poly_type /* ok */              { ($1, $3) }
+    label attributes COLON poly_type            { ($1, $2, $4) }
 ;
 label:
     LIDENT                                      { $1 }

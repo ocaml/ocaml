@@ -97,7 +97,8 @@ module T = struct
     | Ptyp_constr (lid, tl) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_object (l, o) ->
-        object_ ~loc ~attrs (List.map (map_snd (sub.typ sub)) l) o
+        let f (s, a, t) = (s, sub.attributes sub a, sub.typ sub t) in
+        object_ ~loc ~attrs (List.map f l) o
     | Ptyp_class (lid, tl) ->
         class_ ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_alias (t, s) -> alias ~loc ~attrs (sub.typ sub t) s

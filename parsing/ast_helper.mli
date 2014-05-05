@@ -42,8 +42,9 @@ module Typ :
                -> core_type
     val tuple: ?loc:loc -> ?attrs:attrs -> core_type list -> core_type
     val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
-    val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list
-                 -> closed_flag -> core_type
+    val object_: ?loc:loc -> ?attrs:attrs ->
+                  (string * attributes * core_type) list -> closed_flag ->
+                  core_type
     val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
     val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
     val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag

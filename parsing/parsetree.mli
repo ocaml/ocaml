@@ -66,7 +66,7 @@ and core_type_desc =
            T tconstr
            (T1, ..., Tn) tconstr
          *)
-  | Ptyp_object of (string * core_type) list * closed_flag
+  | Ptyp_object of (string * attributes * core_type) list * closed_flag
         (* < l1:T1; ...; ln:Tn >     (flag = Closed)
            < l1:T1; ...; ln:Tn; .. > (flag = Open)
          *)

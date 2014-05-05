@@ -558,7 +558,8 @@ and untype_core_type ct =
         Ptyp_constr (lid,
           List.map untype_core_type list)
     | Ttyp_object (list, o) ->
-        Ptyp_object (List.map (fun (s, t) -> (s, untype_core_type t)) list, o)
+        Ptyp_object
+          (List.map (fun (s, a, t) -> (s, a, untype_core_type t)) list, o)
     | Ttyp_class (_path, lid, list) ->
         Ptyp_class (lid, List.map untype_core_type list)
     | Ttyp_alias (ct, s) ->

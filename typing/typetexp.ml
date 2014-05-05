@@ -377,7 +377,7 @@ let rec transl_type env policy styp =
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let fields =
-        List.map (fun (s, t) -> (s, transl_poly_type env policy t))
+        List.map (fun (s, a, t) -> (s, a, transl_poly_type env policy t))
           fields
       in
       let ty = newobj (transl_fields loc env policy [] o fields) in
@@ -659,7 +659,7 @@ and transl_fields loc env policy seen o =
       | Open, Univars -> new_pre_univar ()
       | Open, _ -> newvar ()
       end
-  | (s, ty1) :: l ->
+  | (s, _attrs, ty1) :: l ->
       if List.mem s seen then raise (Error (loc, env, Repeated_method_label s));
       let ty2 = transl_fields loc env policy (s :: seen) o l in
       newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))

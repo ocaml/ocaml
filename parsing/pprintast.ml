@@ -307,7 +307,7 @@ class printer  ()= object(self:'self)
               pp f ">@ %a"
                 (self#list self#string_quot) xs) low
     | Ptyp_object (l, o) ->
-        let core_field_type f (s, ct) =
+        let core_field_type f (s, _attrs, ct) =
           pp f "@[<hov2>%s@ :%a@ @]" s self#core_type ct
         in
         let field_var f = function
