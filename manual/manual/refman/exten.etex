@@ -1313,7 +1313,7 @@ class-type: ...
 
 This form of attributes can also be inserted after the @'`'tag-name@
 in polymorphic variant type expressions (@tag-spec-first@, @tag-spec@,
-@tag-spec-full@).
+@tag-spec-full@) or after the @method-name@ in @method-type@.
 
 The same syntactic form is also used to attach attributes to labels and
 constructors in type declarations:
