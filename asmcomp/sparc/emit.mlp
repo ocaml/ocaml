@@ -515,9 +515,15 @@ let rec emit_instr i dslot =
           `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
-    | Lbranch lbl ->
+    | Lbranch (lbl,frame_offsets) ->
         `	b	{emit_label lbl}\n`;
-        fill_delay_slot dslot
+        fill_delay_slot dslot;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 8 in
+          stack_offset := !stack_offset + n
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->

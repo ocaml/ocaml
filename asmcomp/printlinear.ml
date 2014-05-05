@@ -36,8 +36,10 @@ let instr ppf i =
       fprintf ppf "return %a" regs i.arg
   | Llabel lbl ->
       fprintf ppf "%a:" label lbl
-  | Lbranch lbl ->
-      fprintf ppf "goto %a" label lbl
+  | Lbranch (lbl, frame_offsets) ->
+      if frame_offsets = 0
+      then fprintf ppf "goto %a" label lbl
+      else fprintf ppf "goto %a offset %i" label lbl frame_offsets
   | Lcondbranch(tst, lbl) ->
       fprintf ppf "if %a goto %a" (test tst) i.arg label lbl
   | Lcondbranch3(lbl0, lbl1, lbl2) ->

@@ -21,6 +21,8 @@ let label_counter = ref 99
 
 let new_label() = incr label_counter; !label_counter
 
+type frame_offsets = int
+
 type instruction =
   { mutable desc: instruction_desc;
     mutable next: instruction;
@@ -35,7 +37,7 @@ and instruction_desc =
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
-  | Lbranch of label
+  | Lbranch of label * frame_offsets
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
@@ -107,14 +109,14 @@ let copy_instr d i n =
 *)
 
 let get_label n = match n.desc with
-    Lbranch lbl -> (lbl, n)
+    Lbranch (lbl,_) -> (lbl, n)
   | Llabel lbl -> (lbl, n)
   | Lend -> (-1, n)
   | _ -> let lbl = new_label() in (lbl, cons_instr (Llabel lbl) n)
 
 (* Check the fallthrough label *)
 let check_label n = match n.desc with
-  | Lbranch lbl -> lbl
+  | Lbranch (lbl,_) -> lbl
   | Llabel lbl -> lbl
   | _ -> -1
 
@@ -139,18 +141,18 @@ let rec discard_dead_code n =
    or if we jump to dead code after the end of function (lbl=-1)
 *)
 
-let add_branch lbl n =
+let add_branch ?(frame_offsets=0) lbl n =
   if lbl >= 0 then
     let n1 = discard_dead_code n in
     match n1.desc with
     | Llabel lbl1 when lbl1 = lbl -> n1
-    | _ -> cons_instr (Lbranch lbl) n1
+    | _ -> cons_instr (Lbranch (lbl,frame_offsets)) n1
   else
     discard_dead_code n
 
 (* Current labels for exit handler *)
 
-let exit_label = ref []
+let exit_label : (int * (int * label)) list ref = ref []
 
 let find_exit_label k =
   try
@@ -162,9 +164,12 @@ let is_next_catch n = match !exit_label with
 | (n0,_)::_  when n0=n -> true
 | _ -> false
 
+let fail_depth fail = fst (find_exit_label fail)
+
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
-let rec linear i n =
+let rec linear' depth i n =
+  let linear = linear' depth in
   match i.Mach.desc with
     Iend -> n
   | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
@@ -182,22 +187,26 @@ let rec linear i n =
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
       begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
-        Iend, _, Lbranch lbl ->
+        Iend, _, Lbranch (lbl,0) ->
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
-      | _, Iend, Lbranch lbl ->
+      | _, Iend, Lbranch (lbl,0) ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
       | Iexit nfail1, Iexit nfail2, _
-            when is_next_catch nfail1 ->
-          let lbl2 = find_exit_label nfail2 in
+            when is_next_catch nfail1
+              && fail_depth nfail1 = depth
+              && fail_depth nfail2 = depth ->
+          let (_,lbl2) = find_exit_label nfail2 in
           copy_instr
             (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
-      | Iexit nfail, _, _ ->
+      | Iexit nfail, _, _
+          when fail_depth nfail = depth ->
           let n2 = linear ifnot n1
-          and lbl = find_exit_label nfail in
+          and (_,lbl) = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
-      | _,  Iexit nfail, _ ->
+      | _,  Iexit nfail, _
+          when fail_depth nfail = depth ->
           let n2 = linear ifso n1 in
-          let lbl = find_exit_label nfail in
+          let (_,lbl) = find_exit_label nfail in
           copy_instr (Lcondbranch(invert_test test, lbl)) i n2
       | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
@@ -237,28 +246,36 @@ let rec linear i n =
   | Iloop body ->
       let lbl_head = new_label() in
       let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
+      let n2 = linear body (cons_instr (Lbranch (lbl_head,0)) n1) in
       cons_instr (Llabel lbl_head) n2
   | Icatch(io, body, handler) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let (lbl_handler, n2) = get_label(linear handler n1) in
-      exit_label := (io, lbl_handler) :: !exit_label ;
+      exit_label := (io, (depth, lbl_handler)) :: !exit_label ;
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := List.tl !exit_label;
       n3
   | Iexit nfail ->
       let n1 = linear i.Mach.next n in
-      let lbl = find_exit_label nfail in
-      add_branch lbl n1
+      let (lbl_depth, lbl) = find_exit_label nfail in
+      let frame_offsets = depth - lbl_depth in
+      let rec poptraps count n =
+        if count = 0
+        then add_branch ~frame_offsets lbl n
+        else cons_instr Lpoptrap (poptraps (count-1) n) in
+      poptraps frame_offsets n1
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
       let (lbl_body, n2) =
         get_label (cons_instr Lpushtrap
-                    (linear body (cons_instr Lpoptrap n1))) in
+                    (linear' (depth+1) body (cons_instr Lpoptrap n1))) in
       cons_instr (Lsetuptrap lbl_body)
         (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
+
+let linear i n =
+  linear' 0 i n
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;

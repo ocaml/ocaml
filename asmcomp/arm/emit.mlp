@@ -679,8 +679,16 @@ let emit_instr i =
         end
     | Llabel lbl ->
         `{emit_label lbl}:\n`; 0
-    | Lbranch lbl ->
-        `	b	{emit_label lbl}\n`; 1
+    | Lbranch (lbl,frame_offsets) ->
+        `	b	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 8 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end;
+        1
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
