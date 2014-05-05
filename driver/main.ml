@@ -96,6 +96,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _no_alias_deps = set transparent_modules
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
@@ -113,7 +114,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
   let _thread = set use_threads
-  let _trans_mod = set transparent_modules
   let _vmthread = set use_vmthreads
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string

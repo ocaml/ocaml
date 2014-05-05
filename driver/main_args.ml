@@ -150,6 +150,11 @@ let mk_modern f =
   "-modern", Arg.Unit f, " (deprecated) same as -labels"
 ;;
 
+let mk_no_alias_deps f =
+  "-no-alias-deps", Arg.Unit f,
+  " Do not record dependencies for module aliases"
+;;
+
 let mk_no_app_funct f =
   "-no-app-funct", Arg.Unit f, " Deactivate applicative functors"
 ;;
@@ -272,10 +277,6 @@ let mk_thread f =
   "-thread", Arg.Unit f,
   " Generate code that supports the system threads library"
 ;;
-
-let mk_trans_mod f =
-  "-trans-mod", Arg.Unit f,
-  " Make typing and linking only depend on normalized paths"
 
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
@@ -446,245 +447,143 @@ let mk__ f =
   "<file>  Treat <file> as a file name (even if it starts with `-')"
 ;;
 
-module type Bytecomp_options = sig
-  val _a : unit -> unit
+module type Common_options = sig
   val _absname : unit -> unit
+  val _I : string -> unit
+  val _labels : unit -> unit
+  val _no_alias_deps : unit -> unit
+  val _no_app_funct : unit -> unit
+  val _noassert : unit -> unit
+  val _nolabels : unit -> unit
+  val _nostdlib : unit -> unit
+  val _ppx : string -> unit
+  val _principal : unit -> unit
+  val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
+  val _short_paths : unit -> unit
+  val _strict_sequence : unit -> unit
+  val _unsafe : unit -> unit
+  val _unsafe_string : unit -> unit
+  val _version : unit -> unit
+  val _vnum : unit -> unit
+  val _w : string -> unit
+  val _warn_error : string -> unit
+  val _warn_help : unit -> unit
+
+  val _dsource : unit -> unit
+  val _dparsetree : unit -> unit
+  val _dtypedtree : unit -> unit
+  val _drawlambda : unit -> unit
+  val _dlambda : unit -> unit
+
+  val anonymous : string -> unit
+end;;
+
+module type Compiler_options =  sig
+  val _a : unit -> unit
   val _annot : unit -> unit
   val _binannot : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
   val _ccopt : string -> unit
-  val _compat_32 : unit -> unit
   val _config : unit -> unit
+  val _g : unit -> unit
+  val _i : unit -> unit
+  val _impl : string -> unit
+  val _intf : string -> unit
+  val _intf_suffix : string -> unit
+  val _keep_locs : unit -> unit
+  val _linkall : unit -> unit
+  val _noautolink : unit -> unit
+  val _o : string -> unit
+  val _output_obj : unit -> unit
+  val _pack : unit -> unit
+  val _pp : string -> unit
+  val _principal : unit -> unit
+  val _rectypes : unit -> unit
+  val _runtime_variant : string -> unit
+  val _safe_string : unit -> unit
+  val _short_paths : unit -> unit
+  val _thread : unit -> unit
+  val _v : unit -> unit
+  val _verbose : unit -> unit
+  val _where : unit -> unit
+
+  val _nopervasives : unit -> unit
+end
+;;
+
+module type Bytecomp_options = sig
+  include Common_options
+  include Compiler_options
+  val _compat_32 : unit -> unit
   val _custom : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
-  val _g : unit -> unit
-  val _i : unit -> unit
-  val _I : string -> unit
-  val _impl : string -> unit
-  val _intf : string -> unit
-  val _intf_suffix : string -> unit
-  val _keep_locs : unit -> unit
-  val _labels : unit -> unit
-  val _linkall : unit -> unit
   val _make_runtime : unit -> unit
-  val _no_app_funct : unit -> unit
-  val _noassert : unit -> unit
-  val _noautolink : unit -> unit
-  val _nolabels : unit -> unit
-  val _nostdlib : unit -> unit
-  val _o : string -> unit
-  val _output_obj : unit -> unit
-  val _pack : unit -> unit
-  val _pp : string -> unit
-  val _ppx : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _runtime_variant : string -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
-  val _strict_sequence : unit -> unit
-  val _trans_mod : unit -> unit
-  val _thread : unit -> unit
   val _vmthread : unit -> unit
-  val _unsafe : unit -> unit
-  val _unsafe_string : unit -> unit
   val _use_runtime : string -> unit
-  val _v : unit -> unit
-  val _version : unit -> unit
-  val _vnum : unit -> unit
-  val _verbose : unit -> unit
-  val _w : string -> unit
-  val _warn_error : string -> unit
-  val _warn_help : unit -> unit
-  val _where : unit -> unit
 
-  val _nopervasives : unit -> unit
-  val _use_prims : string -> unit
-  val _dsource : unit -> unit
-  val _dparsetree : unit -> unit
-  val _dtypedtree : unit -> unit
-  val _drawlambda : unit -> unit
-  val _dlambda : unit -> unit
   val _dinstr : unit -> unit
 
-  val anonymous : string -> unit
+  val _use_prims : string -> unit
 end;;
 
 module type Bytetop_options = sig
-  val _absname : unit -> unit
-  val _I : string -> unit
+  include Common_options
   val _init : string -> unit
-  val _labels : unit -> unit
-  val _no_app_funct : unit -> unit
-  val _noassert : unit -> unit
   val _noinit : unit -> unit
-  val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
-  val _nostdlib : unit -> unit
-  val _ppx : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
-  val _stdin: unit -> unit
-  val _strict_sequence : unit -> unit
-  val _trans_mod : unit -> unit
-  val _unsafe : unit -> unit
-  val _unsafe_string : unit -> unit
-  val _version : unit -> unit
-  val _vnum : unit -> unit
-  val _w : string -> unit
-  val _warn_error : string -> unit
-  val _warn_help : unit -> unit
+  val _stdin : unit -> unit
 
-  val _dsource : unit -> unit
-  val _dparsetree : unit -> unit
-  val _dtypedtree : unit -> unit
-  val _drawlambda : unit -> unit
-  val _dlambda : unit -> unit
   val _dinstr : unit -> unit
+end;;
 
-  val anonymous : string -> unit
+module type Optcommon_options = sig
+  val _compact : unit -> unit
+  val _inline : int -> unit
+
+  val _dclambda : unit -> unit
+  val _dcmm : unit -> unit
+  val _dsel : unit -> unit
+  val _dcombine : unit -> unit
+  val _dcse : unit -> unit
+  val _dlive : unit -> unit
+  val _dspill : unit -> unit
+  val _dsplit : unit -> unit
+  val _dinterf : unit -> unit
+  val _dprefer : unit -> unit
+  val _dalloc : unit -> unit
+  val _dreload : unit -> unit
+  val _dscheduling :  unit -> unit
+  val _dlinear :  unit -> unit
+  val _dstartup :  unit -> unit
 end;;
 
 module type Optcomp_options = sig
-  val _a : unit -> unit
-  val _absname : unit -> unit
-  val _annot : unit -> unit
-  val _binannot : unit -> unit
-  val _c : unit -> unit
-  val _cc : string -> unit
-  val _cclib : string -> unit
-  val _ccopt : string -> unit
-  val _compact : unit -> unit
-  val _config : unit -> unit
+  include Common_options
+  include Compiler_options
+  include Optcommon_options
   val _for_pack : string -> unit
-  val _g : unit -> unit
-  val _i : unit -> unit
-  val _I : string -> unit
-  val _impl : string -> unit
-  val _inline : int -> unit
-  val _intf : string -> unit
-  val _intf_suffix : string -> unit
-  val _keep_locs : unit -> unit
-  val _labels : unit -> unit
-  val _linkall : unit -> unit
-  val _no_app_funct : unit -> unit
   val _no_float_const_prop : unit -> unit
-  val _noassert : unit -> unit
-  val _noautolink : unit -> unit
   val _nodynlink : unit -> unit
-  val _nolabels : unit -> unit
-  val _nostdlib : unit -> unit
-  val _o : string -> unit
-  val _output_obj : unit -> unit
   val _p : unit -> unit
-  val _pack : unit -> unit
   val _pp : string -> unit
-  val _ppx : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
-  val _runtime_variant : string -> unit
   val _S : unit -> unit
-  val _safe_string : unit -> unit
   val _shared : unit -> unit
-  val _short_paths : unit -> unit
-  val _strict_sequence : unit -> unit
-  val _trans_mod : unit -> unit
-  val _thread : unit -> unit
-  val _unsafe : unit -> unit
-  val _unsafe_string : unit -> unit
-  val _v : unit -> unit
-  val _verbose : unit -> unit
-  val _version : unit -> unit
-  val _vnum : unit -> unit
-  val _w : string -> unit
-  val _warn_error : string -> unit
-  val _warn_help : unit -> unit
-  val _where : unit -> unit
-
-  val _nopervasives : unit -> unit
-  val _dsource : unit -> unit
-  val _dparsetree : unit -> unit
-  val _dtypedtree : unit -> unit
-  val _drawlambda : unit -> unit
-  val _dlambda : unit -> unit
-  val _dclambda : unit -> unit
-  val _dcmm : unit -> unit
-  val _dsel : unit -> unit
-  val _dcombine : unit -> unit
-  val _dcse : unit -> unit
-  val _dlive : unit -> unit
-  val _dspill : unit -> unit
-  val _dsplit : unit -> unit
-  val _dinterf : unit -> unit
-  val _dprefer : unit -> unit
-  val _dalloc : unit -> unit
-  val _dreload : unit -> unit
-  val _dscheduling :  unit -> unit
-  val _dlinear :  unit -> unit
-  val _dstartup :  unit -> unit
-
-  val anonymous : string -> unit
 end;;
 
 module type Opttop_options = sig
-  val _absname : unit -> unit
-  val _compact : unit -> unit
-  val _I : string -> unit
+  include Common_options
+  include Optcommon_options
   val _init : string -> unit
-  val _inline : int -> unit
-  val _labels : unit -> unit
-  val _no_app_funct : unit -> unit
-  val _noassert : unit -> unit
   val _noinit : unit -> unit
-  val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
-  val _nostdlib : unit -> unit
-  val _ppx : string -> unit
-  val _principal : unit -> unit
-  val _rectypes : unit -> unit
   val _S : unit -> unit
-  val _safe_string : unit -> unit
-  val _short_paths : unit -> unit
   val _stdin : unit -> unit
-  val _strict_sequence : unit -> unit
-  val _trans_mod : unit -> unit
-  val _unsafe : unit -> unit
-  val _unsafe_string : unit -> unit
-  val _version : unit -> unit
-  val _vnum : unit -> unit
-  val _w : string -> unit
-  val _warn_error : string -> unit
-  val _warn_help : unit -> unit
-
-  val _dsource : unit -> unit
-  val _dparsetree : unit -> unit
-  val _dtypedtree : unit -> unit
-  val _drawlambda : unit -> unit
-  val _dlambda : unit -> unit
-  val _dclambda : unit -> unit
-  val _dcmm : unit -> unit
-  val _dsel : unit -> unit
-  val _dcombine : unit -> unit
-  val _dcse : unit -> unit
-  val _dlive : unit -> unit
-  val _dspill : unit -> unit
-  val _dsplit : unit -> unit
-  val _dinterf : unit -> unit
-  val _dprefer : unit -> unit
-  val _dalloc : unit -> unit
-  val _dreload : unit -> unit
-  val _dscheduling :  unit -> unit
-  val _dlinear :  unit -> unit
-  val _dstartup :  unit -> unit
-
-  val anonymous : string -> unit
 end;;
 
 module type Arg_list = sig
@@ -722,6 +621,7 @@ struct
     mk_make_runtime F._make_runtime;
     mk_make_runtime_2 F._make_runtime;
     mk_modern F._labels;
+    mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noautolink_byt F._noautolink;
@@ -738,7 +638,6 @@ struct
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
-    mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -773,6 +672,7 @@ struct
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
+    mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
@@ -787,7 +687,6 @@ struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
-    mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -831,6 +730,7 @@ struct
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
+    mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
@@ -852,7 +752,6 @@ struct
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
-    mk_trans_mod F._trans_mod;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -898,6 +797,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_init F._init;
     mk_inline F._inline;
     mk_labels F._labels;
+    mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
@@ -913,7 +813,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
-    mk_trans_mod F._trans_mod;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;

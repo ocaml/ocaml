@@ -20,6 +20,6 @@ case $1 in
                            # make sure add_char is inlined (PR#5872)
   buffer.cm[io]|printf.cm[io]|format.cm[io]|scanf.cm[io]) echo ' -w A';;
   scanf.cmx|scanf.p.cmx) echo ' -inline 9';;
-  *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -trans-mod';;
+  *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
   *) echo ' ';;
 esac
