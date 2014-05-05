@@ -2102,9 +2102,9 @@ and type_expect_ ?in_function env sexp ty_expected =
       let rec split_cases vc ec = function
         | [] -> List.rev vc, List.rev ec
         | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
-          split_cases vc ({c with pc_lhs = p} :: ec) rest
+            split_cases vc ({c with pc_lhs = p} :: ec) rest
         | c :: rest ->
-          split_cases (c :: vc) ec rest
+            split_cases (c :: vc) ec rest
       in
       let val_caselist, exn_caselist = split_cases [] [] caselist in
       if val_caselist = [] then raise (Error (loc, env, No_value_clauses));
