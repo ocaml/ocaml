@@ -50,7 +50,8 @@ lexcmm.ml: lexcmm.mll
 MLCASES=optargs staticalloc
 
 CASES=fib tak quicksort quicksort2 soli \
-      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
+      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
+      test-exit-trywith
 ARGS_fib=-DINT_INT -DFUN=fib main.c
 ARGS_tak=-DUNIT_INT -DFUN=takmain main.c
 ARGS_quicksort=-DSORT -DFUN=quicksort main.c
@@ -63,6 +64,7 @@ ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+ARGS_test-exit-trywith=-DINT_INT -DFUN=exit_trywith main.c
 
 tests: $(CASES:=.o)
 	@for c in $(CASES); do \

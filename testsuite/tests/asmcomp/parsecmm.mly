@@ -197,6 +197,9 @@ expr:
           | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
         Ccatch(0, [], Cloop body, Ctuple []) }
   | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], $3, $5) }
+  | LPAREN CATCH sequence WITH LPAREN identlist RPAREN sequence RPAREN
+    { Ccatch(0, $6, $3, $8) }
+  | LPAREN EXIT exprlist RPAREN { Cexit(0,$3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
@@ -212,6 +215,10 @@ expr:
       { Cop(Cstore Word, [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { Cop(Cstore Double_u, [access_array $3 $4 Arch.size_float; $5]) }
+;
+identlist:
+    identlist bind_ident        { $2 :: $1 }
+  | /**/                        { [] }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
