@@ -228,6 +228,9 @@ and pattern i ppf x =
       longident_loc i ppf li
   | Ppat_unpack s ->
       line i ppf "Ppat_unpack %a\n" fmt_string_loc s;
+  | Ppat_exception p ->
+      line i ppf "Ppat_exception\n";
+      pattern i ppf p
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
       payload i ppf arg

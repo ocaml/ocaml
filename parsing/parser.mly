@@ -1445,6 +1445,8 @@ pattern:
       { expecting 3 "pattern" }
   | LAZY simple_pattern
       { mkpat(Ppat_lazy $2) }
+  | EXCEPTION pattern %prec prec_constr_appl
+      { mkpat(Ppat_exception $2) }
   | pattern attribute
       { Pat.attr $1 $2 }
 ;

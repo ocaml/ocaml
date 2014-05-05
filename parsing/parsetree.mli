@@ -184,6 +184,8 @@ and pattern_desc =
            Note: (module P : S) is represented as
            Ppat_constraint(Ppat_unpack, Ptyp_package)
          *)
+  | Ppat_exception of pattern
+        (* exception P *)
   | Ppat_extension of extension
         (* [%id] *)
 

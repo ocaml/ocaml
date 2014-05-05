@@ -112,9 +112,10 @@ let expression sub exp =
   | Texp_apply (exp, list) ->
       sub # expression exp;
       List.iter (fun (_, expo, _) -> opt (sub # expression) expo) list
-  | Texp_match (exp, cases, _) ->
+  | Texp_match (exp, cases, exn_cases, _) ->
       sub # expression exp;
-      sub # cases cases
+      sub # cases cases;
+      sub # cases exn_cases
   | Texp_try (exp, cases) ->
       sub # expression exp;
       sub # cases cases

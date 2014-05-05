@@ -126,19 +126,6 @@ let is_simple_construct :construct -> bool = function
 
 let pp = fprintf
 
-let rec is_irrefut_patt x =
-  match x.ppat_desc with
-  | Ppat_any | Ppat_var _ | Ppat_unpack _ -> true
-  | Ppat_alias (p,_) -> is_irrefut_patt p
-  | Ppat_tuple (ps) -> List.for_all is_irrefut_patt ps
-  | Ppat_constraint (p,_) -> is_irrefut_patt p
-  | Ppat_or (l,r) -> is_irrefut_patt l || is_irrefut_patt r
-  | Ppat_record (ls,_) -> List.for_all (fun (_,x) -> is_irrefut_patt x) ls
-  | Ppat_lazy p -> is_irrefut_patt p
-  | Ppat_extension _ -> assert false
-  | Ppat_interval _
-  | Ppat_constant _ | Ppat_construct _  | Ppat_variant _ | Ppat_array _
-  | Ppat_type _-> false (*conservative*)
 class printer  ()= object(self:'self)
   val pipe = false
   val semi = false
@@ -407,6 +394,8 @@ class printer  ()= object(self:'self)
         pp f "@[<2>(%a@;:@;%a)@]" self#pattern1 p self#core_type ct
     | Ppat_lazy p ->
         pp f "@[<2>(lazy@;%a)@]" self#pattern1 p
+    | Ppat_exception p ->
+        pp f "@[<2>exception@;%a@]" self#pattern1 p
     | _ -> self#paren true self#pattern f x
 
   method label_exp f (l,opt,p) =

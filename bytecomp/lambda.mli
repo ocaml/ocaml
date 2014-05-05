@@ -246,7 +246,7 @@ val negate_comparison : comparison -> comparison
 
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
-
+val next_negative_raise_count : unit -> int
 
 val staticfail : lambda (* Anticipated static failure *)
 

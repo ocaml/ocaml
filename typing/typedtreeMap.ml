@@ -274,10 +274,11 @@ module MakeMap(Map : MapArgument) = struct
                         in
                         (label, expo, optional)
                       ) list )
-        | Texp_match (exp, list, partial) ->
+        | Texp_match (exp, list1, list2, partial) ->
           Texp_match (
             map_expression exp,
-            map_cases list,
+            map_cases list1,
+            map_cases list2,
             partial
           )
         | Texp_try (exp, list) ->

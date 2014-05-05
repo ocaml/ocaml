@@ -76,7 +76,7 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of label * case list * partial
   | Texp_apply of expression * (label * expression option * optional) list
-  | Texp_match of expression * case list * partial
+  | Texp_match of expression * case list * case list * partial
   | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of

@@ -67,6 +67,8 @@ type error =
   | Invalid_interval
   | Invalid_for_loop_index
   | Extension of string
+  | No_value_clauses
+  | Exception_pattern_below_toplevel
 
 exception Error of Location.t * Env.t * error
 
@@ -1194,6 +1196,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
+  | Ppat_exception _ ->
+      raise (Error (loc, !env, Exception_pattern_below_toplevel))
   | Ppat_extension (s, _arg) ->
       raise (Error (s.loc, !env, Extension s.txt))
 
@@ -1368,7 +1372,7 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
-  | Texp_match(e, cases, _) ->
+  | Texp_match(e, cases, [], _) ->
       is_nonexpansive e &&
       List.for_all
         (fun {c_lhs = _; c_guard; c_rhs} ->
@@ -1831,7 +1835,8 @@ let iter_ppat f p =
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
+  | Ppat_exception p | Ppat_alias (p,_)
+  | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
 
 let contains_polymorphic_variant p =
@@ -2094,11 +2099,21 @@ and type_expect_ ?in_function env sexp ty_expected =
       end_def ();
       if is_nonexpansive arg then generalize arg.exp_type
       else generalize_expansive env arg.exp_type;
-      let cases, partial =
-        type_cases env arg.exp_type ty_expected true loc caselist
+      let rec split_cases vc ec = function
+        | [] -> List.rev vc, List.rev ec
+        | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
+          split_cases vc ({c with pc_lhs = p} :: ec) rest
+        | c :: rest ->
+          split_cases (c :: vc) ec rest
       in
+      let val_caselist, exn_caselist = split_cases [] [] caselist in
+      if val_caselist = [] then raise (Error (loc, env, No_value_clauses));
+      let val_cases, partial =
+        type_cases env arg.exp_type ty_expected true loc val_caselist in
+      let exn_cases, _ =
+        type_cases env Predef.type_exn ty_expected false loc exn_caselist in
       re {
-        exp_desc = Texp_match(arg, cases, partial);
+        exp_desc = Texp_match(arg, val_cases, exn_cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -3882,6 +3897,12 @@ let report_error env ppf = function
         "@[Invalid for-loop index: only variables and _ are allowed.@]"
   | Extension s ->
       fprintf ppf "Uninterpreted extension '%s'." s
+  | No_value_clauses ->
+      fprintf ppf
+        "None of the patterns in this 'match' expression match values."
+  | Exception_pattern_below_toplevel ->
+      fprintf ppf
+        "@[Exception patterns must be at the top level of a match case.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

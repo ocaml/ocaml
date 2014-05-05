@@ -274,8 +274,18 @@ and untype_expression exp =
                 None -> list
               | Some exp -> (label, untype_expression exp) :: list
           ) list [])
-    | Texp_match (exp, cases, _) ->
-        Pexp_match (untype_expression exp, untype_cases cases)
+    | Texp_match (exp, cases, exn_cases, _) ->
+      let merged_cases = untype_cases cases
+        @ List.map
+          (fun c ->
+            let uc = untype_case c in
+            let pat = { uc.pc_lhs
+                        with ppat_desc = Ppat_exception uc.pc_lhs }
+            in
+            { uc with pc_lhs = pat })
+          exn_cases
+      in 
+      Pexp_match (untype_expression exp, merged_cases)
     | Texp_try (exp, cases) ->
         Pexp_try (untype_expression exp, untype_cases cases)
     | Texp_tuple list ->

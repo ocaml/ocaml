@@ -109,6 +109,8 @@ type error =
   | Invalid_interval
   | Invalid_for_loop_index
   | Extension of string
+  | No_value_clauses
+  | Exception_pattern_below_toplevel
 
 exception Error of Location.t * Env.t * error
 
