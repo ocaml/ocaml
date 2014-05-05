@@ -1555,3 +1555,34 @@ Example:
 String.length {|\"|}         (* returns 2 *)
 String.length {foo|\"|foo}   (* returns 2 *)
 \end{verbatim}
+
+
+\section{Exception cases in pattern matching}\label{s:exception-match}
+
+(Introduced in OCaml 4.02)
+
+A new form of exception patterns is allowed, only as a toplevel
+pattern under a "match"..."with" pattern-matching (other occurrences
+are rejected by the type-checker).
+
+\begin{syntax}
+pattern: ...
+ | 'exception' pattern
+;
+\end{syntax}
+
+Cases with such a toplevel pattern are called ``exception cases'',
+as opposed to regular ``value cases''.  Exception cases are applied
+when the evaluation of the matched expression raises an exception.
+The exception value is then matched against all the exception cases
+and re-raised if none of them accept the exception (as for a
+"try"..."with" block).  Since the bodies of all exception and value
+cases is outside the scope of the exception handler, they are all
+considered to be in tail-position: if the "match"..."with" block
+itself is in tail position in the current function, any function call
+in tail position in one of the case bodies results in an actual tail
+call.
+
+It is an error if all cases are exception cases in a given pattern
+matching.
+
