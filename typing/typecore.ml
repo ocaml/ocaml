@@ -293,7 +293,11 @@ let extract_label_names sexp env ty =
     assert false
 
 let explicit_arity =
-  List.exists (fun (s, _) -> s.txt = "ocaml.explicit_arity")
+  List.exists
+    (function
+      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | _ -> false
+    )
 
 (* Typing of patterns *)
 
