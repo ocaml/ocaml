@@ -1134,6 +1134,8 @@ expr:
       { mkinfix $1 "+" $3 }
   | expr PLUSDOT expr
       { mkinfix $1 "+." $3 }
+  | expr PLUSEQ expr
+      { mkinfix $1 "+=" $3 }
   | expr MINUS expr
       { mkinfix $1 "-" $3 }
   | expr MINUSDOT expr
