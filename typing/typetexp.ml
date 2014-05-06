@@ -88,27 +88,28 @@ let warning_leave_scope () =
 
 let warning_attribute attrs =
   let prev_warnings = List.hd !warning_scope in
+  let process loc txt errflag payload =
+    match string_of_payload payload with
+    | Some s ->
+        if !prev_warnings = None then
+          prev_warnings := Some (Warnings.backup ());
+        begin try Warnings.parse_options errflag s
+        with Arg.Bad _ ->
+          Location.prerr_warning loc
+            (Warnings.Attribute_payload
+               (txt, "Ill-formed list of warnings"))
+        end
+    | None ->
+        Location.prerr_warning loc
+          (Warnings.Attribute_payload
+             (txt, "A single string literal is expected"))
+  in
   List.iter
     (function
-      | ({txt = "ocaml.warning"|"warning"; loc}, payload) ->
-          begin match payload with
-          | PStr [{pstr_desc=Pstr_eval
-                     ({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
-              if !prev_warnings = None then
-                prev_warnings := Some (Warnings.backup ());
-              begin try Warnings.parse_options false s
-              with Arg.Bad _ ->
-                Location.prerr_warning loc
-                  (Warnings.Attribute_payload
-                     ("ocaml.warning",
-                      "Ill-formed list of warnings"))
-              end
-          | _ ->
-              Location.prerr_warning loc
-                (Warnings.Attribute_payload
-                   ("ocaml.warning",
-                    "A single string literal is expected"))
-          end
+      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
+          process loc txt false payload
+      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
+          process loc txt true payload
       | _ ->
           ()
     )
