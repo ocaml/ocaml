@@ -113,4 +113,6 @@ val spellcheck_simple:
 
 val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 
-val warning_attribute: Parsetree.attributes -> Warnings.state option
+val warning_enter_scope: unit -> unit
+val warning_leave_scope: unit -> unit
+val warning_attribute: Parsetree.attributes -> unit

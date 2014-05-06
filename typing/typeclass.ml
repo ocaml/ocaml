@@ -411,6 +411,7 @@ let rec class_type_field env self_type meths
         val_sig, concr_meths, inher)
 
   | Pctf_attribute x ->
+      Typetexp.warning_attribute [x];
       (mkctf (Tctf_attribute x) :: fields,
         val_sig, concr_meths, inher)
 
@@ -436,11 +437,13 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
+  Typetexp.warning_enter_scope ();
   let (fields, val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       ([], Vars.empty, Concr.empty, [])
       sign
   in
+  Typetexp.warning_leave_scope ();
   let cty =   {csig_self = self_type;
    csig_vars = val_sig;
    csig_concr = concr_meths;
@@ -705,6 +708,7 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
        inher, local_meths, local_vals)
   | Pcf_attribute x ->
+      Typetexp.warning_attribute [x];
       (val_env, met_env, par_env,
         lazy (mkcf (Tcf_attribute x)) :: fields,
         concr_meths, warn_vals, inher, local_meths, local_vals)
@@ -758,12 +762,14 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
+  Typetexp.warning_enter_scope ();
   let (_, _, _, fields, concr_meths, _, inher, _local_meths, _local_vals) =
     List.fold_left (class_field self_loc cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
        Concr.empty, Concr.empty)
       str
   in
+  Typetexp.warning_leave_scope ();
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {csig_self = public_self;

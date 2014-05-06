@@ -75,8 +75,19 @@ let check_deprecated loc attrs s =
     | _ ->  ())
     attrs
 
+let warning_scope = ref []
+
+let warning_enter_scope () =
+  warning_scope := ref None :: !warning_scope
+let warning_leave_scope () =
+  match !warning_scope with
+  | [] -> assert false
+  | hd :: tl ->
+      may Warnings.restore !hd;
+      warning_scope := tl
+
 let warning_attribute attrs =
-  let prev_warnings = ref None in
+  let prev_warnings = List.hd !warning_scope in
   List.iter
     (function
       | ({txt = "ocaml.warning"|"warning"; loc}, payload) ->
@@ -101,10 +112,7 @@ let warning_attribute attrs =
       | _ ->
           ()
     )
-    attrs;
-  !prev_warnings
-
-
+    attrs
 
 type variable_context = int * (string, type_expr) Tbl.t
 

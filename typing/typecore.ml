@@ -1923,9 +1923,10 @@ let rec type_exp env sexp =
 
 and type_expect ?in_function env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  let prev_warnings = Typetexp.warning_attribute sexp.pexp_attributes in
+  Typetexp.warning_enter_scope ();
+  Typetexp.warning_attribute sexp.pexp_attributes;
   let exp = type_expect_ ?in_function env sexp ty_expected in
-  may Warnings.restore prev_warnings;
+  Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
