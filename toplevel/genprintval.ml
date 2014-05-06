@@ -53,7 +53,10 @@ module type S =
 module ObjTbl = Hashtbl.Make(struct
         type t = Obj.t
         let equal = (==)
-        let hash = Hashtbl.hash
+        let hash x =
+          try
+            Hashtbl.hash x
+          with exn -> 0
       end)
 
 module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
