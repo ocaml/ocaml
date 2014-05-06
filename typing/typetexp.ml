@@ -55,15 +55,25 @@ type error =
 
 exception Error of Location.t * Env.t * error
 
+let string_of_cst = function
+  | Const_string(s, _) -> Some s
+  | _ -> None
+
+let string_of_payload = function
+  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
+      string_of_cst c
+  | _ -> None
+
 let check_deprecated loc attrs s =
-  if
-    List.exists
-      (function
-      | ({txt = "ocaml.deprecated"|"deprecated"; _}, _) -> true
-      | _ ->  false)
-      attrs
-  then
-    Location.prerr_warning loc (Warnings.Deprecated s)
+  List.iter
+    (function
+    | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
+      begin match string_of_payload p with
+      | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+      | None -> Location.prerr_warning loc (Warnings.Deprecated s)
+      end
+    | _ ->  ())
+    attrs
 
 let warning_attribute attrs =
   let prev_warnings = ref None in
