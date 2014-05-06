@@ -25,6 +25,7 @@
 #include "mlvalues.h"
 #include "prims.h"
 
+/* all uses of this are bugs */
 CAMLprim value caml_static_alloc(value size)
 {
   return (value) caml_stat_alloc((asize_t) Long_val(size));
@@ -32,7 +33,6 @@ CAMLprim value caml_static_alloc(value size)
 
 CAMLprim value caml_static_free(value blk)
 {
-  caml_stat_free((void *) blk);
   return Val_unit;
 }
 
