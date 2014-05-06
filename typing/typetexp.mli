@@ -63,7 +63,6 @@ type error =
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
-  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -116,3 +115,5 @@ val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 val warning_enter_scope: unit -> unit
 val warning_leave_scope: unit -> unit
 val warning_attribute: Parsetree.attributes -> unit
+
+val error_of_extension : Parsetree.extension -> Location.error

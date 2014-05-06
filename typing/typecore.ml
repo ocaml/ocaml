@@ -66,11 +66,11 @@ type error =
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
-  | Extension of string
   | No_value_clauses
   | Exception_pattern_below_toplevel
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
@@ -1202,8 +1202,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_exception _ ->
       raise (Error (loc, !env, Exception_pattern_below_toplevel))
-  | Ppat_extension (s, _arg) ->
-      raise (Error (s.loc, !env, Extension s.txt))
+  | Ppat_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels
     ?(lev=get_current_level()) env sp expected_ty =
@@ -2855,8 +2855,8 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
-  | Pexp_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pexp_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =
@@ -3478,8 +3478,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 
 (* Typing of let bindings *)
 
-and type_let ?(check = fun s -> Warnings.Unused_var s)
-             ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+and type_let ?(check =fun s -> Warnings.Unused_var s)
+             ?(check_strict =fun s -> Warnings.Unused_var_strict s)
     env rec_flag spat_sexp_list scope allow =
   let open Ast_helper in
   begin_def();
@@ -3904,8 +3904,6 @@ let report_error env ppf = function
   | Invalid_for_loop_index ->
       fprintf ppf
         "@[Invalid for-loop index: only variables and _ are allowed.@]"
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
   | No_value_clauses ->
       fprintf ppf
         "None of the patterns in this 'match' expression match values."
@@ -3921,6 +3919,8 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )

@@ -37,11 +37,11 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
-  | Extension of string
   | Recursive_module_require_explicit_type
   | Apply_generative
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 open Typedtree
 
@@ -335,8 +335,8 @@ let rec approx_modtype env smty =
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
-  | Pmty_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmty_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and approx_module_declaration env pmd =
   {
@@ -534,8 +534,8 @@ let rec transl_modtype env smty =
   | Pmty_typeof smod ->
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
-  | Pmty_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmty_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 
 and transl_signature env sg =
@@ -710,8 +710,8 @@ and transl_signature env sg =
             Typetexp.warning_attribute [x];
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
-        | Psig_extension ((s, _), _) ->
-            raise (Error (s.loc, env, Extension s.txt))
+        | Psig_extension (ext, _attrs) ->
+            raise (Error_forward (Typetexp.error_of_extension ext))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   Typetexp.warning_enter_scope ();
@@ -1154,8 +1154,8 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
-  | Pmod_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmod_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
@@ -1385,8 +1385,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           }
         in
         Tstr_include incl, sg, new_env
-    | Pstr_extension ((s, _), _) ->
-        raise (Error (s.loc, env, Extension s.txt))
+    | Pstr_extension (ext, _attrs) ->
+        raise (Error_forward (Typetexp.error_of_extension ext))
     | Pstr_attribute x ->
         Typetexp.warning_attribute [x];
         Tstr_attribute x, [], env
@@ -1759,8 +1759,6 @@ let report_error ppf = function
         "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
   | Recursive_module_require_explicit_type ->
       fprintf ppf "Recursive modules require an explicit module type."
   | Apply_generative ->
@@ -1774,6 +1772,8 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )
