@@ -25,9 +25,8 @@
 #include <string.h>
 
 static void *getsym(void *handle, char *module, char *name){
-  char *fullname = malloc(strlen(module) + strlen(name) + 5);
+  char *fullname = caml_strconcat(3, "caml", module, name);
   void *sym;
-  sprintf(fullname, "caml%s%s", module, name);
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
   free(fullname);
