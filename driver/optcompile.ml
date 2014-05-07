@@ -32,7 +32,7 @@ let interface ppf sourcefile outputprefix =
   let ast = Pparse.parse_interface ppf sourcefile in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-  let tsg = Typemod.transl_signature initial_env ast in
+  let tsg = Typemod.type_interface initial_env ast in
   if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
   let sg = tsg.sig_type in
   if !Clflags.print_types then

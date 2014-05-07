@@ -1618,6 +1618,9 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
+let type_interface env sg =
+  transl_signature env sg
+
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
