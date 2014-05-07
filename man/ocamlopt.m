@@ -579,7 +579,7 @@ Note: it is not recommended to use the
 .B \-warn\-error
 option in production code, because it will almost certainly prevent
 compiling your program with later versions of OCaml when they add new
-warnings.
+warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error\ -a (all warnings are non-fatal).
