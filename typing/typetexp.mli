@@ -116,4 +116,6 @@ val warning_enter_scope: unit -> unit
 val warning_leave_scope: unit -> unit
 val warning_attribute: Parsetree.attributes -> unit
 
-val error_of_extension : Parsetree.extension -> Location.error
+val error_of_extension: Parsetree.extension -> Location.error
+
+val emit_external_warnings: Ast_mapper.mapper

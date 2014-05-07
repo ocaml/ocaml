@@ -618,6 +618,10 @@ let rec extension_of_error {loc; msg; if_highlight; sub} =
          Str.eval (Exp.constant (Asttypes.Const_string (if_highlight, None)))] @
         (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
+let attribute_of_warning loc s =
+  { loc; txt = "ocaml.ppwarning" },
+  PStr ([Str.eval ~loc (Exp.constant (Asttypes.Const_string (s, None)))])
+
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
   let magic =

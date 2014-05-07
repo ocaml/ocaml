@@ -39,7 +39,7 @@ type t =
   | Without_principality of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
-  | Camlp4 of string                        (* 22 *)
+  | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
   | All_clauses_guarded                     (* 25 *)
@@ -97,7 +97,7 @@ let number = function
   | Without_principality _ -> 19
   | Unused_argument -> 20
   | Nonreturning_statement -> 21
-  | Camlp4 _ -> 22
+  | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
   | All_clauses_guarded -> 25
@@ -288,7 +288,7 @@ let message = function
   | Unused_argument -> "this argument will not be used by the function."
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"
-  | Camlp4 s -> s
+  | Preprocessor s -> s
   | Useless_record_with ->
       "all the fields are explicitly listed in this record:\n\
        the 'with' clause is useless."
@@ -433,7 +433,7 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Camlp4 warning.";
+   22, "Proprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";

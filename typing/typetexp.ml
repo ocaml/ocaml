@@ -99,6 +99,24 @@ let check_deprecated loc attrs s =
     | _ ->  ())
     attrs
 
+let emit_external_warnings =
+  let open Ast_mapper in
+  {
+    default_mapper with
+    attribute = (fun _ a ->
+        begin match a with
+        | {txt="ocaml.ppwarning"|"ppwarning"},
+          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
+                                         (Const_string (s, _))},_);
+                pstr_loc}] ->
+            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+        | _ -> ()
+        end;
+        a
+      )
+  }
+
+
 let warning_scope = ref []
 
 let warning_enter_scope () =
