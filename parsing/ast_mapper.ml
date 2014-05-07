@@ -612,7 +612,11 @@ let default_mapper =
       );
   }
 
-
+let rec extension_of_error {loc; msg; if_highlight; sub} =
+  { loc; txt = "ocaml.error" },
+  PStr ([Str.eval (Exp.constant (Asttypes.Const_string (msg, None)));
+         Str.eval (Exp.constant (Asttypes.Const_string (if_highlight, None)))] @
+        (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
@@ -627,9 +631,19 @@ let apply ~source ~target mapper =
   close_in ic;
 
   let ast =
-    if magic = Config.ast_impl_magic_number
-    then Obj.magic (mapper.structure mapper (Obj.magic ast))
-    else Obj.magic (mapper.signature mapper (Obj.magic ast))
+    try
+      if magic = Config.ast_impl_magic_number
+      then Obj.magic (mapper.structure mapper (Obj.magic ast))
+      else Obj.magic (mapper.signature mapper (Obj.magic ast))
+    with exn ->
+      match error_of_exn exn with
+      | Some error ->
+          if magic = Config.ast_impl_magic_number
+          then Obj.magic [{pstr_desc = Pstr_extension (extension_of_error error, []);
+                           pstr_loc  = Location.none}]
+          else Obj.magic [{psig_desc = Psig_extension (extension_of_error error, []);
+                           psig_loc  = Location.none}]
+      | None -> raise exn
   in
   let oc = open_out_bin target in
   output_string oc magic;
@@ -650,9 +664,7 @@ let run_main mapper =
       exit 2
     end
   with exn ->
-    begin try Location.report_exception Format.err_formatter exn
-    with exn -> prerr_endline (Printexc.to_string exn)
-    end;
+    prerr_endline (Printexc.to_string exn);
     exit 2
 
 let register_function = ref (fun _name f -> run_main f)
