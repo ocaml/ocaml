@@ -573,7 +573,8 @@ let rec expand_path env p =
     Some {type_manifest = Some ty} ->
       begin match repr ty with
         {desc=Tconstr(p,_,_)} -> expand_path env p
-      | _ -> assert false
+      | _ -> p
+         (* PR#6394: recursive module may introduce incoherent manifest *)
       end
   | _ ->
       let p' = Env.normalize_path None env p in
