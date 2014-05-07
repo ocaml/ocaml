@@ -264,7 +264,7 @@ opnames.ml: ../byterun/instruct.h
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-	    -e 's/};$$/ |]/' \
+	    -e 's/.*};$$/ |]/' \
 	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
 	    -e 's/,/;/g' \
 	../byterun/instruct.h > opnames.ml

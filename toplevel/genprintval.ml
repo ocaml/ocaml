@@ -187,8 +187,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
-          | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
-              tree_of_exception depth obj
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_list ->
               if O.is_block obj then
@@ -233,8 +231,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               then let v = tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
                    Oval_constr (Oide_ident "lazy", [v])
               else Oval_stuff "<lazy>"
-          | Tconstr(path, ty_list, _) ->
-              begin try
+          | Tconstr(path, ty_list, _) -> begin
+              try
                 let decl = Env.find_type path env in
                 match decl with
                 | {type_kind = Type_abstract; type_manifest = None} ->
@@ -294,6 +292,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
                     end
+                | {type_kind = Type_open} ->
+                    tree_of_extension path depth obj
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"
@@ -351,7 +351,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let args = tree_of_val_list start depth obj ty_args in
         Oval_constr (lid, args)
 
-    and tree_of_exception depth bucket =
+    and tree_of_extension type_path depth bucket =
       let slot =
         if O.tag bucket <> 0 then bucket
         else O.field bucket 0
@@ -364,7 +364,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let cstr = Env.lookup_constructor lid env in
         let path =
           match cstr.cstr_tag with
-            Cstr_exception (p, _) -> p | _ -> raise Not_found in
+            Cstr_extension(p, _) -> p
+            | _ -> raise Not_found
+        in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
@@ -375,7 +377,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x
-        | None -> outval_of_untyped_exception bucket
+        | None when Path.same type_path Predef.path_exn->
+            outval_of_untyped_exception bucket
+        | None ->
+            Oval_stuff "<extension>"
 
     in tree_of_val max_depth obj ty
 

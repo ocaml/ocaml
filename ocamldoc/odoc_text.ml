@@ -128,6 +128,7 @@ module Texter =
                    | RK_class_type -> "classtype"
                    | RK_value -> "val"
                    | RK_type -> "type"
+                   | RK_extension -> "extension"
                    | RK_exception -> "exception"
                    | RK_attribute -> "attribute"
                    | RK_method -> "method"

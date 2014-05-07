@@ -61,7 +61,12 @@ exception Load_failed
 let check_consistency ppf filename cu =
   try
     List.iter
-      (fun (name, crc) -> Consistbl.check Env.crc_units name crc filename)
+      (fun (name, crco) ->
+       Env.imported_units := name :: !Env.imported_units;
+       match crco with
+         None -> ()
+       | Some crc->
+           Consistbl.check Env.crc_units name crc filename)
       cu.cu_imports
   with Consistbl.Inconsistency(name, user, auth) ->
     fprintf ppf "@[<hv 0>The files %s@ and %s@ \
@@ -384,14 +389,22 @@ let () =
   reg_show_prim "show_exception"
     (fun env loc id lid ->
        let desc = Typetexp.find_constructor env loc lid in
-       match desc.cstr_tag with
-       | Cstr_constant _ | Cstr_block _ ->
-           raise Not_found
-       | Cstr_exception _ ->
-           [ Sig_exception (id, {exn_args=desc.cstr_args;
-                                 exn_loc=desc.cstr_loc;
-                                 exn_attributes=desc.cstr_attributes;
-                                }) ]
+       if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
+         raise Not_found;
+       let ret_type =
+         if desc.cstr_generalized then Some Predef.type_exn
+         else None
+       in
+       let ext =
+         { ext_type_path = Predef.path_exn;
+           ext_type_params = [];
+           ext_args = desc.cstr_args;
+           ext_ret_type = ret_type;
+           ext_private = Asttypes.Public;
+           Types.ext_loc = desc.cstr_loc;
+           Types.ext_attributes = desc.cstr_attributes; }
+       in
+         [Sig_typext (id, ext, Text_exception)]
     )
 
 let () =

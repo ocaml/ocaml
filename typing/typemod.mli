@@ -26,6 +26,8 @@ val type_toplevel_phrase:
 val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
+val type_interface:
+        Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
@@ -59,10 +61,10 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
-  | Extension of string
   | Recursive_module_require_explicit_type
   | Apply_generative
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit

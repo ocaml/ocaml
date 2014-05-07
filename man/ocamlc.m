@@ -396,6 +396,9 @@ bytecode executables produced with the option
 .B ocamlc\ \-use\-runtime
 .IR runtime-name .
 .TP
+.B \-no-alias-deps
+Do not record dependencies for module aliases.
+.TP
 .B \-no\-app\-funct
 Deactivates the applicative behaviour of functors. With this option,
 each functor application generates new types in its result and
@@ -786,7 +789,7 @@ mutually recursive types.
 \ \ Unused constructor.
 
 38
-\ \ Unused exception constructor.
+\ \ Unused extension constructor.
 
 39
 \ \ Unused rec flag.
@@ -888,7 +891,7 @@ Note: it is not recommended to use the
 .B \-warn\-error
 option in production code, because it will almost certainly prevent
 compiling your program with later versions of OCaml when they add new
-warnings.
+warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error\ -a (all warnings are non-fatal).

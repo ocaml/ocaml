@@ -16,6 +16,7 @@ module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
+open Odoc_extension
 open Odoc_exception
 open Odoc_class
 open Odoc_module
@@ -27,6 +28,7 @@ type result_element =
   | Res_class_type of t_class_type
   | Res_value of t_value
   | Res_type of t_type
+  | Res_extension of t_extension_constructor
   | Res_exception of t_exception
   | Res_attribute of t_attribute
   | Res_method of t_method
@@ -47,6 +49,7 @@ module type Predicates =
     val p_recfield : t_type -> record_field -> t -> bool
     val p_const : t_type -> variant_constructor -> t -> bool
     val p_type : t_type -> t -> (bool * bool)
+    val p_extension : t_extension_constructor -> t -> bool
     val p_exception : t_exception -> t -> bool
     val p_attribute : t_attribute -> t -> bool
     val p_method : t_method -> t -> bool
@@ -113,8 +116,18 @@ module Search =
                 List.flatten (List.map (fun rf -> search_recfield t rf v) l)
             | Type_variant l ->
                 List.flatten (List.map (fun rf -> search_const t rf v) l)
+            | Type_open -> []
       in
       if ok then (Res_type t) :: l else l
+
+    let search_extension_constructor xt v =
+      if P.p_extension xt v then [Res_extension xt] else []
+
+    let search_type_extension te v =
+      List.fold_left
+        (fun acc -> fun xt -> acc @ (search_extension_constructor xt v))
+        []
+        (Odoc_extension.extension_constructors te)
 
     let search_exception e v = if P.p_exception e v then [Res_exception e] else []
 
@@ -202,6 +215,12 @@ module Search =
               []
               (Odoc_module.module_type_types mt)
           in
+          let res_ext =
+            List.fold_left
+              (fun acc -> fun te -> acc @ (search_type_extension te v))
+              []
+              (Odoc_module.module_type_type_extensions mt)
+          in
           let res_exc =
             List.fold_left
               (fun acc -> fun e -> acc @ (search_exception e v))
@@ -233,7 +252,7 @@ module Search =
               []
               (Odoc_module.module_type_comments mt)
           in
-          let l = res_val @ res_typ @ res_exc @ res_mod @
+          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
           in
           l
@@ -260,6 +279,12 @@ module Search =
               (fun acc -> fun t -> acc @ (search_type t v))
               []
               (Odoc_module.module_types m)
+          in
+          let res_ext =
+            List.fold_left
+              (fun acc -> fun te -> acc @ (search_type_extension te v))
+              []
+              (Odoc_module.module_type_extensions m)
           in
           let res_exc =
             List.fold_left
@@ -292,7 +317,7 @@ module Search =
               []
               (Odoc_module.module_comments m)
           in
-          let l = res_val @ res_typ @ res_exc @ res_mod @
+          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
           in
           l
@@ -334,6 +359,7 @@ module P_name =
       let name = Printf.sprintf "%s.%s" t.ty_name f.vc_name in
       name =~ r
     let p_type t r = (true, t.ty_name =~ r)
+    let p_extension x r = x.xt_name =~ r
     let p_exception e r = e.ex_name =~ r
     let p_attribute a r = a.att_value.val_name =~ r
     let p_method m r = m.met_value.val_name =~ r
@@ -353,6 +379,7 @@ module P_values =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -369,6 +396,34 @@ let values l =
   in
   iter [] l_ele
 
+module P_extensions =
+  struct
+    type t = unit
+    let p_module _ _ = (true, false)
+    let p_module_type _ _ = (true, false)
+    let p_class _ _ = (false, false)
+    let p_class_type _ _ = (false, false)
+    let p_value _ _ = false
+    let p_recfield _ _ _ = false
+    let p_const _ _ _ = false
+    let p_type _ _ = (false, false)
+    let p_extension _ _ = true
+    let p_exception _ _ = false
+    let p_attribute _ _ = false
+    let p_method _ _ = false
+    let p_section _ _ = false
+  end
+module Search_extensions = Search ( P_extensions )
+let extensions l =
+  let l_ele = Search_extensions.search l () in
+  let p x1 x2 = x1.xt_name = x2.xt_name in
+  let rec iter acc = function
+      (Res_extension x) :: q -> if List.exists (p x) acc then iter acc q else iter (x :: acc) q
+    | _ :: q -> iter acc q
+    | [] -> acc
+  in
+  iter [] l_ele
+
 module P_exceptions =
   struct
     type t = unit
@@ -380,6 +435,7 @@ module P_exceptions =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = true
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -407,6 +463,7 @@ module P_types =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, true)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -434,6 +491,7 @@ module P_attributes =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = true
     let p_method _ _ = false
@@ -461,6 +519,7 @@ module P_methods =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = true
@@ -488,6 +547,7 @@ module P_classes =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -515,6 +575,7 @@ module P_class_types =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -542,6 +603,7 @@ module P_modules =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -569,6 +631,7 @@ module P_module_types =
     let p_recfield _ _ _ = false
     let p_const _ _ _ = false
     let p_type _ _ = (false, false)
+    let p_extension _ _ = false
     let p_exception _ _ = false
     let p_attribute _ _ = false
     let p_method _ _ = false
@@ -635,6 +698,15 @@ let module_type_exists mods regexp =
   List.exists
     (function
         Res_module_type _ -> true
+      | _ -> false
+    )
+    l
+
+let extension_exists mods regexp =
+  let l = Search_by_name.search mods regexp in
+  List.exists
+    (function
+        Res_extension _ -> true
       | _ -> false
     )
     l

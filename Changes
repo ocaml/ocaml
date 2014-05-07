@@ -10,15 +10,15 @@ Language features:
 * Alternative syntax for string literals {id|...|id} (can break comments)
 - Separation between read-only strings (type string) and read-write byte
   sequences (type bytes). Activated by command-line option -safe-string.
+- Exception cases in pattern matching (patch by Jeremy Yallop).
 
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
+- Use GNU make instead of portable makefiles.
 
-Camlp4:
-- Removed from the official distribution
-
-Other libraries:
-* Labltk: removed from the distribution, now available as a third-party library
+Shedding weight:
+* Removed Camlp4 from the distribution, now available as third-party software.
+* Removed Labltk from the distribution, now available as a third-party library.
 
 Type system:
 * Keep typing of pattern cases independent in principal mode
@@ -56,7 +56,7 @@ Compilers:
 - PR#5817: new flag to keep locations in cmi files
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@deprecated] attribute
-- PR#6203: Constant exception constructor no longer allocate
+* PR#6203: Constant exception constructor no longer allocate
 - PR#6311: Improve signature mismatch error messages
 - PR#6345: Better compilation of optional arguments with default values
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
@@ -68,7 +68,7 @@ Runtime system:
 - Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
   [Val_unit] rather than zero.
 - Fixed a major performance problem on large heaps (~1GB) by making heap
-  increments proportional to heap size
+  increments proportional to heap size by default
 - PR#4765: Structural equality should treat exception specifically
 - PR#5009: Extending exception tag blocks
 - PR#6075: avoid using unsafe C library functions (strcpy, strcat, sprintf)
@@ -78,7 +78,7 @@ Runtime system:
   64-bit integer type.
 
 Standard library:
-* Added a new module: Bytes.
+* Add new modules: Bytes and BytesLabels.
 - PR#4986: add List.sort_uniq and Set.of_list
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
@@ -130,6 +130,7 @@ Bug fixes:
 - PR#6383: Exception Not_found when using object type in absent module
 - PR#6384: Uncaught Not_found exception with a hidden .cmi file
 - PR#6385: wrong allocation of large closures by the bytecode interpreter
+- PR#6394: Assertion failed in Typecore.expand_path
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
@@ -140,10 +141,10 @@ Bug fixes:
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
 - PR#4323: have "of_string" in Num and Big_int work with binary and
-  hexa representations (patch by Zoe Paraskevopoulou)
+           hex representations (patch by Zoe Paraskevopoulou)
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
-- PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+- PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
 - PR#6000: add a warning for non-principal coercions to format
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
            (patch by Kaustuv Chaudhuri)

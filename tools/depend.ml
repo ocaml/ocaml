@@ -43,7 +43,7 @@ let rec add_type bv ty =
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_object (fl, _) -> List.iter (fun (_, t) -> add_type bv t) fl
+  | Ptyp_object (fl, _) -> List.iter (fun (_, _, t) -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
@@ -76,8 +76,19 @@ let add_type_declaration bv td =
   | Ptype_variant cstrs ->
       List.iter (add_constructor_decl bv) cstrs
   | Ptype_record lbls ->
-      List.iter (fun pld -> add_type bv pld.pld_type) lbls in
+      List.iter (fun pld -> add_type bv pld.pld_type) lbls
+  | Ptype_open -> () in
   add_tkind td.ptype_kind
+
+let add_extension_constructor bv ext =
+  match ext.pext_kind with
+      Pext_decl(args, rty) ->
+        List.iter (add_type bv) args; Misc.may (add_type bv) rty
+    | Pext_rebind lid -> add bv lid
+
+let add_type_extension bv te =
+  add bv te.ptyext_path;
+  List.iter (add_extension_constructor bv) te.ptyext_constructors
 
 let rec add_class_type bv cty =
   match cty.pcty_desc with
@@ -96,6 +107,7 @@ and add_class_type_field bv pctf =
   | Pctf_val(_, _, _, ty) -> add_type bv ty
   | Pctf_method(_, _, _, ty) -> add_type bv ty
   | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pctf_attribute _ -> ()
   | Pctf_extension _ -> ()
 
 let add_class_description bv infos =
@@ -123,6 +135,7 @@ let rec add_pattern bv pat =
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack id -> pattern_bv := StringSet.add id.txt !pattern_bv
+  | Ppat_exception p -> add_pattern bv p
   | Ppat_extension _ -> ()
 
 let add_pattern bv pat =
@@ -227,8 +240,10 @@ and add_sig_item bv item =
       add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
-  | Psig_exception pcd ->
-      add_constructor_decl bv pcd; bv
+  | Psig_typext te ->
+      add_type_extension bv te; bv
+  | Psig_exception pext ->
+      add_extension_constructor bv pext; bv
   | Psig_module pmd ->
       add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
   | Psig_recmodule decls ->
@@ -284,10 +299,11 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (add_type_declaration bv) dcls; bv
-  | Pstr_exception pcd ->
-      add_constructor_decl bv pcd; bv
-  | Pstr_exn_rebind er ->
-      add bv er.pexrb_lid; bv
+  | Pstr_typext te ->
+      add_type_extension bv te;
+      bv
+  | Pstr_exception pext ->
+      add_extension_constructor bv pext; bv
   | Pstr_module x ->
       add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
   | Pstr_recmodule bindings ->
@@ -351,7 +367,7 @@ and add_class_field bv pcf =
   | Pcf_method(_, _, Cfk_virtual ty) -> add_type bv ty
   | Pcf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
   | Pcf_initializer e -> add_expr bv e
-  | Pcf_extension _ -> ()
+  | Pcf_attribute _ | Pcf_extension _ -> ()
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr

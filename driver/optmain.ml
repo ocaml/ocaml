@@ -93,6 +93,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _keep_locs = set keep_locs
   let _labels = clear classic
   let _linkall = set link_everything
+  let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
   let _noassert = set noassert
@@ -112,7 +113,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _safe_string = clear unsafe_string
   let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence
-  let _trans_mod = set transparent_modules
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads

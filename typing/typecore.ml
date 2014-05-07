@@ -66,9 +66,11 @@ type error =
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
-  | Extension of string
+  | No_value_clauses
+  | Exception_pattern_below_toplevel
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
@@ -183,13 +185,13 @@ let iter_expression f e =
     | Pstr_value (_, pel) -> List.iter binding pel
     | Pstr_primitive _
     | Pstr_type _
+    | Pstr_typext _
     | Pstr_exception _
     | Pstr_modtype _
     | Pstr_open _
     | Pstr_class_type _
     | Pstr_attribute _
-    | Pstr_extension _
-    | Pstr_exn_rebind _ -> ()
+    | Pstr_extension _ -> ()
     | Pstr_include {pincl_mod = me}
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
@@ -215,7 +217,7 @@ let iter_expression f e =
     | Pcf_val (_, _, Cfk_concrete (_, e))
     | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
     | Pcf_initializer e -> expr e
-    | Pcf_extension _ -> ()
+    | Pcf_attribute _ | Pcf_extension _ -> ()
 
   in
   expr e
@@ -280,8 +282,7 @@ let extract_concrete_record env ty =
 
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
-    (* exclude exceptions *)
-    (p0, p, {type_kind=Type_variant (_::_ as cstrs)}) -> (p0, p, cstrs)
+    (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
@@ -292,7 +293,11 @@ let extract_label_names sexp env ty =
     assert false
 
 let explicit_arity =
-  List.exists (fun (s, _) -> s.txt = "ocaml.explicit_arity")
+  List.exists
+    (function
+      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | _ -> false
+    )
 
 (* Typing of patterns *)
 
@@ -568,7 +573,8 @@ let rec expand_path env p =
     Some {type_manifest = Some ty} ->
       begin match repr ty with
         {desc=Tconstr(p,_,_)} -> expand_path env p
-      | _ -> assert false
+      | _ -> p
+         (* PR#6394: recursive module may introduce incoherent manifest *)
       end
   | _ ->
       let p' = Env.normalize_path None env p in
@@ -1195,8 +1201,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
-  | Ppat_extension (s, _arg) ->
-      raise (Error (s.loc, !env, Extension s.txt))
+  | Ppat_exception _ ->
+      raise (Error (loc, !env, Exception_pattern_below_toplevel))
+  | Ppat_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels
     ?(lev=get_current_level()) env sp expected_ty =
@@ -1369,7 +1377,7 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
-  | Texp_match(e, cases, _) ->
+  | Texp_match(e, cases, [], _) ->
       is_nonexpansive e &&
       List.for_all
         (fun {c_lhs = _; c_guard; c_rhs} ->
@@ -1405,7 +1413,8 @@ let rec is_nonexpansive exp =
               incr count; true
           | Tcf_initializer e -> is_nonexpansive e
           | Tcf_constraint _ -> true
-          | Tcf_inherit _ -> false)
+          | Tcf_inherit _ -> false
+          | Tcf_attribute _ -> true)
         fields &&
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
@@ -1425,8 +1434,8 @@ and is_nonexpansive_mod mexp =
   | Tmod_structure str ->
       List.for_all
         (fun item -> match item.str_desc with
-          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _ | Tstr_modtype _
-          | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
+          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
+          | Tstr_modtype _ | Tstr_open _ | Tstr_class_type _  -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
           | Tstr_module {mb_expr=m;_}
@@ -1434,7 +1443,14 @@ and is_nonexpansive_mod mexp =
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
-          | Tstr_exception _ -> false (* true would be unsound *)
+          | Tstr_exception {ext_kind = Text_decl _} ->
+              false (* true would be unsound *)
+          | Tstr_exception {ext_kind = Text_rebind _} -> true
+          | Tstr_typext te ->
+              List.for_all
+                (function {ext_kind = Text_decl _} -> false
+                        | {ext_kind = Text_rebind _} -> true)
+                te.tyext_constructors
           | Tstr_class _ -> false (* could be more precise *)
           | Tstr_attribute _ -> true
         )
@@ -1824,7 +1840,8 @@ let iter_ppat f p =
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
+  | Ppat_exception p | Ppat_alias (p,_)
+  | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
 
 let contains_polymorphic_variant p =
@@ -1907,9 +1924,10 @@ let rec type_exp env sexp =
 
 and type_expect ?in_function env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  let prev_warnings = Typetexp.warning_attribute sexp.pexp_attributes in
+  Typetexp.warning_enter_scope ();
+  Typetexp.warning_attribute sexp.pexp_attributes;
   let exp = type_expect_ ?in_function env sexp ty_expected in
-  may Warnings.restore prev_warnings;
+  Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
@@ -2087,11 +2105,25 @@ and type_expect_ ?in_function env sexp ty_expected =
       end_def ();
       if is_nonexpansive arg then generalize arg.exp_type
       else generalize_expansive env arg.exp_type;
-      let cases, partial =
-        type_cases env arg.exp_type ty_expected true loc caselist
+      let rec split_cases vc ec = function
+        | [] -> List.rev vc, List.rev ec
+        | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
+            split_cases vc ({c with pc_lhs = p} :: ec) rest
+        | c :: rest ->
+            split_cases (c :: vc) ec rest
       in
+      let val_caselist, exn_caselist = split_cases [] [] caselist in
+      if val_caselist = [] && exn_caselist <> [] then
+        raise (Error (loc, env, No_value_clauses));
+      (* Note: val_caselist = [] and exn_caselist = [], i.e. a fully
+         empty pattern matching can be generated by Camlp4 with its
+         revised syntax.  Let's accept it for backward compatibility. *)
+      let val_cases, partial =
+        type_cases env arg.exp_type ty_expected true loc val_caselist in
+      let exn_cases, _ =
+        type_cases env Predef.type_exn ty_expected false loc exn_caselist in
       re {
-        exp_desc = Texp_match(arg, cases, partial);
+        exp_desc = Texp_match(arg, val_cases, exn_cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -2824,8 +2856,8 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
-  | Pexp_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pexp_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =
@@ -3873,8 +3905,12 @@ let report_error env ppf = function
   | Invalid_for_loop_index ->
       fprintf ppf
         "@[Invalid for-loop index: only variables and _ are allowed.@]"
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
+  | No_value_clauses ->
+      fprintf ppf
+        "None of the patterns in this 'match' expression match values."
+  | Exception_pattern_below_toplevel ->
+      fprintf ppf
+        "@[Exception patterns must be at the top level of a match case.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
@@ -3884,6 +3920,8 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )

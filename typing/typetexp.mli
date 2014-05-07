@@ -25,14 +25,15 @@ val transl_simple_type_delayed:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val reset_type_variables: unit -> unit
-val enter_type_variable: string Location.loc -> type_expr
 val type_variable: Location.t -> string -> type_expr
+val transl_type_param:
+  Env.t -> Parsetree.core_type -> Typedtree.core_type
 
 type variable_context
 val narrow: unit -> variable_context
 val widen: variable_context -> unit
 
-exception Already_bound of Location.t
+exception Already_bound
 
 type error =
     Unbound_type_variable of string
@@ -62,7 +63,6 @@ type error =
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
-  | Extension of string
 
 exception Error of Location.t * Env.t * error
 
@@ -112,4 +112,10 @@ val spellcheck_simple:
 
 val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 
-val warning_attribute: Parsetree.attributes -> Warnings.state option
+val warning_enter_scope: unit -> unit
+val warning_leave_scope: unit -> unit
+val warning_attribute: Parsetree.attributes -> unit
+
+val error_of_extension: Parsetree.extension -> Location.error
+
+val emit_external_warnings: Ast_mapper.mapper

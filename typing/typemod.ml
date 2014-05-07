@@ -37,11 +37,11 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
-  | Extension of string
   | Recursive_module_require_explicit_type
   | Apply_generative
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 open Typedtree
 
@@ -250,15 +250,12 @@ let merge_constraint initial_env loc sg constr =
           try match sdecl.ptype_manifest with
           | Some {ptyp_desc = Ptyp_constr (lid, stl)}
             when List.length stl = List.length sdecl.ptype_params ->
-              let params =
-                List.map
-                  (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
-                  stl in
-              List.iter2 (fun x (ox, _) ->
-                match ox with
-                    Some y when x = y.txt -> ()
-                  | _ -> raise Exit
-              ) params sdecl.ptype_params;
+              List.iter2 (fun x (y, _) ->
+                match x, y with
+                  {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy}
+                    when sx = sy -> ()
+                | _, _ -> raise Exit)
+                stl sdecl.ptype_params;
               lid
           | _ -> raise Exit
           with Exit ->
@@ -305,6 +302,12 @@ let rec map_rec'' fn decls rem =
       fn Trec_not d1 :: map_rec'' fn dl rem
   | _ -> map_rec fn decls rem
 
+(* Add type extension flags to extension contructors *)
+let map_ext fn exts rem =
+  match exts with
+  | [] -> rem
+  | d1 :: dl -> fn Text_first d1 :: map_end (fn Text_next) dl rem
+
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
    type AST.  Retain only module, type, and module type
@@ -332,8 +335,8 @@ let rec approx_modtype env smty =
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty
-  | Pmty_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmty_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and approx_module_declaration env pmd =
   {
@@ -443,26 +446,25 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
-let rec remove_duplicates val_ids exn_ids  = function
+let rec remove_duplicates val_ids ext_ids = function
     [] -> []
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
-      remove_duplicates val_ids exn_ids rem
-  | Sig_exception(id, _) :: rem
-    when List.exists (Ident.equal id) exn_ids ->
-      remove_duplicates val_ids exn_ids rem
-  | f :: rem -> f :: remove_duplicates val_ids exn_ids rem
+      remove_duplicates val_ids ext_ids rem
+  | Sig_typext (id, _, _) :: rem
+    when List.exists (Ident.equal id) ext_ids ->
+      remove_duplicates val_ids ext_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids ext_ids rem
 
 let rec get_values = function
     [] -> []
   | Sig_value (id, _) :: rem -> id :: get_values rem
   | f :: rem -> get_values rem
 
-let rec get_exceptions = function
+let rec get_extension_constructors = function
     [] -> []
-  | Sig_exception (id, _) :: rem -> id :: get_exceptions rem
-  | f :: rem -> get_exceptions rem
-
+  | Sig_typext (id, _, _) :: rem -> id :: get_extension_constructors rem
+  | f :: rem -> get_extension_constructors rem
 
 (* Check and translate a module type expression *)
 
@@ -532,8 +534,8 @@ let rec transl_modtype env smty =
   | Pmty_typeof smod ->
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
-  | Pmty_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmty_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 
 and transl_signature env sg =
@@ -566,13 +568,33 @@ and transl_signature env sg =
             map_rec'' (fun rs td ->
                 Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
-        | Psig_exception sarg ->
-            let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
+        | Psig_typext styext ->
+            let (tyext, newenv) =
+              Typedecl.transl_type_extension false env item.psig_loc styext
+            in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            let id = arg.cd_id in
-            mksig (Tsig_exception arg) env loc :: trem,
-            (if List.exists (Ident.equal id) (get_exceptions rem) then rem
-             else Sig_exception(id, decl) :: rem),
+            let constructors =
+              List.filter
+                (fun ext -> not
+                  (List.exists (Ident.equal ext.ext_id)
+                               (get_extension_constructors rem)))
+                tyext.tyext_constructors
+            in
+              mksig (Tsig_typext tyext) env loc :: trem,
+              map_ext (fun es ext ->
+                Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
+              final_env
+        | Psig_exception sext ->
+            let (ext, newenv) = Typedecl.transl_exception env sext in
+            let (trem, rem, final_env) = transl_sig newenv srem in
+            let shadowed =
+              List.exists
+                (Ident.equal ext.ext_id)
+                (get_extension_constructors rem)
+            in
+            mksig (Tsig_exception ext) env loc :: trem,
+            (if shadowed then rem else
+               Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
             final_env
         | Psig_module pmd ->
             check_name "module" module_names pmd.pmd_name;
@@ -641,7 +663,8 @@ and transl_signature env sg =
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include incl) env loc :: trem,
-            remove_duplicates (get_values rem) (get_exceptions rem) sg @ rem,
+            remove_duplicates (get_values rem)
+              (get_extension_constructors rem) sg @ rem,
             final_env
         | Psig_class cl ->
             List.iter
@@ -684,15 +707,17 @@ and transl_signature env sg =
                  classes [rem]),
             final_env
         | Psig_attribute x ->
-            let _back = Typetexp.warning_attribute [x] in
+            Typetexp.warning_attribute [x];
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
-        | Psig_extension ((s, _), _) ->
-            raise (Error (s.loc, env, Extension s.txt))
+        | Psig_extension (ext, _attrs) ->
+            raise (Error_forward (Typetexp.error_of_extension ext))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
+  Typetexp.warning_enter_scope ();
   let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
   let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
+  Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     ((Cmt_format.Partial_signature sg) :: previous_saved_types);
   sg
@@ -1129,8 +1154,8 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
            mod_env = env;
            mod_attributes = smod.pmod_attributes;
            mod_loc = smod.pmod_loc }
-  | Pmod_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pmod_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
@@ -1176,13 +1201,19 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
           decls [],
         enrich_type_decls anchor decls env newenv
-    | Pstr_exception sarg ->
-        let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
-        Tstr_exception arg, [Sig_exception(arg.cd_id, decl)], newenv
-    | Pstr_exn_rebind ser ->
-        let (er, newenv) = Typedecl.transl_exn_rebind env ser in
-        Tstr_exn_rebind er,
-        [Sig_exception(er.exrb_id, er.exrb_type)],
+    | Pstr_typext styext ->
+        let (tyext, newenv) =
+          Typedecl.transl_type_extension true env loc styext
+        in
+        (Tstr_typext tyext,
+         map_ext
+           (fun es ext -> Sig_typext(ext.ext_id, ext.ext_type, es))
+           tyext.tyext_constructors [],
+         newenv)
+    | Pstr_exception sext ->
+        let (ext, newenv) = Typedecl.transl_exception env sext in
+        Tstr_exception ext,
+        [Sig_typext(ext.ext_id, ext.ext_type, Text_exception)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
@@ -1334,8 +1365,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                       Sig_module (id, {md with md_type =
                                        Mty_alias (Pdot(p,Ident.name id,n))},
                                   rs)
-                  | Sig_value (_, {val_kind=Val_reg}) | Sig_exception _
-                  | Sig_class _ as it ->
+                  | Sig_value (_, {val_kind=Val_reg})
+                  | Sig_typext _ | Sig_class _ as it ->
                       incr pos; it
                   | Sig_value _ | Sig_type _ | Sig_modtype _
                   | Sig_class_type _ as it ->
@@ -1354,10 +1385,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           }
         in
         Tstr_include incl, sg, new_env
-    | Pstr_extension ((s, _), _) ->
-        raise (Error (s.loc, env, Extension s.txt))
+    | Pstr_extension (ext, _attrs) ->
+        raise (Error_forward (Typetexp.error_of_extension ext))
     | Pstr_attribute x ->
-        let _back = Typetexp.warning_attribute [x] in
+        Typetexp.warning_attribute [x];
         Tstr_attribute x, [], env
   in
   let rec type_struct env sstr =
@@ -1377,8 +1408,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (* moved to genannot *)
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
+  Typetexp.warning_enter_scope ();
   let (items, sg, final_env) = type_struct env sstr in
   let str = { str_items = items; str_type = sg; str_final_env = final_env } in
+  Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_structure str :: previous_saved_types);
   str, sg, final_env
@@ -1405,7 +1438,7 @@ and normalize_signature_item env = function
   | Sig_module(id, md, _) -> normalize_modtype env md.md_type
   | _ -> ()
 
-(* Simplify multiple specifications of a value or an exception in a signature.
+(* Simplify multiple specifications of a value or an extension in a signature.
    (Other signature components, e.g. types, modules, etc, are checked for
    name uniqueness.)  If multiple specifications with the same name,
    keep only the last (rightmost) one. *)
@@ -1418,24 +1451,23 @@ let rec simplify_modtype mty =
   | Mty_signature sg -> Mty_signature(simplify_signature sg)
 
 and simplify_signature sg =
-  let rec simplif val_names exn_names res = function
+  let rec simplif val_names ext_names res = function
     [] -> res
   | (Sig_value(id, descr) as component) :: sg ->
       let name = Ident.name id in
-      simplif (StringSet.add name val_names) exn_names
+      simplif (StringSet.add name val_names) ext_names
               (if StringSet.mem name val_names then res else component :: res)
               sg
-  | (Sig_exception(id, decl) as component) :: sg ->
+  | (Sig_typext(id, ext, es) as component) :: sg ->
       let name = Ident.name id in
-      simplif val_names (StringSet.add name exn_names)
-              (if StringSet.mem name exn_names then res else component :: res)
+      simplif val_names (StringSet.add name ext_names)
+              (if StringSet.mem name ext_names then res else component :: res)
               sg
   | Sig_module(id, md, rs) :: sg ->
       let md = {md with md_type = simplify_modtype md.md_type} in
-      simplif val_names exn_names
-              (Sig_module(id, md, rs) :: res) sg
+      simplif val_names ext_names (Sig_module(id, md, rs) :: res) sg
   | component :: sg ->
-      simplif val_names exn_names (component :: res) sg
+      simplif val_names ext_names (component :: res) sg
   in
     simplif StringSet.empty StringSet.empty [] (List.rev sg)
 
@@ -1519,6 +1551,7 @@ let () =
   Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 
+
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
@@ -1526,6 +1559,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
+  begin
+    let map = Typetexp.emit_external_warnings in
+    ignore (map.Ast_mapper.structure map ast)
+  end;
+
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
@@ -1586,6 +1624,13 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
+let type_interface env ast =
+  begin
+    let map = Typetexp.emit_external_warnings in
+    ignore (map.Ast_mapper.signature map ast)
+  end;
+  transl_signature env ast
+
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
@@ -1637,7 +1682,7 @@ let package_units initial_env objfiles cmifile modulename =
     let imports =
       List.filter
         (fun (name, crc) -> not (List.mem name unit_names))
-        (Env.imported_units()) in
+        (Env.imports()) in
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
       let sg =
@@ -1727,8 +1772,6 @@ let report_error ppf = function
         "The type %a in this module cannot be exported.@ " longident lid;
       fprintf ppf
         "Its type contains local dependencies:@ %a" type_expr ty
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
   | Recursive_module_require_explicit_type ->
       fprintf ppf "Recursive modules require an explicit module type."
   | Apply_generative ->
@@ -1742,6 +1785,8 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )

@@ -38,11 +38,31 @@ class scanner =
           Odoc_type.Type_abstract -> ()
         | Odoc_type.Type_variant l -> List.iter (self#scan_type_const t) l
         | Odoc_type.Type_record l -> List.iter (self#scan_type_recfield t) l
+        | Odoc_type.Type_open -> ()
 
+    method scan_extension_constructor (e : Odoc_extension.t_extension_constructor) = ()
     method scan_exception (e : Odoc_exception.t_exception) = ()
     method scan_attribute (a : Odoc_value.t_attribute) = ()
     method scan_method (m : Odoc_value.t_method) = ()
     method scan_included_module (im : Odoc_module.included_module) = ()
+
+  (** Scan of a type extension *)
+
+    (** Overide this method to perform controls on the extension's type,
+        private and info. This method is called before scanning the
+        extensions's constructors.
+        @return true if the extension's constructors must be scanned.*)
+    method scan_type_extension_pre (x: Odoc_extension.t_type_extension) = true
+
+    (** This method scans the constructors of the given type extension. *)
+    method scan_type_extension_constructors (x: Odoc_extension.t_type_extension) =
+      List.iter self#scan_extension_constructor (Odoc_extension.extension_constructors x)
+
+    (** Scan of a type extension. Should not be overridden. It calls [scan_type_extension_pre]
+      and if [scan_type_extension_pre] returns [true], then it calls scan_type_extension_constructors.*)
+    method scan_type_extension (x: Odoc_extension.t_type_extension) =
+      if self#scan_type_extension_pre x then self#scan_type_extension_constructors x
+
 
   (** Scan of a class. *)
 
@@ -117,6 +137,7 @@ class scanner =
           | Odoc_module.Element_class c -> self#scan_class c
           | Odoc_module.Element_class_type ct -> self#scan_class_type ct
           | Odoc_module.Element_value v -> self#scan_value v
+          | Odoc_module.Element_type_extension x -> self#scan_type_extension x
           | Odoc_module.Element_exception e -> self#scan_exception e
           | Odoc_module.Element_type t -> self#scan_type t
           | Odoc_module.Element_module_comment t -> self#scan_module_comment t
@@ -148,6 +169,7 @@ class scanner =
           | Odoc_module.Element_class c -> self#scan_class c
           | Odoc_module.Element_class_type ct -> self#scan_class_type ct
           | Odoc_module.Element_value v -> self#scan_value v
+          | Odoc_module.Element_type_extension x -> self#scan_type_extension x
           | Odoc_module.Element_exception e -> self#scan_exception e
           | Odoc_module.Element_type t -> self#scan_type t
           | Odoc_module.Element_module_comment t -> self#scan_module_comment t

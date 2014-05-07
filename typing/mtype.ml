@@ -60,7 +60,7 @@ and strengthen_sig env sg p =
               { decl with type_manifest = manif }
       in
       Sig_type(id, newdecl, rs) :: strengthen_sig env rem p
-  | (Sig_exception(id, d) as sigelt) :: rem ->
+  | (Sig_typext(id, ext, es) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
   | Sig_module(id, md, rs) :: rem ->
       let str = strengthen_decl env md (Pdot(p, Ident.name id, nopos)) in
@@ -128,13 +128,9 @@ let nondep_supertype env mid mty =
       | Sig_type(id, d, rs) ->
           Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'
-      | Sig_exception(id, d) ->
-          let d =
-            {d with
-             exn_args = List.map (Ctype.nondep_type env mid) d.exn_args
-            }
-          in
-          Sig_exception(id, d) :: rem'
+      | Sig_typext(id, ext, es) ->
+          Sig_typext(id, Ctype.nondep_extension_constructor env mid ext, es)
+          :: rem'
       | Sig_module(id, md, rs) ->
           Sig_module(id, {md with md_type=nondep_mty env va md.md_type}, rs)
           :: rem'
@@ -212,7 +208,7 @@ and type_paths_sig env p pos sg =
       type_paths_sig (Env.add_module_declaration id md env) p (pos+1) rem
   | Sig_modtype(id, decl) :: rem ->
       type_paths_sig (Env.add_modtype id decl env) p pos rem
-  | (Sig_exception _ | Sig_class _) :: rem ->
+  | (Sig_typext _ | Sig_class _) :: rem ->
       type_paths_sig env p (pos+1) rem
   | (Sig_class_type _) :: rem ->
       type_paths_sig env p pos rem
@@ -237,7 +233,7 @@ and no_code_needed_sig env sg =
       no_code_needed_sig (Env.add_module_declaration id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
-  | (Sig_exception _ | Sig_class _) :: rem ->
+  | (Sig_typext _ | Sig_class _) :: rem ->
       false
 
 
@@ -265,7 +261,7 @@ and contains_type_item env = function
       contains_type env mty
   | Sig_value _
   | Sig_type _
-  | Sig_exception _
+  | Sig_typext _
   | Sig_class _
   | Sig_class_type _ ->
       ()
