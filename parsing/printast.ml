@@ -808,8 +808,8 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
 and constructor_decl i ppf
                      {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} =
   line i ppf "%a\n" fmt_location pcd_loc;
-  attributes i ppf pcd_attributes;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
+  attributes i ppf pcd_attributes;
   list (i+1) core_type ppf pcd_args;
   option (i+1) core_type ppf pcd_res
 
