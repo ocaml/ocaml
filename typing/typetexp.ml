@@ -51,9 +51,9 @@ type error =
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
-  | Extension of string
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 let string_of_cst = function
   | Const_string(s, _) -> Some s
@@ -63,6 +63,30 @@ let string_of_payload = function
   | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
       string_of_cst c
   | _ -> None
+
+let rec error_of_extension ext =
+  match ext with
+  | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
+    let rec sub_from inner =
+      match inner with
+      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
+          error_of_extension ext :: sub_from rest
+      | {pstr_loc} :: rest ->
+          (Location.errorf ~loc "Invalid syntax for sub-error of extension '%s'." txt) ::
+            sub_from rest
+      | [] -> []
+    in
+    begin match p with
+    | PStr({pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
+           {pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
+           inner) ->
+        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
+    | PStr({pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
+        Location.error ~loc ~sub:(sub_from inner) msg
+    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
+    end
+  | ({txt; loc}, _) ->
+      Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let check_deprecated loc attrs s =
   List.iter
@@ -666,8 +690,8 @@ let rec transl_type env policy styp =
             pack_fields = ptys;
             pack_txt = p;
            }) ty
-  | Ptyp_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Ptyp_extension ext ->
+      raise (Error_forward (error_of_extension ext))
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
@@ -935,14 +959,14 @@ let report_error env ppf = function
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )
