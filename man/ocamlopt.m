@@ -316,6 +316,9 @@ flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 .TP
+.B \-no-alias-deps
+Do not record dependencies for module aliases.
+.TP
 .B \-no\-app\-funct
 Deactivates the applicative behaviour of functors. With this option,
 each functor application generates new types in its result and
