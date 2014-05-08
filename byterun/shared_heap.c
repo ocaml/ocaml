@@ -6,6 +6,9 @@
 #include "fail.h"
 #include "memory.h"
 #include "sizeclasses.h"
+#include "addrmap.h"
+#include "roots.h"
+#include "globroots.h"
 
 typedef unsigned int sizeclass;
 typedef uintnat status;
@@ -240,9 +243,60 @@ void caml_init_major_heap (asize_t size) {
   for (i=0; i<256; i++) atoms[i] = Make_header(0, i, global.NOT_MARKABLE);
 }
 
+
+static __thread struct addrmap objs = ADDRMAP_INIT;
+static __thread uintnat nobjs = 0;
+
+static void verify_object(value v) {
+  int i;
+  intnat* entry;
+  if (!Is_block(v)) return;
+
+  if (Tag_val(v) == Infix_tag) {
+    v -= Infix_offset_val(v);
+    Assert(Tag_val(v) == Closure_tag);
+  }
+  
+  entry = caml_addrmap_insert_pos(&objs, v);
+  if (*entry != ADDRMAP_NOT_PRESENT) return;
+  *entry = 0;
+
+  if (Has_status_hd(Hd_val(v), global.NOT_MARKABLE)) return;
+
+  nobjs++;
+
+  Assert(!Is_minor(v));
+
+  if (!Is_minor(v)) {
+    Assert(Has_status_hd(Hd_val(v), global.MARKED));
+  }
+  if (Tag_val(v) < No_scan_tag) {
+    for (i = 0; i < Wosize_val(v); i++) {
+      verify_object(Field(v, i));
+    }
+  }
+}
+
+static void verify_root(value v, value* p) {
+  if (!v) return;
+  verify_object(v);
+}
+
+static void verify_heap() {
+  struct caml_sampled_roots roots;
+  caml_addrmap_clear(&objs);
+  nobjs = 0;
+  caml_sample_local_roots(&roots);
+  caml_do_local_roots(&verify_root, &roots);
+  caml_scan_global_roots(&verify_root);
+  caml_gc_log("Verify: %lu objs", nobjs);
+  caml_addrmap_clear(&objs);
+}
+
 void caml_cycle_heap() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
+  verify_heap();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
