@@ -6,6 +6,7 @@
 #include "shared_heap.h"
 #include "memory.h"
 #include "roots.h"
+#include "globroots.h"
 #include "domain.h"
 
 intnat caml_major_collection_slice (intnat work) {
@@ -14,28 +15,28 @@ intnat caml_major_collection_slice (intnat work) {
   return 100;
 }
 
-#define MARK_STACK_SIZE (1 << 16)
-static __thread value* mark_stack;
-static __thread int mark_stack_count;
+#define MARK_STACK_SIZE (1 << 20)
+__thread value* caml_mark_stack;
+__thread int caml_mark_stack_count;
 
 static __thread uintnat stat_blocks_marked = 0;
 
 void caml_init_major_gc() {
-  mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
-  mark_stack_count = 0;
+  caml_mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  caml_mark_stack_count = 0;
 }
 
 static void mark_stack_push(value v) {
   Assert(Is_block(v));
-  if (mark_stack_count >= MARK_STACK_SIZE)
+  if (caml_mark_stack_count >= MARK_STACK_SIZE)
     caml_failwith("mark stack overflow");
-  mark_stack[mark_stack_count++] = v;
+  caml_mark_stack[caml_mark_stack_count++] = v;
 }
 
 static int mark_stack_pop(value* ret) {
-  if (mark_stack_count == 0) 
+  if (caml_mark_stack_count == 0) 
     return 0;
-  *ret = mark_stack[--mark_stack_count];
+  *ret = caml_mark_stack[--caml_mark_stack_count];
   return 1;
 }
 
@@ -94,27 +95,41 @@ void mark(value initial) {
   }
 }
 
-static void mark_root(value p, value* ptr) {
+void caml_mark_root(value p, value* ptr) {
   if (!p) return;
   mark(p);
 }
 
-void caml_darken(value v) {
-  Assert (Is_markable(v));
+void caml_darken(value v, value* ignored) {
+  /* Assert (Is_markable(v)); */
+  if (!Is_markable (v)) return; /* foreign stack, at least */
+
   v = mark_normalise(v);
   if (caml_mark_object(v)) mark_stack_push(v);
 }
 
 void caml_finish_marking () {
-  value v;
   int i;
+  struct caml_sampled_roots roots;
 
-  caml_do_roots(&mark_root);
+  
+  caml_sample_local_roots(&roots);
+  caml_do_local_roots(&caml_mark_root, &roots);
+
+  caml_scan_global_roots(&caml_mark_root);
+  caml_do_foreign_roots(&caml_mark_root);
+
   for (i = 0 ; i < 256; i ++) caml_mark_object(caml_atom(i));
+
+  caml_empty_mark_stack();
+}
+
+void caml_empty_mark_stack () {
+  value v;
 
   while (mark_stack_pop(&v)) mark(v);
 
-  caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
+  if (stat_blocks_marked || 1) 
+    caml_gc_log("Finished marking major heap. Marked %u blocks", (unsigned)stat_blocks_marked);
   stat_blocks_marked = 0;
 }
-

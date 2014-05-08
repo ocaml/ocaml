@@ -57,12 +57,7 @@ static void handle_signal(int signal_number)
   signal(signal_number, handle_signal);
 #endif
   if (signal_number < 0 || signal_number >= NSIG) return;
-  if (caml_try_leave_blocking_section_hook()) {
-    caml_execute_signal(signal_number, 1);
-    caml_enter_blocking_section_hook();
-  }else{
-    caml_record_signal(signal_number);
-  }
+  caml_record_signal(signal_number);
   errno = saved_errno;
 }
 

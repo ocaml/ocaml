@@ -81,19 +81,14 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
   signal(sig, handle_signal);
 #endif
   if (sig < 0 || sig >= NSIG) return;
-  if (caml_try_leave_blocking_section_hook ()) {
-    caml_execute_signal(sig, 1);
-    caml_enter_blocking_section_hook();
-  } else {
-    caml_record_signal(sig);
+  caml_record_signal(sig);
   /* Some ports cache [caml_young_limit] in a register.
      Use the signal context to modify that register too, but only if
      we are inside OCaml code (not inside C code). */
 #if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-    if (Is_in_code_area(CONTEXT_PC))
-      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+  if (Is_in_code_area(CONTEXT_PC))
+    CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
 #endif
-  }
   errno = saved_errno;
 }
 
