@@ -179,9 +179,9 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trap_spoff);
+      code_t* trace_p = Data_abstract_val(trace);
       Assert(p != NULL);
-      /* The assignment below is safe because we assign into an Abstract_tag block */
-      Field(trace, trace_pos) = (value) p;
+      trace_p[trace_pos] = p;
     }
   }
 
@@ -233,7 +233,7 @@ static value read_debug_info(void)
     /* Relocate events in event list */
     for (l = evl; l != Val_int(0); l = Field(l, 1)) {
       value ev = Field(l, 0);
-      Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
+      Store_field(ev, EV_POS, Val_long(Long_val(Field(ev, EV_POS)) + orig));
     }
     /* Record event list */
     Store_field(events, i, evl);
@@ -370,18 +370,18 @@ CAMLprim value caml_convert_raw_backtrace(value backtrace)
       if (li.loc_valid) {
         fname = caml_copy_string(li.loc_filename);
         p = caml_alloc_small(5, 0);
-        Field(p, 0) = Val_bool(li.loc_is_raise);
-        Field(p, 1) = fname;
-        Field(p, 2) = Val_int(li.loc_lnum);
-        Field(p, 3) = Val_int(li.loc_startchr);
-        Field(p, 4) = Val_int(li.loc_endchr);
+        Init_field(p, 0, Val_bool(li.loc_is_raise));
+        Init_field(p, 1, fname);
+        Init_field(p, 2, Val_int(li.loc_lnum));
+        Init_field(p, 3, Val_int(li.loc_startchr));
+        Init_field(p, 4, Val_int(li.loc_endchr));
       } else {
         p = caml_alloc_small(1, 1);
-        Field(p, 0) = Val_bool(li.loc_is_raise);
+        Init_field(p, 0, Val_bool(li.loc_is_raise));
       }
       caml_modify_field(arr, i, p);
     }
-    res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+    res = caml_alloc_small(1, 0); Init_field(res, 0, arr); /* Some */
   }
   CAMLreturn(res);
 }
@@ -394,7 +394,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLlocal1(res);
   res = caml_alloc(caml_backtrace_pos, Abstract_tag);
   if(caml_backtrace_buffer != NULL)
-    memcpy(&Field(res, 0), caml_backtrace_buffer,
+    memcpy(Data_abstract_val(res), caml_backtrace_buffer,
            caml_backtrace_pos * sizeof(code_t));
   CAMLreturn(res);
 }

@@ -182,7 +182,7 @@ value* caml_shared_try_alloc(mlsize_t wosize, tag_t tag) {
   {
     int i;
     for (i = 0; i < wosize; i++) {
-      Field(Val_hp(p), i) = Debug_free_major;
+      Op_val(Val_hp(p))[i] = Debug_free_major;
     }
   }
 #endif

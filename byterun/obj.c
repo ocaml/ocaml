@@ -80,18 +80,7 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 
 CAMLprim value caml_obj_block(value tag, value size)
 {
-  value res;
-  mlsize_t sz, i;
-  tag_t tg;
-
-  sz = Long_val(size);
-  tg = Long_val(tag);
-  if (sz == 0) return Atom(tg);
-  res = caml_alloc(sz, tg);
-  for (i = 0; i < sz; i++)
-    Field(res, i) = Val_long(0);
-
-  return res;
+  return caml_alloc(Long_val(size), Long_val(tag));
 }
 
 CAMLprim value caml_obj_dup(value arg)
@@ -109,7 +98,7 @@ CAMLprim value caml_obj_dup(value arg)
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
     res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
+    for (i = 0; i < sz; i++) Init_field(res, i, Field(arg, i));
   } else {
     res = caml_alloc_shr(sz, tg);
     for (i = 0; i < sz; i++) caml_initialize_field(res, i, Field(arg, i));
@@ -189,7 +178,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_small (1, Forward_tag);
-  Field (res, 0) = v;
+  Init_field (res, 0, v);
   CAMLreturn (res);
 }
 
@@ -251,7 +240,7 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
 static value oo_last_id = Val_int(0);
 
 CAMLprim value caml_set_oo_id (value obj) {
-  Field(obj, 1) = oo_last_id;
+  Op_val(obj)[1] = oo_last_id;
   oo_last_id += 2;
   return obj;
 }

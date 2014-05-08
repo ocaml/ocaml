@@ -35,8 +35,8 @@ extern caml_root caml_global_data;
 
 #define Val_off(off) (caml_stack_high + Long_val (off))
 #define Off_val(p) Val_long (caml_stack_high - Long_val (p))
-#define Trap_pc(tp) Field((tp), 0)
-#define Trap_link(tp) Field((tp), 1)
+#define Trap_pc(tp) ((tp)[0])
+#define Trap_link(tp) ((tp)[1])
 
 void caml_init_stack (uintnat init_max_size);
 void caml_realloc_stack (asize_t required_size);

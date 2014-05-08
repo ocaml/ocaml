@@ -18,6 +18,7 @@
 #include "fail.h"
 #include "io.h"
 #include "mlvalues.h"
+#include "memory.h"
 
 #define Uninitialised (Val_int(0))
 #define Bad_term (Val_int(1))
@@ -66,7 +67,7 @@ CAMLprim value caml_terminfo_setup (value vchan)
     return Bad_term;
   }
   result = caml_alloc_small (1, Good_term_tag);
-  Field (result, 0) = Val_int (num_lines);
+  Init_field (result, 0, Val_int (num_lines));
   return result;
 }
 

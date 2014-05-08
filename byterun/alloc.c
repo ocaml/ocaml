@@ -40,12 +40,12 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   }else if (wosize <= Max_young_wosize){
     Alloc_small (result, wosize, tag);
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Field (result, i) = Val_long(0);
+      for (i = 0; i < wosize; i++) Init_field (result, i, Val_long(0));
     }
   }else{
     result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Field (result, i) = Val_long(0);
+      for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_long(0);
     }
     result = caml_check_urgent_gc (result);
   }
@@ -74,7 +74,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
   value result = caml_alloc(wosize, String_tag);
 
-  Field (result, wosize - 1) = 0;
+  Op_val (result) [wosize - 1] = 0;
   offset_index = Bsize_wsize (wosize) - 1;
   Byte (result, offset_index) = offset_index - len;
   return result;

@@ -241,8 +241,8 @@ static intnat compare_val(value v1, value v2, int total)
       if (sz1 > 1) {
         sp++;
         if (sp >= compare_stack_limit) sp = compare_resize_stack(sp);
-        sp->v1 = &Field(v1, 1);
-        sp->v2 = &Field(v2, 1);
+        sp->v1 = Op_val(v1) + 1;
+        sp->v2 = Op_val(v2) + 1;
         sp->count = sz1 - 1;
       }
       /* Continue comparison with first field */

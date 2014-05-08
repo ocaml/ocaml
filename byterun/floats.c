@@ -253,8 +253,8 @@ CAMLprim value caml_frexp_float(value f)
 
   mantissa = caml_copy_double(frexp (Double_val(f), &exponent));
   res = caml_alloc_tuple(2);
-  Field(res, 0) = mantissa;
-  Field(res, 1) = Val_int(exponent);
+  Init_field(res, 0, mantissa);
+  Init_field(res, 1, Val_int(exponent));
   CAMLreturn (res);
 }
 
@@ -283,8 +283,8 @@ CAMLprim value caml_modf_float(value f)
   quo = caml_copy_double(modf (Double_val(f), &frem));
   rem = caml_copy_double(frem);
   res = caml_alloc_tuple(2);
-  Field(res, 0) = quo;
-  Field(res, 1) = rem;
+  Init_field(res, 0, quo);
+  Init_field(res, 1, rem);
   CAMLreturn (res);
 }
 

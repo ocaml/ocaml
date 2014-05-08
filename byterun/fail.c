@@ -48,8 +48,8 @@ CAMLexport void caml_raise_with_arg(value tag, value arg)
   CAMLlocal1 (bucket);
 
   bucket = caml_alloc_small (2, 0);
-  Field(bucket, 0) = tag;
-  Field(bucket, 1) = arg;
+  Init_field(bucket, 0, tag);
+  Init_field(bucket, 1, arg);
   caml_raise(bucket);
   CAMLnoreturn;
 }
@@ -63,8 +63,8 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
 
   Assert(1 + nargs <= Max_young_wosize);
   bucket = caml_alloc_small (1 + nargs, 0);
-  Field(bucket, 0) = tag;
-  for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
+  Init_field(bucket, 0, tag);
+  for (i = 0; i < nargs; i++) Init_field(bucket, 1 + i, args[i]);
   caml_raise(bucket);
   CAMLnoreturn;
 }

@@ -40,6 +40,7 @@ CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify_field (value, int, value);
 CAMLextern void caml_initialize_field (value, int, value);
+CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern char * caml_stat_alloc_string (value);
@@ -72,7 +73,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \
   for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
-    Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
+    Op_val (result)[caml__DEBUG_i] = Debug_uninit_minor; \
   } \
 }while(0)
 #else
@@ -279,8 +280,16 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
 
 #define CAMLnoreturn ((void) caml__frame)
 
+  /* initialise a field of an object just allocated on the minor heap */
+#define Init_field(block, offset, val)                  \
+  do {                                                  \
+    value caml__temp_block = block;                     \
+    Assert(Hp_val(caml__temp_block) == caml_young_ptr); \
+    Op_val(caml__temp_block)[offset] = val;             \
+  } while(0)
 
-/* convenience macro */
+  
+  /* modify a field */
 #define Store_field(block, offset, val) caml_modify_field(block, offset, val)
 
 /*

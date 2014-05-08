@@ -243,7 +243,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     break;
   case 2:                       /* was Signal_handle */
     res = caml_alloc_small (1, 0);
-    Field(res, 0) = Field(caml_read_root(caml_signal_handlers), sig);
+    Init_field(res, 0, Field(caml_read_root(caml_signal_handlers), sig));
     break;
   default:                      /* error in caml_set_signal_action */
     caml_sys_error(NO_ARG);

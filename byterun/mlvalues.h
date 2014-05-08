@@ -166,7 +166,7 @@ bits  63    10 9     8 7   0
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
 /* Fields are numbered from 0. */
-#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
+#define Field(x, i) (((value *)(x)) [i] + 0)
 
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
@@ -232,6 +232,7 @@ CAMLextern value caml_hash_variant(char const * tag);
    must not contain any [value].
 */
 #define Abstract_tag 251
+#define Data_abstract_val(v) ((void*) Op_val(v))
 
 /* Strings. */
 #define String_tag 252
@@ -269,7 +270,7 @@ CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
    the GC; therefore, they must not contain any [value].
    See [custom.h] for operations on method suites. */
 #define Custom_tag 255
-#define Data_custom_val(v) ((void *) &Field((v), 1))
+#define Data_custom_val(v) ((void *) (Op_val(v) + 1))
 struct custom_operations;       /* defined in [custom.h] */
 
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
