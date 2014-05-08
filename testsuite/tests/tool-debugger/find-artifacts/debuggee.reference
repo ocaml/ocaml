@@ -1,0 +1,7 @@
+
+(ocd) Loading program... done.
+Breakpoint 1 at 6508: file in/foo.ml, line 10, characters 3-21
+Breakpoint: 1
+10   <|b|>print x;
+x: Blah.blah = Foo
+y: Blah.blah = Bar "hi"
