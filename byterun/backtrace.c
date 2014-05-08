@@ -196,8 +196,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 #define O_BINARY 0
 #endif
 
-static char *read_debug_info_error = "";
-static value read_debug_info(void)
+static value read_debug_info(const char** errmsg)
 {
   CAMLparam0();
   CAMLlocal1(events);
@@ -215,13 +214,13 @@ static value read_debug_info(void)
   }
   fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0){
-    read_debug_info_error = "executable program file not found";
+    *errmsg = "executable program file not found";
     CAMLreturn(Val_false);
   }
   caml_read_section_descriptors(fd, &trail);
   if (caml_seek_optional_section(fd, &trail, "DBUG") == -1) {
     close(fd);
-    read_debug_info_error = "program not linked with -g";
+    *errmsg = "program not linked with -g";
     CAMLreturn(Val_false);
   }
   chan = caml_open_descriptor_in(fd);
@@ -338,11 +337,12 @@ CAMLexport void caml_print_exception_backtrace(void)
   value events;
   int i;
   struct loc_info li;
+  const char* errmsg;
 
-  events = read_debug_info();
+  events = read_debug_info(&errmsg);
   if (events == Val_false) {
     fprintf(stderr, "(Cannot print stack backtrace: %s)\n",
-            read_debug_info_error);
+            errmsg);
     return;
   }
   for (i = 0; i < caml_backtrace_pos; i++) {
@@ -359,8 +359,9 @@ CAMLprim value caml_convert_raw_backtrace(value backtrace)
   CAMLlocal5(events, res, arr, p, fname);
   int i;
   struct loc_info li;
+  const char* errmsg;
 
-  events = read_debug_info();
+  events = read_debug_info(&errmsg);
   if (events == Val_false) {
     res = Val_int(0);           /* None */
   } else {
