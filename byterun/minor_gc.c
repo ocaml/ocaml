@@ -116,7 +116,7 @@ void caml_oldify_one (value v, value *p)
     Assert (Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
     if (hd == 0){         /* If already forwarded */
-      *p = Field (v, 0);  /*  then forward pointer is first field. */
+      *p = Op_val(v)[0];  /*  then forward pointer is first field. */
     }else{
       tag = Tag_hd (hd);
       if (tag < Infix_tag){
@@ -126,25 +126,25 @@ void caml_oldify_one (value v, value *p)
         stat_live_bytes += Bhsize_wosize(sz);
         result = alloc_shared (sz, tag);
         *p = result;
-        field0 = Field (v, 0);
+        field0 = Op_val(v)[0];
         Hd_val (v) = 0;            /* Set forward flag */
-        Field (v, 0) = result;     /*  and forward pointer. */
+        Op_val(v)[0] = result;     /*  and forward pointer. */
         if (sz > 1){
-          Field (result, 0) = field0;
-          Field (result, 1) = oldify_todo_list;    /* Add this block */
+          Op_val (result)[0] = field0;
+          Op_val (result)[1] = oldify_todo_list;    /* Add this block */
           oldify_todo_list = v;                    /*  to the "to do" list. */
         }else{
           Assert (sz == 1);
-          p = &Field (result, 0);
+          p = Op_val(result);
           v = field0;
           goto tail_call;
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
         result = alloc_shared(sz, tag);
-        for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
+        for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
         Hd_val (v) = 0;            /* Set forward flag */
-        Field (v, 0) = result;     /*  and forward pointer. */
+        Op_val (v)[0] = result;    /*  and forward pointer. */
         *p = result;
       }else if (tag == Infix_tag){
         mlsize_t offset = Infix_offset_hd (hd);
@@ -159,7 +159,7 @@ void caml_oldify_one (value v, value *p)
         if (Is_block (f)){
           if (Is_young (f)){
             vv = 1;
-            ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+            ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
           }else{
             vv = 1;
             if (vv){
@@ -173,8 +173,8 @@ void caml_oldify_one (value v, value *p)
           result = alloc_shared (1, Forward_tag);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
-          Field (v, 0) = result;      /*  and forward pointer. */
-          p = &Field (result, 0);
+          Op_val (v)[0] = result;      /*  and forward pointer. */
+          p = Op_val (result);
           v = f;
           goto tail_call;
         }else{
@@ -198,21 +198,21 @@ void caml_oldify_mopup (void)
   mlsize_t i;
 
   while (oldify_todo_list != 0){
-    v = oldify_todo_list;                /* Get the head. */
-    Assert (Hd_val (v) == 0);            /* It must be forwarded. */
-    new_v = Field (v, 0);                /* Follow forward pointer. */
-    oldify_todo_list = Field (new_v, 1); /* Remove from list. */
+    v = oldify_todo_list;                 /* Get the head. */
+    Assert (Hd_val (v) == 0);             /* It must be forwarded. */
+    new_v = Op_val (v)[0];                /* Follow forward pointer. */
+    oldify_todo_list = Op_val (new_v)[1]; /* Remove from list. */
 
-    f = Field (new_v, 0);
+    f = Op_val (new_v)[0];
     if (Is_block (f) && Is_young (f)){
-      caml_oldify_one (f, &Field (new_v, 0));
+      caml_oldify_one (f, Op_val (new_v));
     }
     for (i = 1; i < Wosize_val (new_v); i++){
-      f = Field (v, i);
+      f = Op_val (v)[i];
       if (Is_block (f) && Is_young (f)){
-        caml_oldify_one (f, &Field (new_v, i));
+        caml_oldify_one (f, Op_val (new_v) + i);
       }else{
-        Field (new_v, i) = f;
+        Op_val (new_v)[i] = f;
       }
     }
   }
@@ -250,7 +250,7 @@ void caml_empty_minor_heap (void)
         } 
         
         Assert (Hd_val (v) == 0);
-        vnew = Field(v, 0) + offset;
+        vnew = Op_val(v)[0] + offset;
         Assert(Is_block(vnew) && !Is_young(vnew));
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
@@ -264,7 +264,7 @@ void caml_empty_minor_heap (void)
     for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
         if (Hd_val (**r) == 0){
-          **r = Field (**r, 0);
+          **r = Op_val (**r)[0];
         }else{
           **r = caml_weak_none;
         }

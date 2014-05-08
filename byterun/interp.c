@@ -519,9 +519,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
         Alloc_small(accu, num_args + 2, Closure_tag);
-        Field(accu, 1) = env;
-        for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
-        Field(accu, 0) = Val_bytecode(pc - 3); /* Point to the preceding RESTART instr. */
+        Init_field(accu, 1, env);
+        for (i = 0; i < num_args; i++) Init_field(accu, i + 2, sp[i]);
+        Init_field(accu, 0, Val_bytecode(pc - 3)); /* Point to the preceding RESTART instr. */
         sp += num_args;
         pc = Pc_val(sp[0]);
         env = sp[1];
@@ -536,9 +536,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int i;
       if (nvars > 0) *--sp = accu;
       Alloc_small(accu, 1 + nvars, Closure_tag);
-      Field(accu, 0) = Val_bytecode(pc + *pc);
+      Init_field(accu, 0, Val_bytecode(pc + *pc));
       pc++;
-      for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+      for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
       sp += nvars;
       Next;
     }
@@ -546,25 +546,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(CLOSUREREC): {
       int nfuncs = *pc++;
       int nvars = *pc++;
-      int i;
-      value * p;
+      int i, field;
+      int var_offset = nfuncs * 2 - 1;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, nfuncs * 2 - 1 + nvars, Closure_tag);
-      p = &Field(accu, nfuncs * 2 - 1);
+      Alloc_small(accu, var_offset + nvars, Closure_tag);
       for (i = 0; i < nvars; i++) {
-        *p++ = sp[i];
+        Init_field(accu, var_offset + i, sp[i]);
       }
       sp += nvars;
-      p = &Field(accu, 0);
-      *p = Val_bytecode(pc + pc[0]);
+      Init_field(accu, 0, Val_bytecode(pc + pc[0]));
       *--sp = accu;
-      p++;
+      field = 1;
       for (i = 1; i < nfuncs; i++) {
-        *p = Make_header(i * 2, Infix_tag, 0);  /* color irrelevant. */
-        p++;
-        *p = Val_bytecode (pc + pc[i]);
-        *--sp = (value) p;
-        p++;
+        Init_field(accu, field, Make_header(i * 2, Infix_tag, 0)); /* color irrelevant */
+        field++;
+        Init_field(accu, field, Val_bytecode (pc + pc[i]));
+        *--sp = (value) (Op_val(accu) + field);
+        field++;
       }
       pc += nfuncs;
       Next;
@@ -637,8 +635,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       value block;
       if (wosize <= Max_young_wosize) {
         Alloc_small(block, wosize, tag);
-        Field(block, 0) = accu;
-        for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+        Init_field(block, 0, accu);
+        for (i = 1; i < wosize; i++) Init_field(block, i, *sp++);
       } else {
         Setup_for_gc;
         block = caml_alloc_shr(wosize, tag);
@@ -653,7 +651,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 1, tag);
-      Field(block, 0) = accu;
+      Init_field(block, 0, accu);
       accu = block;
       Next;
     }
@@ -661,8 +659,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 2, tag);
-      Field(block, 0) = accu;
-      Field(block, 1) = sp[0];
+      Init_field(block, 0, accu);
+      Init_field(block, 1, sp[0]);
       sp += 1;
       accu = block;
       Next;
@@ -671,9 +669,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       tag_t tag = *pc++;
       value block;
       Alloc_small(block, 3, tag);
-      Field(block, 0) = accu;
-      Field(block, 1) = sp[0];
-      Field(block, 2) = sp[1];
+      Init_field(block, 0, accu);
+      Init_field(block, 1, sp[0]);
+      Init_field(block, 2, sp[1]);
       sp += 2;
       accu = block;
       Next;
@@ -1034,8 +1032,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu += *pc << 1;
       pc++;
       Next;
-    Instruct(OFFSETREF):
-      Field(accu, 0) += *pc << 1;
+    Instruct(OFFSETREF): {
+        value v = Field(accu, 0);
+        Assert(!Is_block(v));
+        v += *pc << 1;
+        Op_val(accu)[0] = v; /* ?? */
+      }
       accu = Val_unit;
       pc++;
       Next;
@@ -1072,11 +1074,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       accu = Val_int(*pc++);
       ofs = *pc & Field(meths,1);
-      if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
+      if (*(value*)(((char*)(Op_val(meths)+3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
 #endif
-        accu = *(value*)(((char*)&Field(meths,2)) + ofs);
+        accu = *(value*)(((char*)(Op_val(meths)+2)) + ofs);
       }
       else
       {

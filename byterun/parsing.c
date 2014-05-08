@@ -241,8 +241,8 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   case STACKS_GROWN_1:
     RESTORE;
   push:
-    Field(env->s_stack, sp) = Val_int(state);
-    caml_modify_field(env->v_stack, sp, env->lval);
+    Store_field (env->s_stack, sp, Val_int(state));
+    Store_field (env->v_stack, sp, env->lval);
     Store_field (env->symb_start_stack, sp, env->symb_start);
     Store_field (env->symb_end_stack, sp, env->symb_end);
     goto loop;
@@ -277,7 +277,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
                                 /* The ML code calls the semantic action */
   case SEMANTIC_ACTION_COMPUTED:
     RESTORE;
-    Field(env->s_stack, sp) = Val_int(state);
+    Store_field(env->s_stack, sp, Val_int(state));
     caml_modify_field(env->v_stack, sp, arg);
     asp = Int_val(env->asp);
     Store_field (env->symb_end_stack, sp, Field(env->symb_end_stack, asp));

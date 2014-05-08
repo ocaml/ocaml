@@ -56,7 +56,7 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
 #endif
   caml_prepare_bytecode((code_t) prog, (asize_t) Long_val(len));
   clos = caml_alloc_small (1, Closure_tag);
-  Field(clos, 0) = Val_bytecode(prog);
+  Init_field(clos, 0, Val_bytecode(prog));
   return clos;
 }
 
@@ -87,7 +87,7 @@ CAMLprim value caml_realloc_global(value size)
     for (i = 0; i < actual_size; i++)
       caml_initialize_field(new_global_data, i, Field(old_global_data, i));
     for (i = actual_size; i < requested_size; i++){
-      Field (new_global_data, i) = Val_long (0);
+      caml_initialize_field(new_global_data, i, Val_long(0));
     }
     caml_modify_root(caml_global_data, new_global_data);
   }

@@ -67,9 +67,9 @@ void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
     Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
     if (Tag_val(v) < No_scan_tag) {
       int i;
+      value* fields = Op_val(v);
       for (i = 0; i < Wosize_val(v); i++) {
-        value c = Field(v, i);
-        if (Is_block(c) && !Is_minor(c)) f(c, &Field(v, i));
+        if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
       }
     }
     p += Whsize_wosize(Wosize_val(v));
@@ -82,9 +82,9 @@ void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
     Assert (Is_block(v));
     if (Tag_val(v) < No_scan_tag) {
       int i;
+      value* fields = Op_val(v);
       for (i = 0; i < Wosize_val(v); i++) {
-        value c = Field(v, i);
-        if (Is_block(c) && !Is_minor(c)) f(c, &Field(v, i));
+        if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
       }
     }
   }

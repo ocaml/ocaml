@@ -180,15 +180,13 @@ CAMLprim value caml_make_vect(value len, value init)
     if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size < Max_young_wosize) {
       res = caml_alloc_small(size, 0);
-      for (i = 0; i < size; i++) Field(res, i) = init;
-    }
-    else if (Is_block(init) && Is_young(init)) {
-      caml_minor_collection();
-      res = caml_alloc_shr(size, 0);
-      for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc (res);
+      for (i = 0; i < size; i++) Init_field(res, i, init);
     }
     else {
+      /* make sure init is not young, to avoid creating
+         very many ref table entries */
+      if (Is_block(init) && Is_young(init))
+        caml_minor_collection();
       res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
       res = caml_check_urgent_gc (res);
@@ -228,8 +226,6 @@ CAMLprim value caml_make_array(value init)
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
-  intnat count;
-
   if (Tag_val(a2) == Double_array_tag) {
     /* Arrays of floats.  The values being copied are floats, not
        pointer, so we can do a direct copy.  memmove takes care of
@@ -238,36 +234,13 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
             (double *)a1 + Long_val(ofs1),
             Long_val(n) * sizeof(double));
     return Val_unit;
-  }
-  if (Is_young(a2)) {
-    /* Arrays of values, destination is in young generation.
-       Here too we can do a direct copy since this cannot create
-       old-to-young pointers, nor mess up with the incremental major GC.
-       Again, memmove takes care of overlap. */
-    memmove(&Field(a2, Long_val(ofs2)),
-            &Field(a1, Long_val(ofs1)),
-            Long_val(n) * sizeof(value));
+  } else {
+    caml_blit_fields(a1, Long_val(ofs1), a2, Long_val(ofs2), Long_val(n));
+    /* Many caml_modify_field in a row can create a lot of old-to-young refs.
+       Give the minor GC a chance to run if it needs to. */
+    caml_check_urgent_gc(Val_unit);
     return Val_unit;
   }
-  /* Array of values, destination is in old generation.
-     We must use caml_modify_field.  */
-  count = Long_val(n);
-  if (a1 == a2 && Long_val(ofs1) < Long_val(ofs2)) {
-    /* Copy in descending order */
-    for (; count > 0; count--) {
-      caml_modify_field(a2, Long_val(ofs2) + count - 1, Field(a1, Long_val(ofs1) + count - 1));
-    }
-  } else {
-    /* Copy in ascending order */
-    int i;
-    for (i = 0; i < count; i++) {
-      caml_modify_field(a2, Long_val(ofs2) + i, Field(a1, Long_val(ofs1) + i));
-    }
-  }
-  /* Many caml_modify_field in a row can create a lot of old-to-young refs.
-     Give the minor GC a chance to run if it needs to. */
-  caml_check_urgent_gc(Val_unit);
-  return Val_unit;
 }
 
 /* A generic function for extraction and concatenation of sub-arrays */
@@ -280,8 +253,7 @@ static value caml_array_gather(intnat num_arrays,
   CAMLparamN(arrays, num_arrays);
   value res;                    /* no need to register it as a root */
   int isfloat;
-  mlsize_t i, size, wsize, count, pos;
-  value * src;
+  mlsize_t i, size, wsize, pos;
 
   /* Determine total size and whether result array is an array of floats */
   size = 0;
@@ -311,31 +283,13 @@ static value caml_array_gather(intnat num_arrays,
     /* Array of values, too big. */
     caml_invalid_argument("Array.concat");
   }
-  else if (size < Max_young_wosize) {
-    /* Array of values, small enough to fit in young generation.
-       We can use memcpy directly. */
-    res = caml_alloc_small(size, 0);
+  else {
+    res = caml_alloc(size, 0);
     for (i = 0, pos = 0; i < num_arrays; i++) {
-      memcpy(&Field(res, pos),
-             &Field(arrays[i], offsets[i]),
-             lengths[i] * sizeof(value));
+      caml_blit_fields(arrays[i], offsets[i], res, pos, lengths[i]);
       pos += lengths[i];
     }
     Assert(pos == size);
-  } else {
-    /* Array of values, must be allocated in old generation and filled
-       using caml_initialize_field. */
-    res = caml_alloc_shr(size, 0);
-    pos = 0;
-    for (i = 0, pos = 0; i < num_arrays; i++) {
-      for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
-           count > 0;
-           count--, src++, pos++) {
-        caml_initialize_field(res, pos, *src);
-      }
-    }
-    Assert(pos == size);
-
     /* Many caml_initialize_field in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to. */
     res = caml_check_urgent_gc(res);

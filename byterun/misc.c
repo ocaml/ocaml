@@ -29,14 +29,6 @@ int caml_failed_assert (char * expr, char * file, int line)
   return 1; /* not reached */
 }
 
-void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
-{
-  mlsize_t i;
-  for (i = start; i < Wosize_bp (bp); i++){
-    Field (Val_bp (bp), i) = (value) filler;
-  }
-}
-
 #endif /* DEBUG */
 
 uintnat caml_verb_gc = 0;
