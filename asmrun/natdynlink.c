@@ -29,7 +29,7 @@ static void *getsym(void *handle, char *module, char *name){
   void *sym;
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
-  free(fullname);
+  caml_stat_free(fullname);
   return sym;
 }
 
