@@ -22,15 +22,22 @@
    wrapped by caml_domain_deactivate and caml_domain_activate.
 */
 
+
 struct domain {
-  atomic_uintnat is_active, is_alive;
-
-  atomic_uintnat* interrupt_word_address;
-  int is_main;
-
+  /* readonly fields, initialised and never modified */
   int id;
-
+  int is_main;
   uintnat initial_minor_heap_size;
+  atomic_uintnat* interrupt_word_address;
+
+  /* fields accessed concurrently by several threads */
+  atomic_uintnat is_active; /* domain is not in a blocking section */
+  atomic_uintnat is_alive;  /* domain has not terminated */
+
+  /* fields protected by roots_lock */
+  plat_mutex roots_lock;
+  struct caml_sampled_roots sampled_roots;
+  int sampled_roots_dirty;
 };
 
 __thread struct domain* domain_self;
@@ -88,6 +95,7 @@ static void domain_init(value cons) {
   Assert (domain_self == 0);
   domain_self = d;
   d->interrupt_word_address = &caml_young_limit;
+  plat_mutex_init(&d->roots_lock);
 }
 
 /* must be run on the domain's thread */
@@ -104,11 +112,11 @@ static void domain_register(value cons) {
   d->id = next_domain_id++;
   plat_mutex_unlock(&live_domains_lock);
   
-  caml_domain_activate();
+  caml_leave_blocking_section();
 }
 
 static void domain_terminate() {
-  caml_domain_deactivate();
+  caml_enter_blocking_section();
   atomic_store_rel(&domain_self->is_alive, 0);
   /* FIXME: block until swept */
 }
@@ -289,7 +297,7 @@ static atomic_uintnat domstat;
 
 /* Activating a domain blocks until the current stop-the-world phase
    is complete */
-CAMLexport void caml_domain_activate() {
+CAMLexport void caml_leave_blocking_section() {
   /* add 1 to DOMSTAT_ACTIVE when DOMSTAT_PHASE and DOMSTAT_WAITERS are zero */
   while (1) {
     uintnat stat = atomic_load_acq(&domstat);
@@ -299,11 +307,46 @@ CAMLexport void caml_domain_activate() {
     }
     cpu_relax();
   }
+  atomic_store_rel(&domain_self->is_active, 1);
+  plat_mutex_lock(&domain_self->roots_lock);
+  caml_process_pending_signals();
 }
 
-CAMLexport void caml_domain_deactivate() {
+CAMLexport void caml_enter_blocking_section() {
+  caml_process_pending_signals();
+  caml_sample_local_roots(&domain_self->sampled_roots);
+  domain_self->sampled_roots_dirty = 1;
+  plat_mutex_unlock(&domain_self->roots_lock);
+  atomic_store_rel(&domain_self->is_active, 0);
   /* subtract 1 from DOMSTAT_ACTIVE */
   atomic_fetch_add(&domstat, -0x10000);
+}
+
+static void do_foreign_roots(scanning_action f, int mark_dirty)
+{
+  value domlist;
+  plat_mutex_lock(&live_domains_lock);
+  domlist = caml_read_root(live_domains_list);
+  plat_mutex_unlock(&live_domains_lock);
+
+  for (; Is_block(domlist); domlist = Field(domlist, 1)) {
+    struct domain* dom = Domain_val(Field(domlist, 0));
+    if (!atomic_load_acq(&dom->is_active) &&
+        plat_mutex_try_lock(&dom->roots_lock)) {
+      if (dom->sampled_roots_dirty) {
+        caml_gc_log("Marking roots of domain [%02d]", dom->id);
+        caml_do_sampled_roots(f, &dom->sampled_roots);
+        dom->sampled_roots_dirty = 0;
+      }
+      if (mark_dirty) dom->sampled_roots_dirty = 1;
+      plat_mutex_unlock(&dom->roots_lock);
+    }
+  }
+}
+
+void caml_do_foreign_roots(scanning_action f)
+{
+  do_foreign_roots(f, 0);
 }
 
 
@@ -358,7 +401,10 @@ static void stw_phase() {
   caml_empty_minor_heap();
   caml_finish_marking();
 
+  if (!domain_self->is_main) usleep(10000);
   if (barrier_enter(0)) {
+    do_foreign_roots(caml_darken, 1);
+    caml_empty_mark_stack();
     domain_mark_live();
     caml_cleanup_deleted_roots();
     caml_cycle_heap();

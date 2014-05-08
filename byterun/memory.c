@@ -20,7 +20,7 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
   */
 
   if (Is_block(val) && !Is_young(val)) {
-    caml_darken(val);
+    caml_darken(val, 0);
   }
 
 

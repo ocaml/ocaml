@@ -22,56 +22,31 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "stacks.h"
+#include "major_gc.h"
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
-/* FIXME should rename to [caml_oldify_young_roots] and synchronise with
-   asmrun/roots.c */
-/* Call [caml_oldify_one] on (at least) all the roots that point to the minor
-   heap. */
-void caml_oldify_local_roots (void)
+void caml_sample_local_roots(struct caml_sampled_roots* r)
 {
-  register value * sp;
-  struct caml__roots_block *lr;
-  intnat i, j;
-
-  /* The stack */
-  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
-    caml_oldify_one (*sp, sp);
-  }
-  /* Local C roots */  /* FIXME do the old-frame trick ? */
-  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
-    for (i = 0; i < lr->ntables; i++){
-      for (j = 0; j < lr->nitems; j++){
-        sp = &(lr->tables[i][j]);
-        if (*sp != 0) {
-          caml_oldify_one (*sp, sp);
-        }
-      }
-    }
-  }
+  r->stack_low = caml_extern_sp;
+  r->stack_high = caml_stack_high;
+  r->local_roots = caml_local_roots;
+  r->young_ptr = (value*)caml_young_ptr;
+  r->young_end = (value*)caml_young_end;
+  r->mark_stack = caml_mark_stack;
+  r->mark_stack_count = caml_mark_stack_count;
 }
 
-void caml_do_roots (scanning_action f)
-{
-  /* The stack and the local C roots */
-  caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
-  /* Global C roots */
-  caml_scan_global_roots(f);
-}
-
-CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
-                                     value *stack_high,
-                                     struct caml__roots_block *local_roots)
+CAMLexport void caml_do_local_roots (scanning_action f, struct caml_sampled_roots* r)
 {
   register value * sp;
   struct caml__roots_block *lr;
   int i, j;
 
-  for (sp = stack_low; sp < stack_high; sp++) {
+  for (sp = r->stack_low; sp < r->stack_high; sp++) {
     f (*sp, sp);
   }
-  for (lr = local_roots; lr != NULL; lr = lr->next) {
+  for (lr = r->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
@@ -81,4 +56,39 @@ CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
       }
     }
   }
+}
+
+void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
+{
+  /* look for roots on the minor heap */
+  value* p = r->young_ptr;
+  while (p < r->young_end) {
+    value v = Val_hp(p);
+    Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
+    if (Tag_val(v) < No_scan_tag) {
+      int i;
+      for (i = 0; i < Wosize_val(v); i++) {
+        value c = Field(v, i);
+        if (Is_block(c) && !Is_minor(c)) f(c, &Field(v, i));
+      }
+    }
+    p += Whsize_wosize(Wosize_val(v));
+  }
+  Assert(p == r->young_end);
+
+  /* look for gray values in the mark stack */
+  for (p = r->mark_stack; p < r->mark_stack + r->mark_stack_count; p++) {
+    value v = *p;
+    Assert (Is_block(v));
+    if (Tag_val(v) < No_scan_tag) {
+      int i;
+      for (i = 0; i < Wosize_val(v); i++) {
+        value c = Field(v, i);
+        if (Is_block(c) && !Is_minor(c)) f(c, &Field(v, i));
+      }
+    }
+  }
+
+  /* look for local C roots */
+  caml_do_local_roots(f, r);
 }

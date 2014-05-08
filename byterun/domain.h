@@ -16,8 +16,9 @@ void caml_handle_gc_interrupt(void);
 
 void caml_trigger_stw_gc(void);
 
-CAMLextern void caml_domain_activate(void);
-CAMLextern void caml_domain_deactivate(void);
+CAMLextern void caml_enter_blocking_section(void);
+CAMLextern void caml_leave_blocking_section(void);
+void caml_do_foreign_roots(void (*)(value, value*));
 
 void caml_domain_register_main(uintnat minor_heap_size);
 

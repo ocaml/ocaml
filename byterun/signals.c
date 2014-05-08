@@ -38,19 +38,23 @@ CAMLexport intnat volatile caml_pending_signals[NSIG];
 
 /* Execute all pending signals */
 
+static void caml_execute_signal(int signal_number);
 void caml_process_pending_signals(void)
 {
   int i;
+  /* this function preserves errno (PR#5982) */
+  int saved_errno = errno;
 
   if (caml_signals_are_pending) {
     caml_signals_are_pending = 0;
     for (i = 0; i < NSIG; i++) {
       if (caml_pending_signals[i]) {
         caml_pending_signals[i] = 0;
-        caml_execute_signal(i, 0);
+        caml_execute_signal(i);
       }
     }
   }
+  errno = saved_errno;
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -71,58 +75,6 @@ void caml_record_signal(int signal_number)
 #endif
 }
 
-/* Management of blocking sections. */
-
-static intnat volatile caml_async_signal_mode = 0;
-
-static void caml_enter_blocking_section_default(void)
-{
-  Assert (caml_async_signal_mode == 0);
-  caml_async_signal_mode = 1;
-}
-
-static void caml_leave_blocking_section_default(void)
-{
-  Assert (caml_async_signal_mode == 1);
-  caml_async_signal_mode = 0;
-}
-
-static int caml_try_leave_blocking_section_default(void)
-{
-  intnat res;
-  Read_and_clear(res, caml_async_signal_mode);
-  return res;
-}
-
-CAMLexport void (*caml_enter_blocking_section_hook)(void) =
-   caml_enter_blocking_section_default;
-CAMLexport void (*caml_leave_blocking_section_hook)(void) =
-   caml_leave_blocking_section_default;
-CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
-   caml_try_leave_blocking_section_default;
-
-CAMLexport void caml_enter_blocking_section(void)
-{
-  while (1){
-    /* Process all pending signals now */
-    caml_process_pending_signals();
-    caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    if (! caml_signals_are_pending) break;
-    caml_leave_blocking_section_hook ();
-  }
-}
-
-CAMLexport void caml_leave_blocking_section(void)
-{
-  int saved_errno;
-  /* Save the value of errno (PR#5982). */
-  saved_errno = errno;
-  caml_leave_blocking_section_hook ();
-  caml_process_pending_signals();
-  errno = saved_errno;
-}
 
 /* Execute a signal handler immediately */
 
@@ -132,7 +84,7 @@ void caml_init_signal_handling() {
   caml_signal_handlers = caml_create_root(caml_alloc(NSIG, 0));
 }
 
-void caml_execute_signal(int signal_number, int in_signal_handler)
+static void caml_execute_signal(int signal_number)
 {
   value res;
 #ifdef POSIX_SIGNALS
@@ -147,14 +99,8 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
            Field(caml_read_root(caml_signal_handlers), signal_number),
            Val_int(caml_rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
-  if (! in_signal_handler) {
-    /* Restore the original signal mask */
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
-  } else if (Is_exception_result(res)) {
-    /* Restore the original signal mask and unblock the signal itself */
-    sigdelset(&sigs, signal_number);
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
-  }
+  /* Restore the original signal mask */
+  sigprocmask(SIG_SETMASK, &sigs, NULL);
 #endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }

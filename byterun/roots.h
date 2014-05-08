@@ -19,15 +19,25 @@
 
 typedef void (*scanning_action) (value, value *);
 
-void caml_oldify_local_roots (void);
-void caml_do_roots (scanning_action);
 #ifndef NATIVE_CODE
-CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
-                                     struct caml__roots_block *);
+struct caml_sampled_roots {
+  value* stack_low;
+  value* stack_high;
+  struct caml__roots_block* local_roots;
+
+  value* young_ptr;
+  value* young_end;
+  
+  value* mark_stack;
+  int mark_stack_count;
+};
 #else
-CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                                    uintnat last_retaddr, value * gc_regs,
-                                    struct caml__roots_block * local_roots);
+#error "caml_sampled_roots not yet implemented for native code"
 #endif
+
+void caml_sample_local_roots(struct caml_sampled_roots*);
+void caml_do_local_roots(scanning_action, struct caml_sampled_roots*);
+void caml_do_sampled_roots(scanning_action, struct caml_sampled_roots*);
+
 
 #endif /* CAML_ROOTS_H */

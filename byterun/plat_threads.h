@@ -93,6 +93,7 @@ INLINE int atomic_cas(atomic_uintnat* p, uintnat vold, uintnat vnew) {
 typedef pthread_mutex_t plat_mutex;
 #define plat_mutex_init(m) pthread_mutex_init(m, 0);
 #define plat_mutex_lock pthread_mutex_lock
+#define plat_mutex_try_lock(l) (pthread_mutex_trylock(l) == 0)
 #define plat_mutex_unlock pthread_mutex_unlock
 
 /* Better implementations of shared_stack can use CAS (+ABA protection) or LL/SC */

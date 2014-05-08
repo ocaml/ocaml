@@ -229,7 +229,9 @@ void caml_empty_minor_heap (void)
   if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
     stat_live_bytes = 0;
-    caml_oldify_local_roots();
+    struct caml_sampled_roots roots;
+    caml_sample_local_roots(&roots);
+    caml_do_local_roots(&caml_oldify_one, &roots);
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       value x;
       caml_oldify_one (**r, &x);
@@ -253,7 +255,7 @@ void caml_empty_minor_heap (void)
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
         **r = vnew;
-        caml_darken(vnew);
+        caml_darken(vnew, 0);
       }
     }
 

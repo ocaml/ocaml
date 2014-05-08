@@ -39,15 +39,11 @@ CAMLextern void caml_leave_blocking_section (void);
 void caml_urge_major_slice (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
-void caml_execute_signal(int signal_number, int in_signal_handler);
 void caml_record_signal(int signal_number);
 void caml_process_pending_signals(void);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
 
-CAMLextern void (*caml_enter_blocking_section_hook)(void);
-CAMLextern void (*caml_leave_blocking_section_hook)(void);
-CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern void (* volatile caml_async_action_hook)(void);
 /* </private> */
 
