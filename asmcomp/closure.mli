@@ -12,5 +12,5 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-val reset : unit -> unit
 val intro: int -> Lambda.lambda -> Clambda.ulambda
+val reset : unit -> unit

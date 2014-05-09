@@ -1279,11 +1279,11 @@ let collect_exported_structured_constants a =
   in
   approx a
 
-(* The entry point *)
-
 let reset () =
   global_approx := [||];
   function_nesting_depth := 0
+
+(* The entry point *)
 
 let intro size lam =
   reset ();
