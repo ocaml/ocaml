@@ -106,24 +106,20 @@ let convert_raw_backtrace rbckt =
   try Some (Array.map convert_raw_backtrace_slot rbckt)
   with Failure _ -> None
 
-let format_backtrace_slot pos li =
-  let is_raise =
-    match li with
-    | Known_location(is_raise, _, _, _, _) -> is_raise
-    | Unknown_location(is_raise) -> is_raise in
-  let info =
+let format_backtrace_slot pos slot =
+  let info is_raise =
     if is_raise then
       if pos = 0 then "Raised at" else "Re-raised at"
     else
       if pos = 0 then "Raised by primitive operation at" else "Called from"
   in
-  match li with
+  match slot with
+  | Unknown_location true -> (* compiler-inserted re-raise, skipped *) None
+  | Unknown_location false ->
+      Some (sprintf "%s unknown location" (info false))
   | Known_location(is_raise, filename, lineno, startchar, endchar) ->
-      sprintf "%s file \"%s\", line %d, characters %d-%d"
-              info filename lineno startchar endchar
-  | Unknown_location(is_raise) ->
-      sprintf "%s unknown location"
-              info
+      Some (sprintf "%s file \"%s\", line %d, characters %d-%d"
+              (info is_raise) filename lineno startchar endchar)
 
 let print_exception_backtrace outchan backtrace =
   match backtrace with
@@ -132,8 +128,9 @@ let print_exception_backtrace outchan backtrace =
         "(Program not linked with -g, cannot print stack backtrace)\n"
   | Some a ->
       for i = 0 to Array.length a - 1 do
-        if a.(i) <> Unknown_location true then
-          fprintf outchan "%s\n" (format_backtrace_slot i a.(i))
+        match format_backtrace_slot i a.(i) with
+          | None -> ()
+          | Some str -> fprintf outchan "%s\n" str
       done
 
 let print_raw_backtrace outchan raw_backtrace =
@@ -150,13 +147,66 @@ let backtrace_to_string backtrace =
   | Some a ->
       let b = Buffer.create 1024 in
       for i = 0 to Array.length a - 1 do
-        if a.(i) <> Unknown_location true then
-          bprintf b "%s\n" (format_backtrace_slot i a.(i))
+        match format_backtrace_slot i a.(i) with
+          | None -> ()
+          | Some str -> bprintf b "%s\n" str
       done;
       Buffer.contents b
 
 let raw_backtrace_to_string raw_backtrace =
   backtrace_to_string (convert_raw_backtrace raw_backtrace)
+
+let backtrace_slot_is_raise = function
+  | Known_location(is_raise, _, _, _, _) -> is_raise
+  | Unknown_location(is_raise) -> is_raise
+
+type location = {
+  filename : string;
+  line_number : int;
+  start_char : int;
+  end_char : int;
+}
+
+let backtrace_slot_location = function
+  | Unknown_location _ -> None
+  | Known_location(_is_raise, filename, line_number,
+                   start_char, end_char) ->
+    Some {
+      filename;
+      line_number;
+      start_char;
+      end_char;
+    }
+
+let backtrace_slots raw_backtrace =
+  (* The documentation of this function guarantees that Some is
+     returned only if a part of the trace is usable. This gives us
+     a bit more work than just convert_raw_backtrace, but it makes the
+     API more user-friendly -- otherwise most users would have to
+     reimplement the "Program not linked with -g, sorry" logic
+     themselves. *)
+  match convert_raw_backtrace raw_backtrace with
+    | None -> None
+    | Some backtrace ->
+      let usable_slot = function
+        | Unknown_location _ -> false
+        | Known_location _ -> true in
+      let rec exists_usable = function
+        | (-1) -> false
+        | i -> usable_slot backtrace.(i) || exists_usable (i - 1) in
+      if exists_usable (Array.length backtrace - 1)
+      then Some backtrace
+      else None
+
+module Slot = struct
+  type t = backtrace_slot
+  let format = format_backtrace_slot
+  let is_raise = backtrace_slot_is_raise
+  let location = backtrace_slot_location
+end
+
+let raw_backtrace_length bckt = Array.length bckt
+let get_raw_backtrace_slot bckt i = Array.get bckt i
 
 (* confusingly named:
    returns the *string* corresponding to the global current backtrace *)
@@ -169,9 +219,7 @@ external backtrace_status: unit -> bool = "caml_backtrace_status"
 let register_printer fn =
   printers := fn :: !printers
 
-
 external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
-
 
 let exn_slot x =
   let x = Obj.repr x in
