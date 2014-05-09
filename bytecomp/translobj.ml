@@ -162,3 +162,14 @@ let oo_wrap env req f x =
     wrapping := false;
     top_env := Env.empty;
     raise exn
+
+let reset () =
+  Hashtbl.clear consts;
+  cache_required := false;
+  method_cache := lambda_unit;
+  method_count := 0;
+  method_table := [];
+  wrapping := false;
+  top_env := Env.empty;
+  classes := [];
+  method_ids := IdentSet.empty

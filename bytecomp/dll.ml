@@ -173,3 +173,9 @@ let init_toplevel dllpath =
   opened_dlls := Array.to_list (get_current_dlls());
   names_of_opened_dlls := [];
   linking_in_core := true
+
+let reset () =
+  search_path := [];
+  opened_dlls :=[];
+  names_of_opened_dlls := [];
+  linking_in_core := false

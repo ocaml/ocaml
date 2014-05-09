@@ -471,7 +471,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | Pfield n, _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
     when n < List.length l ->
       make_const (List.nth l n)
-  | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx] 
+  | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
@@ -678,7 +678,7 @@ let direct_apply fundesc funct ufunct uargs =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
     match fundesc.fun_inline with
-    | None -> 
+    | None ->
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
     | Some(params, body) ->
         bind_params fundesc.fun_float_const_prop params app_args body in
@@ -1281,8 +1281,12 @@ let collect_exported_structured_constants a =
 
 (* The entry point *)
 
+let reset () =
+  global_approx := [||];
+  function_nesting_depth := 0
+
 let intro size lam =
-  function_nesting_depth := 0;
+  reset ();
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);

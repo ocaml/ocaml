@@ -537,3 +537,7 @@ let lam_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+
+let reset () =
+  raise_count := 0
+

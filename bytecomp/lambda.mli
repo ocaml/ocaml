@@ -259,3 +259,5 @@ val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
 val lam_of_loc : loc_kind -> Location.t -> lambda
+
+val reset: unit -> unit

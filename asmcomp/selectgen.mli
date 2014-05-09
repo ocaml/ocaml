@@ -101,3 +101,5 @@ class virtual selector_generic : object
     (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
 end
+
+val reset : unit -> unit

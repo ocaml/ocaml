@@ -57,3 +57,5 @@ exception Error of error
 open Format
 
 val report_error: formatter -> error -> unit
+
+val reset: unit -> unit

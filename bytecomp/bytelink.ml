@@ -638,3 +638,13 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  lib_ccobjs := [];
+  lib_ccopts := [];
+  lib_dllibs := [];
+  missing_globals := IdentSet.empty;
+  Consistbl.clear crc_interfaces;
+  implementations_defined := [];
+  debug_info := [];
+  output_code_string_counter := 0

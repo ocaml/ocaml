@@ -235,7 +235,7 @@ let rec reload i before =
       let (new_body, after_body) = reload body before in
       (* All registers live at the beginning of the handler are destroyed,
          except the exception bucket *)
-      let before_handler = 
+      let before_handler =
         Reg.Set.remove Proc.loc_exn_bucket
                        (Reg.add_set_array handler.live handler.arg) in
       let (new_handler, after_handler) = reload handler before_handler in
@@ -389,10 +389,14 @@ let rec spill i finally =
 
 (* Entry point *)
 
-let fundecl f =
+let reset () =
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
-  current_date := 0;
+  current_date := 0
+
+let fundecl f =
+  reset ();
+
   let (body1, _) = reload f.fun_body Reg.Set.empty in
   let (body2, tospill_at_entry) = spill body1 Reg.Set.empty in
   let new_body =

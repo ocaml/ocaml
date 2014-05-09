@@ -297,3 +297,9 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  relocs := [];
+  events := [];
+  primitives := [];
+  force_link := false

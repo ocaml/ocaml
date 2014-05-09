@@ -13,4 +13,5 @@
 (* Insertion of moves to suggest possible spilling / reloading points
    before register allocation. *)
 
+val reset : unit -> unit
 val fundecl: Mach.fundecl -> Mach.fundecl

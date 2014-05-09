@@ -286,6 +286,10 @@ let rec linear i n =
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
+let reset () =
+  label_counter := 99;
+  exit_label := []
+
 let fundecl f =
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;

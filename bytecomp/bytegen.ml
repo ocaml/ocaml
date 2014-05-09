@@ -930,3 +930,10 @@ let compile_phrase expr =
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
+
+let reset () =
+  label_counter := 0;
+  sz_static_raises := [];
+  compunit_name := "";
+  Stack.clear functions_to_compile;
+  max_stack_used := 0

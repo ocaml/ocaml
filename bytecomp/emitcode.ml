@@ -417,3 +417,9 @@ let to_packed_file outchan code =
   let reloc = !reloc_info in
   init();
   reloc
+
+let reset () =
+  out_buffer := LongString.create 1024;
+  out_position := 0;
+  label_table := [| |];
+  reloc_info := []

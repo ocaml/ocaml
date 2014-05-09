@@ -934,3 +934,9 @@ let () =
       | _ ->
         None
     )
+
+let reset () =
+  primitive_declarations := [];
+  transl_store_subst := Ident.empty;
+  toploop_ident.Ident.flags <- 0;
+  aliased_idents := Ident.empty

@@ -13,6 +13,7 @@
 (* Link .cmo files and produce a bytecode executable. *)
 
 val link : Format.formatter -> string list -> string -> unit
+val reset : unit -> unit
 
 val check_consistency:
   Format.formatter -> string -> Cmo_format.compilation_unit -> unit
