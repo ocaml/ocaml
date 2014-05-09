@@ -66,6 +66,8 @@ Toplevel interactive system:
 - PR#5377: New "#show_*" directives
 
 Runtime system:
+- Fixed bug in native code version of [caml_raise_with_string] that could
+  potentially lead to heap corruption.
 - Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
   [Val_unit] rather than zero.
 - Fixed a major performance problem on large heaps (~1GB) by making heap
