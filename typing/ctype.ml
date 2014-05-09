@@ -1694,7 +1694,8 @@ let occur env ty0 ty =
 let occur_in env ty0 t =
   try occur env ty0 t; false with Unify _ -> true
 
-(* checks that a local constraint is non recursive *)
+(* Check that a local constraint is well-founded *)
+(* PR#6405: always assume -rectypes mode here *)
 let rec local_non_recursive_abbrev visited env p ty =
   let ty = repr ty in
   if not (List.memq ty !visited) then begin
@@ -1704,15 +1705,9 @@ let rec local_non_recursive_abbrev visited env p ty =
         if Path.same p p' then raise Recursive_abbrev;
         begin try
           local_non_recursive_abbrev visited env p (try_expand_once_opt env ty)
-        with Cannot_expand ->
-          if !Clflags.recursive_types then () else
-          iter_type_expr (local_non_recursive_abbrev visited env p) ty
+        with Cannot_expand -> ()
         end
-    | Tobject _ | Tvariant _ ->
-        ()
-    | _ ->
-        if !Clflags.recursive_types then () else
-        iter_type_expr (local_non_recursive_abbrev visited env p) ty
+    | _ -> ()
   end
 
 let local_non_recursive_abbrev env p =

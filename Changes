@@ -11,6 +11,7 @@ Language features:
 - Separation between read-only strings (type string) and read-write byte
   sequences (type bytes). Activated by command-line option -safe-string.
 - Exception cases in pattern matching (patch by Jeremy Yallop).
+- Extensible open datatypes (patch by Leo White).
 
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
@@ -33,7 +34,7 @@ Type system:
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for
   closed objects and fixed polymorphic variants.
-- PR#6333: Compare first class module types structurally rather than
+* PR#6333: Compare first class module types structurally rather than
   nominally. Value subtyping allows module subtyping as long as the internal
   representation is unchanged.
 
@@ -131,6 +132,7 @@ Bug fixes:
 - PR#6384: Uncaught Not_found exception with a hidden .cmi file
 - PR#6385: wrong allocation of large closures by the bytecode interpreter
 - PR#6394: Assertion failed in Typecore.expand_path
+- PR#6405: unsound interaction of -rectypes and GADTs
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
