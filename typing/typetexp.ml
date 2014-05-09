@@ -72,16 +72,20 @@ let rec error_of_extension ext =
       | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
           error_of_extension ext :: sub_from rest
       | {pstr_loc} :: rest ->
-          (Location.errorf ~loc "Invalid syntax for sub-error of extension '%s'." txt) ::
+          (Location.errorf ~loc
+             "Invalid syntax for sub-error of extension '%s'." txt) ::
             sub_from rest
       | [] -> []
     in
     begin match p with
-    | PStr({pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
-           {pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
+    | PStr({pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
+           {pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
            inner) ->
         Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr({pstr_desc=Pstr_eval({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
+    | PStr({pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
         Location.error ~loc ~sub:(sub_from inner) msg
     | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
     end
@@ -93,8 +97,10 @@ let check_deprecated loc attrs s =
     (function
     | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
       begin match string_of_payload p with
-      | Some txt -> Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
-      | None -> Location.prerr_warning loc (Warnings.Deprecated s)
+      | Some txt ->
+          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+      | None ->
+          Location.prerr_warning loc (Warnings.Deprecated s)
       end
     | _ ->  ())
     attrs
@@ -168,8 +174,13 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    try ignore (Env.lookup_module mlid env)
+    let old = !Clflags.transparent_modules in
+    Clflags.transparent_modules := false;
+    try
+      ignore (Env.lookup_module mlid env);
+      Clflags.transparent_modules := old
     with Not_found ->
+      Clflags.transparent_modules := old;
       narrow_unbound_lid_error env loc mlid
         (fun lid -> Unbound_module lid)
        | Env.Recmodule ->
