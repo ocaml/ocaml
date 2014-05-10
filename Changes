@@ -135,6 +135,8 @@ Bug fixes:
 - PR#6385: wrong allocation of large closures by the bytecode interpreter
 - PR#6394: Assertion failed in Typecore.expand_path
 - PR#6405: unsound interaction of -rectypes and GADTs
+- PR#6302: bytecode debug information re-read from filesystem every time
+  (Jacques-Henri Jourdan)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
@@ -162,6 +164,8 @@ Features wishes:
   (patch by Josh Watzman, review by Xavier Clerc and Alain Frisch)
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer)
+- PR#5899: a programmer-friendly access to backtrace information
+  (Jacques-Henri Jourdan and Gabriel Scherer)
 - ocamllex: user-definable refill action
   (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
