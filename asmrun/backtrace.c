@@ -30,6 +30,17 @@ code_t * caml_backtrace_buffer = NULL;
 value caml_backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
 
+/* In order to prevent the GC from walking through the debug information
+   (which have no headers), we transform frame_descr pointers into
+   31/63 bits ocaml integers by shifting them by 1 to the right. We do
+   not lose information as descr pointers are aligned.
+
+   In particular, we do not need to use [caml_initialize] when setting
+   an array element with such a value.
+*/
+#define Val_Descrptr(descr) Val_long((uintnat)descr>>1)
+#define Descrptr_Val(v) ((frame_descr *) (Long_val(v)<<1))
+
 /* Start or stop the backtrace machinery */
 
 CAMLprim value caml_record_backtrace(value vflag)
@@ -183,15 +194,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      /* In order to prevent the GC to walk through the debug
-         information (which have no headers), we transform the descr
-         pointer to a 31/63 bits ocaml integer by shifting it by 1 to
-         the right. We do not lose information as descr is aligned.
-
-         The assignment below is safe without [caml_initialize], even
-         if the trace is large and allocated on the old heap, because
-         we assign long values. */
-      Field(trace, trace_pos) = Val_long((uintnat)descr>>1);
+      Field(trace, trace_pos) = Val_Descrptr(descr);
     }
   }
 
@@ -304,9 +307,7 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   CAMLlocal2(p, fname);
   struct loc_info li;
 
-  /* We shift back the backtrace slot to a frame_descr pointer. It is
-     aligned, so we know the low-order bit is 0. */
-  extract_location_info((frame_descr *)(Long_val(backtrace_slot)<<1), &li);
+  extract_location_info(Descrptr_Val(backtrace_slot), &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
@@ -335,15 +336,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   if(caml_backtrace_buffer != NULL) {
     intnat i;
     for(i = 0; i < caml_backtrace_pos; i++)
-      /* In order to prevent the GC to walk through the debug
-         information (which have no headers), we transform the
-         pointer to a 31/63 bits ocaml integer by shifting it by 1 to
-         the right. We do not lose information as the pointer is aligned.
-
-         The assignment below is safe without [caml_initialize], even
-         if the trace is large and allocated on the old heap, because
-         we assign long values. */
-      Field(res, i) = Val_long(((uintnat)caml_backtrace_buffer[i])>>1);
+      Field(res, i) = Val_Descrptr(caml_backtrace_buffer[i]);
   }
   CAMLreturn(res);
 }
