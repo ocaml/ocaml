@@ -36,9 +36,9 @@ let run args =
     | None -> ()
     | Some trace ->
       Array.iteri
-        (fun i slot ->
-          if slot <> Printexc.Unknown_location true then
-            print_endline (Printexc.format_backtrace_slot i slot))
+        (fun i slot -> match Printexc.Slot.format i slot with
+          | None -> ()
+          | Some line -> print_endline line)
         trace
 
 let _ =

@@ -14,28 +14,31 @@
 
 let get_backtrace () =
   let raw_backtrace = Printexc.get_raw_backtrace () in
+  let raw_slots =
+    Array.init (Printexc.raw_backtrace_length raw_backtrace)
+               (Printexc.get_raw_backtrace_slot raw_backtrace) in
   let convert = Printexc.convert_raw_backtrace_slot in
-  let backtrace = Array.map convert raw_backtrace in
-  (* we'll play with slots a bit to check that hashing and comparison work:
+  let backtrace = Array.map convert raw_slots in
+  (* we'll play with raw slots a bit to check that hashing and comparison work:
      - create a hashtable that maps slots to their index in the raw backtrace
      - create a balanced set of all slots
   *)
   let table = Hashtbl.create 100 in
-  Array.iteri (fun i slot -> Hashtbl.add table slot i) raw_backtrace;
+  Array.iteri (fun i slot -> Hashtbl.add table slot i) raw_slots;
   let module S = Set.Make(struct
     type t = Printexc.raw_backtrace_slot
     let compare = Pervasives.compare
   end) in
-  let slots = Array.fold_right S.add raw_backtrace S.empty in
+  let slots = Array.fold_right S.add raw_slots S.empty in
   Array.iteri (fun i slot ->
     assert (S.mem slot slots);
     assert (Hashtbl.mem table slot);
     let j =
       (* position in the table of the last slot equal to [slot] *)
       Hashtbl.find table slot in
-    assert (slot = raw_backtrace.(j));
+    assert (slot = raw_slots.(j));
     assert (backtrace.(i) = backtrace.(j));
-  ) raw_backtrace;
+  ) raw_slots;
   backtrace
 
 exception Error of string
@@ -56,9 +59,9 @@ let run args =
   with exn ->
     Printf.printf "Uncaught exception %s\n" (Printexc.to_string exn);
     get_backtrace () |> Array.iteri
-        (fun i slot ->
-          if slot <> Printexc.Unknown_location true then
-            print_endline (Printexc.format_backtrace_slot i slot))
+        (fun i slot -> match Printexc.Slot.format i slot with
+          | None -> ()
+          | Some line -> print_endline line)
 
 let _ =
   Printexc.record_backtrace true;
