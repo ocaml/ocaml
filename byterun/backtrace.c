@@ -207,9 +207,11 @@ struct ev_info {
 };
 
 static int cmp_ev_info(const void *a, const void *b) {
-  if(((const struct ev_info*)a)->ev_pc > ((const struct ev_info*)b)->ev_pc)
-    return 1;
-  return -1;
+  code_t pc_a = ((const struct ev_info*)a)->ev_pc;
+  code_t pc_b = ((const struct ev_info*)b)->ev_pc;
+  if (pc_a > pc_b) return 1;
+  if (pc_a < pc_b) return -1;
+  return 0;
 }
 
 static char *read_debug_info_error = "";
