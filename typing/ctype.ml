@@ -1695,7 +1695,8 @@ let occur_in env ty0 t =
   try occur env ty0 t; false with Unify _ -> true
 
 (* Check that a local constraint is well-founded *)
-(* PR#6405: always assume -rectypes mode here *)
+(* PR#6405: not needed since we allow recursion and work on normalized types *)
+(*
 let rec local_non_recursive_abbrev visited env p ty =
   let ty = repr ty in
   if not (List.memq ty !visited) then begin
@@ -1712,6 +1713,7 @@ let rec local_non_recursive_abbrev visited env p ty =
 
 let local_non_recursive_abbrev env p =
   local_non_recursive_abbrev (ref []) env p
+*)
 
                    (*****************************)
                    (*  Polymorphic Unification  *)
@@ -2466,12 +2468,12 @@ and unify3 env t1 t1' t2 t2' =
       | (Tconstr ((Path.Pident p) as path,[],_), _)
         when is_newtype !env path && !generate_equations ->
           reify env t2';
-          local_non_recursive_abbrev !env (Path.Pident p) t2';
+          (* local_non_recursive_abbrev !env (Path.Pident p) t2'; *)
           add_gadt_equation env p t2'
       | (_, Tconstr ((Path.Pident p) as path,[],_))
         when is_newtype !env path && !generate_equations ->
           reify env t1' ;
-          local_non_recursive_abbrev !env (Path.Pident p) t1';
+          (* local_non_recursive_abbrev !env (Path.Pident p) t1'; *)
           add_gadt_equation env p t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when !umode = Pattern ->
           reify env t1';
