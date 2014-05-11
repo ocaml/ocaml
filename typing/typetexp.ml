@@ -51,6 +51,7 @@ type error =
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
+  | Access_functor_as_structure of Longident.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -189,7 +190,14 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   in
   begin match lid with
   | Longident.Lident _ -> ()
-  | Longident.Ldot (mlid, _) -> check_module mlid
+  | Longident.Ldot (mlid, _) ->
+      check_module mlid;
+      let md = Env.find_module (Env.lookup_module mlid env) env in
+      begin match Env.scrape_alias env md.md_type with
+        Mty_functor _ ->
+          raise (Error (loc, env, Access_functor_as_structure mlid))
+      | _ -> ()
+      end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       check_module mlid;
@@ -989,6 +997,8 @@ let report_error env ppf = function
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
+  | Access_functor_as_structure lid ->
+      fprintf ppf "The module %a is a functor, not a structure" longident lid
 
 let () =
   Location.register_error_of_exn
