@@ -73,6 +73,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = option "-nolabels"
   let _nostdlib = option "-nostdlib"
   let _o s = option_with_arg "-o" s
+  let _open s = option_with_arg "-open" s
   let _output_obj = option "-output-obj"
   let _p = option "-p"
   let _pack = option "-pack"

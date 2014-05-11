@@ -208,6 +208,9 @@ let mk_o f =
   "-o", Arg.String f, "<file>  Set output file name to <file>"
 ;;
 
+let mk_open f =
+  "-open", Arg.String f, "<module>  Opens the module <module> before typing"
+
 let mk_output_obj f =
   "-output-obj", Arg.Unit f, " Output a C object file instead of an executable"
 ;;
@@ -456,6 +459,7 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit

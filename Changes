@@ -52,6 +52,10 @@ Compilers:
 - Experimental native code generator for AArch64 (ARM 64 bits)
 - Optimization of integer division and modulus by constant divisors
   (feature wish PR#6042)
+- Add "-open" command line flag for opening a single module before typing
+* "-o" now sets module name to the output file name up to the first "."
+  (it also applies when "-o" is not given, i.e. the module name is then
+   the input file name up to the first ".")
 - PR#6182: better message for virtual objects and class types
   (Leo P. White, Stephen Dolan)
 - PR#5817: new flag to keep locations in cmi files

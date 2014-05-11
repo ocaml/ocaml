@@ -449,6 +449,18 @@ packed object file produced.  If the
 .B \-output\-obj
 option is given,
 specify the name of the output file produced.
+This can also be used when compiling an interface or implementation
+file, without linking, in which case it sets the name of the cmi or
+cmo file, and also sets the module name to the file name up to the
+first dot.
+.TP
+.BI \-open \ module
+Opens the given module before processing the interface or
+implementation files. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open module1;; ... open moduleN;; were added
+at the top of each file.
 .TP
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
