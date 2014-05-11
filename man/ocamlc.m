@@ -459,7 +459,7 @@ Opens the given module before processing the interface or
 implementation files. If several
 .B \-open
 options are given, they are processed in order, just as if
-the statements open module1;; ... open moduleN;; were added
+the statements open! module1;; ... open! moduleN;; were added
 at the top of each file.
 .TP
 .B \-output\-obj

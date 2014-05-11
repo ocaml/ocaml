@@ -137,7 +137,7 @@ directories searched for source and compiled files.
 Opens the given module before starting the toplevel. If several
 .B \-open
 options are given, they are processed in order, just as if
-the statements open module1;; ... open moduleN;; were input.
+the statements open! module1;; ... open! moduleN;; were input.
 .TP
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
