@@ -1328,7 +1328,8 @@ let fmt_ebb_of_string str =
     let zero = ref false and minus = ref false and plus = ref false
     and sharp = ref false and space = ref false and ign = ref false in
     let set_flag str_ind flag =
-      if !flag then
+      (* in legacy mode, duplicate flags are accepted, except '_' *)
+      if !flag && (not legacy_behavior || flag == ign) then
         failwith_message
           "invalid format %S: at character number %d, duplicate flag %C"
           str str_ind str.[str_ind];
@@ -1360,7 +1361,9 @@ let fmt_ebb_of_string str =
       | false, false -> Right
       | false, true  -> Left
       |  true, false -> Zeros
-      |  true, true  -> incompatible_flag pct_ind str_ind '-' "0" in
+      |  true, true  ->
+        if legacy_behavior then Left
+        else incompatible_flag pct_ind str_ind '-' "0" in
     match str.[str_ind] with
     | '0' .. '9' ->
       let new_ind, width = parse_positive str_ind end_ind 0 in
@@ -1446,15 +1449,22 @@ let fmt_ebb_of_string str =
     and get_prec  () = prec_used  := true; prec in
 
     (* Check that padty <> Zeros. *)
-    let check_no_0 symb = match get_pad () with
-      | No_padding -> ()
-      | Lit_padding ((Left | Right), _) -> ()
-      | Arg_padding (Left | Right) -> ()
-      | Lit_padding (Zeros, _) -> incompatible_flag pct_ind str_ind symb "0"
-      | Arg_padding Zeros -> incompatible_flag pct_ind str_ind symb "0"
+    let check_no_0 symb (type a) (type b) (pad : (a,b) padding) =
+      match pad with
+      | No_padding -> pad
+      | Lit_padding ((Left | Right), _) -> pad
+      | Arg_padding (Left | Right) -> pad
+      | Lit_padding (Zeros, width) ->
+        if legacy_behavior then Lit_padding (Right, width)
+        else incompatible_flag pct_ind str_ind symb "0"
+      | Arg_padding Zeros ->
+        if legacy_behavior then Arg_padding Right
+        else incompatible_flag pct_ind str_ind symb "0"
     in
 
-    (* Get padding as an int option (see "%_", "%{", "%(" and "%["). *)
+    (* Get padding as an int option (see "%_", "%{", "%(" and "%[").
+       (no need for legacy mode tweaking, those were rejected by the
+       legacy parser as well) *)
     let get_pad_opt c = match get_pad () with
       | No_padding -> None
       | Lit_padding (Right, width) -> Some width
@@ -1463,7 +1473,9 @@ let fmt_ebb_of_string str =
       | Arg_padding _          -> incompatible_flag pct_ind str_ind c "'*'"
     in
 
-    (* Get precision as an int option (see "%_f"). *)
+    (* Get precision as an int option (see "%_f").
+       (no need for legacy mode tweaking, those were rejected by the
+       legacy parser as well) *)
     let get_prec_opt () = match get_prec () with
       | No_precision       -> None
       | Lit_precision ndec -> Some ndec
@@ -1482,24 +1494,24 @@ let fmt_ebb_of_string str =
       if get_ign () then Fmt_EBB (Ignored_param (Ignored_caml_char,fmt_rest))
       else Fmt_EBB (Caml_char fmt_rest)
     | 's' ->
-      check_no_0 symb;
+      let pad = check_no_0 symb (get_pad ()) in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       if get_ign () then
         let ignored = Ignored_string (get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padding_fmt_EBB (pad', fmt_rest') =
-          make_padding_fmt_ebb (get_pad ()) fmt_rest in
+          make_padding_fmt_ebb pad fmt_rest in
         Fmt_EBB (String (pad', fmt_rest'))
     | 'S' ->
-      check_no_0 symb;
+      let pad = check_no_0 symb (get_pad ()) in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       if get_ign () then
         let ignored = Ignored_caml_string (get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padding_fmt_EBB (pad', fmt_rest') =
-          make_padding_fmt_ebb (get_pad ()) fmt_rest in
+          make_padding_fmt_ebb pad fmt_rest in
         Fmt_EBB (Caml_string (pad', fmt_rest'))
     | 'd' | 'i' | 'x' | 'X' | 'o' | 'u' ->
       let iconv = compute_int_conv pct_ind str_ind (get_plus ()) (get_sharp ())
@@ -1625,21 +1637,32 @@ let fmt_ebb_of_string str =
         "invalid format %S: at character number %d, \
          invalid conversion \"%%%c\"" str (str_ind - 1) symb
     in
-    (* Check for unused options, which are consequently incompatibles. *)
+    (* Check for unused options, and reject them as incompatible.
+
+       Such checks need to be disabled in legacy mode, as the legacy
+       parser silently ignored incompatible flags. But ignored formats
+       are an exception: '%_+3d' was already rejected for example. So
+       we enable those checks, even in legacy mode, when 'ign' is
+       set. *)
+    if not legacy_behavior || ign then begin
     if not !plus_used && plus then
       incompatible_flag pct_ind str_ind symb "'+'";
     if not !sharp_used && sharp then
       incompatible_flag pct_ind str_ind symb "'#'";
     if not !space_used && space then
       incompatible_flag pct_ind str_ind symb "' '";
-    if not !ign_used && ign then
-      incompatible_flag pct_ind str_ind symb "'_'";
     if not !pad_used  && Padding_EBB pad <> Padding_EBB No_padding then
       incompatible_flag pct_ind str_ind symb "`padding'";
     if not !prec_used && Precision_EBB prec <> Precision_EBB No_precision then
       incompatible_flag pct_ind str_ind (if ign then '_' else symb)
         "`precision'";
     if ign && plus then incompatible_flag pct_ind str_ind '_' "'+'";
+    end;
+    (* this last test must not be disabled in legacy mode,
+       as ignoring it would typically result in a different typing
+       than what the legacy parser used *)
+    if not !ign_used && ign then
+      incompatible_flag pct_ind str_ind symb "'_'";
     fmt_result
 
   (* Parse formatting informations (after '@'). *)
@@ -1991,7 +2014,7 @@ let fmt_ebb_of_string str =
     | false,  true, _ -> incompatible_flag pct_ind str_ind symb "' '"
     | false, false, _ -> assert false
 
-  (* Raise a Failure with a firendly error message about incompatible options.*)
+  (* Raise a Failure with a friendly error message about incompatible options.*)
   and incompatible_flag : type a . int -> int -> char -> string -> a =
     fun pct_ind str_ind symb option ->
       let subfmt = String.sub str pct_ind (str_ind - pct_ind) in
