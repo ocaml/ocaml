@@ -288,8 +288,7 @@ type pers_struct =
     ps_comps: module_components;
     ps_crcs: (string * Digest.t option) list;
     ps_filename: string;
-    ps_flags: pers_flags list;
-    mutable ps_crcs_checked: bool }
+    ps_flags: pers_flags list }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
@@ -309,15 +308,13 @@ let add_imports ps =
     ps.ps_crcs
 
 let check_consistency ps =
-  if ps.ps_crcs_checked then () else
   try
     List.iter
       (fun (name, crco) ->
          match crco with
             None -> ()
           | Some crc -> Consistbl.check crc_units name crc ps.ps_filename)
-      ps.ps_crcs;
-    ps.ps_crcs_checked <- true
+      ps.ps_crcs
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
@@ -338,13 +335,12 @@ let read_pers_struct modname filename =
              ps_sig = sign;
              ps_comps = comps;
              ps_crcs = crcs;
-             ps_crcs_checked = false;
              ps_filename = filename;
              ps_flags = flags } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
   add_imports ps;
-  if not !Clflags.transparent_modules then check_consistency ps;
+  check_consistency ps;
   List.iter
     (function Rectypes ->
       if not !Clflags.recursive_types then
@@ -353,17 +349,16 @@ let read_pers_struct modname filename =
   Hashtbl.add persistent_structures modname (Some ps);
   ps
 
-let find_pers_struct ?(check=true) name =
+let find_pers_struct name =
   if name = "*predef*" then raise Not_found;
   let r =
     try Some (Hashtbl.find persistent_structures name)
     with Not_found -> None
   in
-  let ps =
-    match r with
-    | Some None -> raise Not_found
-    | Some (Some sg) -> sg
-    | None ->
+  match r with
+  | Some None -> raise Not_found
+  | Some (Some sg) -> sg
+  | None ->
       let filename =
         try find_in_path_uncap !load_path (name ^ ".cmi")
         with Not_found ->
@@ -371,9 +366,6 @@ let find_pers_struct ?(check=true) name =
           raise Not_found
       in
       read_pers_struct name filename
-  in
-  if check then check_consistency ps;
-  ps
 
 let reset_cache () =
   current_unit := "";
@@ -629,7 +621,7 @@ let rec lookup_module_descr lid env =
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let p2 = lookup_module l2 env in
+      let p2 = lookup_module true l2 env in
       let {md_type=mty2} = find_module p2 env in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
@@ -639,7 +631,7 @@ let rec lookup_module_descr lid env =
           raise Not_found
       end
 
-and lookup_module lid env : Path.t =
+and lookup_module ~load lid env : Path.t =
   match lid with
     Lident s ->
       begin try
@@ -653,11 +645,11 @@ and lookup_module lid env : Path.t =
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-	if !Clflags.transparent_modules then
+	if !Clflags.transparent_modules && not load then
 	  try ignore (find_in_path_uncap !load_path (s ^ ".cmi"))
           with Not_found ->
 	    Location.prerr_warning Location.none (Warnings.No_cmi_file s)
-	else ignore (find_pers_struct ~check:false s);
+	else ignore (find_pers_struct s);
         Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
@@ -671,7 +663,7 @@ and lookup_module lid env : Path.t =
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
-      let p2 = lookup_module l2 env in
+      let p2 = lookup_module true l2 env in
       let {md_type=mty2} = find_module p2 env in
       let p = Papply(p1, p2) in
       begin match EnvLazy.force !components_of_module_maker' desc1 with
@@ -1571,13 +1563,12 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in
-  check_consistency ps;
   ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
 let crc_of_unit name =
-  let ps = find_pers_struct ~check:false name in
+  let ps = find_pers_struct name in
   let crco =
     try
       List.assoc name ps.ps_crcs
@@ -1622,8 +1613,7 @@ let save_signature_with_imports sg modname filename imports =
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
-        ps_flags = cmi.cmi_flags;
-        ps_crcs_checked = true } in
+        ps_flags = cmi.cmi_flags } in
     Hashtbl.add persistent_structures modname (Some ps);
     Consistbl.set crc_units modname crc filename;
     imported_units := modname :: !imported_units;

@@ -685,6 +685,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
@@ -811,6 +812,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_rectypes F._rectypes;

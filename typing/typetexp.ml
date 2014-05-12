@@ -175,16 +175,9 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    let old = !Clflags.transparent_modules in
-    Clflags.transparent_modules := false;
-    try
-      ignore (Env.lookup_module mlid env);
-      Clflags.transparent_modules := old
-    with
+    try ignore (Env.lookup_module true mlid env) with
     | Not_found ->
-        Clflags.transparent_modules := old;
-        narrow_unbound_lid_error env loc mlid
-          (fun lid -> Unbound_module lid)
+        narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
     | Env.Recmodule ->
         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
@@ -192,7 +185,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   | Longident.Lident _ -> ()
   | Longident.Ldot (mlid, _) ->
       check_module mlid;
-      let md = Env.find_module (Env.lookup_module mlid env) env in
+      let md = Env.find_module (Env.lookup_module true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
         Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
@@ -248,13 +241,19 @@ let find_value env loc lid =
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
-let find_module env loc lid =
+let lookup_module_ ~load env loc lid =
   let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module lid env, ()))
+    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
-  in
-  (* check_deprecated loc decl.md_attributes (Path.name path); *)
-  path
+  in path
+
+let find_module env loc lid =
+  let path = lookup_module_ true env loc lid in
+  let decl = Env.find_module path env in
+  check_deprecated loc decl.md_attributes (Path.name path);
+  (path, decl)
+
+let lookup_module = lookup_module_ ~load:false
 
 let find_modtype env loc lid =
   let (path, decl) as r =

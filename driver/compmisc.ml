@@ -40,10 +40,10 @@ let init_path native =
    toplevel initialization (PR#1775) *)
 
 let open_implicit_module m env =
-  try
-    Env.open_pers_signature m env
-  with Not_found ->
-    Misc.fatal_error (Printf.sprintf "cannot open implicit module %S" m)
+  let open Asttypes in
+  let lid = {loc = Location.in_file "command line";
+             txt = Longident.Lident m } in
+  snd (Typemod.type_open_ Override env lid.loc lid)
 
 let initial_env () =
   Ident.reinit();
