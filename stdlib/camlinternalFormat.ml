@@ -1321,7 +1321,7 @@ let fmt_ebb_of_string str =
     if str_ind = end_ind then add_literal lit_start str_ind End_of_format else
       match str.[str_ind] with
       | '%' ->
-        let Fmt_EBB fmt_rest = parse_flags str_ind end_ind in
+        let Fmt_EBB fmt_rest = parse_format str_ind end_ind in
         add_literal lit_start str_ind fmt_rest
       | '@' ->
         let Fmt_EBB fmt_rest = parse_after_at (str_ind + 1) end_ind in
@@ -1329,17 +1329,28 @@ let fmt_ebb_of_string str =
       | _ ->
         parse_literal lit_start (str_ind + 1) end_ind
 
-  and parse_flags : type e f . int -> int -> (_, _, e, f) fmt_ebb =
-  fun pct_ind end_ind ->
-    let zero = ref false and minus = ref false and plus = ref false
-    and sharp = ref false and space = ref false and ign = ref false in
+  (* Parse a format after '%' *)
+  and parse_format : type e f . int -> int -> (_, _, e, f) fmt_ebb =
+  fun pct_ind end_ind -> parse_ign pct_ind (pct_ind + 1) end_ind
+
+  and parse_ign : type e f . int -> int -> int -> (_, _, e, f) fmt_ebb =
+  fun pct_ind str_ind end_ind ->
+    match str.[str_ind] with
+      | '_' -> parse_flags pct_ind (str_ind+1) end_ind true
+      | _ -> parse_flags pct_ind str_ind end_ind false
+
+  and parse_flags : type e f . int -> int -> int -> bool -> (_, _, e, f) fmt_ebb =
+  fun pct_ind str_ind end_ind ign ->
+    let zero = ref false and minus = ref false
+    and plus = ref false and space = ref false
+    and sharp = ref false in
     let set_flag str_ind flag =
-      (* in legacy mode, duplicate flags are accepted, except '_' *)
-      if !flag && (not legacy_behavior || flag == ign) then
+      (* in legacy mode, duplicate flags are accepted *)
+      if !flag && not legacy_behavior then
         failwith_message
           "invalid format %S: at character number %d, duplicate flag %C"
           str str_ind str.[str_ind];
-      flag := true
+      flag := true;
     in
     let rec read_flags str_ind =
       if str_ind = end_ind then unexpected_end_of_format end_ind;
@@ -1349,13 +1360,12 @@ let fmt_ebb_of_string str =
       | '+' -> set_flag str_ind plus;  read_flags (str_ind + 1)
       | '#' -> set_flag str_ind sharp; read_flags (str_ind + 1)
       | ' ' -> set_flag str_ind space; read_flags (str_ind + 1)
-      | '_' -> set_flag str_ind ign;   read_flags (str_ind + 1)
       | _ ->
         parse_padding pct_ind str_ind end_ind
-          !zero !minus !plus !sharp !space !ign
+          !zero !minus !plus !sharp !space ign
       end
     in
-    read_flags (pct_ind + 1)
+    read_flags str_ind
 
   (* Try to read a digital or a '*' padding. *)
   and parse_padding : type e f .
@@ -1660,11 +1670,8 @@ let fmt_ebb_of_string str =
     (* Check for unused options, and reject them as incompatible.
 
        Such checks need to be disabled in legacy mode, as the legacy
-       parser silently ignored incompatible flags. But ignored formats
-       are an exception: '%_+3d' was already rejected for example. So
-       we enable those checks, even in legacy mode, when 'ign' is
-       set. *)
-    if not legacy_behavior || ign then begin
+       parser silently ignored incompatible flags. *)
+    if not legacy_behavior then begin
     if not !plus_used && plus then
       incompatible_flag pct_ind str_ind symb "'+'";
     if not !sharp_used && sharp then
