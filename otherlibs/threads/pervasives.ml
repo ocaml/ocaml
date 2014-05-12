@@ -843,6 +843,8 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
       ('a, 'b, 'c, ('b -> 'x) -> 'd, 'd, 'a) ignored
   | Ignored_scan_char_set :                                  (* %_[...] *)
       int option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+  | Ignored_scan_get_counter :                               (* %_[nlNL] *)
+      counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 
 and ('a, 'b, 'c, 'd, 'e, 'f) format6 = ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
 
@@ -1073,6 +1075,8 @@ fun ign fmt -> match ign with
     Param_format_EBB (Reader fmt)
   | Ignored_scan_char_set (width_opt, char_set) ->
     Param_format_EBB (Scan_char_set (width_opt, char_set, fmt))
+  | Ignored_scan_get_counter counter ->
+    Param_format_EBB (Scan_get_counter (counter, fmt))
 end
 
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =

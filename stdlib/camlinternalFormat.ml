@@ -552,6 +552,7 @@ fun ign fmt -> match ign with
   | Ignored_format_subst (_, fmtty) -> concat_fmtty fmtty (fmtty_of_fmt fmt)
   | Ignored_reader                  -> Ignored_reader_ty (fmtty_of_fmt fmt)
   | Ignored_scan_char_set _         -> fmtty_of_fmt fmt
+  | Ignored_scan_get_counter _      -> fmtty_of_fmt fmt
 
 (* Add an Int_ty node if padding is taken as an extra argument (ex: "%*s"). *)
 and fmtty_of_padding_fmtty : type x a b c d e f .
@@ -727,10 +728,13 @@ fun ign fmt fmtty -> match ign with
       type_ignored_format_substitution sub_fmtty fmt fmtty in
     Ignored_param (Ignored_format_subst (pad_opt, sub_fmtty'), fmt')
   | Ignored_reader ->
-    match fmtty with
+    begin match fmtty with
     | Ignored_reader_ty fmtty_rest ->
       Ignored_param (Ignored_reader, type_format fmt fmtty_rest)
     | _ -> raise Type_mismatch
+    end
+  | Ignored_scan_get_counter _ as ign' ->
+    Ignored_param (ign', type_format fmt fmtty)
 
 (* Typing of the complex case: "%_(...%)". *)
 and type_ignored_format_substitution : type w z p s t u a b c d e f .
@@ -1023,6 +1027,8 @@ fun k o acc ign fmt -> match ign with
   | Ignored_format_subst (_, fmtty) -> make_from_fmtty k o acc fmtty fmt
   | Ignored_reader                  -> assert false
   | Ignored_scan_char_set _         -> make_invalid_arg k o acc fmt
+  | Ignored_scan_get_counter _      -> make_invalid_arg k o acc fmt
+
 
 (* Special case of printf "%_(". *)
 and make_from_fmtty : type x y a b c f .
@@ -1530,10 +1536,20 @@ let fmt_ebb_of_string str =
         Fmt_EBB (Int (iconv, pad', prec', fmt_rest'))
     | 'N' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
-      Fmt_EBB (Scan_get_counter (Token_counter, fmt_rest))
+      let counter = Token_counter in
+      if get_ign () then
+        let ignored = Ignored_scan_get_counter counter in
+        Fmt_EBB (Ignored_param (ignored, fmt_rest))
+      else
+      Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' | 'n' | 'L' when str_ind=end_ind || not (is_int_base str.[str_ind]) ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
-      Fmt_EBB (Scan_get_counter (counter_of_char symb, fmt_rest))
+      let counter = counter_of_char symb in
+      if get_ign () then
+        let ignored = Ignored_scan_get_counter counter in
+        Fmt_EBB (Ignored_param (ignored, fmt_rest))
+      else
+        Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' ->
       let iconv =
         compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_sharp ())

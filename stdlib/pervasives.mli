@@ -1174,6 +1174,8 @@ module CamlinternalFormatBasics : sig
         ('a, 'b, 'c, ('b -> 'x) -> 'd, 'd, 'a) ignored
     | Ignored_scan_char_set :
         int option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_scan_get_counter :
+        counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 
   and ('a, 'b, 'c, 'd, 'e, 'f) format6 = ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
 
