@@ -17,7 +17,6 @@ COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
-OPTCOMPFLAGS=$(OPTCOMPFLAGS) -allocation-profiling
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
@@ -77,10 +76,10 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) -allocation-profiling $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
+	$(CAMLOPT) -allocation-profiling $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler
 $(OBJS) std_exit.cmo: $(COMPILER)
