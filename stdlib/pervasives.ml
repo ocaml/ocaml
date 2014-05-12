@@ -540,6 +540,10 @@ type ('a, 'b) padding =
   (* Padding as extra argument (ex: "%*d") *)
   | Arg_padding : padty -> (int -> 'a, 'a) padding
 
+(* Some formats, such as %_d,
+   only accept an optional number as padding option (no extra argument) *)
+type pad_option = int option
+
 (* Precision of floats and '0'-padding of integers. *)
 type ('a, 'b) precision =
   (* No precision (ex: "%f") *)
@@ -548,6 +552,10 @@ type ('a, 'b) precision =
   | Lit_precision : int -> ('a, 'a) precision
   (* Precision as extra argument (ex: "%.*f") *)
   | Arg_precision : (int -> 'a, 'a) precision
+
+(* Some formats, such as %_f,
+   only accept an optional number as precision option (no extra argument) *)
+type prec_option = int option
 
 (***)
 
@@ -672,11 +680,11 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
         ('a, 'b, 'c, 'd, 'e, 'f) fmt
 
   | Format_arg :                                             (* %{...%} *)
-      int option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
+      pad_option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
   | Format_subst :                                           (* %(...%) *)
-      int option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
+      pad_option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
       ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
       ('u, 'b, 'c, 'q1, 'e1, 'f) fmt ->
         (('x, 'b, 'c, 'd2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmt
@@ -699,7 +707,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmt
   | Scan_char_set :                                          (* %[...] *)
-      int option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      pad_option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
   | Scan_get_counter :                                       (* %[nlNL] *)
       counter * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
@@ -720,31 +728,31 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_caml_char :                                      (* %_C *)
       ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_string :                                         (* %_s *)
-      int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_caml_string :                                    (* %_S *)
-      int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_int :                                            (* %_d *)
-      int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_int32 :                                          (* %_ld *)
-      int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_nativeint :                                      (* %_nd *)
-      int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_int64 :                                          (* %_Ld *)
-      int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_float :                                          (* %_f *)
-      int option * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_bool :                                           (* %_B *)
       ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_arg :                                     (* %_{...%} *)
-      int option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
+      pad_option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_subst :                                   (* %_(...%) *)
-      int option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+      pad_option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
         ('a, 'b, 'c, 'd, 'e, 'f) ignored
   | Ignored_reader :                                         (* %_r *)
       ('a, 'b, 'c, ('b -> 'x) -> 'd, 'd, 'a) ignored
   | Ignored_scan_char_set :                                  (* %_[...] *)
-      int option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_scan_get_counter :                               (* %_[nlNL] *)
       counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 
@@ -927,12 +935,12 @@ type ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb = Param_format_EBB :
     ('x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt ->
     ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
 
-(* Compute a padding associated to an int option (see "%_42d"). *)
+(* Compute a padding associated to a pad_option (see "%_42d"). *)
 let pad_of_pad_opt pad_opt = match pad_opt with
   | None -> No_padding
   | Some width -> Lit_padding (Right, width)
 
-(* Compute a precision associated to an int option (see "%_.42f"). *)
+(* Compute a precision associated to a prec_option (see "%_.42f"). *)
 let prec_of_prec_opt prec_opt = match prec_opt with
   | None -> No_precision
   | Some ndec -> Lit_precision ndec

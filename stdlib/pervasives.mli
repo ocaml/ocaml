@@ -1005,10 +1005,14 @@ module CamlinternalFormatBasics : sig
     | Lit_padding : padty * int -> ('a, 'a) padding
     | Arg_padding : padty -> (int -> 'a, 'a) padding
 
+  type pad_option = int option
+
   type ('a, 'b) precision =
     | No_precision : ('a, 'a) precision
     | Lit_precision : int -> ('a, 'a) precision
     | Arg_precision : (int -> 'a, 'a) precision
+
+  type prec_option = int option
 
   type ('d1, 'e1, 'd2, 'e2) reader_nb_unifier =
     | Zero_reader :
@@ -1111,11 +1115,11 @@ module CamlinternalFormatBasics : sig
         char * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
           ('a, 'b, 'c, 'd, 'e, 'f) fmt
     | Format_arg :
-        int option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
+        pad_option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
         ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
           (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
     | Format_subst :
-        int option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
+        pad_option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
         ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
         ('u, 'b, 'c, 'q1, 'e1, 'f) fmt ->
           (('x,'b,'c,'d2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmt
@@ -1132,7 +1136,7 @@ module CamlinternalFormatBasics : sig
         ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
           ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmt
     | Scan_char_set :
-        int option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        pad_option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
           (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
     | Scan_get_counter :
         counter * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
@@ -1149,31 +1153,31 @@ module CamlinternalFormatBasics : sig
     | Ignored_caml_char :
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_string :
-        int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_caml_string :
-        int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_int :
-        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_int32 :
-        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_nativeint :
-        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_int64 :
-        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_float :
-        int option * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_bool :
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_format_arg :
-        int option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
+        pad_option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
           ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_format_subst :
-        int option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+        pad_option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
           ('a, 'b, 'c, 'd, 'e, 'f) ignored
     | Ignored_reader :
         ('a, 'b, 'c, ('b -> 'x) -> 'd, 'd, 'a) ignored
     | Ignored_scan_char_set :
-        int option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+        pad_option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_scan_get_counter :
         counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 

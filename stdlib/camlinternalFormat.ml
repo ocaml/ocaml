@@ -1468,7 +1468,7 @@ let fmt_ebb_of_string str =
         else incompatible_flag pct_ind str_ind symb "0"
     in
 
-    (* Get padding as an int option (see "%_", "%{", "%(" and "%[").
+    (* Get padding as a pad_option (see "%_", "%{", "%(" and "%[").
        (no need for legacy mode tweaking, those were rejected by the
        legacy parser as well) *)
     let get_pad_opt c = match get_pad () with
@@ -1483,7 +1483,7 @@ let fmt_ebb_of_string str =
       | Arg_padding _          -> incompatible_flag pct_ind str_ind c "'*'"
     in
 
-    (* Get precision as an int option (see "%_f").
+    (* Get precision as a prec_option (see "%_f").
        (no need for legacy mode tweaking, those were rejected by the
        legacy parser as well) *)
     let get_prec_opt () = match get_prec () with
