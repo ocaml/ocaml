@@ -1047,8 +1047,8 @@ module CamlinternalFormatBasics : sig
         ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
           (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
     | Format_arg_ty :
-        ('x, 'b, 'c, 'q, 'r, 'u) fmtty * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+        ('g, 'h, 'i, 'j, 'k, 'l) fmtty * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
     | Format_subst_ty :
         ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
         ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
@@ -1115,9 +1115,9 @@ module CamlinternalFormatBasics : sig
         char * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
           ('a, 'b, 'c, 'd, 'e, 'f) fmt
     | Format_arg :
-        pad_option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
+        pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
         ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+          (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
     | Format_subst :
         pad_option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
         ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
