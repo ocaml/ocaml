@@ -1468,8 +1468,12 @@ let fmt_ebb_of_string str =
     let get_pad_opt c = match get_pad () with
       | No_padding -> None
       | Lit_padding (Right, width) -> Some width
-      | Lit_padding (Zeros, _) -> incompatible_flag pct_ind str_ind c "'0'"
-      | Lit_padding (Left, _)  -> incompatible_flag pct_ind str_ind c "'-'"
+      | Lit_padding (Zeros, width) ->
+        if legacy_behavior then Some width
+        else incompatible_flag pct_ind str_ind c "'0'"
+      | Lit_padding (Left, width) ->
+        if legacy_behavior then Some width
+        else incompatible_flag pct_ind str_ind c "'-'"
       | Arg_padding _          -> incompatible_flag pct_ind str_ind c "'*'"
     in
 
