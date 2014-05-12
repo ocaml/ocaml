@@ -336,7 +336,7 @@ Bug fixes:
   (Alain Frisch)
 - PR#5552: unrecognized gcc option -no-cpp-precomp
   (Damien Doligez, report by Markus Mottl)
-- PR#5580: missed opportunities for constant propagation
+* PR#5580: missed opportunities for constant propagation
   (Xavier Leroy and John Carr)
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
   (Wojciech Meyer)
