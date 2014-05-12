@@ -1792,7 +1792,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       | _ -> false
     in
     if is_format then
-      type_format loc str env sexp.pexp_attributes
+      let format_parsetree = { sexp with pexp_desc = type_format loc str env }  in
+      type_expect ?in_function env format_parsetree ty_expected
     else
       rue {
         exp_desc = Texp_constant cst;
@@ -2743,7 +2744,7 @@ and get_camlinternalFormat_path env tyname =
     Some (Path.Pdot (cfb_path, tyname, 0))
   with Not_found -> None
 
-and type_format loc str env attr =
+and type_format loc str env =
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
       let mk_exp_loc pexp_desc = {
@@ -2987,12 +2988,7 @@ and type_format loc str env attr =
           | 0 -> []
           | _ -> mk_typ_loc Ptyp_any :: gen_params (n - 1) in
         mk_typ_loc (Ptyp_constr (mk_lid_loc lid, gen_params 6)) in
-      let constrained_exp = {
-        pexp_desc = Pexp_constraint (exp, pervasives_format6_ty);
-        pexp_loc = loc;
-        pexp_attributes = attr;
-      } in
-      type_exp env constrained_exp
+      Pexp_constraint (exp, pervasives_format6_ty)
     ))
   with Failure msg ->
     raise (Error (loc, env, Invalid_format msg))
