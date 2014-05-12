@@ -1370,12 +1370,18 @@ let fmt_ebb_of_string str =
       parse_after_padding pct_ind (str_ind + 1) end_ind plus sharp space ign
         (Arg_padding padty)
     | _ ->
-      match padty with
-      | Left  -> invalid_format_without (str_ind - 1) '-' "padding"
-      | Zeros -> invalid_format_without (str_ind - 1) '0' "padding"
+      if legacy_behavior then
+        parse_after_padding pct_ind str_ind end_ind plus sharp space ign
+          No_padding
+      else begin match padty with
+      | Left  ->
+        invalid_format_without (str_ind - 1) '-' "padding"
+      | Zeros ->
+        invalid_format_without (str_ind - 1) '0' "padding"
       | Right ->
         parse_after_padding pct_ind str_ind end_ind plus sharp space ign
           No_padding
+      end
 
   (* Is precision defined? *)
   and parse_after_padding : type x e f .
@@ -1405,6 +1411,11 @@ let fmt_ebb_of_string str =
       parse_after_precision pct_ind (str_ind + 1) end_ind plus sharp space ign
         pad Arg_precision
     | _ ->
+      if legacy_behavior then
+        (* note that legacy implementation did not ignore '.' without
+           a number (as it does for padding indications), but
+           interprets it as '.0' *)
+        parse_after_precision pct_ind str_ind end_ind plus sharp space ign pad (Lit_precision 0) else
       invalid_format_without (str_ind - 1) '.' "precision"
 
   (* Try to read the conversion. *)
