@@ -1875,70 +1875,87 @@ let fmt_ebb_of_string str =
   (* Parse and construct a char set. *)
   and parse_char_set str_ind end_ind =
     if str_ind = end_ind then unexpected_end_of_format end_ind;
-    let mut_char_set = create_char_set () in
+
+    let char_set = create_char_set () in
+    let add_char c =
+      add_in_char_set char_set c;
+    in
+    let add_range c c' =
+      for i = int_of_char c to int_of_char c' do
+        add_in_char_set char_set (char_of_int i);
+      done;
+    in
+
+    let fail_single_percent str_ind =
+      failwith_message
+        "invalid format %S: '%%' alone is not accepted in character sets, \
+         use %%%% instead at position %d." str str_ind;
+    in
+
+    (* Parse the first character of a char set. *)
+    let rec parse_char_set_start str_ind end_ind =
+      if str_ind = end_ind then unexpected_end_of_format end_ind;
+      let c = str.[str_ind] in
+      parse_char_set_after_char (str_ind + 1) end_ind c;
+
+    (* Parse the content of a char set until the first ']'. *)
+    and parse_char_set_content str_ind end_ind =
+      if str_ind = end_ind then unexpected_end_of_format end_ind;
+      match str.[str_ind] with
+      | ']' ->
+        str_ind + 1
+      | '-' ->
+        add_char '-';
+        parse_char_set_content (str_ind + 1) end_ind;
+      | c ->
+        parse_char_set_after_char (str_ind + 1) end_ind c;
+
+    (* Test for range in char set. *)
+    and parse_char_set_after_char str_ind end_ind c =
+      if str_ind = end_ind then unexpected_end_of_format end_ind;
+      match str.[str_ind] with
+      | ']' ->
+        add_char c;
+        str_ind + 1
+      | '-' ->
+        parse_char_set_after_minus (str_ind + 1) end_ind c
+      | ('%' | '@') as c' when c = '%' ->
+        add_char c';
+        parse_char_set_content (str_ind + 1) end_ind
+      | c' ->
+        if c = '%' then fail_single_percent str_ind;
+        (* note that '@' alone is accepted, as done by the legacy implementation;
+           the documentation specifically requires %@ so we could warn on that *)
+        add_char c;
+        parse_char_set_after_char (str_ind + 1) end_ind c'
+
+    (* Manage range in char set (except if the '-' the last char before ']') *)
+    and parse_char_set_after_minus str_ind end_ind c =
+      if str_ind = end_ind then unexpected_end_of_format end_ind;
+      match str.[str_ind] with
+      | ']' ->
+        add_char c;
+        add_char '-';
+        str_ind + 1
+      | '%' ->
+        if str_ind + 1 = end_ind then unexpected_end_of_format end_ind;
+        begin match str.[str_ind + 1] with
+          | ('%' | '@') as c' ->
+            add_range c c';
+            parse_char_set_content (str_ind + 2) end_ind
+          | _ -> fail_single_percent str_ind
+        end
+      | c' ->
+        add_range c c';
+        parse_char_set_content (str_ind + 1) end_ind
+    in
     let str_ind, reverse =
       match str.[str_ind] with
         | '^' -> str_ind + 1, true
         | _ -> str_ind, false in
-    let next_ind = parse_char_set_start str_ind end_ind mut_char_set in
-    let char_set = freeze_char_set mut_char_set in
+    let next_ind = parse_char_set_start str_ind end_ind in
+    let char_set = freeze_char_set char_set in
     next_ind, (if reverse then rev_char_set char_set else char_set)
-
-  and check_char_set_char str c =
-    if c = '%' && legacy_behavior then
-      failwith_message
-        "non-backward-compatible format %S:\
-        \ character %c was not supported as part of a charset"
-        str c
-
-  (* Parse the first character of a char set. *)
-  and parse_char_set_start str_ind end_ind char_set =
-    if str_ind = end_ind then unexpected_end_of_format end_ind;
-    let c = str.[str_ind] in
-    check_char_set_char str c;
-    parse_char_set_after_char (str_ind + 1) end_ind char_set c;
-
-  (* Parse the content of a char set until the first ']'. *)
-  and parse_char_set_content str_ind end_ind char_set =
-    if str_ind = end_ind then unexpected_end_of_format end_ind;
-    match str.[str_ind] with
-    | ']' ->
-      str_ind + 1
-    | '-' ->
-      add_in_char_set char_set '-';
-      parse_char_set_content (str_ind + 1) end_ind char_set;
-    | c ->
-      check_char_set_char str c;
-      parse_char_set_after_char (str_ind + 1) end_ind char_set c;
-
-  (* Test for range in char set. *)
-  and parse_char_set_after_char str_ind end_ind char_set c =
-    if str_ind = end_ind then unexpected_end_of_format end_ind;
-    match str.[str_ind] with
-    | ']' ->
-      add_in_char_set char_set c;
-      str_ind + 1
-    | '-' ->
-      parse_char_set_after_minus (str_ind + 1) end_ind char_set c
-    | c' ->
-      check_char_set_char str c';
-      add_in_char_set char_set c;
-      parse_char_set_after_char (str_ind + 1) end_ind char_set c'
-
-  (* Manage range in char set (except if the '-' the last char before ']') *)
-  and parse_char_set_after_minus str_ind end_ind char_set c =
-    if str_ind = end_ind then unexpected_end_of_format end_ind;
-    match str.[str_ind] with
-    | ']' ->
-      add_in_char_set char_set c;
-      add_in_char_set char_set '-';
-      str_ind + 1
-    | c' ->
-      check_char_set_char str c';
-      for i = int_of_char c to int_of_char c' do
-        add_in_char_set char_set (char_of_int i);
-      done;
-      parse_char_set_content (str_ind + 1) end_ind char_set
 
   (* Consume all next spaces, raise an Failure if end_ind is reached. *)
   and parse_spaces str_ind end_ind =
