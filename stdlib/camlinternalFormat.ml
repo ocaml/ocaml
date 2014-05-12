@@ -820,7 +820,7 @@ let fix_padding padty width str =
     begin match padty with
     | Left  -> String.blit str 0 res 0 len
     | Right -> String.blit str 0 res (width - len) len
-    | Zeros when len > 0 && (str.[0] = '+' || str.[0] = '-') ->
+    | Zeros when len > 0 && (str.[0] = '+' || str.[0] = '-' || str.[0] = ' ') ->
       Bytes.set res 0 str.[0];
       String.blit str 1 res (width - len + 1) (len - 1)
     | Zeros when len > 1 && str.[0] = '0' && (str.[1] = 'x' || str.[1] = 'X') ->
