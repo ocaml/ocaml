@@ -1776,7 +1776,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string str as cst) -> (
+  | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
     let expected_ty = (repr (expand_head env ty_expected)).desc
     and fmt6_path = get_camlinternalFormat_path env "format6"
@@ -1791,12 +1791,16 @@ and type_expect_ ?in_function env sexp ty_expected =
         end
       | _ -> false
     in
-    if is_format then type_format loc str env else
+    if is_format then
+      type_format loc str env sexp.pexp_attributes
+    else
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
         exp_type = instance_def Predef.type_string;
-      )
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+  )
   | Pexp_constant cst ->
       rue {
         exp_desc = Texp_constant cst;
@@ -2735,22 +2739,24 @@ and camlinternalFormatBasics_lident =
 
 and get_camlinternalFormat_path env tyname =
   try
-    let cfb_path = Env.lookup_module camlinternalFormatBasics_lident env in
-    Some (Path.Pdot (fst cfb_path, tyname, 0))
+    let cfb_path = Env.lookup_module ~load:true camlinternalFormatBasics_lident env in
+    Some (Path.Pdot (cfb_path, tyname, 0))
   with Not_found -> None
 
-and type_format loc str env =
+and type_format loc str env attr =
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
       let mk_exp_loc pexp_desc = {
         pexp_desc = pexp_desc;
         pexp_loc = Location.none;
+        pexp_attributes = [];
       } and mk_lid_loc lid = {
         txt = lid;
         loc = Location.none;
       } and mk_typ_loc ptyp_desc = {
         ptyp_desc = ptyp_desc;
         ptyp_loc = Location.none;
+        ptyp_attributes = [];
       } in
       let mk_constr name args =
         let lid = Longident.Ldot (camlinternalFormatBasics_lident, name) in
@@ -2977,13 +2983,14 @@ and type_format loc str env =
           | _ -> mk_typ_loc Ptyp_any :: gen_params (n - 1) in
         mk_typ_loc (Ptyp_constr (mk_lid_loc lid, gen_params 6)) in
       let constrained_exp = {
-        pexp_desc = Pexp_constraint (exp, Some pervasives_format6_ty, None);
+        pexp_desc = Pexp_constraint (exp, pervasives_format6_ty);
         pexp_loc = loc;
+        pexp_attributes = attr;
       } in
       type_exp env constrained_exp
     ))
   with Failure msg ->
-    raise (Error (loc, Invalid_format msg))
+    raise (Error (loc, env, Invalid_format msg))
 
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
