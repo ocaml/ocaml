@@ -44,7 +44,7 @@ CAMLextern value caml_alloc_final (mlsize_t, /*size in words*/
                                    mlsize_t, /*resources consumed*/
                                    mlsize_t  /*max resources*/);
 
-CAMLextern int caml_convert_flag_list (value, int *);
+CAMLextern int caml_convert_flag_list (value, const int *);
 
 #ifdef __cplusplus
 }

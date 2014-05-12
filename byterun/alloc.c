@@ -123,7 +123,7 @@ CAMLexport value caml_copy_string_array(char const ** arr)
   return caml_alloc_array(caml_copy_string, arr);
 }
 
-CAMLexport int caml_convert_flag_list(value list, int *flags)
+CAMLexport int caml_convert_flag_list(value list, const int *flags)
 {
   int res;
   res = 0;
