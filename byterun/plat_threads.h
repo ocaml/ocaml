@@ -83,6 +83,11 @@ INLINE int atomic_cas(atomic_uintnat* p, uintnat vold, uintnat vnew) {
   return __sync_bool_compare_and_swap(&p->val, vold, vnew);
 }
 
+/* atomically: if (*p == vold) { *p = vnew; } */
+INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
+  __sync_val_compare_and_swap(&p->val, vold, vnew);
+}
+
 #else
 #error "unsupported platform"
 #endif
@@ -95,6 +100,30 @@ typedef pthread_mutex_t plat_mutex;
 #define plat_mutex_lock pthread_mutex_lock
 #define plat_mutex_try_lock(l) (pthread_mutex_trylock(l) == 0)
 #define plat_mutex_unlock pthread_mutex_unlock
+#define plat_mutex_free pthread_mutex_destroy
+
+struct caml__mutex_unwind {
+  plat_mutex* mutex;
+  struct caml__mutex_unwind* next;
+};
+
+#define With_mutex(mutex)                               \
+  Assert(caml_local_roots);                             \
+  plat_mutex* caml__mutex = (mutex);                    \
+  int caml__mutex_go = 1;                               \
+  struct caml__mutex_unwind caml__locked_mutex =        \
+    { caml__mutex, caml_local_roots->mutexes };         \
+  caml_local_roots->mutexes = &caml__locked_mutex;      \
+  for (caml_enter_blocking_section(),                   \
+         plat_mutex_lock(caml__mutex),                  \
+         caml_leave_blocking_section();                 \
+       caml__mutex_go;                                  \
+       plat_mutex_unlock(caml__mutex),                  \
+         caml__mutex_go = 0,                            \
+         caml_local_roots->mutexes =                    \
+         caml_local_roots->mutexes->next)
+
+
 
 /* Better implementations of shared_stack can use CAS (+ABA protection) or LL/SC */
 

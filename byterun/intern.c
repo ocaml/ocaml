@@ -182,6 +182,7 @@ static void stack_init(struct intern_stack* s) {
   /* Set up GC roots */
   s->caml__roots_stack.next = caml_local_roots;
   caml_local_roots = &s->caml__roots_stack;
+  s->caml__roots_stack.mutexes = 0;
   s->caml__roots_stack.ntables = 1;
   s->caml__roots_stack.nitems = INTERN_STACK_INIT_SIZE * STACK_NFIELDS;
   s->caml__roots_stack.tables[0] = (value*)s->curr_vals;
@@ -580,9 +581,9 @@ CAMLprim value caml_input_value(value vchan)
   struct channel * chan = Channel(vchan);
   CAMLlocal1 (res);
 
-  Lock(chan);
-  res = caml_input_val(chan);
-  Unlock(chan);
+  With_mutex(&chan->mutex) {
+    res = caml_input_val(chan);
+  }
   CAMLreturn (res);
 }
 

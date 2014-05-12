@@ -231,12 +231,14 @@ static void putval(struct channel *chan, value val)
 
 static void safe_output_value(struct channel *chan, value val)
 {
-  struct longjmp_buffer raise_buf, * saved_external_raise;
+  struct longjmp_buffer raise_buf;
+  struct caml_exception_context exception_ctx = {&raise_buf, caml_local_roots};
+  struct caml_exception_context* saved_external_raise;
 
   /* Catch exceptions raised by [caml_output_val] */
   saved_external_raise = caml_external_raise;
   if (sigsetjmp(raise_buf.buf, 0) == 0) {
-    caml_external_raise = &raise_buf;
+    caml_external_raise = &exception_ctx;
     caml_output_val(chan, val, caml_read_root(marshal_flags));
   } else {
     /* Send wrong magic number, will cause [caml_input_value] to fail */

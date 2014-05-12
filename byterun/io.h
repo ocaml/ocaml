@@ -18,6 +18,7 @@
 
 #include "misc.h"
 #include "mlvalues.h"
+#include "plat_threads.h"
 
 #ifndef IO_BUFFER_SIZE
 #define IO_BUFFER_SIZE 65536
@@ -38,7 +39,7 @@ struct channel {
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
-  void * mutex;                 /* Placeholder for mutex (for systhreads) */
+  plat_mutex mutex;             /* Mutex protecting buffer */
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */
@@ -91,21 +92,7 @@ CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
 #define Channel(v) (*((struct channel **) (Data_custom_val(v))))
 
-/* The locking machinery */
-
-CAMLextern void (*caml_channel_mutex_free) (struct channel *);
-CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
-
 CAMLextern struct channel * caml_all_opened_channels;
-
-#define Lock(channel) \
-  if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)
-#define Unlock(channel) \
-  if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
-#define Unlock_exn() \
-  if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
 
 /* Conversion between file_offset and int64 */
 
