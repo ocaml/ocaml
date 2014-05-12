@@ -56,6 +56,7 @@ Compilers:
 * "-o" now sets module name to the output file name up to the first "."
   (it also applies when "-o" is not given, i.e. the module name is then
    the input file name up to the first ".")
+* PR#5779: better sharing of structured constants
 - PR#6182: better message for virtual objects and class types
   (Leo P. White, Stephen Dolan)
 - PR#5817: new flag to keep locations in cmi files
