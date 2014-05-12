@@ -20,7 +20,8 @@ let test0 () =
   sprintf "%.0f" 1.0 = "1" &&
   sprintf "%.0f." 1.7 = "2." &&
   sprintf "%.1f." 1.0 = "1.0." &&
-  sprintf "%0.1f." 12.0 = "12.0." &&
+  (*sprintf "%0.1f." 12.0 = "12.0." &&*)
+    (* >> '0' w/o padding *)
   sprintf "%3.1f." 12.0 = "12.0." &&
   sprintf "%5.1f." 12.0 = " 12.0." &&
   sprintf "%10.1f." 12.0 = "      12.0." &&
@@ -33,7 +34,8 @@ let test0 () =
   sprintf "%010.0f." 12.0 = "0000000012." &&
   sprintf "% 10.0f." 12.0 = "        12." &&
 
-  sprintf "%0.1f." 12.0 = "12.0." &&
+  (*sprintf "%0.1f." 12.0 = "12.0." &&*)
+    (* >> '0' w/o padding *)
   sprintf "%10.1f." 1.001 = "       1.0." &&
   sprintf "%05.1f." 1.001 = "001.0."
 ;;
@@ -59,8 +61,10 @@ test (test2 ());;
 
 (* Testing meta format string printing. *)
 let test3 () =
-sprintf "%{toto %s titi.\n%}" "Bonjour %s." = "%s" &&
-sprintf "%{%d%s%}" "kk%dkk%s\n" = "%i%s";;
+(* >> Now works as expected. *)
+(*sprintf "%{toto %s titi.\n%}" "Bonjour %s." = "%s" &&*)
+sprintf "%{toto %s titi.\n%}" "Bonjour %s." = "Bonjour %s." &&
+sprintf "%{%d%s%}" "kk%dkk%s\n" = "kk%dkk%s\n";;
 test (test3 ());;
 
 (* Testing meta format string arguments. *)

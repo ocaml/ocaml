@@ -1248,8 +1248,8 @@ end
       receiver function.
 *)
 
-(*type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
-  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6*)
+type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
 
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 

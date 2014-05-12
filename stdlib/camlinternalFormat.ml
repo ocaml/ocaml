@@ -976,9 +976,9 @@ fun k o acc fmt -> match fmt with
     (*fun _ -> make_printf k o (Acc_string (acc, string_of_fmtty fmtty)) rest*)
     fun (_, str) -> make_printf k o (Acc_string (acc, str)) rest
   | Format_subst (_, _, fmtty, rest) ->
-    (* Call to type_format can't failed (raise Type_mismatch). *)
+    (* Call to type_format can't fail (raise Type_mismatch). *)
     fun (fmt, _) -> make_printf k o acc
-      CamlinternalFormatBasics.(concat_fmt (type_format fmt fmtty) rest)
+      (concat_fmt (type_format fmt fmtty) rest)
 
   | Scan_char_set (_, _, rest) ->
     let new_acc = Acc_invalid_arg (acc, "Printf: bad conversion %[") in
@@ -1215,12 +1215,11 @@ let rec strput_acc b acc = match acc with
                           (* Error managment *)
 
 (* Raise a Failure with a pretty-printed error message. *)
-(* Since it uses "compiled formats", it can't be implemented in bootstrap
-   mode. *)
-let failwith_message _ =
-  failwith
-    "CamlinternalFormat failure \
-     (error messages not implemented at bootstrap time)"
+let failwith_message
+    ((fmt, _) : ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6) =
+  let buf = Buffer.create 256 in
+  let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
+  make_printf k () End_of_acc fmt
 
 (******************************************************************************)
                             (* Parsing tools *)

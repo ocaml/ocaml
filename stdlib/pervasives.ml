@@ -976,34 +976,21 @@ fun ign fmt -> match ign with
     Param_format_EBB (Scan_char_set (width_opt, char_set, fmt))
 end
 
-(*type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
-  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6*)
+type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
 
-(* Aliases of format6 with restricted parameters. *)
-(* Usefull for Printf and Format functions. *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
+
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+let string_of_format (fmt, str) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-
-let (( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
-  fun fmt1 fmt2 ->
-    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
-;;
-
-(* Have to return a copy for compatibility with unsafe-string mode *)
-(* String.copy is not available here, so use ^ to make a copy of the string *)
-let string_of_format fmt = format_to_string fmt ^ ""
+let (^^) (fmt1, str1) (fmt2, str2) =
+  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ str2)
 
 (* Miscellaneous *)
 
