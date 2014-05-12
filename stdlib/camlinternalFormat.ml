@@ -1882,10 +1882,19 @@ let fmt_ebb_of_string str =
     let char_set = freeze_char_set mut_char_set in
     next_ind, (if reverse then rev_char_set char_set else char_set)
 
+  and check_char_set_char str c =
+    if c = '%' && legacy_behavior then
+      failwith_message
+        "non-backward-compatible format %S:\
+        \ character %c was not supported as part of a charset"
+        str c
+
   (* Parse the first character of a char set. *)
   and parse_char_set_start str_ind end_ind char_set =
     if str_ind = end_ind then unexpected_end_of_format end_ind;
-    parse_char_set_after_char (str_ind + 1) end_ind char_set str.[str_ind];
+    let c = str.[str_ind] in
+    check_char_set_char str c;
+    parse_char_set_after_char (str_ind + 1) end_ind char_set c;
 
   (* Parse the content of a char set until the first ']'. *)
   and parse_char_set_content str_ind end_ind char_set =
@@ -1897,6 +1906,7 @@ let fmt_ebb_of_string str =
       add_in_char_set char_set '-';
       parse_char_set_content (str_ind + 1) end_ind char_set;
     | c ->
+      check_char_set_char str c;
       parse_char_set_after_char (str_ind + 1) end_ind char_set c;
 
   (* Test for range in char set. *)
@@ -1909,6 +1919,7 @@ let fmt_ebb_of_string str =
     | '-' ->
       parse_char_set_after_minus (str_ind + 1) end_ind char_set c
     | c' ->
+      check_char_set_char str c';
       add_in_char_set char_set c;
       parse_char_set_after_char (str_ind + 1) end_ind char_set c'
 
@@ -1921,6 +1932,7 @@ let fmt_ebb_of_string str =
       add_in_char_set char_set '-';
       str_ind + 1
     | c' ->
+      check_char_set_char str c';
       for i = int_of_char c to int_of_char c' do
         add_in_char_set char_set (char_of_int i);
       done;
