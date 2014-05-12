@@ -978,10 +978,12 @@ fun k o acc fmt -> match fmt with
   | Char_literal (chr, rest) ->
     make_printf k o (Acc_char (acc, chr)) rest
 
-  | Format_arg (_, _, rest) ->
-    (* Use the following code to obtain the old (curious?) semantics. *)
-    (*fun _ -> make_printf k o (Acc_string (acc, string_of_fmtty fmtty)) rest*)
-    fun (_, str) -> make_printf k o (Acc_string (acc, str)) rest
+  | Format_arg (_, sub_fmtty, rest) ->
+    if legacy_behavior then
+      let ty = string_of_fmtty sub_fmtty in
+      (fun _str ->
+        make_printf k o (Acc_string (acc, ty)) rest)
+    else (fun (_, str) -> make_printf k o (Acc_string (acc, str)) rest)
   | Format_subst (_, _, fmtty, rest) ->
     (* Call to type_format can't fail (raise Type_mismatch). *)
     fun (fmt, _) -> make_printf k o acc
