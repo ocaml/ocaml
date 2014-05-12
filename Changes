@@ -70,6 +70,11 @@ Toplevel interactive system:
 - PR#5377: New "#show_*" directives
 
 Runtime system:
+- New configure option "-no-naked-pointers" to improve performance by
+  avoiding page table tests during block darkening and the marking phase
+  of the major GC.  In this mode, all out-of-heap pointers must point at
+  things that look like OCaml values: in particular they must have a valid
+  header.  The colour of said headers should be black.
 - Fixed bug in native code version of [caml_raise_with_string] that could
   potentially lead to heap corruption.
 - Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
