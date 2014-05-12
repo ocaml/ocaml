@@ -1421,11 +1421,22 @@ let fmt_ebb_of_string str =
         (_, _, e, f) fmt_ebb =
   fun pct_ind str_ind end_ind plus sharp space ign pad ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
-    match str.[str_ind] with
-    | '0' .. '9' ->
+    let parse_literal str_ind =
       let new_ind, prec = parse_positive str_ind end_ind 0 in
       parse_conversion pct_ind (new_ind + 1) end_ind plus sharp space ign pad
-        (Lit_precision prec) str.[new_ind]
+        (Lit_precision prec) str.[new_ind] in
+    match str.[str_ind] with
+    | '0' .. '9' -> parse_literal str_ind
+    | ('+' | '-') when legacy_behavior ->
+      (* Legacy mode would accept and ignore '+' or '-' before the
+         integer describing the desired precision; not that this
+         cannot happen for padding width, as '+' and '-' already have
+         a semantics there.
+
+         That said, the idea (supported by this tweak) that width and
+         precision literals are "integer literals" in the OCaml sense is
+         still blatantly wrong, as 123_456 or 0xFF are rejected. *)
+      parse_literal (str_ind + 1)
     | '*' ->
       parse_after_precision pct_ind (str_ind + 1) end_ind plus sharp space ign
         pad Arg_precision

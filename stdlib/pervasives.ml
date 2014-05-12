@@ -562,7 +562,7 @@ type prec_option = int option
 (* Type used in Format_subst_ty and Format_subst constructors as "a proof"
    of '->' number equality between two ('d, 'e) relations. *)
 (* See the scanf implementation of "%(...%)". *)
-(* Not meaningfull for Printf and Format since "%r" is Scanf specific. *)
+(* Not meaningful for Printf and Format since "%r" is Scanf specific. *)
 type ('d1, 'e1, 'd2, 'e2) reader_nb_unifier =
   | Zero_reader :
       ('d1, 'd1, 'd2, 'd2) reader_nb_unifier
