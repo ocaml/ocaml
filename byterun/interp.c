@@ -31,6 +31,7 @@
 #include "stacks.h"
 #include "domain.h"
 #include "globroots.h"
+#include "startup.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -280,9 +281,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
-    if (caml_trace_flag) caml_disasm_instr(pc);
-    if (caml_trace_flag>1) {
+    if (caml_startup_params.trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
+    if (caml_startup_params.trace_flag) caml_disasm_instr(pc);
+    if (caml_startup_params.trace_flag>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
       putchar('\n');

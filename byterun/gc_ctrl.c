@@ -30,6 +30,7 @@
 #include "globroots.h"
 #include "signals.h"
 #include "minor_heap.h"
+#include "startup.h"
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -337,7 +338,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
   Store_field (res, 1,Val_long(Wsize_bsize(caml_major_heap_increment)));/* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
-  Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
+  Store_field (res, 3, Val_long (caml_startup_params.verb_gc));         /* v */
   Store_field (res, 4, Val_long (caml_percent_max));                    /* O */
 #ifndef NATIVE_CODE
   Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
@@ -370,7 +371,7 @@ CAMLprim value caml_gc_set(value v)
   asize_t newminsize;
   uintnat oldpolicy;
 
-  caml_verb_gc = Long_val (Field (v, 3));
+  caml_startup_params.verb_gc = Long_val (Field (v, 3));
 
 #ifndef NATIVE_CODE
   caml_change_max_stack_size (Long_val (Field (v, 5)));
@@ -459,17 +460,15 @@ uintnat caml_normalize_heap_increment (uintnat i)
   return ((i + Page_size - 1) >> Page_log) << Page_log;
 }
 
-void caml_init_gc (uintnat minor_size, uintnat major_size,
-                   uintnat major_incr, uintnat percent_fr,
-                   uintnat percent_m)
+void caml_init_gc ()
 {
   uintnat 
 major_heap_size =
-    Bsize_wsize (caml_normalize_heap_increment (major_size));
+    Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init));
 
   caml_init_minor_heaps();
   
-  caml_domain_register_main(minor_size);
+  caml_domain_register_main(caml_startup_params.minor_heap_init);
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);

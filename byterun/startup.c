@@ -60,8 +60,6 @@
 #define SEEK_END 2
 #endif
 
-extern int caml_parser_trace;
-
 /* Read the trailer of a bytecode file */
 
 static void fixup_endianness_trailer(uint32 * p)
@@ -208,13 +206,18 @@ Algorithm:
 
 /* Configuration parameters and flags */
 
-static uintnat percent_free_init = Percent_free_def;
-static uintnat max_percent_free_init = Max_percent_free_def;
-static uintnat minor_heap_init = Minor_heap_def;
-static uintnat heap_chunk_init = Heap_chunk_def;
-static uintnat heap_size_init = Init_heap_def;
-static uintnat max_stack_init = Max_stack_def;
-static int backtrace_enabled_init = 0;
+struct caml_startup_params caml_startup_params;
+
+static void init_startup_params()
+{
+  struct caml_startup_params *p = &caml_startup_params;
+  p->percent_free_init = Percent_free_def;
+  p->max_percent_free_init = Max_percent_free_def;
+  p->minor_heap_init = Minor_heap_def;
+  p->heap_chunk_init = Heap_chunk_def;
+  p->heap_size_init = Init_heap_def;
+  p->max_stack_init = Max_stack_def;
+}
 
 /* Parse options on the command line */
 
@@ -226,7 +229,7 @@ static int parse_command_line(char **argv)
     switch(argv[i][1]) {
 #ifdef DEBUG
     case 't':
-      caml_trace_flag++;
+      caml_startup_params.trace_flag++;
       break;
 #endif
     case 'v':
@@ -237,7 +240,7 @@ static int parse_command_line(char **argv)
         printf (OCAML_VERSION "\n");
         exit (0);
       }else{
-        caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        caml_startup_params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
       break;
     case 'p':
@@ -246,7 +249,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      caml_record_backtrace(Val_true);
+      caml_startup_params.backtrace_enabled_init = 1;
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -292,19 +295,19 @@ static void parse_camlrunparam(void)
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 'b': backtrace_enabled_init = 1; break;
-      case 'h': scanmult (opt, &heap_size_init); break;
-      case 'i': scanmult (opt, &heap_chunk_init); break;
-      case 'l': scanmult (opt, &max_stack_init); break;
-      case 'o': scanmult (opt, &percent_free_init); break;
-      case 'O': scanmult (opt, &max_percent_free_init); break;
-      case 'p': caml_parser_trace = 1; break;
+      case 'b': caml_startup_params.backtrace_enabled_init = 1; break;
+      case 'h': scanmult (opt, &caml_startup_params.heap_size_init); break;
+      case 'i': scanmult (opt, &caml_startup_params.heap_chunk_init); break;
+      case 'l': scanmult (opt, &caml_startup_params.max_stack_init); break;
+      case 'o': scanmult (opt, &caml_startup_params.percent_free_init); break;
+      case 'O': scanmult (opt, &caml_startup_params.max_percent_free_init); break;
+      case 'p': caml_startup_params.parser_trace = 1; break;
       /* case 'R': see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &minor_heap_init); break;
+      case 's': scanmult (opt, &caml_startup_params.minor_heap_init); break;
 #ifdef DEBUG
-      case 't': caml_trace_flag = 1; break;
+      case 't': caml_startup_params.trace_flag = 1; break;
 #endif
-      case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'v': scanmult (opt, &caml_startup_params.verb_gc); break;
       }
     }
   }
@@ -335,6 +338,7 @@ CAMLexport void caml_main(char **argv)
   char * exe_name;
   static char proc_self_exe[256];
 
+  init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
@@ -346,7 +350,7 @@ CAMLexport void caml_main(char **argv)
   caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
-  caml_verb_gc = 0xBF;
+  caml_startup_params.verb_gc = 0xBF;
 #endif
   parse_camlrunparam();
   pos = 0;
@@ -379,13 +383,15 @@ CAMLexport void caml_main(char **argv)
       break;
     }
   }
+  caml_startup_params.exe_name = exe_name;
+  caml_startup_params.main_argv = argv + pos;
+
   /* Read the table of contents (section descriptors) */
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
-  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
-  caml_init_stack (max_stack_init);
-  if (backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  caml_init_gc ();
+  caml_init_stack ();
+  if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -408,8 +414,6 @@ CAMLexport void caml_main(char **argv)
   caml_modify_root(caml_global_data, caml_input_val(chan));
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
-  /* Initialize system libraries */
-  caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (getenv("CAMLSIGPIPE"))
@@ -442,13 +446,14 @@ CAMLexport void caml_startup_code(
   char * exe_name;
   static char proc_self_exe[256];
 
+  init_startup_params();
   caml_init_ieee_floats();
 #ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
 #ifdef DEBUG
-  caml_verb_gc = 63;
+  caml_startup_params.verb_gc = 63;
 #endif
   cds_file = getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
@@ -460,11 +465,12 @@ CAMLexport void caml_startup_code(
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
   caml_external_raise = NULL;
+  caml_startup_params.exe_name = exe_name;
+  caml_startup_params.main_argv = argv; 
   /* Initialize the abstract machine */
-  caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
-  caml_init_stack (max_stack_init);
-  if (backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  caml_init_gc ();
+  caml_init_stack ();
+  if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -489,8 +495,6 @@ CAMLexport void caml_startup_code(
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_section_table = section_table;
   caml_section_table_size = section_table_size;
-  /* Initialize system libraries */
-  caml_sys_init(exe_name, argv);
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);

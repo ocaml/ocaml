@@ -17,6 +17,7 @@
 #include "misc.h"
 #include "memory.h"
 #include "domain.h"
+#include "startup.h"
 
 #ifdef DEBUG
 
@@ -31,8 +32,6 @@ int caml_failed_assert (char * expr, char * file, int line)
 
 #endif /* DEBUG */
 
-uintnat caml_verb_gc = 0;
-
 void caml_gc_log (char *msg, ...)
 {
   va_list args;
@@ -40,7 +39,7 @@ void caml_gc_log (char *msg, ...)
 
   char fmtbuf[512];
 
-  if (caml_verb_gc) {
+  if (caml_startup_params.verb_gc) {
     sprintf(fmtbuf, "[%02d] %s\n", caml_domain_id(), msg);
     vfprintf(stderr, fmtbuf, args);
   }

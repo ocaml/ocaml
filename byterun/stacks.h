@@ -38,7 +38,7 @@ extern caml_root caml_global_data;
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
-void caml_init_stack (uintnat init_max_size);
+void caml_init_stack ();
 void caml_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
 uintnat caml_stack_usage (void);

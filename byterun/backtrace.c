@@ -210,7 +210,7 @@ static value read_debug_info(const char** errmsg)
   if (caml_cds_file != NULL) {
     exec_name = caml_cds_file;
   } else {
-    exec_name = caml_exe_name;
+    exec_name = caml_startup_params.exe_name;
   }
   fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0){
