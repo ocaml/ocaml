@@ -16,7 +16,7 @@
 
 # arguments:
 # 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
-# 2. which branch to build (trunk, 4.02, etc)
+# 2. for windows, directory in which to build (trunk, 4.02, etc)
 # 3. options:
 #    -conf configure-option
 
@@ -73,7 +73,7 @@ done
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-workdir="$HOME/workspace/$branch"
+workdir=.
 checkout=false
 nt=
 
