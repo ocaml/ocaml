@@ -79,8 +79,7 @@ type error =
   | Wrong_name of string * type_expr * string * Path.t * Longident.t
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
-  | Incomplete_format of string
-  | Bad_conversion of string * int * char
+  | Invalid_format of string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Virtual_class of Longident.t

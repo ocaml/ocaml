@@ -5,6 +5,7 @@ buffer.cmi :
 bytes.cmi :
 bytesLabels.cmi :
 callback.cmi :
+camlinternalFormat.cmi :
 camlinternalLazy.cmi :
 camlinternalMod.cmi : obj.cmi
 camlinternalOO.cmi : obj.cmi
@@ -61,6 +62,8 @@ bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.cmx : bytes.cmx bytesLabels.cmi
 callback.cmo : obj.cmi callback.cmi
 callback.cmx : obj.cmx callback.cmi
+camlinternalFormat.cmo : camlinternalFormat.cmi char.cmi string.cmi
+camlinternalFormat.cmx : camlinternalFormat.cmi char.cmx string.cmx
 camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
 camlinternalLazy.cmx : obj.cmx camlinternalLazy.cmi
 camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \

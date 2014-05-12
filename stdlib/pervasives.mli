@@ -966,8 +966,246 @@ external decr : int ref -> unit = "%decr"
   {!Printf} and {!Format}.
 *)
 
+module CamlinternalFormatBasics : sig
+  (* No comments, OCaml stdlib internal use only. *)
+
+  type block_type = Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
+
+  type formatting =
+    | Open_box of string * block_type * int
+    | Close_box
+    | Open_tag of string * string
+    | Close_tag
+    | Break of string * int * int
+    | FFlush
+    | Force_newline
+    | Flush_newline
+    | Magic_size of string * int
+    | Escaped_at
+    | Escaped_percent
+    | Scan_indic of char
+
+  type padty = Left | Right | Zeros
+
+  type int_conv =
+    | Int_d | Int_pd | Int_sd | Int_i | Int_pi | Int_si
+    | Int_x | Int_Cx | Int_X | Int_CX | Int_o | Int_Co | Int_u
+
+  type float_conv =
+    | Float_f | Float_pf | Float_sf | Float_e | Float_pe | Float_se
+    | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
+    | Float_G | Float_pG | Float_sG | Float_F
+
+  type char_set = string
+
+  type counter = Line_counter | Char_counter | Token_counter
+
+  type ('a, 'b) padding =
+    | No_padding  : ('a, 'a) padding
+    | Lit_padding : padty * int -> ('a, 'a) padding
+    | Arg_padding : padty -> (int -> 'a, 'a) padding
+
+  type ('a, 'b) precision =
+    | No_precision : ('a, 'a) precision
+    | Lit_precision : int -> ('a, 'a) precision
+    | Arg_precision : (int -> 'a, 'a) precision
+
+  type ('d1, 'e1, 'd2, 'e2) reader_nb_unifier =
+    | Zero_reader :
+        ('d1, 'd1, 'd2, 'd2) reader_nb_unifier
+    | Succ_reader :
+        ('d1, 'e1, 'd2, 'e2) reader_nb_unifier ->
+          ('x -> 'd1, 'e1, 'x -> 'd2, 'e2) reader_nb_unifier
+
+  type ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
+    | Char_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | String_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Int_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (int -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Int32_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (int32 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Nativeint_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (nativeint -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Int64_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (int64 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Float_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (float -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Bool_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Format_arg_ty :
+        ('x, 'b, 'c, 'q, 'r, 'u) fmtty * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Format_subst_ty :
+        ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
+        ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
+        ('u, 'b, 'c, 'q1, 'e1, 'f) fmtty ->
+          (('x, 'b, 'c, 'd2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmtty
+    | Alpha_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (('b -> 'x -> 'c) -> 'x -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Theta_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+    | Reader_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmtty
+    | Ignored_reader_ty :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          ('a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmtty
+    | End_of_fmtty :
+          ('f, 'b, 'c, 'd, 'd, 'f) fmtty
+
+  and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
+    | Char :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Caml_char :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | String :
+        ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Caml_string :
+        ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Int :
+        int_conv * ('x, 'y) padding * ('y, int -> 'a) precision *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Int32 :
+        int_conv * ('x, 'y) padding * ('y, int32 -> 'a) precision *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Nativeint :
+        int_conv * ('x, 'y) padding * ('y, nativeint -> 'a) precision *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Int64 :
+        int_conv * ('x, 'y) padding * ('y, int64 -> 'a) precision *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Float :
+        float_conv * ('x, 'y) padding * ('y, float -> 'a) precision *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x, 'b, 'c, 'd, 'e, 'f) fmt
+    | Bool :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Flush :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('a, 'b, 'c, 'd, 'e, 'f) fmt
+    | String_literal :
+        string * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Char_literal :
+        char * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Format_arg :
+        int option * ('x, 'b, 'c, 'q, 'r, 'u) fmtty *
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (('x, 'b, 'c, 'q, 'r, 'u) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Format_subst :
+        int option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
+        ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
+        ('u, 'b, 'c, 'q1, 'e1, 'f) fmt ->
+          (('x,'b,'c,'d2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmt
+    | Alpha :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (('b -> 'x -> 'c) -> 'x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Theta :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Formatting :
+        formatting * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Reader :
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmt
+    | Scan_char_set :
+        int option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Scan_get_counter :
+        counter * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+          (int -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+    | Ignored_param :
+        ('a, 'b, 'c, 'd, 'y, 'x) ignored * ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
+          ('a, 'b, 'c, 'd, 'e, 'f) fmt
+    | End_of_format :
+          ('f, 'b, 'c, 'e, 'e, 'f) fmt
+
+  and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
+    | Ignored_char :
+        ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_caml_char :
+        ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_string :
+        int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_caml_string :
+        int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_int :
+        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_int32 :
+        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_nativeint :
+        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_int64 :
+        int_conv * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_float :
+        int option * int option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_bool :
+        ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_format_arg :
+        int option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
+          ('a, 'b, 'c, 'd, 'd, 'a) ignored
+    | Ignored_format_subst :
+        int option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+          ('a, 'b, 'c, 'd, 'e, 'f) ignored
+    | Ignored_reader :
+        ('a, 'b, 'c, ('b -> 'x) -> 'd, 'd, 'a) ignored
+    | Ignored_scan_char_set :
+        int option * char_set -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+
+  and ('a, 'b, 'c, 'd, 'e, 'f) format6 = ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
+
+  val concat_fmtty :
+      ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
+      ('f, 'b, 'c, 'e, 'g, 'h) fmtty ->
+      ('a, 'b, 'c, 'd, 'g, 'h) fmtty
+
+  val concat_fmt :
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      ('f, 'b, 'c, 'e, 'g, 'h) fmt ->
+      ('a, 'b, 'c, 'd, 'g, 'h) fmt
+
+  val create_char_set : unit -> string
+  val is_in_char_set : string -> char -> bool
+  val add_in_char_set : string -> char -> unit
+  val rev_char_set : string -> string
+
+  val reader_nb_unifier_of_fmtty :
+     ('a, 'b, 'c, 'd, 'e, 'f) fmtty -> ('d, 'e, 'd, 'e) reader_nb_unifier
+
+  type ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb = Param_format_EBB :
+       ('x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt ->
+       ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
+
+  val param_format_of_ignored_format :
+    ('a, 'b, 'c, 'd, 'y, 'x) ignored -> ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
+    ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
+end
+
 (** Format strings have a general and highly polymorphic type
-    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+    [('a, 'b, 'c, 'd, 'e, 'f) format6].
     The two simplified types, [format] and [format4] below are
     included for backward compatibility with earlier releases of
     OCaml.
@@ -1006,6 +1244,10 @@ external decr : int ref -> unit = "%decr"
       for the [scanf]-style functions, it is typically the result type of the
       receiver function.
 *)
+
+(*type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6*)
+
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4

@@ -37,8 +37,7 @@ type error =
   | Wrong_name of string * type_expr * string * Path.t * Longident.t
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
-  | Incomplete_format of string
-  | Bad_conversion of string * int * char
+  | Invalid_format of string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Virtual_class of Longident.t
@@ -1461,211 +1460,6 @@ and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
 
-(* Typing format strings for printing or reading.
-
-   These format strings are used by functions in modules Printf, Format, and
-   Scanf.
-
-   (Handling of * modifiers contributed by Thorsten Ohl.) *)
-
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-
-let type_format loc fmt =
-
-  let ty_arrow gty ty = newty (Tarrow ("", instance_def gty, ty, Cok)) in
-
-  let bad_conversion fmt i c =
-    raise (Error (loc, Env.empty, Bad_conversion (fmt, i, c))) in
-  let incomplete_format fmt =
-    raise (Error (loc, Env.empty, Incomplete_format fmt)) in
-
-  let rec type_in_format fmt =
-
-    let len = String.length fmt in
-
-    let ty_input = newvar ()
-    and ty_result = newvar ()
-    and ty_aresult = newvar ()
-    and ty_uresult = newvar () in
-
-    let meta = ref 0 in
-
-    let rec scan_format i =
-      if i >= len then
-        if !meta = 0
-        then ty_uresult, ty_result
-        else incomplete_format fmt else
-      match fmt.[i] with
-      | '%' -> scan_opts i (i + 1)
-      | _ -> scan_format (i + 1)
-    and scan_opts i j =
-      if j >= len then incomplete_format fmt else
-      match fmt.[j] with
-      | '_' -> scan_rest true i (j + 1)
-      | _ -> scan_rest false i j
-    and scan_rest skip i j =
-      let rec scan_flags i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
-        | _ -> scan_width i j
-      and scan_width i j = scan_width_or_prec_value scan_precision i j
-      and scan_decimal_string scan i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '0' .. '9' -> scan_decimal_string scan i (j + 1)
-        | _ -> scan i j
-      and scan_width_or_prec_value scan i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '*' ->
-          let ty_uresult, ty_result = scan i (j + 1) in
-          ty_uresult, ty_arrow Predef.type_int ty_result
-        | '-' | '+' -> scan_decimal_string scan i (j + 1)
-        | _ -> scan_decimal_string scan i j
-      and scan_precision i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
-        | _ -> scan_conversion i j
-      and scan_indication j =
-        if j >= len then j - 1 else
-        match fmt.[j] with
-        | '@' ->
-          let k = j + 1 in
-          if k >= len then j - 1 else
-          begin match fmt.[k] with
-          | '%' ->
-            let k = k + 1 in
-            if k >= len then j - 1 else
-            begin match fmt.[k] with
-            | '%' | '@' -> k
-            | _c -> j - 1
-            end
-          | _c -> k
-          end
-        | _c -> j - 1
-      and scan_range j =
-        let rec scan_closing j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | ']' -> j
-          | '%' ->
-            let j = j + 1 in
-            if j >= len then incomplete_format fmt else
-            begin match fmt.[j] with
-            | '%' | '@' -> scan_closing (j + 1)
-            | c -> bad_conversion fmt j c
-            end
-          | c -> scan_closing (j + 1) in
-        let scan_first_pos j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | ']' -> scan_closing (j + 1)
-          | c -> scan_closing j in
-        let scan_first_neg j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | '^' -> scan_first_pos (j + 1)
-          | c -> scan_first_pos j in
-
-        scan_first_neg j
-
-      and conversion j ty_arg =
-        let ty_uresult, ty_result = scan_format (j + 1) in
-        ty_uresult,
-        if skip then ty_result else ty_arrow ty_arg ty_result
-
-      and conversion_a j ty_e ty_arg =
-        let ty_uresult, ty_result = conversion j ty_arg in
-        let ty_a = ty_arrow ty_input (ty_arrow ty_e ty_aresult) in
-        ty_uresult, ty_arrow ty_a ty_result
-
-      and conversion_r j ty_e ty_arg =
-        let ty_uresult, ty_result = conversion j ty_arg in
-        let ty_r = ty_arrow ty_input ty_e in
-        ty_arrow ty_r ty_uresult, ty_result
-
-      and scan_conversion i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '%' | '@' | '!' | ',' -> scan_format (j + 1)
-        | 's' | 'S' ->
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | '[' ->
-          let j = scan_range (j + 1) in
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | 'c' | 'C' -> conversion j Predef.type_char
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' | 'N' ->
-          conversion j Predef.type_int
-        | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-        | 'B' | 'b' -> conversion j Predef.type_bool
-        | 'a' | 'r' as conv ->
-          let conversion =
-            if conv = 'a' then conversion_a else conversion_r in
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-(*            | 'a' | 'A' -> conversion j ty_e (Predef.type_array ty_e)
-            | 'l' | 'L' -> conversion j ty_e (Predef.type_list ty_e)
-            | 'o' | 'O' -> conversion j ty_e (Predef.type_option ty_e)*)
-            | _ -> conversion (j - 1) ty_e ty_e end
-(*        | 'r' ->
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion_r (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-            | 'a' | 'A' -> conversion_r j ty_e (Pref.type_array ty_e)
-            | 'l' | 'L' -> conversion_r j ty_e (Pref.type_list ty_e)
-            | 'o' | 'O' -> conversion_r j ty_e (Pref.type_option ty_e)
-            | _ -> conversion_r (j - 1) ty_e ty_e end *)
-        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-        | 'l' | 'n' | 'L' as c ->
-          let j = j + 1 in
-          if j >= len then conversion (j - 1) Predef.type_int else begin
-            match fmt.[j] with
-            | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
-              let ty_arg =
-                match c with
-                | 'l' -> Predef.type_int32
-                | 'n' -> Predef.type_nativeint
-                | _ -> Predef.type_int64 in
-              conversion j ty_arg
-            | c -> conversion (j - 1) Predef.type_int
-          end
-        | '{' | '(' as c ->
-          let j = j + 1 in
-          if j >= len then incomplete_format fmt else
-          let sj =
-            Printf.CamlinternalPr.Tformat.sub_format
-              (fun fmt -> incomplete_format (format_to_string fmt))
-              (fun fmt -> bad_conversion (format_to_string fmt))
-              c (string_to_format fmt) j in
-          let sfmt = String.sub fmt j (sj - 2 - j) in
-          let ty_sfmt = type_in_format sfmt in
-          begin match c with
-          | '{' -> conversion (sj - 1) ty_sfmt
-          | _ -> incr meta; conversion (j - 1) ty_sfmt end
-        | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
-        | c -> bad_conversion fmt i c in
-      scan_flags i j in
-
-    let ty_ureader, ty_args = scan_format 0 in
-    newty
-      (Tconstr
-        (Predef.path_format6,
-         [ ty_args; ty_input; ty_aresult;
-           ty_ureader; ty_uresult; ty_result; ],
-         ref Mnil)) in
-
-  type_in_format fmt
-
 (* Approximate the type of an expression, for better recursion *)
 
 let rec approx_type env sty =
@@ -1982,24 +1776,27 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string (s, _) as cst) ->
-      let ty_exp = expand_head env ty_expected in
-      let ty =
-        (* Terrible hack for format strings *)
-        match ty_exp.desc with
-          Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
-            if !Clflags.principal && ty_exp.level <> generic_level then
-              Location.prerr_warning loc
-                (Warnings.Not_principal "this coercion to format6");
-            type_format loc s
-        | _ -> instance_def Predef.type_string
-      in
+  | Pexp_constant(Const_string str as cst) -> (
+    (* Terrible hack for format strings *)
+    let expected_ty = (repr (expand_head env ty_expected)).desc
+    and fmt6_path = get_camlinternalFormat_path env "format6"
+    and fmt_path = get_camlinternalFormat_path env "fmt" in
+    let is_format = match expected_ty, fmt6_path, fmt_path with
+      | Tconstr(path, _, _), Some pf6, _ when Path.same path pf6 -> true
+      | Ttuple [ fmt_ty; str_ty ], _, Some pf ->
+        ignore (unify env str_ty Predef.type_string);
+        begin match (repr (expand_head env fmt_ty)).desc with
+          | Tconstr (path, _, _) when Path.same path pf -> true
+          | _ -> false
+        end
+      | _ -> false
+    in
+    if is_format then type_format loc str env else
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
-        exp_type = ty;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
+        exp_type = instance_def Predef.type_string;
+      )
   | Pexp_constant cst ->
       rue {
         exp_desc = Texp_constant cst;
@@ -2929,6 +2726,265 @@ and type_label_access env loc srecord lid =
       (Label.disambiguate lid env opath) labels in
   (record, label, opath)
 
+(* Typing format strings for printing or reading.
+   These formats are used by functions in modules Printf, Format, and Scanf.
+   (Handling of * modifiers contributed by Thorsten Ohl.) *)
+
+and camlinternalFormatBasics_lident =
+  Longident.Ldot (Longident.Lident "Pervasives", "CamlinternalFormatBasics")
+
+and get_camlinternalFormat_path env tyname =
+  try
+    let cfb_path = Env.lookup_module camlinternalFormatBasics_lident env in
+    Some (Path.Pdot (fst cfb_path, tyname, 0))
+  with Not_found -> None
+
+and type_format loc str env =
+  try
+    CamlinternalFormatBasics.(CamlinternalFormat.(
+      let mk_exp_loc pexp_desc = {
+        pexp_desc = pexp_desc;
+        pexp_loc = Location.none;
+      } and mk_lid_loc lid = {
+        txt = lid;
+        loc = Location.none;
+      } and mk_typ_loc ptyp_desc = {
+        ptyp_desc = ptyp_desc;
+        ptyp_loc = Location.none;
+      } in
+      let mk_constr name args =
+        let lid = Longident.Ldot (camlinternalFormatBasics_lident, name) in
+        let arg = match args with
+          | []          -> None
+          | [ e ]       -> Some e
+          | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
+        mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg, true)) in
+      let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
+      let mk_int n = mk_cst (Const_int n)
+      and mk_string str = mk_cst (Const_string str)
+      and mk_char chr = mk_cst (Const_char chr) in
+      let mk_block_type bty = match bty with
+        | Pp_hbox   -> mk_constr "Pp_hbox"   []
+        | Pp_vbox   -> mk_constr "Pp_vbox"   []
+        | Pp_hvbox  -> mk_constr "Pp_hvbox"  []
+        | Pp_hovbox -> mk_constr "Pp_hovbox" []
+        | Pp_box    -> mk_constr "Pp_box"    []
+        | Pp_fits   -> mk_constr "Pp_fits"   [] in
+      let mk_formatting fmting = match fmting with
+        | Open_box (org, bty, idt) ->
+          mk_constr "Open_box" [ mk_string org; mk_block_type bty; mk_int idt ]
+        | Close_box ->
+          mk_constr "Close_box" []
+        | Open_tag (org, name) ->
+          mk_constr "Open_tag" [ mk_string org; mk_string name ]
+        | Close_tag ->
+          mk_constr "Close_tag" []
+        | Break (org, ns, ni) ->
+          mk_constr "Break" [ mk_string org; mk_int ns; mk_int ni ]
+        | FFlush ->
+          mk_constr "FFlush" []
+        | Force_newline ->
+          mk_constr "Force_newline" []
+        | Flush_newline ->
+          mk_constr "Flush_newline" []
+        | Magic_size (org, sz) ->
+          mk_constr "Magic_size" [ mk_string org; mk_int sz ]
+        | Escaped_at ->
+          mk_constr "Escaped_at" []
+        | Escaped_percent ->
+          mk_constr "Escaped_percent" []
+        | Scan_indic c ->
+          mk_constr "Scan_indic" [ mk_char c ]
+      and mk_side side = match side with
+        | Left  -> mk_constr "Left"  []
+        | Right -> mk_constr "Right" []
+        | Zeros -> mk_constr "Zeros" []
+      and mk_iconv iconv = match iconv with
+        | Int_d  -> mk_constr "Int_d"  [] | Int_pd -> mk_constr "Int_pd" []
+        | Int_sd -> mk_constr "Int_sd" [] | Int_i  -> mk_constr "Int_i"  []
+        | Int_pi -> mk_constr "Int_pi" [] | Int_si -> mk_constr "Int_si" []
+        | Int_x  -> mk_constr "Int_x"  [] | Int_Cx -> mk_constr "Int_Cx" []
+        | Int_X  -> mk_constr "Int_X"  [] | Int_CX -> mk_constr "Int_CX" []
+        | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
+        | Int_u  -> mk_constr "Int_u"  []
+      and mk_fconv fconv = match fconv with
+        | Float_f  -> mk_constr "Float_f"  []
+        | Float_pf -> mk_constr "Float_pf" []
+        | Float_sf -> mk_constr "Float_sf" []
+        | Float_e  -> mk_constr "Float_e"  []
+        | Float_pe -> mk_constr "Float_pe" []
+        | Float_se -> mk_constr "Float_se" []
+        | Float_E  -> mk_constr "Float_E"  []
+        | Float_pE -> mk_constr "Float_pE" []
+        | Float_sE -> mk_constr "Float_sE" []
+        | Float_g  -> mk_constr "Float_g"  []
+        | Float_pg -> mk_constr "Float_pg" []
+        | Float_sg -> mk_constr "Float_sg" []
+        | Float_G  -> mk_constr "Float_G"  []
+        | Float_pG -> mk_constr "Float_pG" []
+        | Float_sG -> mk_constr "Float_sG" []
+        | Float_F  -> mk_constr "Float_F"  []
+      and mk_counter cnt = match cnt with
+        | Line_counter  -> mk_constr "Line_counter"  []
+        | Char_counter  -> mk_constr "Char_counter"  []
+        | Token_counter -> mk_constr "Token_counter" []
+      and mk_int_opt n_opt = match n_opt with
+        | None ->
+          let lid_loc = mk_lid_loc (Longident.Lident "None") in
+          mk_exp_loc (Pexp_construct (lid_loc, None, true))
+        | Some n ->
+          let lid_loc = mk_lid_loc (Longident.Lident "Some") in
+          mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n), true)) in
+      let rec mk_reader_nb_unifier : type d1 e1 d2 e2 .
+          (d1, e1, d2, e2) reader_nb_unifier -> Parsetree.expression =
+      fun rnu -> match rnu with
+        | Succ_reader rest ->
+          mk_constr "Succ_reader" [ mk_reader_nb_unifier rest ]
+        | Zero_reader ->
+          mk_constr "Zero_reader" [] in
+      let rec mk_fmtty : type a b c d e f .
+          (a, b, c, d, e, f) fmtty -> Parsetree.expression =
+      fun fmtty -> match fmtty with
+        | Char_ty rest      -> mk_constr "Char_ty"      [ mk_fmtty rest ]
+        | String_ty rest    -> mk_constr "String_ty"    [ mk_fmtty rest ]
+        | Int_ty rest       -> mk_constr "Int_ty"       [ mk_fmtty rest ]
+        | Int32_ty rest     -> mk_constr "Int32_ty"     [ mk_fmtty rest ]
+        | Nativeint_ty rest -> mk_constr "Nativeint_ty" [ mk_fmtty rest ]
+        | Int64_ty rest     -> mk_constr "Int64_ty"     [ mk_fmtty rest ]
+        | Float_ty rest     -> mk_constr "Float_ty"     [ mk_fmtty rest ]
+        | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
+        | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
+        | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
+        | Reader_ty rest    -> mk_constr "Reader_ty"    [ mk_fmtty rest ]
+        | Ignored_reader_ty rest ->
+          mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
+        | Format_arg_ty (sub_fmtty, rest) ->
+          mk_constr "Format_arg_ty" [ mk_fmtty sub_fmtty; mk_fmtty rest ]
+        | Format_subst_ty (rnu, sub_fmtty, rest) ->
+          mk_constr "Format_subst_ty"
+            [ mk_reader_nb_unifier rnu; mk_fmtty sub_fmtty; mk_fmtty rest ]
+        | End_of_fmtty -> mk_constr "End_of_fmtty" []
+      in
+      let mk_ignored : type a b c d e f .
+          (a, b, c, d, e, f) ignored -> Parsetree.expression =
+      fun ign -> match ign with
+        | Ignored_char ->
+          mk_constr "Ignored_char" []
+        | Ignored_caml_char ->
+          mk_constr "Ignored_caml_char" []
+        | Ignored_string pad_opt ->
+          mk_constr "Ignored_string" [ mk_int_opt pad_opt ]
+        | Ignored_caml_string pad_opt ->
+          mk_constr "Ignored_caml_string" [ mk_int_opt pad_opt ]
+        | Ignored_int (iconv, pad_opt) ->
+          mk_constr "Ignored_int" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_int32 (iconv, pad_opt) ->
+          mk_constr "Ignored_int32" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_nativeint (iconv, pad_opt) ->
+          mk_constr "Ignored_nativeint" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_int64 (iconv, pad_opt) ->
+          mk_constr "Ignored_int64" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_float (pad_opt, prec_opt) ->
+          mk_constr "Ignored_float" [ mk_int_opt pad_opt; mk_int_opt prec_opt ]
+        | Ignored_bool ->
+          mk_constr "Ignored_bool" []
+        | Ignored_format_arg (pad_opt, fmtty) ->
+          mk_constr "Ignored_format_arg" [ mk_int_opt pad_opt; mk_fmtty fmtty ]
+        | Ignored_format_subst (pad_opt, fmtty) ->
+          mk_constr "Ignored_format_subst" [
+            mk_int_opt pad_opt; mk_fmtty fmtty ]
+        | Ignored_reader ->
+          mk_constr "Ignored_reader" []
+        | Ignored_scan_char_set (width_opt, char_set) ->
+          mk_constr "Ignored_scan_char_set" [
+            mk_int_opt width_opt; mk_string char_set ] in
+      let mk_padding : type x y . (x, y) padding -> Parsetree.expression =
+      fun pad -> match pad with
+        | No_padding         -> mk_constr "No_padding" []
+        | Lit_padding (s, w) -> mk_constr "Lit_padding" [ mk_side s; mk_int w ]
+        | Arg_padding s      -> mk_constr "Arg_padding" [ mk_side s ]
+      and mk_precision : type x y . (x, y) precision -> Parsetree.expression =
+      fun prec -> match prec with
+        | No_precision    -> mk_constr "No_precision" []
+        | Lit_precision w -> mk_constr "Lit_precision" [ mk_int w ]
+        | Arg_precision   -> mk_constr "Arg_precision" [] in
+      let rec mk_fmt : type a b c d e f .
+          (a, b, c, d, e, f) fmt -> Parsetree.expression =
+      fun fmt -> match fmt with
+        | Char rest ->
+          mk_constr "Char" [ mk_fmt rest ]
+        | Caml_char rest ->
+          mk_constr "Caml_char" [ mk_fmt rest ]
+        | String (pad, rest) ->
+          mk_constr "String" [ mk_padding pad; mk_fmt rest ]
+        | Caml_string (pad, rest) ->
+          mk_constr "Caml_string" [ mk_padding pad; mk_fmt rest ]
+        | Int (iconv, pad, prec, rest) ->
+          mk_constr "Int" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Int32 (iconv, pad, prec, rest) ->
+          mk_constr "Int32" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Nativeint (iconv, pad, prec, rest) ->
+          mk_constr "Nativeint" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Int64 (iconv, pad, prec, rest) ->
+          mk_constr "Int64" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Float (fconv, pad, prec, rest) ->
+          mk_constr "Float" [
+            mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Bool rest ->
+          mk_constr "Bool" [ mk_fmt rest ]
+        | Flush rest ->
+          mk_constr "Flush" [ mk_fmt rest ]
+        | String_literal (s, rest) ->
+          mk_constr "String_literal" [ mk_string s; mk_fmt rest ]
+        | Char_literal (c, rest) ->
+          mk_constr "Char_literal" [ mk_char c; mk_fmt rest ]
+        | Format_arg (pad_opt, fmtty, rest) ->
+          mk_constr "Format_arg" [
+            mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
+        | Format_subst (pad_opt, rnu, fmtty, rest) ->
+          mk_constr "Format_subst" [
+            mk_int_opt pad_opt; mk_reader_nb_unifier rnu; mk_fmtty fmtty;
+            mk_fmt rest ]
+        | Alpha rest ->
+          mk_constr "Alpha" [ mk_fmt rest ]
+        | Theta rest ->
+          mk_constr "Theta" [ mk_fmt rest ]
+        | Formatting (fmting, rest) ->
+          mk_constr "Formatting" [ mk_formatting fmting; mk_fmt rest ]
+        | Reader rest ->
+          mk_constr "Reader" [ mk_fmt rest ]
+        | Scan_char_set (width_opt, char_set, rest) ->
+          mk_constr "Scan_char_set" [
+            mk_int_opt width_opt; mk_string char_set; mk_fmt rest ]
+        | Scan_get_counter (cnt, rest) ->
+          mk_constr "Scan_get_counter" [ mk_counter cnt; mk_fmt rest ]
+        | Ignored_param (ign, rest) ->
+          mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
+        | End_of_format ->
+          mk_constr "End_of_format" [] in
+      let mk_format fmt str =
+        mk_exp_loc (Pexp_tuple [ mk_fmt fmt; mk_string str ]) in
+      let Fmt_EBB fmt = fmt_ebb_of_string str in
+      let exp = { (mk_format fmt str) with pexp_loc = loc } in
+      let pervasives_format6_ty =
+        let lid = Longident.Ldot (Longident.Lident "Pervasives", "format6") in
+        let rec gen_params n = match n with
+          | 0 -> []
+          | _ -> mk_typ_loc Ptyp_any :: gen_params (n - 1) in
+        mk_typ_loc (Ptyp_constr (mk_lid_loc lid, gen_params 6)) in
+      let constrained_exp = {
+        pexp_desc = Pexp_constraint (exp, Some pervasives_format6_ty, None);
+        pexp_loc = loc;
+      } in
+      type_exp env constrained_exp
+    ))
+  with Failure msg ->
+    raise (Error (loc, Invalid_format msg))
+
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
@@ -3792,12 +3848,8 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but a %s was expected belonging to the %s type"
              name kind)
-  | Incomplete_format s ->
-      fprintf ppf "Premature end of format string ``%S''" s
-  | Bad_conversion (fmt, i, c) ->
-      fprintf ppf
-        "Bad conversion %%%c, at char number %d \
-         in format string ``%s''" c i fmt
+  | Invalid_format msg ->
+      fprintf ppf "%s" msg
   | Undefined_method (ty, me) ->
       reset_and_mark_loops ty;
       fprintf ppf
