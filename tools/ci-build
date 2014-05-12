@@ -108,7 +108,7 @@ esac
 
 cd "$workdir"
 
-$make -f Makefile$nt clean distclean || :
+$make -f Makefile$nt distclean || :
 
 if $docheckout; then
   svn update --accept theirs-full

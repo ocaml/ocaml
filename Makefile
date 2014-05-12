@@ -850,7 +850,7 @@ distclean:
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h
-	rm -f tools/*.bak tools/ocamlmklibconfig.ml
+	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
 
