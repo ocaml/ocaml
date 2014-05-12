@@ -31,9 +31,19 @@ error () {
 
 case "$1" in
   bsd|macos|linux) ;;
-  cygwin|mingw|mingw64|msvc|msvc64)
+  cygwin|mingw|mingw64)
     . /etc/profile
-    . ~/.profile
+    . "$HOME/.profile"
+  ;;
+  msvc)
+    . /etc/profile
+    . "$HOME/.profile"
+    . "$HOME/.msenv32"
+  ;;
+  msvc64)
+    . /etc/profile
+    . "$HOME/.profile"
+    . "$HOME/.msenv64"
   ;;
   *) error "unknown architecture: $1";;
 esac
