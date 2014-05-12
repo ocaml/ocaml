@@ -21,6 +21,7 @@
 #include "fail.h"
 #include "mlvalues.h"
 #include "misc.h"
+#include "memory.h"
 #ifdef HAS_LOCALE
 #include <locale.h>
 #endif
@@ -47,6 +48,7 @@ CAMLprim value caml_create_string(value len)
   if (size > Bsize_wsize (Max_wosize) - 1){
     caml_invalid_argument("String.create");
   }
+  ALLOCATION_ENTRY_POINT;
   return caml_alloc_string(size);
 }
 

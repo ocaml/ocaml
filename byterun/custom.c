@@ -29,10 +29,10 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
   if (ops->finalize == NULL && wosize <= Max_young_wosize) {
-    result = caml_alloc_small(wosize, Custom_tag);
+    result = caml_alloc_small_with_profinfo(wosize, Custom_tag, MY_PROFINFO);
     Custom_ops_val(result) = ops;
   } else {
-    result = caml_alloc_shr(wosize, Custom_tag);
+    result = caml_alloc_shr_with_profinfo(wosize, Custom_tag, MY_PROFINFO);
     Custom_ops_val(result) = ops;
     caml_adjust_gc_speed(mem, max);
     result = caml_check_urgent_gc(result);

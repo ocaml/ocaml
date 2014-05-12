@@ -17,6 +17,7 @@
 # It is used in particular to know what to expunge in toplevels.
 
 STDLIB_MODULES=\
+  allocation_profiling \
   arg \
   array \
   arrayLabels \

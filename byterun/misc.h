@@ -102,7 +102,6 @@ void caml_gc_message (int, char *, uintnat);
 
 char *caml_aligned_malloc (asize_t, int, void **);
 
-#ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
 #define Debug_tag(x) (0xD700D7D7D700D6D7ul \
                       | ((uintnat) (x) << 16) \
@@ -135,6 +134,7 @@ char *caml_aligned_malloc (asize_t, int, void **);
 
 #define Debug_uninit_stat    0xD7
 
+#ifdef DEBUG
 extern void caml_set_fields (char *, unsigned long, unsigned long);
 #endif /* DEBUG */
 

@@ -63,6 +63,16 @@
 
 extern int caml_parser_trace;
 
+uintnat caml_lifetime_shift = 0;
+uintnat caml_lifetime_tracking = 0;
+uintnat caml_allocation_profiling = 0;
+uint64_t* caml_minor_allocation_profiling_array = NULL;
+uint64_t* caml_minor_allocation_profiling_array_end = NULL;
+uint64_t* caml_major_allocation_profiling_array = NULL;
+uint64_t* caml_major_allocation_profiling_array_end = NULL;
+void* caml_allocation_trace_caller = NULL;
+void* caml_last_return_address = NULL;
+
 CAMLexport header_t caml_atom_table[256];
 
 /* Initialize the atom table */
@@ -340,6 +350,8 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
+extern int ensure_alloc_profiling_dot_o_is_included;
+
 /* Main entry point when loading code from a file */
 
 CAMLexport void caml_main(char **argv)
@@ -351,6 +363,8 @@ CAMLexport void caml_main(char **argv)
   char * shared_lib_path, * shared_libs, * req_prims;
   char * exe_name;
   static char proc_self_exe[256];
+
+  ensure_alloc_profiling_dot_o_is_included++;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -526,4 +540,10 @@ CAMLexport void caml_startup_code(
     }
     caml_fatal_uncaught_exception(caml_exn_bucket);
   }
+}
+
+void
+caml_record_lifetime_sample(header_t hd)
+{
+  /* not supported for bytecode */
 }

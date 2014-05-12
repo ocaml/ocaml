@@ -253,7 +253,6 @@ let make_shared_startup_file ppf units filename =
   Emit.end_assembly();
   close_out oc
 
-
 let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
   then raise(Error Linking_error)
@@ -333,6 +332,17 @@ let link ppf objfiles output_name =
     raise(Error(Assembler_error startup));
   try
     call_linker (List.map object_file_name objfiles) startup_obj output_name;
+    (* CR mshinwell: update the following comment once we support Mac OS X
+       allocation profiling *)
+    (* For allocation profiling, there is a third pass, after the final link:
+       source location information is extracted from the fully-linked executable
+       and stored in a new section within that same executable.  This may be
+       retrieved later using the [Allocation_profiling] module in the standard
+       library. *)
+    if !Clflags.allocation_profiling then
+      Allocation_profiling.Source_location_map.
+        create_from_dwarf_then_stuff_into_elf_section_exn ~executable:output_name
+          ~run_command:Ccomp.run_command;
     if not !Clflags.keep_startup_file then remove_file startup;
     remove_file startup_obj
   with x ->

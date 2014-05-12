@@ -12,6 +12,8 @@
 /***********************************************************************/
 
 #include <limits.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "compact.h"
 #include "custom.h"
@@ -281,17 +283,90 @@ static void mark_slice (intnat work)
   gray_vals_cur = gray_vals_ptr;
 }
 
+#define MAJOR_WORK_SAMPLES 10000
+static intnat caml_major_work_dark_words[MAJOR_WORK_SAMPLES];
+static intnat caml_major_work_blue_words[MAJOR_WORK_SAMPLES];
+static intnat caml_major_work_white_words[MAJOR_WORK_SAMPLES];
+static intnat caml_major_work_end_of_chunk[MAJOR_WORK_SAMPLES];
+static intnat caml_major_work_end_of_sweep[MAJOR_WORK_SAMPLES];
+
+void caml_dump_major_work_stats (void)
+{
+  int i;
+  for (i = 0; i < MAJOR_WORK_SAMPLES; i++) {
+/*
+    printf("slice size %lld words, freed %lld words\n",
+           (unsigned long long) caml_major_work_slice_size[i],
+           (unsigned long long) caml_major_work_freed_words[i]);
+*/
+    printf("%lld %lld %lld %lld %lld\n",
+           (unsigned long long) caml_major_work_dark_words[i],
+           (unsigned long long) caml_major_work_blue_words[i],
+           (unsigned long long) caml_major_work_white_words[i],
+           (unsigned long long) caml_major_work_end_of_chunk[i],
+           (unsigned long long) caml_major_work_end_of_sweep[i]);
+  }
+  fflush(stdout);
+}
+
+static void add_major_work_stat (intnat dark_words, intnat blue_words,
+                                 intnat white_words, intnat end_of_chunk,
+                                 intnat end_of_sweep)
+{
+  memmove(caml_major_work_dark_words,
+          &caml_major_work_dark_words[1],
+          MAJOR_WORK_SAMPLES * sizeof(intnat));
+
+  memmove(caml_major_work_blue_words,
+          &caml_major_work_blue_words[1],
+          MAJOR_WORK_SAMPLES * sizeof(intnat));
+
+  memmove(caml_major_work_white_words,
+          &caml_major_work_white_words[1],
+          MAJOR_WORK_SAMPLES * sizeof(intnat));
+
+  memmove(caml_major_work_end_of_chunk,
+          &caml_major_work_end_of_chunk[1],
+          MAJOR_WORK_SAMPLES * sizeof(intnat));
+
+  memmove(caml_major_work_end_of_sweep,
+          &caml_major_work_end_of_sweep[1],
+          MAJOR_WORK_SAMPLES * sizeof(intnat));
+
+  caml_major_work_dark_words[MAJOR_WORK_SAMPLES - 1] = dark_words;
+  caml_major_work_blue_words[MAJOR_WORK_SAMPLES - 1] = blue_words;
+  caml_major_work_white_words[MAJOR_WORK_SAMPLES - 1] = white_words;
+  caml_major_work_end_of_chunk[MAJOR_WORK_SAMPLES - 1] = end_of_chunk;
+  caml_major_work_end_of_sweep[MAJOR_WORK_SAMPLES - 1] = end_of_sweep;
+}
+
+extern void caml_record_lifetime_sample(header_t, int, uint64_t);
+
 static void sweep_slice (intnat work)
 {
   char *hp;
   header_t hd;
+  intnat dark_words, blue_words, white_words, end_of_chunk, end_of_sweep;
+  uint64_t now = 0ull;
+
+  dark_words = 0;
+  blue_words = 0;
+  white_words = 0;
+  end_of_chunk = 0;
+  end_of_sweep = 0;
+
+  if (caml_lifetime_tracking) {
+    now = Profinfo_now;
+  }
 
   caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (caml_gc_sweep_hp < limit){
+      intnat block_size;
       hp = caml_gc_sweep_hp;
       hd = Hd_hp (hp);
-      work -= Whsize_hd (hd);
+      block_size = Whsize_hd (hd);
+      work -= block_size;
       caml_gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
@@ -299,15 +374,21 @@ static void sweep_slice (intnat work)
           void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(hp));
         }
+        if (caml_lifetime_tracking) {
+          caml_record_lifetime_sample(hd, 1, now);
+        }
         caml_gc_sweep_hp = caml_fl_merge_block (Bp_hp (hp));
+        white_words += block_size;
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
         caml_fl_merge = Bp_hp (hp);
+        blue_words += block_size;
         break;
       default:          /* gray or black */
         Assert (Color_hd (hd) == Caml_black);
         Hd_hp (hp) = Whitehd_hd (hd);
+        dark_words += block_size;
         break;
       }
       Assert (caml_gc_sweep_hp <= limit);
@@ -318,12 +399,16 @@ static void sweep_slice (intnat work)
         ++ caml_stat_major_collections;
         work = 0;
         caml_gc_phase = Phase_idle;
+        end_of_sweep = 200000;
       }else{
         caml_gc_sweep_hp = chunk;
         limit = chunk + Chunk_size (chunk);
+        end_of_chunk = Chunk_size(chunk) / sizeof(value);
       }
     }
   }
+  add_major_work_stat (dark_words, blue_words, white_words,
+                       end_of_chunk, end_of_sweep);
 }
 
 /* The main entry point for the GC.  Called after each minor GC.

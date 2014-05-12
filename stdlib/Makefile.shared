@@ -17,6 +17,7 @@ COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
+OPTCOMPFLAGS=$(OPTCOMPFLAGS) -allocation-profiling
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
@@ -35,7 +36,7 @@ OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   genlex.cmo weak.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
-  stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  stringLabels.cmo moreLabels.cmo stdLabels.cmo allocation_profiling.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu -o pipefail
+
+if [ "$#" != "2" ]; then
+  echo "syntax: $0 EXECUTABLE-FILE OUTPUT-FILE"
+  exit 1
+fi
+
+exe=$1
+output=$2
+
+cp $exe $output
+
+
+#if [ "$(uname)" = "Linux" ]; then
+#  temp=$(mktemp)
+#  temp2=$(mktemp)
+#
+#  objdump --dwarf=decodedline $exe | awk '/^[^\s]*\s*[0-9]*.*0x/ {print $3}' > $temp
+#  cat $temp | addr2line -f -e $exe | awk '{printf "%s", $0; $0=""; getline; print " " $0}' \
+#    | sed 's/:\([0-9]*\)$/ \1/' | sed 's/caml\([A-Z]\)/ \1/' | sed 's/__/./g' > $temp2
+#  paste -d ' ' $temp $temp2 > $output
+#  rm -f $temp $temp2
+#else
+#  rm -f $output
+#  touch $output
+#fi

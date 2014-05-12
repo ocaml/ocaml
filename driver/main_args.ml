@@ -18,6 +18,10 @@ let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 ;;
 
+let mk_allocation_profiling f =
+  "-allocation-profiling", Arg.Unit f, "  Emit code with allocation profiling"
+;;
+
 let mk_annot f =
   "-annot", Arg.Unit f, " Save information in <filename>.annot"
 ;;
@@ -546,6 +550,8 @@ module type Bytetop_options = sig
 end;;
 
 module type Optcommon_options = sig
+  val _allocation_profiling : unit -> unit
+
   val _compact : unit -> unit
   val _inline : int -> unit
 
@@ -714,6 +720,7 @@ struct
   let list = [
     mk_a F._a;
     mk_absname F._absname;
+    mk_allocation_profiling F._allocation_profiling;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_c F._c;

@@ -471,7 +471,16 @@ let set_field ptr n newval =
   Cop(Cstore Word, [field_address ptr n; newval])
 
 let header ptr =
-  Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+(*
+  if !Clflags.allocation_profiling then
+*)
+    Cop(Cand, [Cop (Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
+               Cconst_int 0x0000_03ff_ffff_ffff;
+              ])
+(*
+  else
+    Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+*)
 
 let tag_offset =
   if big_endian then -1 else -size_int
@@ -585,6 +594,7 @@ let make_alloc_generic set_fn tag wordsize args =
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
                           fill_fields (idx + 2) el) in
     Clet(id,
+         (* CR mshinwell: [caml_alloc] should use the %r12 value here for profinfo. *)
          Cop(Cextcall("caml_alloc", typ_addr, true, Debuginfo.none),
                  [Cconst_int wordsize; Cconst_int tag]),
          fill_fields 1 args)

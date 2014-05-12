@@ -86,6 +86,7 @@ val inline_threshold : int ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
+val allocation_profiling : bool ref
 val shared : bool ref
 val dlcode : bool ref
 val runtime_variant : string ref

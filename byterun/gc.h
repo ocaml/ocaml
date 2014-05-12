@@ -14,8 +14,9 @@
 #ifndef CAML_GC_H
 #define CAML_GC_H
 
-
 #include "mlvalues.h"
+
+extern uintnat caml_allocation_profiling;
 
 #define Caml_white (0 << 8)
 #define Caml_gray  (1 << 8)
@@ -40,6 +41,15 @@
 #define Make_header(wosize, tag, color)                                       \
       (/*Assert ((wosize) <= Max_wosize),*/                                   \
        ((header_t) (((header_t) (wosize) << 10)                               \
+                    + (color)                                                 \
+                    + (tag_t) (tag)))                                         \
+      )
+
+#define Make_header_with_profinfo(wosize, tag, color, profinfo)               \
+      (/*Assert ((wosize) <= Max_wosize),*/                                   \
+       ((header_t) (((caml_allocation_profiling                    ) ?          \
+                       ((((header_t) profinfo) & 0x3fffffull) << 42) : 0)     \
+                    + ((header_t) (wosize) << 10)                             \
                     + (color)                                                 \
                     + (tag_t) (tag)))                                         \
       )

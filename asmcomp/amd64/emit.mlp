@@ -55,6 +55,14 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
+(* Output a label *)
+
+let emit_label lbl =
+  emit_string ".L"; emit_int lbl
+
+let emit_data_label lbl =
+  emit_string ".Ld"; emit_int lbl
+
 (* Symbols *)
 
 let emit_symbol s =
@@ -78,13 +86,12 @@ let load_symbol_addr s =
   then `leaq	{emit_symbol s}(%rip)`
   else `movq	${emit_symbol s}`
 
-(* Output a label *)
-
-let emit_label lbl =
-  emit_string ".L"; emit_int lbl
-
-let emit_data_label lbl =
-  emit_string ".Ld"; emit_int lbl
+let load_label_addr lbl =
+  if !Clflags.dlcode && not mingw64
+  then `movq	{emit_label lbl}@GOTPCREL(%rip)`
+  else if !pic_code
+  then `leaq	{emit_label lbl}(%rip)`
+  else `movq	${emit_label lbl}`
 
 (* Output a .align directive. *)
 
@@ -375,7 +382,18 @@ let emit_instr fallthrough i =
               `	movq	{emit_reg src}, {emit_reg dst}\n`
         end
     | Lop(Iconst_int n | Iconst_blockheader n) ->
-        if n = 0n then begin
+        let profiling_info_label =
+          match i.desc with
+          | Lop(Iconst_int _) -> None
+          | Lop(Iconst_blockheader _) ->
+            if !Clflags.allocation_profiling then Some (new_label ()) else None
+          | _ -> assert false
+        in
+        begin match profiling_info_label with
+          | None -> ()
+          | Some label -> `	.align 16\n{emit_label label}:`
+        end;
+        begin if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xorq	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
           | _     -> `	movq	$0, {emit_reg i.res.(0)}\n`
@@ -383,6 +401,57 @@ let emit_instr fallthrough i =
           `	movq	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else
           `	movabsq	${emit_nativeint n}, {emit_reg i.res.(0)}\n`
+        end;
+        begin match profiling_info_label with
+          | None -> ()
+          | Some _label when !Clflags.dlcode -> ()
+          | Some label -> begin
+            assert (n <= 0xffff_ffffn);
+            let lifetime_tracking_label = new_label () in
+            let shift_end_label = new_label () in
+            let end_label = new_label () in
+            (* CR mshinwell: need to emit CFI stack adjustments *)
+            (* CR mshinwell: not sure if these various mem operands are ok for dlcode *)
+            `	pushq	%r14\n`;
+            `	movq	{emit_symbol "caml_lifetime_tracking"}(%rip), %r14\n`;
+            `	cmpq    $1, %r14\n`;
+            `	je      {emit_label lifetime_tracking_label}\n`;
+            (* Recording of allocation location... *)
+            `	{load_label_addr label}, %r14\n`;
+            `	jmp	{emit_label end_label}\n`;
+            (* ...or recording of allocation time: *)
+            `	.align 16\n{emit_label lifetime_tracking_label}:`;
+            `	pushq	%r15\n`;
+            `	movq	{emit_symbol "caml_young_end"}(%rip), %r14\n`;
+            `	subq	%r15, %r14\n`;  (* %r15 = caml_young_ptr *)
+            `	cvttsd2siq	{emit_symbol "caml_stat_minor_words"}(%rip), %r15\n`;
+            `	sal	$3, %r15\n`; (* CR mshinwell: should be configurable (=log2 word size) *)
+            `	addq	%r15, %r14\n`;
+(*
+            `	cvttsd2siq	{emit_symbol "caml_stat_major_words"}(%rip), %r15\n`;
+            `	addq	%r15, %r14\n`;
+            `	cvttsd2siq	{emit_symbol "caml_stat_promoted_words"}(%rip), %r15\n`;
+            `	subq	%r15, %r14\n`;
+            `	addq    {emit_symbol "caml_allocated_words"}(%rip), %r14\n`;
+*)
+            `	movq    {emit_symbol "caml_lifetime_shift"}(%rip), %r15\n`;
+            `	subq    $4, %r15\n`;  (* since the mask below is shifted 4 bits to the left *)
+            `	cmp	$1, %r15\n`;
+            `	jl	{emit_label shift_end_label}\n`;
+            `	pushq	%rcx\n`;
+            `	movq	%r15, %rcx\n`;
+            `	sar	%cl, %r14\n`;
+            `	popq	%rcx\n`;
+            `	.align 16\n{emit_label shift_end_label}:`;
+            `	popq	%r15\n`;
+            (* For both, shift into the correct place and mask into the header word: *)
+            `	.align 16\n{emit_label end_label}:`;
+            `	andq	$0x0000000003fffff0, %r14\n`;
+            `	sal	$38, %r14\n`;
+            `	orq     %r14, {emit_reg i.res.(0)}\n`;
+            `	popq	%r14\n`
+          end
+        end
     | Lop(Iconst_float f) ->
         begin match Int64.bits_of_float f with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -477,6 +546,26 @@ let emit_instr fallthrough i =
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;
+          if !Clflags.allocation_profiling then begin
+          let skip_tracing_label = new_label () in
+          `	pushq	%r10\n`;
+          `	pushq	%r11\n`;
+          `	{load_symbol_addr "caml_minor_allocation_profiling_array"}, %r11\n`;
+          `	movq	(%r11), %r10\n`;
+          `     cmpq    $0, %r10\n`;
+          `     je      {emit_label skip_tracing_label}\n`;
+          `	lea 	(%rip), %r11\n`;
+          `	addq	%r11, %r10\n`;
+          `	andq	$0xfffffffffffffff8, %r10\n`;
+          `	{load_symbol_addr "caml_minor_allocation_profiling_array_end"}, %r11\n`;
+          `	cmpq    (%r11), %r10\n`;
+          `	jae	{emit_label skip_tracing_label}\n`;
+          `	movq	(%r10), %r11\n`;
+          `	addq	${emit_int (n / 8)}, %r11\n`;
+          `	movq	%r11, (%r10)\n`;
+          `{emit_label skip_tracing_label}:	popq	%r11\n`;
+          `	popq	%r10\n`;
+          end;
           `	leaq	8(%r15), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
@@ -484,11 +573,28 @@ let emit_instr fallthrough i =
               gc_frame = lbl_frame } :: !call_gc_sites
         end else begin
           begin match n with
-            16  -> `	{emit_call "caml_alloc1"}\n`
-          | 24 -> `	{emit_call "caml_alloc2"}\n`
-          | 32 -> `	{emit_call "caml_alloc3"}\n`
-          | _  -> `	movq	${emit_int n}, %rax\n`;
-                  `	{emit_call "caml_allocN"}\n`
+            16  ->
+            if !Clflags.allocation_profiling then
+              `	{emit_call "caml_alloc1_tracing"}\n`
+            else
+              `	{emit_call "caml_alloc1"}\n`
+          | 24 ->
+            if !Clflags.allocation_profiling then
+              `	{emit_call "caml_alloc2_tracing"}\n`
+            else
+              `	{emit_call "caml_alloc2"}\n`
+          | 32 ->
+            if !Clflags.allocation_profiling then
+              `	{emit_call "caml_alloc3_tracing"}\n`
+            else
+              `	{emit_call "caml_alloc3"}\n`
+          | _  -> begin
+            `	movq	${emit_int n}, %rax\n`;
+            if !Clflags.allocation_profiling then
+              `	{emit_call "caml_allocN_tracing"}\n`
+            else
+              `	{emit_call "caml_allocN"}\n`
+          end
           end;
           `{record_frame i.live Debuginfo.none}	leaq	8(%r15), {emit_reg i.res.(0)}\n`
         end

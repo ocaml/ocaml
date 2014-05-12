@@ -74,6 +74,7 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _a = set make_archive
   let _absname = set Location.absname
+  let _allocation_profiling = set allocation_profiling
   let _annot = set annotations
   let _binannot = set binary_annotations
   let _c = set compile_only

@@ -347,6 +347,7 @@ install:
 installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
+	cp tools/allocation-profiling/ocamlmklocs $(BINDIR)/
 	cd stdlib; $(MAKE) installopt
 	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)

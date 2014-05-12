@@ -21,6 +21,7 @@ CC=$(BYTECC)
 CAMLRUN=$(ROOTDIR)/boot/ocamlrun
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+CAMLOPT+=-allocation-profiling
 
 # Variables to be defined by individual libraries:
 #LIBNAME=
