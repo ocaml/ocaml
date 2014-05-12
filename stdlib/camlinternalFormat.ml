@@ -2017,33 +2017,62 @@ let fmt_ebb_of_string str =
   (* Convert (plus, symb) to its associated int_conv. *)
   and compute_int_conv pct_ind str_ind plus sharp space symb =
     match plus, sharp, space, symb with
-    | false, false, false, 'd' -> Int_d  |  true, false, false, 'd' -> Int_pd
-    | false, false,  true, 'd' -> Int_sd | false, false, false, 'i' -> Int_i
-    |  true, false, false, 'i' -> Int_pi | false, false,  true, 'i' -> Int_si
-    | false, false, false, 'x' -> Int_x  | false,  true, false, 'x' -> Int_Cx
-    | false, false, false, 'X' -> Int_X  | false,  true, false, 'X' -> Int_CX
-    | false, false, false, 'o' -> Int_o  | false,  true, false, 'o' -> Int_Co
+    | false, false, false, 'd' -> Int_d  | false, false, false, 'i' -> Int_i
+    | false, false,  true, 'd' -> Int_sd | false, false,  true, 'i' -> Int_si
+    |  true, false, false, 'd' -> Int_pd |  true, false, false, 'i' -> Int_pi
+    | false, false, false, 'x' -> Int_x  | false, false, false, 'X' -> Int_X
+    | false,  true, false, 'x' -> Int_Cx | false,  true, false, 'X' -> Int_CX
+    | false, false, false, 'o' -> Int_o
+    | false,  true, false, 'o' -> Int_Co
     | false, false, false, 'u' -> Int_u
-    | true, _, true, _         -> incompatible_flag pct_ind str_ind ' ' "'+'"
-    | true, _, _, _            -> incompatible_flag pct_ind str_ind symb "'+'"
-    | _, true, _, _            -> incompatible_flag pct_ind str_ind symb "'#'"
-    | _, _, true, _            -> incompatible_flag pct_ind str_ind symb "' '"
-    | false, false, false, _   -> assert false
+    | _, true, _, 'x' when legacy_behavior -> Int_Cx
+    | _, true, _, 'X' when legacy_behavior -> Int_CX
+    | _, true, _, 'o' when legacy_behavior -> Int_Co
+    | _, true, _, _ ->
+      if legacy_behavior then (* ignore *)
+        compute_int_conv pct_ind str_ind plus false space symb
+      else incompatible_flag pct_ind str_ind symb "'#'"
+    | true, false, true, _ ->
+      if legacy_behavior then
+        (* plus and space: legacy implementation prefers plus *)
+        compute_int_conv pct_ind str_ind plus sharp false symb
+      else incompatible_flag pct_ind str_ind ' ' "'+'"
+    | false, false, true, _    ->
+      if legacy_behavior then (* ignore *)
+        compute_int_conv pct_ind str_ind plus sharp false symb
+      else incompatible_flag pct_ind str_ind symb "' '"
+    | true, false, false, _    ->
+      if legacy_behavior then (* ignore *)
+        compute_int_conv pct_ind str_ind false sharp space symb
+      else incompatible_flag pct_ind str_ind symb "'+'"
+    | false, false, false, _ -> assert false
 
   (* Convert (plus, symb) to its associated float_conv. *)
   and compute_float_conv pct_ind str_ind plus space symb =
   match plus, space, symb with
-    | false, false, 'f' -> Float_f  |  true, false, 'f' -> Float_pf
-    | false,  true, 'f' -> Float_sf | false, false, 'e' -> Float_e
-    |  true, false, 'e' -> Float_pe | false,  true, 'e' -> Float_se
-    | false, false, 'E' -> Float_E  |  true, false, 'E' -> Float_pE
-    | false,  true, 'E' -> Float_sE | false, false, 'g' -> Float_g
-    |  true, false, 'g' -> Float_pg | false,  true, 'g' -> Float_sg
-    | false, false, 'G' -> Float_G  |  true, false, 'G' -> Float_pG
-    | false,  true, 'G' -> Float_sG | false, false, 'F' -> Float_F
-    |  true,  true, _ -> incompatible_flag pct_ind str_ind ' ' "'+'"
-    |  true, false, _ -> incompatible_flag pct_ind str_ind symb "'+'"
-    | false,  true, _ -> incompatible_flag pct_ind str_ind symb "' '"
+    | false, false, 'f' -> Float_f  | false, false, 'e' -> Float_e
+    | false,  true, 'f' -> Float_sf | false,  true, 'e' -> Float_se
+    |  true, false, 'f' -> Float_pf |  true, false, 'e' -> Float_pe
+    | false, false, 'E' -> Float_E  | false, false, 'g' -> Float_g
+    | false,  true, 'E' -> Float_sE | false,  true, 'g' -> Float_sg
+    |  true, false, 'E' -> Float_pE |  true, false, 'g' -> Float_pg
+    | false, false, 'G' -> Float_G
+    | false,  true, 'G' -> Float_sG
+    |  true, false, 'G' -> Float_pG
+    | false, false, 'F' -> Float_F
+    |  true,  true, _ ->
+      if legacy_behavior then
+        (* plus and space: legacy implementation prefers plus *)
+        compute_float_conv pct_ind str_ind plus false symb
+      else incompatible_flag pct_ind str_ind ' ' "'+'"
+    | false,  true, _ ->
+      if legacy_behavior then (* ignore *)
+        compute_float_conv pct_ind str_ind plus false symb
+      else incompatible_flag pct_ind str_ind symb "' '"
+    |  true, false, _ ->
+      if legacy_behavior then (* ignore *)
+        compute_float_conv pct_ind str_ind false space symb
+      else incompatible_flag pct_ind str_ind symb "'+'"
     | false, false, _ -> assert false
 
   (* Raise a Failure with a friendly error message about incompatible options.*)
