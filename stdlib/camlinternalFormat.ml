@@ -1,5 +1,8 @@
 open CamlinternalFormatBasics
 
+let legacy_behavior =
+  try Sys.getenv "OCAML_LEGACY_FORMAT" <> "" with _ -> false
+
 (******************************************************************************)
                                  (* Types *)
 
