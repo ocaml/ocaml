@@ -172,6 +172,8 @@ CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 
 /* Maximal size of the queue used for breadth-first traversal.  */
 #define HASH_QUEUE_SIZE 256
+/* Maximal number of Forward_tag links followed in one step */
+#define MAX_FORWARD_DEREFERENCE 1000
 
 /* The generic hash function */
 
@@ -226,11 +228,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         v = v - Infix_offset_val(v);
         goto again;
       case Forward_tag:
-        v = Forward_val(v);
-        /* PR#6361: this should count as 1, otherwise we can get into a loop */
-        num--;
-        if (num <= 0) break;
-        goto again;
+        /* PR#6361: we can have a loop here, so limit the number of
+           Forward_tag links being followed */
+        for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
+          v = Forward_val(v);
+          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+            goto again;
+        }
+        /* Give up on this object and move to the next */
+        break;
       case Object_tag:
         h = caml_hash_mix_intnat(h, Oid_val(v));
         num--;
