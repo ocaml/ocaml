@@ -169,13 +169,13 @@ let char_of_counter counter = match counter with
 (* Print a char_set in a buffer with the OCaml format lexical convention. *)
 let bprint_char_set buf char_set =
   let rec print_start set =
-    if is_in_char_set set ']' &&
-      (not (is_in_char_set set '\\') || not (is_in_char_set set '^'))
-    then buffer_add_char buf ']';
+    let is_alone c =
+      let before, after = Char.(chr (code c - 1), chr (code c + 1)) in
+      is_in_char_set set c
+      && not (is_in_char_set set before && is_in_char_set set after) in
+    if is_alone ']' then buffer_add_char buf ']';
     print_out set 1;
-    if is_in_char_set set '-' &&
-      (not (is_in_char_set set ',') || not (is_in_char_set set '.'))
-    then buffer_add_char buf '-';
+    if is_alone '-' then buffer_add_char buf '-';
   and print_out set i =
     if i < 256 then
       if is_in_char_set set (char_of_int i) then print_first set i
