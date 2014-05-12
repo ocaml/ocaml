@@ -217,13 +217,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
   value env;
   intnat extra_args;
-  struct longjmp_buffer * initial_external_raise;
+  struct caml_exception_context * initial_external_raise;
   int initial_sp_offset;
-  /* volatile ensures that initial_local_roots and saved_pc
-     will keep correct value across longjmp */
-  struct caml__roots_block * volatile initial_local_roots;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
+  struct caml_exception_context exception_ctx = { &raise_buf, caml_local_roots };
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
@@ -247,14 +245,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
-  initial_local_roots = caml_local_roots;
   initial_sp_offset = (char *) caml_stack_high - (char *) caml_extern_sp;
   initial_external_raise = caml_external_raise;
   caml_callback_depth++;
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
-    caml_local_roots = initial_local_roots;
+    /* local variables accessed here (i.e. saved_pc) must be "volatile" */
     sp = caml_extern_sp;
     accu = caml_exn_bucket;
     pc = saved_pc; saved_pc = NULL;
@@ -262,7 +259,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         /* +2 adjustement for the sole purpose of backtraces */
     goto raise_exception;
   }
-  caml_external_raise = &raise_buf;
+  caml_external_raise = &exception_ctx;
 
   sp = caml_extern_sp;
   pc = prog;

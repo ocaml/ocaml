@@ -26,15 +26,24 @@
 #include "signals.h"
 #include "stacks.h"
 
-CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
+CAMLexport struct caml_exception_context * caml_external_raise = NULL;
 value caml_exn_bucket;
 
 CAMLexport void caml_raise(value v)
 {
-  Unlock_exn();
   caml_exn_bucket = v;
   if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);
-  siglongjmp(caml_external_raise->buf, 1);
+  while (caml_local_roots != caml_external_raise->local_roots) {
+    Assert(caml_local_roots != NULL);
+    struct caml__mutex_unwind* m = caml_local_roots->mutexes;
+    while (m) {
+      /* unlocked in reverse order of locking */
+      plat_mutex_unlock(m->mutex);
+      m = m->next;
+    }
+    caml_local_roots = caml_local_roots->next;
+  }
+  siglongjmp(caml_external_raise->jmp->buf, 1);
 }
 
 CAMLexport void caml_raise_constant(value tag)
