@@ -2903,7 +2903,12 @@ and type_format loc str env attr =
           mk_constr "Ignored_reader" []
         | Ignored_scan_char_set (width_opt, char_set) ->
           mk_constr "Ignored_scan_char_set" [
-            mk_int_opt width_opt; mk_string char_set ] in
+            mk_int_opt width_opt; mk_string char_set ]
+        | Ignored_scan_get_counter counter ->
+          mk_constr "Ignored_scan_get_counter" [
+            mk_counter counter
+          ]
+      in
       let mk_padding : type x y . (x, y) padding -> Parsetree.expression =
       fun pad -> match pad with
         | No_padding         -> mk_constr "No_padding" []
