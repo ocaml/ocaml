@@ -25,6 +25,8 @@
 #include "opnames.h"
 #include "prims.h"
 #include "stacks.h"
+#include "domain.h"
+#include "startup.h"
 
 extern code_t caml_start_code;
 
@@ -32,10 +34,9 @@ intnat caml_icount = 0;
 
 void caml_stop_here () {}
 
-int caml_trace_flag = 0;
+char * caml_instr_string (code_t pc);
 
-void caml_disasm_instr(pc)
-     code_t pc;
+void caml_disasm_instr(code_t pc)
 {
   int instr = *pc;
   printf("%6ld  %s", (long) (pc - caml_start_code),
@@ -251,7 +252,7 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
   caml_trace_value_file (accu, prog, proglen, f);
   fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",
            (intnat) sp, caml_stack_high - sp);
-  for (p = sp, i = 0; i < 12 + (1 << caml_trace_flag) && p < caml_stack_high;
+  for (p = sp, i = 0; i < 12 + (1 << caml_startup_params.trace_flag) && p < caml_stack_high;
        p++, i++) {
     fprintf (f, "\n[%ld] ", caml_stack_high - p);
     caml_trace_value_file (*p, prog, proglen, f);

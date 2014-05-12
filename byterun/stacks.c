@@ -19,6 +19,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "stacks.h"
+#include "startup.h"
 
 CAMLexport __thread value * caml_stack_low; /* allocation base */
 CAMLexport __thread value * caml_stack_high; /* one-past-the-end */
@@ -30,7 +31,7 @@ caml_root caml_global_data;
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
 
-void caml_init_stack (uintnat initial_max_size)
+void caml_init_stack ()
 {
   caml_stack_low = (value *) caml_stat_alloc(Stack_size);
   caml_stack_high = caml_stack_low + Stack_size / sizeof (value);
@@ -38,7 +39,7 @@ void caml_init_stack (uintnat initial_max_size)
   caml_extern_sp = caml_stack_high;
   caml_trap_sp_off = 0;
   caml_trap_barrier_off = 1;
-  caml_max_stack_size = initial_max_size;
+  caml_max_stack_size = caml_startup_params.max_stack_init;
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
 }

@@ -48,6 +48,7 @@
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
+#include "startup.h"
 
 static char * error_message(void)
 {
@@ -251,25 +252,16 @@ CAMLprim value caml_sys_getenv(value var)
   return caml_copy_string(res);
 }
 
-char * caml_exe_name;
-static char ** caml_main_argv;
-
 CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = caml_copy_string(caml_exe_name);
-  argv = caml_copy_string_array((char const **) caml_main_argv);
+  exe_name = caml_copy_string(caml_startup_params.exe_name);
+  argv = caml_copy_string_array((char const **) caml_startup_params.main_argv);
   res = caml_alloc_small(2, 0);
   Init_field(res, 0, exe_name);
   Init_field(res, 1, argv);
   CAMLreturn(res);
-}
-
-void caml_sys_init(char * exe_name, char **argv)
-{
-  caml_exe_name = exe_name;
-  caml_main_argv = argv;
 }
 
 #ifdef _WIN32
