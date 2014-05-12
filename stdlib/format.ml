@@ -232,8 +232,6 @@ let pp_output_string state s = state.pp_out_string s 0 (String.length s)
 and pp_output_newline state = state.pp_out_newline ()
 and pp_output_spaces state n = state.pp_out_spaces n
 
-let pp_output_char state c = pp_output_string state (String.make 1 c)
-
 (* To format a break, indenting a new line. *)
 let break_new_line state offset width =
   pp_output_newline state;
@@ -1081,9 +1079,9 @@ let output_formatting ppf fmting = match fmting with
   | Force_newline             -> pp_force_newline ppf ()
   | Flush_newline             -> pp_print_newline ppf ()
   | Magic_size (_, _)         -> ()
-  | Escaped_at                -> pp_output_char ppf '@'
-  | Escaped_percent           -> pp_output_char ppf '%'
-  | Scan_indic c              -> pp_output_char ppf '@'; pp_output_char ppf c
+  | Escaped_at                -> pp_print_char ppf '@'
+  | Escaped_percent           -> pp_print_char ppf '%'
+  | Scan_indic c              -> pp_print_char ppf '@'; pp_print_char ppf c
 
 (* Recursively output an "accumulator" containing a reversed list of
    printing entities (string, char, flus, ...) in an output_stream. *)
