@@ -173,21 +173,10 @@ external bytes_length : bytes -> int = "%string_length"
 external bytes_create : int -> bytes = "caml_create_string"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
-external bytes_get : bytes -> int -> char = "%string_safe_get"
-external bytes_set : bytes -> int -> char -> unit = "%string_safe_set"
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
                         = "caml_blit_string" "noalloc"
 external bytes_unsafe_to_string : bytes -> string = "%identity"
 external bytes_unsafe_of_string : string -> bytes = "%identity"
-
-let copy_bytes byt =
-  let len = bytes_length byt in
-  let res = bytes_create len in
-  bytes_blit byt 0 res 0 len;
-  res
-
-let bytes_to_string byt =
-  bytes_unsafe_to_string (copy_bytes byt)
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -660,7 +649,7 @@ type prec_option = int option
 (* Type used in Format_subst_ty and Format_subst constructors as "a proof"
    of '->' number equality between two ('d, 'e) relations. *)
 (* See the scanf implementation of "%(...%)". *)
-(* Not meaningfull for Printf and Format since "%r" is Scanf specific. *)
+(* Not meaningful for Printf and Format since "%r" is Scanf specific. *)
 type ('d1, 'e1, 'd2, 'e2) reader_nb_unifier =
   | Zero_reader :
       ('d1, 'd1, 'd2, 'd2) reader_nb_unifier
@@ -838,7 +827,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_int64 :                                          (* %_Ld *)
       int_conv * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_float :                                          (* %_f *)
-      pad_option * pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_bool :                                           (* %_B *)
       ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_arg :                                     (* %_{...%} *)
@@ -961,130 +950,6 @@ fun fmt1 fmt2 -> match fmt1 with
 
   | End_of_format ->
     fmt2
-
-(******************************************************************************)
-           (* Tools to manipulate scanning set of chars (see %[...]) *)
-
-type mutable_char_set = bytes
-
-(* Create a fresh, empty, mutable char set. *)
-let create_char_set () =
-  (* Bytes.make isn't defined yet, so we'll fill manually *)
-  let cs = bytes_create 32 in
-  for i = 0 to 31 do bytes_set cs i '\000' done;
-  cs
-
-(* Add a char in a mutable char set. *)
-let add_in_char_set char_set c =
-  let ind = int_of_char c in
-  let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
-  bytes_set char_set str_ind
-    (char_of_int (int_of_char (bytes_get char_set str_ind) lor mask))
-
-let freeze_char_set char_set =
-  bytes_to_string char_set
-
-(* Compute the complement of a char set. *)
-(* Return a fresh string, do not modify its argument. *)
-let rev_char_set char_set =
-  let char_set' = create_char_set () in
-  for i = 0 to 31 do
-    bytes_set char_set' i
-      (char_of_int (int_of_char (string_get char_set i) lxor 0xFF));
-  done;
-  bytes_unsafe_to_string char_set'
-
-(* Return true if a `c' is in `char_set'. *)
-let is_in_char_set char_set c =
-  let ind = int_of_char c in
-  let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
-  (int_of_char (string_get char_set str_ind) land mask) <> 0
-
-(******************************************************************************)
-                             (* Reader count *)
-
-(* Count the number of "%r" (Reader_ty) and "%_r" (Ignored_reader_ty)
-   in an fmtty. *)
-let rec reader_nb_unifier_of_fmtty : type a b c d e f .
-    (a, b, c, d, e, f) fmtty -> (d, e, d, e) reader_nb_unifier =
-fun fmtty -> match fmtty with
-  | Char_ty rest            -> reader_nb_unifier_of_fmtty rest
-  | String_ty rest          -> reader_nb_unifier_of_fmtty rest
-  | Int_ty rest             -> reader_nb_unifier_of_fmtty rest
-  | Int32_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Nativeint_ty rest       -> reader_nb_unifier_of_fmtty rest
-  | Int64_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Float_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Bool_ty rest            -> reader_nb_unifier_of_fmtty rest
-  | Alpha_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Theta_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Reader_ty rest          -> Succ_reader (reader_nb_unifier_of_fmtty rest)
-  | Ignored_reader_ty rest  -> Succ_reader (reader_nb_unifier_of_fmtty rest)
-  | Format_arg_ty (_, rest) -> reader_nb_unifier_of_fmtty rest
-  | Format_subst_ty(_,sub_fmtty,rest) ->
-    reader_nb_unifier_of_fmtty (concat_fmtty sub_fmtty rest)
-  | End_of_fmtty -> Zero_reader
-
-(******************************************************************************)
-                         (* Ignored param conversion *)
-
-(* GADT used to abstract an existential type parameter. *)
-(* See param_format_of_ignored_format. *)
-type ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb = Param_format_EBB :
-    ('x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt ->
-    ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
-
-(* Compute a padding associated to a pad_option (see "%_42d"). *)
-let pad_of_pad_opt pad_opt = match pad_opt with
-  | None -> No_padding
-  | Some width -> Lit_padding (Right, width)
-
-(* Compute a precision associated to a prec_option (see "%_.42f"). *)
-let prec_of_prec_opt prec_opt = match prec_opt with
-  | None -> No_precision
-  | Some ndec -> Lit_precision ndec
-
-(* Turn an ignored param into its equivalent not-ignored format node. *)
-(* Used for format pretty-printing and Scanf. *)
-let param_format_of_ignored_format : type a b c d e f x y .
-    (a, b, c, d, y, x) ignored -> (x, b, c, y, e, f) fmt ->
-      (a, b, c, d, e, f) param_format_ebb =
-fun ign fmt -> match ign with
-  | Ignored_char ->
-    Param_format_EBB (Char fmt)
-  | Ignored_caml_char ->
-    Param_format_EBB (Caml_char fmt)
-  | Ignored_string pad_opt ->
-    Param_format_EBB (String (pad_of_pad_opt pad_opt, fmt))
-  | Ignored_caml_string pad_opt ->
-    Param_format_EBB (Caml_string (pad_of_pad_opt pad_opt, fmt))
-  | Ignored_int (iconv, pad_opt) ->
-    Param_format_EBB (Int (iconv, pad_of_pad_opt pad_opt, No_precision, fmt))
-  | Ignored_int32 (iconv, pad_opt) ->
-    Param_format_EBB
-      (Int32 (iconv, pad_of_pad_opt pad_opt, No_precision, fmt))
-  | Ignored_nativeint (iconv, pad_opt) ->
-    Param_format_EBB
-      (Nativeint (iconv, pad_of_pad_opt pad_opt, No_precision, fmt))
-  | Ignored_int64 (iconv, pad_opt) ->
-    Param_format_EBB
-      (Int64 (iconv, pad_of_pad_opt pad_opt, No_precision, fmt))
-  | Ignored_float (pad_opt, prec_opt) ->
-    Param_format_EBB
-      (Float (Float_f, pad_of_pad_opt pad_opt, prec_of_prec_opt prec_opt, fmt))
-  | Ignored_bool ->
-    Param_format_EBB (Bool fmt)
-  | Ignored_format_arg (pad_opt, fmtty) ->
-    Param_format_EBB (Format_arg (pad_opt, fmtty, fmt))
-  | Ignored_format_subst (pad_opt, fmtty) ->
-    Param_format_EBB
-      (Format_subst (pad_opt, reader_nb_unifier_of_fmtty fmtty, fmtty, fmt))
-  | Ignored_reader ->
-    Param_format_EBB (Reader fmt)
-  | Ignored_scan_char_set (width_opt, char_set) ->
-    Param_format_EBB (Scan_char_set (width_opt, char_set, fmt))
-  | Ignored_scan_get_counter counter ->
-    Param_format_EBB (Scan_get_counter (counter, fmt))
 end
 
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
@@ -1101,7 +966,7 @@ external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
 let (^^) (fmt1, str1) (fmt2, str2) =
-  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ str2)
+  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 

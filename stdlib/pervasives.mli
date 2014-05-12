@@ -1192,25 +1192,6 @@ module CamlinternalFormatBasics : sig
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('f, 'b, 'c, 'e, 'g, 'h) fmt ->
       ('a, 'b, 'c, 'd, 'g, 'h) fmt
-
-  val is_in_char_set : char_set -> char -> bool
-  val rev_char_set : char_set -> char_set
-
-  type mutable_char_set = bytes
-  val create_char_set : unit -> mutable_char_set
-  val add_in_char_set : mutable_char_set -> char -> unit
-  val freeze_char_set : mutable_char_set -> char_set
-
-  val reader_nb_unifier_of_fmtty :
-     ('a, 'b, 'c, 'd, 'e, 'f) fmtty -> ('d, 'e, 'd, 'e) reader_nb_unifier
-
-  type ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb = Param_format_EBB :
-       ('x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt ->
-       ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
-
-  val param_format_of_ignored_format :
-    ('a, 'b, 'c, 'd, 'y, 'x) ignored -> ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
-    ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
 end
 
 (** Format strings have a general and highly polymorphic type
