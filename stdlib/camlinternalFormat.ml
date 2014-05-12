@@ -1,7 +1,18 @@
 open CamlinternalFormatBasics
 
-let legacy_behavior =
-  try Sys.getenv "OCAML_LEGACY_FORMAT" <> "" with _ -> false
+let legacy_behavior = true
+(** When this flag is enabled, the format parser tries to behave as
+    the <4.02 implementations, in particular it ignores most benine
+    nonsensical format. When the flag is disabled, it will reject any
+    format that is not accepted by the specification.
+
+    A typical example would be "%+ d": specifying both '+' (if the
+    number is positive, pad with a '+' to get the same width as
+    negative numbres) and ' ' (if the number is positive, pad with
+    a space) does not make sense, but the legacy (< 4.02)
+    implementation was happy to just ignore the space.
+*)
+
 
 (******************************************************************************)
            (* Tools to manipulate scanning set of chars (see %[...]) *)
