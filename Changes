@@ -66,6 +66,8 @@ Compilers:
 - PR#6311: Improve signature mismatch error messages
 - PR#6345: Better compilation of optional arguments with default values
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
+- PR#6017: a new format implementation based on GADTs
+  (initial patch by Benoît Vaugon, review by Gabriel Scherer)
 
 Toplevel interactive system:
 - PR#5377: New "#show_*" directives
