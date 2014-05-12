@@ -1001,7 +1001,7 @@ external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
 let (^^) (fmt1, str1) (fmt2, str2) =
-  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ str2)
+  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 
