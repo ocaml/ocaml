@@ -989,9 +989,9 @@ fun k o acc fmt -> match fmt with
   | Scan_get_counter (_, rest) ->
     (* This case should be refused for Printf. *)
     (* Accepted for backward compatibility. *)
-    (* Interpret %l, %n and %L as %d. *)
+    (* Interpret %l, %n and %L as %u. *)
     fun n ->
-      let new_acc = Acc_string (acc, format_int "%d" n) in
+      let new_acc = Acc_string (acc, format_int "%u" n) in
       make_printf k o new_acc rest
   | Ignored_param (ign, rest) ->
     make_ignored_param k o acc ign rest
