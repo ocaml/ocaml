@@ -2758,10 +2758,10 @@ and type_format loc str env =
           | []          -> None
           | [ e ]       -> Some e
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
-        mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg, true)) in
+        mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
       let mk_int n = mk_cst (Const_int n)
-      and mk_string str = mk_cst (Const_string str)
+      and mk_string str = mk_cst (Const_string (str, None))
       and mk_char chr = mk_cst (Const_char chr) in
       let mk_block_type bty = match bty with
         | Pp_hbox   -> mk_constr "Pp_hbox"   []
@@ -2831,10 +2831,10 @@ and type_format loc str env =
       and mk_int_opt n_opt = match n_opt with
         | None ->
           let lid_loc = mk_lid_loc (Longident.Lident "None") in
-          mk_exp_loc (Pexp_construct (lid_loc, None, true))
+          mk_exp_loc (Pexp_construct (lid_loc, None))
         | Some n ->
           let lid_loc = mk_lid_loc (Longident.Lident "Some") in
-          mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n), true)) in
+          mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n))) in
       let rec mk_reader_nb_unifier : type d1 e1 d2 e2 .
           (d1, e1, d2, e2) reader_nb_unifier -> Parsetree.expression =
       fun rnu -> match rnu with

@@ -107,41 +107,39 @@ external format_int64: string -> int64 -> string
 (* Type of extensible character buffers. *)
 type buffer = {
   mutable ind : int;
-  mutable str : string;
+  mutable bytes : bytes;
 }
 
 (* Create a fresh buffer. *)
-let buffer_create init_size = { ind = 0; str = String.create init_size }
+let buffer_create init_size = { ind = 0; bytes = Bytes.create init_size }
 
 (* Check size of the buffer and grow it if needed. *)
 let buffer_check_size buf overhead =
-  let len = String.length buf.str in
+  let len = Bytes.length buf.bytes in
   let min_len = buf.ind + overhead in
   if min_len > len then (
     let new_len = max (len * 2) min_len in
-    let new_str = String.create new_len in
-    String.blit buf.str 0 new_str 0 len;
-    buf.str <- new_str;
+    let new_str = Bytes.create new_len in
+    Bytes.blit buf.bytes 0 new_str 0 len;
+    buf.bytes <- new_str;
   )
 
 (* Add the character `c' to the buffer `buf'. *)
 let buffer_add_char buf c =
   buffer_check_size buf 1;
-  buf.str.[buf.ind] <- c;
+  Bytes.set buf.bytes buf.ind c;
   buf.ind <- buf.ind + 1
 
 (* Add the string `s' to the buffer `buf'. *)
 let buffer_add_string buf s =
   let str_len = String.length s in
   buffer_check_size buf str_len;
-  String.blit s 0 buf.str buf.ind str_len;
+  String.blit s 0 buf.bytes buf.ind str_len;
   buf.ind <- buf.ind + str_len
 
 (* Get the content of the buffer. *)
 let buffer_contents buf =
-  let str = String.create buf.ind in
-  String.blit buf.str 0 str 0 buf.ind;
-  str
+  Bytes.sub_string buf.bytes 0 buf.ind
 
 (***)
 
@@ -327,10 +325,7 @@ let string_of_formatting formatting = match formatting with
   | Magic_size (str, _)  -> str
   | Escaped_at           -> "@@"
   | Escaped_percent      -> "@%"
-  | Scan_indic c ->
-    let str = String.create 2 in
-    str.[0] <- '@'; str.[1] <- c;
-    str
+  | Scan_indic c -> "@" ^ (String.make 1 c)
 
 (***)
 
@@ -814,47 +809,43 @@ fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
 let fix_padding padty width str =
   let len = String.length str in
   if width <= len then str else
-    let res = String.make width (if padty = Zeros then '0' else ' ') in
+    let res = Bytes.make width (if padty = Zeros then '0' else ' ') in
     begin match padty with
     | Left  -> String.blit str 0 res 0 len
     | Right -> String.blit str 0 res (width - len) len
     | Zeros when len > 0 && (str.[0] = '+' || str.[0] = '-') ->
-      res.[0] <- str.[0];
+      Bytes.set res 0 str.[0];
       String.blit str 1 res (width - len + 1) (len - 1)
     | Zeros when len > 1 && str.[0] = '0' && (str.[1] = 'x' || str.[1] = 'X') ->
-      res.[1] <- str.[1];
+      Bytes.set res 1 str.[1];
       String.blit str 2 res (width - len + 2) (len - 2)
     | Zeros ->
       String.blit str 0 res (width - len) len
     end;
-    res
+    Bytes.unsafe_to_string res
 
 (* Add '0' padding to int, int32, nativeint or int64 string representation. *)
 let fix_int_precision prec str =
   let len = String.length str in
   if prec <= len then str else
-    let res = String.make prec '0' in
+    let res = Bytes.make prec '0' in
     begin match str.[0] with
     | ('+' | '-' | ' ') as c ->
-      res.[0] <- c;
+      Bytes.set res 0 c;
       String.blit str 1 res (prec - len + 1) (len - 1);
     | '0' when len > 1 && (str.[1] = 'x' || str.[1] = 'X') ->
-      res.[1] <- str.[1];
+      Bytes.set res 1 str.[1];
       String.blit str 2 res (prec - len + 2) (len - 2);
     | '0' .. '9' ->
       String.blit str 0 res (prec - len) len;
     | _ ->
       assert false
     end;
-    res
+    Bytes.unsafe_to_string res
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
-  let esc = String.escaped str in
-  let len = String.length esc in
-  let res = String.create (len + 2) in
-  res.[0] <- '"'; String.blit esc 0 res 1 len; res.[len + 1] <- '"';
-  res
+  String.concat (String.escaped str) ["\""; "\""]
 
 (* Generate the format_int first argument from an int_conv. *)
 let format_of_iconv iconv = match iconv with
@@ -865,17 +856,17 @@ let format_of_iconv iconv = match iconv with
   | Int_o -> "%o" | Int_Co -> "%#o"
   | Int_u -> "%u"
 
-(* Generate the format_int32, format_nativeint and format_int64 first argument
-   from an int_conv. *)
+(* Generate the format_int32, format_nativeint and format_int64 first
+   argument from an int_conv. *)
 let format_of_aconv iconv c =
-  let fix i fmt = fmt.[i] <- c; fmt in
-  match iconv with
-  | Int_d -> fix 1 "% d" | Int_pd -> fix 2 "%+ d" | Int_sd -> fix 2 "%  d"
-  | Int_i -> fix 1 "% i" | Int_pi -> fix 2 "%+ i" | Int_si -> fix 2 "%  i"
-  | Int_x -> fix 1 "% x" | Int_Cx -> fix 2 "%# x"
-  | Int_X -> fix 1 "% X" | Int_CX -> fix 2 "%# X"
-  | Int_o -> fix 1 "% o" | Int_Co -> fix 2 "%# o"
-  | Int_u -> fix 1 "% u"
+  let seps = match iconv with
+  | Int_d -> ["%";"d"] | Int_pd -> ["%+";"d"] | Int_sd -> ["% ";"d"]
+  | Int_i -> ["%";"i"] | Int_pi -> ["%+";"i"] | Int_si -> ["% ";"i"]
+  | Int_x -> ["%";"x"] | Int_Cx -> ["%#";"x"]
+  | Int_X -> ["%";"X"] | Int_CX -> ["%#";"X"]
+  | Int_o -> ["%";"o"] | Int_Co -> ["%#";"o"]
+  | Int_u -> ["%";"u"]
+  in String.concat (String.make 1 c) seps
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
@@ -912,11 +903,7 @@ let convert_float fconv prec x =
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
-  let esc = Char.escaped c in
-  let len = String.length esc in
-  let res = String.create (len + 2) in
-  res.[0] <- '\''; String.blit esc 0 res 1 len; res.[len+1] <- '\'';
-  res
+  String.concat (Char.escaped c) ["'"; "'"]
 
 (* Convert a format type to string *)
 let string_of_fmtty fmtty =
@@ -1807,12 +1794,14 @@ let fmt_ebb_of_string str =
   (* Parse and construct a char set. *)
   and parse_char_set str_ind end_ind =
     if str_ind = end_ind then unexpected_end_of_format end_ind;
-    let char_set = create_char_set () in
-    match str.[str_ind] with
-    | '^' ->
-      let next_ind = parse_char_set_start (str_ind + 1) end_ind char_set in
-      next_ind, rev_char_set char_set
-    | _ -> parse_char_set_start str_ind end_ind char_set, char_set
+    let mut_char_set = create_char_set () in
+    let str_ind, reverse =
+      match str.[str_ind] with
+        | '^' -> str_ind + 1, true
+        | _ -> str_ind, false in
+    let next_ind = parse_char_set_start str_ind end_ind mut_char_set in
+    let char_set = freeze_char_set mut_char_set in
+    next_ind, (if reverse then rev_char_set char_set else char_set)
 
   (* Parse the first character of a char set. *)
   and parse_char_set_start str_ind end_ind char_set =

@@ -169,10 +169,21 @@ external bytes_length : bytes -> int = "%string_length"
 external bytes_create : int -> bytes = "caml_create_string"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
+external bytes_get : bytes -> int -> char = "%string_safe_get"
+external bytes_set : bytes -> int -> char -> unit = "%string_safe_set"
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
                         = "caml_blit_string" "noalloc"
 external bytes_unsafe_to_string : bytes -> string = "%identity"
 external bytes_unsafe_of_string : string -> bytes = "%identity"
+
+let copy_bytes byt =
+  let len = bytes_length byt in
+  let res = bytes_create len in
+  bytes_blit byt 0 res 0 len;
+  res
+
+let bytes_to_string byt =
+  bytes_unsafe_to_string (copy_bytes byt)
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -222,10 +233,7 @@ let string_of_int n =
   format_int "%d" n
 
 external int_of_string : string -> int = "caml_int_of_string"
-module String = struct
-  external get : string -> int -> char = "%string_safe_get"
-  external set : string -> int -> char -> unit = "%string_safe_set"
-end
+external string_get : string -> int -> char = "%string_safe_get"
 
 let valid_float_lexem s =
   let l = string_length s in
@@ -849,32 +857,39 @@ fun fmt1 fmt2 -> match fmt1 with
 (******************************************************************************)
            (* Tools to manipulate scanning set of chars (see %[...]) *)
 
-(* Create a fresh empty char set. *)
+type mutable_char_set = bytes
+
+(* Create a fresh, empty, mutable char set. *)
 let create_char_set () =
-  let str = string_create 32 in
-  for i = 0 to 31 do str.[i] <- '\000' done;
-  str
+  (* Bytes.make isn't defined yet, so we'll fill manually *)
+  let cs = bytes_create 32 in
+  for i = 0 to 31 do bytes_set cs i '\000' done;
+  cs
+
+(* Add a char in a mutable char set. *)
+let add_in_char_set char_set c =
+  let ind = int_of_char c in
+  let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
+  bytes_set char_set str_ind
+    (char_of_int (int_of_char (bytes_get char_set str_ind) lor mask))
+
+let freeze_char_set char_set =
+  bytes_to_string char_set
+
+(* Compute the complement of a char set. *)
+let rev_char_set char_set =
+  let char_set' = create_char_set () in
+  for i = 0 to 31 do
+    bytes_set char_set' i
+      (char_of_int (int_of_char (string_get char_set i) lxor 0xFF));
+  done;
+  bytes_unsafe_to_string char_set'
 
 (* Return true if a `c' is in `char_set'. *)
 let is_in_char_set char_set c =
   let ind = int_of_char c in
   let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
-  (int_of_char char_set.[str_ind] land mask) <> 0
-
-(* Add a char in a char set. *)
-let add_in_char_set char_set c =
-  let ind = int_of_char c in
-  let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
-  char_set.[str_ind] <- char_of_int (int_of_char char_set.[str_ind] lor mask)
-
-(* Compute the complement of a char set. *)
-(* Return a fresh string, do not modify its argument. *)
-let rev_char_set char_set =
-  let char_set' = create_char_set () in
-  for i = 0 to 31 do
-    char_set'.[i] <- char_of_int (int_of_char char_set.[i] lxor 0xFF);
-  done;
-  char_set'
+  (int_of_char (string_get char_set str_ind) land mask) <> 0
 
 (******************************************************************************)
                              (* Reader count *)

@@ -1187,10 +1187,13 @@ module CamlinternalFormatBasics : sig
       ('f, 'b, 'c, 'e, 'g, 'h) fmt ->
       ('a, 'b, 'c, 'd, 'g, 'h) fmt
 
-  val create_char_set : unit -> string
-  val is_in_char_set : string -> char -> bool
-  val add_in_char_set : string -> char -> unit
-  val rev_char_set : string -> string
+  val is_in_char_set : char_set -> char -> bool
+  val rev_char_set : char_set -> char_set
+
+  type mutable_char_set = bytes
+  val create_char_set : unit -> mutable_char_set
+  val add_in_char_set : mutable_char_set -> char -> unit
+  val freeze_char_set : mutable_char_set -> char_set
 
   val reader_nb_unifier_of_fmtty :
      ('a, 'b, 'c, 'd, 'e, 'f) fmtty -> ('d, 'e, 'd, 'e) reader_nb_unifier
