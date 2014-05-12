@@ -1666,7 +1666,12 @@ let fmt_ebb_of_string str =
        as ignoring it would typically result in a different typing
        than what the legacy parser used *)
     if not !ign_used && ign then
-      incompatible_flag pct_ind str_ind symb "'_'";
+      begin match symb with
+        (* argument-less formats can safely be ignored in legacy mode *)
+        | ('@' | '%' | '!' | ',') when legacy_behavior -> ()
+        | _ ->
+          incompatible_flag pct_ind str_ind symb "'_'"
+      end;
     fmt_result
 
   (* Parse formatting informations (after '@'). *)
