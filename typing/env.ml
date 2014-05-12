@@ -1033,8 +1033,8 @@ let rec scrape_alias env ?path mty =
       begin try
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
-        Location.prerr_warning Location.none
-	  (Warnings.No_cmi_file (Path.name path));
+        (*Location.prerr_warning Location.none
+	  (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
   | mty, Some path ->

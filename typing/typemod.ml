@@ -1026,7 +1026,8 @@ let wrap_constraint env arg mty explicit =
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
-      let path = Typetexp.lookup_module env smod.pmod_loc lid.txt in
+      let path =
+        Typetexp.lookup_module ~load:(not alias) env smod.pmod_loc lid.txt in
       let md = { mod_desc = Tmod_ident (path, lid);
                  mod_type = Mty_alias path;
                  mod_env = env;

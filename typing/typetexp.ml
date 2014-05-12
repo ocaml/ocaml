@@ -241,19 +241,17 @@ let find_value env loc lid =
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
-let lookup_module_ ~load env loc lid =
+let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
     find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
   in path
 
 let find_module env loc lid =
-  let path = lookup_module_ true env loc lid in
+  let path = lookup_module ~load:true env loc lid in
   let decl = Env.find_module path env in
   check_deprecated loc decl.md_attributes (Path.name path);
   (path, decl)
-
-let lookup_module = lookup_module_ ~load:false
 
 let find_modtype env loc lid =
   let (path, decl) as r =
