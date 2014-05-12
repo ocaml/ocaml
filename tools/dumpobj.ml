@@ -481,7 +481,7 @@ let print_reloc (info, pos) =
 
 (* Print a .cmo file *)
 
-let dump_obj filename ic =
+let dump_obj ic =
   let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer <> cmo_magic_number then begin
     prerr_endline "Not an object file"; exit 2
@@ -557,7 +557,7 @@ let arg_fun filename =
   begin try
           objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
-      objfile := true; seek_in ic 0; dump_obj filename ic
+      objfile := true; seek_in ic 0; dump_obj ic
   end;
   close_in ic;
   printf "## end of ocaml dump of %S\n%!" filename

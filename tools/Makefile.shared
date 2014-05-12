@@ -18,7 +18,7 @@ CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 	 -I ../driver -I ../toplevel
-COMPFLAGS= -strict-sequence -w +32..39 -warn-error A -safe-string $(INCLUDES)
+COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \

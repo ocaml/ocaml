@@ -166,7 +166,7 @@ and untype_extension_constructor ext =
         Text_decl (args, ret) ->
           Pext_decl (List.map untype_core_type args,
                      option untype_core_type ret)
-      | Text_rebind (p, lid) -> Pext_rebind lid
+      | Text_rebind (_p, lid) -> Pext_rebind lid
     );
     pext_loc = ext.ext_loc;
     pext_attributes = ext.ext_attributes;
