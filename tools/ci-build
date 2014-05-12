@@ -31,7 +31,7 @@ error () {
 
 case "$1" in
   bsd|macos|linux) ;;
-  cygwin|mingw|msvc)
+  cygwin|mingw|mingw64|msvc|msvc64)
     . /etc/profile
     . ~/.profile
   ;;
