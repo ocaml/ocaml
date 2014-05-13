@@ -472,6 +472,9 @@ let _ =
   Hashtbl.add directive_table "rectypes"
              (Directive_none(fun () -> Clflags.recursive_types := true));
 
+  Hashtbl.add directive_table "ppx"
+             (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx));
+
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));
 
