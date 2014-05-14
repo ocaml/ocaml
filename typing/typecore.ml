@@ -1790,10 +1790,14 @@ and type_expect_ ?in_function env sexp ty_expected =
       end
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
-    let ty_expected_desc = (repr (expand_head env ty_expected)).desc in
+    let ty_exp = expand_head env ty_expected in
     let fmt6_path = get_camlinternalFormat_path env "format6" in
-    let is_format = match ty_expected_desc, fmt6_path with
-      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 -> true
+    let is_format = match ty_exp.desc, fmt6_path with
+      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 ->
+        if !Clflags.principal && ty_exp.level <> generic_level then
+          Location.prerr_warning loc
+            (Warnings.Not_principal "this coercion to format6");
+        true
       | _ -> false
     in
     if is_format then
