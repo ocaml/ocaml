@@ -780,8 +780,7 @@ let build_other_constant proj make first next p env =
 let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct (lid,
       ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
-    let id = Ident.create "*extension*" in
-    let c = {c with cstr_tag = Cstr_extension(Path.Pident id, true)} in
+    let c = {c with cstr_name = "*extension*"} in
       make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->
     begin match ext with
