@@ -1784,7 +1784,7 @@ and type_expect_ ?in_function env sexp ty_expected =
     let is_format = match expected_ty, fmt6_path, fmt_path with
       | Tconstr(path, _, _), Some pf6, _ when Path.same path pf6 -> true
       | Ttuple [ fmt_ty; str_ty ], _, Some pf ->
-        ignore (unify env str_ty Predef.type_string);
+        ignore (unify env str_ty (instance_def Predef.type_string));
         begin match (repr (expand_head env fmt_ty)).desc with
           | Tconstr (path, _, _) when Path.same path pf -> true
           | _ -> false
