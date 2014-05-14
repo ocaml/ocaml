@@ -1116,7 +1116,7 @@ fun k o acc fmt -> match fmt with
       make_printf k o (Acc_string (acc, ty)) rest)
   | Format_subst (_, _, fmtty, rest) ->
     (* Call to type_format can't fail (raise Type_mismatch). *)
-    fun (fmt, _) -> make_printf k o acc
+    fun (Format (fmt, _)) -> make_printf k o acc
       (concat_fmt (type_format fmt fmtty) rest)
 
   | Scan_char_set (_, _, rest) ->
@@ -1356,8 +1356,7 @@ let rec strput_acc b acc = match acc with
                           (* Error managment *)
 
 (* Raise a Failure with a pretty-printed error message. *)
-let failwith_message
-    ((fmt, _) : ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6) =
+let failwith_message (Format (fmt, _)) =
   let buf = Buffer.create 256 in
   let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
   make_printf k () End_of_acc fmt
@@ -2265,15 +2264,17 @@ let fmt_ebb_of_string str =
 (* Raise a Failure with an error message in case of type mismatch. *)
 let format_of_string_fmtty str fmtty =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
-  try (type_format fmt fmtty, str) with Type_mismatch ->
+  try Format (type_format fmt fmtty, str)
+  with Type_mismatch ->
     failwith_message
       "bad input: format type mismatch between %S and %S"
       str (string_of_fmtty fmtty)
 
 (* Convert a string to a format compatible with an other format. *)
 (* Raise a Failure with an error message in case of type mismatch. *)
-let format_of_string_format str (fmt', str') =
+let format_of_string_format str (Format (fmt', str')) =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
-  try (type_format fmt (fmtty_of_fmt fmt'), str) with Type_mismatch ->
+  try Format (type_format fmt (fmtty_of_fmt fmt'), str)
+  with Type_mismatch ->
     failwith_message
       "bad input: format type mismatch between %S and %S" str str'

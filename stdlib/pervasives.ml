@@ -81,7 +81,7 @@ external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"
 external ( - ) : int -> int -> int = "%subint"
-external ( *  ) : int -> int -> int = "%mulint"
+external ( * ) : int -> int -> int = "%mulint"
 external ( / ) : int -> int -> int = "%divint"
 external ( mod ) : int -> int -> int = "%modint"
 
@@ -588,6 +588,7 @@ type ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
   | Bool_ty :                                                 (* %B  *)
       ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
         (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
+
   | Format_arg_ty :                                           (* %{...%} *)
       ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
       ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
@@ -744,7 +745,8 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_scan_get_counter :                               (* %_[nlNL] *)
       counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 
-and ('a, 'b, 'c, 'd, 'e, 'f) format6 = ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
+and ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  Format of ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
 
 (******************************************************************************)
                          (* Format type concatenation *)
@@ -853,21 +855,24 @@ fun fmt1 fmt2 -> match fmt1 with
     fmt2
 end
 
-type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
-  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+type ('a, 'b, 'c, 'd, 'e, 'f) format6
+   = ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+   = Format of ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
+               * string
 
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 
-let string_of_format (fmt, str) = str
+let string_of_format (Format (fmt, str)) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let (^^) (fmt1, str1) (fmt2, str2) =
-  (CamlinternalFormatBasics.concat_fmt fmt1 fmt2, str1 ^ "%," ^ str2)
+let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
+  Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
+          str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 

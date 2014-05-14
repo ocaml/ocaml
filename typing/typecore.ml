@@ -1778,21 +1778,15 @@ and type_expect_ ?in_function env sexp ty_expected =
       end
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
-    let expected_ty = (repr (expand_head env ty_expected)).desc
-    and fmt6_path = get_camlinternalFormat_path env "format6"
-    and fmt_path = get_camlinternalFormat_path env "fmt" in
-    let is_format = match expected_ty, fmt6_path, fmt_path with
-      | Tconstr(path, _, _), Some pf6, _ when Path.same path pf6 -> true
-      | Ttuple [ fmt_ty; str_ty ], _, Some pf ->
-        ignore (unify env str_ty Predef.type_string);
-        begin match (repr (expand_head env fmt_ty)).desc with
-          | Tconstr (path, _, _) when Path.same path pf -> true
-          | _ -> false
-        end
+    let ty_expected_desc = (repr (expand_head env ty_expected)).desc in
+    let fmt6_path = get_camlinternalFormat_path env "format6" in
+    let is_format = match ty_expected_desc, fmt6_path with
+      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 -> true
       | _ -> false
     in
     if is_format then
-      let format_parsetree = { sexp with pexp_desc = type_format loc str env }  in
+      let format_parsetree =
+        { sexp with pexp_desc = type_format loc str env }  in
       type_expect ?in_function env format_parsetree ty_expected
     else
       rue {
@@ -2979,7 +2973,7 @@ and type_format loc str env =
         | End_of_format ->
           mk_constr "End_of_format" [] in
       let mk_format fmt str =
-        mk_exp_loc (Pexp_tuple [ mk_fmt fmt; mk_string str ]) in
+        mk_constr "Format" [ mk_fmt fmt; mk_string str ] in
       let Fmt_EBB fmt = fmt_ebb_of_string str in
       let exp = { (mk_format fmt str) with pexp_loc = loc } in
       let pervasives_format6_ty =

@@ -1130,9 +1130,9 @@ let rec strput_acc ppf acc = match acc with
 
  **************************************************************)
 
-let kfprintf k o (fmt, _) =
+let kfprintf k o (Format (fmt, _)) =
   make_printf (fun o acc -> output_acc o acc; k o) o End_of_acc fmt
-let ikfprintf k x (fmt, _) =
+let ikfprintf k x (Format (fmt, _)) =
   make_printf (fun _ _ -> k x) x End_of_acc fmt
 
 let fprintf ppf fmt = kfprintf ignore ppf fmt
@@ -1140,7 +1140,7 @@ let ifprintf ppf fmt = ikfprintf ignore ppf fmt
 let printf fmt = fprintf std_formatter fmt
 let eprintf fmt = fprintf err_formatter fmt
 
-let ksprintf k (fmt, _) =
+let ksprintf k (Format (fmt, _)) =
   let k' () acc =
     let b = Buffer.create 512 in
     let ppf = formatter_of_buffer b in
@@ -1152,7 +1152,7 @@ let ksprintf k (fmt, _) =
 let sprintf fmt =
   ksprintf (fun s -> s) fmt
 
-let asprintf (fmt, _) =
+let asprintf (Format (fmt, _)) =
   let b = Buffer.create 512 in
   let ppf = formatter_of_buffer b in  
   let k' : (formatter -> (formatter, unit) acc -> string)
@@ -1169,7 +1169,7 @@ let asprintf (fmt, _) =
  **************************************************************)
 
 (* Deprecated error prone function bprintf. *)
-let bprintf b ((fmt, _) : ('a, formatter, unit) format) =
+let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
   let k ppf acc = output_acc ppf acc; pp_flush_queue ppf false in
   make_printf k (formatter_of_buffer b) End_of_acc fmt
 
