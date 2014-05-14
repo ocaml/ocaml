@@ -100,3 +100,10 @@ module M_S = (M : S) (* ERROR: Signatures are not compatible *)
 
 type exn2 = exn = ..
 ;;
+
+(* Exhaustiveness *)
+
+type foo = ..
+type foo += Foo
+let f = function Foo -> ()
+;; (* warn *)
