@@ -1036,8 +1036,11 @@ let convert_float fconv prec x =
         | _ -> is_valid (i + 1)
     in
     match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero when not (is_valid 0) -> str ^ "."
-    | FP_infinite | FP_nan | FP_normal | FP_subnormal | FP_zero -> str
+    | FP_normal | FP_subnormal | FP_zero ->
+      if is_valid 0 then str else str ^ "."
+    | FP_infinite ->
+      if x < 0.0 then "neg_infinity" else "infinity"
+    | FP_nan -> "nan"
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
