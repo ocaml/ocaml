@@ -1346,11 +1346,23 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
 
 let delayed_checks = ref []
 let reset_delayed_checks () = delayed_checks := []
-let add_delayed_check f = delayed_checks := f :: !delayed_checks
+let add_delayed_check f =
+  delayed_checks := (f, Warnings.backup ()) :: !delayed_checks
+
 let force_delayed_checks () =
   (* checks may change type levels *)
   let snap = Btype.snapshot () in
-  List.iter (fun f -> f ()) (List.rev !delayed_checks);
+  let w_old = Warnings.backup () in
+  List.iter
+    (fun (f, w) ->
+       (* note: we should maybe optimize Warnings.backup/restore
+          to avoid some overhead here in the typical case
+          where warning-as-error doesn't change from one location
+          to another. *)
+       Warnings.restore w;
+       f ()
+    ) (List.rev !delayed_checks);
+  Warnings.restore w_old;
   reset_delayed_checks ();
   Btype.backtrack snap
 
