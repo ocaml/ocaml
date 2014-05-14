@@ -107,6 +107,14 @@ let check_deprecated loc attrs s =
     attrs
 
 let emit_external_warnings =
+  (* Note: this is run as a preliminary pass when type-checking an
+     interface or implementation.  This allows to cover all kinds of
+     attributes, but the drawback is that it doesn't take local
+     configuration of warnings (with '@@warning'/'@@warnerror'
+     attributes) into account.  We should rather check for
+     'ppwarning' attributes during the actual type-checking, making
+     sure to cover all contexts (easier and more ugly alternative:
+     duplicate here the logic which control warnings locally). *)
   let open Ast_mapper in
   {
     default_mapper with
