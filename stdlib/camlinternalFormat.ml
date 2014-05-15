@@ -1905,6 +1905,7 @@ let fmt_ebb_of_string str =
           done;
           let box_ty = match String.sub str str_ind_1 (!i - str_ind_1) with
             | ""    -> Pp_box
+            | "b"   -> Pp_box
             | "h"   -> Pp_hbox
             | "v"   -> Pp_vbox
             | "hv"  -> Pp_hvbox
