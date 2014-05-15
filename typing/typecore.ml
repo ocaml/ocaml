@@ -1354,14 +1354,8 @@ let force_delayed_checks () =
   let snap = Btype.snapshot () in
   let w_old = Warnings.backup () in
   List.iter
-    (fun (f, w) ->
-       (* note: we should maybe optimize Warnings.backup/restore
-          to avoid some overhead here in the typical case
-          where warning-as-error doesn't change from one location
-          to another. *)
-       Warnings.restore w;
-       f ()
-    ) (List.rev !delayed_checks);
+    (fun (f, w) -> Warnings.restore w; f ())
+    (List.rev !delayed_checks);
   Warnings.restore w_old;
   reset_delayed_checks ();
   Btype.backtrack snap

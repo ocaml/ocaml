@@ -162,21 +162,27 @@ let letter = function
   | _ -> assert false
 ;;
 
-let active = Array.create (last_warning_number + 1) true;;
-let error = Array.create (last_warning_number + 1) false;;
+type state =
+  {
+    active: bool array;
+    error: bool array;
+  }
 
-type state = bool array * bool array
-let backup () = (Array.copy active, Array.copy error)
-let restore (a, e) =
-  assert(Array.length a = Array.length active);
-  assert(Array.length e = Array.length error);
-  Array.blit a 0 active 0 (Array.length active);
-  Array.blit e 0 error 0 (Array.length error)
+let current =
+  ref
+    {
+      active = Array.create (last_warning_number + 1) true;
+      error = Array.create (last_warning_number + 1) false;
+    }
 
-let is_active x = active.(number x);;
-let is_error x = error.(number x);;
+let backup () = !current
 
-let parse_opt flags s =
+let restore x = current := x
+
+let is_active x = (!current).active.(number x);;
+let is_error x = (!current).error.(number x);;
+
+let parse_opt error active flags s =
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
@@ -227,7 +233,11 @@ let parse_opt flags s =
   loop 0
 ;;
 
-let parse_options errflag s = parse_opt (if errflag then error else active) s;;
+let parse_options errflag s =
+  let error = Array.copy (!current).error in
+  let active = Array.copy (!current).active in
+  parse_opt error active (if errflag then error else active) s;
+  current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
@@ -392,7 +402,7 @@ let print ppf w =
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
   Format.pp_set_all_formatter_output_functions ppf out flush newline space;
-  if error.(num) then incr nerrors;
+  if (!current).error.(num) then incr nerrors;
   !newlines
 ;;
 
