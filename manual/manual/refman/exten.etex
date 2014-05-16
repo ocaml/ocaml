@@ -1435,15 +1435,57 @@ begin[@foo] ... end               === (begin ... end)[@foo]
 
 \subsection{Built-in attributes}
 
-TODO
-
 Some attributes are understood by the type-checker:
 \begin{itemize}
 \item
-  ``ocaml.warning''
+ ``ocaml.warning'' or ``warning'', with a string literal payload.
+ This can be used as floating attributes in a
+ signature/structure/object/object type.  The string is parsed and has
+ the same effect as the "-w" command-line option, in the scope between
+ the attribute and the end of the current
+ signature/structure/object/object type.  The attribute can also be
+ used on an expression,
+ in which case its scope is limited to that expression.
+ Note that it is not well-defined which scope is used for a specific
+ warning.  This is implementation dependant and can change between versions.
+ For instance, warnings triggerd by the ``ppwarning'' attribute (see below)
+ are issued using the global warning configuration.
 \item
-  ``ocaml.deprecated''
+ ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
+ Same as ``ocaml.warning'', for the "-warn-error" command-line option.
+\item
+  ``ocaml.deprecated'' or ``deprecated''.
+  Can be applied to most kind of items in signatures or
+  structures.  When the element is later referenced, a warning (3) is
+  triggered.  If the payload of the attribute is a string literal,
+  the warning message includes this text.
+\item
+  ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
+  a string literal payload.  The text is reported as warning (22)
+  by the compiler (currently, the warning location is the location
+  of the string payload).  This is mostly useful for preprocessors which
+  need to communicate warnings to the user.  This could also be used
+  to mark explicitly some code location for further inspection.
 \end{itemize}
+
+\begin{verbatim}
+module X = struct
+  [@@warning "+9"]  (* locally enable warning 9 in this structure *)
+  ...
+end
+
+let x = begin[@warning "+9] ... end in ....
+
+type t = A | B
+  [@@deprecated "Please use type 's' instead.]
+
+
+let f x =
+  assert (x >= 0) [@ppwarning "TODO: remove this later"];
+  ....
+
+\end{verbatim}
+
 
 \section{Extension nodes}\label{s:extension-nodes}
 
