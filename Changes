@@ -140,6 +140,7 @@ Bug fixes:
 - PR#6302: bytecode debug information re-read from filesystem every time
   (Jacques-Henri Jourdan)
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
+- PR#6332: Unix.open_process fails to pass empty arguments under Windows
 - PR#6346: Build failure with latest version of xcode on OSX
 - PR#6348: Unification failure for GADT when original definition is hidden
 - PR#6352: Automatic removal of optional arguments and sequencing
