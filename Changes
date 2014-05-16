@@ -137,6 +137,8 @@ Bug fixes:
 - PR#6267: more information printed by "bt" command of ocamldebug
 - PR#6275: Soundness bug related to type constraints
 - PR#6293: Assert_failure with invalid package type
+- PR#6302: bytecode debug information re-read from filesystem every time
+  (Jacques-Henri Jourdan)
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
 - PR#6346: Build failure with latest version of xcode on OSX
 - PR#6348: Unification failure for GADT when original definition is hidden
@@ -147,8 +149,7 @@ Bug fixes:
 - PR#6385: wrong allocation of large closures by the bytecode interpreter
 - PR#6394: Assertion failed in Typecore.expand_path
 - PR#6405: unsound interaction of -rectypes and GADTs
-- PR#6302: bytecode debug information re-read from filesystem every time
-  (Jacques-Henri Jourdan)
+- PR#6408: Optional arguments given as ~?arg instead of ?arg in message
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
