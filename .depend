@@ -134,9 +134,10 @@ typing/typedtree.cmi : typing/types.cmi typing/primitive.cmi typing/path.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi
 typing/typedtreeIter.cmi : typing/typedtree.cmi parsing/asttypes.cmi
 typing/typedtreeMap.cmi : typing/typedtree.cmi
-typing/typemod.cmi : typing/types.cmi typing/typedtree.cmi \
+typing/typemod.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
-    typing/includemod.cmi typing/ident.cmi typing/env.cmi
+    typing/includemod.cmi typing/ident.cmi typing/env.cmi \
+    parsing/asttypes.cmi
 typing/types.cmi : typing/primitive.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi parsing/asttypes.cmi
@@ -618,8 +619,10 @@ asmcomp/split.cmi : asmcomp/mach.cmi
 asmcomp/strmatch.cmi : asmcomp/cmm.cmi
 asmcomp/CSE.cmo : asmcomp/mach.cmi asmcomp/CSEgen.cmi asmcomp/arch.cmo
 asmcomp/CSE.cmx : asmcomp/mach.cmx asmcomp/CSEgen.cmx asmcomp/arch.cmx
-asmcomp/CSEgen.cmo : asmcomp/reg.cmi asmcomp/mach.cmi asmcomp/CSEgen.cmi
-asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/mach.cmx asmcomp/CSEgen.cmi
+asmcomp/CSEgen.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
+    asmcomp/CSEgen.cmi
+asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
+    asmcomp/CSEgen.cmi
 asmcomp/arch.cmo :
 asmcomp/arch.cmx :
 asmcomp/asmgen.cmo : bytecomp/translmod.cmi asmcomp/split.cmi \
@@ -868,10 +871,14 @@ driver/compile.cmx : utils/warnings.cmx typing/typemod.cmx \
     utils/misc.cmx parsing/location.cmx typing/includemod.cmx typing/env.cmx \
     bytecomp/emitcode.cmx driver/compmisc.cmx driver/compenv.cmx \
     utils/clflags.cmx utils/ccomp.cmx bytecomp/bytegen.cmx driver/compile.cmi
-driver/compmisc.cmo : utils/misc.cmi typing/ident.cmi typing/env.cmi \
-    utils/config.cmi driver/compenv.cmi utils/clflags.cmi driver/compmisc.cmi
-driver/compmisc.cmx : utils/misc.cmx typing/ident.cmx typing/env.cmx \
-    utils/config.cmx driver/compenv.cmx utils/clflags.cmx driver/compmisc.cmi
+driver/compmisc.cmo : typing/typemod.cmi utils/misc.cmi \
+    parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
+    typing/env.cmi utils/config.cmi driver/compenv.cmi utils/clflags.cmi \
+    parsing/asttypes.cmi driver/compmisc.cmi
+driver/compmisc.cmx : typing/typemod.cmx utils/misc.cmx \
+    parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
+    typing/env.cmx utils/config.cmx driver/compenv.cmx utils/clflags.cmx \
+    parsing/asttypes.cmi driver/compmisc.cmi
 driver/errors.cmo : parsing/location.cmi driver/errors.cmi
 driver/errors.cmx : parsing/location.cmx driver/errors.cmi
 driver/main.cmo : utils/warnings.cmi utils/misc.cmi driver/main_args.cmi \
