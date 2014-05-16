@@ -30,8 +30,7 @@ let make = (Obj.magic B.make : int -> char -> string)
 let copy = (Obj.magic B.copy : string -> string)
 let sub = (Obj.magic B.sub : string -> int -> int -> string)
 let fill = B.fill
-let blit =
-  (Obj.magic B.blit : string -> int -> bytes -> int -> int -> unit)
+let blit = B.blit_string
 let concat = (Obj.magic B.concat : string -> string list -> string)
 let iter = (Obj.magic B.iter : (char -> unit) -> string -> unit)
 let iteri = (Obj.magic B.iteri : (int -> char -> unit) -> string -> unit)
