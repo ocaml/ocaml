@@ -3823,7 +3823,7 @@ let report_error env ppf = function
       let print_label ppf = function
         | "" -> fprintf ppf "without label"
         | l ->
-            fprintf ppf "with label %s%s" (if is_optional l then "" else "~") l
+            fprintf ppf "with label %s" (prefixed_label_name l)
       in
       reset_and_mark_loops ty;
       fprintf ppf
@@ -3912,7 +3912,8 @@ let report_error env ppf = function
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | "" -> "but its first argument is not labelled"
-        |  l -> sprintf "but its first argument is labelled ~%s" l in
+        |  l -> sprintf "but its first argument is labelled %s"
+          (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)
