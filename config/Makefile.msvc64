@@ -153,9 +153,6 @@ PACKLD=link /lib /nologo /machine:AMD64 /out:# must have no space after '/out:'
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 
-### Clear this to disable compiling ocamlbuild
-WITH_OCAMLBUILD=ocamlbuild
-
 ### Clear this to disable compiling ocamldoc
 WITH_OCAMLDOC=ocamldoc
 

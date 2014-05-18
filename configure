@@ -41,7 +41,6 @@ gcc_warnings="-Wall"
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
-with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
@@ -147,8 +146,6 @@ while : ; do
         with_debugger="";;
     -no-ocamldoc|--no-ocamldoc)
         with_ocamldoc="";;
-    -no-ocamlbuild|--no-ocamlbuild)
-        with_ocamlbuild="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
     -no-naked-pointers|--no-naked-pointers)
@@ -1687,7 +1684,6 @@ echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
-echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
