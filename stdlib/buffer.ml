@@ -17,13 +17,24 @@ type t =
  {mutable buffer : bytes;
   mutable position : int;
   mutable length : int;
-  initial_buffer : bytes}
+  mutable initial_buffer : bytes}
 
 let create n =
  let n = if n < 1 then 1 else n in
  let n = if n > Sys.max_string_length then Sys.max_string_length else n in
  let s = Bytes.create n in
  {buffer = s; position = 0; length = n; initial_buffer = s}
+
+let recreate b n =
+  let res = b.buffer, b.position in
+  let n = if n < 1 then 1 else n in
+  let n = if n > Sys.max_string_length then Sys.max_string_length else n in
+  let s = Bytes.create n in
+  b.buffer <- s;
+  b.position <- 0;
+  b.length <- n;
+  b.initial_buffer <- s;
+  res
 
 let contents b = Bytes.sub_string b.buffer 0 b.position
 let to_bytes b = Bytes.sub b.buffer 0 b.position

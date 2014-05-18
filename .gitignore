@@ -2486,6 +2486,7 @@
 /tools/dumpobj
 /tools/dumpapprox
 /tools/objinfo
+/tools/ocamlmd5sum
 /tools/cvt_emit
 /tools/cvt_emit.bak
 /tools/cvt_emit.ml

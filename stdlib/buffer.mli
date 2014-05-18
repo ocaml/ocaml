@@ -78,6 +78,12 @@ val reset : t -> unit
    For long-lived buffers that may have grown a lot, [reset] allows
    faster reclamation of the space used by the buffer. *)
 
+val recreate: t -> int -> bytes * int
+(** Empty the buffer, replace the initial internal byte sequence with a
+    new one of the given size and return the internal byte sequence with
+    the length of the content.
+*)
+
 val add_char : t -> char -> unit
 (** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
 

@@ -28,7 +28,13 @@ val input_cmi : in_channel -> cmi_infos
 (* read a cmi from a filename, checking the magic *)
 val read_cmi : string -> cmi_infos
 
-(* Error report *)
+(* read the crcs and flags informations (the magic is supposed to have
+   already been read) *)
+val input_crcs_flags:
+  in_channel -> ((string * Digest.t option) list * pers_flags list)
+
+
+  (* Error report *)
 
 type error =
     Not_an_interface of string
