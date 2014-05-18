@@ -198,7 +198,11 @@ let execute
               try
                 read fd u 0 (Bytes.length u)
               with
-              | Unix.Unix_error(_,_,_) -> 0
+              | Unix.Unix_error(e,_,_)  ->
+                let msg = error_message e in
+                display (fun oc -> fp oc
+                        "Error while reading stdout/stderr: %s\n" msg);
+                0
             in
             if m = 0 then
               if job.job_dying then
@@ -234,6 +238,11 @@ let execute
       (*display begin fun oc -> fp oc "Terminating job %a\n%!" print_job_id job.job_id; end;*)
 
       decr jobs_active;
+
+      (* PR#5371: we would get EAGAIN below otherwise *)
+      clear_nonblock (doi job.job_stdout);
+      clear_nonblock (doi job.job_stderr);
+
       do_read ~loop:true (doi job.job_stdout) job;
       do_read ~loop:true (doi job.job_stderr) job;
       outputs := FDM.remove (doi job.job_stdout) (FDM.remove (doi job.job_stderr) !outputs);
