@@ -2840,15 +2840,8 @@ and type_format loc str env =
         | Some n ->
           let lid_loc = mk_lid_loc (Longident.Lident "Some") in
           mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n))) in
-      let rec mk_reader_nb_unifier : type d1 e1 d2 e2 .
-          (d1, e1, d2, e2) reader_nb_unifier -> Parsetree.expression =
-      fun rnu -> match rnu with
-        | Succ_reader rest ->
-          mk_constr "Succ_reader" [ mk_reader_nb_unifier rest ]
-        | Zero_reader ->
-          mk_constr "Zero_reader" [] in
-      let rec mk_fmtty : type a b c d e f .
-          (a, b, c, d, e, f) fmtty -> Parsetree.expression =
+      let rec mk_fmtty : type a b c d e f g h i j k l .
+          (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression =
       fun fmtty -> match fmtty with
         | Char_ty rest      -> mk_constr "Char_ty"      [ mk_fmtty rest ]
         | String_ty rest    -> mk_constr "String_ty"    [ mk_fmtty rest ]
@@ -2865,9 +2858,9 @@ and type_format loc str env =
           mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
         | Format_arg_ty (sub_fmtty, rest) ->
           mk_constr "Format_arg_ty" [ mk_fmtty sub_fmtty; mk_fmtty rest ]
-        | Format_subst_ty (rnu, sub_fmtty, rest) ->
+        | Format_subst_ty (sub_fmtty1, sub_fmtty2, rest) ->
           mk_constr "Format_subst_ty"
-            [ mk_reader_nb_unifier rnu; mk_fmtty sub_fmtty; mk_fmtty rest ]
+            [ mk_fmtty sub_fmtty1; mk_fmtty sub_fmtty2; mk_fmtty rest ]
         | End_of_fmtty -> mk_constr "End_of_fmtty" []
       in
       let mk_ignored : type a b c d e f .
@@ -2955,10 +2948,9 @@ and type_format loc str env =
         | Format_arg (pad_opt, fmtty, rest) ->
           mk_constr "Format_arg" [
             mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
-        | Format_subst (pad_opt, rnu, fmtty, rest) ->
+        | Format_subst (pad_opt, fmtty, rest) ->
           mk_constr "Format_subst" [
-            mk_int_opt pad_opt; mk_reader_nb_unifier rnu; mk_fmtty fmtty;
-            mk_fmt rest ]
+            mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
         | Alpha rest ->
           mk_constr "Alpha" [ mk_fmt rest ]
         | Theta rest ->
