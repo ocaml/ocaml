@@ -47,30 +47,6 @@ let is_in_char_set char_set c =
   let str_ind = ind lsr 3 and mask = 1 lsl (ind land 0b111) in
   (int_of_char (String.get char_set str_ind) land mask) <> 0
 
-(******************************************************************************)
-                             (* Reader count *)
-
-(* Count the number of "%r" (Reader_ty) and "%_r" (Ignored_reader_ty)
-   in an fmtty. *)
-let rec reader_nb_unifier_of_fmtty : type a b c d e f .
-    (a, b, c, d, e, f) fmtty -> (d, e, d, e) reader_nb_unifier =
-fun fmtty -> match fmtty with
-  | Char_ty rest            -> reader_nb_unifier_of_fmtty rest
-  | String_ty rest          -> reader_nb_unifier_of_fmtty rest
-  | Int_ty rest             -> reader_nb_unifier_of_fmtty rest
-  | Int32_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Nativeint_ty rest       -> reader_nb_unifier_of_fmtty rest
-  | Int64_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Float_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Bool_ty rest            -> reader_nb_unifier_of_fmtty rest
-  | Alpha_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Theta_ty rest           -> reader_nb_unifier_of_fmtty rest
-  | Reader_ty rest          -> Succ_reader (reader_nb_unifier_of_fmtty rest)
-  | Ignored_reader_ty rest  -> Succ_reader (reader_nb_unifier_of_fmtty rest)
-  | Format_arg_ty (_, rest) -> reader_nb_unifier_of_fmtty rest
-  | Format_subst_ty(_,sub_fmtty,rest) ->
-    reader_nb_unifier_of_fmtty (concat_fmtty sub_fmtty rest)
-  | End_of_fmtty -> Zero_reader
 
 (******************************************************************************)
                          (* Ignored param conversion *)
@@ -125,7 +101,7 @@ fun ign fmt -> match ign with
     Param_format_EBB (Format_arg (pad_opt, fmtty, fmt))
   | Ignored_format_subst (pad_opt, fmtty) ->
     Param_format_EBB
-      (Format_subst (pad_opt, reader_nb_unifier_of_fmtty fmtty, fmtty, fmt))
+      (Format_subst (pad_opt, fmtty, fmt))
   | Ignored_reader ->
     Param_format_EBB (Reader fmt)
   | Ignored_scan_char_set (width_opt, char_set) ->
@@ -478,8 +454,8 @@ let bprint_string_literal buf str =
                           (* Format pretty-printing *)
 
 (* Print a complete format type (an fmtty) in a buffer. *)
-let rec bprint_fmtty : type a b c d e f .
-    buffer -> (a, b, c, d, e, f) fmtty -> unit =
+let rec bprint_fmtty : type a b c d e f g h i j k l .
+    buffer -> (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> unit =
 fun buf fmtty -> match fmtty with
   | Char_ty rest      -> buffer_add_string buf "%c";  bprint_fmtty buf rest;
   | String_ty rest    -> buffer_add_string buf "%s";  bprint_fmtty buf rest;
@@ -500,7 +476,7 @@ fun buf fmtty -> match fmtty with
   | Format_arg_ty (sub_fmtty, rest) ->
     buffer_add_string buf "%{"; bprint_fmtty buf sub_fmtty;
     buffer_add_string buf "%}"; bprint_fmtty buf rest;
-  | Format_subst_ty (_, sub_fmtty, rest) ->
+  | Format_subst_ty (sub_fmtty, _, rest) ->
     buffer_add_string buf "%("; bprint_fmtty buf sub_fmtty;
     buffer_add_string buf "%)"; bprint_fmtty buf rest;
 
@@ -572,7 +548,7 @@ let bprint_fmt buf fmt =
       bprint_pad_opt buf pad_opt; buffer_add_char buf '{';
       bprint_fmtty buf fmtty; buffer_add_char buf '%'; buffer_add_char buf '}';
       fmtiter rest false;
-    | Format_subst (pad_opt, _, fmtty, rest) ->
+    | Format_subst (pad_opt, fmtty, rest) ->
       buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
       bprint_pad_opt buf pad_opt; buffer_add_char buf '(';
       bprint_fmtty buf fmtty; buffer_add_char buf '%'; buffer_add_char buf ')';
@@ -608,6 +584,199 @@ let string_of_fmt fmt =
 
 (******************************************************************************)
                           (* Type extraction *)
+
+type (_, _) eq = Refl : ('a, 'a) eq
+
+(* Invariant: this function is the identity on values.
+
+   In particular, if (ty1, ty2) have equal values, then
+   (trans (symm ty1) ty2) respects the 'trans' precondition. *)
+let rec symm : type a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2 .
+   (a1, b1, c1, d1, e1, f1,
+    a2, b2, c2, d2, e2, f2) fmtty_rel
+-> (a2, b2, c2, d2, e2, f2,
+    a1, b1, c1, d1, e1, f1) fmtty_rel
+= function
+  | Char_ty rest -> Char_ty (symm rest)
+  | Int_ty rest -> Int_ty (symm rest)
+  | Int32_ty rest -> Int32_ty (symm rest)
+  | Int64_ty rest -> Int64_ty (symm rest)
+  | Nativeint_ty rest -> Nativeint_ty (symm rest)
+  | Float_ty rest -> Float_ty (symm rest)
+  | Bool_ty rest -> Bool_ty (symm rest)
+  | String_ty rest -> String_ty (symm rest)
+  | Theta_ty rest -> Theta_ty (symm rest)
+  | Alpha_ty rest -> Alpha_ty (symm rest)
+  | Reader_ty rest -> Reader_ty (symm rest)
+  | Ignored_reader_ty rest -> Ignored_reader_ty (symm rest)
+  | Format_arg_ty (ty, rest) ->
+    Format_arg_ty (ty, symm rest)
+  | Format_subst_ty (ty1, ty2, rest) ->
+    Format_subst_ty (ty2, ty1, symm rest)
+  | End_of_fmtty -> End_of_fmtty
+
+let rec fmtty_rel_det : type a1 b c d1 e1 f1 a2 d2 e2 f2 .
+  (a1, b, c, d1, e1, f1,
+   a2, b, c, d2, e2, f2) fmtty_rel ->
+    ((f1, f2) eq -> (a1, a2) eq)
+  * ((a1, a2) eq -> (f1, f2) eq)
+  * ((e1, e2) eq -> (d1, d2) eq)
+  * ((d1, d2) eq -> (e1, e2) eq)
+= function
+  | End_of_fmtty ->
+    (fun Refl -> Refl),
+    (fun Refl -> Refl),
+    (fun Refl -> Refl),
+    (fun Refl -> Refl)
+  | Char_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | String_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Int_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Int32_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Int64_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Nativeint_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Float_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Bool_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+
+  | Theta_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Alpha_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Reader_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Refl -> let Refl = ed Refl in Refl),
+    (fun Refl -> let Refl = de Refl in Refl)
+  | Ignored_reader_ty rest ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Refl -> let Refl = ed Refl in Refl),
+    (fun Refl -> let Refl = de Refl in Refl)
+  | Format_arg_ty (_ty, rest) ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    (fun Refl -> let Refl = fa Refl in Refl),
+    (fun Refl -> let Refl = af Refl in Refl),
+    ed, de
+  | Format_subst_ty (ty1, ty2, rest) ->
+    let fa, af, ed, de = fmtty_rel_det rest in
+    let ty = trans (symm ty1) ty2 in
+    let ag, ga, dj, jd = fmtty_rel_det ty in
+    (fun Refl -> let Refl = fa Refl in let Refl = ag Refl in Refl),
+    (fun Refl -> let Refl = ga Refl in let Refl = af Refl in Refl),
+    (fun Refl -> let Refl = ed Refl in let Refl = dj Refl in Refl),
+    (fun Refl -> let Refl = jd Refl in let Refl = de Refl in Refl)
+
+(* Precondition: we assume that the two fmtty_rel arguments have equal
+   values (at possibly distinct types); this invariant comes from the way
+   fmtty_rel witnesses are produced by the type-checker
+
+   The code below uses (assert false) when this assumption is broken. The
+   code pattern is the following:
+
+     | Foo x, Foo y ->
+       (* case where indeed both values
+          start with constructor Foo *)
+     | Foo _, _
+     | _, Foo _ ->
+       (* different head constructors: broken precondition *)
+       assert false
+*)
+and trans : type
+  a1 b1 c1 d1 e1 f1
+  a2 b2 c2 d2 e2 f2
+  a3 b3 c3 d3 e3 f3
+.
+   (a1, b1, c1, d1, e1, f1,
+    a2, b2, c2, d2, e2, f2) fmtty_rel
+-> (a2, b2, c2, d2, e2, f2,
+    a3, b3, c3, d3, e3, f3) fmtty_rel
+-> (a1, b1, c1, d1, e1, f1,
+    a3, b3, c3, d3, e3, f3) fmtty_rel
+= fun ty1 ty2 -> match ty1, ty2 with
+  | Char_ty rest1, Char_ty rest2 -> Char_ty (trans rest1 rest2)
+  | String_ty rest1, String_ty rest2 -> String_ty (trans rest1 rest2)
+  | Bool_ty rest1, Bool_ty rest2 -> Bool_ty (trans rest1 rest2)
+  | Int_ty rest1, Int_ty rest2 -> Int_ty (trans rest1 rest2)
+  | Int32_ty rest1, Int32_ty rest2 -> Int32_ty (trans rest1 rest2)
+  | Int64_ty rest1, Int64_ty rest2 -> Int64_ty (trans rest1 rest2)
+  | Nativeint_ty rest1, Nativeint_ty rest2 -> Nativeint_ty (trans rest1 rest2)
+  | Float_ty rest1, Float_ty rest2 -> Float_ty (trans rest1 rest2)
+
+  | Alpha_ty rest1, Alpha_ty rest2 -> Alpha_ty (trans rest1 rest2)
+  | Alpha_ty _, _ -> assert false
+  | _, Alpha_ty _ -> assert false
+
+  | Theta_ty rest1, Theta_ty rest2 -> Theta_ty (trans rest1 rest2)
+  | Theta_ty _, _ -> assert false
+  | _, Theta_ty _ -> assert false
+
+  | Reader_ty rest1, Reader_ty rest2 -> Reader_ty (trans rest1 rest2)
+  | Reader_ty _, _ -> assert false
+  | _, Reader_ty _ -> assert false
+
+  | Ignored_reader_ty rest1, Ignored_reader_ty rest2 ->
+    Ignored_reader_ty (trans rest1 rest2)
+  | Ignored_reader_ty _, _ -> assert false
+  | _, Ignored_reader_ty _ -> assert false
+
+  | Format_arg_ty (ty1, rest1), Format_arg_ty (ty2, rest2) ->
+    Format_arg_ty (trans ty1 ty2, trans rest1 rest2)
+  | Format_arg_ty _, _ -> assert false
+  | _, Format_arg_ty _ -> assert false
+
+  | Format_subst_ty (ty11, ty12, rest1),
+    Format_subst_ty (ty21, ty22, rest2) ->
+    let ty = trans (symm ty12) ty21 in
+    let _, f2, _, f4 = fmtty_rel_det ty in
+    let Refl = f2 Refl in
+    let Refl = f4 Refl in
+    Format_subst_ty (ty11, ty22, trans rest1 rest2)
+  | Format_subst_ty _, _ -> assert false
+  | _, Format_subst_ty _ -> assert false
+
+  | End_of_fmtty, End_of_fmtty -> End_of_fmtty
+  | End_of_fmtty, _ -> assert false
+  | _, End_of_fmtty -> assert false
+
 
 (* Extract the type representation (an fmtty) of a format. *)
 let rec fmtty_of_fmt : type a b c d e f .
@@ -648,8 +817,8 @@ fun fmtty -> match fmtty with
 
   | Format_arg (_, ty, rest) ->
     Format_arg_ty (ty, fmtty_of_fmt rest)
-  | Format_subst (_, rnu, ty, rest) ->
-    Format_subst_ty (rnu, ty, fmtty_of_fmt rest)
+  | Format_subst (_, ty, rest) ->
+    Format_subst_ty (ty, ty, fmtty_of_fmt rest)
 
   | Flush rest                 -> fmtty_of_fmt rest
   | String_literal (_, rest)   -> fmtty_of_fmt rest
@@ -704,7 +873,7 @@ and fmtty_of_precision_fmtty : type x a b c d e f .
 (******************************************************************************)
                             (* Format typing *)
 
-(* Exception raised by type_XXX when a typing error occurs. *)
+(* Exception raised when a format does not match a given format type. *)
 exception Type_mismatch
 
 (* Type a padding. *)
@@ -738,11 +907,14 @@ fun pad prec fmtty -> match prec, type_padding pad fmtty with
 (* If typing succeed, generate a copy of the format with the same
     type parameters as the fmtty. *)
 (* Raise a Failure with an error message in case of type mismatch. *)
-let rec type_format : type x t u v a b c d e f .
-    (x, b, c, t, u, v) CamlinternalFormatBasics.fmt ->
-    (a, b, c, d, e, f) fmtty ->
-    (a, b, c, d, e, f) CamlinternalFormatBasics.fmt =
-fun fmt fmtty -> match fmt, fmtty with
+
+let rec type_format :
+  type a1 b1 c1 d1 e1 f1
+       a2 b2 c2 d2 e2 f2  .
+     (a1, b1, c1, d1, e1, f1) fmt
+  -> (a2, b2, c2, d2, e2, f2) fmtty
+  -> (a2, b2, c2, d2, e2, f2) fmt
+= fun fmt fmtty -> match fmt, fmtty with
   | Char fmt_rest, Char_ty fmtty_rest ->
     Char (type_format fmt_rest fmtty_rest)
   | Caml_char fmt_rest, Char_ty fmtty_rest ->
@@ -803,11 +975,11 @@ fun fmt fmtty -> match fmt, fmtty with
     Format_arg_ty (sub_fmtty', fmtty_rest) ->
     if Fmtty_EBB sub_fmtty <> Fmtty_EBB sub_fmtty' then raise Type_mismatch;
     Format_arg (pad_opt, sub_fmtty', type_format fmt_rest fmtty_rest)
-  | Format_subst (pad_opt, _, sub_fmtty, fmt_rest),
-    Format_subst_ty (rnu', sub_fmtty', fmtty_rest) ->
-    if Fmtty_EBB sub_fmtty <> Fmtty_EBB sub_fmtty' then raise Type_mismatch;
-    Format_subst (pad_opt, rnu', sub_fmtty', type_format fmt_rest fmtty_rest)
-
+  | Format_subst (pad_opt, sub_fmtty, fmt_rest),
+    Format_subst_ty (sub_fmtty1, _sub_fmtty2, fmtty_rest) ->
+    if Fmtty_EBB (erase_rel sub_fmtty) <> Fmtty_EBB (erase_rel sub_fmtty1) then
+      raise Type_mismatch;
+    Format_subst (pad_opt, sub_fmtty1, type_format fmt_rest (erase_rel fmtty_rest))
   (* Printf and Format specific constructors: *)
   | Alpha fmt_rest, Alpha_ty fmtty_rest ->
     Alpha (type_format fmt_rest fmtty_rest)
@@ -833,10 +1005,10 @@ fun fmt fmtty -> match fmt, fmtty with
 
   | _ -> raise Type_mismatch
 
-(* Type and Ignored_param node according to an fmtty. *)
-and type_ignored_param : type p q x t u v a b c d e f .
-    (x, b, c, t, q, p) ignored ->
-    (p, b, c, q, u, v) CamlinternalFormatBasics.fmt ->
+(* Type an Ignored_param node according to an fmtty. *)
+and type_ignored_param : type p q x y z t u v a b c d e f .
+    (x, y, z, t, q, p) ignored ->
+    (p, y, z, q, u, v) CamlinternalFormatBasics.fmt ->
     (a, b, c, d, e, f) fmtty ->
     (a, b, c, d, e, f) CamlinternalFormatBasics.fmt =
 fun ign fmt fmtty -> match ign with
@@ -857,7 +1029,7 @@ fun ign fmt fmtty -> match ign with
   | Ignored_format_subst (pad_opt, sub_fmtty) ->
     let Fmtty_fmt_EBB (sub_fmtty', fmt') =
       type_ignored_format_substitution sub_fmtty fmt fmtty in
-    Ignored_param (Ignored_format_subst (pad_opt, sub_fmtty'), fmt')
+    Ignored_param (Ignored_format_subst (pad_opt, erase_rel (symm sub_fmtty')), fmt')
   | Ignored_reader ->
     begin match fmtty with
     | Ignored_reader_ty fmtty_rest ->
@@ -868,9 +1040,9 @@ fun ign fmt fmtty -> match ign with
     Ignored_param (ign', type_format fmt fmtty)
 
 (* Typing of the complex case: "%_(...%)". *)
-and type_ignored_format_substitution : type w z p s t u a b c d e f .
-    (w, b, c, z, s, p) fmtty ->
-    (p, b, c, s, t, u) CamlinternalFormatBasics.fmt ->
+and type_ignored_format_substitution : type w x y z p s t u a b c d e f .
+    (w, x, y, z, s, p) fmtty ->
+    (p, x, y, s, t, u) CamlinternalFormatBasics.fmt ->
     (a, b, c, d, e, f) fmtty -> (a, b, c, d, e, f) fmtty_fmt_ebb =
 fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
   | Char_ty sub_fmtty_rest, Char_ty fmtty_rest ->
@@ -928,17 +1100,58 @@ fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
       type_ignored_format_substitution sub_fmtty_rest fmt fmtty_rest in
     Fmtty_fmt_EBB (Format_arg_ty (sub2_fmtty', sub_fmtty_rest'), fmt')
-  | Format_subst_ty (_, sub2_fmtty, sub_fmtty_rest),
-    Format_subst_ty (rnu', sub2_fmtty', fmtty_rest) ->
-    if Fmtty_EBB sub2_fmtty <> Fmtty_EBB sub2_fmtty' then raise Type_mismatch;
+  | Format_subst_ty (sub1_fmtty,  sub2_fmtty,  sub_fmtty_rest),
+    Format_subst_ty (sub1_fmtty', sub2_fmtty', fmtty_rest) ->
+    (* TODO define Fmtty_rel_EBB to remove those erase_rel *)
+    if Fmtty_EBB (erase_rel sub1_fmtty) <> Fmtty_EBB (erase_rel sub1_fmtty') then raise Type_mismatch;
+    if Fmtty_EBB (erase_rel sub2_fmtty) <> Fmtty_EBB (erase_rel sub2_fmtty') then raise Type_mismatch;
+    let sub_fmtty' = trans (symm sub1_fmtty') sub2_fmtty' in
+    let _, f2, _, f4 = fmtty_rel_det sub_fmtty' in
+    let Refl = f2 Refl in
+    let Refl = f4 Refl in
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
-      type_ignored_format_substitution sub_fmtty_rest fmt fmtty_rest in
-    Fmtty_fmt_EBB (Format_subst_ty (rnu', sub2_fmtty', sub_fmtty_rest'),fmt')
-
+      type_ignored_format_substitution (erase_rel sub_fmtty_rest) fmt fmtty_rest in
+    Fmtty_fmt_EBB (Format_subst_ty (sub1_fmtty', sub2_fmtty', symm sub_fmtty_rest'), fmt')
   | End_of_fmtty, fmtty ->
     Fmtty_fmt_EBB (End_of_fmtty, type_format fmt fmtty)
 
   | _ -> raise Type_mismatch
+
+
+(* This implementation of `recast` is a bit disappointing. The
+   invariant provided by the type are very strong: the input format's
+   type is in relation to the output type's as witnessed by the
+   fmtty_rel argument. One would at first expect this function to be
+   total, and implementable by exhaustive pattern matching. Instead,
+   we reuse the highly partial and much less well-defined function
+   `type_format` that has lost all knowledge of the correspondence
+   between the argument's types.
+
+   Besides the fact that this function reuses a lot of the
+   `type_format` logic (eg.: seeing Int_ty in the fmtty parameter does
+   not let you match on Int only, as you may in fact have Float
+   (Arg_padding, ...) ("%.*d") beginning with an Int_ty), it is also
+   a partial function, because the typing information in a format is
+   not quite enough to reconstruct it unambiguously. For example, the
+   format types of "%d%_r" and "%_r%d" have the same format6
+   parameters, but they are not at all exchangeable, and putting one
+   in place of the other must result in a dynamic failure.
+
+   Given that:
+   - we'd have to duplicate a lot of non-trivial typing logic from type_format
+   - this wouldn't even eliminate (all) the dynamic failures
+   we decided to just reuse type_format directly for now.
+*)
+let recast :
+  type a1 b1 c1 d1 e1 f1
+       a2 b2 c2 d2 e2 f2
+  .
+     (a1, b1, c1, d1, e1, f1) fmt
+  -> (a1, b1, c1, d1, e1, f1,
+      a2, b2, c2, d2, e2, f2) fmtty_rel
+  -> (a2, b2, c2, d2, e2, f2) fmt
+= fun fmt fmtty ->
+  type_format fmt (erase_rel (symm fmtty))
 
 (******************************************************************************)
                              (* Printing tools *)
@@ -1117,10 +1330,9 @@ fun k o acc fmt -> match fmt with
     (fun str ->
       ignore str;
       make_printf k o (Acc_string (acc, ty)) rest)
-  | Format_subst (_, _, fmtty, rest) ->
-    (* Call to type_format can't fail (raise Type_mismatch). *)
+  | Format_subst (_, fmtty, rest) ->
     fun (Format (fmt, _)) -> make_printf k o acc
-      (concat_fmt (type_format fmt fmtty) rest)
+      (concat_fmt (recast fmt fmtty) rest)
 
   | Scan_char_set (_, _, rest) ->
     let new_acc = Acc_invalid_arg (acc, "Printf: bad conversion %[") in
@@ -1185,7 +1397,8 @@ fun k o acc fmtty fmt -> match fmtty with
   | Ignored_reader_ty _     -> assert false
   | Format_arg_ty (_, rest) -> fun _ -> make_from_fmtty k o acc rest fmt
   | End_of_fmtty            -> make_invalid_arg k o acc fmt
-  | Format_subst_ty (_, ty, rest) ->
+  | Format_subst_ty (ty1, ty2, rest) ->
+    let ty = trans (symm ty1) ty2 in
     fun _ -> make_from_fmtty k o acc (concat_fmtty ty rest) fmt
 
 (* Insert an Acc_invalid_arg in the accumulator and continue to generate
@@ -1792,8 +2005,8 @@ let fmt_ebb_of_string str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         Fmt_EBB (Format_subst (get_pad_opt '(',
-                                  reader_nb_unifier_of_fmtty sub_fmtty,
-                                  sub_fmtty, fmt_rest))
+                               sub_fmtty,
+                               fmt_rest))
     | '[' ->
       let next_ind, char_set = parse_char_set str_ind end_ind in
       let Fmt_EBB fmt_rest = parse next_ind end_ind in

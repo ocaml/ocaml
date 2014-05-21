@@ -1014,138 +1014,185 @@ module CamlinternalFormatBasics : sig
 
   type prec_option = int option
 
-  type ('d1, 'e1, 'd2, 'e2) reader_nb_unifier =
-    | Zero_reader :
-        ('d1, 'd1, 'd2, 'd2) reader_nb_unifier
-    | Succ_reader :
-        ('d1, 'e1, 'd2, 'e2) reader_nb_unifier ->
-          ('x -> 'd1, 'e1, 'x -> 'd2, 'e2) reader_nb_unifier
+type ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
+     ('a, 'b, 'c, 'd, 'e, 'f,
+      'a, 'b, 'c, 'd, 'e, 'f) fmtty_rel
+and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel =
+  | Char_ty :                                                 (* %c  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (char -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       char -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | String_ty :                                               (* %s  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (string -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       string -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Int_ty :                                                  (* %d  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (int -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       int -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Int32_ty :                                                (* %ld *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (int32 -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       int32 -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Nativeint_ty :                                            (* %nd *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (nativeint -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       nativeint -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Int64_ty :                                                (* %Ld *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (int64 -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       int64 -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Float_ty :                                                (* %f  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (float -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       float -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Bool_ty :                                                 (* %B  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (bool -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       bool -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Format_arg_ty :                                           (* %{...%} *)
+      ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       ('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Format_subst_ty :                                         (* %(...%) *)
+      ('g, 'h, 'i, 'j, 'k, 'l,
+       'g1, 'b1, 'c1, 'j1, 'd1, 'a1) fmtty_rel *
+      ('g, 'h, 'i, 'j, 'k, 'l,
+       'g2, 'b2, 'c2, 'j2, 'd2, 'a2) fmtty_rel *
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'g1, 'b1, 'c1, 'j1, 'e1, 'f1,
+       ('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'g2, 'b2, 'c2, 'j2, 'e2, 'f2) fmtty_rel
 
-  type ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
-    | Char_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | String_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Int_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (int -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Int32_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (int32 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Nativeint_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (nativeint -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Int64_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (int64 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Float_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (float -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Bool_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Format_arg_ty :
-        ('g, 'h, 'i, 'j, 'k, 'l) fmtty * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Format_subst_ty :
-        ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
-        ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
-        ('u, 'b, 'c, 'q1, 'e1, 'f) fmtty ->
-          (('x, 'b, 'c, 'd2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmtty
-    | Alpha_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (('b -> 'x -> 'c) -> 'x -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Theta_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmtty
-    | Reader_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmtty
-    | Ignored_reader_ty :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-          ('a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmtty
-    | End_of_fmtty :
-          ('f, 'b, 'c, 'd, 'd, 'f) fmtty
+  (* Printf and Format specific constructors. *)
+  | Alpha_ty :                                                (* %a  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (('b1 -> 'x -> 'c1) -> 'x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       ('b2 -> 'x -> 'c2) -> 'x -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Theta_ty :                                                (* %t  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 
-  and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
-    | Char :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Caml_char :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | String :
-        ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Caml_string :
-        ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Int :
-        int_conv * ('x, 'y) padding * ('y, int -> 'a) precision *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Int32 :
-        int_conv * ('x, 'y) padding * ('y, int32 -> 'a) precision *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Nativeint :
-        int_conv * ('x, 'y) padding * ('y, nativeint -> 'a) precision *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Int64 :
-        int_conv * ('x, 'y) padding * ('y, int64 -> 'a) precision *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Float :
-        float_conv * ('x, 'y) padding * ('y, float -> 'a) precision *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x, 'b, 'c, 'd, 'e, 'f) fmt
-    | Bool :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Flush :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('a, 'b, 'c, 'd, 'e, 'f) fmt
-    | String_literal :
-        string * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Char_literal :
-        char * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Format_arg :
-        pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Format_subst :
-        pad_option * ('d1, 'q1, 'd2, 'q2) reader_nb_unifier *
-        ('x, 'b, 'c, 'd1, 'q1, 'u) fmtty *
-        ('u, 'b, 'c, 'q1, 'e1, 'f) fmt ->
-          (('x,'b,'c,'d2, 'q2, 'u) format6 -> 'x, 'b, 'c, 'd1, 'e1, 'f) fmt
-    | Alpha :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (('b -> 'x -> 'c) -> 'x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Theta :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Formatting :
-        formatting * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Reader :
-        ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmt
-    | Scan_char_set :
-        pad_option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Scan_get_counter :
-        counter * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-          (int -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
-    | Ignored_param :
-        ('a, 'b, 'c, 'd, 'y, 'x) ignored * ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
-          ('a, 'b, 'c, 'd, 'e, 'f) fmt
-    | End_of_format :
-          ('f, 'b, 'c, 'e, 'e, 'f) fmt
+  (* Scanf specific constructor. *)
+  | Reader_ty :                                               (* %r  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      ('x -> 'a1, 'b1, 'c1, ('b1 -> 'x) -> 'd1, 'e1, 'f1,
+       'x -> 'a2, 'b2, 'c2, ('b2 -> 'x) -> 'd2, 'e2, 'f2) fmtty_rel
+  | Ignored_reader_ty :                                       (* %_r  *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      ('a1, 'b1, 'c1, ('b1 -> 'x) -> 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, ('b2 -> 'x) -> 'd2, 'e2, 'f2) fmtty_rel
+
+  | End_of_fmtty :
+      ('f1, 'b1, 'c1, 'd1, 'd1, 'f1,
+       'f2, 'b2, 'c2, 'd2, 'd2, 'f2) fmtty_rel
+
+(***)
+
+(* List of format elements. *)
+and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
+  | Char :                                                   (* %c *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Caml_char :                                              (* %C *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (char -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | String :                                                 (* %s *)
+      ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Caml_string :                                            (* %S *)
+      ('x, string -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Int :                                                    (* %[dixXuo] *)
+      int_conv * ('x, 'y) padding * ('y, int -> 'a) precision *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Int32 :                                                  (* %l[dixXuo] *)
+      int_conv * ('x, 'y) padding * ('y, int32 -> 'a) precision *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Nativeint :                                              (* %n[dixXuo] *)
+      int_conv * ('x, 'y) padding * ('y, nativeint -> 'a) precision *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Int64 :                                                  (* %L[dixXuo] *)
+      int_conv * ('x, 'y) padding * ('y, int64 -> 'a) precision *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Float :                                                  (* %[feEgGF] *)
+      float_conv * ('x, 'y) padding * ('y, float -> 'a) precision *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
+  | Bool :                                                   (* %[bB] *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Flush :                                                  (* %! *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt
+
+  | String_literal :                                         (* abc *)
+      string * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Char_literal :                                           (* x *)
+      char * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt
+
+  | Format_arg :                                             (* %{...%} *)
+      pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Format_subst :                                           (* %(...%) *)
+      pad_option *
+      ('g, 'h, 'i, 'j, 'k, 'l,
+       'g2, 'b, 'c, 'j2, 'd, 'a) fmtty_rel *
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      (('g, 'h, 'i, 'j, 'k, 'l) format6 -> 'g2, 'b, 'c, 'j2, 'e, 'f) fmt
+
+  (* Printf and Format specific constructor. *)
+  | Alpha :                                                  (* %a *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (('b -> 'x -> 'c) -> 'x -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Theta :                                                  (* %t *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+
+  (* Format specific constructor: *)
+  | Formatting :                                             (* @_ *)
+      formatting * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt
+
+  (* Scanf specific constructors: *)
+  | Reader :                                                 (* %r *)
+      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x -> 'a, 'b, 'c, ('b -> 'x) -> 'd, 'e, 'f) fmt
+  | Scan_char_set :                                          (* %[...] *)
+      pad_option * char_set * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (string -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Scan_get_counter :                                       (* %[nlNL] *)
+      counter * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        (int -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Ignored_param :                                          (* %_ *)
+      ('a, 'b, 'c, 'd, 'y, 'x) ignored * ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
+        ('a, 'b, 'c, 'd, 'e, 'f) fmt
+
+  | End_of_format :
+        ('f, 'b, 'c, 'e, 'e, 'f) fmt
 
   and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
     | Ignored_char :
@@ -1169,7 +1216,7 @@ module CamlinternalFormatBasics : sig
     | Ignored_bool :
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_format_arg :
-        pad_option * ('x, 'b, 'c, 'y, 'z, 't) fmtty ->
+        pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty ->
           ('a, 'b, 'c, 'd, 'd, 'a) ignored
     | Ignored_format_subst :
         pad_option * ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
@@ -1185,9 +1232,16 @@ module CamlinternalFormatBasics : sig
     Format of ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
 
   val concat_fmtty :
-      ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
-      ('f, 'b, 'c, 'e, 'g, 'h) fmtty ->
-      ('a, 'b, 'c, 'd, 'g, 'h) fmtty
+    ('g1, 'b1, 'c1, 'j1, 'd1, 'a1,
+     'g2, 'b2, 'c2, 'j2, 'd2, 'a2) fmtty_rel ->
+    ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+    ('g1, 'b1, 'c1, 'j1, 'e1, 'f1,
+     'g2, 'b2, 'c2, 'j2, 'e2, 'f2) fmtty_rel
+
+  val erase_rel :
+    ('a, 'b, 'c, 'd, 'e, 'f,
+     'g, 'h, 'i, 'j, 'k, 'l) fmtty_rel -> ('a, 'b, 'c, 'd, 'e, 'f) fmtty
 
   val concat_fmt :
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
