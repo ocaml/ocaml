@@ -145,6 +145,19 @@ let rec compose_coercions c1 c2 =
   | (_, _) ->
       fatal_error "Translmod.compose_coercions"
 
+(*
+let apply_coercion a b c =
+  Format.eprintf "@[<2>apply_coercion@ %a@]@." Includemod.print_coercion b;
+  apply_coercion a b c
+
+let compose_coercions c1 c2 =
+  let c3 = compose_coercions c1 c2 in
+  let open Includemod in
+  Format.eprintf "@[<2>compose_coercions@ (%a)@ (%a) =@ %a@]@."
+    print_coercion c1 print_coercion c2 print_coercion c2;
+  c3
+*)
+
 (* Record the primitive declarations occuring in the module compiled *)
 
 let primitive_declarations = ref ([] : Primitive.description list)
