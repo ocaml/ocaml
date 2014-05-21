@@ -284,7 +284,7 @@ and untype_expression exp =
             in
             { uc with pc_lhs = pat })
           exn_cases
-      in 
+      in
       Pexp_match (untype_expression exp, merged_cases)
     | Texp_try (exp, cases) ->
         Pexp_try (untype_expression exp, untype_cases cases)

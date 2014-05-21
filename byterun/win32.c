@@ -103,7 +103,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
       caml_stat_free(fullname);
       return caml_strdup(name);
     }
-    if (retcode < fullnamelen) 
+    if (retcode < fullnamelen)
       return fullname;
     caml_stat_free(fullname);
     fullnamelen = retcode + 1;

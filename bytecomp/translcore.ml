@@ -1154,7 +1154,7 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   | {exp_desc = Texp_tuple argl}, _ :: _ ->
     let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
     let lvars = List.map (fun id -> Lvar id) val_ids in
-    static_catch (transl_list argl) val_ids 
+    static_catch (transl_list argl) val_ids
       (Matching.for_multiple_match e.exp_loc lvars cases partial)
   | arg, [] ->
     Matching.for_function e.exp_loc None (transl_exp arg) cases partial
