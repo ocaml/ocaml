@@ -58,13 +58,14 @@ Compilers:
   (Xavier Leroy)
 - New back-end optimization pass: common subexpression elimination (CSE).
   (Reuses results of previous computations instead of recomputing them.)
-  (Xavlier Leroy)
+  (Xavier Leroy)
 - New back-end optimization pass: dead code elimination.
   (Removes arithmetic and load instructions whose results are unused.)
   (Xavier Leroy)
 - PR#6269: Optimization of sequences of string patterns
-  (Benoit Vaugon and Luc Maranget)
+  (Benoît Vaugon and Luc Maranget)
 - Experimental native code generator for AArch64 (ARM 64 bits)
+  (Xavier Leroy)
 - PR#6042: Optimization of integer division and modulus by constant divisors
   (Xavier Leroy and Phil Denys)
 - Add "-open" command line flag for opening a single module before typing
