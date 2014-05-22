@@ -32,6 +32,7 @@ let indtailcall8 fn a b c d e f g h =
 let indtailcall16 fn a b c d e f g h i j k l m n o p =
   fn a b c d e f g h i j k l m n o p
 
+(* regression test for PR#6441: *)
 let rec tailcall16_value_closures a b c d e f g h i j k l m n o p =
   if a < 0
   then b
