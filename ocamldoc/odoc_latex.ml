@@ -539,16 +539,21 @@ class latex =
         let priv = t.ty_private = Asttypes.Private in
         (
          match t.ty_manifest with
-           None -> ()
-         | Some typ ->
+         | Some (Other typ) ->
              p fmt2 " = %s%s" (if priv then "private " else "") (self#normal_type mod_name typ)
+         | _ -> ()
         );
         let s_type3 =
           p fmt2
             " %s"
             (
              match t.ty_kind with
-               Type_abstract -> ""
+               Type_abstract ->
+                begin match t.ty_manifest with
+                | Some (Object_type _) ->
+                  "= " ^ (if priv then "private" else "") ^ " <"
+                | _ -> ""
+                end
              | Type_variant _ -> "="^(if priv then " private" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")^"{"
              | Type_open -> "= .."
@@ -557,81 +562,80 @@ class latex =
         in
 
         let defs =
+          let entry_comment = function
+          | None -> []
+          | Some t ->
+              let s =
+                ps fmt2 "\\begin{ocamldoccomment}\n";
+                self#latex_of_info fmt2 (Some t);
+                ps fmt2 "\n\\end{ocamldoccomment}\n";
+                flush2 ()
+              in
+              [ Latex s]
+        in
           match t.ty_kind with
-            Type_abstract -> []
-          | Type_variant l ->
-              (List.flatten
-               (List.map
-                  (fun constr ->
-                    let s_cons =
-                      p fmt2 "@[<h 6>  | %s" constr.vc_name;
-                      (
-                       match constr.vc_args, constr.vc_ret with
-                         [], None -> ()
-                       | l, None ->
-                           p fmt2 " %s@ %s"
-                             "of"
-                             (self#normal_type_list ~par: false mod_name " * " l)
-                       | [], Some r ->
-                           p fmt2 " %s@ %s"
-                             ":"
-                             (self#normal_type mod_name r)
-                       | l, Some r ->
-                           p fmt2 " %s@ %s@ %s@ %s"
-                             ":"
-                             (self#normal_type_list ~par: false mod_name " * " l)
-                             "->"
-                             (self#normal_type mod_name r)
-                      );
-                      flush2 ()
-                    in
-                    [ CodePre s_cons ] @
-                    (match constr.vc_text with
-                      None -> []
-                    | Some t ->
-                        let s =
-                          ps fmt2 "\\begin{ocamldoccomment}\n";
-                          self#latex_of_info fmt2 (Some t);
-                          ps fmt2 "\n\\end{ocamldoccomment}\n";
-                          flush2 ()
-                        in
-                        [ Latex s]
-                    )
-                  )
-                  l
-               )
-              )
-          | Type_record l ->
-              (List.flatten
-                 (List.map
-                    (fun r ->
-                      let s_field =
-                        p fmt2
-                          "@[<h 6>  %s%s :@ %s ;"
-                          (if r.rf_mutable then "mutable " else "")
-                          r.rf_name
-                          (self#normal_type mod_name r.rf_type);
-                        flush2 ()
-                      in
-                      [ CodePre s_field ] @
-                      (match r.rf_text with
-                        None -> []
-                      | Some t ->
-                          let s =
-                            ps fmt2 "\\begin{ocamldoccomment}\n";
-                            self#latex_of_info fmt2 (Some t);
-                            ps fmt2 "\n\\end{ocamldoccomment}\n";
-                            flush2 ()
-                        in
-                        [ Latex s]
-                      )
-                    )
-                    l
-                 )
-              ) @
-              [ CodePre "}" ]
-          | Type_open -> []
+          | Type_abstract ->
+             begin match t.ty_manifest with
+             | Some (Object_type l) ->
+               let fields =
+                 List.map (fun r ->
+                   let s_field =
+                     p fmt2
+                       "@[<h 6>  %s :@ %s ;"
+                       r.of_name
+                       (self#normal_type mod_name r.of_type);
+                     flush2 ()
+                   in
+                   [ CodePre s_field ] @ (entry_comment r.of_text)
+                 ) l
+               in
+               List.flatten fields @ [ CodePre ">" ]
 
+             | None | Some (Other _) -> []
+             end
+          | Type_variant l ->
+             let constructors =
+               List.map (fun constr ->
+                 let s_cons =
+                   p fmt2 "@[<h 6>  | %s" constr.vc_name ;
+                   begin match constr.vc_args, constr.vc_ret with
+                   | [], None -> ()
+                   | l, None ->
+                     p fmt2 " of@ %s"
+                       (self#normal_type_list ~par: false mod_name " * " l)
+                   | [], Some r ->
+                     p fmt2 " :@ %s"
+                       (self#normal_type mod_name r)
+                   | l, Some r ->
+                     p fmt2 " :@ %s@ %s@ %s"
+                       (self#normal_type_list ~par: false mod_name " * " l)
+                       "->"
+                       (self#normal_type mod_name r)
+                   end ;
+                   flush2 ()
+                 in
+                 [ CodePre s_cons ] @ (entry_comment constr.vc_text)
+               ) l
+             in
+             List.flatten constructors
+          | Type_record l ->
+             let fields =
+               List.map (fun r ->
+                 let s_field =
+                   p fmt2
+                     "@[<h 6>  %s%s :@ %s ;"
+                     (if r.rf_mutable then "mutable " else "")
+                     r.rf_name
+                     (self#normal_type mod_name r.rf_type);
+                   flush2 ()
+                 in
+                 [ CodePre s_field ] @ (entry_comment r.rf_text)
+               ) l
+             in
+             List.flatten fields @ [ CodePre "}" ]
+          | Type_open ->
+             (* FIXME ? *)
+             []
         in
         let defs2 = (CodePre s_type3) :: defs in
         let rec iter = function
