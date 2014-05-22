@@ -535,6 +535,13 @@ class man =
     method man_of_type b t =
       Odoc_info.reset_type_names () ;
       let father = Name.father t.ty_name in
+      let field_comment = function
+        | None -> ()
+        | Some t ->
+          bs b "  (* ";
+          self#man_of_info b (Some t);
+          bs b " *) "
+      in
       bs b ".I type ";
       self#man_of_type_expr_param_list b father t;
       (
@@ -548,7 +555,18 @@ class man =
       (
        match t.ty_manifest with
          None -> ()
-       | Some typ ->
+       | Some (Object_type l) ->
+          bs b "= ";
+          if priv then bs b "private ";
+          bs b "<";
+          List.iter (fun r ->
+            bs b (r.of_name^" : ");
+            self#man_of_type_expr b father r.of_type;
+            bs b ";";
+            field_comment r.of_text ;
+          ) l;
+          bs b "\n >\n"
+       | Some (Other typ) ->
            bs b "= ";
            if priv then bs b "private ";
            self#man_of_type_expr b father typ
@@ -557,79 +575,64 @@ class man =
        match t.ty_kind with
         Type_abstract -> ()
       | Type_variant l ->
-          bs b "=";
-          if priv then bs b " private";
-          bs b "\n ";
-          List.iter
-            (fun constr ->
-              bs b ("| "^constr.vc_name);
-              (
-               match constr.vc_args, constr.vc_text,constr.vc_ret with
-               | [], None, None -> bs b "\n "
-               | [], (Some t), None ->
-                   bs b "  (*\n";
-                   self#man_of_info b (Some t);
-                   bs b "*)\n "
-               | l, None, None ->
-                   bs b "\n.B of ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
-                   bs b " "
-               | l, (Some t), None ->
-                   bs b "\n.B of ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
-                   bs b ".I \"  \"\n";
-                   bs b "(*\n";
-                   self#man_of_info b (Some t);
-                   bs b "*)\n"
-               | [], None, Some r ->
-                   bs b "\n.B : ";
-                   self#man_of_type_expr b father r;
-                   bs b " "
-               | [], (Some t), Some r ->
-                   bs b "\n.B : ";
-                   self#man_of_type_expr b father r;
-                   bs b ".I \"  \"\n";
-                   bs b "(*\n";
-                   self#man_of_info b (Some t);
-                   bs b "*)\n "
-               | l, None, Some r ->
-                   bs b "\n.B : ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
-                   bs b ".B -> ";
-                   self#man_of_type_expr b father r;
-                   bs b " "
-               | l, (Some t), Some r ->
-                   bs b "\n.B of ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
-                   bs b ".B -> ";
-                   self#man_of_type_expr b father r;
-                   bs b ".I \"  \"\n";
-                   bs b "(*\n";
-                   self#man_of_info b (Some t);
-                   bs b "*)\n "
-              )
-            )
-            l
+         bs b "=";
+         if priv then bs b " private";
+         bs b "\n ";
+         List.iter (fun constr ->
+           bs b ("| "^constr.vc_name);
+           let print_text t =
+             bs b "  (* ";
+             self#man_of_info b (Some t);
+             bs b " *)\n "
+           in
+           match constr.vc_args, constr.vc_text,constr.vc_ret with
+           | [], None, None -> bs b "\n "
+           | [], (Some t), None ->
+             print_text t
+           | l, None, None ->
+             bs b "\n.B of ";
+             self#man_of_type_expr_list ~par: false b father " * " l;
+             bs b " "
+           | l, (Some t), None ->
+             bs b "\n.B of ";
+             self#man_of_type_expr_list ~par: false b father " * " l;
+             bs b ".I \"  \"\n";
+             print_text t
+           | [], None, Some r ->
+             bs b "\n.B : ";
+             self#man_of_type_expr b father r;
+             bs b " "
+           | [], (Some t), Some r ->
+             bs b "\n.B : ";
+             self#man_of_type_expr b father r;
+             bs b ".I \"  \"\n";
+             print_text t
+           | l, None, Some r ->
+             bs b "\n.B : ";
+             self#man_of_type_expr_list ~par: false b father " * " l;
+             bs b ".B -> ";
+             self#man_of_type_expr b father r;
+             bs b " "
+           | l, (Some t), Some r ->
+             bs b "\n.B of ";
+             self#man_of_type_expr_list ~par: false b father " * " l;
+             bs b ".B -> ";
+             self#man_of_type_expr b father r;
+             bs b ".I \"  \"\n";
+             print_text t
+         ) l
+
       | Type_record l ->
           bs b "= ";
           if priv then bs b "private ";
           bs b "{";
-          List.iter
-            (fun r ->
-              bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
-              bs b (r.rf_name^" : ");
-              self#man_of_type_expr b father r.rf_type;
-              bs b ";";
-              (
-               match r.rf_text with
-                 None -> ()
-               | Some t ->
-                   bs b "  (*\n";
-                   self#man_of_info b (Some t);
-                   bs b "*) "
-              );
-            )
-            l;
+           List.iter (fun r ->
+             bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
+             bs b (r.rf_name^" : ");
+             self#man_of_type_expr b father r.rf_type;
+             bs b ";";
+             field_comment r.rf_text ;
+           ) l;
           bs b "\n }\n"
       | Type_open ->
           bs b "= ..";
