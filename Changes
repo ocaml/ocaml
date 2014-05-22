@@ -107,6 +107,7 @@ OCamldoc:
            (patch by Anil Madhavapeddy)
 - PR#6273: fix Sys.file_exists on large files (Win32)
            (patch by Christoph Bauer)
+- PR#6425: fix generation of man pages
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
