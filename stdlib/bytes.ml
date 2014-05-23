@@ -59,7 +59,7 @@ let extend s left right =
   let r = create len in
   let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
   let cpylen = min (length s - srcoff) (len - dstoff) in
-  unsafe_blit s srcoff r dstoff cpylen;
+  if cpylen > 0 then unsafe_blit s srcoff r dstoff cpylen;
   r
 
 let fill s ofs len c =
