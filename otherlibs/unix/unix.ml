@@ -428,6 +428,9 @@ external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 external sleep : int -> unit = "unix_sleep"
+
+let usleep t = ignore (select [] [] [] t)
+
 external times : unit -> process_times = "unix_times"
 external utimes : string -> float -> float -> unit = "unix_utimes"
 
@@ -1085,3 +1088,4 @@ let establish_server server_fun sockaddr =
             exit 0
     | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
   done
+

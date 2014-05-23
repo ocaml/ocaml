@@ -474,6 +474,8 @@ external alarm : int -> int = "unix_alarm"
 
 let sleep secs = delay (float secs)
 
+let usleep secs = delay secs
+
 external times : unit -> process_times = "unix_times"
 external utimes : string -> float -> float -> unit = "unix_utimes"
 
