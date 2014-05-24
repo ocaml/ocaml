@@ -317,3 +317,25 @@ external get3: unit -> unit = "caml_ba_get_3"
 external set1: unit -> unit = "caml_ba_set_1"
 external set2: unit -> unit = "caml_ba_set_2"
 external set3: unit -> unit = "caml_ba_set_3"
+
+(* Index operators *)
+
+(* Array1 *)
+external ( .{} ) : ('a, 'b, 'c) Array1.t -> int -> 'a = "%caml_ba_opt_ref_1"
+external ( .{} <- ) : ('a, 'b, 'c) Array1.t -> int -> 'a -> unit = "%caml_ba_opt_set_1"
+
+
+(* Array2 *)
+external ( .{,} ) : ('a, 'b, 'c) Array2.t -> int->int -> 'a = "%caml_ba_opt_ref_2"
+external ( .{,} <- ) : ('a, 'b, 'c) Array2.t -> int->int -> 'a -> unit = "%caml_ba_opt_set_2"
+
+(*Array3*)
+external ( .{,,} ) : ('a, 'b, 'c) Array3.t -> int->int->int -> 'a = "%caml_ba_opt_ref_3"
+external ( .{,,} <- ) : ('a, 'b, 'c) Array3.t -> int->int->int -> 'a -> unit = "%caml_ba_opt_set_3"
+
+
+(*Genarray*)
+external ( .{,..,} ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a = "caml_ba_get_generic"
+external ( .{,..,} <- ) : ('a, 'b, 'c) Genarray.t -> int array -> 'a -> unit = "caml_ba_set_generic"
+
+
