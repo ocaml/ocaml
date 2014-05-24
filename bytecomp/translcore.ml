@@ -326,6 +326,22 @@ let primitives_table = create_hashtable 57 [
   "%opaque", Popaque;
 ]
 
+
+let index_primitives_table =
+  let make_ba_ref n="%caml_ba_opt_ref_"^(string_of_int n),
+    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
+  and make_ba_set n="%caml_ba_opt_set_"^(string_of_int n),
+    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout) in
+  create_hashtable 10 [
+    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray else Parrayrefs Pgenarray );
+    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray else Parraysets Pgenarray );
+    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu else Pstringrefs );
+    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu else Pstringsets );
+    make_ba_ref 1; make_ba_set 1;
+    make_ba_ref 2; make_ba_set 2;
+    make_ba_ref 3; make_ba_set 3;
+]
+
 let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
@@ -335,7 +351,9 @@ let find_primitive loc prim_name =
     | "%loc_LINE" -> Ploc Loc_LINE
     | "%loc_POS" -> Ploc Loc_POS
     | "%loc_MODULE" -> Ploc Loc_MODULE
-    | name -> Hashtbl.find primitives_table name
+    | name ->
+      try Hashtbl.find index_primitives_table name () with
+        | Not_found -> Hashtbl.find primitives_table name
 
 let specialize_comparison table env ty =
   let (gencomp, intcomp, floatcomp, stringcomp,
