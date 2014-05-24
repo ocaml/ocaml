@@ -9,7 +9,7 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-
+open Bigarray
 let f x = x.{2}
 
 let () =
