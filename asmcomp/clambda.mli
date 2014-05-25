@@ -86,3 +86,10 @@ type value_approximation =
   | Value_unknown
   | Value_const of uconstant
   | Value_global_field of string * int
+
+(* Comparison functions for constants *)
+
+val compare_structured_constants:
+        ustructured_constant -> ustructured_constant -> int
+val compare_constants:
+        uconstant -> uconstant -> int
