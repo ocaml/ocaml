@@ -80,9 +80,9 @@ Compilers:
 - PR#5817: new flag to keep locations in cmi files
   (Alain Frisch)
 - PR#5854: issue warning 3 when referring to a value marked with
-  the [@@deprecated] attribute
+  the [@@ocaml.deprecated] attribute
   (Alain Frisch, suggestion by Pierre-Marie Pédrot)
-* PR#6203: Constant exception constructor no longer allocate
+* PR#6203: Constant exception constructors no longer allocate
   (Alain Frisch)
 - PR#6311: Improve signature mismatch error messages
   (Alain Frisch, suggestion by Daniel Bünzli)
@@ -143,12 +143,12 @@ OCamldoc:
 - PR#6257: handle full doc comments for variant constructors and
   record fields
   (Maxence Guesdon, request by ygrek)
+- PR#6274: allow doc comments on object types
+  (Thomas Refis)
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
   (Anil Madhavapeddy)
 - PR#6425: fix generation of man pages
   (Maxence Guesdon, report by Anil Madhavapeddy)
-- PR#6274: allow doc comments on object types
-  (Thomas Refis)
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
