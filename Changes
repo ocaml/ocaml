@@ -234,6 +234,7 @@ Bug fixes:
 - PR#6408: Optional arguments given as ~?arg instead of ?arg in message
   (Michael O'Connor)
 - PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
+- PR#6443: ocaml segfault when List.fold_left is traced then executed
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
