@@ -71,8 +71,8 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 
 int caml_alloc_backtrace_buffer(void){
   CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE
-                                 * sizeof(backtrace_slot));
+  caml_backtrace_buffer =
+    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
   if (caml_backtrace_buffer == NULL) return -1;
   return 0;
 }

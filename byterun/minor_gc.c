@@ -85,7 +85,8 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (void *) malloc((tbl->size + tbl->reserve) * element_size);
+  new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
+                                             element_size);
   if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
@@ -151,7 +152,7 @@ void caml_set_minor_heap_size (asize_t bsz)
 
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
-    free (caml_young_base);
+    caml_stat_free (caml_young_base);
   }
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
@@ -508,7 +509,7 @@ static void realloc_generic_table
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
-    tbl->base = (void *) realloc ((char *) tbl->base, sz);
+    tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error (msg_error);
     }

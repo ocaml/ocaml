@@ -46,7 +46,7 @@ struct compare_stack {
 static void compare_free_stack(struct compare_stack* stk)
 {
   if (stk->stack != stk->init_stack) {
-    free(stk->stack);
+    caml_stat_free(stk->stack);
     stk->stack = NULL;
   }
 }
@@ -69,15 +69,15 @@ static struct compare_item * compare_resize_stack(struct compare_stack* stk,
 
   if (stk->stack == stk->init_stack) {
     newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
-    newstack = malloc(sizeof(struct compare_item) * newsize);
+    newstack = caml_stat_alloc_noexc(sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
     memcpy(newstack, stk->init_stack,
            sizeof(struct compare_item) * COMPARE_STACK_INIT_SIZE);
   } else {
     newsize = 2 * (stk->limit - stk->stack);
     if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
-    newstack =
-      realloc(stk->stack, sizeof(struct compare_item) * newsize);
+    newstack = caml_stat_resize_noexc(stk->stack,
+                                      sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
   }
   stk->stack = newstack;

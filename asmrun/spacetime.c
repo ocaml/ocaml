@@ -102,7 +102,7 @@ static void reinitialise_free_node_block(void)
 {
   size_t index;
 
-  start_of_free_node_block = (char*) malloc(chunk_size);
+  start_of_free_node_block = (char*) caml_stat_alloc_noexc(chunk_size);
   end_of_free_node_block = start_of_free_node_block + chunk_size;
 
   for (index = 0; index < chunk_size / sizeof(value); index++) {
@@ -254,7 +254,7 @@ void caml_spacetime_initialize(void)
 void caml_spacetime_register_shapes(void* dynlinked_table)
 {
   shape_table* table;
-  table = (shape_table*) malloc(sizeof(shape_table));
+  table = (shape_table*) caml_stat_alloc_noexc(sizeof(shape_table));
   if (table == NULL) {
     fprintf(stderr, "Out of memory whilst registering shape table");
     abort();
@@ -279,7 +279,7 @@ void caml_spacetime_register_thread(
 {
   per_thread* thr;
 
-  thr = (per_thread*) malloc(sizeof(per_thread));
+  thr = (per_thread*) caml_stat_alloc_noexc(sizeof(per_thread));
   if (thr == NULL) {
     fprintf(stderr, "Out of memory while registering thread for profiling\n");
     abort();
@@ -725,7 +725,8 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       have_frames_already = 1;
     }
     else {
-      frames = (struct ext_table*) malloc(sizeof(struct ext_table));
+      frames =
+        (struct ext_table*) caml_stat_alloc_noexc(sizeof(struct ext_table));
       if (!frames) {
         caml_fatal_error("Not enough memory for ext_table allocation");
       }
