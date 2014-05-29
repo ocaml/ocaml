@@ -319,6 +319,7 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
   11 -> uninitialised fields of major objects
   15 -> uninitialised words of [caml_aligned_malloc] blocks
   85 -> filler bytes of [caml_aligned_malloc]
+  99 -> the magic prefix of a memory block allocated by [caml_stat_alloc]
 
   special case (byte by byte):
   D7 -> uninitialised words of [caml_stat_alloc] blocks
@@ -331,6 +332,7 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 #define Debug_uninit_major   Debug_tag (0x11)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
+#define Debug_pool_magic     Debug_tag (0x99)
 
 #define Debug_uninit_stat    0xD7
 

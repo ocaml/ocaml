@@ -17,6 +17,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include "caml/address_class.h"
 #include "caml/config.h"
 #include "caml/fail.h"
@@ -687,46 +689,158 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
   }
 }
 
-/* [sz] is a number of bytes */
-CAMLexport void * caml_stat_alloc (asize_t sz)
+
+/* Global memory pool.
+
+   The pool is structured as a ring of blocks, where each block's header
+   contains two links: to the previous and to the next block. The data
+   structure allows for insertions and removals of blocks in constant time,
+   given that a pointer to the operated block is provided.
+
+   Initially, the pool contains a single block -- a pivot with no data, the
+   guaranteed existence of which makes for a more concise implementation.
+
+   The API functions that operate on the pool receive not pointers to the
+   block's header, but rather pointers to the block's "data" field. This
+   behaviour is required to maintain compatibility with the interfaces of
+   [malloc], [realloc], and [free] family of functions, as well as to hide
+   the implementation from the user.
+*/
+
+/* A type with the most strict alignment requirements */
+union max_align {
+  char c;
+  short s;
+  long l;
+  int i;
+  float f;
+  double d;
+  void *v;
+  void (*q)(void);
+};
+
+struct pool_block {
+#ifdef DEBUG
+  long magic;
+#endif
+  struct pool_block *next;
+  struct pool_block *prev;
+  union max_align data[1];  /* not allocated, used for alignment purposes */
+};
+
+#define SIZEOF_POOL_BLOCK offsetof(struct pool_block, data)
+
+static struct pool_block *pool = NULL;
+
+
+/* Returns a pointer to the block header, given a pointer to "data" */
+static struct pool_block* get_pool_block(void *ptr)
 {
-  void * result = malloc (sz);
+  if (ptr == NULL) return NULL;
+  struct pool_block *pb = (struct pool_block*)(((char*)ptr) - SIZEOF_POOL_BLOCK);
+#ifdef DEBUG
+  Assert(pb->magic == Debug_pool_magic);
+#endif
+  return pb;
+}
+
+CAMLexport void caml_stat_create_pool(void)
+{
+  if (pool == NULL) {
+    pool = malloc(SIZEOF_POOL_BLOCK);
+    if (pool == NULL)
+      caml_fatal_error("Fatal error: out of memory.\n");
+#ifdef DEBUG
+    pool->magic = Debug_pool_magic;
+#endif
+    pool->next = pool;
+    pool->prev = pool;
+  }
+}
+
+CAMLexport void caml_stat_destroy_pool(void)
+{
+  if (pool != NULL) {
+    pool->prev->next = NULL;
+    while (pool != NULL) {
+      struct pool_block *next = pool->next;
+      free(pool);
+      pool = next;
+    }
+  }
+}
+
+/* [sz] is a number of bytes */
+CAMLexport void *caml_stat_alloc_noexc(asize_t sz)
+{
+  struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
+  if (pb == NULL) return NULL;
+#ifdef DEBUG
+  memset(&(pb->data), Debug_uninit_stat, sz);
+  pb->magic = Debug_pool_magic;
+#endif
+
+  /* Linking the block into the ring */
+  pb->next = pool->next;
+  pb->prev = pool;
+  pool->next->prev = pb;
+  pool->next = pb;
+
+  return &(pb->data);
+}
+
+/* [sz] is a number of bytes */
+CAMLexport void* caml_stat_alloc(asize_t sz)
+{
+  void *result = caml_stat_alloc_noexc(sz);
   /* malloc() may return NULL if size is 0 */
-  if (result == NULL && sz != 0) caml_raise_out_of_memory ();
-#ifdef DEBUG
-  memset (result, Debug_uninit_stat, sz);
-#endif
+  if ((result == NULL) && (sz != 0))
+    caml_raise_out_of_memory();
   return result;
 }
 
-CAMLexport void * caml_stat_alloc_noexc (asize_t sz)
+CAMLexport void caml_stat_free(void *ptr)
 {
-  void * result = malloc (sz);
-#ifdef DEBUG
-  memset (result, Debug_uninit_stat, sz);
-#endif
-  return result;
-}
+  struct pool_block *pb = get_pool_block(ptr);
+  if (pb == NULL) return;
 
-CAMLexport void caml_stat_free (void * blk)
-{
-  free (blk);
+  /* Unlinking the block from the ring */
+  pb->prev->next = pb->next;
+  pb->next->prev = pb->prev;
+
+  free(pb);
 }
 
 /* [sz] is a number of bytes */
-CAMLexport void * caml_stat_resize (void * blk, asize_t sz)
+CAMLexport void * caml_stat_resize_noexc(void *ptr, asize_t sz)
 {
-  void * result = realloc (blk, sz);
-  if (result == NULL) caml_raise_out_of_memory ();
+  struct pool_block *pb = get_pool_block(ptr);
+  struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
+  if (pb_new == NULL) return NULL;
+
+  /* Relinking the new block into the ring in place of the old one */
+  pb_new->prev->next = pb_new;
+  pb_new->next->prev = pb_new;
+
+  return &(pb_new->data);
+}
+
+/* [sz] is a number of bytes */
+CAMLexport void* caml_stat_resize(void *ptr, asize_t sz)
+{
+  void *result = caml_stat_resize_noexc(ptr, sz);
+  if (result == NULL)
+    caml_raise_out_of_memory();
   return result;
 }
 
-CAMLexport void * caml_stat_resize_noexc (void * blk, asize_t sz)
+/* [sz] is a number of bytes */
+CAMLexport void* caml_stat_calloc_noexc(asize_t num, asize_t sz)
 {
-  return realloc (blk, sz);
-}
-
-CAMLexport void * caml_stat_calloc_noexc (asize_t num, asize_t sz)
-{
-  return calloc (num, sz);
+  /* todo: an overflow check is desirable here */
+  sz *= num;
+  void *result = caml_stat_alloc_noexc(sz);
+  if (result != NULL)
+    memset(result, 0, sz);
+  return result;
 }

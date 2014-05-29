@@ -53,12 +53,6 @@ CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);
-CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
-CAMLextern void * caml_stat_alloc_noexc (asize_t);
-CAMLextern void caml_stat_free (void *);
-CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
-CAMLextern void * caml_stat_resize_noexc (void *, asize_t);
-CAMLextern void * caml_stat_calloc_noexc (asize_t, asize_t);
 CAMLextern int caml_init_alloc_for_heap (void);
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
@@ -67,6 +61,27 @@ CAMLextern int caml_add_to_heap (char *mem);
 CAMLextern color_t caml_allocation_color (void *hp);
 
 CAMLextern int caml_huge_fallback_count;
+
+/* Global memory pool.
+
+   The pool must be allocated with a call to caml_stat_create_pool
+   before it is possible to use any other caml_stat_* functions.
+
+   asize_t = size in bytes.
+*/
+CAMLextern void caml_stat_create_pool (void);
+CAMLextern void caml_stat_destroy_pool (void);
+
+/* These functions throw an OCaml exception in case of errors. */
+CAMLextern void * caml_stat_alloc (asize_t);
+CAMLextern void caml_stat_free (void *);
+CAMLextern void * caml_stat_resize (void *, asize_t);
+
+/* These functions do not throw an OCaml exception in case of errors
+   (direct substitutions for malloc, calloc, realloc). */
+CAMLextern void * caml_stat_alloc_noexc (asize_t);
+CAMLextern void * caml_stat_calloc_noexc (asize_t, asize_t);
+CAMLextern void * caml_stat_resize_noexc (void *, asize_t);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 

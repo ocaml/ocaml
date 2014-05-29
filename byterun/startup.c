@@ -286,6 +286,8 @@ CAMLexport void caml_main(char **argv)
 
   caml_ensure_spacetime_dot_o_is_included++;
 
+  caml_stat_create_pool();
+
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
@@ -405,6 +407,7 @@ CAMLexport value caml_startup_code_exn(
   char * cds_file;
   char * exe_name;
 
+  caml_stat_create_pool();
   caml_init_ieee_floats();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
