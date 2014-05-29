@@ -32,9 +32,9 @@ static value alloc_proto_entry(struct protoent *entry)
     name = copy_string(entry->p_name);
     aliases = copy_string_array((const char**)entry->p_aliases);
     res = alloc_small(3, 0);
-    Field(res,0) = name;
-    Field(res,1) = aliases;
-    Field(res,2) = Val_int(entry->p_proto);
+    Init_field(res, 0, name);
+    Init_field(res, 1, aliases);
+    Init_field(res, 2, Val_int(entry->p_proto));
   End_roots();
   return res;
 }

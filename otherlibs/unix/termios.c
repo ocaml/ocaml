@@ -124,17 +124,17 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(value *dst)
+static void encode_terminal_status(value res, int field)
 {
   long * pc;
   int i;
 
-  for(pc = terminal_io_descr; *pc != End; dst++) {
+  for(pc = terminal_io_descr; *pc != End; field++) {
     switch(*pc++) {
     case Bool:
       { int * src = (int *) (*pc++);
         int msk = *pc++;
-        *dst = Val_bool(*src & msk);
+        Init_field(res, field, Val_bool(*src & msk));
         break; }
     case Enum:
       { int * src = (int *) (*pc++);
@@ -143,7 +143,7 @@ static void encode_terminal_status(value *dst)
         int msk = *pc++;
         for (i = 0; i < num; i++) {
           if ((*src & msk) == pc[i]) {
-            *dst = Val_int(i + ofs);
+            Init_field(res, field, Val_int(i + ofs));
             break;
           }
         }
@@ -152,7 +152,7 @@ static void encode_terminal_status(value *dst)
     case Speed:
       { int which = *pc++;
         speed_t speed = 0;
-        *dst = Val_int(9600);   /* in case no speed in speedtable matches */
+        Init_field(res, field, Val_int(9600));   /* in case no speed in speedtable matches */
         switch (which) {
         case Output:
           speed = cfgetospeed(&terminal_status); break;
@@ -161,30 +161,30 @@ static void encode_terminal_status(value *dst)
         }
         for (i = 0; i < NSPEEDS; i++) {
           if (speed == speedtable[i].speed) {
-            *dst = Val_int(speedtable[i].baud);
+            Init_field(res, field, Val_int(speedtable[i].baud));
             break;
           }
         }
         break; }
     case Char:
       { int which = *pc++;
-        *dst = Val_int(terminal_status.c_cc[which]);
+        Init_field(res, field, Val_int(terminal_status.c_cc[which]));
         break; }
     }
   }
 }
 
-static void decode_terminal_status(value *src)
+static void decode_terminal_status(value v, int field)
 {
   long * pc;
   int i;
 
-  for (pc = terminal_io_descr; *pc != End; src++) {
+  for (pc = terminal_io_descr; *pc != End; field++) {
     switch(*pc++) {
     case Bool:
       { int * dst = (int *) (*pc++);
         int msk = *pc++;
-        if (Bool_val(*src))
+        if (Bool_val(Field(v, field)))
           *dst |= msk;
         else
           *dst &= ~msk;
@@ -194,7 +194,7 @@ static void decode_terminal_status(value *src)
         int ofs = *pc++;
         int num = *pc++;
         int msk = *pc++;
-        i = Int_val(*src) - ofs;
+        i = Int_val(Field(v, field)) - ofs;
         if (i >= 0 && i < num) {
           *dst = (*dst & ~msk) | pc[i];
         } else {
@@ -204,7 +204,7 @@ static void decode_terminal_status(value *src)
         break; }
     case Speed:
       { int which = *pc++;
-        int baud = Int_val(*src);
+        int baud = Int_val(Field(v, field));
         int res = 0;
         for (i = 0; i < NSPEEDS; i++) {
           if (baud == speedtable[i].baud) {
@@ -223,7 +223,7 @@ static void decode_terminal_status(value *src)
         break; }
     case Char:
       { int which = *pc++;
-        terminal_status.c_cc[which] = Int_val(*src);
+        terminal_status.c_cc[which] = Int_val(Field(v, field));
         break; }
     }
   }
@@ -236,7 +236,7 @@ CAMLprim value unix_tcgetattr(value fd)
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcgetattr", Nothing);
   res = alloc_tuple(NFIELDS);
-  encode_terminal_status(&Field(res, 0));
+  encode_terminal_status(res, 0);
   return res;
 }
 
@@ -248,7 +248,7 @@ CAMLprim value unix_tcsetattr(value fd, value when, value arg)
 {
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcsetattr", Nothing);
-  decode_terminal_status(&Field(arg, 0));
+  decode_terminal_status(arg, 0);
   if (tcsetattr(Int_val(fd),
                 when_flag_table[Int_val(when)],
                 &terminal_status) == -1)

@@ -44,11 +44,11 @@ static value convert_addrinfo(struct addrinfo * a)
   vaddr = alloc_sockaddr(&sa, len, -1);
   vcanonname = copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
   vres = alloc_small(5, 0);
-  Field(vres, 0) = cst_to_constr(a->ai_family, socket_domain_table, 3, 0);
-  Field(vres, 1) = cst_to_constr(a->ai_socktype, socket_type_table, 4, 0);
-  Field(vres, 2) = Val_int(a->ai_protocol);
-  Field(vres, 3) = vaddr;
-  Field(vres, 4) = vcanonname;
+  Init_field(vres, 0, cst_to_constr(a->ai_family, socket_domain_table, 3, 0));
+  Init_field(vres, 1, cst_to_constr(a->ai_socktype, socket_type_table, 4, 0));
+  Init_field(vres, 2, Val_int(a->ai_protocol));
+  Init_field(vres, 3, vaddr);
+  Init_field(vres, 4, vcanonname);
   CAMLreturn(vres);
 }
 
@@ -117,8 +117,8 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
     for (r = res; r != NULL; r = r->ai_next) {
       e = convert_addrinfo(r);
       v = alloc_small(2, 0);
-      Field(v, 0) = e;
-      Field(v, 1) = vres;
+      Init_field(v, 0, e);
+      Init_field(v, 1, vres);
       vres = v;
     }
     freeaddrinfo(res);

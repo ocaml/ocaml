@@ -31,8 +31,8 @@ CAMLprim value unix_socketpair(value domain, value type, value proto)
                  Int_val(proto), sv) == -1)
     uerror("socketpair", Nothing);
   res = alloc_small(2, 0);
-  Field(res,0) = Val_int(sv[0]);
-  Field(res,1) = Val_int(sv[1]);
+  Init_field(res, 0, Val_int(sv[0]));
+  Init_field(res, 1, Val_int(sv[1]));
   return res;
 }
 

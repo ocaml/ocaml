@@ -41,20 +41,20 @@ static value alloc_process_status(int pid, int status)
 
   if (WIFEXITED(status)) {
     st = alloc_small(1, TAG_WEXITED);
-    Field(st, 0) = Val_int(WEXITSTATUS(status));
+    Init_field(st, 0, Val_int(WEXITSTATUS(status)));
   }
   else if (WIFSTOPPED(status)) {
     st = alloc_small(1, TAG_WSTOPPED);
-    Field(st, 0) = Val_int(caml_rev_convert_signal_number(WSTOPSIG(status)));
+    Init_field(st, 0, Val_int(caml_rev_convert_signal_number(WSTOPSIG(status))));
   }
   else {
     st = alloc_small(1, TAG_WSIGNALED);
-    Field(st, 0) = Val_int(caml_rev_convert_signal_number(WTERMSIG(status)));
+    Init_field(st, 0, Val_int(caml_rev_convert_signal_number(WTERMSIG(status))));
   }
   Begin_root (st);
     res = alloc_small(2, 0);
-    Field(res, 0) = Val_int(pid);
-    Field(res, 1) = st;
+    Init_field(res, 0, Val_int(pid));
+    Init_field(res, 1, st);
   End_roots();
   return res;
 }

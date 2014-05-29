@@ -46,8 +46,8 @@ static value encode_sigset(sigset_t * set)
     for (i = 1; i < NSIG; i++)
       if (sigismember(set, i) > 0) {
         value newcons = alloc_small(2, 0);
-        Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
-        Field(newcons, 1) = res;
+        Init_field(newcons, 0, Val_int(caml_rev_convert_signal_number(i)));
+        Init_field(newcons, 1, res);
         res = newcons;
       }
   End_roots();

@@ -23,15 +23,15 @@ static value alloc_tm(struct tm *tm)
 {
   value res;
   res = alloc_small(9, 0);
-  Field(res,0) = Val_int(tm->tm_sec);
-  Field(res,1) = Val_int(tm->tm_min);
-  Field(res,2) = Val_int(tm->tm_hour);
-  Field(res,3) = Val_int(tm->tm_mday);
-  Field(res,4) = Val_int(tm->tm_mon);
-  Field(res,5) = Val_int(tm->tm_year);
-  Field(res,6) = Val_int(tm->tm_wday);
-  Field(res,7) = Val_int(tm->tm_yday);
-  Field(res,8) = tm->tm_isdst ? Val_true : Val_false;
+  Init_field(res, 0, Val_int(tm->tm_sec));
+  Init_field(res, 1, Val_int(tm->tm_min));
+  Init_field(res, 2, Val_int(tm->tm_hour));
+  Init_field(res, 3, Val_int(tm->tm_mday));
+  Init_field(res, 4, Val_int(tm->tm_mon));
+  Init_field(res, 5, Val_int(tm->tm_year));
+  Init_field(res, 6, Val_int(tm->tm_wday));
+  Init_field(res, 7, Val_int(tm->tm_yday));
+  Init_field(res, 8, tm->tm_isdst ? Val_true : Val_false);
   return res;
 }
 
@@ -79,8 +79,8 @@ CAMLprim value unix_mktime(value t)
     tmval = alloc_tm(&tm);
     clkval = copy_double((double) clock);
     res = alloc_small(2, 0);
-    Field(res, 0) = clkval;
-    Field(res, 1) = tmval;
+    Init_field(res, 0, clkval);
+    Init_field(res, 1, tmval);
   End_roots ();
   return res;
 }
