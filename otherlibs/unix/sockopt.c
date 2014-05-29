@@ -201,7 +201,7 @@ unix_getsockopt_aux(char * name,
       return Val_int(0);        /* None */
     } else {
       value res = alloc_small(1, 0); /* Some */
-      Field(res, 0) = Val_int(optval.lg.l_linger);
+      Init_field(res, 0, Val_int(optval.lg.l_linger));
       return res;
     }
   case TYPE_TIMEVAL:
@@ -215,7 +215,7 @@ unix_getsockopt_aux(char * name,
       err = unix_error_of_code(optval.i);
       Begin_root(err);
         res = alloc_small(1, 0); /* Some */
-        Field(res, 0) = err;
+        Init_field(res, 0, err);
       End_roots();
       return res;
     }

@@ -24,4 +24,4 @@ extern void uerror (char * cmdname, value arg) Noreturn;
 
 #define UNIX_BUFFER_SIZE 65536
 
-#define DIR_Val(v) *((DIR **) &Field(v, 0))
+#define DIR_Val(v) *((DIR **) Data_abstract_val(v))

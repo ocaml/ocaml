@@ -37,10 +37,10 @@ static value alloc_service_entry(struct servent *entry)
     aliases = copy_string_array((const char**)entry->s_aliases);
     proto = copy_string(entry->s_proto);
     res = alloc_small(4, 0);
-    Field(res,0) = name;
-    Field(res,1) = aliases;
-    Field(res,2) = Val_int(ntohs(entry->s_port));
-    Field(res,3) = proto;
+    Init_field(res, 0, name);
+    Init_field(res, 1, aliases);
+    Init_field(res, 2, Val_int(ntohs(entry->s_port)));
+    Init_field(res, 3, proto);
   End_roots();
   return res;
 }

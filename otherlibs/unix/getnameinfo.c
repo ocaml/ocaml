@@ -52,8 +52,8 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   vhost = copy_string(host);
   vserv = copy_string(serv);
   vres = alloc_small(2, 0);
-  Field(vres, 0) = vhost;
-  Field(vres, 1) = vserv;
+  Init_field(vres, 0, vhost);
+  Init_field(vres, 1, vserv);
   CAMLreturn(vres);
 }
 

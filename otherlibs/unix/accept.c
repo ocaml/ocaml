@@ -38,8 +38,8 @@ CAMLprim value unix_accept(value sock)
   a = alloc_sockaddr(&addr, addr_len, retcode);
   Begin_root (a);
     res = alloc_small(2, 0);
-    Field(res, 0) = Val_int(retcode);
-    Field(res, 1) = a;
+    Init_field(res, 0, Val_int(retcode));
+    Init_field(res, 1, a);
   End_roots();
   return res;
 }

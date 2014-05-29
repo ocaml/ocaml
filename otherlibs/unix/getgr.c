@@ -29,10 +29,10 @@ static value alloc_group_entry(struct group *entry)
     pass = copy_string(entry->gr_passwd);
     mem = copy_string_array((const char**)entry->gr_mem);
     res = alloc_small(4, 0);
-    Field(res,0) = name;
-    Field(res,1) = pass;
-    Field(res,2) = Val_int(entry->gr_gid);
-    Field(res,3) = mem;
+    Init_field(res, 0, name);
+    Init_field(res, 1, pass);
+    Init_field(res, 2, Val_int(entry->gr_gid));
+    Init_field(res, 3, mem);
   End_roots();
   return res;
 }
