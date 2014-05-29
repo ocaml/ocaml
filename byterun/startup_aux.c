@@ -103,3 +103,8 @@ void caml_parse_ocamlrunparam(void)
     }
   }
 }
+
+CAMLexport void caml_shutdown(void)
+{
+  caml_stat_destroy_pool();
+}
