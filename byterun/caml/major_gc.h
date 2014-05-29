@@ -81,6 +81,15 @@ void major_collection (void);
 void caml_finish_major_cycle (void);
 void caml_set_major_window (int);
 
-#endif /* CAML_INTERNALS */
+/* Forces finalisation of all heap-allocated values,
+   disregarding both local and global roots.
+
+   Warning: finalisation is performed by means of forced sweeping, which may
+   result in pointers referencing nonexistent values; therefore the function
+   should only be used on runtime shutdown.
+*/
+void caml_finalise_heap (void);
+
+#endif /* CAML_INTERNALiS */
 
 #endif /* CAML_MAJOR_GC_H */

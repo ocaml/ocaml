@@ -22,6 +22,7 @@
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/startup_aux.h"
+#include "caml/major_gc.h"
 
 
 /* Initialize the atom table */
@@ -106,5 +107,6 @@ void caml_parse_ocamlrunparam(void)
 
 CAMLexport void caml_shutdown(void)
 {
+  caml_finalise_heap();
   caml_stat_destroy_pool();
 }

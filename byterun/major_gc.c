@@ -905,3 +905,20 @@ void caml_set_major_window (int w){
   }
   caml_major_window = w;
 }
+
+void caml_finalise_heap (void)
+{
+  /* Finishing major cycle (all values become white) */
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  CAMLassert (caml_gc_phase == Phase_idle);
+
+  /* Finalising all values (by means of forced sweeping) */
+  caml_fl_init_merge ();
+  caml_gc_phase = Phase_sweep;
+  chunk = caml_heap_start;
+  caml_gc_sweep_hp = chunk;
+  limit = chunk + Chunk_size (chunk);
+  while (caml_gc_phase == Phase_sweep)
+    sweep_slice (LONG_MAX);
+}
