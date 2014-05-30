@@ -23,6 +23,7 @@ Language features:
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
 - Use GNU make instead of portable makefiles.
+- Updated build instructions for 32-bit Mac OS X on Intel hardware.
 
 Shedding weight:
 * Removed Camlp4 from the distribution, now available as third-party software.
@@ -128,6 +129,8 @@ Runtime system:
 Standard library:
 * Add new modules: Bytes and BytesLabels.
   (Damien Doligez)
+- PR#6355: Improve documentation regarding finalisers and multithreading
+  (Daniel Bünzli, Mark Shinwell)
 - PR#4986: add List.sort_uniq and Set.of_list
   (Alain Frisch)
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
@@ -151,6 +154,10 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
+- PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
+  (Stéphane Glondu, Mark Shinwell)
+- PR#6439: Don't use the deprecated [getpagesize] function
+  (John Whitington, Mark Shinwell)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
 - PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
