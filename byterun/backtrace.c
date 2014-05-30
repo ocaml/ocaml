@@ -230,7 +230,7 @@ static void read_debug_info(void)
   struct exec_trailer trail;
   struct channel * chan;
   uint32 num_events, orig, i;
-  uintnat j;
+  intnat j;
   value evl, l, ev_start;
 
   if(events != NULL)
