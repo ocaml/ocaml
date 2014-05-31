@@ -199,6 +199,12 @@ void caml_build_primitive_table_builtin(void)
   }
 }
 
+void caml_free_shared_libs(void)
+{
+  while (shared_libs.size > 0)
+    caml_dlclose(shared_libs.contents[--shared_libs.size]);
+}
+
 #endif /* NATIVE_CODE */
 
 /** dlopen interface for the bytecode linker **/

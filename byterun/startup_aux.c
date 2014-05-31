@@ -23,6 +23,9 @@
 #include "caml/memory.h"
 #include "caml/startup_aux.h"
 #include "caml/major_gc.h"
+#ifndef NATIVE_CODE
+#include "caml/dynlink.h"
+#endif
 
 
 /* Initialize the atom table */
@@ -108,5 +111,8 @@ void caml_parse_ocamlrunparam(void)
 CAMLexport void caml_shutdown(void)
 {
   caml_finalise_heap();
+#ifndef NATIVE_CODE
+  caml_free_shared_libs();
+#endif
   caml_stat_destroy_pool();
 }
