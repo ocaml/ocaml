@@ -294,12 +294,14 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
-#       - : int = 100
-# - : int = 101
-# - : int = 102
-#         - : int * int * int = (103, 104, 105)
-#           - : int * int * int * int * int = (106, 107, 108, 33, 33)
-#           - : int * int * int * int * int = (109, 110, 111, 33, 33)
+#       val r : int ref = {contents = 0}
+# val id : < .. > -> int = <fun>
+# - : unit = ()
+# - : int = 1
+# - : int = 2
+#         - : int * int * int = (3, 4, 5)
+#           - : int * int * int * int * int = (6, 7, 8, 33, 33)
+#           - : int * int * int * int * int * int * int = (9, 10, 10, 11, 11, 33, 33)
 #         Characters 42-69:
   class a = let _ = new b in object end
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
