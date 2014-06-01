@@ -265,6 +265,10 @@ bytecode executables produced with the
 "ocamlc -use-runtime" \var{runtime-name} option.
 See section~\ref{s:custom-runtime} for more information.
 
+\item["-no-alias-deps"]
+Do not record dependencies for module aliases. See
+section~\ref{s:module-alias} for more information.
+
 \item["-no-app-funct"]
 Deactivates the applicative behaviour of functors. With this option,
 each functor application generates new types in its result and
@@ -304,6 +308,13 @@ packed object file produced.  If the "-output-obj" option is given,
 specify the name of the output file produced.  If the "-c" option is
 given, specify the name of the object file produced for the {\em next}
 source file that appears on the command line.
+
+\item["-open" \var{Module}]
+Opens the given module before processing the interface or
+implementation files. If several "-open" options are given,
+they are processed in order, just as if
+the statements "open!" \var{Module1}";;" "..." "open!" \var{ModuleN}";;"
+were added at the top of each file.
 
 \item["-output-obj"]
 Cause the linker to produce a C object file instead of a bytecode
