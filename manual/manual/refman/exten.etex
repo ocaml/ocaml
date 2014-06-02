@@ -1734,3 +1734,70 @@ call.
 It is an error if all cases are exception cases in a given pattern
 matching.
 
+\section{Extensible variant types}\label{s:extensible-variants}
+
+(Introduced in OCaml 4.02)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' '..'
+;
+specification:
+        ...
+      | 'type' [type-params] typeconstr type-extension-spec
+;
+definition:
+        ...
+      | 'type' [type-params] typeconstr type-extension-def
+;
+type-extension-spec: '+=' ['private'] ['|'] constr-decl { '|' constr-decl }
+;
+type-extension-def: '+=' ['private'] ['|'] constr-def { '|' constr-def }
+;
+constr-def:
+          constr-decl
+        | constr-name '=' constr
+;
+\end{syntax}
+
+Extensible variant types are variant types which can be extended with
+new variant constructors. Extensible variant types are defined using
+"..". New variant constructors are added using "+=".
+\begin{verbatim}
+        type attr = ..
+
+        type attr += Str of string
+
+        type attr +=
+          | Int of int
+          | Float of float
+\end{verbatim}
+
+Pattern matching on an extensible variant type requires a default case
+to handle unknown variant constructors:
+\begin{verbatim}
+        let to_string = function
+          | Str s -> s
+          | Int i -> string_of_int i
+          | Float f -> string_of_float f
+          | _ -> "?"
+\end{verbatim}
+
+A preexisting example of an extensible variant type is the built-in
+"exn" type used for exceptions. Indeed, exception constructors can be
+declared using the type extension syntax:
+\begin{verbatim}
+        type exn += Exc of int
+\end{verbatim}
+
+Extensible variant constructors can be rebound to a different name. This
+allows exporting variants from another module.
+\begin{verbatim}
+        type Expr.attr += Str = Expr.Str
+\end{verbatim}
+
+Extensible variant constructors can be declared "private". As with
+regular variants, this prevents them from being constructed directly by
+constructor application while still allowing them to be de-structured in
+pattern-matching.
