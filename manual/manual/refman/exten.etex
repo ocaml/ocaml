@@ -1042,17 +1042,18 @@ module they reference.
 
 When the compiler flag @'-no-alias-deps'@ is enabled, type-level
 module aliases are also exploited to avoid introducing dependencies
-between compilation units. Namely, accessing a module alias declared
-in a compilation unit does not introduce a link-time dependency on
-that compilation unit, but just on the compilation unit containing the
-module referenced by the alias (it still introduces a compile-time
-dependency). Moreover, a module alias directly referring to a
-compilation unit ({\em i.e.} @module-path@ is just a module name)
-does not introduce any dependency (either compile-time or link-time)
-on that compilation unit, as long as the module alias is not
-dereferenced. Note that these differences in link-time behavior may be
-incompatible with the previous behavior, as some compilation units
-might not be extracted from libraries, and their side-effects ignored.
+between compilation units. Namely, a module alias referring to a
+module inside another compilation unit does not introduce a link-time
+dependency on that compilation unit, as long as it is not
+dereferenced; it still introduces a compile-time dependency if the
+interface needs to be read, {\em i.e.}  if the module is a submodule
+of the compilation unit, or if some type components are referred to.
+Additionally, accessing a module alias introduces a link-time
+dependency on the compilation unit containing the module referenced by
+the alias, rather than the compilation unit containing the alias.
+Note that these differences in link-time behavior may be incompatible
+with the previous behavior, as some compilation units might not be
+extracted from libraries, and their side-effects ignored.
 
 These weakened dependencies make possible to use module aliases in
 place of the @'-pack'@ mechanism. Suppose that you have a library
