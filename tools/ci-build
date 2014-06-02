@@ -56,21 +56,6 @@ esac
 # be verbose and stop on error
 set -ex
 
-# parse command line
-# Configure options are not allowed to have spaces or special characters
-# for the moment. We'll fix that when needed.
-arch="$1"
-branch="$2"
-confoptions=""
-shift 2
-while [ $# -gt 0 ]; do
-  case $1 in
-    -conf) confoptions="$confoptions $2"; shift 2;;
-    -patch1) patch -f -p1 <"$2"; shift 2;;
-    *) error "unknown option $1";;
-  esac
-done
-
 #########################################################################
 # set up variables
 
@@ -119,8 +104,28 @@ case "$arch" in
 esac
 
 #########################################################################
+# Go to the right directory
 
 cd "$workdir"
+
+#########################################################################
+# parse command line (has to be done after the "cd")
+# Configure options are not allowed to have spaces or special characters
+# for the moment. We'll fix that when needed.
+arch="$1"
+branch="$2"
+confoptions=""
+shift 2
+while [ $# -gt 0 ]; do
+  case $1 in
+    -conf) confoptions="$confoptions $2"; shift 2;;
+    -patch1) patch -f -p1 <"$2"; shift 2;;
+    *) error "unknown option $1";;
+  esac
+done
+
+#########################################################################
+# Do the work
 
 $make -f Makefile$nt distclean || :
 
