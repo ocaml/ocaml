@@ -19,6 +19,7 @@
 # 2. for windows, directory in which to build (trunk, 4.02, etc)
 # 3. options:
 #    -conf configure-option
+#    -patch1 file-name       apply patch with -p1
 
 error () {
   echo "$1" >&2
@@ -63,6 +64,7 @@ shift 2
 while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions $2"; shift 2;;
+    -patch1) patch -f -p1 <"$2"; shift 2;;
     *) error "unknown option $1";;
   esac
 done
