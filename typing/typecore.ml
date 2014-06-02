@@ -608,7 +608,7 @@ end) = struct
 
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
-    Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+    Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
         try
@@ -3642,7 +3642,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                       slot := (name, vd) :: !slot; rec_needed := true
                   | None ->
                       List.iter
-                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (fun (name, vd) -> Env.mark_value_used env name vd)
                         (get_ref slot);
                       used := true;
                       some_used := true

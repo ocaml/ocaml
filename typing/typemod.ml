@@ -1084,7 +1084,8 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
       in
       let sg' = simplify_signature sg in
       if List.length sg' = List.length sg then md else
-      wrap_constraint env md (Mty_signature sg') Tmodtype_implicit
+      wrap_constraint (Env.implicit_coercion env) md (Mty_signature sg')
+        Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
       let ty_arg = may_map (fun m -> m.mty_type) mty in
