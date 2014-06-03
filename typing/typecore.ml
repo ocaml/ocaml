@@ -1878,6 +1878,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected "" caselist
   | Pexp_apply(sfunct, sargs) ->
+      if sargs = [] then
+        Syntaxerr.ill_formed_ast loc "Function application with no argument.";
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in

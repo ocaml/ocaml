@@ -226,6 +226,8 @@ and expression_desc =
         (* E0 ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
+
+           Invariant: n > 0
          *)
   | Pexp_match of expression * case list
         (* match E0 with P1 -> E1 | ... | Pn -> En *)
@@ -527,6 +529,8 @@ and class_expr_desc =
         (* CE ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
+
+           Invariant: n > 0
          *)
   | Pcl_let of rec_flag * value_binding list * class_expr
         (* let P1 = E1 and ... and Pn = EN in CE      (flag = Nonrecursive)
