@@ -166,7 +166,7 @@ class printer  ()= object(self:'self)
   method paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit =
     fun  ?(first="") ?(last="") b fu f x ->
-      if b then (pp f first; fu f x; pp f last)
+      if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
       else fu f x
 
 
