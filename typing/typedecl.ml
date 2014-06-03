@@ -185,6 +185,9 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
         Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
+        if scstrs = [] then
+          Syntaxerr.ill_formed_ast sdecl.ptype_loc
+            "Variant types cannot be empty.";
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
@@ -222,6 +225,8 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
+        if lbls = [] then
+          Syntaxerr.ill_formed_ast sdecl.ptype_loc "Records cannot be empty.";
         let all_labels = ref StringSet.empty in
         List.iter
           (fun {pld_name = {txt=name}} ->
