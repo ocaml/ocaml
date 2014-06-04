@@ -1187,7 +1187,7 @@ let fix_int_precision prec str =
     | '0' when len > 1 && (str.[1] = 'x' || str.[1] = 'X') ->
       Bytes.set res 1 str.[1];
       String.blit str 2 res (prec - len + 2) (len - 2);
-    | '0' .. '9' ->
+    | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ->
       String.blit str 0 res (prec - len) len;
     | _ ->
       assert false
