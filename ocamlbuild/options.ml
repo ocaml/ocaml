@@ -38,7 +38,7 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
-let use_ocamlfind = ref true
+let use_ocamlfind = ref false
 
 (* Currently only ocamlfind and menhir is defined as no-core tool,
    perhaps later we need something better *)
