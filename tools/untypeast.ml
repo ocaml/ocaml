@@ -186,14 +186,6 @@ and untype_pattern pat =
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
         Ppat_constraint (untype_pattern { pat with pat_extra=rem },
                          untype_core_type ct)
-    | { pat_extra; pat_desc= Tpat_alias _; pat_attributes= ({txt="untypeast"}, PPat (p, None))::_ } ->
-        (* let (x : t) = ... where x is unused ...
-           => let ((_ as x) : t) = ... where x is unused ...
-
-           Since ocamlc gives different warnings for the former and the latter at stdlib/parsing.ml,
-           we need to recover the original.
-        *)
-        p.ppat_desc
     | _ ->
     match pat.pat_desc with
       Tpat_any -> Ppat_any
@@ -274,24 +266,6 @@ and untype_expression exp =
         Pexp_let (rec_flag,
           List.map untype_binding list,
           untype_expression exp)
-(*
-    | Texp_function 
-        (label, 
-         [ { pat_desc = Tpat_var (_, {txt = "*opt*"}) }, 
-           { exp_desc = 
-               Texp_let (Default, 
-                         [pat, { exp_desc = Texp_match(_, [_ (* Some *); (_, default) ], _) }], 
-                         exp)
-           } 
-         ],
-         _)
-        when Btype.is_optional label ->
-
-        let pat = untype_pattern pat in
-        let default = untype_expression default in
-        let exp = untype_expression exp in
-        Pexp_function(label, Some default, [pat, exp])
-*)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, untype_pattern p, untype_expression e)
     | Texp_function ("", cases, _) ->
@@ -614,7 +588,7 @@ and untype_core_type ct =
 
 and untype_class_structure cs =
   let rec remove_self = function
-    | { pat_desc = Tpat_alias (p, id, s) } when string_is_prefix "selfpat-" id.Ident.name ->
+    | { pat_desc = Tpat_alias (p, id, _s) } when string_is_prefix "selfpat-" id.Ident.name ->
         remove_self p
     | p -> p
   in
