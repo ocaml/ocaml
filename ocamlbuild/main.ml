@@ -66,16 +66,42 @@ let proceed () =
   Options.init ();
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
-  let options_wd = Sys.getcwd () in
+
   let first_run_for_plugin =
     (* If we are in the first run before launching the plugin, we
        should skip the user-visible operations (hygiene) that may need
        information from the plugin to run as the user expects it.
-       
+
        Note that we don't need to disable the [Hooks] call as they are
        no-ops anyway, before any plugin has registered hooks. *)
     Plugin.we_need_a_plugin () && not !Options.just_plugin in
 
+  if !Options.use_ocamlfind then begin
+    let ocamlfind_cmd = A "ocamlfind" in
+    let ocamlfind arg = S[ocamlfind_cmd; arg] in
+    let cmd = Command.string_of_command_spec ocamlfind_cmd in
+    let has_ocamlfind =
+      try ignore(Command.search_in_path cmd); true
+      with Not_found ->
+        if first_run_for_plugin then
+          Log.eprintf
+            "Warning: ocamlfind not found on path, but -no-ocamlfind not \
+             used. Defaulting to -no-ocamlfind.";
+        false
+    in
+    (* TODO: warning message when using an option such as -ocamlc *)
+    if has_ocamlfind then begin
+      Options.ocamlc := ocamlfind & A"ocamlc";
+      Options.ocamlopt := ocamlfind & A"ocamlopt";
+      Options.ocamldep := ocamlfind & A"ocamldep";
+      Options.ocamldoc := ocamlfind & A"ocamldoc";
+      Options.ocamlmktop := ocamlfind & A"ocamlmktop";
+    end else begin
+      Options.use_ocamlfind := false;
+    end;
+  end;
+
+  let options_wd = Sys.getcwd () in
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
@@ -228,7 +254,7 @@ let proceed () =
             link (Pathname.dirname cmd); acc
         | _ ->
             if !Options.program_to_execute then
-              eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
+              Log.eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
             acc
       end targets [] in
 
