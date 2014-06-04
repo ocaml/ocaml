@@ -215,6 +215,9 @@ val finalise : ('a -> unit) -> 'a -> unit
    before the values it depends upon.  Of course, this becomes
    false if additional dependencies are introduced by assignments.
 
+   In the presence of multiple OCaml threads it should be assumed that
+   any particular finaliser may be executed in any of the threads.
+
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
    as expected:

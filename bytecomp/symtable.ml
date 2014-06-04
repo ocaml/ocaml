@@ -300,7 +300,8 @@ let init_toplevel () =
     Dll.init_toplevel dllpath;
     (* Recover CRC infos for interfaces *)
     let crcintfs =
-      try (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
+      try
+        (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
       with Not_found -> [] in
     (* Done *)
     sect.close_reader();

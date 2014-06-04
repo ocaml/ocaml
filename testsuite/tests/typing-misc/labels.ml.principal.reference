@@ -12,5 +12,5 @@ Warning 43: the label x is not optional.
   foo (fun ?opt () -> ()) ;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^
 Error: This function should have type unit -> unit
-       but its first argument is labelled ~?opt
+       but its first argument is labelled ?opt
 # 

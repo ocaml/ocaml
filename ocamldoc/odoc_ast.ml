@@ -1206,10 +1206,7 @@ module Analyser =
                     | td :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                   in
                   let (maybe_more, name_comment_list) =
-                    Sig.name_comment_from_type_kind
-                    loc_end
-                    pos_limit2
-                    type_decl.Parsetree.ptype_kind
+                    Sig.name_comment_from_type_decl loc_end pos_limit2 type_decl
                   in
                   let tt_type_decl =
                     try Typedtree_search.search_type_declaration table name
@@ -1243,7 +1240,8 @@ module Analyser =
                       ty_manifest =
                         (match tt_type_decl.Types.type_manifest with
                            None -> None
-                         | Some t -> Some (Odoc_env.subst_type new_env t));
+                         | Some t ->
+                           Some (Sig.manifest_structure new_env name_comment_list t));
                       ty_loc = { loc_impl = Some loc ; loc_inter = None } ;
                       ty_code =
                       (

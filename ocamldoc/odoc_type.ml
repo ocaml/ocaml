@@ -42,6 +42,16 @@ type type_kind =
                    (** fields *)
   | Type_open
 
+type object_field = {
+  of_name : string ;
+  of_type : Types.type_expr ;
+  mutable of_text : Odoc_types.info option ; (** optional user description *)
+}
+
+type type_manifest =
+  | Other of Types.type_expr (** Type manifest directly taken from Typedtre. *)
+  | Object_type of object_field list
+
 (** Representation of a type. *)
 type t_type = {
     ty_name : Name.t ;
@@ -50,7 +60,7 @@ type t_type = {
                     (** type parameters: (type, covariant, contravariant) *)
     ty_kind : type_kind ;
     ty_private : private_flag;
-    ty_manifest : Types.type_expr option; (** type manifest *)
+    ty_manifest : type_manifest option;
     mutable ty_loc : Odoc_types.location ;
     mutable ty_code : string option;
   }

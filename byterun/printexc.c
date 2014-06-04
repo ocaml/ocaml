@@ -131,7 +131,8 @@ void caml_fatal_uncaught_exception(value exn)
 {
   value *handle_uncaught_exception;
 
-  handle_uncaught_exception = caml_named_value("Printexc.handle_uncaught_exception");
+  handle_uncaught_exception =
+    caml_named_value("Printexc.handle_uncaught_exception");
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */
     caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));

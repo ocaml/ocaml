@@ -33,6 +33,3 @@ class cse_generic : object
   method fundecl: Mach.fundecl -> Mach.fundecl
 
 end
-
-
-

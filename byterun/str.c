@@ -308,7 +308,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   /* C99-compliant implementation */
   va_start(args, format);
   /* "vsnprintf(dest, sz, format, args)" writes at most "sz" characters
-     into "dest", including the terminating '\0'.  
+     into "dest", including the terminating '\0'.
      It returns the number of characters of the formatted string,
      excluding the terminating '\0'. */
   n = vsnprintf(buf, sizeof(buf), format, args);
@@ -316,7 +316,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   /* Allocate a Caml string with length "n" as computed by vsnprintf. */
   res = caml_alloc_string(n);
   if (n < sizeof(buf)) {
-    /* All output characters were written to buf, including the 
+    /* All output characters were written to buf, including the
        terminating '\0'.  Just copy them to the result. */
     memcpy(String_val(res), buf, n);
   } else {

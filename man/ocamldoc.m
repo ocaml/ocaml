@@ -181,7 +181,7 @@ Several
 .B -load
 options can be given.
 .TP
-.BI \-m flags
+.BI \-m \ flags
 Specify merge options between interfaces and implementations.
 .I flags
 can be one or several of the following characters:
@@ -442,11 +442,11 @@ option:
 Generate man pages only for modules, module types, classes and class types,
 instead of pages for all elements.
 .TP
-.BI \-man\-suffix suffix
+.BI \-man\-suffix \ suffix
 Set the suffix used for generated man filenames. Default is o, as in
 .IR List.o .
 .TP
-.BI \-man\-section section
+.BI \-man\-section \ section
 Set the section number used for generated man filenames. Default is 3.
 
 

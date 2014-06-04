@@ -168,10 +168,44 @@ module Analyser =
 
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options
 
-    let name_comment_from_type_kind pos_end pos_limit tk =
-      match tk with
-        Parsetree.Ptype_abstract ->
-          (0, [])
+    let name_comment_from_type_decl pos_end pos_limit ty_decl =
+      match ty_decl.Parsetree.ptype_kind with
+      | Parsetree.Ptype_abstract ->
+        let open Parsetree in
+        begin match ty_decl.ptype_manifest with
+        | None -> (0, [])
+        | Some core_ty ->
+          begin match core_ty.ptyp_desc with
+          | Ptyp_object (fields, _) ->
+            let rec f = function
+              | [] -> []
+              | ("",_,_) :: _ ->
+                (* Fields with no name have been eliminated previously. *)
+                assert false
+
+              | (name, _atts, ct) :: [] ->
+                let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
+                let s = get_string_of_file pos pos_end in
+                let (_,comment_opt) =  My_ir.just_after_special !file_name s in
+                [name, comment_opt]
+              | (name, _atts, ct) :: ((name2, _atts2, ct2) as ele2) :: q ->
+                let pos = ct.Parsetree.ptyp_loc.Location.loc_end.Lexing.pos_cnum in
+                let pos2 = ct2.Parsetree.ptyp_loc.Location.loc_start.Lexing.pos_cnum in
+                let s = get_string_of_file pos pos2 in
+                let (_,comment_opt) =  My_ir.just_after_special !file_name s in
+                (name, comment_opt) :: (f (ele2 :: q))
+            in
+            let is_named_field field =
+              match field with
+              | ("",_,_) -> false
+              | _ -> true
+            in
+            (0, f @@ List.filter is_named_field fields)
+
+          | _ -> (0, [])
+          end
+        end
+
       | Parsetree.Ptype_variant cons_core_type_list_list ->
           let rec f acc cons_core_type_list_list =
             let open Parsetree in
@@ -216,6 +250,22 @@ module Analyser =
           (0, [])
 
 
+    let manifest_structure env name_comment_list type_expr =
+      match type_expr.desc with
+      | Tobject (fields, _) ->
+        let f (field_name, _, type_expr) =
+          let comment_opt =
+            try List.assoc field_name name_comment_list
+            with Not_found -> None
+          in {
+            of_name = field_name ;
+            of_type = Odoc_env.subst_type env type_expr ;
+            of_text = comment_opt ;
+          }
+        in
+        Object_type (List.map f @@ fst @@ Ctype.flatten_fields fields)
+      | _ -> Other (Odoc_env.subst_type env type_expr)
+
     let get_type_kind env name_comment_list type_kind =
       match type_kind with
         Types.Type_abstract ->
@@ -224,7 +274,7 @@ module Analyser =
           let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
-              try List.assoc constructor_name name_comment_list 
+              try List.assoc constructor_name name_comment_list
               with Not_found -> None
             in
             {
@@ -703,10 +753,10 @@ module Analyser =
                     | td :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
                   in
                   let (maybe_more, name_comment_list) =
-                    name_comment_from_type_kind
+                    name_comment_from_type_decl
                       type_decl.Parsetree.ptype_loc.Location.loc_end.Lexing.pos_cnum
                       pos_limit2
-                      type_decl.Parsetree.ptype_kind
+                      type_decl
                   in
                   print_DEBUG ("Type "^name.txt^" : "^(match assoc_com with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c));
                   let f_DEBUG (name, c_opt) = print_DEBUG ("constructor/field "^name^": "^(match c_opt with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c)) in
@@ -735,9 +785,11 @@ module Analyser =
                       ty_kind = type_kind;
                       ty_private = sig_type_decl.Types.type_private;
                       ty_manifest =
-                      (match sig_type_decl.Types.type_manifest with
-                        None -> None
-                      | Some t -> Some (Odoc_env.subst_type new_env t));
+                        begin match sig_type_decl.Types.type_manifest with
+                        | None   -> None
+                        | Some t ->
+                          Some (manifest_structure env name_comment_list t)
+                        end ;
                       ty_loc = { loc_impl = None ;  loc_inter = Some sig_item_loc } ;
                       ty_code =
                         (

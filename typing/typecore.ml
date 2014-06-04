@@ -1186,18 +1186,11 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
       if separate then
         match p.pat_desc with
-          (* Changing [(x : t)] to [((_ : as x) : t)] changes the warning if x is not used,
-             and this is problematic at retyping untyped stdlib/parsing.ml. We add a special attribute [@untypeast] with the original [p]
-             so that untypeast can recover [p].
-          *)
           Tpat_var (id,s) ->
             {p with pat_type = ty;
              pat_desc = Tpat_alias
                ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
              pat_extra = [extra];
-             pat_attributes = 
-               ({txt="untypeast"; loc= Location.none}, PPat (sp, None)) 
-               :: p.pat_attributes
             }
         | _ -> {p with pat_type = ty;
                 pat_extra = extra :: p.pat_extra}
@@ -1792,9 +1785,11 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
-    let fmt6_path = get_camlinternalFormat_path env "format6" in
-    let is_format = match ty_exp.desc, fmt6_path with
-      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 ->
+    let fmt6_path =
+      Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
+                  "format6", 0)) in
+    let is_format = match ty_exp.desc with
+      | Tconstr(path, _, _) when Path.same path fmt6_path ->
         if !Clflags.principal && ty_exp.level <> generic_level then
           Location.prerr_warning loc
             (Warnings.Not_principal "this coercion to format6");
@@ -1803,7 +1798,7 @@ and type_expect_ ?in_function env sexp ty_expected =
     in
     if is_format then
       let format_parsetree =
-        { sexp with pexp_desc = type_format loc str env }  in
+        { (type_format loc str env) with pexp_loc = sexp.pexp_loc }  in
       type_expect ?in_function env format_parsetree ty_expected
     else
       rue {
@@ -2746,32 +2741,20 @@ and type_label_access env loc srecord lid =
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
-and camlinternalFormatBasics_lident =
-  Longident.Ldot (Longident.Lident "Pervasives", "CamlinternalFormatBasics")
-
-and get_camlinternalFormat_path env tyname =
-  try
-    let cfb_path = Env.lookup_module ~load:true camlinternalFormatBasics_lident env in
-    Some (Path.Pdot (cfb_path, tyname, 0))
-  with Not_found -> None
-
 and type_format loc str env =
+  let loc = {loc with Location.loc_ghost = true} in
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
       let mk_exp_loc pexp_desc = {
         pexp_desc = pexp_desc;
-        pexp_loc = Location.none;
+        pexp_loc = loc;
         pexp_attributes = [];
       } and mk_lid_loc lid = {
         txt = lid;
-        loc = Location.none;
-      } and mk_typ_loc ptyp_desc = {
-        ptyp_desc = ptyp_desc;
-        ptyp_loc = Location.none;
-        ptyp_attributes = [];
+        loc = loc;
       } in
       let mk_constr name args =
-        let lid = Longident.Ldot (camlinternalFormatBasics_lident, name) in
+        let lid = Longident.(Ldot(Lident "CamlinternalFormatBasics", name)) in
         let arg = match args with
           | []          -> None
           | [ e ]       -> Some e
@@ -2853,15 +2836,8 @@ and type_format loc str env =
         | Some n ->
           let lid_loc = mk_lid_loc (Longident.Lident "Some") in
           mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n))) in
-      let rec mk_reader_nb_unifier : type d1 e1 d2 e2 .
-          (d1, e1, d2, e2) reader_nb_unifier -> Parsetree.expression =
-      fun rnu -> match rnu with
-        | Succ_reader rest ->
-          mk_constr "Succ_reader" [ mk_reader_nb_unifier rest ]
-        | Zero_reader ->
-          mk_constr "Zero_reader" [] in
-      let rec mk_fmtty : type a b c d e f .
-          (a, b, c, d, e, f) fmtty -> Parsetree.expression =
+      let rec mk_fmtty : type a b c d e f g h i j k l .
+          (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression =
       fun fmtty -> match fmtty with
         | Char_ty rest      -> mk_constr "Char_ty"      [ mk_fmtty rest ]
         | String_ty rest    -> mk_constr "String_ty"    [ mk_fmtty rest ]
@@ -2878,9 +2854,9 @@ and type_format loc str env =
           mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
         | Format_arg_ty (sub_fmtty, rest) ->
           mk_constr "Format_arg_ty" [ mk_fmtty sub_fmtty; mk_fmtty rest ]
-        | Format_subst_ty (rnu, sub_fmtty, rest) ->
+        | Format_subst_ty (sub_fmtty1, sub_fmtty2, rest) ->
           mk_constr "Format_subst_ty"
-            [ mk_reader_nb_unifier rnu; mk_fmtty sub_fmtty; mk_fmtty rest ]
+            [ mk_fmtty sub_fmtty1; mk_fmtty sub_fmtty2; mk_fmtty rest ]
         | End_of_fmtty -> mk_constr "End_of_fmtty" []
       in
       let mk_ignored : type a b c d e f .
@@ -2968,10 +2944,9 @@ and type_format loc str env =
         | Format_arg (pad_opt, fmtty, rest) ->
           mk_constr "Format_arg" [
             mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
-        | Format_subst (pad_opt, rnu, fmtty, rest) ->
+        | Format_subst (pad_opt, fmtty, rest) ->
           mk_constr "Format_subst" [
-            mk_int_opt pad_opt; mk_reader_nb_unifier rnu; mk_fmtty fmtty;
-            mk_fmt rest ]
+            mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
         | Alpha rest ->
           mk_constr "Alpha" [ mk_fmt rest ]
         | Theta rest ->
@@ -2989,17 +2964,8 @@ and type_format loc str env =
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
           mk_constr "End_of_format" [] in
-      let mk_format fmt str =
-        mk_constr "Format" [ mk_fmt fmt; mk_string str ] in
       let Fmt_EBB fmt = fmt_ebb_of_string str in
-      let exp = { (mk_format fmt str) with pexp_loc = loc } in
-      let pervasives_format6_ty =
-        let lid = Longident.Ldot (Longident.Lident "Pervasives", "format6") in
-        let rec gen_params n = match n with
-          | 0 -> []
-          | _ -> mk_typ_loc Ptyp_any :: gen_params (n - 1) in
-        mk_typ_loc (Ptyp_constr (mk_lid_loc lid, gen_params 6)) in
-      Pexp_constraint (exp, pervasives_format6_ty)
+      mk_constr "Format" [ mk_fmt fmt; mk_string str ]
     ))
   with Failure msg ->
     raise (Error (loc, env, Invalid_format msg))
@@ -3830,7 +3796,7 @@ let report_error env ppf = function
       let print_label ppf = function
         | "" -> fprintf ppf "without label"
         | l ->
-            fprintf ppf "with label %s%s" (if is_optional l then "" else "~") l
+            fprintf ppf "with label %s" (prefixed_label_name l)
       in
       reset_and_mark_loops ty;
       fprintf ppf
@@ -3919,7 +3885,8 @@ let report_error env ppf = function
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | "" -> "but its first argument is not labelled"
-        |  l -> sprintf "but its first argument is labelled ~%s" l in
+        |  l -> sprintf "but its first argument is labelled %s"
+          (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)

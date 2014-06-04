@@ -33,7 +33,8 @@ type addressing_mode =
 
 type specific_operation =
     Ilea of addressing_mode             (* "lea" gives scaled adds *)
-  | Istore_int of nativeint * addressing_mode * bool (* Store an integer constant *)
+  | Istore_int of nativeint * addressing_mode * bool
+                                        (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode

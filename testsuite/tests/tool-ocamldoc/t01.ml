@@ -16,4 +16,7 @@ module type MT = sig
     (string * string * string) ->
       (string * string * string) -> unit
   val y : int
+
+  type obj_type =
+     < foo : int ; bar : float -> string ; gee : int -> (int * string) >
 end

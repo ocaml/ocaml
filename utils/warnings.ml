@@ -332,7 +332,8 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, false, false) ->
+      "unused extension constructor " ^ s ^ "."
   | Unused_extension (s, true, _) ->
       "extension constructor " ^ s ^
       " is never used to build values.\n\

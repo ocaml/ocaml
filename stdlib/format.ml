@@ -1059,10 +1059,10 @@ and set_tags =
 ;;
 
  (**************************************************************
- 
+
   Defining continuations to be passed as arguments of
   CamlinternalFormat.make_printf.
- 
+
   **************************************************************)
 
 open CamlinternalFormatBasics
@@ -1154,7 +1154,7 @@ let sprintf fmt =
 
 let asprintf (Format (fmt, _)) =
   let b = Buffer.create 512 in
-  let ppf = formatter_of_buffer b in  
+  let ppf = formatter_of_buffer b in
   let k' : (formatter -> (formatter, unit) acc -> string)
     = fun ppf acc ->
       output_acc ppf acc;

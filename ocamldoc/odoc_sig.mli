@@ -139,8 +139,14 @@ module Analyser :
          [pos_end] is last char of the complete type definition.
          [pos_limit] is the position of the last char we could use to look for a comment,
          i.e. usually the beginning on the next element.*)
-      val name_comment_from_type_kind :
-          int -> int -> Parsetree.type_kind -> int * (string * Odoc_types.info option) list
+      val name_comment_from_type_decl :
+          int -> int -> Parsetree.type_declaration -> int * (string * Odoc_types.info option) list
+
+      (** This function converts a [Types.type_expr] into a [Odoc_type.type_kind],
+         by associating the comment found in the parstree of each object field, if any. *)
+      val manifest_structure :
+          Odoc_env.env -> (string * Odoc_types.info option) list ->
+            Types.type_expr -> Odoc_type.type_manifest
 
       (** This function converts a [Types.type_kind] into a [Odoc_type.type_kind],
          by associating the comment found in the parsetree of each constructor/field, if any.*)
