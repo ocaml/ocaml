@@ -602,8 +602,11 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
-    | Pexp_poly _ ->
-        assert false
+    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *) 
+    | Pexp_poly (e, None) ->
+        pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
+    | Pexp_poly (e, Some ct) ->
+        pp f "@[<hov2>(!poly!@ %a@ : %a)@]" self#simple_expr e self#core_type ct
     | Pexp_open (ovf, lid, e) ->
         pp f "@[<2>let open%s %a in@;%a@]" (override ovf) self#longident_loc lid
           self#expression  e
@@ -779,7 +782,9 @@ class printer  ()= object(self:'self)
                               pvb_loc=Location.none;
                              }
           | _ ->
-              self#expression f e ) e
+              pp f "%s =@;%a"
+                s.txt
+                self#expression e) e
     | Pcf_constraint (ct1, ct2) ->
         pp f "@[<2>constraint %a =@;%a@]" self#core_type  ct1 self#core_type  ct2
     | Pcf_initializer (e) ->
