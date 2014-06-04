@@ -246,8 +246,6 @@ Features wishes:
 - PR#4323: have "of_string" in Num and Big_int work with binary and
            hex representations
   (Zoe Paraskevopoulou, review by Gabriel Scherer)
-- PR#5547: Enable the "-use-ocamlfind" option by default
-  (Wojciech Meyer)
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
   (Hongbo Zhang)
 - PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
