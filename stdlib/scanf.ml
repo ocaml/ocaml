@@ -11,6 +11,19 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open CamlinternalFormatBasics
+open CamlinternalFormat
+
+(* alias to avoid warning for ambiguity between
+   Pervasives.format6
+   and CamlinternalFormatBasics.format6
+
+   (the former is in fact an alias for the latter,
+    but the ambiguity warning doesn't care)
+*)
+type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  ('a, 'b, 'c, 'd, 'e, 'f) Pervasives.format6
+
 (* The run-time library for scanners. *)
 
 (* Scanning buffers. *)
@@ -318,17 +331,17 @@ module Scanning : SCANNING = struct
 
   let from_ic scan_close_ic iname ic =
     let len = !file_buffer_size in
-    let buf = String.create len in
+    let buf = Bytes.create len in
     let i = ref 0 in
     let lim = ref 0 in
     let eof = ref false in
     let next () =
-      if !i < !lim then begin let c = buf.[!i] in incr i; c end else
+      if !i < !lim then begin let c = Bytes.get buf !i in incr i; c end else
       if !eof then raise End_of_file else begin
         lim := input ic buf 0 len;
         if !lim = 0 then begin eof := true; scan_close_ic ic end else begin
           i := 1;
-          buf.[0]
+          Bytes.get buf 0
         end
       end in
     create iname next
@@ -402,11 +415,6 @@ end
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
-;;
-
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-;;
 
 (* Reporting errors. *)
 exception Scan_failure of string;;
@@ -429,33 +437,6 @@ let bad_end_of_input message =
     (Printf.sprintf
        "scanning of %s failed: \
         premature end of file occurred before end of token" message)
-;;
-
-let int_of_width_opt = function
-  | None -> max_int
-  | Some width -> width
-;;
-
-let int_of_prec_opt = function
-  | None -> max_int
-  | Some prec -> prec
-;;
-
-module Sformat = Printf.CamlinternalPr.Sformat;;
-module Tformat = Printf.CamlinternalPr.Tformat;;
-
-let bad_conversion fmt i c =
-  invalid_arg
-    (Printf.sprintf
-       "scanf: bad conversion %%%C, at char number %i \
-        in format string \'%s\'" c i (Sformat.to_string fmt))
-;;
-
-let incomplete_format fmt =
-  invalid_arg
-    (Printf.sprintf "scanf: premature end of format string \'%s\'"
-       (Sformat.to_string fmt))
-;;
 
 let bad_float () =
   bad_input "no dot or exponent part found in float token"
@@ -467,19 +448,15 @@ let character_mismatch_err c ci =
 
 let character_mismatch c ci =
   bad_input (character_mismatch_err c ci)
-;;
 
-let format_mismatch_err fmt1 fmt2 =
-  Printf.sprintf
-    "format read \'%s\' does not match specification \'%s\'" fmt1 fmt2
-;;
-
-let format_mismatch fmt1 fmt2 = bad_input (format_mismatch_err fmt1 fmt2);;
-
-(* Checking that 2 format strings are type compatible. *)
-let compatible_format_type fmt1 fmt2 =
-  Tformat.summarize_format_type (string_to_format fmt1) =
-  Tformat.summarize_format_type (string_to_format fmt2);;
+let rec skip_whites ib =
+  let c = Scanning.peek_char ib in
+  if not (Scanning.eof ib) then begin
+    match c with
+    | ' ' | '\t' | '\n' | '\r' ->
+      Scanning.invalidate_current_char ib; skip_whites ib
+    | _ -> ()
+  end
 
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character [c] has been explicitly specified in the
@@ -496,28 +473,13 @@ let compatible_format_type fmt1 fmt2 =
    We are also careful to treat "\r\n" in the input as an end of line marker:
    it always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
-  let ci = Scanning.checked_peek_char ib in
-  if ci = c then Scanning.invalidate_current_char ib else begin
-    match ci with
-    | '\r' when c = '\n' ->
-      Scanning.invalidate_current_char ib; check_char ib '\n'
-    | _ -> character_mismatch c ci
-  end
-;;
-
-(* Checks that the current char is indeed one of the stopper characters,
-   then skips it.
-   Be careful that if ib has no more character this procedure should
-   just do nothing (since %s@c defaults to the entire rest of the
-   buffer, when no character c can be found in the input). *)
-let ignore_stoppers stps ib =
-  if stps <> [] && not (Scanning.eof ib) then
-  let ci = Scanning.peek_char ib in
-  if List.memq ci stps then Scanning.invalidate_current_char ib else
-  let sr = String.concat "" (List.map (String.make 1) stps) in
-  bad_input
-    (Printf.sprintf "looking for one of range %S, found %C" sr ci)
-;;
+  if c = ' ' then skip_whites ib else
+    let ci = Scanning.checked_peek_char ib in
+    if ci = c then Scanning.invalidate_current_char ib else
+      match ci with
+      | '\r' when c = '\n' ->
+        Scanning.invalidate_current_char ib; check_char ib '\n'
+      | _ -> character_mismatch c ci
 
 (* Extracting tokens from the output token buffer. *)
 
@@ -701,7 +663,7 @@ let scan_optionally_signed_int width ib =
   scan_unsigned_int width ib
 ;;
 
-let scan_int_conv conv width _prec ib =
+let scan_int_conv conv width ib =
   match conv with
   | 'b' -> scan_binary_int width ib
   | 'd' -> scan_optionally_signed_decimal_int width ib
@@ -791,7 +753,7 @@ let scan_float width precision ib =
     scan_exp_part width ib, precision
 ;;
 
-let scan_Float width precision ib =
+let scan_caml_float width precision ib =
   let width = scan_optionally_signed_decimal_int width ib in
   if width = 0 then bad_float () else
   let c = Scanning.peek_char ib in
@@ -805,12 +767,11 @@ let scan_Float width precision ib =
   | 'e' | 'E' ->
     scan_exp_part width ib
   | _ -> bad_float ()
-;;
 
 (* Scan a regular string:
    stops when encountering a space, if no scanning indication has been given;
-   otherwise, stops when encountering one of the characters in the scanning
-   indication list [stp].
+   otherwise, stops when encountering the characters in the scanning
+   indication [stp].
    It also stops at end of file or when the maximum number of characters has
    been read.*)
 let scan_string stp width ib =
@@ -818,12 +779,14 @@ let scan_string stp width ib =
     if width = 0 then width else
     let c = Scanning.peek_char ib in
     if Scanning.eof ib then width else
-    if stp = [] then
-      match c with
-      | ' ' | '\t' | '\n' | '\r' -> width
-      | c -> loop (Scanning.store_char width ib c) else
-    if List.memq c stp then Scanning.skip_char width ib else
-    loop (Scanning.store_char width ib c) in
+      match stp with
+      | Some c' when c = c' -> Scanning.skip_char width ib
+      | Some _ -> loop (Scanning.store_char width ib c)
+      | None ->
+        match c with
+        | ' ' | '\t' | '\n' | '\r' -> width
+        | _ -> loop (Scanning.store_char width ib c)
+  in
   loop width
 ;;
 
@@ -925,7 +888,7 @@ let scan_backslash_char width ib =
 ;;
 
 (* Scan a character (an OCaml token). *)
-let scan_Char width ib =
+let scan_caml_char width ib =
 
   let rec find_start width =
     match Scanning.checked_peek_char ib with
@@ -948,7 +911,7 @@ let scan_Char width ib =
 ;;
 
 (* Scan a delimited string (an OCaml token). *)
-let scan_String width ib =
+let scan_caml_string width ib =
 
   let rec find_start width =
     match Scanning.checked_peek_char ib with
@@ -981,8 +944,7 @@ let scan_String width ib =
 ;;
 
 (* Scan a boolean (an OCaml token). *)
-let scan_bool width ib =
-  if width < 4 then bad_token_length "a boolean" else
+let scan_bool ib =
   let c = Scanning.checked_peek_char ib in
   let m =
     match c with
@@ -991,560 +953,432 @@ let scan_bool width ib =
     | c ->
       bad_input
         (Printf.sprintf "the character %C cannot start a boolean" c) in
-  scan_string [] (min width m) ib
-;;
+  scan_string None m ib
 
-(* Reading char sets in %[...] conversions. *)
-type char_set =
-   | Pos_set of string (* Positive (regular) set. *)
-   | Neg_set of string (* Negative (complementary) set. *)
-;;
-
-
-(* Char sets are read as sub-strings in the format string. *)
-let scan_range fmt j =
-
-  let len = Sformat.length fmt in
-
-  let buffer = Buffer.create len in
-
-  let rec scan_closing j =
-    if j >= len then incomplete_format fmt else
-    match Sformat.get fmt j with
-    | ']' -> j, Buffer.contents buffer
-    | '%' ->
-      let j = j + 1 in
-      if j >= len then incomplete_format fmt else
-      begin match Sformat.get fmt j with
-      | '%' | '@' as c ->
-        Buffer.add_char buffer c;
-        scan_closing (j + 1)
-      | c -> bad_conversion fmt j c
-      end
-    | c ->
-      Buffer.add_char buffer c;
-      scan_closing (j + 1) in
-
-  let scan_first_pos j =
-    if j >= len then incomplete_format fmt else
-    match Sformat.get fmt j with
-    | ']' as c ->
-      Buffer.add_char buffer c;
-      scan_closing (j + 1)
-    | _ -> scan_closing j in
-
-  let scan_first_neg j =
-    if j >= len then incomplete_format fmt else
-    match Sformat.get fmt j with
-    | '^' ->
-      let j = j + 1 in
-      let k, char_set = scan_first_pos j in
-      k, Neg_set char_set
-    | _ ->
-      let k, char_set = scan_first_pos j in
-      k, Pos_set char_set in
-
-  scan_first_neg j
-;;
-
-(* Char sets are now represented as bit vectors that are represented as
-   byte strings. *)
-
-(* Bit manipulations into bytes. *)
-let set_bit_of_byte byte idx b =
-  (b lsl idx) lor (byte land (* mask idx *) (lnot (1 lsl idx)))
-;;
-
-let get_bit_of_byte byte idx = (byte lsr idx) land 1;;
-
-(* Bit manipulations in vectors of bytes represented as strings. *)
-let set_bit_of_range r c b =
-  let idx = c land 0x7 in
-  let ydx = c lsr 3 in
-  let byte = r.[ydx] in
-  r.[ydx] <- char_of_int (set_bit_of_byte (int_of_char byte) idx b)
-;;
-
-let get_bit_of_range r c =
-  let idx = c land 0x7 in
-  let ydx = c lsr 3 in
-  let byte = r.[ydx] in
-  get_bit_of_byte (int_of_char byte) idx
-;;
-
-(* Char sets represented as bit vectors represented as fixed length byte
-   strings. *)
-(* Create a full or empty set of chars. *)
-let make_range bit =
-  let c = char_of_int (if bit = 0 then 0 else 0xFF) in
-  String.make 32 c
-;;
-
-(* Test if a char belongs to a set of chars. *)
-let get_char_in_range r c = get_bit_of_range r (int_of_char c);;
-
-let bit_not b = (lnot b) land 1;;
-
-(* Build the bit vector corresponding to the set of characters
-   that belongs to the string argument [set].
-   (In the [Scanf] module [set] is always a sub-string of the format.) *)
-let make_char_bit_vect bit set =
-  let r = make_range (bit_not bit) in
-  let lim = String.length set - 1 in
-  let rec loop bit rp i =
-    if i <= lim then
-    match set.[i] with
-    | '-' when rp ->
-      (* if i = 0 then rp is false (since the initial call is
-         loop bit false 0). Hence i >= 1 and the following is safe. *)
-      let c1 = set.[i - 1] in
-      let i = succ i in
-      if i > lim then loop bit false (i - 1) else
-      let c2 = set.[i] in
-      for j = int_of_char c1 to int_of_char c2 do
-        set_bit_of_range r j bit done;
-      loop bit false (succ i)
-    | _ ->
-      set_bit_of_range r (int_of_char set.[i]) bit;
-      loop bit true (succ i) in
-  loop bit false 0;
-  r
-;;
-
-(* Compute the predicate on chars corresponding to a char set. *)
-let make_predicate bit set stp =
-  let r = make_char_bit_vect bit set in
-  List.iter
-    (fun c -> set_bit_of_range r (int_of_char c) (bit_not bit)) stp;
-  (fun c -> get_char_in_range r c)
-;;
-
-let make_setp stp char_set =
-  match char_set with
-  | Pos_set set ->
-    begin match String.length set with
-    | 0 -> (fun _ -> 0)
-    | 1 ->
-      let p = set.[0] in
-      (fun c -> if c == p then 1 else 0)
-    | 2 ->
-      let p1 = set.[0] and p2 = set.[1] in
-      (fun c -> if c == p1 || c == p2 then 1 else 0)
-    | 3 ->
-      let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_predicate 1 set stp else
-      (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
-    | _ -> make_predicate 1 set stp
-    end
-  | Neg_set set ->
-    begin match String.length set with
-    | 0 -> (fun _ -> 1)
-    | 1 ->
-      let p = set.[0] in
-      (fun c -> if c != p then 1 else 0)
-    | 2 ->
-      let p1 = set.[0] and p2 = set.[1] in
-      (fun c -> if c != p1 && c != p2 then 1 else 0)
-    | 3 ->
-      let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_predicate 0 set stp else
-      (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
-    | _ -> make_predicate 0 set stp
-    end
-;;
-
-let setp_table = Hashtbl.create 7;;
-
-let add_setp stp char_set setp =
-  let char_set_tbl =
-    try Hashtbl.find setp_table char_set with
-    | Not_found ->
-      let char_set_tbl = Hashtbl.create 3 in
-      Hashtbl.add setp_table char_set char_set_tbl;
-      char_set_tbl in
-  Hashtbl.add char_set_tbl stp setp
-;;
-
-let find_setp stp char_set =
-  try Hashtbl.find (Hashtbl.find setp_table char_set) stp with
-  | Not_found ->
-    let setp = make_setp stp char_set in
-    add_setp stp char_set setp;
-    setp
-;;
-
-let scan_chars_in_char_set stp char_set width ib =
-  let rec loop_pos1 cp1 width =
-    if width = 0 then width else
+(* Scan a string containing elements in char_set and terminated by scan_indic
+   if provided. *)
+let scan_chars_in_char_set char_set scan_indic width ib =
+  let rec scan_chars i stp =
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c == cp1
-    then loop_pos1 cp1 (Scanning.store_char width ib c)
-    else width
-  and loop_pos2 cp1 cp2 width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c == cp1 || c == cp2
-    then loop_pos2 cp1 cp2 (Scanning.store_char width ib c)
-    else width
-  and loop_pos3 cp1 cp2 cp3 width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c == cp1 || c == cp2 || c == cp3
-    then loop_pos3 cp1 cp2 cp3 (Scanning.store_char width ib c)
-    else width
-  and loop_neg1 cp1 width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c != cp1
-    then loop_neg1 cp1 (Scanning.store_char width ib c)
-    else width
-  and loop_neg2 cp1 cp2 width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c != cp1 && c != cp2
-    then loop_neg2 cp1 cp2 (Scanning.store_char width ib c)
-    else width
-  and loop_neg3 cp1 cp2 cp3 width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if c != cp1 && c != cp2 && c != cp3
-    then loop_neg3 cp1 cp2 cp3 (Scanning.store_char width ib c)
-    else width
-  and loop setp width =
-    if width = 0 then width else
-    let c = Scanning.peek_char ib in
-    if Scanning.eof ib then width else
-    if setp c == 1
-    then loop setp (Scanning.store_char width ib c)
-    else width in
-
-  let width =
-    match char_set with
-    | Pos_set set ->
-      begin match String.length set with
-      | 0 -> loop (fun _ -> 0) width
-      | 1 -> loop_pos1 set.[0] width
-      | 2 -> loop_pos2 set.[0] set.[1] width
-      | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] width
-      | _ -> loop (find_setp stp char_set) width end
-    | Neg_set set ->
-      begin match String.length set with
-      | 0 -> loop (fun _ -> 1) width
-      | 1 -> loop_neg1 set.[0] width
-      | 2 -> loop_neg2 set.[0] set.[1] width
-      | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] width
-      | _ -> loop (find_setp stp char_set) width end in
-  ignore_stoppers stp ib;
-  width
-;;
-
-let get_count t ib =
-  match t with
-  | 'l' -> Scanning.line_count ib
-  | 'n' -> Scanning.char_count ib
-  | _ -> Scanning.token_count ib
-;;
-
-let rec skip_whites ib =
-  let c = Scanning.peek_char ib in
-  if not (Scanning.eof ib) then begin
-    match c with
-    | ' ' | '\t' | '\n' | '\r' ->
-      Scanning.invalidate_current_char ib; skip_whites ib
-    | _ -> ()
-  end
-;;
+    if i > 0 && not (Scanning.eof ib) && is_in_char_set char_set c &&
+      int_of_char c <> stp then
+      let _ = Scanning.store_char max_int ib c in
+      scan_chars (i - 1) stp;
+  in
+  match scan_indic with
+  | None -> scan_chars width (-1);
+  | Some c ->
+    scan_chars width (int_of_char c);
+    if not (Scanning.eof ib) then
+      let ci = Scanning.peek_char ib in
+      if c = ci then Scanning.invalidate_current_char ib
+      else character_mismatch c ci
 
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
-    bad_input (Printf.sprintf "scanf: bad input at char number %i: \'%s\'" i s)
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: %S" i s)
   | x -> raise x
-;;
 
-let list_iter_i f l =
-  let rec loop i = function
-  | [] -> ()
-  | [x] -> f i x (* Tail calling [f] *)
-  | x :: xs -> f i x; loop (succ i) xs in
-  loop 0 l
-;;
+(* Get the content of a counter from an input buffer. *)
+let get_counter ib counter = match counter with
+  | Line_counter -> Scanning.line_count ib
+  | Char_counter -> Scanning.char_count ib
+  | Token_counter -> Scanning.token_count ib
 
-let ascanf sc fmt =
-  let ac = Tformat.ac_of_format fmt in
-  match ac.Tformat.ac_rdrs with
-  | 0 ->
-    Obj.magic (fun f -> sc fmt [||] f)
-  | 1 ->
-    Obj.magic (fun x f -> sc fmt [| Obj.repr x |] f)
-  | 2 ->
-    Obj.magic (fun x y f -> sc fmt [| Obj.repr x; Obj.repr y; |] f)
-  | 3 ->
-    Obj.magic
-      (fun x y z f -> sc fmt [| Obj.repr x; Obj.repr y; Obj.repr z; |] f)
-  | nargs ->
-    let rec loop i args =
-      if i >= nargs then
-        let a = Array.make nargs (Obj.repr 0) in
-        list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
-        Obj.magic (fun f -> sc fmt a f)
-      else Obj.magic (fun x -> loop (succ i) (x :: args)) in
-    loop 0 []
-;;
+(* Compute the width of a padding option (see "%42{" and "%123("). *)
+let width_of_pad_opt pad_opt = match pad_opt with
+  | None -> max_int
+  | Some width -> width
 
-(* The [scan_format] main scanning function.
-   It takes as arguments:
-     - an input buffer [ib] from which to read characters,
-     - an error handling function [ef],
-     - a format [fmt] that specifies what to read in the input,
-     - a vector of user's defined readers [rv],
-     - and a function [f] to pass the tokens read to.
+let stopper_of_formatting fmting =
+  if fmting = Escaped_percent then '%', "" else
+    let str = string_of_formatting fmting in
+    let stp = str.[1] in
+    let sub_str = String.sub str 2 (String.length str - 2) in
+    stp, sub_str
 
-   Then [scan_format] scans the format and the input buffer in parallel to
-   find out tokens as specified by the format; when it finds one token, it
-   converts it as specified, remembers the converted value as a future
-   argument to the function [f], and continues scanning.
+(******************************************************************************)
+                           (* Readers managment *)
 
-   If the entire scanning succeeds (i.e. the format string has been
-   exhausted and the buffer has provided tokens according to the
-   format string), [f] is applied to the tokens read.
+(* A call to take_format_readers on a format is evaluated into functions
+   taking readers as arguments and aggregate them into an heterogeneous list *)
+(* When all readers are taken, finally pass the list of the readers to the
+   continuation k. *)
+let rec take_format_readers : type a c d e f .
+    ((d, e) heter_list -> e) -> (a, Scanning.in_channel, c, d, e, f) fmt ->
+    d =
+fun k fmt -> match fmt with
+  | Reader fmt_rest ->
+    fun reader ->
+      let new_k readers_rest = k (Cons (reader, readers_rest)) in
+      take_format_readers new_k fmt_rest
+  | Char rest                        -> take_format_readers k rest
+  | Caml_char rest                   -> take_format_readers k rest
+  | String (_, rest)                 -> take_format_readers k rest
+  | Caml_string (_, rest)            -> take_format_readers k rest
+  | Int (_, _, _, rest)              -> take_format_readers k rest
+  | Int32 (_, _, _, rest)            -> take_format_readers k rest
+  | Nativeint (_, _, _, rest)        -> take_format_readers k rest
+  | Int64 (_, _, _, rest)            -> take_format_readers k rest
+  | Float (_, _, _, rest)            -> take_format_readers k rest
+  | Bool rest                        -> take_format_readers k rest
+  | Alpha rest                       -> take_format_readers k rest
+  | Theta rest                       -> take_format_readers k rest
+  | Flush rest                       -> take_format_readers k rest
+  | String_literal (_, rest)         -> take_format_readers k rest
+  | Char_literal (_, rest)           -> take_format_readers k rest
 
-   If the scanning or some conversion fails, the main scanning function
-   aborts and applies the scanning buffer and a string that explains
-   the error to the error handling function [ef] (the error continuation). *)
+  | Scan_char_set (_, _, rest)       -> take_format_readers k rest
+  | Scan_get_counter (_, rest)       -> take_format_readers k rest
 
-let scan_format ib ef fmt rv f =
+  | Formatting (_, rest)             -> take_format_readers k rest
 
-  let limr = Array.length rv - 1 in
+  | Format_arg (_, _, rest)          -> take_format_readers k rest
+  | Format_subst (_, _, fmtty, rest) -> take_fmtty_format_readers k fmtty rest
+  | Ignored_param (ign, rest)        -> take_ignored_format_readers k ign rest
 
-  let return v = Obj.magic v () in
-  let delay f x () = f x in
-  let stack f = delay (return f) in
-  let no_stack f _x = f in
+  | End_of_format                    -> k Nil
 
-  let rec scan fmt =
+(* Take readers associated to an fmtty coming from a Format_subst "%(...%)". *)
+and take_fmtty_format_readers : type x y a c d e f .
+    ((d, e) heter_list -> e) -> (a, Scanning.in_channel, c, d, x, y) fmtty ->
+      (y, Scanning.in_channel, c, x, e, f) fmt -> d =
+fun k fmtty fmt -> match fmtty with
+  | Reader_ty fmt_rest ->
+    fun reader ->
+      let new_k readers_rest = k (Cons (reader, readers_rest)) in
+      take_fmtty_format_readers new_k fmt_rest fmt
+  | Ignored_reader_ty fmt_rest ->
+    fun reader ->
+      let new_k readers_rest = k (Cons (reader, readers_rest)) in
+      take_fmtty_format_readers new_k fmt_rest fmt
+  | Char_ty rest                -> take_fmtty_format_readers k rest fmt
+  | String_ty rest              -> take_fmtty_format_readers k rest fmt
+  | Int_ty rest                 -> take_fmtty_format_readers k rest fmt
+  | Int32_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Nativeint_ty rest           -> take_fmtty_format_readers k rest fmt
+  | Int64_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Float_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Bool_ty rest                -> take_fmtty_format_readers k rest fmt
+  | Alpha_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Theta_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Format_arg_ty (_, rest)     -> take_fmtty_format_readers k rest fmt
+  | End_of_fmtty                -> take_format_readers k fmt
+  | Format_subst_ty (_, ty, rest) ->
+    take_fmtty_format_readers k (concat_fmtty ty rest) fmt
 
-    let lim = Sformat.length fmt - 1 in
+(* Take readers associated to an ignored parameter. *)
+and take_ignored_format_readers : type x y a c d e f .
+    ((d, e) heter_list -> e) -> (a, Scanning.in_channel, c, d, x, y) ignored ->
+      (y, Scanning.in_channel, c, x, e, f) fmt -> d =
+fun k ign fmt -> match ign with
+  | Ignored_reader ->
+    fun reader ->
+      let new_k readers_rest = k (Cons (reader, readers_rest)) in
+      take_format_readers new_k fmt
+  | Ignored_char                    -> take_format_readers k fmt
+  | Ignored_caml_char               -> take_format_readers k fmt
+  | Ignored_string _                -> take_format_readers k fmt
+  | Ignored_caml_string _           -> take_format_readers k fmt
+  | Ignored_int (_, _)              -> take_format_readers k fmt
+  | Ignored_int32 (_, _)            -> take_format_readers k fmt
+  | Ignored_nativeint (_, _)        -> take_format_readers k fmt
+  | Ignored_int64 (_, _)            -> take_format_readers k fmt
+  | Ignored_float (_, _)            -> take_format_readers k fmt
+  | Ignored_bool                    -> take_format_readers k fmt
+  | Ignored_format_arg _            -> take_format_readers k fmt
+  | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
+  | Ignored_scan_char_set _         -> take_format_readers k fmt
+  | Ignored_scan_get_counter _      -> take_format_readers k fmt
 
-    let rec scan_fmt ir f i =
-      if i > lim then ir, f else
-      match Sformat.unsafe_get fmt i with
-      | '%' -> scan_skip ir f (succ i)
-      | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
-      | c -> check_char ib c; scan_fmt ir f (succ i)
+(******************************************************************************)
+                          (* Scanf "%(...%)" tools *)
 
-    and scan_skip ir f i =
-      if i > lim then ir, f else
-      match Sformat.get fmt i with
-      | '_' -> scan_limits true ir f (succ i)
-      | _ -> scan_limits false ir f i
+(* Type used to cross and substract reader_nb_unifer. *)
+(* Used to interface make_format_subst_rnus and convert_fmtty_on_reader_nb. *)
+type (_, _, _, _, _, _, _) format_subst_rnus = Format_subst_rnus :
+    ('d3, 'q3, 'd2, 'q2) reader_nb_unifier *
+    ('d1, 'q1, 'd3, 'q3) reader_nb_unifier *
+    ('q1, 'e1, 'q3, 'e3) reader_nb_unifier ->
+    ('d1, 'q1, 'e1, 'd2, 'q2, 'd3, 'e3) format_subst_rnus
 
-    and scan_limits skip ir f i =
+(* Cross and substract reader_nb_unifers. *)
+(* Used when formats contains encapsulated "%(...%)" like "%(..%(..%)..%)". *)
+(* See (convert_fmtty_on_reader_nb _ "%(...%)"). *)
+let rec make_format_subst_rnus : type d1 q1 e1 d2 q2 d3 e3 .
+    (d1, e1, d3, e3) reader_nb_unifier -> (d1, q1, d2, q2) reader_nb_unifier ->
+      (d1, q1, e1, d2, q2, d3, e3) format_subst_rnus =
+fun rnu sub_rnu -> match rnu, sub_rnu with
+  | Succ_reader rnu_rest, Succ_reader sub_rnu_rest ->
+    let Format_subst_rnus (sub_rnu', sub_fmtty_rnu, rest_rnu) =
+      make_format_subst_rnus rnu_rest sub_rnu_rest in
+    Format_subst_rnus(Succ_reader sub_rnu', Succ_reader sub_fmtty_rnu, rest_rnu)
+  | _, Zero_reader ->
+    Format_subst_rnus (Zero_reader, Zero_reader, rnu)
+  | Zero_reader, Succ_reader _ ->
+    (* Impossible! By hypothesis: rnu > sub_rnu. *)
+    assert false
 
-      let rec scan_width i =
-        if i > lim then incomplete_format fmt else
-        match Sformat.get fmt i with
-        | '0' .. '9' as conv ->
-          let width, i =
-            read_int_literal (decimal_value_of_char conv) (succ i) in
-          Some width, i
-        | _ -> None, i
+(* Use a reader_nb_unifier to transform 'd and 'e parameters of an fmtty. *)
+(* See make_scanf "%(...%)". *)
+let rec convert_fmtty_on_reader_nb : type a b c d1 d2 e1 e2 f .
+    (d1, e1, d2, e2) reader_nb_unifier -> (a, b, c, d1, e1, f) fmtty ->
+      (a, b, c, d2, e2, f) fmtty =
+fun rnu fmtty -> match rnu, fmtty with
+  | _, Char_ty rest       -> Char_ty      (convert_fmtty_on_reader_nb rnu rest)
+  | _, String_ty rest     -> String_ty    (convert_fmtty_on_reader_nb rnu rest)
+  | _, Int_ty rest        -> Int_ty       (convert_fmtty_on_reader_nb rnu rest)
+  | _, Int32_ty rest      -> Int32_ty     (convert_fmtty_on_reader_nb rnu rest)
+  | _, Nativeint_ty rest  -> Nativeint_ty (convert_fmtty_on_reader_nb rnu rest)
+  | _, Int64_ty rest      -> Int64_ty     (convert_fmtty_on_reader_nb rnu rest)
+  | _, Float_ty rest      -> Float_ty     (convert_fmtty_on_reader_nb rnu rest)
+  | _, Bool_ty rest       -> Bool_ty      (convert_fmtty_on_reader_nb rnu rest)
+  | _, Alpha_ty rest      -> Alpha_ty     (convert_fmtty_on_reader_nb rnu rest)
+  | _, Theta_ty rest      -> Theta_ty     (convert_fmtty_on_reader_nb rnu rest)
 
-      and scan_precision i =
-        begin
-          match Sformat.get fmt i with
-          | '.' ->
-            let precision, i = read_int_literal 0 (succ i) in
-            (Some precision, i)
-          | _ -> None, i
-        end
+  | Succ_reader rnu_rest, Reader_ty fmtty_rest ->
+    Reader_ty (convert_fmtty_on_reader_nb rnu_rest fmtty_rest)
+  | Succ_reader rnu_rest, Ignored_reader_ty fmtty_rest ->
+    Ignored_reader_ty (convert_fmtty_on_reader_nb rnu_rest fmtty_rest)
 
-      and read_int_literal accu i =
-        if i > lim then accu, i else
-        match Sformat.unsafe_get fmt i with
-        | '0' .. '9' as c ->
-          let accu = 10 * accu + decimal_value_of_char c in
-          read_int_literal accu (succ i)
-        | _ -> accu, i in
+  | _, Format_arg_ty (sub_fmtty, rest) ->
+    Format_arg_ty (sub_fmtty, convert_fmtty_on_reader_nb rnu rest)
+  | _, Format_subst_ty (sub_rnu, sub_fmtty, rest) ->
+    let Format_subst_rnus (sub_rnu', sub_fmtty_rnu, rest_rnu) =
+      make_format_subst_rnus rnu sub_rnu in
+    let sub_fmtty' = convert_fmtty_on_reader_nb sub_fmtty_rnu sub_fmtty in
+    let rest' = convert_fmtty_on_reader_nb rest_rnu rest in
+    Format_subst_ty (sub_rnu', sub_fmtty', rest')
 
-      if i > lim then ir, f else
-      let width_opt, i = scan_width i in
-      let prec_opt, i = scan_precision i in
-      scan_conversion skip width_opt prec_opt ir f i
+  | Zero_reader, End_of_fmtty -> End_of_fmtty
 
-    and scan_conversion skip width_opt prec_opt ir f i =
-      let stack = if skip then no_stack else stack in
-      let width = int_of_width_opt width_opt in
-      let prec = int_of_prec_opt prec_opt in
-      match Sformat.get fmt i with
-      | '%' | '@' as c ->
-        check_char ib c;
-        scan_fmt ir f (succ i)
-      | '!' ->
-        if not (Scanning.end_of_input ib)
-        then bad_input "end of input not found" else
-        scan_fmt ir f (succ i)
-      | ',' ->
-        scan_fmt ir f (succ i)
-      | 's' ->
-        let i, stp = scan_indication (succ i) in
-        let _x = scan_string stp width ib in
-        scan_fmt ir (stack f (token_string ib)) (succ i)
-      | 'S' ->
-        let _x = scan_String width ib in
-        scan_fmt ir (stack f (token_string ib)) (succ i)
-      | '[' (* ']' *) ->
-        let i, char_set = scan_range fmt (succ i) in
-        let i, stp = scan_indication (succ i) in
-        let _x = scan_chars_in_char_set stp char_set width ib in
-        scan_fmt ir (stack f (token_string ib)) (succ i)
-      | ('c' | 'C') when width = 0 ->
-        let c = Scanning.checked_peek_char ib in
-        scan_fmt ir (stack f c) (succ i)
-      | 'c' ->
-        let _x = scan_char width ib in
-        scan_fmt ir (stack f (token_char ib)) (succ i)
-      | 'C' ->
-        let _x = scan_Char width ib in
-        scan_fmt ir (stack f (token_char ib)) (succ i)
-      | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let _x = scan_int_conv conv width prec ib in
-        scan_fmt ir (stack f (token_int conv ib)) (succ i)
-      | 'N' as conv ->
-        scan_fmt ir (stack f (get_count conv ib)) (succ i)
-      | 'f' | 'e' | 'E' | 'g' | 'G' ->
-        let _x = scan_float width prec ib in
-        scan_fmt ir (stack f (token_float ib)) (succ i)
-      | 'F' ->
-        let _x = scan_Float width prec ib in
-        scan_fmt ir (stack f (token_float ib)) (succ i)
-(*      | 'B' | 'b' when width = Some 0 ->
-        let _x = scan_bool width ib in
-        scan_fmt ir (stack f (token_int ib)) (succ i) *)
-      | 'B' | 'b' ->
-        let _x = scan_bool width ib in
-        scan_fmt ir (stack f (token_bool ib)) (succ i)
-      | 'r' ->
-        if ir > limr then assert false else
-        let token = Obj.magic rv.(ir) ib in
-        scan_fmt (succ ir) (stack f token) (succ i)
-      | 'l' | 'n' | 'L' as conv0 ->
-        let i = succ i in
-        if i > lim then scan_fmt ir (stack f (get_count conv0 ib)) i else begin
-        match Sformat.get fmt i with
-        (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv1 ->
-          let _x = scan_int_conv conv1 width prec ib in
-          (* Look back to the character that triggered the integer conversion
-             (this character is either 'l', 'n' or 'L') to find the
-             conversion to apply to the integer token read. *)
-          begin match conv0 with
-          | 'l' -> scan_fmt ir (stack f (token_int32 conv1 ib)) (succ i)
-          | 'n' -> scan_fmt ir (stack f (token_nativeint conv1 ib)) (succ i)
-          | _ -> scan_fmt ir (stack f (token_int64 conv1 ib)) (succ i) end
-        (* This is not an integer conversion, but a regular %l, %n or %L. *)
-        | _ -> scan_fmt ir (stack f (get_count conv0 ib)) i end
-      | '(' | '{' as conv (* ')' '}' *) ->
-        let i = succ i in
-        (* Find [mf], the static specification for the format to read. *)
-        let j =
-          Tformat.sub_format
-            incomplete_format bad_conversion conv fmt i in
-        let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
-        (* Read [rf], the specified format string in the input buffer,
-           and check its correctness w.r.t. [mf]. *)
-        let _x = scan_String width ib in
-        let rf = token_string ib in
-        if not (compatible_format_type rf mf) then format_mismatch rf mf else
-        (* Proceed according to the kind of metaformat found:
-           - %{ mf %} simply returns [rf] as the token read,
-           - %( mf %) returns [rf] as the first token read, then
-             returns a second token obtained by scanning the input with
-             format string [rf].
-           Behaviour for %( mf %) is mandatory for sake of format string
-           typechecking specification. To get pure format string
-           substitution behaviour, you should use %_( mf %) that skips the
-           first (format string) token and hence properly substitutes [mf] by
-           [rf] in the format string argument.
-        *)
-        (* For conversion %{%}, just return this format string as the token
-           read and go on with the rest of the format string argument. *)
-        if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
-        (* Or else, return this format string as the first token read;
-           then continue scanning using this format string to get
-           the following token read;
-           finally go on with the rest of the format string argument. *)
-        let ir, nf = scan (string_to_format rf) ir (stack f rf) 0 in
-        (* Return the format string read and the value just read,
-           then go on with the rest of the format. *)
-        scan_fmt ir nf j
+  | Zero_reader, Reader_ty _ ->
+    (* Impossible, by typing constraints on fmtty and rnu constructors: *)
+    (*   rnu = Zero_reader    =>  d1 == e1 *)
+    (*   fmtty = Reader_ty _  =>  d1 <> e1 *)
+    assert false
+  | Zero_reader, Ignored_reader_ty _ ->
+    assert false (* Similar. *)
+  | Succ_reader _, End_of_fmtty ->
+    assert false (* Similar. *)
 
-      | c -> bad_conversion fmt i c
+(******************************************************************************)
+                          (* Generic scanning *)
 
-    and scan_indication j =
-      if j > lim then j - 1, [] else
-      match Sformat.get fmt j with
-      | '@' ->
-        let k = j + 1 in
-        if k > lim then j - 1, [] else
-        begin match Sformat.get fmt k with
-        | '%' ->
-          let k = k + 1 in
-          if k > lim then j - 1, [] else
-          begin match Sformat.get fmt k with
-          | '%' | '@' as c  -> k, [ c ]
-          | _c -> j - 1, []
-          end
-        | c -> k, [ c ]
-        end
-      | _c -> j - 1, [] in
+(* Make a generic scanning function. *)
+(* Scan a stream according to a format and readers obtained by
+   take_format_readers, and aggegate scanned values into an
+   heterogeneous list. *)
+(* Return the heterogeneous list of scanned values. *)
+let rec make_scanf : type a c d e f .
+    Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
+      (d, _) heter_list -> (a, f) heter_list =
+fun ib fmt readers -> match fmt with
+  | Char rest ->
+    let _ = scan_char 0 ib in
+    let c = token_char ib in
+    Cons (c, make_scanf ib rest readers)
+  | Caml_char rest ->
+    let _ = scan_caml_char 0 ib in
+    let c = token_char ib in
+    Cons (c, make_scanf ib rest readers)
 
-    scan_fmt in
+  | String (pad, Formatting (fmting, rest)) ->
+    let stp, str = stopper_of_formatting fmting in
+    let scan width _ ib = scan_string (Some stp) width ib in
+    let str_rest = String_literal (str, rest) in
+    pad_prec_scanf ib str_rest readers pad No_precision scan token_string
+  | String (pad, rest) ->
+    let scan width _ ib = scan_string None width ib in
+    pad_prec_scanf ib rest readers pad No_precision scan token_string
 
+  | Caml_string (pad, rest) ->
+    let scan width _ ib = scan_caml_string width ib in
+    pad_prec_scanf ib rest readers pad No_precision scan token_string
+  | Int (iconv, pad, prec, rest) ->
+    let c = char_of_iconv iconv in
+    let scan width _ ib = scan_int_conv c width ib in
+    pad_prec_scanf ib rest readers pad prec scan (token_int c)
+  | Int32 (iconv, pad, prec, rest) ->
+    let c = char_of_iconv iconv in
+    let scan width _ ib = scan_int_conv c width ib in
+    pad_prec_scanf ib rest readers pad prec scan (token_int32 c)
+  | Nativeint (iconv, pad, prec, rest) ->
+    let c = char_of_iconv iconv in
+    let scan width _ ib = scan_int_conv c width ib in
+    pad_prec_scanf ib rest readers pad prec scan (token_nativeint c)
+  | Int64 (iconv, pad, prec, rest) ->
+    let c = char_of_iconv iconv in
+    let scan width _ ib = scan_int_conv c width ib in
+    pad_prec_scanf ib rest readers pad prec scan (token_int64 c)
+  | Float (Float_F, pad, prec, rest) ->
+    pad_prec_scanf ib rest readers pad prec scan_caml_float token_float
+  | Float ((Float_f | Float_pf | Float_sf | Float_e | Float_pe | Float_se
+               | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
+               | Float_G | Float_pG | Float_sG), pad, prec, rest) ->
+    pad_prec_scanf ib rest readers pad prec scan_float token_float
 
-  Scanning.reset_token ib;
+  | Bool rest ->
+    let _ = scan_bool ib in
+    let b = token_bool ib in
+    Cons (b, make_scanf ib rest readers)
+  | Alpha _ ->
+    invalid_arg "scanf: bad conversion \"%a\""
+  | Theta _ ->
+    invalid_arg "scanf: bad conversion \"%t\""
+  | Reader fmt_rest ->
+    let Cons (reader, readers_rest) = readers in
+    let x = reader ib in
+    Cons (x, make_scanf ib fmt_rest readers_rest)
+  | Flush rest ->
+    if Scanning.end_of_input ib then make_scanf ib rest readers
+    else bad_input "end of input not found"
 
-  let v =
-    try snd (scan fmt 0 (fun () -> f) 0) with
-    | (Scan_failure _ | Failure _ | End_of_file) as exc ->
-      stack (delay ef ib) exc in
-  return v
-;;
+  | String_literal (str, rest) ->
+    String.iter (check_char ib) str;
+    make_scanf ib rest readers
+  | Char_literal (chr, rest) ->
+    check_char ib chr;
+    make_scanf ib rest readers
 
-let mkscanf ib ef fmt =
-  let sc = scan_format ib ef in
-  ascanf sc fmt
-;;
+  | Format_arg (pad_opt, fmtty, rest) ->
+    let _ = scan_caml_string (width_of_pad_opt pad_opt) ib in
+    let s = token_string ib in
+    let fmt =
+      try format_of_string_fmtty s fmtty
+      with Failure msg -> bad_input msg
+    in
+    Cons (fmt, make_scanf ib rest readers)
+  | Format_subst (pad_opt, rnu, fmtty, rest) ->
+    let fmtty' = convert_fmtty_on_reader_nb rnu fmtty in
+    let _ = scan_caml_string (width_of_pad_opt pad_opt) ib in
+    let s = token_string ib in
+    let fmt, fmt' =
+      try
+        let Fmt_EBB fmt = fmt_ebb_of_string s in
+        type_format fmt fmtty, type_format fmt fmtty'
+      with Failure msg -> bad_input msg
+    in
+    Cons (Format (fmt', s),
+          make_scanf ib (concat_fmt fmt rest) readers)
 
-let kscanf ib ef fmt = mkscanf ib ef fmt;;
+  | Scan_char_set (width_opt, char_set, Formatting (fmting, rest)) ->
+    let stp, str = stopper_of_formatting fmting in
+    let width = width_of_pad_opt width_opt in
+    let _ = scan_chars_in_char_set char_set (Some stp) width ib in
+    let s = token_string ib in
+    let str_rest = String_literal (str, rest) in
+    Cons (s, make_scanf ib str_rest readers)
+  | Scan_char_set (width_opt, char_set, rest) ->
+    let width = width_of_pad_opt width_opt in
+    let _ = scan_chars_in_char_set char_set None width ib in
+    let s = token_string ib in
+    Cons (s, make_scanf ib rest readers)
+  | Scan_get_counter (counter, rest) ->
+    let count = get_counter ib counter in
+    Cons (count, make_scanf ib rest readers)
 
-let bscanf ib = kscanf ib scanf_bad_input;;
+  | Formatting (formatting, rest) ->
+    String.iter (check_char ib) (string_of_formatting formatting);
+    make_scanf ib rest readers
 
-let fscanf ic = bscanf (Scanning.from_channel ic);;
+  | Ignored_param (ign, rest) ->
+    let Param_format_EBB fmt' = param_format_of_ignored_format ign rest in
+    begin match make_scanf ib fmt' readers with
+    | Cons (_, arg_rest) -> arg_rest
+    | Nil -> assert false
+    end
 
-let sscanf : string -> ('a, 'b, 'c, 'd) scanner
-  = fun s -> bscanf (Scanning.from_string s);;
+  | End_of_format ->
+    Nil
 
-let scanf fmt = bscanf Scanning.stdib fmt;;
+(* Case analysis on padding and precision. *)
+(* Reject formats containing "%*" or "%.*". *)
+(* Pass padding and precision to the generic scanner `scan'. *)
+and pad_prec_scanf : type a c d e f x y z t .
+    Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
+      (d, _) heter_list -> (x, y) padding -> (y, z -> a) precision ->
+      (int -> int -> Scanning.in_channel -> t) ->
+      (Scanning.in_channel -> z) ->
+      (x, f) heter_list =
+fun ib fmt readers pad prec scan token -> match pad, prec with
+  | No_padding, No_precision ->
+    let _ = scan max_int max_int ib in
+    let x = token ib in
+    Cons (x, make_scanf ib fmt readers)
+  | No_padding, Lit_precision p ->
+    let _ = scan max_int p ib in
+    let x = token ib in
+    Cons (x, make_scanf ib fmt readers)
+  | Lit_padding ((Right | Zeros), w), No_precision ->
+    let _ = scan w max_int ib in
+    let x = token ib in
+    Cons (x, make_scanf ib fmt readers)
+  | Lit_padding ((Right | Zeros), w), Lit_precision p ->
+    let _ = scan w p ib in
+    let x = token ib in
+    Cons (x, make_scanf ib fmt readers)
+  | Lit_padding (Left, _), _ ->
+    invalid_arg "scanf: bad conversion \"%-\""
+  | Lit_padding ((Right | Zeros), _), Arg_precision ->
+    invalid_arg "scanf: bad conversion \"%*\""
+  | Arg_padding _, _ ->
+    invalid_arg "scanf: bad conversion \"%*\""
+  | No_padding, Arg_precision ->
+    invalid_arg "scanf: bad conversion \"%*\""
 
-let bscanf_format ib fmt f =
-  let fmt = Sformat.unsafe_to_string fmt in
-  let fmt1 =
-    ignore (scan_String max_int ib);
-    token_string ib in
-  if not (compatible_format_type fmt1 fmt) then
-    format_mismatch fmt1 fmt else
-  f (string_to_format fmt1)
-;;
+(******************************************************************************)
+            (* Defining [scanf] and various flavors of [scanf] *)
 
-let sscanf_format s fmt = bscanf_format (Scanning.from_string s) fmt;;
+type 'a kscanf_result = Args of 'a | Exc of exn
+
+let kscanf ib ef (Format (fmt, str)) =
+  let rec apply : type a b . a -> (a, b) heter_list -> b =
+    fun f args -> match args with
+    | Cons (x, r) -> apply (f x) r
+    | Nil -> f
+  in
+  let k readers f =
+    Scanning.reset_token ib;
+    match try Args (make_scanf ib fmt readers) with
+      | (Scan_failure _ | Failure _ | End_of_file) as exc -> Exc exc
+      | Invalid_argument msg ->
+        invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
+    with
+      | Args args -> apply f args
+      | Exc exc -> ef ib exc
+  in
+  take_format_readers k fmt
+
+let kbscanf = kscanf
+
+(***)
+
+let ksscanf s ef fmt = kbscanf (Scanning.from_string s) ef fmt
+let kfscanf ic ef fmt = kbscanf (Scanning.from_channel ic) ef fmt
+let bscanf ib fmt = kscanf ib scanf_bad_input fmt
+let fscanf ic fmt = kscanf (Scanning.from_channel ic) scanf_bad_input fmt
+let sscanf s fmt = kscanf (Scanning.from_string s) scanf_bad_input fmt
+let scanf fmt = kscanf Scanning.stdib scanf_bad_input fmt
+
+(***)
+
+let bscanf_format : Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
+  fun ib format f ->
+    let _ = scan_caml_string max_int ib in
+    let str = token_string ib in
+    let fmt' =
+      try format_of_string_format str format
+      with Failure msg -> bad_input msg
+    in
+    f fmt'
+
+let sscanf_format : string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g =
+  fun s format f -> bscanf_format (Scanning.from_string s) format f
 
 let string_to_String s =
   let l = String.length s in
@@ -1566,9 +1400,3 @@ let format_from_string s fmt =
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 ;;
-
-(*
- Local Variables:
-  compile-command: "cd ..; make world"
-  End:
-*)

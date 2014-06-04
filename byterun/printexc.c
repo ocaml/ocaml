@@ -71,7 +71,8 @@ CAMLexport char * caml_format_exception(value exn)
       if (i > start) add_string(&buf, ", ");
       v = Field(bucket, i);
       if (Is_long(v)) {
-        sprintf(intbuf, "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
+        snprintf(intbuf, sizeof(intbuf),
+                 "%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val(v));
         add_string(&buf, intbuf);
       } else if (Tag_val(v) == String_tag) {
         add_char(&buf, '"');
@@ -94,7 +95,14 @@ CAMLexport char * caml_format_exception(value exn)
 }
 
 
-void caml_fatal_uncaught_exception(value exn)
+#ifdef NATIVE_CODE
+#  define DEBUGGER_IN_USE 0
+#else
+#  define DEBUGGER_IN_USE caml_debugger_in_use
+#endif
+
+/* Default C implementation in case the OCaml one is not registered. */
+static void default_fatal_uncaught_exception(value exn)
 {
   char * msg;
   value * at_exit;
@@ -115,13 +123,20 @@ void caml_fatal_uncaught_exception(value exn)
   fprintf(stderr, "Fatal error: exception %s\n", msg);
   free(msg);
   /* Display the backtrace if available */
-  if (caml_backtrace_active
-#ifndef NATIVE_CODE
-      && !caml_debugger_in_use
-#endif
-      ) {
+  if (caml_backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();
-  }
+}
+
+void caml_fatal_uncaught_exception(value exn)
+{
+  value *handle_uncaught_exception;
+
+  handle_uncaught_exception = caml_named_value("Printexc.handle_uncaught_exception");
+  if (handle_uncaught_exception != NULL)
+    /* [Printexc.handle_uncaught_exception] does not raise exception. */
+    caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));
+  else
+    default_fatal_uncaught_exception(exn);
   /* Terminate the process */
   exit(2);
 }

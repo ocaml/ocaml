@@ -69,6 +69,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _init s = init_file := Some s
   let _inline n = inline_threshold := n * 8
   let _labels = clear classic
+  let _no_alias_deps = set transparent_modules
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic

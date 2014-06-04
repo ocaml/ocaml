@@ -79,8 +79,7 @@ type error =
   | Wrong_name of string * type_expr * string * Path.t * Longident.t
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
-  | Incomplete_format of string
-  | Bad_conversion of string * int * char
+  | Invalid_format of string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Virtual_class of Longident.t
@@ -108,9 +107,11 @@ type error =
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
-  | Extension of string
+  | No_value_clauses
+  | Exception_pattern_below_toplevel
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
  (* Deprecated.  Use Location.{error_of_exn, report_error}. *)

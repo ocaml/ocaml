@@ -99,7 +99,7 @@ val big_endian : bool
     @since 4.00.0 *)
 
 val max_string_length : int
-(** Maximum length of a string. *)
+(** Maximum length of strings and byte sequences. *)
 
 val max_array_length : int
 (** Maximum length of a normal array.  The maximum length of a float

@@ -21,7 +21,7 @@ open Typedtree
 open Types
 open Ctype
 
-exception Already_bound of Location.t
+exception Already_bound
 
 type error =
     Unbound_type_variable of string
@@ -51,48 +51,123 @@ type error =
   | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
-  | Extension of string
+  | Access_functor_as_structure of Longident.t
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
+
+let string_of_cst = function
+  | Const_string(s, _) -> Some s
+  | _ -> None
+
+let string_of_payload = function
+  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
+      string_of_cst c
+  | _ -> None
+
+let rec error_of_extension ext =
+  match ext with
+  | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
+    let rec sub_from inner =
+      match inner with
+      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
+          error_of_extension ext :: sub_from rest
+      | {pstr_loc} :: rest ->
+          (Location.errorf ~loc
+             "Invalid syntax for sub-error of extension '%s'." txt) ::
+            sub_from rest
+      | [] -> []
+    in
+    begin match p with
+    | PStr({pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
+           {pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
+           inner) ->
+        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
+    | PStr({pstr_desc=Pstr_eval
+              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
+        Location.error ~loc ~sub:(sub_from inner) msg
+    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
+    end
+  | ({txt; loc}, _) ->
+      Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let check_deprecated loc attrs s =
-  if
-    List.exists
-      (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
-      attrs
-  then
-    Location.prerr_warning loc (Warnings.Deprecated s)
-
-let warning_attribute attrs =
-  let prev_warnings = ref None in
   List.iter
     (function
-      | ({txt = "warning"; loc}, payload) ->
-          begin match payload with
-          | PStr [{pstr_desc=Pstr_eval
-                     ({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
-              if !prev_warnings = None then
-                prev_warnings := Some (Warnings.backup ());
-              begin try Warnings.parse_options false s
-              with Arg.Bad _ ->
-                Location.prerr_warning loc
-                  (Warnings.Attribute_payload
-                     ("warning",
-                      "Ill-formed list of warnings"))
-              end
-          | _ ->
-              Location.prerr_warning loc
-                (Warnings.Attribute_payload
-                   ("warning",
-                    "A single string literal is expected"))
-          end
+    | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
+      begin match string_of_payload p with
+      | Some txt ->
+          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
+      | None ->
+          Location.prerr_warning loc (Warnings.Deprecated s)
+      end
+    | _ ->  ())
+    attrs
+
+let emit_external_warnings =
+  (* Note: this is run as a preliminary pass when type-checking an
+     interface or implementation.  This allows to cover all kinds of
+     attributes, but the drawback is that it doesn't take local
+     configuration of warnings (with '@@warning'/'@@warnerror'
+     attributes) into account.  We should rather check for
+     'ppwarning' attributes during the actual type-checking, making
+     sure to cover all contexts (easier and more ugly alternative:
+     duplicate here the logic which control warnings locally). *)
+  let open Ast_mapper in
+  {
+    default_mapper with
+    attribute = (fun _ a ->
+        begin match a with
+        | {txt="ocaml.ppwarning"|"ppwarning"},
+          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
+                                         (Const_string (s, _))},_);
+                pstr_loc}] ->
+            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+        | _ -> ()
+        end;
+        a
+      )
+  }
+
+
+let warning_scope = ref []
+
+let warning_enter_scope () =
+  warning_scope := (Warnings.backup ()) :: !warning_scope
+let warning_leave_scope () =
+  match !warning_scope with
+  | [] -> assert false
+  | hd :: tl ->
+      Warnings.restore hd;
+      warning_scope := tl
+
+let warning_attribute attrs =
+  let process loc txt errflag payload =
+    match string_of_payload payload with
+    | Some s ->
+        begin try Warnings.parse_options errflag s
+        with Arg.Bad _ ->
+          Location.prerr_warning loc
+            (Warnings.Attribute_payload
+               (txt, "Ill-formed list of warnings"))
+        end
+    | None ->
+        Location.prerr_warning loc
+          (Warnings.Attribute_payload
+             (txt, "A single string literal is expected"))
+  in
+  List.iter
+    (function
+      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
+          process loc txt false payload
+      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
+          process loc txt true payload
       | _ ->
           ()
     )
-    attrs;
-  !prev_warnings
-
-
+    attrs
 
 type variable_context = int * (string, type_expr) Tbl.t
 
@@ -105,16 +180,22 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    try ignore (Env.lookup_module mlid env)
-    with Not_found ->
-      narrow_unbound_lid_error env loc mlid
-        (fun lid -> Unbound_module lid)
-       | Env.Recmodule ->
-         raise (Error (loc, env, Illegal_reference_to_recursive_module))
+    try ignore (Env.lookup_module true mlid env) with
+    | Not_found ->
+        narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
+    | Env.Recmodule ->
+        raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
   begin match lid with
   | Longident.Lident _ -> ()
-  | Longident.Ldot (mlid, _) -> check_module mlid
+  | Longident.Ldot (mlid, _) ->
+      check_module mlid;
+      let md = Env.find_module (Env.lookup_module true mlid env) env in
+      begin match Env.scrape_alias env md.md_type with
+        Mty_functor _ ->
+          raise (Error (loc, env, Access_functor_as_structure mlid))
+      | _ -> ()
+      end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       check_module mlid;
@@ -126,7 +207,7 @@ let find_component lookup make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial
+        lookup (Longident.Lident s) Env.initial_safe_string
     | _ -> lookup lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
@@ -165,13 +246,17 @@ let find_value env loc lid =
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
-let find_module env loc lid =
+let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module lid env, ()))
+    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
-  in
-  (* check_deprecated loc decl.md_attributes (Path.name path); *)
-  path
+  in path
+
+let find_module env loc lid =
+  let path = lookup_module ~load:true env loc lid in
+  let decl = Env.find_module path env in
+  check_deprecated loc decl.md_attributes (Path.name path);
+  (path, decl)
 
 let find_modtype env loc lid =
   let (path, decl) as r =
@@ -258,23 +343,34 @@ let new_global_var ?name () =
 let newvar ?name () =
   newvar ?name:(validate_name name) ()
 
-let enter_type_variable {Location.txt=name; loc} =
-  try
-    if name <> "" && name.[0] = '_' then
-      raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
-    let v = Tbl.find name !type_variables in
-    raise (Already_bound loc);
-    v
-  with Not_found ->
-    let v = new_global_var ~name () in
-    type_variables := Tbl.add name v !type_variables;
-    v
-
 let type_variable loc name =
   try
     Tbl.find name !type_variables
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
+
+let transl_type_param env styp =
+  let loc = styp.ptyp_loc in
+  match styp.ptyp_desc with
+    Ptyp_any ->
+      let ty = new_global_var ~name:"_" () in
+        { ctyp_desc = Ttyp_any; ctyp_type = ty; ctyp_env = env;
+          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
+  | Ptyp_var name ->
+      let ty =
+        try
+          if name <> "" && name.[0] = '_' then
+            raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
+          ignore (Tbl.find name !type_variables);
+          raise Already_bound
+        with Not_found ->
+          let v = new_global_var ~name () in
+            type_variables := Tbl.add name v !type_variables;
+            v
+      in
+        { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
+          ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
+  | _ -> assert false
 
 let wrap_method ty =
   match (Ctype.repr ty).desc with
@@ -333,6 +429,12 @@ let rec transl_type env policy styp =
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let stl =
+        match stl with
+        | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
+            List.map (fun _ -> t) decl.type_params
+        | _ -> stl
+      in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
@@ -360,7 +462,7 @@ let rec transl_type env policy styp =
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
       let fields =
-        List.map (fun (s, t) -> (s, transl_poly_type env policy t))
+        List.map (fun (s, a, t) -> (s, a, transl_poly_type env policy t))
           fields
       in
       let ty = newobj (transl_fields loc env policy [] o fields) in
@@ -392,7 +494,7 @@ let rec transl_type env policy styp =
           let (path, decl) = Env.lookup_type lid2 env in
           (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, env, Unbound_class lid.txt))
+          ignore (find_class env styp.ptyp_loc lid.txt); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
@@ -502,7 +604,7 @@ let rec transl_type env policy styp =
           Hashtbl.add hfields h (l,f)
       in
       let add_field = function
-          Rtag (l, c, stl) ->
+          Rtag (l, attrs, c, stl) ->
             name := None;
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
@@ -517,7 +619,7 @@ let rec transl_type env policy styp =
                       Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l f;
-              Ttag (l,c,tl)
+              Ttag (l,attrs,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
             let ty = cty.ctyp_type in
@@ -623,13 +725,13 @@ let rec transl_type env policy styp =
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
       ctyp (Ttyp_package {
-            pack_name = path;
+            pack_path = path;
             pack_type = mty.mty_type;
             pack_fields = ptys;
             pack_txt = p;
            }) ty
-  | Ptyp_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Ptyp_extension ext ->
+      raise (Error_forward (error_of_extension ext))
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
@@ -642,7 +744,7 @@ and transl_fields loc env policy seen o =
       | Open, Univars -> new_pre_univar ()
       | Open, _ -> newvar ()
       end
-  | (s, ty1) :: l ->
+  | (s, _attrs, ty1) :: l ->
       if List.mem s seen then raise (Error (loc, env, Repeated_method_label s));
       let ty2 = transl_fields loc env policy (s :: seen) o l in
       newty (Tfield (s, Fpresent, ty1.ctyp_type, ty2))
@@ -897,14 +999,16 @@ let report_error env ppf = function
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
+  | Access_functor_as_structure lid ->
+      fprintf ppf "The module %a is a functor, not a structure" longident lid
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )

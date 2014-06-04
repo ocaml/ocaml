@@ -121,6 +121,8 @@ type primitive =
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer
+  (* Integer to external pointer *)
+  | Pint_as_pointer
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -244,7 +246,10 @@ val negate_comparison : comparison -> comparison
 
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
-
+val next_negative_raise_count : unit -> int
+  (* Negative raise counts are used to compile 'match ... with exception x -> ...'.
+     This disabled some simplifications performed by the Simplif module that assume
+     that static raises are in tail position in their handler. *)
 
 val staticfail : lambda (* Anticipated static failure *)
 
@@ -254,3 +259,5 @@ val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
 val lam_of_loc : loc_kind -> Location.t -> lambda
+
+val reset: unit -> unit

@@ -72,6 +72,7 @@ module Pat = struct
   let type_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_type a)
   let lazy_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_lazy a)
   let unpack ?loc ?attrs a = mk ?loc ?attrs (Ppat_unpack a)
+  let exception_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_exception a)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Ppat_extension a)
 end
 
@@ -157,12 +158,13 @@ module Sig = struct
 
   let value ?loc a = mk ?loc (Psig_value a)
   let type_ ?loc a = mk ?loc (Psig_type a)
+  let type_extension ?loc a = mk ?loc (Psig_typext a)
   let exception_ ?loc a = mk ?loc (Psig_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
   let modtype ?loc a = mk ?loc (Psig_modtype a)
-  let open_ ?loc ?(attrs = []) a b = mk ?loc (Psig_open (a, b, attrs))
-  let include_ ?loc ?(attrs = []) a = mk ?loc (Psig_include (a, attrs))
+  let open_ ?loc a = mk ?loc (Psig_open a)
+  let include_ ?loc a = mk ?loc (Psig_include a)
   let class_ ?loc a = mk ?loc (Psig_class a)
   let class_type ?loc a = mk ?loc (Psig_class_type a)
   let extension ?loc ?(attrs = []) a = mk ?loc (Psig_extension (a, attrs))
@@ -176,16 +178,15 @@ module Str = struct
   let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
+  let type_extension ?loc a = mk ?loc (Pstr_typext a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
-  let exn_rebind ?loc ?(attrs = []) a b =
-    mk ?loc (Pstr_exn_rebind (a, b, attrs))
   let module_ ?loc a = mk ?loc (Pstr_module a)
   let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
   let modtype ?loc a = mk ?loc (Pstr_modtype a)
-  let open_ ?loc ?(attrs = []) a b = mk ?loc (Pstr_open (a, b, attrs))
+  let open_ ?loc a = mk ?loc (Pstr_open a)
   let class_ ?loc a = mk ?loc (Pstr_class a)
   let class_type ?loc a = mk ?loc (Pstr_class_type a)
-  let include_ ?loc ?(attrs = []) a = mk ?loc (Pstr_include (a, attrs))
+  let include_ ?loc a = mk ?loc (Pstr_include a)
   let extension ?loc ?(attrs = []) a = mk ?loc (Pstr_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Pstr_attribute a)
 end
@@ -237,6 +238,7 @@ module Ctf = struct
   let method_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_method (a, b, c, d))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pctf_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pctf_extension a)
+  let attribute ?loc a = mk ?loc (Pctf_attribute a)
 end
 
 module Cf = struct
@@ -254,6 +256,7 @@ module Cf = struct
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constraint (a, b))
   let initializer_ ?loc ?attrs a = mk ?loc ?attrs (Pcf_initializer a)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcf_extension a)
+  let attribute ?loc a = mk ?loc (Pcf_attribute a)
 
   let virtual_ ct = Cfk_virtual ct
   let concrete o e = Cfk_concrete (o, e)
@@ -300,12 +303,32 @@ module Mb = struct
     }
 end
 
+module Opn = struct
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(override = Fresh) lid =
+    {
+     popen_lid = lid;
+     popen_override = override;
+     popen_loc = loc;
+     popen_attributes = attrs;
+    }
+end
+
+module Incl = struct
+  let mk ?(loc = !default_loc) ?(attrs = []) mexpr =
+    {
+     pincl_mod = mexpr;
+     pincl_loc = loc;
+     pincl_attributes = attrs;
+    }
+end
+
 module Vb = struct
-  let mk ?(attrs = []) pat expr =
+  let mk ?(loc = !default_loc) ?(attrs = []) pat expr =
     {
      pvb_pat = pat;
      pvb_expr = expr;
      pvb_attributes = attrs;
+     pvb_loc = loc;
     }
 end
 
@@ -360,6 +383,43 @@ module Type = struct
     }
 end
 
+(** Type extensions *)
+module Te = struct
+  let mk ?(attrs = []) ?(params = []) ?(priv = Public) path constructors =
+    {
+     ptyext_path = path;
+     ptyext_params = params;
+     ptyext_constructors = constructors;
+     ptyext_private = priv;
+     ptyext_attributes = attrs;
+    }
+
+  let constructor ?(loc = !default_loc) ?(attrs = []) name kind =
+    {
+     pext_name = name;
+     pext_kind = kind;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let decl ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
+    {
+     pext_name = name;
+     pext_kind = Pext_decl(args, res);
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let rebind ?(loc = !default_loc) ?(attrs = []) name lid =
+    {
+     pext_name = name;
+     pext_kind = Pext_rebind lid;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+end
+
+
 module Csig = struct
   let mk self fields =
     {
@@ -374,75 +434,4 @@ module Cstr = struct
      pcstr_self = self;
      pcstr_fields = fields;
     }
-end
-
-module Convenience = struct
-  open Location
-
-  let may_tuple tup = function
-    | [] -> None
-    | [x] -> Some x
-    | l -> Some (tup ?loc:None ?attrs:None l)
-
-  let lid s = mkloc (Longident.parse s) !default_loc
-  let tuple l = Exp.tuple l
-  let constr s args = Exp.construct (lid s) (may_tuple Exp.tuple args)
-  let nil () = constr "[]" []
-  let unit () = constr "()" []
-  let cons hd tl = constr "::" [hd; tl]
-  let list l = List.fold_right cons l (nil ())
-  let str s = Exp.constant (Const_string (s, None))
-  let int x = Exp.constant (Const_int x)
-  let char x = Exp.constant (Const_char x)
-  let float x = Exp.constant (Const_float (string_of_float x))
-  let record ?over l =
-    Exp.record (List.map (fun (s, e) -> (lid s, e)) l) over
-  let func l = Exp.function_ (List.map (fun (p, e) -> Exp.case p e) l)
-  let lam ?(label = "") ?default pat exp = Exp.fun_ label default pat exp
-  let app f l = Exp.apply f (List.map (fun a -> "", a) l)
-  let evar s = Exp.ident (lid s)
-  let let_in ?(recursive = false) b body =
-    Exp.let_ (if recursive then Recursive else Nonrecursive) b body
-
-  let pvar s = Pat.var (mkloc s !default_loc)
-  let pconstr s args = Pat.construct (lid s) (may_tuple Pat.tuple args)
-  let precord ?(closed = Open) l =
-    Pat.record (List.map (fun (s, e) -> (lid s, e)) l) closed
-  let pnil () = pconstr "[]" []
-  let pcons hd tl = pconstr "::" [hd; tl]
-  let punit () = pconstr "()" []
-  let plist l = List.fold_right pcons l (pnil ())
-  let ptuple l = Pat.tuple l
-
-  let pstr s = Pat.constant (Const_string (s, None))
-  let pint x = Pat.constant (Const_int x)
-  let pchar x = Pat.constant (Const_char x)
-  let pfloat x = Pat.constant (Const_float (string_of_float x))
-
-  let tconstr c l = Typ.constr (lid c) l
-
-  let get_str = function
-    | {pexp_desc=Pexp_constant (Const_string (s, _)); _} -> Some s
-    | e -> None
-
-  let get_lid = function
-    | {pexp_desc=Pexp_ident{txt=id;_};_} ->
-        Some (String.concat "." (Longident.flatten id))
-    | _ -> None
-
-  let find_attr s attrs =
-    try Some (snd (List.find (fun (x, _) -> x.txt = s) attrs))
-    with Not_found -> None
-
-  let expr_of_payload = function
-    | PStr [{pstr_desc=Pstr_eval(e, _)}] -> Some e
-    | _ -> None
-
-  let find_attr_expr s attrs =
-    match find_attr s attrs with
-    | Some e -> expr_of_payload e
-    | None -> None
-
-  let has_attr s attrs =
-    find_attr s attrs <> None
 end

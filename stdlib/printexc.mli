@@ -86,31 +86,184 @@ val register_printer: (exn -> string option) -> unit
 (** {6 Raw backtraces} *)
 
 type raw_backtrace
-
-(** The abstract type [backtrace] stores exception backtraces in
+(** The abstract type [raw_backtrace] stores a backtrace in
     a low-level format, instead of directly exposing them as string as
     the [get_backtrace()] function does.
 
     This allows delaying the formatting of backtraces to when they are
-    actually printed, which might be useful if you record more
+    actually printed, which may be useful if you record more
     backtraces than you print.
+
+    Raw backtraces cannot be marshalled. If you need marshalling, you
+    should use the array returned by the [backtrace_slots] function of
+    the next section.
+
+    @since 4.01.0
 *)
 
 val get_raw_backtrace: unit -> raw_backtrace
-val print_raw_backtrace: out_channel -> raw_backtrace -> unit
-val raw_backtrace_to_string: raw_backtrace -> string
+(** [Printexc.get_raw_backtrace ()] returns the same exception
+    backtrace that [Printexc.print_backtrace] would print, but in
+    a raw format.
 
+    @since 4.01.0
+*)
+
+val print_raw_backtrace: out_channel -> raw_backtrace -> unit
+(** Print a raw backtrace in the same format
+    [Printexc.print_backtrace] uses.
+
+    @since 4.01.0
+*)
+
+val raw_backtrace_to_string: raw_backtrace -> string
+(** Return a string from a raw backtrace, in the same format
+    [Printexc.get_backtrace] uses.
+
+    @since 4.01.0
+*)
 
 (** {6 Current call stack} *)
 
 val get_callstack: int -> raw_backtrace
-
 (** [Printexc.get_callstack n] returns a description of the top of the
     call stack on the current program point (for the current thread),
     with at most [n] entries.  (Note: this function is not related to
     exceptions at all, despite being part of the [Printexc] module.)
 
     @since 4.01.0
+*)
+
+(** {6 Uncaught exceptions} *)
+
+val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
+(** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
+    for uncaught exceptions. The default handler prints the exception and
+    backtrace on standard error output.
+
+    Note that when [fn] is called all the functions registered with
+    {!Pervasives.at_exit} have already been called. Because of this you must
+    make sure any output channel [fn] writes on is flushed.
+
+    If [fn] raises an exception, it is ignored.
+
+    @since 4.02.0
+*)
+
+
+(** {6 Manipulation of backtrace information}
+
+    Those function allow to traverse the slots of a raw backtrace,
+    extract information from them in a programmer-friendly format.
+*)
+
+type backtrace_slot
+(** The abstract type [backtrace_slot] represents a single slot of
+    a backtrace.
+
+    @since 4.02
+*)
+
+val backtrace_slots : raw_backtrace -> backtrace_slot array option
+(** Returns the slots of a raw backtrace, or [None] if none of them
+    contain useful information.
+
+    In the return array, the slot at index [0] corresponds to the most
+    recent function call, raise, or primitive [get_backtrace] call in
+    the trace.
+
+    Some possible reasons for returning [None] are as follow:
+    - none of the slots in the trace come from modules compiled with
+    debug information ([-g])
+    - the program is a bytecode program that has not been linked with
+    debug information enabled ([ocamlc -g])
+*)
+
+type location = {
+  filename : string;
+  line_number : int;
+  start_char : int;
+  end_char : int;
+}
+(** The type of location information found in backtraces. [start_char]
+    and [end_char] are positions relative to the beginning of the
+    line.
+
+    @since 4.02
+*)
+
+module Slot : sig
+  type t = backtrace_slot
+
+  val is_raise : t -> bool
+  (** [is_raise slot] is [true] when [slot] refers to a raising
+      point in the code, and [false] when it comes from a simple
+      function call.
+
+      @since 4.02
+  *)
+
+  val location : t -> location option
+  (** [location slot] returns the location information of the slot,
+      if available, and [None] otherwise.
+
+      Some possible reasons for failing to return a location are as follow:
+      - the slot corresponds to a compiler-inserted raise
+      - the slot corresponds to a part of the program that has not been
+      compiled with debug information ([-g])
+
+      @since 4.02
+  *)
+
+  val format : int -> t -> string option
+  (** [format pos slot] returns the string representation of [slot] as
+      [raw_backtrace_to_string] would format it, assuming it is the
+      [pos]-th element of the backtrace: the [0]-th element is
+      pretty-printed differently than the others.
+
+      Whole-backtrace printing functions also skip some uninformative
+      slots; in that case, [format pos slot] returns [None].
+
+      @since 4.02
+  *)
+end
+
+
+(** {6 Raw backtrace slots} *)
+
+type raw_backtrace_slot
+(** This type allows direct access to raw backtrace slots, without any
+    conversion in an OCaml-usable data-structure. Being
+    process-specific, they must absolutely not be marshalled, and are
+    unsafe to use for this reason (marshalling them may not fail, but
+    un-marshalling and using the result will result in
+    undefined behavior).
+
+    Elements of this type can still be compared and hashed: when two
+    elements are equal, then they represent the same source location
+    (the converse is not necessarily true in presence of inlining,
+    for example).
+*)
+
+val raw_backtrace_length : raw_backtrace -> int
+(** [raw_backtrace_length bckt] returns the number of slots in the
+    backtrace [bckt].
+
+    @since 4.02
+*)
+
+val get_raw_backtrace_slot : raw_backtrace -> int -> raw_backtrace_slot
+(** [get_slot bckt pos] returns the slot in position [pos] in the
+    backtrace [bckt].
+
+    @since 4.02
+*)
+
+val convert_raw_backtrace_slot : raw_backtrace_slot -> backtrace_slot
+(** Extracts the user-friendly [backtrace_slot] from a low-level
+    [raw_backtrace_slot].
+
+    @since 4.02
 *)
 
 

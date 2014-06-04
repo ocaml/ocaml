@@ -17,7 +17,8 @@ include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot $(INCLUDES)
+COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot \
+          -safe-string $(INCLUDES)
 LINKFLAGS=
 
 CAMLYACC=boot/ocamlyacc
@@ -84,10 +85,13 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
-  asmcomp/comballoc.cmo asmcomp/liveness.cmo \
+  asmcomp/comballoc.cmo \
+  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
+  asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
@@ -145,11 +149,10 @@ world.opt:
 #
 # make coreboot     [old system -- you were in a stable state]
 # <change the source>
-# make core         [cross-compiler]
-# make partialclean [if you get "inconsistent assumptions"]
+# make clean runtime coreall
 # <debug your changes>
-# make core         [cross-compiler]
-# make coreboot     [new system -- now you are in a stable state]
+# make clean runtime coreall
+# make coreboot [new system -- now in a stable state]
 
 # Core bootstrapping cycle
 coreboot:
@@ -588,6 +591,14 @@ partialclean::
 
 beforedepend:: asmcomp/selection.ml
 
+asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
+	ln -s $(ARCH)/CSE.ml asmcomp/CSE.ml
+
+partialclean::
+	rm -f asmcomp/CSE.ml
+
+beforedepend:: asmcomp/CSE.ml
+
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	ln -s $(ARCH)/reload.ml asmcomp/reload.ml
 
@@ -723,6 +734,12 @@ ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	cd ocamldoc && $(MAKE) opt.opt
 
+# Documentation
+
+html_doc: ocamldoc
+	make -C ocamldoc html_doc
+	@echo "documentation is in ./ocamldoc/stdlib_html/"
+
 partialclean::
 	cd ocamldoc && $(MAKE) clean
 
@@ -833,7 +850,7 @@ distclean:
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h
-	rm -f tools/*.bak tools/ocamlmklibconfig.ml
+	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log
 

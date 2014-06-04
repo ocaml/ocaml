@@ -101,7 +101,9 @@ let read_member_info file = (
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
     try
-      let buffer = input_bytes ic (String.length Config.cmo_magic_number) in
+      let buffer =
+        really_input_string ic (String.length Config.cmo_magic_number)
+      in
       if buffer <> Config.cmo_magic_number then
         raise(Error(Not_an_object_file file));
       let compunit_pos = input_binary_int ic in
@@ -233,7 +235,8 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_pos = pos_code;
         cu_codesize = pos_debug - pos_code;
         cu_reloc = List.rev !relocs;
-        cu_imports = (targetname, Env.crc_of_unit targetname) :: imports;
+        cu_imports =
+          (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = !primitives;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
@@ -248,7 +251,7 @@ let package_object_files ppf files targetfile targetname coercion =
 
 (* The entry point *)
 
-let package_files ppf files targetfile =
+let package_files ppf initial_env files targetfile =
     let files =
     List.map
         (fun f ->
@@ -259,11 +262,12 @@ let package_files ppf files targetfile =
     let targetcmi = prefix ^ ".cmi" in
     let targetname = String.capitalize(Filename.basename prefix) in
     try
-      let coercion = Typemod.package_units files targetcmi targetname in
-    let ret = package_object_files ppf files targetfile targetname coercion in
-    ret
-  with x ->
-    remove_file targetfile; raise x
+      let coercion =
+        Typemod.package_units initial_env files targetcmi targetname in
+      let ret = package_object_files ppf files targetfile targetname coercion in
+      ret
+    with x ->
+      remove_file targetfile; raise x
 
 (* Error report *)
 
@@ -293,3 +297,9 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  relocs := [];
+  events := [];
+  primitives := [];
+  force_link := false

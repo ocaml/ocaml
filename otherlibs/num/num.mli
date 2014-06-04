@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Operation on arbitrary-precision numbers.
 
    Numbers (type [num]) are arbitrary-precision rational numbers,

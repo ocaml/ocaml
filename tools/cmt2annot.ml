@@ -87,8 +87,10 @@ let iterator rebuild_env =
           bind_bindings exp.exp_loc bindings
       | Texp_let (Nonrecursive, bindings, body) ->
           bind_bindings body.exp_loc bindings
+      | Texp_match (_, f1, f2, _) ->
+        bind_cases f1;
+        bind_cases f2
       | Texp_function (_, f, _)
-      | Texp_match (_, f, _)
       | Texp_try (_, f) ->
           bind_cases f
       | _ -> ()
@@ -154,7 +156,7 @@ let gen_annot target_filename filename
     match target_filename with
     | None -> Some (filename ^ ".annot")
     | Some "-" -> None
-    | Some filename -> target_filename
+    | Some _ -> target_filename
   in
   let iterator = iterator cmt_use_summaries in
   match cmt_annots with
@@ -187,7 +189,7 @@ let gen_ml target_filename filename cmt =
   let target_filename = match target_filename with
       None -> Some (filename ^ ext)
     | Some "-" -> None
-    | Some filename -> target_filename
+    | Some _ -> target_filename
   in
   let oc = match target_filename with
       None -> None

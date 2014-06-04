@@ -41,7 +41,6 @@ CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
-CAMLextern char * caml_stat_alloc_string (value);
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
@@ -267,27 +266,31 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
     0)
 
 #define CAMLlocal1(x) \
-  value x = 0; \
+  value x = Val_unit; \
   CAMLxparam1 (x)
 
 #define CAMLlocal2(x, y) \
-  value x = 0, y = 0; \
+  value x = Val_unit, y = Val_unit; \
   CAMLxparam2 (x, y)
 
 #define CAMLlocal3(x, y, z) \
-  value x = 0, y = 0, z = 0; \
+  value x = Val_unit, y = Val_unit, z = Val_unit; \
   CAMLxparam3 (x, y, z)
 
 #define CAMLlocal4(x, y, z, t) \
-  value x = 0, y = 0, z = 0, t = 0; \
+  value x = Val_unit, y = Val_unit, z = Val_unit, t = Val_unit; \
   CAMLxparam4 (x, y, z, t)
 
 #define CAMLlocal5(x, y, z, t, u) \
-  value x = 0, y = 0, z = 0, t = 0, u = 0; \
+  value x = Val_unit, y = Val_unit, z = Val_unit, t = Val_unit, u = Val_unit; \
   CAMLxparam5 (x, y, z, t, u)
 
 #define CAMLlocalN(x, size) \
-  value x [(size)] = { 0, /* 0, 0, ... */ }; \
+  value x [(size)]; \
+  int caml__i_##x; \
+  for (caml__i_##x = 0; caml__i_##x < size; caml__i_##x ++) { \
+    x[caml__i_##x] = Val_unit; \
+  } \
   CAMLxparamN (x, (size))
 
 

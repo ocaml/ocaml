@@ -89,6 +89,8 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
+exception Error of error
+
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string

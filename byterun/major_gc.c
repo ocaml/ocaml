@@ -27,6 +27,12 @@
 #include "roots.h"
 #include "weak.h"
 
+#if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
+#define NATIVE_CODE_AND_NO_NAKED_POINTERS
+#else
+#undef NATIVE_CODE_AND_NO_NAKED_POINTERS
+#endif
+
 uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
@@ -82,7 +88,18 @@ static void realloc_gray_vals (void)
 
 void caml_darken (value v, value *p /* not used */)
 {
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  if (Is_block (v) && Wosize_val (v) > 0) {
+    /* We insist that naked pointers to outside the heap point to things that
+       look like values with headers coloured black.  This isn't always
+       strictly necessary but is essential in certain cases---in particular
+       when the value is allocated in a read-only section.  (For the values
+       where it would be safe it is a performance improvement since we avoid
+       putting them on the grey list.) */
+    CAMLassert (Is_in_heap (v) || Is_black_hd (Hd_val (v)));
+#else
   if (Is_block (v) && Is_in_heap (v)) {
+#endif
     header_t h = Hd_val (v);
     tag_t t = Tag_hd (h);
     if (t == Infix_tag){
@@ -124,6 +141,9 @@ static void mark_slice (intnat work)
   value v, child;
   header_t hd;
   mlsize_t size, i;
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+  int marking_closure = 0;
+#endif
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
@@ -132,13 +152,28 @@ static void mark_slice (intnat work)
     if (gray_vals_ptr > gray_vals){
       v = *--gray_vals_ptr;
       hd = Hd_val(v);
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+      marking_closure =
+        (Tag_hd (hd) == Closure_tag || Tag_hd (hd) == Infix_tag);
+#endif
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
       size = Wosize_hd (hd);
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
+#ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
+          if (Is_block (child)
+                && Wosize_val (child) > 0  /* Atoms never need to be marked. */
+                /* Closure blocks contain code pointers at offsets that cannot
+                   be reliably determined, so we always use the page table when
+                   marking such values. */
+                && (!marking_closure || Is_in_heap (child))) {
+            /* See [caml_darken] for a description of this assertion. */
+            CAMLassert (Is_in_heap (child) || Is_black_hd (Hd_val (child)));
+#else
           if (Is_block (child) && Is_in_heap (child)) {
+#endif
             hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
               value f = Forward_val (child);

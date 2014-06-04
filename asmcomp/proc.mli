@@ -40,6 +40,9 @@ val max_register_pressure: Mach.operation -> int array
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
 
+(* Pure operations *)
+val op_is_pure: Mach.operation -> bool
+
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array
 val contains_calls: bool ref

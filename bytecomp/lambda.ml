@@ -121,6 +121,8 @@ type primitive =
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer
+  (* Integer to external pointer *)
+  | Pint_as_pointer
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -209,16 +211,23 @@ let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
 
+(* Build sharing keys *)
+(*
+   Those keys are later compared with Pervasives.compare.
+   For that reason, they should not include cycles.
+*)
+
 exception Not_simple
 
 let max_raw = 32
 
 let make_key e =
-  let count = ref 0
+  let count = ref 0   (* Used for controling size *)
   and make_key = Ident.make_key_generator () in
+  (* make_key is used for normalizing let-bound variables *)
   let rec tr_rec env e =
     incr count ;
-    if !count > max_raw then raise Not_simple ;
+    if !count > max_raw then raise Not_simple ; (* Too big ! *)
     match e with
     | Lvar id ->
       begin
@@ -262,11 +271,12 @@ let make_key e =
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
-    | Levent (e,evt) ->
-        Levent (tr_rec env e,evt)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
-    | Lfor _ | Lwhile _  ->
+    | Lfor _ | Lwhile _
+(* Beware: (PR#6412) the event argument to Levent
+   may include cyclic structure of type Type.typexpr *)
+    | Levent _  ->
         raise Not_simple
 
   and tr_recs env es = List.map (tr_rec env) es
@@ -399,6 +409,12 @@ let next_raise_count () =
   incr raise_count ;
   !raise_count
 
+let negative_raise_count = ref 0
+
+let next_negative_raise_count () =
+  decr negative_raise_count ;
+  !negative_raise_count
+
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
 
@@ -529,3 +545,7 @@ let lam_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+
+let reset () =
+  raise_count := 0
+

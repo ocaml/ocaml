@@ -7,15 +7,19 @@ Language features:
 - Attributes and extension nodes
 - Generative functors
 - Module aliases
+* Alternative syntax for string literals {id|...|id} (can break comments)
+- Separation between read-only strings (type string) and read-write byte
+  sequences (type bytes). Activated by command-line option -safe-string.
+- Exception cases in pattern matching (patch by Jeremy Yallop).
+- Extensible open datatypes (patch by Leo White).
 
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
+- Use GNU make instead of portable makefiles.
 
-Camlp4:
-- Removed from the official distribution
-
-Other libraries:
-* Labltk: removed from the distribution, now available as a third-party library
+Shedding weight:
+* Removed Camlp4 from the distribution, now available as third-party software.
+* Removed Labltk from the distribution, now available as a third-party library.
 
 Type system:
 * Keep typing of pattern cases independent in principal mode
@@ -30,33 +34,66 @@ Type system:
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for
   closed objects and fixed polymorphic variants.
-- PR#6333: Compare first class module types structurally rather than
+* PR#6333: Compare first class module types structurally rather than
   nominally. Value subtyping allows module subtyping as long as the internal
   representation is unchanged.
 
 Compilers:
+- More aggressive constant propagation, including float and
+  int32/int64/nativeint arithmetic.  Constant propagation for floats
+  can be turned off with option -no-float-const-prop, for codes that
+  change FP rounding modes at run-time.
+- New back-end optimization pass: common subexpression elimination (CSE).
+  (Reuses results of previous computations instead of recomputing them.)
+- New back-end optimization pass: dead code elimination.
+  (Removes arithmetic and load instructions whose results are unused.)
 - PR#6269 Optimization of string matching (patch by Benoit Vaugon
   and Luc Maranget)
 - Experimental native code generator for AArch64 (ARM 64 bits)
 - Optimization of integer division and modulus by constant divisors
   (feature wish PR#6042)
+- Add "-open" command line flag for opening a single module before typing
+* "-o" now sets module name to the output file name up to the first "."
+  (it also applies when "-o" is not given, i.e. the module name is then
+   the input file name up to the first ".")
+* PR#5779: better sharing of structured constants
 - PR#6182: better message for virtual objects and class types
   (Leo P. White, Stephen Dolan)
 - PR#5817: new flag to keep locations in cmi files
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@deprecated] attribute
-- PR#6203: Constant exception constructor no longer allocate
+* PR#6203: Constant exception constructor no longer allocate
 - PR#6311: Improve signature mismatch error messages
 - PR#6345: Better compilation of optional arguments with default values
 - PR#6260: Unnecessary boxing in let (patch by vbrankov)
+- PR#6017: a new format implementation based on GADTs
+  (initial patch by Benoît Vaugon, review by Gabriel Scherer)
+
+Toplevel interactive system:
+- PR#5377: New "#show_*" directives
 
 Runtime system:
+- New configure option "-no-naked-pointers" to improve performance by
+  avoiding page table tests during block darkening and the marking phase
+  of the major GC.  In this mode, all out-of-heap pointers must point at
+  things that look like OCaml values: in particular they must have a valid
+  header.  The colour of said headers should be black.
+- Fixed bug in native code version of [caml_raise_with_string] that could
+  potentially lead to heap corruption.
+- Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
+  [Val_unit] rather than zero.
 - Fixed a major performance problem on large heaps (~1GB) by making heap
-  increments proportional to heap size
+  increments proportional to heap size by default
 - PR#4765: Structural equality should treat exception specifically
 - PR#5009: Extending exception tag blocks
+- PR#6075: avoid using unsafe C library functions (strcpy, strcat, sprintf)
+- An ISO C99-compliant C compiler and standard library is now assumed.
+  (Plus special exceptions for MSVC.)  In particular, emulation code for
+  64-bit integer arithmetic was removed, the C compiler must support a
+  64-bit integer type.
 
 Standard library:
+* Add new modules: Bytes and BytesLabels.
 - PR#4986: add List.sort_uniq and Set.of_list
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
 - PR#6146: support "Unix.kill pid Sys.sigkill" under Windows
@@ -68,6 +105,8 @@ OCamldoc:
            record fields
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
            (patch by Anil Madhavapeddy)
+- PR#6273: fix Sys.file_exists on large files (Win32)
+           (patch by Christoph Bauer)
 
 Bug fixes:
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
@@ -102,18 +141,28 @@ Bug fixes:
 - PR#6346: Build failure with latest version of xcode on OSX
 - PR#6348: Unification failure for GADT when original definition is hidden
 - PR#6352: Automatic removal of optional arguments and sequencing
+- PR#6361: Hashtbl.hash not terminating on some lazy values w/ recursive types
+- PR#6383: Exception Not_found when using object type in absent module
+- PR#6384: Uncaught Not_found exception with a hidden .cmi file
+- PR#6385: wrong allocation of large closures by the bytecode interpreter
+- PR#6394: Assertion failed in Typecore.expand_path
+- PR#6405: unsound interaction of -rectypes and GADTs
+- PR#6302: bytecode debug information re-read from filesystem every time
+  (Jacques-Henri Jourdan)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
+- sometimes wrong stack alignment at out-of-bounds array access
+  (Gabriel Scherer, review by Xavier Leroy, report by Pierre Chambart)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
 - PR#4323: have "of_string" in Num and Big_int work with binary and
-  hexa representations (patch by Zoe Paraskevopoulou)
+           hex representations (patch by Zoe Paraskevopoulou)
 - PR#5547: Enable the "-use-ocamlfind" option by default
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
-- PR#5808: allow simple patterns, not only identifiers, in "let p : t = ..."
+- PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
 - PR#6000: add a warning for non-principal coercions to format
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
            (patch by Kaustuv Chaudhuri)
@@ -127,6 +176,8 @@ Features wishes:
   (patch by Josh Watzman, review by Xavier Clerc and Alain Frisch)
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer)
+- PR#5899: a programmer-friendly access to backtrace information
+  (Jacques-Henri Jourdan and Gabriel Scherer)
 - ocamllex: user-definable refill action
   (patch by Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
@@ -288,7 +339,7 @@ Bug fixes:
   (Alain Frisch)
 - PR#5552: unrecognized gcc option -no-cpp-precomp
   (Damien Doligez, report by Markus Mottl)
-- PR#5580: missed opportunities for constant propagation
+* PR#5580: missed opportunities for constant propagation
   (Xavier Leroy and John Carr)
 - PR#5611: avoid clashes betwen .cmo files and output files during linking
   (Wojciech Meyer)

@@ -135,7 +135,7 @@ let pseudoregs_for_operation op arg res =
   (* For storing a byte, the argument must be in eax...edx.
      (But for a short, any reg will do!)
      Keep it simple, just force the argument to be in edx. *)
-  | Istore((Byte_unsigned | Byte_signed), addr) ->
+  | Istore((Byte_unsigned | Byte_signed), addr, _) ->
       let newarg = Array.copy arg in
       newarg.(0) <- edx;
       (newarg, res, false)
@@ -178,20 +178,20 @@ method select_addressing chunk exp =
   | (Ascaledadd(e1, e2, scale), d) ->
       (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method! select_store addr exp =
+method! select_store is_assign addr exp =
   match exp with
     Cconst_int n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
-  | Cconst_natint n ->
-      (Ispecific(Istore_int(n, addr)), Ctuple [])
+      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
+  | (Cconst_natint n | Cconst_blockheader n) ->
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
+      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer n ->
-      (Ispecific(Istore_int(n, addr)), Ctuple [])
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol s ->
-      (Ispecific(Istore_symbol(s, addr)), Ctuple [])
+      (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
-      super#select_store addr exp
+      super#select_store is_assign addr exp
 
 method! select_operation op args =
   match op with
@@ -287,6 +287,9 @@ method select_push exp =
       let (addr, arg) = self#select_addressing Double_u loc in
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
+
+method! mark_c_tailcall =
+  Proc.contains_calls := true
 
 method! emit_extcall_args env args =
   let rec size_pushes = function

@@ -35,11 +35,7 @@ let files = ref []
 
 let fix_slash s =
   if Sys.os_type = "Unix" then s else begin
-    let r = String.copy s in
-    for i = 0 to String.length r - 1 do
-      if r.[i] = '\\' then r.[i] <- '/'
-    done;
-    r
+    String.map (function '\\' -> '/' | c -> c) s
   end
 
 (* Since we reinitialize load_path after reading OCAMLCOMP,
@@ -160,20 +156,20 @@ let print_filename s =
       else count n (i+1)
     in
     let spaces = count 0 0 in
-    let result = String.create (String.length s + spaces) in
+    let result = Bytes.create (String.length s + spaces) in
     let rec loop i j =
       if i >= String.length s then ()
       else if s.[i] = ' ' then begin
-        result.[j] <- '\\';
-        result.[j+1] <- ' ';
+        Bytes.set result j '\\';
+        Bytes.set result (j+1) ' ';
         loop (i+1) (j+2);
       end else begin
-        result.[j] <- s.[i];
+        Bytes.set result j s.[i];
         loop (i+1) (j+1);
       end
     in
     loop 0 0;
-    print_string result;
+    print_bytes result;
   end
 ;;
 
@@ -205,7 +201,7 @@ let print_raw_dependencies source_file deps =
 
 (* Process one file *)
 
-let report_err source_file exn =
+let report_err exn =
   error_occurred := true;
   match exn with
     | Sys_error msg ->
@@ -232,7 +228,7 @@ let read_parse_and_extract parse_function extract_function magic source_file =
       raise x
     end
   with x ->
-    report_err source_file x;
+    report_err x;
     Depend.StringSet.empty
 
 let ml_file_dependencies source_file =
@@ -288,7 +284,7 @@ let mli_file_dependencies source_file =
       print_raw_dependencies source_file extracted_deps
     end else begin
       let basename = Filename.chop_extension source_file in
-      let (byt_deps, opt_deps) =
+      let (byt_deps, _opt_deps) =
         Depend.StringSet.fold (find_dependency MLI)
           extracted_deps ([], []) in
       print_dependencies [basename ^ ".cmi"] byt_deps
@@ -309,7 +305,7 @@ let file_dependencies_as kind source_file =
       | ML -> ml_file_dependencies source_file
       | MLI -> mli_file_dependencies source_file
     end
-  with x -> report_err source_file x
+  with x -> report_err x
 
 let file_dependencies source_file =
   if List.exists (Filename.check_suffix source_file) !ml_synonyms then
@@ -324,8 +320,9 @@ let sort_files_by_dependencies files =
 
 (* Init Hashtbl with all defined modules *)
   let files = List.map (fun (file, file_kind, deps) ->
-    let modname = Filename.chop_extension (Filename.basename file) in
-    modname.[0] <- Char.uppercase modname.[0];
+    let modname =
+      String.capitalize (Filename.chop_extension (Filename.basename file))
+    in
     let key = (modname, file_kind) in
     let new_deps = ref [] in
     Hashtbl.add h key (file, new_deps);

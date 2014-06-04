@@ -46,9 +46,9 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
-  | Extension of string
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 open Typedtree
 
@@ -410,8 +410,13 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_constraint (cty, cty')) :: fields,
         val_sig, concr_meths, inher)
 
-  | Pctf_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pctf_attribute x ->
+      Typetexp.warning_attribute [x];
+      (mkctf (Tctf_attribute x) :: fields,
+        val_sig, concr_meths, inher)
+
+  | Pctf_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   let meths = ref Meths.empty in
@@ -432,11 +437,13 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
+  Typetexp.warning_enter_scope ();
   let (rev_fields, val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       ([], Vars.empty, Concr.empty, [])
       sign
   in
+  Typetexp.warning_leave_scope ();
   let cty =   {csig_self = self_type;
    csig_vars = val_sig;
    csig_concr = concr_meths;
@@ -494,8 +501,8 @@ and class_type env scty =
       let clty = class_type env scty in
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
-  | Pcty_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pcty_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 let class_type env scty =
   delayed_meth_specs := [];
@@ -700,9 +707,13 @@ let rec class_field self_loc cl_num self_type meths vars
         end in
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
        inher, local_meths, local_vals)
-
-  | Pcf_extension (s, _arg) ->
-      raise (Error (s.loc, val_env, Extension s.txt))
+  | Pcf_attribute x ->
+      Typetexp.warning_attribute [x];
+      (val_env, met_env, par_env,
+        lazy (mkcf (Tcf_attribute x)) :: fields,
+        concr_meths, warn_vals, inher, local_meths, local_vals)
+  | Pcf_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =
@@ -751,12 +762,14 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
+  Typetexp.warning_enter_scope ();
   let (_, _, _, fields, concr_meths, _, inher, _local_meths, _local_vals) =
     List.fold_left (class_field self_loc cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
        Concr.empty, Concr.empty)
       str
   in
+  Typetexp.warning_leave_scope ();
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {csig_self = public_self;
@@ -1132,8 +1145,8 @@ and class_expr cl_num val_env met_env scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
-  | Pcl_extension (s, _arg) ->
-      raise (Error (s.loc, val_env, Extension s.txt))
+  | Pcl_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 (*******************************)
 
@@ -1252,12 +1265,16 @@ let class_infos define_class kind
   Ctype.begin_class_def ();
 
   (* Introduce class parameters *)
-  let params =
-    try
-      List.map (fun (x, _v) -> enter_type_variable x) cl.pci_params
-    with Already_bound loc ->
-      raise(Error(loc, env, Repeated_parameter))
+  let ci_params =
+    let make_param (sty, v) =
+      try
+          (transl_type_param env sty, v)
+      with Already_bound ->
+        raise(Error(sty.ptyp_loc, env, Repeated_parameter))
+    in
+      List.map make_param cl.pci_params
   in
+  let params = List.map (fun (cty, _) -> cty.ctyp_type) ci_params in
 
   (* Allow self coercions (only for class declarations) *)
   let coercion_locs = ref [] in
@@ -1443,12 +1460,12 @@ let class_infos define_class kind
      type_attributes = []; (* or keep attrs from cl? *)
     }
   in
-  ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+  ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,
    env)
 
 let final_decl env define_class
-    (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+    (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
      arity, pub_meths, coe, expr) =
 
   begin try Ctype.collapse_conj_params env clty.cty_params
@@ -1485,7 +1502,7 @@ let final_decl env define_class
    arity, pub_meths, coe, expr,
    { ci_loc = cl.pci_loc;
      ci_virt = cl.pci_virt;
-     ci_params = cl.pci_params;
+     ci_params = ci_params;
 (* TODO : check that we have the correct use of identifiers *)
      ci_id_name = cl.pci_name;
      ci_id_class = id;
@@ -1818,8 +1835,6 @@ let report_error env ppf = function
   | Duplicate (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has multiple definitions in this object@]"
                     kind name
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)
@@ -1829,6 +1844,8 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )

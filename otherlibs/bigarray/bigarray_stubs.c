@@ -386,16 +386,9 @@ CAMLprim value caml_ba_uint8_get32(value vb, value vind)
   return caml_copy_int32(res);
 }
 
-#ifdef ARCH_INT64_TYPE
-#include "int64_native.h"
-#else
-#include "int64_emul.h"
-#endif
-
 CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 {
-  uint32 reshi;
-  uint32 reslo;
+  uint64 res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -409,13 +402,17 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
   b7 = ((unsigned char*) b->data)[idx+6];
   b8 = ((unsigned char*) b->data)[idx+7];
 #ifdef ARCH_BIG_ENDIAN
-  reshi = b1 << 24 | b2 << 16 | b3 << 8 | b4;
-  reslo = b5 << 24 | b6 << 16 | b7 << 8 | b8;
+  res = (uint64) b1 << 56 | (uint64) b2 << 48
+        | (uint64) b3 << 40 | (uint64) b4 << 32
+        | (uint64) b5 << 24 | (uint64) b6 << 16
+        | (uint64) b7 << 8 | (uint64) b8;
 #else
-  reshi = b8 << 24 | b7 << 16 | b6 << 8 | b5;
-  reslo = b4 << 24 | b3 << 16 | b2 << 8 | b1;
+  res = (uint64) b8 << 56 | (uint64) b7 << 48
+        | (uint64) b6 << 40 | (uint64) b5 << 32
+        | (uint64) b4 << 24 | (uint64) b3 << 16
+        | (uint64) b2 << 8 | (uint64) b1;
 #endif
-  return caml_copy_int64(I64_literal(reshi,reslo));
+  return caml_copy_int64(res);
 }
 
 /* Generic write to a big array */
@@ -579,31 +576,29 @@ CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
 CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
-  uint32 lo,hi;
   intnat idx = Long_val(vind);
   int64 val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
   val = Int64_val(newval);
-  I64_split(val,hi,lo);
 #ifdef ARCH_BIG_ENDIAN
-  b1 = 0xFF & hi >> 24;
-  b2 = 0xFF & hi >> 16;
-  b3 = 0xFF & hi >> 8;
-  b4 = 0xFF & hi;
-  b5 = 0xFF & lo >> 24;
-  b6 = 0xFF & lo >> 16;
-  b7 = 0xFF & lo >> 8;
-  b8 = 0xFF & lo;
+  b1 = 0xFF & val >> 56;
+  b2 = 0xFF & val >> 48;
+  b3 = 0xFF & val >> 40;
+  b4 = 0xFF & val >> 32;
+  b5 = 0xFF & val >> 24;
+  b6 = 0xFF & val >> 16;
+  b7 = 0xFF & val >> 8;
+  b8 = 0xFF & val;
 #else
-  b8 = 0xFF & hi >> 24;
-  b7 = 0xFF & hi >> 16;
-  b6 = 0xFF & hi >> 8;
-  b5 = 0xFF & hi;
-  b4 = 0xFF & lo >> 24;
-  b3 = 0xFF & lo >> 16;
-  b2 = 0xFF & lo >> 8;
-  b1 = 0xFF & lo;
+  b8 = 0xFF & val >> 56;
+  b7 = 0xFF & val >> 48;
+  b6 = 0xFF & val >> 40;
+  b5 = 0xFF & val >> 32;
+  b4 = 0xFF & val >> 24;
+  b3 = 0xFF & val >> 16;
+  b2 = 0xFF & val >> 8;
+  b1 = 0xFF & val;
 #endif
   ((unsigned char*) b->data)[idx] = b1;
   ((unsigned char*) b->data)[idx+1] = b2;
@@ -767,20 +762,7 @@ static int caml_ba_compare(value v1, value v2)
   case CAML_BA_INT32:
     DO_INTEGER_COMPARISON(int32);
   case CAML_BA_INT64:
-#ifdef ARCH_INT64_TYPE
     DO_INTEGER_COMPARISON(int64);
-#else
-    { int64 * p1 = b1->data; int64 * p2 = b2->data;
-      for (n = 0; n < num_elts; n++) {
-        int64 e1 = *p1++; int64 e2 = *p2++;
-        if ((int32)e1.h > (int32)e2.h) return 1;
-        if ((int32)e1.h < (int32)e2.h) return -1;
-        if (e1.l > e2.l) return 1;
-        if (e1.l < e2.l) return -1;
-      }
-      return 0;
-    }
-#endif
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);

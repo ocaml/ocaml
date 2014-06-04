@@ -124,14 +124,14 @@ let create_hashtable size init =
 (* File copy *)
 
 let copy_file ic oc =
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy () =
     let n = input ic buff 0 0x1000 in
     if n = 0 then () else (output oc buff 0 n; copy())
   in copy()
 
 let copy_file_chunk ic oc len =
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy n =
     if n <= 0 then () else begin
       let r = input ic buff 0 (min n 0x1000) in
@@ -141,22 +141,12 @@ let copy_file_chunk ic oc len =
 
 let string_of_file ic =
   let b = Buffer.create 0x10000 in
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy () =
     let n = input ic buff 0 0x1000 in
     if n = 0 then Buffer.contents b else
-      (Buffer.add_substring b buff 0 n; copy())
+      (Buffer.add_subbytes b buff 0 n; copy())
   in copy()
-
-
-
-(* Reading from a channel *)
-
-let input_bytes ic n =
-  let result = String.create n in
-  really_input ic result 0 n;
-  result
-;;
 
 (* Integer operations *)
 
@@ -226,26 +216,27 @@ let for4 (_,_,_,x) = x
 
 
 module LongString = struct
-  type t = string array
+  type t = bytes array
 
   let create str_size =
     let tbl_size = str_size / Sys.max_string_length + 1 in
-    let tbl = Array.make tbl_size "" in
+    let tbl = Array.make tbl_size Bytes.empty in
     for i = 0 to tbl_size - 2 do
-      tbl.(i) <- String.create Sys.max_string_length;
+      tbl.(i) <- Bytes.create Sys.max_string_length;
     done;
-    tbl.(tbl_size - 1) <- String.create (str_size mod Sys.max_string_length);
+    tbl.(tbl_size - 1) <- Bytes.create (str_size mod Sys.max_string_length);
     tbl
 
   let length tbl =
     let tbl_size = Array.length tbl in
-    Sys.max_string_length * (tbl_size - 1) + String.length tbl.(tbl_size - 1)
+    Sys.max_string_length * (tbl_size - 1) + Bytes.length tbl.(tbl_size - 1)
 
   let get tbl ind =
-    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length]
+    Bytes.get tbl.(ind / Sys.max_string_length) (ind mod Sys.max_string_length)
 
   let set tbl ind c =
-    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length] <- c
+    Bytes.set tbl.(ind / Sys.max_string_length) (ind mod Sys.max_string_length)
+              c
 
   let blit src srcoff dst dstoff len =
     for i = 0 to len - 1 do
@@ -257,14 +248,14 @@ module LongString = struct
       output_char oc (get tbl i)
     done
 
-  let unsafe_blit_to_string src srcoff dst dstoff len =
+  let unsafe_blit_to_bytes src srcoff dst dstoff len =
     for i = 0 to len - 1 do
-      String.unsafe_set dst (dstoff + i) (get src (srcoff + i))
+      Bytes.unsafe_set dst (dstoff + i) (get src (srcoff + i))
     done
 
   let input_bytes ic len =
     let tbl = create len in
-    Array.iter (fun str -> really_input ic str 0 (String.length str)) tbl;
+    Array.iter (fun str -> really_input ic str 0 (Bytes.length str)) tbl;
     tbl
 end
 

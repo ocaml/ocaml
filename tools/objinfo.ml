@@ -31,11 +31,18 @@ let input_stringlist ic len =
       else acc
     in fold 0 0 []
   in
-  let sect = Misc.input_bytes ic len in
+  let sect = really_input_string ic len in
   get_string_list sect len
 
-let print_name_crc (name, crc) =
-  printf "\t%s\t%s\n" (Digest.to_hex crc) name
+let dummy_crc = String.make 32 '-'
+
+let print_name_crc (name, crco) =
+  let crc =
+    match crco with
+      None -> dummy_crc
+    | Some crc -> Digest.to_hex crc
+  in
+    printf "\t%s\t%s\n" crc name
 
 let print_line name =
   printf "\t%s\n" name
@@ -69,7 +76,7 @@ let print_cma_infos (lib : Cmo_format.library) =
   printf "\n";
   List.iter print_cmo_infos lib.lib_units
 
-let print_cmi_infos name sign crcs =
+let print_cmi_infos name crcs =
   printf "Unit name: %s\n" name;
   printf "Interfaces imported:\n";
   List.iter print_name_crc crcs
@@ -143,7 +150,7 @@ let dump_byte ic =
            | "CRCS" ->
                p_section
                  "Imported units"
-                 (input_value ic : (string * Digest.t) list)
+                 (input_value ic : (string * Digest.t option) list)
            | "DLLS" ->
                p_list
                  "Used DLLs"
@@ -189,7 +196,7 @@ let dump_obj filename =
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
   let len_magic_number = String.length cmo_magic_number in
-  let magic_number = Misc.input_bytes ic len_magic_number in
+  let magic_number = really_input_string ic len_magic_number in
   if magic_number = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;
@@ -205,8 +212,7 @@ let dump_obj filename =
   end else if magic_number = cmi_magic_number then begin
     let cmi = Cmi_format.input_cmi ic in
     close_in ic;
-    print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_sign
-      cmi.Cmi_format.cmi_crcs
+    print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_crcs
   end else if magic_number = cmx_magic_number then begin
     let ui = (input_value ic : unit_infos) in
     let crc = Digest.input ic in
@@ -219,7 +225,7 @@ let dump_obj filename =
   end else begin
     let pos_trailer = in_channel_length ic - len_magic_number in
     let _ = seek_in ic pos_trailer in
-    let _ = really_input ic magic_number 0 len_magic_number in
+    let magic_number = really_input_string ic len_magic_number in
     if magic_number = Config.exec_magic_number then begin
       dump_byte ic;
       close_in ic

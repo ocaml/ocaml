@@ -50,4 +50,5 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
+val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl

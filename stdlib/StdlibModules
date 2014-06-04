@@ -21,6 +21,8 @@ STDLIB_MODULES=\
   array \
   arrayLabels \
   buffer \
+  bytes \
+  bytesLabels \
   callback \
   camlinternalLazy \
   camlinternalMod \

@@ -133,6 +133,12 @@ window.
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.
 .TP
+.BI \-open \ module
+Opens the given module before starting the toplevel. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open! module1;; ... open! moduleN;; were input.
+.TP
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
@@ -157,6 +163,12 @@ Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported.
 .TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
+.TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -177,13 +189,20 @@ constructs). Programs compiled with
 are therefore slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 .TP
+.B \-unsafe\-string
+Identify the types
+.BR string \ and\  bytes ,
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
+.TP
 .B \-version
 Print version string and exit.
 .TP
 .B \-vnum
 Print short version number and exit.
 .TP
-.BI \-w \ warning-list
+.BI \-w \ warning\-list
 Enable or disable warnings according to the argument
 .IR warning-list .
 See
@@ -192,7 +211,7 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
-.BI \-warn-error \ warning-list
+.BI \-warn\-error \ warning\-list
 Mark as fatal the warnings described by the argument
 .IR warning\-list .
 Note that a warning is not triggered (and does not trigger an error) if
