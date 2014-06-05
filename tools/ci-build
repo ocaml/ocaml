@@ -29,6 +29,11 @@ error () {
 }
 
 #########################################################################
+
+# be verbose and stop on error
+set -ex
+
+#########################################################################
 # If we are called from a Windows batch script, we must set up the
 # Unix environment variables (e.g. PATH).
 
@@ -50,11 +55,6 @@ case "$1" in
   ;;
   *) error "unknown architecture: $1";;
 esac
-
-#########################################################################
-
-# be verbose and stop on error
-set -ex
 
 #########################################################################
 # set up variables
