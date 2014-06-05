@@ -152,6 +152,8 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
+- PR#2719: wrong scheduling of bound checks within a 
+  try...with Invalid_argument -> _ ...  (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
 - PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
