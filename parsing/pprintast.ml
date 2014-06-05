@@ -602,8 +602,11 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
-    | Pexp_poly _ ->
-        assert false
+    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *) 
+    | Pexp_poly (e, None) ->
+        pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
+    | Pexp_poly (e, Some ct) ->
+        pp f "@[<hov2>(!poly!@ %a@ : %a)@]" self#simple_expr e self#core_type ct
     | Pexp_open (ovf, lid, e) ->
         pp f "@[<2>let open%s %a in@;%a@]" (override ovf) self#longident_loc lid
           self#expression  e
@@ -765,6 +768,15 @@ class printer  ()= object(self:'self)
           self#mutable_flag mf s.txt
           self#core_type  ct
     | Pcf_method (s, pf, Cfk_concrete (ovf, e)) ->
+        let bind e =
+          self#binding f
+            {pvb_pat=
+               {ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
+             pvb_expr=e;
+             pvb_attributes=[];
+             pvb_loc=Location.none;
+            }
+        in
         pp f "@[<2>method%s %a%a@]"
           (override ovf)
           self#private_flag pf
@@ -772,14 +784,8 @@ class printer  ()= object(self:'self)
           | Pexp_poly (e, Some ct) ->
               pp f "%s :@;%a=@;%a"
                 s.txt (self#core_type) ct self#expression e
-          | Pexp_poly (e,None) ->
-              self#binding f {pvb_pat={ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
-                              pvb_expr=e;
-                              pvb_attributes=[];
-                              pvb_loc=Location.none;
-                             }
-          | _ ->
-              self#expression f e ) e
+          | Pexp_poly (e,None) -> bind e
+          | _ -> bind e) e
     | Pcf_constraint (ct1, ct2) ->
         pp f "@[<2>constraint %a =@;%a@]" self#core_type  ct1 self#core_type  ct2
     | Pcf_initializer (e) ->
