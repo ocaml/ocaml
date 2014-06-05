@@ -29,15 +29,21 @@ error () {
 }
 
 #########################################################################
-
 # be verbose
 set -x
+
+#########################################################################
+# "Parse" mandatory command-line arguments.
+
+arch="$1"
+branch="$2"
+shift 2
 
 #########################################################################
 # If we are called from a Windows batch script, we must set up the
 # Unix environment variables (e.g. PATH).
 
-case "$1" in
+case "$arch" in
   bsd|macos|linux) ;;
   cygwin|mingw|mingw64)
     . /etc/profile
@@ -53,7 +59,7 @@ case "$1" in
     . "$HOME/.profile"
     . "$HOME/.msenv64"
   ;;
-  *) error "unknown architecture: $1";;
+  *) error "unknown architecture: $arch";;
 esac
 
 #########################################################################
@@ -114,13 +120,10 @@ esac
 cd "$workdir"
 
 #########################################################################
-# parse command line (has to be done after the "cd")
+# parse optional command-line arguments (has to be done after the "cd")
 # Configure options are not allowed to have spaces or special characters
 # for the moment. We'll fix that when needed.
-arch="$1"
-branch="$2"
 confoptions=""
-shift 2
 while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions $2"; shift 2;;
