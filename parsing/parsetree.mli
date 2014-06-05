@@ -392,7 +392,7 @@ and label_declaration =
 (*  { ...; l: T; ... }            (mutable=Immutable)
     { ...; mutable l: T; ... }    (mutable=Mutable)
 
-    Note: T can be a Pexp_poly.
+    Note: T can be a Ptyp_poly.
 *)
 
 and constructor_declaration =
@@ -490,7 +490,7 @@ and class_type_field_desc =
   | Pctf_method  of (string * private_flag * virtual_flag * core_type)
         (* method x: T
 
-           Note: T can be a Pexp_poly.
+           Note: T can be a Ptyp_poly.
          *)
   | Pctf_constraint  of (core_type * core_type)
         (* constraint T1 = T2 *)
