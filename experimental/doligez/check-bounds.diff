@@ -2,7 +2,7 @@ Patch taken from:
   https://github.com/mshinwell/ocaml/commits/4.02-block-bounds
 
 diff --git a/asmcomp/cmmgen.ml b/asmcomp/cmmgen.ml
-index 01eff9c..49968e5 100644
+index 01eff9c..b498b58 100644
 --- a/asmcomp/cmmgen.ml
 +++ b/asmcomp/cmmgen.ml
 @@ -22,6 +22,13 @@ open Clambda
@@ -19,7 +19,7 @@ index 01eff9c..49968e5 100644
  (* Local binding of complex expressions *)
  
  let bind name arg fn =
-@@ -494,6 +501,26 @@ let get_tag ptr =
+@@ -494,6 +501,35 @@ let get_tag ptr =
  let get_size ptr =
    Cop(Clsr, [header ptr; Cconst_int 10])
  
@@ -30,6 +30,15 @@ index 01eff9c..49968e5 100644
 +    if_success
 +  else
 +    let field_index = Cconst_int field_index in
++    (* If [ptr] points at an infix header, we need to move it back to the "main"
++       [Closure_tag] header. *)
++    let ptr =
++      Cifthenelse (Cop (Ccmpi Cne, [get_tag ptr; Cconst_int Obj.infix_tag]),
++        ptr,
++        Cop (Csuba, [ptr;
++          Cop (Cmuli, [get_size ptr (* == Infix_offset_val(ptr) *);
++            Cconst_int size_addr])]))
++    in
 +    let not_too_small = Cop (Ccmpi Cge, [field_index; Cconst_int 0]) in
 +    let not_too_big = Cop (Ccmpi Clt, [field_index; get_size ptr]) in
 +    let failure =
@@ -46,7 +55,7 @@ index 01eff9c..49968e5 100644
  (* Array indexing *)
  
  let log2_size_addr = Misc.log2 size_addr
-@@ -1550,13 +1577,18 @@ and transl_prim_1 p arg dbg =
+@@ -1550,13 +1586,18 @@ and transl_prim_1 p arg dbg =
        return_unit(remove_unit (transl arg))
    (* Heap operations *)
    | Pfield n ->
@@ -70,7 +79,7 @@ index 01eff9c..49968e5 100644
    | Pint_as_pointer ->
       Cop(Cadda, [transl arg; Cconst_int (-1)])
    (* Exceptions *)
-@@ -1649,20 +1681,25 @@ and transl_prim_1 p arg dbg =
+@@ -1649,20 +1690,25 @@ and transl_prim_1 p arg dbg =
  and transl_prim_2 p arg1 arg2 dbg =
    match p with
    (* Heap operations *)
