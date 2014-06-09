@@ -31,17 +31,18 @@ type directive_fun =
 
 (* The table of toplevel value bindings and its accessors *)
 
-let toplevel_value_bindings =
-  (Hashtbl.create 37 : (string, Obj.t) Hashtbl.t)
+module StringMap = Map.Make(String)
+
+let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
 let getvalue name =
   try
-    Hashtbl.find toplevel_value_bindings name
+    StringMap.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  Hashtbl.replace toplevel_value_bindings name v
+  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -52,7 +53,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          Hashtbl.find toplevel_value_bindings name
+          StringMap.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -150,6 +151,7 @@ let load_lambda ppf lam =
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
+  let initial_bindings = !toplevel_value_bindings in
   try
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
@@ -165,6 +167,7 @@ let load_lambda ppf lam =
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
+    toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
 
