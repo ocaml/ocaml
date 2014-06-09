@@ -187,6 +187,9 @@ Bug fixes:
   (Jacques-Pascal Deplaix)
 - PR#6194: Incorrect unused warning with first-class modules in patterns
   (Jacques Garrigue, report by Markus Mottl and Leo White)
+- PR#6211: in toplevel interactive use, bad interaction between uncaught
+  exceptions and multiple bindings of the form "let x = a let y = b;;".
+  (Xavier Leroy)
 - PR#6216: inlining of GADT matches generates invalid assembly
   (Xavier Leroy and Alain Frisch, report by Mark Shinwell)
 - PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
