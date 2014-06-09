@@ -1,33 +1,3 @@
-(* Type of a block used by the Format pretty-printer. *)
-type block_type =
-  | Pp_hbox   (* Horizontal block no line breaking *)
-  | Pp_vbox   (* Vertical block each break leads to a new line *)
-  | Pp_hvbox  (* Horizontal-vertical block: same as vbox, except if this block
-                 is small enough to fit on a single line *)
-  | Pp_hovbox (* Horizontal or Vertical block: breaks lead to new line
-                 only when necessary to print the content of the block *)
-  | Pp_box    (* Horizontal or Indent block: breaks lead to new line
-                 only when necessary to print the content of the block, or
-                 when it leads to a new indentation of the current line *)
-  | Pp_fits   (* Internal usage: when a block fits on a single line *)
-
-(* Formatting element used by the Format pretty-printter. *)
-type formatting =
-  | Open_box of string * block_type * int   (* @[   *)
-  | Close_box                               (* @]   *)
-  | Open_tag of string * string             (* @{   *)
-  | Close_tag                               (* @}   *)
-  | Break of string * int * int             (* @, | @  | @; | @;<> *)
-  | FFlush                                  (* @?   *)
-  | Force_newline                           (* @\n  *)
-  | Flush_newline                           (* @.   *)
-  | Magic_size of string * int              (* @<n> *)
-  | Escaped_at                              (* @@   *)
-  | Escaped_percent                         (* @%%  *)
-  | Scan_indic of char                      (* @X   *)
-
-(***)
-
 (* Padding position. *)
 type padty =
   | Left   (* Text is left justified ('-' option).               *)
@@ -226,9 +196,43 @@ does assume that the two input have exactly the same term structure
 Format_subst_ty constructor).
 *)
 
+(* Type of a block used by the Format pretty-printer. *)
+type block_type =
+  | Pp_hbox   (* Horizontal block no line breaking *)
+  | Pp_vbox   (* Vertical block each break leads to a new line *)
+  | Pp_hvbox  (* Horizontal-vertical block: same as vbox, except if this block
+                 is small enough to fit on a single line *)
+  | Pp_hovbox (* Horizontal or Vertical block: breaks lead to new line
+                 only when necessary to print the content of the block *)
+  | Pp_box    (* Horizontal or Indent block: breaks lead to new line
+                 only when necessary to print the content of the block, or
+                 when it leads to a new indentation of the current line *)
+  | Pp_fits   (* Internal usage: when a block fits on a single line *)
+
+(* Formatting element used by the Format pretty-printter. *)
+type formatting_lit =
+  | Open_box of string * block_type * int               (* @[   *)
+  | Close_box                                           (* @]   *)
+  | Close_tag                                           (* @}   *)
+  | Break of string * int * int          (* @, | @  | @; | @;<> *)
+  | FFlush                                              (* @?   *)
+  | Force_newline                                       (* @\n  *)
+  | Flush_newline                                       (* @.   *)
+  | Magic_size of string * int                          (* @<n> *)
+  | Escaped_at                                          (* @@   *)
+  | Escaped_percent                                     (* @%%  *)
+  | Scan_indic of char                                  (* @X   *)
+
+(* Formatting element used by the Format pretty-printter. *)
+type ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen =
+  | Open_tag : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->      (* @{   *)
+    ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
+
+(***)
+
 (* List of format type elements. *)
 (* In particular used to represent %(...%) and %{...%} contents. *)
-type ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
+and ('a, 'b, 'c, 'd, 'e, 'f) fmtty =
      ('a, 'b, 'c, 'd, 'e, 'f,
       'a, 'b, 'c, 'd, 'e, 'f) fmtty_rel
 and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
@@ -388,9 +392,12 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
         (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
 
   (* Format specific constructor: *)
-  | Formatting :                                             (* @_ *)
-      formatting * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+  | Formatting_lit :                                         (* @_ *)
+      formatting_lit * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Formatting_gen :                                             (* @_ *)
+      ('a1, 'b, 'c, 'd1, 'e1, 'f1) formatting_gen *
+      ('f1, 'b, 'c, 'e1, 'e2, 'f2) fmt -> ('a1, 'b, 'c, 'd1, 'e2, 'f2) fmt
 
   (* Scanf specific constructors: *)
   | Reader :                                                 (* %r *)
@@ -597,8 +604,10 @@ fun fmt1 fmt2 -> match fmt1 with
   | Ignored_param (ign, rest) ->
     Ignored_param (ign, concat_fmt rest fmt2)
 
-  | Formatting (fmting, rest) ->
-    Formatting (fmting, concat_fmt rest fmt2)
+  | Formatting_lit (fmting_lit, rest) ->
+    Formatting_lit (fmting_lit, concat_fmt rest fmt2)
+  | Formatting_gen (fmting_gen, rest) ->
+    Formatting_gen (fmting_gen, concat_fmt rest fmt2)
 
   | End_of_format ->
     fmt2

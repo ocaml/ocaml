@@ -992,9 +992,9 @@ let width_of_pad_opt pad_opt = match pad_opt with
   | None -> max_int
   | Some width -> width
 
-let stopper_of_formatting fmting =
+let stopper_of_formatting_lit fmting =
   if fmting = Escaped_percent then '%', "" else
-    let str = string_of_formatting fmting in
+    let str = string_of_formatting_lit fmting in
     let stp = str.[1] in
     let sub_str = String.sub str 2 (String.length str - 2) in
     stp, sub_str
@@ -1033,7 +1033,9 @@ fun k fmt -> match fmt with
   | Scan_char_set (_, _, rest)       -> take_format_readers k rest
   | Scan_get_counter (_, rest)       -> take_format_readers k rest
 
-  | Formatting (_, rest)             -> take_format_readers k rest
+  | Formatting_lit (_, rest)         -> take_format_readers k rest
+  | Formatting_gen (Open_tag (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
+
 
   | Format_arg (_, _, rest)          -> take_format_readers k rest
   | Format_subst (_, fmtty, rest)    -> take_fmtty_format_readers k (erase_rel (symm fmtty)) rest
@@ -1115,8 +1117,8 @@ fun ib fmt readers -> match fmt with
     let c = token_char ib in
     Cons (c, make_scanf ib rest readers)
 
-  | String (pad, Formatting (fmting, rest)) ->
-    let stp, str = stopper_of_formatting fmting in
+  | String (pad, Formatting_lit (fmting_lit, rest)) ->
+    let stp, str = stopper_of_formatting_lit fmting_lit in
     let scan width _ ib = scan_string (Some stp) width ib in
     let str_rest = String_literal (str, rest) in
     pad_prec_scanf ib str_rest readers pad No_precision scan token_string
@@ -1207,8 +1209,8 @@ fun ib fmt readers -> match fmt with
     Cons (Format (fmt, s),
           make_scanf ib (concat_fmt fmt' rest) readers)
 
-  | Scan_char_set (width_opt, char_set, Formatting (fmting, rest)) ->
-    let stp, str = stopper_of_formatting fmting in
+  | Scan_char_set (width_opt, char_set, Formatting_lit (fmting_lit, rest)) ->
+    let stp, str = stopper_of_formatting_lit fmting_lit in
     let width = width_of_pad_opt width_opt in
     let _ = scan_chars_in_char_set char_set (Some stp) width ib in
     let s = token_string ib in
@@ -1223,9 +1225,12 @@ fun ib fmt readers -> match fmt with
     let count = get_counter ib counter in
     Cons (count, make_scanf ib rest readers)
 
-  | Formatting (formatting, rest) ->
-    String.iter (check_char ib) (string_of_formatting formatting);
+  | Formatting_lit (formatting_lit, rest) ->
+    String.iter (check_char ib) (string_of_formatting_lit formatting_lit);
     make_scanf ib rest readers
+  | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
+    check_char ib '@'; check_char ib '{'; check_char ib '<';
+    make_scanf ib (concat_fmt fmt' (Char_literal ('<', rest))) readers
 
   | Ignored_param (ign, rest) ->
     let Param_format_EBB fmt' = param_format_of_ignored_format ign rest in
