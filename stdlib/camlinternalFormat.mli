@@ -18,13 +18,17 @@ val param_format_of_ignored_format :
   ('a, 'b, 'c, 'd, 'y, 'x) ignored -> ('x, 'b, 'c, 'y, 'e, 'f) fmt ->
   ('a, 'b, 'c, 'd, 'e, 'f) param_format_ebb
 
-type ('b, 'c) acc =
-  | Acc_formatting  of ('b, 'c) acc * formatting
-  | Acc_string      of ('b, 'c) acc * string
-  | Acc_char        of ('b, 'c) acc * char
-  | Acc_delay       of ('b, 'c) acc * ('b -> 'c)
-  | Acc_flush       of ('b, 'c) acc
-  | Acc_invalid_arg of ('b, 'c) acc * string
+type ('b, 'c) acc_formatting_gen =
+  | Acc_open_tag of ('b, 'c) acc
+
+and ('b, 'c) acc =
+  | Acc_formatting_lit of ('b, 'c) acc * formatting_lit
+  | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen
+  | Acc_string         of ('b, 'c) acc * string
+  | Acc_char           of ('b, 'c) acc * char
+  | Acc_delay          of ('b, 'c) acc * ('b -> 'c)
+  | Acc_flush          of ('b, 'c) acc
+  | Acc_invalid_arg    of ('b, 'c) acc * string
   | End_of_acc
 
 type ('a, 'b) heter_list =
@@ -61,7 +65,9 @@ val format_of_string_format :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
 
 val char_of_iconv : CamlinternalFormatBasics.int_conv -> char
-val string_of_formatting : CamlinternalFormatBasics.formatting -> string
+val string_of_formatting_lit : CamlinternalFormatBasics.formatting_lit -> string
+val string_of_formatting_gen :
+  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.formatting_gen -> string
 
 val string_of_fmtty :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty -> string
