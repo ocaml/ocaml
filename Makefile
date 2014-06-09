@@ -125,11 +125,7 @@ defaultentry:
 # Recompile the system using the bootstrap compiler
 all:
 	$(MAKE) runtime
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex
-	$(MAKE) ocamlyacc
-	$(MAKE) ocamltools
-	$(MAKE) library
+	$(MAKE) coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
 	  $(WITH_OCAMLDOC)
@@ -201,8 +197,7 @@ coldstart:
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
 	$(MAKE) coldstart
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+	$(MAKE) coreall
 
 # Recompile the core system using the bootstrap compiler
 coreall:
