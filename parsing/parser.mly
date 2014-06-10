@@ -827,7 +827,7 @@ class_expr:
       { $2 }
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
-  | LET rec_flag let_bindings IN class_expr
+  | LET rec_flag let_bindings_no_attrs IN class_expr
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
   | class_expr attribute
       { Cl.attr $1 $2 }
@@ -1082,7 +1082,7 @@ expr:
       { $1 }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET ext_attributes rec_flag let_bindings IN seq_expr
+  | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
@@ -1321,6 +1321,17 @@ let_bindings:
     let_binding                                 { [$1] }
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
+let_bindings_no_attrs:
+   let_bindings {
+     let l = $1 in
+     List.iter
+       (fun vb ->
+          if vb.pvb_attributes <> [] then
+            raise Syntaxerr.(Error(Not_expecting(vb.pvb_loc,"item attribute")))
+       )
+       l;
+     l
+   }
 
 lident_list:
     LIDENT                            { [$1] }
