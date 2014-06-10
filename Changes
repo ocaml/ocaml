@@ -216,6 +216,8 @@ Bug fixes:
   (Alain Frisch and Leo White)
 - PR#6267: more information printed by "bt" command of ocamldebug
   (Josh Watzman)
+- PR#6268: -DMODEL_$(MODEL) not passed when building asmrun/arm.p.o
+  (Peter Michael Green)
 - PR#6273: fix Sys.file_exists on large files (Win32)
   (Christoph Bauer)
 - PR#6275: Soundness bug related to type constraints
