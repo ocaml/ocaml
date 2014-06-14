@@ -240,6 +240,8 @@ Bug fixes:
   (Alain Frisch and Jacques Garrigue)
 - PR#6405: unsound interaction of -rectypes and GADTs
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
+- PR#6418: reimplement parametrized Format tags/indentation with GADTs
+  (Benoît Vaugon)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
