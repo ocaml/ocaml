@@ -250,6 +250,8 @@ Bug fixes:
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
 - PR#6408: Optional arguments given as ~?arg instead of ?arg in message
   (Michael O'Connor)
+- PR#6418: reimplement parametrized Format tags/indentation with GADTs
+  (Benoît Vaugon)
 - PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
 - PR#6443: ocaml segfault when List.fold_left is traced then executed
 - fix -dsource printing of "external _pipe = ..."

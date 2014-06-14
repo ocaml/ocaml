@@ -211,7 +211,6 @@ type block_type =
 
 (* Formatting element used by the Format pretty-printter. *)
 type formatting_lit =
-  | Open_box of string * block_type * int               (* @[   *)
   | Close_box                                           (* @]   *)
   | Close_tag                                           (* @}   *)
   | Break of string * int * int          (* @, | @  | @; | @;<> *)
@@ -226,6 +225,8 @@ type formatting_lit =
 (* Formatting element used by the Format pretty-printter. *)
 type ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen =
   | Open_tag : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->      (* @{   *)
+    ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
+  | Open_box : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->      (* @[   *)
     ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
 
 (***)

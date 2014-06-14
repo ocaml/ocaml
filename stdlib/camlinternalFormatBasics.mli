@@ -32,7 +32,6 @@ type prec_option = int option
 type block_type = Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
 
 type formatting_lit =
-  | Open_box of string * block_type * int
   | Close_box
   | Close_tag
   | Break of string * int * int
@@ -46,6 +45,8 @@ type formatting_lit =
 
 type ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen =
   | Open_tag : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+    ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
+  | Open_box : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
 
 and ('a, 'b, 'c, 'd, 'e, 'f) fmtty =

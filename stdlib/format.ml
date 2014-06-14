@@ -1058,6 +1058,17 @@ and set_tags =
   pp_set_tags std_formatter
 ;;
 
+ (**************************************************************)
+
+let compute_tag output tag_acc =
+  let buf = Buffer.create 16 in
+  let ppf = formatter_of_buffer buf in
+  let () = output ppf tag_acc in
+  let () = pp_print_flush ppf () in
+  let len = Buffer.length buf in
+  if len < 2 then Buffer.contents buf
+  else Buffer.sub buf 1 (len - 2)
+
  (**************************************************************
 
   Defining continuations to be passed as arguments of
@@ -1070,7 +1081,6 @@ open CamlinternalFormat
 
 (* Interpret a formatting entity on a formatter. *)
 let output_formatting_lit ppf fmting_lit = match fmting_lit with
-  | Open_box (_, bty, indent) -> pp_open_box_gen ppf indent bty
   | Close_box                 -> pp_close_box ppf ()
   | Close_tag                 -> pp_close_tag ppf ()
   | Break (_, width, offset)  -> pp_print_break ppf width offset
@@ -1098,11 +1108,11 @@ let rec output_acc ppf acc = match acc with
     output_formatting_lit ppf f;
   | Acc_formatting_gen (p, Acc_open_tag acc') ->
     output_acc ppf p;
-    let buf' = Buffer.create 16 in
-    let ppf' = formatter_of_buffer buf' in
-    output_acc ppf' acc';
-    pp_print_flush ppf' ();
-    pp_open_tag ppf (Buffer.contents buf');
+    pp_open_tag ppf (compute_tag output_acc acc')
+  | Acc_formatting_gen (p, Acc_open_box acc') ->
+    let () = output_acc ppf p in
+    let (indent, bty) = open_box_of_string (compute_tag output_acc acc') in
+    pp_open_box_gen ppf indent bty
   | Acc_string (p, s)        -> output_acc ppf p; pp_print_string ppf s;
   | Acc_char (p, c)          -> output_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> output_acc ppf p; f ppf;
@@ -1129,11 +1139,11 @@ let rec strput_acc ppf acc = match acc with
     output_formatting_lit ppf f;
   | Acc_formatting_gen (p, Acc_open_tag acc') ->
     strput_acc ppf p;
-    let buf' = Buffer.create 16 in
-    let ppf' = formatter_of_buffer buf' in
-    strput_acc ppf' acc';
-    pp_print_flush ppf' ();
-    pp_open_tag ppf (Buffer.contents buf');
+    pp_open_tag ppf (compute_tag strput_acc acc')
+  | Acc_formatting_gen (p, Acc_open_box acc') ->
+    let () = strput_acc ppf p in
+    let (indent, bty) = open_box_of_string (compute_tag strput_acc acc') in
+    pp_open_box_gen ppf indent bty
   | Acc_string (p, s)        -> strput_acc ppf p; pp_print_string ppf s;
   | Acc_char (p, c)          -> strput_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> strput_acc ppf p; pp_print_string ppf (f ());
