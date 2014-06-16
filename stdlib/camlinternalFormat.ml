@@ -1824,6 +1824,7 @@ let fmt_ebb_of_string str =
 
   and parse_ign : type e f . int -> int -> int -> (_, _, e, f) fmt_ebb =
   fun pct_ind str_ind end_ind ->
+    if str_ind = end_ind then unexpected_end_of_format end_ind;
     match str.[str_ind] with
       | '_' -> parse_flags pct_ind (str_ind+1) end_ind true
       | _ -> parse_flags pct_ind str_ind end_ind false
@@ -1912,6 +1913,7 @@ let fmt_ebb_of_string str =
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_literal str_ind =
       let new_ind, prec = parse_positive str_ind end_ind 0 in
+      if new_ind = end_ind then unexpected_end_of_format end_ind;
       parse_conversion pct_ind (new_ind + 1) end_ind plus sharp space ign pad
         (Lit_precision prec) str.[new_ind] in
     match str.[str_ind] with
@@ -2409,6 +2411,7 @@ let fmt_ebb_of_string str =
         parse_char_set_content (str_ind + 1) end_ind
     in
     let str_ind, reverse =
+      if str_ind = end_ind then unexpected_end_of_format end_ind;
       match str.[str_ind] with
         | '^' -> str_ind + 1, true
         | _ -> str_ind, false in
