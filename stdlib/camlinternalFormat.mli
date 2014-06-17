@@ -25,8 +25,10 @@ type ('b, 'c) acc_formatting_gen =
 and ('b, 'c) acc =
   | Acc_formatting_lit of ('b, 'c) acc * formatting_lit
   | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen
-  | Acc_string         of ('b, 'c) acc * string
-  | Acc_char           of ('b, 'c) acc * char
+  | Acc_string_literal of ('b, 'c) acc * string
+  | Acc_char_literal   of ('b, 'c) acc * char
+  | Acc_data_string    of ('b, 'c) acc * string
+  | Acc_data_char      of ('b, 'c) acc * char
   | Acc_delay          of ('b, 'c) acc * ('b -> 'c)
   | Acc_flush          of ('b, 'c) acc
   | Acc_invalid_arg    of ('b, 'c) acc * string

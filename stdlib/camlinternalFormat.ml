@@ -120,13 +120,15 @@ type ('b, 'c) acc_formatting_gen =
 (* Reversed list of printing atoms. *)
 (* Used to accumulate printf arguments. *)
 and ('b, 'c) acc =
-  | Acc_formatting_lit of ('b, 'c) acc * formatting_lit(* Special fmtting (box) *)
+  | Acc_formatting_lit of ('b, 'c) acc * formatting_lit (* Special fmtting (box)      *)
   | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen (* Special fmtting (box) *)
-  | Acc_string         of ('b, 'c) acc * string        (* Literal or generated string*)
-  | Acc_char           of ('b, 'c) acc * char          (* Literal or generated char  *)
-  | Acc_delay          of ('b, 'c) acc * ('b -> 'c)    (* Delayed printing (%a, %t)  *)
-  | Acc_flush          of ('b, 'c) acc                 (* Flush                      *)
-  | Acc_invalid_arg    of ('b, 'c) acc * string        (* Raise Invalid_argument msg *)
+  | Acc_string_literal of ('b, 'c) acc * string         (* Literal string             *)
+  | Acc_char_literal   of ('b, 'c) acc * char           (* Literal char               *)
+  | Acc_data_string    of ('b, 'c) acc * string         (* Generated string           *)
+  | Acc_data_char      of ('b, 'c) acc * char           (* Generated char             *)
+  | Acc_delay          of ('b, 'c) acc * ('b -> 'c)     (* Delayed printing (%a, %t)  *)
+  | Acc_flush          of ('b, 'c) acc                  (* Flush                      *)
+  | Acc_invalid_arg    of ('b, 'c) acc * string         (* Raise Invalid_argument msg *)
   | End_of_acc
 
 (* List of heterogeneous values. *)
@@ -1363,11 +1365,11 @@ let rec make_printf : type a b c d e f .
 fun k o acc fmt -> match fmt with
   | Char rest ->
     fun c ->
-      let new_acc = Acc_char (acc, c) in
+      let new_acc = Acc_data_char (acc, c) in
       make_printf k o new_acc rest
   | Caml_char rest ->
     fun c ->
-      let new_acc = Acc_string (acc, format_caml_char c) in
+      let new_acc = Acc_data_string (acc, format_caml_char c) in
       make_printf k o new_acc rest
   | String (pad, rest) ->
     make_string_padding k o acc rest pad (fun str -> str)
@@ -1384,7 +1386,7 @@ fun k o acc fmt -> match fmt with
   | Float (fconv, pad, prec, rest) ->
     make_float_padding_precision k o acc rest pad prec fconv
   | Bool rest ->
-    fun b -> make_printf k o (Acc_string (acc, string_of_bool b)) rest
+    fun b -> make_printf k o (Acc_data_string (acc, string_of_bool b)) rest
   | Alpha rest ->
     fun f x -> make_printf k o (Acc_delay (acc, fun o -> f o x)) rest
   | Theta rest ->
@@ -1403,15 +1405,15 @@ fun k o acc fmt -> match fmt with
     make_printf k o (Acc_flush acc) rest
 
   | String_literal (str, rest) ->
-    make_printf k o (Acc_string (acc, str)) rest
+    make_printf k o (Acc_string_literal (acc, str)) rest
   | Char_literal (chr, rest) ->
-    make_printf k o (Acc_char (acc, chr)) rest
+    make_printf k o (Acc_char_literal (acc, chr)) rest
 
   | Format_arg (_, sub_fmtty, rest) ->
     let ty = string_of_fmtty sub_fmtty in
     (fun str ->
       ignore str;
-      make_printf k o (Acc_string (acc, ty)) rest)
+      make_printf k o (Acc_data_string (acc, ty)) rest)
   | Format_subst (_, fmtty, rest) ->
     fun (Format (fmt, _)) -> make_printf k o acc
       (concat_fmt (recast fmt fmtty) rest)
@@ -1424,7 +1426,7 @@ fun k o acc fmt -> match fmt with
     (* Accepted for backward compatibility. *)
     (* Interpret %l, %n and %L as %u. *)
     fun n ->
-      let new_acc = Acc_string (acc, format_int "%u" n) in
+      let new_acc = Acc_data_string (acc, format_int "%u" n) in
       make_printf k o new_acc rest
   | Ignored_param (ign, rest) ->
     make_ignored_param k o acc ign rest
@@ -1507,15 +1509,15 @@ and make_string_padding : type x z a b c d e f .
   fun k o acc fmt pad trans -> match pad with
   | No_padding ->
     fun x ->
-      let new_acc = Acc_string (acc, trans x) in
+      let new_acc = Acc_data_string (acc, trans x) in
       make_printf k o new_acc fmt
   | Lit_padding (padty, width) ->
     fun x ->
-      let new_acc = Acc_string (acc, fix_padding padty width (trans x)) in
+      let new_acc = Acc_data_string (acc, fix_padding padty width (trans x)) in
       make_printf k o new_acc fmt
   | Arg_padding padty ->
     fun w x ->
-      let new_acc = Acc_string (acc, fix_padding padty w (trans x)) in
+      let new_acc = Acc_data_string (acc, fix_padding padty w (trans x)) in
       make_printf k o new_acc fmt
 
 (* Fix padding and precision for int, int32, nativeint or int64. *)
@@ -1529,39 +1531,39 @@ and make_int_padding_precision : type x y z a b c d e f .
   | No_padding, No_precision ->
     fun x ->
       let str = trans iconv x in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | No_padding, Lit_precision p ->
     fun x ->
       let str = fix_int_precision p (trans iconv x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | No_padding, Arg_precision ->
     fun p x ->
       let str = fix_int_precision p (trans iconv x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), No_precision ->
     fun x ->
       let str = fix_padding padty w (trans iconv x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Lit_precision p ->
     fun x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Arg_precision ->
     fun p x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, No_precision ->
     fun w x ->
       let str = fix_padding padty w (trans iconv x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Lit_precision p ->
     fun w x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Arg_precision ->
     fun w p x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
 
 (* Convert a float, fix padding and precision if needed. *)
 (* Take the float argument and one or two extra integer arguments if needed. *)
@@ -1573,41 +1575,41 @@ and make_float_padding_precision : type x y a b c d e f .
   | No_padding, No_precision ->
     fun x ->
       let str = convert_float fconv default_float_precision x in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | No_padding, Lit_precision p ->
     fun x ->
       let str = convert_float fconv p x in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | No_padding, Arg_precision ->
     fun p x ->
       let str = convert_float fconv p x in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), No_precision ->
     fun x ->
       let str = convert_float fconv default_float_precision x in
       let str' = fix_padding padty w str in
-      make_printf k o (Acc_string (acc, str')) fmt
+      make_printf k o (Acc_data_string (acc, str')) fmt
   | Lit_padding (padty, w), Lit_precision p ->
     fun x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Arg_precision ->
     fun p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, No_precision ->
     fun w x ->
       let str = convert_float fconv default_float_precision x in
       let str' = fix_padding padty w str in
-      make_printf k o (Acc_string (acc, str')) fmt
+      make_printf k o (Acc_data_string (acc, str')) fmt
   | Arg_padding padty, Lit_precision p ->
     fun w x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Arg_precision ->
     fun w p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_string (acc, str)) fmt
+      make_printf k o (Acc_data_string (acc, str)) fmt
 
 (******************************************************************************)
                           (* Continuations for make_printf *)
@@ -1623,8 +1625,10 @@ let rec output_acc o acc = match acc with
     output_acc o p; output_string o "@{"; output_acc o acc';
   | Acc_formatting_gen (p, Acc_open_box acc') ->
     output_acc o p; output_string o "@["; output_acc o acc';
-  | Acc_string (p, s)        -> output_acc o p; output_string o s
-  | Acc_char (p, c)          -> output_acc o p; output_char o c
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s)   -> output_acc o p; output_string o s
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c)     -> output_acc o p; output_char o c
   | Acc_delay (p, f)         -> output_acc o p; f o
   | Acc_flush p              -> output_acc o p; flush o
   | Acc_invalid_arg (p, msg) -> output_acc o p; invalid_arg msg;
@@ -1641,8 +1645,10 @@ let rec bufput_acc b acc = match acc with
     bufput_acc b p; Buffer.add_string b "@{"; bufput_acc b acc';
   | Acc_formatting_gen (p, Acc_open_box acc') ->
     bufput_acc b p; Buffer.add_string b "@["; bufput_acc b acc';
-  | Acc_string (p, s)        -> bufput_acc b p; Buffer.add_string b s
-  | Acc_char (p, c)          -> bufput_acc b p; Buffer.add_char b c
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s)   -> bufput_acc b p; Buffer.add_string b s
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c)     -> bufput_acc b p; Buffer.add_char b c
   | Acc_delay (p, f)         -> bufput_acc b p; f b
   | Acc_flush p              -> bufput_acc b p;
   | Acc_invalid_arg (p, msg) -> bufput_acc b p; invalid_arg msg;
@@ -1660,8 +1666,10 @@ let rec strput_acc b acc = match acc with
     strput_acc b p; Buffer.add_string b "@{"; strput_acc b acc';
   | Acc_formatting_gen (p, Acc_open_box acc') ->
     strput_acc b p; Buffer.add_string b "@["; strput_acc b acc';
-  | Acc_string (p, s)        -> strput_acc b p; Buffer.add_string b s
-  | Acc_char (p, c)          -> strput_acc b p; Buffer.add_char b c
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s)   -> strput_acc b p; Buffer.add_string b s
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c)     -> strput_acc b p; Buffer.add_char b c
   | Acc_delay (p, f)         -> strput_acc b p; Buffer.add_string b (f ())
   | Acc_flush p              -> strput_acc b p;
   | Acc_invalid_arg (p, msg) -> strput_acc b p; invalid_arg msg;
