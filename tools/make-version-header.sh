@@ -27,6 +27,7 @@
 # versions of OCaml.
 
 version="`ocamlc -v | sed -n -e 's/.*version //p'`"
+version="`sed -e 1q ../VERSION`"
 
 major="`echo "$version" | sed -n -e '1s/^\([0-9]*\)\..*/\1/p'`"
 minor="`echo "$version" | sed -n -e '1s/^[0-9]*\.\([0-9]*\).*/\1/p'`"
@@ -41,3 +42,5 @@ case "$suffix" in
   "") echo "#undef OCAML_VERSION_ADDITIONAL";;
   *) echo "#define OCAML_VERSION_ADDITIONAL \"$suffix\"";;
 esac
+echo "#define OCAML_VERSION $major$minor$patchlvl"
+echo "#define OCAML_VERSION_STRING \"$version\""
