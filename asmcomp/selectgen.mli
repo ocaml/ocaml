@@ -35,7 +35,8 @@ class virtual selector_generic : object
   method select_condition : Cmm.expression -> Mach.test * Cmm.expression
     (* Can be overridden to deal with special test instructions *)
   method select_store :
-    Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
+    bool -> Arch.addressing_mode -> Cmm.expression ->
+                                         Mach.operation * Cmm.expression
     (* Can be overridden to deal with special store constant instructions *)
   method regs_for : Cmm.machtype -> Reg.t array
     (* Return an array of fresh registers of the given type.
@@ -58,6 +59,30 @@ class virtual selector_generic : object
     (* Fill a freshly allocated block.  Can be overridden for architectures
        that do not provide Arch.offset_addressing. *)
 
+  method mark_call : unit
+  (* informs the code emitter that the current function is non-leaf:
+     it may perform a (non-tail) call; by default, sets
+     [Proc.contains_calls := true] *)
+
+  method mark_tailcall : unit
+  (* informs the code emitter that the current function may end with
+     a tail-call; by default, does nothing *)
+
+  method mark_c_tailcall : unit
+  (* informs the code emitter that the current function may call
+     a C function that never returns; by default, does nothing.
+
+     It is unecessary to save the stack pointer in this situation
+     (which is the main purpose of tracking leaf functions) but some
+     architectures still need to ensure that the stack is properly
+     aligned when the C function is called. This is achieved by
+     overloading this method to set [Proc.contains_calls := true] *)
+
+  method mark_instr : Mach.instruction_desc -> unit
+  (* dispatches on instructions to call one of the marking function
+     above; overloading this is useful if Ispecific instructions need
+     marking *)
+
   (* The following method is the entry point and should not be overridden *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
@@ -76,3 +101,5 @@ class virtual selector_generic : object
     (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
 end
+
+val reset : unit -> unit

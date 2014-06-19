@@ -60,7 +60,8 @@ fail.o: fail.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/fail.h ../byterun/io.h ../byterun/gc.h ../byterun/memory.h \
   ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h ../byterun/mlvalues.h ../byterun/printexc.h \
-  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h
+  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h \
+  ../byterun/callback.h
 finalise.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/misc.h ../byterun/fail.h ../byterun/mlvalues.h \
@@ -311,7 +312,8 @@ fail.d.o: fail.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/fail.h ../byterun/io.h ../byterun/gc.h ../byterun/memory.h \
   ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h ../byterun/mlvalues.h ../byterun/printexc.h \
-  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h
+  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h \
+  ../byterun/callback.h
 finalise.d.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/misc.h ../byterun/fail.h ../byterun/mlvalues.h \
@@ -562,7 +564,8 @@ fail.p.o: fail.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/fail.h ../byterun/io.h ../byterun/gc.h ../byterun/memory.h \
   ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h ../byterun/mlvalues.h ../byterun/printexc.h \
-  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h
+  ../byterun/signals.h stack.h ../byterun/roots.h ../byterun/memory.h \
+  ../byterun/callback.h
 finalise.p.o: finalise.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
   ../byterun/misc.h ../byterun/fail.h ../byterun/mlvalues.h \

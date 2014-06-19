@@ -86,8 +86,11 @@ type control =
        this parameter will trigger a minor collection.  Default: 32k. *)
 
     mutable major_heap_increment : int;
-    (** The minimum number of words to add to the
-       major heap when increasing it.  Default: 124k. *)
+    (** How much to add to the major heap when increasing it. If this
+        number is less than or equal to 1000, it is a percentage of
+        the current heap size (i.e. setting it to 100 will double the heap
+        size at each increase). If it is more than 1000, it is a fixed
+        number of words that will be added to the heap. Default: 15. *)
 
     mutable space_overhead : int;
     (** The major GC speed is computed from this parameter.
@@ -246,7 +249,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    another copy is still in use by the program.
 
 
-   The results of calling {!String.make}, {!String.create},
+   The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
    {!Array.make}, and {!Pervasives.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
 *)

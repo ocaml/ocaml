@@ -40,19 +40,21 @@ let init_path native =
    toplevel initialization (PR#1775) *)
 
 let open_implicit_module m env =
-  try
-    Env.open_pers_signature m env
-  with Not_found ->
-    Misc.fatal_error (Printf.sprintf "cannot open implicit module %S" m)
+  let open Asttypes in
+  let lid = {loc = Location.in_file "command line";
+             txt = Longident.Lident m } in
+  snd (Typemod.type_open_ Override env lid.loc lid)
 
 let initial_env () =
   Ident.reinit();
+  let initial =
+    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    else Env.initial_safe_string
+  in
   let env =
-    if !Clflags.nopervasives
-    then Env.initial
-    else
-      open_implicit_module "Pervasives" Env.initial
+    if !Clflags.nopervasives then initial else
+    open_implicit_module "Pervasives" initial
   in
   List.fold_left (fun env m ->
     open_implicit_module m env
-  ) env !implicit_modules
+  ) env (!implicit_modules @ List.rev !Clflags.open_module)

@@ -126,9 +126,9 @@ let rec discard_dead_code n =
   match n.desc with
     Lend -> n
   | Llabel _ -> n
-(* Do not discard Lpoptrap or Istackoffset instructions,
+(* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
    as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap -> n
+  | Lpoptrap | Lpushtrap -> n
   | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
@@ -148,19 +148,29 @@ let add_branch lbl n =
   else
     discard_dead_code n
 
-(* Current labels for exit handler *)
+let try_depth = ref 0
+
+(* Association list: exit handler -> (handler label, try-nesting factor) *)
 
 let exit_label = ref []
 
-let find_exit_label k =
+let find_exit_label_try_depth k =
   try
     List.assoc k !exit_label
   with
   | Not_found -> Misc.fatal_error "Linearize.find_exit_label"
 
+let find_exit_label k =
+  let (label, t) = find_exit_label_try_depth k in
+  assert(t = !try_depth);
+  label
+
 let is_next_catch n = match !exit_label with
-| (n0,_)::_  when n0=n -> true
+| (n0,(_,t))::_  when n0=n && t = !try_depth -> true
 | _ -> false
+
+let local_exit k =
+  snd (find_exit_label_try_depth k) = !try_depth
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -187,15 +197,15 @@ let rec linear i n =
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
       | Iexit nfail1, Iexit nfail2, _
-            when is_next_catch nfail1 ->
+            when is_next_catch nfail1 && local_exit nfail2 ->
           let lbl2 = find_exit_label nfail2 in
           copy_instr
             (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
-      | Iexit nfail, _, _ ->
+      | Iexit nfail, _, _ when local_exit nfail ->
           let n2 = linear ifnot n1
           and lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
-      | _,  Iexit nfail, _ ->
+      | _,  Iexit nfail, _ when local_exit nfail ->
           let n2 = linear ifso n1 in
           let lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(invert_test test, lbl)) i n2
@@ -242,23 +252,43 @@ let rec linear i n =
   | Icatch(io, body, handler) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let (lbl_handler, n2) = get_label(linear handler n1) in
-      exit_label := (io, lbl_handler) :: !exit_label ;
+      exit_label := (io, (lbl_handler, !try_depth)) :: !exit_label ;
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := List.tl !exit_label;
       n3
   | Iexit nfail ->
-      let n1 = linear i.Mach.next n in
-      let lbl = find_exit_label nfail in
-      add_branch lbl n1
+      let lbl, t = find_exit_label_try_depth nfail in
+      (* We need to re-insert dummy pushtrap (which won't be executed),
+         so as to preserve stack offset during assembler generation.
+         It would make sense to have a special pseudo-instruction
+         only to inform the later pass about this stack offset
+         (corresponding to N traps).
+       *)
+      let rec loop i tt =
+        if t = tt then i
+        else loop (cons_instr Lpushtrap i) (tt - 1)
+      in
+      let n1 = loop (linear i.Mach.next n) !try_depth in
+      let rec loop i tt =
+        if t = tt then i
+        else loop (cons_instr Lpoptrap i) (tt - 1)
+      in
+      loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
+      incr try_depth;
       let (lbl_body, n2) =
         get_label (cons_instr Lpushtrap
                     (linear body (cons_instr Lpoptrap n1))) in
+      decr try_depth;
       cons_instr (Lsetuptrap lbl_body)
         (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
+
+let reset () =
+  label_counter := 99;
+  exit_label := []
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;

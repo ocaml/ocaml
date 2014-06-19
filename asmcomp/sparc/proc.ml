@@ -171,6 +171,10 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
@@ -195,6 +199,15 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall(_, _) -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

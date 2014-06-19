@@ -55,7 +55,7 @@ let last_ppx = ref []
 let first_objfiles = ref []
 let last_objfiles = ref []
 
-(* Note: this function is duplicated in optcompile.ml *)
+(* Check validity of module name *)
 let check_unit_name ppf filename name =
   try
     begin match name.[0] with
@@ -76,10 +76,19 @@ let check_unit_name ppf filename name =
   with Exit -> ()
 ;;
 
-
-
-
-
+(* Compute name of module from output file name *)
+let module_of_filename ppf inputfile outputprefix =
+  let basename = Filename.basename outputprefix in
+  let name =
+    try
+      let pos = String.index basename '.' in
+      String.sub basename 0 pos
+    with Not_found -> basename
+  in
+  let name = String.capitalize name in
+  check_unit_name ppf inputfile name;
+  name
+;;
 
 
 type readenv_position =
@@ -126,6 +135,10 @@ let setter ppf f name options s =
       (Warnings.Bad_env_variable ("OCAMLPARAM",
                                   Printf.sprintf "bad value for %s" name))
 
+(* 'can-discard=' specifies which arguments can be discarded without warning
+   because they are not understood by some versions of OCaml. *)
+let can_discard = ref []
+
 let read_OCAMLPARAM ppf position =
   try
     let s = Sys.getenv "OCAMLPARAM" in
@@ -137,7 +150,6 @@ let read_OCAMLPARAM ppf position =
            (Warnings.Bad_env_variable ("OCAMLPARAM", s));
          [],[]
     in
-
     let set name options s =  setter ppf (fun b -> b) name options s in
     let clear name options s = setter ppf (fun b -> not b) name options s in
     List.iter (fun (name, v) ->
@@ -155,6 +167,7 @@ let read_OCAMLPARAM ppf position =
       | "nolabels" -> set "nolabels" [ classic ] v
       | "principal" -> set "principal"  [ principal ] v
       | "rectypes" -> set "rectypes" [ recursive_types ] v
+      | "safe-string" -> clear "safe-string" [ unsafe_string ] v
       | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
       | "thread" -> set "thread" [ use_threads ] v
       | "unsafe" -> set "unsafe" [ fast ] v
@@ -251,10 +264,16 @@ let read_OCAMLPARAM ppf position =
             first_objfiles := v :: !first_objfiles
         end
 
+      | "can-discard" ->
+        can_discard := v ::!can_discard
+
       | _ ->
-        Printf.eprintf
+        if not (List.mem name !can_discard) then begin
+          can_discard := name :: !can_discard;
+          Printf.eprintf
             "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
             name
+        end
     ) (match position with
         Before_args -> before
       | Before_compile | Before_link -> after)

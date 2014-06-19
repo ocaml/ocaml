@@ -71,68 +71,29 @@ CAMLexport value caml_copy_double(double d)
 
 CAMLprim value caml_format_float(value fmt, value arg)
 {
-#define MAX_DIGITS 350
-/* Max number of decimal digits in a "natural" (not artificially padded)
-   representation of a float. Can be quite big for %f format.
-   Max exponent for IEEE format is 308 decimal digits.
-   Rounded up for good measure. */
-  char format_buffer[MAX_DIGITS + 20];
-  int prec, i;
-  char * p;
-  char * dest;
   value res;
   double d = Double_val(arg);
 
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
-  prec = MAX_DIGITS;
-  for (p = String_val(fmt); *p != 0; p++) {
-    if (*p >= '0' && *p <= '9') {
-      i = atoi(p) + MAX_DIGITS;
-      if (i > prec) prec = i;
-      break;
-    }
-  }
-  for( ; *p != 0; p++) {
-    if (*p == '.') {
-      i = atoi(p+1) + MAX_DIGITS;
-      if (i > prec) prec = i;
-      break;
-    }
-  }
-  if (prec < sizeof(format_buffer)) {
-    dest = format_buffer;
-  } else {
-    dest = caml_stat_alloc(prec);
-  }
-  sprintf(dest, String_val(fmt), d);
-  res = caml_copy_string(dest);
-  if (dest != format_buffer) {
-    caml_stat_free(dest);
-  }
+    res = caml_alloc_sprintf(String_val(fmt), d);
 #ifdef HAS_BROKEN_PRINTF
   } else {
-    if (isnan(d))
-    {
+    if (isnan(d)) {
       res = caml_copy_string("nan");
-    }
-    else
-    {
+    } else {
       if (d > 0)
-      {
         res = caml_copy_string("inf");
-      }
       else
-      {
         res = caml_copy_string("-inf");
-      }
     }
   }
 #endif
   return res;
 }
 
+#if 0
 /*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
 {
   char parse_buffer[64];
@@ -163,6 +124,7 @@ CAMLprim value caml_format_float(value fmt, value arg)
   if (buf != parse_buffer) caml_stat_free(buf);
   caml_failwith("float_of_string");
 }
+#endif
 
 CAMLprim value caml_float_of_string(value vs)
 {

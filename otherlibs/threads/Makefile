@@ -15,9 +15,11 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
-CAMLC=../../ocamlcomp.sh -I ../unix
+ROOTDIR=../..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+      -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-w +33..39 -warn-error A
+COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string
 
 C_OBJS=scheduler.o
 
@@ -25,7 +27,7 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 LIB=../../stdlib
 
-LIB_OBJS=pervasives.cmo \
+LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo        \
   $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo $(LIB)/obj.cmo                 \
   $(LIB)/int32.cmo $(LIB)/int64.cmo $(LIB)/nativeint.cmo                    \
@@ -95,15 +97,18 @@ clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+
 install:
-	if test -f dllvmthreads.so; then cp dllvmthreads.so $(STUBLIBDIR)/.; fi
-	mkdir -p $(LIBDIR)/vmthreads
-	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
-	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
+	if test -f dllvmthreads.so; then cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; fi
+	mkdir -p $(INSTALL_LIBDIR)/vmthreads
+	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
+	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
 	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi \
-	   threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	   threads.cma stdlib.cma unix.cma $(INSTALL_LIBDIR)/vmthreads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
-	   $(LIBDIR)/vmthreads
+	   $(INSTALL_LIBDIR)/vmthreads
 
 installopt:
 
@@ -114,9 +119,6 @@ installopt:
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
-
-.ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

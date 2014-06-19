@@ -26,3 +26,5 @@ val method_ids: IdentSet.t ref (* reset when starting a new wrapper *)
 
 val oo_wrap: Env.t -> bool -> ('a -> lambda) -> 'a -> lambda
 val oo_add_class: Ident.t -> Env.t * bool
+
+val reset: unit -> unit

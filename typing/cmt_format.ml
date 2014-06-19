@@ -23,9 +23,7 @@ open Typedtree
 
 let read_magic_number ic =
   let len_magic_number = String.length Config.cmt_magic_number in
-  let magic_number = String.create len_magic_number in
-  really_input ic magic_number 0 len_magic_number;
-  magic_number
+  really_input_string ic len_magic_number
 
 type binary_annots =
   | Packed of Types.signature * string list
@@ -56,7 +54,7 @@ type cmt_infos = {
   cmt_loadpath : string list;
   cmt_source_digest : Digest.t option;
   cmt_initial_env : Env.t;
-  cmt_imports : (string * Digest.t) list;
+  cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
 }
@@ -203,7 +201,7 @@ let record_value_dependency vd1 vd2 =
 
 let save_cmt filename modname binary_annots sourcefile initial_env sg =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
-    let imports = Env.imported_units () in
+    let imports = Env.imports () in
     let oc = open_out_bin filename in
     let this_crc =
       match sg with
@@ -239,4 +237,3 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     close_out oc;
   end;
   clear ()
-

@@ -104,7 +104,7 @@ let emit_stack r =
 (* Output an addressing mode *)
 
 let emit_symbol_offset s ofs =
-  emit_symbol s; 
+  emit_symbol s;
   if ofs > 0 then `+{emit_int ofs}`
   else if ofs < 0 then `-{emit_int (-ofs)}`
   else ()
@@ -286,7 +286,7 @@ let emit_literals() =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.quad	`; emit_printf "0x%Lx\n" f)
+        `{emit_label lbl}:`; emit_float64_directive ".quad" f)
       !float_literals;
     float_literals := []
   end
@@ -323,18 +323,18 @@ let emit_instr i =
           | _ ->
               assert false
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
-        let b = Int64.bits_of_float(float_of_string f) in
+        let b = Int64.bits_of_float f in
         if b = 0L then
-          `	fmov	{emit_reg i.res.(0)}, xzr	/* {emit_string f} */\n`
+          `	fmov	{emit_reg i.res.(0)}, xzr\n`
         else if is_immediate_float b then
-          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" b}	/* {emit_string f} */\n`
+          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" b}\n`
         else begin
           let lbl = float_literal b in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
-          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]	/* {emit_string f} */\n`
+          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
@@ -388,7 +388,7 @@ let emit_instr i =
         | Word | Double | Double_u ->
             `	ldr	{emit_reg dst}, {emit_addressing addr base}\n`
         end
-    | Lop(Istore(size, addr)) ->
+    | Lop(Istore(size, addr, _)) ->
         let src = i.arg.(0) in
         let base =
           match addr with
@@ -578,7 +578,7 @@ let emit_instr i =
         for j = 0 to Array.length jumptbl - 1 do
             `	b	{emit_label jumptbl.(j)}\n`
         done
-(* Alternative: 
+(* Alternative:
         let lbltbl = new_label() in
         `	adr	{emit_reg reg_tmp1}, {emit_label lbltbl}\n`;
         `	ldr	{emit_wreg reg_tmp2}, [{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, lsl #2]\n`;
@@ -604,7 +604,7 @@ let emit_instr i =
         `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
-    | Lraise ->
+    | Lraise k ->
         begin match !Clflags.debug, k with
         | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
@@ -644,7 +644,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   `	.text\n`;
-  `	.align	2\n`;
+  `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
@@ -652,7 +652,7 @@ let fundecl fundecl =
   cfi_startproc();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
-  if n > 0 then 
+  if n > 0 then
     emit_stack_adjustment (-n);
   if !contains_calls then
     `	str	x30, [sp, #{emit_int (n-8)}]\n`;
@@ -675,8 +675,8 @@ let emit_item = function
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_nativeint n}\n`
   | Cint n -> `	.quad	{emit_nativeint n}\n`
-  | Csingle f -> emit_float32_directive ".long" f
-  | Cdouble f -> emit_float64_directive ".quad" f
+  | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
+  | Cdouble f -> emit_float64_directive ".quad" (Int64.bits_of_float f)
   | Csymbol_address s -> `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl -> `	.quad	{emit_data_label lbl}\n`
   | Cstring s -> emit_string_directive "	.ascii  " s
@@ -685,6 +685,7 @@ let emit_item = function
 
 let data l =
   `	.data\n`;
+  `	.align 3\n`;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)

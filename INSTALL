@@ -19,7 +19,7 @@ PREREQUISITES
   make is not GNU make, you need to define the GNUMAKE environment
   variable to the name of GNU make, typically with this command:
 
-    export GNUMAKE=gnumake
+    export GNUMAKE=gmake
 
 INSTALLATION INSTRUCTIONS
 
@@ -153,8 +153,9 @@ Examples:
   to build a 64-bit version of OCaml:
     ./configure -cc "gcc -m64"
 
-  On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
-    ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
+  On Intel Mac OS X, to build a 32-bit version of OCaml:
+    ./configure -host "i386-apple-darwin13.2.0" -cc "gcc -arch i386 -m32" \
+      -as "as -arch i386" -aspp "gcc -arch i386 -m32 -c"
 
   For Sun Solaris with the "acc" compiler:
     ./configure -cc "acc -fast" -libs "-lucb"
@@ -316,6 +317,9 @@ Fix: do not pass the -j option to make, and be patient.
 
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.
+
+* Solaris make mishandles a space in our Makefiles, so you have to use GNU
+make to build on Solaris.
 
 * The Makefiles assume that make executes commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL

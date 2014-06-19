@@ -190,7 +190,7 @@ let emit_frame fd =
 
 (* Record floating-point constants *)
 
-let float_constants = ref ([] : (int * string) list)
+let float_constants = ref ([] : (int * int64) list)
 
 let emit_float_constant (lbl, cst) =
   rodata ();
@@ -302,18 +302,18 @@ let rec emit_instr i dslot =
           | (_, _) ->
               fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if is_native_immediate n then
           `	mov	{emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else begin
           `	sethi	%hi({emit_nativeint n}), %g1\n`;
           `	or	%g1, %lo({emit_nativeint n}), {emit_reg i.res.(0)}\n`
         end
-    | Lop(Iconst_float s) ->
+    | Lop(Iconst_float f) ->
         (* On UltraSPARC, the fzero instruction could be used to set a
            floating point register pair to zero. *)
         let lbl = new_label() in
-        float_constants := (lbl, s) :: !float_constants;
+        float_constants := (lbl, Int64.bits_of_float f) :: !float_constants;
         `	sethi	%hi({emit_label lbl}), %g1\n`;
         `	ldd	[%g1 + %lo({emit_label lbl})], {emit_reg i.res.(0)}\n`
     | Lop(Iconst_symbol s) ->
@@ -375,7 +375,7 @@ let rec emit_instr i dslot =
               | _ -> "ld" in
             emit_load loadinstr addr i.arg dest
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         let src = i.arg.(0) in
         begin match chunk with
           Double_u ->
@@ -609,10 +609,10 @@ let is_one_instr i =
       begin match op with
         Imove | Ispill | Ireload ->
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
-      | Iconst_int n -> is_native_immediate n
+      | Iconst_int n | Iconst_blockheader n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
-      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float && is_immediate n
+      | Istore(_, Iindexed n, _) -> i.arg.(0).typ <> Float && is_immediate n
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true
@@ -706,9 +706,9 @@ let emit_item = function
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive ".word" f
+      emit_float32_directive ".word" (Int32.bits_of_float f)
   | Cdouble f ->
-      emit_float64_split_directive ".word" f
+      emit_float64_split_directive ".word" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->

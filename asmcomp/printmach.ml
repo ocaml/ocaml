@@ -18,8 +18,8 @@ open Reg
 open Mach
 
 let reg ppf r =
-  if String.length r.name > 0 then
-    fprintf ppf "%s" r.name
+  if not (Reg.anonymous r) then
+    fprintf ppf "%s" (Reg.name r)
   else
     fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
   fprintf ppf "/%i" r.stamp;
@@ -103,8 +103,9 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
-  | Iconst_float s -> fprintf ppf "%s" s
+  | Iconst_int n
+  | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_float f -> fprintf ppf "%F" f
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
   | Icall_ind -> fprintf ppf "call %a" regs arg
   | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
@@ -118,12 +119,13 @@ let operation op arg ppf res =
   | Iload(chunk, addr) ->
       fprintf ppf "%s[%a]"
        (Printcmm.chunk chunk) (Arch.print_addressing reg addr) arg
-  | Istore(chunk, addr) ->
-      fprintf ppf "%s[%a] := %a"
+  | Istore(chunk, addr, is_assign) ->
+      fprintf ppf "%s[%a] := %a %s"
        (Printcmm.chunk chunk)
        (Arch.print_addressing reg addr)
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
+       (if is_assign then "(assign)" else "(init)")
   | Ialloc n -> fprintf ppf "alloc %i" n
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n

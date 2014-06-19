@@ -316,6 +316,9 @@ flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 .TP
+.B \-no-alias-deps
+Do not record dependencies for module aliases.
+.TP
 .B \-no\-app\-funct
 Deactivates the applicative behaviour of functors. With this option,
 each functor application generates new types in its result and
@@ -364,6 +367,18 @@ If the
 option is given, specify the name of the output file produced. If the
 .B \-shared
 option is given, specify the name of plugin file produced.
+This can also be used when compiling an interface or implementation
+file, without linking, in which case it sets the name of the cmi or
+cmo file, and also sets the module name to the file name up to the
+first dot.
+.TP
+.BI \-open \ module
+Opens the given module before processing the interface or
+implementation files. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open! module1;; ... open! moduleN;; were added
+at the top of each file.
 .TP
 .B \-output\-obj
 Cause the linker to produce a C object file instead of an executable
@@ -475,6 +490,12 @@ code for the source file
 is saved in the file
 .IR x .s.
 .TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
+.TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
 the
@@ -522,6 +543,13 @@ program or continue with an unspecified result instead of raising a
 .B Division_by_zero
 exception.
 .TP
+.B \-unsafe\-string
+Identify the types
+.BR string \ and\  bytes ,
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
+.TP
 .B \-v
 Print the version number of the compiler and the location of the
 standard library directory, then exit.
@@ -563,7 +591,7 @@ Note: it is not recommended to use the
 .B \-warn\-error
 option in production code, because it will almost certainly prevent
 compiling your program with later versions of OCaml when they add new
-warnings.
+warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error\ -a (all warnings are non-fatal).
@@ -630,6 +658,41 @@ Generate SPARC version 9 code.
 .P
 The default is to generate code for SPARC version 7, which runs on all
 SPARC processors.
+
+.SH OPTIONS FOR THE ARM ARCHITECTURE
+The ARM code generator supports the following additional options:
+.TP
+.B \-farch=armv4|armv5|armv5te|armv6|armv6t2|armv7
+Select the ARM target architecture
+.TP
+.B \-ffpu=soft|vfpv2|vfpv3\-d16|vfpv3
+Select the floating-point hardware
+.TP
+.B \-fPIC
+Generate position-independent machine code.
+.TP
+.B \-fno\-PIC
+Generate position-dependent machine code.  This is the default.
+.TP
+.B \-fthumb
+Enable Thumb/Thumb-2 code generation
+.TP
+.B \-fno\-thumb
+Disable Thumb/Thumb-2 code generation
+.P
+The default values for target architecture, floating-point hardware
+and thumb usage were selected at configure-time when building
+.BR ocamlopt 
+itself. This configuration can be inspected using 
+.BR ocamlopt
+.BR \-config .
+Target architecture depends on the "model" setting, while
+floating-point hardware and thumb support are determined from the ABI
+setting in "system" (
+.BR linux_eabi
+or
+.BR linux_eabihf
+).
 
 .SH SEE ALSO
 .BR ocamlc (1).

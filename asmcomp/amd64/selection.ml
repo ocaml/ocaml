@@ -152,20 +152,20 @@ method select_addressing chunk exp =
     | Ascaledadd(e1, e2, scale) ->
         (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method! select_store addr exp =
+method! select_store is_assign addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
-  | Cconst_natint n when self#is_immediate_natint n ->
-      (Ispecific(Istore_int(n, addr)), Ctuple [])
+      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
+  | (Cconst_natint n | Cconst_blockheader n) when self#is_immediate_natint n ->
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
+      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer n when self#is_immediate_natint n ->
-      (Ispecific(Istore_int(n, addr)), Ctuple [])
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol s when not (!pic_code || !Clflags.dlcode) ->
-      (Ispecific(Istore_symbol(s, addr)), Ctuple [])
+      (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
-      super#select_store addr exp
+      super#select_store is_assign addr exp
 
 method! select_operation op args =
   match op with
@@ -233,6 +233,9 @@ method select_floatarith commutative regular_op mem_op args =
       (regular_op, [arg1; arg2])
   | _ ->
       assert false
+
+method! mark_c_tailcall =
+  Proc.contains_calls := true
 
 (* Deal with register constraints *)
 

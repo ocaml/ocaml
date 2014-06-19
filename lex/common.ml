@@ -47,7 +47,7 @@ let update_tracker tr =
   fprintf tr.oc "# %d \"%s\"\n" (tr.cur_line+1) tr.file;
 ;;
 
-let copy_buffer = String.create 1024
+let copy_buffer = Bytes.create 1024
 
 let copy_chars_unix ic oc start stop =
   let n = ref (stop - start) in
@@ -158,6 +158,14 @@ let output_env ic oc tr env =
 (* Output the user arguments *)
 let output_args oc args =
   List.iter (fun x -> (output_string oc x; output_char oc ' ')) args
+
+let output_refill_handler ic oc oci = function
+  | None -> false
+  | Some location ->
+    output_string oc "let __ocaml_lex_refill : \
+                      (Lexing.lexbuf -> 'a) -> (Lexing.lexbuf -> 'a) =\n";
+    copy_chunk ic oc oci location true;
+    true
 
 (* quiet flag *)
 let quiet_mode = ref false;;

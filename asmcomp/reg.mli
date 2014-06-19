@@ -12,12 +12,18 @@
 
 (* Pseudo-registers *)
 
+module Raw_name : sig
+  type t
+  val create_from_ident : Ident.t -> t
+end
+
 type t =
-  { mutable name: string;               (* Name (for printing) *)
+  { mutable raw_name: Raw_name.t;       (* Name *)
     stamp: int;                         (* Unique stamp *)
     typ: Cmm.machtype_component;        (* Type of contents *)
     mutable loc: location;              (* Actual location *)
     mutable spill: bool;                (* "true" to force stack allocation  *)
+    mutable part: int option;           (* Zero-based index of part of value *)
     mutable interf: t list;             (* Other regs live simultaneously *)
     mutable prefer: (t * int) list;     (* Preferences for other regs *)
     mutable degree: int;                (* Number of other regs live sim. *)
@@ -41,12 +47,18 @@ val createv_like: t array -> t array
 val clone: t -> t
 val at_location: Cmm.machtype_component -> location -> t
 
+val anonymous : t -> bool
+
+(* Name for printing *)
+val name : t -> string
+
 module Set: Set.S with type elt = t
 module Map: Map.S with type key = t
 
 val add_set_array: Set.t -> t array -> Set.t
 val diff_set_array: Set.t -> t array -> Set.t
 val inter_set_array: Set.t -> t array -> Set.t
+val disjoint_set_array: Set.t -> t array -> bool
 val set_of_array: t array -> Set.t
 
 val reset: unit -> unit

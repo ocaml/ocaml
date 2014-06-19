@@ -53,10 +53,8 @@ module Nonexhaustive :
 Error: This expression has type a#2 t but an expression was expected of type
          a#2 t
        The type constructor a#2 would escape its scope
-#                       Characters 174-175:
-            C ->
-            ^
-Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
+#               module Rectype :
+  sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
 #                         Characters 178-186:
           | (IntLit _ | BoolLit _) -> ()
              ^^^^^^^^

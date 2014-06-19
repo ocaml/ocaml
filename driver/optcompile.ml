@@ -24,15 +24,13 @@ open Compenv
 
 let interface ppf sourcefile outputprefix =
   Compmisc.init_path false;
-  let modulename =
-    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
-  check_unit_name ppf sourcefile modulename;
+  let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let initial_env = Compmisc.initial_env () in
   let ast = Pparse.parse_interface ppf sourcefile in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-  let tsg = Typemod.transl_signature initial_env ast in
+  let tsg = Typemod.type_interface initial_env ast in
   if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
   let sg = tsg.sig_type in
   if !Clflags.print_types then
@@ -59,9 +57,7 @@ let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
   Compmisc.init_path true;
-  let modulename =
-    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
-  check_unit_name ppf sourcefile modulename;
+  let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
   Compilenv.reset ?packname:!Clflags.for_package modulename;

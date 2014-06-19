@@ -35,7 +35,8 @@ let _ =
   printf "+infty\t\t%08x\n" (Hashtbl.hash infinity);
   printf "-infty\t\t%08x\n" (Hashtbl.hash neg_infinity);
   printf "NaN\t\t%08x\n" (Hashtbl.hash nan);
-  printf "NaN#2\t\t%08x\n" (Hashtbl.hash (Int64.float_of_bits 0xFF_F0_00_12_34_56_78_9AL));
+  printf "NaN#2\t\t%08x\n"
+         (Hashtbl.hash (Int64.float_of_bits 0xFF_F0_00_12_34_56_78_9AL));
   printf "NaN#3\t\t%08x\n" (Hashtbl.hash (0.0 /. 0.0));
 
   printf "-- Native integers:\n";

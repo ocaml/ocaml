@@ -17,7 +17,8 @@ include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
+COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot \
+          -safe-string $(INCLUDES)
 LINKFLAGS=
 
 CAMLYACC=boot/ocamlyacc
@@ -82,12 +83,15 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
-  asmcomp/closure.cmo asmcomp/cmmgen.cmo \
+  asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
-  asmcomp/comballoc.cmo asmcomp/liveness.cmo \
+  asmcomp/comballoc.cmo \
+  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
+  asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
@@ -121,11 +125,7 @@ defaultentry:
 # Recompile the system using the bootstrap compiler
 all:
 	$(MAKE) runtime
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex
-	$(MAKE) ocamlyacc
-	$(MAKE) ocamltools
-	$(MAKE) library
+	$(MAKE) coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(OCAMLBUILDBYTE) $(WITH_DEBUGGER) \
 	  $(WITH_OCAMLDOC)
@@ -145,11 +145,10 @@ world.opt:
 #
 # make coreboot     [old system -- you were in a stable state]
 # <change the source>
-# make core         [cross-compiler]
-# make partialclean [if you get "inconsistent assumptions"]
+# make clean runtime coreall
 # <debug your changes>
-# make core         [cross-compiler]
-# make coreboot     [new system -- now you are in a stable state]
+# make clean runtime coreall
+# make coreboot [new system -- now in a stable state]
 
 # Core bootstrapping cycle
 coreboot:
@@ -198,8 +197,7 @@ coldstart:
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
 	$(MAKE) coldstart
-	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+	$(MAKE) coreall
 
 # Recompile the core system using the bootstrap compiler
 coreall:
@@ -294,29 +292,39 @@ base.opt:
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
+
 install:
-	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
-	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
-	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
-	if test -d $(COMPLIBDIR); then : ; else $(MKDIR) $(COMPLIBDIR); fi
-	if test -d $(MANDIR)/man$(MANEXT); then : ; \
-	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
-	cp VERSION $(LIBDIR)/
-	cd $(LIBDIR); rm -f dllbigarray.so dllnums.so dllthreads.so \
+	if test -d $(INSTALL_BINDIR); then : ; \
+	  else $(MKDIR) $(INSTALL_BINDIR); fi
+	if test -d $(INSTALL_LIBDIR); then : ; \
+	  else $(MKDIR) $(INSTALL_LIBDIR); fi
+	if test -d $(INSTALL_STUBLIBDIR); then : ; \
+	  else $(MKDIR) $(INSTALL_STUBLIBDIR); fi
+	if test -d $(INSTALL_COMPLIBDIR); then : ; \
+	  else $(MKDIR) $(INSTALL_COMPLIBDIR); fi
+	if test -d $(INSTALL_MANDIR)/man$(MANEXT); then : ; \
+	  else $(MKDIR) $(INSTALL_MANDIR)/man$(MANEXT); fi
+	cp VERSION $(INSTALL_LIBDIR)/
+	cd $(INSTALL_LIBDIR); rm -f dllbigarray.so dllnums.so dllthreads.so \
 	  dllunix.so dllgraphics.so dllstr.so
 	cd byterun; $(MAKE) install
-	cp ocamlc $(BINDIR)/ocamlc$(EXE)
-	cp ocaml $(BINDIR)/ocaml$(EXE)
+	cp ocamlc $(INSTALL_BINDIR)/ocamlc$(EXE)
+	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
-	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
-	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
+	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
+	cp yacc/ocamlyacc$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
 	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
-	   toplevel/*.cmi $(COMPLIBDIR)
+	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   $(COMPLIBDIR)
-	cp expunge $(LIBDIR)/expunge$(EXE)
-	cp toplevel/topdirs.cmi $(LIBDIR)
+	   $(INSTALL_COMPLIBDIR)
+	cp expunge $(INSTALL_LIBDIR)/expunge$(EXE)
+	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
@@ -327,16 +335,16 @@ install:
 	   else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) install); \
 	   else :; fi
-	cp config/Makefile $(LIBDIR)/Makefile.config
+	cp config/Makefile $(INSTALL_LIBDIR)/Makefile.config
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
+	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	cp asmcomp/*.cmi $(COMPLIBDIR)
-	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(COMPLIBDIR)
+	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
+	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
@@ -347,16 +355,16 @@ installopt:
 	cd tools; $(MAKE) installopt
 
 installoptopt:
-	cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE)
-	cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE)
-	cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE)
+	cp ocamlc.opt $(INSTALL_BINDIR)/ocamlc.opt$(EXE)
+	cp ocamlopt.opt $(INSTALL_BINDIR)/ocamlopt.opt$(EXE)
+	cp lex/ocamllex.opt $(INSTALL_BINDIR)/ocamllex.opt$(EXE)
 	cp compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.a \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.a \
 	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.o) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.o) \
-	   $(COMPLIBDIR)
-	cd $(COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
+	   $(INSTALL_COMPLIBDIR)
+	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
 clean:: partialclean
@@ -378,9 +386,6 @@ partialclean::
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc|' \
-	  driver/ocamlcomp.sh.in > ocamlcomp.sh
-	@chmod +x ocamlcomp.sh
 
 # The native-code compiler
 
@@ -392,12 +397,9 @@ partialclean::
 ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
-	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlopt|' \
-	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
-	@chmod +x ocamlcompopt.sh
 
 partialclean::
-	rm -f ocamlopt ocamlcompopt.sh
+	rm -f ocamlopt
 
 # The toplevel
 
@@ -460,7 +462,6 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
-	@chmod -w utils/config.ml
 
 partialclean::
 	rm -f utils/config.ml
@@ -506,9 +507,6 @@ ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
 	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
-	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
-	  driver/ocamlcomp.sh.in > ocamlcomp.sh
-	@chmod +x ocamlcomp.sh
 
 partialclean::
 	rm -f ocamlc.opt
@@ -525,9 +523,6 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
-	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
-	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
-	@chmod +x ocamlcompopt.sh
 
 partialclean::
 	rm -f ocamlopt.opt
@@ -589,6 +584,14 @@ partialclean::
 	rm -f asmcomp/selection.ml
 
 beforedepend:: asmcomp/selection.ml
+
+asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
+	ln -s $(ARCH)/CSE.ml asmcomp/CSE.ml
+
+partialclean::
+	rm -f asmcomp/CSE.ml
+
+beforedepend:: asmcomp/CSE.ml
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	ln -s $(ARCH)/reload.ml asmcomp/reload.ml
@@ -700,13 +703,15 @@ clean::
 
 # Tools
 
-ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
+ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+            asmcomp/printclambda.cmo
 	cd tools; $(MAKE) all
 
 ocamltoolsopt: ocamlopt
 	cd tools; $(MAKE) opt
 
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+                   asmcomp/printclambda.cmx
 	cd tools; $(MAKE) opt.opt
 
 partialclean::
@@ -722,6 +727,12 @@ ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	cd ocamldoc && $(MAKE) opt.opt
+
+# Documentation
+
+html_doc: ocamldoc
+	make -C ocamldoc html_doc
+	@echo "documentation is in ./ocamldoc/stdlib_html/"
 
 partialclean::
 	cd ocamldoc && $(MAKE) clean
@@ -818,7 +829,7 @@ clean::
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \
-	  do rm -f $$d/*.cm[iox] $$d/*.annot $$d/*.[so] $$d/*~; done
+	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 
 depend: beforedepend
@@ -833,8 +844,8 @@ distclean:
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h
-	rm -f tools/*.bak tools/ocamlmklibconfig.ml
-	rm -f ocaml ocamlc ocamlcomp.sh
+	rm -f tools/*.bak
+	rm -f ocaml ocamlc
 	rm -f testsuite/_log
 
 .PHONY: all backup bootstrap checkstack clean

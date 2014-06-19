@@ -109,4 +109,17 @@ Error: Cannot create values of the private type Test2.t
                                           ^^^^^^^^^^^^^^^^^^^^^^^
 Warning 3: deprecated feature: spurious use of private
 module Test2 : sig type t = Test.t = private A end
+#     type t = private < x : int; .. >
+# type t = private < x : int; .. >
+# type t = private < x : int >
+# type t = private < x : int >
+# Characters -1--1:
+  type 'a t = private < x : int; .. > as 'a;;
+  
+Error: Type declarations do not match:
+         type 'a t = private < x : int; .. > constraint 'a = 'a t
+       is not included in
+         type 'a t
+       Their constraints differ.
+# type 'a t = private 'a constraint 'a = < x : int; .. >
 # 

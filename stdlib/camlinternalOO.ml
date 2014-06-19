@@ -403,9 +403,12 @@ type tables = Empty | Cons of closure * tables * tables
 type mut_tables =
     {key: closure; mutable data: tables; mutable next: tables}
 external mut : tables -> mut_tables = "%identity"
+external demut : mut_tables -> tables = "%identity"
 
 let build_path n keys tables =
-  let res = Cons (Obj.magic 0, Empty, Empty) in
+  (* Be careful not to create a seemingly immutable block, otherwise it could
+     be statically allocated.  See #5779. *)
+  let res = demut {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
     r := Cons (keys.(i), !r, Empty)

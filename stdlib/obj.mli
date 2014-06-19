@@ -43,18 +43,21 @@ val infix_tag : int
 val forward_tag : int
 val no_scan_tag : int
 val abstract_tag : int
-val string_tag : int
+val string_tag : int   (* both [string] and [bytes] *)
 val double_tag : int
 val double_array_tag : int
 val custom_tag : int
-val final_tag : int  (* DEPRECATED *)
+val final_tag : int [@@ocaml.deprecated]
 
 val int_tag : int
 val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
+val extension_name : 'a -> string
+val extension_id : 'a -> int
+
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
 
-val marshal : t -> string
-val unmarshal : string -> int -> t * int
+val marshal : t -> bytes [@@ocaml.deprecated]
+val unmarshal : bytes -> int -> t * int [@@ocaml.deprecated]

@@ -164,19 +164,23 @@ program_loading.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
 program_management.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi \
     time_travel.cmi symbols.cmi question.cmi program_loading.cmi \
     primitives.cmi parameters.cmi int64ops.cmi input_handling.cmi history.cmi \
-    debugger_config.cmi breakpoints.cmi program_management.cmi
+    ../typing/envaux.cmi debugger_config.cmi ../utils/config.cmi \
+    breakpoints.cmi program_management.cmi
 program_management.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
     time_travel.cmx symbols.cmx question.cmx program_loading.cmx \
     primitives.cmx parameters.cmx int64ops.cmx input_handling.cmx history.cmx \
-    debugger_config.cmx breakpoints.cmx program_management.cmi
+    ../typing/envaux.cmx debugger_config.cmx ../utils/config.cmx \
+    breakpoints.cmx program_management.cmi
 question.cmo : primitives.cmi lexer.cmi input_handling.cmi question.cmi
 question.cmx : primitives.cmx lexer.cmx input_handling.cmx question.cmi
 show_information.cmo : symbols.cmi source.cmi show_source.cmi printval.cmi \
-    ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi events.cmi \
-    debugcom.cmi checkpoints.cmi breakpoints.cmi show_information.cmi
+    parameters.cmi ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi \
+    events.cmi debugcom.cmi checkpoints.cmi breakpoints.cmi \
+    show_information.cmi
 show_information.cmx : symbols.cmx source.cmx show_source.cmx printval.cmx \
-    ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx events.cmx \
-    debugcom.cmx checkpoints.cmx breakpoints.cmx show_information.cmi
+    parameters.cmx ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx \
+    events.cmx debugcom.cmx checkpoints.cmx breakpoints.cmx \
+    show_information.cmi
 show_source.cmo : source.cmi primitives.cmi parameters.cmi \
     ../parsing/location.cmi ../bytecomp/instruct.cmi events.cmi \
     debugger_config.cmi show_source.cmi

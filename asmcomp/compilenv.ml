@@ -27,8 +27,30 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
-let structured_constants =
-  ref ([] : (string * bool * Lambda.structured_constant) list)
+module CstMap =
+  Map.Make(struct
+    type t = Clambda.ustructured_constant
+    let compare = Clambda.compare_structured_constants
+    (* PR#6442: it is incorrect to use Pervasives.compare on values of type t
+       because it compares "0.0" and "-0.0" equal. *)
+  end)
+
+type structured_constants =
+  {
+    strcst_shared: string CstMap.t;
+    strcst_all: (string * Clambda.ustructured_constant) list;
+  }
+
+let structured_constants_empty  =
+  {
+    strcst_shared = CstMap.empty;
+    strcst_all = [];
+  }
+
+let structured_constants = ref structured_constants_empty
+
+
+let exported_constants = Hashtbl.create 17
 
 let current_unit =
   { ui_name = "";
@@ -69,7 +91,8 @@ let reset ?packname name =
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false;
-  structured_constants := []
+  Hashtbl.clear exported_constants;
+  structured_constants := structured_constants_empty
 
 let current_unit_infos () =
   current_unit
@@ -85,7 +108,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in
-  name = prefix || 
+  name = prefix ||
   (let lp = String.length prefix in
    String.length name >= 2 + lp
    && String.sub name 0 lp = prefix
@@ -95,7 +118,7 @@ let symbol_in_current_unit name =
 let read_unit_info filename =
   let ic = open_in_bin filename in
   try
-    let buffer = input_bytes ic (String.length cmx_magic_number) in
+    let buffer = really_input_string ic (String.length cmx_magic_number) in
     if buffer <> cmx_magic_number then begin
       close_in ic;
       raise(Error(Not_a_unit_info filename))
@@ -110,7 +133,7 @@ let read_unit_info filename =
 
 let read_library_info filename =
   let ic = open_in_bin filename in
-  let buffer = input_bytes ic (String.length cmxa_magic_number) in
+  let buffer = really_input_string ic (String.length cmxa_magic_number) in
   if buffer <> cmxa_magic_number then
     raise(Error(Not_a_unit_info filename));
   let infos = (input_value ic : library_infos) in
@@ -119,9 +142,6 @@ let read_library_info filename =
 
 
 (* Read and cache info on global identifiers *)
-
-let cmx_not_found_crc =
-  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
 
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in
@@ -138,9 +158,9 @@ let get_global_info global_ident = (
           let (ui, crc) = read_unit_info filename in
           if ui.ui_name <> modname then
             raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
-          (Some ui, crc)
+          (Some ui, Some crc)
         with Not_found ->
-          (None, cmx_not_found_crc) in
+          (None, None) in
       current_unit.ui_imports_cmx <-
         (modname, crc) :: current_unit.ui_imports_cmx;
       Hashtbl.add global_infos_table modname infos;
@@ -208,7 +228,7 @@ let write_unit_info info filename =
   close_out oc
 
 let save_unit_info filename =
-  current_unit.ui_imports_cmi <- Env.imported_units();
+  current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
 
@@ -223,12 +243,39 @@ let new_const_symbol () =
   incr const_label;
   make_symbol (Some (string_of_int !const_label))
 
-let new_structured_constant cst global =
-  let lbl = new_const_symbol() in
-  structured_constants := (lbl, global, cst) :: !structured_constants;
-  lbl
+let snapshot () = !structured_constants
+let backtrack s = structured_constants := s
 
-let structured_constants () = !structured_constants
+let new_structured_constant cst ~shared =
+  let {strcst_shared; strcst_all} = !structured_constants in
+  if shared then
+    try
+      CstMap.find cst strcst_shared
+    with Not_found ->
+      let lbl = new_const_symbol() in
+      structured_constants :=
+        {
+          strcst_shared = CstMap.add cst lbl strcst_shared;
+          strcst_all = (lbl, cst) :: strcst_all;
+        };
+      lbl
+  else
+    let lbl = new_const_symbol() in
+    structured_constants :=
+      {
+        strcst_shared;
+        strcst_all = (lbl, cst) :: strcst_all;
+      };
+    lbl
+
+let add_exported_constant s =
+  Hashtbl.replace exported_constants s ()
+
+let structured_constants () =
+  List.map
+    (fun (lbl, cst) ->
+       (lbl, Hashtbl.mem exported_constants lbl, cst)
+    ) (!structured_constants).strcst_all
 
 (* Error report *)
 

@@ -53,10 +53,11 @@ struct
           p fmt "# type %s:\n" t.ty_name;
           if self#must_display_types then
             (
-             p fmt "# manifest (Odoc_info.string_of_type_expr):\n<[%s]>\n"
+             p fmt "# manifest :\n<[%s]>\n"
                (match t.ty_manifest with
                  None -> "None"
-               | Some e -> Odoc_info.string_of_type_expr e
+               | Some (Object_type _fields) -> "< object type >" (* TODO *)
+               | Some (Other e) -> Odoc_info.string_of_type_expr e
                );
             );
 

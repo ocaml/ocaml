@@ -30,7 +30,7 @@ open Time_travel
 let file_name = ref (None : string option)
 
 (* Default connection handler. *)
-let buffer = String.create 1024
+let buffer = Bytes.create 1024
 let control_connection pid fd =
   if (read fd.io_fd buffer 0 1024) = 0 then
     forget_process fd pid
@@ -124,6 +124,8 @@ let initialize_loading () =
     raise Toplevel;
   end;
   Symbols.read_symbols !program_name;
+  Config.load_path := !Config.load_path @ !Symbols.program_source_dirs;
+  Envaux.reset_cache ();
   if !debug_loading then
     prerr_endline "Opening a socket...";
   open_connection !socket_name

@@ -481,8 +481,8 @@ let print_reloc (info, pos) =
 
 (* Print a .cmo file *)
 
-let dump_obj filename ic =
-  let buffer = Misc.input_bytes ic (String.length cmo_magic_number) in
+let dump_obj ic =
+  let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer <> cmo_magic_number then begin
     prerr_endline "Not an object file"; exit 2
   end;
@@ -493,6 +493,7 @@ let dump_obj filename ic =
   if cu.cu_debug > 0 then begin
     seek_in ic cu.cu_debug;
     let evl = (input_value ic : debug_event list) in
+    ignore (input_value ic); (* Skip the list of absolute directory names *)
     record_events 0 evl
   end;
   seek_in ic cu.cu_pos;
@@ -501,7 +502,7 @@ let dump_obj filename ic =
 (* Read the primitive table from an executable *)
 
 let read_primitive_table ic len =
-  let p = Misc.input_bytes ic len in
+  let p = really_input_string ic len in
   let rec split beg cur =
     if cur >= len then []
     else if p.[cur] = '\000' then
@@ -531,6 +532,7 @@ let dump_exe ic =
     for _i = 1 to num_eventlists do
       let orig = input_binary_int ic in
       let evl = (input_value ic : debug_event list) in
+      ignore (input_value ic); (* Skip the list of absolute directory names *)
       record_events orig evl
     done
   with Not_found -> ()
@@ -555,7 +557,7 @@ let arg_fun filename =
   begin try
           objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
-      objfile := true; seek_in ic 0; dump_obj filename ic
+      objfile := true; seek_in ic 0; dump_obj ic
   end;
   close_in ic;
   printf "## end of ocaml dump of %S\n%!" filename

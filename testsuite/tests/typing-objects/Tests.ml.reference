@@ -244,9 +244,9 @@ Error: Signature mismatch:
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
-#   Characters 32-55:
+#   Characters 38-39:
   module M = struct type t = int class t () = object end end;;
-                                 ^^^^^^^^^^^^^^^^^^^^^^^
+                                       ^
 Error: Multiple definition of the type name t.
        Names must be unique in a given structure or signature.
 #   - : < m : (< m : 'a > as 'b) -> 'b as 'a; .. > -> 'b = <fun>
@@ -294,12 +294,12 @@ Warning 10: this expression should have type unit.
   unit -> object method private m : int method n : int method o : int end
 #   - : int * int = (1, 1)
 #   class c : unit -> object method m : int end
-#       - : int = 95
-# - : int = 96
-# - : int = 97
-#         - : int * int * int = (98, 99, 100)
-#           - : int * int * int * int * int = (101, 102, 103, 33, 33)
-#           - : int * int * int * int * int = (104, 105, 106, 33, 33)
+#       - : int = 100
+# - : int = 101
+# - : int = 102
+#         - : int * int * int = (103, 104, 105)
+#           - : int * int * int * int * int = (106, 107, 108, 33, 33)
+#           - : int * int * int * int * int = (109, 110, 111, 33, 33)
 #         Characters 42-69:
   class a = let _ = new b in object end
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^

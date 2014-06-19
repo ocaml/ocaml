@@ -21,12 +21,6 @@
 #include "memory.h"
 #include "hash.h"
 
-#ifdef ARCH_INT64_TYPE
-#include "int64_native.h"
-#else
-#include "int64_emul.h"
-#endif
-
 /* The new implementation, based on MurmurHash 3,
      http://code.google.com/p/smhasher/  */
 
@@ -77,9 +71,7 @@ CAMLexport uint32 caml_hash_mix_intnat(uint32 h, intnat d)
 
 CAMLexport uint32 caml_hash_mix_int64(uint32 h, int64 d)
 {
-  uint32 hi, lo;
-
-  I64_split(d, hi, lo);
+  uint32 hi = (uint32) (d >> 32), lo = (uint32) d;
   MIX(h, lo);
   MIX(h, hi);
   return h;
@@ -180,6 +172,8 @@ CAMLexport uint32 caml_hash_mix_string(uint32 h, value s)
 
 /* Maximal size of the queue used for breadth-first traversal.  */
 #define HASH_QUEUE_SIZE 256
+/* Maximal number of Forward_tag links followed in one step */
+#define MAX_FORWARD_DEREFERENCE 1000
 
 /* The generic hash function */
 
@@ -221,7 +215,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         for (i = 0, len = Wosize_val(v) / Double_wosize; i < len; i++) {
           h = caml_hash_mix_double(h, Double_field(v, i));
           num--;
-          if (num < 0) break;
+          if (num <= 0) break;
         }
         break;
       case Abstract_tag:
@@ -234,8 +228,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         v = v - Infix_offset_val(v);
         goto again;
       case Forward_tag:
-        v = Forward_val(v);
-        goto again;
+        /* PR#6361: we can have a loop here, so limit the number of
+           Forward_tag links being followed */
+        for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
+          v = Forward_val(v);
+          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+            goto again;
+        }
+        /* Give up on this object and move to the next */
+        break;
       case Object_tag:
         h = caml_hash_mix_intnat(h, Oid_val(v));
         num--;

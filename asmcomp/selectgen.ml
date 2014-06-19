@@ -47,7 +47,8 @@ let oper_result_type = function
 
 let size_expr env exp =
   let rec size localenv = function
-      Cconst_int _ | Cconst_natint _ -> Arch.size_int
+      Cconst_int _ | Cconst_natint _
+    | Cconst_blockheader _ -> Arch.size_int
     | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
@@ -85,7 +86,7 @@ let swap_intcomp = function
 let all_regs_anonymous rv =
   try
     for i = 0 to Array.length rv - 1 do
-      if String.length rv.(i).name > 0 then raise Exit
+      if not (Reg.anonymous rv.(i)) then raise Exit
     done;
     true
   with Exit ->
@@ -93,10 +94,11 @@ let all_regs_anonymous rv =
 
 let name_regs id rv =
   if Array.length rv = 1 then
-    rv.(0).name <- Ident.name id
+    rv.(0).raw_name <- Raw_name.create_from_ident id
   else
     for i = 0 to Array.length rv - 1 do
-      rv.(i).name <- Ident.name id ^ "#" ^ string_of_int i
+      rv.(i).raw_name <- Raw_name.create_from_ident id;
+      rv.(i).part <- Some i
     done
 
 (* "Join" two instruction sequences, making sure they return their results
@@ -111,10 +113,10 @@ let join opt_r1 seq1 opt_r2 seq2 =
       assert (l1 = Array.length r2);
       let r = Array.create l1 Reg.dummy in
       for i = 0 to l1-1 do
-        if String.length r1.(i).name = 0 then begin
+        if Reg.anonymous r1.(i) then begin
           r.(i) <- r1.(i);
           seq2#insert_move r2.(i) r1.(i)
-        end else if String.length r2.(i).name = 0 then begin
+        end else if Reg.anonymous r2.(i) then begin
           r.(i) <- r2.(i);
           seq1#insert_move r1.(i) r2.(i)
         end else begin
@@ -177,6 +179,7 @@ class virtual selector_generic = object (self)
 method is_simple_expr = function
     Cconst_int _ -> true
   | Cconst_natint _ -> true
+  | Cconst_blockheader _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
   | Cconst_pointer _ -> true
@@ -206,8 +209,39 @@ method virtual select_addressing :
 
 (* Default instruction selection for stores (of words) *)
 
-method select_store addr arg =
-  (Istore(Word, addr), arg)
+method select_store is_assign addr arg =
+  (Istore(Word, addr, is_assign), arg)
+
+(* call marking methods, documented in selectgen.mli *)
+
+method mark_call =
+  Proc.contains_calls := true
+
+method mark_tailcall = ()
+
+method mark_c_tailcall = ()
+
+method mark_instr = function
+  | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
+      self#mark_call
+  | Iop (Itailcall_ind | Itailcall_imm _) ->
+      self#mark_tailcall
+  | Iop (Ialloc _) ->
+      self#mark_call (* caml_alloc*, caml_garbage_collection *)
+  | Iop (Iintop Icheckbound | Iintop_imm(Icheckbound, _)) ->
+      self#mark_c_tailcall (* caml_ml_array_bound_error *)
+  | Iraise raise_kind ->
+    begin match raise_kind with
+      | Lambda.Raise_notrace -> ()
+      | Lambda.Raise_regular | Lambda.Raise_reraise ->
+        if !Clflags.debug then (* PR#6239 *)
+        (* caml_stash_backtrace; we #mark_call rather than
+           #mark_c_tailcall to get a good stack backtrace *)
+          self#mark_call
+    end
+  | Itrywith _ ->
+    self#mark_call
+  | _ -> ()
 
 (* Default instruction selection for operators *)
 
@@ -222,10 +256,10 @@ method select_operation op args =
   | (Cstore chunk, [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       if chunk = Word then begin
-        let (op, newarg2) = self#select_store addr arg2 in
+        let (op, newarg2) = self#select_store true addr arg2 in
         (op, [newarg2; eloc])
       end else begin
-        (Istore(chunk, addr), [arg2; eloc])
+        (Istore(chunk, addr, true), [arg2; eloc])
         (* Inversion addr/datum in Istore *)
       end
   | (Calloc, _) -> (Ialloc 0, args)
@@ -391,6 +425,9 @@ method emit_expr env exp =
   | Cconst_natint n ->
       let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int n) [||] r)
+  | Cconst_blockheader n ->
+      let r = self#regs_for typ_int in
+      Some(self#insert_op (Iconst_blockheader n) [||] r)
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float n) [||] r)
@@ -433,8 +470,6 @@ method emit_expr env exp =
           Some(self#emit_tuple ext_env simple_list)
       end
   | Cop(Craise (k, dbg), [arg]) ->
-      if !Clflags.debug && k <> Lambda.Raise_notrace then
-        Proc.contains_calls := true;    (* PR#6239 *)
       begin match self#emit_expr env arg with
         None -> None
       | Some r1 ->
@@ -454,7 +489,6 @@ method emit_expr env exp =
           let dbg = debuginfo_op op in
           match new_op with
             Icall_ind ->
-              Proc.contains_calls := true;
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
               let rd = self#regs_for ty in
@@ -466,7 +500,6 @@ method emit_expr env exp =
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Icall_imm lbl ->
-              Proc.contains_calls := true;
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
@@ -476,7 +509,6 @@ method emit_expr env exp =
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall(lbl, alloc) ->
-              Proc.contains_calls := true;
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env new_args in
               let rd = self#regs_for ty in
@@ -485,7 +517,6 @@ method emit_expr env exp =
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Ialloc _ ->
-              Proc.contains_calls := true;
               let rd = self#regs_for typ_addr in
               let size = size_expr env (Ctuple new_args) in
               self#insert (Iop(Ialloc size)) [||] rd;
@@ -560,7 +591,6 @@ method emit_expr env exp =
           None
       end
   | Ctrywith(e1, v, e2) ->
-      Proc.contains_calls := true;
       let (r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in
       let (r2, s2) = self#emit_sequence (Tbl.add v rv env) e2 in
@@ -647,16 +677,16 @@ method emit_stores env data regs_addr =
     ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
     (fun e ->
-      let (op, arg) = self#select_store !a e in
+      let (op, arg) = self#select_store false !a e in
       match self#emit_expr env arg with
         None -> assert false
       | Some regs ->
           match op with
-            Istore(_, _) ->
+            Istore(_, _, _) ->
               for i = 0 to Array.length regs - 1 do
                 let r = regs.(i) in
                 let kind = if r.typ = Float then Double_u else Word in
-                self#insert (Iop(Istore(kind, !a)))
+                self#insert (Iop(Istore(kind, !a, false)))
                             (Array.append [|r|] regs_addr) [||];
                 a := Arch.offset_addressing !a (size_component r.typ)
               done
@@ -697,7 +727,6 @@ method emit_tail env exp =
                 self#insert (Iop Itailcall_ind)
                             (Array.append [|r1.(0)|] loc_arg) [||]
               end else begin
-                Proc.contains_calls := true;
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 self#insert_move_args rarg loc_arg stack_ofs;
@@ -717,7 +746,6 @@ method emit_tail env exp =
                 self#insert_moves r1 loc_arg';
                 self#insert (Iop(Itailcall_imm lbl)) loc_arg' [||]
               end else begin
-                Proc.contains_calls := true;
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 self#insert_move_args r1 loc_arg stack_ofs;
@@ -767,7 +795,6 @@ method emit_tail env exp =
       let s2 = self#emit_tail_sequence new_env e2 in
       self#insert (Icatch(nfail, s1, s2)) [||] [||]
   | Ctrywith(e1, v, e2) ->
-      Proc.contains_calls := true;
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in
       let s2 = self#emit_tail_sequence (Tbl.add v rv env) e2 in
@@ -807,9 +834,11 @@ method emit_fundecl f =
       f.Cmm.fun_args rargs Tbl.empty in
   self#insert_moves loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
+  let body = self#extract in
+  instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
-    fun_body = self#extract;
+    fun_body = body;
     fun_fast = f.Cmm.fun_fast;
     fun_dbg  = f.Cmm.fun_dbg }
 
@@ -828,3 +857,7 @@ let is_tail_call nargs =
 
 let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
+
+let reset () =
+  catch_regs := [];
+  current_function_name := ""

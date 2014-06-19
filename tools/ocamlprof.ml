@@ -35,7 +35,7 @@ and inchan = ref stdin
 and outchan = ref stdout
 
 (* To copy source fragments *)
-let copy_buffer = String.create 256
+let copy_buffer = Bytes.create 256
 
 let copy_chars_unix nchars =
   let n = ref nchars in
@@ -173,8 +173,8 @@ and rewrite_exp iflag sexp =
 
 and rw_exp iflag sexp =
   match sexp.pexp_desc with
-    Pexp_ident lid -> ()
-  | Pexp_constant cst -> ()
+    Pexp_ident _lid -> ()
+  | Pexp_constant _cst -> ()
 
   | Pexp_let(_, spat_sexp_list, sbody) ->
     rewrite_patexp_list iflag spat_sexp_list;
@@ -314,7 +314,7 @@ and rewrite_annotate_exp_list l =
     l
 
 and rewrite_function iflag = function
-  | [{pc_lhs=spat; pc_guard=None;
+  | [{pc_lhs=_; pc_guard=None;
       pc_rhs={pexp_desc = (Pexp_function _|Pexp_fun _)} as sexp}] ->
         rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
@@ -344,6 +344,7 @@ and rewrite_class_field iflag cf =
   | Pcf_method (_, _, Cfk_virtual _)
   | Pcf_val (_, _, Cfk_virtual _)
   | Pcf_constraint _  -> ()
+  | Pcf_attribute _ -> ()
   | Pcf_extension _ -> ()
 
 and rewrite_class_expr iflag cexpr =
@@ -370,11 +371,11 @@ and rewrite_class_declaration iflag cl =
 
 and rewrite_mod iflag smod =
   match smod.pmod_desc with
-    Pmod_ident lid -> ()
+    Pmod_ident _ -> ()
   | Pmod_structure sstr -> List.iter (rewrite_str_item iflag) sstr
-  | Pmod_functor(param, smty, sbody) -> rewrite_mod iflag sbody
+  | Pmod_functor(_param, _smty, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
-  | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
+  | Pmod_constraint(smod, _smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp) -> rewrite_exp iflag sexp
   | Pmod_extension _ -> ()
 

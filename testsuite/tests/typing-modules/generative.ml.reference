@@ -37,4 +37,8 @@ Error: Signature mismatch:
          functor () -> sig  end
        is not included in
          functor (X : sig  end) -> sig  end
+#     module X : functor (X : sig  end) (Y : sig  end) (Z : sig  end) -> sig  end
+#   module Y : functor (X : sig  end) (Y : sig  end) (Z : sig  end) -> sig  end
+# module Z : functor (_ : sig  end) (_ : sig  end) (_ : sig  end) -> sig  end
+#   module GZ : functor (X : sig  end) () (Z : sig  end) -> sig  end
 # 

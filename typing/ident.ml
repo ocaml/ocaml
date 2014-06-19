@@ -209,3 +209,15 @@ let rec iter f = function
     Empty -> ()
   | Node(l, k, r, _) ->
       iter f l; f k.ident k.data; iter f r
+
+(* Idents for sharing keys *)
+
+(* They should be 'totally fresh' -> neg numbers *)
+let key_name = ""
+
+let make_key_generator () =
+  let c = ref 1 in
+  fun id ->
+    let stamp = !c in
+    decr c ;
+    { id with name = key_name; stamp = stamp; }

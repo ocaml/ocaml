@@ -258,7 +258,120 @@ module M :
     type t = Y.t
   end
 module F :
-  functor (Y : sig type t end) ->
-    functor (M : sig type t = Y.t end) -> sig  end
+  functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig  end
 #   module G : functor (M : sig type t = M.Y.t end) -> sig  end
-# *   
+# *               module A1 : sig  end
+module A2 : sig  end
+module L1 : sig module X = A1 end
+module L2 : sig module X = A2 end
+#   module F : functor (L : sig module X : sig  end end) -> sig  end
+#   module F1 : sig  end
+# module F2 : sig  end
+#                     module Int : sig type t = int val compare : 'a -> 'a -> int end
+module SInt :
+  sig
+    type elt = Int.t
+    type t = Set.Make(Int).t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+    val split : elt -> t -> t * bool * t
+    val find : elt -> t -> elt
+    val of_list : elt list -> t
+  end
+type (_, _) eq = Eq : ('a, 'a) eq
+type wrap = W of (SInt.t, SInt.t) eq
+module M :
+  sig
+    module I = Int
+    type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
+  end
+# module type S =
+  sig
+    module I = Int
+    type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
+  end
+#   module Int2 : sig type t = int val compare : 'a -> 'a -> int end
+#       Characters 49-69:
+    include S with module I := I
+            ^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of I
+       does not match its original definition in the constrained signature:
+       Modules do not match: (module Int2) is not included in (module Int)
+#   * * * * * * * * * * *                   module M :
+  sig
+    module N : sig module I = Int end
+    module P : sig module I = N.I end
+    module Q :
+      sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq end
+  end
+# module type S =
+  sig
+    module N : sig module I = Int end
+    module P : sig module I = N.I end
+    module Q :
+      sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq end
+  end
+#               module M :
+  sig
+    module N : sig module I = Int end
+    module P : sig module I = N.I end
+    module Q :
+      sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq end
+  end
+# module type S =
+  sig
+    module N : sig module I = Int end
+    module P :
+      sig module I : sig type t = int val compare : 'a -> 'a -> int end end
+    module Q :
+      sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq end
+  end
+#     module type S = sig module M : sig type t val x : t end end
+# module H : sig type t = A val x : t end
+# module H' = H
+# module type S' = sig module M : sig type t = H.t = A val x : t end end
+#     module type Alias = sig module N : sig  end module M = N end
+# module F : functor (X : sig  end) -> sig type t end
+# Characters -1--1:
+  module type A = Alias with module N := F(List);;
+  
+Error: Module type declarations do not match:
+         module type A = sig module M = F(List) end
+       does not match
+         module type A = sig module M = F(List) end
+       At position module type A = <here>
+       Modules do not match:
+         sig module M = F(List) end
+       is not included in
+         sig module M = F(List) end
+       At position module type A = sig module M : <here> end
+       Module F(List) cannot be aliased
+# Characters 17-18:
+  module rec Bad : A = Bad;;
+                   ^
+Error: Unbound module type A
+#                           module B : sig module R : sig type t = string end module O = R end
+module K : sig module E = B module N = E.O end
+#   val x : K.N.t = "foo"
+# 

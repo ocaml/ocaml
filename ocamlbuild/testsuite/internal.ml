@@ -239,6 +239,16 @@ let () = test "PluginCompilation3"
          T.f "myocamlbuild.ml" ~content:"print_endline \"foo\";;"]
   (* if the plugin were executed we'd get "foo" in failing_msg *)
   ~failing_msg:""
-  ~targets:("main,byte", []) ();;
+  ~targets:("main.byte", []) ();;
+
+let () = test "PluginTagsWarning"
+  ~description:"check that a warning is raised if -plugin-tags \
+                is used without a plugin file"
+  ~options:[`no_ocamlfind; `plugin_tag "use_str"]
+  ~tree:[T.f "main.ml" ~content:""]
+  ~matching:[_build [M.f "main.cmo"]]
+  ~failing_msg:"Warning: option -plugin-tag(s) has no effect \
+                in absence of plugin file \"myocamlbuild.ml\""
+  ~targets:("main.ml", []) ();;
 
 run ~root:"_test_internal";;

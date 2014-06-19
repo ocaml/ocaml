@@ -37,7 +37,7 @@ let dump_counters () =
         then raise Bad_profile)
       !counters prevl;
     List.iter2
-      (fun (curname, (_,curcount)) (prevname, (_,prevcount)) ->
+      (fun (_curname, (_,curcount)) (_prevname, (_,prevcount)) ->
         for i = 0 to Array.length curcount - 1 do
           curcount.(i) <- curcount.(i) + prevcount.(i)
         done)

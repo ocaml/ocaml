@@ -116,7 +116,7 @@ let name_pattern default p =
   | _ -> Ident.create default
 
 let normalize_cl_path cl path =
-  Env.normalize_path (Some cl.cl_loc) cl.cl_env path  
+  Env.normalize_path (Some cl.cl_loc) cl.cl_env path
 
 let rec build_object_init cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
@@ -145,7 +145,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                | Tcf_val (_, _, id, Tcfk_concrete (_, exp), _) ->
                    (inh_init, lsequence (set_inst_var obj id exp) obj_init,
                     has_init)
-               | Tcf_method _ | Tcf_val _ | Tcf_constraint _ ->
+               | Tcf_method _ | Tcf_val _ | Tcf_constraint _ | Tcf_attribute _ ->
                    (inh_init, obj_init, has_init)
                | Tcf_initializer _ ->
                    (inh_init, obj_init, true)
@@ -280,7 +280,9 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                     inh_init cl_init msubst top cl in
                 (inh_init, cl_init, [], values)
             | Tcf_val (name, _, id, _, over) ->
-                let values = if over then values else (name.txt, id) :: values in
+                let values =
+                  if over then values else (name.txt, id) :: values
+                in
                 (inh_init, cl_init, methods, values)
             | Tcf_method (_, _, Tcfk_virtual _)
             | Tcf_constraint _
@@ -296,14 +298,16 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                   else met_code
                 in
                 (inh_init, cl_init,
-                 Lvar (Meths.find name.txt str.cstr_meths) :: met_code @ methods,
+                 Lvar(Meths.find name.txt str.cstr_meths) :: met_code @ methods,
                  values)
             | Tcf_initializer exp ->
                 (inh_init,
                  Lsequence(mkappl (oo_prim "add_initializer",
                                    Lvar cla :: msubst false (transl_exp exp)),
                            cl_init),
-                 methods, values))
+                 methods, values)
+            | Tcf_attribute _ ->
+                (inh_init, cl_init, methods, values))
           str.cstr_fields
           (inh_init, cl_init, [], [])
       in
@@ -808,7 +812,7 @@ let transl_class ids cl_id pub_meths cl vflag =
 (*
     let cl_id = ci.ci_id_class in
 (* TODO: cl_id is used somewhere else as typesharp ? *)
-  let _arity = List.length (fst ci.ci_params) in
+  let _arity = List.length ci.ci_params in
   let pub_meths = m in
   let cl = ci.ci_expr in
   let vflag = vf in

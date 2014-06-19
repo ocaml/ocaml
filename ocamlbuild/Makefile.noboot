@@ -17,11 +17,13 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-CAMLRUN  = ../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
+
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
 
@@ -35,10 +37,9 @@ OCAMLBUILD_LIBCMA=ocamlbuildlib.cma
 OCAMLBUILD_LIBCMI=ocamlbuildlib.cmi
 OCAMLBUILD_LIBCMXA=ocamlbuild.cmxa
 OCAMLBUILD_LIBA=ocamlbuild.$(A)
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamlbuild
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamlbuild
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(OCAMLBIN)
-INSTALL_MANODIR=$(MANDIR)/man3
+INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
 
 INSTALL_MLIS=
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -55,7 +56,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A
+COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
 LINKFLAGS=$(INCLUDES)
 
 CMOFILES_PACK= 			            \

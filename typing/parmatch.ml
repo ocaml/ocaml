@@ -58,7 +58,7 @@ let const_compare x y =
   | Const_float f1, Const_float f2 ->
       Pervasives.compare (float_of_string f1) (float_of_string f2)
   | Const_string (s1, _), Const_string (s2, _) ->
-      Pervasives.compare s1 s2
+      String.compare s1 s2
   | _, _ -> Pervasives.compare x y
 
 let records_args l1 l2 =
@@ -110,12 +110,11 @@ and compats ps qs = match ps,qs with
 | p::ps, q::qs -> compat p q && compats ps qs
 | _,_    -> assert false
 
-(****************************************)
-(* Utilities for retrieving constructor *)
-(* and record label names               *)
-(****************************************)
-
 exception Empty (* Empty pattern *)
+
+(****************************************)
+(* Utilities for retrieving type paths  *)
+(****************************************)
 
 (* May need a clean copy, cf. PR#4745 *)
 let clean_copy ty =
@@ -128,33 +127,6 @@ let get_type_path ty tenv =
   | Tconstr (path,_,_) -> path
   | _ -> fatal_error "Parmatch.get_type_path"
 
-let get_type_descr ty tenv =
-  match (Ctype.repr ty).desc with
-  | Tconstr (path,_,_) -> Env.find_type path tenv
-  | _ -> fatal_error "Parmatch.get_type_descr"
-
-let rec get_constr tag ty tenv =
-  match get_type_descr ty tenv with
-  | {type_kind=Type_variant constr_list} ->
-      Datarepr.find_constr_by_tag tag constr_list
-  | {type_manifest = Some _} ->
-      get_constr tag (Ctype.expand_head_once tenv (clean_copy ty)) tenv
-  | _ -> fatal_error "Parmatch.get_constr"
-
-let find_label lbl lbls =
-  try
-    let l = List.nth lbls lbl.lbl_pos in
-    l.Types.ld_id
-  with Failure "nth" -> Ident.create "*Unknown label*"
-
-let rec get_record_labels ty tenv =
-  match get_type_descr ty tenv with
-  | {type_kind = Type_record(lbls, rep)} -> lbls
-  | {type_manifest = Some _} ->
-      get_record_labels (Ctype.expand_head_once tenv (clean_copy ty)) tenv
-  | _ -> fatal_error "Parmatch.get_record_labels"
-
-
 (*************************************)
 (* Values as patterns pretty printer *)
 (*************************************)
@@ -162,16 +134,8 @@ let rec get_record_labels ty tenv =
 open Format
 ;;
 
-let get_constr_name tag ty tenv  = match tag with
-| Cstr_exception (path, _) -> Path.name path
-| _ ->
-  try
-    let cd = get_constr tag ty tenv in Ident.name cd.cd_id
-  with
-  | Datarepr.Constr_not_found -> "*Unknown constructor*"
-
-let is_cons tag v  = match get_constr_name tag v.pat_type v.pat_env with
-| "::" -> true
+let is_cons = function
+| {cstr_name = "::"} -> true
 | _ -> false
 
 let pretty_const c = match c with
@@ -201,14 +165,12 @@ let rec pretty_val ppf v =
   | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
   | Tpat_tuple vs ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
-  | Tpat_construct (_, {cstr_tag=tag},[]) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
-      fprintf ppf "%s" name
-  | Tpat_construct (_, {cstr_tag=tag},[w]) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
-      fprintf ppf "@[<2>%s@ %a@]" name pretty_arg w
-  | Tpat_construct (_, {cstr_tag=tag},vs) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
+  | Tpat_construct (_, cstr, []) ->
+      fprintf ppf "%s" cstr.cstr_name
+  | Tpat_construct (_, cstr, [w]) ->
+      fprintf ppf "@[<2>%s@ %a@]" cstr.cstr_name pretty_arg w
+  | Tpat_construct (_, cstr, vs) ->
+      let name = cstr.cstr_name in
       begin match (name, vs) with
         ("::", [v1;v2]) ->
           fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
@@ -221,7 +183,7 @@ let rec pretty_val ppf v =
       fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
   | Tpat_record (lvs,_) ->
       fprintf ppf "@[{%a}@]"
-        (pretty_lvals (get_record_labels v.pat_type v.pat_env))
+        pretty_lvals
         (List.filter
            (function
              | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
@@ -236,14 +198,14 @@ let rec pretty_val ppf v =
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
 
 and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct (_,{cstr_tag=tag}, [_ ; _])
-    when is_cons tag v ->
+| Tpat_construct (_,cstr, [_ ; _])
+    when is_cons cstr ->
       fprintf ppf "(%a)" pretty_val v
 | _ -> pretty_val ppf v
 
 and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct (_,{cstr_tag=tag}, [v1 ; v2])
-    when is_cons tag v ->
+| Tpat_construct (_,cstr, [v1 ; v2])
+    when is_cons cstr ->
       fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
 | _ -> pretty_val ppf v
 
@@ -262,15 +224,13 @@ and pretty_vals sep ppf = function
   | v::vs ->
       fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
 
-and pretty_lvals lbls ppf = function
+and pretty_lvals ppf = function
   | [] -> ()
   | [_,lbl,v] ->
-      let name = find_label lbl lbls in
-      fprintf ppf "%s=%a" (Ident.name name) pretty_val v
+      fprintf ppf "%s=%a" lbl.lbl_name pretty_val v
   | (_, lbl,v)::rest ->
-      let name = find_label lbl lbls in
       fprintf ppf "%s=%a;@ %a"
-        (Ident.name name) pretty_val v (pretty_lvals lbls) rest
+        lbl.lbl_name pretty_val v pretty_lvals rest
 
 let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
@@ -661,16 +621,16 @@ let clean_env env =
   loop env
 
 let full_match ignore_generalized closing env =  match env with
-| ({pat_desc = Tpat_construct (_,{cstr_tag=Cstr_exception _},_)},_)::_ ->
-    false
 | ({pat_desc = Tpat_construct(_,c,_);pat_type=typ},_) :: _ ->
-    if ignore_generalized then
-      (* remove generalized constructors;
-         those cases will be handled separately *)
-      let env = clean_env env in
-      List.length env = c.cstr_normal
+    if c.cstr_consts < 0 then false (* extensions *)
     else
-      List.length env = c.cstr_consts + c.cstr_nonconsts
+      if ignore_generalized then
+        (* remove generalized constructors;
+           those cases will be handled separately *)
+        let env = clean_env env in
+        List.length env = c.cstr_normal
+      else
+        List.length env = c.cstr_consts + c.cstr_nonconsts
 
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
@@ -768,19 +728,18 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
-exception Not_an_adt
-
-let rec adt_path env ty =
-  match get_type_descr ty env with
-  | {type_kind=Type_variant constr_list} ->
-      begin match (Ctype.repr ty).desc with
-      | Tconstr (path,_,_) ->
-          path
-      | _ -> assert false end
-  | {type_manifest = Some _} ->
-      adt_path env (Ctype.expand_head_once env (clean_copy ty))
-  | _ -> raise Not_an_adt
-;;
+let rec get_variant_constructors env ty =
+  match (Ctype.repr ty).desc with
+  | Tconstr (path,_,_) -> begin
+      match Env.find_type path env with
+      | {type_kind=Type_variant _} ->
+          fst (Env.find_type_descrs path env)
+      | {type_manifest = Some _} ->
+          get_variant_constructors env
+            (Ctype.expand_head_once env (clean_copy ty))
+      | _ -> fatal_error "Parmatch.get_variant_constructors"
+    end
+  | _ -> fatal_error "Parmatch.get_variant_constructors"
 
 let rec map_filter f  =
   function
@@ -794,18 +753,12 @@ let rec map_filter f  =
 let complete_constrs p all_tags =
   match p.pat_desc with
   | Tpat_construct (_,c,_) ->
-      begin try
-        let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-        let (constrs, _) =
-          Env.find_type_descrs (adt_path p.pat_env p.pat_type) p.pat_env in
+      let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+      let constrs = get_variant_constructors p.pat_env c.cstr_res in
         map_filter
           (fun cnstr ->
             if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
           constrs
-      with
-      | Datarepr.Constr_not_found ->
-          fatal_error "Parmatch.complete_constr: constr_not_found"
-      end
   | _ -> fatal_error "Parmatch.complete_constr"
 
 
@@ -825,16 +778,10 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other ext env =  match env with
-| ({pat_desc =
-    Tpat_construct (lid, ({cstr_tag=Cstr_exception _} as c),_)},_)
-  ::_ ->
-    make_pat
-      (Tpat_construct
-         (lid, {c with
-           cstr_tag=(Cstr_exception
-            (Path.Pident (Ident.create "*exception*"), Location.none))},
-          []))
-      Ctype.none Env.empty
+| ({pat_desc = Tpat_construct (lid,
+      ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
+    let c = {c with cstr_name = "*extension*"} in
+      make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->
     begin match ext with
     | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
@@ -1921,7 +1868,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
-| Tpat_construct (_, {cstr_tag=Cstr_exception _}, ps)->
+| Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
     List.fold_left collect_paths_from_pat r ps
 | Tpat_record (lps,_) ->
     List.fold_left
@@ -1990,7 +1937,7 @@ let check_unused tdefs casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with Empty | Not_an_adt | Not_found | NoGuard -> assert false
+            with Empty | Not_found | NoGuard -> assert false
             end ;
 
           if c_guard <> None then

@@ -21,11 +21,19 @@ type compile_time_constant =
   | Ostype_win32
   | Ostype_cygwin
 
+type loc_kind =
+  | Loc_FILE
+  | Loc_LINE
+  | Loc_MODULE
+  | Loc_LOC
+  | Loc_POS
+
 type primitive =
     Pidentity
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
+  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -113,6 +121,8 @@ type primitive =
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer
+  (* Integer to external pointer *)
+  | Pint_as_pointer
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -175,6 +185,9 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
+(* switch on strings, clauses are sorted by string order,
+   strings are pairwise distinct *)
+  | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -204,7 +217,9 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
-val same: lambda -> lambda -> bool
+(* Sharing key *)
+val make_key: lambda -> lambda option
+
 val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
@@ -231,7 +246,10 @@ val negate_comparison : comparison -> comparison
 
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
-
+val next_negative_raise_count : unit -> int
+  (* Negative raise counts are used to compile 'match ... with exception x -> ...'.
+     This disabled some simplifications performed by the Simplif module that assume
+     that static raises are in tail position in their handler. *)
 
 val staticfail : lambda (* Anticipated static failure *)
 
@@ -240,3 +258,6 @@ val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
+val lam_of_loc : loc_kind -> Location.t -> lambda
+
+val reset: unit -> unit

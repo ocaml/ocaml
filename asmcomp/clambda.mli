@@ -18,9 +18,23 @@ open Lambda
 
 type function_label = string
 
+type ustructured_constant =
+  | Uconst_float of float
+  | Uconst_int32 of int32
+  | Uconst_int64 of int64
+  | Uconst_nativeint of nativeint
+  | Uconst_block of int * uconstant list
+  | Uconst_float_array of float list
+  | Uconst_string of string
+
+and uconstant =
+  | Uconst_ref of string * ustructured_constant
+  | Uconst_int of int
+  | Uconst_ptr of int
+
 type ulambda =
     Uvar of Ident.t
-  | Uconst of structured_constant * string option
+  | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
@@ -29,6 +43,7 @@ type ulambda =
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
+  | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
   | Ustaticfail of int * ulambda list
   | Ucatch of int * Ident.t list * ulambda * ulambda
   | Utrywith of ulambda * Ident.t * ulambda
@@ -59,7 +74,9 @@ type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
-    mutable fun_inline: (Ident.t list * ulambda) option }
+    mutable fun_inline: (Ident.t list * ulambda) option;
+    mutable fun_float_const_prop: bool  (* Can propagate FP consts *)
+  }
 
 (* Approximation of values *)
 
@@ -67,5 +84,12 @@ type value_approximation =
     Value_closure of function_description * value_approximation
   | Value_tuple of value_approximation array
   | Value_unknown
-  | Value_integer of int
-  | Value_constptr of int
+  | Value_const of uconstant
+  | Value_global_field of string * int
+
+(* Comparison functions for constants *)
+
+val compare_structured_constants:
+        ustructured_constant -> ustructured_constant -> int
+val compare_constants:
+        uconstant -> uconstant -> int

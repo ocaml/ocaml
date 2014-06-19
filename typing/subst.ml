@@ -85,6 +85,14 @@ let newpersty desc =
   decr new_id;
   { desc = desc; level = generic_level; id = !new_id }
 
+(* ensure that all occurrences of 'Tvar None' are physically shared *)
+let tvar_none = Tvar None
+let tunivar_none = Tunivar None
+let norm = function
+  | Tvar None -> tvar_none
+  | Tunivar None -> tunivar_none
+  | d -> d
+
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
@@ -92,7 +100,7 @@ let rec typexp s ty =
     Tvar _ | Tunivar _ as desc ->
       if s.for_saving || ty.id < 0 then
         let ty' =
-          if s.for_saving then newpersty desc
+          if s.for_saving then newpersty (norm desc)
           else newty2 ty.level desc
         in
         save_desc ty desc; ty.desc <- Tsubst ty'; ty'
@@ -146,7 +154,7 @@ let rec typexp s ty =
                 | Tconstr _ | Tnil -> typexp s more
                 | Tunivar _ | Tvar _ ->
                     save_desc more more.desc;
-                    if s.for_saving then newpersty more.desc else
+                    if s.for_saving then newpersty (norm more.desc) else
                     if dup && is_Tvar more then newgenty more.desc else more
                 | _ -> assert false
               in
@@ -209,6 +217,7 @@ let type_declaration s decl =
                  )
                   lbls,
                rep)
+        | Type_open -> Type_open
         end;
       type_manifest =
         begin
@@ -290,11 +299,18 @@ let value_description s descr =
     val_attributes = attrs s descr.val_attributes;
    }
 
-let exception_declaration s descr =
-  { exn_args = List.map (type_expr s) descr.exn_args;
-    exn_loc = loc s descr.exn_loc;
-    exn_attributes = attrs s descr.exn_attributes;
-   }
+let extension_constructor s ext =
+  let ext =
+    { ext_type_path = type_path s ext.ext_type_path;
+      ext_type_params = List.map (typexp s) ext.ext_type_params;
+      ext_args = List.map (typexp s) ext.ext_args;
+      ext_ret_type = may_map (typexp s) ext.ext_ret_type;
+      ext_private = ext.ext_private;
+      ext_attributes = ext.ext_attributes;
+      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+  in
+    cleanup_types ();
+    ext
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
@@ -308,7 +324,7 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_exception(id, _) |
+  | (Sig_value(id, _) | Sig_typext(id, _, _) |
      Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
@@ -346,8 +362,8 @@ and signature_component s comp newid =
       Sig_value(newid, value_description s d)
   | Sig_type(id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_exception(id, d) ->
-      Sig_exception(newid, exception_declaration s d)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(newid, extension_constructor s ext, es)
   | Sig_module(id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->

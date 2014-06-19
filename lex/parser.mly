@@ -49,7 +49,7 @@ let as_cset = function
 %token <string> Tstring
 %token <Syntax.location> Taction
 %token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof
-       Tlbracket Trbracket
+       Tlbracket Trbracket Trefill
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
 %right Tas
@@ -65,10 +65,12 @@ let as_cset = function
 %%
 
 lexer_definition:
-    header named_regexps Trule definition other_definitions header Tend
+    header named_regexps refill_handler Trule definition other_definitions
+    header Tend
         { {header = $1;
-           entrypoints = $4 :: List.rev $5;
-           trailer = $6} }
+           refill_handler = $3;
+           entrypoints = $5 :: List.rev $6;
+           trailer = $7} }
 ;
 header:
     Taction
@@ -88,6 +90,10 @@ other_definitions:
         { $3::$1 }
   | /*epsilon*/
         { [] }
+;
+refill_handler:
+  | Trefill Taction { Some $2 }
+  | /*empty*/ { None }
 ;
 definition:
     Tident arguments Tequal Tparse entry

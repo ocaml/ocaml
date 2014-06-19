@@ -233,9 +233,15 @@ let add_event ev =
 
 (**** Compilation of a lambda expression ****)
 
-(* association staticraise numbers -> (lbl,size of stack *)
+let try_blocks = ref []  (* list of stack size for each nested try block *)
+
+(* association staticraise numbers -> (lbl,size of stack, try_blocks *)
 
 let sz_static_raises = ref []
+
+let push_static_raise i lbl_handler sz =
+  sz_static_raises := (i, (lbl_handler, sz, !try_blocks)) :: !sz_static_raises
+
 let find_raise_label i =
   try
     List.assoc i !sz_static_raises
@@ -247,8 +253,8 @@ let find_raise_label i =
 (* Will the translation of l lead to a jump to label ? *)
 let code_as_jump l sz = match l with
 | Lstaticraise (i,[]) ->
-    let label,size = find_raise_label i in
-    if sz = size then
+    let label,size,tb = find_raise_label i in
+    if sz = size && tb == !try_blocks then
       Some label
     else
       None
@@ -274,6 +280,10 @@ let compunit_name = ref ""
 (* Maximal stack size reached during the current function body *)
 
 let max_stack_used = ref 0
+
+
+(* Sequence of string tests *)
+
 
 (* Translate a primitive to a bytecode instruction (possibly a call to a C
    function) *)
@@ -397,10 +407,15 @@ let comp_primitive p args =
   | Pbigstring_set_64(_) -> Kccall("caml_ba_uint8_set64", 3)
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
+  | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
 
+module Storer =
+  Switch.Store
+    (struct type t = lambda type key = lambda
+      let make_key = Lambda.make_key end)
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
@@ -618,7 +633,7 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-   | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =
@@ -628,8 +643,7 @@ let rec comp_expr env exp sz cont =
               (comp_expr
                 (add_vars vars (sz+1) env)
                 handler (sz+nvars) (add_pop nvars cont1)) in
-          sz_static_raises :=
-            (i, (lbl_handler, sz+nvars)) :: !sz_static_raises ;
+          push_static_raise i lbl_handler (sz+nvars);
           push_dummies nvars
             (comp_expr env body (sz+nvars)
             (add_pop nvars (branch1 :: cont2)))
@@ -640,30 +654,39 @@ let rec comp_expr env exp sz cont =
               (Kpush::comp_expr
                 (add_var var (sz+1) env)
                 handler (sz+1) (add_pop 1 cont1)) in
-          sz_static_raises :=
-            (i, (lbl_handler, sz)) :: !sz_static_raises ;
+          push_static_raise i lbl_handler sz;
           comp_expr env body sz (branch1 :: cont2)
         end in
       sz_static_raises := List.tl !sz_static_raises ;
       r
   | Lstaticraise (i, args) ->
       let cont = discard_dead_code cont in
-      let label,size = find_raise_label i in
+      let label,size,tb = find_raise_label i in
+      let cont = branch_to label cont in
+      let rec loop sz tbb =
+        if tb == tbb then add_pop (sz-size) cont
+        else match tbb with
+        | [] -> assert false
+        | try_sz :: tbb -> add_pop (sz-try_sz-4) (Kpoptrap :: loop try_sz tbb)
+      in
+      let cont = loop sz !try_blocks in
       begin match args with
       | [arg] -> (* optim, argument passed in accumulator *)
-          comp_expr env arg sz
-            (add_pop (sz-size) (branch_to label cont))
-      | _ ->
-          comp_exit_args env args sz size
-            (add_pop (sz-size) (branch_to label cont))
+          comp_expr env arg sz cont
+      | _ -> comp_exit_args env args sz size cont
       end
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
-      Kpushtrap lbl_handler ::
-        comp_expr env body (sz+4) (Kpoptrap :: branch1 ::
-          Klabel lbl_handler :: Kpush ::
-            comp_expr (add_var id (sz+1) env) handler (sz+1) (add_pop 1 cont1))
+      let body_cont =
+        Kpoptrap :: branch1 ::
+        Klabel lbl_handler :: Kpush ::
+        comp_expr (add_var id (sz+1) env) handler (sz+1) (add_pop 1 cont1)
+      in
+      try_blocks := sz :: !try_blocks;
+      let l = comp_expr env body (sz+4) body_cont in
+      try_blocks := List.tl !try_blocks;
+      Kpushtrap lbl_handler :: l
   | Lifthenelse(cond, ifso, ifnot) ->
       comp_binary_test env cond ifso ifnot sz cont
   | Lsequence(exp1, exp2) ->
@@ -691,8 +714,9 @@ let rec comp_expr env exp sz cont =
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
+
 (* Build indirection vectors *)
-      let store = mk_store Lambda.same in
+      let store = Storer.mk_store () in
       let act_consts = Array.create sw.sw_numconsts 0
       and act_blocks = Array.create sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
@@ -703,9 +727,19 @@ let rec comp_expr env exp sz cont =
         (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
       List.iter
         (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
-
 (* Compile and label actions *)
       let acts = store.act_get () in
+(*
+      let a = store.act_get_shared () in
+      Array.iter
+        (function
+          | Switch.Shared (Lstaticraise _) -> ()
+          | Switch.Shared act ->
+              Printlambda.lambda Format.str_formatter act ;
+              Printf.eprintf "SHARE BYTE:\n%s\n" (Format.flush_str_formatter ())
+          | _ -> ())
+        a ;
+*)
       let lbls = Array.create (Array.length acts) 0 in
       for i = Array.length acts-1 downto 0 do
         let lbl,c1 = label_code (comp_expr env acts.(i) sz (branch :: !c)) in
@@ -723,6 +757,8 @@ let rec comp_expr env exp sz cont =
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
+  | Lstringswitch (arg,sw,d) ->
+      comp_expr env (Matching.expand_stringswitch arg sw d) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
@@ -827,6 +863,10 @@ and comp_binary_test env cond ifso ifnot sz cont =
 
   comp_expr env cond sz cont_cond
 
+(* Compile string switch *)
+
+and comp_string_switch env arg cases default sz cont = ()
+
 (**** Compilation of a code block (with tracking of stack usage) ****)
 
 let comp_block env exp sz cont =
@@ -890,3 +930,10 @@ let compile_phrase expr =
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
+
+let reset () =
+  label_counter := 0;
+  sz_static_raises := [];
+  compunit_name := "";
+  Stack.clear functions_to_compile;
+  max_stack_used := 0

@@ -229,7 +229,7 @@ let record_frame live dbg =
 
 (* Record floating-point and large integer literals *)
 
-let float_literals = ref ([] : (string * int) list)
+let float_literals = ref ([] : (int64 * int) list)
 let int_literals = ref ([] : (nativeint * int) list)
 
 (* Record external C functions to be called in a position-independent way
@@ -318,7 +318,8 @@ let load_store_size = function
 let instr_size = function
     Lend -> 0
   | Lop(Imove | Ispill | Ireload) -> 1
-  | Lop(Iconst_int n) -> if is_native_immediate n then 1 else 2
+  | Lop(Iconst_int n | Iconst_blockheader n) ->
+    if is_native_immediate n then 1 else 2
   | Lop(Iconst_float s) -> 2
   | Lop(Iconst_symbol s) -> 2
   | Lop(Icall_ind) -> 2
@@ -332,7 +333,7 @@ let instr_size = function
       if chunk = Byte_signed
       then load_store_size addr + 1
       else load_store_size addr
-  | Lop(Istore(chunk, addr)) -> load_store_size addr
+  | Lop(Istore(chunk, addr, _)) -> load_store_size addr
   | Lop(Ialloc n) -> 4
   | Lop(Ispecific(Ialloc_far n)) -> 5
   | Lop(Iintop Imod) -> 3
@@ -452,7 +453,7 @@ let rec emit_instr i dslot =
             | (_, _) ->
                 fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if is_native_immediate n then
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin
@@ -465,9 +466,9 @@ let rec emit_instr i dslot =
           `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
           `	{emit_string lg}	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}({emit_gpr 11})\n`
         end
-    | Lop(Iconst_float s) ->
+    | Lop(Iconst_float f) ->
         let lbl = new_label() in
-        float_literals := (s, lbl) :: !float_literals;
+        float_literals := (Int64.bits_of_float f, lbl) :: !float_literals;
         `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
         `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}({emit_gpr 11})\n`
     | Lop(Iconst_symbol s) ->
@@ -547,7 +548,7 @@ let rec emit_instr i dslot =
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =
           match chunk with
             Byte_unsigned | Byte_signed -> "stb"
@@ -627,8 +628,7 @@ let rec emit_instr i dslot =
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
 	end else begin
           let lbl = new_label() in
-          float_literals := ("4.503601774854144e15", lbl) :: !float_literals;
-          (* That float above represents 0x4330000080000000 *)
+          float_literals := (0x4330000080000000L, lbl) :: !float_literals;
           `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_fpr 0}, {emit_lower emit_label lbl}({emit_gpr 11})\n`;
           `	lis	{emit_gpr 0}, 0x4330\n`;
@@ -898,11 +898,11 @@ let emit_item = function
   | Cint n ->
       `	{emit_string datag}	{emit_nativeint n}\n`
   | Csingle f ->
-      emit_float32_directive ".long" f
+      emit_float32_directive ".long" (Int32.bits_of_float f)
   | Cdouble f ->
       if ppc64
-      then emit_float64_directive ".quad" f
-      else emit_float64_split_directive ".long" f
+      then emit_float64_directive ".quad" (Int64.bits_of_float f)
+      else emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	{emit_string datag}	{emit_symbol s}\n`
   | Clabel_address lbl ->

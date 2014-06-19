@@ -33,9 +33,9 @@ external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 
 let marshal (obj : t) =
-  Marshal.to_string obj []
+  Marshal.to_bytes obj []
 let unmarshal str pos =
-  (Marshal.from_string str pos, pos + Marshal.total_size str pos)
+  (Marshal.from_bytes str pos, pos + Marshal.total_size str pos)
 
 let lazy_tag = 246
 let closure_tag = 247
@@ -56,3 +56,28 @@ let final_tag = custom_tag
 let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
+
+let extension_slot x =
+  let x = repr x in
+  let slot =
+    if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
+    else x
+  in
+  let name =
+    if (is_block slot) && (tag slot) = object_tag then field slot 0
+    else raise Not_found
+  in
+    if (tag name) = string_tag then slot
+    else raise Not_found
+
+let extension_name x =
+  try
+    let slot = extension_slot x in
+      (obj (field slot 0) : string)
+  with Not_found -> invalid_arg "Obj.extension_name"
+
+let extension_id x =
+  try
+    let slot = extension_slot x in
+      (obj (field slot 1) : int)
+  with Not_found -> invalid_arg "Obj.extension_id"

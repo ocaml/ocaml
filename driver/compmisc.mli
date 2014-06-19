@@ -12,4 +12,3 @@
 
 val init_path : bool -> unit
 val initial_env : unit -> Env.t
-

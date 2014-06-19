@@ -112,7 +112,7 @@ let f (x : t) : T.t = x ;;
 module A = struct
   module B = struct type t let compare x y = 0 end
   module S = Set.Make(B)
-  let empty = S.empty 
+  let empty = S.empty
 end
 module A1 = A;;
 A1.empty = A.empty;;
@@ -130,3 +130,93 @@ module F (Y : sig type t end) (M : sig type t = Y.t end) = struct end;;
 module G = F (M.Y);;
 (*module N = G (M);;
 module N = F (M.Y) (M);;*)
+
+(* PR#6307 *)
+
+module A1 = struct end
+module A2 = struct end
+module L1 = struct module X = A1 end
+module L2 = struct module X = A2 end;;
+
+module F (L : (module type of L1)) = struct end;;
+
+module F1 = F(L1);; (* ok *)
+module F2 = F(L2);; (* should succeed too *)
+
+(* Counter example: why we need to be careful with PR#6307 *)
+module Int = struct type t = int let compare = compare end
+module SInt = Set.Make(Int)
+type (_,_) eq = Eq : ('a,'a) eq
+type wrap = W of (SInt.t, SInt.t) eq
+
+module M = struct
+  module I = Int
+  type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
+end;;
+module type S = module type of M;; (* keep alias *)
+
+module Int2 = struct type t = int let compare x y = compare y x end;;
+module type S' = sig
+  module I = Int2
+  include S with module I := I
+end;; (* fail *)
+
+(* (* if the above succeeded, one could break invariants *)
+module rec M2 : S' = M2;; (* should succeed! (but this is bad) *)
+
+let M2.W eq = W Eq;;
+
+let s = List.fold_right SInt.add [1;2;3] SInt.empty;;
+module SInt2 = Set.Make(Int2);;
+let conv : type a b. (a,b) eq -> a -> b = fun Eq x -> x;;
+let s' : SInt2.t = conv eq s;;
+SInt2.elements s';;
+SInt2.mem 2 s';; (* invariants are broken *)
+*)
+
+(* Check behavior with submodules *)
+module M = struct
+  module N = struct module I = Int end
+  module P = struct module I = N.I end
+  module Q = struct
+    type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq
+  end
+end;;
+module type S = module type of M ;;
+
+module M = struct
+  module N = struct module I = Int end
+  module P = struct module I = N.I end
+  module Q = struct
+    type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq
+  end
+end;;
+module type S = module type of M ;;
+
+(* PR#6365 *)
+module type S = sig module M : sig type t val x : t end end;;
+module H = struct type t = A let x = A end;;
+module H' = H;;
+module type S' = S with module M = H';; (* shouldn't introduce an alias *)
+
+(* PR#6376 *)
+module type Alias = sig module N : sig end module M = N end;;
+module F (X : sig end) = struct type t end;;
+module type A = Alias with module N := F(List);;
+module rec Bad : A = Bad;;
+
+(* Shinwell 2014-04-23 *)
+module B = struct
+ module R = struct
+   type t = string
+ end
+
+ module O = R
+end
+
+module K = struct
+ module E = B
+ module N = E.O
+end;;
+
+let x : K.N.t = "foo";;

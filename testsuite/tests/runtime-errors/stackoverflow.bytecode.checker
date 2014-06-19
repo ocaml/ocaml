@@ -11,4 +11,3 @@
 #########################################################################
 
 $DIFF stackoverflow.bytecode.reference stackoverflow.bytecode.result
-

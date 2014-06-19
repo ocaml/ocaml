@@ -69,6 +69,8 @@ val mkloc : 'a -> t -> 'a loc
 val print: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
+val absolute_path: string -> string
+
 val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
@@ -87,9 +89,12 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
+exception Error of error
+
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
-val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string -> ('a, unit, string, error) format4 -> 'a
+val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
+            -> ('a, unit, string, error) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 

@@ -109,14 +109,7 @@ CAMLextern struct channel * caml_all_opened_channels;
 
 /* Conversion between file_offset and int64 */
 
-#ifdef ARCH_INT64_TYPE
 #define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))
-#else
-CAMLextern value caml_Val_file_offset(file_offset fofs);
-CAMLextern file_offset caml_File_offset_val(value v);
-#define Val_file_offset caml_Val_file_offset
-#define File_offset_val caml_File_offset_val
-#endif
 
 #endif /* CAML_IO_H */

@@ -41,10 +41,35 @@ let get_unix_environment () =
   String.concat "" (List.map f !Debugger_config.environment)
 ;;
 
+(* Notes:
+   1. This quoting is not the same as [Filename.quote] because the "set"
+      command is a shell built-in and its quoting rules are different
+      from regular commands.
+   2. Microsoft's documentation omits the double-quote from the list
+      of characters that need quoting, but that is a mistake (unquoted
+      quotes are included in the value, but they alter the quoting of
+      characters between them).
+   Reference: http://msdn.microsoft.com/en-us/library/bb490954.aspx
+ *)
+let quote_for_windows_shell s =
+  let b = Buffer.create (20 + String.length s) in
+  for i = 0 to String.length s - 1 do
+    begin match s.[i] with
+    | '<' | '>' | '|' | '&' | '^' | '\"' ->
+      Buffer.add_char b '^';
+    | _ -> ()
+    end;
+    Buffer.add_char b s.[i];
+  done;
+  Buffer.contents b
+;;
+
 (* Returns a command line prefix to set environment for the debuggee *)
 let get_win32_environment () =
   (* Note: no space before the & or Windows will add it to the value *)
-  let f (vname, vvalue) = Printf.sprintf "set %s=%s&" vname vvalue in
+  let f (vname, vvalue) =
+    Printf.sprintf "set %s=%s&" vname (quote_for_windows_shell vvalue)
+  in
   String.concat "" (List.map f !Debugger_config.environment)
 
 (* A generic function for launching the program *)

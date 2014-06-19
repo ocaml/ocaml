@@ -51,9 +51,13 @@ let rec eliminate_ref id = function
          sw_numblocks = sw.sw_numblocks;
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
-         sw_failaction = match sw.sw_failaction with
-         | None -> None
-         | Some l -> Some (eliminate_ref id l)})
+         sw_failaction =
+            Misc.may_map (eliminate_ref id) sw.sw_failaction; })
+  | Lstringswitch(e, sw, default) ->
+      Lstringswitch
+        (eliminate_ref id e,
+         List.map (fun (s, e) -> (s, eliminate_ref id e)) sw,
+         Misc.may_map (eliminate_ref id) default)
   | Lstaticraise (i,args) ->
       Lstaticraise (i,List.map (eliminate_ref id) args)
   | Lstaticcatch(e1, i, e2) ->
@@ -115,6 +119,15 @@ let simplify_exits lam =
       count l;
       List.iter (fun (_, l) -> count l) sw.sw_consts;
       List.iter (fun (_, l) -> count l) sw.sw_blocks
+  | Lstringswitch(l, sw, d) ->
+      count l;
+      List.iter (fun (_, l) -> count l) sw;
+      begin match  d with
+      | None -> ()
+      | Some d -> match sw with
+        | []|[_] -> count d
+        | _ -> count d; count d (* default will get replicated *)
+      end
   | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
       (* i will be replaced by j in l1, so each occurence of i in l1
@@ -138,10 +151,7 @@ let simplify_exits lam =
   | Lsequence(l1, l2) -> count l1; count l2
   | Lwhile(l1, l2) -> count l1; count l2
   | Lfor(_, l1, l2, dir, l3) -> count l1; count l2; count l3
-  | Lassign(v, l) ->
-      (* Lalias-bound variables are never assigned, so don't increase
-         v's refcount *)
-      count l
+  | Lassign(v, l) -> count l
   | Lsend(k, m, o, ll, _) -> List.iter count (m::o::ll)
   | Levent(l, _) -> count l
   | Lifused(v, l) -> count l
@@ -209,13 +219,15 @@ let simplify_exits lam =
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
-      and new_fail = match sw.sw_failaction with
-      | None -> None
-      | Some l -> Some (simplif l) in
+      and new_fail = Misc.may_map simplif sw.sw_failaction in
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
+  | Lstringswitch(l,sw,d) ->
+      Lstringswitch
+        (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
+         Misc.may_map simplif d)
   | Lstaticraise (i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
@@ -241,17 +253,10 @@ let simplify_exits lam =
   | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
-  | Lstaticcatch (l1,(i,xs), (Lvar _ as l2)) ->
-      begin match count_exit i with
-      | 0 -> simplif l1
-      | _ ->
-          Hashtbl.add subst i (xs,l2) ;
-          simplif l1
-      end
   | Lstaticcatch (l1,(i,xs),l2) ->
       begin match count_exit i with
       | 0 -> simplif l1
-      | 1 ->
+      | 1 when i >= 0 ->
           Hashtbl.add subst i (xs,simplif l2) ;
           simplif l1
       | _ ->
@@ -361,6 +366,17 @@ let simplify_lets lam =
       count bv l;
       List.iter (fun (_, l) -> count bv l) sw.sw_consts;
       List.iter (fun (_, l) -> count bv l) sw.sw_blocks
+  | Lstringswitch(l, sw, d) ->
+      count bv l ;
+      List.iter (fun (_, l) -> count bv l) sw ;
+      begin match d with
+      | Some d ->
+          begin match sw with
+          | []|[_] -> count bv d
+          | _ -> count bv d ; count bv d
+          end
+      | None -> ()
+      end
   | Lstaticraise (i,ls) -> List.iter (count bv) ls
   | Lstaticcatch(l1, (i,_), l2) -> count bv l1; count bv l2
   | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
@@ -453,13 +469,15 @@ let simplify_lets lam =
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
-      and new_fail = match sw.sw_failaction with
-      | None -> None
-      | Some l -> Some (simplif l) in
+      and new_fail = Misc.may_map simplif sw.sw_failaction in
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
+  | Lstringswitch (l,sw,d) ->
+      Lstringswitch
+        (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
+         Misc.may_map simplif d)
   | Lstaticraise (i,ls) ->
       Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(l1, (i,args), l2) ->
@@ -520,7 +538,14 @@ let rec emit_tail_infos is_tail lambda =
   | Lswitch (lam, sw) ->
       emit_tail_infos false lam;
       list_emit_tail_infos_fun snd is_tail sw.sw_consts;
-      list_emit_tail_infos_fun snd is_tail sw.sw_blocks
+      list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
+      Misc.may  (emit_tail_infos is_tail) sw.sw_failaction
+  | Lstringswitch (lam, sw, d) ->
+      emit_tail_infos false lam;
+      List.iter
+        (fun (_,lam) ->  emit_tail_infos is_tail lam)
+        sw ;
+      Misc.may (emit_tail_infos is_tail) d
   | Lstaticraise (_, l) ->
       list_emit_tail_infos false l
   | Lstaticcatch (body, _, handler) ->

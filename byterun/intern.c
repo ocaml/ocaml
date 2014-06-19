@@ -738,7 +738,8 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
 static void intern_bad_code_pointer(unsigned char digest[16])
 {
   char msg[256];
-  sprintf(msg, "input_value: unknown code module "
+  snprintf(msg, sizeof(msg), 
+               "input_value: unknown code module "
                "%02X%02X%02X%02X%02X%02X%02X%02X"
                "%02X%02X%02X%02X%02X%02X%02X%02X",
           digest[0], digest[1], digest[2], digest[3],

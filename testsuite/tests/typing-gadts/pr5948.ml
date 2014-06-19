@@ -1,6 +1,6 @@
 type tag = [`TagA | `TagB | `TagC];;
 
-type 'a poly = 
+type 'a poly =
     AandBTags : [< `TagA of int | `TagB ] poly
   | ATag : [< `TagA of int] poly
 (* constraint 'a = [< `TagA of int | `TagB] *)
@@ -10,17 +10,17 @@ let intA = function `TagA i -> i
 let intB = function `TagB -> 4
 ;;
 
-let intAorB = function 
+let intAorB = function
     `TagA i -> i
   | `TagB -> 4
 ;;
 
-type _ wrapPoly = 
+type _ wrapPoly =
     WrapPoly : 'a poly -> ([< `TagA of int | `TagB] as 'a) wrapPoly
 ;;
 
 let example6 : type a. a wrapPoly -> (a -> int) =
-  fun w -> 
+  fun w  ->
     match w with
     | WrapPoly ATag -> intA
     | WrapPoly _ -> intA (* This should not be allowed *)

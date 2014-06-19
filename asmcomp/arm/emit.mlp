@@ -273,7 +273,7 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 (* Pending floating-point literals *)
-let float_literals = ref ([] : (string * label) list)
+let float_literals = ref ([] : (int64 * label) list)
 (* Pending relative references to the global offset table *)
 let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
@@ -283,12 +283,13 @@ let num_literals = ref 0
 
 (* Label a floating-point literal *)
 let float_literal f =
+  let repr = Int64.bits_of_float f in
   try
-    List.assoc f !float_literals
+    List.assoc repr !float_literals
   with Not_found ->
     let lbl = new_label() in
     num_literals := !num_literals + 2;
-    float_literals := (f, lbl) :: !float_literals;
+    float_literals := (repr, lbl) :: !float_literals;
     lbl
 
 (* Label a GOTREL literal *)
@@ -314,7 +315,7 @@ let emit_literals() =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.double	{emit_string f}\n`)
+        `{emit_label lbl}:`; emit_float64_split_directive ".long" f)
       !float_literals;
     float_literals := []
   end;
@@ -387,11 +388,10 @@ let emit_instr i =
               `	ldr	{emit_reg dst}, {emit_stack src}\n`
           end; 1
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         emit_intconst i.res.(0) (Nativeint.to_int32 n)
     | Lop(Iconst_float f) when !fpu = Soft ->
-        `	@ {emit_string f}\n`;
-        let bits = Int64.bits_of_float (float_of_string f) in
+        let bits = Int64.bits_of_float f in
         let high_bits = Int64.to_int32 (Int64.shift_right_logical bits 32)
         and low_bits = Int64.to_int32 bits in
         if is_immediate low_bits || is_immediate high_bits then begin
@@ -406,7 +406,7 @@ let emit_instr i =
         end
     | Lop(Iconst_float f) when !fpu = VFPv2 ->
         let lbl = float_literal f in
-        `	fldd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string f}\n`;
+        `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
         1
     | Lop(Iconst_float f) ->
         let encode imm =
@@ -425,12 +425,12 @@ let emit_instr i =
               let ex = ((ex + 3) land 0x07) lxor 0x04 in
               Some((sg lsl 7) lor (ex lsl 4) lor mn)
           end in
-        begin match encode (Int64.bits_of_float (float_of_string f)) with
+        begin match encode (Int64.bits_of_float f) with
           None ->
             let lbl = float_literal f in
-            `	fldd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string f}\n`
+            `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
         | Some imm8 ->
-            `	fconstd	{emit_reg i.res.(0)}, #{emit_int imm8} @ {emit_string f}\n`
+            `	fconstd	{emit_reg i.res.(0)}, #{emit_int imm8}\n`
         end; 1
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
@@ -508,10 +508,10 @@ let emit_instr i =
           | Double_u -> "fldd"
           | _ (* 32-bit quantities *) -> "ldr" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 0}\n`; 1
-    | Lop(Istore(Single, addr)) when !fpu >= VFPv2 ->
+    | Lop(Istore(Single, addr, _)) when !fpu >= VFPv2 ->
         `	fcvtsd	s14, {emit_reg i.arg.(0)}\n`;
         `	fsts	s14, {emit_addressing addr i.arg 1}\n`; 2
-    | Lop(Istore((Double | Double_u), addr)) when !fpu = Soft ->
+    | Lop(Istore((Double | Double_u), addr, _)) when !fpu = Soft ->
         (* Use STM or STRD if possible *)
         begin match i.arg.(0), i.arg.(1), addr with
           {loc = Reg rt}, {loc = Reg rt2}, Iindexed 0
@@ -525,7 +525,7 @@ let emit_instr i =
             `	str	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 2}\n`;
             `	str	{emit_reg i.arg.(1)}, {emit_addressing addr' i.arg 2}\n`; 2
         end
-    | Lop(Istore(size, addr)) ->
+    | Lop(Istore(size, addr, _)) ->
         let r = i.arg.(0) in
         let instr =
           match size with
@@ -874,8 +874,8 @@ let emit_item = function
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
   | Cint n -> `	.long	{emit_int32 (Nativeint.to_int32 n)}\n`
-  | Csingle f -> `	.single	{emit_string f}\n`
-  | Cdouble f -> `	.double	{emit_string f}\n`
+  | Csingle f -> emit_float32_directive ".long" (Int32.bits_of_float f)
+  | Cdouble f -> emit_float64_split_directive ".long" (Int64.bits_of_float f)
   | Csymbol_address s -> `	.word	{emit_symbol s}\n`
   | Clabel_address lbl -> `	.word	{emit_data_label lbl}\n`
   | Cstring s -> emit_string_directive "	.ascii  " s

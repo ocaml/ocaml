@@ -14,12 +14,13 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-CAMLRUN=../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
-OCAMLYACC= ../boot/ocamlyacc
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
 OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
 
@@ -36,9 +37,9 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(OCAMLBIN)
+INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -78,6 +79,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_parameter.cmo\
 	odoc_value.cmo\
 	odoc_type.cmo\
+	odoc_extension.cmo\
 	odoc_exception.cmo\
 	odoc_class.cmo\
 	odoc_module.cmo\

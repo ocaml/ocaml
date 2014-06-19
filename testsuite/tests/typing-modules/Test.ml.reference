@@ -29,4 +29,9 @@ Error: Signature mismatch:
 Error: This variant or record definition does not match that of type u
        The types for field X are not equal.
 #       module type S = sig exception Foo of bool end
+#       module F : functor (X : sig  end) -> sig val x : int end
+# Characters 0-3:
+  F.x;; (* fail *)
+  ^^^
+Error: The module F is a functor, not a structure
 # 

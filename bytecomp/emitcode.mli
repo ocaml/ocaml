@@ -21,7 +21,7 @@ val to_file: out_channel -> string -> instruction list -> unit
              name of compilation unit implemented
              list of instructions to emit *)
 val to_memory: instruction list -> instruction list ->
-                    string * int * (reloc_info * int) list
+                    bytes * int * (reloc_info * int) list
         (* Arguments:
              initialization code (terminated by STOP)
              function code
@@ -36,3 +36,5 @@ val to_packed_file:
              list of instructions to emit
            Result:
              relocation information (reversed) *)
+
+val reset: unit -> unit

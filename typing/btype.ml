@@ -12,6 +12,7 @@
 
 (* Basic operations on core types *)
 
+open Misc
 open Types
 
 (**** Sets, maps and hashtables of types ****)
@@ -235,6 +236,107 @@ let rec iter_abbrev f = function
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
+type type_iterators =
+  { it_signature: type_iterators -> signature -> unit;
+    it_signature_item: type_iterators -> signature_item -> unit;
+    it_value_description: type_iterators -> value_description -> unit;
+    it_type_declaration: type_iterators -> type_declaration -> unit;
+    it_extension_constructor: type_iterators -> extension_constructor -> unit;
+    it_module_declaration: type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: type_iterators -> class_declaration -> unit;
+    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
+    it_module_type: type_iterators -> module_type -> unit;
+    it_class_type: type_iterators -> class_type -> unit;
+    it_type_kind: type_iterators -> type_kind -> unit;
+    it_do_type_expr: type_iterators -> type_expr -> unit;
+    it_type_expr: type_iterators -> type_expr -> unit;
+    it_path: Path.t -> unit; }
+
+let type_iterators =
+  let it_signature it =
+    List.iter (it.it_signature_item it)
+  and it_signature_item it = function
+      Sig_value (_, vd)     -> it.it_value_description it vd
+    | Sig_type (_, td, _)   -> it.it_type_declaration it td
+    | Sig_typext (_, td, _) -> it.it_extension_constructor it td
+    | Sig_module (_, md, _) -> it.it_module_declaration it md
+    | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
+    | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
+    | Sig_class_type (_, ctd, _) -> it.it_class_type_declaration it ctd
+  and it_value_description it vd =
+    it.it_type_expr it vd.val_type
+  and it_type_declaration it td =
+    List.iter (it.it_type_expr it) td.type_params;
+    may (it.it_type_expr it) td.type_manifest;
+    it.it_type_kind it td.type_kind
+  and it_extension_constructor it td =
+    it.it_path td.ext_type_path;
+    List.iter (it.it_type_expr it) td.ext_type_params;
+    List.iter (it.it_type_expr it) td.ext_args;
+    may (it.it_type_expr it) td.ext_ret_type
+  and it_module_declaration it md =
+    it.it_module_type it md.md_type
+  and it_modtype_declaration it mtd =
+    may (it.it_module_type it) mtd.mtd_type
+  and it_class_declaration it cd =
+    List.iter (it.it_type_expr it) cd.cty_params;
+    it.it_class_type it cd.cty_type;
+    may (it.it_type_expr it) cd.cty_new;
+    it.it_path cd.cty_path
+  and it_class_type_declaration it ctd =
+    List.iter (it.it_type_expr it) ctd.clty_params;
+    it.it_class_type it ctd.clty_type;
+    it.it_path ctd.clty_path
+  and it_module_type it = function
+      Mty_ident p
+    | Mty_alias p -> it.it_path p
+    | Mty_signature sg -> it.it_signature it sg
+    | Mty_functor (_, mto, mt) ->
+        may (it.it_module_type it) mto;
+        it.it_module_type it mt
+  and it_class_type it = function
+      Cty_constr (p, tyl, cty) ->
+        it.it_path p;
+        List.iter (it.it_type_expr it) tyl;
+        it.it_class_type it cty
+    | Cty_signature cs ->
+        it.it_type_expr it cs.csig_self;
+        Vars.iter (fun _ (_,_,ty) -> it.it_type_expr it ty) cs.csig_vars;
+        List.iter
+          (fun (p, tl) -> it.it_path p; List.iter (it.it_type_expr it) tl)
+          cs.csig_inher
+    | Cty_arrow  (_, ty, cty) ->
+        it.it_type_expr it ty;
+        it.it_class_type it cty
+  and it_type_kind it = function
+      Type_abstract -> ()
+    | Type_record (ll, _) ->
+        List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
+    | Type_variant cl ->
+        List.iter (fun cd ->
+          List.iter (it.it_type_expr it) cd.cd_args;
+          may (it.it_type_expr it) cd.cd_res)
+          cl
+    | Type_open -> ()
+  and it_do_type_expr it ty =
+    iter_type_expr (it.it_type_expr it) ty;
+    match ty.desc with
+      Tconstr (p, _, _)
+    | Tobject (_, {contents=Some (p, _)})
+    | Tpackage (p, _, _) ->
+        it.it_path p
+    | Tvariant row ->
+        may (fun (p,_) -> it.it_path p) (row_repr row).row_name
+    | _ -> ()
+  and it_path p = ()
+  in
+  { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
+    it_type_kind; it_class_type; it_module_type;
+    it_signature; it_class_type_declaration; it_class_declaration;
+    it_modtype_declaration; it_module_declaration; it_extension_constructor;
+    it_type_declaration; it_value_description; it_signature_item; }
+
 let copy_row f fixed row keep more =
   let fields = List.map
       (fun (l, fi) -> l,
@@ -334,6 +436,17 @@ let mark_type_node ty =
 let mark_type_params ty =
   iter_type_expr mark_type ty
 
+let type_iterators =
+  let it_type_expr it ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      mark_type_node ty;
+      it.it_do_type_expr it ty;
+    end
+  in
+  {type_iterators with it_type_expr}
+
+
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
@@ -342,36 +455,24 @@ let rec unmark_type ty =
     iter_type_expr unmark_type ty
   end
 
+let unmark_iterators =
+  let it_type_expr it ty = unmark_type ty in
+  {type_iterators with it_type_expr}
+
 let unmark_type_decl decl =
-  List.iter unmark_type decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract -> ()
-  | Type_variant cstrs ->
-      List.iter
-        (fun d ->
-          List.iter unmark_type d.cd_args;
-          Misc.may unmark_type d.cd_res)
-        cstrs
-  | Type_record(lbls, rep) ->
-      List.iter (fun d -> unmark_type d.ld_type) lbls
-  end;
-  begin match decl.type_manifest with
-    None    -> ()
-  | Some ty -> unmark_type ty
-  end
+  unmark_iterators.it_type_declaration unmark_iterators decl
+
+let unmark_extension_constructor ext =
+  List.iter unmark_type ext.ext_type_params;
+  List.iter unmark_type ext.ext_args;
+  Misc.may unmark_type ext.ext_ret_type
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;
   Vars.iter (fun l (m, v, t) -> unmark_type t) sign.csig_vars
 
-let rec unmark_class_type =
-  function
-    Cty_constr (p, tyl, cty) ->
-      List.iter unmark_type tyl; unmark_class_type cty
-  | Cty_signature sign ->
-      unmark_class_signature sign
-  | Cty_arrow (_, ty, cty) ->
-      unmark_type ty; unmark_class_type cty
+let unmark_class_type cty =
+  unmark_iterators.it_class_type unmark_iterators cty
 
 
                   (*******************************************)

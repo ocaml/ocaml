@@ -23,10 +23,14 @@ external channel: in_channel -> int -> t = "caml_md5_chan"
 let string str =
   unsafe_string str 0 (String.length str)
 
+let bytes b = string (Bytes.unsafe_to_string b)
+
 let substring str ofs len =
   if ofs < 0 || len < 0 || ofs > String.length str - len
   then invalid_arg "Digest.substring"
   else unsafe_string str ofs len
+
+let subbytes b ofs len = substring (Bytes.unsafe_to_string b) ofs len
 
 let file filename =
   let ic = open_in_bin filename in
@@ -35,23 +39,21 @@ let file filename =
   d
 
 let output chan digest =
-  output chan digest 0 16
+  output_string chan digest
 
-let input chan =
-  let digest = String.create 16 in
-  really_input chan digest 0 16;
-  digest
+let input chan = really_input_string chan 16
 
-let char_hex n = Char.unsafe_chr (n + if n < 10 then Char.code '0' else (Char.code 'a' - 10))
+let char_hex n =
+  Char.unsafe_chr (n + if n < 10 then Char.code '0' else (Char.code 'a' - 10))
 
 let to_hex d =
-  let result = String.create 32 in
+  let result = Bytes.create 32 in
   for i = 0 to 15 do
     let x = Char.code d.[i] in
-    String.unsafe_set result (i*2) (char_hex (x lsr 4));
-    String.unsafe_set result (i*2+1) (char_hex (x land 0x0f));
+    Bytes.unsafe_set result (i*2) (char_hex (x lsr 4));
+    Bytes.unsafe_set result (i*2+1) (char_hex (x land 0x0f));
   done;
-  result
+  Bytes.unsafe_to_string result
 
 let from_hex s =
   if String.length s <> 32 then raise (Invalid_argument "Digest.from_hex");
@@ -63,8 +65,8 @@ let from_hex s =
     | _ -> raise (Invalid_argument "Digest.from_hex")
   in
   let byte i = digit s.[i] lsl 4 + digit s.[i+1] in
-  let result = String.create 16 in
+  let result = Bytes.create 16 in
   for i = 0 to 15 do
-    result.[i] <- Char.chr (byte (2 * i));
+    Bytes.set result i (Char.chr (byte (2 * i)));
   done;
-  result
+  Bytes.unsafe_to_string result

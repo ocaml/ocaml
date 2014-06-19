@@ -48,15 +48,22 @@ ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > ld.conf
 	echo "$(LIBDIR)" >> ld.conf
 
+# Installation
+
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
+
 install::
-	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
-	cp libcamlrun.$(A) $(LIBDIR)/libcamlrun.$(A)
-	cd $(LIBDIR); $(RANLIB) libcamlrun.$(A)
-	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
+	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
+	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
+	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
+	  else mkdir $(INSTALL_LIBDIR)/caml; fi
 	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
+	  sed -f ../tools/cleanup-header $$i > $(INSTALL_LIBDIR)/caml/$$i; \
 	done
-	cp ld.conf $(LIBDIR)/ld.conf
+	cp ld.conf $(INSTALL_LIBDIR)/ld.conf
 .PHONY: install
 
 install:: install-$(RUNTIMED)
@@ -65,8 +72,8 @@ install-noruntimed:
 .PHONY: install-noruntimed
 
 install-runtimed:
-	cp ocamlrund$(EXE) $(BINDIR)/ocamlrund$(EXE)
-	cp libcamlrund.$(A) $(LIBDIR)/libcamlrund.$(A)
+	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
+	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
 .PHONY: install-runtimed
 
 # If primitives contain duplicated lines (e.g. because the code is defined

@@ -20,6 +20,7 @@ type result_element =
   | Res_class_type of Odoc_class.t_class_type
   | Res_value of Odoc_value.t_value
   | Res_type of Odoc_type.t_type
+  | Res_extension of Odoc_extension.t_extension_constructor
   | Res_exception of Odoc_exception.t_exception
   | Res_attribute of Odoc_value.t_attribute
   | Res_method of Odoc_value.t_method
@@ -46,6 +47,8 @@ module type Predicates =
     val p_recfield : Odoc_type.t_type -> Odoc_type.record_field -> t -> bool
     val p_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> t -> bool
     val p_type : Odoc_type.t_type -> t -> (bool * bool)
+    val p_extension :
+      Odoc_extension.t_extension_constructor -> t -> bool
     val p_exception : Odoc_exception.t_exception -> t -> bool
     val p_attribute : Odoc_value.t_attribute -> t -> bool
     val p_method : Odoc_value.t_method -> t -> bool
@@ -72,6 +75,14 @@ module Search :
 
       (** search in a type *)
       val search_type : Odoc_type.t_type -> P.t -> result_element list
+
+      (** search in an extension constructor *)
+      val search_extension_constructor :
+          Odoc_extension.t_extension_constructor -> P.t -> result_element list
+
+      (** search in a type extension *)
+      val search_type_extension :
+          Odoc_extension.t_type_extension -> P.t -> result_element list
 
       (** search in an exception *)
       val search_exception :
@@ -116,6 +127,8 @@ module P_name :
     val p_recfield : Odoc_type.t_type -> Odoc_type.record_field -> Str.regexp -> bool
     val p_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> Str.regexp -> bool
     val p_type : Odoc_type.t_type -> Str.regexp -> (bool * bool)
+    val p_extension :
+      Odoc_extension.t_extension_constructor -> Str.regexp -> bool
     val p_exception : Odoc_exception.t_exception -> Str.regexp -> bool
     val p_attribute : Odoc_value.t_attribute -> Str.regexp -> bool
     val p_method : Odoc_value.t_method -> Str.regexp -> bool
@@ -129,6 +142,10 @@ module Search_by_name :
     val search_recfield : Odoc_type.t_type -> Odoc_type.record_field -> P_name.t -> result_element list
     val search_const : Odoc_type.t_type -> Odoc_type.variant_constructor -> P_name.t -> result_element list
     val search_type : Odoc_type.t_type -> P_name.t -> result_element list
+    val search_extension_constructor :
+      Odoc_extension.t_extension_constructor -> P_name.t -> result_element list
+    val search_type_extension :
+      Odoc_extension.t_type_extension -> P_name.t -> result_element list
     val search_exception :
       Odoc_exception.t_exception -> P_name.t -> result_element list
     val search_attribute :
@@ -147,6 +164,10 @@ module Search_by_name :
 
 (** A function to search all the values in a list of modules. *)
 val values : Odoc_module.t_module list -> Odoc_value.t_value list
+
+(** A function to search all the extension constructors in a list of modules. *)
+val extensions :
+  Odoc_module.t_module list -> Odoc_extension.t_extension_constructor list
 
 (** A function to search all the exceptions in a list of modules. *)
 val exceptions : Odoc_module.t_module list -> Odoc_exception.t_exception list
@@ -195,6 +216,10 @@ val class_exists : Odoc_module.t_module list -> Str.regexp -> bool
 (** Return [true] if a class type  with the given complete name (regexp) exists
    in the given module list.*)
 val class_type_exists : Odoc_module.t_module list -> Str.regexp -> bool
+
+(** Return [true] if an extension with the given complete name (regexp) exists
+   in the given module list.*)
+val extension_exists : Odoc_module.t_module list -> Str.regexp -> bool
 
 (** Return [true] if a exception with the given complete name (regexp) exists
    in the given module list.*)
