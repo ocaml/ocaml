@@ -134,9 +134,7 @@ let get_type_path ty tenv =
 open Format
 ;;
 
-let is_cons = function
-| {cstr_name = "::"} -> true
-| _ -> false
+let is_infix_construct cstr = cstr.cstr_name.[0] = ':'
 
 let pretty_const c = match c with
 | Const_int i -> Printf.sprintf "%d" i
@@ -169,14 +167,12 @@ let rec pretty_val ppf v =
       fprintf ppf "%s" cstr.cstr_name
   | Tpat_construct (_, cstr, [w]) ->
       fprintf ppf "@[<2>%s@ %a@]" cstr.cstr_name pretty_arg w
+  | Tpat_construct (_, cstr, [v1;v2]) when is_infix_construct cstr ->
+      fprintf ppf "@[(%a)@,%s@,(%a)@]" pretty_val v1 cstr.cstr_name pretty_val v2
+  | Tpat_construct (_, cstr, vs) when is_infix_construct cstr ->
+      fprintf ppf "@[<2>(%s)@ @[(%a)@]@]" cstr.cstr_name (pretty_vals ",") vs
   | Tpat_construct (_, cstr, vs) ->
-      let name = cstr.cstr_name in
-      begin match (name, vs) with
-        ("::", [v1;v2]) ->
-          fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
-      |  _ ->
-          fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
-      end
+      fprintf ppf "@[<2>%s@ @[(%a)@]@]" cstr.cstr_name (pretty_vals ",") vs
   | Tpat_variant (l, None, _) ->
       fprintf ppf "`%s" l
   | Tpat_variant (l, Some w, _) ->
@@ -196,18 +192,6 @@ let rec pretty_val ppf v =
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
-
-and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [_ ; _])
-    when is_cons cstr ->
-      fprintf ppf "(%a)" pretty_val v
-| _ -> pretty_val ppf v
-
-and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [v1 ; v2])
-    when is_cons cstr ->
-      fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
-| _ -> pretty_val ppf v
 
 and pretty_arg ppf v = match v.pat_desc with
 | Tpat_construct (_,_,_::_) -> fprintf ppf "(%a)" pretty_val v
