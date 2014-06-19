@@ -106,11 +106,11 @@ let mkuplus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
-let mkexp_cons consloc args loc =
-  Exp.mk ~loc (Pexp_construct(mkloc (Lident "::") consloc, Some args))
+let mkexp_constructor constructor constructorloc args loc =
+  Exp.mk ~loc (Pexp_construct(mkloc (Lident constructor) constructorloc, Some args))
 
-let mkpat_cons consloc args loc =
-  Pat.mk ~loc (Ppat_construct(mkloc (Lident "::") consloc, Some args))
+let mkpat_constructor constructor constructorloc args loc =
+  Pat.mk ~loc (Ppat_construct(mkloc (Lident constructor) constructorloc, Some args))
 
 let rec mktailexp nilloc = function
     [] ->
@@ -124,7 +124,7 @@ let rec mktailexp nilloc = function
                loc_ghost = true}
       in
       let arg = Exp.mk ~loc (Pexp_tuple [e1; exp_el]) in
-      mkexp_cons {loc with loc_ghost = true} arg loc
+      mkexp_constructor "::" {loc with loc_ghost = true} arg loc
 
 let rec mktailpat nilloc = function
     [] ->
@@ -138,7 +138,7 @@ let rec mktailpat nilloc = function
                loc_ghost = true}
       in
       let arg = Pat.mk ~loc (Ppat_tuple [p1; pat_pl]) in
-      mkpat_cons {loc with loc_ghost = true} arg loc
+      mkpat_constructor "::" {loc with loc_ghost = true} arg loc
 
 let mkstrexp e attrs =
   { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc }
@@ -307,7 +307,6 @@ let mkctf_attrs d attrs =
 %token <char> CHAR
 %token CLASS
 %token COLON
-%token COLONCOLON
 %token COLONEQUAL
 %token COLONGREATER
 %token COMMA
@@ -340,6 +339,7 @@ let mkctf_attrs d attrs =
 %token <string> INFIXOP2
 %token <string> INFIXOP3
 %token <string> INFIXOP4
+%token <string> INFIXCONSTRUCTOR
 %token INHERIT
 %token INITIALIZER
 %token <int> INT
@@ -461,13 +461,13 @@ The precedences must be listed from low to high.
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
-%right    COLONCOLON                    /* expr (e :: e :: e) */
+%right    INFIXCONSTRUCTOR                    /* expr (e OP e OP e) with OP a constructor */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
 %left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
-%nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
+%nonassoc prec_constr_appl              /* above AS BAR INFIXCONSTRUCTOR COMMA */
 %nonassoc below_SHARP
 %nonassoc SHARP                         /* simple_expr/toplevel_directive */
 %nonassoc below_DOT
@@ -1116,10 +1116,10 @@ expr:
   | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO
     seq_expr DONE
       { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
-  | expr COLONCOLON expr
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+  | expr INFIXCONSTRUCTOR expr
+      { mkexp_constructor $2 (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
+  | LPAREN INFIXCONSTRUCTOR RPAREN LPAREN expr COMMA expr RPAREN
+      { mkexp_constructor $2 (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1444,13 +1444,13 @@ pattern:
       { mkpat(Ppat_construct(mkrhs $1 1, Some $2)) }
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
-  | pattern COLONCOLON pattern
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
-  | pattern COLONCOLON error
+  | pattern INFIXCONSTRUCTOR pattern
+      { mkpat_constructor $2 (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
+  | pattern INFIXCONSTRUCTOR error
       { expecting 3 "pattern" }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
+  | LPAREN INFIXCONSTRUCTOR RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat_constructor $2 (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
+  | LPAREN INFIXCONSTRUCTOR RPAREN LPAREN pattern COMMA pattern error
       { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
@@ -1984,8 +1984,8 @@ constr_ident:
     UIDENT                                      { $1 }
 /*  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
-  | COLONCOLON                                  { "::" }
-/*  | LPAREN COLONCOLON RPAREN                    { "::" } */
+  | INFIXCONSTRUCTOR                            { $1 }
+/*  | LPAREN INFIXCONSTRUCTOR RPAREN              { $1 } */
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
