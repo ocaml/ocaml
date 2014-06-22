@@ -704,8 +704,8 @@ module_type:
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
       { mkmty(Pmty_typeof $4) }
-  | LPAREN MODULE mod_longident RPAREN
-      { mkmty (Pmty_alias (mkrhs $3 3)) }
+/*  | LPAREN MODULE mod_longident RPAREN
+      { mkmty (Pmty_alias (mkrhs $3 3)) } */
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error
