@@ -39,8 +39,8 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
-  | Pfield of int
-  | Psetfield of int * bool
+  | Pfield of int * bool * mutable_flag
+  | Psetfield of int * bool * mutable_flag
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
@@ -441,7 +441,7 @@ let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_normal_path p])
+      Lprim(Pfield(pos, true, Immutable), [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 

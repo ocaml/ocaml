@@ -304,8 +304,9 @@ let comp_primitive p sz args =
   | Psetglobal id -> Ksetglobal id
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
-  | Pfield n -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Pfield(n, ptr, Immutable) -> Kgetfield n
+  | Pfield(n, ptr, Mutable) -> Kgetmutablefield n
+  | Psetfield(n, ptr, mut) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)

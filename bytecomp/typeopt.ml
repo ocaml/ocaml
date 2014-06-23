@@ -25,13 +25,13 @@ let has_base_type exp base_ty_path =
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
-let maybe_pointer exp =
-  match scrape exp.exp_env exp.exp_type with
+let maybe_pointer_type env ty =
+  match scrape env ty with
   | Tconstr(p, args, abbrev) ->
       not (Path.same p Predef.path_int) &&
       not (Path.same p Predef.path_char) &&
       begin try
-        match Env.find_type p exp.exp_env with
+        match Env.find_type p env with
         | {type_kind = Type_variant []} -> true (* type exn *)
         | {type_kind = Type_variant cstrs} ->
             List.exists (fun c -> c.Types.cd_args <> []) cstrs
@@ -42,6 +42,8 @@ let maybe_pointer exp =
            Maybe we should emit a warning. *)
       end
   | _ -> true
+
+let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
 let array_element_kind env ty =
   match scrape env ty with

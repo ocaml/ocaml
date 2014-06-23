@@ -141,9 +141,9 @@ let comparisons_table = create_hashtable 11 [
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
-  "%field0", Pfield 0;
-  "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, true);
+  "%field0", Pfield(0, true, Mutable);
+  "%field1", Pfield(1, true, Mutable);
+  "%setfield0", Psetfield(0, true, Mutable);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
   "%raise", Praise Raise_regular;
@@ -375,7 +375,8 @@ let transl_prim loc prim args =
     let p = find_primitive loc prim_name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
-        (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
+        (Psetfield(n, _, mut), [arg1; arg2]) ->
+            Psetfield(n, maybe_pointer arg2, mut)
       | (Parraylength Pgenarray, [arg])   -> Parraylength(array_kind arg)
       | (Parrayrefu Pgenarray, arg1 :: _) -> Parrayrefu(array_kind arg1)
       | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
@@ -777,14 +778,16 @@ and transl_exp0 e =
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Pfield lbl.lbl_pos
+          Record_regular -> Pfield(lbl.lbl_pos, maybe_pointer e, lbl.lbl_mut)
         | Record_float -> Pfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg])
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
-        | Record_float -> Psetfloatfield lbl.lbl_pos in
+          Record_regular ->
+            Psetfield(lbl.lbl_pos, maybe_pointer newval, lbl.lbl_mut)
+        | Record_float ->
+            Psetfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
       let kind = array_kind e in
@@ -833,7 +836,7 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
+      Lapply(Lprim(Pfield(0, true, Mutable), [transl_path ~loc e.exp_env cl]),
              [lambda_unit], Location.none)
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
@@ -1079,9 +1082,12 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
       None -> ()
     | Some init_expr ->
         for i = 0 to Array.length all_labels - 1 do
+          let lbl = all_labels.(i) in
           let access =
-            match all_labels.(i).lbl_repres with
-              Record_regular -> Pfield i
+            match lbl.lbl_repres with
+              Record_regular ->
+                let ptr = maybe_pointer_type init_expr.exp_env lbl.lbl_arg in
+                  Pfield(i, ptr, lbl.lbl_mut)
             | Record_float -> Pfloatfield i in
           lv.(i) <- Lprim(access, [Lvar init_id])
         done
@@ -1119,7 +1125,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
+          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr, lbl.lbl_mut)
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with

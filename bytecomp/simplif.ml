@@ -35,9 +35,9 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v]) when Ident.same v id ->
+  | Lprim(Pfield(0, _, _), [Lvar v]) when Ident.same v id ->
       Lvar id
-  | Lprim(Psetfield(0, _), [Lvar v; e]) when Ident.same v id ->
+  | Lprim(Psetfield(0, _, _), [Lvar v; e]) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v]) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lvar id]))

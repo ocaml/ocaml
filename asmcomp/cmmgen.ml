@@ -472,11 +472,31 @@ let field_address ptr n =
   then ptr
   else Cop(Cadda, [ptr; Cconst_int(n * size_addr)])
 
-let get_field ptr n =
-  Cop(Cload Word, [field_address ptr n])
+let float_field_address ptr n =
+  if n = 0
+  then ptr
+  else Cop(Cadda, [ptr; Cconst_int(n * size_float)])
 
-let set_field ptr n newval =
-  Cop(Cstore Word, [field_address ptr n; newval])
+let get_field base n =
+  Cop(Cload Word, [field_address base n])
+
+let get_mut_field base n =
+  Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
+      [base; Cconst_int n])
+
+let set_addr_field base n newval =
+  Cop(Cextcall("caml_modify_field", typ_void, false,Debuginfo.none),
+      [base; Cconst_int n; newval])
+
+let set_int_field base n newval =
+  Cop(Cstore Word, [field_address base n; newval])
+
+let set_float_field base n newval =
+  Cop(Cstore Double_u, [float_field_address base n; newval])
+
+let init_field base n newval =
+  Cop(Cextcall("caml_init_field", typ_void, false, Debuginfo.none),
+      [base; Cconst_int n; newval])
 
 let header ptr =
   Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
@@ -529,6 +549,9 @@ let array_indexing log2size ptr ofs =
                    Cconst_int((-1) lsl (log2size - 1))])
 
 let addr_array_ref arr ofs =
+  Cop(Cextcall("caml_get_field", typ_addr, false, Debuginfo.none),
+      [arr; untag_int ofs])
+let int_array_ref arr ofs =
   Cop(Cload Word, [array_indexing log2_size_addr arr ofs])
 let unboxed_float_array_ref arr ofs =
   Cop(Cload Double_u, [array_indexing log2_size_float arr ofs])
@@ -570,7 +593,7 @@ let lookup_tag obj tag =
 
 let lookup_label obj lab =
   bind "lab" lab (fun lab ->
-    let table = Cop (Cload Word, [obj]) in
+    let table = get_mut_field obj 0 in
     addr_array_ref table lab)
 
 let call_cached_method obj tag cache pos args dbg =
@@ -590,18 +613,25 @@ let make_alloc_generic set_fn tag wordsize args =
     let id = Ident.create "alloc" in
     let rec fill_fields idx = function
       [] -> Cvar id
-    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
-                          fill_fields (idx + 2) el) in
+    | e1::el -> Csequence(set_fn (Cvar id) idx e1,
+                          fill_fields (idx + 1) el) in
     Clet(id,
          Cop(Cextcall("caml_alloc", typ_addr, true, Debuginfo.none),
                  [Cconst_int wordsize; Cconst_int tag]),
-         fill_fields 1 args)
+         fill_fields 0 args)
   end
 
 let make_alloc tag args =
-  make_alloc_generic addr_array_set tag (List.length args) args
-let make_float_alloc tag args =
-  make_alloc_generic float_array_set tag
+  make_alloc_generic init_field tag (List.length args) args
+
+let make_addr_array_alloc args =
+  make_alloc_generic set_addr_field 0 (List.length args) args
+
+let make_int_array_alloc args =
+  make_alloc_generic set_int_field 0 (List.length args) args
+
+let make_float_array_alloc args =
+  make_alloc_generic set_float_field Obj.double_array_tag
                      (List.length args * size_float / size_addr) args
 
 (* Bounds checking *)
@@ -1327,7 +1357,8 @@ let rec transl = function
       Cop(Capply(typ_addr, dbg), Cconst_symbol lbl :: List.map transl args)
   | Ugeneric_apply(clos, [arg], dbg) ->
       bind "fun" (transl clos) (fun clos ->
-        Cop(Capply(typ_addr, dbg), [get_field clos 0; transl arg; clos]))
+        Cop(Capply(typ_addr, dbg),
+            [get_field clos 0; transl arg; clos]))
   | Ugeneric_apply(clos, args, dbg) ->
       let arity = List.length args in
       let cargs = Cconst_symbol(apply_function arity) ::
@@ -1393,12 +1424,13 @@ let rec transl = function
           begin match kind with
             Pgenarray ->
               Cop(Cextcall("caml_make_array", typ_addr, true, Debuginfo.none),
-                  [make_alloc 0 (List.map transl args)])
-          | Paddrarray | Pintarray ->
-              make_alloc 0 (List.map transl args)
+                  [make_addr_array_alloc (List.map transl args)])
+          | Paddrarray ->
+              make_addr_array_alloc (List.map transl args)
+          | Pintarray ->
+              make_int_array_alloc (List.map transl args)
           | Pfloatarray ->
-              make_float_alloc Obj.double_array_tag
-                              (List.map transl_unbox_float args)
+              make_float_array_alloc (List.map transl_unbox_float args)
           end
       | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
@@ -1549,8 +1581,9 @@ and transl_prim_1 p arg dbg =
   | Pignore ->
       return_unit(remove_unit (transl arg))
   (* Heap operations *)
-  | Pfield n ->
-      get_field (transl arg) n
+  | Pfield(n, is_ptr, mut) ->
+      if is_ptr && (mut = Mutable) then get_mut_field (transl arg) n
+      else get_field (transl arg) n
   | Pfloatfield n ->
       let ptr = transl arg in
       box_float(
@@ -1649,20 +1682,15 @@ and transl_prim_1 p arg dbg =
 and transl_prim_2 p arg1 arg2 dbg =
   match p with
   (* Heap operations *)
-    Psetfield(n, ptr) ->
-      if ptr then
-        return_unit(Cop(Cextcall("caml_modify_field", typ_void, false,Debuginfo.none),
-                        [transl arg1; Cconst_int n; transl arg2]))
-      else
-        return_unit(set_field (transl arg1) n (transl arg2))
+    Psetfield(n, is_ptr, mut) ->
+      let set =
+        if not (is_ptr) then set_int_field
+        else if mut = Mutable then set_addr_field
+        else init_field
+      in
+        return_unit (set (transl arg1) n (transl arg2))
   | Psetfloatfield n ->
-      let ptr = transl arg1 in
-      return_unit(
-        Cop(Cstore Double_u,
-            [if n = 0 then ptr
-                       else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
-                   transl_unbox_float arg2]))
-
+      return_unit (set_float_field (transl arg1) n (transl_unbox_float arg2))
   (* Boolean operations *)
   | Psequand ->
       Cifthenelse(test_bool(transl arg1), transl arg2, Cconst_int 1)
@@ -1789,8 +1817,10 @@ and transl_prim_2 p arg1 arg2 dbg =
               Cifthenelse(is_addr_array_ptr arr,
                           addr_array_ref arr idx,
                           float_array_ref arr idx)))
-      | Paddrarray | Pintarray ->
+      | Paddrarray ->
           addr_array_ref (transl arg1) (transl arg2)
+      | Pintarray ->
+          int_array_ref (transl arg1) (transl arg2)
       | Pfloatarray ->
           float_array_ref (transl arg1) (transl arg2)
       end
@@ -1811,11 +1841,16 @@ and transl_prim_2 p arg1 arg2 dbg =
                           addr_array_ref arr idx),
                 Csequence(make_checkbound dbg [float_array_length hdr; idx],
                           float_array_ref arr idx)))))
-      | Paddrarray | Pintarray ->
+      | Paddrarray ->
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       addr_array_ref arr idx)))
+      | Pintarray ->
+          bind "index" (transl arg2) (fun idx ->
+          bind "arr" (transl arg1) (fun arr ->
+            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                      int_array_ref arr idx)))
       | Pfloatarray ->
           box_float(
             bind "index" (transl arg2) (fun idx ->
@@ -2443,13 +2478,13 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
     let real = Ident.create "real" in
-    let mask = get_field (Cvar meths) 1 in
+    let mask = get_mut_field (Cvar meths) 1 in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths]);
                               Cconst_int(3*size_addr-1)]) in
     let tag' = Cop(Cload Word, [tag_pos]) in
     Clet (
-    meths, Cop(Cload Word, [obj]),
+    meths, get_mut_field obj 0,
     Clet (
     cached, Cop(Cand, [Cop(Cload Word, [cache]); mask]),
     Clet (
@@ -2457,9 +2492,10 @@ let send_function arity =
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
                 cache_public_method (Cvar meths) tag cache,
                 cached_pos),
-    Cop(Cload Word, [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths]);
-                                 Cconst_int(2*size_addr-1)])]))))
-
+    Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
+        [Cvar meths;
+         Cop(Casr, [Cop (Cadda, [Cvar real; Cconst_int(2*size_addr - 1)]);
+                    Cconst_int log2_size_addr])]))))
   in
   let body = Clet(clos', clos, body) in
   let fun_args =
