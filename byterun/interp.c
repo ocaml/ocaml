@@ -724,14 +724,24 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access to components of blocks */
 
     Instruct(GETFIELD0):
-      accu = Field(accu, 0); Next;
+      accu = FieldImm(accu, 0); Next;
     Instruct(GETFIELD1):
-      accu = Field(accu, 1); Next;
+      accu = FieldImm(accu, 1); Next;
     Instruct(GETFIELD2):
-      accu = Field(accu, 2); Next;
+      accu = FieldImm(accu, 2); Next;
     Instruct(GETFIELD3):
-      accu = Field(accu, 3); Next;
+      accu = FieldImm(accu, 3); Next;
     Instruct(GETFIELD):
+      accu = FieldImm(accu, *pc); pc++; Next;
+    Instruct(GETMUTABLEFIELD0):
+      accu = Field(accu, 0); Next;
+    Instruct(GETMUTABLEFIELD1):
+      accu = Field(accu, 1); Next;
+    Instruct(GETMUTABLEFIELD2):
+      accu = Field(accu, 2); Next;
+    Instruct(GETMUTABLEFIELD3):
+      accu = Field(accu, 3); Next;
+    Instruct(GETMUTABLEFIELD):
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);

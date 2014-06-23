@@ -68,6 +68,7 @@ type instruction =
   | Kmakeblock of int * int             (* size, tag *)
   | Kmakefloatblock of int
   | Kgetfield of int
+  | Kgetmutablefield of int
   | Ksetfield of int
   | Kgetfloatfield of int
   | Ksetfloatfield of int

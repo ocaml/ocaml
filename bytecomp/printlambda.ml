@@ -104,9 +104,21 @@ let primitive ppf = function
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
-  | Pfield n -> fprintf ppf "field %i" n
-  | Psetfield(n, ptr) ->
-      let instr = if ptr then "setfield_ptr " else "setfield_imm " in
+  | Pfield(n, ptr, mut) ->
+      let instr =
+        match ptr, mut with
+        | false, _ -> "field_int "
+        | true, Mutable -> "field_mut "
+        | true, Immutable -> "field_imm "
+      in
+      fprintf ppf "%s%i" instr n
+  | Psetfield(n, ptr, mut) ->
+      let instr =
+        match ptr, mut with
+          false, _ -> "setfield_int "
+        | true, Mutable -> "setfield_mut "
+        | true, Immutable -> "setfield_imm "
+      in
       fprintf ppf "%s%i" instr n
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
