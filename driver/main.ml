@@ -86,7 +86,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i = set print_types
   let _I s = include_dirs := s :: !include_dirs
   let _impl = impl
   let _intf = intf
@@ -167,7 +167,7 @@ let main () =
         revd (extracted_output);
       Warnings.check_fatal ();
     end
-    else if not !compile_only && !objfiles <> [] then begin
+    else if not !print_types && not !compile_only && !objfiles <> [] then begin
       let target =
         if !output_c_object then
           let s = extract_output !output_name in

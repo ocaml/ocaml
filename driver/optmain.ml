@@ -84,7 +84,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config () = show_config ()
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i = set print_types
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline n = inline_threshold := n * 8
@@ -187,7 +187,7 @@ let main () =
       Asmlink.link_shared ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end
-    else if not !compile_only && !objfiles <> [] then begin
+    else if not !print_types && not !compile_only && !objfiles <> [] then begin
       let target =
         if !output_c_object then
           let s = extract_output !output_name in

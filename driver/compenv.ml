@@ -16,7 +16,9 @@ let output_prefix name =
   let oname =
     match !output_name with
     | None -> name
-    | Some n -> if !compile_only then (output_name := None; n) else name in
+    | Some n ->
+        if !compile_only || !print_types
+        then (output_name := None; n) else name in
   Misc.chop_extension_if_any oname
 
 let print_version_and_library compiler =
