@@ -1133,8 +1133,6 @@ expr:
       { mkexp_constructor $2 (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | expr INFIXCONSTRUCTOR4 expr
       { mkexp_constructor $2 (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
-  | LPAREN infix_construct RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_constructor $2 (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -2007,10 +2005,12 @@ operator:
 ;
 constr_ident:
     UIDENT                                      { $1 }
-/*  | LBRACKET RBRACKET                           { "[]" } */
+  | constr_ident_no_uident                      { $1 }
+
+constr_ident_no_uident:
+    LBRACKET RBRACKET                           { "[]" }
   | LPAREN RPAREN                               { "()" }
-  | infix_construct                             { $1 }
-/*  | LPAREN infix_construct RPAREN               { $1 } */
+  | LPAREN infix_construct RPAREN               { $2 }
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
@@ -2029,10 +2029,8 @@ val_longident:
 ;
 constr_longident:
     mod_longident       %prec below_DOT         { $1 }
-  | LBRACKET RBRACKET                           { Lident "[]" }
-  | LPAREN RPAREN                               { Lident "()" }
-  | FALSE                                       { Lident "false" }
-  | TRUE                                        { Lident "true" }
+  | constr_ident_no_uident                      { Lident $1 }
+  | mod_longident DOT constr_ident_no_uident    { Ldot($1, $3) }
 ;
 label_longident:
     LIDENT                                      { Lident $1 }
