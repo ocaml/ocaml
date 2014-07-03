@@ -288,15 +288,6 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
 #define CAMLreturn(result) CAMLreturnT(value, result)
 
 #define CAMLnoreturn ((void) caml__frame)
-
-  /* initialise a field of an object just allocated on the minor heap */
-#define Init_field(block, offset, val)                  \
-  do {                                                  \
-    value caml__temp_block = block;                     \
-    Assert(Hp_val(caml__temp_block) == caml_young_ptr); \
-    Op_val(caml__temp_block)[offset] = val;             \
-  } while(0)
-
   
   /* modify a field */
 #define Store_field(block, offset, val) caml_modify_field(block, offset, val)
