@@ -942,11 +942,7 @@ class_type:
       { mkcty(Pcty_arrow($1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_arrow("", $1, $3)) }
-  | class_type attribute
-      { Cty.attr $1 $2 }
-  | extension
-      { mkcty(Pcty_extension $1) }
-;
+ ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
       { mkcty(Pcty_constr (mkloc $4 (rhs_loc 4), List.rev $2)) }
@@ -956,6 +952,10 @@ class_signature:
       { mkcty(Pcty_signature $2) }
   | OBJECT class_sig_body error
       { unclosed "object" 1 "end" 3 }
+  | class_signature attribute
+      { Cty.attr $1 $2 }
+  | extension
+      { mkcty(Pcty_extension $1) }
 ;
 class_sig_body:
     class_self_type class_sig_fields
