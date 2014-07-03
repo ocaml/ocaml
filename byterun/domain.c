@@ -11,6 +11,9 @@
 #include "globroots.h"
 #include "signals.h"
 #include "alloc.h"
+#include "startup.h"
+#include "stacks.h"
+#include "callback.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -29,6 +32,9 @@ struct domain {
   int is_main;
   uintnat initial_minor_heap_size;
   atomic_uintnat* interrupt_word_address;
+
+  /* fields only accessed by the domain itself (after initialisation) */
+  caml_root initial_data;
 
   /* fields accessed concurrently by several threads */
   atomic_uintnat is_active; /* domain is not in a blocking section */
@@ -64,7 +70,7 @@ static caml_root live_domains_list;
 static int next_domain_id;
 static plat_mutex live_domains_lock;
 
-static value domain_alloc(uintnat initial_minor_heap_size) {
+static value domain_alloc(uintnat initial_minor_heap_size, value initial) {
   CAMLparam0();
   CAMLlocal2(result, cons);
   /* these really shouldn't be on the minor heap, so we allocate manually */
@@ -77,6 +83,7 @@ static value domain_alloc(uintnat initial_minor_heap_size) {
   d->is_main = 0;
   d->id = -1;
   d->initial_minor_heap_size = initial_minor_heap_size;
+  d->initial_data = initial == Val_unit ? 0 : caml_create_root(initial);
 
   /* this object will eventually be placed into live_domains_list. We
      allocate the cons cell now, because domain_init is a bad time to 
@@ -116,6 +123,7 @@ static void domain_register(value cons) {
 }
 
 static void domain_terminate() {
+  caml_gc_log("Domain terminating");
   caml_enter_blocking_section();
   atomic_store_rel(&domain_self->is_alive, 0);
   /* FIXME: block until swept */
@@ -148,6 +156,17 @@ static void domain_mark_live() {
 
 
 static void poll_interrupts();
+
+static value domain_run(value v) {
+  CAMLparam1 (v);
+  caml_delete_root(domain_self->initial_data);
+
+  /* FIXME exceptions */
+  caml_callback_exn(v, Val_unit);
+
+  CAMLreturn (Val_unit);
+}
+
 static void* domain_thread_func(void* v) {
   caml_init_young_ptrs();
   caml_init_shared_heap();
@@ -156,28 +175,30 @@ static void* domain_thread_func(void* v) {
   domain_init((value)v);
   domain_register((value)v);
   caml_set_minor_heap_size (caml_norm_minor_heap_size (domain_self->initial_minor_heap_size));
+  caml_gc_log("Domain starting");
 
-  while (1) {
-    usleep(10000);
-    /* if (rand() % 10 <= 10) caml_alloc(10, 0); 
-       poll_interrupts(); */
-    caml_trigger_stw_gc();
-    poll_interrupts();
-  }
+  caml_init_stack();
+
+  value init = caml_read_root(domain_self->initial_data);
+  domain_run(init);
 
   domain_terminate();
   return 0;
 }
 
-value caml_domain_create(uintnat minor_size) {
-  value newdom = domain_alloc(minor_size);
+
+CAMLprim value caml_domain_spawn(value callback)
+{
+  CAMLparam1 (callback);
+  caml_empty_minor_heap(); /* FIXME */
+  value newdom = domain_alloc(caml_startup_params.minor_heap_init, callback);
   pthread_t th;
   int err = pthread_create(&th, 0, domain_thread_func, (void*)newdom);
   if (err) {
     caml_failwith("failed to create domain");
   }
   pthread_detach(th);
-  return newdom;
+  CAMLreturn (Val_unit);
 }
 
 void caml_domain_register_main(uintnat minor_size) {
@@ -185,7 +206,7 @@ void caml_domain_register_main(uintnat minor_size) {
   caml_init_shared_heap();
   caml_init_major_gc();
 
-  value dom = domain_alloc(minor_size);
+  value dom = domain_alloc(minor_size, Val_unit);
   domain_init(dom);
   domain_self->is_main = 1;
 
@@ -200,7 +221,7 @@ void caml_domain_register_main(uintnat minor_size) {
   caml_init_signal_handling();
 
 
-  caml_domain_create(minor_size); /* for testing */
+  //  caml_domain_create(minor_size); /* for testing */
 }
 
 int caml_domain_id() {
@@ -208,7 +229,10 @@ int caml_domain_id() {
   return domain_self->id;
 }
 
-
+CAMLprim value caml_ml_domain_id(value unit)
+{
+  return Val_int(caml_domain_id());
+}
 
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
 __thread atomic_uintnat caml_young_limit = {0};
