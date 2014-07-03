@@ -168,6 +168,21 @@ bits  63    10 9     8 7   0
 /* Fields are numbered from 0. */
 #define Field(x, i) (((value *)(x)) [i] + 0)
 
+/* initialise a field of an object just allocated on the minor heap */
+#ifndef DEBUG
+#define Init_field(block, offset, val) (Op_val(block)[offset] = val)
+#else
+/* add some assertions in debug mode */
+CAMLextern __thread char *caml_young_ptr;
+#define Init_field(block, offset, val)                  \
+  do {                                                  \
+    value caml__temp_block = block;                     \
+    Assert(Hp_val(caml__temp_block) == caml_young_ptr); \
+    Op_val(caml__temp_block)[offset] = val;             \
+  } while(0)
+#endif
+
+
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
 
