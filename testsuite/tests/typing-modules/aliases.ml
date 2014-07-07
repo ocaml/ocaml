@@ -4,11 +4,6 @@ C.chr 66;;
 module C' : module type of Char = C;;
 C'.chr 66;;
 
-module C'' : (module C) = C';; (* fails *)
-
-module C'' : (module Char) = C;;
-C''.chr 66;;
-
 module C3 = struct include Char end;;
 C3.chr 66;;
 

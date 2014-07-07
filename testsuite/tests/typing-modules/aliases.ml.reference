@@ -13,13 +13,6 @@
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
-#   Characters 27-29:
-  module C'' : (module C) = C';; (* fails *)
-                            ^^
-Error: Signature mismatch:
-       Modules do not match: (module C') is not included in (module C)
-#   module C'' = Char
-# - : char = 'B'
 #   module C3 :
   sig
     external code : char -> int = "%identity"
