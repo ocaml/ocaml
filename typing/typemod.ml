@@ -1303,7 +1303,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             decls sbind in
         let newenv = (* allow aliasing recursive modules from outside *)
           List.fold_left
-            (fun env md -> Env.add_module md.md_id md.md_type.mty_type env)
+            (fun env md ->
+               let mdecl =
+                 {
+                   md_type = md.md_type.mty_type;
+                   md_attributes = md.md_attributes;
+                   md_loc = md.md_loc;
+                 }
+               in
+               Env.add_module_declaration md.md_id mdecl env
+            )
             env decls
         in
         let bindings2 =
