@@ -96,7 +96,10 @@ let rec live i finally =
       !at_top
   | Icatch(nfail, body, handler) ->
       let at_join = live i.next finally in
-      let before_handler = ref handler.live in
+      let before_handler = ref Reg.Set.empty in
+      (* Why is using handler.live as initialisation incorrect ?
+         It seams like it could allow faster fixpoint when going multiple
+         times through stacked catch. *)
       begin try
         while true do
           let used = ref false in
