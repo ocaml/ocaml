@@ -637,7 +637,7 @@ let input_ast source =
       Location.input_name := input_value ic;
       let ast : Parsetree.structure = input_value ic in
       Impl ast
-    end else if magic <> Config.ast_intf_magic_number then begin
+    end else if magic = Config.ast_intf_magic_number then begin
       Location.input_name := input_value ic;
       let ast : Parsetree.signature = input_value ic in
       Intf ast
