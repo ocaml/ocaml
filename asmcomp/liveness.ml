@@ -96,25 +96,21 @@ let rec live i finally =
       !at_top
   | Icatch(nfail, body, handler) ->
       let at_join = live i.next finally in
-      let before_handler = ref Reg.Set.empty in
-      (* Why is using handler.live as initialisation incorrect ?
-         It seams like it could allow faster fixpoint when going multiple
-         times through stacked catch. *)
-      begin try
-        while true do
-          let used = ref false in
-          live_at_exit := (nfail,(used, !before_handler)) :: !live_at_exit ;
-          let before_handler' = live handler at_join in
-          live_at_exit := List.tl !live_at_exit ;
-          let new_before_handler =
-            Reg.Set.union !before_handler before_handler' in
-          if not !used || Reg.Set.equal !before_handler new_before_handler
-          then raise Exit;
-          before_handler := new_before_handler ;
-        done
-      with Exit -> ()
-      end;
-      live_at_exit := (nfail,(ref false, !before_handler)) :: !live_at_exit ;
+      let rec fixpoint before_handler =
+        let used = ref false in
+        live_at_exit := (nfail,(used, before_handler)) :: !live_at_exit ;
+        let before_handler' = live handler at_join in
+        live_at_exit := List.tl !live_at_exit ;
+        let before_handler' = Reg.Set.union before_handler before_handler' in
+        if not !used || Reg.Set.equal before_handler before_handler'
+        then before_handler'
+        else fixpoint before_handler'
+      in
+      let before_handler = fixpoint Reg.Set.empty in
+      (* We could use handler.live instead of Reg.Set.empty as the initialisation
+         but we would need to clean the live field before doing the analysis
+         (to remove remaining of previous passes) *)
+      live_at_exit := (nfail,(ref false, before_handler)) :: !live_at_exit ;
       let before_body = live body at_join in
       live_at_exit := List.tl !live_at_exit ;
       i.live <- before_body;
