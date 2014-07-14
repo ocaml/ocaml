@@ -242,6 +242,8 @@ Bug fixes:
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
 - PR#6418: reimplement parametrized Format tags/indentation with GADTs
   (Benoît Vaugon)
+- PR#6482: ocamlbuild fails when _tags file in unhygienic directory
+  (Gabriel Scherer)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
