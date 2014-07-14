@@ -110,7 +110,7 @@ let proceed () =
   let entry_include_dirs = ref [] in
   let entry =
     Slurp.filter
-      begin fun path name _ ->
+      begin fun path name () ->
         let dir =
           if path = Filename.current_dir_name then
             None
@@ -118,8 +118,21 @@ let proceed () =
             Some path
         in
         let path_name = path/name in
-        if name = "_tags" then
-          ignore (Configuration.parse_file ?dir path_name);
+
+        if name = "_tags" then begin
+          let tags_path =
+            (* PR#6482: remember that this code is run lazily by the Slurp command,
+               and may run only after the working directory has been changed.
+
+               On the other hand, always using the absolute path makes
+               error messages longer and more frigthening in case of
+               syntax error in the _tags file. So we use the absolute
+               path only when necessary -- the working directory has
+               changed. *)
+            if Sys.getcwd () = Pathname.pwd then path_name
+            else Pathname.pwd / path_name in
+          ignore (Configuration.parse_file ?dir tags_path);
+        end;
 
         (List.mem name ["_oasis"] || (String.length name > 0 && name.[0] <> '_'))
         && (name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
@@ -148,10 +161,9 @@ let proceed () =
       let tags = tags_of_pathname (path/name) in
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
+  Slurp.force hygiene_entry;
   if !Options.hygiene && not first_run_for_plugin then
-    Fda.inspect hygiene_entry
-  else
-    Slurp.force hygiene_entry;
+    Fda.inspect hygiene_entry;
   let entry = hygiene_entry in
   Hooks.call_hook Hooks.After_hygiene;
   Options.include_dirs := Pathname.current_dir_name :: List.rev !entry_include_dirs;
