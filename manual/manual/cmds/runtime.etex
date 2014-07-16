@@ -1,5 +1,3 @@
-% $Id$
-
 \chapter{The runtime system (ocamlrun)} \label{c:runtime}
 \pdfchapter{The runtime system (ocamlrun)}
 %HEVEA\cutname{runtime.html}
@@ -123,11 +121,17 @@ The following environment variables are also consulted:
 \fi
         This option takes no argument.
   \item[h] The initial size of the major heap (in words).
+  \item[a] ("allocation_policy") The policy used for allocating in the
+  OCaml heap.  Possible values are 0 for the next-fit policy, and 1
+  for the first-fit policy.  Next-fit is usually faster, but first-fit
+  is better for avoiding fragmentation and the associated heap
+  compactions.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
   \item[i] ("major_heap_increment")  Default size increment for the
   major heap. (in words)
   \item[o] ("space_overhead")  The major GC speed setting.
   \item[O] ("max_overhead")  The heap compaction trigger setting.
+  \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
@@ -142,7 +146,6 @@ The following environment variables are also consulted:
         \item[256 (= 0x100)] Startup messages (loading the bytecode
            executable file, resolving shared libraries).
   \end{options}
-  \item[l] ("stack_limit") The limit (in words) of the stack size.
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.
