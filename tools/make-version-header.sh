@@ -42,5 +42,5 @@ case "$suffix" in
   "") echo "#undef OCAML_VERSION_ADDITIONAL";;
   *) echo "#define OCAML_VERSION_ADDITIONAL \"$suffix\"";;
 esac
-echo "#define OCAML_VERSION (($major << 16) | ($minor << 8) | $patchlvl)"
+printf "#define OCAML_VERSION %d%02d%02d\n" $major $minor $patchlvl
 echo "#define OCAML_VERSION_STRING \"$version\""
