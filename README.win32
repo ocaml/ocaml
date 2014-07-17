@@ -260,6 +260,12 @@ NOTES:
 
 * The replay debugger is partially supported (no reverse execution).
 
+* The default Makefile.mingw passes -static-libgcc to the linker.
+  For more information on this topic:
+
+  http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options
+  http://caml.inria.fr/mantis/view.php?id=6411
+
 ------------------------------------------------------------------------------
 
                   The Cygwin port of OCaml
