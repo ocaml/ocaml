@@ -44,10 +44,10 @@ and instruction_desc =
   | Lsetuptrap of label
   | Lpushtrap
   | Lpoptrap
-  | Lraise
+  | Lraise of Lambda.raise_kind
 
 let has_fallthrough = function
-  | Lreturn | Lbranch _ | Lswitch _ | Lraise
+  | Lreturn | Lbranch _ | Lswitch _ | Lraise _
   | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
   | _ -> true
 
@@ -280,8 +280,8 @@ let rec linear' depth i n =
                     (linear' (depth+1) body (cons_instr Lpoptrap n1))) in
       cons_instr (Lsetuptrap lbl_body)
         (linear handler (add_branch lbl_join n2))
-  | Iraise ->
-      copy_instr Lraise i (discard_dead_code n)
+  | Iraise k ->
+      copy_instr (Lraise k) i (discard_dead_code n)
 
 let linear i n =
   linear' 0 i n
