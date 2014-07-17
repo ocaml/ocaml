@@ -250,11 +250,20 @@ let rec linear' depth i n =
       cons_instr (Llabel lbl_head) n2
   | Icatch(io, body, handler) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
-      let (lbl_handler, n2) = get_label(linear handler n1) in
-      exit_label := (io, (depth, lbl_handler)) :: !exit_label ;
-      let n3 = linear body (add_branch lbl_end n2) in
-      exit_label := List.tl !exit_label;
-      n3
+      begin match handler.Mach.desc with
+      | Iend ->
+          exit_label := (io, (depth, lbl_end)) :: !exit_label ;
+          let n3 = linear body (add_branch lbl_end n1) in
+          exit_label := List.tl !exit_label;
+          n3
+      | _ ->
+          let lbl_handler = new_label() in
+          exit_label := (io, (depth, lbl_handler)) :: !exit_label ;
+          let n2 = cons_instr (Llabel lbl_handler) (linear handler n1) in
+          let n3 = linear body (add_branch lbl_end n2) in
+          exit_label := List.tl !exit_label;
+          n3
+      end
   | Iexit nfail ->
       let n1 = linear i.Mach.next n in
       let (lbl_depth, lbl) = find_exit_label nfail in

@@ -583,14 +583,14 @@ method emit_expr env exp =
           (fun id ->
             let r = self#regs_for typ_addr in name_regs id r; r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
-      let (r1, s1) = self#emit_sequence env e1 in
-      catch_regs := List.tl !catch_regs ;
       let new_env =
         List.fold_left
         (fun env (id,r) -> Tbl.add id r env)
         env (List.combine ids rs) in
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
+      let (r1, s1) = self#emit_sequence env e1 in
       let (r2, s2) = self#emit_sequence new_env e2 in
+      catch_regs := List.tl !catch_regs ;
       let r = join r1 s1 r2 s2 in
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
@@ -803,14 +803,14 @@ method emit_tail env exp =
             name_regs id r  ;
             r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
-      let s1 = self#emit_tail_sequence env e1 in
-      catch_regs := List.tl !catch_regs ;
       let new_env =
         List.fold_left
         (fun env (id,r) -> Tbl.add id r env)
         env (List.combine ids rs) in
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
+      let s1 = self#emit_tail_sequence env e1 in
       let s2 = self#emit_tail_sequence new_env e2 in
+      catch_regs := List.tl !catch_regs ;
       self#insert (Icatch(nfail, s1, s2)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in

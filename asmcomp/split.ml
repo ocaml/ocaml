@@ -167,8 +167,10 @@ let rec rename i sub =
       exit_subst := (nfail, new_subst) :: !exit_subst ;
       let (new_body, sub_body) = rename body sub in
       let sub_entry_handler = !new_subst in
-      exit_subst := List.tl !exit_subst;
+      (* exit_subst := List.tl !exit_subst; *)
+      (* Not completely sure for that one. Need to think a bit more... *)
       let (new_handler, sub_handler) = rename handler sub_entry_handler in
+      exit_subst := List.tl !exit_subst;
       let (new_next, sub_next) =
         rename i.next (merge_substs sub_body sub_handler i.next) in
       (instr_cons (Icatch(nfail, new_body, new_handler)) [||] [||] new_next,

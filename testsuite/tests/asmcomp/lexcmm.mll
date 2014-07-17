@@ -133,7 +133,9 @@ let report_error lexbuf msg =
 }
 
 rule token = parse
-    [' ' '\010' '\013' '\009' '\012'] +
+    ['\010']
+      { Lexing.new_line lexbuf; token lexbuf }
+  | [' ' '\013' '\009' '\012'] +
       { token lexbuf }
   | "+a" { ADDA }
   | "+f" { ADDF }

@@ -1,0 +1,7 @@
+
+(function "catch_exit" (b:int)
+  (+ 33
+  (catch
+    (try (exit 0 12)
+     with var 456)
+   with (0 x) (+ x 789))))

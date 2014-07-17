@@ -220,9 +220,14 @@ let rec reload i before =
       let new_set = ref Reg.Set.empty in
       reload_at_exit := (nfail, new_set) :: !reload_at_exit ;
       let (new_body, after_body) = reload body before in
-      let at_exit = !new_set in
+      let rec fixpoint () =
+        let at_exit = !new_set in
+        let (new_handler, after_handler) = reload handler at_exit in
+        if Reg.Set.equal at_exit !new_set
+        then (new_handler, after_handler)
+        else fixpoint () in
+      let (new_handler, after_handler) = fixpoint () in
       reload_at_exit := List.tl !reload_at_exit ;
-      let (new_handler, after_handler) = reload handler at_exit in
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_body after_handler) in
       (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
@@ -265,7 +270,9 @@ let rec reload i before =
 let spill_at_exit = ref []
 let find_spill_at_exit k =
   try
-    List.assoc k !spill_at_exit
+    let used, set = List.assoc k !spill_at_exit in
+    used := true;
+    set
   with
   | Not_found -> Misc.fatal_error "Spill.find_spill_at_exit"
 
@@ -308,7 +315,7 @@ let rec spill i finally =
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
       if
-        !inside_loop || !inside_arm
+        !inside_loop || !inside_arm || !inside_catch
       then
         (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
                      i.arg i.res new_next,
@@ -364,13 +371,21 @@ let rec spill i finally =
        !at_head)
   | Icatch(nfail, body, handler) ->
       let (new_next, at_join) = spill i.next finally in
-      let (new_handler, at_exit) = spill handler at_join in
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
-      spill_at_exit := (nfail, at_exit) :: !spill_at_exit ;
+      let rec fixpoint at_exit =
+        let used = ref false in
+        spill_at_exit := (nfail, (used, at_exit)) :: !spill_at_exit ;
+        let (new_handler, new_at_exit) = spill handler at_join in
+        spill_at_exit := List.tl !spill_at_exit;
+        if Reg.Set.equal at_exit new_at_exit || not !used
+        then (new_handler, new_at_exit)
+        else fixpoint new_at_exit in
+      let (new_handler, at_exit) = fixpoint Reg.Set.empty in
+      inside_catch := saved_inside_catch ;
+      spill_at_exit := (nfail, (ref false, at_exit)) :: !spill_at_exit ;
       let (new_body, before) = spill body at_join in
       spill_at_exit := List.tl !spill_at_exit;
-      inside_catch := saved_inside_catch ;
       (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
        before)
   | Iexit nfail ->

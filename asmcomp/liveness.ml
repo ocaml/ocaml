@@ -19,7 +19,9 @@ let live_at_exit = ref []
 
 let find_live_at_exit k =
   try
-    List.assoc k !live_at_exit
+    let (used, set) = List.assoc k !live_at_exit in
+    used := true;
+    set
   with
   | Not_found -> Misc.fatal_error "Liveness.find_live_at_exit"
 
@@ -94,12 +96,24 @@ let rec live i finally =
       !at_top
   | Icatch(nfail, body, handler) ->
       let at_join = live i.next finally in
-      let before_handler = live handler at_join in
-      let before_body =
-          live_at_exit := (nfail,before_handler) :: !live_at_exit ;
-          let before_body = live body at_join in
+      let before_handler = ref handler.live in
+      begin try
+        while true do
+          let used = ref false in
+          live_at_exit := (nfail,(used, !before_handler)) :: !live_at_exit ;
+          let before_handler' = live handler at_join in
           live_at_exit := List.tl !live_at_exit ;
-          before_body in
+          let new_before_handler =
+            Reg.Set.union !before_handler before_handler' in
+          if not !used || Reg.Set.equal !before_handler new_before_handler
+          then raise Exit;
+          before_handler := new_before_handler ;
+        done
+      with Exit -> ()
+      end;
+      live_at_exit := (nfail,(ref false, !before_handler)) :: !live_at_exit ;
+      let before_body = live body at_join in
+      live_at_exit := List.tl !live_at_exit ;
       i.live <- before_body;
       before_body
   | Iexit nfail ->
