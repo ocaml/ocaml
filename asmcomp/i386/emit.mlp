@@ -749,8 +749,15 @@ let emit_instr fallthrough i =
         end
     | Llabel lbl ->
         `{emit_Llabel fallthrough lbl}:\n`
-    | Lbranch lbl ->
-        `	jmp	{emit_label lbl}\n`
+    | Lbranch (lbl,frame_offsets) ->
+        `	jmp	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * trap_frame_size in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
