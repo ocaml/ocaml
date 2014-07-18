@@ -254,6 +254,9 @@ Bug fixes:
   (Benoît Vaugon)
 - PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
 - PR#6443: ocaml segfault when List.fold_left is traced then executed
+- PR#6460: runtime assertion failure with large [| e1;...eN |]
+  float array expressions
+  (Leo White)
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
 - fix -dsource printing of "external _pipe = ..."
