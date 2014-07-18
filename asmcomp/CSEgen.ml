@@ -19,7 +19,7 @@ type valnum = int
 
 (* We maintain sets of equations of the form
        valnums = operation(valnums)
-   plus a mapping from registers to value numbers.  *)
+   plus a mapping from registers to valnums (value numbers). *)
 
 type rhs = operation * valnum array
 
@@ -34,6 +34,30 @@ type numbering =
 let empty_numbering =
   { num_next = 0; num_eqs = Equations.empty; num_reg = Reg.Map.empty }
 
+(** Generate a fresh value number [v] and associate it to register [r].
+  Returns a pair [(n',v)] with the updated value numbering [n']. *)
+
+let fresh_valnum_reg n r =
+  let v = n.num_next in
+  ({n with num_next = v + 1; num_reg = Reg.Map.add r v n.num_reg}, v)
+
+(* Same, for a set of registers [rs]. *)
+
+let array_fold_transf (f: numbering -> 'a -> numbering * 'b) n (a: 'a array)
+                      : numbering * 'b array =
+  match Array.length a with
+  | 0 -> (n, [||])
+  | 1 -> let (n', b) = f n a.(0) in (n', [|b|])
+  | l -> let b = Array.make l 0 and n = ref n in
+         for i = 0 to l - 1 do
+           let (n', x) = f !n a.(i) in
+           b.(i) <- x; n := n'
+         done;
+         (!n, b)
+
+let fresh_valnum_regs n rs =
+  array_fold_transf fresh_valnum_reg n rs
+
 (** [valnum_reg n r] returns the value number for the contents of
   register [r].  If none exists, a fresh value number is returned
   and associated with register [r].  The possibly updated numbering
@@ -44,19 +68,10 @@ let valnum_reg n r =
   try
     (n, Reg.Map.find r n.num_reg)
   with Not_found ->
-    let v = n.num_next in
-    ({n with num_next = v + 1; num_reg = Reg.Map.add r v n.num_reg}, v)
+    fresh_valnum_reg n r
 
 let valnum_regs n rs =
-  let l = Array.length rs in
-  let vs = Array.make l 0 in
-  let n = ref n in
-  for i = 0 to l-1 do
-    let (ni, vi) = valnum_reg !n rs.(i) in
-    vs.(i) <- vi;
-    n := ni
-  done;
-  (!n, vs)
+  array_fold_transf valnum_reg n rs
 
 (* Look up the set of equations for an equation with the given rhs.
    Return [Some res] if there is one, where [res] is the lhs. *)
@@ -67,24 +82,51 @@ let find_equation n rhs =
   with Not_found ->
     None
 
+(* Find a register containing the given value number. *)
+
+let find_reg_containing n v =
+  Reg.Map.fold (fun r v' res -> if v' = v then Some r else res)
+               n.num_reg None
+
 (* Find a set of registers containing the given value numbers. *)
 
 let find_regs_containing n vs =
   match Array.length vs with
   | 0 -> Some [||]
-  | 1 -> let v = vs.(0) in
-         Reg.Map.fold (fun r v' res -> if v' = v then Some [|r|] else res)
-                      n.num_reg None
-  | _ -> assert false
+  | 1 -> begin match find_reg_containing n vs.(0) with
+         | None -> None
+         | Some r -> Some [|r|]
+         end
+  | l -> let rs = Array.make l Reg.dummy in
+         begin try
+           for i = 0 to l - 1 do
+             match find_reg_containing n vs.(i) with
+             | None -> raise Exit
+             | Some r -> rs.(i) <- r
+           done;
+           Some rs
+         with Exit ->
+           None
+         end
+
+(* Associate the given value number to the given result register,
+   without adding new equations. *)
+
+let set_known_reg n r v =
+  { n with num_reg = Reg.Map.add r v n.num_reg }
 
 (* Associate the given value numbers to the given result registers,
    without adding new equations. *)
 
+let array_fold2 f n a1 a2 =
+  let l = Array.length a1 in
+  assert (l = Array.length a2);
+  let n = ref n in
+  for i = 0 to l - 1 do n := f !n a1.(i) a2.(i) done;
+  !n
+
 let set_known_regs n rs vs =
-  match Array.length rs with
-  | 0 -> n
-  | 1 -> { n with num_reg = Reg.Map.add rs.(0) vs.(0) n.num_reg }
-  | _ -> assert false
+  array_fold2 set_known_reg n rs vs
 
 (* Record the effect of a move: no new equations, but the result reg
    maps to the same value number as the argument reg. *)
@@ -97,13 +139,8 @@ let set_move n src dst =
    result registers [rs] to [fresh valnums]. *)
 
 let set_fresh_regs n rs rhs =
-  match Array.length rs with
-  | 0 -> { n with num_eqs = Equations.add rhs [||] n.num_eqs }
-  | 1 -> let v = n.num_next in
-         { num_next = v + 1;
-           num_eqs = Equations.add rhs [|v|] n.num_eqs;
-           num_reg = Reg.Map.add rs.(0) v n.num_reg }
-  | _ -> assert false
+  let (n1, vs) = fresh_valnum_regs n rs in
+  { n1 with num_eqs = Equations.add rhs vs n.num_eqs }
 
 (* Forget everything we know about the given result registers,
    which are receiving unpredictable values at run-time. *)
@@ -111,27 +148,40 @@ let set_fresh_regs n rs rhs =
 let set_unknown_regs n rs =
   { n with num_reg = Array.fold_right Reg.Map.remove rs n.num_reg }
 
+(* Forget everything we know about hardware registers and stack locations.
+   Used at function calls, since these can change registers arbitrarily. *)
+
+let forget_hard_regs n =
+  { n with num_reg =
+        Reg.Map.filter (fun r v -> r.Reg.loc = Reg.Unknown) n.num_reg }
+
 (* Keep only the equations satisfying the given predicate. *)
 
 let filter_equations pred n =
   { n with num_eqs = Equations.filter (fun (op,_) res -> pred op) n.num_eqs }
 
-(* Prepend a reg-reg move *)
+(* Prepend a set of moves before [i] to assign [srcs] to [dsts].  *)
+
+let insert_single_move i src dst = instr_cons (Iop Imove) [|src|] [|dst|] i
 
 let insert_move srcs dsts i =
   match Array.length srcs with
   | 0 -> i
   | 1 -> instr_cons (Iop Imove) srcs dsts i
-  | _ -> assert false
+  | l -> (* Parallel move: first copy srcs into tmps one by one,
+            then copy tmps into dsts one by one *)
+         let tmps = Reg.createv_like srcs in
+         array_fold2 insert_single_move
+           (array_fold2 insert_single_move i srcs tmps) tmps dsts
 
 (* Classification of operations *)
 
 type op_class =
-  | Op_pure     (* pure, produce one result *)
+  | Op_pure           (* pure arithmetic, produce one or several result *)
   | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
   | Op_load           (* memory load *)
   | Op_store of bool  (* memory store, false = init, true = assign *)
-  | Op_other          (* anything else that does not store in memory *)
+  | Op_other   (* anything else that does not allocate nor store in memory *)
 
 class cse_generic = object (self)
 
@@ -148,7 +198,7 @@ method class_of_operation op =
   | Istackoffset _ -> Op_other
   | Iload(_,_) -> Op_load
   | Istore(_,_,asg) -> Op_store asg
-  | Ialloc _ -> Op_other
+  | Ialloc _ -> assert false                   (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
   | Iintop _ -> Op_pure
   | Iintop_imm(Icheckbound, _) -> Op_checkbound
@@ -177,6 +227,16 @@ method private keep_checkbounds n =
   filter_equations (fun o -> self#class_of_operation o = Op_checkbound)
                    {n with num_reg = Reg.Map.empty }
 
+(* Keep only equations involving checkbounds and loads.
+   Performed across an alloc.  We cannot reuse results of arithmetic operations
+   after an alloc, because some of these results can be derived pointers 
+   (into the heap, but not to the first field of an object) (PR#6484). *)
+
+method private keep_checkbounds_and_loads n =
+  filter_equations
+    (fun o -> let c = self#class_of_operation o in c = Op_checkbound || c = Op_load)
+    n
+
 (* Perform CSE on the given instruction [i] and its successors.
    [n] is the value numbering current at the beginning of [i]. *)
 
@@ -191,22 +251,45 @@ method private cse n i =
       let n1 = set_move n i.arg.(0) i.res.(0) in
       {i with next = self#cse n1 i.next}
   | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
-      (* We don't perform CSE across function calls, as it increases
-         register pressure too much.  We do remember the checkbound
-         instructions already performed, though, since their reuse
-         cannot increase register pressure. *)
-      let n1 = self#keep_checkbounds n in
+      (* For function calls, we should at least forget:
+         - equations involving memory loads, since the callee can
+           perform arbitrary memory stores;
+         - equations involving arithmetic operations that can
+           produce bad pointers into the heap (see below for Ialloc);
+         - mappings from hardware registers to value numbers,
+           since the callee may not preserve these registers.
+         At any rate, we don't want to perform CSE of arithmetic
+         operations across function calls, because of increased
+         register pressure.  So, we only remember:
+         - the checkbound instructions already performed, though,
+           since their reuse cannot increase register pressure
+           nor trouble the GC;
+         - mappings from unallocated pseudoregisters to value numbers. *)
+      let n1 = forget_hard_regs (self#keep_checkbounds n) in
       {i with next = self#cse n1 i.next}
+  | Iop (Ialloc _) ->
+      (* For allocations, we must avoid extending the live range of a
+         pseudoregister across the allocation if this pseudoreg can
+         contain a value that looks like a pointer into the heap but
+         is not a pointer to the beginning of a Caml object.  PR#6484
+         is an example of such as value (a derived pointer into a
+         block).  So, conservatively, we forget all equations
+         involving arithmetic operations or memory loads, keeping only
+         checkbound equations.  For registers, we do like for an
+         "Op_other" instruction. *)
+       let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+       let n2 = self#keep_checkbounds n1 in
+       let n3 = set_unknown_regs n2 i.res in
+       {i with next = self#cse n3 i.next}
   | Iop op ->
       begin match self#class_of_operation op with
       | Op_pure | Op_checkbound | Op_load ->
-          assert (Array.length i.res <= 1);
           let (n1, varg) = valnum_regs n i.arg in
           let n2 = set_unknown_regs n1 (Proc.destroyed_at_oper i.desc) in
           begin match find_equation n1 (op, varg) with
           | Some vres ->
               (* This operation was computed earlier. *)
-              (* Is there a register that holds the result computed earlier? *)
+              (* Are there registers that hold the results computed earlier? *)
               begin match find_regs_containing n1 vres with
               | Some res when (not (self#is_cheap_operation op))
                            && (not (Proc.regs_are_volatile res)) ->
@@ -219,6 +302,9 @@ method private cse n i =
                      does not destroy any regs *)
                   insert_move res i.res (self#cse n3 i.next)
               | _ ->
+                  (* We already computed the operation but lost its
+                     results.  Associate the result registers to
+                     the result valnums of the previous operation. *)
                   let n3 = set_known_regs n2 i.res vres in
                   {i with next = self#cse n3 i.next}
               end
@@ -234,7 +320,7 @@ method private cse n i =
          let n2 = set_unknown_regs n1 i.res in
          {i with next = self#cse n2 i.next}
       | Op_store true ->
-          (* A non-initializing store: it can invalidate
+          (* A non-initializing store can invalidate
              anything we know about prior loads. *)
          let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
          let n2 = set_unknown_regs n1 i.res in
