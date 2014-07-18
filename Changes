@@ -242,6 +242,9 @@ Bug fixes:
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
 - PR#6418: reimplement parametrized Format tags/indentation with GADTs
   (Benoît Vaugon)
+- PR#6460: runtime assertion failure with large [| e1;...eN |]
+  float array expressions
+  (Leo White)
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
 - fix -dsource printing of "external _pipe = ..."
