@@ -285,10 +285,10 @@ let init () =
   in
 
   if !use_ocamlfind then begin
-    ocamlfind_cmd := A "ocamlfind";
-    let cmd = Command.string_of_command_spec !ocamlfind_cmd in
-    begin try ignore(Command.search_in_path cmd)
-    with Not_found -> failwith "ocamlfind not found on path, but -no-ocamlfind not used" end;
+    begin try ignore(Command.search_in_path "ocamlfind")
+    with Not_found ->
+      failwith "ocamlfind not found on path, but -no-ocamlfind not used"
+    end;
     (* TODO: warning message when using an option such as -ocamlc *)
     (* Note that plugins can still modify these variables After_options.
        This design decision can easily be changed. *)
