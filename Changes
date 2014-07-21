@@ -154,7 +154,7 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
-- PR#2719: wrong scheduling of bound checks within a 
+- PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
 - PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
   (Stéphane Glondu, Mark Shinwell)
@@ -276,6 +276,8 @@ Features wishes:
   (Hongbo Zhang)
 - PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
   (Alain Frisch)
+- PR#5899: a programmer-friendly access to backtrace information
+  (Jacques-Henri Jourdan and Gabriel Scherer)
 - PR#6000 comment 9644: add a warning for non-principal coercions to format
   (Jacques Garrigue, report by Damien Doligez)
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
@@ -294,8 +296,8 @@ Features wishes:
   (Josh Watzman, review by Xavier Clerc and Alain Frisch)
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer, request by François Berenger)
-- PR#5899: a programmer-friendly access to backtrace information
-  (Jacques-Henri Jourdan and Gabriel Scherer)
+- PR#6406: Expose OCaml version in C headers
+  (Peter Zotov and Romain Calascibetta)
 - ocamllex: user-definable refill action
   (Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
