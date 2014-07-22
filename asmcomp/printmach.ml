@@ -178,8 +178,10 @@ let rec instr ppf i =
         instr body i instr handler
   | Iexit i ->
       fprintf ppf "exit(%d)" i
-  | Iexit_ind ->
-      fprintf ppf "exit_ind(%a)" reg i.arg.(0)
+  | Iexit_ind il ->
+      fprintf ppf "exit_ind(%a, %a)"
+        reg i.arg.(0)
+        (fun ppf -> List.iter (pp_print_int ppf)) il
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler

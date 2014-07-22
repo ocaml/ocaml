@@ -180,11 +180,12 @@ let rec rename i sub =
       r := merge_substs !r sub i;
       (i, None)
 
-  | Iexit_ind ->
-      (* COMPLETELY false ! *)
-      let nfail = 0 in
-      let r = find_exit_subst nfail in
-      r := merge_substs !r sub i;
+  | Iexit_ind possible_fails ->
+      List.iter
+        (fun nfail ->
+           let r = find_exit_subst nfail in
+           r := merge_substs !r sub i)
+        possible_fails;
       (i, None)
 
   | Itrywith(body, handler) ->

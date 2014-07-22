@@ -72,7 +72,7 @@ and instruction_desc =
   | Iloop of instruction
   | Icatch of int * instruction * instruction
   | Iexit of int
-  | Iexit_ind
+  | Iexit_ind of int list
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 

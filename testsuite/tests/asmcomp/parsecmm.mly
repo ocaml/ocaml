@@ -204,6 +204,8 @@ expr:
   | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { Cexit($3,List.rev $4,[Stexn_cst $6]) }
   | LPAREN EXIT_IND INTCONST exprlist RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[]) }
   | LPAREN EXIT_IND INTCONST exprlist COMMA INTCONST RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[Stexn_cst $6]) }
+  | LPAREN EXIT_IND INTCONST exprlist COMMA LPAREN INTCONST RPAREN RPAREN
+      { Cexit_ind({stexn_var = $3},List.rev $4,[Stexn_var { stexn_var = $7 } ]) }
   | LPAREN CATCH sequence WITH LPAREN INTCONST bind_identlist RPAREN sequence RPAREN
                 { List.iter unbind_ident $7; Ccatch($6, $7, [], $3, $9) }
   | LPAREN CATCH sequence WITH LPAREN INTCONST bind_identlist COMMA INTCONST RPAREN sequence RPAREN

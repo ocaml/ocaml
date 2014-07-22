@@ -237,13 +237,13 @@ let rec reload i before =
       set := Reg.Set.union !set before;
       (i, Reg.Set.empty)
 
-  | Iexit_ind ->
-      (* COMPLETELY false ! *)
-      let nfail = 0 in
-      let set = find_reload_at_exit nfail in
-      set := Reg.Set.union !set before;
+  | Iexit_ind possible_fails ->
+      List.iter
+        (fun nfail ->
+           let set = find_reload_at_exit nfail in
+           set := Reg.Set.union !set before)
+        possible_fails;
       (i, Reg.Set.empty)
-
 
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
@@ -400,10 +400,13 @@ let rec spill i finally =
   | Iexit nfail ->
       (i, find_spill_at_exit nfail)
 
-  | Iexit_ind ->
-      (* COMPLETELY false ! *)
-      let nfail = 0 in
-      (i, find_spill_at_exit nfail)
+  | Iexit_ind possible_fails ->
+      let set =
+        List.fold_left
+          (fun set nfail ->
+             Reg.Set.union set (find_spill_at_exit nfail))
+          Reg.Set.empty possible_fails in
+      (i, set)
 
   | Itrywith(body, handler) ->
       let (new_next, at_join) = spill i.next finally in

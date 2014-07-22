@@ -37,7 +37,7 @@ and instruction_desc =
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
-  | Lbranch_ind
+  | Lbranch_ind of frame_offsets
   | Lbranch of label * frame_offsets
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
@@ -183,8 +183,6 @@ let rec linear' depth i n =
       copy_instr (Lop (Iconst_sexn_addr lbl)) i (linear i.Mach.next n)
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
-  | Iexit_ind ->
-      copy_instr Lbranch_ind i (linear i.Mach.next n)
   | Ireturn ->
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
       if !Proc.contains_calls
@@ -279,6 +277,28 @@ let rec linear' depth i n =
         then add_branch ~frame_offsets lbl n
         else cons_instr Lpoptrap (poptraps (count-1) n) in
       poptraps frame_offsets n1
+
+  | Iexit_ind possible_fails ->
+      let n1 = linear i.Mach.next n in
+      let lbl_depth =
+        match possible_fails with
+        | [] -> Misc.fatal_error "Linearize.linear': Iexit_ind"
+        | h :: t ->
+            let depth = fail_depth h in
+            List.iter
+              (fun n ->
+                 if fail_depth n <> depth
+                 then Misc.fatal_error "Linearize.linear': Iexit_ind not matching depth")
+              t;
+            depth
+      in
+      let frame_offsets = depth - lbl_depth in
+      let rec poptraps count n =
+        if count = 0
+        then copy_instr (Lbranch_ind frame_offsets) i n
+        else cons_instr Lpoptrap (poptraps (count-1) n) in
+      poptraps frame_offsets n1
+
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
       let (lbl_body, n2) =

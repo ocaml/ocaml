@@ -595,8 +595,15 @@ let emit_instr fallthrough i =
           stack_offset := !stack_offset + n
         end
 
-    | Lbranch_ind ->
-        `	jmp	*{emit_reg i.arg.(0)}\n`
+    | Lbranch_ind frame_offsets ->
+        `	jmp	*{emit_reg i.arg.(0)}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 16 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
 
     | Lcondbranch(tst, lbl) ->
         begin match tst with

@@ -137,9 +137,6 @@ module Exn_classes = struct
               e.st_k <- r
 
           | (Some r1 as r), Some r2 ->
-              (* let l1 = List.length r1 in *)
-              (* let l2 = List.length r2 in *)
-              (* Format.printf "l1: %i l2: %i@." l1 l2; *)
               assert(List.length r1 = List.length r2);
               e.st_k <- r;
               List.iter2 union r1 r2
@@ -154,6 +151,7 @@ module Exn_classes = struct
     c
 
   let define env i args k =
+    (* TODO: record try/with depth *)
     let k = List.map (fun x -> Stexn_var x) k in
     let c = make_class env args k in
     Hashtbl.add env.def i c
@@ -898,9 +896,10 @@ method emit_expr (env:environment) exp =
           let src = self#emit_tuple ext_env simple_list in
           let src_exn = self#emit_load_sexns ext_env stex_args in
           let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_vars fail_var in
+          let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
           self#insert_moves src (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
-          self#insert (Iexit_ind) exn_var [||];
+          self#insert (Iexit_ind possible_exns) exn_var [||];
           None
       end
 

@@ -125,7 +125,7 @@ method private reload i =
   | Iexit i ->
       instr_cons (Iexit i) [||] [||] dummy_instr
 
-  | Iexit_ind ->
+  | Iexit_ind _ ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
         {i with arg = newarg}
