@@ -1288,6 +1288,22 @@ let strmatch_compile =
       end) in
   S.compile
 
+let cloop expr =
+  let raise_num = next_raise_count () in
+  Ccatch(raise_num, [], [],
+         Cexit (raise_num,[],[]),
+         (Csequence (remove_unit expr,
+                     Cexit (raise_num,[],[]))))
+
+(* let cloop expr = *)
+(*   let raise_num = next_raise_count () in *)
+(*   let var = { stexn_var = raise_num } in *)
+(*   (\* there is no reason to use that as variable, but it is easy to generate... *\) *)
+(*   Ccatch(raise_num, [], [var], *)
+(*          Cexit (raise_num,[],[Stexn_cst raise_num]), *)
+(*          (Csequence (remove_unit expr, *)
+(*                      Cexit_ind (var,[],[Stexn_var var])))) *)
+
 let rec transl = function
     Uvar id ->
       Cvar id
@@ -1513,8 +1529,25 @@ let rec transl = function
       return_unit
         (Ccatch
            (raise_num, [], [],
-            Cloop(exit_if_false cond (remove_unit(transl body)) raise_num),
+            (* Cloop *)
+            cloop
+              (exit_if_false cond (remove_unit(transl body)) raise_num),
             Ctuple []))
+
+      (* let raise_loop_num = next_raise_count () in *)
+      (* return_unit *)
+      (*   (Ccatch *)
+      (*      (raise_num, [], [], *)
+      (*       Ccatch *)
+      (*         (raise_loop_num, [], [], *)
+      (*          Cexit (raise_loop_num,[],[]), *)
+      (*          exit_if_false cond *)
+      (*            (Csequence ((remove_unit(transl body), *)
+      (*                         Cexit (raise_loop_num,[],[])))) *)
+      (*            raise_num), *)
+      (*       Ctuple [])) *)
+
+
   | Ufor(id, low, high, dir, body) ->
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
@@ -1528,7 +1561,8 @@ let rec transl = function
                 (raise_num, [], [],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar id; high]), Cexit (raise_num, [], []),
-                    Cloop
+                    (* Cloop *)
+                    cloop
                       (Csequence
                          (remove_unit(transl body),
                          Clet(id_prev, Cvar id,
@@ -2374,7 +2408,8 @@ let cache_public_method meths tag cache =
   Csequence(
   Ccatch
     (raise_num, [],[],
-     Cloop
+     (* Cloop *)
+     cloop
        (Clet(
         mi,
         Cop(Cor,
