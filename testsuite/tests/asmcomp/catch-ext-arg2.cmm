@@ -1,0 +1,5 @@
+(function "catch_fact" (b:int)
+  (catch (exit 0 b 1, 0)
+   with (0 c acc, 33)
+     (if (== c 0) acc
+         (exit_ind 33 (- c 1) ( * c acc), 0))))

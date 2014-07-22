@@ -40,6 +40,7 @@ let keyword_table =
     "catch", CATCH;
     "checkbound", CHECKBOUND;
     "exit", EXIT;
+    "exit_ind", EXIT_IND;
     "extcall", EXTCALL;
     "float", FLOAT;
     "float32", FLOAT32;
@@ -175,6 +176,7 @@ rule token = parse
   | "-a" { SUBA }
   | "-f" { SUBF }
   | "-" { SUBI }
+  | "," { COMMA }
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
                      | "0o" ['0'-'7']+ | "0b" ['0'-'1']+)
       { INTCONST(int_of_string(Lexing.lexeme lexbuf)) }

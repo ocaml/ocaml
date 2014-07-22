@@ -236,6 +236,15 @@ let rec reload i before =
       let set = find_reload_at_exit nfail in
       set := Reg.Set.union !set before;
       (i, Reg.Set.empty)
+
+  | Iexit_ind ->
+      (* COMPLETELY false ! *)
+      let nfail = 0 in
+      let set = find_reload_at_exit nfail in
+      set := Reg.Set.union !set before;
+      (i, Reg.Set.empty)
+
+
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
       (* All registers live at the beginning of the handler are destroyed,
@@ -390,6 +399,12 @@ let rec spill i finally =
        before)
   | Iexit nfail ->
       (i, find_spill_at_exit nfail)
+
+  | Iexit_ind ->
+      (* COMPLETELY false ! *)
+      let nfail = 0 in
+      (i, find_spill_at_exit nfail)
+
   | Itrywith(body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, before_handler) = spill handler at_join in

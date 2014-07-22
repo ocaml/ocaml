@@ -145,18 +145,38 @@ let rec expr ppf = function
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
-  | Ccatch(i, ids, e1, e2) ->
+  | Ccatch(i, ids, kids, e1, e2) ->
       fprintf ppf
-        "@[<2>(catch@ %a@;<1 -2>with(%d%a)@ %a)@]"
+        "@[<2>(catch@ %a@;<1 -2>with(%d%a%a)@ %a)@]"
         sequence e1 i
         (fun ppf ids ->
           List.iter
             (fun id -> fprintf ppf " %a" Ident.print id)
             ids) ids
+        (fun ppf kids ->
+          List.iter
+            (fun { stexn_var = id } -> fprintf ppf " v%d" id)
+            kids) kids
         sequence e2
-  | Cexit (i, el) ->
+  | Cexit (i, el, kl) ->
       fprintf ppf "@[<2>(exit %d" i ;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
+      (match kl with [] -> () | _ -> fprintf ppf ",");
+      List.iter (function
+          | Stexn_var { stexn_var } ->
+              fprintf ppf "@ v%d" stexn_var
+          | Stexn_cst i ->
+              fprintf ppf "@ c%d" i) kl;
+      fprintf ppf ")@]"
+  | Cexit_ind ({stexn_var = i}, el, kl) ->
+      fprintf ppf "@[<2>(exit_ind v%d" i ;
+      List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
+      (match kl with [] -> () | _ -> fprintf ppf ",");
+      List.iter (function
+          | Stexn_var { stexn_var } ->
+              fprintf ppf "@ v%d" stexn_var
+          | Stexn_cst i ->
+              fprintf ppf "@ c%d" i) kl;
       fprintf ppf ")@]"
   | Ctrywith(e1, id, e2) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"

@@ -82,6 +82,12 @@ type operation =
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
+type stexn_var = { stexn_var : int }
+
+type stexn =
+  | Stexn_var of stexn_var
+  | Stexn_cst of int
+
 type expression =
     Cconst_int of int
   | Cconst_natint of nativeint
@@ -99,8 +105,9 @@ type expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
   | Cloop of expression
-  | Ccatch of int * Ident.t list * expression * expression
-  | Cexit of int * expression list
+  | Ccatch of int * Ident.t list * stexn_var list * expression * expression
+  | Cexit of int * expression list * stexn list
+  | Cexit_ind of stexn_var * expression list * stexn list
   | Ctrywith of expression * Ident.t * expression
 
 type fundecl =

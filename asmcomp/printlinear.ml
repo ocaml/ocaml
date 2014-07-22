@@ -36,6 +36,8 @@ let instr ppf i =
       fprintf ppf "return %a" regs i.arg
   | Llabel lbl ->
       fprintf ppf "%a:" label lbl
+  | Lbranch_ind ->
+      fprintf ppf "branch_ind [%a]" regs i.arg
   | Lbranch (lbl, frame_offsets) ->
       if frame_offsets = 0
       then fprintf ppf "goto %a" label lbl

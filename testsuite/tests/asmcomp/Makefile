@@ -51,7 +51,7 @@ MLCASES=optargs staticalloc
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
-      catch-try catch-rec
+      catch-try catch-rec catch-ext-arg2
 
 ARGS_fib=-DINT_INT -DFUN=fib main.c
 ARGS_tak=-DUNIT_INT -DFUN=takmain main.c
@@ -67,6 +67,7 @@ ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 ARGS_catch-try=-DINT_INT -DFUN=catch_exit main.c
 ARGS_catch-rec=-DINT_INT -DFUN=catch_fact main.c
+ARGS_catch-ext-arg2=-DINT_INT -DFUN=catch_fact main.c
 
 tests: $(CASES:=.o)
 	@for c in $(CASES); do \

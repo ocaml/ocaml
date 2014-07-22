@@ -26,7 +26,7 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
+  let actv = Array.make (Array.length casev) (Cexit(0,[],[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -66,6 +66,7 @@ let access_array base numelt size =
 %token EQF
 %token EQI
 %token EXIT
+%token EXIT_IND
 %token EXTCALL
 %token FLOAT
 %token FLOAT32
@@ -133,6 +134,7 @@ let access_array base numelt size =
 %token ADDRASET
 %token INTASET
 %token FLOATASET
+%token COMMA
 
 %start phrase
 %type <Cmm.phrase> phrase
@@ -194,13 +196,18 @@ expr:
       { let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(0, [], Cloop body, Ctuple []) }
-  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], $3, $5) }
-  | EXIT        { Cexit(0,[]) }
-  | LPAREN EXIT INTCONST exprlist RPAREN { Cexit($3,List.rev $4) }
+          | _ -> Cifthenelse($3, $4, (Cexit(0,[],[]))) in
+        Ccatch(0, [], [], Cloop body, Ctuple []) }
+  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], [], $3, $5) }
+  | EXIT        { Cexit(0,[],[]) }
+  | LPAREN EXIT INTCONST exprlist RPAREN { Cexit($3,List.rev $4,[]) }
+  | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { Cexit($3,List.rev $4,[Stexn_cst $6]) }
+  | LPAREN EXIT_IND INTCONST exprlist RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[]) }
+  | LPAREN EXIT_IND INTCONST exprlist COMMA INTCONST RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[Stexn_cst $6]) }
   | LPAREN CATCH sequence WITH LPAREN INTCONST bind_identlist RPAREN sequence RPAREN
-                { List.iter unbind_ident $7; Ccatch($6, $7, $3, $9) }
+                { List.iter unbind_ident $7; Ccatch($6, $7, [], $3, $9) }
+  | LPAREN CATCH sequence WITH LPAREN INTCONST bind_identlist COMMA INTCONST RPAREN sequence RPAREN
+                { List.iter unbind_ident $7; Ccatch($6, $7, [{stexn_var = $9}], $3, $11) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN

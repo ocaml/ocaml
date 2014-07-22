@@ -179,6 +179,14 @@ let rec rename i sub =
       let r = find_exit_subst nfail in
       r := merge_substs !r sub i;
       (i, None)
+
+  | Iexit_ind ->
+      (* COMPLETELY false ! *)
+      let nfail = 0 in
+      let r = find_exit_subst nfail in
+      r := merge_substs !r sub i;
+      (i, None)
+
   | Itrywith(body, handler) ->
       let (new_body, sub_body) = rename body sub in
       let (new_handler, sub_handler) = rename handler sub in

@@ -106,7 +106,8 @@ let operation op arg ppf res =
   | Iconst_int n
   | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" f
-  | Iconst_symbol s -> fprintf ppf "\"%s\"" s
+  | Iconst_symbol s -> fprintf ppf "%s" s
+  | Iconst_sexn_addr i -> fprintf ppf "\"st_exn%i\"" i
   | Icall_ind -> fprintf ppf "call %a" regs arg
   | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
   | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
@@ -177,6 +178,8 @@ let rec instr ppf i =
         instr body i instr handler
   | Iexit i ->
       fprintf ppf "exit(%d)" i
+  | Iexit_ind ->
+      fprintf ppf "exit_ind(%a)" reg i.arg.(0)
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler

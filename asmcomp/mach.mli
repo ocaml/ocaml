@@ -39,6 +39,7 @@ type operation =
   | Iconst_float of float
   | Iconst_symbol of string
   | Iconst_blockheader of nativeint
+  | Iconst_sexn_addr of int
   | Icall_ind
   | Icall_imm of string
   | Itailcall_ind
@@ -72,6 +73,7 @@ and instruction_desc =
   | Iloop of instruction
   | Icatch of int * instruction * instruction
   | Iexit of int
+  | Iexit_ind
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 

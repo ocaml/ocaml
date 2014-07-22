@@ -18,7 +18,288 @@ open Cmm
 open Reg
 open Mach
 
-type environment = (Ident.t, Reg.t array) Tbl.t
+type static_exception_info =
+  { sti_vars : (stexn_var, Reg.t array list * Reg.t array list) Hashtbl.t;
+    sti_def : (int, Reg.t array list * Reg.t array list) Hashtbl.t;
+    sti_bind : (stexn_var, int list) Hashtbl.t }
+
+module Exn_classes = struct
+
+  type exn_class =
+    {
+      st_id : int;
+      mutable st_repr : exn_class option;
+      mutable st_rank : int;
+
+      mutable st_depth : int option; (* try/with depth *)
+      mutable st_args : int option; (* number of arguments *)
+      mutable st_k : exn_class list option; (* list of continuation arguments *)
+    }
+
+  type env_exn =
+    { vars : (stexn_var,exn_class) Hashtbl.t;
+      def : (int,exn_class) Hashtbl.t;
+      class_count : int ref }
+
+  let fresh_env () =
+    { vars = Hashtbl.create 0;
+      def = Hashtbl.create 0;
+      class_count = ref 0 }
+
+  let class_count = ref 0
+
+  let new_class env =
+    incr env.class_count;
+    { st_id = !(env.class_count);
+      st_repr = None;
+      st_rank = 0;
+      st_depth = None;
+      st_args = None;
+      st_k = None }
+
+  let rec repr e =
+    match e.st_repr with
+    | None -> e
+    | Some e' ->
+        let e'' = repr e' in
+        if e'' != e' then e.st_repr <- Some e'';
+        e''
+
+  let var_class env var =
+    try Hashtbl.find env.vars var with
+    | Not_found ->
+        let c = new_class env in
+        Hashtbl.add env.vars var c;
+        c
+
+  let stexn env = function
+    | Stexn_cst i ->
+        begin
+          try Hashtbl.find env.def i
+          with Not_found ->
+            assert false (* must have been filled before *)
+        end
+    | Stexn_var var ->
+        var_class env var
+
+  let rec union e1 e2 =
+    let e1 = repr e1 in
+    let e2 = repr e2 in
+
+    if e1 != e2
+    then
+      begin
+        begin
+          if e1.st_rank < e2.st_rank
+          then e1.st_repr <- Some e2
+          else
+          if e1.st_rank > e2.st_rank
+          then e2.st_repr <- Some e1
+          else
+            (e2.st_repr <- Some e1;
+             e1.st_rank <- e1.st_rank + 1)
+        end;
+
+        let e = repr e1 in
+
+        begin
+          match e1.st_depth, e2.st_depth with
+          | None, None -> ()
+
+          | (Some _ as r), None
+          | None, (Some _ as r) ->
+              e.st_depth <- r
+
+          | (Some r1 as r), Some r2 ->
+              assert(r1 = r2);
+              e.st_depth <- r
+        end;
+
+        begin
+          match e1.st_args, e2.st_args with
+          | None, None -> ()
+
+          | (Some _ as r), None
+          | None, (Some _ as r) ->
+              e.st_args <- r
+
+          | (Some r1 as r), Some r2 ->
+              assert(r1 = r2);
+              e.st_args <- r
+        end;
+
+        begin
+          match e1.st_k, e2.st_k with
+          | None, None -> ()
+
+          | (Some _ as r), None
+          | None, (Some _ as r) ->
+              e.st_k <- r
+
+          | (Some r1 as r), Some r2 ->
+              (* let l1 = List.length r1 in *)
+              (* let l2 = List.length r2 in *)
+              (* Format.printf "l1: %i l2: %i@." l1 l2; *)
+              assert(List.length r1 = List.length r2);
+              e.st_k <- r;
+              List.iter2 union r1 r2
+        end
+      end
+
+  let make_class env args k =
+    let c = new_class env in
+    c.st_args <- Some (List.length args);
+    let k = List.map (stexn env) k in
+    c.st_k <- Some k;
+    c
+
+  let define env i args k =
+    let k = List.map (fun x -> Stexn_var x) k in
+    let c = make_class env args k in
+    Hashtbl.add env.def i c
+
+  let apply env e args k =
+    let c_expect = make_class env args k in
+    let c = stexn env e in
+    union c_expect c
+
+  let apply_direct env i args k =
+    apply env (Stexn_cst i) args k
+
+  let apply_var env v args k =
+    apply env (Stexn_var v) args k
+
+
+  let mark_exception_classes cmm =
+    let env = fresh_env () in
+    let rec aux = function
+      | Cconst_int _
+      | Cconst_natint _
+      | Cconst_float _
+      | Cconst_symbol _
+      | Cconst_pointer _
+      | Cconst_natpointer _
+      | Cconst_blockheader _
+      | Cvar _ -> ()
+
+      | Clet (_, e1, e2)
+      | Csequence (e1, e2)
+      | Ctrywith (e1, _, e2) ->
+          aux e1; aux e2
+
+      | Cassign (_, e)
+      | Cloop e ->
+          aux e
+
+      | Ctuple l
+      | Cop (_, l) ->
+          List.iter aux l
+
+      | Cifthenelse (e1, e2, e3) ->
+          aux e1; aux e2; aux e3
+
+      | Cswitch (e, _, a) ->
+          aux e; Array.iter aux a
+
+      | Ccatch (i, args, k, body, handler) ->
+          define env i args k;
+          aux body;
+          aux handler
+
+      | Cexit (i, args, k) ->
+          apply_direct env i args k;
+          List.iter aux args
+
+      | Cexit_ind (var, args, k) ->
+          apply_var env var args k;
+          List.iter aux args
+
+    in
+    aux cmm;
+    env
+
+  let result regs_for_addr env =
+
+    (* allocates registers for each equivalence class *)
+    let classes = Hashtbl.create !(env.class_count) in
+    let sti_vars = Hashtbl.create (Hashtbl.length env.vars) in
+    let sti_def = Hashtbl.create (Hashtbl.length env.def) in
+    let aux t v cl =
+      let cl = repr cl in
+      let regs =
+        try Hashtbl.find classes cl.st_id
+        with Not_found ->
+          let args =
+            match cl.st_args with
+            | None -> [] (* if not used anything will be ok *)
+            | Some args ->
+                Array.to_list (Array.init args (fun _ -> regs_for_addr ()))
+          in
+          let k =
+            match cl.st_k with
+            | None -> []
+            | Some k -> List.map (fun _ -> regs_for_addr ()) k
+          in
+          let r = args, k in
+          Hashtbl.add classes cl.st_id r;
+          r
+      in
+      Hashtbl.add t v regs
+    in
+    Hashtbl.iter (aux sti_vars) env.vars;
+    Hashtbl.iter (aux sti_def) env.def;
+
+    (* marks which static exception belong to which class *)
+    let equiv_classes = Hashtbl.create !(env.class_count) in
+    let aux' i cl =
+      let cl = repr cl in
+      let l =
+        try Hashtbl.find equiv_classes cl.st_id
+        with Not_found ->
+          let r = ref [] in
+          Hashtbl.add equiv_classes cl.st_id r;
+          r
+      in
+      l := i :: !l
+    in
+    Hashtbl.iter aux' env.def;
+
+    (* marks which static exception can be contained by each variables *)
+    let sti_bind = Hashtbl.create (Hashtbl.length env.vars) in
+    let aux'' v cl =
+      let cl = repr cl in
+      let l = try !(Hashtbl.find equiv_classes cl.st_id) with Not_found -> [] in
+      Hashtbl.add sti_bind v l
+    in
+    Hashtbl.iter aux'' env.vars;
+
+    { sti_vars; sti_def; sti_bind }
+
+  let static_exceptions_registers regs_for_addr cmm =
+    let env = mark_exception_classes cmm in
+    result regs_for_addr env
+
+end
+
+type environment =
+  { var : (Ident.t, Reg.t array) Tbl.t;
+    exn : (Cmm.stexn_var, Reg.t array) Tbl.t;
+    st_exn_info : static_exception_info;
+  }
+
+let env_add id v env =
+  { env with var = Tbl.add id v env.var }
+
+let env_add_ex id v env =
+  { env with exn = Tbl.add id v env.exn }
+
+let env_find id env =
+  Tbl.find id env.var
+
+let env_find_ex id env =
+  Tbl.find id env.exn
+
+let env_empty st_exn_info = { var = Tbl.empty; exn = Tbl.empty; st_exn_info }
 
 (* Infer the type of the result of an operation *)
 
@@ -45,7 +326,7 @@ let oper_result_type = function
 
 (* Infer the size in bytes of the result of a simple expression *)
 
-let size_expr env exp =
+let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _
     | Cconst_blockheader _ -> Arch.size_int
@@ -57,7 +338,7 @@ let size_expr env exp =
           Tbl.find id localenv
         with Not_found ->
         try
-          let regs = Tbl.find id env in
+          let regs = env_find id env in
           size_machtype (Array.map (fun r -> r.typ) regs)
         with Not_found ->
           fatal_error("Selection.size_expr: unbound var " ^
@@ -158,9 +439,6 @@ let debuginfo_op = function
   | Craise (_, dbg) -> dbg
   | Ccheckbound dbg -> dbg
   | _ -> Debuginfo.none
-
-(* Registers for catch constructs *)
-let catch_regs = ref []
 
 (* Name of function being compiled *)
 let current_function_name = ref ""
@@ -435,7 +713,7 @@ method insert_op op rs rd =
 (* Add the instructions for the given expression
    at the end of the self sequence *)
 
-method emit_expr env exp =
+method emit_expr (env:environment) exp =
   match exp with
     Cconst_int n ->
       let r = self#regs_for typ_int in
@@ -460,7 +738,7 @@ method emit_expr env exp =
       Some(self#insert_op (Iconst_int n) [||] r)
   | Cvar v ->
       begin try
-        Some(Tbl.find v env)
+        Some(env_find v env)
       with Not_found ->
         fatal_error("Selection.emit_expr: unbound var " ^ Ident.unique_name v)
       end
@@ -472,7 +750,7 @@ method emit_expr env exp =
   | Cassign(v, e1) ->
       let rv =
         try
-          Tbl.find v env
+          env_find v env
         with Not_found ->
           fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
       begin match self#emit_expr env e1 with
@@ -577,41 +855,59 @@ method emit_expr env exp =
       let (rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       Some [||]
-  | Ccatch(nfail, ids, e1, e2) ->
-      let rs =
-        List.map
-          (fun id ->
-            let r = self#regs_for typ_addr in name_regs id r; r)
-          ids in
+  | Ccatch(nfail, ids, kids, e1, e2) ->
+      let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+      List.iter2 name_regs ids rs;
+
+      (* those moves must go into emit sequence *)
+      (* Format.printf "ccatch @."; *)
+      (* List.iter (fun r -> Format.printf "regs: %a@." Printmach.regs r) ids_regs; *)
+      (* self#insert_moves (Array.concat ids_regs) (Array.concat rs); *)
+      (* self#insert_moves (Array.concat kids_regs) (Array.concat krs); *)
+
       let new_env =
         List.fold_left
-        (fun env (id,r) -> Tbl.add id r env)
+        (fun env (id,r) -> env_add id r env)
         env (List.combine ids rs) in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
+      let new_env =
+        List.fold_left
+        (fun env (id,r) -> env_add_ex id r env)
+        new_env (List.combine kids krs) in
       let (r1, s1) = self#emit_sequence env e1 in
       let (r2, s2) = self#emit_sequence new_env e2 in
-      catch_regs := List.tl !catch_regs ;
       let r = join r1 s1 r2 s2 in
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
-  | Cexit (nfail,args) ->
+  | Cexit (nfail,args,stex_args) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
           let src = self#emit_tuple ext_env simple_list in
-          let dest =
-            try List.assoc nfail !catch_regs
-            with Not_found ->
-              Misc.fatal_error
-                ("Selectgen.emit_expr, on exit("^string_of_int nfail^")") in
-          self#insert_moves src dest ;
+          let src_exn = self#emit_load_sexns ext_env stex_args in
+          let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_def nfail in
+          self#insert_moves src (Array.concat dest_args) ;
+          self#insert_moves src_exn (Array.concat dest_exn) ;
           self#insert (Iexit nfail) [||] [||];
           None
       end
+  | Cexit_ind (fail_var,args,stex_args) ->
+      begin match self#emit_parts_list env args with
+        None -> None
+      | Some (simple_list, ext_env) ->
+          let exn_var = self#emit_load_sexn_var env fail_var in
+          let src = self#emit_tuple ext_env simple_list in
+          let src_exn = self#emit_load_sexns ext_env stex_args in
+          let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_vars fail_var in
+          self#insert_moves src (Array.concat dest_args) ;
+          self#insert_moves src_exn (Array.concat dest_exn) ;
+          self#insert (Iexit_ind) exn_var [||];
+          None
+      end
+
   | Ctrywith(e1, v, e2) ->
       let (r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in
-      let (r2, s2) = self#emit_sequence (Tbl.add v rv env) e2 in
+      let (r2, s2) = self#emit_sequence (env_add v rv env) e2 in
       let r = join r1 s1 r2 s2 in
       self#insert
         (Itrywith(s1#extract,
@@ -620,23 +916,45 @@ method emit_expr env exp =
         [||] [||];
       r
 
-method private emit_sequence env exp =
+method private emit_load_sexn_var (env:environment) var =
+  try env_find_ex var env
+  with Not_found ->
+    fatal_error("Selection.emit_load_sexn_var: unbound exn var v" ^
+                (string_of_int var.stexn_var))
+
+method private emit_load_sexn (env:environment) sexn =
+  match sexn with
+  | Stexn_var v -> self#emit_load_sexn_var env v
+  | Stexn_cst i ->
+      let r = self#regs_for typ_addr in
+      self#insert_op (Iconst_sexn_addr i) [||] r
+
+method private emit_load_sexns (env:environment) sexns =
+  let rec emit_list = function
+    [] -> []
+  | exp :: rem ->
+      let loc_rem = emit_list rem in
+      let loc_exp = self#emit_load_sexn env exp in
+      loc_exp :: loc_rem in
+  Array.concat(emit_list sexns)
+
+method private emit_sequence (env:environment) exp =
   let s = {< instr_seq = dummy_instr >} in
   let r = s#emit_expr env exp in
   (r, s)
 
-method private bind_let env v r1 =
+method private bind_let (env:environment) v r1 =
   if all_regs_anonymous r1 then begin
     name_regs v r1;
-    Tbl.add v r1 env
+    env_add v r1 env
   end else begin
     let rv = Reg.createv_like r1 in
     name_regs v rv;
     self#insert_moves r1 rv;
-    Tbl.add v rv env
+    env_add v rv env
   end
 
-method private emit_parts env exp =
+method private emit_parts (env:environment) exp =
   if self#is_simple_expr exp then
     Some (exp, env)
   else begin
@@ -650,17 +968,17 @@ method private emit_parts env exp =
           let id = Ident.create "bind" in
           if all_regs_anonymous r then
             (* r is an anonymous, unshared register; use it directly *)
-            Some (Cvar id, Tbl.add id r env)
+            Some (Cvar id, env_add id r env)
           else begin
             (* Introduce a fresh temp to hold the result *)
             let tmp = Reg.createv_like r in
             self#insert_moves r tmp;
-            Some (Cvar id, Tbl.add id tmp env)
+            Some (Cvar id, env_add id tmp env)
           end
         end
   end
 
-method private emit_parts_list env exp_list =
+method private emit_parts_list (env:environment) exp_list : (_ * environment) option =
   match exp_list with
     [] -> Some ([], env)
   | exp :: rem ->
@@ -673,7 +991,7 @@ method private emit_parts_list env exp_list =
             None -> None
           | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
 
-method private emit_tuple env exp_list =
+method private emit_tuple (env:environment) exp_list =
   let rec emit_list = function
     [] -> []
   | exp :: rem ->
@@ -684,13 +1002,13 @@ method private emit_tuple env exp_list =
       | Some loc_exp -> loc_exp :: loc_rem in
   Array.concat(emit_list exp_list)
 
-method emit_extcall_args env args =
+method emit_extcall_args (env:environment) args =
   let r1 = self#emit_tuple env args in
   let (loc_arg, stack_ofs as arg_stack) = Proc.loc_external_arguments r1 in
   self#insert_move_args r1 loc_arg stack_ofs;
   arg_stack
 
-method emit_stores env data regs_addr =
+method emit_stores (env:environment) data regs_addr =
   let a =
     ref (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)) in
   List.iter
@@ -715,7 +1033,7 @@ method emit_stores env data regs_addr =
 
 (* Same, but in tail position *)
 
-method private emit_return env exp =
+method private emit_return (env:environment) exp =
   match self#emit_expr env exp with
     None -> ()
   | Some r ->
@@ -723,7 +1041,7 @@ method private emit_return env exp =
       self#insert_moves r loc;
       self#insert Ireturn loc [||]
 
-method emit_tail env exp =
+method emit_tail (env:environment) exp =
   match exp with
     Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -795,27 +1113,25 @@ method emit_tail env exp =
             (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
             rsel [||]
       end
-  | Ccatch(nfail, ids, e1, e2) ->
-       let rs =
-        List.map
-          (fun id ->
-            let r = self#regs_for typ_addr in
-            name_regs id r  ;
-            r)
-          ids in
+  | Ccatch(nfail, ids, kids, e1, e2) ->
+      let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+      List.iter2 name_regs ids rs;
+
       let new_env =
         List.fold_left
-        (fun env (id,r) -> Tbl.add id r env)
+        (fun env (id,r) -> env_add id r env)
         env (List.combine ids rs) in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
+      let new_env =
+        List.fold_left
+        (fun env (id,r) -> env_add_ex id r env)
+        new_env (List.combine kids krs) in
       let s1 = self#emit_tail_sequence env e1 in
       let s2 = self#emit_tail_sequence new_env e2 in
-      catch_regs := List.tl !catch_regs ;
       self#insert (Icatch(nfail, s1, s2)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in
-      let s2 = self#emit_tail_sequence (Tbl.add v rv env) e2 in
+      let s2 = self#emit_tail_sequence (env_add v rv env) e2 in
       self#insert
         (Itrywith(s1#extract,
                   instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))
@@ -846,10 +1162,18 @@ method emit_fundecl f =
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in
+
+  let static_exn_regs =
+    Exn_classes.static_exceptions_registers
+      (fun () -> self#regs_for typ_addr)
+      f.Cmm.fun_body in
+
   let env =
     List.fold_right2
-      (fun (id, ty) r env -> Tbl.add id r env)
-      f.Cmm.fun_args rargs Tbl.empty in
+      (fun (id, ty) r env -> env_add id r env)
+      f.Cmm.fun_args rargs
+      (env_empty static_exn_regs) in
+
   self#insert_moves loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
   let body = self#extract in
@@ -877,5 +1201,5 @@ let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
 
 let reset () =
-  catch_regs := [];
-  current_function_name := ""
+  current_function_name := "";
+  ()

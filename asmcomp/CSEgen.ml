@@ -184,6 +184,7 @@ class cse_generic = object (self)
 method class_of_operation op =
   match op with
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
+  | Iconst_sexn_addr _
   | Iconst_int _ | Iconst_float _ | Iconst_symbol _
   | Iconst_blockheader _ -> Op_pure
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
@@ -219,7 +220,7 @@ method private kill_loads n =
 method private cse n i =
   match i.desc with
   | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _)
-  | Iexit _ | Iraise _ ->
+  | Iexit _ | Iexit_ind | Iraise _ ->
       i
   | Iop (Imove | Ispill | Ireload) ->
       (* For moves, we associate the same value number to the result reg

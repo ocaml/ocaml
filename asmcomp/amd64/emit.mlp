@@ -86,6 +86,14 @@ let emit_label lbl =
 let emit_data_label lbl =
   emit_string ".Ld"; emit_int lbl
 
+let load_label_addr s =
+  (* heu un peu douteux en fait tout ces gotpcrel... ? *)
+  if !Clflags.dlcode && not mingw64 && not cygwin
+  then `movq	{emit_label s}@GOTPCREL(%rip)`
+  else if !pic_code
+  then `leaq	{emit_label s}(%rip)`
+  else `movq	${emit_label s}`
+
 (* Output a .align directive. *)
 
 let emit_align n =
@@ -393,6 +401,8 @@ let emit_instr fallthrough i =
         end
     | Lop(Iconst_symbol s) ->
         `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
+    | Lop(Iconst_sexn_addr n) ->
+        `	{load_label_addr n}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
         record_frame i.live i.dbg
@@ -584,6 +594,10 @@ let emit_instr fallthrough i =
           cfi_adjust_cfa_offset n;
           stack_offset := !stack_offset + n
         end
+
+    | Lbranch_ind ->
+        `	jmp	*{emit_reg i.arg.(0)}\n`
+
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->

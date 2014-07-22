@@ -124,6 +124,12 @@ method private reload i =
         (self#reload i.next)
   | Iexit i ->
       instr_cons (Iexit i) [||] [||] dummy_instr
+
+  | Iexit_ind ->
+      let newarg = self#makereg1 i.arg in
+      insert_moves i.arg newarg
+        {i with arg = newarg}
+
   | Itrywith(body, handler) ->
       instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
         (self#reload i.next)

@@ -108,6 +108,8 @@ let build_graph fundecl =
         interf body; interf handler; interf i.next
     | Iexit _ ->
         ()
+    | Iexit_ind ->
+        ()
     | Itrywith(body, handler) ->
         add_interf_set Proc.destroyed_at_raise handler.live;
         interf body; interf handler; interf i.next
@@ -179,6 +181,8 @@ let build_graph fundecl =
     | Icatch(_, body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next
     | Iexit _ ->
+        ()
+    | Iexit_ind ->
         ()
     | Itrywith(body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next

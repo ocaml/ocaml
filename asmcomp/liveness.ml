@@ -119,6 +119,15 @@ let rec live i finally =
       let this_live = find_live_at_exit nfail in
       i.live <- this_live ;
       this_live
+
+  | Iexit_ind ->
+      (* COMPLETELY false ! *)
+      let this_live = find_live_at_exit 0 in
+
+      let this_live = Reg.Set.union (Reg.set_of_array i.arg) this_live in
+      i.live <- this_live ;
+      this_live
+
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in

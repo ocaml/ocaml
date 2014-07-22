@@ -55,6 +55,7 @@ let main() =
      "-dprefer", Arg.Set dump_prefer, "";
      "-dalloc", Arg.Set dump_regalloc, "";
      "-dreload", Arg.Set dump_reload, "";
+     "-dcse", Arg.Set dump_cse, "";
      "-dscheduling", Arg.Set dump_scheduling, "";
      "-dlinear", Arg.Set dump_linear, ""
     ] compile_file usage

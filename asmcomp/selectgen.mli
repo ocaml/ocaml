@@ -13,7 +13,16 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-type environment = (Ident.t, Reg.t array) Tbl.t
+type static_exception_info =
+  { sti_vars : (Cmm.stexn_var, Reg.t array list * Reg.t array list) Hashtbl.t;
+    sti_def : (int, Reg.t array list * Reg.t array list) Hashtbl.t;
+    sti_bind : (Cmm.stexn_var, int list) Hashtbl.t }
+
+type environment =
+  { var : (Ident.t, Reg.t array) Tbl.t;
+    exn : (Cmm.stexn_var, Reg.t array) Tbl.t;
+    st_exn_info : static_exception_info;
+  }
 
 val size_expr : environment -> Cmm.expression -> int
 
@@ -100,8 +109,8 @@ class virtual selector_generic : object
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :
-    (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
-  method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
+    environment -> Cmm.expression -> Reg.t array option
+  method emit_tail : environment -> Cmm.expression -> unit
 end
 
 val reset : unit -> unit

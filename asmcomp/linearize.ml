@@ -37,6 +37,7 @@ and instruction_desc =
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
+  | Lbranch_ind
   | Lbranch of label * frame_offsets
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
@@ -177,8 +178,13 @@ let rec linear' depth i n =
   | Iop(Imove | Ireload | Ispill)
     when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
       linear i.Mach.next n
+  | Iop(Iconst_sexn_addr nfail) ->
+      let (_,lbl) = find_exit_label nfail in
+      copy_instr (Lop (Iconst_sexn_addr lbl)) i (linear i.Mach.next n)
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
+  | Iexit_ind ->
+      copy_instr Lbranch_ind i (linear i.Mach.next n)
   | Ireturn ->
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
       if !Proc.contains_calls
