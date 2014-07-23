@@ -148,13 +148,6 @@ let set_fresh_regs n rs rhs =
 let set_unknown_regs n rs =
   { n with num_reg = Array.fold_right Reg.Map.remove rs n.num_reg }
 
-(* Forget everything we know about hardware registers and stack locations.
-   Used at function calls, since these can change registers arbitrarily. *)
-
-let forget_hard_regs n =
-  { n with num_reg =
-        Reg.Map.filter (fun r v -> r.Reg.loc = Reg.Unknown) n.num_reg }
-
 (* Keep only the equations satisfying the given predicate. *)
 
 let filter_equations pred n =
@@ -220,23 +213,6 @@ method is_cheap_operation op =
 method private kill_loads n =
   filter_equations (fun o -> self#class_of_operation o <> Op_load) n
 
-(* Keep only equations involving checkbounds, and forget register values.
-   Performed across a call. *)
-
-method private keep_checkbounds n =
-  filter_equations (fun o -> self#class_of_operation o = Op_checkbound)
-                   {n with num_reg = Reg.Map.empty }
-
-(* Keep only equations involving checkbounds and loads.
-   Performed across an alloc.  We cannot reuse results of arithmetic operations
-   after an alloc, because some of these results can be derived pointers 
-   (into the heap, but not to the first field of an object) (PR#6484). *)
-
-method private keep_checkbounds_and_loads n =
-  filter_equations
-    (fun o -> let c = self#class_of_operation o in c = Op_checkbound || c = Op_load)
-    n
-
 (* Perform CSE on the given instruction [i] and its successors.
    [n] is the value numbering current at the beginning of [i]. *)
 
@@ -257,30 +233,21 @@ method private cse n i =
          - equations involving arithmetic operations that can
            produce bad pointers into the heap (see below for Ialloc);
          - mappings from hardware registers to value numbers,
-           since the callee may not preserve these registers.
-         At any rate, we don't want to perform CSE of arithmetic
-         operations across function calls, because of increased
-         register pressure.  So, we only remember:
-         - the checkbound instructions already performed, though,
-           since their reuse cannot increase register pressure
-           nor trouble the GC;
-         - mappings from unallocated pseudoregisters to value numbers. *)
-      let n1 = forget_hard_regs (self#keep_checkbounds n) in
-      {i with next = self#cse n1 i.next}
+           since the callee does not preserve these registers.
+         That doesn't leave much usable information: checkbounds
+         could be kept, but won't be usable for CSE as one of their
+         arguments is always a memory load.  For simplicity, we
+         just forget everything. *)
+      {i with next = self#cse empty_numbering i.next}
   | Iop (Ialloc _) ->
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg can
          contain a value that looks like a pointer into the heap but
          is not a pointer to the beginning of a Caml object.  PR#6484
-         is an example of such as value (a derived pointer into a
-         block).  So, conservatively, we forget all equations
-         involving arithmetic operations or memory loads, keeping only
-         checkbound equations.  For registers, we do like for an
-         "Op_other" instruction. *)
-       let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
-       let n2 = self#keep_checkbounds n1 in
-       let n3 = set_unknown_regs n2 i.res in
-       {i with next = self#cse n3 i.next}
+         is an example of such a value (a derived pointer into a
+         block).  In the absence of more precise typing information,
+         we just forget everything. *)
+       {i with next = self#cse empty_numbering i.next}
   | Iop op ->
       begin match self#class_of_operation op with
       | Op_pure | Op_checkbound | Op_load ->
