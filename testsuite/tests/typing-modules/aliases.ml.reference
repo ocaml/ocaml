@@ -367,4 +367,19 @@ Error: Unbound module type A
 #                           module B : sig module R : sig type t = string end module O = R end
 module K : sig module E = B module N = E.O end
 #   val x : K.N.t = "foo"
+#       module M : sig type t = A module B : sig type u = B end end
+# module P : sig type t = M.t = A module B = M.B end
+# module P : sig type t = M.t = A module B = M.B end
+#         module type S = sig module M : sig module P : sig  end end module Q = M end
+#       module type S =
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q : sig module N = M.N module P = M.P end
+  end
+#       module R :
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q = M
+  end
+# module R' : S
 # 

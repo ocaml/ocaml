@@ -913,8 +913,10 @@ let check_recmodule_inclusion env bindings =
      the number of mutually recursive declarations. *)
 
   let subst_and_strengthen env s id mty =
-    Mtype.strengthen env (Subst.modtype s mty)
-                         (Subst.module_path s (Pident id)) in
+    let p = Subst.module_path s (Pident id) in
+    let id' = match p with Pident x -> x | _ -> assert false in
+    Mtype.strengthen (Env.add_functor_arg id' env) (Subst.modtype s mty) p
+  in
 
   let rec check_incl first_time n env s =
     if n > 0 then begin
@@ -1389,27 +1391,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
             (extract_sig_open env smodl.pmod_loc modl.mod_type) in
-        let sg =
-          match modl.mod_desc with
-            Tmod_ident (p, _) when not (Env.is_functor_arg p env) ->
-              Env.add_required_global (Path.head p);
-              let pos = ref 0 in
-              List.map
-                (function
-                  | Sig_module (id, md, rs) ->
-                      let n = !pos in incr pos;
-                      Sig_module (id, {md with md_type =
-                                       Mty_alias (Pdot(p,Ident.name id,n))},
-                                  rs)
-                  | Sig_value (_, {val_kind=Val_reg})
-                  | Sig_typext _ | Sig_class _ as it ->
-                      incr pos; it
-                  | Sig_value _ | Sig_type _ | Sig_modtype _
-                  | Sig_class_type _ as it ->
-                      it)
-                sg
-          | _ -> sg
-        in
         List.iter
           (check_sig_item type_names module_names modtype_names loc) sg;
         let new_env = Env.add_signature sg env in
