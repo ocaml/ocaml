@@ -179,6 +179,8 @@ Bug fixes:
   (Gabriel Kerneis)
 - PR#6116: more efficient implementation of Digest.to_hex
   (ygrek)
+- PR#6142: add cmt file support to ocamlobjinfo
+  (Anil Madhavapeddy)
 - PR#6165: Alterations to handling of \013 in source files breaking other tools
   (David Allsopp)
 - PR#6173: Typing error message is worse than before
