@@ -33,18 +33,18 @@ let freshen mty =
 let rec strengthen env mty p =
   match scrape env mty with
     Mty_signature sg ->
-      Mty_signature(strengthen_sig env sg p 0)
+      Mty_signature(strengthen_sig env sg p)
   | Mty_functor(param, arg, res)
     when !Clflags.applicative_functors && Ident.name param <> "*" ->
       Mty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
   | mty ->
       mty
 
-and strengthen_sig env sg p pos =
+and strengthen_sig env sg p =
   match sg with
     [] -> []
   | (Sig_value(id, desc) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p (pos+1)
+      sigelt :: strengthen_sig env rem p
   | Sig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest, decl.type_private, decl.type_kind with
@@ -59,18 +59,13 @@ and strengthen_sig env sg p pos =
             else
               { decl with type_manifest = manif }
       in
-      Sig_type(id, newdecl, rs) :: strengthen_sig env rem p pos
+      Sig_type(id, newdecl, rs) :: strengthen_sig env rem p
   | (Sig_typext(id, ext, es) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p (pos+1)
+      sigelt :: strengthen_sig env rem p
   | Sig_module(id, md, rs) :: rem ->
-      let str =
-        if Env.is_functor_arg p env then
-          strengthen_decl env md (Pdot(p, Ident.name id, pos))
-        else
-          {md with md_type = Mty_alias (Pdot(p, Ident.name id, pos))}
-      in
+      let str = strengthen_decl env md (Pdot(p, Ident.name id, nopos)) in
       Sig_module(id, str, rs)
-      :: strengthen_sig (Env.add_module_declaration id md env) rem p (pos+1)
+      :: strengthen_sig (Env.add_module_declaration id md env) rem p
       (* Need to add the module in case it defines manifest module types *)
   | Sig_modtype(id, decl) :: rem ->
       let newdecl =
@@ -81,12 +76,12 @@ and strengthen_sig env sg p pos =
             decl
       in
       Sig_modtype(id, newdecl) ::
-      strengthen_sig (Env.add_modtype id decl env) rem p pos
+      strengthen_sig (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
   | (Sig_class(id, decl, rs) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p (pos+1)
+      sigelt :: strengthen_sig env rem p
   | (Sig_class_type(id, decl, rs) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p pos
+      sigelt :: strengthen_sig env rem p
 
 and strengthen_decl env md p =
   {md with md_type = strengthen env md.md_type p}

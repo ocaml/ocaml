@@ -379,11 +379,9 @@ and signature_components env cxt subst = function
       extension_constructors env cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: signature_components env cxt subst rem
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
-      let p1 = Pident id1 in
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen (Env.add_functor_arg id1 env) mty1.md_type p1)
-          mty2.md_type in
+          (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
       (pos, cc) :: signature_components env cxt subst rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
@@ -420,10 +418,7 @@ and check_modtype_equiv env cxt mty1 mty2 =
      modtypes env cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
-  | (c1, c2) ->
-      (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
-        print_coercion c1 print_coercion c2; *)
-      raise(Error [cxt, env, Modtype_permutation])
+  | (_, _) -> raise(Error [cxt, env, Modtype_permutation])
 
 (* Simplified inclusion check between module types (for Env) *)
 

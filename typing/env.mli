@@ -61,7 +61,6 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
-val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
 val normalize_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete value or module.
