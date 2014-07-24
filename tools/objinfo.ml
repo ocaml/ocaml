@@ -81,6 +81,23 @@ let print_cmi_infos name crcs =
   printf "Interfaces imported:\n";
   List.iter print_name_crc crcs
 
+let print_cmt_infos cmt =
+  let open Cmt_format in
+  printf "Cmt unit name: %s\n" cmt.cmt_modname;
+  print_string "Cmt interfaces imported:\n";
+  List.iter print_name_crc cmt.cmt_imports;
+  printf "Source file: %s\n"
+         (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
+  printf "Compilation flags:";
+  Array.iter print_spaced_string cmt.cmt_args;
+  printf "\nLoad path:";
+  List.iter print_spaced_string cmt.cmt_loadpath;
+  printf "\n";
+  printf "cmt interface digest: %s\n"
+    (match cmt.cmt_interface_digest with
+     | None -> ""
+     | Some crc -> Digest.to_hex crc)
+
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
   printf "CRC of implementation: %s\n" (Digest.to_hex crc);
@@ -209,10 +226,19 @@ let dump_obj filename =
     let toc = (input_value ic : library) in
     close_in ic;
     print_cma_infos toc
-  end else if magic_number = cmi_magic_number then begin
-    let cmi = Cmi_format.input_cmi ic in
+  end else if magic_number = cmi_magic_number ||
+              magic_number = cmt_magic_number then begin
     close_in ic;
-    print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_crcs
+    let cmi, cmt = Cmt_format.read filename in
+    begin match cmi with
+     | None -> ()
+     | Some cmi ->
+         print_cmi_infos cmi.Cmi_format.cmi_name cmi.Cmi_format.cmi_crcs
+    end;
+    begin match cmt with
+     | None -> ()
+     | Some cmt -> print_cmt_infos cmt
+    end
   end else if magic_number = cmx_magic_number then begin
     let ui = (input_value ic : unit_infos) in
     let crc = Digest.input ic in
