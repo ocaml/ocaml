@@ -23,6 +23,7 @@
 # - absence of empty lines at end of file (white-at-eof)
 # - presence of a LF character at the end of the file (missing-lf)
 # - maximum line length of 80 characters (long-line)
+# - maximum line length of 132 characters (very-long-line)
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
 
@@ -49,6 +50,9 @@
 #     *.mltop
 #     *.odocl
 #     *.clib
+# - Any file whose name matches the following pattern is automatically
+#   exempt from the "long-line" rule (but not from "very-long-line").
+#   */ocamldoc/*
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -130,14 +134,15 @@ IGNORE_DIRS="
       svnrules=`svn propget ocaml:typo "$f"`
     fi
     rules="$userrules"
+    add_hd(){ rules="missing-header,$rules"; }
     case "$f" in
       Makefile*|*/Makefile*) rules="tab,$rules";;
-    esac
-    h(){ rules="missing-header,$rules"; }
-    case "$f" in
-      */.depend*|*/.ignore) h;;
-      *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
+      */.depend*|*/.ignore) add_hd;;
+      *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
       *.reference|*/reference) continue;;
+    esac
+    case "$f" in
+      ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;
     esac
 
     (cat "$f"; echo) \
@@ -180,6 +185,12 @@ IGNORE_DIRS="
           RSTART = 81;
           RLENGTH = 0;
           err("long-line", "line is over 80 characters");
+        }
+
+        length($0) > 132 {
+          RSTART = 133;
+          RLENGTH = 0;
+          err("very-long-line", "line is over 132 characters");
         }
 
         3 <= NR && NR <= 5 \

@@ -214,9 +214,13 @@ CAMLprim value caml_make_array(value init)
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {
-      Assert(size < Max_young_wosize);
       wsize = size * Double_wosize;
-      res = caml_alloc_small(wsize, Double_array_tag);
+      if (wsize <= Max_young_wosize) {
+        res = caml_alloc_small(wsize, Double_array_tag);
+      } else {
+        res = caml_alloc_shr(wsize, Double_array_tag);
+        res = caml_check_urgent_gc(res);
+      }
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));
       }

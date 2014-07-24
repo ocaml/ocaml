@@ -246,10 +246,10 @@ static int parse_command_line(char **argv)
 #endif
     case 'v':
       if (!strcmp (argv[i], "-version")){
-        printf ("The OCaml runtime, version " OCAML_VERSION "\n");
+        printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
         exit (0);
       }else if (!strcmp (argv[i], "-vnum")){
-        printf (OCAML_VERSION "\n");
+        printf (OCAML_VERSION_STRING "\n");
         exit (0);
       }else{
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;

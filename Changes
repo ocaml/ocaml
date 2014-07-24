@@ -152,7 +152,7 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
-- PR#2719: wrong scheduling of bound checks within a 
+- PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
@@ -173,6 +173,8 @@ Bug fixes:
   (Gabriel Kerneis)
 - PR#6116: more efficient implementation of Digest.to_hex
   (ygrek)
+- PR#6142: add cmt file support to ocamlobjinfo
+  (Anil Madhavapeddy)
 - PR#6165: Alterations to handling of \013 in source files breaking other tools
   (David Allsopp)
 - PR#6173: Typing error message is worse than before
@@ -242,6 +244,11 @@ Bug fixes:
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
 - PR#6418: reimplement parametrized Format tags/indentation with GADTs
   (Benoît Vaugon)
+- PR#6460: runtime assertion failure with large [| e1;...eN |]
+  float array expressions
+  (Leo White)
+- PR#6482: ocamlbuild fails when _tags file in unhygienic directory
+  (Gabriel Scherer)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
@@ -259,6 +266,8 @@ Features wishes:
   (Hongbo Zhang)
 - PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
   (Alain Frisch)
+- PR#5899: a programmer-friendly access to backtrace information
+  (Jacques-Henri Jourdan and Gabriel Scherer)
 - PR#6000 comment 9644: add a warning for non-principal coercions to format
   (Jacques Garrigue, report by Damien Doligez)
 - PR#6054: add support for M.[ foo ], M.[| foo |] etc.
@@ -277,8 +286,8 @@ Features wishes:
   (Josh Watzman, review by Xavier Clerc and Alain Frisch)
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer, request by François Berenger)
-- PR#5899: a programmer-friendly access to backtrace information
-  (Jacques-Henri Jourdan and Gabriel Scherer)
+- PR#6406: Expose OCaml version in C headers
+  (Peter Zotov and Romain Calascibetta)
 - ocamllex: user-definable refill action
   (Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
