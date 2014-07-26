@@ -479,7 +479,7 @@ rule token = parse
   | ['+' '-'] symbolchar *
             { INFIXOP2(Lexing.lexeme lexbuf) }
   | "**" symbolchar *
-            { INFIXOP4(Lexing.lexeme lexbuf) }
+            { EXPONENTIATION(Lexing.lexeme lexbuf) }
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }

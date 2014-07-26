@@ -340,6 +340,7 @@ let mkctf_attrs d attrs =
 %token <string> INFIXOP2
 %token <string> INFIXOP3
 %token <string> INFIXOP4
+%token <string> EXPONENTIATION
 %token INHERIT
 %token INITIALIZER
 %token <int> INT
@@ -465,6 +466,8 @@ The precedences must be listed from low to high.
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
 %left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
+%nonassoc prec_unary_minusdot prec_unary_plusdot /* unary -. */
+%right    EXPONENTIATION
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
 %nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
@@ -1130,6 +1133,8 @@ expr:
       { mkinfix $1 $2 $3 }
   | expr INFIXOP4 expr
       { mkinfix $1 $2 $3 }
+  | expr EXPONENTIATION expr
+      { mkinfix $1 $2 $3 }
   | expr PLUS expr
       { mkinfix $1 "+" $3 }
   | expr PLUSDOT expr
@@ -1160,10 +1165,14 @@ expr:
       { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
       { mkinfix $1 ":=" $3 }
-  | subtractive expr %prec prec_unary_minus
-      { mkuminus $1 $2 }
-  | additive expr %prec prec_unary_plus
-      { mkuplus $1 $2 }
+  | MINUS expr %prec prec_unary_minus
+      { mkuminus "-" $2 }
+  | MINUSDOT expr %prec prec_unary_minusdot
+      { mkuminus "-." $2 }
+  | PLUS expr %prec prec_unary_plus
+      { mkuplus "+" $2 }
+  | PLUSDOT expr %prec prec_unary_plusdot
+      { mkuplus "+." $2 }
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
@@ -1950,6 +1959,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | EXPONENTIATION                              { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
@@ -2073,14 +2083,6 @@ opt_bar:
 opt_semi:
   | /* empty */                                 { () }
   | SEMI                                        { () }
-;
-subtractive:
-  | MINUS                                       { "-" }
-  | MINUSDOT                                    { "-." }
-;
-additive:
-  | PLUS                                        { "+" }
-  | PLUSDOT                                     { "+." }
 ;
 
 /* Attributes and extensions */
