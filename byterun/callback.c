@@ -18,7 +18,7 @@
 #include "fail.h"
 #include "memory.h"
 #include "mlvalues.h"
-#include "plat_threads.h"
+#include "platform.h"
 
 #ifndef NATIVE_CODE
 
@@ -201,10 +201,10 @@ struct named_value {
 #define Named_value_size 13
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
-static plat_mutex named_value_lock;
+static caml_plat_mutex named_value_lock;
 
 void caml_init_callbacks() {
-  plat_mutex_init(&named_value_lock);
+  caml_plat_mutex_init(&named_value_lock);
   init_callback_code();
 }
 
@@ -222,7 +222,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   unsigned int h = hash_value_name(name);
   int found = 0;
 
-  plat_mutex_lock(&named_value_lock);
+  caml_plat_lock(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
       caml_modify_root(nv->val, val);
@@ -238,7 +238,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
     nv->next = named_value_table[h];
     named_value_table[h] = nv;
   }
-  plat_mutex_unlock(&named_value_lock);
+  caml_plat_unlock(&named_value_lock);
   return Val_unit;
 }
 
@@ -247,7 +247,7 @@ CAMLexport value caml_get_named_value(char const *name, int* found_res)
   struct named_value * nv;
   int found = 0;
   value ret = Val_unit;
-  plat_mutex_lock(&named_value_lock);
+  caml_plat_lock(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
@@ -257,7 +257,7 @@ CAMLexport value caml_get_named_value(char const *name, int* found_res)
       break;
     }
   }
-  plat_mutex_unlock(&named_value_lock);
+  caml_plat_unlock(&named_value_lock);
 
   if (found_res) *found_res = found;
   return ret;

@@ -18,7 +18,7 @@
 
 #include "misc.h"
 #include "mlvalues.h"
-#include "plat_threads.h"
+#include "platform.h"
 
 #ifndef IO_BUFFER_SIZE
 #define IO_BUFFER_SIZE 65536
@@ -39,7 +39,7 @@ struct channel {
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
-  plat_mutex mutex;             /* Mutex protecting buffer */
+  caml_plat_mutex mutex;             /* Mutex protecting buffer */
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */

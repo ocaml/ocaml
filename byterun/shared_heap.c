@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "plat_threads.h"
+#include "platform.h"
 #include "mlvalues.h"
 #include "gc.h"
 #include "fail.h"
@@ -22,7 +22,7 @@ struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
 enum {NOT_MARKABLE = 3 << 8};
 
 /* readable and writable only using explicit atomic operations
-   from plat_threads.h */
+   from platform.h */
 struct {
   shared_stack unswept_regions;
   shared_stack swept_regions;

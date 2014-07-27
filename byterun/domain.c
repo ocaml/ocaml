@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "domain.h"
-#include "plat_threads.h"
+#include "platform.h"
 #include "custom.h"
 #include "major_gc.h"
 #include "shared_heap.h"
@@ -41,7 +41,7 @@ struct domain {
   atomic_uintnat is_alive;  /* domain has not terminated */
 
   /* fields protected by roots_lock */
-  plat_mutex roots_lock;
+  caml_plat_mutex roots_lock;
   struct caml_sampled_roots sampled_roots;
   int sampled_roots_dirty;
 };
@@ -68,7 +68,7 @@ static struct domain* Domain_val(value v) {
 /* A normal OCaml list (cons cells) containing at least the alive domains */
 static caml_root live_domains_list;
 static int next_domain_id;
-static plat_mutex live_domains_lock;
+static caml_plat_mutex live_domains_lock;
 
 static value domain_alloc(uintnat initial_minor_heap_size, value initial) {
   CAMLparam0();
@@ -102,7 +102,7 @@ static void domain_init(value cons) {
   Assert (domain_self == 0);
   domain_self = d;
   d->interrupt_word_address = &caml_young_limit;
-  plat_mutex_init(&d->roots_lock);
+  caml_plat_mutex_init(&d->roots_lock);
 }
 
 /* must be run on the domain's thread */
@@ -110,14 +110,14 @@ static void domain_register(value cons) {
   struct domain* d = Domain_val(Field(cons, 0));
   /* ORD: is_alive = 1 visible before being added to live_domains_list */
   
-  /* FIXME: what are the ordering constraints of plat_mutex_lock, exactly? */
+  /* FIXME: what are the ordering constraints of caml_plat_lock, exactly? */
   
   /* add to live_domains_list */
-  plat_mutex_lock(&live_domains_lock);
+  caml_plat_lock(&live_domains_lock);
   caml_modify_field(cons, 1, caml_read_root(live_domains_list));
   caml_modify_root(live_domains_list, cons);
   d->id = next_domain_id++;
-  plat_mutex_unlock(&live_domains_lock);
+  caml_plat_unlock(&live_domains_lock);
   
   caml_leave_blocking_section();
 }
@@ -133,7 +133,7 @@ static void domain_terminate() {
 static void domain_mark_live() {
   value last_live, l;
   int first = 1;
-  plat_mutex_lock(&live_domains_lock);
+  caml_plat_lock(&live_domains_lock);
   l = caml_read_root(live_domains_list);
   while (Is_block(l)) {
     value domain = Field(l, 0);
@@ -151,7 +151,7 @@ static void domain_mark_live() {
     }
     l = tail;
   }
-  plat_mutex_unlock(&live_domains_lock);
+  caml_plat_unlock(&live_domains_lock);
 }
 
 
@@ -211,8 +211,8 @@ void caml_domain_register_main(uintnat minor_size) {
   domain_self->is_main = 1;
 
   caml_init_global_roots();
-  live_domains_list = caml_create_root();
-  plat_mutex_init(&live_domains_lock);
+  live_domains_list = caml_create_root(Val_unit);
+  caml_plat_mutex_init(&live_domains_lock);
 
   domain_register(dom);
 
@@ -269,11 +269,11 @@ static void request_stw() {
   value d;
   atomic_store_rel(&stw_requested, 1);
   /* interrupt all domains */
-  plat_mutex_lock(&live_domains_lock);
+  caml_plat_lock(&live_domains_lock);
   for (d = caml_read_root(live_domains_list); Is_block(d); d = Field(d, 1)) {
     caml_interrupt_domain(Field(d, 0));
   }
-  plat_mutex_unlock(&live_domains_lock);
+  caml_plat_unlock(&live_domains_lock);
 }
 
 
@@ -332,7 +332,7 @@ CAMLexport void caml_leave_blocking_section() {
     cpu_relax();
   }
   atomic_store_rel(&domain_self->is_active, 1);
-  plat_mutex_lock(&domain_self->roots_lock);
+  caml_plat_lock(&domain_self->roots_lock);
   caml_process_pending_signals();
 }
 
@@ -340,7 +340,7 @@ CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_sample_local_roots(&domain_self->sampled_roots);
   domain_self->sampled_roots_dirty = 1;
-  plat_mutex_unlock(&domain_self->roots_lock);
+  caml_plat_unlock(&domain_self->roots_lock);
   atomic_store_rel(&domain_self->is_active, 0);
   /* subtract 1 from DOMSTAT_ACTIVE */
   atomic_fetch_add(&domstat, -0x10000);
@@ -349,21 +349,21 @@ CAMLexport void caml_enter_blocking_section() {
 static void do_foreign_roots(scanning_action f, int mark_dirty)
 {
   value domlist;
-  plat_mutex_lock(&live_domains_lock);
+  caml_plat_lock(&live_domains_lock);
   domlist = caml_read_root(live_domains_list);
-  plat_mutex_unlock(&live_domains_lock);
+  caml_plat_unlock(&live_domains_lock);
 
   for (; Is_block(domlist); domlist = Field(domlist, 1)) {
     struct domain* dom = Domain_val(Field(domlist, 0));
     if (!atomic_load_acq(&dom->is_active) &&
-        plat_mutex_try_lock(&dom->roots_lock)) {
+        caml_plat_try_lock(&dom->roots_lock)) {
       if (dom->sampled_roots_dirty) {
         caml_gc_log("Marking roots of domain [%02d]", dom->id);
         caml_do_sampled_roots(f, &dom->sampled_roots);
         dom->sampled_roots_dirty = 0;
       }
       if (mark_dirty) dom->sampled_roots_dirty = 1;
-      plat_mutex_unlock(&dom->roots_lock);
+      caml_plat_unlock(&dom->roots_lock);
     }
   }
 }

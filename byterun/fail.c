@@ -38,7 +38,7 @@ CAMLexport void caml_raise(value v)
     struct caml__mutex_unwind* m = caml_local_roots->mutexes;
     while (m) {
       /* unlocked in reverse order of locking */
-      plat_mutex_unlock(m->mutex);
+      caml_plat_unlock(m->mutex);
       m = m->next;
     }
     caml_local_roots = caml_local_roots->next;

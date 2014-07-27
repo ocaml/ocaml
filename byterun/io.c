@@ -61,7 +61,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   caml_leave_blocking_section();
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
-  plat_mutex_init(&channel->mutex);
+  caml_plat_mutex_init(&channel->mutex);
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
@@ -100,7 +100,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
 {
   close(channel->fd);
   if (channel->refcount > 0) return;
-  plat_mutex_free(&channel->mutex);
+  caml_plat_mutex_free(&channel->mutex);
   unlink_channel(channel);
   caml_stat_free(channel);
 }
@@ -418,7 +418,7 @@ CAMLexport void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if (--chan->refcount > 0) return;
-  plat_mutex_free(&chan->mutex);
+  caml_plat_mutex_free(&chan->mutex);
   unlink_channel(chan);
   caml_stat_free(chan);
 }

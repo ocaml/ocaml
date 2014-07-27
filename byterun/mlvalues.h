@@ -63,7 +63,7 @@ typedef uintnat color_t;
 typedef uintnat mark_t;
 
 /* atomic_uintnat is declared as a struct type to prevent accidental
-   accesses that don't use the primitives of plat_threads.h */
+   accesses that don't use the primitives of platform.h */
 typedef struct atomic_uintnat {
   volatile uintnat val;
 } atomic_uintnat;
