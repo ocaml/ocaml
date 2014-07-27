@@ -19,7 +19,7 @@
 #include "roots.h"
 #include "globroots.h"
 #include "callback.h"
-#include "plat_threads.h"
+#include "platform.h"
 #include "alloc.h"
 
 /* A caml_root is in fact a value. We don't expose that fact outside
@@ -36,13 +36,13 @@
    heap will be detected using the normal inter-generational pointer
    mechanism. */
 
-static plat_mutex roots_mutex;
+static caml_plat_mutex roots_mutex;
 static value roots_all = Val_unit;
 
 
 void caml_init_global_roots() 
 {
-  plat_mutex_init(&roots_mutex);
+  caml_plat_mutex_init(&roots_mutex);
 }
 
 CAMLexport caml_root caml_create_root(value init) 
@@ -52,10 +52,10 @@ CAMLexport caml_root caml_create_root(value init)
   caml_initialize_field(v, 0, init);
   caml_initialize_field(v, 1, Val_int(1));
   
-  plat_mutex_lock(&roots_mutex);
+  caml_plat_lock(&roots_mutex);
   caml_initialize_field(v, 2, roots_all);
   roots_all = v;
-  plat_mutex_unlock(&roots_mutex);
+  caml_plat_unlock(&roots_mutex);
 
   CAMLreturnT(caml_root, (caml_root)v);
 }
@@ -86,9 +86,9 @@ CAMLexport void caml_modify_root(caml_root root, value newv)
 void caml_scan_global_roots(scanning_action f)
 {
   value r, newr;
-  plat_mutex_lock(&roots_mutex);
+  caml_plat_lock(&roots_mutex);
   r = roots_all;
-  plat_mutex_unlock(&roots_mutex);
+  caml_plat_unlock(&roots_mutex);
   
   Assert(!Is_minor(r));
   newr = r;
@@ -100,7 +100,7 @@ void caml_cleanup_deleted_roots()
 {
   value r, prev;
   int first = 1;
-  plat_mutex_lock(&roots_mutex);
+  caml_plat_lock(&roots_mutex);
 
   r = roots_all;
   while (Is_block(r)) {
@@ -119,5 +119,5 @@ void caml_cleanup_deleted_roots()
     r = next;
   }
 
-  plat_mutex_unlock(&roots_mutex);
+  caml_plat_unlock(&roots_mutex);
 }

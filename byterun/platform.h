@@ -1,6 +1,6 @@
 #ifndef CAML_PLAT_THREADS_H
 #define CAML_PLAT_THREADS_H
-/* Platform-specific concurrency primitives */
+/* Platform-specific concurrency and memory primitives */
 
 #include <pthread.h>
 #include "mlvalues.h"
@@ -37,6 +37,8 @@ FIXME: This file should use C11 atomics if they are available.
 INLINE void cpu_relax() {
   asm volatile("pause" ::: "memory");
 }
+
+#define ATOMIC_UINTNAT_INIT(x) { (x) }
 
 /* On x86, all loads are acquire and all stores are release. So, only
    compiler barriers are necessary in the following. */
@@ -95,30 +97,30 @@ INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
 
 
 
-typedef pthread_mutex_t plat_mutex;
-#define plat_mutex_init(m) pthread_mutex_init(m, 0);
-#define plat_mutex_lock pthread_mutex_lock
-#define plat_mutex_try_lock(l) (pthread_mutex_trylock(l) == 0)
-#define plat_mutex_unlock pthread_mutex_unlock
-#define plat_mutex_free pthread_mutex_destroy
+typedef pthread_mutex_t caml_plat_mutex;
+#define caml_plat_mutex_init(m) pthread_mutex_init(m, 0);
+#define caml_plat_lock pthread_mutex_lock
+#define caml_plat_try_lock(l) (pthread_mutex_trylock(l) == 0)
+#define caml_plat_unlock pthread_mutex_unlock
+#define caml_plat_mutex_free pthread_mutex_destroy
 
 struct caml__mutex_unwind {
-  plat_mutex* mutex;
+  caml_plat_mutex* mutex;
   struct caml__mutex_unwind* next;
 };
 
 #define With_mutex(mutex)                               \
   Assert(caml_local_roots);                             \
-  plat_mutex* caml__mutex = (mutex);                    \
+  caml_plat_mutex* caml__mutex = (mutex);                    \
   int caml__mutex_go = 1;                               \
   struct caml__mutex_unwind caml__locked_mutex =        \
     { caml__mutex, caml_local_roots->mutexes };         \
   caml_local_roots->mutexes = &caml__locked_mutex;      \
   for (caml_enter_blocking_section(),                   \
-         plat_mutex_lock(caml__mutex),                  \
+         caml_plat_lock(caml__mutex),                  \
          caml_leave_blocking_section();                 \
        caml__mutex_go;                                  \
-       plat_mutex_unlock(caml__mutex),                  \
+       caml_plat_unlock(caml__mutex),                  \
          caml__mutex_go = 0,                            \
          caml_local_roots->mutexes =                    \
          caml_local_roots->mutexes->next)
@@ -132,7 +134,7 @@ typedef struct shared_stack_node {
 } shared_stack_node;
 
 typedef struct shared_stack {
-  plat_mutex lock;
+  caml_plat_mutex lock;
   struct shared_stack_node first;
 } shared_stack;
 
@@ -140,25 +142,33 @@ typedef struct shared_stack {
 
 INLINE void shared_stack_init(shared_stack* stk) {
   stk->first.next = 0;
-  plat_mutex_init(&stk->lock);
+  caml_plat_mutex_init(&stk->lock);
 }
 
 INLINE void shared_stack_push(shared_stack* stk, shared_stack_node* node) {
-  plat_mutex_lock(&stk->lock);
+  caml_plat_lock(&stk->lock);
   node->next = stk->first.next;
   stk->first.next = node;
-  plat_mutex_unlock(&stk->lock);
+  caml_plat_unlock(&stk->lock);
 }
 
 INLINE void* shared_stack_pop(shared_stack* stk) {
-  plat_mutex_lock(&stk->lock);
+  caml_plat_lock(&stk->lock);
   shared_stack_node* n = stk->first.next;
   if (n) {
     stk->first.next = n->next;
   }
-  plat_mutex_unlock(&stk->lock);
+  caml_plat_unlock(&stk->lock);
   return n;
 }
 
 
-#endif /* CAML_PLAT_THREADS_H */
+/* Memory management primitives (mmap) */
+
+uintnat caml_mem_round_up_pages(uintnat size);
+void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only);
+void caml_mem_commit(void* mem, uintnat size);
+void caml_mem_decommit(void* mem, uintnat size);
+void caml_mem_unmap(void* mem, uintnat size);
+
+#endif /* CAML_PLATFORM_H */
