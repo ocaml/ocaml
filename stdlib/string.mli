@@ -80,6 +80,12 @@ val make : int -> char -> string
 
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
+val init : int -> (int -> char) -> string
+(** [String.init n f] returns a string of length [n],
+    with character [i] initialized to the result of [f i].
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
 val copy : string -> string
 (** Return a copy of the given string. *)
 

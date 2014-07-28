@@ -40,6 +40,12 @@ val make : int -> char -> bytes
 
     Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
+val init : int -> (int -> char) -> bytes
+(** [init n f] returns a fresh byte sequence of length [n],
+    with character [i] initialized to the result of [f i].
+
+    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
 val empty : bytes
 (** A byte sequence of size 0. *)
 

@@ -31,6 +31,13 @@ let make n c =
   unsafe_fill s 0 n c;
   s
 
+let init n f =
+  let s = create n in
+  for i = 0 to n - 1 do
+    unsafe_set s i (f i)
+  done;
+  s
+
 let empty = create 0;;
 
 let copy s =

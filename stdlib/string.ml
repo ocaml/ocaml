@@ -27,6 +27,7 @@ external unsafe_fill : bytes -> int -> int -> char -> unit
 module B = Bytes
 
 let make = (Obj.magic B.make : int -> char -> string)
+let init = (Obj.magic B.init : int -> (int -> char) -> string)
 let copy = (Obj.magic B.copy : string -> string)
 let sub = (Obj.magic B.sub : string -> int -> int -> string)
 let fill = B.fill
