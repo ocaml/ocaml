@@ -2116,6 +2116,9 @@ ocamlopt -a -o zip.cmxa zip.cmx -cclib -lzip \
 gcc -shared -o dllzip.so zipstubs.o -lz -L/usr/local/zlib
 ar rc libzip.a zipstubs.o
 \end{verbatim}
+Note: This example is on a Unix system. The exact command lines
+may be different on other systems.
+
 If shared libraries are not supported, the following commands are
 performed instead:
 \begin{verbatim}
