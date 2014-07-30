@@ -269,6 +269,8 @@ Bug fixes:
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
 - sometimes wrong stack alignment at out-of-bounds array access
   (Gabriel Scherer and Xavier Leroy, report by Pierre Chambart)
+- make ocamldebug -I auto-detection work with ocamlbuild
+  (Josh Watzman)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
