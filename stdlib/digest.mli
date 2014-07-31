@@ -33,6 +33,9 @@ val compare : t -> t -> int
     argument to the functors {!Set.Make} and {!Map.Make}.
     @since 4.00.0 *)
 
+val equal : t -> t -> bool
+(** The equal function for 16-character digest. @since 4.03.0 *)
+
 val string : string -> t
 (** Return the digest of the given string. *)
 
