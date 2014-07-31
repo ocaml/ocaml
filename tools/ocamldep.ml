@@ -18,7 +18,6 @@ let ppf = Format.err_formatter
 
 type file_kind = ML | MLI;;
 
-let include_dirs = ref []
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
@@ -214,6 +213,7 @@ let report_err exn =
         | None -> raise x
 
 let read_parse_and_extract parse_function extract_function magic source_file =
+  Ast_mapper.tool_name := "ocamldep";
   Depend.free_structure_names := Depend.StringSet.empty;
   try
     let input_file = Pparse.preprocess source_file in
@@ -295,7 +295,7 @@ let file_dependencies_as kind source_file =
   load_path := [];
   List.iter add_to_load_path (
       (!Compenv.last_include_dirs @
-       !include_dirs @
+       !Clflags.include_dirs @
        !Compenv.first_include_dirs
       ));
   Location.input_name := source_file;
@@ -411,7 +411,7 @@ let _ =
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
-     "-I", Arg.String (fun s -> include_dirs := s :: !include_dirs),
+     "-I", Arg.String (fun s -> Clflags.include_dirs := s :: !Clflags.include_dirs),
         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
         "<f>  Process <f> as a .ml file";

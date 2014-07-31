@@ -45,6 +45,7 @@ let initial_env () =
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
+  Ast_mapper.tool_name := "ocamldoc";
   try
     Pparse.preprocess sourcefile
   with Pparse.Error err ->

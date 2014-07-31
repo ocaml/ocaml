@@ -115,6 +115,7 @@ module Options = Main_args.Make_opttop_options (struct
 end);;
 
 let main () =
+  Ast_mapper.tool_name := "ocamlnat";
   Arg.parse Options.list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter

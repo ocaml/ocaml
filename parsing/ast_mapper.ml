@@ -18,6 +18,8 @@
 *)
 
 
+open Asttypes
+open Longident
 open Parsetree
 open Ast_helper
 open Location
@@ -615,13 +617,88 @@ let default_mapper =
 
 let rec extension_of_error {loc; msg; if_highlight; sub} =
   { loc; txt = "ocaml.error" },
-  PStr ([Str.eval (Exp.constant (Asttypes.Const_string (msg, None)));
-         Str.eval (Exp.constant (Asttypes.Const_string (if_highlight, None)))] @
+  PStr ([Str.eval (Exp.constant (Const_string (msg, None)));
+         Str.eval (Exp.constant (Const_string (if_highlight, None)))] @
         (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
 let attribute_of_warning loc s =
   { loc; txt = "ocaml.ppwarning" },
-  PStr ([Str.eval ~loc (Exp.constant (Asttypes.Const_string (s, None)))])
+  PStr ([Str.eval ~loc (Exp.constant (Const_string (s, None)))])
+
+let tool_name = ref "_none_"
+
+let prepare_ppx_context payload =
+  let get_string ~name pexp =
+    match pexp with
+    | { pexp_desc = Pexp_constant (Const_string (str, None)) } -> str
+    | _ -> raise (Location.Error (Location.errorf
+                  "Internal error: invalid [@@@ocaml.ppx.context { %s }] string syntax" name))
+  and get_bool ~name pexp =
+    match pexp with
+    | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "true" }, None) } -> true
+    | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "false" }, None) } -> false
+    | _ -> raise (Location.Error (Location.errorf
+                  "Internal error: invalid [@@@ocaml.ppx.context { %s }] bool syntax" name))
+  and get_list ~name elem pexp =
+    let rec loop acc pexp =
+      match pexp with
+      | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "::" },
+          Some { pexp_desc = Pexp_tuple [exp; rest] }) } ->
+        loop (elem exp :: acc) rest
+      | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "[]" }, None) } ->
+        acc
+      | _ -> raise (Location.Error (Location.errorf
+                    "Internal error: invalid [@@@ocaml.ppx.context { %s }] list syntax" name))
+    in
+    List.rev (loop [] pexp)
+  and get_option ~name elem pexp =
+    match pexp with
+    | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "Some" }, Some exp) } ->
+      Some (elem exp)
+    | { pexp_desc = Pexp_construct ({ txt = Longident.Lident "None" }, None) } ->
+      None
+    | _ -> raise (Location.Error (Location.errorf
+                  "Internal error: invalid [@@@ocaml.ppx.context { %s }] option syntax" name))
+  in
+  match payload with
+  | PStr [{ pstr_desc = Pstr_eval ({ pexp_desc = Pexp_record (fields, None) }, []) }] ->
+    let rec loop fields =
+      match fields with
+      | ({ txt = Lident "tool_name" }, payload) :: fields ->
+        tool_name := get_string ~name:"tool_name" payload; loop fields
+      | ({ txt = Lident "include_dirs" }, payload) :: fields ->
+        let name = "include_dirs" in
+        Clflags.include_dirs := get_list ~name (get_string ~name) payload; loop fields
+      | ({ txt = Lident "load_path" }, payload) :: fields ->
+        let name = "load_path" in
+        Config.load_path := get_list ~name (get_string ~name) payload; loop fields
+      | ({ txt = Lident "open_module" }, payload) :: fields ->
+        let name = "open_module" in
+        Clflags.open_module := get_list ~name (get_string ~name) payload; loop fields
+      | ({ txt = Lident "for_package" }, payload) :: fields ->
+        let name = "for_package" in
+        Clflags.for_package := get_option ~name (get_string ~name) payload; loop fields
+      | ({ txt = Lident "debug" }, payload) :: fields ->
+        Clflags.debug := get_bool ~name:"debug" payload; loop fields
+      | _ :: fields ->
+        loop fields
+      | [] -> ()
+    in
+    loop fields
+  | _ -> raise (Location.Error (Location.error
+                  "Internal error: invalid [@@@ocaml.ppx.context] syntax"))
+
+let prepare_structure items =
+  match items with
+  | { pstr_desc = Pstr_attribute ({ txt = "ocaml.ppx.context" }, payload) } :: _ ->
+    prepare_ppx_context payload; items
+  | _ -> items
+
+let prepare_signature items =
+  match items with
+  | { psig_desc = Psig_attribute ({ txt = "ocaml.ppx.context" }, payload) } :: _ ->
+    prepare_ppx_context payload; items
+  | _ -> items
 
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
@@ -638,8 +715,8 @@ let apply ~source ~target mapper =
   let ast =
     try
       if magic = Config.ast_impl_magic_number
-      then Obj.magic (mapper.structure mapper (Obj.magic ast))
-      else Obj.magic (mapper.signature mapper (Obj.magic ast))
+      then Obj.magic (mapper.structure mapper (prepare_structure (Obj.magic ast)))
+      else Obj.magic (mapper.signature mapper (prepare_signature (Obj.magic ast)))
     with exn ->
       match error_of_exn exn with
       | Some error ->

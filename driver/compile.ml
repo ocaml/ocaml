@@ -22,6 +22,7 @@ open Compenv
 (* Keep in sync with the copy in optcompile.ml *)
 
 let interface ppf sourcefile outputprefix =
+  Ast_mapper.tool_name := "ocamlc";
   Compmisc.init_path false;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
@@ -54,6 +55,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 
 let implementation ppf sourcefile outputprefix =
+  Ast_mapper.tool_name := "ocamlc";
   Compmisc.init_path false;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
