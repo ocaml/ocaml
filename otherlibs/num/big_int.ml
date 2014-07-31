@@ -70,6 +70,8 @@ let compare_big_int bi1 bi2 =
             compare_nat (bi2.abs_value) 0 (num_digits_big_int bi2)
                         (bi1.abs_value) 0 (num_digits_big_int bi1)
 
+let equal bi1 bi2 = compare_big_int bi1 bi2 = 0
+
 let eq_big_int bi1 bi2 = compare_big_int bi1 bi2 = 0
 and le_big_int bi1 bi2 = compare_big_int bi1 bi2 <= 0
 and ge_big_int bi1 bi2 = compare_big_int bi1 bi2 >= 0

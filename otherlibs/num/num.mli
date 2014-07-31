@@ -129,6 +129,9 @@ val compare_num : num -> num -> int
 (** Return [-1], [0] or [1] if the first argument is less than,
    equal to, or greater than the second argument. *)
 
+val equal : num -> num -> bool
+(** The equal function for nums. @since 4.03.0 *)
+
 val max_num : num -> num -> num
 (** Return the greater of the two arguments. *)
 
