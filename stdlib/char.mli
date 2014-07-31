@@ -41,6 +41,9 @@ val compare: t -> t -> int
     allows the module [Char] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equal function for chars. Force to use [caml_int_compare]. *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

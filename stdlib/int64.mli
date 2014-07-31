@@ -175,6 +175,9 @@ val compare: t -> t -> int
     allows the module [Int64] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equal function for int64s. Force to use [caml_int64_compare]. *)
+
 (**/**)
 
 (** {6 Deprecated functions} *)

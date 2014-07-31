@@ -50,3 +50,4 @@ external of_string : string -> int32 = "caml_int32_of_string"
 type t = int32
 
 let compare (x: t) (y: t) = Pervasives.compare x y
+let equal (x: t) (y: t) = compare x y = 0
