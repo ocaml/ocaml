@@ -176,7 +176,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for int64s. Force to use [caml_int64_compare]. *)
+(** The equal function for int64s. @since 4.03.0 *)
 
 (**/**)
 

@@ -42,7 +42,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for chars. Force to use [caml_int_compare]. *)
+(** The equal function for chars. @since 4.03.0 *)
 
 (**/**)
 

@@ -218,7 +218,7 @@ val compare: t -> t -> int
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for bytes. Force to use [caml_string_equal]. *)
+(** The equal function for bytes. @since 4.03.0 *)
 
 (**/**)
 

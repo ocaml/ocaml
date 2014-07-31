@@ -154,7 +154,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for int32s. Force to use [caml_int32_compare]. *)
+(** The equal function for int32s. @since 4.03.0 *)
 
 (**/**)
 

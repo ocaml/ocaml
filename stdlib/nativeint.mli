@@ -172,8 +172,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for natives ints. Force to use
-    [caml_nativeint_compare]. *)
+(** The equal function for natives ints. @since 4.03.0 *)
 
 (**/**)
 
