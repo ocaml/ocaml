@@ -156,6 +156,8 @@ OCamldoc:
 Bug fixes:
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
+- PR#4771: Clarify documentation of Dynlink.allow_only
+  (Damien Doligez, report by David Allsopp)
 - PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
   (Stéphane Glondu, Mark Shinwell)
 - PR#6439: Don't use the deprecated [getpagesize] function

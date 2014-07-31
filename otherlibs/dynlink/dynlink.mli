@@ -43,17 +43,22 @@ val adapt_filename : string -> string
 (** {6 Access control} *)
 
 val allow_only: string list -> unit
-(** [allow_only units] restricts the compilation units that dynamically-linked
-    units can reference: it only allows references to the units named in
-    list [units].  References to any other compilation unit will cause
-    a [Unavailable_unit] error during [loadfile] or [loadfile_private].
+(** [allow_only units] restricts the compilation units that
+    dynamically-linked units can reference: it forbids all references
+    to units other than those named in the list [units]. References
+    to any other compilation unit will cause a [Unavailable_unit]
+    error during [loadfile] or [loadfile_private].
 
-    Initially (just after calling [init]), all compilation units composing
-    the program currently running are available for reference from
-    dynamically-linked units.  [allow_only] can be used to grant access
-    to some of them only, e.g. to the units that compose the API for
+    Initially (or after calling [default_available_units]) all
+    compilation units composing the program currently running are
+    available for reference from dynamically-linked units.
+    [allow_only] can be used to restrict access to a subset of these
+    units, e.g. to the units that compose the API for
     dynamically-linked code, and prevent access to all other units,
-    e.g. private, internal modules of the running program. *)
+    e.g. private, internal modules of the running program. If
+    [allow_only] is called several times, access will be restricted to
+    the intersection of the given lists (i.e. a call to [allow_only]
+    can never increase the set of available units). *)
 
 val prohibit: string list -> unit
 (** [prohibit units] prohibits dynamically-linked units from referencing
