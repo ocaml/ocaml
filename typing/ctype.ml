@@ -1601,12 +1601,14 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-                              (*****************)
-                              (*  Occur check  *)
-                              (*****************)
+let is_contractive env ty =
+  match (repr ty).desc with
+    Tconstr (p, _, _) ->
+      in_pervasives p ||
+      (try is_datatype (Env.find_type p env) with Not_found -> false)
+  | _ -> true
 
-
-exception Occur
+(* Code moved to Typedecl
 
 (* The marks are already used by [expand_abbrev]... *)
 let visited = ref []
@@ -1649,6 +1651,14 @@ let correct_abbrev env path params ty =
     simple_abbrevs := Mnil;
     visited := [];
     raise exn
+*)
+
+                              (*****************)
+                              (*  Occur check  *)
+                              (*****************)
+
+
+exception Occur
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
