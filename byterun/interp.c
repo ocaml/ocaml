@@ -193,7 +193,7 @@ extern intnat caml_safe_mod(intnat p, intnat q);
 
 
 #ifdef DEBUG
-static intnat caml_bcodcount;
+static __thread intnat caml_bcodcount;
 #endif
 
 /* The interpreter itself */
