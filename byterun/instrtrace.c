@@ -30,7 +30,7 @@
 
 extern code_t caml_start_code;
 
-intnat caml_icount = 0;
+__thread intnat caml_icount = 0;
 
 void caml_stop_here () {}
 
@@ -38,8 +38,10 @@ char * caml_instr_string (code_t pc);
 
 void caml_disasm_instr(code_t pc)
 {
+  char buf[256];
+  char* c = buf;
   int instr = *pc;
-  printf("%6ld  %s", (long) (pc - caml_start_code),
+  c += sprintf(c, "%6ld  %s", (long) (pc - caml_start_code),
          instr < 0 || instr > STOP ? "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {
@@ -54,124 +56,34 @@ void caml_disasm_instr(code_t pc)
   case BRANCH: case BRANCHIF: case BRANCHIFNOT: case PUSHTRAP:
   case CONSTINT: case PUSHCONSTINT: case OFFSETINT: case OFFSETREF:
   case OFFSETCLOSURE: case PUSHOFFSETCLOSURE:
-    printf(" %d\n", pc[0]); break;
+    c += sprintf(c, " %d\n", pc[0]); break;
     /* Instructions with two operands */
   case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:
   case GETGLOBALFIELD: case MAKEBLOCK:
   case BEQ: case BNEQ: case BLTINT: case BLEINT: case BGTINT: case BGEINT:
   case BULTINT: case BUGEINT:
-    printf(" %d, %d\n", pc[0], pc[1]); break;
+    c += sprintf(c, " %d, %d\n", pc[0], pc[1]); break;
     /* Instructions with a C primitive as operand */
   case C_CALLN:
-    printf(" %d,", pc[0]); pc++;
+    c += sprintf(c, " %d,", pc[0]); pc++;
     /* fallthrough */
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
-      printf(" unknown primitive %d\n", pc[0]);
+      c += sprintf(c, " unknown primitive %d\n", pc[0]);
     else
-      printf(" %s\n", (char *) caml_prim_name_table.contents[pc[0]]);
-    break;
-  default:
-    printf("\n");
-  }
-  fflush (stdout);
-}
-
-char * caml_instr_string (code_t pc)
-{
-  static char buf[256];
-  char nambuf[128];
-  int instr = *pc;
-  char *nam;
-
-  nam = (instr < 0 || instr > STOP)
-    ? (sprintf (nambuf, "???%d", instr), nambuf)
-    : names_of_instructions[instr];
-  pc++;
-  switch (instr) {
-    /* Instructions with one integer operand */
-  case PUSHACC:
-  case ACC:
-  case POP:
-  case ASSIGN:
-  case PUSHENVACC:
-  case ENVACC:
-  case PUSH_RETADDR:
-  case APPLY:
-  case APPTERM1:
-  case APPTERM2:
-  case APPTERM3:
-  case RETURN:
-  case GRAB:
-  case PUSHGETGLOBAL:
-  case GETGLOBAL:
-  case SETGLOBAL:
-  case PUSHATOM:
-  case ATOM:
-  case MAKEBLOCK1:
-  case MAKEBLOCK2:
-  case MAKEBLOCK3:
-  case MAKEFLOATBLOCK:
-  case GETFIELD:
-  case SETFIELD:
-  case GETFLOATFIELD:
-  case SETFLOATFIELD:
-  case BRANCH:
-  case BRANCHIF:
-  case BRANCHIFNOT:
-  case PUSHTRAP:
-  case CONSTINT:
-  case PUSHCONSTINT:
-  case OFFSETINT:
-  case OFFSETREF:
-  case OFFSETCLOSURE:
-  case PUSHOFFSETCLOSURE:
-    sprintf(buf, "%s %d", nam, pc[0]);
-    break;
-    /* Instructions with two operands */
-  case APPTERM:
-  case CLOSURE:
-  case CLOSUREREC:
-  case PUSHGETGLOBALFIELD:
-  case GETGLOBALFIELD:
-  case MAKEBLOCK:
-  case BEQ:
-  case BNEQ:
-  case BLTINT:
-  case BLEINT:
-  case BGTINT:
-  case BGEINT:
-  case BULTINT:
-  case BUGEINT:
-    sprintf(buf, "%s %d, %d", nam, pc[0], pc[1]);
+      c += sprintf(c, " %s\n", (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   case SWITCH:
-    sprintf(buf, "SWITCH sz%#lx=%ld::ntag%ld nint%ld",
-            (long) pc[0], (long) pc[0], (unsigned long) pc[0] >> 16,
-            (unsigned long) pc[0] & 0xffff);
-    break;
-    /* Instructions with a C primitive as operand */
-  case C_CALLN:
-    sprintf(buf, "%s %d,", nam, pc[0]);
-    pc++;
-    /* fallthrough */
-  case C_CALL1:
-  case C_CALL2:
-  case C_CALL3:
-  case C_CALL4:
-  case C_CALL5:
-    if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
-      sprintf(buf, "%s unknown primitive %d", nam, pc[0]);
-    else
-      sprintf(buf, "%s %s", nam, (char *) caml_prim_name_table.contents[pc[0]]);
+    c += sprintf(c, " ntag=%ld nint=%ld\n",
+                 (unsigned long) pc[0] >> 16,
+                 (unsigned long) pc[0] & 0xffff);
     break;
   default:
-    sprintf(buf, "%s", nam);
-    break;
-  };
-  return buf;
+    c += sprintf(c, "\n");
+  }
+  printf("[%02d] %s", caml_domain_id(caml_domain_self()), buf);
+  fflush (stdout);
 }
-
 
 void
 caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)

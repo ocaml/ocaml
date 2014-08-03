@@ -101,7 +101,7 @@ prims.c : primitives
 opnames.h : instruct.h
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
-	    -e 's/enum /char * names_of_/' \
+	    -e 's/enum /const char * const names_of_/' \
 	    -e 's/{$$/[] = {/' \
 	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' instruct.h > opnames.h
 
