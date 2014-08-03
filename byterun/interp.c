@@ -353,28 +353,28 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access in heap-allocated environment */
 
     Instruct(ENVACC1):
-      accu = Field(env, 1); Next;
+      accu = FieldImm(env, 1); Next;
     Instruct(ENVACC2):
-      accu = Field(env, 2); Next;
+      accu = FieldImm(env, 2); Next;
     Instruct(ENVACC3):
-      accu = Field(env, 3); Next;
+      accu = FieldImm(env, 3); Next;
     Instruct(ENVACC4):
-      accu = Field(env, 4); Next;
+      accu = FieldImm(env, 4); Next;
 
     Instruct(PUSHENVACC1):
-      *--sp = accu; accu = Field(env, 1); Next;
+      *--sp = accu; accu = FieldImm(env, 1); Next;
     Instruct(PUSHENVACC2):
-      *--sp = accu; accu = Field(env, 2); Next;
+      *--sp = accu; accu = FieldImm(env, 2); Next;
     Instruct(PUSHENVACC3):
-      *--sp = accu; accu = Field(env, 3); Next;
+      *--sp = accu; accu = FieldImm(env, 3); Next;
     Instruct(PUSHENVACC4):
-      *--sp = accu; accu = Field(env, 4); Next;
+      *--sp = accu; accu = FieldImm(env, 4); Next;
 
     Instruct(PUSHENVACC):
       *--sp = accu;
       /* Fallthrough */
     Instruct(ENVACC):
-      accu = Field(env, *pc++);
+      accu = FieldImm(env, *pc++);
       Next;
 
 /* Function application */

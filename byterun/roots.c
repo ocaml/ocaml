@@ -23,6 +23,7 @@
 #include "roots.h"
 #include "stacks.h"
 #include "major_gc.h"
+#include "shared_heap.h"
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
@@ -35,6 +36,9 @@ void caml_sample_local_roots(struct caml_sampled_roots* r)
   r->young_end = (value*)caml_young_end;
   r->mark_stack = caml_mark_stack;
   r->mark_stack_count = caml_mark_stack_count;
+  r->promotion_table = &caml_promotion_table;
+  r->promotion_rev_table = &caml_promotion_rev_table;
+  r->shared_heap = caml_shared_heap;
 }
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct caml_sampled_roots* r)

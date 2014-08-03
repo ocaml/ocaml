@@ -21,9 +21,18 @@ CAMLextern void caml_leave_blocking_section(void);
 void caml_do_foreign_roots(void (*)(value, value*));
 
 struct domain;
+struct caml_sampled_roots* caml_get_sampled_roots(struct domain*);
+
 void caml_domain_register_main(uintnat minor_heap_size);
 
 
 struct domain* caml_domain_self();
 int caml_domain_id(struct domain*);
+int caml_domain_is_main(struct domain*);
+
+typedef void (*domain_rpc_handler)(struct domain*, void*);
+
+void caml_domain_rpc(struct domain*, 
+                     domain_rpc_handler, void*);
+
 #endif /* CAML_DOMAIN_H */

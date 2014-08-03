@@ -28,6 +28,7 @@
 #include "domain.h"
 #include "minor_heap.h"
 #include "shared_heap.h"
+#include "addrmap.h"
 
 asize_t __thread caml_minor_heap_size;
 CAMLexport __thread char *caml_young_ptr = NULL;
@@ -87,12 +88,118 @@ void caml_set_minor_heap_size (asize_t size)
   reset_table (&caml_weak_ref_table);
 }
 
+
+__thread struct addrmap caml_promotion_table = ADDRMAP_INIT;
+__thread struct addrmap caml_promotion_rev_table = ADDRMAP_INIT;
+
+struct promotion_stack_entry {
+  value local;
+  value global;
+  int field;
+};
+struct promotion_stack {
+  int stack_len, sp;
+  struct promotion_stack_entry* stack;
+};
+
+static value caml_promote_one(struct promotion_stack* stk, struct domain* domain, 
+                              struct addrmap* promotion_table, struct addrmap* rev_table,
+                              struct caml_heap_state* shared_heap, value curr)
+{
+  header_t curr_block_hd;
+  int infix_offset = 0;
+  if (Is_long(curr) || !Is_minor(curr))
+    return curr; /* needs no promotion */
+
+  Assert(caml_owner_of_young_block(curr) == domain);
+
+  curr_block_hd = Hd_val(curr);
+  
+  if (Tag_hd(curr_block_hd) == Infix_tag) {
+    infix_offset = Infix_offset_val(curr);
+    curr -= infix_offset;
+    curr_block_hd = Hd_val(curr);
+  }
+    
+  if (Is_promoted_hd(curr_block_hd)) {
+    /* already promoted */
+    return caml_addrmap_lookup(promotion_table, curr) + infix_offset;
+  }
+
+  /* otherwise, must promote */
+  void* mem = caml_shared_try_alloc_remote(shared_heap, Wosize_hd(curr_block_hd),
+                                           Tag_hd(curr_block_hd), 1);
+  if (!mem) caml_fatal_error("allocation failure during promotion");
+  value promoted = Val_hp(mem);
+  Hd_val(curr) = Promotedhd_hd(curr_block_hd);
+    
+  caml_addrmap_insert(promotion_table, curr, promoted);
+  caml_addrmap_insert(rev_table, promoted, curr);
+
+  if (Tag_hd(curr_block_hd) >= No_scan_tag) {
+    int i;
+    for (i = 0; i < Wosize_hd(curr_block_hd); i++) 
+      Op_val(promoted)[i] = Op_val(curr)[i];
+  } else {
+    /* push to stack */
+    if (stk->sp == stk->stack_len) {
+      stk->stack_len = 2 * (stk->stack_len + 10);
+      stk->stack = caml_stat_resize(stk->stack,
+          sizeof(struct promotion_stack_entry) * stk->stack_len);
+    }
+    stk->stack[stk->sp].local = curr;
+    stk->stack[stk->sp].global = promoted;
+    stk->stack[stk->sp].field = 0;
+    stk->sp++;
+  }
+  return promoted + infix_offset;
+}
+
+CAMLexport value caml_promote(struct domain* domain, value root)
+{
+  struct promotion_stack stk = {0};
+
+  struct addrmap* promotion_table;
+  struct addrmap* rev_table;
+  struct caml_heap_state* shared_heap;
+  if (domain == caml_domain_self()) {
+    promotion_table = &caml_promotion_table;
+    rev_table = &caml_promotion_rev_table;
+    shared_heap = caml_shared_heap;
+  } else {
+    struct caml_sampled_roots* roots = caml_get_sampled_roots(domain);
+    promotion_table = roots->promotion_table;
+    rev_table = roots->promotion_rev_table;
+    shared_heap = roots->shared_heap;
+  }
+  
+  value ret = caml_promote_one(&stk, domain, promotion_table, rev_table, shared_heap, root);
+
+
+  while (stk.sp > 0) {
+    struct promotion_stack_entry* curr = &stk.stack[stk.sp - 1];
+    value local = curr->local;
+    value global = curr->global;
+    int field = curr->field;
+    Assert(field < Wosize_val(local));
+    curr->field++;
+    if (curr->field == Wosize_val(local)) 
+      stk.sp--;
+    Op_val(local)[field] = 
+      Op_val(global)[field] = 
+      caml_promote_one(&stk, domain, promotion_table, rev_table, shared_heap, Op_val(local)[field]);
+  }
+  caml_stat_free(stk.stack);
+  return ret;
+}
+
+
 static __thread value oldify_todo_list = 0;
 static __thread uintnat stat_live_bytes = 0;
 
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
-  void* mem = caml_shared_try_alloc(wosize, tag);
+  void* mem = caml_shared_try_alloc(wosize, tag, 0 /* not promotion */);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -102,7 +209,7 @@ static value alloc_shared(mlsize_t wosize, tag_t tag)
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 
-void caml_oldify_one (value v, value *p)
+static void caml_oldify_one (value v, value *p)
 {
   value result;
   header_t hd;
@@ -115,7 +222,9 @@ void caml_oldify_one (value v, value *p)
   if (Is_block (v) && Is_young (v)){
     Assert (Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
-    if (hd == 0){         /* If already forwarded */
+    if (Is_promoted_hd (hd)) {
+      *p = caml_addrmap_lookup(&caml_promotion_table, v);
+    } else if (hd == 0){         /* If already forwarded */
       *p = Op_val(v)[0];  /*  then forward pointer is first field. */
     }else{
       tag = Tag_hd (hd);
@@ -192,7 +301,7 @@ void caml_oldify_one (value v, value *p)
    Note that [caml_oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
    oldifying its fields. */
-void caml_oldify_mopup (void)
+static void caml_oldify_mopup (void)
 {
   value v, new_v, f;
   mlsize_t i;
@@ -216,6 +325,14 @@ void caml_oldify_mopup (void)
       }
     }
   }
+}
+
+static void unpin_promoted_object(value local, value promoted)
+{
+  Assert (caml_addrmap_lookup(&caml_promotion_table, local) == promoted);
+  Assert (caml_addrmap_lookup(&caml_promotion_rev_table, promoted) == local);
+  caml_shared_unpin(promoted);
+  caml_darken(promoted, 0);
 }
 
 /* rewrite a field that used to point to a young object */
@@ -256,14 +373,18 @@ void caml_empty_minor_heap (void)
         Assert (Hp_val (**r) >= caml_young_ptr);
         value v = **r, vnew;
         header_t hd = Hd_val(v);
-        int offset = 0;
-        if (Tag_hd(hd) == Infix_tag) {
-          offset = Infix_offset_hd(hd);
-          v -= offset;
-        } 
-        
-        Assert (Hd_val (v) == 0);
-        vnew = Op_val(v)[0] + offset;
+        // FIXME: call oldify_one here?
+        if (Is_promoted_hd(hd)) {
+          vnew = caml_addrmap_lookup(&caml_promotion_table, v);
+        } else {
+          int offset = 0;
+          if (Tag_hd(hd) == Infix_tag) {
+            offset = Infix_offset_hd(hd);
+            v -= offset;
+          } 
+          Assert (Hd_val (v) == 0);
+          vnew = Op_val(v)[0] + offset;
+        }
         Assert(Is_block(vnew) && !Is_young(vnew));
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
@@ -283,12 +404,18 @@ void caml_empty_minor_heap (void)
       }
     }
 #endif
+    
+    caml_addrmap_iter(&caml_promotion_table, unpin_promoted_object);
+
+
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     caml_young_ptr = caml_young_end;
     caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
+    caml_addrmap_clear(&caml_promotion_table);
+    caml_addrmap_clear(&caml_promotion_rev_table);
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }

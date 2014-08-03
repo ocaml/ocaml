@@ -39,6 +39,7 @@ CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify_field (value, int, value);
+CAMLextern value caml_read_barrier (value, int);
 CAMLextern void caml_initialize_field (value, int, value);
 CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
@@ -55,18 +56,15 @@ color_t caml_allocation_color (void *hp);
 
 /* <private> */
 
-#define In_heap 1
-#define In_young 2
-#define In_code_area 8
 
-#define Is_in_value_area(a) \
-  (Classify_addr(a) & (In_heap | In_young))
-#define Is_in_heap(a) (Classify_addr(a) & In_heap)
-#define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
+/* FIXME */
+/* There are two GC bits in the object header, with the following
+   possible values:
+    00: new object, not forwarded
+    11: forwarded by a fault promotion */
 
-int caml_page_table_add(int kind, void * start, void * end);
-int caml_page_table_remove(int kind, void * start, void * end);
-int caml_page_table_initialize(mlsize_t bytesize);
+#define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
+#define Promotedhd_hd(hd)  ((hd) | (3 << 8))  
 
 
 #ifdef DEBUG
@@ -91,7 +89,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
     Restore_after_gc;                                                       \
     caml_young_ptr -= Bhsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), 3<<8 /* FIXME */);    \
+  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), 0);                \
   (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
