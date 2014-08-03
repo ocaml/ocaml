@@ -218,12 +218,25 @@ void caml_oldify_mopup (void)
   }
 }
 
+/* rewrite a field that used to point to a young object */
+static int rewrite_shared_field(value* field, value vold, value vnew)
+{
+  Assert(!Is_young(vnew));
+  if (__sync_bool_compare_and_swap(field, vold, vnew)) {
+    caml_darken(vnew, 0);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
 void caml_empty_minor_heap (void)
 {
   uintnat minor_allocated_bytes = caml_young_end - caml_young_ptr;
+  unsigned rewritten = 0;
   value **r;
 
   if (minor_allocated_bytes != 0){
@@ -254,8 +267,7 @@ void caml_empty_minor_heap (void)
         Assert(Is_block(vnew) && !Is_young(vnew));
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
-        **r = vnew;
-        caml_darken(vnew, 0);
+        rewritten += rewrite_shared_field(*r, v, vnew);
       }
     }
 
@@ -277,8 +289,8 @@ void caml_empty_minor_heap (void)
     caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
-    caml_gc_log ("Minor collection completed: %u of %u kb live",
-                 (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024);
+    caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
+                 (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
   
 #ifdef DEBUG
