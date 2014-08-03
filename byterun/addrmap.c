@@ -87,3 +87,19 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value key) {
   caml_stat_free(old_table);
   return caml_addrmap_insert_pos(t, key);
 }
+
+void caml_addrmap_insert(struct addrmap* t, value k, value v) {
+  value* p = caml_addrmap_insert_pos(t, k);
+  Assert(*p == ADDRMAP_NOT_PRESENT);
+  *p = v;
+}
+
+void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value)) {
+  int i;
+  if (!t->entries) return;
+
+  for (i = 0; i < t->size; i++) {
+    if (t->entries[i].key != INVALID_KEY)
+      f(t->entries[i].key, t->entries[i].value);
+  }
+}
