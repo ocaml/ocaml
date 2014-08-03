@@ -21,12 +21,6 @@ struct global_heap_state {
 struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
 enum {NOT_MARKABLE = 3 << 8};
 
-/* readable and writable only using explicit atomic operations
-   from platform.h */
-struct {
-  shared_stack unswept_regions;
-  shared_stack swept_regions;
-} global_atomic = { SHARED_STACK_INIT, SHARED_STACK_INIT };
 
 static int Has_status_hd(header_t hd, status s) {
   return (hd & (3 << 8)) == s;
@@ -37,148 +31,204 @@ static header_t With_status_hd(header_t hd, status s) {
 }
 
 
-typedef struct region {
-  shared_stack_node node;
-
-  struct region* next_pool;
-  sizeclass sz;
+typedef struct pool {
+  struct pool* next;
   value* next_obj;
-  /* FIXME alignment */
+  struct domain* owner;
+} pool;
+
+typedef struct large_alloc {
+  struct domain* owner;
+  struct large_alloc* next;
+} large_alloc;
 
 
-  mlsize_t region_size;
-} region;
+#define ALIGN_SIZEOF_VALUE(n) (((n + sizeof(value) - 1) / sizeof(value)) * sizeof(value))
+
+/* sizeof(pool) rounded up to sizeof(value) */
+#define POOL_HEADER_SZ ALIGN_SIZEOF_VALUE(sizeof(pool))
+#define LARGE_ALLOC_HEADER_SZ ALIGN_SIZEOF_VALUE(sizeof(large_alloc))
+
+struct {
+  caml_plat_mutex lock;
+  pool* free;
+} pool_freelist;
 
 
 /* readable and writable only by the current thread */
-struct local_state {
-  region* free_pools;
-  region* swept_pools[NUM_SIZECLASSES];
-  region* unswept_pools[NUM_SIZECLASSES];
+struct caml_heap_state {
+  pool* free_pools;
+  int num_free_pools;
+
+  pool* avail_pools[NUM_SIZECLASSES];
+  pool* full_pools[NUM_SIZECLASSES];
+  pool* unswept_avail_pools[NUM_SIZECLASSES];
+  pool* unswept_full_pools[NUM_SIZECLASSES];
+
+  large_alloc* swept_large;
+  large_alloc* unswept_large;
 
   sizeclass next_to_sweep;
-  int fully_swept_global;
+
+  struct domain* owner;
 };
 
-__thread struct local_state* local;
+__thread struct caml_heap_state* caml_shared_heap;
 
-
-void caml_init_shared_heap() {
+void caml_init_shared_heap(int is_main) {
   int i;
-  local = caml_stat_alloc(sizeof(struct local_state));
-  local->free_pools = 0;
-  for (i = 0; i<NUM_SIZECLASSES; i++) {
-    local->swept_pools[i] = 0;
-    local->unswept_pools[i] = 0;
+  if (caml_domain_is_main(caml_domain_self())) {
+    caml_plat_mutex_init(&pool_freelist.lock);
   }
-  local->next_to_sweep = 0;
-  local->fully_swept_global = 0;
+
+  Assert(NOT_MARKABLE == Promotedhd_hd(0));
+
+  caml_shared_heap = caml_stat_alloc(sizeof(struct caml_heap_state));
+  caml_shared_heap->free_pools = 0;
+  caml_shared_heap->num_free_pools = 0;
+  for (i = 0; i<NUM_SIZECLASSES; i++) {
+    caml_shared_heap->avail_pools[i] = caml_shared_heap->full_pools[i] =
+      caml_shared_heap->unswept_avail_pools[i] = caml_shared_heap->unswept_full_pools[i] = 0;
+  }
+  caml_shared_heap->next_to_sweep = 0;
+  caml_shared_heap->swept_large = 0;
+  caml_shared_heap->unswept_large = 0;
+  caml_shared_heap->owner = caml_domain_self();
 }
 
-region* region_alloc(mlsize_t sz) {
-  region* r = malloc(sizeof(region) + sz);
-  r->region_size = sz;
 
-  shared_stack_push(&global_atomic.swept_regions, &r->node);
+/* Allocating and deallocating pools from the global freelist.
+   Up to MAX_LOCAL_FREE_POOLS are cached locally */
+
+#define POOLS_PER_ALLOCATION 16
+#define MAX_LOCAL_FREE_POOLS 5
+static pool* pool_acquire(struct caml_heap_state* local) {
+  pool* r;
+
+  if (local->num_free_pools > 0) {
+    r = local->free_pools;
+    local->free_pools = r->next;
+    local->num_free_pools--;
+  } else {
+    caml_plat_lock(&pool_freelist.lock);
+    if (!pool_freelist.free) {
+      void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE) * POOLS_PER_ALLOCATION, 
+                               Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
+      int i;
+      if (mem) {
+        pool_freelist.free = mem;
+        for (i=1; i<POOLS_PER_ALLOCATION; i++) {
+          r = (pool*)(((uintnat)mem) + ((uintnat)i) * Bsize_wsize(POOL_WSIZE));
+          r->next = pool_freelist.free;
+          pool_freelist.free = r;
+        }
+      }
+    }
+    r = pool_freelist.free;
+    if (r)
+      pool_freelist.free = r->next;
+    caml_plat_unlock(&pool_freelist.lock);
+  }
   return r;
 }
 
-void* region_start(region* r) {
-  return (void*)(r + 1);
+static void pool_release(struct caml_heap_state* local, pool* pool) {
+  if (local->num_free_pools < MAX_LOCAL_FREE_POOLS) {
+    local->num_free_pools++;
+    pool->next = local->free_pools;
+    local->free_pools = pool;
+  } else {
+    caml_plat_lock(&pool_freelist.lock);
+    pool->next = pool_freelist.free;
+    pool_freelist.free = pool;
+    caml_plat_unlock(&pool_freelist.lock);
+  }
 }
 
-void* region_end(region* r) {
-  return ((char*)region_start(r)) + r->region_size;
-}
 
-void pool_new(sizeclass sz) {
-  region* a;
+/* Allocating an object from a pool */
+
+static int pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
+static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
+  pool* r;
+
+  /* Hopefully we have a pool we can use directly */
+  r = local->avail_pools[sz];
+  if (r) return r;
+
+  /* Otherwise, try to sweep until we find one */
+  while (!local->avail_pools[sz] && 
+         pool_sweep(local, &local->unswept_avail_pools[sz], sz));
+  while (!local->avail_pools[sz] &&
+         pool_sweep(local, &local->unswept_full_pools[sz], sz));
+  r = local->avail_pools[sz];
+  if (r) return r;
+
+  /* Failing that, we need to allocate a new pool */
   if (local->free_pools) {
-    a = local->free_pools;
-    local->free_pools = a->next_pool;
+    r = local->free_pools;
+    local->free_pools = r->next;
   } else {
-    a = region_alloc(Bsize_wsize(POOL_WSIZE));
-    if (!a) return;
+    r = pool_acquire(local);
+    if (!r) return 0; /* if we can't allocate, give up */
   }
-  a->sz = sz;
-  a->next_obj = 0;
-  mlsize_t wh = wsize_sizeclass[sz];
 
-  value* p = region_start(a);
-  value* end = region_end(a);
+  /* Having allocated a new pool, set it up for size sz */
+  local->avail_pools[sz] = r;
+  r->next = 0;
+  r->owner = local->owner;
+  mlsize_t wh = wsize_sizeclass[sz];
+  value* p = (value*)((char*)r + POOL_HEADER_SZ);
+  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
 
   while (p + wh <= end) {
-    p[0] = (value)Make_header(0, 0, NOT_MARKABLE);
-    p[1] = (value)a->next_obj;
-    a->next_obj = p;
-    p += wh;
-  }
-  
-  a->next_pool = local->swept_pools[sz];
-  local->swept_pools[sz] = a;
-}
-
-void pool_sweep(sizeclass sz) {
-  region* a = local->unswept_pools[sz];
-  if (!a) return;
-  local->unswept_pools[sz] = a->next_pool;
-  value* p = (void*)(a + 1);
-  value* end = (void*)((uintnat*)a + POOL_WSIZE);
-  mlsize_t wh = wsize_sizeclass[sz];
-  int all_free = 1;
-  
-  while (p + wh <= end) {
-    header_t hd = (header_t)*p;
-    if (Has_status_hd(hd, global.GARBAGE)) {
-      p[0] = (value)Make_header(0, 0, NOT_MARKABLE);
-      p[1] = (value)a->next_obj;
-      a->next_obj = p;
-    } else if (Has_status_hd(hd, NOT_MARKABLE)) {
-      /* already on freelist, ignore */
-    } else {
-      all_free = 0;
-    }
+    p[0] = 0; /* zero header indicates free object */
+    p[1] = (value)r->next_obj;
+    r->next_obj = p;
     p += wh;
   }
 
-  /* FIXME: consider returning some of these to central pool */
-  if (all_free) {
-    a->next_pool = local->free_pools;
-    local->free_pools = a;
-  } else {
-    a->next_pool = local->swept_pools[sz];
-    local->swept_pools[sz] = a;
-  }
+  return r;
 }
 
-void* pool_alloc(sizeclass sz) {
-  region* a = local->swept_pools[sz];
-  if (!a) { pool_sweep(sz); a = local->swept_pools[sz]; }
-  if (!a) { pool_new(sz); a = local->swept_pools[sz]; }
-  if (!a) { return 0; }
-  
-  value* p = a->next_obj;
+static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
+  pool* r = pool_find(local, sz);
+
+  if (!r) return 0;
+
+  value* p = r->next_obj;
   value* next = (value*)p[1];
-  if (next) {
-    a->next_obj = next;
-  } else {
-    local->swept_pools[sz] = a->next_pool;
+  r->next_obj = next;
+  Assert(p[0] == 0);
+  if (!next) {
+    local->avail_pools[sz] = r->next;
+    r->next = local->full_pools[sz];
+    local->full_pools[sz] = r;
   }
   return p;
 }
 
+static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
+  large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
+  if (!a) caml_raise_out_of_memory();
+  a->owner = local->owner;
+  a->next = local->swept_large;
+  local->swept_large = a;
+  return (char*)a + LARGE_ALLOC_HEADER_SZ;
+}
 
-value* caml_shared_try_alloc(mlsize_t wosize, tag_t tag) {
+value* caml_shared_try_alloc_remote(struct caml_heap_state* local, mlsize_t wosize, tag_t tag, int pinned) {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
   Assert (wosize > 0);
+  Assert (tag != Infix_tag);
   if (whsize <= SIZECLASS_MAX) {
-    p = pool_alloc(sizeclass_wsize[whsize]);
+    p = pool_allocate(local, sizeclass_wsize[whsize]);
   } else {
-    p = region_start(region_alloc(Bsize_wsize(whsize)));
+    p = large_allocate(local, Bsize_wsize(whsize));
   }
   if (!p) return 0;
-  Hd_hp (p) = Make_header(wosize, tag, global.UNMARKED);
+  Hd_hp (p) = Make_header(wosize, tag, pinned ? NOT_MARKABLE : global.UNMARKED);
 #ifdef DEBUG
   {
     int i;
@@ -190,26 +240,106 @@ value* caml_shared_try_alloc(mlsize_t wosize, tag_t tag) {
   return p;
 }
 
+value* caml_shared_try_alloc(mlsize_t wosize, tag_t tag, int pinned) {
+  return caml_shared_try_alloc_remote(caml_shared_heap, wosize, tag, pinned);
+}
+
+struct domain* caml_owner_of_shared_block(value v) {
+  Assert (Is_block(v) && !Is_minor(v));
+  mlsize_t whsize = Whsize_wosize(Wosize_val(v));
+  Assert (whsize > 0); /* not an atom */
+  if (whsize <= SIZECLASS_MAX) {
+    /* FIXME: ORD: if we see the object, we must see the owner */
+    pool* p = (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
+    return p->owner;
+  } else {
+    large_alloc* a = (large_alloc*)((char*)v - LARGE_ALLOC_HEADER_SZ);
+    return a->owner;
+  }
+}
+
+void caml_shared_unpin(value v) {
+  Assert (Is_block(v) && !Is_minor(v));
+  Assert (caml_owner_of_shared_block(v) == caml_domain_self());
+  Assert (Has_status_hd(Hd_val(v), NOT_MARKABLE));
+  Hd_val(v) = With_status_hd(Hd_val(v), global.UNMARKED);
+}
+
+/* Sweeping */
+
+static int pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass sz) {
+  pool* a = *plist;
+  if (!a) return 0;
+  *plist = a->next;
+
+  value* p = (value*)((char*)a + POOL_HEADER_SZ);
+  value* end = (value*)a + POOL_WSIZE;
+  mlsize_t wh = wsize_sizeclass[sz];
+  int all_free = 1, all_used = 1;
+  
+  while (p + wh <= end) {
+    header_t hd = (header_t)*p;
+    if (hd == 0) {
+      /* already on freelist */
+      all_used = 0;
+    } else if (Has_status_hd(hd, global.GARBAGE)) {
+      /* add to freelist */
+      p[0] = 0;
+      p[1] = (value)a->next_obj;
+      Assert(Is_block((value)p));
+      a->next_obj = p;
+      all_used = 0;
+    } else {
+      /* still live */
+      all_free = 0;
+    }
+    p += wh;
+  }
+
+  if (all_free) {
+    pool_release(local, a);
+  } else {
+    pool** list = all_used ? &local->full_pools[sz] : &local->avail_pools[sz];
+    a->next = *list;
+    *list = a;
+  }
+
+  return 1;
+}
+
+static void large_alloc_sweep(struct caml_heap_state* local) {
+  large_alloc* a = local->unswept_large;
+  if (a) {
+    local->unswept_large = a->next;
+    header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+    if (Has_status_hd(hd, global.GARBAGE)) {
+      free(a);
+    } else {
+      a->next = local->swept_large;
+      local->swept_large = a;
+    }
+  }
+}
+
 int caml_sweep(int work) {
   /* Sweep local pools */
+  struct caml_heap_state* local = caml_shared_heap;
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
-    if (local->unswept_pools[local->next_to_sweep]) {
-      pool_sweep(local->next_to_sweep);
-      work--;
+    sizeclass sz = local->next_to_sweep;
+    int sweep_work = 
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz) +
+      pool_sweep(local, &local->unswept_full_pools[sz], sz);
+    if (sweep_work) {
+      work -= sweep_work;
     } else {
       local->next_to_sweep++;
     }
   }
 
-  /* Sweep global regions */
-  while (work > 0 && !local->fully_swept_global) {
-    region* r = shared_stack_pop(&global_atomic.unswept_regions);
-    if (r) {
-      /* sweep the region somehow */
-      shared_stack_push(&global_atomic.swept_regions, &r->node);
-    } else {
-      local->fully_swept_global = 1;
-    }
+  /* Sweep global pools */
+  while (work > 0 && local->unswept_large) {
+    large_alloc_sweep(local);
+    work--;
   }
   return work;
 }
@@ -224,7 +354,7 @@ int caml_mark_object(value p) {
        - UNMARKED:     this object has not yet been traced
        - MARKED:       this object has already been traced or is being traced
        - NOT_MARKABLE: this object should be ignored by the GC */
-  Assert (!Has_status_hd(h, global.GARBAGE));
+  Assert (h && !Has_status_hd(h, global.GARBAGE));
   if (Has_status_hd(h, global.UNMARKED)) {
     Hd_val(p) = With_status_hd(h, global.MARKED);
     return 1;
@@ -274,65 +404,126 @@ void caml_init_major_heap (asize_t size) {
 }
 
 
-static __thread struct addrmap objs = ADDRMAP_INIT;
-static __thread uintnat nobjs = 0;
+static __thread value* verify_stack;
+static __thread int verify_stack_len;
+static __thread int verify_sp;
+static __thread intnat verify_objs = 0;
+static __thread struct addrmap verify_seen = ADDRMAP_INIT;
+
+static void verify_push(value v, value* p) {
+  if (verify_sp == verify_stack_len) {
+    verify_stack_len = verify_stack_len * 2 + 100;
+    verify_stack = caml_stat_resize(verify_stack,
+         sizeof(value*) * verify_stack_len);
+  } 
+  verify_stack[verify_sp++] = v;
+}
 
 static void verify_object(value v) {
-  int i;
-  intnat* entry;
   if (!Is_block(v)) return;
 
   if (Tag_val(v) == Infix_tag) {
     v -= Infix_offset_val(v);
     Assert(Tag_val(v) == Closure_tag);
   }
-  
-  entry = caml_addrmap_insert_pos(&objs, v);
+
+  intnat* entry = caml_addrmap_insert_pos(&verify_seen, v);
   if (*entry != ADDRMAP_NOT_PRESENT) return;
-  *entry = 0;
+  *entry = 1;
 
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
-
-  nobjs++;
-
-  Assert(!Is_minor(v));
+  verify_objs++;
 
   if (!Is_minor(v)) {
     Assert(Has_status_hd(Hd_val(v), global.MARKED));
   }
   if (Tag_val(v) < No_scan_tag) {
+    int i;
     for (i = 0; i < Wosize_val(v); i++) {
-      verify_object(Field(v, i));
+      value f = Op_val(v)[i];
+      if (Is_minor(v) && Is_minor(f)) {
+        Assert(caml_owner_of_young_block(v) ==
+               caml_owner_of_young_block(f));
+      }
+      if (Is_block(f)) verify_push(f, 0);
     }
   }
 }
 
-static void verify_root(value v, value* p) {
-  if (!v) return;
-  verify_object(v);
-}
-
 static void verify_heap() {
   struct caml_sampled_roots roots;
-  caml_addrmap_clear(&objs);
-  nobjs = 0;
+
   caml_sample_local_roots(&roots);
-  caml_do_local_roots(&verify_root, &roots);
-  caml_scan_global_roots(&verify_root);
-  caml_gc_log("Verify: %lu objs", nobjs);
-  caml_addrmap_clear(&objs);
+  caml_do_local_roots(&verify_push, &roots);
+  caml_scan_global_roots(&verify_push);
+  while (verify_sp) verify_object(verify_stack[--verify_sp]);
+  caml_gc_log("Verify: %lu objs", verify_objs);
+
+  caml_addrmap_clear(&verify_seen);
+  verify_objs = 0;
+  caml_stat_free(verify_stack);
+  verify_stack = 0;
+  verify_stack_len = 0;
+  verify_sp = 0;
 }
 
-void caml_cycle_heap() {
+
+static void verify_pool(pool* a, sizeclass sz) {
+  value* v;
+  for (v = a->next_obj; v; v = (value*)v[1]) {
+    Assert(*v == 0);
+  }
+  
+  value* p = (value*)((char*)a + POOL_HEADER_SZ);
+  value* end = (value*)a + POOL_WSIZE;
+  mlsize_t wh = wsize_sizeclass[sz];
+  
+  while (p + wh <= end) {
+    header_t hd = (header_t)*p;
+    Assert(hd == 0 || Has_status_hd(hd, global.MARKED) || Has_status_hd(hd, global.UNMARKED));
+    p += wh;
+  }
+}
+
+static void verify_freelists () {
+  int i;
+  struct caml_heap_state* local = caml_shared_heap;
+  for (i = 0; i < NUM_SIZECLASSES; i++) {
+    /* sweeping should be done by this point */
+    Assert(local->unswept_avail_pools[i] == 0 &&
+           local->unswept_full_pools[i] == 0);
+    pool* p;
+    for (p = local->avail_pools[i]; p; p = p->next)
+      verify_pool(p, i);
+    for (p = local->full_pools[i]; p; p = p->next) {
+      Assert(p->next_obj == 0);
+      verify_pool(p, i);
+    }
+  }
+}
+
+void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
   verify_heap();
+  verify_freelists();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
   global = newg;
 }
 
+void caml_cycle_heap() {
+  int i;
+  struct caml_heap_state* local = caml_shared_heap;
+  for (i = 0; i < NUM_SIZECLASSES; i++) {
+    local->unswept_avail_pools[i] = local->avail_pools[i];
+    local->avail_pools[i] = 0;
+    local->unswept_full_pools[i] = local->full_pools[i];
+    local->full_pools[i] = 0;
+  }
+  local->next_to_sweep = 0;
+}
 
 
 

@@ -30,6 +30,10 @@ struct caml_sampled_roots {
   
   value* mark_stack;
   int mark_stack_count;
+
+  struct addrmap* promotion_table;
+  struct addrmap* promotion_rev_table;
+  struct caml_heap_state* shared_heap;
 };
 #else
 #error "caml_sampled_roots not yet implemented for native code"

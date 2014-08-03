@@ -5,48 +5,56 @@
 #include "fail.h"
 #include "memory.h"
 #include "shared_heap.h"
+#include "minor_heap.h"
 #include "domain.h"
+#include "addrmap.h"
+#include "roots.h"
+
+static void shared_heap_write_barrier(value obj, int field, value val)
+{
+  Assert (Is_block(obj) && !Is_young(obj));
+
+  if (Is_block(val)) {
+    if (Is_young(val)) {
+      /* Add to remembered set */
+      if (caml_ref_table.ptr >= caml_ref_table.limit){
+        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
+        caml_realloc_ref_table (&caml_ref_table);
+      }
+      *caml_ref_table.ptr++ = Op_val(obj) + field;
+    } else {
+      /* 
+         FIXME: should have an is_marking check
+         don't want to do this all the time
+         
+         unconditionally mark new value
+      */
+
+      caml_darken(val, 0);
+    }
+  }
+}
+
+static void promoted_write(value obj, int field, value val);
 
 CAMLexport void caml_modify_field (value obj, int field, value val)
 {
   Assert (Is_block(obj));
   Assert (!Is_foreign(obj));
   Assert (!Is_foreign(val));
-  /* 
-     FIXME: should have an is_marking check
-     don't want to do this all the time
-     
-     unconditionally mark new value
-  */
+  Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
 
-  if (Is_block(val) && !Is_young(val)) {
-    caml_darken(val, 0);
+  if (Is_promoted_hd(Hd_val(obj))) {
+    promoted_write(obj, field, val);
+  } else {
+    if (!Is_young(obj)) shared_heap_write_barrier(obj, field, val);
+    Op_val(obj)[field] = val;
   }
-
-
-      Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
-
-
-  if (!Is_young(obj)) {
-    
-    if (Is_block(val) && Is_young(val)) {
-
-
-
-      /* Add [fp] to remembered set */
-      if (caml_ref_table.ptr >= caml_ref_table.limit){
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
-        caml_realloc_ref_table (&caml_ref_table);
-      }
-      *caml_ref_table.ptr++ = Op_val(obj) + field;
-    }
-  }
-  
-  Op_val(obj)[field] = val;
 }
 
 CAMLexport void caml_initialize_field (value obj, int field, value val)
 {
+  /* FIXME: there are more efficient implementations of this */
   Op_val(obj)[field] = Val_long(0);
   caml_modify_field(obj, field, val);
 }
@@ -103,12 +111,97 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = caml_shared_try_alloc(wosize, tag);
+  value* v = caml_shared_try_alloc(wosize, tag, 0);
   if (v == NULL) {
-    /* FIXME: trigger GC */
     caml_raise_out_of_memory ();
   }
   return Val_hp(v);
 }
 
+struct read_fault_req {
+  value obj;
+  int field;
+  value ret;
+};
 
+static void handle_read_fault(struct domain* target, void* reqp) {
+  struct read_fault_req* req = reqp;
+  value v = Op_val(req->obj)[req->field];
+  if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
+    caml_gc_log("Handling read fault for domain [%02d]", caml_domain_id(target));
+    req->ret = caml_promote(target, v);
+    Assert (!Is_minor(req->ret));
+    /* OPT: update obj[field] as well? */
+    /* FIXME: caml_modify_field may be wrong here */
+    caml_modify_field(req->obj, req->field, req->ret);
+  } else {
+    /* Race condition: by the time we handled the fault, the field was
+       already modified and no longer points to our heap.  We recurse
+       into the read barrier. This always terminates: in the worst
+       case, all domains get tied up servicing one fault and then
+       there are no more left running to win the race */
+    caml_gc_log("Stale read fault for domain [%02d]", caml_domain_id(target));
+    req->ret = caml_read_barrier(req->obj, req->field);
+  }
+}
+
+CAMLexport value caml_read_barrier(value obj, int field)
+{
+  value v = Op_val(obj)[field];
+  if (Is_foreign(v)) {
+    struct read_fault_req req = {obj, field, Val_unit};
+    if (Is_young(obj)) {
+      /* We can trigger a read fault on a young object only if this is
+         the young copy of a promoted object. We should fault on the
+         promoted version, instead of the young one */
+      Assert(Is_promoted_hd(Hd_val(obj)));
+      req.obj = caml_addrmap_lookup(&caml_promotion_table, obj);
+    }
+    caml_gc_log("Read fault to domain [%02d]", caml_domain_id(caml_owner_of_young_block(v)));
+    caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, &req);
+    Assert(!Is_minor(req.ret));
+    caml_gc_log("Read fault returned (%p)", req.ret);
+    return req.ret;
+  } else {
+    return v;
+  }
+}
+
+struct write_fault_req {
+  value obj;
+  int field;
+  value val;
+};
+
+static void handle_write_fault(struct domain* target, void* reqp) {
+  struct write_fault_req* req = reqp;
+  if (Is_promoted_hd(Hd_val(req->obj)) &&
+      caml_owner_of_shared_block(req->obj) == target) {
+    caml_gc_log("Handling write fault for domain [%02d]", caml_domain_id(target));
+    value local =
+      caml_addrmap_lookup(caml_get_sampled_roots(target)->promotion_rev_table,
+                          req->obj);
+    Op_val(local)[req->field] = req->val;
+    shared_heap_write_barrier(req->obj, req->field, req->val);
+    Op_val(req->obj)[req->field] = req->val;
+  } else {
+    caml_gc_log("Stale write fault for domain [%02d]", caml_domain_id(target));
+    /* Race condition: this shared block is now owned by someone else */
+    caml_modify_field(req->obj, req->field, req->val);
+  }
+}
+
+static void promoted_write(value obj, int field, value val)
+{
+  if (Is_young(obj)) {
+    value promoted = caml_addrmap_lookup(&caml_promotion_table, obj);
+    shared_heap_write_barrier(promoted, field, val);
+    Op_val(promoted)[field] = val;
+    Op_val(obj)[field] = val;
+  } else {
+    struct domain* owner = caml_owner_of_shared_block(obj);
+    struct write_fault_req req = {obj, field, val};
+    caml_gc_log("Write fault to domain [%02d]", caml_domain_id(owner));
+    caml_domain_rpc(owner, &handle_write_fault, &req);
+  }
+}

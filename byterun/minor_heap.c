@@ -1,7 +1,7 @@
 #include "minor_heap.h"
 #include "fail.h"
 #include "platform.h"
-
+#include "domain.h"
 
 CAMLexport __thread char *caml_young_start = NULL, *caml_young_end = NULL;
 
@@ -24,6 +24,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 static void* heaps_base;
 static int heaps_allocated;
 static int next_heap[1 << Minor_heap_sel_bits];
+static struct domain* heap_owners[1 << Minor_heap_sel_bits];
 static caml_plat_mutex heaps_lock;
 
 void caml_init_minor_heaps()
@@ -59,6 +60,7 @@ void caml_allocate_minor_heap (asize_t heap_size)
   caml_plat_lock(&heaps_lock);
   if (heaps_allocated < (1 << Minor_heap_sel_bits)) {
     int heap = next_heap[heaps_allocated];
+    heap_owners[heap] = caml_domain_self();
     heaps_allocated++;
     mem = (uintnat)heaps_base + (1 << Minor_heap_align_bits) * heap;
   }
@@ -81,6 +83,11 @@ void caml_allocate_minor_heap (asize_t heap_size)
   caml_young_end = (char*)(mem + heap_size);
 }
 
+static int heap_id(value v)
+{
+  return ((uintnat)v - (uintnat)heaps_base) / (1 << Minor_heap_align_bits);
+}
+
 void caml_free_minor_heap ()
 {
   uintnat heap = (uintnat)caml_young_start;
@@ -99,8 +106,15 @@ void caml_free_minor_heap ()
     caml_plat_lock(&heaps_lock);
     Assert (heaps_allocated > 0);
     heaps_allocated--;
-    next_heap[heaps_allocated] = (heap - (uintnat)heaps_base) / (1 << Minor_heap_align_bits);
+    next_heap[heaps_allocated] = heap_id(heap);
+    Assert(heap_owners[heap_id(heap)] != 0);
+    heap_owners[heap_id(heap)] = 0;
     caml_plat_unlock(&heaps_lock);
   }
   caml_young_start = caml_young_end = NULL;
+}
+
+struct domain* caml_owner_of_young_block(value v) {
+  Assert(Is_minor(v));
+  return heap_owners[heap_id(v)];
 }
