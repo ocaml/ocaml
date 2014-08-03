@@ -20,8 +20,10 @@ CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
 void caml_do_foreign_roots(void (*)(value, value*));
 
+struct domain;
 void caml_domain_register_main(uintnat minor_heap_size);
 
-int caml_domain_id(void);
 
+struct domain* caml_domain_self();
+int caml_domain_id(struct domain*);
 #endif /* CAML_DOMAIN_H */
