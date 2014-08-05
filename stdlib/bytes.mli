@@ -260,5 +260,5 @@ external unsafe_blit :
   = "caml_blit_string" "noalloc"
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+val unsafe_to_string : bytes -> string
+val unsafe_of_string : string -> bytes
