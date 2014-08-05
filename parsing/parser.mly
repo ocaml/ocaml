@@ -1401,9 +1401,8 @@ lbl_expr:
       { (mkrhs $1 1, exp_of_label $1 1) }
 ;
 field_expr_list:
-    field_expr { [$1] }
+    field_expr opt_semi { [$1] }
   | field_expr SEMI field_expr_list { $1 :: $3 }
-  | field_expr SEMI { [$1] }
 ;
 field_expr:
     label EQUAL expr
