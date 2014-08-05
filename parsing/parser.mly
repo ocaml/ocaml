@@ -1408,7 +1408,7 @@ field_expr:
     label EQUAL expr
       { (mkrhs $1 1, $3) }
   | label
-      { (mkrhs $1 1, mkexp (Pexp_ident (mkrhs (Lident $1) 1))) }
+      { (mkrhs $1 1, exp_of_label (Lident $1) 1) }
 ;
 expr_semi_list:
     expr                                        { [$1] }
