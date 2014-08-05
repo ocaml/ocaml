@@ -249,7 +249,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated feature: " ^ s
+  | Deprecated s -> "deprecated: " ^ s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
