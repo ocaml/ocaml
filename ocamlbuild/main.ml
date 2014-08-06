@@ -56,9 +56,12 @@ let show_documentation () =
    this means that even if they were not part of any flag declaration,
    they should be marked as useful, to avoid the "unused tag" warning. *)
 let builtin_useful_tags =
-  Tags.of_list
-    ["include"; "traverse"; "not_hygienic";
-     "pack"; "ocamlmklib"; "native"; "thread"; "nopervasives"]
+  Tags.of_list [
+    "include"; "traverse"; "not_hygienic";
+    "pack"; "ocamlmklib"; "native"; "thread";
+    "nopervasives"; "use_menhir"; "ocamldep";
+    "thread";
+  ]
 ;;
 
 let proceed () =
