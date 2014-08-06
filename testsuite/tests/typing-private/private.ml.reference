@@ -107,7 +107,7 @@ Error: Cannot create values of the private type Test2.t
 # *   Characters 148-171:
   module Test2 : module type of Test with type t = private Test.t = Test;;
                                           ^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated feature: spurious use of private
+Warning 3: deprecated: spurious use of private
 module Test2 : sig type t = Test.t = private A end
 #     type t = private < x : int; .. >
 # type t = private < x : int; .. >
