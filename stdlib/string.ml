@@ -37,6 +37,7 @@ let concat = (Obj.magic B.concat : string -> string list -> string)
 let iter = (Obj.magic B.iter : (char -> unit) -> string -> unit)
 let iteri = (Obj.magic B.iteri : (int -> char -> unit) -> string -> unit)
 let map = (Obj.magic B.map : (char -> char) -> string -> string)
+let mapi = (Obj.magic B.mapi : (int -> char -> char) -> string -> string)
 
 (* Beware: we cannot use B.trim or B.escape because they always make a
    copy, but String.mli spells out some cases where we are not allowed
