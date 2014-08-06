@@ -648,8 +648,6 @@ Bug fixes:
   (Jacques Garrigue, report by Elnatan Reisner)
 - PR#6058: 'ocamlbuild -use-ocamlfind -tag thread -package threads t.cma' fails
   (Gabriel Scherer, report by Hezekiah M. Carty)
-- PR#6060: ocamlbuild rules for -principal, -strict-sequence and -short-paths
-  (Anil Madhavapeddy)
 - PR#6069: ocamldoc: lexing: empty token
   (Maxence Guesdon, Grégoire Henry, report by ygrek)
 - PR#6072: configure does not handle FreeBSD current (i.e. 10) correctly
@@ -715,6 +713,12 @@ Feature wishes:
   (Anil Madhavapeddy, review by Benedikt Meurer)
 - PR#6059: add -output-obj rules for ocamlbuild
   (Anil Madhavapeddy)
+- PR#6060: ocamlbuild tags 'principal', 'strict_sequence' and 'short_paths'
+  (Anil Madhavapeddy)
+- PR#6495: ocamlbuild tags 'safe_string', 'unsafe_string'
+  (Anil Madhavapeddy)
+- ocamlbuild tag 'no_alias_deps'
+  (Daniel Bünzli)
 
 Tools:
 - OCamlbuild now features a bin_annot tag to generate .cmt files.
