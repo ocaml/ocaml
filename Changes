@@ -249,6 +249,8 @@ Bug fixes:
   (Leo White)
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
+- PR#6509: add -linkall flag to ocamlcommon.cma
+  (Frédéric Bour)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
