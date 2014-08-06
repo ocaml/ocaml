@@ -188,7 +188,15 @@ let map f s =
   let l = length s in
   if l = 0 then s else begin
     let r = create l in
-    for i = 0 to l - 1 do unsafe_set r i (f(unsafe_get s i)) done;
+    for i = 0 to l - 1 do unsafe_set r i (f (unsafe_get s i)) done;
+    r
+  end
+
+let mapi f s =
+  let l = length s in
+  if l = 0 then s else begin
+    let r = create l in
+    for i = 0 to l - 1 do unsafe_set r i (f i (unsafe_get s i)) done;
     r
   end
 

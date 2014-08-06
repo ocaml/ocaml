@@ -67,8 +67,9 @@ val make : int -> char -> bytes
     Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> bytes
-(** [Bytes.init n f] returns a fresh byte sequence of length [n],
-    with character [i] initialized to the result of [f i].
+(** [Bytes.init n f] returns a fresh byte sequence of length [n], with
+    character [i] initialized to the result of [f i] (in increasing
+    index order).
 
     Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
@@ -161,9 +162,14 @@ val iteri : (int -> char -> unit) -> bytes -> unit
     argument. *)
 
 val map : (char -> char) -> bytes -> bytes
-(** [map f s] applies function [f] in turn to all the bytes of [s] and
-    stores the resulting bytes in a new sequence that is returned as
-    the result. *)
+(** [map f s] applies function [f] in turn to all the bytes of [s]
+    (in increasing index order) and stores the resulting bytes in
+    a new sequence that is returned as the result. *)
+
+val mapi : (int -> char -> char) -> bytes -> bytes
+(** [mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the resulting bytes
+    in a new sequence that is returned as the result. *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing

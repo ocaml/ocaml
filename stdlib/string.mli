@@ -81,10 +81,14 @@ val make : int -> char -> string
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
-(** [String.init n f] returns a string of length [n],
-    with character [i] initialized to the result of [f i].
+(** [String.init n f] returns a string of length [n], with character
+    [i] initialized to the result of [f i] (called in increasing
+    index order).
 
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+    @since 4.02.0
+*)
 
 val copy : string -> string
 (** Return a copy of the given string.
@@ -131,10 +135,16 @@ val iteri : (int -> char -> unit) -> string -> unit
    @since 4.00.0 *)
 
 val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all
-   the characters of [s] and stores the results in a new string that
-   is returned.
-   @since 4.00.0 *)
+(** [String.map f s] applies function [f] in turn to all the
+    characters of [s] (in increasing index order) and stores the
+    results in a new string that is returned.
+    @since 4.00.0 *)
+
+val mapi : (int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
 
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
