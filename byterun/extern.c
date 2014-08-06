@@ -75,10 +75,10 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 
 /* Forward declarations */
 
-static void extern_out_of_memory(void);
-static void extern_invalid_argument(char *msg);
-static void extern_failwith(char *msg);
-static void extern_stack_overflow(void);
+static void extern_out_of_memory(void) Noreturn;
+static void extern_invalid_argument(char *msg) Noreturn;
+static void extern_failwith(char *msg) Noreturn;
+static void extern_stack_overflow(void) Noreturn;
 static struct code_fragment * extern_find_code(char *addr);
 static void extern_replay_trail(void);
 static void free_extern_output(void);

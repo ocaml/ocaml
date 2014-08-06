@@ -15,6 +15,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <mlvalues.h>
+#include <misc.h>
 
 struct canvas {
   int w, h;                     /* Dimensions of the drawable */
@@ -73,7 +74,7 @@ extern int caml_gr_bits_per_pixel;
 #endif
 #endif
 
-extern void caml_gr_fail(char *fmt, char *arg);
+extern void caml_gr_fail(char *fmt, char *arg) Noreturn;
 extern void caml_gr_check_open(void);
 extern unsigned long caml_gr_pixel_rgb(int rgb);
 extern int caml_gr_rgb_pixel(long unsigned int pixel);
