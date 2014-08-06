@@ -23,6 +23,7 @@ open Compenv
 (* Keep in sync with the copy in compile.ml *)
 
 let interface ppf sourcefile outputprefix =
+  Ast_mapper.tool_name := "ocamlopt";
   Compmisc.init_path false;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
@@ -56,6 +57,7 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
+  Ast_mapper.tool_name := "ocamlopt";
   Compmisc.init_path true;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;

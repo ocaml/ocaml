@@ -72,6 +72,10 @@ val default_mapper: mapper
 
 (** {2 Apply mappers to compilation units} *)
 
+val tool_name: string ref
+(** The name of the tool invoking the preprocessor:
+    ["ocamlc"], ["ocamlopt"], ["ocamldoc"], ... *)
+
 val apply: source:string -> target:string -> mapper -> unit
 (** Apply a mapper (parametrized by the unit name) to a dumped
     parsetree found in the [source] file and put the result in the

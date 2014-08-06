@@ -87,7 +87,46 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
+let ppx_context () =
+  let open Longident in
+  let open Asttypes in
+  let open Ast_helper in
+  let lid name = { txt = Lident name; loc = Location.none } in
+  let make_string x = Exp.constant (Const_string (x, None)) in
+  let make_bool x =
+    if x
+    then Exp.construct (lid "true") None
+    else Exp.construct (lid "false") None
+  in
+  let rec make_list f lst =
+    match lst with
+    | x :: rest ->
+      Exp.construct (lid "::") (Some (Exp.tuple [f x; make_list f rest]))
+    | [] ->
+      Exp.construct (lid "[]") None
+  in
+  let make_option f opt =
+    match opt with
+    | Some x -> Exp.construct (lid "Some") (Some (f x))
+    | None   -> Exp.construct (lid "None") None
+  in
+  { txt = "ocaml.ppx.context"; loc = Location.none },
+    Parsetree.PStr [Str.eval (
+      Exp.record ([
+        lid "tool_name",    make_string !Ast_mapper.tool_name;
+        lid "include_dirs", make_list make_string !Clflags.include_dirs;
+        lid "load_path",    make_list make_string !Config.load_path;
+        lid "open_module",  make_list make_string !Clflags.open_module;
+        lid "for_package",  make_option make_string !Clflags.for_package;
+        lid "debug",        make_bool !Clflags.debug;
+      ]) None)]
+
 let apply_rewriters magic ast =
+  let ast =
+    if magic = Config.ast_impl_magic_number
+    then Obj.magic (Ast_helper.Str.attribute (ppx_context ()) :: (Obj.magic ast))
+    else Obj.magic (Ast_helper.Sig.attribute (ppx_context ()) :: (Obj.magic ast))
+  in
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->

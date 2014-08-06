@@ -102,6 +102,7 @@ end);;
 
 let main () =
   let ppf = Format.err_formatter in
+  Ast_mapper.tool_name := "ocaml";
   Compenv.readenv ppf Before_args;
   Arg.parse Options.list file_argument usage;
   Compenv.readenv ppf Before_link;
