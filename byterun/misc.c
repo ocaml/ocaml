@@ -26,7 +26,6 @@ int caml_failed_assert (char * expr, char * file, int line)
            file, line, expr);
   fflush (stderr);
   exit (100);
-  return 1; /* not reached */
 }
 
 void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
