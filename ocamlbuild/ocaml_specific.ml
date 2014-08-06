@@ -682,6 +682,7 @@ flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
+flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
