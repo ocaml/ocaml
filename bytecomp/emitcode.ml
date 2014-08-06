@@ -360,7 +360,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name code =
+let to_file outchan unit_name objfile code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -370,6 +370,9 @@ let to_file outchan unit_name code =
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
+      debug_dirs := StringSet.add
+        (Filename.dirname (Location.absolute_path objfile))
+        !debug_dirs;
       let p = pos_out outchan in
       output_value outchan !events;
       output_value outchan (StringSet.elements !debug_dirs);
