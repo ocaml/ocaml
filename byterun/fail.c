@@ -71,11 +71,9 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
 
 CAMLexport void caml_raise_with_string(value tag, char const *msg)
 {
-  CAMLparam1 (tag);
-  CAMLlocal1 (vmsg);
-
-  vmsg = caml_copy_string(msg);
-  caml_raise_with_arg(tag, vmsg);
+  CAMLparam1(tag);
+  value v_msg = caml_copy_string(msg);
+  caml_raise_with_arg(tag, v_msg);
   CAMLnoreturn;
 }
 

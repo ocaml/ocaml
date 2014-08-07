@@ -43,8 +43,8 @@ val type_expr: t -> type_expr -> type_expr
 val class_type: t -> class_type -> class_type
 val value_description: t -> value_description -> value_description
 val type_declaration: t -> type_declaration -> type_declaration
-val exception_declaration:
-        t -> exception_declaration -> exception_declaration
+val extension_constructor:
+        t -> extension_constructor -> extension_constructor
 val class_declaration: t -> class_declaration -> class_declaration
 val cltype_declaration: t -> class_type_declaration -> class_type_declaration
 val modtype: t -> module_type -> module_type
@@ -58,7 +58,7 @@ val compose: t -> t -> t
 
 
 val sub_ids: type_declaration -> Ident.t list
-val sub_ids_exn: exception_declaration -> Ident.t list
+val sub_ids_ext: extension_constructor -> Ident.t list
 
 
 val add_prefixes: Path.t -> Ident.t list -> t -> t

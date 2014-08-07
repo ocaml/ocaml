@@ -241,7 +241,7 @@ type type_iterators =
     it_signature_item: type_iterators -> signature_item -> unit;
     it_value_description: type_iterators -> value_description -> unit;
     it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_exception_declaration: type_iterators -> exception_declaration -> unit;
+    it_extension_constructor: type_iterators -> extension_constructor -> unit;
     it_module_declaration: type_iterators -> module_declaration -> unit;
     it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
     it_class_declaration: type_iterators -> class_declaration -> unit;
@@ -253,20 +253,28 @@ type type_iterators =
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
 
+let iter_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> List.iter f tl
+  | Cstr_record (_, lbls) -> List.iter (fun d -> f d.ld_type) lbls
+
+let map_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
+  | Cstr_record (r, lbls) ->
+      Cstr_record (r, List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
+
 let iter_type_expr_kind f = function
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
         (fun cd ->
-           begin match cd.cd_args with
-           | Cstr_tuple tl -> List.iter f tl
-           | Cstr_record (_, lbls) -> List.iter (fun d -> f d.ld_type) lbls
-           end;
+           iter_type_expr_cstr_args f cd.cd_args;
            Misc.may f cd.cd_res
         )
         cstrs
   | Type_record(lbls, _) ->
       List.iter (fun d -> f d.ld_type) lbls
+  | Type_open ->
+      ()
 
 
 let type_iterators =
@@ -275,7 +283,7 @@ let type_iterators =
   and it_signature_item it = function
       Sig_value (_, vd)     -> it.it_value_description it vd
     | Sig_type (_, td, _)   -> it.it_type_declaration it td
-    | Sig_exception (_, ed) -> it.it_exception_declaration it ed
+    | Sig_typext (_, td, _) -> it.it_extension_constructor it td
     | Sig_module (_, md, _) -> it.it_module_declaration it md
     | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
     | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
@@ -286,11 +294,11 @@ let type_iterators =
     List.iter (it.it_type_expr it) td.type_params;
     may (it.it_type_expr it) td.type_manifest;
     it.it_type_kind it td.type_kind
-  and it_exception_declaration it ed =
-    match ed.exn_args with
-    | Cstr_tuple tl -> List.iter (it.it_type_expr it) tl
-    | Cstr_record (_, lbls) ->
-        List.iter (fun d -> it.it_type_expr it d.ld_type) lbls
+  and it_extension_constructor it td =
+    it.it_path td.ext_type_path;
+    List.iter (it.it_type_expr it) td.ext_type_params;
+    iter_type_expr_cstr_args (it.it_type_expr it) td.ext_args;
+    may (it.it_type_expr it) td.ext_ret_type
   and it_module_declaration it md =
     it.it_module_type it md.md_type
   and it_modtype_declaration it mtd =
@@ -342,7 +350,7 @@ let type_iterators =
   { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
     it_type_kind; it_class_type; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
-    it_modtype_declaration; it_module_declaration; it_exception_declaration;
+    it_modtype_declaration; it_module_declaration; it_extension_constructor;
     it_type_declaration; it_value_description; it_signature_item; }
 
 let copy_row f fixed row keep more =
@@ -469,6 +477,11 @@ let unmark_iterators =
 
 let unmark_type_decl decl =
   unmark_iterators.it_type_declaration unmark_iterators decl
+
+let unmark_extension_constructor ext =
+  List.iter unmark_type ext.ext_type_params;
+  iter_type_expr_cstr_args unmark_type ext.ext_args;
+  Misc.may unmark_type ext.ext_ret_type
 
 let unmark_class_signature sign =
   unmark_type sign.csig_self;

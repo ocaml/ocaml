@@ -164,28 +164,49 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
   let r = describe_constructors 0 0 cstrs in
   r, !tdecls
 
-let exception_descr ?rebind path_exc decl =
-  let type_manifest () = rebind in
-  let cstr_args, cstr_inlined, tds =
-    constructor_args path_exc type_manifest []
-      (Record_exception path_exc)
-      decl.exn_args
+let extension_descr ?rebind path_ext ext =
+  let ty_res =
+    match ext.ext_ret_type with
+        Some type_ret -> type_ret
+      | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
-  { cstr_name = Path.last path_exc;
-    cstr_res = Predef.type_exn;
-    cstr_existentials = [];
-    cstr_args;
-    cstr_arity = List.length cstr_args;
-    cstr_tag = Cstr_exception (path_exc, decl.exn_loc);
-    cstr_consts = -1;
-    cstr_nonconsts = -1;
-    cstr_private = Public;
-    cstr_normal = -1;
-    cstr_generalized = false;
-    cstr_loc = decl.exn_loc;
-    cstr_attributes = decl.exn_attributes;
-    cstr_inlined;
-  }, tds
+  (* TODO #5528: merge code below with constructor_descrs *)
+  let tyl =
+    match ext.ext_args with
+    | Cstr_tuple l -> l
+    | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
+  in
+  let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
+  let existentials =
+    match ext.ext_ret_type with
+      | None -> []
+      | Some type_ret ->
+          let res_vars, _ = free_vars type_ret in
+          TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
+  in
+  let cstr_args, cstr_inlined, tds =
+    constructor_args path_ext (fun () -> rebind)
+      arg_vars
+      (Record_extension path_ext)
+      ext.ext_args
+  in
+    { cstr_name = Path.last path_ext;
+      cstr_res = ty_res;
+      cstr_existentials = existentials;
+      cstr_args;
+      cstr_arity = List.length cstr_args;
+      cstr_tag = Cstr_extension(path_ext, cstr_args = []);
+      cstr_consts = -1;
+      cstr_nonconsts = -1;
+      cstr_private = ext.ext_private;
+      cstr_normal = -1;
+      cstr_generalized = ext.ext_ret_type <> None;
+      cstr_loc = ext.ext_loc;
+      cstr_attributes = ext.ext_attributes;
+      cstr_inlined;
+    },
+    tds
+
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)

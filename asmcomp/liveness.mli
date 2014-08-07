@@ -15,4 +15,5 @@
 
 open Format
 
+val reset : unit -> unit
 val fundecl: formatter -> Mach.fundecl -> unit

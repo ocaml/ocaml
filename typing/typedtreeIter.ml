@@ -24,6 +24,8 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_declaration : type_declaration -> unit
+    val enter_type_extension : type_extension -> unit
+    val enter_extension_constructor : extension_constructor -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
     val enter_package_type : package_type -> unit
@@ -49,6 +51,8 @@ module type IteratorArgument = sig
     val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_declaration : type_declaration -> unit
+    val leave_type_extension : type_extension -> unit
+    val leave_extension_constructor : extension_constructor -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
     val leave_package_type : package_type -> unit
@@ -130,24 +134,18 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type list -> List.iter iter_type_declaration list
-        | Tstr_exception cd -> iter_constructor_declaration cd
-        | Tstr_exn_rebind _ -> ()
+        | Tstr_typext tyext -> iter_type_extension tyext
+        | Tstr_exception ext -> iter_extension_constructor ext
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
         | Tstr_open _ -> ()
         | Tstr_class list ->
-            List.iter (fun (ci, _, _) ->
-                Iter.enter_class_declaration ci;
-                iter_class_expr ci.ci_expr;
-                Iter.leave_class_declaration ci;
-            ) list
+            List.iter (fun (ci, _, _) -> iter_class_declaration ci) list
         | Tstr_class_type list ->
-            List.iter (fun (id, _, ct) ->
-                Iter.enter_class_type_declaration ct;
-                iter_class_type ct.ci_expr;
-                Iter.leave_class_type_declaration ct;
-            ) list
+            List.iter
+              (fun (id, _, ct) -> iter_class_type_declaration ct)
+              list
         | Tstr_include incl -> iter_module_expr incl.incl_mod
         | Tstr_attribute _ ->
             ()
@@ -162,15 +160,20 @@ module MakeIterator(Iter : IteratorArgument) : sig
       iter_core_type v.val_desc;
       Iter.leave_value_description v
 
-    and iter_constructor_declaration cd =
-      begin match cd.cd_args with
+    and iter_constructor_arguments = function
       | Cstr_tuple l -> List.iter iter_core_type l
       | Cstr_record l -> List.iter (fun ld -> iter_core_type ld.ld_type) l
-      end;
+
+    and iter_constructor_declaration cd =
+      iter_constructor_arguments cd.cd_args;
       option iter_core_type cd.cd_res;
+
+    and iter_type_parameter (ct, v) =
+      iter_core_type ct
 
     and iter_type_declaration decl =
       Iter.enter_type_declaration decl;
+      List.iter iter_type_parameter decl.typ_params;
       List.iter (fun (ct1, ct2, loc) ->
           iter_core_type ct1;
           iter_core_type ct2
@@ -184,12 +187,26 @@ module MakeIterator(Iter : IteratorArgument) : sig
               (fun ld ->
                 iter_core_type ld.ld_type
             ) list
+        | Ttype_open -> ()
       end;
-      begin match decl.typ_manifest with
-          None -> ()
-        | Some ct -> iter_core_type ct
-      end;
+      option iter_core_type decl.typ_manifest;
       Iter.leave_type_declaration decl
+
+    and iter_extension_constructor ext =
+      Iter.enter_extension_constructor ext;
+      begin match ext.ext_kind with
+          Text_decl(args, ret) ->
+          iter_constructor_arguments args;
+            option iter_core_type ret
+        | Text_rebind _ -> ()
+      end;
+      Iter.leave_extension_constructor ext;
+
+    and iter_type_extension tyext =
+      Iter.enter_type_extension tyext;
+      List.iter iter_type_parameter tyext.tyext_params;
+      List.iter iter_extension_constructor tyext.tyext_constructors;
+      Iter.leave_type_extension tyext
 
     and iter_pattern pat =
       Iter.enter_pattern pat;
@@ -250,9 +267,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
                   None -> ()
                 | Some exp -> iter_expression exp
             ) list
-        | Texp_match (exp, list, _) ->
+        | Texp_match (exp, list1, list2, _) ->
             iter_expression exp;
-            iter_cases list
+            iter_cases list1;
+            iter_cases list2;
         | Texp_try (exp, list) ->
             iter_expression exp;
             iter_cases list
@@ -340,8 +358,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_value_description vd
         | Tsig_type list ->
             List.iter iter_type_declaration list
-        | Tsig_exception cd ->
-            iter_constructor_declaration cd
+        | Tsig_exception ext ->
+            iter_extension_constructor ext
+        | Tsig_typext tyext ->
+            iter_type_extension tyext
         | Tsig_module md ->
             iter_module_type md.md_type
         | Tsig_recmodule list ->
@@ -367,16 +387,23 @@ module MakeIterator(Iter : IteratorArgument) : sig
       end;
       Iter.leave_module_type_declaration mtd
 
+    and iter_class_declaration cd =
+      Iter.enter_class_declaration cd;
+      List.iter iter_type_parameter cd.ci_params;
+      iter_class_expr cd.ci_expr;
+      Iter.leave_class_declaration cd;
 
     and iter_class_description cd =
       Iter.enter_class_description cd;
+      List.iter iter_type_parameter cd.ci_params;
       iter_class_type cd.ci_expr;
       Iter.leave_class_description cd;
 
     and iter_class_type_declaration cd =
       Iter.enter_class_type_declaration cd;
+      List.iter iter_type_parameter cd.ci_params;
       iter_class_type cd.ci_expr;
-        Iter.leave_class_type_declaration cd;
+      Iter.leave_class_type_declaration cd;
 
     and iter_module_type mty =
       Iter.enter_module_type mty;
@@ -497,6 +524,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tctf_constraint  (ct1, ct2) ->
             iter_core_type ct1;
             iter_core_type ct2
+        | Tctf_attribute _ -> ()
       end;
       Iter.leave_class_type_field ctf
 
@@ -513,7 +541,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_constr (path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_object (list, o) ->
-            List.iter (fun (_, t) -> iter_core_type t) list
+            List.iter (fun (_, _, t) -> iter_core_type t) list
         | Ttyp_class (path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_alias (ct, s) ->
@@ -534,7 +562,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_row_field rf =
       match rf with
-        Ttag (label, bool, list) ->
+        Ttag (label, _attrs, bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
 
@@ -557,6 +585,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
           iter_expression exp
       | Tcf_initializer exp ->
           iter_expression exp
+      | Tcf_attribute _ -> ()
       end;
       Iter.leave_class_field cf;
   end
@@ -566,7 +595,8 @@ module DefaultIteratorArgument = struct
       let enter_structure _ = ()
       let enter_value_description _ = ()
       let enter_type_declaration _ = ()
-      let enter_exception_declaration _ = ()
+      let enter_type_extension _ = ()
+      let enter_extension_constructor _ = ()
       let enter_pattern _ = ()
       let enter_expression _ = ()
       let enter_package_type _ = ()
@@ -593,7 +623,8 @@ module DefaultIteratorArgument = struct
       let leave_structure _ = ()
       let leave_value_description _ = ()
       let leave_type_declaration _ = ()
-      let leave_exception_declaration _ = ()
+      let leave_type_extension _ = ()
+      let leave_extension_constructor _ = ()
       let leave_pattern _ = ()
       let leave_expression _ = ()
       let leave_package_type _ = ()

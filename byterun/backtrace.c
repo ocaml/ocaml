@@ -35,6 +35,7 @@
 #include "stacks.h"
 #include "sys.h"
 #include "backtrace.h"
+#include "fail.h"
 
 CAMLexport int caml_backtrace_active = 0;
 CAMLexport int caml_backtrace_pos = 0;
@@ -102,6 +103,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     caml_backtrace_last_exn = exn;
   }
   if (caml_backtrace_buffer == NULL) {
+    Assert(caml_backtrace_pos == 0);
     caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
     if (caml_backtrace_buffer == NULL) return;
   }
@@ -118,6 +120,17 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
     }
   }
 }
+
+/* In order to prevent the GC from walking through the debug
+   information (which have no headers), we transform code pointers to
+   31/63 bits ocaml integers by shifting them by 1 to the right. We do
+   not lose information as code pointers are aligned.
+
+   In particular, we do not need to use [caml_initialize] when setting
+   an array element with such a value.
+*/
+#define Val_Codet(p) Val_long((uintnat)p>>1)
+#define Codet_Val(v) ((code_t)(Long_val(v)<<1))
 
 /* returns the next frame pointer (or NULL if none is available);
    updates *sp to point to the following one, and *trapsp to the next
@@ -165,7 +178,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     }
   }
 
-  trace = caml_alloc(trace_size, Abstract_tag);
+  trace = caml_alloc(trace_size, 0);
 
   /* then collect the trace */
   {
@@ -176,36 +189,52 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trapsp);
       Assert(p != NULL);
-      /* The assignment below is safe without [caml_initialize], even
-         if the trace is large and allocated on the old heap, because
-         we assign values that are outside the OCaml heap. */
-      Assert(!(Is_block((value) p) && Is_in_heap((value) p)));
-      Field(trace, trace_pos) = (value) p;
+      Field(trace, trace_pos) = Val_Codet(p);
     }
   }
 
   CAMLreturn(trace);
 }
 
-/* Read the debugging info contained in the current bytecode executable.
-   Return an OCaml array of OCaml lists of debug_event records in "events",
-   or Val_false on failure. */
+/* Read the debugging info contained in the current bytecode executable. */
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 
+struct ev_info {
+  code_t ev_pc;
+  char * ev_filename;
+  int ev_lnum;
+  int ev_startchr;
+  int ev_endchr;
+};
+
+static int cmp_ev_info(const void *a, const void *b) {
+  code_t pc_a = ((const struct ev_info*)a)->ev_pc;
+  code_t pc_b = ((const struct ev_info*)b)->ev_pc;
+  if (pc_a > pc_b) return 1;
+  if (pc_a < pc_b) return -1;
+  return 0;
+}
+
 static char *read_debug_info_error = "";
-static value read_debug_info(void)
+static uintnat n_events;
+static struct ev_info *events = NULL;
+static void read_debug_info(void)
 {
   CAMLparam0();
-  CAMLlocal1(events);
+  CAMLlocal1(events_heap);
   char * exec_name;
   int fd;
   struct exec_trailer trail;
   struct channel * chan;
   uint32 num_events, orig, i;
-  value evl, l;
+  intnat j;
+  value evl, l, ev_start;
+
+  if(events != NULL)
+    CAMLreturn0;
 
   if (caml_cds_file != NULL) {
     exec_name = caml_cds_file;
@@ -215,17 +244,18 @@ static value read_debug_info(void)
   fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0){
     read_debug_info_error = "executable program file not found";
-    CAMLreturn(Val_false);
+    CAMLreturn0;
   }
   caml_read_section_descriptors(fd, &trail);
   if (caml_seek_optional_section(fd, &trail, "DBUG") == -1) {
     close(fd);
     read_debug_info_error = "program not linked with -g";
-    CAMLreturn(Val_false);
+    CAMLreturn0;
   }
   chan = caml_open_descriptor_in(fd);
   num_events = caml_getword(chan);
-  events = caml_alloc(num_events, 0);
+  n_events = 0;
+  events_heap = caml_alloc(num_events, 0);
   for (i = 0; i < num_events; i++) {
     orig = caml_getword(chan);
     evl = caml_input_val(chan);
@@ -234,36 +264,82 @@ static value read_debug_info(void)
     for (l = evl; l != Val_int(0); l = Field(l, 1)) {
       value ev = Field(l, 0);
       Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
+      n_events++;
     }
     /* Record event list */
-    Store_field(events, i, evl);
+    Store_field(events_heap, i, evl);
   }
   caml_close_channel(chan);
-  CAMLreturn(events);
-}
 
-/* Search the event for the given PC.  Return Val_false if not found. */
+  events = (struct ev_info*)malloc(n_events * sizeof(struct ev_info));
+  if(events == NULL) {
+    read_debug_info_error = "out of memory";
+    CAMLreturn0;
+  }
 
-static value event_for_location(value events, code_t pc)
-{
-  mlsize_t i;
-  value pos, l, ev, ev_pos, best_ev;
+  j = 0;
+  for (i = 0; i < num_events; i++) {
+    for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1)) {
+      uintnat fnsz;
+      value ev = Field(l, 0);
 
-  best_ev = 0;
-  Assert(pc >= caml_start_code && pc < caml_start_code + caml_code_size);
-  pos = Val_long((char *) pc - (char *) caml_start_code);
-  for (i = 0; i < Wosize_val(events); i++) {
-    for (l = Field(events, i); l != Val_int(0); l = Field(l, 1)) {
-      ev = Field(l, 0);
-      ev_pos = Field(ev, EV_POS);
-      if (ev_pos == pos) return ev;
-      /* ocamlc sometimes moves an event past a following PUSH instruction;
-         allow mismatch by 1 instruction. */
-      if (ev_pos == pos + 8) best_ev = ev;
+      events[j].ev_pc =
+        (code_t)((char*)caml_start_code + Long_val(Field(ev, EV_POS)));
+
+      ev_start = Field (Field (ev, EV_LOC), LOC_START);
+
+      fnsz = caml_string_length(Field (ev_start, POS_FNAME))+1;
+      events[j].ev_filename = (char*)malloc(fnsz);
+      if(events[j].ev_filename == NULL) {
+        for(j--; j >= 0; j--)
+          free(events[j].ev_filename);
+        free(events);
+        events = NULL;
+        read_debug_info_error = "out of memory";
+        CAMLreturn0;
+      }
+      memcpy(events[j].ev_filename, String_val (Field (ev_start, POS_FNAME)), fnsz);
+
+      events[j].ev_lnum = Int_val (Field (ev_start, POS_LNUM));
+      events[j].ev_startchr =
+        Int_val (Field (ev_start, POS_CNUM))
+        - Int_val (Field (ev_start, POS_BOL));
+      events[j].ev_endchr =
+        Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
+        - Int_val (Field (ev_start, POS_BOL));
+
+      j++;
     }
   }
-  if (best_ev != 0) return best_ev;
-  return Val_false;
+
+  Assert(j == n_events);
+
+  qsort(events, n_events, sizeof(struct ev_info), cmp_ev_info);
+
+  CAMLreturn0;
+}
+
+/* Search the event index for the given PC.  Return -1 if not found. */
+
+static intnat event_for_location(code_t pc)
+{
+  uintnat low = 0, high = n_events;
+  Assert(pc >= caml_start_code && pc < caml_start_code + caml_code_size);
+  Assert(events != NULL);
+  while(low+1 < high) {
+    uintnat m = (low+high)/2;
+    if(pc < events[m].ev_pc) high = m;
+    else low = m;
+  }
+  if(events[low].ev_pc == pc)
+    return low;
+  /* ocamlc sometimes moves an event past a following PUSH instruction;
+     allow mismatch by 1 instruction. */
+  if(events[low].ev_pc == pc + 1)
+    return low;
+  if(low+1 < n_events && events[low+1].ev_pc == pc + 1)
+    return low+1;
+  return -1;
 }
 
 /* Extract location information for the given PC */
@@ -277,28 +353,21 @@ struct loc_info {
   int loc_endchr;
 };
 
-static void extract_location_info(value events, code_t pc,
+static void extract_location_info(code_t pc,
                                   /*out*/ struct loc_info * li)
 {
-  value ev, ev_start;
-
-  ev = event_for_location(events, pc);
+  intnat ev = event_for_location(pc);
   li->loc_is_raise = caml_is_instruction(*pc, RAISE) ||
     caml_is_instruction(*pc, RERAISE);
-  if (ev == Val_false) {
+  if (ev == -1) {
     li->loc_valid = 0;
     return;
   }
   li->loc_valid = 1;
-  ev_start = Field (Field (ev, EV_LOC), LOC_START);
-  li->loc_filename = String_val (Field (ev_start, POS_FNAME));
-  li->loc_lnum = Int_val (Field (ev_start, POS_LNUM));
-  li->loc_startchr =
-    Int_val (Field (ev_start, POS_CNUM))
-    - Int_val (Field (ev_start, POS_BOL));
-  li->loc_endchr =
-    Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
-    - Int_val (Field (ev_start, POS_BOL));
+  li->loc_filename = events[ev].ev_filename;
+  li->loc_lnum = events[ev].ev_lnum;
+  li->loc_startchr = events[ev].ev_startchr;
+  li->loc_endchr = events[ev].ev_endchr;
 }
 
 /* Print location information -- same behavior as in Printexc */
@@ -335,55 +404,47 @@ static void print_location(struct loc_info * li, int index)
 
 CAMLexport void caml_print_exception_backtrace(void)
 {
-  value events;
   int i;
   struct loc_info li;
 
-  events = read_debug_info();
-  if (events == Val_false) {
+  read_debug_info();
+  if (events == NULL) {
     fprintf(stderr, "(Cannot print stack backtrace: %s)\n",
             read_debug_info_error);
     return;
   }
   for (i = 0; i < caml_backtrace_pos; i++) {
-    extract_location_info(events, caml_backtrace_buffer[i], &li);
+    extract_location_info(caml_backtrace_buffer[i], &li);
     print_location(&li, i);
   }
 }
 
 /* Convert the backtrace to a data structure usable from OCaml */
 
-CAMLprim value caml_convert_raw_backtrace(value backtrace)
-{
-  CAMLparam1(backtrace);
-  CAMLlocal5(events, res, arr, p, fname);
-  int i;
+CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
+  CAMLparam1(backtrace_slot);
+  CAMLlocal2(p, fname);
   struct loc_info li;
 
-  events = read_debug_info();
-  if (events == Val_false) {
-    res = Val_int(0);           /* None */
+  read_debug_info();
+  if (events == NULL)
+    caml_failwith(read_debug_info_error);
+
+  extract_location_info(Codet_Val(backtrace_slot), &li);
+
+  if (li.loc_valid) {
+    fname = caml_copy_string(li.loc_filename);
+    p = caml_alloc_small(5, 0);
+    Field(p, 0) = Val_bool(li.loc_is_raise);
+    Field(p, 1) = fname;
+    Field(p, 2) = Val_int(li.loc_lnum);
+    Field(p, 3) = Val_int(li.loc_startchr);
+    Field(p, 4) = Val_int(li.loc_endchr);
   } else {
-    arr = caml_alloc(Wosize_val(backtrace), 0);
-    for (i = 0; i < Wosize_val(backtrace); i++) {
-      extract_location_info(events, (code_t)Field(backtrace, i), &li);
-      if (li.loc_valid) {
-        fname = caml_copy_string(li.loc_filename);
-        p = caml_alloc_small(5, 0);
-        Field(p, 0) = Val_bool(li.loc_is_raise);
-        Field(p, 1) = fname;
-        Field(p, 2) = Val_int(li.loc_lnum);
-        Field(p, 3) = Val_int(li.loc_startchr);
-        Field(p, 4) = Val_int(li.loc_endchr);
-      } else {
-        p = caml_alloc_small(1, 1);
-        Field(p, 0) = Val_bool(li.loc_is_raise);
-      }
-      caml_modify(&Field(arr, i), p);
-    }
-    res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+    p = caml_alloc_small(1, 1);
+    Field(p, 0) = Val_bool(li.loc_is_raise);
   }
-  CAMLreturn(res);
+  CAMLreturn(p);
 }
 
 /* Get a copy of the latest backtrace */
@@ -392,20 +453,49 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 {
   CAMLparam0();
   CAMLlocal1(res);
-  res = caml_alloc(caml_backtrace_pos, Abstract_tag);
-  if(caml_backtrace_buffer != NULL)
-    memcpy(&Field(res, 0), caml_backtrace_buffer,
-           caml_backtrace_pos * sizeof(code_t));
+
+  res = caml_alloc(caml_backtrace_pos, 0);
+  if(caml_backtrace_buffer != NULL) {
+    intnat i;
+    for(i = 0; i < caml_backtrace_pos; i++)
+      Field(res, i) = Val_Codet(caml_backtrace_buffer[i]);
+  }
   CAMLreturn(res);
 }
 
-/* the function below is deprecated: see asmrun/backtrace.c */
+/* the function below is deprecated: we previously returned directly
+   the OCaml-usable representation, instead of the raw backtrace as an
+   abstract type, but this has a large performance overhead if you
+   store a lot of backtraces and print only some of them.
+
+   It is not used by the Printexc library anymore, or anywhere else in
+   the compiler, but we have kept it in case some user still depends
+   on it as an external.
+*/
 
 CAMLprim value caml_get_exception_backtrace(value unit)
 {
   CAMLparam0();
-  CAMLlocal2(raw, res);
-  raw = caml_get_exception_raw_backtrace(unit);
-  res = caml_convert_raw_backtrace(raw);
+  CAMLlocal4(arr, raw_slot, slot, res);
+
+  read_debug_info();
+  if (events == NULL) {
+      res = Val_int(0); /* None */
+  } else {
+      arr = caml_alloc(caml_backtrace_pos, 0);
+      if(caml_backtrace_buffer == NULL) {
+          Assert(caml_backtrace_pos == 0);
+      } else {
+          intnat i;
+          for(i = 0; i < caml_backtrace_pos; i++) {
+              raw_slot = Val_Codet(caml_backtrace_buffer[i]);
+              /* caml_convert_raw_backtrace_slot will not fail with
+               caml_failwith as we checked (events != NULL) already */
+              slot = caml_convert_raw_backtrace_slot(raw_slot);
+              caml_modify(&Field(arr, i), slot);
+          }
+      }
+      res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+  }
   CAMLreturn(res);
 }

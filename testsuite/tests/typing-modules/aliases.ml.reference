@@ -371,4 +371,7 @@ Error: Module type declarations do not match:
   module rec Bad : A = Bad;;
                    ^
 Error: Unbound module type A
+#                           module B : sig module R : sig type t = string end module O = R end
+module K : sig module E = B module N = E.O end
+#   val x : K.N.t = "foo"
 # 

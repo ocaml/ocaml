@@ -81,10 +81,13 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
-  asmcomp/comballoc.cmo asmcomp/liveness.cmo \
+  asmcomp/comballoc.cmo \
+  asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
+  asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
@@ -389,7 +392,6 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
-	@chmod -w utils/config.ml
 
 partialclean::
 	rm -f utils/config.ml
@@ -518,6 +520,14 @@ partialclean::
 	rm -f asmcomp/selection.ml
 
 beforedepend:: asmcomp/selection.ml
+
+asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
+	cp asmcomp/$(ARCH)/CSE.ml asmcomp/CSE.ml
+
+partialclean::
+	rm -f asmcomp/CSE.ml
+
+beforedepend:: asmcomp/CSE.ml
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	cp asmcomp/$(ARCH)/reload.ml asmcomp/reload.ml
@@ -716,7 +726,13 @@ depend: beforedepend
 alldepend:: depend
 
 distclean:
-	./build/distclean.sh
+	$(MAKE) clean
+	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
+	      boot/*.cm* boot/libcamlrun.a
+	rm -f config/Makefile config/m.h config/s.h
+	rm -f tools/*.bak
+	rm -f ocaml ocamlc
+	rm -f testsuite/_log
 
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart

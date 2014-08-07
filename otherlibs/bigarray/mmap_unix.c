@@ -153,7 +153,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
     }
   }
   /* Determine offset so that the mapping starts at the given file pos */
-  page = getpagesize();
+  page = sysconf(_SC_PAGESIZE);
   delta = (uintnat) startpos % page;
   /* Do the mmap */
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
@@ -189,7 +189,7 @@ CAMLprim value caml_ba_map_file_bytecode(value * argv, int argn)
 void caml_ba_unmap_file(void * addr, uintnat len)
 {
 #if defined(HAS_MMAP)
-  uintnat page = getpagesize();
+  uintnat page = sysconf(_SC_PAGESIZE);
   uintnat delta = (uintnat) addr % page;
   if (len == 0) return;         /* PR#5463 */
   addr = (void *)((uintnat)addr - delta);

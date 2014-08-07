@@ -55,7 +55,7 @@ let last_ppx = ref []
 let first_objfiles = ref []
 let last_objfiles = ref []
 
-(* Note: this function is duplicated in optcompile.ml *)
+(* Check validity of module name *)
 let check_unit_name ppf filename name =
   try
     begin match name.[0] with
@@ -76,10 +76,19 @@ let check_unit_name ppf filename name =
   with Exit -> ()
 ;;
 
-
-
-
-
+(* Compute name of module from output file name *)
+let module_of_filename ppf inputfile outputprefix =
+  let basename = Filename.basename outputprefix in
+  let name =
+    try
+      let pos = String.index basename '.' in
+      String.sub basename 0 pos
+    with Not_found -> basename
+  in
+  let name = String.capitalize name in
+  check_unit_name ppf inputfile name;
+  name
+;;
 
 
 type readenv_position =
@@ -158,6 +167,7 @@ let read_OCAMLPARAM ppf position =
       | "nolabels" -> set "nolabels" [ classic ] v
       | "principal" -> set "principal"  [ principal ] v
       | "rectypes" -> set "rectypes" [ recursive_types ] v
+      | "safe-string" -> clear "safe-string" [ unsafe_string ] v
       | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
       | "thread" -> set "thread" [ use_threads ] v
       | "unsafe" -> set "unsafe" [ fast ] v

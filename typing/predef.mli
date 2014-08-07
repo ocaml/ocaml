@@ -17,6 +17,7 @@ open Types
 val type_int: type_expr
 val type_char: type_expr
 val type_string: type_expr
+val type_bytes: type_expr
 val type_float: type_expr
 val type_bool: type_expr
 val type_unit: type_expr
@@ -32,13 +33,13 @@ val type_lazy_t: type_expr -> type_expr
 val path_int: Path.t
 val path_char: Path.t
 val path_string: Path.t
+val path_bytes: Path.t
 val path_float: Path.t
 val path_bool: Path.t
 val path_unit: Path.t
 val path_exn: Path.t
 val path_array: Path.t
 val path_list: Path.t
-val path_format6: Path.t
 val path_option: Path.t
 val path_nativeint: Path.t
 val path_int32: Path.t
@@ -51,12 +52,12 @@ val path_undefined_recursive_module : Path.t
 
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing
-   over Env.t, Env.add_type and Env.add_exception. *)
+   over Env.t, Env.add_type and Env.add_extension. *)
 
 val build_initial_env:
   (Ident.t -> type_declaration -> 'a -> 'a) ->
-  (Ident.t -> exception_declaration -> 'a -> 'a) ->
-  'a -> 'a
+  (Ident.t -> extension_constructor -> 'a -> 'a) ->
+  'a -> 'a * 'a
 
 (* To initialize linker tables *)
 

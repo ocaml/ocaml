@@ -13,41 +13,36 @@
 
 (** String operations.
 
-  Given a string [s] of length [l], we call character number in [s]
-  the index of a character in [s].  Indexes start at [0], and we will
-  call a character number valid in [s] if it falls within the range
-  [[0...l-1]]. A position is the point between two characters or at
-  the beginning or end of the string.  We call a position valid
-  in [s] if it falls within the range [[0...l]]. Note that character
-  number [n] is between positions [n] and [n+1].
+  A string is an immutable data structure that contains a
+  fixed-length sequence of (single-byte) characters. Each character
+  can be accessed in constant time through its index.
+
+  Given a string [s] of length [l], we can access each of the [l]
+  characters of [s] via its index in the sequence. Indexes start at
+  [0], and we will call an index valid in [s] if it falls within the
+  range [[0...l-1]] (inclusive). A position is the point between two
+  characters or at the beginning or end of the string.  We call a
+  position valid in [s] if it falls within the range [[0...l]]
+  (inclusive). Note that the character at index [n] is between
+  positions [n] and [n+1].
 
   Two parameters [start] and [len] are said to designate a valid
   substring of [s] if [len >= 0] and [start] and [start+len] are
   valid positions in [s].
 
-  OCaml strings can be modified in place, for instance via the
-  {!String.set} and {!String.blit} functions described below.  This
-  possibility should be used rarely and with much care, however, since
-  both the OCaml compiler and most OCaml libraries share strings as if
-  they were immutable, rather than copying them.  In particular,
-  string literals are shared: a single copy of the string is created
-  at program loading time and returned by all evaluations of the
-  string literal.  Consider for example:
+  OCaml strings used to be modifiable in place, for instance via the
+  {!String.set} and {!String.blit} functions described below. This
+  usage is deprecated and only possible when the compiler is put in
+  "unsafe-string" mode by giving the [-unsafe-string] command-line
+  option (which is currently the default for reasons of backward
+  compatibility). This is done by making the types [string] and
+  [bytes] (see module {!Bytes}) interchangeable so that functions
+  expecting byte sequences can also accept strings as arguments and
+  modify them.
 
-  {[
-      # let f () = "foo";;
-      val f : unit -> string = <fun>
-      # (f ()).[0] <- 'b';;
-      - : unit = ()
-      # f ();;
-      - : string = "boo"
-  ]}
-
-  Likewise, many functions from the standard library can return string
-  literals or one of their string arguments.  Therefore, the returned strings
-  must not be modified directly.  If mutation is absolutely necessary,
-  it should be performed on a fresh copy of the string, as produced by
-  {!String.copy}.
+  All new code should avoid this feature and be compiled with the
+  [-safe-string] command-line option to enforce the separation between
+  the types [string] and [bytes].
 
  *)
 
@@ -55,30 +50,45 @@ external length : string -> int = "%string_length"
 (** Return the length (number of characters) of the given string. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [String.get s n] returns character number [n] in string [s].
+(** [String.get s n] returns the character at index [n] in string [s].
    You can also write [s.[n]] instead of [String.get s n].
 
-   Raise [Invalid_argument] if [n] not a valid character number in [s]. *)
+   Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
 
-external set : string -> int -> char -> unit = "%string_safe_set"
-(** [String.set s n c] modifies string [s] in place,
-   replacing the character number [n] by [c].
+external set : bytes -> int -> char -> unit = "%string_safe_set"
+  [@@ocaml.deprecated]
+(** [String.set s n c] modifies byte sequence [s] in place,
+   replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
 
-   Raise [Invalid_argument] if [n] is not a valid character number in [s]. *)
+   Raise [Invalid_argument] if [n] is not a valid index in [s].
 
-external create : int -> string = "caml_create_string"
-(** [String.create n] returns a fresh string of length [n].
-   The string initially contains arbitrary characters.
+   @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
 
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
+(** [String.create n] returns a fresh byte sequence of length [n].
+   The sequence is uninitialized and contains arbitrary bytes.
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+   @deprecated This is a deprecated alias of {!Bytes.create}.[ ] *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
    filled with the character [c].
 
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.*)
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
+val init : int -> (int -> char) -> string
+(** [String.init n f] returns a string of length [n], with character
+    [i] initialized to the result of [f i] (called in increasing
+    index order).
+
+    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+
+    @since 4.02.0
+*)
 
 val copy : string -> string
 (** Return a copy of the given string. *)
@@ -91,23 +101,23 @@ val sub : string -> int -> int -> string
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid substring of [s]. *)
 
-val fill : string -> int -> int -> char -> unit
-(** [String.fill s start len c] modifies string [s] in place,
-   replacing [len] characters by [c], starting at [start].
+val fill : bytes -> int -> int -> char -> unit [@@ocaml.deprecated]
+(** [String.fill s start len c] modifies byte sequence [s] in place,
+   replacing [len] bytes with [c], starting at [start].
 
    Raise [Invalid_argument] if [start] and [len] do not
-   designate a valid substring of [s]. *)
+   designate a valid range of [s].
 
-val blit : string -> int -> string -> int -> int -> unit
+   @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
+
+val blit : string -> int -> bytes -> int -> int -> unit
 (** [String.blit src srcoff dst dstoff len] copies [len] characters
-   from string [src], starting at character number [srcoff], to
-   string [dst], starting at character number [dstoff]. It works
-   correctly even if [src] and [dst] are the same string,
-   and the source and destination intervals overlap.
+   (bytes) from the string [src], starting at index [srcoff], to byte
+   sequence [dst], starting at index [dstoff].
 
    Raise [Invalid_argument] if [srcoff] and [len] do not
    designate a valid substring of [src], or if [dstoff] and [len]
-   do not designate a valid substring of [dst]. *)
+   do not designate a valid range of [dst]. *)
 
 val concat : string -> string list -> string
 (** [String.concat sep sl] concatenates the list of strings [sl],
@@ -122,19 +132,24 @@ val iteri : (int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
    function is applied to the index of the element as first argument
    (counting from 0), and the character itself as second argument.
-   @since 4.00.0
-*)
+   @since 4.00.0 *)
 
 val map : (char -> char) -> string -> string
-(** [String.map f s] applies function [f] in turn to all
-   the characters of [s] and stores the results in a new string that
-   is returned.
-   @since 4.00.0 *)
+(** [String.map f s] applies function [f] in turn to all the
+    characters of [s] (in increasing index order) and stores the
+    results in a new string that is returned.
+    @since 4.00.0 *)
+
+val mapi : (int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
 
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],
-   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is no leading nor
+   ['\012'], ['\n'], ['\r'], and ['\t'].  If there is neither leading nor
    trailing whitespace character in the argument, return the original
    string itself, not a copy.
    @since 4.00.0 *)
@@ -147,19 +162,19 @@ val escaped : string -> string
    not a copy. Its inverse function is Scanf.unescaped. *)
 
 val index : string -> char -> int
-(** [String.index s c] returns the character number of the first
+(** [String.index s c] returns the index of the first
    occurrence of character [c] in string [s].
 
    Raise [Not_found] if [c] does not occur in [s]. *)
 
 val rindex : string -> char -> int
-(** [String.rindex s c] returns the character number of the last
+(** [String.rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
 
    Raise [Not_found] if [c] does not occur in [s]. *)
 
 val index_from : string -> int -> char -> int
-(** [String.index_from s i c] returns the character number of the
+(** [String.index_from s i c] returns the index of the
    first occurrence of character [c] in string [s] after position [i].
    [String.index s c] is equivalent to [String.index_from s 0 c].
 
@@ -167,7 +182,7 @@ val index_from : string -> int -> char -> int
    Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
 val rindex_from : string -> int -> char -> int
-(** [String.rindex_from s i c] returns the character number of the
+(** [String.rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
    [String.rindex s c] is equivalent to
    [String.rindex_from s (String.length s - 1) c].
@@ -224,8 +239,11 @@ val compare: t -> t -> int
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+  [@@ocaml.deprecated]
 external unsafe_blit :
-  string -> int -> string -> int -> int -> unit = "caml_blit_string" "noalloc"
+  string -> int -> bytes -> int -> int -> unit
+  = "caml_blit_string" "noalloc"
 external unsafe_fill :
-  string -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
+  bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
+  [@@ocaml.deprecated]

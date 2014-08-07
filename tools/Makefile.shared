@@ -13,12 +13,12 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 	 -I ../driver -I ../toplevel
-COMPFLAGS= -w +32..39 -warn-error A $(INCLUDES)
+COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
@@ -39,7 +39,7 @@ CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo \
-  ccomp.cmo pparse.cmo compenv.cmo
+  ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
@@ -264,7 +264,7 @@ opnames.ml: ../byterun/instruct.h
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-	    -e 's/};$$/ |]/' \
+	    -e 's/.*};$$/ |]/' \
 	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
 	    -e 's/,/;/g' \
 	../byterun/instruct.h > opnames.ml

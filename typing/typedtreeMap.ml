@@ -16,6 +16,9 @@ module type MapArgument = sig
   val enter_structure : structure -> structure
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
+  val enter_type_extension : type_extension -> type_extension
+  val enter_extension_constructor :
+    extension_constructor -> extension_constructor
   val enter_pattern : pattern -> pattern
   val enter_expression : expression -> expression
   val enter_package_type : package_type -> package_type
@@ -27,10 +30,10 @@ module type MapArgument = sig
   val enter_with_constraint : with_constraint -> with_constraint
   val enter_class_expr : class_expr -> class_expr
   val enter_class_signature : class_signature -> class_signature
+  val enter_class_declaration : class_declaration -> class_declaration
   val enter_class_description : class_description -> class_description
   val enter_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val enter_class_infos : 'a class_infos -> 'a class_infos
   val enter_class_type : class_type -> class_type
   val enter_class_type_field : class_type_field -> class_type_field
   val enter_core_type : core_type -> core_type
@@ -41,6 +44,9 @@ module type MapArgument = sig
   val leave_structure : structure -> structure
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
+  val leave_type_extension : type_extension -> type_extension
+  val leave_extension_constructor :
+    extension_constructor -> extension_constructor
   val leave_pattern : pattern -> pattern
   val leave_expression : expression -> expression
   val leave_package_type : package_type -> package_type
@@ -52,10 +58,10 @@ module type MapArgument = sig
   val leave_with_constraint : with_constraint -> with_constraint
   val leave_class_expr : class_expr -> class_expr
   val leave_class_signature : class_signature -> class_signature
+  val leave_class_declaration : class_declaration -> class_declaration
   val leave_class_description : class_description -> class_description
   val leave_class_type_declaration :
     class_type_declaration -> class_type_declaration
-  val leave_class_infos : 'a class_infos -> 'a class_infos
   val leave_class_type : class_type -> class_type
   val leave_class_type_field : class_type_field -> class_type_field
   val leave_core_type : core_type -> core_type
@@ -113,10 +119,10 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_primitive (map_value_description vd)
         | Tstr_type list ->
           Tstr_type (List.map map_type_declaration list)
-        | Tstr_exception cd ->
-          Tstr_exception (map_constructor_declaration cd)
-        | Tstr_exn_rebind er ->
-          Tstr_exn_rebind er
+        | Tstr_typext tyext ->
+          Tstr_typext (map_type_extension tyext)
+        | Tstr_exception ext ->
+          Tstr_exception (map_extension_constructor ext)
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -127,21 +133,20 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_open od -> Tstr_open od
         | Tstr_class list ->
           let list =
-            List.map (fun (ci, string_list, virtual_flag) ->
-              let ci = Map.enter_class_infos ci in
-              let ci_expr = map_class_expr ci.ci_expr in
-              (Map.leave_class_infos { ci with ci_expr = ci_expr},
-               string_list, virtual_flag)
-            ) list
+            List.map
+              (fun (ci, string_list, virtual_flag) ->
+                 map_class_declaration ci, string_list, virtual_flag)
+              list
           in
-          Tstr_class list
+            Tstr_class list
         | Tstr_class_type list ->
-          let list = List.map (fun (id, name, ct) ->
-            let ct = Map.enter_class_infos ct in
-            let ci_expr = map_class_type ct.ci_expr in
-            (id, name, Map.leave_class_infos { ct with ci_expr = ci_expr})
-          ) list in
-          Tstr_class_type list
+          let list =
+            List.map
+              (fun (id, name, ct) ->
+               id, name, map_class_type_declaration ct)
+              list
+          in
+            Tstr_class_type list
         | Tstr_include incl ->
           Tstr_include {incl with incl_mod = map_module_expr incl.incl_mod}
         | Tstr_attribute x -> Tstr_attribute x
@@ -158,6 +163,7 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_type_declaration decl =
     let decl = Map.enter_type_declaration decl in
+    let typ_params = List.map map_type_parameter decl.typ_params in
     let typ_cstrs = List.map (fun (ct1, ct2, loc) ->
       (map_core_type ct1,
        map_core_type ct2,
@@ -176,28 +182,47 @@ module MakeMap(Map : MapArgument) = struct
             ) list
         in
         Ttype_record list
+      | Ttype_open -> Ttype_open
     in
-    let typ_manifest =
-      match decl.typ_manifest with
-          None -> None
-        | Some ct -> Some (map_core_type ct)
-    in
-    Map.leave_type_declaration { decl with typ_cstrs = typ_cstrs;
-      typ_kind = typ_kind; typ_manifest = typ_manifest }
+    let typ_manifest = may_map map_core_type decl.typ_manifest in
+    Map.leave_type_declaration { decl with typ_params = typ_params;
+      typ_cstrs = typ_cstrs; typ_kind = typ_kind; typ_manifest = typ_manifest }
+
+  and map_type_parameter (ct, v) = (map_core_type ct, v)
+
+  and map_constructor_arguments = function
+    | Cstr_tuple l ->
+        Cstr_tuple (List.map map_core_type l)
+    | Cstr_record l ->
+        Cstr_record
+          (List.map (fun ld -> {ld with ld_type = map_core_type ld.ld_type})
+             l)
 
   and map_constructor_declaration cd =
-    let cd_args =
-      match cd.cd_args with
-      | Cstr_tuple l ->
-          Cstr_tuple (List.map map_core_type l)
-      | Cstr_record l ->
-          Cstr_record
-            (List.map (fun ld -> {ld with ld_type = map_core_type ld.ld_type})
-               l)
-    in
+    let cd_args = map_constructor_arguments cd.cd_args in
     {cd with cd_args;
      cd_res = may_map map_core_type cd.cd_res
     }
+
+  and map_type_extension tyext =
+    let tyext = Map.enter_type_extension tyext in
+    let tyext_params = List.map map_type_parameter tyext.tyext_params in
+    let tyext_constructors  =
+      List.map map_extension_constructor tyext.tyext_constructors
+    in
+    Map.leave_type_extension { tyext with tyext_params = tyext_params;
+      tyext_constructors = tyext_constructors }
+
+  and map_extension_constructor ext =
+    let ext = Map.enter_extension_constructor ext in
+    let ext_kind = match ext.ext_kind with
+        Text_decl(args, ret) ->
+          let args = map_constructor_arguments args in
+          let ret = may_map map_core_type ret in
+            Text_decl(args, ret)
+      | Text_rebind(p, lid) -> Text_rebind(p, lid)
+    in
+    Map.leave_extension_constructor {ext with ext_kind = ext_kind}
 
   and map_pattern pat =
     let pat = Map.enter_pattern pat in
@@ -258,10 +283,11 @@ module MakeMap(Map : MapArgument) = struct
                         in
                         (label, expo, optional)
                       ) list )
-        | Texp_match (exp, list, partial) ->
+        | Texp_match (exp, list1, list2, partial) ->
           Texp_match (
             map_expression exp,
-            map_cases list,
+            map_cases list1,
+            map_cases list2,
             partial
           )
         | Texp_try (exp, list) ->
@@ -392,8 +418,10 @@ module MakeMap(Map : MapArgument) = struct
           Tsig_value vd ->
             Tsig_value (map_value_description vd)
         | Tsig_type list -> Tsig_type (List.map map_type_declaration list)
-        | Tsig_exception cd ->
-          Tsig_exception (map_constructor_declaration cd)
+        | Tsig_typext tyext ->
+          Tsig_typext (map_type_extension tyext)
+        | Tsig_exception ext ->
+          Tsig_exception (map_extension_constructor ext)
         | Tsig_module md ->
           Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
@@ -419,16 +447,26 @@ module MakeMap(Map : MapArgument) = struct
     let mtd = {mtd with mtd_type = may_map map_module_type mtd.mtd_type} in
     Map.leave_module_type_declaration mtd
 
+  and map_class_declaration cd =
+    let cd = Map.enter_class_declaration cd in
+    let ci_params = List.map map_type_parameter cd.ci_params in
+    let ci_expr = map_class_expr cd.ci_expr in
+    Map.leave_class_declaration
+      { cd with ci_params = ci_params; ci_expr = ci_expr }
 
   and map_class_description cd =
     let cd = Map.enter_class_description cd in
+    let ci_params = List.map map_type_parameter cd.ci_params in
     let ci_expr = map_class_type cd.ci_expr in
-    Map.leave_class_description { cd with ci_expr = ci_expr}
+    Map.leave_class_description
+      { cd with ci_params = ci_params; ci_expr = ci_expr}
 
   and map_class_type_declaration cd =
     let cd = Map.enter_class_type_declaration cd in
+    let ci_params = List.map map_type_parameter cd.ci_params in
     let ci_expr = map_class_type cd.ci_expr in
-    Map.leave_class_type_declaration { cd with ci_expr = ci_expr }
+    Map.leave_class_type_declaration
+      { cd with ci_params = ci_params; ci_expr = ci_expr }
 
   and map_module_type mty =
     let mty = Map.enter_module_type mty in
@@ -551,6 +589,7 @@ module MakeMap(Map : MapArgument) = struct
           Tctf_method (s, priv, virt, map_core_type ct)
         | Tctf_constraint (ct1, ct2) ->
           Tctf_constraint (map_core_type ct1, map_core_type ct2)
+        | Tctf_attribute _ as x -> x
     in
     Map.leave_class_type_field { ctf with ctf_desc = ctf_desc }
 
@@ -566,7 +605,8 @@ module MakeMap(Map : MapArgument) = struct
         | Ttyp_constr (path, lid, list) ->
           Ttyp_constr (path, lid, List.map map_core_type list)
         | Ttyp_object (list, o) ->
-          Ttyp_object (List.map (fun (s, t) -> (s, map_core_type t)) list, o)
+          Ttyp_object
+            (List.map (fun (s, a, t) -> (s, a, map_core_type t)) list, o)
         | Ttyp_class (path, lid, list) ->
           Ttyp_class (path, lid, List.map map_core_type list)
         | Ttyp_alias (ct, s) -> Ttyp_alias (map_core_type ct, s)
@@ -585,8 +625,8 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_row_field rf =
     match rf with
-        Ttag (label, bool, list) ->
-          Ttag (label, bool, List.map map_core_type list)
+        Ttag (label, attrs, bool, list) ->
+          Ttag (label, attrs, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
 
   and map_class_field cf =
@@ -606,6 +646,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
           Tcf_method (lab, priv, Tcfk_concrete (o, map_expression exp))
         | Tcf_initializer exp -> Tcf_initializer (map_expression exp)
+        | Tcf_attribute _ as x -> x
     in
     Map.leave_class_field { cf with cf_desc = cf_desc }
 end
@@ -616,7 +657,8 @@ module DefaultMapArgument = struct
   let enter_structure t = t
   let enter_value_description t = t
   let enter_type_declaration t = t
-  let enter_exception_declaration t = t
+  let enter_type_extension t = t
+  let enter_extension_constructor t = t
   let enter_pattern t = t
   let enter_expression t = t
   let enter_package_type t = t
@@ -628,9 +670,9 @@ module DefaultMapArgument = struct
   let enter_with_constraint t = t
   let enter_class_expr t = t
   let enter_class_signature t = t
+  let enter_class_declaration t = t
   let enter_class_description t = t
   let enter_class_type_declaration t = t
-  let enter_class_infos t = t
   let enter_class_type t = t
   let enter_class_type_field t = t
   let enter_core_type t = t
@@ -642,7 +684,8 @@ module DefaultMapArgument = struct
   let leave_structure t = t
   let leave_value_description t = t
   let leave_type_declaration t = t
-  let leave_exception_declaration t = t
+  let leave_type_extension t = t
+  let leave_extension_constructor t = t
   let leave_pattern t = t
   let leave_expression t = t
   let leave_package_type t = t
@@ -654,9 +697,9 @@ module DefaultMapArgument = struct
   let leave_with_constraint t = t
   let leave_class_expr t = t
   let leave_class_signature t = t
+  let leave_class_declaration t = t
   let leave_class_description t = t
   let leave_class_type_declaration t = t
-  let leave_class_infos t = t
   let leave_class_type t = t
   let leave_class_type_field t = t
   let leave_core_type t = t

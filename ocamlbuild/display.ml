@@ -51,7 +51,7 @@ type sophisticated_display = {
           ds_columns         : int;                    (** Number of columns in dssplay *)
   mutable ds_jobs            : int;                    (** Number of jobs launched or cached *)
   mutable ds_jobs_cached     : int;                    (** Number of jobs cached *)
-          ds_tagline         : string;                 (** Current tagline *)
+          ds_tagline         : bytes;                  (** Current tagline *)
   mutable ds_seen_tags       : Tags.t;                 (** Tags that we have encountered *)
           ds_pathname_length : int;                    (** How much space for displaying pathnames ? *)
           ds_tld             : tagline_description;    (** Description for the tagline *)
@@ -105,7 +105,7 @@ let uncached = " ";;
 let cache_chars = 1;;
 (* ***)
 (*** create_tagline *)
-let create_tagline description = String.make (List.length description) '-';;
+let create_tagline description = Bytes.make (List.length description) '-';;
 (* ***)
 (*** create *)
 let create
@@ -184,7 +184,7 @@ let print_shortened_pathname length oc u =
       let n = String.length dots in
       let k = length - n in
       output_string oc dots;
-      output oc u (m - k) k;
+      output_substring oc u (m - k) k;
     end
 (* ***)
 (*** Layout
@@ -216,7 +216,7 @@ let redraw_sophisticated ds =
     ds.ds_jobs_cached
     (print_shortened_pathname ds.ds_pathname_length) ds.ds_last_target
     (if ds.ds_last_cached then cached else uncached)
-    ds.ds_tagline
+    (Bytes.to_string ds.ds_tagline)
     ticker;
   fp oc "%a%!" ANSI.clear_to_eol ()
 ;;
@@ -292,17 +292,17 @@ let update_tagline_from_tags ds =
   let tags = ds.ds_last_tags in
   let rec loop i = function
     | [] ->
-        for j = i to String.length tagline - 1 do
-          tagline.[j] <- '-'
+        for j = i to Bytes.length tagline - 1 do
+          Bytes.set tagline j '-'
         done
     | (tag, c) :: rest ->
         if Tags.mem tag tags then
-          tagline.[i] <- Char.uppercase c
+          Bytes.set tagline i (Char.uppercase c)
         else
           if Tags.mem tag ds.ds_seen_tags then
-            tagline.[i] <- Char.lowercase c
+            Bytes.set tagline i (Char.lowercase c)
           else
-            tagline.[i] <- '-';
+            Bytes.set tagline i '-';
         loop (i + 1) rest
   in
   loop 0 ds.ds_tld;

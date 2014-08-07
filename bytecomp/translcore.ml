@@ -311,6 +311,7 @@ let primitives_table = create_hashtable 57 [
   "%bswap_int32", Pbbswap(Pint32);
   "%bswap_int64", Pbbswap(Pint64);
   "%bswap_native", Pbbswap(Pnativeint);
+  "%int_as_pointer", Pint_as_pointer;
 ]
 
 let prim_makearray =
@@ -553,7 +554,7 @@ let rec push_defaults loc bindings cases partial =
                            val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
-             cases, partial) }
+             cases, [], partial) }
       in
       push_defaults loc bindings
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
@@ -730,12 +731,8 @@ and transl_exp0 e =
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
-  | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
-      Matching.for_multiple_match e.exp_loc
-        (transl_list argl) (transl_cases pat_expr_list) partial
-  | Texp_match(arg, pat_expr_list, partial) ->
-      Matching.for_function e.exp_loc None
-        (transl_exp arg) (transl_cases pat_expr_list) partial
+  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
+    transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
@@ -761,10 +758,12 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception (path, _) ->
-          let slot = transl_path ~loc:e.exp_loc e.exp_env path in
-          if cstr.cstr_arity = 0 then slot
-          else Lprim(Pmakeblock(0, Immutable), slot :: ll)
+      | Cstr_extension(path, is_const) ->
+          if is_const then
+            transl_path e.exp_env path
+          else
+            Lprim(Pmakeblock(0, Immutable),
+                  transl_path e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -789,7 +788,7 @@ and transl_exp0 e =
         match lbl.lbl_repres with
           Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos
-        | Record_exception _ -> Pfield (lbl.lbl_pos + 1)
+        | Record_extension _ -> Pfield (lbl.lbl_pos + 1)
       in
       Lprim(access, [transl_exp arg])
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -798,7 +797,7 @@ and transl_exp0 e =
           Record_regular
         | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_exception _ ->
+        | Record_extension _ ->
             Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
       in
       Lprim(access, [transl_exp arg; transl_exp newval])
@@ -912,7 +911,6 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_exn
                 || has_base_type e Predef.path_array
                 || has_base_type e Predef.path_list
-                || has_base_type e Predef.path_format6
                 || has_base_type e Predef.path_option
                 || has_base_type e Predef.path_nativeint
                 || has_base_type e Predef.path_int32
@@ -1099,7 +1097,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
           let access =
             match all_labels.(i).lbl_repres with
               Record_regular | Record_inlined _ -> Pfield i
-            | Record_exception _ -> Pfield (i + 1)
+            | Record_extension _ -> Pfield (i + 1)
             | Record_float -> Pfloatfield i in
           lv.(i) <- Lprim(access, [Lvar init_id])
         done
@@ -1121,14 +1119,14 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
-        | Record_exception _ ->
+        | Record_extension _ ->
             raise Not_constant
       with Not_constant ->
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
         | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
-        | Record_exception path ->
+        | Record_extension path ->
             let slot = transl_path env path in
             Lprim(Pmakeblock(0, Immutable), slot :: ll)
     in
@@ -1148,7 +1146,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
           Record_regular
         | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_exception _ -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
+        | Record_extension _ -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
       in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with
@@ -1159,6 +1157,34 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
   end
+
+and transl_match e arg pat_expr_list exn_pat_expr_list partial =
+  let id = name_pattern "exn" exn_pat_expr_list
+  and cases = transl_cases pat_expr_list
+  and exn_cases = transl_cases exn_pat_expr_list in
+  let static_catch body val_ids handler =
+    let static_exception_id = next_negative_raise_count () in
+    Lstaticcatch
+      (Ltrywith (Lstaticraise (static_exception_id, body), id,
+                 Matching.for_trywith (Lvar id) exn_cases),
+       (static_exception_id, val_ids),
+       handler)
+  in
+  match arg, exn_cases with
+  | {exp_desc = Texp_tuple argl}, [] ->
+    Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
+  | {exp_desc = Texp_tuple argl}, _ :: _ ->
+    let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
+    let lvars = List.map (fun id -> Lvar id) val_ids in
+    static_catch (transl_list argl) val_ids 
+      (Matching.for_multiple_match e.exp_loc lvars cases partial)
+  | arg, [] ->
+    Matching.for_function e.exp_loc None (transl_exp arg) cases partial
+  | arg, _ :: _ ->
+    let val_id = name_pattern "val" pat_expr_list in
+    static_catch [transl_exp arg] [val_id]
+      (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
+
 
 (* Wrapper for class compilation *)
 

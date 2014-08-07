@@ -665,6 +665,10 @@ flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
+flag ["ocaml"; "safe_string"; "compile"] (A "-safe-string");;
+flag ["ocaml"; "safe_string"; "infer_interface"] (A "-safe-string");;
+flag ["ocaml"; "unsafe_string"; "compile"] (A "-unsafe-string");;
+flag ["ocaml"; "unsafe_string"; "infer_interface"] (A "-unsafe-string");;
 flag ["ocaml"; "short_paths"; "compile"] (A "-short-paths");;
 flag ["ocaml"; "short_paths"; "infer_interface"] (A "-short-paths");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
@@ -678,6 +682,7 @@ flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
+flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;

@@ -75,7 +75,7 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of label * case list * partial
   | Texp_apply of expression * (label * expression option * optional) list
-  | Texp_match of expression * case list * partial
+  | Texp_match of expression * case list * case list * partial
   | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of
@@ -168,6 +168,7 @@ and class_field_desc =
   | Tcf_method of string loc * private_flag * class_field_kind
   | Tcf_constraint of core_type * core_type
   | Tcf_initializer of expression
+  | Tcf_attribute of attribute
 
 (* Value expressions for the module language *)
 
@@ -209,8 +210,8 @@ and structure_item_desc =
   | Tstr_value of rec_flag * value_binding list
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
-  | Tstr_exception of constructor_declaration
-  | Tstr_exn_rebind of exception_rebind
+  | Tstr_typext of type_extension
+  | Tstr_exception of extension_constructor
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
@@ -275,7 +276,8 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of type_declaration list
-  | Tsig_exception of constructor_declaration
+  | Tsig_typext of type_extension
+  | Tsig_exception of extension_constructor
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
@@ -345,7 +347,7 @@ and core_type_desc =
   | Ttyp_arrow of label * core_type * core_type
   | Ttyp_tuple of core_type list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
-  | Ttyp_object of (string * core_type) list * closed_flag
+  | Ttyp_object of (string * attributes * core_type) list * closed_flag
   | Ttyp_class of Path.t * Longident.t loc * core_type list
   | Ttyp_alias of core_type * string
   | Ttyp_variant of row_field list * closed_flag * label list option
@@ -353,14 +355,14 @@ and core_type_desc =
   | Ttyp_package of package_type
 
 and package_type = {
-  pack_name : Path.t;
+  pack_path : Path.t;
   pack_fields : (Longident.t loc * core_type) list;
   pack_type : Types.module_type;
   pack_txt : Longident.t loc;
 }
 
 and row_field =
-    Ttag of label * bool * core_type list
+    Ttag of label * attributes * bool * core_type list
   | Tinherit of core_type
 
 and value_description =
@@ -377,7 +379,7 @@ and type_declaration =
   {
     typ_id: Ident.t;
     typ_name: string loc;
-    typ_params: (string loc option * variance) list;
+    typ_params: (core_type * variance) list;
     typ_type: Types.type_declaration;
     typ_cstrs: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
@@ -391,6 +393,7 @@ and type_kind =
     Ttype_abstract
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
+  | Ttype_open
 
 and label_declaration =
     {
@@ -416,16 +419,29 @@ and constructor_arguments =
   | Cstr_tuple of core_type list
   | Cstr_record of label_declaration list
 
-and exception_rebind =
-    {
-     exrb_id: Ident.t;
-     exrb_name: string loc;
-     exrb_path: Path.t;
-     exrb_txt: Longident.t loc;
-     exrb_type: Types.exception_declaration;
-     exrb_loc: Location.t;
-     exrb_attributes: attribute list;
-    }
+and type_extension =
+  {
+    tyext_path: Path.t;
+    tyext_txt: Longident.t loc;
+    tyext_params: (core_type * variance) list;
+    tyext_constructors: extension_constructor list;
+    tyext_private: private_flag;
+    tyext_attributes: attributes;
+  }
+
+and extension_constructor =
+  {
+    ext_id: Ident.t;
+    ext_name: string loc;
+    ext_type : Types.extension_constructor;
+    ext_kind : extension_constructor_kind;
+    ext_loc : Location.t;
+    ext_attributes: attributes;
+  }
+
+and extension_constructor_kind =
+    Text_decl of constructor_arguments * core_type option
+  | Text_rebind of Path.t * Longident.t loc
 
 and class_type =
     {
@@ -458,6 +474,7 @@ and class_type_field_desc =
   | Tctf_val of (string * mutable_flag * virtual_flag * core_type)
   | Tctf_method of (string * private_flag * virtual_flag * core_type)
   | Tctf_constraint of (core_type * core_type)
+  | Tctf_attribute of attribute
 
 and class_declaration =
   class_expr class_infos
@@ -470,7 +487,7 @@ and class_type_declaration =
 
 and 'a class_infos =
   { ci_virt: virtual_flag;
-    ci_params: (string loc * variance) list;
+    ci_params: (core_type * variance) list;
     ci_id_name : string loc;
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;

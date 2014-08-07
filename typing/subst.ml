@@ -50,7 +50,7 @@ let sub_ids decl =
   | _ -> []
 
 
-let sub_ids_exn exn = sub_ids_args exn.exn_args
+let sub_ids_ext ext = sub_ids_args ext.ext_args
 
 let add_prefixes root ids sub =
   List.fold_left
@@ -256,6 +256,7 @@ let type_declaration s decl =
                  cstrs)
         | Type_record(lbls, rep) ->
             Type_record (List.map (label_declaration s) lbls, rep)
+        | Type_open -> Type_open
         end;
       type_manifest =
         begin
@@ -337,15 +338,18 @@ let value_description s descr =
     val_attributes = attrs s descr.val_attributes;
    }
 
-let exception_declaration s descr =
-  let r =
-    { exn_args = constructor_arguments s descr.exn_args;
-      exn_loc = loc s descr.exn_loc;
-      exn_attributes = attrs s descr.exn_attributes;
-    }
+let extension_constructor s ext =
+  let ext =
+    { ext_type_path = type_path s ext.ext_type_path;
+      ext_type_params = List.map (typexp s) ext.ext_type_params;
+      ext_args = constructor_arguments s ext.ext_args;
+      ext_ret_type = may_map (typexp s) ext.ext_ret_type;
+      ext_private = ext.ext_private;
+      ext_attributes = ext.ext_attributes;
+      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
   in
-  cleanup_types ();
-  r
+    cleanup_types ();
+    ext
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
@@ -360,8 +364,8 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | Sig_exception(id, d) :: sg ->
-      let s = rename_types (sub_ids_exn d) s in
+  | Sig_typext(id, d, _) :: sg ->
+      let s = rename_types (sub_ids_ext d) s in
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
   | (Sig_value(id, _) | Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
@@ -404,8 +408,8 @@ and signature_component s comp newid =
       Sig_value(newid, value_description s d)
   | Sig_type(id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_exception(id, d) ->
-      Sig_exception(newid, exception_declaration s d)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(newid, extension_constructor s ext, es)
   | Sig_module(id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->

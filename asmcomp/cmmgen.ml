@@ -38,6 +38,8 @@ let bind_nonvar name arg fn =
   | Cconst_blockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
+let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8  (* cf. byterun/gc.h *)
+
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
 let floatarray_tag = Cconst_int Obj.double_array_tag
@@ -45,7 +47,12 @@ let floatarray_tag = Cconst_int Obj.double_array_tag
 let block_header tag sz =
   Nativeint.add (Nativeint.shift_left (Nativeint.of_int sz) 10)
                 (Nativeint.of_int tag)
-let closure_header sz = block_header Obj.closure_tag sz
+(* Static data corresponding to "value"s must be marked black in case we are
+   in no-naked-pointers mode.  See [caml_darken] and the code below that emits
+   structured constants and static module definitions. *)
+let black_block_header tag sz = Nativeint.logor (block_header tag sz) caml_black
+let white_closure_header sz = block_header Obj.closure_tag sz
+let black_closure_header sz = black_block_header Obj.closure_tag sz
 let infix_header ofs = block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
 let floatarray_header len =
@@ -59,7 +66,7 @@ let boxedintnat_header = block_header Obj.custom_tag 2
 let alloc_block_header tag sz = Cconst_blockheader(block_header tag sz)
 let alloc_float_header = Cconst_blockheader(float_header)
 let alloc_floatarray_header len = Cconst_blockheader(floatarray_header len)
-let alloc_closure_header sz = Cconst_blockheader(closure_header sz)
+let alloc_closure_header sz = Cconst_blockheader(white_closure_header sz)
 let alloc_infix_header ofs = Cconst_blockheader(infix_header ofs)
 let alloc_boxedint32_header = Cconst_blockheader(boxedint32_header)
 let alloc_boxedint64_header = Cconst_blockheader(boxedint64_header)
@@ -635,7 +642,7 @@ let rec expr_size env = function
       RHS_floatblock (List.length args)
   | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
-  | Uprim (Pduprecord (Record_exception _, sz), _, _) ->
+  | Uprim (Pduprecord (Record_extension _, sz), _, _) ->
       RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
@@ -1551,6 +1558,8 @@ and transl_prim_1 p arg dbg =
         Cop(Cload Double_u,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
+  | Pint_as_pointer ->
+     Cop(Cadda, [transl arg; Cconst_int (-1)])
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl arg])
@@ -2202,10 +2211,13 @@ let rec transl_all_functions already_translated cont =
 
 (* Emit structured constants *)
 
-let emit_block header symb cont =
-  Cint header :: Cdefine_symbol symb :: cont
-
 let rec emit_structured_constant symb cst cont =
+  let emit_block white_header symb cont =
+    (* Headers for structured constants must be marked black in case we
+       are in no-naked-pointers mode.  See [caml_darken]. *)
+    let black_header = Nativeint.logor white_header caml_black in
+    Cint black_header :: Cdefine_symbol symb :: cont
+  in
   match cst with
   | Uconst_float s->
       emit_block float_header symb (Cdouble s :: cont)
@@ -2282,7 +2294,7 @@ let emit_constant_closure symb fundecls cont =
             Cint(Nativeint.of_int (f2.arity lsl 1 + 1)) ::
             Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
-      Cint(closure_header (fundecls_size fundecls)) ::
+      Cint(black_closure_header (fundecls_size fundecls)) ::
       Cdefine_symbol symb ::
       if f1.arity = 1 then
         Csymbol_address f1.label ::
@@ -2324,10 +2336,18 @@ let compunit size ulam =
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
-  Cdata [Cint(block_header 0 size);
+  let space =
+    (* These words will be registered as roots and as such must contain
+       valid values, in case we are in no-naked-pointers mode.  Likewise
+       the block header must be black, below (see [caml_darken]), since
+       the overall record may be referenced. *)
+    Array.to_list
+      (Array.init size (fun _index ->
+        Cint (Nativeint.of_int 1 (* Val_unit *))))
+  in
+  Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
-         Cdefine_symbol glob;
-         Cskip(size * size_addr)] :: c3
+         Cdefine_symbol glob] @ space) :: c3
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

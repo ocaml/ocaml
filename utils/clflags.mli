@@ -23,11 +23,12 @@ val debug : bool ref
 val fast : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
-val bytecode_compatible_32: bool ref
+val bytecode_compatible_32 : bool ref
 val output_c_object : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
+val open_modules : string list ref
 val preprocessor : string option ref
 val all_ppx : string list ref
 val annotations : bool ref
@@ -55,6 +56,7 @@ val dllpaths : string list ref
 val make_package : bool ref
 val for_package : string option ref
 val error_size : int ref
+val float_const_prop : bool ref
 val transparent_modules : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
@@ -67,6 +69,7 @@ val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
 val dump_cmm : bool ref
 val dump_selection : bool ref
+val dump_cse : bool ref
 val dump_live : bool ref
 val dump_spill : bool ref
 val dump_split : bool ref
@@ -88,3 +91,4 @@ val dlcode : bool ref
 val runtime_variant : string ref
 val force_slash : bool ref
 val keep_locs : bool ref
+val unsafe_string : bool ref

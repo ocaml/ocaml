@@ -28,21 +28,21 @@ type directive_fun =
    | Directive_int of (int -> unit)
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
-   | Directive_generic of (Parsetree.directive_argument list -> unit)
 
 (* The table of toplevel value bindings and its accessors *)
 
-let toplevel_value_bindings =
-  (Hashtbl.create 37 : (string, Obj.t) Hashtbl.t)
+module StringMap = Map.Make(String)
+
+let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
 let getvalue name =
   try
-    Hashtbl.find toplevel_value_bindings name
+    StringMap.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  Hashtbl.replace toplevel_value_bindings name v
+  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -53,7 +53,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          Hashtbl.find toplevel_value_bindings name
+          StringMap.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -83,6 +83,7 @@ let print_out_value = Oprint.out_value
 let print_out_type = Oprint.out_type
 let print_out_class_type = Oprint.out_class_type
 let print_out_module_type = Oprint.out_module_type
+let print_out_type_extension = Oprint.out_type_extension
 let print_out_sig_item = Oprint.out_sig_item
 let print_out_signature = Oprint.out_signature
 let print_out_phrase = Oprint.out_phrase
@@ -150,6 +151,7 @@ let load_lambda ppf lam =
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
+  let initial_bindings = !toplevel_value_bindings in
   try
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
@@ -165,6 +167,7 @@ let load_lambda ppf lam =
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
+    toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
 
@@ -245,20 +248,27 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir(dir_name, dir_arg) ->
-      try
-        match (Hashtbl.find directive_table dir_name, dir_arg) with
-        | (Directive_none f, []) -> f (); true
-        | (Directive_string f, [Pdir_string s]) -> f s; true
-        | (Directive_int f, [Pdir_int n]) -> f n; true
-        | (Directive_ident f, [Pdir_ident lid]) -> f lid; true
-        | (Directive_bool f, [Pdir_bool b]) -> f b; true
-        | (Directive_generic f, l) -> f l; true
-        | (_, _) ->
-            fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
-            false
-      with Not_found ->
-        fprintf ppf "Unknown directive `%s'.@." dir_name;
-        false
+      let d =
+        try Some (Hashtbl.find directive_table dir_name)
+        with Not_found -> None
+      in
+      begin match d with
+      | None ->
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
+      | Some d ->
+          match d, dir_arg with
+          | Directive_none f, Pdir_none -> f (); true
+          | Directive_string f, Pdir_string s -> f s; true
+          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_ident f, Pdir_ident lid -> f lid; true
+          | Directive_bool f, Pdir_bool b -> f b; true
+          | _ ->
+              fprintf ppf "Wrong type of argument for directive `%s'.@."
+                dir_name;
+              false
+      end
+
 
 (* Temporary assignment to a reference *)
 
@@ -281,7 +291,7 @@ let phrase ppf phr =
   let phr =
     match phr with
     | Ptop_def str ->
-        Ptop_def (Pparse.apply_rewriters ast_impl_magic_number str)
+        Ptop_def (Pparse.apply_rewriters ~tool_name:"ocaml" ast_impl_magic_number str)
     | phr -> phr
   in
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
@@ -341,7 +351,7 @@ let read_input_default prompt buffer len =
     while true do
       if !i >= len then raise Exit;
       let c = input_char Pervasives.stdin in
-      buffer.[!i] <- c;
+      Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;
     done;
@@ -382,8 +392,12 @@ let _ =
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;
   List.iter
-    (fun (name, crc) ->
-      Consistbl.set Env.crc_units name crc Sys.executable_name)
+    (fun (name, crco) ->
+      Env.imported_units := name :: !Env.imported_units;
+      match crco with
+        None -> ()
+      | Some crc->
+          Consistbl.set Env.crc_units name crc Sys.executable_name)
     crc_intfs
 
 let load_ocamlinit ppf =

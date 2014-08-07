@@ -18,6 +18,7 @@ open Odoc_info
 open Parameter
 open Value
 open Type
+open Extension
 open Exception
 open Class
 open Module
@@ -41,6 +42,9 @@ module Naming =
 
     (** The prefix for functions marks. *)
     let mark_function = "FUN"
+
+    (** The prefix for extensions marks. *)
+    let mark_extension = "EXTENSION"
 
     (** The prefix for exceptions marks. *)
     let mark_exception = "EXCEPTION"
@@ -100,6 +104,10 @@ module Naming =
     let recfield_target t f = target mark_type_elt
       (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.rf_name)
 
+    (** Return the link target for the given object field. *)
+    let objfield_target t f = target mark_type_elt
+      (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.of_name)
+
     (** Return the complete link target for the given type. *)
     let complete_type_target t = complete_target mark_type t.ty_name
 
@@ -109,6 +117,12 @@ module Naming =
       Printf.sprintf "%s.%s" (complete_target mark_type_elt typ) field
 
     let complete_const_target = complete_recfield_target
+
+    (** Return the link target for the given extension. *)
+    let extension_target x = target mark_extension (Name.simple x.xt_name)
+
+    (** Return the complete link target for the given extension. *)
+    let complete_extension_target x = complete_target mark_extension x.xt_name
 
     (** Return the link target for the given exception. *)
     let exception_target e = target mark_exception (Name.simple e.ex_name)
@@ -261,9 +275,9 @@ class virtual text =
       List.iter (self#html_of_text_element b) t
 
     (** Print the html code for the [text_element] in parameter. *)
-    method html_of_text_element b te =
+    method html_of_text_element b txt =
       print_DEBUG "text::html_of_text_element";
-      match te with
+      match txt with
       | Odoc_info.Raw s -> self#html_of_Raw b s
       | Odoc_info.Code s -> self#html_of_Code b s
       | Odoc_info.CodePre s -> self#html_of_CodePre b s
@@ -454,6 +468,7 @@ class virtual text =
                 (html_file, h name)
             | Odoc_info.RK_value -> (Naming.complete_target Naming.mark_value name, h name)
             | Odoc_info.RK_type -> (Naming.complete_target Naming.mark_type name, h name)
+            | Odoc_info.RK_extension -> (Naming.complete_target Naming.mark_extension name, h name)
             | Odoc_info.RK_exception -> (Naming.complete_target Naming.mark_exception name, h name)
             | Odoc_info.RK_attribute -> (Naming.complete_target Naming.mark_attribute name, h name)
             | Odoc_info.RK_method -> (Naming.complete_target Naming.mark_method name, h name)
@@ -515,6 +530,7 @@ class virtual text =
       in
       bp b "<ul class=\"indexlist\">\n";
       index_if_not_empty self#list_types self#index_types Odoc_messages.index_of_types;
+      index_if_not_empty self#list_extensions self#index_extensions Odoc_messages.index_of_extensions;
       index_if_not_empty self#list_exceptions self#index_exceptions Odoc_messages.index_of_exceptions;
       index_if_not_empty self#list_values self#index_values Odoc_messages.index_of_values;
       index_if_not_empty self#list_attributes self#index_attributes Odoc_messages.index_of_attributes;
@@ -527,6 +543,8 @@ class virtual text =
 
     method virtual list_types : Odoc_info.Type.t_type list
     method virtual index_types : string
+    method virtual list_extensions : Odoc_info.Extension.t_extension_constructor list
+    method virtual index_extensions : string
     method virtual list_exceptions : Odoc_info.Exception.t_exception list
     method virtual index_exceptions : string
     method virtual list_values : Odoc_info.Value.t_value list
@@ -888,6 +906,8 @@ class html =
     method index_values = Printf.sprintf "%s_values.html" self#index_prefix
     (** The file for the index of types. *)
     method index_types = Printf.sprintf "%s_types.html" self#index_prefix
+    (** The file for the index of extensions. *)
+    method index_extensions = Printf.sprintf "%s_extensions.html" self#index_prefix
     (** The file for the index of exceptions. *)
     method index_exceptions = Printf.sprintf "%s_exceptions.html" self#index_prefix
     (** The file for the index of attributes. *)
@@ -913,6 +933,9 @@ class html =
     (** The list of values. Filled in the [generate] method. *)
     val mutable list_values = []
     method list_values = list_values
+    (** The list of extensions. Filled in the [generate] method. *)
+    val mutable list_extensions = []
+    method list_extensions = list_extensions
     (** The list of exceptions. Filled in the [generate] method. *)
     val mutable list_exceptions = []
     method list_exceptions = list_exceptions
@@ -1012,6 +1035,7 @@ class html =
              )
         );
         link_if_not_empty self#list_types Odoc_messages.index_of_types self#index_types;
+        link_if_not_empty self#list_extensions Odoc_messages.index_of_extensions self#index_extensions;
         link_if_not_empty self#list_exceptions Odoc_messages.index_of_exceptions self#index_exceptions;
         link_if_not_empty self#list_values Odoc_messages.index_of_values self#index_values;
         link_if_not_empty self#list_attributes Odoc_messages.index_of_attributes self#index_attributes;
@@ -1321,7 +1345,7 @@ class html =
       self#html_of_module_type_kind b father p.mp_kind;
       self#html_of_text b [ Code (") "^s_arrow)]
 
-    method html_of_module_element b father ele =
+    method html_of_module_element b m_name ele =
       match ele with
         Element_module m ->
           self#html_of_module b ~complete: false m
@@ -1335,6 +1359,8 @@ class html =
           self#html_of_class_type b ~complete: false ct
       | Element_value v ->
           self#html_of_value b v
+      | Element_type_extension te ->
+          self#html_of_type_extension b m_name te
       | Element_exception e ->
           self#html_of_exception b e
       | Element_type t ->
@@ -1424,6 +1450,84 @@ class html =
          self#html_of_described_parameter_list b (Name.father v.val_name) v.val_parameters
       )
 
+    (** Print html code for a type extension. *)
+    method html_of_type_extension b m_name te =
+      Odoc_info.reset_type_names ();
+      bs b "<pre><code>";
+      bs b ((self#keyword "type")^" ");
+      let s = Odoc_info.string_of_type_extension_param_list te in
+      let s2 = newline_to_indented_br s in
+      bs b "<code class=\"type\">";
+      bs b (self#create_fully_qualified_idents_links m_name s2);
+      bs b "</code>";
+      (match te.te_type_parameters with [] -> () | _ -> bs b " ");
+      bs b (self#create_fully_qualified_idents_links m_name te.te_type_name);
+      bs b " += ";
+      if te.te_private = Asttypes.Private then bs b "private ";
+      bs b "</code></pre>";
+      bs b "<table class=\"typetable\">\n";
+      let print_one x =
+        let father = Name.father x.xt_name in
+        bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>";
+        bs b (self#keyword "|");
+        bs b "</code></td>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>";
+        bp b "<span id=\"%s\">%s</span>"
+          (Naming.extension_target x)
+          (Name.simple x.xt_name);
+        (
+          match x.xt_args, x.xt_ret with
+              [], None -> ()
+            | l,None ->
+                bs b (" " ^ (self#keyword "of") ^ " ");
+                self#html_of_type_expr_list ~par: false b father " * " l;
+            | [],Some r ->
+                bs b (" " ^ (self#keyword ":") ^ " ");
+                self#html_of_type_expr b father r;
+            | l,Some r ->
+                bs b (" " ^ (self#keyword ":") ^ " ");
+                self#html_of_type_expr_list ~par: false b father " * " l;
+                bs b (" " ^ (self#keyword "->") ^ " ");
+                self#html_of_type_expr b father r;
+        );
+        (
+            match x.xt_alias with
+              None -> ()
+            | Some xa ->
+                bs b " = ";
+                (
+                  match xa.xa_xt with
+                    None -> bs b xa.xa_name
+                  | Some x ->
+                      bp b "<a href=\"%s\">%s</a>" (Naming.complete_extension_target x) x.xt_name
+                )
+        );
+        bs b "</code></td>\n";
+        (
+          match x.xt_text with
+              None -> ()
+            | Some t ->
+                bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+                bs b "<code>";
+                bs b "(*";
+                bs b "</code></td>";
+                bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+                self#html_of_info b (Some t);
+                bs b "</td>";
+                bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
+                bs b "<code>";
+                bs b "*)";
+                bs b "</code></td>";
+        );
+        bs b "\n</tr>"
+      in
+        print_concat b "\n" print_one te.te_constructors;
+        bs b "</table>\n";
+        bs b "\n";
+        self#html_of_info b te.te_info;
+        bs b "\n"
+
     (** Print html code for an exception. *)
     method html_of_exception b e =
       Odoc_info.reset_type_names ();
@@ -1434,12 +1538,21 @@ class html =
       bs b (Name.simple e.ex_name);
       bs b "</span>";
       (
-       match e.ex_args with
-         [] -> ()
-       | _ ->
-           bs b (" "^(self#keyword "of")^" ");
-           self#html_of_type_expr_list
-             ~par: false b (Name.father e.ex_name) " * " e.ex_args
+        match e.ex_args, e.ex_ret with
+          [], None -> ()
+        | l,None ->
+            bs b (" "^(self#keyword "of")^" ");
+            self#html_of_type_expr_list
+                   ~par: false b (Name.father e.ex_name) " * " e.ex_args
+        | [],Some r ->
+            bs b (" " ^ (self#keyword ":") ^ " ");
+            self#html_of_type_expr b (Name.father e.ex_name) r;
+        | l,Some r ->
+            bs b (" " ^ (self#keyword ":") ^ " ");
+            self#html_of_type_expr_list
+                   ~par: false b (Name.father e.ex_name) " * " l;
+            bs b (" " ^ (self#keyword "->") ^ " ");
+            self#html_of_type_expr b (Name.father e.ex_name) r;
       );
       (
        match e.ex_alias with
@@ -1460,12 +1573,32 @@ class html =
     method html_of_type b t =
       Odoc_info.reset_type_names ();
       let father = Name.father t.ty_name in
+      let print_field_prefix () =
+        bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>&nbsp;&nbsp;</code>";
+        bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>";
+      in
+      let print_field_comment = function
+        | None -> ()
+        | Some t ->
+            bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+            bs b "<code>";
+            bs b "(*";
+            bs b "</code></td>";
+            bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+            self#html_of_info b (Some t);
+            bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
+            bs b "<code>*)</code></td>"
+      in
       bs b
         (match t.ty_manifest, t.ty_kind with
-          None, Type_abstract -> "\n<pre>"
+          None, Type_abstract
+        | None, Type_open -> "\n<pre>"
         | None, Type_variant _
         | None, Type_record _ -> "\n<pre><code>"
-        | Some _, Type_abstract -> "\n<pre>"
+        | Some _, Type_abstract
+        | Some _, Type_open -> "\n<pre>"
         | Some _, Type_variant _
         | Some _, Type_record _ -> "\n<pre>"
         );
@@ -1479,7 +1612,25 @@ class html =
       (
        match t.ty_manifest with
          None -> ()
-       | Some typ ->
+       | Some (Object_type fields) ->
+           bs b "= ";
+           if priv then bs b "private ";
+           bs b "&lt;</pre>";
+           bs b "<table class=\"typetable\">\n" ;
+           let print_one f =
+             print_field_prefix () ;
+             bp b "<span id=\"%s\">%s</span>&nbsp;: "
+               (Naming.objfield_target t f)
+               f.of_name;
+             self#html_of_type_expr b father f.of_type;
+             bs b ";</code></td>\n";
+             print_field_comment f.of_text ;
+             bs b "\n</tr>"
+           in
+           print_concat b "\n" print_one fields;
+           bs b "</table>\n>\n";
+           bs b " "
+       | Some (Other typ) ->
            bs b "= ";
            if priv then bs b "private ";
            self#html_of_type_expr b father typ;
@@ -1582,6 +1733,9 @@ class html =
           in
           print_concat b "\n" print_one l;
           bs b "</table>\n}\n"
+      | Type_open ->
+          bs b "= ..";
+          bs b "</pre>"
       );
       bs b "\n";
       self#html_of_info b t.ty_info;
@@ -2313,7 +2467,7 @@ class html =
         bs b "<hr width=\"100%\">\n";
         (* module elements *)
         List.iter
-          (self#html_of_module_element b (Name.father mt.mt_name))
+          (self#html_of_module_element b mt.mt_name)
           (Module.module_type_elements mt);
 
         bs b "</body></html>";
@@ -2396,7 +2550,7 @@ class html =
 
         (* module elements *)
         List.iter
-          (self#html_of_module_element b (Name.father modu.m_name))
+          (self#html_of_module_element b modu.m_name)
           (Module.module_elements modu);
 
         bs b "</body></html>";
@@ -2473,6 +2627,16 @@ class html =
         Naming.complete_value_target
         Odoc_messages.index_of_values
         self#index_values
+
+    (** Generate the extensions index in the file [index_extensions.html]. *)
+    method generate_extensions_index module_list =
+      self#generate_elements_index
+        self#list_extensions
+        (fun x -> x.xt_name)
+        (fun x -> x.xt_type_extension.te_info)
+        (fun x -> Naming.complete_extension_target x)
+        Odoc_messages.index_of_extensions
+        self#index_extensions
 
     (** Generate the exceptions index in the file [index_exceptions.html]. *)
     method generate_exceptions_index module_list =
@@ -2561,6 +2725,7 @@ class html =
       self#init_style ;
       (* init the lists of elements *)
       list_values <- Odoc_info.Search.values module_list ;
+      list_extensions <- Odoc_info.Search.extensions module_list ;
       list_exceptions <- Odoc_info.Search.exceptions module_list ;
       list_types <- Odoc_info.Search.types module_list ;
       list_attributes <- Odoc_info.Search.attributes module_list ;
@@ -2612,6 +2777,7 @@ class html =
       try
         self#generate_index module_list;
         self#generate_values_index module_list ;
+        self#generate_extensions_index module_list ;
         self#generate_exceptions_index module_list ;
         self#generate_types_index module_list ;
         self#generate_attributes_index module_list ;

@@ -50,9 +50,7 @@ external __MODULE__ : string = "%loc_MODULE"
 external __POS__ : string * int * int * int = "%loc_POS"
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
-external __FILE_OF__ : 'a -> string * 'a = "%loc_FILE"
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
-external __MODULE_OF__ : 'a -> string * 'a = "%loc_MODULE"
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 
 (* Comparisons *)
@@ -87,7 +85,7 @@ external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"
 external ( - ) : int -> int -> int = "%subint"
-external ( *  ) : int -> int -> int = "%mulint"
+external ( * ) : int -> int -> int = "%mulint"
 external ( / ) : int -> int -> int = "%divint"
 external ( mod ) : int -> int -> int = "%modint"
 
@@ -168,19 +166,24 @@ type fpclass =
   | FP_nan
 external classify_float : float -> fpclass = "caml_classify_float"
 
-(* String operations -- more in module String *)
+(* String and byte sequence operations -- more in modules String and Bytes *)
 
 external string_length : string -> int = "%string_length"
-external string_create : int -> string = "caml_create_string"
-external string_blit : string -> int -> string -> int -> int -> unit
+external bytes_length : bytes -> int = "%string_length"
+external bytes_create : int -> bytes = "caml_create_string"
+external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
+external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
+                        = "caml_blit_string" "noalloc"
+external bytes_unsafe_to_string : bytes -> string = "%identity"
+external bytes_unsafe_of_string : string -> bytes = "%identity"
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
-  let s = string_create (l1 + l2) in
+  let s = bytes_create (l1 + l2) in
   string_blit s1 0 s 0 l1;
   string_blit s2 0 s l1 l2;
-  s
+  bytes_unsafe_to_string s
 
 (* Character operations -- more in module Char *)
 
@@ -223,12 +226,13 @@ let string_of_int n =
   format_int "%d" n
 
 external int_of_string : string -> int = "caml_int_of_string"
+external string_get : string -> int -> char = "%string_safe_get"
 
 let valid_float_lexem s =
   let l = string_length s in
   let rec loop i =
     if i >= l then s ^ "." else
-    match s.[i] with
+    match string_get s i with
     | '0' .. '9' | '-' -> loop (i + 1)
     | _ -> s
   in
@@ -319,7 +323,7 @@ let flush_all () =
         iter l
   in iter (out_channels_list ())
 
-external unsafe_output_partial : out_channel -> string -> int -> int -> int
+external unsafe_output_partial : out_channel -> bytes -> int -> int -> int
                         = "caml_ml_output_partial"
 
 let rec unsafe_output oc buf pos len =
@@ -343,15 +347,19 @@ let rec output_char oc c =
   with Sys_blocked_io ->
     wait_outchan oc 1; output_char oc c
 
+let output_bytes oc s =
+  unsafe_output oc s 0 (bytes_length s)
+
 let output_string oc s =
-  unsafe_output oc s 0 (string_length s)
+  unsafe_output oc (bytes_unsafe_of_string s) 0 (string_length s)
 
 let output oc s ofs len =
-  if ofs < 0 || len < 0 || ofs > string_length s - len
+  if ofs < 0 || len < 0 || ofs > bytes_length s - len
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
-let output' oc ~buf ~pos ~len = output oc buf pos len
+let output_substring oc s ofs len =
+  output oc (bytes_unsafe_of_string s) ofs len
 
 let rec output_byte oc b =
   try
@@ -405,7 +413,7 @@ let rec input_char ic =
   with Sys_blocked_io ->
     wait_inchan ic; input_char ic
 
-external unsafe_input_blocking : in_channel -> string -> int -> int -> int
+external unsafe_input_blocking : in_channel -> bytes -> int -> int -> int
                                = "caml_ml_input"
 
 let rec unsafe_input ic s ofs len =
@@ -415,7 +423,7 @@ let rec unsafe_input ic s ofs len =
     wait_inchan ic; unsafe_input ic s ofs len
 
 let input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > string_length s - len
+  if ofs < 0 || len < 0 || ofs > bytes_length s - len
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
@@ -428,31 +436,38 @@ let rec unsafe_really_input ic s ofs len =
   end
 
 let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > string_length s - len
+  if ofs < 0 || len < 0 || ofs > bytes_length s - len
   then invalid_arg "really_input"
   else unsafe_really_input ic s ofs len
 
+let really_input_string ic len =
+  let s = bytes_create len in
+  really_input ic s 0 len;
+  bytes_unsafe_to_string s
+
+external bytes_set : bytes -> int -> char -> unit = "%string_safe_set"
+
 let input_line ic =
-  let buf = ref (string_create 128) in
+  let buf = ref (bytes_create 128) in
   let pos = ref 0 in
   begin try
     while true do
-      if !pos = string_length !buf then begin
-        let newbuf = string_create (2 * !pos) in
-        string_blit !buf 0 newbuf 0 !pos;
+      if !pos = bytes_length !buf then begin
+        let newbuf = bytes_create (2 * !pos) in
+        bytes_blit !buf 0 newbuf 0 !pos;
         buf := newbuf
       end;
       let c = input_char ic in
       if c = '\n' then raise Exit;
-      !buf.[!pos] <- c;
+      bytes_set !buf !pos c;
       incr pos
     done
   with Exit -> ()
      | End_of_file -> if !pos = 0 then raise End_of_file
   end;
-  let res = string_create !pos in
-  string_blit !buf 0 res 0 !pos;
-  res
+  let res = bytes_create !pos in
+  bytes_blit !buf 0 res 0 !pos;
+  bytes_unsafe_to_string res
 
 let rec input_byte ic =
   try
@@ -468,15 +483,15 @@ let input_binary_int ic =
   let b4 = input_byte ic in
   (n1 lsl 24) + (b2 lsl 16) + (b3 lsl 8) + b4
 
-external unmarshal : string -> int -> 'a = "caml_input_value_from_string"
-external marshal_data_size : string -> int -> int = "caml_marshal_data_size"
+external unmarshal : bytes -> int -> 'a = "caml_input_value_from_string"
+external marshal_data_size : bytes -> int -> int = "caml_marshal_data_size"
 
 let input_value ic =
-  let header = string_create 20 in
+  let header = bytes_create 20 in
   really_input ic header 0 20;
   let bsize = marshal_data_size header 0 in
-  let buffer = string_create (20 + bsize) in
-  string_blit header 0 buffer 0 20;
+  let buffer = bytes_create (20 + bsize) in
+  bytes_blit header 0 buffer 0 20;
   really_input ic buffer 20 bsize;
   unmarshal buffer 0
 
@@ -492,6 +507,7 @@ external set_binary_mode_in : in_channel -> bool -> unit
 
 let print_char c = output_char stdout c
 let print_string s = output_string stdout s
+let print_bytes s = output_bytes stdout s
 let print_int i = output_string stdout (string_of_int i)
 let print_float f = output_string stdout (string_of_float f)
 let print_endline s =
@@ -502,6 +518,7 @@ let print_newline () = output_char stdout '\n'; flush stdout
 
 let prerr_char c = output_char stderr c
 let prerr_string s = output_string stderr s
+let prerr_bytes s = output_bytes stderr s
 let prerr_int i = output_string stderr (string_of_int i)
 let prerr_float f = output_string stderr (string_of_float f)
 let prerr_endline s =
@@ -528,33 +545,25 @@ module LargeFile =
   end
 
 (* Formats *)
+
+type ('a, 'b, 'c, 'd, 'e, 'f) format6
+   = ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+   = Format of ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
+               * string
+
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+let string_of_format (Format (fmt, str)) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-
-let (( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
-  fun fmt1 fmt2 ->
-    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
-;;
-
-let string_of_format fmt =
-  let s = format_to_string fmt in
-  let l = string_length s in
-  let r = string_create l in
-  string_blit s 0 r 0 l;
-  r
+let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
+  Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
+          str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 

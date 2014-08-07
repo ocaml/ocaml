@@ -183,7 +183,7 @@ clean::
           exit 2; }
 
 .S.p.o:
-	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
 	ln -s -f $*.c $*.d.c

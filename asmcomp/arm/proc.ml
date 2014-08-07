@@ -166,13 +166,17 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_alloc =            (* r0-r6, d0-d15 preserved *)
   Array.of_list (List.map
                    phys_reg
                    [7;8;
-                    116;116;118;119;120;121;122;123;
+                    116;117;118;119;120;121;122;123;
                     124;125;126;127;128;129;130;131])
 
 let destroyed_at_c_call =
@@ -183,12 +187,12 @@ let destroyed_at_c_call =
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
                          108;109;110;111;112;113;114;115;
-                         116;116;118;119;120;121;122;123;
+                         116;117;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]
                     | EABI_HF ->    (* r4-r7, d8-d15 preserved *)
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
-                         116;116;118;119;120;121;122;123;
+                         116;117;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]))
 
 let destroyed_at_oper = function
@@ -203,7 +207,7 @@ let destroyed_at_oper = function
       [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
   | Iop(Iintop Imulh) when !arch < ARMv6 ->
       [| phys_reg 8 |]              (* r12 destroyed *)
-  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _)) ->
+  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
 
@@ -222,8 +226,18 @@ let max_register_pressure = function
   | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
   | Iconst_symbol _ when !pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _) | Istore(Single, _) -> [| 9; 15; 31 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
   | _ -> [| 9; 16; 32 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Ispecific(Ishiftcheckbound _) -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

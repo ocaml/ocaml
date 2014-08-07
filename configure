@@ -43,6 +43,7 @@ with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_ocamlbuild=ocamlbuild
 with_frame_pointers=false
+no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
 
@@ -150,6 +151,8 @@ while : ; do
         with_ocamlbuild="";;
     -with-frame-pointers|--with-frame-pointers)
         with_frame_pointers=true;;
+    -no-naked-pointers|--no-naked-pointers)
+        no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
     *) err "Unknown option \"$1\".";;
@@ -757,11 +760,11 @@ if test $with_sharedlibs = "yes"; then
     sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
-    i[345]86-*-freebsd*)          natdynlink=true;;
+    i[3456]86-*-freebsd*)         natdynlink=true;;
     x86_64-*-freebsd*)            natdynlink=true;;
-    i[345]86-*-openbsd*)          natdynlink=true;;
+    i[3456]86-*-openbsd*)         natdynlink=true;;
     x86_64-*-openbsd*)            natdynlink=true;;
-    i[345]86-*-netbsd*)           natdynlink=true;;
+    i[3456]86-*-netbsd*)          natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
@@ -818,6 +821,8 @@ case "$target" in
   armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
   armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
   arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
+  arm*-*-openbsd*)              arch=arm; system=bsd;;
+  zaurus*-*-openbsd*)           arch=arm; system=bsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
@@ -886,8 +891,10 @@ case "$arch,$system" in
   sparc,solaris)  as="${TOOLPREF}as"
                   case "$cc" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
-                              *) aspp="${TOOLPREF}as -P";;
+                    *) aspp="${TOOLPREF}as -P";;
                   esac;;
+  *,freebsd)      as="${TOOLPREF}as"
+                  aspp="${TOOLPREF}cc -c";;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
                   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
@@ -903,12 +910,16 @@ case "$arch,$system" in
   i386,bsd_elf) profiling='prof';;
   amd64,macosx) profiling='prof';;
   i386,macosx) profiling='prof';;
+  sparc,bsd) profiling='prof';;
   sparc,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='prof';;
+  amd64,openbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
+  power,elf) profiling='prof';;
+  power,bsd*) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -1289,6 +1300,11 @@ if test $nargs != "none"; then
   echo "#define HAS_GETHOSTBYADDR_R $nargs" >> s.h
 fi
 
+if sh ./hasgot mkstemp; then
+  inf "mkstemp() found"
+  echo "#define HAS_MKSTEMP" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1600,6 +1616,9 @@ if test "$with_frame_pointers" = "true"; then
 
 fi
 
+if $no_naked_pointers; then
+  echo "#define NO_NAKED_POINTERS" >> m.h
+fi
 
 # Final twiddling of compiler options to work around known bugs
 
@@ -1736,7 +1755,11 @@ else
   else
   inf "        with frame pointers....... no"
   fi
-  echo "        native dynlink ........... $natdynlink"
+  if $no_naked_pointers; then
+  inf "        naked pointers forbidden.. yes"
+  else
+  inf "        naked pointers forbidden.. no"
+  fi
   inf "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   inf "        profiling with gprof ..... supported"

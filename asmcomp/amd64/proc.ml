@@ -239,6 +239,10 @@ let loc_external_arguments =
 
 let loc_exn_bucket = rax
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
@@ -259,7 +263,7 @@ let destroyed_at_oper = function
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
-  | Iop(Istore(Single, _)) -> [| rxmm15 |]
+  | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
@@ -290,9 +294,20 @@ let max_register_pressure = function
     if fp then [| 10; 16 |] else [| 11; 16 |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
     if fp then [| 11; 16 |] else [| 12; 16 |]
-  | Istore(Single, _) ->
+  | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Ilea _) -> true
+  | Ispecific _ -> false
+  | _ -> true
 
 (* Layout of the stack frame *)
 

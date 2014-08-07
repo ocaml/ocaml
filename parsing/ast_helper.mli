@@ -42,8 +42,9 @@ module Typ :
                -> core_type
     val tuple: ?loc:loc -> ?attrs:attrs -> core_type list -> core_type
     val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
-    val object_: ?loc:loc -> ?attrs:attrs -> (string * core_type) list
-                 -> closed_flag -> core_type
+    val object_: ?loc:loc -> ?attrs:attrs ->
+                  (string * attributes * core_type) list -> closed_flag ->
+                  core_type
     val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
     val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
     val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag
@@ -78,6 +79,7 @@ module Pat:
     val type_: ?loc:loc -> ?attrs:attrs -> lid -> pattern
     val lazy_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
     val unpack: ?loc:loc -> ?attrs:attrs -> str -> pattern
+    val exception_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
   end
 
@@ -102,22 +104,33 @@ module Exp:
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option
                    -> expression
-    val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
-    val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list -> expression option -> expression
+    val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option
+                 -> expression
+    val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list
+                -> expression option -> expression
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
-    val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression -> expression
+    val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
+                  -> expression
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
-    val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression option -> expression
-    val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
-    val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
-    val for_: ?loc:loc -> ?attrs:attrs -> pattern -> expression -> expression -> direction_flag -> expression -> expression
-    val coerce: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type -> expression
-    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type -> expression
+    val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                    -> expression option -> expression
+    val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                  -> expression
+    val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                -> expression
+    val for_: ?loc:loc -> ?attrs:attrs -> pattern -> expression -> expression
+              -> direction_flag -> expression -> expression
+    val coerce: ?loc:loc -> ?attrs:attrs -> expression -> core_type option
+                -> core_type -> expression
+    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type
+                     -> expression
     val send: ?loc:loc -> ?attrs:attrs -> expression -> string -> expression
     val new_: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
-    val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list -> expression
-    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression -> expression
+    val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list
+                  -> expression
+    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression
+                   -> expression
     val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val poly: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> expression
@@ -139,10 +152,21 @@ module Val:
 (** Type declarations *)
 module Type:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(str option * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
+    val mk: ?loc:loc -> ?attrs:attrs -> ?params:(core_type * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
 
     val constructor: ?loc:loc -> ?attrs:attrs -> ?args:constructor_arguments -> ?res:core_type -> str -> constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
+  end
+
+(** Type extensions *)
+module Te:
+  sig
+    val mk: ?attrs:attrs -> ?params:(core_type * variance) list -> ?priv:private_flag -> lid -> extension_constructor list -> type_extension
+
+    val constructor: ?loc:loc -> ?attrs:attrs -> str -> extension_constructor_kind -> extension_constructor
+
+    val decl: ?loc:loc -> ?attrs:attrs -> ?args:constructor_arguments -> ?res:core_type -> str -> extension_constructor
+    val rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> extension_constructor
   end
 
 (** {2 Module language} *)
@@ -186,7 +210,8 @@ module Sig:
 
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> type_declaration list -> signature_item
-    val exception_: ?loc:loc -> constructor_declaration -> signature_item
+    val type_extension: ?loc:loc -> type_extension -> signature_item
+    val exception_: ?loc:loc -> extension_constructor -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
@@ -207,8 +232,8 @@ module Str:
     val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> type_declaration list -> structure_item
-    val exception_: ?loc:loc -> constructor_declaration -> structure_item
-    val exn_rebind: ?loc:loc -> exception_rebind -> structure_item
+    val type_extension: ?loc:loc -> type_extension -> structure_item
+    val exception_: ?loc:loc -> extension_constructor -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item
@@ -283,6 +308,7 @@ module Ctf:
     val method_: ?loc:loc -> ?attrs:attrs -> string -> private_flag -> virtual_flag -> core_type -> class_type_field
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_type_field
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type_field
+    val attribute: ?loc:loc -> attribute -> class_type_field
   end
 
 (** Class expressions *)
@@ -312,6 +338,7 @@ module Cf:
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type -> class_field
     val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_field
+    val attribute: ?loc:loc -> attribute -> class_field
 
     val virtual_: core_type -> class_field_kind
     val concrete: override_flag -> expression -> class_field_kind
@@ -320,7 +347,7 @@ module Cf:
 (** Classes *)
 module Ci:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(str * variance) list -> str -> 'a -> 'a class_infos
+    val mk: ?loc:loc -> ?attrs:attrs -> ?virt:virtual_flag -> ?params:(core_type * variance) list -> str -> 'a -> 'a class_infos
   end
 
 (** Class signatures *)
@@ -333,78 +360,4 @@ module Csig:
 module Cstr:
   sig
     val mk: pattern -> class_field list -> class_structure
-  end
-
-(** Exception rebinding *)
-module Exrb:
-  sig
-    val mk: ?loc:loc -> ?attrs:attrs -> str -> lid -> exception_rebind
-end
-
-
-(** {2 Convenience functions} *)
-
-(** Convenience functions to help build and deconstruct AST fragments. *)
-module Convenience :
-  sig
-
-    (** {2 Misc} *)
-
-    val lid: string -> lid
-
-    (** {2 Expressions} *)
-
-    val evar: string -> expression
-    val let_in: ?recursive:bool -> value_binding list -> expression -> expression
-
-    val constr: string -> expression list -> expression
-    val record: ?over:expression -> (string * expression) list -> expression
-    val tuple: expression list -> expression
-
-    val nil: unit -> expression
-    val cons: expression -> expression -> expression
-    val list: expression list -> expression
-
-    val unit: unit -> expression
-
-    val func: (pattern * expression) list -> expression
-    val lam: ?label:string -> ?default:expression -> pattern -> expression -> expression
-    val app: expression -> expression list -> expression
-
-    val str: string -> expression
-    val int: int -> expression
-    val char: char -> expression
-    val float: float -> expression
-
-    (** {2 Patterns} *)
-
-    val pvar: string -> pattern
-    val pconstr: string -> pattern list -> pattern
-    val precord: ?closed:closed_flag -> (string * pattern) list -> pattern
-    val ptuple: pattern list -> pattern
-
-    val pnil: unit -> pattern
-    val pcons: pattern -> pattern -> pattern
-    val plist: pattern list -> pattern
-
-    val pstr: string -> pattern
-    val pint: int -> pattern
-    val pchar: char -> pattern
-    val pfloat: float -> pattern
-
-    val punit: unit -> pattern
-
-
-    (** {2 Types} *)
-
-    val tconstr: string -> core_type list -> core_type
-
-    (** {2 AST deconstruction} *)
-
-    val get_str: expression -> string option
-    val get_lid: expression -> string option
-
-    val has_attr: string -> attributes -> bool
-    val find_attr: string -> attributes -> payload option
-    val find_attr_expr: string -> attributes -> expression option
   end

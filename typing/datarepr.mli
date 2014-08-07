@@ -22,11 +22,10 @@ val constructor_descrs:
   (Ident.t * constructor_description) list *
   (Ident.t * Path.t * type_declaration) list
 
-val exception_descr:
+val extension_descr:
   ?rebind:Path.t ->
-  Path.t -> exception_declaration ->
+  Path.t -> extension_constructor ->
   constructor_description * (Ident.t * Path.t * type_declaration) list
-
 
 val label_descrs:
   type_expr -> label_declaration list ->

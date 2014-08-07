@@ -478,7 +478,7 @@ caml_callback2_exn:
     /* Initial shuffling of arguments (x0 = closure, x1 = arg1, x2 = arg2) */
         mov     TMP, x0
         mov     x0, x1          /* x0 = first arg */
-        mov     x1, x2          /* x1 = second arg
+        mov     x1, x2          /* x1 = second arg */
         mov     x2, TMP         /* x2 = closure environment */
         ADDRGLOBAL(ARG, caml_apply2)
         b       .Ljump_to_caml

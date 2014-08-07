@@ -42,3 +42,5 @@ class virtual scheduler_generic : object
   (* Entry point *)
   method schedule_fundecl : Linearize.fundecl -> Linearize.fundecl
 end
+
+val reset : unit -> unit

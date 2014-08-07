@@ -154,6 +154,21 @@ let loc_external_results res =
 
 let loc_exn_bucket = eax
 
+(* Volatile registers: the x87 top of FP stack is *)
+
+let reg_is_volatile = function
+  | { typ = Float; loc = Reg _ } -> true
+  | _ -> false
+
+let regs_are_volatile rs =
+  try
+    for i = 0 to Array.length rs - 1 do
+      if reg_is_volatile rs.(i) then raise Exit
+    done;
+    false
+  with Exit ->
+    true
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
@@ -181,6 +196,17 @@ let max_register_pressure = function
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
     Iintoffloat -> [| 6; max_int |]
   | _ -> [|7; max_int |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers).  *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Ilea _) -> true
+  | Ispecific _ -> false
+  | _ -> true
 
 (* Layout of the stack frame *)
 

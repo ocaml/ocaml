@@ -19,7 +19,7 @@ ROOTDIR=../..
 CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-w +33..39 -warn-error A -bin-annot
+COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string
 
 C_OBJS=scheduler.o
 
@@ -27,7 +27,7 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 LIB=../../stdlib
 
-LIB_OBJS=pervasives.cmo \
+LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo        \
   $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo $(LIB)/obj.cmo                 \
   $(LIB)/int32.cmo $(LIB)/int64.cmo $(LIB)/nativeint.cmo                    \

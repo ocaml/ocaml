@@ -18,6 +18,7 @@ open Odoc_info
 open Parameter
 open Value
 open Type
+open Extension
 open Exception
 open Class
 open Module
@@ -37,6 +38,7 @@ let latex_titles = ref [
 let latex_value_prefix = ref Odoc_messages.default_latex_value_prefix
 let latex_type_prefix = ref Odoc_messages.default_latex_type_prefix
 let latex_type_elt_prefix = ref Odoc_messages.default_latex_type_elt_prefix
+let latex_extension_prefix = ref Odoc_messages.default_latex_extension_prefix
 let latex_exception_prefix = ref Odoc_messages.default_latex_exception_prefix
 let latex_module_prefix = ref Odoc_messages.default_latex_module_prefix
 let latex_module_type_prefix = ref Odoc_messages.default_latex_module_type_prefix
@@ -234,6 +236,9 @@ class text =
     (** Make a correct label from a module type name. *)
     method module_type_label ?no_ name = !latex_module_type_prefix^(self#label ?no_ name)
 
+    (** Make a correct label from an extension name. *)
+    method extension_label ?no_ name = !latex_extension_prefix^(self#label ?no_ name)
+
     (** Make a correct label from an exception name. *)
     method exception_label ?no_ name = !latex_exception_prefix^(self#label ?no_ name)
 
@@ -257,8 +262,8 @@ class text =
       List.iter (self#latex_of_text_element fmt) t
 
     (** Print the LaTeX code for the [text_element] in parameter. *)
-    method latex_of_text_element fmt te =
-      match te with
+    method latex_of_text_element fmt txt =
+      match txt with
       | Odoc_info.Raw s -> self#latex_of_Raw fmt s
       | Odoc_info.Code s -> self#latex_of_Code fmt s
       | Odoc_info.CodePre s -> self#latex_of_CodePre fmt s
@@ -411,6 +416,7 @@ class text =
             | Odoc_info.RK_class_type -> self#class_type_label
             | Odoc_info.RK_value -> self#value_label
             | Odoc_info.RK_type -> self#type_label
+            | Odoc_info.RK_extension -> self#extension_label
             | Odoc_info.RK_exception -> self#exception_label
             | Odoc_info.RK_attribute -> self#attribute_label
             | Odoc_info.RK_method -> self#method_label
@@ -533,96 +539,103 @@ class latex =
         let priv = t.ty_private = Asttypes.Private in
         (
          match t.ty_manifest with
-           None -> ()
-         | Some typ ->
+         | Some (Other typ) ->
              p fmt2 " = %s%s" (if priv then "private " else "") (self#normal_type mod_name typ)
+         | _ -> ()
         );
         let s_type3 =
           p fmt2
             " %s"
             (
              match t.ty_kind with
-               Type_abstract -> ""
+               Type_abstract ->
+                begin match t.ty_manifest with
+                | Some (Object_type _) ->
+                  "= " ^ (if priv then "private" else "") ^ " <"
+                | _ -> ""
+                end
              | Type_variant _ -> "="^(if priv then " private" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")^"{"
+             | Type_open -> "= .."
             ) ;
           flush2 ()
         in
 
         let defs =
+          let entry_comment = function
+          | None -> []
+          | Some t ->
+              let s =
+                ps fmt2 "\\begin{ocamldoccomment}\n";
+                self#latex_of_info fmt2 (Some t);
+                ps fmt2 "\n\\end{ocamldoccomment}\n";
+                flush2 ()
+              in
+              [ Latex s]
+        in
           match t.ty_kind with
-            Type_abstract -> []
+          | Type_abstract ->
+             begin match t.ty_manifest with
+             | Some (Object_type l) ->
+               let fields =
+                 List.map (fun r ->
+                   let s_field =
+                     p fmt2
+                       "@[<h 6>  %s :@ %s ;"
+                       r.of_name
+                       (self#normal_type mod_name r.of_type);
+                     flush2 ()
+                   in
+                   [ CodePre s_field ] @ (entry_comment r.of_text)
+                 ) l
+               in
+               List.flatten fields @ [ CodePre ">" ]
+
+             | None | Some (Other _) -> []
+             end
           | Type_variant l ->
-              (List.flatten
-               (List.map
-                  (fun constr ->
-                    let s_cons =
-                      p fmt2 "@[<h 6>  | %s" constr.vc_name;
-                      (
-                       match constr.vc_args, constr.vc_ret with
-                         [], None -> ()
-                       | l, None ->
-                           p fmt2 " %s@ %s"
-                             "of"
-                             (self#normal_type_list ~par: false mod_name " * " l)
-                       | [], Some r ->
-                           p fmt2 " %s@ %s"
-                             ":"
-                             (self#normal_type mod_name r)
-                       | l, Some r ->
-                           p fmt2 " %s@ %s@ %s@ %s"
-                             ":"
-                             (self#normal_type_list ~par: false mod_name " * " l)
-                             "->"
-                             (self#normal_type mod_name r)
-                      );
-                      flush2 ()
-                    in
-                    [ CodePre s_cons ] @
-                    (match constr.vc_text with
-                      None -> []
-                    | Some t ->
-                        let s =
-                          ps fmt2 "\\begin{ocamldoccomment}\n";
-                          self#latex_of_info fmt2 (Some t);
-                          ps fmt2 "\n\\end{ocamldoccomment}\n";
-                          flush2 ()
-                        in
-                        [ Latex s]
-                    )
-                  )
-                  l
-               )
-              )
+             let constructors =
+               List.map (fun constr ->
+                 let s_cons =
+                   p fmt2 "@[<h 6>  | %s" constr.vc_name ;
+                   begin match constr.vc_args, constr.vc_ret with
+                   | [], None -> ()
+                   | l, None ->
+                     p fmt2 " of@ %s"
+                       (self#normal_type_list ~par: false mod_name " * " l)
+                   | [], Some r ->
+                     p fmt2 " :@ %s"
+                       (self#normal_type mod_name r)
+                   | l, Some r ->
+                     p fmt2 " :@ %s@ %s@ %s"
+                       (self#normal_type_list ~par: false mod_name " * " l)
+                       "->"
+                       (self#normal_type mod_name r)
+                   end ;
+                   flush2 ()
+                 in
+                 [ CodePre s_cons ] @ (entry_comment constr.vc_text)
+               ) l
+             in
+             List.flatten constructors
           | Type_record l ->
-              (List.flatten
-                 (List.map
-                    (fun r ->
-                      let s_field =
-                        p fmt2
-                          "@[<h 6>  %s%s :@ %s ;"
-                          (if r.rf_mutable then "mutable " else "")
-                          r.rf_name
-                          (self#normal_type mod_name r.rf_type);
-                        flush2 ()
-                      in
-                      [ CodePre s_field ] @
-                      (match r.rf_text with
-                        None -> []
-                      | Some t ->
-                          let s =
-                            ps fmt2 "\\begin{ocamldoccomment}\n";
-                            self#latex_of_info fmt2 (Some t);
-                            ps fmt2 "\n\\end{ocamldoccomment}\n";
-                            flush2 ()
-                        in
-                        [ Latex s]
-                      )
-                    )
-                    l
-                 )
-              ) @
-              [ CodePre "}" ]
+             let fields =
+               List.map (fun r ->
+                 let s_field =
+                   p fmt2
+                     "@[<h 6>  %s%s :@ %s ;"
+                     (if r.rf_mutable then "mutable " else "")
+                     r.rf_name
+                     (self#normal_type mod_name r.rf_type);
+                   flush2 ()
+                 in
+                 [ CodePre s_field ] @ (entry_comment r.rf_text)
+               ) l
+             in
+             List.flatten fields @ [ CodePre "}" ]
+          | Type_open ->
+             (* FIXME ? *)
+             []
         in
         let defs2 = (CodePre s_type3) :: defs in
         let rec iter = function
@@ -639,6 +652,96 @@ class latex =
       in
       self#latex_of_text fmt
         ((Latex (self#make_label (self#type_label t.ty_name))) :: text)
+
+    (** Print LaTeX code for a type extension. *)
+    method latex_of_type_extension mod_name fmt te =
+      let text =
+        let (fmt2, flush2) = new_fmt () in
+        Odoc_info.reset_type_names () ;
+        Format.fprintf fmt2 "@[<h 2>type ";
+        (
+          match te.te_type_parameters with
+              [] -> ()
+            | [p] ->
+                ps fmt2 (self#normal_type mod_name p);
+                ps fmt2 " "
+            | l ->
+                ps fmt2 "(";
+                print_concat fmt2 ", " (fun p -> ps fmt2 (self#normal_type mod_name p)) l;
+                ps fmt2 ") "
+        );
+        ps fmt2 (self#relative_idents mod_name te.te_type_name);
+        p fmt2 " +=%s" (if te.te_private = Asttypes.Private then " private" else "") ;
+        let s_type3 = flush2 () in
+        let defs =
+          (List.flatten
+             (List.map
+                (fun x ->
+                   let father = Name.father x.xt_name in
+                   let s_cons =
+                     p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
+                     (
+                       match x.xt_args, x.xt_ret with
+                           [], None -> ()
+                         | l, None ->
+                             p fmt2 " %s@ %s"
+                               "of"
+                               (self#normal_type_list ~par: false father " * " l)
+                         | [], Some r ->
+                             p fmt2 " %s@ %s"
+                               ":"
+                               (self#normal_type father r)
+                         | l, Some r ->
+                             p fmt2 " %s@ %s@ %s@ %s"
+                               ":"
+                               (self#normal_type_list ~par: false father " * " l)
+                               "->"
+                               (self#normal_type father r)
+                     );
+                     (
+                       match x.xt_alias with
+                           None -> ()
+                         | Some xa ->
+                             p fmt2 " = %s"
+                               (
+                                 match xa.xa_xt with
+                                     None -> xa.xa_name
+                                   | Some x -> x.xt_name
+                               )
+                     );
+                     flush2 ()
+                    in
+                    [ Latex (self#make_label (self#extension_label x.xt_name));
+                      CodePre s_cons ] @
+                    (match x.xt_text with
+                      None -> []
+                    | Some t ->
+                        let s =
+                          ps fmt2 "\\begin{ocamldoccomment}\n";
+                          self#latex_of_info fmt2 (Some t);
+                          ps fmt2 "\n\\end{ocamldoccomment}\n";
+                          flush2 ()
+                        in
+                        [ Latex s]
+                    )
+                  )
+                  te.te_constructors
+               )
+              )
+        in
+        let defs2 = (CodePre s_type3) :: defs in
+        let rec iter = function
+            [] -> []
+          | [e] -> [e]
+          | (CodePre s1) :: (CodePre s2) :: q ->
+              iter ((CodePre (s1^"\n"^s2)) :: q)
+          | e :: q ->
+              e :: (iter q)
+        in
+        (iter defs2) @
+        (self#text_of_info te.te_info)
+      in
+      self#latex_of_text fmt text
 
     (** Print LaTeX code for an exception. *)
     method latex_of_exception fmt e =
@@ -1034,6 +1137,7 @@ class latex =
       | Element_class c -> self#latex_of_class fmt c
       | Element_class_type ct -> self#latex_of_class_type fmt ct
       | Element_value v -> self#latex_of_value fmt v
+      | Element_type_extension te -> self#latex_of_type_extension module_name fmt te
       | Element_exception e -> self#latex_of_exception fmt e
       | Element_type t -> self#latex_of_type fmt t
       | Element_module_comment t -> self#latex_of_text fmt t

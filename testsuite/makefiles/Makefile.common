@@ -110,7 +110,7 @@ defaultclean:
 .cmxa.so:
 	@$(OCAMLOPT) -o $@ -shared -linkall $(ADD_COMPFLAGS) $<
 
-.mly.ml:
+%.ml %.mli: %.mly
 	@$(OCAMLYACC) -q $< 2> /dev/null
 
 .mll.ml:

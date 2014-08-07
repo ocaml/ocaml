@@ -86,7 +86,7 @@ let record_rep ppf r =
   | Record_regular -> fprintf ppf "regular"
   | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
-  | Record_exception p -> fprintf ppf "exn (%s)" (Path.name p)
+  | Record_extension p -> fprintf ppf "ext (%s)" (Path.name p)
 ;;
 
 let string_of_loc_kind = function
@@ -239,6 +239,7 @@ let primitive ppf = function
      else fprintf ppf "bigarray.array1.set64"
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
+  | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
 let rec lam ppf = function
   | Lvar id ->

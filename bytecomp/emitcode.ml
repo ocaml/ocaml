@@ -381,7 +381,7 @@ let to_file outchan unit_name code =
       cu_pos = pos_code;
       cu_codesize = !out_position;
       cu_reloc = List.rev !reloc_info;
-      cu_imports = Env.imported_units();
+      cu_imports = Env.imports();
       cu_primitives = List.map Primitive.byte_name
                                !Translmod.primitive_declarations;
       cu_force_link = false;
@@ -402,7 +402,7 @@ let to_memory init_code fun_code =
   emit init_code;
   emit fun_code;
   let code = Meta.static_alloc !out_position in
-  LongString.unsafe_blit_to_string !out_buffer 0 code 0 !out_position;
+  LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info
   and code_size = !out_position in
   init();
@@ -417,3 +417,9 @@ let to_packed_file outchan code =
   let reloc = !reloc_info in
   init();
   reloc
+
+let reset () =
+  out_buffer := LongString.create 1024;
+  out_position := 0;
+  label_table := [| |];
+  reloc_info := []

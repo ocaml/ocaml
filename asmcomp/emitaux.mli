@@ -23,10 +23,11 @@ val emit_char: char -> unit
 val emit_string_literal: string -> unit
 val emit_string_directive: string -> string -> unit
 val emit_bytes_directive: string -> string -> unit
-val emit_float64_directive: string -> string -> unit
-val emit_float64_split_directive: string -> string -> unit
-val emit_float32_directive: string -> string -> unit
+val emit_float64_directive: string -> int64 -> unit
+val emit_float64_split_directive: string -> int64 -> unit
+val emit_float32_directive: string -> int32 -> unit
 
+val reset : unit -> unit
 val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
 

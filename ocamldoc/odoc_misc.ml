@@ -23,7 +23,7 @@ let no_blanks s =
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
   let len = 1024 in
-  let s = String.create len in
+  let s = Bytes.create len in
   let buf = Buffer.create len in
   let rec iter () =
     try
@@ -32,7 +32,7 @@ let input_file_as_string nom =
         ()
       else
         (
-         Buffer.add_substring buf s 0 n;
+         Buffer.add_subbytes buf s 0 n;
          iter ()
         )
     with
@@ -313,8 +313,8 @@ let get_titles_in_text t =
     | Odoc_types.Index_list -> ()
     | Odoc_types.Custom (_, t) -> iter_text t
     | Odoc_types.Target _ -> ()
-  and iter_text te =
-    List.iter iter_ele te
+  and iter_text txt =
+    List.iter iter_ele txt
   in
   iter_text t;
   List.rev !l

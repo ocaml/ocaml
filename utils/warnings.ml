@@ -39,7 +39,7 @@ type t =
   | Without_principality of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
-  | Camlp4 of string                        (* 22 *)
+  | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
   | All_clauses_guarded                     (* 25 *)
@@ -55,7 +55,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_exception of string * bool       (* 38 *)
+  | Unused_extension of string * bool * bool    (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -66,6 +66,7 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
+  | No_cmi_file of string                   (* 49 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -96,7 +97,7 @@ let number = function
   | Without_principality _ -> 19
   | Unused_argument -> 20
   | Nonreturning_statement -> 21
-  | Camlp4 _ -> 22
+  | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
   | All_clauses_guarded -> 25
@@ -112,7 +113,7 @@ let number = function
   | Unused_for_index _ -> 35
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
-  | Unused_exception _ -> 38
+  | Unused_extension _ -> 38
   | Unused_rec_flag -> 39
   | Name_out_of_scope _ -> 40
   | Ambiguous_name _ -> 41
@@ -123,9 +124,10 @@ let number = function
   | Bad_env_variable _ -> 46
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
+  | No_cmi_file _ -> 49
 ;;
 
-let last_warning_number = 48
+let last_warning_number = 49
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -286,7 +288,7 @@ let message = function
   | Unused_argument -> "this argument will not be used by the function."
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"
-  | Camlp4 s -> s
+  | Preprocessor s -> s
   | Useless_record_with ->
       "all the fields are explicitly listed in this record:\n\
        the 'with' clause is useless."
@@ -320,12 +322,15 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_exception (s, false) ->
-      "unused exception constructor " ^ s ^ "."
-  | Unused_exception (s, true) ->
-      "exception constructor " ^ s ^
-      " is never raised or used to build values.\n\
+  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, true, _) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
         (However, this constructor appears in patterns.)"
+  | Unused_extension (s, false, true) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        It is exported or rebound as a private extension."
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -366,6 +371,8 @@ let message = function
       Printf.sprintf "implicit elimination of optional argument%s %s"
         (if List.length sl = 1 then "" else "s")
         (String.concat ", " sl)
+  | No_cmi_file s ->
+      "no cmi file was found in path for module " ^ s
 ;;
 
 let nerrors = ref 0;;
@@ -426,7 +433,7 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Camlp4 warning.";
+   22, "Proprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
@@ -449,7 +456,7 @@ let descriptions =
    35, "Unused for-loop index.";
    36, "Unused ancestor variable.";
    37, "Unused constructor.";
-   38, "Unused exception constructor.";
+   38, "Unused extension constructor.";
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
@@ -457,9 +464,10 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Illegal environment variable";
-   47, "Illegal attribute payload";
-   48, "Implicit elimination of optional arguments";
+   46, "Illegal environment variable.";
+   47, "Illegal attribute payload.";
+   48, "Implicit elimination of optional arguments.";
+   49, "Absent cmi file when looking up module alias.";
   ]
 ;;
 

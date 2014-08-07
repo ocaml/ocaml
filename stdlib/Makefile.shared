@@ -15,25 +15,27 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib
+COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
+          -safe-string
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=pervasives.cmo $(OTHERS)
-OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
+OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
+OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
-  buffer.cmo printf.cmo \
+  buffer.cmo camlinternalFormat.cmo printf.cmo \
   arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo hashtbl.cmo format.cmo scanf.cmo callback.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   filename.cmo complex.cmo \
-  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
+  stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -86,7 +88,7 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
-$(OBJS) std_exit.cmo: pervasives.cmi
+$(OTHERS) std_exit.cmo: pervasives.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi

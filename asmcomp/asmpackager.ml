@@ -130,7 +130,7 @@ let build_package_cmx members cmxfile =
           List.flatten (List.map (fun info -> info.ui_defines) units) @
           [ui.ui_symbol];
       ui_imports_cmi =
-          (ui.ui_name, Env.crc_of_unit ui.ui_name) ::
+          (ui.ui_name, Some (Env.crc_of_unit ui.ui_name)) ::
           filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx =
           filter(Asmlink.extract_crc_implementations());
@@ -161,7 +161,7 @@ let package_object_files ppf files targetcmx
 
 (* The entry point *)
 
-let package_files ppf files targetcmx =
+let package_files ppf initial_env files targetcmx =
   let files =
     List.map
       (fun f ->
@@ -177,7 +177,8 @@ let package_files ppf files targetcmx =
   (* Set the name of the current compunit *)
   Compilenv.reset ?packname:!Clflags.for_package targetname;
   try
-    let coercion = Typemod.package_units files targetcmi targetname in
+    let coercion =
+      Typemod.package_units initial_env files targetcmi targetname in
     package_object_files ppf files targetcmx targetobj targetname coercion
   with x ->
     remove_file targetcmx; remove_file targetobj;

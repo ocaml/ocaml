@@ -125,7 +125,8 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_exception of Path.t * Location.t (* Exception constructor *)
+  | Cstr_extension of Path.t * bool     (* Extension constructor
+                                           true if a constant false if a block *)
 
 (* Record label descriptions *)
 
@@ -146,7 +147,7 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_inlined of int               (* Same, for inlined records *)
   | Record_float                        (* All fields are floats *)
-  | Record_exception of Path.t          (* Inlined record under exception *)
+  | Record_extension of Path.t          (* Inlined record under exception *)
 
 (* Variance *)
 
@@ -196,6 +197,7 @@ and type_kind =
     Type_abstract
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
+  | Type_open
 
 and label_declaration =
   {
@@ -219,16 +221,19 @@ and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of Ident.t * label_declaration list
 
+type extension_constructor =
+    { ext_type_path: Path.t;
+      ext_type_params: type_expr list;
+      ext_args: constructor_arguments;
+      ext_ret_type: type_expr option;
+      ext_private: private_flag;
+      ext_loc: Location.t;
+      ext_attributes: Parsetree.attributes; }
+
 and type_transparence =
     Type_public      (* unrestricted expansion *)
   | Type_new         (* "new" type *)
   | Type_private     (* private type *)
-
-type exception_declaration =
-    { exn_args: constructor_arguments;
-      exn_loc: Location.t;
-      exn_attributes: Parsetree.attributes;
-     }
 
 (* Type expressions for the class language *)
 
@@ -278,7 +283,7 @@ and signature = signature_item list
 and signature_item =
     Sig_value of Ident.t * value_description
   | Sig_type of Ident.t * type_declaration * rec_status
-  | Sig_exception of Ident.t * exception_declaration
+  | Sig_typext of Ident.t * extension_constructor * ext_status
   | Sig_module of Ident.t * module_declaration * rec_status
   | Sig_modtype of Ident.t * modtype_declaration
   | Sig_class of Ident.t * class_declaration * rec_status
@@ -302,3 +307,8 @@ and rec_status =
     Trec_not                            (* not recursive *)
   | Trec_first                          (* first in a recursive group *)
   | Trec_next                           (* not first in a recursive group *)
+
+and ext_status =
+    Text_first                     (* first constructor of an extension *)
+  | Text_next                      (* not first constructor of an extension *)
+  | Text_exception                 (* an exception *)
