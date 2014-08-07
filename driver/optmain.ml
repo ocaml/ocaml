@@ -102,7 +102,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
-  let _open s = open_module := s :: !open_module
+  let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _p = set gprofile
   let _pack = set make_package

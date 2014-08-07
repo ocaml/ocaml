@@ -18,6 +18,8 @@
 *)
 
 
+open Asttypes
+open Longident
 open Parsetree
 open Ast_helper
 open Location
@@ -615,13 +617,85 @@ let default_mapper =
 
 let rec extension_of_error {loc; msg; if_highlight; sub} =
   { loc; txt = "ocaml.error" },
-  PStr ([Str.eval (Exp.constant (Asttypes.Const_string (msg, None)));
-         Str.eval (Exp.constant (Asttypes.Const_string (if_highlight, None)))] @
+  PStr ([Str.eval (Exp.constant (Const_string (msg, None)));
+         Str.eval (Exp.constant (Const_string (if_highlight, None)))] @
         (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
 let attribute_of_warning loc s =
   { loc; txt = "ocaml.ppwarning" },
-  PStr ([Str.eval ~loc (Exp.constant (Asttypes.Const_string (s, None)))])
+  PStr ([Str.eval ~loc (Exp.constant (Const_string (s, None)))])
+
+let tool_name_ref = ref "_none_"
+
+let tool_name () = !tool_name_ref
+
+let restore_ppx_context payload =
+  let fields =
+    match payload with
+    | PStr [{pstr_desc = Pstr_eval
+                 ({ pexp_desc = Pexp_record (fields, None) }, [])}] ->
+        fields
+    | _ ->
+        raise_errorf "Internal error: invalid [@@@ocaml.ppx.context] syntax"
+  in
+  let field name payload =
+    let rec get_string = function
+      | { pexp_desc = Pexp_constant (Const_string (str, None)) } -> str
+      | _ ->
+          raise_errorf
+            "Internal error: invalid [@@@ocaml.ppx.context { %s }] string syntax"
+            name
+    and get_bool pexp =
+      match pexp with
+      | {pexp_desc = Pexp_construct ({txt = Longident.Lident "true"}, None)} ->
+          true
+      | {pexp_desc = Pexp_construct ({txt = Longident.Lident "false"}, None)} ->
+          false
+      | _ ->
+          raise_errorf
+            "Internal error: invalid [@@@ocaml.ppx.context { %s }] bool syntax"
+            name
+    and get_list elem = function
+      | {pexp_desc =
+           Pexp_construct ({txt = Longident.Lident "::"},
+                           Some {pexp_desc = Pexp_tuple [exp; rest]}) } ->
+          elem exp :: get_list elem rest
+      | {pexp_desc =
+           Pexp_construct ({txt = Longident.Lident "[]"}, None)} ->
+          []
+      | _ ->
+          raise_errorf
+            "Internal error: invalid [@@@ocaml.ppx.context { %s }] list syntax"
+            name
+    and get_option elem = function
+      | { pexp_desc =
+            Pexp_construct ({ txt = Longident.Lident "Some" }, Some exp) } ->
+          Some (elem exp)
+      | { pexp_desc =
+            Pexp_construct ({ txt = Longident.Lident "None" }, None) } ->
+          None
+      | _ ->
+          raise_errorf
+            "Internal error: invalid [@@@ocaml.ppx.context { %s }] option syntax"
+            name
+    in
+    match name with
+    | "tool_name" ->
+        tool_name_ref := get_string payload
+    | "include_dirs" ->
+        Clflags.include_dirs := get_list get_string payload
+    | "load_path" ->
+        Config.load_path := get_list get_string payload
+    | "open_modules" ->
+        Clflags.open_modules := get_list get_string payload
+    | "for_package" ->
+        Clflags.for_package := get_option get_string payload
+    | "debug" ->
+        Clflags.debug := get_bool payload
+    | _ ->
+        ()
+  in
+  List.iter (function ({txt=Lident name}, x) -> field name x | _ -> ()) fields
 
 let apply ~source ~target mapper =
   let ic = open_in_bin source in
@@ -635,22 +709,40 @@ let apply ~source ~target mapper =
   let ast = input_value ic in
   close_in ic;
 
-  let ast =
+  let implem ast =
     try
-      if magic = Config.ast_impl_magic_number
-      then Obj.magic (mapper.structure mapper (Obj.magic ast))
-      else Obj.magic (mapper.signature mapper (Obj.magic ast))
+      begin match ast with
+      | {pstr_desc = Pstr_attribute ({txt = "ocaml.ppx.context"}, x)} :: _ ->
+          restore_ppx_context x
+      | _ -> ()
+      end;
+      mapper.structure mapper ast
     with exn ->
       match error_of_exn exn with
       | Some error ->
-          if magic = Config.ast_impl_magic_number
-          then Obj.magic [{pstr_desc = Pstr_extension (extension_of_error error,
-                                                       []);
-                           pstr_loc  = Location.none}]
-          else Obj.magic [{psig_desc = Psig_extension (extension_of_error error,
-                                                       []);
-                           psig_loc  = Location.none}]
+          [{pstr_desc = Pstr_extension (extension_of_error error, []);
+            pstr_loc  = Location.none}]
       | None -> raise exn
+  in
+  let iface ast =
+    try
+      begin match ast with
+      | {psig_desc = Psig_attribute ({txt = "ocaml.ppx.context"}, x)} :: _ ->
+          restore_ppx_context x
+      | _ -> ()
+      end;
+      mapper.signature mapper ast
+    with exn ->
+      match error_of_exn exn with
+      | Some error ->
+          [{psig_desc = Psig_extension (extension_of_error error, []);
+            psig_loc  = Location.none}]
+      | None -> raise exn
+  in
+  let ast =
+    if magic = Config.ast_impl_magic_number
+    then Obj.magic (implem (Obj.magic ast))
+    else Obj.magic (iface (Obj.magic ast))
   in
   let oc = open_out_bin target in
   output_string oc magic;
@@ -682,3 +774,38 @@ let run_main mapper =
 
 let register_function = ref (fun _name f -> run_main f)
 let register name f = !register_function name f
+
+
+let ppx_context ~tool_name () =
+  let open Longident in
+  let open Asttypes in
+  let open Ast_helper in
+  let lid name = { txt = Lident name; loc = Location.none } in
+  let make_string x = Exp.constant (Const_string (x, None)) in
+  let make_bool x =
+    if x
+    then Exp.construct (lid "true") None
+    else Exp.construct (lid "false") None
+  in
+  let rec make_list f lst =
+    match lst with
+    | x :: rest ->
+      Exp.construct (lid "::") (Some (Exp.tuple [f x; make_list f rest]))
+    | [] ->
+      Exp.construct (lid "[]") None
+  in
+  let make_option f opt =
+    match opt with
+    | Some x -> Exp.construct (lid "Some") (Some (f x))
+    | None   -> Exp.construct (lid "None") None
+  in
+  { txt = "ocaml.ppx.context"; loc = Location.none },
+    Parsetree.PStr [Str.eval (
+      Exp.record ([
+        lid "tool_name",    make_string tool_name;
+        lid "include_dirs", make_list make_string !Clflags.include_dirs;
+        lid "load_path",    make_list make_string !Config.load_path;
+        lid "open_modules", make_list make_string !Clflags.open_modules;
+        lid "for_package",  make_option make_string !Clflags.for_package;
+        lid "debug",        make_bool !Clflags.debug;
+      ]) None)]

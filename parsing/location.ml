@@ -377,3 +377,6 @@ let () =
       | Error e -> Some e
       | _ -> None
     )
+
+let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
+  Printf.ksprintf (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))

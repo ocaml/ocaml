@@ -87,7 +87,13 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
-let apply_rewriters magic ast =
+let apply_rewriters ~tool_name magic ast =
+  let ctx = Ast_mapper.ppx_context ~tool_name () in
+  let ast =
+    if magic = Config.ast_impl_magic_number
+    then Obj.magic (Ast_helper.Str.attribute ctx :: (Obj.magic ast))
+    else Obj.magic (Ast_helper.Sig.attribute ctx :: (Obj.magic ast))
+  in
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
@@ -101,7 +107,7 @@ let apply_rewriters magic ast =
 
 exception Outdated_version
 
-let file ppf inputfile parse_fun ast_magic =
+let file ppf ~tool_name inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -134,7 +140,7 @@ let file ppf inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ast_magic ast
+  apply_rewriters ~tool_name ast_magic ast
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -151,11 +157,11 @@ let () =
       | _ -> None
     )
 
-let parse_all parse_fun magic ppf sourcefile =
+let parse_all ~tool_name parse_fun magic ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    try file ppf inputfile parse_fun magic
+    try file ppf ~tool_name inputfile parse_fun magic
     with exn ->
       remove_preprocessed inputfile;
       raise exn
@@ -163,7 +169,9 @@ let parse_all parse_fun magic ppf sourcefile =
   remove_preprocessed inputfile;
   ast
 
-let parse_implementation ppf sourcefile =
-  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile
-let parse_interface ppf sourcefile =
-  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile
+let parse_implementation ppf ~tool_name sourcefile =
+  parse_all ~tool_name Parse.implementation
+    Config.ast_impl_magic_number ppf sourcefile
+let parse_interface ppf ~tool_name sourcefile =
+  parse_all ~tool_name Parse.interface
+    Config.ast_intf_magic_number ppf sourcefile

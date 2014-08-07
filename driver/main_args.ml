@@ -73,9 +73,10 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
-let mk_for_pack_byt () =
-  "-for-pack", Arg.String ignore,
-  "<ident>  Ignored (for compatibility with ocamlopt)"
+let mk_for_pack_byt f =
+  "-for-pack", Arg.String f,
+  "<ident>  Generate code that can later be `packed' with\n\
+  \     ocamlc -pack -o <ident>.cmo"
 ;;
 
 let mk_for_pack_opt f =
@@ -493,6 +494,7 @@ module type Compiler_options =  sig
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
+  val _for_pack : string -> unit
   val _g : unit -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -571,7 +573,6 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
-  val _for_pack : string -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
@@ -612,7 +613,7 @@ struct
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
-    mk_for_pack_byt ();
+    mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
     mk_i F._i;
     mk_I F._I;
