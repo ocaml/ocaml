@@ -259,14 +259,7 @@ let execute_phrase print_outcome ppf phr =
           | Result v ->
               if print_outcome then
                 Printtyp.wrap_printing_env oldenv (fun () ->
-                  let items =
-                    match str.str_items with
-                    | {str_desc = Tstr_attribute({Location.txt = "ocaml.ppx.context"}, _)}
-                      :: items ->
-                        items
-                    | items -> items
-                  in
-                  match items with
+                  match str.str_items with
                   | [ { str_desc = Tstr_eval (exp, _attrs) }] ->
                       let outv = outval_of_value newenv v exp.exp_type in
                       let ty = Printtyp.tree_of_type_scheme exp.exp_type in

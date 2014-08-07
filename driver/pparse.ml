@@ -89,19 +89,39 @@ let read_ast magic fn =
 
 let apply_rewriters ~tool_name magic ast =
   let ctx = Ast_mapper.ppx_context ~tool_name () in
-  let ast =
-    if magic = Config.ast_impl_magic_number
-    then Obj.magic (Ast_helper.Str.attribute ctx :: (Obj.magic ast))
-    else Obj.magic (Ast_helper.Sig.attribute ctx :: (Obj.magic ast))
-  in
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
+      let ast =
+        if magic = Config.ast_impl_magic_number
+        then Obj.magic (Ast_helper.Str.attribute ctx :: (Obj.magic ast))
+        else Obj.magic (Ast_helper.Sig.attribute ctx :: (Obj.magic ast))
+      in
       let fn =
         List.fold_left (apply_rewriter magic) (write_ast magic ast)
           (List.rev ppxs)
       in
-      read_ast magic fn
+      let ast = read_ast magic fn in
+      let open Parsetree in
+      if magic = Config.ast_impl_magic_number then
+        let ast =
+          match Obj.magic ast with
+          | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, _)}
+            :: items ->
+              items
+          | items -> items
+        in
+        Obj.magic ast
+      else
+        let ast =
+          match Obj.magic ast with
+          | {psig_desc = Psig_attribute({Location.txt = "ocaml.ppx.context"}, _)}
+            :: items ->
+              items
+          | items -> items
+        in
+        Obj.magic ast
+
 
 (* Parse a file or get a dumped syntax tree from it *)
 
