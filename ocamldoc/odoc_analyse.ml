@@ -56,6 +56,9 @@ let (++) x f = f x
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
    no error occured, else None and an error message is printed.*)
+
+let tool_name = "ocamldoc"
+
 let process_implementation_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
@@ -64,7 +67,10 @@ let process_implementation_file ppf sourcefile =
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
-    let parsetree = Pparse.file Format.err_formatter inputfile Parse.implementation ast_impl_magic_number in
+    let parsetree =
+      Pparse.file ~tool_name Format.err_formatter inputfile
+        Parse.implementation ast_impl_magic_number
+    in
     let typedtree =
       Typemod.type_implementation
         sourcefile prefixname modulename env parsetree
@@ -92,7 +98,10 @@ let process_interface_file ppf sourcefile =
   let modulename = String.capitalize(Filename.basename prefixname) in
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
-  let ast = Pparse.file Format.err_formatter inputfile Parse.interface ast_intf_magic_number in
+  let ast =
+    Pparse.file ~tool_name Format.err_formatter inputfile
+      Parse.interface ast_intf_magic_number
+  in
   let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
   (ast, sg, inputfile)

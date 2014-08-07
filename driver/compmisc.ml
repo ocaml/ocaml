@@ -57,4 +57,4 @@ let initial_env () =
   in
   List.fold_left (fun env m ->
     open_implicit_module m env
-  ) env (!implicit_modules @ List.rev !Clflags.open_module)
+  ) env (!implicit_modules @ List.rev !Clflags.open_modules)
