@@ -446,6 +446,12 @@ let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_opaque f =
+  "-opaque", Arg.Unit f,
+  " Does not generate cross-module optimization information\n\
+  \     (reduces necessary recompilation on module change)"
+;;
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -515,7 +521,6 @@ module type Compiler_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
-
   val _nopervasives : unit -> unit
 end
 ;;
@@ -578,6 +583,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -794,6 +800,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_opaque F._opaque;
   ]
 end;;
 
