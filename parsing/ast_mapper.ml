@@ -623,40 +623,64 @@ let attribute_of_warning loc s =
   { loc; txt = "ocaml.ppwarning" },
   PStr ([Str.eval ~loc (Exp.constant (Asttypes.Const_string (s, None)))])
 
-let apply ~source ~target mapper =
+type ast =
+  | Intf of Parsetree.signature
+  | Impl of Parsetree.structure
+
+let input_ast source =
   let ic = open_in_bin source in
   let magic =
     really_input_string ic (String.length Config.ast_impl_magic_number)
   in
-  if magic <> Config.ast_impl_magic_number
-  && magic <> Config.ast_intf_magic_number then
-    failwith "Ast_mapper: OCaml version mismatch or malformed input";
-  Location.input_name := input_value ic;
-  let ast = input_value ic in
-  close_in ic;
-
   let ast =
+    if magic = Config.ast_impl_magic_number then begin
+      Location.input_name := input_value ic;
+      let ast : Parsetree.structure = input_value ic in
+      Impl ast
+    end else if magic = Config.ast_intf_magic_number then begin
+      Location.input_name := input_value ic;
+      let ast : Parsetree.signature = input_value ic in
+      Intf ast
+    end else
+      failwith "Ast_mapper: OCaml version mismatch or malformed input"
+  in
+  close_in ic;
+  ast
+
+let output_ast target ast =
+  let oc = open_out_bin target in
+  ( match ast with
+    | Impl ast ->
+        output_string oc Config.ast_impl_magic_number;
+        output_value oc !Location.input_name;
+        output_value oc ast
+    | Intf ast ->
+        output_string oc Config.ast_intf_magic_number;
+        output_value oc !Location.input_name;
+        output_value oc ast );
+  close_out oc
+
+let apply ~source ~target mapper =
+  let source_ast = input_ast source in
+  let target_ast =
     try
-      if magic = Config.ast_impl_magic_number
-      then Obj.magic (mapper.structure mapper (Obj.magic ast))
-      else Obj.magic (mapper.signature mapper (Obj.magic ast))
+      match source_ast with
+      | Impl ast -> Impl (mapper.structure mapper ast)
+      | Intf ast -> Intf (mapper.signature mapper ast)
     with exn ->
       match error_of_exn exn with
-      | Some error ->
-          if magic = Config.ast_impl_magic_number
-          then Obj.magic [{pstr_desc = Pstr_extension (extension_of_error error,
-                                                       []);
-                           pstr_loc  = Location.none}]
-          else Obj.magic [{psig_desc = Psig_extension (extension_of_error error,
-                                                       []);
-                           psig_loc  = Location.none}]
+      | Some error -> begin
+          match source_ast with
+          | Impl _ ->
+              Impl [{pstr_desc = Pstr_extension (extension_of_error error, []);
+                     pstr_loc  = Location.none}]
+          | Intf _ ->
+              Intf [{psig_desc = Psig_extension (extension_of_error error, []);
+                     psig_loc  = Location.none}]
+        end
       | None -> raise exn
   in
-  let oc = open_out_bin target in
-  output_string oc magic;
-  output_value oc !Location.input_name;
-  output_value oc ast;
-  close_out oc
+  output_ast target target_ast
 
 let run_main mapper =
   try
