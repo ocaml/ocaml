@@ -660,8 +660,14 @@ let run_main mapper =
     let a = Sys.argv in
     let n = Array.length a in
     if n > 2 then
-      apply ~source:a.(n - 2) ~target:a.(n - 1)
-            (mapper (Array.to_list (Array.sub a 1 (n - 3))))
+      let mapper =
+        try mapper (Array.to_list (Array.sub a 1 (n - 3)))
+        with exn ->
+          (* PR #6463 *)
+          let f _ _ = raise exn in
+          {default_mapper with structure = f; signature = f}
+      in
+      apply ~source:a.(n - 2) ~target:a.(n - 1) mapper
     else begin
       Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>\n%!"
                      Sys.executable_name;
