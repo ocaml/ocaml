@@ -152,6 +152,8 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
+- PR#6507: crash on AArch64 resulting from incorrect setting of
+  [caml_bottom_of_stack].  (Richard Jones, Mark Shinwell)
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
