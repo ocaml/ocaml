@@ -448,6 +448,11 @@ let rec remove_duplicates val_ids ext_ids = function
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
       remove_duplicates val_ids ext_ids rem
+  | Sig_typext (id, _, Text_first) :: Sig_typext (id2, ext2, Text_next) :: rem
+    when List.exists (Ident.equal id) ext_ids ->
+      (* #6510 *)
+      remove_duplicates val_ids ext_ids
+        (Sig_typext (id2, ext2, Text_first) :: rem)
   | Sig_typext (id, _, _) :: rem
     when List.exists (Ident.equal id) ext_ids ->
       remove_duplicates val_ids ext_ids rem
@@ -1449,25 +1454,35 @@ let rec simplify_modtype mty =
   | Mty_signature sg -> Mty_signature(simplify_signature sg)
 
 and simplify_signature sg =
-  let rec simplif val_names ext_names res = function
-    [] -> res
-  | (Sig_value(id, descr) as component) :: sg ->
-      let name = Ident.name id in
-      simplif (StringSet.add name val_names) ext_names
-              (if StringSet.mem name val_names then res else component :: res)
-              sg
-  | (Sig_typext(id, ext, es) as component) :: sg ->
-      let name = Ident.name id in
-      simplif val_names (StringSet.add name ext_names)
-              (if StringSet.mem name ext_names then res else component :: res)
-              sg
-  | Sig_module(id, md, rs) :: sg ->
-      let md = {md with md_type = simplify_modtype md.md_type} in
-      simplif val_names ext_names (Sig_module(id, md, rs) :: res) sg
-  | component :: sg ->
-      simplif val_names ext_names (component :: res) sg
+  let rec aux = function
+    | [] -> [], StringSet.empty, StringSet.empty
+    | (Sig_value(id, descr) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name val_names then k
+        else (component :: sg, StringSet.add name val_names, ext_names)
+    | (Sig_typext(id, ext, es) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name ext_names then
+          (* #6510 *)
+          match es, sg with
+          | Text_first, Sig_typext(id2, ext2, Text_next) :: rest ->
+              (Sig_typext(id2, ext2, Text_first) :: rest,
+               val_names, ext_names)
+          | _ -> k
+        else
+          (component :: sg, val_names, StringSet.add name ext_names)
+    | Sig_module(id, md, rs) :: sg ->
+        let (sg, val_names, ext_names) = aux sg in
+        let md = {md with md_type = simplify_modtype md.md_type} in
+        (Sig_module(id, md, rs) :: sg, val_names, ext_names)
+    | component :: sg ->
+        let (sg, val_names, ext_names) = aux sg in
+        (component :: sg, val_names, ext_names)
   in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+  let (sg, _, _) = aux sg in
+  sg
 
 (* Extract the module type of a module expression *)
 
