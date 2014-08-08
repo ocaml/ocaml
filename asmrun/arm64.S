@@ -83,10 +83,10 @@ caml_call_gc:
         PROFILE
     /* Record return address */
         STOREGLOBAL(x30, caml_last_return_address)
-.Lcaml_call_gc:
     /* Record lowest stack address */
         mov     TMP, sp
         STOREGLOBAL(TMP, caml_bottom_of_stack)
+.Lcaml_call_gc:
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
         stp     x29, x30, [sp, -400]!
@@ -175,6 +175,13 @@ caml_alloc1:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
+    /* Record the lowest address of the caller's stack frame.  This is the address
+       immediately above the pair of words (x29 and x30) we just pushed.  Those must
+       not be included since otherwise the distance from [caml_bottom_of_stack] to the
+       highest address in the caller's stack frame won't match the frame size contained
+       in the relevant frame descriptor. */
+        add     x29, sp, #16
+        STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
     /* Record return address */
         STOREGLOBAL(x30, caml_last_return_address)
@@ -200,6 +207,9 @@ caml_alloc2:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
+    /* Record the lowest address of the caller's stack frame.  See comment above. */
+        add     x29, sp, #16
+        STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
     /* Record return address */
         STOREGLOBAL(x30, caml_last_return_address)
@@ -225,6 +235,9 @@ caml_alloc3:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
+    /* Record the lowest address of the caller's stack frame.  See comment above. */
+        add     x29, sp, #16
+        STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
     /* Record return address */
         STOREGLOBAL(x30, caml_last_return_address)
@@ -250,6 +263,9 @@ caml_allocN:
         ret
 2:      stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
+    /* Record the lowest address of the caller's stack frame.  See comment above. */
+        add     x29, sp, #16
+        STOREGLOBAL(x29, caml_bottom_of_stack)
         add     x29, sp, #0
     /* Record return address */
         STOREGLOBAL(x30, caml_last_return_address)
