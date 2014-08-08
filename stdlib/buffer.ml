@@ -39,7 +39,7 @@ let blit src srcoff dst dstoff len =
              || dstoff < 0 || dstoff > (Bytes.length dst) - len
   then invalid_arg "Buffer.blit"
   else
-    Bytes.blit src.buffer srcoff dst dstoff len
+    Bytes.unsafe_blit src.buffer srcoff dst dstoff len
 ;;
 
 let nth b ofs =
@@ -66,6 +66,8 @@ let resize b more =
     else failwith "Buffer.add: cannot grow buffer"
   end;
   let new_buffer = Bytes.create !new_len in
+  (* PR#6148: let's keep using [blit] rather than [unsafe_blit] in
+     this tricky function that is slow anyway. *)
   Bytes.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
   b.length <- !new_len
