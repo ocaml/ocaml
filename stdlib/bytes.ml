@@ -20,12 +20,15 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
 external create : int -> bytes = "caml_create_string"
 external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
-external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
 external unsafe_fill : bytes -> int -> int -> char -> unit
                      = "caml_fill_string" "noalloc"
 external unsafe_to_string : bytes -> string = "%identity"
 external unsafe_of_string : string -> bytes = "%identity"
+
+external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
+                     = "caml_blit_string" "noalloc"
+external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
+                     = "caml_blit_string" "noalloc"
 
 let make n c =
   let s = create n in
@@ -84,7 +87,7 @@ let blit_string s1 ofs1 s2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > string_length s1 - len
              || ofs2 < 0 || ofs2 > length s2 - len
   then invalid_arg "Bytes.blit_string"
-  else unsafe_blit (unsafe_of_string s1) ofs1 s2 ofs2 len
+  else unsafe_blit_string s1 ofs1 s2 ofs2 len
 
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
