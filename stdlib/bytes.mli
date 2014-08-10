@@ -255,6 +255,144 @@ val compare: t -> t -> int
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
+
+(** {6 Unsafe conversions (Advanced)}
+
+    The conversions below are unsafe versions of [unsafe_to_string]
+    and [unsafe_of_string] that may not copy the internal data when
+    converting from [bytes] to [string] and conversely. They are
+    unsafe, in the sense that using them may break the invariant, if
+    you never use the deprecated [String] functions, strings are
+    immutable.
+
+    They are used internally inside the standard library to implement
+    the basic building blocks; they SHOULD NOT be used outside, except
+    by expert library authors. Note that [to_string] and [of_string]
+    are quite fast, and that using unsafe functions indiscriminately
+    will bring you more bugs than performance improvements.
+
+    Note that this interface DOES NOT assume that [bytes] and [string]
+    share the same representation; if [string]'s implementation
+    becomes ropes-based in the future, [unsafe_to_string] will still
+    make sense. On the contrary, using [Obj.magic] would break memory
+    safety; never use it (or unsafe externals) to convert between
+    [bytes] and [string].
+*)
+
+val unsafe_to_string : bytes -> string
+(**
+   Unsafely converts a byte sequence to a string.
+
+   To reason about the use of [unsafe_to_string], it is convenient to
+   consider an "ownership" discipline (in the sense of Mezzo
+   [1]). A piece of code that manipulates some data "owns" it; there
+   are two disjoint ownership mode:
+
+   - Unique ownership: the data may be accessed and mutated
+
+   - Shared ownership: the data has several owner, that may only
+     access it, not mutate it.
+
+   Unique ownership is linear: passing the data to another piece of
+   code means giving up ownership (we cannot write the
+   data again). A unique owner may decide to make the data shared
+   (giving up mutation rights on it), but shared data may never become
+   uniquely-owned again.
+
+   [1] http://gallium.inria.fr/~fpottier/biblio/pottier_abstracts.html#pottier-protzenko-13
+
+   [unsafe_to_string s] is only safe to use if the caller is the
+   unique owner of the byte sequence [s]; the caller gives up
+   ownership of [s], and gains ownership of the returned string.
+
+   There are two valid use-cases that respect this ownership
+   discipline:
+
+   1. Creating a string by initializing and mutating a byte sequence
+   that is never changed after initialization is performed.
+
+   {[ let string_init len f : string =
+        let s = Bytes.create len in
+        for i = 0 to len - 1 do Bytes.set s i (f i) done;
+        Bytes.unsafe_to_string s
+   ]}
+
+   This function is safe because the byte sequence [s] will never
+   change after [unsafe_to_string] is called. There is definitive
+   a transfer of ownership from the [string_init] code to its
+   caller at this point. Note that it would be unsafe if [s] was
+   passed as an additional parameter to the function [f], as it
+   could escape this way, and be mutated in the future.
+
+   Note that we have provided the [String.init] and [String.map],
+   [String.mapi] functions in the standard library to cover most
+   cases of building new strings; you should not need to use
+   [unsafe_to_string].
+
+   2. Temporarily giving ownership of a byte sequence to a function
+   that expects a uniquely owned string and returns ownership back, so
+   that we can mutate the sequence again after the call ended.
+
+   {[ let bytes_length (s : bytes) =
+        String.length (Bytes.unsafe_to_string s)
+   ]}
+
+   In this use-case, we do not promise that [s] will never be mutated
+   after the call to [bytes_length s]. The [String.length] function
+   temporarily borrows unique ownership of the byte sequence
+   (and sees it as a [string]), but returns this ownership back to
+   the caller, which may assume that [s] is still a valid byte
+   sequence after the call. Note that this is only correct because we
+   know that [String.length] does not capture its argument -- it could
+   escape by a side-channel such as a memoization combinator.
+
+   The caller may not mutate [s] while the string is borrowed (it has
+   temporarily given up ownership). This affects concurrent programs,
+   but also higher-order functions: if [String.length] returned
+   a future to be called later, [s] should not be mutated until this
+   future is fully consumed and returns ownership.
+*)
+
+val unsafe_of_string : string -> bytes
+
+(**
+   On paper, the same ownership discipline that makes
+   [unsafe_to_string] correct applies to [unsafe_of_string]: you may
+   use it if you are the owner of the [string] value, and are
+   giving ownership to a [bytes]-expecting program.
+
+   In practice, this function is extremely difficult to use correctly,
+   because it is hard to reason about ownership of [string] values. We
+   advise you to avoid [unsafe_of_string].
+
+   For example, string literals are shared, so you never uniquely own
+   them.
+
+   {[
+   let incorrect = Bytes.unsafe_of_string "hello"
+   let s = Bytes.of_string "hello"
+   ]}
+
+   The [incorrect] version is unsafe, because the string literal
+   ["hello"] could be shared with other parts of the program, and
+   mutating [incorrect] is a bug. You must always use the second
+   version, which performs a copy and is thus correct.
+
+   Calling [unsafe_of_string] on strings that are not string literals,
+   but are (partly) built from string literals, is also unsafe: in
+   a ropes-based implementation of string, ["foo" ^ s] would be a tree
+   whose left leaf is the shared string ["foo"]; similarly, the unique
+   ownership of [String.concat sep string_list] requires unique
+   ownership of [sep] and all the strings in [string_list].
+
+   The only case we have reasonable confidence is safe is if the
+   produced [bytes] is never mutated: it is not uniquely owned, but
+   shared, by the caller, and used as an immutable byte sequence. This
+   is possibly useful for incremental migration of low-level program
+   that manipulate immutable byte sequences, and previously used the
+   [string] type for this purpose.
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
@@ -266,5 +404,3 @@ external unsafe_blit :
   = "caml_blit_string" "noalloc"
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
-val unsafe_to_string : bytes -> string
-val unsafe_of_string : string -> bytes
