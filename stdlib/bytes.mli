@@ -272,8 +272,8 @@ val unsafe_to_string : bytes -> string
 
    To reason about the use of [unsafe_to_string], it is convenient to
    consider an "ownership" discipline. A piece of code that
-   manipulates some data "owns" it; there are two disjoint ownership
-   mode:
+   manipulates some data "owns" it; there several disjoint ownership
+   modes, including:
    - Unique ownership: the data may be accessed and mutated}
    - Shared ownership: the data has several owner, that may only
    access it, not mutate it.
@@ -284,9 +284,10 @@ val unsafe_to_string : bytes -> string
    (giving up mutation rights on it), but shared data may never become
    uniquely-owned again.
 
-   [unsafe_to_string s] is only safe to use if the caller is the
-   unique owner of the byte sequence [s]; the caller gives up
-   ownership of [s], and gains ownership of the returned string.
+   [unsafe_to_string s] can only be used when the caller owns the byte
+   sequence [s] -- either uniquely or as shared immutable data. The
+   caller gives up ownership of [s], and gains ownership of the
+   returned string.
 
    There are two valid use-cases that respect this ownership
    discipline:
@@ -295,22 +296,26 @@ val unsafe_to_string : bytes -> string
    that is never changed after initialization is performed.
 
    {[ let string_init len f : string =
-   let s = Bytes.create len in
-   for i = 0 to len - 1 do Bytes.set s i (f i) done;
-   Bytes.unsafe_to_string s
+        let s = Bytes.create len in
+        for i = 0 to len - 1 do Bytes.set s i (f i) done;
+        Bytes.unsafe_to_string s
    ]}
 
-   This function is safe because the byte sequence [s] will never
-   change after [unsafe_to_string] is called. There is definitive
-   a transfer of ownership from the [string_init] code to its
-   caller at this point. Note that it would be unsafe if [s] was
-   passed as an additional parameter to the function [f], as it
-   could escape this way, and be mutated in the future.
+   This function is safe because the byte sequence [s] will never be
+   accessed or mutated after [unsafe_to_string] is called. The
+   [string_init] code gives up ownership of [s], and returns the
+   ownership of the resulting string to its caller.
 
-   Note that we have provided the [String.init] and [String.map],
-   [String.mapi] functions in the standard library to cover most
-   cases of building new strings; you should not need to use
-   [unsafe_to_string].
+   Note that it would be unsafe if [s] was passed as an additional
+   parameter to the function [f] as it could escape this way and be
+   mutated in the future -- [string_init] would give up ownership of
+   [s] to pass it to [f], and could not call [unsafe_to_string]
+   safely.
+
+   We have provided the [String.init] and [String.map], [String.mapi]
+   functions in the standard library to cover most cases of building
+   new strings. You should prefer those over [unsafe_to_string]
+   whenever applicable.
 
    2. Temporarily giving ownership of a byte sequence to a function
    that expects a uniquely owned string and returns ownership back, so
@@ -341,17 +346,17 @@ val unsafe_of_string : string -> bytes
 (** Unsafely convert a shared string to a byte sequence that should
     not be mutated.
 
-    On paper, the same ownership discipline that makes
-    [unsafe_to_string] correct applies to [unsafe_of_string]: you may
-    use it if you are the owner of the [string] value, and you will
-    own the return [bytes] accordingly.
+    The same ownership discipline that makes [unsafe_to_string]
+    correct applies to [unsafe_of_string]: you may use it if you were
+    the owner of the [string] value, and you will own the return
+    [bytes] in the same mode.
 
-    In practice, this function is extremely difficult to use correctly,
-    because it is hard to reason about ownership of [string] values. We
-    advise you to avoid [unsafe_of_string].
+    In practice, unique ownership of string values is extremely
+    difficult to reason about correctly. You should always assume
+    strings are shared, never uniquely owned.
 
-    For example, string literals are shared, so you never uniquely own
-    them.
+    For example, string literals are implicitly shared by the
+    compiler, so you never uniquely own them.
 
     {[
     let incorrect = Bytes.unsafe_of_string "hello"
@@ -363,7 +368,7 @@ val unsafe_of_string : string -> bytes
     mutating [incorrect] is a bug. You must always use the second
     version, which performs a copy and is thus correct.
 
-    Calling [unsafe_of_string] on strings that are not string
+    Assuming unique ownership of strings that are not string
     literals, but are (partly) built from string literals, is also
     incorrect. For example, mutating [unsafe_of_string ("foo" ^ s)]
     could mutate the shared string ["foo"] -- assuming a rope-like
@@ -373,12 +378,11 @@ val unsafe_of_string : string -> bytes
     result of [unsafe_of_string].
 
     The only case we have reasonable confidence is safe is if the
-    produced [bytes] is never mutated: it is not uniquely owned, but
-    shared, and must be used as an immutable byte sequence. This is
-    possibly useful for incremental migration of low-level program
-    that manipulate immutable sequences of bytes -- for example
-    {!Marshal.from_bytes} -- and previously used the [string] type for
-    this purpose.
+    produced [bytes] is shared -- used as an immutable byte
+    sequence. This is possibly useful for incremental migration of
+    low-level programs that manipulate immutable sequences of bytes
+    (for example {!Marshal.from_bytes}) and previously used the
+    [string] type for this purpose.
 *)
 
 (**/**)
