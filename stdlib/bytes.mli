@@ -258,18 +258,12 @@ val compare: t -> t -> int
 
 (** {6 Unsafe conversions (Advanced)}
 
-    The conversions below are unsafe versions of [to_string]
-    and [of_string] that may not copy the internal data when
-    converting from [bytes] to [string] and conversely. They are
-    unsafe, in the sense that using them may break the invariant, if
-    you never use the deprecated [String] functions, strings are
-    immutable.
-
-    They are used internally inside the standard library to implement
-    the basic building blocks; they should not be used outside, except
-    by expert library authors. Note that [to_string] and [of_string]
-    are quite fast, and that using unsafe functions indiscriminately
-    will bring you more bugs than performance improvements.
+    This section describes unsafe, low-level conversion functions
+    between [bytes] and [string]. They do not copy the internal data;
+    used improperly, they can break the immutability invariant on
+    strings provided the `-safe-string` option. They are available for
+    expert library authors, but for most purposes you should use the
+    always-correct [to_string] and [of_string] instead.
 *)
 
 val unsafe_to_string : bytes -> string
