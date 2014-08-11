@@ -32,7 +32,7 @@ end
 type t =
   { mutable raw_name: Raw_name.t;
     stamp: int;
-    typ: Cmm.machtype_component;
+    mutable typ: Cmm.machtype_component;
     mutable loc: location;
     mutable spill: bool;
     mutable part: int option;
