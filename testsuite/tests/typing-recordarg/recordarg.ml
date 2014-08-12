@@ -98,6 +98,6 @@ module Z = struct
   type X1.t += A of {x: int}
   let f = function A r -> r | _ -> assert false
 
-  type t = A of {x: int}  (* BUG: this should be rejected *)
+  type t = A of {x: int}
   let g = function A r -> r
 end;;

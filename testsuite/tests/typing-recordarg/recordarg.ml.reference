@@ -65,7 +65,7 @@ Error: In module M:
 Error: Multiple definition of the type name t.A.
        Names must be unique in a given structure or signature.
 #             Characters 107-108:
-    type t = A of {x: int}  (* BUG: this should be rejected *)
+    type t = A of {x: int}
              ^
 Error: Multiple definition of the type name t.A.
        Names must be unique in a given structure or signature.
