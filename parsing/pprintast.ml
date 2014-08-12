@@ -1140,22 +1140,16 @@ class printer  ()= object(self:'self)
     | xs -> pp f "@[<v>@[<2>type %a"
           (self#list aux ~sep:"@]@,@[<2>and " ~last:"@]@]") xs
           (* called by type_def_list *)
+
+  method record_declaration f lbls =
+    let type_record_field f pld =
+      pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
+    pp f "{@\n%a}"
+      (self#list type_record_field ~sep:";@\n" )  lbls
+
   method type_declaration f x = begin
-    let  type_variant_leaf f  {pcd_name; pcd_args; pcd_res; pcd_loc=_} = match pcd_res with
-    |None ->
-        pp f "@\n|@;%s%a" pcd_name.txt
-          (fun f l -> match l with
-          | Pcstr_tuple [] -> ()
-          | Pcstr_tuple l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
-          | Pcstr_record _ -> assert false (* TODO *)
-          ) pcd_args
-    |Some x ->
-        begin match pcd_args with
-        | Pcstr_tuple l ->
-            pp f "@\n|@;%s:@;%a" pcd_name.txt
-              (self#list self#core_type1 ~sep:"@;->@;") (l@[x])
-        | Pcstr_record _ -> assert false (* TODO *)
-        end
+    let  type_variant_leaf f {pcd_name; pcd_args; pcd_res; pcd_loc=_} =
+      self#constructor_declaration f (pcd_name.txt, pcd_args, pcd_res)
     in
     pp f "%a%a@ %a"
       (fun f x -> match (x.ptype_manifest,x.ptype_kind,x.ptype_private) with
@@ -1177,10 +1171,7 @@ class printer  ()= object(self:'self)
             (self#list ~sep:"" type_variant_leaf) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-          let type_record_field f pld =
-            pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
-          pp f "{@\n%a}"
-            (self#list type_record_field ~sep:";@\n" )  l ;
+          self#record_declaration f l
       | Ptype_open ->
           pp f ".."
       ) x
@@ -1204,28 +1195,36 @@ class printer  ()= object(self:'self)
          (self#list ~sep:"" extension_constructor)
          x.ptyext_constructors
 
+  method constructor_declaration f (name, args, res) =
+    match res with
+    | None ->
+        pp f "%s%a" name
+          (fun f -> function
+             | Pcstr_tuple [] -> ()
+             | Pcstr_tuple l ->
+                 pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
+             | Pcstr_record lbls ->
+                 pp f "@;of@;%a" (self#record_declaration) lbls
+          ) args
+    | Some r ->
+        pp f "%s:@;%a" name
+          (fun f -> function
+             | Pcstr_tuple [] -> self#core_type1 f r
+             | Pcstr_tuple l -> pp f "%a@;->@;%a"
+                                  (self#list self#core_type1 ~sep:"*@;") l
+                                  self#core_type1 r
+             | Pcstr_record lbls ->
+                 pp f "%a@;->@;%a"
+                   (self#record_declaration) lbls
+                   self#core_type1 r
+          )
+          args
+
+
   method extension_constructor f x =
     match x.pext_kind with
-    | Pext_decl(l, None) ->
-        pp f "%s%a" x.pext_name.txt
-          (fun f -> function
-                 | Pcstr_tuple [] -> ()
-                 | Pcstr_tuple l ->
-                     pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
-                 | Pcstr_record _ ->
-                     pp f "{...}" (* #5528: TODO *)
-          ) l
-    | Pext_decl(l, Some r) ->
-        pp f "%s:@;%a" x.pext_name.txt
-          (fun f -> function
-                 | Pcstr_tuple [] -> self#core_type1 f r
-                 | Pcstr_tuple l -> pp f "%a@;->@;%a"
-                           (self#list self#core_type1 ~sep:"*@;") l
-                           self#core_type1 r
-                 | Pcstr_record _ ->
-                     pp f "{...}" (* #5528: TODO *)
-          )
-          l
+    | Pext_decl(l, r) ->
+        self#constructor_declaration f (x.pext_name.txt, l, r)
     | Pext_rebind li ->
         pp f "%s@ = @ %a" x.pext_name.txt
            self#longident_loc li
