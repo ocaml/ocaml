@@ -1446,16 +1446,20 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
-let explain_unbound ppf tv tl typ kwd lab =
+let explain_unbound_gen ppf tv tl typ kwd pr =
   try
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
     fprintf ppf
-      ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-      kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr tv
+      ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
+      kwd pr ti Printtyp.type_expr tv
   with Not_found -> ()
+
+let explain_unbound ppf tv tl typ kwd lab =
+  explain_unbound_gen ppf tv tl typ kwd
+    (fun ppf ti -> fprintf ppf "%s%a" (lab ti) Printtyp.type_expr (typ ti))
 
 let explain_unbound_single ppf tv ty =
   let trivial ty =
@@ -1479,17 +1483,9 @@ let explain_unbound_single ppf tv ty =
   | _ -> trivial ty
 
 
-(* TODO #5528: this will result in error messages such as:
-  
-  # type t = A of { x : < .. > ; y : int };;
-  Error: A type variable is unbound in this type declaration.
-  In case A of (< .. > as 'a) * int the variable 'a is unbound
-*)
-
 let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
   | Types.Cstr_record (_, lbls) -> List.map (fun l -> l.Types.ld_type) lbls
-
 
 let report_error ppf = function
   | Repeated_parameter ->
@@ -1545,11 +1541,14 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun c ->
+          explain_unbound_gen ppf ty tl (fun c ->
               let tl = tys_of_constr_args c.cd_args in
               Btype.newgenty (Ttuple tl)
             )
-            "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
+            "case" (fun ppf c ->
+                fprintf ppf
+                  "%s of %a" (Ident.name c.Types.cd_id)
+                  Printtyp.constructor_arguments c.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")

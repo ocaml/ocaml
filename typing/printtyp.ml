@@ -879,6 +879,10 @@ let tree_of_type_declaration id decl rs =
 let type_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
 
+let constructor_arguments ppf a =
+  let tys = tree_of_constructor_arguments a in
+  !Oprint.out_type ppf (Otyp_tuple tys)
+
 (* Print an extension declaration *)
 
 let tree_of_extension_constructor id ext es =
