@@ -83,3 +83,21 @@ module M = struct
   exception A = M1.A
   exception A
 end;;
+
+module X1 = struct
+  type t = ..
+end;;
+module X2 = struct
+  type t = ..
+end;;
+module Z = struct
+  type X1.t += A of {x: int}
+  type X2.t += A of {x: int}
+end;;
+module Z = struct
+  type X1.t += A of {x: int}
+  let f = function A r -> r | _ -> assert false
+
+  type t = A of {x: int}  (* BUG: this should be rejected *)
+  let g = function A r -> r
+end;;

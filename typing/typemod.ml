@@ -434,14 +434,32 @@ let check cl loc set_ref name =
 let check_name cl set_ref name =
   check cl name.loc set_ref name.txt
 
-let check_ext_decl loc type_names decl =
+let typedecl_subids decl =
+  match decl.ptype_kind with
+  | Ptype_variant cstrs ->
+      List.fold_left
+        (fun acc pcd ->
+           match pcd.pcd_args with
+           | Pcstr_record _ ->
+               {loc = pcd.pcd_name.loc; txt = decl.ptype_name.txt ^ "." ^ pcd.pcd_name.txt} :: acc
+           | Pcstr_tuple _ ->
+               acc
+        )
+        [] cstrs
+  | _ ->
+      []
+
+let check_types loc type_names ids =
   List.iter
     (fun id -> check "type" loc type_names (Ident.name id))
-    (Subst.sub_ids_ext decl)
+    ids
+
+let check_ext_decl loc type_names decl =
+  check_types loc type_names (Subst.sub_ids_ext decl)
 
 let check_sig_item type_names module_names modtype_names loc = function
-    Sig_type(id, _, _) ->
-      check "type" loc type_names (Ident.name id)
+    Sig_type(id, decl, _) ->
+      check_types loc type_names (id :: Subst.sub_ids decl)
   | Sig_module(id, _, _) ->
       check "module" loc module_names (Ident.name id)
   | Sig_modtype(id, _) ->
@@ -570,7 +588,9 @@ and transl_signature env sg =
         | Psig_type sdecls ->
             List.iter
               (fun decl ->
-                check_name "type" type_names decl.ptype_name)
+                 List.iter (check_name "type" type_names)
+                   (decl.ptype_name :: typedecl_subids decl)
+              )
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -1213,7 +1233,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
     | Pstr_type sdecls ->
         List.iter
-          (fun decl -> check_name "type" type_names decl.ptype_name)
+          (fun decl ->
+             List.iter (check_name "type" type_names)
+               (decl.ptype_name :: typedecl_subids decl)
+          )
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         Tstr_type decls,
