@@ -1478,6 +1478,19 @@ let explain_unbound_single ppf tv ty =
         "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
 
+
+(* TODO #5528: this will result in error messages such as:
+  
+  # type t = A of { x : < .. > ; y : int };;
+  Error: A type variable is unbound in this type declaration.
+  In case A of (< .. > as 'a) * int the variable 'a is unbound
+*)
+
+let tys_of_constr_args = function
+  | Types.Cstr_tuple tl -> tl
+  | Types.Cstr_record (_, lbls) -> List.map (fun l -> l.Types.ld_type) lbls
+
+
 let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
@@ -1533,10 +1546,8 @@ let report_error ppf = function
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
           explain_unbound ppf ty tl (fun c ->
-              match c.cd_args with
-              | Cstr_tuple tl ->
-                  Btype.newgenty (Ttuple tl)
-              | Cstr_record _ -> assert false (* #5528: TODO *)
+              let tl = tys_of_constr_args c.cd_args in
+              Btype.newgenty (Ttuple tl)
             )
             "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
       | Type_record (tl, _), _ ->
@@ -1548,10 +1559,7 @@ let report_error ppf = function
       end
   | Unbound_type_var_ext (ty, ext) ->
       fprintf ppf "A type variable is unbound in this extension constructor";
-      let args = match ext.ext_args with
-        | Cstr_tuple l -> l
-        | Cstr_record (_, lbls) -> List.map (fun l -> l.Types.ld_type) lbls
-      in
+      let args = tys_of_constr_args ext.ext_args in
       explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
   | Not_open_type path ->
       fprintf ppf "@[%s@ %a@]"
