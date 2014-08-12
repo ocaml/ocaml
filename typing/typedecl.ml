@@ -1135,21 +1135,25 @@ let transl_extension_constructor env check_open type_path type_params
         in
         let rebind, args =
         if cdescr.cstr_inlined then
-          let p =
-            match cdescr.cstr_args with
-            | [ {desc=Tconstr(p, [], _)} ] -> p
-            | [ {desc=Tconstr(_, _, _)} ] ->
-                (* #5528: TODO *)
-                failwith "Rebinding of inlined extension constructors with free variables is not yet supported."
+          let p, tl =
+            match args with
+            | [ {desc=Tconstr(p, tl, _)} ] -> p, tl
             | _ -> assert false
 	  in
 	  let decl =
 	    try Env.find_type p env with Not_found -> assert false
 	  in
-	  let lbls =
-	    match decl.type_kind with Type_record (l, _) -> l | _ -> assert false
+          let decl = Ctype.instance_declaration decl in
+          assert (List.length decl.type_params = List.length tl);
+          List.iter2 (Ctype.unify env) decl.type_params tl;
+          let lbls =
+            match decl.type_kind with
+            | Type_record (lbls, _) -> lbls
+            | _ -> assert false
 	  in
-	  let id = Ident.create (Path.last type_path ^ "." ^ sext.pext_name.txt) in
+	  let id =
+            Ident.create (Path.last type_path ^ "." ^ sext.pext_name.txt)
+          in
 	  Some p, Types.Cstr_record (id, lbls)
         else
           None, Types.Cstr_tuple args
@@ -1546,7 +1550,7 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this extension constructor";
       let args = match ext.ext_args with
         | Cstr_tuple l -> l
-        | Cstr_record _ -> assert false (* #5528: TODO *)
+        | Cstr_record (_, lbls) -> List.map (fun l -> l.Types.ld_type) lbls
       in
       explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
   | Not_open_type path ->
