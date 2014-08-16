@@ -112,6 +112,11 @@ val map : f:(char -> char) -> bytes -> bytes
     stores the resulting bytes in a new sequence that is returned as
     the result. *)
 
+val mapi : (int -> char -> char) -> bytes -> bytes
+(** [mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the resulting bytes
+    in a new sequence that is returned as the result. *)
+
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
     whitespace. The bytes regarded as whitespace are the ASCII
