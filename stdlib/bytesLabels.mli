@@ -112,7 +112,7 @@ val map : f:(char -> char) -> bytes -> bytes
     stores the resulting bytes in a new sequence that is returned as
     the result. *)
 
-val mapi : (int -> char -> char) -> bytes -> bytes
+val mapi : f:(int -> char -> char) -> bytes -> bytes
 (** [mapi f s] calls [f] with each character of [s] and its
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
