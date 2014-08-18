@@ -92,3 +92,4 @@ val runtime_variant : string ref
 val force_slash : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
+val opaque : bool ref
