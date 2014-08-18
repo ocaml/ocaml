@@ -10,6 +10,7 @@
     val uppercase : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
@@ -29,6 +30,7 @@ Error: Signature mismatch:
     val uppercase : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
@@ -44,6 +46,7 @@ Error: Signature mismatch:
       val uppercase : char -> char
       type t = char
       val compare : t -> t -> int
+      val equal : t -> t -> bool
       external unsafe_chr : int -> char = "%identity"
     end
 # module C4 :
@@ -55,6 +58,7 @@ Error: Signature mismatch:
     val uppercase : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'

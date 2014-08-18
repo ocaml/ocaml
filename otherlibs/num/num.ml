@@ -330,6 +330,8 @@ and le_num num1 num2 = compare_num num1 num2 <= 0
 and gt_num num1 num2 = compare_num num1 num2 > 0
 and ge_num num1 num2 = compare_num num1 num2 >= 0
 
+let equal a b = compare_num a b = 0
+
 let ( </ ) = lt_num
 and ( <=/ ) = le_num
 and ( >/ ) = gt_num

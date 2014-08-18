@@ -223,6 +223,9 @@ val compare: t -> t -> int
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equal function for bytes. @since 4.03.0 *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

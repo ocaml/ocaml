@@ -153,6 +153,9 @@ val compare: t -> t -> int
     allows the module [Int32] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equal function for int32s. @since 4.03.0 *)
+
 (**/**)
 
 (** {6 Deprecated functions} *)

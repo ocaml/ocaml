@@ -124,3 +124,4 @@ let uncapitalize s =
 type t = string
 
 let compare (x: t) (y: t) = Pervasives.compare x y
+external equal : string -> string -> bool = "caml_string_equal"
