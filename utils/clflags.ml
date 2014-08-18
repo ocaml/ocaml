@@ -71,6 +71,7 @@ and dump_instr = ref false              (* -dinstr *)
 
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
+and opaque = ref false                  (* -opaque *)
 
 and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
@@ -86,7 +87,6 @@ let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
-
 let native_code = ref false             (* set to true under ocamlopt *)
 let inline_threshold = ref 10
 let force_slash = ref false             (* for ocamldep *)

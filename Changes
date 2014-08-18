@@ -100,6 +100,8 @@ Compilers:
   (Vladimir Brankov)
 - PR#6017: a new format implementation based on GADTs
   (Benoît Vaugon and Gabriel Scherer)
+- PR#6389: ocamlopt -opaque option for incremental native compilation
+  (Pierre Chambart, Gabriel Scherer)
 
 Toplevel interactive system:
 - PR#5377: New "#show_*" directives
