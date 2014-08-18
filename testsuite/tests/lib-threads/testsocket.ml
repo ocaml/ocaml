@@ -33,11 +33,11 @@ let main() =
     match Sys.argv with
     |  [| _ |] -> false, [| Sys.argv.(0); "caml.inria.fr" |]
     | _ -> true, Sys.argv in
-  let addresses = Array.create (Array.length argv - 1) inet_addr_any in
+  let addresses = Array.make (Array.length argv - 1) inet_addr_any in
   for i = 1 to Array.length argv - 1 do
     addresses.(i - 1) <- (gethostbyname argv.(i)).h_addr_list.(0)
   done;
-  let processes = Array.create (Array.length addresses) (Thread.self()) in
+  let processes = Array.make (Array.length addresses) (Thread.self()) in
   for i = 0 to Array.length addresses - 1 do
     processes.(i) <- Thread.create (engine verbose i) addresses.(i)
   done;

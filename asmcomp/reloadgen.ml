@@ -54,7 +54,7 @@ method makereg r =
 
 method private makeregs rv =
   let n = Array.length rv in
-  let newv = Array.create n Reg.dummy in
+  let newv = Array.make n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- self#makereg rv.(i) done;
   newv
 

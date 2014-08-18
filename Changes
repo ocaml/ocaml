@@ -143,6 +143,8 @@ Standard library:
   (John Whitington)
 - PR#6180: efficient creation of uninitialized float arrays
   (Alain Frisch, request by Markus Mottl)
+- Trigger warning 3 for all values marked as deprected in the documentation.
+  (Damien Doligez)
 
 OCamldoc:
 - PR#6257: handle full doc comments for variant constructors and

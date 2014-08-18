@@ -440,7 +440,7 @@ let analyse_files ?(init=[]) files =
     );
 
   if !Odoc_global.sort_modules then
-    Sort.list (fun m1 -> fun m2 -> m1.Odoc_module.m_name < m2.Odoc_module.m_name) merged_modules
+    List.sort (fun m1 m2 -> compare m1.Odoc_module.m_name m2.Odoc_module.m_name) merged_modules
   else
     merged_modules
 

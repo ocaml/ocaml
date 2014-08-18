@@ -82,7 +82,7 @@ let label_table  = ref ([| |] : label_definition array)
 let extend_label_table needed =
   let new_size = ref(Array.length !label_table) in
   while needed >= !new_size do new_size := 2 * !new_size done;
-  let new_table = Array.create !new_size (Label_undefined []) in
+  let new_table = Array.make !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
   label_table := new_table
 
@@ -150,7 +150,7 @@ let record_event ev =
 
 let init () =
   out_position := 0;
-  label_table := Array.create 16 (Label_undefined []);
+  label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
   debug_dirs := StringSet.empty;
   events := []

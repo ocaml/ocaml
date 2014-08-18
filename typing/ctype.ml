@@ -293,7 +293,7 @@ let flatten_fields ty =
         (l, ty)
   in
     let (l, r) = flatten [] ty in
-    (Sort.list (fun (n, _, _) (n', _, _) -> n < n') l, r)
+    (List.sort (fun (n, _, _) (n', _, _) -> compare n n') l, r)
 
 let build_fields level =
   List.fold_right
@@ -422,7 +422,7 @@ let rec class_type_arity =
                   (*  Miscellaneous operations on row types  *)
                   (*******************************************)
 
-let sort_row_fields = Sort.list (fun (p,_) (q,_) -> p < q)
+let sort_row_fields = List.sort (fun (p,_) (q,_) -> compare p q)
 
 let rec merge_rf r1 r2 pairs fi1 fi2 =
   match fi1, fi2 with

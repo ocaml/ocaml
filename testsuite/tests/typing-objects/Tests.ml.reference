@@ -217,9 +217,9 @@ class e :
 #     * * * * * * * * * * * * * * * * * * * * *                             module M : sig class c : unit -> object method xc : int end end
 #         class d : unit -> object val x : int method xc : int method xd : int end
 # - : int * int = (1, 2)
-#         Characters 7-156:
+#         Characters 7-154:
   ......virtual ['a] matrix (sz, init : int * 'a) = object
-    val m = Array.create_matrix sz sz init
+    val m = Array.make_matrix sz sz init
     method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
   end..
 Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >

@@ -232,7 +232,7 @@ module Path2 = struct
     | _ -> Pervasives.compare p1 p2
 end
 module PathMap = Map.Make(Path2)
-let printing_map = ref (Lazy.lazy_from_val PathMap.empty)
+let printing_map = ref (Lazy.from_val PathMap.empty)
 
 let same_type t t' = repr t == repr t'
 

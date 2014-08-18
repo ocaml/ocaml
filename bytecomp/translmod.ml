@@ -238,7 +238,7 @@ let reorder_rec_bindings bindings =
   and rhs = Array.of_list (List.map (fun (_,_,_,rhs) -> rhs) bindings) in
   let fv = Array.map Lambda.free_variables rhs in
   let num_bindings = Array.length id in
-  let status = Array.create num_bindings Undefined in
+  let status = Array.make num_bindings Undefined in
   let res = ref [] in
   let rec emit_binding i =
     match status.(i) with

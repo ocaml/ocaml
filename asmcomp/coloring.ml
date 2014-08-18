@@ -47,7 +47,7 @@ let allocate_registers() =
     if reg.spill then begin
       (* Preallocate the registers in the stack *)
       let nslots = Proc.num_stack_slots.(cl) in
-      let conflict = Array.create nslots false in
+      let conflict = Array.make nslots false in
       List.iter
         (fun r ->
           match r.loc with
@@ -84,14 +84,14 @@ let allocate_registers() =
   (* Where to start the search for a suitable register.
      Used to introduce some "randomness" in the choice between registers
      with equal scores. This offers more opportunities for scheduling. *)
-  let start_register = Array.create Proc.num_register_classes 0 in
+  let start_register = Array.make Proc.num_register_classes 0 in
 
   (* Assign a location to a register, the best we can. *)
   let assign_location reg =
     let cl = Proc.register_class reg in
     let first_reg = Proc.first_available_register.(cl) in
     let num_regs = Proc.num_available_registers.(cl) in
-    let score = Array.create num_regs 0 in
+    let score = Array.make num_regs 0 in
     let best_score = ref (-1000000) and best_reg = ref (-1) in
     let start = start_register.(cl) in
     if num_regs <> 0 then begin
@@ -161,7 +161,7 @@ let allocate_registers() =
     end else begin
       (* Sorry, we must put the pseudoreg in a stack location *)
       let nslots = Proc.num_stack_slots.(cl) in
-      let score = Array.create nslots 0 in
+      let score = Array.make nslots 0 in
       (* Compute the scores as for registers *)
       List.iter
         (fun (r, w) ->

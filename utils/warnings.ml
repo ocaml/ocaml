@@ -171,8 +171,8 @@ type state =
 let current =
   ref
     {
-      active = Array.create (last_warning_number + 1) true;
-      error = Array.create (last_warning_number + 1) false;
+      active = Array.make (last_warning_number + 1) true;
+      error = Array.make (last_warning_number + 1) false;
     }
 
 let backup () = !current
@@ -395,14 +395,13 @@ let print ppf w =
   for i = 0 to String.length msg - 1 do
     if msg.[i] = '\n' then incr newlines;
   done;
-  let (out, flush, newline, space) =
-    Format.pp_get_all_formatter_output_functions ppf ()
-  in
-  let countnewline x = incr newlines; newline x in
-  Format.pp_set_all_formatter_output_functions ppf out flush countnewline space;
+  let out_functions = Format.pp_get_formatter_out_functions ppf () in
+  let countnewline x = incr newlines; out_functions.Format.out_newline x in
+  Format.pp_set_formatter_out_functions ppf
+         {out_functions with Format.out_newline = countnewline};
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
-  Format.pp_set_all_formatter_output_functions ppf out flush newline space;
+  Format.pp_set_formatter_out_functions ppf out_functions;
   if (!current).error.(num) then incr nerrors;
   !newlines
 ;;

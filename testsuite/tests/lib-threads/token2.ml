@@ -35,9 +35,9 @@ let process (n, ins, outs, nprocs) =
 let main() =
   let nprocs = try int_of_string Sys.argv.(1) with _ -> 100 in
   let iter = try int_of_string Sys.argv.(2) with _ -> 1000 in
-  let ins = Array.create nprocs Unix.stdin in
-  let outs = Array.create nprocs Unix.stdout in
-  let threads = Array.create nprocs (Thread.self ()) in
+  let ins = Array.make nprocs Unix.stdin in
+  let outs = Array.make nprocs Unix.stdout in
+  let threads = Array.make nprocs (Thread.self ()) in
   for n = 0 to nprocs - 1 do
     let (i, o) = Unix.pipe() in ins.(n) <- i; outs.(n) <- o
   done;

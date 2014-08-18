@@ -90,7 +90,7 @@ val init : int -> (int -> char) -> string
     @since 4.02.0
 *)
 
-val copy : string -> string
+val copy : string -> string [@@ocaml.deprecated]
 (** Return a copy of the given string.
 
     @deprecated Because strings are immutable, it doesn't make much

@@ -1177,7 +1177,7 @@ and close_one_function fenv cenv id funct =
 
 and close_switch arg fenv cenv cases num_keys default =
   let ncases = List.length cases in
-  let index = Array.create num_keys 0
+  let index = Array.make num_keys 0
   and store = Storer.mk_store () in
 
   (* First default case *)

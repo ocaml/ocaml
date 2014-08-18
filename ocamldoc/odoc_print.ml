@@ -25,13 +25,9 @@ let new_fmt () =
 
 let (type_fmt, flush_type_fmt) = new_fmt ()
 let _ =
-  let (out, flush, outnewline, outspace) =
-    pp_get_all_formatter_output_functions type_fmt ()
-  in
-  pp_set_all_formatter_output_functions type_fmt
-    ~out ~flush
-    ~newline: (fun () -> out "\n  " 0 3)
-    ~spaces: outspace
+  let outfuns = pp_get_formatter_out_functions type_fmt () in
+  pp_set_formatter_out_functions type_fmt
+    {outfuns with out_newline = fun () -> outfuns.out_string "\n  " 0 3}
 
 let (modtype_fmt, flush_modtype_fmt) = new_fmt ()
 

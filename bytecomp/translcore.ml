@@ -1078,7 +1078,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.create (Array.length all_labels) staticfail in
+    let lv = Array.make (Array.length all_labels) staticfail in
     let init_id = Ident.create "init" in
     begin match opt_init_expr with
       None -> ()

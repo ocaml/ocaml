@@ -84,10 +84,10 @@ external set_trace: bool -> bool
     = "caml_set_parser_trace"
 
 let env =
-  { s_stack = Array.create 100 0;
-    v_stack = Array.create 100 (Obj.repr ());
-    symb_start_stack = Array.create 100 dummy_pos;
-    symb_end_stack = Array.create 100 dummy_pos;
+  { s_stack = Array.make 100 0;
+    v_stack = Array.make 100 (Obj.repr ());
+    symb_start_stack = Array.make 100 dummy_pos;
+    symb_end_stack = Array.make 100 dummy_pos;
     stacksize = 100;
     stackbase = 0;
     curr_char = 0;
@@ -104,10 +104,10 @@ let env =
 let grow_stacks() =
   let oldsize = env.stacksize in
   let newsize = oldsize * 2 in
-  let new_s = Array.create newsize 0
-  and new_v = Array.create newsize (Obj.repr ())
-  and new_start = Array.create newsize dummy_pos
-  and new_end = Array.create newsize dummy_pos in
+  let new_s = Array.make newsize 0
+  and new_v = Array.make newsize (Obj.repr ())
+  and new_start = Array.make newsize dummy_pos
+  and new_end = Array.make newsize dummy_pos in
     Array.blit env.s_stack 0 new_s 0 oldsize;
     env.s_stack <- new_s;
     Array.blit env.v_stack 0 new_v 0 oldsize;
