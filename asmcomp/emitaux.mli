@@ -30,6 +30,10 @@ val emit_float32_directive: string -> int32 -> unit
 val reset : unit -> unit
 val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
+val emit_debug_info_gen :
+  Debuginfo.t ->
+  (int -> string -> unit) ->
+  (int -> int -> unit) -> unit
 
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)

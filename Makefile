@@ -79,7 +79,14 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+INTEL_ASM=\
+  asmcomp/intel_proc.cmo \
+  asmcomp/intel_gas.cmo \
+  asmcomp/intel_masm.cmo
+
+ASMCOMP=\
+  $(INTEL_ASM) \
+  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
@@ -529,6 +536,8 @@ partialclean::
 
 $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
+partialclean:: asmclean
+
 # The numeric opcodes
 
 bytecomp/opcodes.ml: byterun/instruct.h
@@ -564,7 +573,7 @@ beforedepend:: bytecomp/runtimedef.ml
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	ln -s $(ARCH)/arch.ml asmcomp/arch.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/arch.ml
 
 beforedepend:: asmcomp/arch.ml
@@ -572,7 +581,7 @@ beforedepend:: asmcomp/arch.ml
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
 	ln -s $(ARCH)/proc.ml asmcomp/proc.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/proc.ml
 
 beforedepend:: asmcomp/proc.ml
@@ -580,7 +589,7 @@ beforedepend:: asmcomp/proc.ml
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
 	ln -s $(ARCH)/selection.ml asmcomp/selection.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/selection.ml
 
 beforedepend:: asmcomp/selection.ml
@@ -588,7 +597,7 @@ beforedepend:: asmcomp/selection.ml
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
 	ln -s $(ARCH)/CSE.ml asmcomp/CSE.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/CSE.ml
 
 beforedepend:: asmcomp/CSE.ml
@@ -596,7 +605,7 @@ beforedepend:: asmcomp/CSE.ml
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 	ln -s $(ARCH)/reload.ml asmcomp/reload.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/reload.ml
 
 beforedepend:: asmcomp/reload.ml
@@ -604,7 +613,7 @@ beforedepend:: asmcomp/reload.ml
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 	ln -s $(ARCH)/scheduling.ml asmcomp/scheduling.ml
 
-partialclean::
+asmclean::
 	rm -f asmcomp/scheduling.ml
 
 beforedepend:: asmcomp/scheduling.ml
@@ -615,7 +624,7 @@ asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
 	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
 	|| { rm -f asmcomp/emit.ml; exit 2; }
 
-partialclean::
+asmclean::
 	rm -f asmcomp/emit.ml
 
 beforedepend:: asmcomp/emit.ml

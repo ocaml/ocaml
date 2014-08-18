@@ -75,7 +75,14 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+INTEL_ASM=\
+  asmcomp/intel_proc.cmo \
+  asmcomp/intel_gas.cmo \
+  asmcomp/intel_masm.cmo 
+
+ASMCOMP=\
+  $(INTEL_ASM) \
+  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
@@ -499,11 +506,11 @@ partialclean::
 
 beforedepend:: asmcomp/arch.ml
 
-ifeq ($(TOOLCHAIN),msvc)
-ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
-else
+#ifeq ($(TOOLCHAIN),msvc)
+#ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
+#else
 ASMCOMP_EMIT=asmcomp/$(ARCH)/emit.mlp
-endif
+#endif
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
 	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
