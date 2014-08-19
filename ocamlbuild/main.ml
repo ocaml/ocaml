@@ -93,6 +93,8 @@ let proceed () =
      <**/*.cmx>: ocaml, native\n\
     ";
 
+  List.iter Configuration.parse_string !Options.tag_lines;
+
   Configuration.tag_any !Options.tags;
   if !Options.recursive || Options.ocamlbuild_project_heuristic ()
   then Configuration.tag_any ["traverse"];
@@ -170,8 +172,6 @@ let proceed () =
   Options.include_dirs := Pathname.current_dir_name :: List.rev !entry_include_dirs;
   dprintf 3 "include directories are:@ %a" print_string_list !Options.include_dirs;
   Options.entry := Some entry;
-
-  List.iter Configuration.parse_string !Options.tag_lines;
 
   Hooks.call_hook Hooks.Before_rules;
   Ocaml_specific.init ();
