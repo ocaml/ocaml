@@ -18,7 +18,6 @@ open Pathname
 type resource_pattern
 type env
 
-type t = Pathname.t
 module Resources : Set.S with type elt = t
 
 module Cache :

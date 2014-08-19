@@ -410,22 +410,3 @@ let memo3 f =
     with Not_found ->
       let res = f x y z in
       (Hashtbl.add cache (x,y,z) res; res)
-
-let set_lexbuf_fname fname lexbuf =
-  let open Lexing in
-  lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname = fname };
-  lexbuf.lex_curr_p  <- { lexbuf.lex_curr_p  with pos_fname = fname };
-  ()
-
-let lexbuf_of_string ?name content =
-  let lexbuf = Lexing.from_string content in
-  let fname = match name with
-    | Some name -> name
-    | None ->
-      (* 40: hope the location will fit one line of 80 chars *)
-      if String.length content < 40 && not (String.contains content '\n') then
-        String.escaped content
-      else ""
-  in
-  set_lexbuf_fname fname lexbuf;
-  lexbuf

@@ -142,8 +142,7 @@ let use_jocaml () =
 ;;
 
 let add_to rxs x =
-  let xs = Lexers.comma_or_blank_sep_strings
-    Const.Source.command_line (Lexing.from_string x) in
+  let xs = Lexers.comma_or_blank_sep_strings (Lexing.from_string x) in
   rxs := xs :: !rxs
 let add_to' rxs x =
   if x <> dummy then

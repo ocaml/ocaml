@@ -17,8 +17,6 @@ open Format
 open Log
 open Pathname.Operators
 
-
-type t = Pathname.t
 module Resources = Set.Make(Pathname)
 
 let print = Pathname.print
@@ -314,8 +312,7 @@ end = struct
         let mk (pattern_allowed, s) = List.map begin function
           | `Var(var_name, globber) -> V(var_name, globber)
           | `Word s -> A s
-        end (Lexers.path_scheme pattern_allowed
-               Const.Source.target_pattern (lexbuf_of_string s))
+        end (Lexers.path_scheme pattern_allowed (Lexing.from_string s))
 
         let mk = memo mk
 

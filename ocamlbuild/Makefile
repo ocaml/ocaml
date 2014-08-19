@@ -23,7 +23,6 @@ COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB) -safe-string
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
 PACK_CMO=\
-  const.cmo \
   loc.cmo \
   discard_printf.cmo \
   signatures.cmi \
