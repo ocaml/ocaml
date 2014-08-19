@@ -100,9 +100,12 @@ let proceed () =
   then Configuration.tag_any ["traverse"];
 
   (* options related to findlib *)
-  List.iter
-    (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
-    !Options.ocaml_pkgs;
+  if !Options.use_ocamlfind then
+    List.iter
+      (fun pkg ->
+        let tag = Param_tags.make "package" pkg in
+        Configuration.tag_any [tag])
+      !Options.ocaml_pkgs;
 
   begin match !Options.ocaml_syntax with
   | Some syntax -> Configuration.tag_any [Param_tags.make "syntax" syntax]
