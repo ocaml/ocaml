@@ -94,9 +94,7 @@ let proceed () =
     ";
 
   Configuration.tag_any !Options.tags;
-  if !Options.recursive
-  || Sys.file_exists (* authorized since we're not in build *) "_tags"
-  || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
+  if !Options.recursive || Options.ocamlbuild_project_heuristic ()
   then Configuration.tag_any ["traverse"];
 
   (* options related to findlib *)

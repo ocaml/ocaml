@@ -23,6 +23,7 @@ open Format
 open Command
 
 let entry = ref None
+let project_root_dir = ref None
 let build_dir = ref (Filename.concat (Sys.getcwd ()) "_build")
 let include_dirs = ref []
 let exclude_dirs = ref []
@@ -270,6 +271,8 @@ let init () =
   parse_argv argv' !spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
 
+  project_root_dir := Some (Sys.getcwd ());
+
   let () =
     let log = !log_file_internal in
     if log = "" then Log.init None
@@ -334,3 +337,17 @@ let init () =
 
   ignore_list := List.map String.capitalize !ignore_list
 ;;
+
+(* The current heuristic: we know we are in an ocamlbuild project if
+   either _tags or myocamlbuild.ml are present at the root. This
+   heuristic has been documented and explained to users, so it should
+   not be changed. *)
+let ocamlbuild_project_heuristic () =
+  let root_dir = match !project_root_dir with
+    | None -> Sys.getcwd ()
+    | Some dir -> dir in
+  let at_root file = Filename.concat root_dir file in
+  Sys.file_exists (* authorized since we're not in build *)
+      (at_root "_tags")
+  || Sys.file_exists (* authorized since we're not in build *)
+      (at_root "myocamlbuild.ml")
