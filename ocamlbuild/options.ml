@@ -294,14 +294,29 @@ let init () =
     with Not_found ->
       failwith "ocamlfind not found on path, but -no-ocamlfind not used"
     end;
-    (* TODO: warning message when using an option such as -ocamlc *)
+
+    let with_ocamlfind (command_name, command_ref) =
+        command_ref := match !command_ref with
+          | Sh user_command ->
+            (* this command has been set by the user
+               using an -ocamlc, -ocamlopt, etc. flag;
+
+               not all such combinations make sense (eg. "ocamlfind
+               /my/special/path/to/ocamlc" will make ocamlfind choke),
+               but the user will see the error and hopefully fix the
+               flags. *)
+            ocamlfind & (Sh user_command);
+          | _ -> ocamlfind & A command_name
+    in
     (* Note that plugins can still modify these variables After_options.
        This design decision can easily be changed. *)
-    ocamlc := ocamlfind & A"ocamlc";
-    ocamlopt := ocamlfind & A"ocamlopt";
-    ocamldep := ocamlfind & A"ocamldep";
-    ocamldoc := ocamlfind & A"ocamldoc";
-    ocamlmktop := ocamlfind & A"ocamlmktop";
+    List.iter with_ocamlfind [
+      "ocamlc", ocamlc;
+      "ocamlopt", ocamlopt;
+      "ocamldep", ocamldep;
+      "ocamldoc", ocamldoc;
+      "ocamlmktop", ocamlmktop;
+    ]
   end;
 
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in

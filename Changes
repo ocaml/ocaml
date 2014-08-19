@@ -240,6 +240,8 @@ Bug fixes:
   (Jacques Garrigue, report by Leo White)
 - PR#6293: Assert_failure with invalid package type
   (Jacques Garrigue, report by Elnatan Reisner)
+- PR#6300: ocamlbuild -use-ocamlfind conflicts with -ocamlc
+  (Gabriel Scherer)
 - PR#6302: bytecode debug information re-read from filesystem every time
   (Jacques-Henri Jourdan)
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
