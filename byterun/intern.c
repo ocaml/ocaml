@@ -469,6 +469,16 @@ static void intern_rec(value *dest)
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(size, Custom_tag, intern_color);
         Custom_ops_val(v) = ops;
+
+        if (ops->finalize != NULL && Is_young(v)) {
+          /* Remembered that the block has a finalizer */
+          if (caml_finalize_table.ptr >= caml_finalize_table.limit){
+            CAMLassert (caml_finalize_table.ptr == caml_finalize_table.limit);
+            caml_realloc_ref_table (&caml_finalize_table);
+          }
+          *caml_finalize_table.ptr++ = (value *)v;
+        }
+
         intern_dest += 1 + size;
         break;
       default:
