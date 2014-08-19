@@ -74,6 +74,15 @@ static void clear_table (struct caml_ref_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
+void caml_add_to_table (struct caml_ref_table *tbl, value *v)
+{
+  if (tbl->ptr >= tbl->limit){
+    CAMLassert (tbl->ptr == tbl->limit);
+    caml_realloc_ref_table (tbl);
+  }
+  *tbl->ptr++ = v;
+}
+
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {

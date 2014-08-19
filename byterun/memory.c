@@ -508,10 +508,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   CAMLassert(Is_in_heap(fp));
   *fp = val;
   if (Is_block (val) && Is_young (val)) {
-    if (caml_ref_table.ptr >= caml_ref_table.limit){
-      caml_realloc_ref_table (&caml_ref_table);
-    }
-    *caml_ref_table.ptr++ = fp;
+    caml_add_to_table(&caml_ref_table, fp);
   }
 }
 
@@ -560,11 +557,7 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
     /* Check for condition 1. */
     if (Is_block(val) && Is_young(val)) {
       /* Add [fp] to remembered set */
-      if (caml_ref_table.ptr >= caml_ref_table.limit){
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
-        caml_realloc_ref_table (&caml_ref_table);
-      }
-      *caml_ref_table.ptr++ = fp;
+      caml_add_to_table(&caml_ref_table, fp);
     }
   }
 }
