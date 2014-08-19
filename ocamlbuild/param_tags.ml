@@ -32,7 +32,7 @@ let only_once f =
 let declare name action =
   Hashtbl.add declared_tags name (only_once action)
 
-let parse tag = Lexers.tag_gen (Lexing.from_string tag)
+let parse tag = Lexers.tag_gen (failwith "TODO") (Lexing.from_string tag)
 
 let acknowledge maybe_loc tag =
   acknowledged_tags := (parse tag, maybe_loc) :: !acknowledged_tags

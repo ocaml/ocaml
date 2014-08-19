@@ -18,7 +18,7 @@
 
 (** Incorporate a newline-separated configuration string into the current configuration.
     Will usually raising an [Invalid_arg] with an appropriately explicit message in case of error. *)
-val parse_string : string -> unit
+val parse_string : ?source:Loc.source -> string -> unit
 
 (** [parse_file ?dir fn] incorporates the configuration file named [fn], prefixing its glob patterns
     with [dir] if given. *)

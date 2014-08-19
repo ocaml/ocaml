@@ -32,17 +32,21 @@ let (configs, add_config) =
      Hashtbl.clear cache)
 
 let parse_lexbuf ?dir source lexbuf =
-  lexbuf.Lexing.lex_curr_p <-
-    { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = source };
-  let conf = Lexers.conf_lines dir lexbuf in
+  let conf = Lexers.conf_lines dir source lexbuf in
   add_config conf
 
-let parse_string s =
-  parse_lexbuf (Printf.sprintf "STRING(%s)" s) (Lexing.from_string s)
+let parse_string ?source s =
+  let source = match source with
+    | Some source -> source
+    | None -> Const.Source.configuration
+  in
+  parse_lexbuf source (lexbuf_of_string s)
 
 let parse_file ?dir file =
   with_input_file file begin fun ic ->
-    parse_lexbuf ?dir file (Lexing.from_channel ic)
+    let lexbuf = Lexing.from_channel ic in
+    set_lexbuf_fname file lexbuf;
+    parse_lexbuf ?dir Const.Source.file lexbuf
   end
 
 let key_match = Glob.eval
