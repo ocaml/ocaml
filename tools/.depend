@@ -45,6 +45,12 @@ objinfo.cmo : ../asmcomp/printclambda.cmi ../utils/misc.cmi \
 objinfo.cmx : ../asmcomp/printclambda.cmx ../utils/misc.cmx \
     ../utils/config.cmx ../asmcomp/cmx_format.cmi ../bytecomp/cmo_format.cmi \
     ../typing/cmi_format.cmx ../bytecomp/bytesections.cmx
+ocamlmd5sum.cmo : ../utils/misc.cmi ../utils/config.cmi
+	../asmcomp/cmx_format.cmi ../bytecomp/cmo_format.cmi	\
+	../typing/cmi_format.cmi ../bytecomp/bytesections.cmi
+ocamlmd5sum.cmx : ../utils/misc.cmx ../utils/config.cmx		\
+	../asmcomp/cmx_format.cmi ../bytecomp/cmo_format.cmi	\
+	../typing/cmi_format.cmx ../bytecomp/bytesections.cmx
 ocaml299to3.cmo :
 ocaml299to3.cmx :
 ocamlcp.cmo : ../driver/main_args.cmi

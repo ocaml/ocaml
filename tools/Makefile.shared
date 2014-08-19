@@ -22,7 +22,7 @@ COMPFLAGS= -strict-sequence -w +27+32..39 -warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamloptp ocamlmktop ocamlmklib dumpobj \
-     objinfo read_cmt
+     objinfo read_cmt ocamlmd5sum
 
 all: tast_iter.cmo
 
@@ -30,7 +30,7 @@ all: tast_iter.cmo
 
 .PHONY: all
 
-opt.opt: ocamldep.opt read_cmt.opt
+opt.opt: ocamldep.opt read_cmt.opt ocamlmd5sum.opt
 .PHONY: opt.opt
 
 # The dependency generator
@@ -285,8 +285,10 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../asmcomp/printclambda.cmo \
         objinfo.cmo
 
+
 objinfo: objinfo_helper$(EXE) $(OBJINFO)
 	$(CAMLC) -o objinfo $(OBJINFO)
+
 
 install::
 	cp objinfo $(INSTALL_BINDIR)/ocamlobjinfo$(EXE)
@@ -294,6 +296,30 @@ install::
 
 clean::
 	rm -f objinfo objinfo_helper$(EXE)
+
+# Display a hash on compiled files
+
+OCAMLMD5SUM=../compilerlibs/ocamlcommon.cma \
+            ../compilerlibs/ocamlbytecomp.cma \
+            ocamlmd5sum.cmo
+
+OCAMLMD5SUMX=../compilerlibs/ocamlcommon.cmxa \
+             ../compilerlibs/ocamlbytecomp.cmxa \
+             ocamlmd5sum.cmx
+
+ocamlmd5sum: $(OCAMLMD5SUM)
+	$(CAMLC) $(LINKFLAGS) -o ocamlmd5sum $(OCAMLMD5SUM)
+
+ocamlmd5sum.opt: $(OCAMLMD5SUMX)
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlmd5sum.opt $(OCAMLMD5SUMX)
+
+install::
+	cp ocamlmd5sum $(INSTALL_BINDIR)/ocamlmd5sum$(EXE)
+	if test -f ocamldep.opt; \
+	  then cp ocamldep.opt $(INSTALL_BINDIR)/ocamldep.opt$(EXE); else :; fi
+
+clean::
+	rm -f ocamlmd5sum
 
 # Scan object files for required primitives
 

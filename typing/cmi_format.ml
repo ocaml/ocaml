@@ -37,6 +37,18 @@ let input_cmi ic =
       cmi_flags = flags;
     }
 
+let input_crcs_flags ic =
+  (** skip name and signature *)
+  let header = Bytes.create Marshal.header_size in
+  really_input ic header 0 Marshal.header_size;
+  let size = Marshal.data_size header 0 in
+  seek_in ic (pos_in ic + size);
+  (** read the other fields *)
+  let crcs = input_value ic in
+  let flags = input_value ic in
+  crcs, flags
+
+
 let read_cmi filename =
   let ic = open_in_bin filename in
   try
