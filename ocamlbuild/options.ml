@@ -218,8 +218,10 @@ let spec = ref (
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
-   "-use-ocamlfind", Set use_ocamlfind, " Option deprecated. Now enabled by default. Use -no-ocamlfind to disable";
-   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind";
+   "-use-ocamlfind", Set use_ocamlfind, " Use the 'ocamlfind' wrapper instead of \
+       using Findlib directly to determine command-line arguments. \
+       Use -no-ocamlfind to disable.";
+   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind.";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
