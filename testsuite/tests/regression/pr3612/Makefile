@@ -1,0 +1,18 @@
+#########################################################################
+#                                                                       #
+#                                 OCaml                                 #
+#                                                                       #
+#                       Pierre Chambart, OCamlPro                       #
+#                                                                       #
+#   Copyright 2014 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
+MAIN_MODULE=pr3612
+C_FILES=custom_finalize
+
+BASEDIR=../../..
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common
