@@ -116,10 +116,25 @@ let prepare_compile build ml =
     match mandatory, res with
     | _, Good _ -> ()
     | `mandatory, Bad exn ->
-        if !Options.ignore_auto then
-          dprintf 3 "Warning: Failed to build the module \
-                     %s requested by ocamldep" name
-        else raise exn
+        if not !Options.ignore_auto then raise exn
+        else dprintf 3
+          "Warning: Failed to build the module %s requested by ocamldep."
+          name;
+        Log.at_failure (fun `Error ->
+          eprintf "Hint:@ Recursive@ traversal@ of@ subdirectories@ \
+            was@ not@ enabled@ for@ this@ build,@ as@ the@ working@ \
+            directory does@ not@ look@ like@ an@ ocamlbuild@ project@ \
+            (no@ '_tags'@ or@ 'myocamlbuild.ml'@ file).@ \
+            If@ you@ have@ modules@ in@ subdirectories,@ you@ should@ add@ \
+            the@ option@ \"-r\"@ or@ create@ an@ empty@ '_tags'@ file.@\n\
+            @\n\
+            To@ enable@ recursive@ traversal@ for@ some@ subdirectories@ \
+            only,@ you@ can@ use@ the@ following@ '_tags'@ file:@\n\
+            @[<v 4>@,\
+              true: -traverse@,\
+              <dir1> or <dir2>: traverse@,\
+            @]"
+        );
     | `just_try, Bad _ -> ()
   end modules results
 

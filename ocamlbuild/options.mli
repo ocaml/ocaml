@@ -28,7 +28,7 @@ val plugin_tags : string list ref
    This information is used to decide whether to enable recursive
    traversal of subdirectories by default.
 *)
-val ocamlbuild_projet_heuristic : unit -> bool
+val ocamlbuild_project_heuristic : unit -> bool
 
 val entry : bool Slurp.entry option ref
 val init : unit -> unit

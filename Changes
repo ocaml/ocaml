@@ -178,6 +178,8 @@ Bug fixes:
   (Damien Doligez)
 - PR#5820: Fix camlp4 lexer roll back problem
   (Hongbo Zhang)
+- PR#5851: warn when -r is disabled because no _tags file is present
+  (Gabriel Scherer)
 - PR#5946: CAMLprim taking (void) as argument
   (Benoît Vaugon)
 - PR#6038: on x86-32, enforce 16-byte stack alignment for compatibility
