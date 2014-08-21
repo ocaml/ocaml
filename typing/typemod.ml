@@ -515,6 +515,7 @@ let rec transl_modtype env smty =
       let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
       let (id, newenv) =
         Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
+      Ctype.init_def(Ident.current_time()); (* PR#6513 *)
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
       (Mty_functor(id, ty_arg, res.mty_type)) env loc

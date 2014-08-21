@@ -272,14 +272,18 @@ Bug fixes:
   (Benoît Vaugon)
 - PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
 - PR#6443: ocaml segfault when List.fold_left is traced then executed
+  (Jacques Garrigue, report by Reventlov)
 - PR#6460: runtime assertion failure with large [| e1;...eN |]
   float array expressions
   (Leo White)
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
 - PR#6505: Missed Type-error leads to a segfault upon record access
+  (Jacques Garrigue, report by Christoph Höger)
 - PR#6509: add -linkall flag to ocamlcommon.cma
   (Frédéric Bour)
+- PR#6513: Fatal error Ctype.Unify(_) in functor type
+  (Jacques Garrigue, report by Dario Teixeira)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
