@@ -32,11 +32,14 @@ let empty = { plus_tags = []; minus_tags = [] }
 
 let locate source lexbuf txt =
   (txt, Loc.of_lexbuf source lexbuf)
+
+let sublex lexer s = lexer (Lexing.from_string s)
 }
 
 let newline = ('\n' | '\r' | "\r\n")
 let space = [' ' '\t' '\012']
 let space_or_esc_nl = (space | '\\' newline)
+let sp = space_or_esc_nl
 let blank = newline | space
 let not_blank = [^' ' '\t' '\012' '\n' '\r']
 let not_space_nor_comma = [^' ' '\t' '\012' ',']
@@ -114,15 +117,15 @@ and conf_lines dir source = parse
   | space* '#' not_newline* eof { [] }
   | space* newline { Lexing.new_line lexbuf; conf_lines dir source lexbuf }
   | space* eof { [] }
-  | space* (not_newline_nor_colon+ as k) space* ':' space*
+  | space* (not_newline_nor_colon+ as k) (sp* as s1) ':' (sp* as s2)
       {
         let bexpr =
           try Glob.parse ?dir k
           with exn -> error source lexbuf "Invalid globbing pattern %S" k (Printexc.to_string exn)
         in
+        sublex (count_lines lexbuf) s1; sublex (count_lines lexbuf) s2;
         let v1 = conf_value empty source lexbuf in
         let v2 = conf_values v1 source lexbuf in
-        Lexing.new_line lexbuf; (* FIXME values may have escaped newlines *)
         let rest = conf_lines dir source lexbuf in (bexpr,v2) :: rest
       }
   | _ { error source lexbuf "Invalid line syntax" }
@@ -133,9 +136,13 @@ and conf_value x source = parse
   | (_ | eof) { error source lexbuf "Invalid tag modifier only '+ or '-' are allowed as prefix for tag" }
 
 and conf_values x source = parse
-  | space_or_esc_nl* ',' space_or_esc_nl* { conf_values (conf_value x source lexbuf) source lexbuf }
-  | (newline | eof) { x }
-  | (_ | eof) { error source lexbuf "Only ',' separated tags are alllowed" }
+  | (sp* as s1) ',' (sp* as s2) {
+      sublex (count_lines lexbuf) s1; sublex (count_lines lexbuf) s2;
+      conf_values (conf_value x source lexbuf) source lexbuf
+    }
+  | newline { Lexing.new_line lexbuf; x }
+  | eof { x }
+  | _ { error source lexbuf "Only ',' separated tags are alllowed" }
 
 and path_scheme patt_allowed source = parse
   | ([^ '%' ]+ as prefix)
@@ -177,3 +184,8 @@ and trim_blanks source = parse
 and tag_gen source = parse
   | (normal+ as name) ('(' ([^')']* as param) ')')? { name, param }
   | _ { error source lexbuf "Not a valid parametrized tag" }
+
+and count_lines lb = parse
+  | space* { count_lines lb lexbuf }
+  | '\\' newline { Lexing.new_line lb; count_lines lb lexbuf }
+  | eof { () }

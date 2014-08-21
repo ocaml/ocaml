@@ -309,6 +309,8 @@ Features wishes:
   (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6071: Add a -noinit option to the toplevel
   (David Sheets)
+- PR#6087: ocamlbuild, improve _tags parsing of escaped newlines
+  (Gabriel Scherer, request by Daniel Bünzli)
 - PR#6166: document -ocamldoc option of ocamlbuild
   (Xavier Clerc)
 - PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
