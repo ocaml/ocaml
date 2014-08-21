@@ -21,7 +21,7 @@ type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 let abi =
   match Config.system with
-    "linux_eabi"   -> EABI
+    "linux_eabi" | "freebsd" -> EABI
   | "linux_eabihf" -> EABI_HF
   | _ -> assert false
 
