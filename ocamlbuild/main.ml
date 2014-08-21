@@ -81,7 +81,7 @@ let proceed () =
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
-  Configuration.parse_string
+  Configuration.parse_string ~source:Const.Source.builtin
     "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml\n\
      <**/*.byte>: ocaml, byte, program\n\
      <**/*.odoc>: ocaml, doc\n\
@@ -93,7 +93,9 @@ let proceed () =
      <**/*.cmx>: ocaml, native\n\
     ";
 
-  List.iter Configuration.parse_string !Options.tag_lines;
+  List.iter
+    (Configuration.parse_string ~source:Const.Source.command_line)
+    !Options.tag_lines;
 
   Configuration.tag_any !Options.tags;
   if !Options.recursive || Options.ocamlbuild_project_heuristic ()
