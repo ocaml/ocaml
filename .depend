@@ -866,8 +866,7 @@ driver/compile.cmo : utils/warnings.cmi typing/typemod.cmi \
     parsing/printast.cmi parsing/pprintast.cmi driver/pparse.cmi \
     utils/misc.cmi parsing/location.cmi typing/includemod.cmi typing/env.cmi \
     bytecomp/emitcode.cmi driver/compmisc.cmi driver/compenv.cmi \
-    utils/clflags.cmi utils/ccomp.cmi bytecomp/bytegen.cmi \
-    parsing/ast_mapper.cmi driver/compile.cmi
+    utils/clflags.cmi utils/ccomp.cmi bytecomp/bytegen.cmi driver/compile.cmi
 driver/compile.cmx : utils/warnings.cmx typing/typemod.cmx \
     typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
     typing/stypes.cmx bytecomp/simplif.cmx typing/printtyped.cmx \
@@ -875,8 +874,7 @@ driver/compile.cmx : utils/warnings.cmx typing/typemod.cmx \
     parsing/printast.cmx parsing/pprintast.cmx driver/pparse.cmx \
     utils/misc.cmx parsing/location.cmx typing/includemod.cmx typing/env.cmx \
     bytecomp/emitcode.cmx driver/compmisc.cmx driver/compenv.cmx \
-    utils/clflags.cmx utils/ccomp.cmx bytecomp/bytegen.cmx \
-    parsing/ast_mapper.cmx driver/compile.cmi
+    utils/clflags.cmx utils/ccomp.cmx bytecomp/bytegen.cmx driver/compile.cmi
 driver/compmisc.cmo : typing/typemod.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
     typing/env.cmi utils/config.cmi driver/compenv.cmi utils/clflags.cmi \
@@ -906,8 +904,7 @@ driver/optcompile.cmo : utils/warnings.cmi typing/typemod.cmi \
     parsing/pprintast.cmi driver/pparse.cmi utils/misc.cmi \
     typing/includemod.cmi typing/env.cmi utils/config.cmi driver/compmisc.cmi \
     asmcomp/compilenv.cmi driver/compenv.cmi utils/clflags.cmi \
-    utils/ccomp.cmi parsing/ast_mapper.cmi asmcomp/asmgen.cmi \
-    driver/optcompile.cmi
+    utils/ccomp.cmi asmcomp/asmgen.cmi driver/optcompile.cmi
 driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
     typing/stypes.cmx bytecomp/simplif.cmx typing/printtyped.cmx \
@@ -915,8 +912,7 @@ driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     parsing/pprintast.cmx driver/pparse.cmx utils/misc.cmx \
     typing/includemod.cmx typing/env.cmx utils/config.cmx driver/compmisc.cmx \
     asmcomp/compilenv.cmx driver/compenv.cmx utils/clflags.cmx \
-    utils/ccomp.cmx parsing/ast_mapper.cmx asmcomp/asmgen.cmx \
-    driver/optcompile.cmi
+    utils/ccomp.cmx asmcomp/asmgen.cmx driver/optcompile.cmi
 driver/opterrors.cmo : parsing/location.cmi driver/opterrors.cmi
 driver/opterrors.cmx : parsing/location.cmx driver/opterrors.cmi
 driver/optmain.cmo : utils/warnings.cmi asmcomp/printmach.cmi \
@@ -932,12 +928,10 @@ driver/optmain.cmx : utils/warnings.cmx asmcomp/printmach.cmx \
     asmcomp/asmlink.cmx asmcomp/asmlibrarian.cmx asmcomp/arch.cmx \
     driver/optmain.cmi
 driver/pparse.cmo : parsing/parsetree.cmi parsing/parse.cmi utils/misc.cmi \
-    parsing/longident.cmi parsing/location.cmi utils/config.cmi \
-    utils/clflags.cmi utils/ccomp.cmi parsing/asttypes.cmi \
+    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
     parsing/ast_mapper.cmi parsing/ast_helper.cmi driver/pparse.cmi
 driver/pparse.cmx : parsing/parsetree.cmi parsing/parse.cmx utils/misc.cmx \
-    parsing/longident.cmx parsing/location.cmx utils/config.cmx \
-    utils/clflags.cmx utils/ccomp.cmx parsing/asttypes.cmi \
+    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
     parsing/ast_mapper.cmx parsing/ast_helper.cmx driver/pparse.cmi
 toplevel/genprintval.cmi : typing/types.cmi typing/path.cmi \
     typing/outcometree.cmi typing/env.cmi
@@ -1002,13 +996,11 @@ toplevel/opttoploop.cmx : utils/warnings.cmx typing/types.cmx \
 toplevel/opttopmain.cmo : utils/warnings.cmi asmcomp/printmach.cmi \
     toplevel/opttoploop.cmi toplevel/opttopdirs.cmi utils/misc.cmi \
     driver/main_args.cmi parsing/location.cmi utils/config.cmi \
-    driver/compenv.cmi utils/clflags.cmi parsing/ast_mapper.cmi \
-    toplevel/opttopmain.cmi
+    driver/compenv.cmi utils/clflags.cmi toplevel/opttopmain.cmi
 toplevel/opttopmain.cmx : utils/warnings.cmx asmcomp/printmach.cmx \
     toplevel/opttoploop.cmx toplevel/opttopdirs.cmx utils/misc.cmx \
     driver/main_args.cmx parsing/location.cmx utils/config.cmx \
-    driver/compenv.cmx utils/clflags.cmx parsing/ast_mapper.cmx \
-    toplevel/opttopmain.cmi
+    driver/compenv.cmx utils/clflags.cmx toplevel/opttopmain.cmi
 toplevel/opttopstart.cmo : toplevel/opttopmain.cmi
 toplevel/opttopstart.cmx : toplevel/opttopmain.cmx
 toplevel/topdirs.cmo : utils/warnings.cmi typing/typetexp.cmi \
@@ -1058,11 +1050,11 @@ toplevel/toploop.cmx : utils/warnings.cmx typing/types.cmx \
 toplevel/topmain.cmo : utils/warnings.cmi toplevel/toploop.cmi \
     toplevel/topdirs.cmi utils/misc.cmi driver/main_args.cmi \
     parsing/location.cmi utils/config.cmi driver/compenv.cmi \
-    utils/clflags.cmi parsing/ast_mapper.cmi toplevel/topmain.cmi
+    utils/clflags.cmi toplevel/topmain.cmi
 toplevel/topmain.cmx : utils/warnings.cmx toplevel/toploop.cmx \
     toplevel/topdirs.cmx utils/misc.cmx driver/main_args.cmx \
     parsing/location.cmx utils/config.cmx driver/compenv.cmx \
-    utils/clflags.cmx parsing/ast_mapper.cmx toplevel/topmain.cmi
+    utils/clflags.cmx toplevel/topmain.cmi
 toplevel/topstart.cmo : toplevel/topmain.cmi
 toplevel/topstart.cmx : toplevel/topmain.cmx
 toplevel/trace.cmo : typing/types.cmi toplevel/toploop.cmi \
