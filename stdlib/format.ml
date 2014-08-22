@@ -1070,10 +1070,10 @@ let compute_tag output tag_acc =
   else Buffer.sub buf 1 (len - 2)
 
  (**************************************************************
- 
+
   Defining continuations to be passed as arguments of
   CamlinternalFormat.make_printf.
- 
+
   **************************************************************)
 
 open CamlinternalFormatBasics
@@ -1097,10 +1097,12 @@ let output_formatting_lit ppf fmting_lit = match fmting_lit with
 (* Differ from Printf.output_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec output_acc ppf acc = match acc with
-  | Acc_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
+  | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
+  | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     output_acc ppf p;
     pp_print_as_size ppf (size_of_int size) s;
-  | Acc_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
+  | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
+  | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     output_acc ppf p;
     pp_print_as_size ppf (size_of_int size) (String.make 1 c);
   | Acc_formatting_lit (p, f) ->
@@ -1113,8 +1115,10 @@ let rec output_acc ppf acc = match acc with
     let () = output_acc ppf p in
     let (indent, bty) = open_box_of_string (compute_tag output_acc acc') in
     pp_open_box_gen ppf indent bty
-  | Acc_string (p, s)        -> output_acc ppf p; pp_print_string ppf s;
-  | Acc_char (p, c)          -> output_acc ppf p; pp_print_char ppf c;
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s)   -> output_acc ppf p; pp_print_string ppf s;
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c)     -> output_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> output_acc ppf p; f ppf;
   | Acc_flush p              -> output_acc ppf p; pp_print_flush ppf ();
   | Acc_invalid_arg (p, msg) -> output_acc ppf p; invalid_arg msg;
@@ -1125,10 +1129,12 @@ let rec output_acc ppf acc = match acc with
 (* Differ from Printf.bufput_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec strput_acc ppf acc = match acc with
-  | Acc_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
+  | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
+  | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     strput_acc ppf p;
     pp_print_as_size ppf (size_of_int size) s;
-  | Acc_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
+  | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
+  | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     strput_acc ppf p;
     pp_print_as_size ppf (size_of_int size) (String.make 1 c);
   | Acc_delay (Acc_formatting_lit (p, Magic_size (_, size)), f) ->
@@ -1144,8 +1150,10 @@ let rec strput_acc ppf acc = match acc with
     let () = strput_acc ppf p in
     let (indent, bty) = open_box_of_string (compute_tag strput_acc acc') in
     pp_open_box_gen ppf indent bty
-  | Acc_string (p, s)        -> strput_acc ppf p; pp_print_string ppf s;
-  | Acc_char (p, c)          -> strput_acc ppf p; pp_print_char ppf c;
+  | Acc_string_literal (p, s)
+  | Acc_data_string (p, s)   -> strput_acc ppf p; pp_print_string ppf s;
+  | Acc_char_literal (p, c)
+  | Acc_data_char (p, c)     -> strput_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> strput_acc ppf p; pp_print_string ppf (f ());
   | Acc_flush p              -> strput_acc ppf p; pp_print_flush ppf ();
   | Acc_invalid_arg (p, msg) -> strput_acc ppf p; invalid_arg msg;
@@ -1181,7 +1189,7 @@ let sprintf fmt =
 
 let asprintf (Format (fmt, _)) =
   let b = Buffer.create 512 in
-  let ppf = formatter_of_buffer b in  
+  let ppf = formatter_of_buffer b in
   let k' : (formatter -> (formatter, unit) acc -> string)
     = fun ppf acc ->
       output_acc ppf acc;

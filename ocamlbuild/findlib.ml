@@ -74,15 +74,19 @@ let rec query name =
   with Not_found ->
     try
       let n, d, v, a_byte, lo, l =
-        run_and_parse Lexers.ocamlfind_query
+        run_and_parse
+          (Lexers.ocamlfind_query Const.Source.ocamlfind_query)
           "%s query -l -predicates byte %s" ocamlfind name
       in
       let a_native =
-        run_and_parse Lexers.trim_blanks
+        run_and_parse
+          (Lexers.trim_blanks Const.Source.ocamlfind_query)
           "%s query -a-format -predicates native %s" ocamlfind name
       in
       let deps =
-        run_and_parse Lexers.blank_sep_strings "%s query -r -p-format %s" ocamlfind name
+        run_and_parse
+          (Lexers.blank_sep_strings Const.Source.ocamlfind_query)
+          "%s query -r -p-format %s" ocamlfind name
       in
       let deps = List.filter ((<>) n) deps in
       let deps =

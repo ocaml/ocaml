@@ -39,8 +39,8 @@ let sub s ofs len =
   B.sub (bos s) ofs len |> bts
 let fill =
   B.fill
-let blit s1 ofs1 s2 ofs2 len =
-  B.blit (bos s1) ofs1 s2 ofs2 len
+let blit =
+  B.blit_string
 
 let concat sep l =
   match l with

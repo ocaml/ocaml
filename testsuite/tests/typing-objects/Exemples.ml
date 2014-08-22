@@ -170,14 +170,14 @@ p1#print (fun x -> x#print);;
 (*******************************************************************)
 
 class virtual comparable () = object (self : 'a)
-  method virtual leq : 'a -> bool
+  method virtual cmp : 'a -> int
   end;;
 
 class int_comparable (x : int) = object
   inherit comparable ()
   val x = x
   method x = x
-  method leq p = x <= p#x
+  method cmp p = compare x p#x
 end;;
 
 class int_comparable2 xi = object
@@ -193,7 +193,7 @@ class ['a] sorted_list () = object
     let rec insert =
       function
             []     ->  [x]
-      | a::l as l' -> if a#leq x then a::(insert l) else x::l'
+      | a::l as l' -> if a#cmp x <= 0 then a::(insert l) else x::l'
     in
       l <- insert l
   method hd = List.hd l
@@ -209,7 +209,7 @@ l#add (c2 :> int_comparable);;      (* Echec : 'a comp2 n'est un sous-type *)
 
 class int_comparable3 (x : int) = object
   val mutable x = x
-  method leq (y : int_comparable) = x < y#x
+  method cmp (y : int_comparable) = compare x y#x
   method x = x
   method setx y = x <- y
 end;;
@@ -218,7 +218,7 @@ let c3 = new int_comparable3 15;;
 l#add (c3 :> int_comparable);;
 (new sorted_list ())#add c3;;   (* Error; strange message with -principal *)
 
-let sort (l : #comparable list) = Sort.list (fun x -> x#leq) l;;
+let sort (l : #comparable list) = List.sort (fun x -> x#cmp) l;;
 let pr l =
   List.map (fun c -> print_int c#x; print_string " ") l;
   print_newline ();;
@@ -231,7 +231,7 @@ pr l;;
 pr (sort l);;
 
 let min (x : #comparable) y =
-  if x#leq y then x else y;;
+  if x#cmp y <= 0 then x else y;;
 
 (min (new int_comparable  7) (new int_comparable 11))#x;;
 (min (new int_comparable2 5) (new int_comparable2 3))#x;;

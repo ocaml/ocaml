@@ -589,7 +589,7 @@ let rec firstpos = function
 
 (* Berry-sethi followpos *)
 let followpos size entry_list =
-  let v = Array.create size TransSet.empty in
+  let v = Array.make size TransSet.empty in
   let rec fill s = function
     | Empty|Action _|Tag _ -> ()
     | Chars (n,_) -> v.(n) <- s
@@ -1132,7 +1132,7 @@ let make_tag_entry id start act a r = match a with
   | _ -> r
 
 let extract_tags l =
-  let envs = Array.create (List.length l) TagMap.empty in
+  let envs = Array.make (List.length l) TagMap.empty in
   List.iter
     (fun (act,m,_) ->
       envs.(act) <-
@@ -1186,7 +1186,7 @@ let make_dfa lexdef =
   done ;
   eprintf "%d states\n" !next_state_num ;
 *)
-  let actions = Array.create !next_state_num (Perform (0,[])) in
+  let actions = Array.make !next_state_num (Perform (0,[])) in
   List.iter (fun (act, i) -> actions.(i) <- act) states;
 (* Useless state reset, so as to restrict GC roots *)
   reset_state  () ;

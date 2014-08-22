@@ -25,6 +25,7 @@ type error =
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
+  | Cycle_in_def of string * type_expr
   | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
   | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
@@ -163,8 +164,9 @@ let make_constructor env type_path type_params sargs sret_type =
       begin
         match (Ctype.repr ret_type).desc with
           Tconstr (p', _, _) when Path.same type_path p' -> ()
-        | _ -> raise (Error (sret_type.ptyp_loc, Constraint_failed
-                              (ret_type, Ctype.newconstr type_path type_params)))
+        | _ ->
+            raise (Error (sret_type.ptyp_loc, Constraint_failed
+                            (ret_type, Ctype.newconstr type_path type_params)))
       end;
       widen z;
       targs, Some tret_type, args, Some ret_type
@@ -185,6 +187,9 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
         Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
+        if scstrs = [] then
+          Syntaxerr.ill_formed_ast sdecl.ptype_loc
+            "Variant types cannot be empty.";
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
@@ -222,6 +227,8 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
+        if lbls = [] then
+          Syntaxerr.ill_formed_ast sdecl.ptype_loc "Records cannot be empty.";
         let all_labels = ref StringSet.empty in
         List.iter
           (fun {pld_name = {txt=name}} ->
@@ -229,11 +236,15 @@ let transl_declaration env sdecl id =
               raise(Error(sdecl.ptype_loc, Duplicate_label name));
             all_labels := StringSet.add name !all_labels)
           lbls;
-        let lbls = List.map (fun {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} ->
+        let lbls = List.map (fun {pld_name=name;
+                                  pld_mutable=mut;
+                                  pld_type=arg;
+                                  pld_loc=loc;
+                                  pld_attributes=attrs} ->
           let arg = Ast_helper.Typ.force_poly arg in
           let cty = transl_simple_type env true arg in
-          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
-           ld_loc = loc; ld_attributes = attrs}
+          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
           ) lbls in
         let lbls' =
           List.map
@@ -335,6 +346,7 @@ let generalize_decl decl =
 (* Check that all constraints are enforced *)
 
 module TypeSet = Btype.TypeSet
+module TypeMap = Btype.TypeMap
 
 let rec check_constraints_rec env loc visited ty =
   let ty = Ctype.repr ty in
@@ -400,7 +412,8 @@ let check_constraints env sdecl (_, decl) =
       let rec get_loc name = function
           [] -> assert false
         | pld :: tl ->
-            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc else get_loc name tl
+            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
+            else get_loc name tl
       in
       List.iter
         (fun {Types.ld_id=name; ld_type=ty} ->
@@ -457,14 +470,61 @@ let check_abbrev env sdecl (id, decl) =
 
 (* Check that recursion is well-founded *)
 
-let check_well_founded env loc path decl =
-  Misc.may
-    (fun body ->
-      try Ctype.correct_abbrev env path decl.type_params body with
-      | Ctype.Recursive_abbrev ->
-          raise(Error(loc, Recursive_abbrev (Path.name path)))
-      | Ctype.Unify trace -> raise(Error(loc, Type_clash (env, trace))))
-    decl.type_manifest
+let check_well_founded env loc path to_check ty =
+  let visited = ref TypeMap.empty in
+  let rec check ty0 exp_nodes ty =
+    let ty = Btype.repr ty in
+    if TypeSet.mem ty exp_nodes then begin
+      (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
+      if match ty0.desc with
+      | Tconstr (p, _, _) -> Path.same p path
+      | _ -> false
+      then raise (Error (loc, Recursive_abbrev (Path.name path)))
+      else raise (Error (loc, Cycle_in_def (Path.name path, ty0)))
+    end;
+    let (fini, exp_nodes) =
+      try
+        let prev = TypeMap.find ty !visited in
+        if TypeSet.subset exp_nodes prev then (true, exp_nodes) else
+        (false, TypeSet.union exp_nodes prev)
+      with Not_found ->
+        (false, exp_nodes)
+    in
+    let snap = Btype.snapshot () in
+    if fini then () else try
+      visited := TypeMap.add ty exp_nodes !visited;
+      match ty.desc with
+      | Tconstr(p, args, _)
+        when not (TypeSet.is_empty exp_nodes) || to_check p ->
+          let ty' = Ctype.try_expand_once_opt env ty in
+          let ty0 = if TypeSet.is_empty exp_nodes then ty else ty0 in
+          check ty0 (TypeSet.add ty exp_nodes) ty'
+      | _ -> raise Ctype.Cannot_expand
+    with
+    | Ctype.Cannot_expand ->
+        let nodes =
+          if !Clflags.recursive_types && Ctype.is_contractive env ty
+          || match ty.desc with Tobject _ | Tvariant _ -> true | _ -> false
+          then TypeSet.empty
+          else exp_nodes in
+        Btype.iter_type_expr (check ty0 nodes) ty
+    | Ctype.Unify _ ->
+        (* Will be detected by check_recursion *)
+        Btype.backtrack snap
+  in
+  check ty TypeSet.empty ty
+
+let check_well_founded_manifest env loc path decl =
+  if decl.type_manifest = None then () else
+  let args = List.map (fun _ -> Ctype.newvar()) decl.type_params in
+  check_well_founded env loc path (Path.same path) (Ctype.newconstr path args)
+
+let check_well_founded_decl env loc path decl to_check =
+  let open Btype in
+  let it =
+    {type_iterators with
+     it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
+  it.it_type_declaration it (Ctype.instance_declaration decl)
 
 (* Check for ill-defined abbrevs *)
 
@@ -524,15 +584,12 @@ let check_recursion env loc path decl to_check =
       check_regular path args [] body)
     decl.type_manifest
 
-let check_abbrev_recursion env id_loc_list tdecl =
+let check_abbrev_recursion env id_loc_list to_check tdecl =
   let decl = tdecl.typ_type in
   let id = tdecl.typ_id in
-  check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl
-    (function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false)
+  check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
 
 (* Compute variance *)
-
-module TypeMap = Btype.TypeMap
 
 let get_variance ty visited =
   try TypeMap.find ty !visited with Not_found -> Variance.null
@@ -775,11 +832,13 @@ let compute_variance_decl env check decl (required, loc as rloc) =
   | Type_variant tll ->
       if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env check rloc decl
-          (mn @ add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
+          (mn @
+           add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
       else begin
         let mn =
           List.map (fun (_,ty) -> ([ty],None)) mn in
-        let tll = mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
+        let tll =
+          mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env check rloc decl) tll with
         | vari :: rem ->
             let varl = List.fold_left (List.map2 Variance.union) vari rem in
@@ -876,8 +935,10 @@ let check_duplicates sdecl_list =
               let name' = Hashtbl.find constrs pcd.pcd_name.txt in
               Location.prerr_warning pcd.pcd_loc
                 (Warnings.Duplicate_definitions
-                   ("constructor", pcd.pcd_name.txt, name', sdecl.ptype_name.txt))
-            with Not_found -> Hashtbl.add constrs pcd.pcd_name.txt sdecl.ptype_name.txt)
+                   ("constructor", pcd.pcd_name.txt, name',
+                    sdecl.ptype_name.txt))
+            with Not_found ->
+              Hashtbl.add constrs pcd.pcd_name.txt sdecl.ptype_name.txt)
           cl
     | Ptype_record fl ->
         List.iter
@@ -915,8 +976,10 @@ let transl_type_decl env sdecl_list =
   let sdecl_list =
     List.map
       (fun sdecl ->
-        let ptype_name =  mkloc (sdecl.ptype_name.txt ^"#row") sdecl.ptype_name.loc in
-        {sdecl with ptype_name; ptype_kind = Ptype_abstract; ptype_manifest = None})
+        let ptype_name =
+          mkloc (sdecl.ptype_name.txt ^"#row") sdecl.ptype_name.loc in
+        {sdecl with
+         ptype_name; ptype_kind = Ptype_abstract; ptype_manifest = None})
       fixed_types
     @ sdecl_list
   in
@@ -951,7 +1014,7 @@ let transl_type_decl env sdecl_list =
           match !current_slot with
           | Some slot -> slot := (name, td) :: !slot
           | None ->
-              List.iter (fun (name, d) -> Env.mark_type_used name d)
+              List.iter (fun (name, d) -> Env.mark_type_used env name d)
                 (get_ref slot);
               old_callback ()
         );
@@ -985,9 +1048,16 @@ let transl_type_decl env sdecl_list =
       id_list sdecl_list
   in
   List.iter (fun (id, decl) ->
-    check_well_founded newenv (List.assoc id id_loc_list) (Path.Pident id) decl)
+    check_well_founded_manifest newenv (List.assoc id id_loc_list)
+      (Path.Pident id) decl)
     decls;
-  List.iter (check_abbrev_recursion newenv id_loc_list) tdecls;
+  let to_check =
+    function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false in
+  List.iter (fun (id, decl) ->
+    check_well_founded_decl newenv (List.assoc id id_loc_list) (Path.Pident id)
+      decl to_check)
+    decls;
+  List.iter (check_abbrev_recursion newenv id_loc_list to_check) tdecls;
   (* Check that all type variable are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -1186,7 +1256,8 @@ let transl_type_extension check_open env loc styext =
   List.iter
     (fun ext ->
        match Ctype.closed_extension_constructor ext.ext_type with
-         Some ty -> raise(Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))
+         Some ty ->
+           raise(Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))
        | None -> ())
     constructors;
   (* Check variances are correct *)
@@ -1272,7 +1343,7 @@ let transl_value_decl env loc valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path orig_decl sdecl =
-  Env.mark_type_used (Ident.name id) orig_decl;
+  Env.mark_type_used env (Ident.name id) orig_decl;
   reset_type_variables();
   Ctype.begin_def();
   let tparams = make_params env sdecl.ptype_params in
@@ -1383,9 +1454,10 @@ let approx_type_decl env sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
-  check_well_founded env loc path decl;
-  check_recursion env loc path decl
-    (fun path -> List.exists (fun id -> Path.isfree id path) recmod_ids)
+  let to_check path =
+    List.exists (fun id -> Path.isfree id path) recmod_ids in
+  check_well_founded_decl env loc path decl to_check;
+  check_recursion env loc path decl to_check
 
 
 (**** Error report ****)
@@ -1437,6 +1509,10 @@ let report_error ppf = function
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
       fprintf ppf "The type abbreviation %s is cyclic" s
+  | Cycle_in_def (s, ty) ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
+        s Printtyp.type_expr ty
   | Definition_mismatch (ty, errs) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"

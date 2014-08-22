@@ -140,7 +140,8 @@ val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value
    like {!Marshal.from_channel} does, except that the byte
    representation is not read from a channel, but taken from
-   the byte sequence [buff], starting at position [ofs]. *)
+   the byte sequence [buff], starting at position [ofs].
+   The byte sequence is not mutated. *)
 
 val from_string : string -> int -> 'a
 (** Same as [from_bytes] but take a string as argument instead of a

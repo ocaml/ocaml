@@ -1,4 +1,4 @@
-Next version:
+OCaml 4.03.0:
 -------------
 
 Compilers:
@@ -31,6 +31,7 @@ Language features:
 Build system for the OCaml distribution:
 - Use -bin-annot when building.
 - Use GNU make instead of portable makefiles.
+- Updated build instructions for 32-bit Mac OS X on Intel hardware.
 
 Shedding weight:
 * Removed Camlp4 from the distribution, now available as third-party software.
@@ -138,6 +139,8 @@ Runtime system:
 Standard library:
 * Add new modules: Bytes and BytesLabels.
   (Damien Doligez)
+- PR#6355: Improve documentation regarding finalisers and multithreading
+  (Daniel Bünzli, Mark Shinwell)
 - PR#4986: add List.sort_uniq and Set.of_list
   (Alain Frisch)
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
@@ -148,11 +151,15 @@ Standard library:
   (John Whitington)
 - PR#6180: efficient creation of uninitialized float arrays
   (Alain Frisch, request by Markus Mottl)
+- Trigger warning 3 for all values marked as deprected in the documentation.
+  (Damien Doligez)
 
 OCamldoc:
 - PR#6257: handle full doc comments for variant constructors and
   record fields
   (Maxence Guesdon, request by ygrek)
+- PR#6274: allow doc comments on object types
+  (Thomas Refis)
 - PR#6310: fix ocamldoc's subscript/superscript CSS font size
   (Anil Madhavapeddy)
 - PR#6425: fix generation of man pages
@@ -163,16 +170,28 @@ Bug fixes:
   [caml_bottom_of_stack].  (Richard Jones, Mark Shinwell)
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
+- PR#4771: Clarify documentation of Dynlink.allow_only
+  (Damien Doligez, report by David Allsopp)
+- PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
+  (Stéphane Glondu, Mark Shinwell)
+- PR#6439: Don't use the deprecated [getpagesize] function
+  (John Whitington, Mark Shinwell)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
 - PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
   (Jun Furuse and Hongbo Zhang, report by Dmitry Grebeniuk)
 - PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
   (user 'daweil')
+- PR#5406 ocamlbuild: "tag 'package' does not expect a parameter"
+  (Gabriel Scherer)
 - PR#5598: follow-up fix related to PR#6165
   (Damien Doligez)
 - PR#5820: Fix camlp4 lexer roll back problem
   (Hongbo Zhang)
+- PR#5851: warn when -r is disabled because no _tags file is present
+  (Gabriel Scherer)
+- PR#5946: CAMLprim taking (void) as argument
+  (Benoît Vaugon)
 - PR#6038: on x86-32, enforce 16-byte stack alignment for compatibility
   with recent GCC and Clang.  Win32/MSVC keeps 4-byte stack alignment.
   (Xavier Leroy)
@@ -229,10 +248,14 @@ Bug fixes:
   (Jacques Garrigue, report by Leo White)
 - PR#6293: Assert_failure with invalid package type
   (Jacques Garrigue, report by Elnatan Reisner)
+- PR#6300: ocamlbuild -use-ocamlfind conflicts with -ocamlc
+  (Gabriel Scherer)
 - PR#6302: bytecode debug information re-read from filesystem every time
   (Jacques-Henri Jourdan)
 - PR#6307: Behavior of 'module type of' w.r.t. module aliases
   (Jacques Garrigue, report by Alain Frisch)
+- PR#6332: Unix.open_process fails to pass empty arguments under Windows
+  (Damien Doligez, report Virgile Prevosto)
 - PR#6346: Build failure with latest version of xcode on OSX
   (Jérémie Dimino)
 - PR#6348: Unification failure for GADT when original definition is hidden
@@ -251,21 +274,33 @@ Bug fixes:
   (Alain Frisch and Jacques Garrigue)
 - PR#6405: unsound interaction of -rectypes and GADTs
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
+- PR#6408: Optional arguments given as ~?arg instead of ?arg in message
+  (Michael O'Connor)
 - PR#6418: reimplement parametrized Format tags/indentation with GADTs
   (Benoît Vaugon)
+- PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
+  (John Whitington)
+- PR#6443: ocaml segfault when List.fold_left is traced then executed
+  (Jacques Garrigue, report by Reventlov)
 - PR#6460: runtime assertion failure with large [| e1;...eN |]
   float array expressions
   (Leo White)
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
+- PR#6505: Missed Type-error leads to a segfault upon record access
+  (Jacques Garrigue, report by Christoph Höger)
 - PR#6509: add -linkall flag to ocamlcommon.cma
   (Frédéric Bour)
+- PR#6513: Fatal error Ctype.Unify(_) in functor type
+  (Jacques Garrigue, report by Dario Teixeira)
 - fix -dsource printing of "external _pipe = ..."
   (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
 - sometimes wrong stack alignment at out-of-bounds array access
   (Gabriel Scherer and Xavier Leroy, report by Pierre Chambart)
+- make ocamldebug -I auto-detection work with ocamlbuild
+  (Josh Watzman)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
@@ -287,6 +322,8 @@ Features wishes:
   (Jeremy Yallop, review by Gabriel Scherer)
 - PR#6071: Add a -noinit option to the toplevel
   (David Sheets)
+- PR#6087: ocamlbuild, improve _tags parsing of escaped newlines
+  (Gabriel Scherer, request by Daniel Bünzli)
 - PR#6166: document -ocamldoc option of ocamlbuild
   (Xavier Clerc)
 - PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
@@ -299,6 +336,8 @@ Features wishes:
   (Gabriel Scherer, request by François Berenger)
 - PR#6406: Expose OCaml version in C headers
   (Peter Zotov and Romain Calascibetta)
+- PR#5899: a programmer-friendly access to backtrace information
+  (Jacques-Henri Jourdan and Gabriel Scherer)
 - ocamllex: user-definable refill action
   (Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."

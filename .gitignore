@@ -1219,6 +1219,27 @@
 /testsuite/tests/basic-manyargs/.depend.nt
 /testsuite/tests/basic-manyargs/.DS_Store
 
+# /testsuite/tests/basic-modules/
+/testsuite/tests/basic-modules/*.o
+/testsuite/tests/basic-modules/*.a
+/testsuite/tests/basic-modules/*.so
+/testsuite/tests/basic-modules/*.obj
+/testsuite/tests/basic-modules/*.lib
+/testsuite/tests/basic-modules/*.dll
+/testsuite/tests/basic-modules/*.cm[ioxat]
+/testsuite/tests/basic-modules/*.cmx[as]
+/testsuite/tests/basic-modules/*.cmti
+/testsuite/tests/basic-modules/*.annot
+/testsuite/tests/basic-modules/*.result
+/testsuite/tests/basic-modules/*.byte
+/testsuite/tests/basic-modules/*.native
+/testsuite/tests/basic-modules/program
+/testsuite/tests/basic-modules/*.exe
+/testsuite/tests/basic-modules/*.exe.manifest
+/testsuite/tests/basic-modules/.depend
+/testsuite/tests/basic-modules/.depend.nt
+/testsuite/tests/basic-modules/.DS_Store
+
 # /testsuite/tests/basic-more/
 /testsuite/tests/basic-more/*.o
 /testsuite/tests/basic-more/*.a
@@ -1343,6 +1364,8 @@
 /testsuite/tests/formats-transition/*.a
 /testsuite/tests/formats-transition/*.so
 /testsuite/tests/formats-transition/*.obj
+/testsuite/tests/formats-transition/*.lib
+/testsuite/tests/formats-transition/*.dll
 /testsuite/tests/formats-transition/*.cm[ioxat]
 /testsuite/tests/formats-transition/*.cmx[as]
 /testsuite/tests/formats-transition/*.cmti
@@ -1351,7 +1374,8 @@
 /testsuite/tests/formats-transition/*.byte
 /testsuite/tests/formats-transition/*.native
 /testsuite/tests/formats-transition/program
-/testsuite/tests/formats-transition/program.exe
+/testsuite/tests/formats-transition/*.exe
+/testsuite/tests/formats-transition/*.exe.manifest
 /testsuite/tests/formats-transition/.depend
 /testsuite/tests/formats-transition/.depend.nt
 /testsuite/tests/formats-transition/.DS_Store
@@ -1819,6 +1843,8 @@
 /testsuite/tests/match-exception/*.a
 /testsuite/tests/match-exception/*.so
 /testsuite/tests/match-exception/*.obj
+/testsuite/tests/match-exception/*.lib
+/testsuite/tests/match-exception/*.dll
 /testsuite/tests/match-exception/*.cm[ioxat]
 /testsuite/tests/match-exception/*.cmx[as]
 /testsuite/tests/match-exception/*.cmti
@@ -1827,10 +1853,32 @@
 /testsuite/tests/match-exception/*.byte
 /testsuite/tests/match-exception/*.native
 /testsuite/tests/match-exception/program
-/testsuite/tests/match-exception/program.exe
+/testsuite/tests/match-exception/*.exe
+/testsuite/tests/match-exception/*.exe.manifest
 /testsuite/tests/match-exception/.depend
 /testsuite/tests/match-exception/.depend.nt
 /testsuite/tests/match-exception/.DS_Store
+
+# /testsuite/tests/match-exception-warnings/
+/testsuite/tests/match-exception-warnings/*.o
+/testsuite/tests/match-exception-warnings/*.a
+/testsuite/tests/match-exception-warnings/*.so
+/testsuite/tests/match-exception-warnings/*.obj
+/testsuite/tests/match-exception-warnings/*.lib
+/testsuite/tests/match-exception-warnings/*.dll
+/testsuite/tests/match-exception-warnings/*.cm[ioxat]
+/testsuite/tests/match-exception-warnings/*.cmx[as]
+/testsuite/tests/match-exception-warnings/*.cmti
+/testsuite/tests/match-exception-warnings/*.annot
+/testsuite/tests/match-exception-warnings/*.result
+/testsuite/tests/match-exception-warnings/*.byte
+/testsuite/tests/match-exception-warnings/*.native
+/testsuite/tests/match-exception-warnings/program
+/testsuite/tests/match-exception-warnings/*.exe
+/testsuite/tests/match-exception-warnings/*.exe.manifest
+/testsuite/tests/match-exception-warnings/.depend
+/testsuite/tests/match-exception-warnings/.depend.nt
+/testsuite/tests/match-exception-warnings/.DS_Store
 
 # /testsuite/tests/misc/
 /testsuite/tests/misc/*.o
@@ -2067,6 +2115,51 @@
 /testsuite/tests/tool-debugger/.DS_Store
 /testsuite/tests/tool-debugger/compiler-libs
 
+# /testsuite/tests/tool-debugger/basic/
+/testsuite/tests/tool-debugger/basic/*.o
+/testsuite/tests/tool-debugger/basic/*.a
+/testsuite/tests/tool-debugger/basic/*.so
+/testsuite/tests/tool-debugger/basic/*.obj
+/testsuite/tests/tool-debugger/basic/*.lib
+/testsuite/tests/tool-debugger/basic/*.dll
+/testsuite/tests/tool-debugger/basic/*.cm[ioxat]
+/testsuite/tests/tool-debugger/basic/*.cmx[as]
+/testsuite/tests/tool-debugger/basic/*.cmti
+/testsuite/tests/tool-debugger/basic/*.annot
+/testsuite/tests/tool-debugger/basic/*.result
+/testsuite/tests/tool-debugger/basic/*.byte
+/testsuite/tests/tool-debugger/basic/*.native
+/testsuite/tests/tool-debugger/basic/program
+/testsuite/tests/tool-debugger/basic/*.exe
+/testsuite/tests/tool-debugger/basic/*.exe.manifest
+/testsuite/tests/tool-debugger/basic/.depend
+/testsuite/tests/tool-debugger/basic/.depend.nt
+/testsuite/tests/tool-debugger/basic/.DS_Store
+/testsuite/tests/tool-debugger/basic/compiler-libs
+
+# /testsuite/tests/tool-debugger/find-artifacts/
+/testsuite/tests/tool-debugger/find-artifacts/*.o
+/testsuite/tests/tool-debugger/find-artifacts/*.a
+/testsuite/tests/tool-debugger/find-artifacts/*.so
+/testsuite/tests/tool-debugger/find-artifacts/*.obj
+/testsuite/tests/tool-debugger/find-artifacts/*.lib
+/testsuite/tests/tool-debugger/find-artifacts/*.dll
+/testsuite/tests/tool-debugger/find-artifacts/*.cm[ioxat]
+/testsuite/tests/tool-debugger/find-artifacts/*.cmx[as]
+/testsuite/tests/tool-debugger/find-artifacts/*.cmti
+/testsuite/tests/tool-debugger/find-artifacts/*.annot
+/testsuite/tests/tool-debugger/find-artifacts/*.result
+/testsuite/tests/tool-debugger/find-artifacts/*.byte
+/testsuite/tests/tool-debugger/find-artifacts/*.native
+/testsuite/tests/tool-debugger/find-artifacts/program
+/testsuite/tests/tool-debugger/find-artifacts/*.exe
+/testsuite/tests/tool-debugger/find-artifacts/*.exe.manifest
+/testsuite/tests/tool-debugger/find-artifacts/.depend
+/testsuite/tests/tool-debugger/find-artifacts/.depend.nt
+/testsuite/tests/tool-debugger/find-artifacts/.DS_Store
+/testsuite/tests/tool-debugger/find-artifacts/compiler-libs
+/testsuite/tests/tool-debugger/find-artifacts/out
+
 # /testsuite/tests/tool-lexyacc/
 /testsuite/tests/tool-lexyacc/*.o
 /testsuite/tests/tool-lexyacc/*.a
@@ -2124,11 +2217,34 @@
 /testsuite/tests/tool-ocamldoc/*.css
 /testsuite/tests/tool-ocamldoc/ocamldoc.out
 
+# /testsuite/tests/tool-toplevel/
+/testsuite/tests/tool-toplevel/*.o
+/testsuite/tests/tool-toplevel/*.a
+/testsuite/tests/tool-toplevel/*.so
+/testsuite/tests/tool-toplevel/*.obj
+/testsuite/tests/tool-toplevel/*.lib
+/testsuite/tests/tool-toplevel/*.dll
+/testsuite/tests/tool-toplevel/*.cm[ioxat]
+/testsuite/tests/tool-toplevel/*.cmx[as]
+/testsuite/tests/tool-toplevel/*.cmti
+/testsuite/tests/tool-toplevel/*.annot
+/testsuite/tests/tool-toplevel/*.result
+/testsuite/tests/tool-toplevel/*.byte
+/testsuite/tests/tool-toplevel/*.native
+/testsuite/tests/tool-toplevel/program
+/testsuite/tests/tool-toplevel/*.exe
+/testsuite/tests/tool-toplevel/*.exe.manifest
+/testsuite/tests/tool-toplevel/.depend
+/testsuite/tests/tool-toplevel/.depend.nt
+/testsuite/tests/tool-toplevel/.DS_Store
+
 # /testsuite/tests/typing-extensions/
 /testsuite/tests/typing-extensions/*.o
 /testsuite/tests/typing-extensions/*.a
 /testsuite/tests/typing-extensions/*.so
 /testsuite/tests/typing-extensions/*.obj
+/testsuite/tests/typing-extensions/*.lib
+/testsuite/tests/typing-extensions/*.dll
 /testsuite/tests/typing-extensions/*.cm[ioxat]
 /testsuite/tests/typing-extensions/*.cmx[as]
 /testsuite/tests/typing-extensions/*.cmti
@@ -2137,7 +2253,8 @@
 /testsuite/tests/typing-extensions/*.byte
 /testsuite/tests/typing-extensions/*.native
 /testsuite/tests/typing-extensions/program
-/testsuite/tests/typing-extensions/program.exe
+/testsuite/tests/typing-extensions/*.exe
+/testsuite/tests/typing-extensions/*.exe.manifest
 /testsuite/tests/typing-extensions/.depend
 /testsuite/tests/typing-extensions/.depend.nt
 /testsuite/tests/typing-extensions/.DS_Store

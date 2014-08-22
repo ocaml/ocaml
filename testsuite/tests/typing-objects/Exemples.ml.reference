@@ -183,15 +183,15 @@ and ['a] cons :
 #   val p1 : printable_color_point lst = <obj>
 # ((3, red)::(10, red)::[])- : unit = ()
 #           class virtual comparable :
-  unit -> object ('a) method virtual leq : 'a -> bool end
+  unit -> object ('a) method virtual cmp : 'a -> int end
 #             class int_comparable :
-  int -> object ('a) val x : int method leq : 'a -> bool method x : int end
+  int -> object ('a) val x : int method cmp : 'a -> int method x : int end
 #           class int_comparable2 :
   int ->
   object ('a)
     val x : int
     val mutable x' : int
-    method leq : 'a -> bool
+    method cmp : 'a -> int
     method set_x : int -> unit
     method x : int
   end
@@ -212,19 +212,19 @@ and ['a] cons :
         ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type
          int_comparable2 =
-           < leq : int_comparable2 -> bool; set_x : int -> unit; x : int >
+           < cmp : int_comparable2 -> int; set_x : int -> unit; x : int >
        is not a subtype of
-         int_comparable = < leq : int_comparable -> bool; x : int > 
-       Type int_comparable = < leq : int_comparable -> bool; x : int >
+         int_comparable = < cmp : int_comparable -> int; x : int > 
+       Type int_comparable = < cmp : int_comparable -> int; x : int >
        is not a subtype of
          int_comparable2 =
-           < leq : int_comparable2 -> bool; set_x : int -> unit; x : int > 
+           < cmp : int_comparable2 -> int; set_x : int -> unit; x : int > 
 # - : unit = ()
 #             class int_comparable3 :
   int ->
   object
     val mutable x : int
-    method leq : int_comparable -> bool
+    method cmp : int_comparable -> int
     method setx : int -> unit
     method x : int
   end
@@ -235,13 +235,13 @@ Error: Type
                            ^^
 Error: This expression has type
          int_comparable3 =
-           < leq : int_comparable -> bool; setx : int -> unit; x : int >
+           < cmp : int_comparable -> int; setx : int -> unit; x : int >
        but an expression was expected of type
-         #comparable as 'a = < leq : 'a -> bool; .. >
-       Type int_comparable = < leq : int_comparable -> bool; x : int >
+         #comparable as 'a = < cmp : 'a -> int; .. >
+       Type int_comparable = < cmp : int_comparable -> int; x : int >
        is not compatible with type
          int_comparable3 =
-           < leq : int_comparable -> bool; setx : int -> unit; x : int > 
+           < cmp : int_comparable -> int; setx : int -> unit; x : int > 
        The first object type has no method setx
 #   val sort : (#comparable as 'a) list -> 'a list = <fun>
 #     Characters 13-66:

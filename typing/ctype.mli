@@ -238,8 +238,9 @@ val nondep_class_declaration:
 val nondep_cltype_declaration:
         Env.t -> Ident.t -> class_type_declaration -> class_type_declaration
         (* Same for class type declarations. *)
-val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit
+(*val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit*)
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
+val is_contractive: Env.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
 val closed_schema: type_expr -> bool

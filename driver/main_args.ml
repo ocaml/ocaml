@@ -161,7 +161,8 @@ let mk_no_app_funct f =
 ;;
 
 let mk_no_float_const_prop f =
-  "-no-float-const-prop", Arg.Unit f, " Deactivate constant propagation for floating-point operations"
+  "-no-float-const-prop", Arg.Unit f,
+  " Deactivate constant propagation for floating-point operations"
 ;;
 
 let mk_noassert f =

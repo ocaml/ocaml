@@ -48,7 +48,20 @@ let update () = Display.update !-internal_display
 let event ?pretend x = Display.event !-internal_display ?pretend x
 let display x = Display.display !-internal_display x
 
+let do_at_end = Queue.create ()
+
+let at_end_always thunk = Queue.add thunk do_at_end
+let at_end thunk = at_end_always (function
+  | `Quiet -> ()
+  | `Success | `Error -> thunk `Error)
+let at_failure thunk = at_end_always (function
+  | `Success | `Quiet -> ()
+  | `Error -> thunk `Error)
+
 let finish ?how () =
+  Queue.iter (fun thunk ->
+    thunk (match how with None -> `Quiet | Some how -> how)
+  ) do_at_end;
   match !internal_display with
   | None -> ()
   | Some d -> Display.finish ?how d

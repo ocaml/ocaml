@@ -117,14 +117,13 @@ val set_temp_dir_name : string -> unit
     @since 4.00.0
 *)
 
-val temp_dir_name : string
-(** @deprecated  The name of the initial temporary directory:
+val temp_dir_name : string [@@ocaml.deprecated]
+(** The name of the initial temporary directory:
     Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
     if the variable is not set.
     Under Windows, the value of the [TEMP] environment variable, or "."
     if the variable is not set.
-    This function is deprecated; {!Filename.get_temp_dir_name} should be
-    used instead.
+    @deprecated You should use {!Filename.get_temp_dir_name} instead.
     @since 3.09.1
 *)
 

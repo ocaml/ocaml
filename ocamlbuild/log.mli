@@ -32,3 +32,8 @@ val finish : ?how:[`Success|`Error|`Quiet] -> unit -> unit
 val display : (out_channel -> unit) -> unit
 val update : unit -> unit
 val mode : string -> bool
+
+(** Wrap logging event so that only fire at the end of the compilation
+    process, possibly depending on the termination status. *)
+val at_end : ([> `Error | `Quiet ] -> unit) -> unit
+val at_failure : ([> `Error ] -> unit) -> unit

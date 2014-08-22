@@ -20,11 +20,13 @@
 *)
 
 val list : ('a -> 'a -> bool) -> 'a list -> 'a list
+  [@@ocaml.deprecated]
 (** Sort a list in increasing order according to an ordering predicate.
    The predicate should return [true] if its first argument is
    less than or equal to its second argument. *)
 
 val array : ('a -> 'a -> bool) -> 'a array -> unit
+  [@@ocaml.deprecated]
 (** Sort an array in increasing order according to an
    ordering predicate.
    The predicate should return [true] if its first argument is
@@ -32,6 +34,7 @@ val array : ('a -> 'a -> bool) -> 'a array -> unit
    The array is sorted in place. *)
 
 val merge : ('a -> 'a -> bool) -> 'a list -> 'a list -> 'a list
+  [@@ocaml.deprecated]
 (** Merge two lists according to the given predicate.
    Assuming the two argument lists are sorted according to the
    predicate, [merge] returns a sorted list containing the elements
