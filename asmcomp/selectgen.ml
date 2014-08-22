@@ -199,10 +199,10 @@ module Exn_classes = struct
       | Cswitch (e, _, a) ->
           aux e; Array.iter aux a
 
-      | Ccatch (i, args, k, body, handler) ->
-          define env i args k;
+      | Ccatch (handlers, body) ->
+          List.iter (fun (i, args, k, _handler) -> define env i args k) handlers;
           aux body;
-          aux handler
+          List.iter (fun (_i, _args, _k, handler) -> aux handler) handlers
 
       | Cexit (i, args, k) ->
           apply_direct env i args k;
@@ -853,7 +853,10 @@ method emit_expr (env:environment) exp =
       let (rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       Some [||]
-  | Ccatch(nfail, ids, kids, e1, e2) ->
+  | Ccatch([], e1) ->
+      self#emit_expr env e1
+  (* | Ccatch(nfail, ids, kids, e1, e2) -> *)
+  | Ccatch([nfail, ids, kids, e2], e1) ->
       let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
       List.iter2 name_regs ids rs;
 
@@ -876,6 +879,10 @@ method emit_expr (env:environment) exp =
       let r = join r1 s1 r2 s2 in
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
+
+  | Ccatch(_::_::_, e1) ->
+      failwith "TODO handler list"
+
   | Cexit (nfail,args,stex_args) ->
       begin match self#emit_parts_list env args with
         None -> None
@@ -1112,7 +1119,9 @@ method emit_tail (env:environment) exp =
             (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
             rsel [||]
       end
-  | Ccatch(nfail, ids, kids, e1, e2) ->
+  | Ccatch([], e1) ->
+      self#emit_tail env e1
+  | Ccatch([nfail, ids, kids, e2], e1) ->
       let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
       List.iter2 name_regs ids rs;
 
@@ -1127,6 +1136,10 @@ method emit_tail (env:environment) exp =
       let s1 = self#emit_tail_sequence env e1 in
       let s2 = self#emit_tail_sequence new_env e2 in
       self#insert (Icatch(nfail, s1, s2)) [||] [||]
+
+  | Ccatch(_::_::_, e1) ->
+      failwith "TODO handler list tail"
+
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in

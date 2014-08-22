@@ -418,6 +418,12 @@ let test_bool = function
 
 let box_float c = Cop(Calloc, [alloc_float_header; c])
 
+let map_ccatch f handlers body =
+  let handlers = List.map
+      (fun (n, ids, kids, handler) -> (n, ids, kids, f handler))
+      handlers in
+  Ccatch(handlers, f body)
+
 let rec unbox_float = function
     Cop(Calloc, [header; c]) -> c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
@@ -425,7 +431,8 @@ let rec unbox_float = function
       Cifthenelse(cond, unbox_float e1, unbox_float e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
   | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
-  | Ccatch(n, ids, kids, e1, e2) -> Ccatch(n, ids, kids, unbox_float e1, unbox_float e2)
+  | Ccatch(handlers, e1) ->
+      map_ccatch unbox_float handlers e1
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
   | c -> Cop(Cload Double_u, [c])
 
@@ -451,8 +458,8 @@ let rec remove_unit = function
       Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
   | Cswitch(sel, index, cases) ->
       Cswitch(sel, index, Array.map remove_unit cases)
-  | Ccatch(io, ids, kids, body, handler) ->
-      Ccatch(io, ids, kids, remove_unit body, remove_unit handler)
+  | Ccatch(handlers, body) ->
+      map_ccatch remove_unit handlers body
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
@@ -744,7 +751,7 @@ let rec unbox_int bi arg =
       Cifthenelse(cond, unbox_int bi e1, unbox_int bi e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2)
   | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_int bi) el)
-  | Ccatch(n, ids, kids, e1, e2) -> Ccatch(n, ids, kids, unbox_int bi e1, unbox_int bi e2)
+  | Ccatch(handlers, body) -> map_ccatch (unbox_int bi) handlers body
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_int bi e1, id, unbox_int bi e2)
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
@@ -1119,7 +1126,7 @@ struct
       | Cexit (j,_,_) ->
           if i=j then handler
           else body
-      | _ ->  Ccatch (i,[],[],body,handler))
+      | _ ->  ccatch (i,[],[],body,handler))
 
   let make_exit i = Cexit (i,[],[])
 
@@ -1268,7 +1275,7 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cswitch(arg, index, cases) ->
         Cswitch(subst arg, index, Array.map subst cases)
     | Cloop e -> Cloop(subst e)
-    | Ccatch(nfail, ids, kids, e1, e2) -> Ccatch(nfail, ids, kids, subst e1, subst e2)
+    | Ccatch(handlers, body) -> map_ccatch subst handlers body
     | Cexit (nfail, el, kel) -> Cexit (nfail, List.map subst el, kel)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | e -> e in
@@ -1290,7 +1297,7 @@ let strmatch_compile =
 
 let cloop expr =
   let raise_num = next_raise_count () in
-  Ccatch(raise_num, [], [],
+  ccatch(raise_num, [], [],
          Cexit (raise_num,[],[]),
          (Csequence (remove_unit expr,
                      Cexit (raise_num,[],[]))))
@@ -1487,7 +1494,7 @@ let rec transl = function
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl body) (transl handler)
   | Ucatch(nfail, ids, body, handler) ->
-      Ccatch(nfail, ids, [], transl body, transl handler)
+      ccatch(nfail, ids, [], transl body, transl handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl body, exn, transl handler)
   | Uifthenelse(Uprim(Pnot, [arg], _), ifso, ifnot) ->
@@ -1527,7 +1534,7 @@ let rec transl = function
   | Uwhile(cond, body) ->
       let raise_num = next_raise_count () in
       return_unit
-        (Ccatch
+        (ccatch
            (raise_num, [], [],
             (* Cloop *)
             cloop
@@ -1557,7 +1564,7 @@ let rec transl = function
         (Clet
            (id, transl low,
             bind_nonvar "bound" (transl high) (fun high ->
-              Ccatch
+              ccatch
                 (raise_num, [], [],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar id; high]), Cexit (raise_num, [], []),
@@ -2074,7 +2081,7 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[],[]) when nexit=ncatch -> handler
-| _ ->  Ccatch (ncatch, [], [], body, handler)
+| _ ->  ccatch (ncatch, [], [], body, handler)
 
 and make_catch2 mk_body handler = match handler with
 | Cexit (_,[],[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
@@ -2406,7 +2413,7 @@ let cache_public_method meths tag cache =
   Clet (
   hi, Cop(Cload Word, [meths]),
   Csequence(
-  Ccatch
+  ccatch
     (raise_num, [],[],
      (* Cloop *)
      cloop
