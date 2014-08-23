@@ -880,8 +880,28 @@ method emit_expr (env:environment) exp =
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
 
-  | Ccatch(_::_::_, e1) ->
-      failwith "TODO handler list"
+  | Ccatch(handlers, e1) ->
+      let (r_body, s_body) = self#emit_sequence env e1 in
+      let aux (nfail, ids, kids, e2) =
+        let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+        List.iter2 name_regs ids rs;
+
+        let new_env =
+          List.fold_left
+            (fun env (id,r) -> env_add id r env)
+            env (List.combine ids rs) in
+        let new_env =
+          List.fold_left
+            (fun env (id,r) -> env_add_ex id r env)
+            new_env (List.combine kids krs) in
+        let (r, s) = self#emit_sequence new_env e2 in
+        self#insert (Icatch(nfail, s_body#extract, s#extract)) [||] [||];
+        (r, s)
+      in
+      let l = List.map aux handlers in
+      let a = Array.of_list ((r_body,s_body) :: l) in
+      let r = join_array a in
+      r
 
   | Cexit (nfail,args,stex_args) ->
       begin match self#emit_parts_list env args with
@@ -1121,24 +1141,25 @@ method emit_tail (env:environment) exp =
       end
   | Ccatch([], e1) ->
       self#emit_tail env e1
-  | Ccatch([nfail, ids, kids, e2], e1) ->
-      let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
-      List.iter2 name_regs ids rs;
 
-      let new_env =
-        List.fold_left
-        (fun env (id,r) -> env_add id r env)
-        env (List.combine ids rs) in
-      let new_env =
-        List.fold_left
-        (fun env (id,r) -> env_add_ex id r env)
-        new_env (List.combine kids krs) in
-      let s1 = self#emit_tail_sequence env e1 in
-      let s2 = self#emit_tail_sequence new_env e2 in
-      self#insert (Icatch(nfail, s1, s2)) [||] [||]
+  | Ccatch(handlers, e1) ->
+      let s_body = self#emit_tail_sequence env e1 in
+      let aux (nfail, ids, kids, e2) =
+        let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+        List.iter2 name_regs ids rs;
 
-  | Ccatch(_::_::_, e1) ->
-      failwith "TODO handler list tail"
+        let new_env =
+          List.fold_left
+            (fun env (id,r) -> env_add id r env)
+            env (List.combine ids rs) in
+        let new_env =
+          List.fold_left
+            (fun env (id,r) -> env_add_ex id r env)
+            new_env (List.combine kids krs) in
+        let s = self#emit_tail_sequence new_env e2 in
+        self#insert (Icatch(nfail, s_body, s)) [||] [||];
+      in
+      List.iter aux handlers
 
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
