@@ -41,7 +41,7 @@ Type system:
 * Module aliases are now typed in a specific way, which remembers their
   identity. In particular this changes the signature inferred by
   "module type of"
-  (Jacques Garrigue)
+  (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for
   closed objects and fixed polymorphic variants.
@@ -70,29 +70,26 @@ Compilers:
 - PR#6042: Optimization of integer division and modulus by constant divisors
   (Xavier Leroy and Phil Denys)
 - Add "-open" command line flag for opening a single module before typing
+  (Leo White, Mark Shinwell and Nick Chapman)
 * "-o" now sets module name to the output file name up to the first "."
   (it also applies when "-o" is not given, i.e. the module name is then
    the input file name up to the first ".")
-  (Leo White and Mark Shinwell)
+  (Leo White, Mark Shinwell and Nick Chapman)
 * PR#5779: better sharing of structured constants
   (Alain Frisch)
-- PR#6182: better message for virtual objects and class types
-  (Leo P. White, Stephen Dolan)
 - PR#5817: new flag to keep locations in cmi files
   (Alain Frisch)
 - PR#5854: issue warning 3 when referring to a value marked with
   the [@@ocaml.deprecated] attribute
   (Alain Frisch, suggestion by Pierre-Marie Pédrot)
-* PR#6203: Constant exception constructors no longer allocate
-  (Alain Frisch)
-- PR#6311: Improve signature mismatch error messages
-  (Alain Frisch, suggestion by Daniel Bünzli)
-- PR#6345: Better compilation of optional arguments with default values
-  (Alain Frisch, review by Jacques Garrigue)
-- PR#6260: Unnecessary boxing in let
-  (Vladimir Brankov)
 - PR#6017: a new format implementation based on GADTs
   (Benoît Vaugon and Gabriel Scherer)
+* PR#6203: Constant exception constructors no longer allocate
+  (Alain Frisch)
+- PR#6260: avoid unnecessary boxing in let
+  (Vladimir Brankov)
+- PR#6345: Better compilation of optional arguments with default values
+  (Alain Frisch, review by Jacques Garrigue)
 - PR#6389: ocamlopt -opaque option for incremental native compilation
   (Pierre Chambart, Gabriel Scherer)
 
@@ -116,7 +113,7 @@ Runtime system:
 - Fixed a major performance problem on large heaps (~1GB) by making heap
   increments proportional to heap size by default
   (Damien Doligez)
-- PR#4765: Structural equality should treat exception specifically
+- PR#4765: Structural equality treats exception specifically
   (Alain Frisch)
 - PR#5009: efficient comparison/indexing of exceptions
   (Alain Frisch, request by Markus Mottl)
@@ -129,10 +126,8 @@ Runtime system:
   (Xavier Leroy)
 
 Standard library:
-* Add new modules: Bytes and BytesLabels.
+* Add new modules Bytes and BytesLabels for mutable byte sequences.
   (Damien Doligez)
-- PR#6355: Improve documentation regarding finalisers and multithreading
-  (Daniel Bünzli, Mark Shinwell)
 - PR#4986: add List.sort_uniq and Set.of_list
   (Alain Frisch)
 - PR#5935: a faster version of "raise" which does not maintain the backtrace
@@ -143,6 +138,8 @@ Standard library:
   (John Whitington)
 - PR#6180: efficient creation of uninitialized float arrays
   (Alain Frisch, request by Markus Mottl)
+- PR#6355: Improve documentation regarding finalisers and multithreading
+  (Daniel Bünzli, Mark Shinwell)
 - Trigger warning 3 for all values marked as deprected in the documentation.
   (Damien Doligez)
 
@@ -158,53 +155,30 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
-- PR#6507: crash on AArch64 resulting from incorrect setting of
-  [caml_bottom_of_stack].  (Richard Jones, Mark Shinwell)
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
-- PR#4771: Clarify documentation of Dynlink.allow_only
-  (Damien Doligez, report by David Allsopp)
-- PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
-  (Stéphane Glondu, Mark Shinwell)
-- PR#6439: Don't use the deprecated [getpagesize] function
-  (John Whitington, Mark Shinwell)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
   (Alain Frisch, report by Bart Jacobs)
-- PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
-  (Jun Furuse and Hongbo Zhang, report by Dmitry Grebeniuk)
-- PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
-  (user 'daweil')
 - PR#5406 ocamlbuild: "tag 'package' does not expect a parameter"
   (Gabriel Scherer)
-- PR#5598: follow-up fix related to PR#6165
-  (Damien Doligez)
+- PR#5598, PR#6165: Alterations to handling of \013 in source files
+  breaking other tools
+  (David Allsopp and Damien Doligez)
 - PR#5820: Fix camlp4 lexer roll back problem
   (Hongbo Zhang)
-- PR#5851: warn when -r is disabled because no _tags file is present
-  (Gabriel Scherer)
 - PR#5946: CAMLprim taking (void) as argument
   (Benoît Vaugon)
 - PR#6038: on x86-32, enforce 16-byte stack alignment for compatibility
   with recent GCC and Clang.  Win32/MSVC keeps 4-byte stack alignment.
   (Xavier Leroy)
-- PR#6062: Fix a regression bug caused by commit 13047
+- PR#6062: Fix a 4.01 camlp4 DELETE_RULE regression caused by commit 13047
   (Hongbo Zhang, report by Christophe Troestler)
-- PR#6109: Typos in ocamlbuild error messages
-  (Gabriel Kerneis)
-- PR#6116: more efficient implementation of Digest.to_hex
-  (ygrek)
-- PR#6142: add cmt file support to ocamlobjinfo
-  (Anil Madhavapeddy)
-- PR#6165: Alterations to handling of \013 in source files breaking other tools
-  (David Allsopp)
 - PR#6173: Typing error message is worse than before
   (Jacques Garrigue and John Whitington)
 - PR#6174: OCaml compiler loops on an example using GADTs (-rectypes case)
   (Jacques Garrigue and Grégoire Henry, report by Chantal Keller)
-- PR#6175: add open! support to camlp4
+- PR#6175: open! was not suppored by camlp4
   (Hongbo Zhang)
-- PR#6183: enhanced documentation for 'Unix.shutdown_connection'
-  (Anil Madhavapeddy, report by Jun Furuse)
 - PR#6184: ocamlbuild: `ocamlfind ocamldep` does not support -predicate
   (Jacques-Pascal Deplaix)
 - PR#6194: Incorrect unused warning with first-class modules in patterns
@@ -214,6 +188,8 @@ Bug fixes:
   (Xavier Leroy)
 - PR#6216: inlining of GADT matches generates invalid assembly
   (Xavier Leroy and Alain Frisch, report by Mark Shinwell)
+- PR#6232: Don't use [mktemp] on platforms where [mkstemp] is available
+  (Stéphane Glondu, Mark Shinwell)
 - PR#6233: out-of-bounds exceptions lose their locations on ARM, PowerPC
   (Jacques-Henri Jourdan and Xavier Leroy,
    report and testing by Stéphane Glondu)
@@ -230,8 +206,6 @@ Bug fixes:
   (Xavier Leroy, report by Pierre-Marie Pédrot)
 - PR#6262: equality of first-class modules take module aliases into account
   (Alain Frisch and Leo White)
-- PR#6267: more information printed by "bt" command of ocamldebug
-  (Josh Watzman)
 - PR#6268: -DMODEL_$(MODEL) not passed when building asmrun/arm.p.o
   (Peter Michael Green)
 - PR#6273: fix Sys.file_exists on large files (Win32)
@@ -268,30 +242,41 @@ Bug fixes:
   (Jacques Garrigue, report by Gabriel Scherer and Benoît Vaugon)
 - PR#6408: Optional arguments given as ~?arg instead of ?arg in message
   (Michael O'Connor)
-- PR#6418: reimplement parametrized Format tags/indentation with GADTs
-  (Benoît Vaugon)
+- PR#6411: missing libgcc_s_sjlj-1.dll in mingw (add -static-libgcc)
+  (Jun Furuse and Alain Frisch, Jonathan Protzenko and Adrien Nader)
 - PR#6436: Typos in @deprecated text in stdlib/arrayLabels.mli
+  (John Whitington)
+- PR#6439: Don't use the deprecated [getpagesize] function
+  (John Whitington, Mark Shinwell)
+- PR#6441: undetected tail-call in some mutually-recursive functions
+  (many arguments, and mutual block mixes functions and non-functions)
+  (Stefan Holdermans, review by Xavier Leroy)
 - PR#6443: ocaml segfault when List.fold_left is traced then executed
-  (Jacques Garrigue, report by Reventlov)
+  (Jacques Garrigue, report by user 'Reventlov')
+- PR#6451: some bugs in untypeast.ml
+  (Jun Furuse, review by Alain Frisch)
 - PR#6460: runtime assertion failure with large [| e1;...eN |]
   float array expressions
   (Leo White)
+- PR#6463: -dtypedtree fails on class fields
+  (Leo White)
+- PR#6469: invalid -dsource printing of "external _pipe = ...", "Pervasives.(!)"
+  (Gabriel Scherer and Damien Doligez, user 'ngunn')
 - PR#6482: ocamlbuild fails when _tags file in unhygienic directory
   (Gabriel Scherer)
+- PR#6502: ocamlbuild spurious warning on "use_menhir" tag
+  (Xavier Leroy)
 - PR#6505: Missed Type-error leads to a segfault upon record access
-  (Jacques Garrigue, report by Christoph Höger)
+  (Jacques Garrigue, Jeremy Yallop, report by Christoph Höger)
+- PR#6507: crash on AArch64 resulting from incorrect setting of
+  [caml_bottom_of_stack].  (Richard Jones, Mark Shinwell)
 - PR#6509: add -linkall flag to ocamlcommon.cma
   (Frédéric Bour)
 - PR#6513: Fatal error Ctype.Unify(_) in functor type
-  (Jacques Garrigue, report by Dario Teixeira)
-- fix -dsource printing of "external _pipe = ..."
-  (Gabriel Scherer)
 - bound-checking bug in caml_string_{get,set}{16,32,64}
   (Pierre Chambart and Gabriel Scherer, report by Nicolas Trangez)
 - sometimes wrong stack alignment at out-of-bounds array access
   (Gabriel Scherer and Xavier Leroy, report by Pierre Chambart)
-- make ocamldebug -I auto-detection work with ocamlbuild
-  (Josh Watzman)
 
 Features wishes:
 - PR#4243: make the Makefiles parallelizable
@@ -299,10 +284,18 @@ Features wishes:
 - PR#4323: have "of_string" in Num and Big_int work with binary and
            hex representations
   (Zoe Paraskevopoulou, review by Gabriel Scherer)
+- PR#4771: Clarify documentation of Dynlink.allow_only
+  (Damien Doligez, report by David Allsopp)
+- PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
+  (Jun Furuse and Hongbo Zhang, report by Dmitry Grebeniuk)
+- PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
+  (user 'daweil')
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
   (Hongbo Zhang)
 - PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
   (Alain Frisch)
+- PR#5851: warn when -r is disabled because no _tags file is present
+  (Gabriel Scherer)
 - PR#5899: a programmer-friendly access to backtrace information
   (Jacques-Henri Jourdan and Gabriel Scherer)
 - PR#6000 comment 9644: add a warning for non-principal coercions to format
@@ -315,23 +308,46 @@ Features wishes:
   (David Sheets)
 - PR#6087: ocamlbuild, improve _tags parsing of escaped newlines
   (Gabriel Scherer, request by Daniel Bünzli)
+- PR#6109: Typos in ocamlbuild error messages
+  (Gabriel Kerneis)
+- PR#6116: more efficient implementation of Digest.to_hex
+  (ygrek)
+- PR#6142: add cmt file support to ocamlobjinfo
+  (Anil Madhavapeddy)
 - PR#6166: document -ocamldoc option of ocamlbuild
   (Xavier Clerc)
+- PR#6182: better message for virtual objects and class types
+  (Leo White, Stephen Dolan)
+- PR#6183: enhanced documentation for 'Unix.shutdown_connection'
+  (Anil Madhavapeddy, report by Jun Furuse)
 - PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
   (Jacques-Pascal Deplaix)
 - PR#6246: allow wilcard _ as for-loop index
   (Alain Frisch, request by ygrek)
+- PR#6267: more information printed by "bt" command of ocamldebug
+  (Josh Watzman)
 - PR#6270: remove need for -I directives to ocamldebug in common case
   (Josh Watzman, review by Xavier Clerc and Alain Frisch)
+- PR#6311: Improve signature mismatch error messages
+  (Alain Frisch, suggestion by Daniel Bünzli)
 - PR#6358: obey DESTDIR in install targets
   (Gabriel Scherer, request by François Berenger)
+- PR#6388, PR#6424: more parsetree correctness checks for -ppx users
+  (Alain Frisch, request by Peter Zotov and Jun Furuse)
 - PR#6406: Expose OCaml version in C headers
   (Peter Zotov and Romain Calascibetta)
+- PR#6446: improve "unused declaration" warnings wrt. name shadowing
+  (Alain Frisch)
+- PR#6495: ocamlbuild tags 'safe_string', 'unsafe_string'
+  (Anil Madhavapeddy)
+- PR#6497: pass context information to -ppx preprocessors
+  (Peter Zotov, Alain Frisch)
 - ocamllex: user-definable refill action
   (Frédéric Bour, review by Gabriel Scherer and Luc Maranget)
 - shorten syntax for functor signatures: "functor (M1:S1) (M2:S2) .. -> .."
   (Thomas Gazagnaire and Jeremy Yallop, review by Gabriel Scherer)
-
+- make ocamldebug -I auto-detection work with ocamlbuild
+  (Josh Watzman)
 
 OCaml 4.01.0:
 -------------
@@ -751,8 +767,6 @@ Feature wishes:
 - PR#6059: add -output-obj rules for ocamlbuild
   (Anil Madhavapeddy)
 - PR#6060: ocamlbuild tags 'principal', 'strict_sequence' and 'short_paths'
-  (Anil Madhavapeddy)
-- PR#6495: ocamlbuild tags 'safe_string', 'unsafe_string'
   (Anil Madhavapeddy)
 - ocamlbuild tag 'no_alias_deps'
   (Daniel Bünzli)
