@@ -335,18 +335,6 @@ static void unpin_promoted_object(value local, value promoted)
   caml_darken(promoted, 0);
 }
 
-/* rewrite a field that used to point to a young object */
-static int rewrite_shared_field(value* field, value vold, value vnew)
-{
-  Assert(!Is_young(vnew));
-  if (__sync_bool_compare_and_swap(field, vold, vnew)) {
-    caml_darken(vnew, 0);
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
@@ -389,7 +377,7 @@ void caml_empty_minor_heap (void)
         Assert(Is_block(vnew) && !Is_young(vnew));
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
-        rewritten += rewrite_shared_field(&Op_val(r->obj)[r->field], v, vnew);
+        rewritten += caml_atomic_cas_field(r->obj, r->field, v, vnew);
       }
     }
 
