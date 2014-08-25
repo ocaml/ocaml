@@ -855,6 +855,7 @@ method emit_expr (env:environment) exp =
       Some [||]
   | Ccatch([], e1) ->
       self#emit_expr env e1
+(*
   (* | Ccatch(nfail, ids, kids, e1, e2) -> *)
   | Ccatch([nfail, ids, kids, e2], e1) ->
       let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
@@ -879,6 +880,7 @@ method emit_expr (env:environment) exp =
       let r = join r1 s1 r2 s2 in
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
+*)
 
   | Ccatch(handlers, e1) ->
       let (r_body, s_body) = self#emit_sequence env e1 in
@@ -895,12 +897,13 @@ method emit_expr (env:environment) exp =
             (fun env (id,r) -> env_add_ex id r env)
             new_env (List.combine kids krs) in
         let (r, s) = self#emit_sequence new_env e2 in
-        self#insert (Icatch(nfail, s_body#extract, s#extract)) [||] [||];
-        (r, s)
+        (nfail, (r, s))
       in
       let l = List.map aux handlers in
-      let a = Array.of_list ((r_body,s_body) :: l) in
+      let a = Array.of_list ((r_body,s_body) :: List.map snd l) in
       let r = join_array a in
+      let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
+      self#insert (Icatch(List.map aux2 l, s_body#extract)) [||] [||];
       r
 
   | Cexit (nfail,args,stex_args) ->
@@ -1156,10 +1159,9 @@ method emit_tail (env:environment) exp =
           List.fold_left
             (fun env (id,r) -> env_add_ex id r env)
             new_env (List.combine kids krs) in
-        let s = self#emit_tail_sequence new_env e2 in
-        self#insert (Icatch(nfail, s_body, s)) [||] [||];
+        nfail, self#emit_tail_sequence new_env e2
       in
-      List.iter aux handlers
+      self#insert (Icatch(List.map aux handlers, s_body)) [||] [||];
 
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in

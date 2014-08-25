@@ -172,10 +172,16 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(i, body, handler) ->
+  | Icatch([i, handler], body) ->
       fprintf
         ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
         instr body i instr handler
+  | Icatch([i1,handler1; i2,handler2], body) ->
+      fprintf
+        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;@ and(%d)@,%a@;<0 -2>endcatch@]"
+        instr body i1 instr handler1 i2 instr handler2
+  | Icatch(_, body) ->
+      failwith "TODO print Icatch"
   | Iexit i ->
       fprintf ppf "exit(%d)" i
   | Iexit_ind il ->
