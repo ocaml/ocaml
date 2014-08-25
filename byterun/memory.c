@@ -55,6 +55,34 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
   caml_modify_field(obj, field, val);
 }
 
+static int promoted_cas(value obj, int field, value oldval, value newval);
+
+CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)
+{
+  if (Is_promoted_hd(Hd_val(obj))) {
+    return promoted_cas(obj, field, oldval, newval);
+  } else {
+    value* p = &Op_val(obj)[field];
+    if (Is_young(obj)) {
+      /* non-atomic CAS since only this thread can access the object */
+      if (*p == oldval) {
+        *p = newval;
+        return 1;
+      } else {
+        return 0;
+      }
+    } else {
+      /* need a real CAS */
+      if (__sync_bool_compare_and_swap(p, oldval, newval)) {
+        shared_heap_write_barrier(obj, field, newval);
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  }
+}
+
 CAMLexport void caml_set_fields (value obj, value v)
 {
   int i;
@@ -127,9 +155,10 @@ static void handle_read_fault(struct domain* target, void* reqp) {
     caml_gc_log("Handling read fault for domain [%02d]", caml_domain_id(target));
     req->ret = caml_promote(target, v);
     Assert (!Is_minor(req->ret));
-    /* OPT: update obj[field] as well? */
-    /* FIXME: caml_modify_field may be wrong here */
-    caml_modify_field(req->obj, req->field, req->ret);
+    /* Update the field so that future requests don't fault. We must
+       use a CAS here, since another thread may modify the field and
+       we must avoid overwriting its update */
+    caml_atomic_cas_field(req->obj, req->field, v, req->ret);
   } else {
     /* Race condition: by the time we handled the fault, the field was
        already modified and no longer points to our heap.  We recurse
@@ -199,5 +228,55 @@ static void promoted_write(value obj, int field, value val)
     struct write_fault_req req = {obj, field, val};
     caml_gc_log("Write fault to domain [%02d]", caml_domain_id(owner));
     caml_domain_rpc(owner, &handle_write_fault, &req);
+  }
+}
+
+
+struct cas_fault_req {
+  value obj;
+  int field;
+  value oldval;
+  value newval;
+  int success;
+};
+
+static int do_promoted_cas(value local, value promoted, int field, value oldval, value newval) {
+  value* p = &Op_val(local)[field];
+  if (*p == oldval) {
+    *p = newval;
+    shared_heap_write_barrier(promoted, field, newval);
+    Op_val(promoted)[field] = newval;
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+static void handle_cas_fault(struct domain* target, void* reqp) {
+  struct cas_fault_req* req = reqp;
+  if (Is_promoted_hd(Hd_val(req->obj)) &&
+      caml_owner_of_shared_block(req->obj) == target) {
+    caml_gc_log("Handling CAS fault for domain [%02d]", caml_domain_id(target));
+    value local =
+      caml_addrmap_lookup(caml_get_sampled_roots(target)->promotion_rev_table,
+                          req->obj);
+    req->success = do_promoted_cas(local, req->obj, req->field, req->oldval, req->newval);
+  } else {
+    caml_gc_log("Stale CAS fault for domain [%02d]", caml_domain_id(target));
+    req->success = caml_atomic_cas_field(req->obj, req->field, req->oldval, req->newval);
+  }
+}
+
+static int promoted_cas(value obj, int field, value oldval, value newval)
+{
+  if (Is_young(obj)) {
+    value promoted = caml_addrmap_lookup(&caml_promotion_table, obj);
+    return do_promoted_cas(obj, promoted, field, oldval, newval);
+  } else {
+    struct domain* owner = caml_owner_of_shared_block(obj);
+    struct cas_fault_req req = {obj, field, oldval, newval, 0};
+    caml_gc_log("CAS fault to domain [%02d]", caml_domain_id(owner));
+    caml_domain_rpc(owner, &handle_cas_fault, &req);
+    return req.success;
   }
 }
