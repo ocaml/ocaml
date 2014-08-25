@@ -43,12 +43,12 @@ static __thread unsigned long minor_gc_counter = 0;
 
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
-  value **new_table;
+  struct caml_ref_entry *new_table;
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (value **) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                          * sizeof (value *));
+  new_table = (struct caml_ref_entry*) caml_stat_alloc ((tbl->size + tbl->reserve)
+                                                        * sizeof (struct caml_ref_entry));
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -354,7 +354,7 @@ void caml_empty_minor_heap (void)
 {
   uintnat minor_allocated_bytes = caml_young_end - caml_young_ptr;
   unsigned rewritten = 0;
-  value **r;
+  struct caml_ref_entry *r;
 
   if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
@@ -364,14 +364,15 @@ void caml_empty_minor_heap (void)
     caml_do_local_roots(&caml_oldify_one, &roots);
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       value x;
-      caml_oldify_one (**r, &x);
+      caml_oldify_one (Op_val(r->obj)[r->field], &x);
     }
     caml_oldify_mopup ();
 
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
-      if (Is_block(**r) && Is_young(**r)) {
-        Assert (Hp_val (**r) >= caml_young_ptr);
-        value v = **r, vnew;
+      value v = Op_val(r->obj)[r->field];
+      if (Is_block(v) && Is_young(v)) {
+        Assert (Hp_val (v) >= caml_young_ptr);
+        value vnew;
         header_t hd = Hd_val(v);
         // FIXME: call oldify_one here?
         if (Is_promoted_hd(hd)) {
@@ -388,7 +389,7 @@ void caml_empty_minor_heap (void)
         Assert(Is_block(vnew) && !Is_young(vnew));
         Assert(Hd_val(vnew));
         if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
-        rewritten += rewrite_shared_field(*r, v, vnew);
+        rewritten += rewrite_shared_field(&Op_val(r->obj)[r->field], v, vnew);
       }
     }
 
@@ -479,7 +480,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     caml_gc_log ("Growing ref_table to %"
                  ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
                      (intnat) sz/1024);
-    tbl->base = (value **) caml_stat_resize ((char *) tbl->base, sz);
+    tbl->base = (struct caml_ref_entry*) caml_stat_resize ((char *) tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error ("Fatal error: ref_table overflow\n");
     }

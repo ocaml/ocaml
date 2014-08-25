@@ -21,12 +21,17 @@
 CAMLextern __thread char *caml_young_ptr;
 extern __thread asize_t caml_minor_heap_size;
 
+struct caml_ref_entry {
+  value obj;
+  intnat field;
+};
+
 struct caml_ref_table {
-  value **base;
-  value **end;
-  value **threshold;
-  value **ptr;
-  value **limit;
+  struct caml_ref_entry *base;
+  struct caml_ref_entry *end;
+  struct caml_ref_entry *threshold;
+  struct caml_ref_entry *ptr;
+  struct caml_ref_entry *limit;
   asize_t size;
   asize_t reserve;
 };
@@ -47,5 +52,17 @@ CAMLextern value caml_promote(struct domain*, value root);
       caml_oldify_one (__oldify__v__, (p)); \
     } \
   }while(0)
+
+#define Ref_table_add(ref_table, x, f) do {                             \
+    struct caml_ref_table* ref = (ref_table);                           \
+    if (ref->ptr >= ref->limit) {                                       \
+      CAMLassert (ref->ptr == ref->limit);                              \
+      caml_realloc_ref_table (ref);                                     \
+    }                                                                   \
+    ref->ptr->obj = (x);                                                \
+    ref->ptr->field = (f);                                              \
+    ref->ptr++;                                                         \
+  } while (0)
+
 
 #endif /* CAML_MINOR_GC_H */

@@ -17,11 +17,7 @@ static void shared_heap_write_barrier(value obj, int field, value val)
   if (Is_block(val)) {
     if (Is_young(val)) {
       /* Add to remembered set */
-      if (caml_ref_table.ptr >= caml_ref_table.limit){
-        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);
-        caml_realloc_ref_table (&caml_ref_table);
-      }
-      *caml_ref_table.ptr++ = Op_val(obj) + field;
+      Ref_table_add(&caml_ref_table, obj, field);
     } else {
       /* 
          FIXME: should have an is_marking check
