@@ -587,37 +587,6 @@ CAMLprim value caml_input_value(value vchan)
   CAMLreturn (res);
 }
 
-CAMLexport value caml_input_val_from_string(value str, intnat ofs)
-{
-  CAMLparam1 (str);
-  mlsize_t num_objects, whsize;
-  CAMLlocal1 (obj);
-
-  caml_failwith("lolwat");
-
-  intern_src = &Byte_u(str, ofs + 2*4);
-  intern_input_malloced = 0;
-  num_objects = read32u();
-#ifdef ARCH_SIXTYFOUR
-  intern_src += 4;  /* skip size_32 */
-  whsize = read32u();
-#else
-  whsize = read32u();
-  intern_src += 4;  /* skip size_64 */
-#endif
-  /* Allocate result */
-  intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */ /* !!!!! src ptr broken */
-  /* Fill it in */
-  obj = intern_rec(whsize, num_objects);
-  /* Free everything !! */
-  CAMLreturn (caml_check_urgent_gc(obj));
-}
-
-CAMLprim value caml_input_value_from_string(value str, value ofs)
-{
-  return caml_input_val_from_string(str, Long_val(ofs));
-}
-
 static value input_val_from_block(void)
 {
   mlsize_t num_objects, whsize;
@@ -673,6 +642,27 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   obj = input_val_from_block();
   return obj;
 }
+
+CAMLexport value caml_input_val_from_string(value str, intnat ofs)
+{
+  CAMLparam1 (str);
+  CAMLlocal1 (obj);
+
+  intern_input = caml_stat_alloc(caml_string_length(str));
+  intern_input_malloced = 1;
+  memcpy(intern_input, &Byte(str, 0), caml_string_length(str));
+  intern_src = intern_input + 2*4;
+  obj = input_val_from_block();
+  caml_stat_free(intern_input);
+
+  CAMLreturn (obj);
+}
+
+CAMLprim value caml_input_value_from_string(value str, value ofs)
+{
+  return caml_input_val_from_string(str, Long_val(ofs));
+}
+
 
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
