@@ -1,0 +1,8 @@
+(function "is_even" (b:int)
+  (catch (exit 1 b)
+   with (0 v)
+     (if (== v 0) 0
+         (exit 1 (- b 1)))
+   and (1 v)
+     (if (== v 0) 1
+         (exit 0 (- b 1)))))
