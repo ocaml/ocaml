@@ -34,6 +34,11 @@ val update : unit -> unit
 val mode : string -> bool
 
 (** Wrap logging event so that only fire at the end of the compilation
-    process, possibly depending on the termination status. *)
-val at_end : ([> `Error | `Quiet ] -> unit) -> unit
-val at_failure : ([> `Error ] -> unit) -> unit
+    process, possibly depending on the termination status.
+
+    The name is used to avoid printing the same hint/warning twice,
+    even if [at_end] is called several times. Use different names for
+    distinct events.
+*)
+val at_end : name:string -> ([> `Error | `Quiet ] -> unit) -> unit
+val at_failure : name:string -> ([> `Error ] -> unit) -> unit

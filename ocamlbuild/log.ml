@@ -49,19 +49,30 @@ let event ?pretend x = Display.event !-internal_display ?pretend x
 let display x = Display.display !-internal_display x
 
 let do_at_end = Queue.create ()
+let already_asked = Hashtbl.create 10
 
-let at_end_always thunk = Queue.add thunk do_at_end
-let at_end thunk = at_end_always (function
+let at_end_always ~name thunk =
+  if not (Hashtbl.mem already_asked name) then begin
+    Hashtbl.add already_asked name ();
+    Queue.add thunk do_at_end;
+  end
+
+let at_end ~name thunk = at_end_always ~name (function
   | `Quiet -> ()
   | `Success | `Error -> thunk `Error)
-let at_failure thunk = at_end_always (function
+let at_failure ~name thunk = at_end_always ~name (function
   | `Success | `Quiet -> ()
   | `Error -> thunk `Error)
 
 let finish ?how () =
-  Queue.iter (fun thunk ->
-    thunk (match how with None -> `Quiet | Some how -> how)
-  ) do_at_end;
+  while not (Queue.is_empty do_at_end) do
+    let actions = Queue.copy do_at_end in
+    Queue.clear do_at_end;
+    (* calling a thunk may add new actions again, hence the loop *)
+    Queue.iter (fun thunk ->
+      thunk (match how with None -> `Quiet | Some how -> how)
+    ) actions;
+  done;
   match !internal_display with
   | None -> ()
   | Some d -> Display.finish ?how d
