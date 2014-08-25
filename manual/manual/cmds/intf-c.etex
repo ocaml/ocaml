@@ -1703,11 +1703,11 @@ greater than the second argument.
 The "compare_ext" field can be set to "custom_compare_ext_default"; this
 default comparison function simply raises "Failure".
 
-\item "long (*hash)(value v)" \\
+\item "intnat (*hash)(value v)" \\
 The "hash" field contains a pointer to a C function that is called
 whenever OCaml's generic hash operator (see module "Hashtbl") is
 applied to a custom block.  The C function can return an arbitrary
-long integer representing the hash value of the data contained in the
+integer representing the hash value of the data contained in the
 given custom block.  The hash value must be compatible with the
 "compare" function, in the sense that two structurally equal data
 (that is, two custom blocks for which "compare" returns 0) must have
@@ -1716,7 +1716,7 @@ the same hash value.
 The "hash" field can be set to "custom_hash_default", in which case
 the custom block is ignored during hash computation.
 
-\item "void (*serialize)(value v, unsigned long * wsize_32, unsigned long * wsize_64)" \\
+\item "void (*serialize)(value v, uintnat * wsize_32, uintnat * wsize_64)" \\
 The "serialize" field contains a pointer to a C function that is
 called whenever the custom block needs to be serialized (marshaled)
 using the OCaml functions "output_value" or "Marshal.to_...".
@@ -1734,7 +1734,7 @@ The "serialize" field can be set to "custom_serialize_default",
 in which case the "Failure" exception is raised when attempting to
 serialize the custom block.
 
-\item "unsigned long (*deserialize)(void * dst)" \\
+\item "uintnat (*deserialize)(void * dst)" \\
 The "deserialize" field contains a pointer to a C function that is
 called whenever a custom block with identifier "identifier" needs to
 be deserialized (un-marshaled) using the OCaml functions "input_value"
