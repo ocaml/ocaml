@@ -81,3 +81,8 @@ let extension_id x =
     let slot = extension_slot x in
       (obj (field slot 1) : int)
   with Not_found -> invalid_arg "Obj.extension_id"
+
+let extension_slot x =
+  try
+    extension_slot x
+  with Not_found -> invalid_arg "Obj.extension_slot"

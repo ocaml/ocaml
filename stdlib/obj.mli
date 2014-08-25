@@ -55,6 +55,7 @@ val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
 val extension_name : 'a -> string
 val extension_id : 'a -> int
+val extension_slot : 'a -> t
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
