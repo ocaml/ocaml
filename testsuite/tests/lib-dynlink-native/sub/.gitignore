@@ -1,0 +1,7 @@
+*.o
+*.a
+*.so
+*.result
+*.byte
+*.native
+program

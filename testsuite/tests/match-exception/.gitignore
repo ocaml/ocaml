@@ -1,0 +1,15 @@
+*.obj
+
+*.cm[ioxat]
+*.cmx[as]
+*.cmti
+*.annot
+
+program.exe
+
+.depend
+.depend.nt
+.DS_Store
+
+
+

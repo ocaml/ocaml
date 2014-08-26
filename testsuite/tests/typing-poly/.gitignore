@@ -1,0 +1,12 @@
+*.obj
+
+*.cm[ioxa]
+*.cmx[as]
+*.annot
+
+
+.depend
+.depend.nt
+.DS_Store
+
+

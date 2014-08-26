@@ -1,0 +1,6 @@
+_boot_log1
+_boot_log2
+_build
+_log
+myocamlbuild_config.ml
+*.cm*
