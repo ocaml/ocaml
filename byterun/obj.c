@@ -106,51 +106,9 @@ CAMLprim value caml_obj_dup(value arg)
   CAMLreturn (res);
 }
 
-/* Shorten the given block to the given size and return void.
-   Raise Invalid_argument if the given size is less than or equal
-   to 0 or greater than the current size.
-
-   algorithm:
-   Change the length field of the header.  Make up a white object
-   with the leftover part of the object: this is needed in the major
-   heap and harmless in the minor heap.
-*/
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {
   caml_failwith("Obj.truncate not supported");
-#if 0
-  mlsize_t new_wosize = Long_val (newsize);
-  header_t hd = Hd_val (v);
-  tag_t tag = Tag_hd (hd);
-  color_t color = Color_hd (hd);
-  mlsize_t wosize = Wosize_hd (hd);
-  mlsize_t i;
-
-  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
-
-  if (new_wosize <= 0 || new_wosize > wosize){
-    caml_invalid_argument ("Obj.truncate");
-  }
-  if (new_wosize == wosize) return Val_unit;
-  /* PR#61: since we're about to lose our references to the elements
-     beyond new_wosize in v, erase them explicitly so that the GC
-     can darken them as appropriate. */
-  if (tag < No_scan_tag) {
-    for (i = new_wosize; i < wosize; i++){
-      caml_modify_field(v, i, Val_unit);
-#ifdef DEBUG
-      Field (v, i) = Debug_free_truncate;
-#endif
-    }
-  }
-  /* We must use an odd tag for the header of the leftovers so it does not
-     look like a pointer because there may be some references to it in
-     ref_table. */
-  Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
-  Hd_val (v) = Make_header (new_wosize, tag, color);
-  return Val_unit;
-#endif
 }
 
 CAMLprim value caml_obj_add_offset (value v, value offset)
