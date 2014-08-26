@@ -133,6 +133,7 @@ static void (*prev_scan_roots_hook) (scanning_action);
 
 static void thread_scan_roots(scanning_action action)
 {
+#if 0
   caml_thread_t th, start;
 
   /* Scan all active descriptors */
@@ -145,6 +146,7 @@ static void thread_scan_roots(scanning_action action)
   }
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
+#endif
 }
 
 /* Forward declarations for async I/O handling */
@@ -156,6 +158,8 @@ static void thread_restore_std_descr(void);
 
 value thread_initialize(value unit)       /* ML */
 {
+  caml_failwith("threads dead");
+  #if 0
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
   /* Create a descriptor for the current thread */
@@ -201,6 +205,7 @@ value thread_initialize(value unit)       /* ML */
   /* Register an at-exit function to restore the standard file descriptors */
   atexit(thread_restore_std_descr);
   return Val_unit;
+#endif
 }
 
 /* Initialize the interval timer used for preemption */
@@ -220,6 +225,8 @@ value thread_initialize_preemption(value unit)     /* ML */
 
 value thread_new(value clos)          /* ML */
 {
+  caml_failwith("threads dead");
+#if 0
   caml_thread_t th;
   /* Allocate the thread and its stack */
   Begin_root(clos);
@@ -265,6 +272,7 @@ value thread_new(value clos)          /* ML */
   Assign(curr_thread->prev, th);
   /* Return thread */
   return (value) th;
+#endif
 }
 
 /* Return the thread identifier */
@@ -296,6 +304,8 @@ static void find_bad_fds(value fdl, fd_set *set);
 
 static value schedule_thread(void)
 {
+  caml_failwith("threads dead");
+#if 0
   caml_thread_t run_thread, th;
   fd_set readfds, writefds, exceptfds;
   double delay, now;
@@ -509,6 +519,7 @@ try_again:
   backtrace_buffer = curr_thread->backtrace_buffer;
   caml_modify_root(&backtrace_last_exn, curr_thread->backtrace_last_exn);
   return curr_thread->retval;
+#endif
 }
 
 /* Since context switching is not allowed in callbacks, a thread that
@@ -550,8 +561,10 @@ static void thread_reschedule(void)
 
 value thread_request_reschedule(value unit)    /* ML */
 {
+#if 0
   async_action_hook = thread_reschedule;
   something_to_do = 1;
+#endif
   return Val_unit;
 }
 
@@ -794,23 +807,7 @@ static void add_fdlist_to_set(value fdl, fd_set *set)
 
 static value inter_fdlist_set(value fdl, fd_set *set, int *count)
 {
-  value res = Val_unit;
-  value cons;
-
-  Begin_roots2(fdl, res);
-    for (res = NO_FDS; fdl != NO_FDS; fdl = Field(fdl, 1)) {
-      int fd = Int_val(Field(fdl, 0));
-      if (FD_ISSET(fd, set)) {
-        cons = alloc_small(2, 0);
-        Field(cons, 0) = Val_int(fd);
-        Field(cons, 1) = res;
-        res = cons;
-        FD_CLR(fd, set); /* wake up only one thread per fd ready */
-        (*count)--;
-      }
-    }
-  End_roots();
-  return res;
+  caml_failwith("threads dead");
 }
 
 /* Find closed file descriptors in a waiting list and set them to 1 in
@@ -847,26 +844,7 @@ static void find_bad_fds(value fdl, fd_set *set)
 
 static value alloc_process_status(int pid, int status)
 {
-  value st, res;
-
-  if (WIFEXITED(status)) {
-    st = alloc_small(1, TAG_WEXITED);
-    Field(st, 0) = Val_int(WEXITSTATUS(status));
-  }
-  else if (WIFSTOPPED(status)) {
-    st = alloc_small(1, TAG_WSTOPPED);
-    Field(st, 0) = Val_int(WSTOPSIG(status));
-  }
-  else {
-    st = alloc_small(1, TAG_WSIGNALED);
-    Field(st, 0) = Val_int(WTERMSIG(status));
-  }
-  Begin_root(st);
-    res = alloc_small(2, TAG_RESUMED_WAIT);
-    Field(res, 0) = Val_int(pid);
-    Field(res, 1) = st;
-  End_roots();
-  return res;
+  caml_failwith("threads dead");
 }
 
 /* Restore the standard file descriptors to their initial state */
