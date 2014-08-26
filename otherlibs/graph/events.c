@@ -143,11 +143,11 @@ static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
                                      int keypressed, int key)
 {
   value res = alloc_small(5, 0);
-  Field(res, 0) = Val_int(mouse_x);
-  Field(res, 1) = Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y));
-  Field(res, 2) = Val_bool(button);
-  Field(res, 3) = Val_bool(keypressed);
-  Field(res, 4) = Val_int(key & 0xFF);
+  Init_field(res, 0, Val_int(mouse_x));
+  Init_field(res, 1, Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y)));
+  Init_field(res, 2, Val_bool(button));
+  Init_field(res, 3, Val_bool(keypressed));
+  Init_field(res, 4, Val_int(key & 0xFF));
   return res;
 }
 

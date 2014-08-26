@@ -29,7 +29,7 @@ value caml_gr_dump_image(value image)
     m = alloc(height, 0);
     for (i = 0; i < height; i++) {
       value v = alloc(width, 0);
-      modify(&Field(m, i), v);
+      caml_modify_field(m, i, v);
     }
 
     idata =
@@ -37,8 +37,8 @@ value caml_gr_dump_image(value image)
                 ZPixmap);
     for (i = 0; i < height; i++)
       for (j = 0; j < width; j++)
-        Field(Field(m, i), j) =
-          Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i)));
+        caml_modify_field(Field(m, i), j,
+          Val_int(caml_gr_rgb_pixel(XGetPixel(idata, j, i))));
     XDestroyImage(idata);
 
     if (Mask_im(image) != None) {
@@ -48,7 +48,7 @@ value caml_gr_dump_image(value image)
       for (i = 0; i < height; i++)
         for (j = 0; j < width; j++)
           if (XGetPixel(imask, j, i) == 0)
-            Field(Field(m, i), j) = Val_int(Transparent);
+            caml_modify_field(Field(m, i), j, Val_int(Transparent));
       XDestroyImage(imask);
     }
   End_roots();
