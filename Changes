@@ -6,7 +6,7 @@ OCaml 4.02.0:
 Language features:
 - Attributes and extension nodes
   (Alain Frisch)
-- PR#5095: Generative functors
+- Generative functors (PR#5905)
   (Jacques Garrigue)
 - Module aliases
   (Jacques Garrigue)
