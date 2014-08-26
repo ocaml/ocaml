@@ -855,39 +855,11 @@ method emit_expr (env:environment) exp =
       Some [||]
   | Ccatch([], e1) ->
       self#emit_expr env e1
-(*
-  (* | Ccatch(nfail, ids, kids, e1, e2) -> *)
-  | Ccatch([nfail, ids, kids, e2], e1) ->
-      let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
-      List.iter2 name_regs ids rs;
-
-      (* those moves must go into emit sequence *)
-      (* Format.printf "ccatch @."; *)
-      (* List.iter (fun r -> Format.printf "regs: %a@." Printmach.regs r) ids_regs; *)
-      (* self#insert_moves (Array.concat ids_regs) (Array.concat rs); *)
-      (* self#insert_moves (Array.concat kids_regs) (Array.concat krs); *)
-
-      let new_env =
-        List.fold_left
-        (fun env (id,r) -> env_add id r env)
-        env (List.combine ids rs) in
-      let new_env =
-        List.fold_left
-        (fun env (id,r) -> env_add_ex id r env)
-        new_env (List.combine kids krs) in
-      let (r1, s1) = self#emit_sequence env e1 in
-      let (r2, s2) = self#emit_sequence new_env e2 in
-      let r = join r1 s1 r2 s2 in
-      self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
-      r
-*)
-
   | Ccatch(handlers, e1) ->
       let (r_body, s_body) = self#emit_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
         List.iter2 name_regs ids rs;
-
         let new_env =
           List.fold_left
             (fun env (id,r) -> env_add id r env)
@@ -905,7 +877,6 @@ method emit_expr (env:environment) exp =
       let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
       self#insert (Icatch(List.map aux2 l, s_body#extract)) [||] [||];
       r
-
   | Cexit (nfail,args,stex_args) ->
       begin match self#emit_parts_list env args with
         None -> None
@@ -1144,13 +1115,11 @@ method emit_tail (env:environment) exp =
       end
   | Ccatch([], e1) ->
       self#emit_tail env e1
-
   | Ccatch(handlers, e1) ->
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
         List.iter2 name_regs ids rs;
-
         let new_env =
           List.fold_left
             (fun env (id,r) -> env_add id r env)
@@ -1162,7 +1131,6 @@ method emit_tail (env:environment) exp =
         nfail, self#emit_tail_sequence new_env e2
       in
       self#insert (Icatch(List.map aux handlers, s_body)) [||] [||];
-
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in

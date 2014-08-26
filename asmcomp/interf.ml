@@ -104,8 +104,10 @@ let build_graph fundecl =
         interf i.next
     | Iloop body ->
         interf body; interf i.next
-    | Icatch(_, body, handler) ->
-        interf body; interf handler; interf i.next
+    | Icatch(handlers, body) ->
+        interf body;
+        List.iter (fun (_, handler) -> interf handler) handlers;
+        interf i.next
     | Iexit _ ->
         ()
     | Iexit_ind _ ->
@@ -178,8 +180,10 @@ let build_graph fundecl =
         (* Avoid overflow of weight and spill_cost *)
         prefer (if weight < 1000 then 8 * weight else weight) body;
         prefer weight i.next
-    | Icatch(_, body, handler) ->
-        prefer weight body; prefer weight handler; prefer weight i.next
+    | Icatch(handlers, body) ->
+        prefer weight body;
+        List.iter (fun (_, handler) -> prefer weight handler) handlers;
+        prefer weight i.next
     | Iexit _ ->
         ()
     | Iexit_ind _ ->
