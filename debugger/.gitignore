@@ -1,0 +1,9 @@
+*.cm[ioxa]
+program.exe
+lexer.ml
+parser.ml
+parser.mli
+ocamldebug
+ocamldebug.exe
+dynlink.ml
+dynlink.mli

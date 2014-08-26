@@ -1,0 +1,16 @@
+*.obj
+
+*.cm[ioxa]
+*.cmx[as]
+*.annot
+
+
+.depend
+.depend.nt
+.DS_Store
+
+*.html
+*.sty
+*.css
+ocamldoc.out
+

@@ -1,0 +1,17 @@
+*.cm[ioxa]
+program.exe
+jumptbl.h
+primitives
+prims.c
+opnames.h
+version.h
+ocamlrun
+ocamlrun.exe
+ocamlrund
+ocamlrund.exe
+ld.conf
+interp.a.lst
+*.[sd]obj
+.gdb_history
+*.d.c
+*.pic.c
