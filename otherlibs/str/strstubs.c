@@ -147,7 +147,7 @@ static int re_match(value re,
       *q = NULL;
   }
 
-  pc = &Field(Prog(re), 0);
+  pc = Op_val(Prog(re));
   stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
@@ -359,11 +359,11 @@ static value re_alloc_groups(value re, value str)
   for (i = 0; i < n; i++) {
     group = &(re_group[i]);
     if (group->start == NULL || group->end == NULL) {
-      Field(res, i * 2) = Val_int(-1);
-      Field(res, i * 2 + 1) = Val_int(-1);
+      Init_field(res, i * 2, Val_int(-1));
+      Init_field(res, i * 2 + 1, Val_int(-1));
     } else {
-      Field(res, i * 2) = Val_long(group->start - starttxt);
-      Field(res, i * 2 + 1) = Val_long(group->end - starttxt);
+      Init_field(res, i * 2, Val_long(group->start - starttxt));
+      Init_field(res, i * 2 + 1, Val_long(group->end - starttxt));
     }
   }
   CAMLreturn(res);

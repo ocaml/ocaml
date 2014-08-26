@@ -78,7 +78,7 @@ value caml_gr_text_size(value str)
   if (caml_gr_font == NULL) caml_gr_get_font(DEFAULT_FONT);
   width = XTextWidth(caml_gr_font, String_val(str), string_length(str));
   res = alloc_small(2, 0);
-  Field(res, 0) = Val_int(width);
-  Field(res, 1) = Val_int(caml_gr_font->ascent + caml_gr_font->descent);
+  Init_field(res, 0, Val_int(width));
+  Init_field(res, 1, Val_int(caml_gr_font->ascent + caml_gr_font->descent));
   return res;
 }
