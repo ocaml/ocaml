@@ -476,11 +476,21 @@ let loop ppf =
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
+module type SYS = module type of Sys
+
+(* The script must see a different value for the "constant" Sys.argv.
+   So, rewrite the module to claim it was always that way *)
+let hack_argv new_argv =
+  let new_argv = Obj.repr new_argv in
+  let old_argv = Obj.repr Sys.argv in
+  let sys_mod = Obj.repr (module Sys : SYS) in
+  for i = 0 to Obj.size sys_mod - 1 do
+    if Obj.field sys_mod i == old_argv then
+      Obj.set_field sys_mod i new_argv
+  done
+
 let run_script ppf name args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+  hack_argv args;
   Arg.current := 0;
   Compmisc.init_path false;
   toplevel_env := Compmisc.initial_env();
