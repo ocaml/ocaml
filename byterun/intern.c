@@ -29,6 +29,7 @@
 #include "mlvalues.h"
 #include "misc.h"
 #include "reverse.h"
+#include "signals.h"
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
@@ -49,6 +50,9 @@ static char * intern_extra_block;
 
 static asize_t obj_counter;
 /* Count how many objects seen so far */
+
+static int custom_counter;
+/* Count how many custom blocks. */
 
 static value * intern_obj_table;
 /* The pointers to objects already seen */
@@ -470,6 +474,7 @@ static void intern_rec(value *dest)
         *intern_dest = Make_header(size, Custom_tag, intern_color);
         Custom_ops_val(v) = ops;
         intern_dest += 1 + size;
+        if (ops->finalize) custom_counter++;
         break;
       default:
         intern_cleanup();
@@ -525,6 +530,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_extra_block = NULL;
   }
   obj_counter = 0;
+  custom_counter = 0;
   if (num_objects > 0)
     intern_obj_table = (value *) caml_stat_alloc(num_objects * sizeof(value));
   else
@@ -548,6 +554,11 @@ static void intern_add_to_heap(mlsize_t whsize)
     caml_allocated_words +=
       Wsize_bsize ((char *) intern_dest - intern_extra_block);
     caml_add_to_heap(intern_extra_block);
+  } else if (custom_counter != 0) {
+    /* When the value contains custom block with finalizer, and the
+       value has been allocated in the minor heap, force minor
+       collection. (PR #3612) */
+    caml_force_major_slice = 1;
   }
 }
 
