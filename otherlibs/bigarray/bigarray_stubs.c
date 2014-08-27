@@ -279,9 +279,9 @@ value caml_ba_get_N(value vb, value * vind, int nind)
   case CAML_BA_UINT16:
     return Val_int(((uint16 *) b->data)[offset]);
   case CAML_BA_INT32:
-    return caml_copy_int32(((int32 *) b->data)[offset]);
+    return caml_copy_int32(((int32_t *) b->data)[offset]);
   case CAML_BA_INT64:
-    return caml_copy_int64(((int64 *) b->data)[offset]);
+    return caml_copy_int64(((int64_t *) b->data)[offset]);
   case CAML_BA_NATIVE_INT:
     return caml_copy_nativeint(((intnat *) b->data)[offset]);
   case CAML_BA_CAML_INT:
@@ -388,7 +388,7 @@ CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 
 CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 {
-  uint64 res;
+  uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -402,15 +402,15 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
   b7 = ((unsigned char*) b->data)[idx+6];
   b8 = ((unsigned char*) b->data)[idx+7];
 #ifdef ARCH_BIG_ENDIAN
-  res = (uint64) b1 << 56 | (uint64) b2 << 48
-        | (uint64) b3 << 40 | (uint64) b4 << 32
-        | (uint64) b5 << 24 | (uint64) b6 << 16
-        | (uint64) b7 << 8 | (uint64) b8;
+  res = (uint64_t) b1 << 56 | (uint64_t) b2 << 48
+        | (uint64_t) b3 << 40 | (uint64_t) b4 << 32
+        | (uint64_t) b5 << 24 | (uint64_t) b6 << 16
+        | (uint64_t) b7 << 8 | (uint64_t) b8;
 #else
-  res = (uint64) b8 << 56 | (uint64) b7 << 48
-        | (uint64) b6 << 40 | (uint64) b5 << 32
-        | (uint64) b4 << 24 | (uint64) b3 << 16
-        | (uint64) b2 << 8 | (uint64) b1;
+  res = (uint64_t) b8 << 56 | (uint64_t) b7 << 48
+        | (uint64_t) b6 << 40 | (uint64_t) b5 << 32
+        | (uint64_t) b4 << 24 | (uint64_t) b3 << 16
+        | (uint64_t) b2 << 8 | (uint64_t) b1;
 #endif
   return caml_copy_int64(res);
 }
@@ -447,9 +447,9 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
   case CAML_BA_UINT16:
     ((int16 *) b->data)[offset] = Int_val(newval); break;
   case CAML_BA_INT32:
-    ((int32 *) b->data)[offset] = Int32_val(newval); break;
+    ((int32_t *) b->data)[offset] = Int32_val(newval); break;
   case CAML_BA_INT64:
-    ((int64 *) b->data)[offset] = Int64_val(newval); break;
+    ((int64_t *) b->data)[offset] = Int64_val(newval); break;
   case CAML_BA_NATIVE_INT:
     ((intnat *) b->data)[offset] = Nativeint_val(newval); break;
   case CAML_BA_CAML_INT:
@@ -577,7 +577,7 @@ CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
-  int64 val;
+  int64_t val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
   val = Int64_val(newval);
@@ -760,9 +760,9 @@ static int caml_ba_compare(value v1, value v2)
   case CAML_BA_UINT16:
     DO_INTEGER_COMPARISON(uint16);
   case CAML_BA_INT32:
-    DO_INTEGER_COMPARISON(int32);
+    DO_INTEGER_COMPARISON(int32_t);
   case CAML_BA_INT64:
-    DO_INTEGER_COMPARISON(int64);
+    DO_INTEGER_COMPARISON(int64_t);
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);
@@ -780,7 +780,7 @@ static intnat caml_ba_hash(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   intnat num_elts, n;
-  uint32 h, w;
+  uint32_t h, w;
   int i;
 
   num_elts = 1;
@@ -820,7 +820,7 @@ static intnat caml_ba_hash(value v)
   }
   case CAML_BA_INT32:
   {
-    uint32 * p = b->data;
+    uint32_t * p = b->data;
     if (num_elts > 64) num_elts = 64;
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_uint32(h, *p);
     break;
@@ -835,7 +835,7 @@ static intnat caml_ba_hash(value v)
   }
   case CAML_BA_INT64:
   {
-    int64 * p = b->data;
+    int64_t * p = b->data;
     if (num_elts > 32) num_elts = 32;
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
     break;
@@ -878,7 +878,7 @@ static void caml_ba_serialize_longarray(void * data,
   } else {
     caml_serialize_int_1(0);
     for (n = 0, p = data; n < num_elts; n++, p++)
-      caml_serialize_int_4((int32) *p);
+      caml_serialize_int_4((int32_t) *p);
   }
 #else
   caml_serialize_int_1(0);
@@ -1181,14 +1181,14 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     break;
   }
   case CAML_BA_INT32: {
-    int32 init = Int32_val(vinit);
-    int32 * p;
+    int32_t init = Int32_val(vinit);
+    int32_t * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }
   case CAML_BA_INT64: {
-    int64 init = Int64_val(vinit);
-    int64 * p;
+    int64_t init = Int64_val(vinit);
+    int64_t * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }

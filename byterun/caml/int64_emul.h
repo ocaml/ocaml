@@ -28,7 +28,7 @@
 #define I64_split(x,hi,lo) (hi = (x).h, lo = (x).l)
 
 /* Unsigned comparison */
-static int I64_ucompare(uint64 x, uint64 y)
+static int I64_ucompare(uint64_t x, uint64_t y)
 {
   if (x.h > y.h) return 1;
   if (x.h < y.h) return -1;
@@ -40,19 +40,19 @@ static int I64_ucompare(uint64 x, uint64 y)
 #define I64_ult(x, y) (I64_ucompare(x, y) < 0)
 
 /* Signed comparison */
-static int I64_compare(int64 x, int64 y)
+static int I64_compare(int64_t x, int64_t y)
 {
-  if ((int32)x.h > (int32)y.h) return 1;
-  if ((int32)x.h < (int32)y.h) return -1;
+  if ((int32_t)x.h > (int32_t)y.h) return 1;
+  if ((int32_t)x.h < (int32_t)y.h) return -1;
   if (x.l > y.l) return 1;
   if (x.l < y.l) return -1;
   return 0;
 }
 
 /* Negation */
-static int64 I64_neg(int64 x)
+static int64_t I64_neg(int64_t x)
 {
-  int64 res;
+  int64_t res;
   res.l = -x.l;
   res.h = ~x.h;
   if (res.l == 0) res.h++;
@@ -60,9 +60,9 @@ static int64 I64_neg(int64 x)
 }
 
 /* Addition */
-static int64 I64_add(int64 x, int64 y)
+static int64_t I64_add(int64_t x, int64_t y)
 {
-  int64 res;
+  int64_t res;
   res.l = x.l + y.l;
   res.h = x.h + y.h;
   if (res.l < x.l) res.h++;
@@ -70,9 +70,9 @@ static int64 I64_add(int64 x, int64 y)
 }
 
 /* Subtraction */
-static int64 I64_sub(int64 x, int64 y)
+static int64_t I64_sub(int64_t x, int64_t y)
 {
-  int64 res;
+  int64_t res;
   res.l = x.l - y.l;
   res.h = x.h - y.h;
   if (x.l < y.l) res.h--;
@@ -80,13 +80,13 @@ static int64 I64_sub(int64 x, int64 y)
 }
 
 /* Multiplication */
-static int64 I64_mul(int64 x, int64 y)
+static int64_t I64_mul(int64_t x, int64_t y)
 {
-  int64 res;
-  uint32 prod00 = (x.l & 0xFFFF) * (y.l & 0xFFFF);
-  uint32 prod10 = (x.l >> 16) * (y.l & 0xFFFF);
-  uint32 prod01 = (x.l & 0xFFFF) * (y.l >> 16);
-  uint32 prod11 = (x.l >> 16) * (y.l >> 16);
+  int64_t res;
+  uint32_t prod00 = (x.l & 0xFFFF) * (y.l & 0xFFFF);
+  uint32_t prod10 = (x.l >> 16) * (y.l & 0xFFFF);
+  uint32_t prod01 = (x.l & 0xFFFF) * (y.l >> 16);
+  uint32_t prod11 = (x.l >> 16) * (y.l >> 16);
   res.l = prod00;
   res.h = prod11 + (prod01 >> 16) + (prod10 >> 16);
   prod01 = prod01 << 16; res.l += prod01; if (res.l < prod01) res.h++;
@@ -96,39 +96,39 @@ static int64 I64_mul(int64 x, int64 y)
 }
 
 #define I64_is_zero(x) (((x).l | (x).h) == 0)
-#define I64_is_negative(x) ((int32) (x).h < 0)
+#define I64_is_negative(x) ((int32_t) (x).h < 0)
 #define I64_is_min_int(x) ((x).l == 0 && (x).h == 0x80000000U)
 #define I64_is_minus_one(x) (((x).l & (x).h) == 0xFFFFFFFFU)
 
 /* Bitwise operations */
-static int64 I64_and(int64 x, int64 y)
+static int64_t I64_and(int64_t x, int64_t y)
 {
-  int64 res;
+  int64_t res;
   res.l = x.l & y.l;
   res.h = x.h & y.h;
   return res;
 }
 
-static int64 I64_or(int64 x, int64 y)
+static int64_t I64_or(int64_t x, int64_t y)
 {
-  int64 res;
+  int64_t res;
   res.l = x.l | y.l;
   res.h = x.h | y.h;
   return res;
 }
 
-static int64 I64_xor(int64 x, int64 y)
+static int64_t I64_xor(int64_t x, int64_t y)
 {
-  int64 res;
+  int64_t res;
   res.l = x.l ^ y.l;
   res.h = x.h ^ y.h;
   return res;
 }
 
 /* Shifts */
-static int64 I64_lsl(int64 x, int s)
+static int64_t I64_lsl(int64_t x, int s)
 {
-  int64 res;
+  int64_t res;
   s = s & 63;
   if (s == 0) return x;
   if (s < 32) {
@@ -141,9 +141,9 @@ static int64 I64_lsl(int64 x, int s)
   return res;
 }
 
-static int64 I64_lsr(int64 x, int s)
+static int64_t I64_lsr(int64_t x, int s)
 {
-  int64 res;
+  int64_t res;
   s = s & 63;
   if (s == 0) return x;
   if (s < 32) {
@@ -156,17 +156,17 @@ static int64 I64_lsr(int64 x, int s)
   return res;
 }
 
-static int64 I64_asr(int64 x, int s)
+static int64_t I64_asr(int64_t x, int s)
 {
-  int64 res;
+  int64_t res;
   s = s & 63;
   if (s == 0) return x;
   if (s < 32) {
     res.l = (x.l >> s) | (x.h << (32 - s));
-    res.h = (int32) x.h >> s;
+    res.h = (int32_t) x.h >> s;
   } else {
-    res.l = (int32) x.h >> (s - 32);
-    res.h = (int32) x.h >> 31;
+    res.l = (int32_t) x.h >> (s - 32);
+    res.h = (int32_t) x.h >> 31;
   }
   return res;
 }
@@ -176,15 +176,15 @@ static int64 I64_asr(int64 x, int s)
 #define I64_SHL1(x) x.h = (x.h << 1) | (x.l >> 31); x.l <<= 1
 #define I64_SHR1(x) x.l = (x.l >> 1) | (x.h << 31); x.h >>= 1
 
-static void I64_udivmod(uint64 modulus, uint64 divisor,
-                        uint64 * quo, uint64 * mod)
+static void I64_udivmod(uint64_t modulus, uint64_t divisor,
+                        uint64_t * quo, uint64_t * mod)
 {
-  int64 quotient, mask;
+  int64_t quotient, mask;
   int cmp;
 
   quotient.h = 0; quotient.l = 0;
   mask.h = 0; mask.l = 1;
-  while ((int32) divisor.h >= 0) {
+  while ((int32_t) divisor.h >= 0) {
     cmp = I64_ucompare(divisor, modulus);
     I64_SHL1(divisor);
     I64_SHL1(mask);
@@ -202,27 +202,27 @@ static void I64_udivmod(uint64 modulus, uint64 divisor,
   *mod = modulus;
 }
 
-static int64 I64_div(int64 x, int64 y)
+static int64_t I64_div(int64_t x, int64_t y)
 {
-  int64 q, r;
-  int32 sign;
+  int64_t q, r;
+  int32_t sign;
 
   sign = x.h ^ y.h;
-  if ((int32) x.h < 0) x = I64_neg(x);
-  if ((int32) y.h < 0) y = I64_neg(y);
+  if ((int32_t) x.h < 0) x = I64_neg(x);
+  if ((int32_t) y.h < 0) y = I64_neg(y);
   I64_udivmod(x, y, &q, &r);
   if (sign < 0) q = I64_neg(q);
   return q;
 }
 
-static int64 I64_mod(int64 x, int64 y)
+static int64_t I64_mod(int64_t x, int64_t y)
 {
-  int64 q, r;
-  int32 sign;
+  int64_t q, r;
+  int32_t sign;
 
   sign = x.h;
-  if ((int32) x.h < 0) x = I64_neg(x);
-  if ((int32) y.h < 0) y = I64_neg(y);
+  if ((int32_t) x.h < 0) x = I64_neg(x);
+  if ((int32_t) y.h < 0) y = I64_neg(y);
   I64_udivmod(x, y, &q, &r);
   if (sign < 0) r = I64_neg(r);
   return r;
@@ -230,49 +230,49 @@ static int64 I64_mod(int64 x, int64 y)
 
 /* Coercions */
 
-static int64 I64_of_int32(int32 x)
+static int64_t I64_of_int32(int32_t x)
 {
-  int64 res;
+  int64_t res;
   res.l = x;
   res.h = x >> 31;
   return res;
 }
 
-#define I64_to_int32(x) ((int32) (x).l)
+#define I64_to_int32(x) ((int32_t) (x).l)
 
 /* Note: we assume sizeof(intnat) = 4 here, which is true otherwise
    autoconfiguration would have selected native 64-bit integers */
 #define I64_of_intnat I64_of_int32
 #define I64_to_intnat I64_to_int32
 
-static double I64_to_double(int64 x)
+static double I64_to_double(int64_t x)
 {
   double res;
-  int32 sign = x.h;
+  int32_t sign = x.h;
   if (sign < 0) x = I64_neg(x);
   res = ldexp((double) x.h, 32) + x.l;
   if (sign < 0) res = -res;
   return res;
 }
 
-static int64 I64_of_double(double f)
+static int64_t I64_of_double(double f)
 {
-  int64 res;
+  int64_t res;
   double frac, integ;
   int neg;
 
   neg = (f < 0);
   f = fabs(f);
   frac = modf(ldexp(f, -32), &integ);
-  res.h = (uint32) integ;
-  res.l = (uint32) ldexp(frac, 32);
+  res.h = (uint32_t) integ;
+  res.l = (uint32_t) ldexp(frac, 32);
   if (neg) res = I64_neg(res);
   return res;
 }
 
-static int64 I64_bswap(int64 x)
+static int64_t I64_bswap(int64_t x)
 {
-  int64 res;
+  int64_t res;
   res.h = (((x.l & 0x000000FF) << 24) |
            ((x.l & 0x0000FF00) << 8) |
            ((x.l & 0x00FF0000) >> 8) |
