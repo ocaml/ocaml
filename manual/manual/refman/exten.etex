@@ -707,6 +707,7 @@ package-type:
 ;
 package-constraint:
           'type' typeconstr '=' typexpr
+;
 \end{syntax}
 
 Modules are typically thought of as static components. This extension
@@ -741,11 +742,16 @@ of a limited form: only non-parametrized types can be specified.
 For type-checking purposes (and starting from OCaml 4.02), package types
 are compared using the structural comparison of module types.
 
-The module expression @'(' "val" expr ":" package-type ')'@ cannot be used
-in the
-body of a functor, because this can cause unsoundness in conjunction
-with applicative functors.  On the other hand, it can be used anywhere
-in the context of a local module binding
+In general, the module expression @'(' "val" expr ":" package-type
+')'@ cannot be used in the body of a functor, because this could cause
+unsoundness in conjunction with applicative functors.
+Since OCaml 4.02, this is relaxed in two ways:
+if @package-type@ does not contain nominal type declarations ({\em
+  i.e.} types that are created with a proper identity), then this
+expression can be used anywhere, and even if it contains such types
+it can be used inside the body of a generative
+functor, described in section~\ref{s:generative-functors}.
+It can also be used anywhere in the context of a local module binding
 @'let' 'module' module-name '=' '(' "val" expr_1 ":" package-type ')'
  "in" expr_2@.
 
@@ -1814,3 +1820,43 @@ Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
+
+
+\section{Generative functors}\label{s:generative-functors}
+
+(Introduced in OCaml 4.02)
+
+\begin{syntax}
+module-expr:
+          ...
+        | 'functor' '()' '->' module-expr
+        | module-expr '()'
+;
+definition:
+          ...
+        | 'module' module-name { '(' module-name ':' module-type ')' || '()' }
+                   [ ':' module-type ] \\ '=' module-expr
+;
+module-type:
+          ...
+        | 'functor' '()' '->' module-type
+;
+specification:
+          ...
+        | 'module' module-name { '(' module-name ':' module-type ')' || '()' }
+          ':' module-type
+;
+\end{syntax}
+
+A generative functor takes a unit "()" argument.
+In order to use it, one must necessarily apply it to this unit argument,
+ensuring that all type components in the result of the functor behave
+in a generative way, {\em i.e.} they are different from types obtained
+by other applications of the same functor.
+This is equivalent to taking an argument of signature "sig end", and always
+applying to "struct end", but not to some defined module (in the
+latter case, applying twice to the same module would return identical
+types).
+
+As a side-effect of this generativity, one is allowed to unpack
+first-class modules in the body of generative functors.
