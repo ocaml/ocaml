@@ -615,26 +615,6 @@ case "$target" in
     esac
 esac
 
-# Check semantics of division and modulus
-
-sh ./runtest divmod.c
-case $? in
-  0) inf "Native division and modulus have round-towards-zero semantics," \
-         "will use them."
-     echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-  1) inf "Native division and modulus do not have round-towards-zero"
-         "semantics, will use software emulation."
-     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-  *) case $target in
-       *-*-mingw*) inf "Native division and modulus have round-towards-zero" \
-                       "semantics, will use them."
-                   echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
-       *) wrn "Something went wrong while checking native division and modulus"\
-              "please report it at http://http://caml.inria.fr/mantis/"
-          echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
-     esac;;
-esac
-
 # Shared library support
 
 shared_libraries_supported=false
@@ -1077,6 +1057,11 @@ if sh ./hasgot -i sys/types.h -i sys/socket.h -i netinet/in.h \
 && sh ./hasgot getaddrinfo getnameinfo inet_pton inet_ntop; then
   inf "IPv6 is supported."
   echo "#define HAS_IPV6" >> s.h
+fi
+
+if sh ./hasgot -i stdint.h; then
+  inf "stdint.h found."
+  echo "#define HAS_STDINT_H" >> s.h
 fi
 
 if sh ./hasgot -i unistd.h; then

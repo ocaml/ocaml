@@ -32,8 +32,8 @@ CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
 CAMLextern value caml_copy_string (char const *);
 CAMLextern value caml_copy_string_array (char const **);
 CAMLextern value caml_copy_double (double);
-CAMLextern value caml_copy_int32 (int32);       /* defined in [ints.c] */
-CAMLextern value caml_copy_int64 (int64);       /* defined in [ints.c] */
+CAMLextern value caml_copy_int32 (int32_t);       /* defined in [ints.c] */
+CAMLextern value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
 CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const ** array);

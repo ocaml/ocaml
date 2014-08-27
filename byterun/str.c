@@ -101,7 +101,7 @@ CAMLprim value caml_string_get32(value str, value index)
 
 CAMLprim value caml_string_get64(value str, value index)
 {
-  uint64 res;
+  uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(index);
   if (idx < 0 || idx + 7 >= caml_string_length(str)) caml_array_bound_error();
@@ -114,15 +114,15 @@ CAMLprim value caml_string_get64(value str, value index)
   b7 = Byte_u(str, idx + 6);
   b8 = Byte_u(str, idx + 7);
 #ifdef ARCH_BIG_ENDIAN
-  res = (uint64) b1 << 56 | (uint64) b2 << 48
-        | (uint64) b3 << 40 | (uint64) b4 << 32
-        | (uint64) b5 << 24 | (uint64) b6 << 16
-        | (uint64) b7 << 8 | (uint64) b8;
+  res = (uint64_t) b1 << 56 | (uint64_t) b2 << 48
+        | (uint64_t) b3 << 40 | (uint64_t) b4 << 32
+        | (uint64_t) b5 << 24 | (uint64_t) b6 << 16
+        | (uint64_t) b7 << 8 | (uint64_t) b8;
 #else
-  res = (uint64) b8 << 56 | (uint64) b7 << 48
-        | (uint64) b6 << 40 | (uint64) b5 << 32
-        | (uint64) b4 << 24 | (uint64) b3 << 16
-        | (uint64) b2 << 8 | (uint64) b1;
+  res = (uint64_t) b8 << 56 | (uint64_t) b7 << 48
+        | (uint64_t) b6 << 40 | (uint64_t) b5 << 32
+        | (uint64_t) b4 << 24 | (uint64_t) b3 << 16
+        | (uint64_t) b2 << 8 | (uint64_t) b1;
 #endif
   return caml_copy_int64(res);
 }
@@ -174,7 +174,7 @@ CAMLprim value caml_string_set32(value str, value index, value newval)
 CAMLprim value caml_string_set64(value str, value index, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
-  int64 val;
+  int64_t val;
   intnat idx = Long_val(index);
   if (idx < 0 || idx + 7 >= caml_string_length(str)) caml_array_bound_error();
   val = Int64_val(newval);

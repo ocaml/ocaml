@@ -78,12 +78,12 @@ CAMLextern value caml_alloc_channel(struct channel *chan);
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
-CAMLextern void caml_putword (struct channel *, uint32);
+CAMLextern void caml_putword (struct channel *, uint32_t);
 CAMLextern int caml_putblock (struct channel *, char *, intnat);
 CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
-CAMLextern uint32 caml_getword (struct channel *);
+CAMLextern uint32_t caml_getword (struct channel *);
 CAMLextern int caml_getblock (struct channel *, char *, intnat);
 CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
@@ -107,7 +107,7 @@ CAMLextern struct channel * caml_all_opened_channels;
 #define Unlock_exn() \
   if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
 
-/* Conversion between file_offset and int64 */
+/* Conversion between file_offset and int64_t */
 
 #define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))

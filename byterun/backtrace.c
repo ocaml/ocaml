@@ -229,7 +229,7 @@ static void read_debug_info(void)
   int fd;
   struct exec_trailer trail;
   struct channel * chan;
-  uint32 num_events, orig, i;
+  uint32_t num_events, orig, i;
   intnat j;
   value evl, l, ev_start;
 

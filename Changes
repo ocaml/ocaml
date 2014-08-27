@@ -5,6 +5,10 @@ Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
 
+Runtime system:
+- PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
+  types {,u}int{32,64}.
+
 
 Ocaml 4.02.0:
 -------------

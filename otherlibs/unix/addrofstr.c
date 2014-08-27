@@ -73,7 +73,7 @@ CAMLprim value unix_inet_addr_of_string(value s)
 #else
   struct in_addr address;
   address.s_addr = inet_addr(String_val(s));
-  if (address.s_addr == (uint32) -1) failwith("inet_addr_of_string");
+  if (address.s_addr == (uint32_t) -1) failwith("inet_addr_of_string");
   return alloc_inet_addr(&address);
 #endif
 }
