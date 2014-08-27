@@ -108,11 +108,19 @@ let remove_file filename =
 (* Expand a -I option: if it starts with +, make it relative to the standard
    library directory *)
 
-let expand_directory alt s =
+let expand_directory_aux alt s =
   if String.length s > 0 && s.[0] = '+'
   then Filename.concat alt
                        (String.sub s 1 (String.length s - 1))
   else s
+
+let expand_directory alts s =
+  let dirs = List.map (fun alt -> expand_directory_aux alt s) alts in
+  try List.find (fun dir -> Sys.file_exists dir) dirs
+  with Not_found ->
+    match alts with
+    | main :: _ -> expand_directory_aux main s
+    | _ -> failwith (Printf.sprintf "Cannot resolve %s." s)
 
 (* Hashtable functions *)
 

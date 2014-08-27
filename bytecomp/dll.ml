@@ -114,17 +114,19 @@ let synchronize_primitive num symb =
 
 let ld_conf_contents () =
   let path = ref [] in
-  begin try
-    let ic = open_in (Filename.concat Config.standard_library "ld.conf") in
-    begin try
-      while true do
-        path := input_line ic :: !path
-      done
-    with End_of_file -> ()
-    end;
-    close_in ic
-  with Sys_error _ -> ()
-  end;
+  let read alt =
+    try
+      let ic = open_in (Filename.concat alt "ld.conf") in
+      begin try
+        while true do
+          path := input_line ic :: !path
+        done
+      with End_of_file -> ()
+      end;
+      close_in ic
+    with Sys_error _ -> ()
+  in
+  List.iter read Config.standard_library;
   List.rev !path
 
 (* Split the CAML_LD_LIBRARY_PATH environment variable and return

@@ -23,14 +23,15 @@ let print_version_and_library compiler =
   Printf.printf "The OCaml %s, version " compiler;
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
-  print_string Config.standard_library; print_newline();
+  print_string (String.concat ":" Config.standard_library); print_newline();
   exit 0
 
 let print_version_string () =
   print_string Config.version; print_newline(); exit 0
 
 let print_standard_library () =
-  print_string Config.standard_library; print_newline(); exit 0
+  print_string (String.concat ":" Config.standard_library); print_newline();
+  exit 0
 
 let fatal err =
   prerr_endline err;

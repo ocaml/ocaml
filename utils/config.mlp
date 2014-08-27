@@ -27,12 +27,12 @@ let standard_library_default = "%%LIBDIR%%"
 
 let standard_library =
   try
-    Sys.getenv "OCAMLLIB"
+    Misc.split (Sys.getenv "OCAMLLIB") ':'
   with Not_found ->
   try
-    Sys.getenv "CAMLLIB"
+    Misc.split (Sys.getenv "CAMLLIB") ':'
   with Not_found ->
-    standard_library_default
+    [standard_library_default]
 
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
@@ -101,7 +101,7 @@ let print_config oc =
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
   p "version" version;
   p "standard_library_default" standard_library_default;
-  p "standard_library" standard_library;
+  p "standard_library" (String.concat ":" standard_library);
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
   p "bytecomp_c_compiler" bytecomp_c_compiler;

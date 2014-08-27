@@ -453,7 +453,8 @@ let set_paths () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
-  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
+  load_path := !load_path @
+               [Misc.expand_directory Config.standard_library "+camlp4"];
   load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
   Dll.add_path !load_path
 

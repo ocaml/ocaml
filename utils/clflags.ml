@@ -94,12 +94,13 @@ let force_slash = ref false             (* for ocamldep *)
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
 let std_include_flag prefix =
-  if !no_std_include then ""
-  else (prefix ^ (Filename.quote Config.standard_library))
+  if !no_std_include then []
+  else List.map (fun path -> (prefix ^ Filename.quote path))
+      Config.standard_library
 ;;
 
 let std_include_dir () =
-  if !no_std_include then [] else [Config.standard_library]
+  if !no_std_include then [] else Config.standard_library
 ;;
 
 let shared = ref false (* -shared *)

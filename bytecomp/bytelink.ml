@@ -501,7 +501,8 @@ let build_custom_runtime prim_name exec_name =
   let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
   Ccomp.call_linker Ccomp.Exe exec_name
     ([prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+    (String.concat " " (Clflags.std_include_flag "-I")
+     ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in

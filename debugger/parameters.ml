@@ -23,7 +23,7 @@ let socket_name = ref ""
 let arguments = ref ""
 
 let default_load_path =
-  ref [ Filename.current_dir_name; Config.standard_library ]
+  ref ( Filename.current_dir_name :: Config.standard_library )
 
 let add_path dir =
   load_path := dir :: except dir !load_path;

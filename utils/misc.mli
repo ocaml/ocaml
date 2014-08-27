@@ -48,8 +48,8 @@ val find_in_path_uncap: string list -> string -> string
            to match. *)
 val remove_file: string -> unit
         (* Delete the given file if it exists. Never raise an error. *)
-val expand_directory: string -> string -> string
-        (* [expand_directory alt file] eventually expands a [+] at the
+val expand_directory: string list -> string -> string
+        (* [expand_directory alts file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
 
 val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
