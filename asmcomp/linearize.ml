@@ -267,7 +267,7 @@ let rec linear' depth i n =
       let n2 = List.fold_left2 (fun n (_io, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n1))
+          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
           n1 handlers labels
       in
       let n3 = linear body (add_branch lbl_end n2) in
