@@ -140,7 +140,7 @@ Standard library:
   (Alain Frisch, request by Markus Mottl)
 - PR#6355: Improve documentation regarding finalisers and multithreading
   (Daniel Bünzli, Mark Shinwell)
-- Trigger warning 3 for all values marked as deprected in the documentation.
+- Trigger warning 3 for all values marked as deprecated in the documentation.
   (Damien Doligez)
 
 OCamldoc:
@@ -322,7 +322,7 @@ Features wishes:
   (Anil Madhavapeddy, report by Jun Furuse)
 - PR#6187: ocamlbuild: warn when using -plugin-tag(s) without myocamlbuild.ml
   (Jacques-Pascal Deplaix)
-- PR#6246: allow wilcard _ as for-loop index
+- PR#6246: allow wildcard _ as for-loop index
   (Alain Frisch, request by ygrek)
 - PR#6267: more information printed by "bt" command of ocamldebug
   (Josh Watzman)
