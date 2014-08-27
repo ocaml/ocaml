@@ -540,7 +540,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
 
 value caml_input_val(struct channel *chan)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len, num_objects, whsize;
   char * block;
   value res;
@@ -614,7 +614,7 @@ static value input_val_from_block(void)
 
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
-  uint32 magic;
+  uint32_t magic;
   value obj;
 
   intern_input = (unsigned char *) data;
@@ -632,7 +632,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 
 CAMLexport value caml_input_value_from_block(const char * data, intnat len)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len;
   value obj;
 
@@ -672,7 +672,7 @@ CAMLprim value caml_input_value_from_string(value str, value ofs)
 
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len;
 
   intern_src = &Byte_u(buff, Long_val(ofs));
@@ -743,26 +743,26 @@ CAMLexport int caml_deserialize_sint_2(void)
   return read16s();
 }
 
-CAMLexport uint32 caml_deserialize_uint_4(void)
+CAMLexport uint32_t caml_deserialize_uint_4(void)
 {
   return read32u();
 }
 
-CAMLexport int32 caml_deserialize_sint_4(void)
+CAMLexport int32_t caml_deserialize_sint_4(void)
 {
   return read32s();
 }
 
-CAMLexport uint64 caml_deserialize_uint_8(void)
+CAMLexport uint64_t caml_deserialize_uint_8(void)
 {
-  uint64 i;
+  uint64_t i;
   caml_deserialize_block_8(&i, 1);
   return i;
 }
 
-CAMLexport int64 caml_deserialize_sint_8(void)
+CAMLexport int64_t caml_deserialize_sint_8(void)
 {
-  int64 i;
+  int64_t i;
   caml_deserialize_block_8(&i, 1);
   return i;
 }
