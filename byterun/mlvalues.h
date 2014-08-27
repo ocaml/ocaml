@@ -195,7 +195,7 @@ CAMLextern __thread char *caml_young_end, *caml_young_start;
   ((((uintnat)(val) ^ (uintnat)caml_young_start) & Minor_val_bitmask) == 0)
 
 /* Is_foreign(val) is true iff val is a block in another domain's minor heap.
-   Since all minor heaps lie in one aligned blick, this can be tested via
+   Since all minor heaps lie in one aligned block, this can be tested via
    more bitmasking. */
 #define Is_foreign(val) \
   (((((uintnat)(val) ^ (uintnat)caml_young_start) - (1 << Minor_heap_align_bits)) & \

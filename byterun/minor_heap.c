@@ -41,7 +41,9 @@ void caml_init_minor_heaps()
     next_heap[i] = i;
   heaps_allocated = 0;
 
-  heaps_base = caml_mem_map(size, size, 1 /* reserve_only */);
+  /* To ensure Is_foreign gives no false positives, we reserve twice
+     the address space needed and only use the first half */
+  heaps_base = caml_mem_map(size*2, size*2, 1 /* reserve_only */);
 }
 
 void caml_init_young_ptrs ()
