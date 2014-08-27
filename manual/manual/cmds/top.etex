@@ -389,6 +389,14 @@ The parts of values whose depth exceeds \var{n} are printed as "..."
 Limit the number of value nodes printed to at most \var{n}.
 Remaining parts of values are printed as "..." (ellipsis).
 
+\item["#show_val "\var{value-path}";;"]\vspace{-4.7ex}
+\item["#show_type "\var{typeconstr}";;"]\vspace{-4.7ex}
+\item["#show_module "\var{module-path}";;"]\vspace{-4.7ex}
+\item["#show_module_type "\var{modtype-path}";;"]\vspace{-4.7ex}
+\item["#show_class "\var{class-path}";;"]\vspace{-4.7ex}
+\item["#show_class_type "\var{class-path}";;"]
+Print the signature of the corresponding component.
+
 \end{options}
 
 \section{The toplevel and the module system} \label{s:toplevel-modules}
