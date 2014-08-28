@@ -1772,10 +1772,10 @@ let env_of_only_summary env_from_summary env =
 open Format
 
 let report_error ppf = function
-  | Illegal_renaming(name, modname, filename) -> fprintf ppf
+  | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for @ \
        %s when %s was expected"
-      Location.print_filename filename name modname
+      Location.print_filename filename ps_name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"
