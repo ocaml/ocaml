@@ -389,6 +389,11 @@ warning messages.
 \item["-strict-sequence"]
 Force the left-hand part of each sequence to have type unit.
 
+\item["-strict-formats"]
+Reject invalid formats that were accepted in legacy format
+implementations. You should use this flag to detect and fix such
+invalid formats, as they will be rejected by future OCaml versions.
+
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in chapter~\ref{c:threads}.

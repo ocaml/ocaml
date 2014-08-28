@@ -219,6 +219,11 @@ interactive session.
 \item["-strict-sequence"]
 Force the left-hand part of each sequence to have type unit.
 
+\item["-strict-formats"]
+Reject invalid formats that were accepted in legacy format
+implementations. You should use this flag to detect and fix such
+invalid formats, as they will be rejected by future OCaml versions.
+
 \item["-unsafe"]
 See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
 Turn bound checking off on array and string accesses (the "v.(i)" and
