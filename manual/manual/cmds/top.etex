@@ -397,6 +397,10 @@ Remaining parts of values are printed as "..." (ellipsis).
 \item["#show_class_type "\var{class-path}";;"]
 Print the signature of the corresponding component.
 
+\item["#show "\var{ident}";;"]
+Print the signatures of components with name \var{ident} in all the
+above categories.
+
 \end{options}
 
 \section{The toplevel and the module system} \label{s:toplevel-modules}
