@@ -1277,8 +1277,12 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cloop e -> Cloop(subst e)
     | Ccatch(handlers, body) -> map_ccatch subst handlers body
     | Cexit (nfail, el, kel) -> Cexit (nfail, List.map subst el, kel)
+    | Cexit_ind (nfail, el, kel) -> Cexit_ind (nfail, List.map subst el, kel)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | e -> e in
+    | (Cconst_int _ | Cconst_natint _ | Cconst_float _
+      | Cconst_symbol _ | Cconst_pointer _ |Cconst_natpointer _
+      | Cconst_blockheader _) as e -> e
+  in
   let res = subst exp in
   (res, !need_boxed, !assigned)
 
