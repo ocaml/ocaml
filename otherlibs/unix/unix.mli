@@ -295,12 +295,27 @@ val single_write_substring : file_descr -> string -> int -> int -> int
 val in_channel_of_descr : file_descr -> in_channel
 (** Create an input channel reading from the given descriptor.
    The channel is initially in binary mode; use
-   [set_binary_mode_in ic false] if text mode is desired. *)
+   [set_binary_mode_in ic false] if text mode is desired.
+   Beware that channels are buffered so more characters may have been
+   read from the file descriptor than those accessed using channel functions.
+   Channels also keep a copy of the current position in the file.
+
+   You need to explicitly close all channels created with this function.
+   Closing the channel also closes the underlying file descriptor (unless
+   it was already closed). *)
 
 val out_channel_of_descr : file_descr -> out_channel
 (** Create an output channel writing on the given descriptor.
    The channel is initially in binary mode; use
-   [set_binary_mode_out oc false] if text mode is desired. *)
+   [set_binary_mode_out oc false] if text mode is desired.
+   Beware that channels are buffered so you may have to [flush] them
+   to ensure that all data has been sent to the file descriptor.
+   Channels also keep a copy of the current position in the file.
+
+   You need to explicitly close all channels created with this function.
+   Closing the channel flushes the data and closes the underlying file
+   descriptor (unless it has already been closed, in which case the
+   buffered data is lost).*)
 
 val descr_of_in_channel : in_channel -> file_descr
 (** Return the descriptor corresponding to an input channel. *)
