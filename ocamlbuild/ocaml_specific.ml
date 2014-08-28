@@ -610,6 +610,8 @@ let () =
     (fun param -> S [A "-w"; A param]);
   pflag ["ocaml";"compile";] "warn_error"
     (fun param -> S [A "-warn-error"; A param]);
+  pflag ["ocaml"; "compile"] "open"
+    (fun param -> S [A "-open"; A param]);
   ()
 
 let camlp4_flags camlp4s =
@@ -683,6 +685,7 @@ flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
+flag ["ocaml"; "compile"; "strict_formats";] (A "-strict-formats");;
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
