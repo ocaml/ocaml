@@ -1,0 +1,489 @@
+addrmap.o: addrmap.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h addrmap.h
+alloc.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h fiber.h roots.h
+array.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h
+backtrace.o: backtrace.c config.h ../config/m.h ../config/s.h \
+ compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h instruct.h intext.h exec.h \
+ fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+callback.o: callback.c callback.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h platform.h interp.h instruct.h fix_code.h \
+ fiber.h roots.h
+compare.o: compare.c custom.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+custom.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+debugger.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h fix_code.h instruct.h \
+ intext.h io.h platform.h fiber.h roots.h sys.h
+domain.o: domain.c domain.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h custom.h shared_heap.h fail.h globroots.h \
+ roots.h signals.h alloc.h startup.h exec.h fiber.h callback.h
+dynlink.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h dynlink.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h osdeps.h prims.h
+extern.o: extern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h platform.h \
+ memory.h major_gc.h minor_gc.h minor_heap.h domain.h md5.h reverse.h \
+ addrmap.h
+fail.o: fail.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h io.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h printexc.h signals.h fiber.h roots.h
+fiber.o: fiber.c fiber.h misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h gc_ctrl.h instruct.h fail.h alloc.h \
+ platform.h fix_code.h
+finalise.o: finalise.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h
+fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h \
+ compatibility.h debugger.h misc.h mlvalues.h fix_code.h instruct.h \
+ intext.h io.h platform.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h md5.h reverse.h
+floats.o: floats.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h reverse.h fiber.h roots.h
+gc_ctrl.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h custom.h finalise.h gc.h \
+ gc_ctrl.h major_gc.h minor_gc.h minor_heap.h shared_heap.h fiber.h \
+ memory.h domain.h roots.h globroots.h signals.h startup.h exec.h
+globroots.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
+ ../config/s.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h roots.h globroots.h callback.h platform.h alloc.h
+hash.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h hash.h fail.h int64_native.h
+hax.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h minor_heap.h
+instrtrace.o: instrtrace.c
+intern.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h callback.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h custom.h fail.h intext.h io.h platform.h md5.h \
+ reverse.h
+interp.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h backtrace.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h fix_code.h \
+ instrtrace.h instruct.h interp.h prims.h signals.h fiber.h roots.h \
+ globroots.h startup.h exec.h jumptbl.h
+ints.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h int64_native.h
+io.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h signals.h sys.h
+lexing.o: lexing.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fiber.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h
+main.o: main.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h sys.h
+major_gc.o: major_gc.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h fail.h shared_heap.h roots.h globroots.h fiber.h
+md5.o: md5.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h md5.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h reverse.h
+memory.o: memory.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h shared_heap.h addrmap.h roots.h
+meta.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h fix_code.h interp.h intext.h io.h \
+ platform.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ prims.h fiber.h roots.h
+minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h \
+ compatibility.h fail.h misc.h mlvalues.h finalise.h gc.h gc_ctrl.h \
+ major_gc.h memory.h minor_gc.h minor_heap.h domain.h roots.h signals.h \
+ weak.h shared_heap.h addrmap.h fiber.h
+minor_heap.o: minor_heap.c minor_heap.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h fail.h platform.h memory.h \
+ gc.h major_gc.h minor_gc.h domain.h
+misc.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
+ misc.h memory.h gc.h mlvalues.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h startup.h exec.h
+obj.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h memory.h \
+ minor_gc.h minor_heap.h domain.h prims.h
+parsing.o: parsing.c config.h ../config/m.h ../config/s.h compatibility.h \
+ mlvalues.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h alloc.h startup.h exec.h
+platform.o: platform.c platform.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h
+prims.o: prims.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h prims.h
+printexc.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h printexc.h
+roots.o: roots.c finalise.h globroots.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h roots.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fiber.h shared_heap.h
+shared_heap.o: shared_heap.c platform.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h fail.h sizeclasses.h addrmap.h roots.h \
+ globroots.h fiber.h
+signals.o: signals.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h callback.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h roots.h signals.h \
+ signals_machdep.h sys.h
+signals_byt.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+ compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h signals_machdep.h
+startup.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h backtrace.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h callback.h custom.h debugger.h \
+ dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
+ intext.h io.h platform.h osdeps.h prims.h printexc.h reverse.h signals.h \
+ fiber.h roots.h sys.h startup.h version.h
+str.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h int64_native.h
+sys.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
+ fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ roots.h sys.h startup.h exec.h
+terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h \
+ compatibility.h alloc.h misc.h mlvalues.h fail.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h
+unix.o: unix.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h osdeps.h
+weak.o: weak.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h
+win32.o: win32.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h sys.h
+addrmap.d.o: addrmap.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h addrmap.h
+alloc.d.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h fiber.h roots.h
+array.d.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h
+backtrace.d.o: backtrace.c config.h ../config/m.h ../config/s.h \
+ compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h instruct.h intext.h exec.h \
+ fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+callback.d.o: callback.c callback.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h platform.h interp.h instruct.h fix_code.h \
+ fiber.h roots.h
+compare.d.o: compare.c custom.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+custom.d.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+debugger.d.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h fix_code.h instruct.h \
+ intext.h io.h platform.h fiber.h roots.h sys.h
+domain.d.o: domain.c domain.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h custom.h shared_heap.h fail.h globroots.h \
+ roots.h signals.h alloc.h startup.h exec.h fiber.h callback.h
+dynlink.d.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h dynlink.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h osdeps.h prims.h
+extern.d.o: extern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h platform.h \
+ memory.h major_gc.h minor_gc.h minor_heap.h domain.h md5.h reverse.h \
+ addrmap.h
+fail.d.o: fail.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h io.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h printexc.h signals.h fiber.h roots.h
+fiber.d.o: fiber.c fiber.h misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h gc_ctrl.h instruct.h fail.h alloc.h \
+ platform.h fix_code.h
+finalise.d.o: finalise.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h
+fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h \
+ compatibility.h debugger.h misc.h mlvalues.h fix_code.h instruct.h \
+ intext.h io.h platform.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h md5.h reverse.h
+floats.d.o: floats.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h reverse.h fiber.h roots.h
+gc_ctrl.d.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h custom.h finalise.h gc.h \
+ gc_ctrl.h major_gc.h minor_gc.h minor_heap.h shared_heap.h fiber.h \
+ memory.h domain.h roots.h globroots.h signals.h startup.h exec.h
+globroots.d.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
+ ../config/s.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h roots.h globroots.h callback.h platform.h alloc.h
+hash.d.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h hash.h fail.h int64_native.h
+hax.d.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h minor_heap.h
+instrtrace.d.o: instrtrace.c instruct.h misc.h compatibility.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h opnames.h prims.h fiber.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h roots.h \
+ startup.h exec.h
+intern.d.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h callback.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h custom.h fail.h intext.h io.h platform.h md5.h \
+ reverse.h
+interp.d.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h backtrace.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h fix_code.h \
+ instrtrace.h instruct.h interp.h prims.h signals.h fiber.h roots.h \
+ globroots.h startup.h exec.h
+ints.d.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h int64_native.h
+io.d.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h signals.h sys.h
+lexing.d.o: lexing.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fiber.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h
+main.d.o: main.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h sys.h
+major_gc.d.o: major_gc.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h fail.h shared_heap.h roots.h globroots.h fiber.h
+md5.d.o: md5.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h md5.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h reverse.h
+memory.d.o: memory.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h shared_heap.h addrmap.h roots.h
+meta.d.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h fix_code.h interp.h intext.h io.h \
+ platform.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ prims.h fiber.h roots.h
+minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h \
+ compatibility.h fail.h misc.h mlvalues.h finalise.h gc.h gc_ctrl.h \
+ major_gc.h memory.h minor_gc.h minor_heap.h domain.h roots.h signals.h \
+ weak.h shared_heap.h addrmap.h fiber.h
+minor_heap.d.o: minor_heap.c minor_heap.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h fail.h platform.h memory.h \
+ gc.h major_gc.h minor_gc.h domain.h
+misc.d.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
+ misc.h memory.h gc.h mlvalues.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h startup.h exec.h
+obj.d.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h memory.h \
+ minor_gc.h minor_heap.h domain.h prims.h
+parsing.d.o: parsing.c config.h ../config/m.h ../config/s.h compatibility.h \
+ mlvalues.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h alloc.h startup.h exec.h
+platform.d.o: platform.c platform.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h
+prims.d.o: prims.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h prims.h
+printexc.d.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h printexc.h
+roots.d.o: roots.c finalise.h globroots.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h roots.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fiber.h shared_heap.h
+shared_heap.d.o: shared_heap.c platform.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h fail.h sizeclasses.h addrmap.h roots.h \
+ globroots.h fiber.h
+signals.d.o: signals.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h callback.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h roots.h signals.h \
+ signals_machdep.h sys.h
+signals_byt.d.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+ compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h signals_machdep.h
+startup.d.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h backtrace.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h callback.h custom.h debugger.h \
+ dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
+ intext.h io.h platform.h osdeps.h prims.h printexc.h reverse.h signals.h \
+ fiber.h roots.h sys.h startup.h version.h
+str.d.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h int64_native.h
+sys.d.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
+ fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ roots.h sys.h startup.h exec.h
+terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h \
+ compatibility.h alloc.h misc.h mlvalues.h fail.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h
+unix.d.o: unix.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h osdeps.h
+weak.d.o: weak.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h
+win32.d.o: win32.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h sys.h
+addrmap.pic.o: addrmap.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h addrmap.h
+alloc.pic.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h fiber.h roots.h
+array.pic.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h
+backtrace.pic.o: backtrace.c config.h ../config/m.h ../config/s.h \
+ compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h instruct.h intext.h exec.h \
+ fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+callback.pic.o: callback.c callback.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h platform.h interp.h instruct.h fix_code.h \
+ fiber.h roots.h
+compare.pic.o: compare.c custom.h compatibility.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+custom.pic.o: custom.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h
+debugger.pic.o: debugger.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h debugger.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h fix_code.h instruct.h \
+ intext.h io.h platform.h fiber.h roots.h sys.h
+domain.pic.o: domain.c domain.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h custom.h shared_heap.h fail.h globroots.h \
+ roots.h signals.h alloc.h startup.h exec.h fiber.h callback.h
+dynlink.pic.o: dynlink.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h dynlink.h fail.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h osdeps.h prims.h
+extern.pic.o: extern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h platform.h \
+ memory.h major_gc.h minor_gc.h minor_heap.h domain.h md5.h reverse.h \
+ addrmap.h
+fail.pic.o: fail.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h io.h platform.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h printexc.h signals.h fiber.h roots.h
+fiber.pic.o: fiber.c fiber.h misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h gc_ctrl.h instruct.h fail.h alloc.h \
+ platform.h fix_code.h
+finalise.pic.o: finalise.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h
+fix_code.pic.o: fix_code.c config.h ../config/m.h ../config/s.h \
+ compatibility.h debugger.h misc.h mlvalues.h fix_code.h instruct.h \
+ intext.h io.h platform.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h md5.h reverse.h
+floats.pic.o: floats.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h reverse.h fiber.h roots.h
+gc_ctrl.pic.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h custom.h finalise.h gc.h \
+ gc_ctrl.h major_gc.h minor_gc.h minor_heap.h shared_heap.h fiber.h \
+ memory.h domain.h roots.h globroots.h signals.h startup.h exec.h
+globroots.pic.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
+ ../config/s.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h roots.h globroots.h callback.h platform.h alloc.h
+hash.pic.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h hash.h fail.h int64_native.h
+hax.pic.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h minor_heap.h
+instrtrace.pic.o: instrtrace.c
+intern.pic.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h callback.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h custom.h fail.h intext.h io.h platform.h md5.h \
+ reverse.h
+interp.pic.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h backtrace.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h fix_code.h \
+ instrtrace.h instruct.h interp.h prims.h signals.h fiber.h roots.h \
+ globroots.h startup.h exec.h jumptbl.h
+ints.pic.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h int64_native.h
+io.pic.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h signals.h sys.h
+lexing.pic.o: lexing.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fiber.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h roots.h
+main.pic.o: main.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h sys.h
+major_gc.pic.o: major_gc.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h fail.h shared_heap.h roots.h globroots.h fiber.h
+md5.pic.o: md5.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h md5.h io.h platform.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h reverse.h
+memory.pic.o: memory.c misc.h compatibility.h config.h ../config/m.h \
+ ../config/s.h fail.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h shared_heap.h addrmap.h roots.h
+meta.pic.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h fix_code.h interp.h intext.h io.h \
+ platform.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ prims.h fiber.h roots.h
+minor_gc.pic.o: minor_gc.c config.h ../config/m.h ../config/s.h \
+ compatibility.h fail.h misc.h mlvalues.h finalise.h gc.h gc_ctrl.h \
+ major_gc.h memory.h minor_gc.h minor_heap.h domain.h roots.h signals.h \
+ weak.h shared_heap.h addrmap.h fiber.h
+minor_heap.pic.o: minor_heap.c minor_heap.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h fail.h platform.h memory.h \
+ gc.h major_gc.h minor_gc.h domain.h
+misc.pic.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
+ misc.h memory.h gc.h mlvalues.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h startup.h exec.h
+obj.pic.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h memory.h \
+ minor_gc.h minor_heap.h domain.h prims.h
+parsing.pic.o: parsing.c config.h ../config/m.h ../config/s.h compatibility.h \
+ mlvalues.h misc.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h alloc.h startup.h exec.h
+platform.pic.o: platform.c platform.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h fail.h
+prims.pic.o: prims.c mlvalues.h compatibility.h config.h ../config/m.h \
+ ../config/s.h misc.h prims.h
+printexc.pic.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
+ ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h callback.h debugger.h fail.h printexc.h
+roots.pic.o: roots.c finalise.h globroots.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h roots.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fiber.h shared_heap.h
+shared_heap.pic.o: shared_heap.c platform.h mlvalues.h compatibility.h \
+ config.h ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h fail.h sizeclasses.h addrmap.h roots.h \
+ globroots.h fiber.h
+signals.pic.o: signals.c alloc.h compatibility.h misc.h config.h \
+ ../config/m.h ../config/s.h mlvalues.h callback.h memory.h gc.h \
+ major_gc.h minor_gc.h minor_heap.h domain.h fail.h roots.h signals.h \
+ signals_machdep.h sys.h
+signals_byt.pic.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+ compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h signals_machdep.h
+startup.pic.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
+ alloc.h misc.h mlvalues.h backtrace.h memory.h gc.h major_gc.h \
+ minor_gc.h minor_heap.h domain.h callback.h custom.h debugger.h \
+ dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
+ intext.h io.h platform.h osdeps.h prims.h printexc.h reverse.h signals.h \
+ fiber.h roots.h sys.h startup.h version.h
+str.pic.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h int64_native.h
+sys.pic.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
+ misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
+ fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h \
+ roots.h sys.h startup.h exec.h
+terminfo.pic.o: terminfo.c config.h ../config/m.h ../config/s.h \
+ compatibility.h alloc.h misc.h mlvalues.h fail.h io.h platform.h \
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h domain.h
+unix.pic.o: unix.c config.h ../config/m.h ../config/s.h compatibility.h \
+ memory.h gc.h mlvalues.h misc.h major_gc.h minor_gc.h minor_heap.h \
+ domain.h osdeps.h
+weak.pic.o: weak.c alloc.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h fail.h major_gc.h memory.h gc.h minor_gc.h \
+ minor_heap.h domain.h
+win32.pic.o: win32.c fail.h compatibility.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h major_gc.h minor_gc.h \
+ minor_heap.h domain.h osdeps.h signals.h sys.h
