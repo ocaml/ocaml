@@ -325,3 +325,7 @@ let split s c =
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
+
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringMap = Map.Make(struct type t = string let compare = compare end)

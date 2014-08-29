@@ -13,6 +13,7 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
+open Misc
 open Cmm
 open Arch
 open Proc
@@ -898,7 +899,6 @@ let emit_item = function
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  arch64 := true;
   Intel_proc.reset_asm_code ();
   reset_debug_info();                   (* PR#5603 *)
   float_constants := [];

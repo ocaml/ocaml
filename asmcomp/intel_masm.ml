@@ -13,6 +13,9 @@
 open Intel_ast
 open Intel_proc
 
+let tab b = Buffer.add_char b '\t'
+let bprint b s = tab b; Buffer.add_string b s
+
 let string_of_data_size = function
   | B64 -> "QWORD"
   | B32 -> "DWORD"
@@ -131,7 +134,7 @@ let bprint_arg_mem b string_of_register ptr mem =
         offset
 
 (* TODO: remove need of "ins" *)
-let bprint_arg arch b arg =
+let bprint_arg b arg =
   match arg with
   (*    | ConstantInt int -> Printf.bprintf b "%d" int *)
   | Imm ( (B8|B16), (None, int)) ->
@@ -172,15 +175,15 @@ let bprint_arg arch b arg =
       bprint_arg_mem b string_of_register64 ptr addr
 
 
-let bprint_args arch b instr args =
+let bprint_args b instr args =
   match args with
   | [] -> ()
-  | [ arg ] -> tab b; bprint_arg arch b arg
+  | [ arg ] -> tab b; bprint_arg b arg
   | [ arg2; arg1 ] ->
-      tab b; bprint_arg arch b arg1;
+      tab b; bprint_arg b arg1;
       Buffer.add_char b ',';
       Buffer.add_char b ' ';
-      bprint_arg arch b arg2
+      bprint_arg b arg2
   | _ -> assert false
 
 let rec string_of_constant = function
@@ -242,7 +245,7 @@ let buf_bytes_directive b directive s =
 
 let list_o arg = match arg with None -> [] | Some arg -> [arg]
 
-let bprint_instr_name b arch instr =
+let bprint_instr_name b instr =
   match instr with
   | Global s ->
       Printf.bprintf b "\tPUBLIC\t%s" s
@@ -414,10 +417,10 @@ let bprint_instr_name b arch instr =
 
       in
       bprint b name;
-      bprint_args arch b instr args;
+      bprint_args b instr args;
       ()
 
-let bprint_instr b arch instr =
-  bprint_instr_name b arch instr;
+let bprint_instr b instr =
+  bprint_instr_name b instr;
   Buffer.add_string b "\n"
 

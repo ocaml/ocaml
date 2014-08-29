@@ -10,6 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+[@@@ocaml.warning "+A-42-4"]
+
 (* OCAMLASM variable: a ':'-separated string of keywords
 
    With Intel_assembler module:
@@ -25,11 +27,7 @@
 
 *)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-module StringMap = Map.Make(struct type t = string let compare = compare end)
-module IntSet = Set.Make(struct type t = int let compare x y = x - y end)
-module IntMap = Map.Make(struct type t = int let compare x y = x - y end)
-
+open Misc
 open Intel_ast
 
 type system =
@@ -238,12 +236,6 @@ let string_of_condition condition =
   | O -> "o"
 
 
-let tab b = Buffer.add_char b '\t'
-let bprint b s = tab b; Buffer.add_string b s
-
-(* Set in asmcomp/{amd64|i386}/emit.mlp at begin_assembly *)
-let arch64 = ref true
-
 (* [print_assembler] is used to decide whether assembly code
    should be printed in the .s file or not. *)
 let print_assembler = ref true
@@ -253,7 +245,7 @@ let print_assembler = ref true
 let assembler_passes = ref ([] : (asm_program -> asm_program) list)
 
 exception AsmAborted
-let final_assembler = ref (fun _ -> raise AsmAborted)
+let final_assembler = ref None
 
 (* Which asm conventions to use *)
 let masm =
@@ -336,17 +328,16 @@ let split_sections instrs =
 
 let assemble_code instrs =
   try
-    let assembler = !final_assembler system in
-
+    let assembler =
+      match !final_assembler with
+      | None -> raise AsmAborted
+      | Some f -> f
+    in
     if List.mem "no" env_OCAMLASM then begin
       Printf.eprintf "Warning: binary generation prevented by OCAMLASM\n%!";
       raise AsmAborted;
     end;
-    (*    Printf.eprintf "Intel_assembler.assemble_code...\n%!"; *)
-    let machine = if !arch64 then X64 else X86 in
-
-    let sections = split_sections instrs in
-    let bin = assembler machine sections in
+    let bin = assembler (split_sections instrs) in
     binary_content := Some bin
   with AsmAborted ->
     if List.mem "yes" env_OCAMLASM then begin
@@ -362,12 +353,6 @@ let generate_code oc bprint_instr =
   assemble_code instrs;
   if !print_assembler then
     let b = Buffer.create 10000 in
-    List.iter (bprint_instr b !arch64) instrs;
+    List.iter (bprint_instr b) instrs;
     let s = Buffer.contents b in
     output_string oc s
-
-let string_of_data_size = function
-  | B8 -> "B8"
-  | B16 -> "B16"
-  | B32 -> "B32"
-  | B64 -> "B64"

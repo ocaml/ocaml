@@ -600,6 +600,7 @@ asmcomp/debuginfo.cmi : parsing/location.cmi bytecomp/lambda.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
 asmcomp/emitaux.cmi : asmcomp/debuginfo.cmi
 asmcomp/intel_ast.cmi :
+asmcomp/intel_proc.cmi :
 asmcomp/interf.cmi : asmcomp/mach.cmi
 asmcomp/linearize.cmi : asmcomp/reg.cmi asmcomp/mach.cmi bytecomp/lambda.cmi \
     asmcomp/debuginfo.cmi
@@ -740,28 +741,28 @@ asmcomp/debuginfo.cmx : parsing/location.cmx bytecomp/lambda.cmx \
     asmcomp/debuginfo.cmi
 asmcomp/emit.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/linearize.cmi bytecomp/lambda.cmi \
-    asmcomp/intel_proc.cmo asmcomp/intel_masm.cmo asmcomp/intel_gas.cmo \
-    asmcomp/emitaux.cmi asmcomp/debuginfo.cmi utils/config.cmi \
-    asmcomp/compilenv.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo \
-    asmcomp/emit.cmi
+    asmcomp/intel_proc.cmi asmcomp/intel_masm.cmo asmcomp/intel_gas.cmo \
+    asmcomp/intel_ast.cmi asmcomp/emitaux.cmi asmcomp/debuginfo.cmi \
+    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/arch.cmo asmcomp/emit.cmi
 asmcomp/emit.cmx : asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
     asmcomp/mach.cmx asmcomp/linearize.cmx bytecomp/lambda.cmx \
     asmcomp/intel_proc.cmx asmcomp/intel_masm.cmx asmcomp/intel_gas.cmx \
-    asmcomp/emitaux.cmx asmcomp/debuginfo.cmx utils/config.cmx \
-    asmcomp/compilenv.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
-    asmcomp/emit.cmi
+    asmcomp/intel_ast.cmi asmcomp/emitaux.cmx asmcomp/debuginfo.cmx \
+    utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/arch.cmx asmcomp/emit.cmi
 asmcomp/emitaux.cmo : asmcomp/linearize.cmi asmcomp/debuginfo.cmi \
     utils/config.cmi utils/clflags.cmi asmcomp/arch.cmo asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : asmcomp/linearize.cmx asmcomp/debuginfo.cmx \
     utils/config.cmx utils/clflags.cmx asmcomp/arch.cmx asmcomp/emitaux.cmi
-asmcomp/intel_gas.cmo : asmcomp/intel_proc.cmo
-asmcomp/intel_gas.cmx : asmcomp/intel_proc.cmx
-asmcomp/intel_masm.cmo : asmcomp/intel_proc.cmo
-asmcomp/intel_masm.cmx : asmcomp/intel_proc.cmx
+asmcomp/intel_gas.cmo : asmcomp/intel_proc.cmi asmcomp/intel_ast.cmi
+asmcomp/intel_gas.cmx : asmcomp/intel_proc.cmx asmcomp/intel_ast.cmi
+asmcomp/intel_masm.cmo : asmcomp/intel_proc.cmi asmcomp/intel_ast.cmi
+asmcomp/intel_masm.cmx : asmcomp/intel_proc.cmx asmcomp/intel_ast.cmi
 asmcomp/intel_proc.cmo : utils/misc.cmi asmcomp/intel_ast.cmi \
-    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi
+    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi asmcomp/intel_proc.cmi
 asmcomp/intel_proc.cmx : utils/misc.cmx asmcomp/intel_ast.cmi \
-    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx
+    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx asmcomp/intel_proc.cmi
 asmcomp/interf.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/interf.cmi
 asmcomp/interf.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
@@ -807,7 +808,7 @@ asmcomp/printmach.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/printmach.cmi
 asmcomp/proc.cmo : asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
-    asmcomp/intel_proc.cmo utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+    asmcomp/intel_proc.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
     asmcomp/proc.cmi
 asmcomp/proc.cmx : asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/intel_proc.cmx utils/config.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \

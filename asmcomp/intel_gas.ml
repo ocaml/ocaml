@@ -42,6 +42,9 @@ FDIVR ST(i), ST(0)
 open Intel_ast
 open Intel_proc
 
+let tab b = Buffer.add_char b '\t'
+let bprint b s = tab b; Buffer.add_string b s
+
 let string_of_table = function
   | Some PLT -> "@PLT"
   | Some GOTPCREL -> "@GOTPCREL"
@@ -143,7 +146,7 @@ let bprint_arg_mem b string_of_register ptr    ( mem : 'a addr ) =
 
 
 
-let bprint_arg arch b arg =
+let bprint_arg b arg =
   match arg with
   (*  | ConstantInt int -> Printf.bprintf b "$%d" int *)
   | Imm (_, (None, int) ) ->
@@ -178,25 +181,25 @@ let bprint_arg arch b arg =
   | Mem (ptr, M64 addr) ->
       bprint_arg_mem b string_of_register64 ptr addr
 
-let bprint_args arch b instr args =
+let bprint_args b instr args =
   match args, instr with
   | [], _ -> ()
   | [ (* this is the encoding of jump labels: don't use * *)
     Mem (_, M64 (Some (RIP, _, _), (Some _,_)))
   | Mem (_, M32 (None, (Some _, _)))
     as arg ],  (CALL _ | JMP _)
-    -> tab b; bprint_arg arch b arg
+    -> tab b; bprint_arg b arg
   | [ Reg32 _
     | Reg64 _
     | Mem _
       as arg ],  (CALL _ | JMP _) ->
-      tab b; Buffer.add_char b '*'; bprint_arg arch b arg
-  | [ arg ], _ -> tab b; bprint_arg arch b arg
+      tab b; Buffer.add_char b '*'; bprint_arg b arg
+  | [ arg ], _ -> tab b; bprint_arg b arg
   | [ arg1; arg2 ], _ ->
-      tab b; bprint_arg arch b arg1;
+      tab b; bprint_arg b arg1;
       Buffer.add_char b ',';
       Buffer.add_char b ' ';
-      bprint_arg arch b arg2
+      bprint_arg b arg2
   | _ -> assert false
 
 let rec string_of_constant = function
@@ -265,7 +268,7 @@ let auto_suffix ins arg =
 
 let list_o arg = match arg with None -> [] | Some arg -> [arg]
 
-let bprint_instr b arch instr =
+let bprint_instr b instr =
   begin
     match instr with
       Global s ->
@@ -497,7 +500,7 @@ let bprint_instr b arch instr =
           | BSWAP arg -> "bswap", [ arg ]
         in
         bprint b ins;
-        bprint_args arch b instr args;
+        bprint_args b instr args;
   end;
   Buffer.add_string b "\n"
 
