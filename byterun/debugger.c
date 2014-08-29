@@ -71,7 +71,7 @@ void caml_debugger_cleanup_fork(void)
 #include "intext.h"
 #include "io.h"
 #include "mlvalues.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "sys.h"
 
 static int sock_domain;         /* Socket domain for the debugger */

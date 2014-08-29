@@ -15,7 +15,7 @@
 
 #include "fail.h"
 #include "mlvalues.h"
-#include "stacks.h"
+#include "fiber.h"
 
 struct lexer_buffer {
   value refill_buff;

@@ -9,6 +9,7 @@
 #include "addrmap.h"
 #include "roots.h"
 #include "globroots.h"
+#include "fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
 typedef uintnat status;
@@ -253,7 +254,7 @@ struct domain* caml_owner_of_shared_block(value v) {
     pool* p = (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
     return p->owner;
   } else {
-    large_alloc* a = (large_alloc*)((char*)v - LARGE_ALLOC_HEADER_SZ);
+    large_alloc* a = (large_alloc*)(Hp_val(v) - LARGE_ALLOC_HEADER_SZ);
     return a->owner;
   }
 }
@@ -437,7 +438,10 @@ static void verify_object(value v) {
   if (!Is_minor(v)) {
     Assert(Has_status_hd(Hd_val(v), global.MARKED));
   }
-  if (Tag_val(v) < No_scan_tag) {
+
+  if (Tag_val(v) == Stack_tag) {
+    caml_scan_stack(verify_push, v);
+  } else if (Tag_val(v) < No_scan_tag) {
     int i;
     for (i = 0; i < Wosize_val(v); i++) {
       value f = Op_val(v)[i];
@@ -453,6 +457,8 @@ static void verify_object(value v) {
 static void verify_heap() {
   struct caml_sampled_roots roots;
 
+  caml_save_stack_gc();
+
   caml_sample_local_roots(&roots);
   caml_do_local_roots(&verify_push, &roots);
   caml_scan_global_roots(&verify_push);
@@ -465,6 +471,7 @@ static void verify_heap() {
   verify_stack = 0;
   verify_stack_len = 0;
   verify_sp = 0;
+  caml_restore_stack_gc();
 }
 
 
@@ -505,7 +512,7 @@ static void verify_freelists () {
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-  verify_heap();
+  //  verify_heap();
   verify_freelists();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;

@@ -24,7 +24,7 @@
 #include "mlvalues.h"
 #include "printexc.h"
 #include "signals.h"
-#include "stacks.h"
+#include "fiber.h"
 
 CAMLexport struct caml_exception_context * caml_external_raise = NULL;
 value caml_exn_bucket;

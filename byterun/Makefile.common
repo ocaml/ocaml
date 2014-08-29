@@ -16,7 +16,7 @@ include ../config/Makefile
 CC=$(BYTECC)
 
 COMMONOBJS=\
-  interp.o misc.o stacks.o fix_code.o startup.o major_gc.o \
+  interp.o misc.o fiber.o fix_code.o startup.o major_gc.o \
   shared_heap.o minor_gc.o memory.o alloc.o roots.o globroots.o \
   fail.o signals.o signals_byt.o printexc.o backtrace.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
@@ -27,7 +27,7 @@ COMMONOBJS=\
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
+  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c fiber.c \
   dynlink.c backtrace.c domain.c
 
 PUBLIC_INCLUDES=\

@@ -70,7 +70,7 @@ let max_tag = 245
 let lazy_tag = 246
 
 let max_young_wosize = 256
-let stack_threshold = 256 (* see byterun/config.h *)
+let stack_threshold = 16 (* see byterun/config.h *)
 
 let architecture = "%%ARCH%%"
 let model = "%%MODEL%%"

@@ -24,7 +24,7 @@
 #include "mlvalues.h"
 #include "misc.h"
 #include "reverse.h"
-#include "stacks.h"
+#include "fiber.h"
 
 #ifdef _MSC_VER
 #include <float.h>

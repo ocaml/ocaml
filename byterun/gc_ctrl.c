@@ -24,7 +24,7 @@
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
-#include "stacks.h"
+#include "fiber.h"
 #endif
 #include "domain.h"
 #include "globroots.h"
@@ -33,7 +33,7 @@
 #include "startup.h"
 
 #ifndef NATIVE_CODE
-extern uintnat caml_max_stack_size;    /* defined in stacks.c */
+uintnat caml_max_stack_size;
 #endif
 
 double caml_stat_minor_words = 0.0,
@@ -465,6 +465,10 @@ void caml_init_gc ()
   uintnat 
 major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init));
+
+  caml_max_stack_size = caml_startup_params.max_stack_init;
+  caml_gc_log ("Initial stack limit: %luk bytes",
+               caml_max_stack_size / 1024 * sizeof (value));
 
   caml_init_minor_heaps();
   

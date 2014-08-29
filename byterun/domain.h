@@ -29,10 +29,13 @@ void caml_domain_register_main(uintnat minor_heap_size);
 struct domain* caml_domain_self();
 int caml_domain_id(struct domain*);
 int caml_domain_is_main(struct domain*);
+struct caml_runqueue* caml_domain_runqueue(struct domain* d);
 
 typedef void (*domain_rpc_handler)(struct domain*, void*);
 
 void caml_domain_rpc(struct domain*, 
                      domain_rpc_handler, void*);
+
+void caml_domain_spin();
 
 #endif /* CAML_DOMAIN_H */

@@ -21,9 +21,10 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "roots.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "major_gc.h"
 #include "shared_heap.h"
+#include "fiber.h"
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
@@ -39,17 +40,16 @@ void caml_sample_local_roots(struct caml_sampled_roots* r)
   r->promotion_table = &caml_promotion_table;
   r->promotion_rev_table = &caml_promotion_rev_table;
   r->shared_heap = caml_shared_heap;
+  r->runqueue = caml_runqueue;
 }
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct caml_sampled_roots* r)
 {
-  register value * sp;
   struct caml__roots_block *lr;
   int i, j;
+  value* sp;
 
-  for (sp = r->stack_low; sp < r->stack_high; sp++) {
-    f (*sp, sp);
-  }
+  caml_do_fiber_roots(f, r->runqueue);
   for (lr = r->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
@@ -93,6 +93,6 @@ void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
     }
   }
 
-  /* look for local C roots */
+  /* look for local C and stack roots */
   caml_do_local_roots(f, r);
 }

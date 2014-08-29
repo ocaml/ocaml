@@ -24,7 +24,7 @@
 #include "mlvalues.h"
 #include "opnames.h"
 #include "prims.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "domain.h"
 #include "startup.h"
 
@@ -98,8 +98,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     fprintf (f, "=code@%ld", (code_t) v - prog);
   else if (Is_long (v))
     fprintf (f, "=long%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val (v));
-  else if ((void*)v >= (void*)caml_stack_low
-           && (void*)v < (void*)caml_stack_high)
+  else if (caml_on_current_stack((value*)v))
     fprintf (f, "=stack_%ld", (intnat*)caml_stack_high - (intnat*)v);
   else if (Is_block (v)) {
     int s = Wosize_val (v);

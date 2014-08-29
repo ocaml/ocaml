@@ -36,6 +36,7 @@ external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
          (* @since 3.12.0 *)
 
+val stack_tag : int
 val lazy_tag : int
 val closure_tag : int
 val object_tag : int
