@@ -1132,9 +1132,8 @@ let end_assembly() =
 
   let oc = !Emitaux.output_channel in
   let bprint_instr =
-    match system with
-    | S_win32 | S_win64 -> Intel_masm.bprint_instr
-    | _ -> Intel_gas.bprint_instr
+    if Intel_proc.masm then Intel_masm.bprint_instr
+    else Intel_gas.bprint_instr
   in
   Intel_proc.generate_code oc bprint_instr
 

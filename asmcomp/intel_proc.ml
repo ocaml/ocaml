@@ -257,9 +257,9 @@ let final_assembler = ref (fun _ -> raise AsmAborted)
 
 (* Which asm conventions to use *)
 let masm =
-  match Config.ccomp_type with
-  | "msvc" | "masm" -> true
-  | _      -> false
+  match system with
+  | S_win32 | S_win64 -> true
+  | _ -> false
 
 (* Shall we use an external assembler command ?
    If [binary_content] contains some data, we can directly
