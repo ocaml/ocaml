@@ -155,7 +155,7 @@ let register_name r =
 let emit_reg = function
     { loc = Reg r } -> register_name r
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
-    _mem_sym_x NO (emit_symbol "caml_extra_params") (n + 64)
+      _mem_sym_x NO (emit_symbol "caml_extra_params") (n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
       _mem_reg REAL8 ofs _esp
@@ -181,30 +181,30 @@ let emit_reg16 r =
   | _ -> fatal_error "Emit_i386.emit_reg16"
 
 let emit_reg32 = function
-    | { loc = Reg.Reg r } -> int_reg_name.(r)
-    | _ -> assert false
+  | { loc = Reg.Reg r } -> int_reg_name.(r)
+  | _ -> assert false
 
 (* Output an addressing mode *)
 
 let emit_addressing addr pref r n =
   match addr with
     Ibased(s, d) ->
-    add_used_symbol s;
-    _mem_sym_x pref (emit_symbol s) d
+      add_used_symbol s;
+      _mem_sym_x pref (emit_symbol s) d
   | Iindexed d ->
-    _mem_reg pref d (emit_reg32 r.(n))
+      _mem_reg pref d (emit_reg32 r.(n))
   | Iindexed2 d ->
-    Mem(pref, M32 ( Some (emit_reg32 r.(n+1), 1, Some (emit_reg32 r.(n))),
-      (None, Int64.of_int d)))
+      Mem(pref, M32 ( Some (emit_reg32 r.(n+1), 1, Some (emit_reg32 r.(n))),
+                      (None, Int64.of_int d)))
   | Iscaled(2, d) ->
-    Mem(pref, M32 ( Some (emit_reg32 r.(n), 1, Some (emit_reg32 r.(n))),
-        (None, Int64.of_int d)))
+      Mem(pref, M32 ( Some (emit_reg32 r.(n), 1, Some (emit_reg32 r.(n))),
+                      (None, Int64.of_int d)))
   | Iscaled(scale, d) ->
-    Mem(pref, M32 ( Some (emit_reg32 r.(n), scale, None),
-        (None, Int64.of_int d)))
+      Mem(pref, M32 ( Some (emit_reg32 r.(n), scale, None),
+                      (None, Int64.of_int d)))
   | Iindexed2scaled(scale, d) ->
-    Mem(pref, M32 (Some  (emit_reg32 r.(n+1), scale, Some (emit_reg32 r.(n))),
-        (None, Int64.of_int d)))
+      Mem(pref, M32 (Some  (emit_reg32 r.(n+1), scale, Some (emit_reg32 r.(n))),
+                     (None, Int64.of_int d)))
 
 (* Record live pointers at call points *)
 
@@ -261,12 +261,12 @@ let bound_error_label dbg =
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label Reg.Set.empty dbg in
     bound_error_sites :=
-     { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
-   lbl_bound_error
- end else begin
-   if !bound_error_call = 0 then bound_error_call := new_label();
-   !bound_error_call
- end
+      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
+    lbl_bound_error
+  end else begin
+    if !bound_error_call = 0 then bound_error_call := new_label();
+    !bound_error_call
+  end
 
 let emit_call_bound_error bd =
   _llabel (emit_label bd.bd_lbl);
@@ -355,9 +355,9 @@ let output_epilogue f =
       I.addl ( _int n, _r _esp );
       cfi_adjust_cfa_offset (-n);
       f ();
-    (* reset CFA back cause function body may continue *)
+      (* reset CFA back cause function body may continue *)
       cfi_adjust_cfa_offset n
-  end
+    end
   else
     f ()
 
@@ -371,33 +371,33 @@ let emit_float_test cmp neg arg lbl =
   let actual_cmp =
     match (is_tos arg.(0), is_tos arg.(1)) with
       (true, true) ->
-      (* both args on top of FP stack *)
-      I.fcompp ();
-      cmp
+        (* both args on top of FP stack *)
+        I.fcompp ();
+        cmp
     | (true, false) ->
-      (* first arg on top of FP stack *)
-      I.fcompl ( emit_reg arg.(1)  );
-      cmp
+        (* first arg on top of FP stack *)
+        I.fcompl ( emit_reg arg.(1)  );
+        cmp
     | (false, true) ->
-      (* second arg on top of FP stack *)
-      I.fcompl ( emit_reg arg.(0)  );
-      Cmm.swap_comparison cmp
+        (* second arg on top of FP stack *)
+        I.fcompl ( emit_reg arg.(0)  );
+        Cmm.swap_comparison cmp
     | (false, false) ->
-      I.fldl    ( emit_reg arg.(0)  );
-      I.fcompl  ( emit_reg arg.(1)  );
-      cmp
+        I.fldl    ( emit_reg arg.(0)  );
+        I.fcompl  ( emit_reg arg.(1)  );
+        cmp
   in
   I.fnstsw ( Reg16 AX  );
   begin match actual_cmp with
     Ceq ->
       if neg then begin
-      I.andb ( _int 68 , Reg8 AH  );
-      I.xorb ( _int 64 , Reg8 AH   );
-      I.jne
+        I.andb ( _int 68 , Reg8 AH  );
+        I.xorb ( _int 64 , Reg8 AH   );
+        I.jne
       end else begin
-      I.andb ( _int 69 , Reg8 AH   );
-      I.cmpb ( _int 64 , Reg8 AH   );
-      I.je
+        I.andb ( _int 69 , Reg8 AH   );
+        I.cmpb ( _int 64 , Reg8 AH   );
+        I.je
       end
   | Cne ->
       if neg then begin
@@ -433,7 +433,7 @@ let emit_float_test cmp neg arg lbl =
       then I.jne
       else I.je
   end
-  ( _l (emit_label lbl)  )
+    ( _l (emit_label lbl)  )
 
 (* Emit a Ifloatspecial instruction *)
 
@@ -490,408 +490,408 @@ let emit_instr fallthrough i =
   match i.desc with
     Lend -> ()
   | Lop(Imove | Ispill | Ireload) ->
-    let src = i.arg.(0) and dst = i.res.(0) in
-    if src.loc <> dst.loc then begin
-      if src.typ = Float then
-        if is_tos src then
-          I.fstpl ( emit_reg dst  )
-        else if is_tos dst then
-          I.fldl ( emit_reg src  )
-        else begin
-          I.fldl  ( emit_reg src  );
-          I.fstpl ( emit_reg dst  )
-        end
-      else
-        I.movl ( emit_reg src , emit_reg dst   )
-    end
+      let src = i.arg.(0) and dst = i.res.(0) in
+      if src.loc <> dst.loc then begin
+        if src.typ = Float then
+          if is_tos src then
+            I.fstpl ( emit_reg dst  )
+          else if is_tos dst then
+            I.fldl ( emit_reg src  )
+          else begin
+            I.fldl  ( emit_reg src  );
+            I.fstpl ( emit_reg dst  )
+          end
+        else
+          I.movl ( emit_reg src , emit_reg dst   )
+      end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
-    if n = 0n then begin
-      match i.res.(0).loc with
-        Reg n -> I.xorl ( emit_reg i.res.(0) , emit_reg i.res.(0)   )
-      | _     -> I.movl ( _int 0 , emit_reg i.res.(0)   )
-    end else
-      I.movl ( emit_nat n , emit_reg i.res.(0)   )
+      if n = 0n then begin
+        match i.res.(0).loc with
+          Reg n -> I.xorl ( emit_reg i.res.(0) , emit_reg i.res.(0)   )
+        | _     -> I.movl ( _int 0 , emit_reg i.res.(0)   )
+      end else
+        I.movl ( emit_nat n , emit_reg i.res.(0)   )
   | Lop(Iconst_float f) ->
-    begin match Int64.bits_of_float f with
+      begin match Int64.bits_of_float f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
-        I.fldz ( )
+          I.fldz ( )
       | 0x8000_0000_0000_0000L ->       (* -0.0 *)
-        I.fldz ( ); I.fchs None
+          I.fldz ( ); I.fchs None
       | 0x3FF0_0000_0000_0000L ->       (*  1.0 *)
-        I.fld1 ( )
+          I.fld1 ( )
       | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
-        I.fld1 ( ); I.fchs None
+          I.fld1 ( ); I.fchs None
       | _ ->
-        let lbl = add_float_constant f in
-        I.fldl ( _mem_sym (emit_label lbl ))
-    end
+          let lbl = add_float_constant f in
+          I.fldl ( _mem_sym (emit_label lbl ))
+      end
   | Lop(Iconst_symbol s) ->
-    add_used_symbol s;
-    I.movl ( _offset (abs_ (emit_symbol s)) , emit_reg i.res.(0)   )
+      add_used_symbol s;
+      I.movl ( _offset (abs_ (emit_symbol s)) , emit_reg i.res.(0)   )
   | Lop(Icall_ind) ->
-    I.call ( emit_reg i.arg.(0) );
-    record_frame i.live i.dbg
-  | Lop(Icall_imm s) ->
-    add_used_symbol s;
-    I.call ( _l (emit_symbol s)  );
-    record_frame i.live i.dbg
-  | Lop(Itailcall_ind) ->
-    output_epilogue begin fun () ->
-      I.jmp ( emit_reg i.arg.(0)  )
-    end
-  | Lop(Itailcall_imm s) ->
-    if s = !function_name then
-      I.jmp ( _l (emit_label !tailrec_entry_point)  )
-    else begin
-      output_epilogue begin fun () ->
-        add_used_symbol s;
-        I.jmp ( _l (emit_symbol s)  )
-      end
-    end
-  | Lop(Iextcall(s, alloc)) ->
-    add_used_symbol s;
-    if alloc then begin
-      if system <> S_macosx then
-        I.movl ( _offset (abs_ (emit_symbol s)) , _r _eax   )
-      else begin
-        external_symbols_indirect :=
-          StringSet.add s !external_symbols_indirect;
-        I.movl ( _mem_sym (Printf.sprintf "L%s$non_lazy_ptr"
-                      (emit_symbol s)) , _r _eax   )
-      end;
-      emit_call "caml_c_call";
+      I.call ( emit_reg i.arg.(0) );
       record_frame i.live i.dbg
-    end else begin
-      if system <> S_macosx then
-        emit_call s
-      else begin
-        external_symbols_direct :=
-          StringSet.add s !external_symbols_direct;
-        I.call ( _l (Printf.sprintf "L%s$stub" (emit_symbol s))  )
+  | Lop(Icall_imm s) ->
+      add_used_symbol s;
+      I.call ( _l (emit_symbol s)  );
+      record_frame i.live i.dbg
+  | Lop(Itailcall_ind) ->
+      output_epilogue begin fun () ->
+        I.jmp ( emit_reg i.arg.(0)  )
       end
-    end
+  | Lop(Itailcall_imm s) ->
+      if s = !function_name then
+        I.jmp ( _l (emit_label !tailrec_entry_point)  )
+      else begin
+        output_epilogue begin fun () ->
+          add_used_symbol s;
+          I.jmp ( _l (emit_symbol s)  )
+        end
+      end
+  | Lop(Iextcall(s, alloc)) ->
+      add_used_symbol s;
+      if alloc then begin
+        if system <> S_macosx then
+          I.movl ( _offset (abs_ (emit_symbol s)) , _r _eax   )
+        else begin
+          external_symbols_indirect :=
+            StringSet.add s !external_symbols_indirect;
+          I.movl ( _mem_sym (Printf.sprintf "L%s$non_lazy_ptr"
+                               (emit_symbol s)) , _r _eax   )
+        end;
+        emit_call "caml_c_call";
+        record_frame i.live i.dbg
+      end else begin
+        if system <> S_macosx then
+          emit_call s
+        else begin
+          external_symbols_direct :=
+            StringSet.add s !external_symbols_direct;
+          I.call ( _l (Printf.sprintf "L%s$stub" (emit_symbol s))  )
+        end
+      end
   | Lop(Istackoffset n) ->
-    if n < 0
-    then I.addl ( _int(-n) , _r _esp   )
-    else I.subl ( _int(n) , _r _esp   );
-    cfi_adjust_cfa_offset n;
-    stack_offset := !stack_offset + n
+      if n < 0
+      then I.addl ( _int(-n) , _r _esp   )
+      else I.subl ( _int(n) , _r _esp   );
+      cfi_adjust_cfa_offset n;
+      stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
-    let dest = i.res.(0) in
-    begin match chunk with
+      let dest = i.res.(0) in
+      begin match chunk with
       | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
-        I.movl ( emit_addressing addr DWORD i.arg 0 , emit_reg dest   )
+          I.movl ( emit_addressing addr DWORD i.arg 0 , emit_reg dest   )
       | Byte_unsigned ->
-        I.movzbl ( emit_addressing addr BYTE i.arg 0 , emit_reg dest   )
+          I.movzbl ( emit_addressing addr BYTE i.arg 0 , emit_reg dest   )
       | Byte_signed ->
-        I.movsbl ( emit_addressing addr BYTE i.arg 0 , emit_reg dest   )
+          I.movsbl ( emit_addressing addr BYTE i.arg 0 , emit_reg dest   )
       | Sixteen_unsigned ->
-        I.movzwl ( emit_addressing addr WORD i.arg 0 , emit_reg dest   )
+          I.movzwl ( emit_addressing addr WORD i.arg 0 , emit_reg dest   )
       | Sixteen_signed ->
-        I.movswl ( emit_addressing addr WORD i.arg 0 , emit_reg dest   )
+          I.movswl ( emit_addressing addr WORD i.arg 0 , emit_reg dest   )
       | Single ->
-        I.flds ( emit_addressing addr REAL4 i.arg 0  )
+          I.flds ( emit_addressing addr REAL4 i.arg 0  )
       | Double | Double_u ->
-        I.fldl ( emit_addressing addr REAL8 i.arg 0  )
-    end
+          I.fldl ( emit_addressing addr REAL8 i.arg 0  )
+      end
   | Lop(Istore(chunk, addr, _)) ->
-    begin match chunk with
+      begin match chunk with
       | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
-        I.movl ( emit_reg i.arg.(0) , emit_addressing addr DWORD i.arg 1   )
+          I.movl ( emit_reg i.arg.(0) , emit_addressing addr DWORD i.arg 1   )
       | Byte_unsigned | Byte_signed ->
-        I.movb ( emit_reg8 i.arg.(0) , emit_addressing addr BYTE i.arg 1   )
+          I.movb ( emit_reg8 i.arg.(0) , emit_addressing addr BYTE i.arg 1   )
       | Sixteen_unsigned | Sixteen_signed ->
-        I.movw ( emit_reg16 i.arg.(0) , emit_addressing addr WORD i.arg 1   )
+          I.movw ( emit_reg16 i.arg.(0) , emit_addressing addr WORD i.arg 1   )
       | Single ->
-        if is_tos i.arg.(0) then
-          I.fstps ( emit_addressing addr REAL4 i.arg 1  )
-        else begin
-          I.fldl ( emit_reg i.arg.(0)  );
-          I.fstps ( emit_addressing addr REAL4 i.arg 1  )
-        end
+          if is_tos i.arg.(0) then
+            I.fstps ( emit_addressing addr REAL4 i.arg 1  )
+          else begin
+            I.fldl ( emit_reg i.arg.(0)  );
+            I.fstps ( emit_addressing addr REAL4 i.arg 1  )
+          end
       | Double | Double_u ->
-        if is_tos i.arg.(0) then
-          I.fstpl ( emit_addressing addr REAL8 i.arg 1  )
-        else begin
-          I.fldl ( emit_reg i.arg.(0)  );
-          I.fstpl ( emit_addressing addr REAL8 i.arg 1  )
-        end
-    end
+          if is_tos i.arg.(0) then
+            I.fstpl ( emit_addressing addr REAL8 i.arg 1  )
+          else begin
+            I.fldl ( emit_reg i.arg.(0)  );
+            I.fstpl ( emit_addressing addr REAL8 i.arg 1  )
+          end
+      end
   | Lop(Ialloc n) ->
-    if !fastcode_flag then begin
-      let lbl_redo = new_label() in
-      _llabel (emit_label lbl_redo);
-      I.movl ( _mem_sym (emit_symbol "caml_young_ptr") , _r _eax   );
-      I.subl ( _int n , _r _eax   );
-      I.movl ( _r _eax , _mem_sym (emit_symbol "caml_young_ptr")  );
-      I.cmpl ( _mem_sym (emit_symbol "caml_young_limit") , _r _eax   );
-      let lbl_call_gc = new_label() in
-      let lbl_frame = record_frame_label i.live Debuginfo.none in
-      I.jb ( _l (emit_label lbl_call_gc)  );
-      I.leal  ( _mem_reg NO 4 _eax , emit_reg i.res.(0)   );
-      call_gc_sites :=
-        { gc_lbl = lbl_call_gc;
-          gc_return_lbl = lbl_redo;
-          gc_frame = lbl_frame } :: !call_gc_sites
-    end else begin
-      begin match n with
+      if !fastcode_flag then begin
+        let lbl_redo = new_label() in
+        _llabel (emit_label lbl_redo);
+        I.movl ( _mem_sym (emit_symbol "caml_young_ptr") , _r _eax   );
+        I.subl ( _int n , _r _eax   );
+        I.movl ( _r _eax , _mem_sym (emit_symbol "caml_young_ptr")  );
+        I.cmpl ( _mem_sym (emit_symbol "caml_young_limit") , _r _eax   );
+        let lbl_call_gc = new_label() in
+        let lbl_frame = record_frame_label i.live Debuginfo.none in
+        I.jb ( _l (emit_label lbl_call_gc)  );
+        I.leal  ( _mem_reg NO 4 _eax , emit_reg i.res.(0)   );
+        call_gc_sites :=
+          { gc_lbl = lbl_call_gc;
+            gc_return_lbl = lbl_redo;
+            gc_frame = lbl_frame } :: !call_gc_sites
+      end else begin
+        begin match n with
           8  -> emit_call "caml_alloc1"
         | 12 -> emit_call "caml_alloc2"
         | 16 -> emit_call "caml_alloc3"
         | _  ->
-          I.movl ( _int n , _r _eax   );
-          emit_call "caml_allocN"
-      end;
-      record_frame i.live Debuginfo.none;
-      I.leal ( _mem_reg NO 4 _eax , emit_reg i.res.(0)   )
-    end
+            I.movl ( _int n , _r _eax   );
+            emit_call "caml_allocN"
+        end;
+        record_frame i.live Debuginfo.none;
+        I.leal ( _mem_reg NO 4 _eax , emit_reg i.res.(0)   )
+      end
   | Lop(Iintop(Icomp cmp)) ->
-    I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)   );
-    let b = name_for_cond_branch cmp in
-    I.set b ( Reg8 AL  );
-    I.movzbl ( Reg8 AL , emit_reg i.res.(0)   );
+      I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)   );
+      let b = name_for_cond_branch cmp in
+      I.set b ( Reg8 AL  );
+      I.movzbl ( Reg8 AL , emit_reg i.res.(0)   );
   | Lop(Iintop_imm(Icomp cmp, n)) ->
-    I.cmpl ( _int n , emit_reg i.arg.(0)   );
-    let b = name_for_cond_branch cmp in
-    I.set b ( Reg8 AL  );
-    I.movzbl ( Reg8 AL , emit_reg i.res.(0)   )
+      I.cmpl ( _int n , emit_reg i.arg.(0)   );
+      let b = name_for_cond_branch cmp in
+      I.set b ( Reg8 AL  );
+      I.movzbl ( Reg8 AL , emit_reg i.res.(0)   )
   | Lop(Iintop Icheckbound) ->
-    let lbl = bound_error_label i.dbg in
-    I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)   );
-    I.jbe ( _l ( emit_label lbl )  )
+      let lbl = bound_error_label i.dbg in
+      I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)   );
+      I.jbe ( _l ( emit_label lbl )  )
   | Lop(Iintop_imm(Icheckbound, n)) ->
-    let lbl = bound_error_label i.dbg in
-    I.cmpl ( _int n , emit_reg i.arg.(0)   );
-    I.jbe ( _l (emit_label lbl)  )
+      let lbl = bound_error_label i.dbg in
+      I.cmpl ( _int n , emit_reg i.arg.(0)   );
+      I.jbe ( _l (emit_label lbl)  )
   | Lop(Iintop(Idiv | Imod)) ->
-    I.cltd ( );
-    I.idivl ( emit_reg i.arg.(1)  )
+      I.cltd ( );
+      I.idivl ( emit_reg i.arg.(1)  )
   | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
-    (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %ecx *)
-    instr_for_intop op ( Reg8 CL , emit_reg i.res.(0)   )
+      (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %ecx *)
+      instr_for_intop op ( Reg8 CL , emit_reg i.res.(0)   )
   | Lop(Iintop Imulh) ->
-    I.imull ( emit_reg i.arg.(1), None )
+      I.imull ( emit_reg i.arg.(1), None )
   | Lop(Iintop op) ->
-    (* We have i.arg.(0) = i.res.(0) *)
-    instr_for_intop op ( emit_reg i.arg.(1) , emit_reg i.res.(0)   )
+      (* We have i.arg.(0) = i.res.(0) *)
+      instr_for_intop op ( emit_reg i.arg.(1) , emit_reg i.res.(0)   )
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-    I.leal ( _mem_reg NO n (emit_reg32 i.arg.(0)), emit_reg i.res.(0)   )
+      I.leal ( _mem_reg NO n (emit_reg32 i.arg.(0)), emit_reg i.res.(0)   )
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
-    I.incl ( emit_reg i.res.(0)  )
+      I.incl ( emit_reg i.res.(0)  )
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
-    I.decl ( emit_reg i.res.(0)  )
+      I.decl ( emit_reg i.res.(0)  )
   | Lop(Iintop_imm(op, n)) ->
-    (* We have i.arg.(0) = i.res.(0) *)
-    instr_for_intop op ( _int n , emit_reg i.res.(0)   )
+      (* We have i.arg.(0) = i.res.(0) *)
+      instr_for_intop op ( _int n , emit_reg i.res.(0)   )
   | Lop(Inegf | Iabsf as floatop) ->
-    if not (is_tos i.arg.(0)) then
-      I.fldl ( emit_reg i.arg.(0)  );
-    instr_for_floatop floatop None
-  | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
-      as floatop) ->
-    begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
-        (true, true) ->
-        (* both operands on top of FP stack *)
-        instr_for_floatop_pop floatop ( Regf (ST 0) , Regf (ST 1)   )
-      | (true, false) ->
-        (* first operand on stack *)
-        instr_for_floatop floatop (Some ( emit_reg i.arg.(1)  ))
-      | (false, true) ->
-        (* second operand on stack *)
-        instr_for_floatop_reversed floatop (Some ( emit_reg i.arg.(0)  ))
-      | (false, false) ->
-        (* both operands in memory *)
+      if not (is_tos i.arg.(0)) then
         I.fldl ( emit_reg i.arg.(0)  );
-        instr_for_floatop floatop (Some ( emit_reg i.arg.(1)  ))
-    end
+      instr_for_floatop floatop None
+  | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
+        as floatop) ->
+      begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
+        (true, true) ->
+          (* both operands on top of FP stack *)
+          instr_for_floatop_pop floatop ( Regf (ST 0) , Regf (ST 1)   )
+      | (true, false) ->
+          (* first operand on stack *)
+          instr_for_floatop floatop (Some ( emit_reg i.arg.(1)  ))
+      | (false, true) ->
+          (* second operand on stack *)
+          instr_for_floatop_reversed floatop (Some ( emit_reg i.arg.(0)  ))
+      | (false, false) ->
+          (* both operands in memory *)
+          I.fldl ( emit_reg i.arg.(0)  );
+          instr_for_floatop floatop (Some ( emit_reg i.arg.(1)  ))
+      end
   | Lop(Ifloatofint) ->
-    begin match i.arg.(0).loc with
+      begin match i.arg.(0).loc with
         Stack s ->
-        I.fildl ( emit_reg i.arg.(0)  )
+          I.fildl ( emit_reg i.arg.(0)  )
       | _ ->
-        I.pushl ( emit_reg i.arg.(0)  );
-        I.fildl ( _mem_reg DWORD 0 _esp  );
-        I.addl ( _int 4 , _r _esp   )
-    end
+          I.pushl ( emit_reg i.arg.(0)  );
+          I.fildl ( _mem_reg DWORD 0 _esp  );
+          I.addl ( _int 4 , _r _esp   )
+      end
   | Lop(Iintoffloat) ->
-    if not (is_tos i.arg.(0)) then
-      I.fldl ( emit_reg i.arg.(0)  );
-    stack_offset := !stack_offset - 8;
-    I.subl ( _int 8 , _r _esp   );
-    cfi_adjust_cfa_offset 8;
-    I.fnstcw ( _mem_reg NO 4 _esp  );
-    I.movw ( _mem_reg NO 4 _esp , Reg16 AX   );
-    I.movb ( _int 12 , Reg8 AH   );
-    I.movw ( Reg16 AX , _mem_reg NO 0 _esp   );
-    I.fldcw ( _mem_reg NO 0 _esp  );
-    begin match i.res.(0).loc with
+      if not (is_tos i.arg.(0)) then
+        I.fldl ( emit_reg i.arg.(0)  );
+      stack_offset := !stack_offset - 8;
+      I.subl ( _int 8 , _r _esp   );
+      cfi_adjust_cfa_offset 8;
+      I.fnstcw ( _mem_reg NO 4 _esp  );
+      I.movw ( _mem_reg NO 4 _esp , Reg16 AX   );
+      I.movb ( _int 12 , Reg8 AH   );
+      I.movw ( Reg16 AX , _mem_reg NO 0 _esp   );
+      I.fldcw ( _mem_reg NO 0 _esp  );
+      begin match i.res.(0).loc with
         Stack s ->
-        I.fistpl ( emit_reg i.res.(0)  )
+          I.fistpl ( emit_reg i.res.(0)  )
       | _ ->
-        I.fistpl ( _mem_reg DWORD 0 _esp  );
-        I.movl ( _mem_reg NO 0 _esp , emit_reg i.res.(0)   )
-    end;
-    I.fldcw ( _mem_reg NO 4 _esp  );
-    I.addl ( _int 8 , _r _esp   );
-    cfi_adjust_cfa_offset (-8);
-    stack_offset := !stack_offset + 8
+          I.fistpl ( _mem_reg DWORD 0 _esp  );
+          I.movl ( _mem_reg NO 0 _esp , emit_reg i.res.(0)   )
+      end;
+      I.fldcw ( _mem_reg NO 4 _esp  );
+      I.addl ( _int 8 , _r _esp   );
+      cfi_adjust_cfa_offset (-8);
+      stack_offset := !stack_offset + 8
   | Lop(Ispecific(Ilea addr)) ->
-    I.leal ( emit_addressing addr DWORD i.arg 0 , emit_reg i.res.(0)   )
+      I.leal ( emit_addressing addr DWORD i.arg 0 , emit_reg i.res.(0)   )
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
-    I.movl ( emit_nat n , emit_addressing addr DWORD i.arg 0   )
+      I.movl ( emit_nat n , emit_addressing addr DWORD i.arg 0   )
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
-    add_used_symbol s;
-    I.movl ( _offset (abs_ (emit_symbol s)) , emit_addressing addr DWORD i.arg 0   )
+      add_used_symbol s;
+      I.movl ( _offset (abs_ (emit_symbol s)) , emit_addressing addr DWORD i.arg 0   )
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
-    I.addl ( _int n , emit_addressing addr DWORD i.arg 0   )
+      I.addl ( _int n , emit_addressing addr DWORD i.arg 0   )
   | Lop(Ispecific(Ipush)) ->
-    (* Push arguments in reverse order *)
-    for n = Array.length i.arg - 1 downto 0 do
-      let r = i.arg.(n) in
-      match r with
-        {loc = Reg _; typ = Float} ->
-        I.subl ( _int 8 , _r _esp   );
-        cfi_adjust_cfa_offset 8;
-        I.fstpl ( _mem_reg REAL8 0 _esp  );
-        stack_offset := !stack_offset + 8
-      | {loc = Stack sl; typ = Float} ->
-        let ofs = slot_offset sl 1 in
-        I.pushl ( _mem_reg DWORD (ofs + 4) _esp  );
-        I.pushl ( _mem_reg DWORD (ofs + 4) _esp  );
-        cfi_adjust_cfa_offset 8;
-        stack_offset := !stack_offset + 8
-      | _ ->
-        I.pushl ( emit_reg r  );
-        cfi_adjust_cfa_offset 4;
-        stack_offset := !stack_offset + 4
-    done
+      (* Push arguments in reverse order *)
+      for n = Array.length i.arg - 1 downto 0 do
+        let r = i.arg.(n) in
+        match r with
+          {loc = Reg _; typ = Float} ->
+            I.subl ( _int 8 , _r _esp   );
+            cfi_adjust_cfa_offset 8;
+            I.fstpl ( _mem_reg REAL8 0 _esp  );
+            stack_offset := !stack_offset + 8
+        | {loc = Stack sl; typ = Float} ->
+            let ofs = slot_offset sl 1 in
+            I.pushl ( _mem_reg DWORD (ofs + 4) _esp  );
+            I.pushl ( _mem_reg DWORD (ofs + 4) _esp  );
+            cfi_adjust_cfa_offset 8;
+            stack_offset := !stack_offset + 8
+        | _ ->
+            I.pushl ( emit_reg r  );
+            cfi_adjust_cfa_offset 4;
+            stack_offset := !stack_offset + 4
+      done
   | Lop(Ispecific(Ipush_int n)) ->
-    I.pushl ( emit_nat n  );
-    cfi_adjust_cfa_offset 4;
-    stack_offset := !stack_offset + 4
+      I.pushl ( emit_nat n  );
+      cfi_adjust_cfa_offset 4;
+      stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_symbol s)) ->
-    add_used_symbol s;
-    I.pushl ( _offset (abs_ (emit_symbol s))  );
-    cfi_adjust_cfa_offset 4;
-    stack_offset := !stack_offset + 4
+      add_used_symbol s;
+      I.pushl ( _offset (abs_ (emit_symbol s))  );
+      cfi_adjust_cfa_offset 4;
+      stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_load addr)) ->
-    I.pushl ( emit_addressing addr DWORD i.arg 0  );
-    cfi_adjust_cfa_offset 4;
-    stack_offset := !stack_offset + 4
+      I.pushl ( emit_addressing addr DWORD i.arg 0  );
+      cfi_adjust_cfa_offset 4;
+      stack_offset := !stack_offset + 4
   | Lop(Ispecific(Ipush_load_float addr)) ->
-    I.pushl ( emit_addressing (offset_addressing addr 4) DWORD i.arg 0  );
-    I.pushl ( emit_addressing addr DWORD i.arg 0  );
-    cfi_adjust_cfa_offset 8;
-    stack_offset := !stack_offset + 8
+      I.pushl ( emit_addressing (offset_addressing addr 4) DWORD i.arg 0  );
+      I.pushl ( emit_addressing addr DWORD i.arg 0  );
+      cfi_adjust_cfa_offset 8;
+      stack_offset := !stack_offset + 8
   | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
-    if not (is_tos i.arg.(0)) then
-      I.fldl ( emit_reg i.arg.(0)  );
-    instr_for_floatarithmem double op ( Some (
-      emit_addressing addr
-        (if double then REAL8 else REAL4) i.arg 1  ))
+      if not (is_tos i.arg.(0)) then
+        I.fldl ( emit_reg i.arg.(0)  );
+      instr_for_floatarithmem double op ( Some (
+          emit_addressing addr
+            (if double then REAL8 else REAL4) i.arg 1  ))
   | Lop(Ispecific(Ifloatspecial s)) ->
-    (* Push args on float stack if necessary *)
-    for k = 0 to Array.length i.arg - 1 do
-      if not (is_tos i.arg.(k)) then I.fldl ( emit_reg i.arg.(k)  )
-    done;
-    (* Fix-up for binary instrs whose args were swapped *)
-    if Array.length i.arg = 2 && is_tos i.arg.(1) then
-      I.fxch (Some ( _st 1  ));
-    emit_floatspecial s
+      (* Push args on float stack if necessary *)
+      for k = 0 to Array.length i.arg - 1 do
+        if not (is_tos i.arg.(k)) then I.fldl ( emit_reg i.arg.(k)  )
+      done;
+      (* Fix-up for binary instrs whose args were swapped *)
+      if Array.length i.arg = 2 && is_tos i.arg.(1) then
+        I.fxch (Some ( _st 1  ));
+      emit_floatspecial s
   | Lreloadretaddr ->
-    ()
+      ()
   | Lreturn ->
-    output_epilogue begin fun () ->
-      I.ret ( )
-    end
+      output_epilogue begin fun () ->
+        I.ret ( )
+      end
   | Llabel lbl ->
-    emit_Llabel fallthrough lbl
+      emit_Llabel fallthrough lbl
   | Lbranch lbl ->
-    I.jmp ( _l(emit_label lbl)  )
+      I.jmp ( _l(emit_label lbl)  )
   | Lcondbranch(tst, lbl) ->
-    begin match tst with
+      begin match tst with
         Itruetest ->
-        output_test_zero i.arg.(0);
-        I.jne ( _l (emit_label lbl)  );
+          output_test_zero i.arg.(0);
+          I.jne ( _l (emit_label lbl)  );
       | Ifalsetest ->
-        output_test_zero i.arg.(0);
-        I.je ( _l (emit_label lbl)  )
+          output_test_zero i.arg.(0);
+          I.je ( _l (emit_label lbl)  )
       | Iinttest cmp ->
-        I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)    );
-        let b = name_for_cond_branch cmp in
-        I.j b ( _l (emit_label lbl)  )
+          I.cmpl ( emit_reg i.arg.(1) , emit_reg i.arg.(0)    );
+          let b = name_for_cond_branch cmp in
+          I.j b ( _l (emit_label lbl)  )
       | Iinttest_imm((Isigned Ceq | Isigned Cne |
                       Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
-        output_test_zero i.arg.(0);
-        let b = name_for_cond_branch cmp in
-        I.j b ( _l (emit_label lbl)  )
+          output_test_zero i.arg.(0);
+          let b = name_for_cond_branch cmp in
+          I.j b ( _l (emit_label lbl)  )
       | Iinttest_imm(cmp, n) ->
-        I.cmpl ( _int n , emit_reg i.arg.(0)   );
-        let b = name_for_cond_branch cmp in
-        I.j b ( _l (emit_label lbl)  )
+          I.cmpl ( _int n , emit_reg i.arg.(0)   );
+          let b = name_for_cond_branch cmp in
+          I.j b ( _l (emit_label lbl)  )
       | Ifloattest(cmp, neg) ->
-        emit_float_test cmp neg i.arg lbl
+          emit_float_test cmp neg i.arg lbl
       | Ioddtest ->
-        I.testl ( _int 1 , emit_reg i.arg.(0)   );
-        I.jne ( _l (emit_label lbl)  )
+          I.testl ( _int 1 , emit_reg i.arg.(0)   );
+          I.jne ( _l (emit_label lbl)  )
       | Ieventest ->
-        I.testl ( _int 1 , emit_reg i.arg.(0)   );
-        I.je ( _l (emit_label lbl)  )
-    end
+          I.testl ( _int 1 , emit_reg i.arg.(0)   );
+          I.je ( _l (emit_label lbl)  )
+      end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
-    I.cmpl ( _int 1 , emit_reg i.arg.(0)   );
-    begin match lbl0 with
+      I.cmpl ( _int 1 , emit_reg i.arg.(0)   );
+      begin match lbl0 with
         None -> ()
       | Some lbl -> I.jb ( _l (emit_label lbl)  )
-    end;
-    begin match lbl1 with
+      end;
+      begin match lbl1 with
         None -> ()
       | Some lbl -> I.je ( _l (emit_label lbl)  )
-    end;
-    begin match lbl2 with
+      end;
+      begin match lbl2 with
         None -> ()
       | Some lbl -> I.jg ( _l (emit_label lbl)  )
-    end
+      end
   | Lswitch jumptbl ->
-    let lbl = new_label() in
-    I.jmp ( Mem(NO, M32 ( Some (emit_reg32 i.arg.(0), 4, None),
-             (Some (emit_label lbl, None), 0L) )));
-    _data ();
-    _label (emit_label lbl);
-    for i = 0 to Array.length jumptbl - 1 do
-      _long (ConstLabel (emit_label jumptbl.(i), None ))
-    done;
-    _text ()
+      let lbl = new_label() in
+      I.jmp ( Mem(NO, M32 ( Some (emit_reg32 i.arg.(0), 4, None),
+                            (Some (emit_label lbl, None), 0L) )));
+      _data ();
+      _label (emit_label lbl);
+      for i = 0 to Array.length jumptbl - 1 do
+        _long (ConstLabel (emit_label jumptbl.(i), None ))
+      done;
+      _text ()
   | Lsetuptrap lbl ->
-    I.call ( _l (emit_label lbl)  )
+      I.call ( _l (emit_label lbl)  )
   | Lpushtrap ->
-    if trap_frame_size > 8 then
-      I.subl ( _int (trap_frame_size - 8) , _r _esp   );
-    I.pushl ( _mem_sym (emit_symbol "caml_exception_pointer" ));
-    cfi_adjust_cfa_offset trap_frame_size;
-    I.movl ( _r _esp , _mem_sym (emit_symbol "caml_exception_pointer"));
-    stack_offset := !stack_offset + trap_frame_size
+      if trap_frame_size > 8 then
+        I.subl ( _int (trap_frame_size - 8) , _r _esp   );
+      I.pushl ( _mem_sym (emit_symbol "caml_exception_pointer" ));
+      cfi_adjust_cfa_offset trap_frame_size;
+      I.movl ( _r _esp , _mem_sym (emit_symbol "caml_exception_pointer"));
+      stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-    I.popl ( _mem_sym (emit_symbol "caml_exception_pointer")  );
-    I.addl ( _int (trap_frame_size - 4) , _r _esp   );
-    cfi_adjust_cfa_offset (-trap_frame_size);
-    stack_offset := !stack_offset - trap_frame_size
+      I.popl ( _mem_sym (emit_symbol "caml_exception_pointer")  );
+      I.addl ( _int (trap_frame_size - 4) , _r _esp   );
+      cfi_adjust_cfa_offset (-trap_frame_size);
+      stack_offset := !stack_offset - trap_frame_size
   | Lraise k  ->
-    begin match !Clflags.debug, k with
+      begin match !Clflags.debug, k with
       | true, Lambda.Raise_regular ->
-        emit_call "caml_raise_exn";
-        record_frame Reg.Set.empty i.dbg
+          emit_call "caml_raise_exn";
+          record_frame Reg.Set.empty i.dbg
       | true, Lambda.Raise_reraise ->
-        emit_call "caml_reraise_exn";
-        record_frame Reg.Set.empty i.dbg
+          emit_call "caml_reraise_exn";
+          record_frame Reg.Set.empty i.dbg
       | false, _
       | true, Lambda.Raise_notrace ->
-        I.movl ( _mem_sym (emit_symbol "caml_exception_pointer") , _r _esp   );
-        I.popl ( _mem_sym (emit_symbol "caml_exception_pointer")  );
-        if trap_frame_size > 8 then
-          I.addl ( _int (trap_frame_size - 8) , _r _esp   );
-        I.ret ( )
-    end
+          I.movl ( _mem_sym (emit_symbol "caml_exception_pointer") , _r _esp   );
+          I.popl ( _mem_sym (emit_symbol "caml_exception_pointer")  );
+          if trap_frame_size > 8 then
+            I.addl ( _int (trap_frame_size - 8) , _r _esp   );
+          I.ret ( )
+      end
 
 let rec emit_all fallthrough i =
   match i.desc with
@@ -988,10 +988,10 @@ let fundecl fundecl =
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
   if n > 0 then
-  begin
-    I.subl ( _int n , _r _esp   );
-    cfi_adjust_cfa_offset n;
-  end;
+    begin
+      I.subl ( _int n , _r _esp   );
+      cfi_adjust_cfa_offset n;
+    end;
   _llabel (emit_label !tailrec_entry_point);
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
@@ -1001,9 +1001,9 @@ let fundecl fundecl =
     S_linux_elf | S_bsd_elf | S_gnu ->
       _type  (emit_symbol fundecl.fun_name) "@function";
       _size (emit_symbol fundecl.fun_name)
-           (ConstSub (
-              ConstLabel (".", None),
-              ConstLabel  (emit_symbol fundecl.fun_name, None)))
+        (ConstSub (
+            ConstLabel (".", None),
+            ConstLabel  (emit_symbol fundecl.fun_name, None)))
   | _ -> () end
 
 
@@ -1012,20 +1012,20 @@ let fundecl fundecl =
 let emit_item = function
     Cglobal_symbol s -> _global ( emit_symbol s )
   | Cdefine_symbol s ->
-    add_def_symbol s;
-    _label ( emit_symbol s )
+      add_def_symbol s;
+      _label ( emit_symbol s )
   | Cdefine_label lbl -> _label ( emit_data_label lbl )
   | Cint8 n -> _byte (_const n)
   | Cint16 n -> _word (_const n)
   | Cint32 n -> _long ( const_nat n )
   | Cint n -> _long ( const_nat n )
   | Csingle f ->
-    _long (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
+      _long (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f ->
-    emit_float64_split_directive (Int64.bits_of_float f)
+      emit_float64_split_directive (Int64.bits_of_float f)
   | Csymbol_address s ->
-    add_used_symbol s;
-    _long (ConstLabel ( emit_symbol s, None ))
+      add_used_symbol s;
+      _long (ConstLabel ( emit_symbol s, None ))
   | Clabel_address lbl -> _long (ConstLabel ( emit_data_label lbl, None ))
   | Cstring s -> _ascii s
   | Cskip n ->
@@ -1102,15 +1102,15 @@ let end_assembly() =
       efa_word = (fun n -> _long ( _const n ));
       efa_align = emit_align;
       efa_label_rel = (fun lbl ofs ->
-        _long (ConstAdd (
-            ConstSub( ConstLabel(emit_label lbl, None),
-              ConstLabel (".", None) ),
-            const_32 ofs)));
+          _long (ConstAdd (
+              ConstSub( ConstLabel(emit_label lbl, None),
+                        ConstLabel (".", None) ),
+              const_32 ofs)));
       efa_def_label = (fun l -> _label ( emit_label l ));
       efa_string = (fun s ->
-        let s = s ^ "\000" in
-        _ascii s
-      ) };
+          let s = s ^ "\000" in
+          _ascii s
+        ) };
   if system = S_macosx then emit_external_symbols ();
   if system = S_linux_elf then
     (* Mark stack as non-executable, PR#4564 *)
@@ -1120,8 +1120,8 @@ let end_assembly() =
     _comment "External functions";
     StringSet.iter
       (fun s ->
-        if not (StringSet.mem s !symbols_defined) then
-          _extrn (emit_symbol s) PROC)
+         if not (StringSet.mem s !symbols_defined) then
+           _extrn (emit_symbol s) PROC)
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;
