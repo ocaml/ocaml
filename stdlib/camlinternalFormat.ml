@@ -1,19 +1,5 @@
 open CamlinternalFormatBasics
 
-let legacy_behavior = true
-(** When this flag is enabled, the format parser tries to behave as
-    the <4.02 implementations, in particular it ignores most benine
-    nonsensical format. When the flag is disabled, it will reject any
-    format that is not accepted by the specification.
-
-    A typical example would be "%+ d": specifying both '+' (if the
-    number is positive, pad with a '+' to get the same width as
-    negative numbres) and ' ' (if the number is positive, pad with
-    a space) does not make sense, but the legacy (< 4.02)
-    implementation was happy to just ignore the space.
-*)
-
-
 (******************************************************************************)
            (* Tools to manipulate scanning set of chars (see %[...]) *)
 
@@ -1769,7 +1755,7 @@ fun pad prec fmt ->
 
 (* Parse a string representing a format and create a fmt_ebb. *)
 (* Raise an Failure exception in case of invalid format. *)
-let fmt_ebb_of_string str =
+let fmt_ebb_of_string ?legacy_behavior str =
   (* Parameters naming convention:                                    *)
   (*   - lit_start: start of the literal sequence.                    *)
   (*   - str_ind: current index in the string.                        *)
@@ -1785,6 +1771,22 @@ let fmt_ebb_of_string str =
   (*   - prec: precision of the current micro-format.                 *)
   (*   - symb: char representing the conversion ('c', 's', 'd', ...). *)
   (*   - char_set: set of characters as bitmap (see scanf %[...]).    *)
+
+  let legacy_behavior = match legacy_behavior with
+    | Some flag -> flag
+    | None -> true
+  (** When this flag is enabled, the format parser tries to behave as
+      the <4.02 implementations, in particular it ignores most benine
+      nonsensical format. When the flag is disabled, it will reject any
+      format that is not accepted by the specification.
+
+      A typical example would be "%+ d": specifying both '+' (if the
+      number is positive, pad with a '+' to get the same width as
+      negative numbres) and ' ' (if the number is positive, pad with
+      a space) does not make sense, but the legacy (< 4.02)
+      implementation was happy to just ignore the space.
+  *)
+  in
 
   (* Raise a Failure with a friendly error message. *)
   (* Used when the end of the format (or the current sub-format) was encoutered
