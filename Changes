@@ -155,6 +155,8 @@ OCamldoc:
   (Maxence Guesdon, report by Anil Madhavapeddy)
 
 Bug fixes:
+- PR#6523: failure upon character bigarray access, and unnecessary change
+  in comparison ordering (Jeremy Yallop, Mark Shinwell)
 - PR#2719: wrong scheduling of bound checks within a
   try...with Invalid_argument -> _ ...  (Xavier Leroy)
 - PR#4719: Sys.executable_name wrong if executable name contains dots (Windows)
