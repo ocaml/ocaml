@@ -29,6 +29,9 @@ extern intnat
      caml_stat_compactions,
      caml_stat_heap_chunks;
 
+extern uintnat
+     caml_max_stack_size;
+
 uintnat caml_normalize_heap_increment (uintnat);
 
 void caml_init_gc ();

@@ -50,7 +50,7 @@ void caml_init_young_ptrs ()
 {
   Assert (caml_young_start == 0);
   Assert (heaps_base);
-  caml_young_start = caml_young_end = (char*)heaps_base;
+  caml_young_start = caml_young_end = caml_young_ptr = (char*)heaps_base;
 }
 
 void caml_allocate_minor_heap (asize_t heap_size)

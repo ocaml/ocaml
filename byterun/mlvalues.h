@@ -201,10 +201,13 @@ CAMLextern __thread char *caml_young_end, *caml_young_start;
   (((((uintnat)(val) ^ (uintnat)caml_young_start) - (1 << Minor_heap_align_bits)) & \
     Minor_val_bitmask) == 0)
 
+
+CAMLextern __thread char *caml_young_ptr;
   
 CAMLextern value caml_read_barrier(value, int);
 static inline value Field(value x, int i) {
   value v = (((value*)x))[i];
+  if (Is_young(v)) Assert(caml_young_ptr < (char*)v);
   return Is_foreign(v) ? caml_read_barrier(x, i) : v;
   }
   #define FieldImm(x, i) (((value *)(x)) [i] + 0)
@@ -215,7 +218,6 @@ static inline value Field(value x, int i) {
 #define Init_field(block, offset, val) (Op_val(block)[offset] = val)
 #else
 /* add some assertions in debug mode */
-CAMLextern __thread char *caml_young_ptr;
 #define Init_field(block, offset, val)                  \
   do {                                                  \
     value caml__temp_block = block;                     \
@@ -260,8 +262,11 @@ CAMLextern value caml_get_public_method (value obj, value tag);
    Note however that tags being hashed, same tag does not necessarily mean
    same method name. */
 
-#define Val_pc(pc) (Assert(((value)(pc) & 1) == 0), (value)(((char*)(pc)) + 1))
-#define Pc_val(val) (Assert(val & 1),  (code_t)((char*)(val) - 1))
+#define Val_ptr(p) (Assert(((value)(p) & 1) == 0), (value)(p) + 1)
+#define Ptr_val(val) (Assert(val & 1),  (void*)(val - 1))
+
+#define Val_pc(pc) Val_ptr(pc)
+#define Pc_val(val) ((code_t)Ptr_val(val))
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
@@ -272,6 +277,9 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 /* This tag is used (with Forward_tag) to implement lazy values.
    See major_gc.c and stdlib/lazy.ml. */
 #define Lazy_tag 246
+
+/* Tag used for fiber stacks (see fiber.c) */
+#define Stack_tag 245
 
 /* Another special case: variants */
 CAMLextern value caml_hash_variant(char const * tag);

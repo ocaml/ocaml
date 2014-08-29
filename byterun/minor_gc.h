@@ -36,6 +36,7 @@ struct caml_ref_table {
   asize_t reserve;
 };
 CAMLextern __thread struct caml_ref_table caml_ref_table, caml_weak_ref_table;
+CAMLextern __thread struct caml_ref_table caml_fiber_ref_table;
 CAMLextern __thread struct addrmap caml_promotion_table, caml_promotion_rev_table;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */

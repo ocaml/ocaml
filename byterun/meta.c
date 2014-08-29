@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
-#include "stacks.h"
+#include "fiber.h"
 
 #ifndef NATIVE_CODE
 
@@ -171,14 +171,5 @@ value caml_reify_bytecode(value prog, value len)
   caml_invalid_argument("Meta.reify_bytecode");
   return Val_unit; /* not reached */
 }
-
-value * caml_stack_low;
-value * caml_stack_high;
-value * caml_stack_threshold;
-value * caml_extern_sp;
-intnat caml_trap_sp_off;
-int caml_callback_depth;
-int volatile caml_something_to_do;
-void (* volatile caml_async_action_hook)(void);
 
 #endif

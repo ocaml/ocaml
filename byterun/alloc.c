@@ -22,7 +22,7 @@
 #include "major_gc.h"
 #include "memory.h"
 #include "mlvalues.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "domain.h"
 
 #define Setup_for_gc

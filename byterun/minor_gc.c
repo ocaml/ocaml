@@ -29,13 +29,15 @@
 #include "minor_heap.h"
 #include "shared_heap.h"
 #include "addrmap.h"
+#include "fiber.h"
 
 asize_t __thread caml_minor_heap_size;
 CAMLexport __thread char *caml_young_ptr = NULL;
 
 CAMLexport __thread struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
-  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
+  caml_fiber_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
 #ifdef DEBUG
 static __thread unsigned long minor_gc_counter = 0;
@@ -175,7 +177,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   
   value ret = caml_promote_one(&stk, domain, promotion_table, rev_table, shared_heap, root);
 
-
   while (stk.sp > 0) {
     struct promotion_stack_entry* curr = &stk.stack[stk.sp - 1];
     value local = curr->local;
@@ -217,8 +218,6 @@ static void caml_oldify_one (value v, value *p)
   tag_t tag;
 
  tail_call:
-  Assert (!Is_block(v) || Wosize_hd (Hd_val (v)) <= Max_wosize);
-
   if (Is_block (v) && Is_young (v)){
     Assert (Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
@@ -235,18 +234,26 @@ static void caml_oldify_one (value v, value *p)
         stat_live_bytes += Bhsize_wosize(sz);
         result = alloc_shared (sz, tag);
         *p = result;
-        field0 = Op_val(v)[0];
-        Hd_val (v) = 0;            /* Set forward flag */
-        Op_val(v)[0] = result;     /*  and forward pointer. */
-        if (sz > 1){
-          Op_val (result)[0] = field0;
-          Op_val (result)[1] = oldify_todo_list;    /* Add this block */
-          oldify_todo_list = v;                    /*  to the "to do" list. */
-        }else{
-          Assert (sz == 1);
-          p = Op_val(result);
-          v = field0;
-          goto tail_call;
+        if (tag == Stack_tag) {
+          memcpy((void*)result, (void*)v, sizeof(value) * sz);
+          Hd_val (v) = 0;
+          Op_val(v)[0] = result;
+          Op_val(v)[1] = oldify_todo_list;
+          oldify_todo_list = v;
+        } else {
+          field0 = Op_val(v)[0];
+          Hd_val (v) = 0;            /* Set forward flag */
+          Op_val(v)[0] = result;     /*  and forward pointer. */
+          if (sz > 1){
+            Op_val (result)[0] = field0;
+            Op_val (result)[1] = oldify_todo_list;    /* Add this block */
+            oldify_todo_list = v;                    /*  to the "to do" list. */
+          }else{
+            Assert (sz == 1);
+            p = Op_val(result);
+            v = field0;
+            goto tail_call;
+          }
         }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
@@ -310,18 +317,23 @@ static void caml_oldify_mopup (void)
     v = oldify_todo_list;                 /* Get the head. */
     Assert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
-    oldify_todo_list = Op_val (new_v)[1]; /* Remove from list. */
+    if (Tag_val(new_v) == Stack_tag) {
+      oldify_todo_list = Op_val (v)[1];   /* Remove from list (stack) */
+      caml_scan_stack(caml_oldify_one, new_v);
+    } else {
+      oldify_todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
-    f = Op_val (new_v)[0];
-    if (Is_block (f) && Is_young (f)){
-      caml_oldify_one (f, Op_val (new_v));
-    }
-    for (i = 1; i < Wosize_val (new_v); i++){
-      f = Op_val (v)[i];
+      f = Op_val (new_v)[0];
       if (Is_block (f) && Is_young (f)){
-        caml_oldify_one (f, Op_val (new_v) + i);
-      }else{
-        Op_val (new_v)[i] = f;
+        caml_oldify_one (f, Op_val (new_v));
+      }
+      for (i = 1; i < Wosize_val (new_v); i++){
+        f = Op_val (v)[i];
+        if (Is_block (f) && Is_young (f)){
+          caml_oldify_one (f, Op_val (new_v) + i);
+        }else{
+          Op_val (new_v)[i] = f;
+        }
       }
     }
   }
@@ -335,6 +347,24 @@ static void unpin_promoted_object(value local, value promoted)
   caml_darken(promoted, 0);
 }
 
+static void stack_entry(value v, value* p) 
+{
+  if (Is_block(v) && !Is_young(v)) {
+    caml_darken(v, p);
+  } else {
+    caml_oldify_one(v, p);
+  }
+}
+
+static void clean_stacks()
+{
+  struct caml_ref_entry* r;
+  for (r = caml_fiber_ref_table.base; r < caml_fiber_ref_table.ptr; r++) {
+    caml_scan_dirty_stack(&stack_entry, r->obj);
+  }
+  clear_table (&caml_fiber_ref_table);
+}
+
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
 */
@@ -344,16 +374,24 @@ void caml_empty_minor_heap (void)
   unsigned rewritten = 0;
   struct caml_ref_entry *r;
 
+  caml_save_stack_gc();
+
+  /* We must process the fiber_ref_table even if the minor heap
+     is empty. */
+  clean_stacks();
+
   if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
     stat_live_bytes = 0;
     struct caml_sampled_roots roots;
     caml_sample_local_roots(&roots);
     caml_do_local_roots(&caml_oldify_one, &roots);
+
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       value x;
       caml_oldify_one (Op_val(r->obj)[r->field], &x);
     }
+
     caml_oldify_mopup ();
 
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
@@ -408,6 +446,8 @@ void caml_empty_minor_heap (void)
     caml_gc_log ("Minor collection completed: %u of %u kb live, %u pointers rewritten",
                  (unsigned)stat_live_bytes/1024, (unsigned)minor_allocated_bytes/1024, rewritten);
   }
+  caml_restore_stack_gc();
+
   
 #ifdef DEBUG
   {
@@ -464,7 +504,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
                                              Assert (caml_force_major_slice);
 
     tbl->size *= 2;
-    sz = (tbl->size + tbl->reserve) * sizeof (value *);
+    sz = (tbl->size + tbl->reserve) * sizeof (struct caml_ref_entry);
     caml_gc_log ("Growing ref_table to %"
                  ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
                      (intnat) sz/1024);

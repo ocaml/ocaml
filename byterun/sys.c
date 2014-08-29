@@ -46,7 +46,7 @@
 #include "mlvalues.h"
 #include "osdeps.h"
 #include "signals.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "sys.h"
 #include "startup.h"
 

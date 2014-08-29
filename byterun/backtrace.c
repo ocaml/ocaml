@@ -32,7 +32,7 @@
 #include "fix_code.h"
 #include "memory.h"
 #include "startup.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "sys.h"
 #include "backtrace.h"
 

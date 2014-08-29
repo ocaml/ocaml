@@ -12,7 +12,7 @@
 #include "signals.h"
 #include "alloc.h"
 #include "startup.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "callback.h"
 #include "minor_gc.h"
 
@@ -33,6 +33,7 @@ struct domain {
   int is_main;
   uintnat initial_minor_heap_size;
   atomic_uintnat* interrupt_word_address;
+  struct caml_runqueue* runqueue;
 
   /* fields only accessed by the domain itself (after initialisation) */
   caml_root initial_data;
@@ -141,6 +142,9 @@ static value domain_run(value v) {
   CAMLparam1 (v);
   caml_delete_root(domain_self->initial_data);
 
+  /* FIXME */
+  caml_sample_local_roots(&domain_self->sampled_roots);
+
   /* FIXME exceptions */
   caml_callback_exn(v, Val_unit);
 
@@ -150,7 +154,8 @@ static value domain_run(value v) {
 static void* domain_thread_func(void* v) {
   domain_init(v);
   caml_gc_log("Domain starting");
-  caml_init_stack();
+  caml_init_domain_fiber();
+  domain_self->runqueue = caml_runqueue;
   domain_run(caml_read_root(domain_self->initial_data));
   domain_terminate();
   return 0;
@@ -181,6 +186,9 @@ void caml_domain_register_main(uintnat minor_size) {
 
   caml_init_global_roots();
   caml_init_signal_handling();
+
+  caml_init_domain_fiber();
+  domain_self->runqueue = caml_runqueue;
 }
 
 int caml_domain_id(struct domain* d) {
@@ -197,6 +205,10 @@ int caml_domain_is_main(struct domain* d) {
 struct domain* caml_domain_self()
 {
   return domain_self;
+}
+
+struct caml_runqueue* caml_domain_runqueue(struct domain* d) {
+  return d->runqueue;
 }
 
 CAMLprim value caml_ml_domain_id(value unit)
@@ -270,6 +282,10 @@ void caml_handle_gc_interrupt() {
   }
 }
 
+void caml_domain_spin() {
+  check_rpc();
+  cpu_relax();
+}
 
 
 

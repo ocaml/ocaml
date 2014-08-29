@@ -47,7 +47,7 @@
 #include "printexc.h"
 #include "reverse.h"
 #include "signals.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "sys.h"
 #include "startup.h"
 #include "version.h"
@@ -390,7 +390,6 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
-  caml_init_stack ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
@@ -469,7 +468,6 @@ CAMLexport void caml_startup_code(
   caml_startup_params.main_argv = argv; 
   /* Initialize the abstract machine */
   caml_init_gc ();
-  caml_init_stack ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
