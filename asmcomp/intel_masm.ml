@@ -247,6 +247,125 @@ let buf_bytes_directive b directive s =
 
 let list_o arg = match arg with None -> [] | Some arg -> [arg]
 
+let split_instr = function
+  | NEG arg ->  "neg", [arg]
+  | NOP -> "nop", []
+  | ADD (arg1, arg2) ->  "add", [arg1; arg2]
+  | SUB (arg1, arg2) ->   "sub", [arg1; arg2]
+  | XOR (arg1, arg2) ->   "xor", [arg1; arg2]
+  | OR (arg1, arg2) ->    "or", [arg1; arg2]
+  | AND (arg1, arg2) ->   "and", [arg1; arg2]
+  | CMP (arg1, arg2) ->  "cmp", [arg1; arg2]
+
+  | LEAVE -> "leave", []
+  | SAR (arg1, arg2) ->  "sar", [arg1; arg2]
+  | SHR (arg1, arg2) ->  "shr", [arg1; arg2]
+  | SAL (arg1, arg2) ->  "sal", [arg1; arg2]
+
+  | FSTP arg -> "fstp", [ arg ]
+  | FILD arg -> "fild", [arg]
+  | FCOMPP -> "fcompp", []
+  | FCOMP arg -> "fcomp", [ arg ]
+  | FLD arg -> "fld", [ arg ]
+  | FLDCW arg -> "fldcw", [ arg ]
+  | FISTP arg -> "fistp", [ arg]
+
+  | FNSTSW arg -> "fnstsw", [ arg ]
+  | FNSTCW arg -> "fnstcw", [ arg ]
+
+  | FCHS -> "fchs", []
+  | FABS -> "fabs", []
+  | FADD (arg, None) -> "fadd", [arg]
+  | FADD _ -> assert false
+  | FSUB (arg, None) -> "fsub", [arg]
+  | FSUB _ -> assert false
+  | FMUL (arg, None) -> "fmul", [arg]
+  | FMUL _ -> assert false
+  | FDIV (arg, None) -> "fdiv", [arg]
+  | FDIV _ -> assert false
+  | FSUBR (arg, None) -> "fsubr", [arg]
+  | FSUBR _ -> assert false
+  | FDIVR (arg, None) -> "fdivr", [arg]
+  | FDIVR _ -> assert false
+
+  | FADDP (arg1, arg2)  -> "faddp", [ arg1; arg2 ]
+  | FSUBP (arg1, arg2)  -> "fsubp", [ arg1; arg2 ]
+  | FMULP (arg1, arg2)  -> "fmulp", [ arg1; arg2 ]
+  | FDIVP (arg1, arg2)  -> "fdivp", [ arg1; arg2 ]
+  | FSUBRP (arg1, arg2)  -> "fsubrp", [ arg1; arg2 ]
+  | FDIVRP (arg1, arg2)  -> "fdivrp", [ arg1; arg2 ]
+
+  | INC arg ->  "inc", [ arg ]
+  | DEC arg ->  "dec", [ arg ]
+
+  | IMUL (arg1, arg2) ->  "imul", arg1 :: list_o arg2
+  | IDIV arg ->  "idiv", [ arg ]
+  | HLT -> assert false
+  | MOV (arg1, arg2) ->  "mov", [ arg1; arg2]
+
+  | MOVZX (arg1, arg2) ->  "movzx", [ arg1; arg2]
+  | MOVSX (arg1, arg2) ->  "movsx",  [ arg1; arg2]
+  | MOVSS (arg1, arg2) ->  "movss", [ arg1; arg2 ]
+  | MOVSXD (arg1, arg2) ->  "movsxd", [ arg1; arg2 ]
+
+  | MOVSD (arg1, arg2) ->  "movsd", [ arg1; arg2 ]
+  | ADDSD (arg1, arg2) ->  "addsd", [ arg1 ; arg2 ]
+  | SUBSD (arg1, arg2) ->  "subsd", [ arg1 ; arg2 ]
+  | MULSD (arg1, arg2) ->  "mulsd", [ arg1 ; arg2 ]
+  | DIVSD (arg1, arg2) ->  "divsd", [ arg1 ; arg2 ]
+  | SQRTSD (arg1, arg2) -> "sqrtsd", [ arg1; arg2]
+  | ROUNDSD (rounding, arg1, arg2) ->
+      Printf.sprintf "roundsd.%s" (match rounding with
+            RoundDown -> "down"
+          | RoundUp -> "up"
+          | RoundTruncate -> "trunc"
+          | RoundNearest -> "near"), [ arg1 ; arg2 ]
+  | CVTSS2SD (arg1, arg2) ->  "cvtss2sd", [ arg1; arg2 ]
+  | CVTSD2SS (arg1, arg2) ->  "cvtsd2ss", [ arg1; arg2 ]
+  | CVTSI2SD (arg1, arg2) ->  "cvtsi2sd", [ arg1; arg2 ]
+  | CVTSD2SI (arg1, arg2) ->  "cvtsd2si", [ arg1; arg2 ]
+  | CVTTSD2SI (arg1, arg2) ->  "cvttsd2si", [ arg1; arg2 ]
+  | UCOMISD (arg1, arg2) ->  "ucomisd", [ arg1; arg2]
+  | COMISD (arg1, arg2) ->  "comisd", [arg1; arg2]
+
+  | FLD1 -> "fld1", []
+  | FPATAN -> "fpatan", []
+  | FPTAN -> "fptan", []
+  | FCOS -> "fcos", []
+  | FLDLN2 -> "fldln2", []
+  | FLDLG2 -> "fldlg2", []
+  | FXCH arg -> "fxch", list_o arg
+  | FYL2X -> "fyl2x", []
+  | FSIN -> "fsin", []
+  | FSQRT -> "fsqrt", []
+  | FLDZ -> "fldz", []
+
+  | CALL arg  ->  "call", [ arg ]
+  | JMP arg ->  "jmp", [ arg]
+  | RET ->  "ret", []
+  | PUSH arg ->  "push", [arg]
+  | POP arg ->  "pop", [arg]
+
+  | TEST (arg1, arg2) ->  "test", [arg1; arg2]
+  | SET (condition, arg) ->
+      Printf.sprintf  "set%s" (string_of_condition condition), [ arg ]
+  | J (condition, arg) ->
+      Printf.sprintf  "j%s" (string_of_condition condition), [ arg ]
+
+  | CMOV (condition, arg1, arg2) ->
+      Printf.sprintf "cmov%s" (string_of_condition condition), [ arg1; arg2]
+  | XORPD (arg1, arg2) ->  "xorpd", [ arg1; arg2 ]
+  | ANDPD (arg1, arg2) ->  "andpd", [ arg1; arg2 ]
+  | MOVLPD (arg1, arg2) ->  "movlpd", [ arg1; arg2 ]
+  | MOVAPD (arg1, arg2) ->  "movapd", [ arg1; arg2 ]
+  | CDQ -> "cdq", []
+
+  | LEA (arg1, arg2) ->  "lea", [arg1; arg2]
+  | CQTO ->  "cqo", []
+  | XCHG (arg1, arg2) -> "xchg", [ arg1; arg2 ]
+  | BSWAP arg -> "bswap", [ arg ]
+
+
 let bprint_instr_name b instr =
   match instr with
   | Global s ->
@@ -296,133 +415,10 @@ let bprint_instr_name b instr =
   | Bytes s -> buf_bytes_directive b "BYTE" s
 
   | Ins instr ->
-      let name, args =
-        match instr with
-
-
-        | NEG arg ->  "neg", [arg]
-        | NOP -> "nop", []
-        | ADD (arg1, arg2) ->  "add", [arg1; arg2]
-        | SUB (arg1, arg2) ->   "sub", [arg1; arg2]
-        | XOR (arg1, arg2) ->   "xor", [arg1; arg2]
-        | OR (arg1, arg2) ->    "or", [arg1; arg2]
-        | AND (arg1, arg2) ->   "and", [arg1; arg2]
-        | CMP (arg1, arg2) ->  "cmp", [arg1; arg2]
-
-        | LEAVE -> "leave", []
-        | SAR (arg1, arg2) ->  "sar", [arg1; arg2]
-        | SHR (arg1, arg2) ->  "shr", [arg1; arg2]
-        | SAL (arg1, arg2) ->  "sal", [arg1; arg2]
-
-        | FSTP arg -> "fstp", [ arg ]
-        | FILD arg -> "fild", [arg]
-        | FCOMPP -> "fcompp", []
-        | FCOMP arg -> "fcomp", [ arg ]
-        | FLD arg -> "fld", [ arg ]
-        | FLDCW arg -> "fldcw", [ arg ]
-        | FISTP arg -> "fistp", [ arg]
-
-        | FNSTSW arg -> "fnstsw", [ arg ]
-        | FNSTCW arg -> "fnstcw", [ arg ]
-
-        | FCHS -> "fchs", []
-        | FABS -> "fabs", []
-        | FADD (arg, None) -> "fadd", [arg]
-        | FADD _ -> assert false
-        | FSUB (arg, None) -> "fsub", [arg]
-        | FSUB _ -> assert false
-        | FMUL (arg, None) -> "fmul", [arg]
-        | FMUL _ -> assert false
-        | FDIV (arg, None) -> "fdiv", [arg]
-        | FDIV _ -> assert false
-        | FSUBR (arg, None) -> "fsubr", [arg]
-        | FSUBR _ -> assert false
-        | FDIVR (arg, None) -> "fdivr", [arg]
-        | FDIVR _ -> assert false
-
-        | FADDP (arg1, arg2)  -> "faddp", [ arg1; arg2 ]
-        | FSUBP (arg1, arg2)  -> "fsubp", [ arg1; arg2 ]
-        | FMULP (arg1, arg2)  -> "fmulp", [ arg1; arg2 ]
-        | FDIVP (arg1, arg2)  -> "fdivp", [ arg1; arg2 ]
-        | FSUBRP (arg1, arg2)  -> "fsubrp", [ arg1; arg2 ]
-        | FDIVRP (arg1, arg2)  -> "fdivrp", [ arg1; arg2 ]
-
-        | INC arg ->  "inc", [ arg ]
-        | DEC arg ->  "dec", [ arg ]
-
-        | IMUL (arg1, arg2) ->  "imul", arg1 :: list_o arg2
-        | IDIV arg ->  "idiv", [ arg ]
-        | HLT -> assert false
-        | MOV (arg1, arg2) ->  "mov", [ arg1; arg2]
-
-        | MOVZX (arg1, arg2) ->  "movzx", [ arg1; arg2]
-        | MOVSX (arg1, arg2) ->  "movsx",  [ arg1; arg2]
-        | MOVSS (arg1, arg2) ->  "movss", [ arg1; arg2 ]
-        | MOVSXD (arg1, arg2) ->  "movsxd", [ arg1; arg2 ]
-
-        | MOVSD (arg1, arg2) ->  "movsd", [ arg1; arg2 ]
-        | ADDSD (arg1, arg2) ->  "addsd", [ arg1 ; arg2 ]
-        | SUBSD (arg1, arg2) ->  "subsd", [ arg1 ; arg2 ]
-        | MULSD (arg1, arg2) ->  "mulsd", [ arg1 ; arg2 ]
-        | DIVSD (arg1, arg2) ->  "divsd", [ arg1 ; arg2 ]
-        | SQRTSD (arg1, arg2) -> "sqrtsd", [ arg1; arg2]
-        | ROUNDSD (rounding, arg1, arg2) ->
-            Printf.sprintf "roundsd.%s" (match rounding with
-                  RoundDown -> "down"
-                | RoundUp -> "up"
-                | RoundTruncate -> "trunc"
-                | RoundNearest -> "near"), [ arg1 ; arg2 ]
-        | CVTSS2SD (arg1, arg2) ->  "cvtss2sd", [ arg1; arg2 ]
-        | CVTSD2SS (arg1, arg2) ->  "cvtsd2ss", [ arg1; arg2 ]
-        | CVTSI2SD (arg1, arg2) ->  "cvtsi2sd", [ arg1; arg2 ]
-        | CVTSD2SI (arg1, arg2) ->  "cvtsd2si", [ arg1; arg2 ]
-        | CVTTSD2SI (arg1, arg2) ->  "cvttsd2si", [ arg1; arg2 ]
-        | UCOMISD (arg1, arg2) ->  "ucomisd", [ arg1; arg2]
-        | COMISD (arg1, arg2) ->  "comisd", [arg1; arg2]
-
-        | FLD1 -> "fld1", []
-        | FPATAN -> "fpatan", []
-        | FPTAN -> "fptan", []
-        | FCOS -> "fcos", []
-        | FLDLN2 -> "fldln2", []
-        | FLDLG2 -> "fldlg2", []
-        | FXCH arg -> "fxch", list_o arg
-        | FYL2X -> "fyl2x", []
-        | FSIN -> "fsin", []
-        | FSQRT -> "fsqrt", []
-        | FLDZ -> "fldz", []
-
-        | CALL arg  ->  "call", [ arg ]
-        | JMP arg ->  "jmp", [ arg]
-        | RET ->  "ret", []
-        | PUSH arg ->  "push", [arg]
-        | POP arg ->  "pop", [arg]
-
-        | TEST (arg1, arg2) ->  "test", [arg1; arg2]
-        | SET (condition, arg) ->
-            Printf.sprintf  "set%s" (string_of_condition condition), [ arg ]
-        | J (condition, arg) ->
-            Printf.sprintf  "j%s" (string_of_condition condition), [ arg ]
-
-        | CMOV (condition, arg1, arg2) ->
-            Printf.sprintf "cmov%s" (string_of_condition condition), [ arg1; arg2]
-        | XORPD (arg1, arg2) ->  "xorpd", [ arg1; arg2 ]
-        | ANDPD (arg1, arg2) ->  "andpd", [ arg1; arg2 ]
-        | MOVLPD (arg1, arg2) ->  "movlpd", [ arg1; arg2 ]
-        | MOVAPD (arg1, arg2) ->  "movapd", [ arg1; arg2 ]
-        | CDQ -> "cdq", []
-
-        | LEA (arg1, arg2) ->  "lea", [arg1; arg2]
-        | CQTO ->  "cqo", []
-        | XCHG (arg1, arg2) -> "xchg", [ arg1; arg2 ]
-        | BSWAP arg -> "bswap", [ arg ]
-
-      in
+      let name, args = split_instr instr in
       bprint b name;
-      bprint_args b args;
-      ()
+      bprint_args b args
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
   Buffer.add_string b "\n"
-
