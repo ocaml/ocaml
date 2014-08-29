@@ -170,8 +170,6 @@ let rec instr ppf i =
         fprintf ppf "@]@,%a@]" instr cases.(i)
       done;
       fprintf ppf "@,endswitch"
-  | Iloop(body) ->
-      fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
   | Icatch([i, handler], body) ->
       fprintf
         ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"

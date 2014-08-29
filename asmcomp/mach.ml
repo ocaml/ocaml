@@ -69,7 +69,6 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
   | Icatch of (int * instruction) list * instruction
   | Iexit of int
   | Iexit_ind of int list
@@ -121,8 +120,6 @@ let rec instr_iter f i =
             instr_iter f cases.(i)
           done;
           instr_iter f i.next
-      | Iloop(body) ->
-          instr_iter f body; instr_iter f i.next
       | Icatch(handlers, body) ->
           instr_iter f body;
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;

@@ -104,7 +104,6 @@ type expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
-  | Cloop of expression
   | Ccatch of (int * Ident.t list * stexn_var list * expression) list * expression
   | Cexit of int * expression list * stexn list
   | Cexit_ind of stexn_var * expression list * stexn list

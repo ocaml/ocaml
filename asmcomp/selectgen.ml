@@ -185,8 +185,7 @@ module Exn_classes = struct
       | Ctrywith (e1, _, e2) ->
           aux e1; aux e2
 
-      | Cassign (_, e)
-      | Cloop e ->
+      | Cassign (_, e) ->
           aux e
 
       | Ctuple l
@@ -849,10 +848,6 @@ method emit_expr (env:environment) exp =
                       rsel [||];
           r
       end
-  | Cloop(ebody) ->
-      let (rarg, sbody) = self#emit_sequence env ebody in
-      self#insert (Iloop(sbody#extract)) [||] [||];
-      Some [||]
   | Ccatch([], e1) ->
       self#emit_expr env e1
   | Ccatch(handlers, e1) ->

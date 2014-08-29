@@ -1274,7 +1274,6 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
     | Cswitch(arg, index, cases) ->
         Cswitch(subst arg, index, Array.map subst cases)
-    | Cloop e -> Cloop(subst e)
     | Ccatch(handlers, body) -> map_ccatch subst handlers body
     | Cexit (nfail, el, kel) -> Cexit (nfail, List.map subst el, kel)
     | Cexit_ind (nfail, el, kel) -> Cexit_ind (nfail, List.map subst el, kel)

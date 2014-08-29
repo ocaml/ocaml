@@ -196,26 +196,6 @@ let rec reload i before =
                    (instr_cons (Iswitch(index, new_cases))
                                i.arg i.res new_next),
        finally)
-  | Iloop(body) ->
-      let date_start = !current_date in
-      let at_head = ref before in
-      let final_body = ref body in
-      begin try
-        while true do
-          current_date := date_start;
-          let (new_body, new_at_head) = reload body !at_head in
-          let merged_at_head = Reg.Set.union !at_head new_at_head in
-          if Reg.Set.equal merged_at_head !at_head then begin
-            final_body := new_body;
-            raise Exit
-          end;
-          at_head := merged_at_head
-        done
-      with Exit -> ()
-      end;
-      let (new_next, finally) = reload i.next Reg.Set.empty in
-      (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
-       finally)
   | Icatch(handlers, body) ->
       let new_sets = List.map
           (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
@@ -257,7 +237,6 @@ let rec reload i before =
            set := Reg.Set.union !set before)
         possible_fails;
       (i, Reg.Set.empty)
-
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
       (* All registers live at the beginning of the handler are destroyed,
@@ -371,26 +350,6 @@ let rec spill i finally =
       inside_arm := saved_inside_arm ;
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
-  | Iloop(body) ->
-      let (new_next, _) = spill i.next finally in
-      let saved_inside_loop = !inside_loop in
-      inside_loop := true;
-      let at_head = ref Reg.Set.empty in
-      let final_body = ref body in
-      begin try
-        while true do
-          let (new_body, before_body) = spill body !at_head in
-          let new_at_head = Reg.Set.union !at_head before_body in
-          if Reg.Set.equal new_at_head !at_head then begin
-            final_body := new_body; raise Exit
-          end;
-          at_head := new_at_head
-        done
-      with Exit -> ()
-      end;
-      inside_loop := saved_inside_loop;
-      (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
-       !at_head)
   | Icatch(handlers, body) ->
       let (new_next, at_join) = spill i.next finally in
       let saved_inside_catch = !inside_catch in

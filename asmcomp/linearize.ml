@@ -247,11 +247,6 @@ let rec linear' depth i n =
                    i !n2
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
-  | Iloop body ->
-      let lbl_head = new_label() in
-      let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch (lbl_head,0)) n1) in
-      cons_instr (Llabel lbl_head) n2
   | Icatch(handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let labels = List.map (fun (_io, handler) ->

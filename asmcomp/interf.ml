@@ -102,8 +102,6 @@ let build_graph fundecl =
           interf cases.(i)
         done;
         interf i.next
-    | Iloop body ->
-        interf body; interf i.next
     | Icatch(handlers, body) ->
         interf body;
         List.iter (fun (_, handler) -> interf handler) handlers;
@@ -176,12 +174,12 @@ let build_graph fundecl =
           prefer (weight / 2) cases.(i)
         done;
         prefer weight i.next
-    | Iloop body ->
-        (* Avoid overflow of weight and spill_cost *)
-        prefer (if weight < 1000 then 8 * weight else weight) body;
-        prefer weight i.next
     | Icatch(handlers, body) ->
         prefer weight body;
+        (* TODO: change the weight of recursive handlers
+           Iloop had:
+             prefer (if weight < 1000 then 8 * weight else weight) body;
+        *)
         List.iter (fun (_, handler) -> prefer weight handler) handlers;
         prefer weight i.next
     | Iexit _ ->

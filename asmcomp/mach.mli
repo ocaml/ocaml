@@ -70,7 +70,6 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
   | Icatch of (int * instruction) list * instruction
   | Iexit of int
   | Iexit_ind of int list

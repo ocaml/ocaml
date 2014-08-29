@@ -80,20 +80,6 @@ let rec live i finally =
       done;
       i.live <- !at_fork;
       Reg.add_set_array !at_fork i.arg
-  | Iloop(body) ->
-      let at_top = ref Reg.Set.empty in
-      (* Yes, there are better algorithms, but we'll just iterate till
-         reaching a fixpoint. *)
-      begin try
-        while true do
-          let new_at_top = Reg.Set.union !at_top (live body !at_top) in
-          if Reg.Set.equal !at_top new_at_top then raise Exit;
-          at_top := new_at_top
-        done
-      with Exit -> ()
-      end;
-      i.live <- !at_top;
-      !at_top
   | Icatch(handlers, body) ->
       let at_join = live i.next finally in
 
