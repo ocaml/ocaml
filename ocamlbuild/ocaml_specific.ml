@@ -598,14 +598,16 @@ let () =
     (fun param -> S [A "-for-pack"; A param]);
   pflag ["ocaml"; "native"; "compile"] "inline"
     (fun param -> S [A "-inline"; A param]);
-  pflag ["ocaml"; "compile"] "pp"
-    (fun param -> S [A "-pp"; A param]);
-  pflag ["ocaml"; "ocamldep"] "pp"
-    (fun param -> S [A "-pp"; A param]);
-  pflag ["ocaml"; "doc"] "pp"
-    (fun param -> S [A "-pp"; A param]);
-  pflag ["ocaml"; "infer_interface"] "pp"
-    (fun param -> S [A "-pp"; A param]);
+  List.iter (fun pp ->
+    pflag ["ocaml"; "compile"] pp
+      (fun param -> S [A ("-" ^ pp); A param]);
+    pflag ["ocaml"; "ocamldep"] pp
+      (fun param -> S [A ("-" ^ pp); A param]);
+    pflag ["ocaml"; "doc"] pp
+      (fun param -> S [A ("-" ^ pp); A param]);
+    pflag ["ocaml"; "infer_interface"] pp
+      (fun param -> S [A ("-" ^ pp); A param])
+  ) ["pp"; "ppx"];
   pflag ["ocaml";"compile";] "warn"
     (fun param -> S [A "-w"; A param]);
   pflag ["ocaml";"compile";] "warn_error"
@@ -686,6 +688,13 @@ flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 flag ["ocaml"; "compile"; "strict_formats";] (A "-strict-formats");;
+flag ["ocaml"; "native"; "compile"; "opaque";] (A "-opaque");;
+flag ["ocaml"; "native"; "compile"; "no_float_const_prop";] (A "-no-float-const-prop");
+flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");
+flag ["ocaml"; "absname"; "compile"] (A "-absname");;
+flag ["ocaml"; "absname"; "infer_interface"] (A "-absname");;
+flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
+
 
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
