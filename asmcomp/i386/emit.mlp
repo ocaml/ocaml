@@ -24,9 +24,9 @@ open Emitaux
 
 open Intel_ast
 open Intel_proc
-open Intel_gas.DSL32
+open Intel_dsl.DSL32
 
-module I = Intel_gas.INS32
+module I = Intel_dsl.INS32
 
 (* CFI directives *)
 

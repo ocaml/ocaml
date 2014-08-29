@@ -24,9 +24,9 @@ open Emitaux
 
 open Intel_ast
 open Intel_proc
-open Intel_gas.DSL64
+open Intel_dsl.DSL64
 
-module I = Intel_gas.INS64
+module I = Intel_dsl.INS64
 
 (* Override proc.ml *)
 

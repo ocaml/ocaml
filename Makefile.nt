@@ -77,6 +77,7 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
 
 INTEL_ASM=\
   asmcomp/intel_proc.cmo \
+  asmcomp/intel_dsl.cmo \
   asmcomp/intel_gas.cmo \
   asmcomp/intel_masm.cmo 
 
