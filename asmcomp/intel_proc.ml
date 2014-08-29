@@ -354,6 +354,10 @@ let generate_code oc bprint_instr =
   assemble_code instrs;
   if !print_assembler then
     let b = Buffer.create 10000 in
-    List.iter (bprint_instr b) instrs;
-    let s = Buffer.contents b in
-    output_string oc s
+    List.iter
+      (fun i ->
+         Buffer.clear b;
+         bprint_instr b i;
+         Buffer.output_buffer oc b
+      )
+      instrs
