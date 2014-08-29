@@ -13,13 +13,6 @@
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
-#   Characters 27-29:
-  module C'' : (module C) = C';; (* fails *)
-                            ^^
-Error: Signature mismatch:
-       Modules do not match: (module C') is not included in (module C)
-#   module C'' = Char
-# - : char = 'B'
 #   module C3 :
   sig
     external code : char -> int = "%identity"
@@ -374,4 +367,48 @@ Error: Unbound module type A
 #                           module B : sig module R : sig type t = string end module O = R end
 module K : sig module E = B module N = E.O end
 #   val x : K.N.t = "foo"
+#       module M : sig type t = A module B : sig type u = B end end
+# Characters 53-54:
+  module P : sig type t = M.t = A module B = M.B end = M;; (* should be ok *)
+                                                       ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = M.t = A module B : sig type u = M.B.u = B end end
+       is not included in
+         sig type t = M.t = A module B = M.B end
+       In module B:
+       Modules do not match:
+         sig type u = M.B.u = B end
+       is not included in
+         (module M.B)
+# module P : sig type t = M.t = A module B = M.B end
+#         module type S = sig module M : sig module P : sig  end end module Q = M end
+#       module type S =
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q : sig module N = M.N module P = M.P end
+  end
+#       module R :
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q = M
+  end
+# Characters 16-17:
+  module R' : S = R;; (* should be ok *)
+                  ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module M : sig module N : sig  end module P : sig  end end
+           module Q = M
+         end
+       is not included in
+         S
+       In module Q:
+       Modules do not match:
+         sig module N : sig  end module P : sig  end end
+       is not included in
+         sig module N = M.N module P = M.P end
+       In module Q.N:
+       Modules do not match: sig  end is not included in (module M.N)
 # 

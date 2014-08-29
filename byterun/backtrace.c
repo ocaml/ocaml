@@ -229,7 +229,7 @@ static void read_debug_info(void)
   int fd;
   struct exec_trailer trail;
   struct channel * chan;
-  uint32 num_events, orig, i;
+  uint32_t num_events, orig, i;
   intnat j;
   value evl, l, ev_start;
 
@@ -298,7 +298,8 @@ static void read_debug_info(void)
         read_debug_info_error = "out of memory";
         CAMLreturn0;
       }
-      memcpy(events[j].ev_filename, String_val (Field (ev_start, POS_FNAME)), fnsz);
+      memcpy(events[j].ev_filename, String_val (Field (ev_start, POS_FNAME)),
+             fnsz);
 
       events[j].ev_lnum = Int_val (Field (ev_start, POS_LNUM));
       events[j].ev_startchr =

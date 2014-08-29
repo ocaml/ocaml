@@ -165,8 +165,8 @@ std_exit.cmo :
 std_exit.cmx :
 stream.cmo : string.cmi obj.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.cmx : string.cmx obj.cmx list.cmx lazy.cmx bytes.cmx stream.cmi
-string.cmo : pervasives.cmi obj.cmi bytes.cmi string.cmi
-string.cmx : pervasives.cmx obj.cmx bytes.cmx string.cmi
+string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
+string.cmx : pervasives.cmx list.cmx bytes.cmx string.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.cmx : string.cmx stringLabels.cmi
 sys.cmo : sys.cmi
@@ -291,8 +291,8 @@ std_exit.cmo :
 std_exit.p.cmx :
 stream.cmo : string.cmi obj.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.p.cmx : string.p.cmx obj.p.cmx list.p.cmx lazy.p.cmx bytes.p.cmx stream.cmi
-string.cmo : pervasives.cmi obj.cmi bytes.cmi string.cmi
-string.p.cmx : pervasives.p.cmx obj.p.cmx bytes.p.cmx string.cmi
+string.cmo : pervasives.cmi list.cmi bytes.cmi string.cmi
+string.p.cmx : pervasives.p.cmx list.p.cmx bytes.p.cmx string.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.p.cmx : string.p.cmx stringLabels.cmi
 sys.cmo : sys.cmi

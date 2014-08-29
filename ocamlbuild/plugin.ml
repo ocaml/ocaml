@@ -202,7 +202,7 @@ module Make(U:sig end) =
            precisely those that will be used during the compilation of
            the plugin, and no more.
         *)
-        Param_tags.partial_init plugin_tags;
+        Param_tags.partial_init Const.Source.plugin_tag plugin_tags;
 
         let cmd =
           (* The argument order is important: we carefully put the

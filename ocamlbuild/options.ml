@@ -23,6 +23,7 @@ open Format
 open Command
 
 let entry = ref None
+let project_root_dir = ref None
 let build_dir = ref (Filename.concat (Sys.getcwd ()) "_build")
 let include_dirs = ref []
 let exclude_dirs = ref []
@@ -141,7 +142,8 @@ let use_jocaml () =
 ;;
 
 let add_to rxs x =
-  let xs = Lexers.comma_or_blank_sep_strings (Lexing.from_string x) in
+  let xs = Lexers.comma_or_blank_sep_strings
+    Const.Source.command_line (Lexing.from_string x) in
   rxs := xs :: !rxs
 let add_to' rxs x =
   if x <> dummy then
@@ -217,8 +219,10 @@ let spec = ref (
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
-   "-use-ocamlfind", Set use_ocamlfind, " Option deprecated. Now enabled by default. Use -no-ocamlfind to disable";
-   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind";
+   "-use-ocamlfind", Set use_ocamlfind, " Use the 'ocamlfind' wrapper instead of \
+       using Findlib directly to determine command-line arguments. \
+       Use -no-ocamlfind to disable.";
+   "-no-ocamlfind", Clear use_ocamlfind, " Don't use ocamlfind.";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
@@ -270,6 +274,8 @@ let init () =
   parse_argv argv' !spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
 
+  project_root_dir := Some (Sys.getcwd ());
+
   let () =
     let log = !log_file_internal in
     if log = "" then Log.init None
@@ -285,18 +291,33 @@ let init () =
   in
 
   if !use_ocamlfind then begin
-    ocamlfind_cmd := A "ocamlfind";
-    let cmd = Command.string_of_command_spec !ocamlfind_cmd in
-    begin try ignore(Command.search_in_path cmd)
-    with Not_found -> failwith "ocamlfind not found on path, but -no-ocamlfind not used" end;
-    (* TODO: warning message when using an option such as -ocamlc *)
+    begin try ignore(Command.search_in_path "ocamlfind")
+    with Not_found ->
+      failwith "ocamlfind not found on path, but -no-ocamlfind not used"
+    end;
+
+    let with_ocamlfind (command_name, command_ref) =
+        command_ref := match !command_ref with
+          | Sh user_command ->
+            (* this command has been set by the user
+               using an -ocamlc, -ocamlopt, etc. flag;
+
+               not all such combinations make sense (eg. "ocamlfind
+               /my/special/path/to/ocamlc" will make ocamlfind choke),
+               but the user will see the error and hopefully fix the
+               flags. *)
+            ocamlfind & (Sh user_command);
+          | _ -> ocamlfind & A command_name
+    in
     (* Note that plugins can still modify these variables After_options.
        This design decision can easily be changed. *)
-    ocamlc := ocamlfind & A"ocamlc";
-    ocamlopt := ocamlfind & A"ocamlopt";
-    ocamldep := ocamlfind & A"ocamldep";
-    ocamldoc := ocamlfind & A"ocamldoc";
-    ocamlmktop := ocamlfind & A"ocamlmktop";
+    List.iter with_ocamlfind [
+      "ocamlc", ocamlc;
+      "ocamlopt", ocamlopt;
+      "ocamldep", ocamldep;
+      "ocamldoc", ocamldoc;
+      "ocamlmktop", ocamlmktop;
+    ]
   end;
 
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in
@@ -334,3 +355,17 @@ let init () =
 
   ignore_list := List.map String.capitalize !ignore_list
 ;;
+
+(* The current heuristic: we know we are in an ocamlbuild project if
+   either _tags or myocamlbuild.ml are present at the root. This
+   heuristic has been documented and explained to users, so it should
+   not be changed. *)
+let ocamlbuild_project_heuristic () =
+  let root_dir = match !project_root_dir with
+    | None -> Sys.getcwd ()
+    | Some dir -> dir in
+  let at_root file = Filename.concat root_dir file in
+  Sys.file_exists (* authorized since we're not in build *)
+      (at_root "_tags")
+  || Sys.file_exists (* authorized since we're not in build *)
+      (at_root "myocamlbuild.ml")

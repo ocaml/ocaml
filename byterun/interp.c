@@ -793,7 +793,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (accu == Val_false) pc += *pc; else pc++;
       Next;
     Instruct(SWITCH): {
-      uint32 sizes = *pc++;
+      uint32_t sizes = *pc++;
       if (Is_block(accu)) {
         intnat index = Tag_val(accu);
         Assert ((uintnat) index < (sizes >> 16));

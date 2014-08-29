@@ -378,9 +378,9 @@ CAMLprim value caml_log1p_float(value f)
 union double_as_two_int32 {
     double d;
 #if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
-    struct { uint32 h; uint32 l; } i;
+    struct { uint32_t h; uint32_t l; } i;
 #else
-    struct { uint32 l; uint32 h; } i;
+    struct { uint32_t l; uint32_t h; } i;
 #endif
 };
 
@@ -467,7 +467,7 @@ CAMLprim value caml_classify_float(value vd)
   }
 #else
   union double_as_two_int32 u;
-  uint32 h, l;
+  uint32_t h, l;
 
   u.d = Double_val(vd);
   h = u.i.h;  l = u.i.l;

@@ -438,7 +438,7 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
 
   (* Class type fields *)
   Typetexp.warning_enter_scope ();
-  let (fields, val_sig, concr_meths, inher) =
+  let (rev_fields, val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       ([], Vars.empty, Concr.empty, [])
       sign
@@ -450,9 +450,9 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
    csig_inher = inher}
   in
   { csig_self = self_cty;
-    csig_fields = fields;
+    csig_fields = List.rev rev_fields;
     csig_type = cty;
-    }
+  }
 
 and class_type env scty =
   let cltyp desc typ =
@@ -968,6 +968,9 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_apply (scl', sargs) ->
+      if sargs = [] then
+        Syntaxerr.ill_formed_ast scl.pcl_loc
+          "Function application with no argument.";
       if !Clflags.principal then Ctype.begin_def ();
       let cl = class_expr cl_num val_env met_env scl' in
       if !Clflags.principal then begin

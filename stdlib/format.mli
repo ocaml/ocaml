@@ -714,14 +714,18 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 
 (** {6 Deprecated} *)
 
-val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
+val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
+  [@@ocaml.deprecated]
+;;
 (** @deprecated This function is error prone. Do not use it.
 
   If you need to print to some buffer [b], you must first define a
   formatter writing to [b], using [let to_b = formatter_of_buffer b]; then
   use regular calls to [Format.fprintf] on formatter [to_b]. *)
 
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
+  [@@ocaml.deprecated]
+;;
 (** @deprecated An alias for [ksprintf]. *)
 
 val set_all_formatter_output_functions :
@@ -730,6 +734,7 @@ val set_all_formatter_output_functions :
   newline:(unit -> unit) ->
   spaces:(int -> unit) ->
   unit
+[@@ocaml.deprecated]
 ;;
 (** @deprecated Subsumed by [set_formatter_out_functions].
 *)
@@ -740,12 +745,14 @@ val get_all_formatter_output_functions :
   (unit -> unit) *
   (unit -> unit) *
   (int -> unit)
+[@@ocaml.deprecated]
 ;;
 (** @deprecated Subsumed by [get_formatter_out_functions].
 *)
 val pp_set_all_formatter_output_functions :
   formatter -> out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
   newline:(unit -> unit) -> spaces:(int -> unit) -> unit
+[@@ocaml.deprecated]
 ;;
 (** @deprecated Subsumed by [pp_set_formatter_out_functions].
 *)
@@ -754,6 +761,7 @@ val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit)
+[@@ocaml.deprecated]
 ;;
 (** @deprecated Subsumed by [pp_get_formatter_out_functions].
 *)

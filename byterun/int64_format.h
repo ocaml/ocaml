@@ -17,7 +17,7 @@
 #ifndef CAML_INT64_FORMAT_H
 #define CAML_INT64_FORMAT_H
 
-static void I64_format(char * buffer, char * fmt, int64 x)
+static void I64_format(char * buffer, char * fmt, int64_t x)
 {
   static char conv_lower[] = "0123456789abcdef";
   static char conv_upper[] = "0123456789ABCDEF";
@@ -26,7 +26,7 @@ static void I64_format(char * buffer, char * fmt, int64 x)
   int base, width, sign, i, rawlen;
   char * cvtbl;
   char * p, * r;
-  int64 wbase, digit;
+  int64_t wbase, digit;
 
   /* Parsing of format */
   justify = '+';

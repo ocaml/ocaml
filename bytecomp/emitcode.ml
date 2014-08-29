@@ -82,7 +82,7 @@ let label_table  = ref ([| |] : label_definition array)
 let extend_label_table needed =
   let new_size = ref(Array.length !label_table) in
   while needed >= !new_size do new_size := 2 * !new_size done;
-  let new_table = Array.create !new_size (Label_undefined []) in
+  let new_table = Array.make !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
   label_table := new_table
 
@@ -150,7 +150,7 @@ let record_event ev =
 
 let init () =
   out_position := 0;
-  label_table := Array.create 16 (Label_undefined []);
+  label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
   debug_dirs := StringSet.empty;
   events := []
@@ -360,7 +360,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name code =
+let to_file outchan unit_name objfile code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -370,6 +370,9 @@ let to_file outchan unit_name code =
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
+      debug_dirs := StringSet.add
+        (Filename.dirname (Location.absolute_path objfile))
+        !debug_dirs;
       let p = pos_out outchan in
       output_value outchan !events;
       output_value outchan (StringSet.elements !debug_dirs);

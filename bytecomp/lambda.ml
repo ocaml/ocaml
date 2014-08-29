@@ -548,4 +548,3 @@ let lam_of_loc kind loc =
 
 let reset () =
   raise_count := 0
-

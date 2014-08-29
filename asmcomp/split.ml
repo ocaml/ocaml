@@ -30,7 +30,7 @@ let subst_regs rv sub =
     None -> rv
   | Some s ->
       let n = Array.length rv in
-      let nv = Array.create n Reg.dummy in
+      let nv = Array.make n Reg.dummy in
       for i = 0 to n-1 do nv.(i) <- subst_reg rv.(i) s done;
       nv
 

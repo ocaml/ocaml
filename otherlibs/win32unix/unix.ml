@@ -808,7 +808,7 @@ external win_create_process : string -> string -> string option ->
 
 let make_cmdline args =
   let maybe_quote f =
-    if String.contains f ' ' || String.contains f '\"'
+    if String.contains f ' ' || String.contains f '\"' || f = ""
     then Filename.quote f
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))

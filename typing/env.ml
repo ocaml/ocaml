@@ -164,6 +164,9 @@ module EnvTbl =
 type type_descriptions =
     constructor_description list * label_description list
 
+let in_signature_flag = 0x01
+let implicit_coercion_flag = 0x02
+
 type t = {
   values: (Path.t * value_description) EnvTbl.t;
   constrs: constructor_description EnvTbl.t;
@@ -178,7 +181,7 @@ type t = {
   summary: summary;
   local_constraints: bool;
   gadt_instances: (int * TypeSet.t ref) list;
-  in_signature: bool;
+  flags: int;
 }
 
 and module_components =
@@ -221,11 +224,17 @@ let empty = {
   components = EnvTbl.empty; classes = EnvTbl.empty;
   cltypes = EnvTbl.empty;
   summary = Env_empty; local_constraints = false; gadt_instances = [];
-  in_signature = false;
+  flags = 0;
   functor_args = Ident.empty;
  }
 
-let in_signature env = {env with in_signature = true}
+let in_signature env =
+  {env with flags = env.flags lor in_signature_flag}
+let implicit_coercion env =
+  {env with flags = env.flags lor implicit_coercion_flag}
+
+let is_in_signature env = env.flags land in_signature_flag <> 0
+let is_implicit_coercion env = env.flags land implicit_coercion_flag <> 0
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = EnvTbl.keys tbl2 in
@@ -760,22 +769,26 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let mark_value_used name vd =
-  try Hashtbl.find value_declarations (name, vd.val_loc) ()
-  with Not_found -> ()
+let mark_value_used env name vd =
+  if not (is_implicit_coercion env) then
+    try Hashtbl.find value_declarations (name, vd.val_loc) ()
+    with Not_found -> ()
 
-let mark_type_used name vd =
-  try Hashtbl.find type_declarations (name, vd.type_loc) ()
-  with Not_found -> ()
+let mark_type_used env name vd =
+  if not (is_implicit_coercion env) then
+    try Hashtbl.find type_declarations (name, vd.type_loc) ()
+    with Not_found -> ()
 
-let mark_constructor_used usage name vd constr =
-  try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
-  with Not_found -> ()
+let mark_constructor_used usage env name vd constr =
+  if not (is_implicit_coercion env) then
+    try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
+    with Not_found -> ()
 
-let mark_extension_used usage ext name =
-  let ty_name = Path.last ext.ext_type_path in
-  try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
-  with Not_found -> ()
+let mark_extension_used usage env ext name =
+  if not (is_implicit_coercion env) then
+    let ty_name = Path.last ext.ext_type_path in
+    try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
+    with Not_found -> ()
 
 let set_value_used_callback name vd callback =
   let key = (name, vd.val_loc) in
@@ -801,12 +814,12 @@ let set_type_used_callback name td callback =
 
 let lookup_value lid env =
   let (_, desc) as r = lookup_value lid env in
-  mark_value_used (Longident.last lid) desc;
+  mark_value_used env (Longident.last lid) desc;
   r
 
 let lookup_type lid env =
   let (path, (decl, _)) = lookup_type lid env in
-  mark_type_used (Longident.last lid) decl;
+  mark_type_used env (Longident.last lid) decl;
   (path, decl)
 
 (* [path] must be the path to a type, not to a module ! *)
@@ -819,7 +832,7 @@ let path_subst_last path id =
 let mark_type_path env path =
   try
     let decl = find_type path env in
-    mark_type_used (Path.last path) decl
+    mark_type_used env (Path.last path) decl
   with Not_found -> ()
 
 let ty_path t =
@@ -851,7 +864,8 @@ let lookup_all_constructors lid env =
     Not_found when is_lident lid -> []
 
 let mark_constructor usage env name desc =
-  match desc.cstr_tag with
+  if not (is_implicit_coercion env)
+  then match desc.cstr_tag with
   | Cstr_extension _ ->
       begin
         let ty_path = ty_path desc.cstr_res in
@@ -863,7 +877,7 @@ let mark_constructor usage env name desc =
       let ty_path = ty_path desc.cstr_res in
       let ty_decl = try find_type ty_path env with Not_found -> assert false in
       let ty_name = Path.last ty_path in
-      mark_constructor_used usage ty_name ty_decl name
+      mark_constructor_used usage env ty_name ty_decl name
 
 let lookup_label lid env =
   match lookup_all_labels lid env with
@@ -1298,7 +1312,7 @@ and store_type ~check slot id path info env renv =
           if not (ty = "" || ty.[0] = '_')
           then !add_delayed_check_forward
               (fun () ->
-                if not env.in_signature && not used.cu_positive then
+                if not (is_in_signature env) && not used.cu_positive then
                   Location.prerr_warning loc
                     (Warnings.Unused_constructor
                        (c, used.cu_pattern, used.cu_privatize)))
@@ -1346,7 +1360,7 @@ and store_extension ~check slot id path ext env renv =
       Hashtbl.add used_constructors k (add_constructor_usage used);
       !add_delayed_check_forward
         (fun () ->
-          if not env.in_signature && not used.cu_positive then
+          if not (is_in_signature env) && not used.cu_positive then
             Location.prerr_warning loc
               (Warnings.Unused_extension
                  (n, used.cu_pattern, used.cu_privatize)
@@ -1737,7 +1751,7 @@ let keep_only_summary env =
        empty with
        summary = env.summary;
        local_constraints = env.local_constraints;
-       in_signature = env.in_signature;
+       flags = env.flags;
       }
     in
     last_env := env;
@@ -1750,7 +1764,7 @@ let env_of_only_summary env_from_summary env =
   let new_env = env_from_summary env.summary Subst.identity in
   { new_env with
     local_constraints = env.local_constraints;
-    in_signature = env.in_signature;
+    flags = env.flags;
   }
 
 (* Error report *)
@@ -1758,10 +1772,10 @@ let env_of_only_summary env_from_summary env =
 open Format
 
 let report_error ppf = function
-  | Illegal_renaming(name, modname, filename) -> fprintf ppf
+  | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for @ \
        %s when %s was expected"
-      Location.print_filename filename name modname
+      Location.print_filename filename ps_name modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"

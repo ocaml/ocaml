@@ -720,7 +720,7 @@ CAMLexport void caml_serialize_int_2(int i)
   extern_ptr += 2;
 }
 
-CAMLexport void caml_serialize_int_4(int32 i)
+CAMLexport void caml_serialize_int_4(int32_t i)
 {
   if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
   extern_ptr[0] = i >> 24;
@@ -730,7 +730,7 @@ CAMLexport void caml_serialize_int_4(int32 i)
   extern_ptr += 4;
 }
 
-CAMLexport void caml_serialize_int_8(int64 i)
+CAMLexport void caml_serialize_int_8(int64_t i)
 {
   caml_serialize_block_8(&i, 1);
 }

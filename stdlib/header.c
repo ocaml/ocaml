@@ -133,7 +133,7 @@ static char * read_runtime_path(int fd)
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAXPATHLEN];
   int num_sections, i;
-  uint32 path_size;
+  uint32_t path_size;
   long ofs;
 
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);

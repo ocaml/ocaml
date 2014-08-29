@@ -24,6 +24,8 @@ STDLIB_MODULES=\
   bytes \
   bytesLabels \
   callback \
+  camlinternalFormat \
+  camlinternalFormatBasics \
   camlinternalLazy \
   camlinternalMod \
   camlinternalOO \

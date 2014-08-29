@@ -18,12 +18,12 @@
 
 #include "mlvalues.h"
 
-CAMLextern uint32 caml_hash_mix_uint32(uint32 h, uint32 d);
-CAMLextern uint32 caml_hash_mix_intnat(uint32 h, intnat d);
-CAMLextern uint32 caml_hash_mix_int64(uint32 h, int64 d);
-CAMLextern uint32 caml_hash_mix_double(uint32 h, double d);
-CAMLextern uint32 caml_hash_mix_float(uint32 h, float d);
-CAMLextern uint32 caml_hash_mix_string(uint32 h, value s);
+CAMLextern uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d);
+CAMLextern uint32_t caml_hash_mix_intnat(uint32_t h, intnat d);
+CAMLextern uint32_t caml_hash_mix_int64(uint32_t h, int64_t d);
+CAMLextern uint32_t caml_hash_mix_double(uint32_t h, double d);
+CAMLextern uint32_t caml_hash_mix_float(uint32_t h, float d);
+CAMLextern uint32_t caml_hash_mix_string(uint32_t h, value s);
 
 
 #endif

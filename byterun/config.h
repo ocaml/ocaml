@@ -25,23 +25,29 @@
 #include "compatibility.h"
 #endif
 
-/* Types for 32-bit integers, 64-bit integers,
+#ifdef HAS_STDINT_H
+#include <stdint.h>
+#endif
+
+/* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 
+#ifndef ARCH_INT32_TYPE
 #if SIZEOF_INT == 4
-typedef int int32;
-typedef unsigned int uint32;
+#define ARCH_INT32_TYPE int
+#define ARCH_UINT32_TYPE unsigned int
 #define ARCH_INT32_PRINTF_FORMAT ""
 #elif SIZEOF_LONG == 4
-typedef long int32;
-typedef unsigned long uint32;
+#define ARCH_INT32_TYPE long
+#define ARCH_UINT32_TYPE unsigned long
 #define ARCH_INT32_PRINTF_FORMAT "l"
 #elif SIZEOF_SHORT == 4
-typedef short int32;
-typedef unsigned short uint32;
+#define ARCH_INT32_TYPE short
+#define ARCH_UINT32_TYPE unsigned short
 #define ARCH_INT32_PRINTF_FORMAT ""
 #else
 #error "No 32-bit integer type available"
+#endif
 #endif
 
 #ifndef ARCH_INT64_TYPE
@@ -58,8 +64,13 @@ typedef unsigned short uint32;
 #endif
 #endif
 
-typedef ARCH_INT64_TYPE int64;
-typedef ARCH_UINT64_TYPE uint64;
+#ifndef HAS_STDINT_H
+/* Not a C99 compiler, typically MSVC.  Define the C99 types we use. */
+typedef ARCH_INT32_TYPE int32_t;
+typedef ARCH_UINT32_TYPE uint32_t;
+typedef ARCH_INT64_TYPE int64_t;
+typedef ARCH_UINT64_TYPE uint64_t;
+#endif
 
 #if SIZEOF_PTR == SIZEOF_LONG
 /* Standard models: ILP32 or I32LP64 */
@@ -72,9 +83,9 @@ typedef int intnat;
 typedef unsigned int uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ""
 #elif SIZEOF_PTR == 8
-/* Win64 model: IL32LLP64 */
-typedef int64 intnat;
-typedef uint64 uintnat;
+/* Win64 model: IL32P64 */
+typedef int64_t intnat;
+typedef uint64_t uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
 #else
 #error "No integer type available to represent pointers"

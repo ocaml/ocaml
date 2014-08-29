@@ -109,7 +109,7 @@ NATIVECCLIBS=-lws2_32
 CPP=$(BYTECC) -E
 
 ### Flexlink
-FLEXLINK=flexlink -chain mingw -stack 16777216
+FLEXLINK=flexlink -chain mingw -stack 16777216 -link -static-libgcc
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)

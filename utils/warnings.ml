@@ -162,21 +162,27 @@ let letter = function
   | _ -> assert false
 ;;
 
-let active = Array.create (last_warning_number + 1) true;;
-let error = Array.create (last_warning_number + 1) false;;
+type state =
+  {
+    active: bool array;
+    error: bool array;
+  }
 
-type state = bool array * bool array
-let backup () = (Array.copy active, Array.copy error)
-let restore (a, e) =
-  assert(Array.length a = Array.length active);
-  assert(Array.length e = Array.length error);
-  Array.blit a 0 active 0 (Array.length active);
-  Array.blit e 0 error 0 (Array.length error)
+let current =
+  ref
+    {
+      active = Array.make (last_warning_number + 1) true;
+      error = Array.make (last_warning_number + 1) false;
+    }
 
-let is_active x = active.(number x);;
-let is_error x = error.(number x);;
+let backup () = !current
 
-let parse_opt flags s =
+let restore x = current := x
+
+let is_active x = (!current).active.(number x);;
+let is_error x = (!current).error.(number x);;
+
+let parse_opt error active flags s =
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
@@ -227,7 +233,11 @@ let parse_opt flags s =
   loop 0
 ;;
 
-let parse_options errflag s = parse_opt (if errflag then error else active) s;;
+let parse_options errflag s =
+  let error = Array.copy (!current).error in
+  let active = Array.copy (!current).active in
+  parse_opt error active (if errflag then error else active) s;
+  current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
@@ -239,7 +249,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated feature: " ^ s
+  | Deprecated s -> "deprecated: " ^ s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -322,7 +332,8 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) -> "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, false, false) ->
+      "unused extension constructor " ^ s ^ "."
   | Unused_extension (s, true, _) ->
       "extension constructor " ^ s ^
       " is never used to build values.\n\
@@ -384,15 +395,14 @@ let print ppf w =
   for i = 0 to String.length msg - 1 do
     if msg.[i] = '\n' then incr newlines;
   done;
-  let (out, flush, newline, space) =
-    Format.pp_get_all_formatter_output_functions ppf ()
-  in
-  let countnewline x = incr newlines; newline x in
-  Format.pp_set_all_formatter_output_functions ppf out flush countnewline space;
+  let out_functions = Format.pp_get_formatter_out_functions ppf () in
+  let countnewline x = incr newlines; out_functions.Format.out_newline x in
+  Format.pp_set_formatter_out_functions ppf
+         {out_functions with Format.out_newline = countnewline};
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
-  Format.pp_set_all_formatter_output_functions ppf out flush newline space;
-  if error.(num) then incr nerrors;
+  Format.pp_set_formatter_out_functions ppf out_functions;
+  if (!current).error.(num) then incr nerrors;
   !newlines
 ;;
 

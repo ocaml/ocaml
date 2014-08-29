@@ -75,7 +75,7 @@ let initialize name array maxval x y w h =
 (* Main animation function *)
 
 let display functs nelts maxval =
-  let a = Array.create nelts 0 in
+  let a = Array.make nelts 0 in
   for i = 0 to nelts - 1 do
     a.(i) <- Random.int maxval
   done;

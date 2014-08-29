@@ -79,7 +79,7 @@ static void init_atoms(void)
 
 /* Read the trailer of a bytecode file */
 
-static void fixup_endianness_trailer(uint32 * p)
+static void fixup_endianness_trailer(uint32_t * p)
 {
 #ifndef ARCH_BIG_ENDIAN
   Reverse_32(p, p);
@@ -153,7 +153,7 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 {
   long ofs;
   int i;
@@ -172,9 +172,9 @@ int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 /* Position fd at the beginning of the section having the given name.
    Return the length of the section data in bytes. */
 
-int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
-  int32 len = caml_seek_optional_section(fd, trail, name);
+  int32_t len = caml_seek_optional_section(fd, trail, name);
   if (len == -1)
     caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
@@ -185,7 +185,7 @@ int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 
 static char * read_section(int fd, struct exec_trailer *trail, char *name)
 {
-  int32 len;
+  int32_t len;
   char * data;
 
   len = caml_seek_optional_section(fd, trail, name);
