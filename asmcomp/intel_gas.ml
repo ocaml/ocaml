@@ -10,6 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+[@@@ocaml.warning "+A-42-4"]
+
 (*
 
 
@@ -55,7 +57,7 @@ let string_of_symbol = function
   | s, Some GOTPCREL -> s ^ "@GOTPCREL"
   | s, None -> s
 
-let bprint_arg_mem b string_of_register ptr    ( mem : 'a addr ) =
+let bprint_arg_mem b string_of_register ( mem : 'a addr ) =
   match mem with
   | None, (None, addr) ->
       Printf.bprintf b "%Ld" addr
@@ -176,10 +178,10 @@ let bprint_arg b arg =
   | Regf registerf ->
       Printf.bprintf b "%%%s" (string_of_registerf registerf)
 
-  | Mem (ptr, M32 addr) ->
-      bprint_arg_mem b string_of_register32 ptr addr
-  | Mem (ptr, M64 addr) ->
-      bprint_arg_mem b string_of_register64 ptr addr
+  | Mem (_ptr, M32 addr) ->
+      bprint_arg_mem b string_of_register32 addr
+  | Mem (_ptr, M64 addr) ->
+      bprint_arg_mem b string_of_register64 addr
 
 let bprint_args b instr args =
   match args, instr with
@@ -225,27 +227,6 @@ and string_of_simple_constant = function
   | ConstSub (c1, c2) ->
       Printf.sprintf "(%s - %s)"
         (string_of_simple_constant c1) (string_of_simple_constant c2)
-
-let get_suffix s =
-  match s with
-  | B -> "b"
-  | W -> "w"
-  | L -> "l"
-  | Q -> "q"
-
-let get_float_suffix s =
-  match s with
-  | FS -> "s"
-  | FL -> "l"
-
-let suffix ins s =
-  ins ^ (get_suffix s)
-
-let float_suffix ins s =
-  ins ^ (get_float_suffix s)
-
-let suffix2 ins s1 s2 =
-  ins ^ (get_suffix s1) ^ (get_suffix s2)
 
 let auto_suffix ins arg =
   let suffix =

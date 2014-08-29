@@ -10,6 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+[@@@ocaml.warning "+A-42-4"]
+
 open Intel_ast
 open Intel_proc
 
@@ -175,7 +177,7 @@ let bprint_arg b arg =
       bprint_arg_mem b string_of_register64 ptr addr
 
 
-let bprint_args b instr args =
+let bprint_args b args =
   match args with
   | [] -> ()
   | [ arg ] -> tab b; bprint_arg b arg
@@ -417,7 +419,7 @@ let bprint_instr_name b instr =
 
       in
       bprint b name;
-      bprint_args b instr args;
+      bprint_args b args;
       ()
 
 let bprint_instr b instr =
