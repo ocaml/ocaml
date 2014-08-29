@@ -10,6 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open Intel_ast
 open Intel_proc
 
 let string_of_data_size = function

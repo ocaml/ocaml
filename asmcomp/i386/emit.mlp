@@ -21,6 +21,8 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+
+open Intel_ast
 open Intel_proc
 open Intel_gas.DSL32
 

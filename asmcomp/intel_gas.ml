@@ -39,6 +39,7 @@ FDIVR ST(i), ST(0)
 *)
 
 
+open Intel_ast
 open Intel_proc
 
 let string_of_table = function
