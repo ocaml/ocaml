@@ -137,11 +137,8 @@ let bprint_arg_mem b string_of_register ptr mem =
 
 let bprint_arg b arg =
   match arg with
-  | Imm ( (B8|B16), (None, int)) ->
+  | Imm ( (B8|B16|B32), (None, int)) ->
       Printf.bprintf b "%Ld" int
-  | Imm ( B32, (None, int)) ->
-      (* force ml64 to use mov reg, imm64 instruction *)
-      Printf.bprintf b "0%Lxh" int
   | Imm ( B64, (None, int)) ->
       (* force ml64 to use mov reg, imm64 instruction *)
       Printf.bprintf b "0%LxH" int
@@ -199,8 +196,7 @@ let rec string_of_constant = function
 and string_of_simple_constant = function
   | ConstLabel (l, None) -> if l = "." then  "THIS BYTE"      else l
   | ConstLabel _ -> assert false
-  | Const ( (B8|B16), n) -> Int64.to_string n
-  | Const (B32, n) -> Printf.sprintf "0%Lxh" n
+  | Const ( (B8|B16|B32), n) -> Int64.to_string n
   | Const (B64, n) -> Printf.sprintf "0%LxH" n
   | ConstFloat s ->
       (* MASM doesn't like floating-point constants such as 2e9.
