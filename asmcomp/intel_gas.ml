@@ -150,7 +150,6 @@ let bprint_arg_mem b string_of_register ( mem : 'a addr ) =
 
 let bprint_arg b arg =
   match arg with
-  (*  | ConstantInt int -> Printf.bprintf b "$%d" int *)
   | Imm (_, (None, int) ) ->
       Printf.bprintf b "$%Ld" int
 
@@ -264,7 +263,6 @@ let split_instr = function
   | SHR (arg1, arg2) -> auto_suffix "shr" arg2, [arg1; arg2]
   | SAL (arg1, arg2) -> auto_suffix "sal" arg2, [arg1; arg2]
 
-  (*        | MOVABSQ (arg1, arg2) -> "movabsq", [arg1; arg2] *)
   | FISTP arg -> auto_suffix "fistp" arg, [ arg ]
 
   | FSTP ( Mem( REAL4, _)  as arg) -> "fstps", [arg]

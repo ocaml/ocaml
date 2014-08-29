@@ -311,14 +311,15 @@ let split_sections instrs =
       section
   in
   let current_section = ref (section ".text") in
-  List.iter (fun ins ->
-      match ins with
-      | Section ([sec], _, _) ->
-          current_section := section sec
-      | _ ->
-          let (section, _) = !current_section in
-          section := ins :: !section
-    ) instrs;
+  List.iter
+    (function
+       | Section ([sec], _, _) ->
+           current_section := section sec
+       | ins ->
+           let (section, _) = !current_section in
+           section := ins :: !section
+    )
+    instrs;
   StringMap.map
     (fun (ref, section) ->
        { section with sec_instrs = Array.of_list (List.rev !ref) }

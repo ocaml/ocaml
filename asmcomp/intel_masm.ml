@@ -135,10 +135,8 @@ let bprint_arg_mem b string_of_register ptr mem =
         (if offset > 0L then "+" else "")
         offset
 
-(* TODO: remove need of "ins" *)
 let bprint_arg b arg =
   match arg with
-  (*    | ConstantInt int -> Printf.bprintf b "%d" int *)
   | Imm ( (B8|B16), (None, int)) ->
       Printf.bprintf b "%Ld" int
   | Imm ( B32, (None, int)) ->
