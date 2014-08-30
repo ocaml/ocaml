@@ -17,7 +17,7 @@ static void shared_heap_write_barrier(value obj, int field, value val)
   if (Is_block(val)) {
     if (Is_young(val)) {
       /* Add to remembered set */
-      Ref_table_add(&caml_ref_table, obj, field);
+      Ref_table_add(&caml_remembered_set.ref, obj, field);
     } else {
       /* 
          FIXME: should have an is_marking check
@@ -137,7 +137,7 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = caml_shared_try_alloc(wosize, tag, 0);
+  value* v = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0);
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
@@ -154,7 +154,7 @@ static void handle_read_fault(struct domain* target, void* reqp) {
   struct read_fault_req* req = reqp;
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
-    caml_gc_log("Handling read fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Handling read fault for domain [%02d]", target->id);
     req->ret = caml_promote(target, v);
     Assert (!Is_minor(req->ret));
     /* Update the field so that future requests don't fault. We must
@@ -167,7 +167,7 @@ static void handle_read_fault(struct domain* target, void* reqp) {
        into the read barrier. This always terminates: in the worst
        case, all domains get tied up servicing one fault and then
        there are no more left running to win the race */
-    caml_gc_log("Stale read fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Stale read fault for domain [%02d]", target->id);
     req->ret = caml_read_barrier(req->obj, req->field);
   }
 }
@@ -182,12 +182,12 @@ CAMLexport value caml_read_barrier(value obj, int field)
          the young copy of a promoted object. We should fault on the
          promoted version, instead of the young one */
       Assert(Is_promoted_hd(Hd_val(obj)));
-      req.obj = caml_addrmap_lookup(&caml_promotion_table, obj);
+      req.obj = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
     }
-    caml_gc_log("Read fault to domain [%02d]", caml_domain_id(caml_owner_of_young_block(v)));
+    caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
     caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, &req);
     Assert(!Is_minor(req.ret));
-    caml_gc_log("Read fault returned (%p)", req.ret);
+    caml_gc_log("Read fault returned (%p)", (void*)req.ret);
     return req.ret;
   } else {
     return v;
@@ -204,15 +204,14 @@ static void handle_write_fault(struct domain* target, void* reqp) {
   struct write_fault_req* req = reqp;
   if (Is_promoted_hd(Hd_val(req->obj)) &&
       caml_owner_of_shared_block(req->obj) == target) {
-    caml_gc_log("Handling write fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Handling write fault for domain [%02d]", target->id);
     value local =
-      caml_addrmap_lookup(caml_get_sampled_roots(target)->promotion_rev_table,
-                          req->obj);
+      caml_addrmap_lookup(&target->remembered_set->promotion_rev, req->obj);
     Op_val(local)[req->field] = req->val;
     shared_heap_write_barrier(req->obj, req->field, req->val);
     Op_val(req->obj)[req->field] = req->val;
   } else {
-    caml_gc_log("Stale write fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Stale write fault for domain [%02d]", target->id);
     /* Race condition: this shared block is now owned by someone else */
     caml_modify_field(req->obj, req->field, req->val);
   }
@@ -221,14 +220,14 @@ static void handle_write_fault(struct domain* target, void* reqp) {
 static void promoted_write(value obj, int field, value val)
 {
   if (Is_young(obj)) {
-    value promoted = caml_addrmap_lookup(&caml_promotion_table, obj);
+    value promoted = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
     shared_heap_write_barrier(promoted, field, val);
     Op_val(promoted)[field] = val;
     Op_val(obj)[field] = val;
   } else {
     struct domain* owner = caml_owner_of_shared_block(obj);
     struct write_fault_req req = {obj, field, val};
-    caml_gc_log("Write fault to domain [%02d]", caml_domain_id(owner));
+    caml_gc_log("Write fault to domain [%02d]", owner->id);
     caml_domain_rpc(owner, &handle_write_fault, &req);
   }
 }
@@ -258,13 +257,13 @@ static void handle_cas_fault(struct domain* target, void* reqp) {
   struct cas_fault_req* req = reqp;
   if (Is_promoted_hd(Hd_val(req->obj)) &&
       caml_owner_of_shared_block(req->obj) == target) {
-    caml_gc_log("Handling CAS fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Handling CAS fault for domain [%02d]", target->id);
     value local =
-      caml_addrmap_lookup(caml_get_sampled_roots(target)->promotion_rev_table,
+      caml_addrmap_lookup(&target->remembered_set->promotion_rev,
                           req->obj);
     req->success = do_promoted_cas(local, req->obj, req->field, req->oldval, req->newval);
   } else {
-    caml_gc_log("Stale CAS fault for domain [%02d]", caml_domain_id(target));
+    caml_gc_log("Stale CAS fault for domain [%02d]", target->id);
     req->success = caml_atomic_cas_field(req->obj, req->field, req->oldval, req->newval);
   }
 }
@@ -272,12 +271,12 @@ static void handle_cas_fault(struct domain* target, void* reqp) {
 static int promoted_cas(value obj, int field, value oldval, value newval)
 {
   if (Is_young(obj)) {
-    value promoted = caml_addrmap_lookup(&caml_promotion_table, obj);
+    value promoted = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
     return do_promoted_cas(obj, promoted, field, oldval, newval);
   } else {
     struct domain* owner = caml_owner_of_shared_block(obj);
     struct cas_fault_req req = {obj, field, oldval, newval, 0};
-    caml_gc_log("CAS fault to domain [%02d]", caml_domain_id(owner));
+    caml_gc_log("CAS fault to domain [%02d]", owner->id);
     caml_domain_rpc(owner, &handle_cas_fault, &req);
     return req.success;
   }

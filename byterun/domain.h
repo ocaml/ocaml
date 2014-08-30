@@ -4,6 +4,24 @@
 #include "mlvalues.h"
 CAMLextern __thread atomic_uintnat caml_young_limit;
 
+struct domain {
+  int id;
+  int is_main;
+  uintnat initial_minor_heap_size;
+
+  struct dom_internal* internals;
+  struct caml_runqueue* runqueue;
+  struct caml_heap_state* shared_heap;
+  struct caml_sampled_roots* sampled_roots;
+  struct caml_remembered_set* remembered_set;
+
+  struct caml__roots_block** local_roots;
+  char** young_ptr;
+  char** young_end;
+  value** mark_stack;
+  int* mark_stack_count;
+};
+
 
 /* FIXME atomic access below */
 #define Caml_get_young_limit() caml_young_limit.val
@@ -18,18 +36,11 @@ void caml_trigger_stw_gc(void);
 
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
-void caml_do_foreign_roots(void (*)(value, value*));
-
-struct domain;
-struct caml_sampled_roots* caml_get_sampled_roots(struct domain*);
 
 void caml_domain_register_main(uintnat minor_heap_size);
 
 
 struct domain* caml_domain_self();
-int caml_domain_id(struct domain*);
-int caml_domain_is_main(struct domain*);
-struct caml_runqueue* caml_domain_runqueue(struct domain* d);
 
 typedef void (*domain_rpc_handler)(struct domain*, void*);
 

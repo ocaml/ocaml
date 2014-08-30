@@ -17,7 +17,6 @@ CAMLextern __thread int caml_c_call_args;
 CAMLextern __thread code_t caml_saved_pc;
 
 struct caml_runqueue;
-CAMLextern __thread struct caml_runqueue* caml_runqueue;
 CAMLextern __thread value caml_current_fiber;
 
 void caml_do_fiber_roots(scanning_action, struct caml_runqueue*);
@@ -39,7 +38,7 @@ void caml_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
 int caml_on_current_stack(value*);
 
-void caml_init_domain_fiber();
+struct caml_runqueue* caml_init_runqueue();
 void caml_init_fibers();
 
 int caml_running_main_fiber();
