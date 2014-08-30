@@ -75,11 +75,20 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
     if (Tag_val(v) < No_scan_tag) {
       int i;
       value* fields = Op_val(v);
+      Assert(Tag_val(v) != Infix_tag); /* Infix_tag can't appear on mark stack */
       for (i = 0; i < Wosize_val(v); i++) {
         if (Is_block(fields[i]) && !Is_minor(fields[i])) f(fields[i], &fields[i]);
       }
     }
   }
+
+  /* treat the remembered sets as roots */
+  struct caml_ref_entry* r;
+  for (r = domain->remembered_set->ref.base; r < domain->remembered_set->ref.ptr; r++)
+    f(r->obj, 0);
+  for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++)
+    f(r->obj, 0);
+
 
   /* look for local C and stack roots */
   caml_do_local_roots(f, domain);

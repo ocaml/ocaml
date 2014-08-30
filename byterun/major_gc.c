@@ -106,8 +106,6 @@ void caml_finish_marking () {
   caml_save_stack_gc();
   caml_do_local_roots(&caml_darken, caml_domain_self());
   caml_scan_global_roots(&caml_darken);
-  caml_do_foreign_roots(&caml_mark_root);
-
   caml_empty_mark_stack();
   caml_restore_stack_gc();
 }
