@@ -87,6 +87,35 @@ void caml_set_minor_heap_size (asize_t size)
 }
 
 
+/* used to communicate with promote_stack_elem */
+__thread struct domain* promote_domain;
+static void promote_stack_elem(value v, value* p)
+{
+  *p = caml_promote(promote_domain, v);
+}
+
+static value promote_stack(struct domain* domain, value stack)
+{
+  caml_gc_log("Promoting stack");
+  Assert(Tag_val(stack) == Stack_tag);
+  if (Is_minor(stack)) {
+    /* First, promote the actual stack object */
+    Assert(caml_owner_of_young_block(stack) == domain);
+    /* Stacks are only referenced via fibers, so we don't bother
+       using the promotion_table */
+    void* new_stack = caml_shared_try_alloc(domain->shared_heap, Wosize_val(stack), Stack_tag, 0);
+    if (!new_stack) caml_fatal_error("allocation failure during stack promotion");
+    memcpy(Op_hp(new_stack), (void*)stack, Wosize_val(stack) * sizeof(value));
+    stack = Val_hp(new_stack);
+  }
+
+  /* Promote each object on the stack. If the stack is not dirty, there are no
+     such objects. */
+  promote_domain = domain;
+  caml_scan_dirty_stack(&promote_stack_elem, stack);
+  return stack;
+}
+
 
 struct promotion_stack_entry {
   value local;
@@ -153,6 +182,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 {
   struct promotion_stack stk = {0};
 
+  if (Is_block(root) && Tag_val(root) == Stack_tag)
+    return promote_stack(domain, root);
+
   value ret = caml_promote_one(&stk, domain, root);
 
   while (stk.sp > 0) {
@@ -164,9 +196,15 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     curr->field++;
     if (curr->field == Wosize_val(local)) 
       stk.sp--;
-    Op_val(local)[field] = 
-      Op_val(global)[field] = 
-      caml_promote_one(&stk, domain, promotion_table, rev_table, shared_heap, Op_val(local)[field]);
+    value x = Op_val(local)[field];
+    if (Is_block(x) && Tag_val(x) == Stack_tag) {
+      /* stacks are not promoted unless explicitly requested */
+      Ref_table_add(&domain->remembered_set->ref, global, field);
+    } else {
+      x = caml_promote_one(&stk, domain, x);
+    }
+    Op_val(local)[field] = Op_val(global)[field] = x;
+  }
   caml_stat_free(stk.stack);
   return ret;
 }
