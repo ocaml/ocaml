@@ -166,18 +166,14 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   if (r) return r;
 
   /* Failing that, we need to allocate a new pool */
-  if (local->free_pools) {
-    r = local->free_pools;
-    local->free_pools = r->next;
-  } else {
-    r = pool_acquire(local);
-    if (!r) return 0; /* if we can't allocate, give up */
-  }
+  r = pool_acquire(local);
+  if (!r) return 0; /* if we can't allocate, give up */
 
   /* Having allocated a new pool, set it up for size sz */
   local->avail_pools[sz] = r;
   r->next = 0;
   r->owner = local->owner;
+  r->next_obj = 0;
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = (value*)((char*)r + POOL_HEADER_SZ);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
@@ -206,6 +202,8 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
     r->next = local->full_pools[sz];
     local->full_pools[sz] = r;
   }
+
+  Assert(r->next_obj == 0 || *r->next_obj == 0);
   return p;
 }
 
