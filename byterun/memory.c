@@ -40,6 +40,8 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
   Assert (!Is_foreign(val));
   Assert (!Is_block(val) || Wosize_hd (Hd_val (val)) < (1 << 20)); /* !! */
 
+  Assert(field >= 0 && field < Wosize_val(obj));
+
   if (Is_promoted_hd(Hd_val(obj))) {
     promoted_write(obj, field, val);
   } else {
