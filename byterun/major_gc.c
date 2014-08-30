@@ -94,12 +94,6 @@ static void mark(value initial) {
   }
 }
 
-void caml_mark_root(value p, value* ptr) {
-  if (!p) return;
-
-  caml_darken(p, ptr);
-}
-
 void caml_darken(value v, value* ignored) {
   /* Assert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
@@ -109,14 +103,9 @@ void caml_darken(value v, value* ignored) {
 }
 
 void caml_finish_marking () {
-  struct caml_sampled_roots roots;
-
   caml_save_stack_gc();
-  
-  caml_sample_local_roots(&roots);
-  caml_do_local_roots(&caml_mark_root, &roots);
-
-  caml_scan_global_roots(&caml_mark_root);
+  caml_do_local_roots(&caml_darken, caml_domain_self());
+  caml_scan_global_roots(&caml_darken);
   caml_do_foreign_roots(&caml_mark_root);
 
   caml_empty_mark_stack();

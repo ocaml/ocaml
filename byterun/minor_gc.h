@@ -17,6 +17,7 @@
 
 #include "misc.h"
 #include "minor_heap.h"
+#include "addrmap.h"
 
 CAMLextern __thread char *caml_young_ptr;
 extern __thread asize_t caml_minor_heap_size;
@@ -35,9 +36,12 @@ struct caml_ref_table {
   asize_t size;
   asize_t reserve;
 };
-CAMLextern __thread struct caml_ref_table caml_ref_table, caml_weak_ref_table;
-CAMLextern __thread struct caml_ref_table caml_fiber_ref_table;
-CAMLextern __thread struct addrmap caml_promotion_table, caml_promotion_rev_table;
+
+struct caml_remembered_set {
+  struct caml_ref_table ref, fiber_ref;
+  struct addrmap promotion, promotion_rev;
+};
+CAMLextern __thread struct caml_remembered_set caml_remembered_set;
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap (void);

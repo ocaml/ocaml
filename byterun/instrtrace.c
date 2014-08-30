@@ -81,7 +81,7 @@ void caml_disasm_instr(code_t pc)
   default:
     c += sprintf(c, "\n");
   }
-  printf("[%02d] %s", caml_domain_id(caml_domain_self()), buf);
+  printf("[%02d] %s", caml_domain_self()->id, buf);
   fflush (stdout);
 }
 

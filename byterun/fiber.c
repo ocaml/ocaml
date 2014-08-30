@@ -292,7 +292,7 @@ value caml_fiber_death()
   return load_context(next_fiber());
 }
 
-void caml_init_domain_fiber()
+struct caml_runqueue* caml_init_runqueue()
 {
   value fib, stack;
   struct fiber_ctx* ctx;
@@ -321,6 +321,7 @@ void caml_init_domain_fiber()
   caml_initialize_field(fib, FIBER_NEXT, Val_unit);
 
   load_context(fib);
+  return caml_runqueue;
 }
 
 #define Fiber_stack_wosize ((Stack_threshold / sizeof(value)) *2)
@@ -468,7 +469,7 @@ static void dirty_stack(value stack)
   if (!Is_minor(stack)) {
     if (!Stack_ctx(stack)->dirty) {
       Stack_ctx(stack)->dirty = 1;
-      Ref_table_add(&caml_fiber_ref_table, stack, 0);
+      Ref_table_add(&caml_remembered_set.fiber_ref, stack, 0);
     }
   }
 }
@@ -614,7 +615,7 @@ static value wake_fiber(value fib, value ret)
        append(&caml_runqueue->back, save_context(ret));
        CAMLreturn (load_context(fib)); */
   } else {
-    struct caml_runqueue* rq = caml_domain_runqueue(owner);
+    struct caml_runqueue* rq = owner->runqueue;
     caml_gc_log("Waking fiber remotely");
     With_mutex(&rq->woken_lock) {
       caml_modify_field(fib, FIBER_NEXT, caml_read_root(rq->woken));

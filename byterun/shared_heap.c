@@ -9,6 +9,7 @@
 #include "addrmap.h"
 #include "roots.h"
 #include "globroots.h"
+#include "shared_heap.h"
 #include "fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
@@ -74,27 +75,27 @@ struct caml_heap_state {
   struct domain* owner;
 };
 
-__thread struct caml_heap_state* caml_shared_heap;
-
-void caml_init_shared_heap(int is_main) {
+struct caml_heap_state* caml_init_shared_heap() {
   int i;
-  if (caml_domain_is_main(caml_domain_self())) {
+  struct caml_heap_state* heap;
+  if (caml_domain_self()->is_main) {
     caml_plat_mutex_init(&pool_freelist.lock);
   }
 
   Assert(NOT_MARKABLE == Promotedhd_hd(0));
 
-  caml_shared_heap = caml_stat_alloc(sizeof(struct caml_heap_state));
-  caml_shared_heap->free_pools = 0;
-  caml_shared_heap->num_free_pools = 0;
+  heap = caml_stat_alloc(sizeof(struct caml_heap_state));
+  heap->free_pools = 0;
+  heap->num_free_pools = 0;
   for (i = 0; i<NUM_SIZECLASSES; i++) {
-    caml_shared_heap->avail_pools[i] = caml_shared_heap->full_pools[i] =
-      caml_shared_heap->unswept_avail_pools[i] = caml_shared_heap->unswept_full_pools[i] = 0;
+    heap->avail_pools[i] = heap->full_pools[i] =
+      heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
   }
-  caml_shared_heap->next_to_sweep = 0;
-  caml_shared_heap->swept_large = 0;
-  caml_shared_heap->unswept_large = 0;
-  caml_shared_heap->owner = caml_domain_self();
+  heap->next_to_sweep = 0;
+  heap->swept_large = 0;
+  heap->unswept_large = 0;
+  heap->owner = caml_domain_self();
+  return heap;
 }
 
 
@@ -216,7 +217,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
-value* caml_shared_try_alloc_remote(struct caml_heap_state* local, mlsize_t wosize, tag_t tag, int pinned) {
+value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag_t tag, int pinned) {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
   Assert (wosize > 0);
@@ -237,10 +238,6 @@ value* caml_shared_try_alloc_remote(struct caml_heap_state* local, mlsize_t wosi
   }
 #endif
   return p;
-}
-
-value* caml_shared_try_alloc(mlsize_t wosize, tag_t tag, int pinned) {
-  return caml_shared_try_alloc_remote(caml_shared_heap, wosize, tag, pinned);
 }
 
 struct domain* caml_owner_of_shared_block(value v) {
@@ -320,9 +317,8 @@ static void large_alloc_sweep(struct caml_heap_state* local) {
   }
 }
 
-int caml_sweep(int work) {
+int caml_sweep(struct caml_heap_state* local, int work) {
   /* Sweep local pools */
-  struct caml_heap_state* local = caml_shared_heap;
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
     sizeclass sz = local->next_to_sweep;
     int sweep_work = 
@@ -453,12 +449,9 @@ static void verify_object(value v) {
 }
 
 static void verify_heap() {
-  struct caml_sampled_roots roots;
-
   caml_save_stack_gc();
 
-  caml_sample_local_roots(&roots);
-  caml_do_local_roots(&verify_push, &roots);
+  caml_do_local_roots(&verify_push, caml_domain_self());
   caml_scan_global_roots(&verify_push);
   while (verify_sp) verify_object(verify_stack[--verify_sp]);
   caml_gc_log("Verify: %lu objs", verify_objs);
@@ -485,16 +478,16 @@ static void verify_pool(pool* a, sizeclass sz) {
   
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
-    Assert(hd == 0 || Has_status_hd(hd, global.MARKED) || Has_status_hd(hd, global.UNMARKED));
+    Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
     p += wh;
   }
 }
 
-static void verify_freelists () {
+static void verify_freelists (struct caml_heap_state* local) {
   int i;
-  struct caml_heap_state* local = caml_shared_heap;
+  /* sweeping should be done by this point */
+  Assert(local->next_to_sweep == NUM_SIZECLASSES);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
-    /* sweeping should be done by this point */
     Assert(local->unswept_avail_pools[i] == 0 &&
            local->unswept_full_pools[i] == 0);
     pool* p;
@@ -510,17 +503,16 @@ static void verify_freelists () {
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-  //  verify_heap();
-  verify_freelists();
+  verify_heap();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
   global = newg;
 }
 
-void caml_cycle_heap() {
+void caml_cycle_heap(struct caml_heap_state* local) {
   int i;
-  struct caml_heap_state* local = caml_shared_heap;
+  verify_freelists(local);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = 0;

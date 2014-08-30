@@ -40,7 +40,8 @@ void caml_gc_log (char *msg, ...)
   char fmtbuf[512];
 
   if (caml_startup_params.verb_gc) {
-    sprintf(fmtbuf, "[%02d] %s\n", caml_domain_id(caml_domain_self()), msg);
+    struct domain* self = caml_domain_self();
+    sprintf(fmtbuf, "[%02d] %s\n", self ? self->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
   }
 

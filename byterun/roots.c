@@ -28,29 +28,14 @@
 
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
-void caml_sample_local_roots(struct caml_sampled_roots* r)
-{
-  r->stack_low = caml_extern_sp;
-  r->stack_high = caml_stack_high;
-  r->local_roots = caml_local_roots;
-  r->young_ptr = (value*)caml_young_ptr;
-  r->young_end = (value*)caml_young_end;
-  r->mark_stack = caml_mark_stack;
-  r->mark_stack_count = caml_mark_stack_count;
-  r->promotion_table = &caml_promotion_table;
-  r->promotion_rev_table = &caml_promotion_rev_table;
-  r->shared_heap = caml_shared_heap;
-  r->runqueue = caml_runqueue;
-}
-
-CAMLexport void caml_do_local_roots (scanning_action f, struct caml_sampled_roots* r)
+CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 {
   struct caml__roots_block *lr;
   int i, j;
   value* sp;
 
-  caml_do_fiber_roots(f, r->runqueue);
-  for (lr = r->local_roots; lr != NULL; lr = lr->next) {
+  caml_do_fiber_roots(f, domain->runqueue);
+  for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
@@ -62,11 +47,12 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct caml_sampled_root
   }
 }
 
-void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
+void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 {
   /* look for roots on the minor heap */
-  value* p = r->young_ptr;
-  while (p < r->young_end) {
+  value* p = (value*)(*domain->young_ptr);
+  value* end = (value*)(*domain->young_end);
+  while (p < end) {
     value v = Val_hp(p);
     Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
     if (Tag_val(v) < No_scan_tag) {
@@ -78,10 +64,12 @@ void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
     }
     p += Whsize_wosize(Wosize_val(v));
   }
-  Assert(p == r->young_end);
+  Assert(p == end);
 
   /* look for gray values in the mark stack */
-  for (p = r->mark_stack; p < r->mark_stack + r->mark_stack_count; p++) {
+  value* mark_stack = *domain->mark_stack;
+  value* mark_stack_end = *domain->mark_stack + *domain->mark_stack_count;
+  for (p = mark_stack; p < mark_stack_end; p++) {
     value v = *p;
     Assert (Is_block(v));
     if (Tag_val(v) < No_scan_tag) {
@@ -94,5 +82,5 @@ void caml_do_sampled_roots(scanning_action f, struct caml_sampled_roots* r)
   }
 
   /* look for local C and stack roots */
-  caml_do_local_roots(f, r);
+  caml_do_local_roots(f, domain);
 }
