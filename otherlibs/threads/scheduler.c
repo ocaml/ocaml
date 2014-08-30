@@ -30,7 +30,7 @@
 #include "printexc.h"
 #include "roots.h"
 #include "signals.h"
-#include "stacks.h"
+#include "fiber.h"
 #include "sys.h"
 
 #if ! (defined(HAS_SELECT) && \
