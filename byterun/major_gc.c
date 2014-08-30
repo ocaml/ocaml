@@ -53,20 +53,16 @@ static value mark_normalise(value v) {
   return v;
 }
 
-void mark(value initial) {
-  value next;
-  int found_next;
-  if (!Is_markable(initial)) return;
-  next = mark_normalise(initial);
-  if (!caml_mark_object(next)) return;
-  found_next = 1;
+static void mark(value initial) {
+  value next = initial;
+  int found_next = 1;
   while (found_next) {
     value v = next;
     header_t hd_v;
     found_next = 0;
 
     Assert(Is_markable(v));
-    Assert(Tag_val(v) != Infix_tag);
+    Assert(v == mark_normalise(v));
 
     stat_blocks_marked++;
     /* mark the current object */
@@ -100,7 +96,8 @@ void mark(value initial) {
 
 void caml_mark_root(value p, value* ptr) {
   if (!p) return;
-  mark(p);
+
+  caml_darken(p, ptr);
 }
 
 void caml_darken(value v, value* ignored) {

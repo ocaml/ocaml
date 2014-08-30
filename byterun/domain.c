@@ -410,11 +410,7 @@ static void barrier_release(int phase) {
 
 
 static void stw_phase() {
-  if (domain_self->is_main) {
-    while (caml_sweep(10) <= 0);
-
-
-  }
+  while (caml_sweep(domain_self->state.shared_heap, 10) <= 0);
 
   caml_empty_minor_heap();
   caml_finish_marking();
@@ -425,19 +421,20 @@ static void stw_phase() {
     caml_empty_mark_stack();
     domain_filter_live();
     caml_cleanup_deleted_roots();
-    caml_cycle_heap_stw();
-    atomic_store_rel(&stw_requested, 0);
     barrier_release(0);
   }
+
+  caml_cycle_heap(domain_self->state.shared_heap);
 
   /* filter_remembered_sets(); */
   
   if (barrier_enter(1)) {
     /* nothing to do here, just verify filter_remembered_sets is globally done */
+    caml_cycle_heap_stw();
+    atomic_store_rel(&stw_requested, 0);
     caml_gc_log("GC cycle completed");
     barrier_release(1);
   }
-  caml_cycle_heap();
 }
 
 static void handle_rpc(struct domain* target)
