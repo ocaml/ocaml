@@ -199,21 +199,6 @@ struct domain* caml_domain_self()
   return domain_self ? &domain_self->state : 0;
 }
 
-struct domain* caml_random_domain()
-{
-  dom_internal* d;
-  int r = rand(), len = 0;
-
-  caml_plat_lock(&live_domains_lock);
-  for (d = live_domains_list; d; d = d->next) len++;
-  r %= len;
-  for (d = live_domains_list; r > 0; d = d->next) r--;
-  caml_plat_unlock(&live_domains_lock);
-
-  Assert(d);
-  return &d->state;
-}
-
 CAMLprim value caml_ml_domain_id(value unit)
 {
   return Val_int(domain_self->state.id);
@@ -344,35 +329,42 @@ CAMLexport void caml_enter_blocking_section() {
   atomic_fetch_add(&domstat, -0x10000);
 }
 
-static void do_foreign_roots(scanning_action f, int mark_dirty)
+static void gc_inactive_domains()
 {
-  // FIXME: d->next validity as new domain created
-  struct domain* d;
-  caml_plat_lock(&live_domains_lock);
-  d = live_domains_list;
-  caml_plat_unlock(&live_domains_lock);
+  while (1) {
+    /* find an inactive, dirty domain */
+    dom_internal* d;
+    caml_plat_lock(&live_domains_lock);
+    d = live_domains_list;
 
-  for (; d; d = d->next) {
-    if (!atomic_load_acq(&d->is_active) &&
-        caml_plat_try_lock(&d->roots_lock)) {
-      if (d->sampled_roots_dirty) {
-        caml_gc_log("Marking roots of domain [%02d]", d->id);
-        caml_do_sampled_roots(f, &d->sampled_roots);
-        d->sampled_roots_dirty = 0;
+    for (; d; d = d->next) {
+      if (!atomic_load_acq(&d->is_active) &&
+          caml_plat_try_lock(&d->roots_lock)) {
+        if (d->sampled_roots_dirty) {
+          d->sampled_roots_dirty = 0;
+          break;
+        } else {
+          caml_plat_unlock(&d->roots_lock);
+        }
       }
-      if (mark_dirty) d->sampled_roots_dirty = 1;
-      caml_plat_unlock(&d->roots_lock);
     }
+
+    caml_plat_unlock(&live_domains_lock);
+
+    if (!d) break;
+
+    /* If we found one, GC it */
+    caml_gc_log("GCing inactive domain [%02d]", d->state.id);
+
+    while (caml_sweep(d->state.shared_heap, 10) <= 0);
+
+    caml_do_sampled_roots(&caml_darken, &d->state);
+    caml_empty_mark_stack();
+
+    caml_cycle_heap(d->state.shared_heap);
+
+    caml_plat_unlock(&d->roots_lock);
   }
-}
-
-void caml_do_foreign_roots(scanning_action f)
-{
-  do_foreign_roots(f, 0);
-}
-
-struct caml_sampled_roots* caml_get_sampled_roots(struct domain* d) {
-  return &d->sampled_roots;
 }
 
 /* synchronise all domains. returns 1 if this was the last domain to enter the barrier */
@@ -426,8 +418,7 @@ static void stw_phase() {
 
   if (!domain_self->state.is_main) usleep(10000);
   if (barrier_enter(0)) {
-    do_foreign_roots(caml_darken, 1);
-    caml_empty_mark_stack();
+    gc_inactive_domains();
     domain_filter_live();
     caml_cleanup_deleted_roots();
     barrier_release(0);

@@ -488,18 +488,12 @@ void caml_scan_stack(scanning_action f, value stack)
 {
   value *low, *high, *sp;
   Assert(Is_block(stack) && Tag_val(stack) == Stack_tag);
-  Assert(stack_is_saved);
 
   if (Is_promoted_hd(Hd_val(stack)))
     Assert(!Is_young(stack)); //FIXME
 
   high = (value*)stack + Wosize_val(stack);
   low = high + Stack_ctx(stack)->sp;
-  if (stack == Field(caml_runqueue->current, FIBER_STACK)) {
-    Assert(high == caml_stack_high);
-    Assert(low == caml_extern_sp);
-  }
-
   for (sp = low; sp < high; sp++) {
     f(*sp, sp);
   }
