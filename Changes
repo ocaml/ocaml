@@ -1,3 +1,6 @@
+- PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+
+
 OCaml 4.02.0:
 -------------
 
