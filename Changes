@@ -8,7 +8,9 @@ Compilers:
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
   types {,u}int{32,64}.
-
+  (Xavier Leroy)
+- PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+  (Xavier Leroy)
 
 Ocaml 4.02.0:
 -------------
