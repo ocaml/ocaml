@@ -300,16 +300,24 @@ type pers_struct =
     ps_flags: pers_flags list }
 
 let persistent_structures =
-  (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
+  (Hashtbl.create 17 : (string, (pers_struct * bool ref (* checked? *)) option)
+       Hashtbl.t)
 
 (* Consistency between persistent structures *)
 
 let crc_units = Consistbl.create()
-let imported_units = ref ([] : string list)
+
+module StringSet =
+  Set.Make(struct type t = string let compare = String.compare end)
+
+let imported_units = ref StringSet.empty
+
+let add_import s =
+  imported_units := StringSet.add s !imported_units
 
 let clear_imports () =
   Consistbl.clear crc_units;
-  imported_units := []
+  imported_units := StringSet.empty
 
 let check_consistency ps =
   try
@@ -318,7 +326,7 @@ let check_consistency ps =
          match crco with
             None -> ()
           | Some crc ->
-              imported_units := name :: !imported_units;
+              add_import name;
               Consistbl.check crc_units name crc ps.ps_filename)
       ps.ps_crcs
   with Consistbl.Inconsistency(name, source, auth) ->
@@ -345,14 +353,15 @@ let read_pers_struct modname filename =
              ps_flags = flags } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
-  imported_units := name :: !imported_units;
+  add_import name;
   List.iter
     (function Rectypes ->
       if not !Clflags.recursive_types then
         error (Need_recursive_types(ps.ps_name, !current_unit)))
     ps.ps_flags;
-  Hashtbl.add persistent_structures modname (Some ps);
-  ps
+  let r = (ps, ref false) in
+  Hashtbl.add persistent_structures modname (Some r);
+  r
 
 let find_pers_struct ?(check=true) name =
   if name = "*predef*" then raise Not_found;
@@ -360,10 +369,10 @@ let find_pers_struct ?(check=true) name =
     try Some (Hashtbl.find persistent_structures name)
     with Not_found -> None
   in
-  let ps =
+  let ps, checked =
     match r with
     | Some None -> raise Not_found
-    | Some (Some sg) -> sg
+    | Some (Some (sg, checked)) -> sg, checked
     | None ->
         let filename =
           try find_in_path_uncap !load_path (name ^ ".cmi")
@@ -373,7 +382,10 @@ let find_pers_struct ?(check=true) name =
         in
         read_pers_struct name filename
   in
-  if check then check_consistency ps;
+  if check && not !checked then begin
+    check_consistency ps;
+    checked := true;
+  end;
   ps
 
 let reset_cache () =
@@ -933,7 +945,7 @@ let iter_env proj1 proj2 f env =
   Hashtbl.iter
     (fun s pso ->
       match pso with None -> ()
-      | Some ps ->
+      | Some (ps, _) ->
           let id = Pident (Ident.create_persistent s) in
           iter_components id id ps.ps_comps)
     persistent_structures;
@@ -1576,7 +1588,7 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in
+  let ps, _ = read_pers_struct modname filename in
   check_consistency ps;
   ps.ps_sig
 
@@ -1597,7 +1609,7 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imports() =
-  Consistbl.extract !imported_units crc_units
+  Consistbl.extract (StringSet.elements !imported_units) crc_units
 
 (* Save a signature to a file *)
 
@@ -1629,9 +1641,9 @@ let save_signature_with_imports sg modname filename imports =
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
         ps_flags = cmi.cmi_flags } in
-    Hashtbl.add persistent_structures modname (Some ps);
+    Hashtbl.add persistent_structures modname (Some (ps, ref false));
     Consistbl.set crc_units modname crc filename;
-    imported_units := modname :: !imported_units;
+    add_import modname;
     sg
   with exn ->
     close_out oc;
@@ -1694,7 +1706,7 @@ let fold_modules f lid env acc =
         (fun name ps acc ->
           match ps with
               None -> acc
-            | Some ps ->
+            | Some (ps, _) ->
               f name (Pident(Ident.create_persistent name))
                      (md (Mty_signature ps.ps_sig)) acc)
         persistent_structures
