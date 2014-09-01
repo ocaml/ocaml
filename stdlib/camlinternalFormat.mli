@@ -55,7 +55,11 @@ val type_format :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty ->
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
 
-val fmt_ebb_of_string : string -> ('b, 'c, 'e, 'f) fmt_ebb
+val fmt_ebb_of_string : ?legacy_behavior:bool -> string -> ('b, 'c, 'e, 'f) fmt_ebb
+(* warning: the optional flag legacy_behavior is EXPERIMENTAL and will
+   be removed in the next version. You must not set it explicitly. It
+   is only used by the type-checker implementation.
+*)
 
 val format_of_string_fmtty :
   string ->
