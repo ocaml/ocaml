@@ -41,6 +41,13 @@ let access_array base numelt size =
   | _ -> Cop(Cadda, [base;
                      Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)])])
 
+let cloop expr =
+  let raise_num = Lambda.next_raise_count () in
+  ccatch(raise_num, [], [],
+         Cexit (raise_num,[],[]),
+         (Csequence (expr,
+                     Cexit (raise_num,[],[]))))
+
 %}
 
 %token ABSF
@@ -197,7 +204,7 @@ expr:
           match $3 with
             Cconst_int x when x <> 0 -> $4
           | _ -> Cifthenelse($3, $4, (Cexit(0,[],[]))) in
-        Ccatch([0, [], [], Ctuple []], Cloop body) }
+        Ccatch([0, [], [], Ctuple []], cloop body) }
   | EXIT        { Cexit(0,[],[]) }
   | LPAREN EXIT INTCONST exprlist RPAREN { Cexit($3,List.rev $4,[]) }
   | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { Cexit($3,List.rev $4,[Stexn_cst $6]) }
