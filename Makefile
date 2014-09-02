@@ -85,8 +85,16 @@ INTEL_ASM=\
   asmcomp/intel_gas.cmo \
   asmcomp/intel_masm.cmo
 
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+
 ASMCOMP=\
-  $(INTEL_ASM) \
+  $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \

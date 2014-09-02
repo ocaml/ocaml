@@ -75,14 +75,16 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-INTEL_ASM=\
-  asmcomp/intel_proc.cmo \
-  asmcomp/intel_dsl.cmo \
-  asmcomp/intel_gas.cmo \
-  asmcomp/intel_masm.cmo 
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
 
 ASMCOMP=\
-  $(INTEL_ASM) \
+  $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
@@ -507,12 +509,6 @@ partialclean::
 
 beforedepend:: asmcomp/arch.ml
 
-#ifeq ($(TOOLCHAIN),msvc)
-#ASMCOMP_EMIT=asmcomp/$(ARCH)/emit_nt.mlp
-#else
-ASMCOMP_EMIT=asmcomp/$(ARCH)/emit.mlp
-#endif
-
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
 	cp asmcomp/$(ARCH)/proc.ml asmcomp/proc.ml
 
@@ -555,8 +551,8 @@ beforedepend:: asmcomp/scheduling.ml
 
 # Preprocess the code emitters
 
-asmcomp/emit.ml: $(ASMCOMP_EMIT) tools/cvt_emit
-	boot/ocamlrun tools/cvt_emit < $(ASMCOMP_EMIT) > asmcomp/emit.ml
+asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
+	boot/ocamlrun tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml
 
 partialclean::
 	rm -f asmcomp/emit.ml
