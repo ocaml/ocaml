@@ -338,6 +338,8 @@ let emit_instr i =
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
+    | Lop(Iconst_sexn_addr n) ->
+        `	adrl	{emit_reg i.res.(0)}, {emit_label lbl}\n`
     | Lop(Icall_ind) ->
         `	blr	{emit_reg i.arg.(0)}\n`;
         `{record_frame i.live i.dbg}\n`
@@ -520,8 +522,24 @@ let emit_instr i =
         output_epilogue (fun () -> `	ret\n`)
     | Llabel lbl ->
         `{emit_label lbl}:\n`
-    | Lbranch lbl ->
+    | Lbranch (lbl,frame_offsets) ->
         `	b	{emit_label lbl}\n`
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 16 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
+    | Lbranch_ind frame_offsets ->
+        `	bx	{emit_reg i.arg.(0)}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 16 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
         | Itruetest ->
