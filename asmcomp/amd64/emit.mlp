@@ -549,7 +549,7 @@ let emit_instr fallthrough i =
       | Thirtytwo_signed ->
           I.movslq ( emit_addressing addr DWORD i.arg 0, emit_reg dest;  )
       | Single ->
-          I.cvtss2sd ( emit_addressing addr REAL8 i.arg 0, emit_reg dest;  )
+          I.cvtss2sd ( emit_addressing addr REAL4 i.arg 0, emit_reg dest;  )
       | Double | Double_u ->
           I.movsd ( emit_addressing addr REAL8 i.arg 0, emit_reg dest;  )
       end
