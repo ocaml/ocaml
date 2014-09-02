@@ -434,6 +434,10 @@ let emit_instr i =
         end; 1
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
+    | Lop(Iconst_sexn_addr n) ->
+        `	movw	{emit_reg i.res.(0)}, #:lower16:{emit_label n}\n`;
+        `	movt	{emit_reg i.res.(0)}, #:upper16:{emit_label n}\n`;
+        2
     | Lop(Icall_ind) ->
         if !arch >= ARMv5 then begin
           `	blx	{emit_reg i.arg.(0)}\n`;
@@ -681,6 +685,16 @@ let emit_instr i =
         `{emit_label lbl}:\n`; 0
     | Lbranch (lbl,frame_offsets) ->
         `	b	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 8 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end;
+        1
+    | Lbranch_ind frame_offsets ->
+        `	bx	{emit_reg i.arg.(0)}\n`;
         if frame_offsets <> 0
         then begin
           assert(frame_offsets > 0);
