@@ -87,10 +87,8 @@ let emit_data_label lbl =
   emit_string ".Ld"; emit_int lbl
 
 let load_label_addr s =
-  (* heu un peu douteux en fait tout ces gotpcrel... ? *)
-  if !Clflags.dlcode && not mingw64 && not cygwin
-  then `movq	{emit_label s}@GOTPCREL(%rip)`
-  else if !pic_code
+  if !Clflags.dlcode || !pic_code
+  (* the label is local: no need to go through the GOT *)
   then `leaq	{emit_label s}(%rip)`
   else `movq	${emit_label s}`
 
