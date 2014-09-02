@@ -517,7 +517,14 @@ let emit_instr fallthrough i =
         load_symbol_addr s (_r RAX);
         emit_call "caml_c_call";
         record_frame i.live i.dbg;
-        if system <> S_win64 then begin (* TODO: investigate why such a diff *)
+        if system <> S_win64 then begin
+          (* TODO: investigate why such a diff.
+             This comes from:
+             http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
+
+             If we do the same for Win64, we probably need to change
+             amd64nt.asm accordingly.
+          *)
           load_symbol_addr "caml_young_ptr" (_r R11);
           I.movq ( _mem_ptr QWORD 0 R11, _r R15;  )
         end;
