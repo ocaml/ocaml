@@ -482,6 +482,8 @@ let emit_instr fallthrough i =
         end
     | Lop(Iconst_symbol s) ->
         `	movl	${emit_symbol s}, {emit_reg i.res.(0)}\n`
+    | Lop(Iconst_sexn_addr n) ->
+        `	movl	${emit_label n}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
         record_frame i.live i.dbg
@@ -751,6 +753,15 @@ let emit_instr fallthrough i =
         `{emit_Llabel fallthrough lbl}:\n`
     | Lbranch (lbl,frame_offsets) ->
         `	jmp	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * trap_frame_size in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
+    | Lbranch_ind frame_offsets ->
+        `	jmp	*{emit_reg i.arg.(0)}\n`;
         if frame_offsets <> 0
         then begin
           assert(frame_offsets > 0);
