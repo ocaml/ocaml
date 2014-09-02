@@ -565,7 +565,7 @@ let emit_instr fallthrough i =
           I.movl ( emit_reg32 i.arg.(0), emit_addressing addr DWORD i.arg 1  )
       | Single ->
           I.cvtsd2ss ( emit_reg i.arg.(0), Regf (XMM 15);   );
-          I.movss ( Regf (XMM 15), emit_addressing addr REAL8 i.arg 1  )
+          I.movss ( Regf (XMM 15), emit_addressing addr REAL4 i.arg 1  )
       | Double | Double_u ->
           I.movsd ( emit_reg i.arg.(0), emit_addressing addr REAL8 i.arg 1  )
       end
