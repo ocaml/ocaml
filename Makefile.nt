@@ -75,6 +75,12 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
+INTEL_ASM=\
+  asmcomp/intel_proc.cmo \
+  asmcomp/intel_dsl.cmo \
+  asmcomp/intel_gas.cmo \
+  asmcomp/intel_masm.cmo
+
 ARCH_SPECIFIC_ASMCOMP=
 ifeq ($(ARCH),i386)
 ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
