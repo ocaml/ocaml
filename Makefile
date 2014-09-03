@@ -612,7 +612,8 @@ beforedepend:: asmcomp/scheduling.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
+	echo \# 1 \"$(ARCH)/emit.mlp\" > asmcomp/emit.ml
+	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp >> asmcomp/emit.ml \
 	|| { rm -f asmcomp/emit.ml; exit 2; }
 
 partialclean::
