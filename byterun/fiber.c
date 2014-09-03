@@ -380,9 +380,9 @@ int caml_on_current_stack(value* p)
   return Stack_base(stack) <= p && p < caml_stack_high;
 }
 
-void caml_realloc_stack(asize_t required_space)
+void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
 {
-  CAMLparam0();
+  CAMLparamN(saved_vals, nsaved);
   CAMLlocal3(old_stack, new_stack, fib);
   asize_t size;
   int stack_used;
@@ -420,7 +420,8 @@ void caml_realloc_stack(asize_t required_space)
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
-  if (caml_extern_sp - req < (value*)Field(caml_runqueue->current, FIBER_STACK)) caml_realloc_stack(req);
+  if (caml_extern_sp - req < (value*)Field(caml_runqueue->current, FIBER_STACK))
+    caml_realloc_stack(req, 0, 0);
   return Val_unit;
 }
 

@@ -857,9 +857,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     check_stacks:
       if (sp < caml_stack_threshold) {
+        value saved[] = {env, accu};
         caml_extern_sp = sp;
-        caml_realloc_stack(Stack_threshold / sizeof(value));
+        caml_realloc_stack(Stack_threshold / sizeof(value), saved, 2);
         sp = caml_extern_sp;
+        env = saved[0];
+        accu = saved[1];
       }
       /* Fall through CHECK_SIGNALS */
 
