@@ -243,3 +243,7 @@ let emit_debug_info dbg =
 let reset () =
   reset_debug_info ();
   frame_descriptors := []
+
+let binary_backend_available = ref false
+let create_asm_file = ref true
+

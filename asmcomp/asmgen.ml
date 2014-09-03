@@ -100,19 +100,21 @@ let compile_genfuns ppf f =
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
 let compile_unit asm_filename keep_asm obj_filename gen =
+  let create_asm = keep_asm || not !Emitaux.binary_backend_available in
+  Emitaux.create_asm_file := create_asm;
   try
-    Emitaux.output_channel := open_out asm_filename;
+    if create_asm then Emitaux.output_channel := open_out asm_filename;
     begin try
       gen ();
-      close_out !Emitaux.output_channel;
-    with exn ->
+      if create_asm then close_out !Emitaux.output_channel;
+    with exn when create_asm ->
       close_out !Emitaux.output_channel;
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
     if Proc.assemble_file asm_filename obj_filename <> 0
     then raise(Error(Assembler_error asm_filename));
-    if not keep_asm then remove_file asm_filename
+    if create_asm && not keep_asm then remove_file asm_filename
   with exn ->
     remove_file obj_filename;
     raise exn

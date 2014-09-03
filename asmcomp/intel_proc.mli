@@ -35,8 +35,17 @@ val reset_asm_code: unit -> unit
 
 (** Code emission *)
 
+val generate_code: (out_channel * (Buffer.t -> Intel_ast.asm_line -> unit)) option -> unit
+  (** Post-process the stream of instructions.  Dump it (using
+      the provided syntax emitter) in a file (if provided) and
+      compile it with an internal assembler (if registered
+      through [register_internal_assembler]). *)
+
 val assemble_file: (*infile*) string -> (*outfile*) string -> (*retcode*) int
-val generate_code: out_channel -> (Buffer.t -> Intel_ast.asm_line -> unit) -> unit
+(** Generate an object file corresponding to the last call to
+    [generate_code].  An internal assembler is used if available (and
+    the input file is ignored). Otherwise, the source asm file with an
+    external assembler. *)
 
 (** System detection *)
 
@@ -67,10 +76,10 @@ val masm: bool
 
 (** Support for plumbing a binary code emitter *)
 
-val final_assembler: (Intel_ast.section Misc.StringMap.t -> string -> unit) option ref
+val register_internal_assembler:
+  (Intel_ast.section Misc.StringMap.t -> string -> unit) -> unit
+
 
 (** Hooks for rewriting the assembly code *)
 
 val assembler_passes: (asm_program -> asm_program) list ref
-
-val env_OCAMLASM: string list
