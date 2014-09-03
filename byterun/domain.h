@@ -30,7 +30,7 @@ struct domain {
 
 void caml_update_young_limit(uintnat);
 
-void caml_handle_gc_interrupt(void);
+void caml_handle_gc_interrupt(int required_words);
 
 void caml_trigger_stw_gc(void);
 
