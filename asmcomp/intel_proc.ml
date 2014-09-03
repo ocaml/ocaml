@@ -12,7 +12,6 @@
 
 [@@@ocaml.warning "+A-42-4"]
 
-open Misc
 open Intel_ast
 
 type system =
@@ -261,34 +260,6 @@ let emit ins = directive (Ins ins)
 
 let reset_asm_code () = asm_code := []
 
-
-let split_sections instrs =
-  let sections = ref StringMap.empty in
-  let section s =
-    try
-      StringMap.find s !sections
-    with Not_found ->
-      let section = (ref [], { sec_name = s; sec_instrs = [||] }) in
-      sections := StringMap.add s section !sections;
-      section
-  in
-  let current_section = ref (section ".text") in
-  List.iter
-    (function
-       | Section ([sec], _, _) ->
-           current_section := section sec
-       | ins ->
-           let (section, _) = !current_section in
-           section := ins :: !section
-    )
-    instrs;
-  StringMap.map
-    (fun (ref, section) ->
-       { section with sec_instrs = Array.of_list (List.rev !ref) }
-    )
-    !sections
-
-
 let generate_code asm =
   let instrs = List.rev !asm_code in
   let instrs =
@@ -307,6 +278,6 @@ let generate_code asm =
   | None -> ()
   end;
   begin match !internal_assembler with
-  | Some f -> binary_content := Some (f (split_sections instrs))
+  | Some f -> binary_content := Some (f instrs)
   | None -> binary_content := None
   end

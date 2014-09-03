@@ -76,8 +76,7 @@ val masm: bool
 
 (** Support for plumbing a binary code emitter *)
 
-val register_internal_assembler:
-  (Intel_ast.section Misc.StringMap.t -> string -> unit) -> unit
+val register_internal_assembler: (asm_program -> string -> unit) -> unit
 
 
 (** Hooks for rewriting the assembly code *)
