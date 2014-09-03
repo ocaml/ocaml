@@ -21,3 +21,8 @@ val compile_phrase :
 type error = Assembler_error of string
 exception Error of error
 val report_error: Format.formatter -> error -> unit
+
+
+val compile_unit:
+  string(*asm file*) -> bool(*keep asm*) ->
+  string(*obj file*) -> (unit -> unit) -> unit

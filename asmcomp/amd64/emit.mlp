@@ -1040,7 +1040,6 @@ let end_assembly() =
   _end ();
 
   let oc = !Emitaux.output_channel in
-
   let bprint_instr =
     if Intel_proc.masm then Intel_masm.bprint_instr
     else Intel_gas.bprint_instr

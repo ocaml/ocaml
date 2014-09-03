@@ -99,43 +99,53 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
+let compile_unit asm_filename keep_asm obj_filename gen =
+  try
+    Emitaux.output_channel := open_out asm_filename;
+    begin try
+      gen ();
+      close_out !Emitaux.output_channel;
+    with exn ->
+      close_out !Emitaux.output_channel;
+      if not keep_asm then remove_file asm_filename;
+      raise exn
+    end;
+    if Proc.assemble_file asm_filename obj_filename <> 0
+    then raise(Error(Assembler_error asm_filename));
+    if not keep_asm then remove_file asm_filename
+  with exn ->
+    remove_file obj_filename;
+    raise exn
+
+let gen_implementation ?toplevel ppf (size, lam) =
+  Emit.begin_assembly ();
+  Closure.intro size lam
+  ++ clambda_dump_if ppf
+  ++ Cmmgen.compunit size
+  ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
+  (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
+
+  (* We add explicit references to external primitive symbols.  This
+     is to ensure that the object files that define these symbols,
+     when part of a C library, won't be discarded by the linker.
+     This is important if a module that uses such a symbol is later
+     dynlinked. *)
+
+  compile_phrase ppf
+    (Cmmgen.reference_symbols
+       (List.filter (fun s -> s <> "" && s.[0] <> '%')
+          (List.map Primitive.native_name !Translmod.primitive_declarations))
+    );
+  Emit.end_assembly ()
+
 let compile_implementation ?toplevel prefixname ppf (size, lam) =
   let asmfile =
     if !keep_asm_file
     then prefixname ^ ext_asm
-    else Filename.temp_file "camlasm" ext_asm in
-  let oc = open_out asmfile in
-  begin try
-    Emitaux.output_channel := oc;
-    Emit.begin_assembly();
-    Closure.intro size lam
-    ++ clambda_dump_if ppf
-    ++ Cmmgen.compunit size
-    ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
-    (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
-
-    (* We add explicit references to external primitive symbols.  This
-       is to ensure that the object files that define these symbols,
-       when part of a C library, won't be discarded by the linker.
-       This is important if a module that uses such a symbol is later
-       dynlinked. *)
-
-    compile_phrase ppf
-      (Cmmgen.reference_symbols
-         (List.filter (fun s -> s <> "" && s.[0] <> '%')
-            (List.map Primitive.native_name !Translmod.primitive_declarations))
-      );
-
-    Emit.end_assembly();
-    close_out oc
-  with x ->
-    close_out oc;
-    if !keep_asm_file then () else remove_file asmfile;
-    raise x
-  end;
-  if Proc.assemble_file asmfile (prefixname ^ ext_obj) <> 0
-  then raise(Error(Assembler_error asmfile));
-  if !keep_asm_file then () else remove_file asmfile
+    else Filename.temp_file "camlasm" ext_asm
+  in
+  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
+    (fun () -> gen_implementation ?toplevel ppf (size, lam))
 
 (* Error report *)
 
