@@ -98,11 +98,9 @@ static void domain_init(dom_internal* d) {
   
   /* FIXME: what are the ordering constraints of caml_plat_lock, exactly? */
   
-  /* add to live_domains_list */
+  /* get an ID */
   caml_plat_lock(&live_domains_lock);
   d->state.id = next_domain_id++;
-  d->next = live_domains_list;
-  live_domains_list = d;
   caml_plat_unlock(&live_domains_lock);
 
   d->state.shared_heap = caml_init_shared_heap();
@@ -122,6 +120,13 @@ static void domain_init(dom_internal* d) {
   d->state.young_end = &caml_young_end;
   d->state.mark_stack = &caml_mark_stack;
   d->state.mark_stack_count = &caml_mark_stack_count;
+
+  /* add to live_domains_list */
+  caml_plat_lock(&live_domains_lock);
+  d->next = live_domains_list;
+  live_domains_list = d;
+  caml_plat_unlock(&live_domains_lock);
+
 }
 
 static void domain_terminate() {
