@@ -231,10 +231,10 @@ let make_startup_file ppf units_list =
   Emit.end_assembly ()
 
 let make_shared_startup_file ppf units =
-  Emit.begin_assembly ();
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
+  Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
   compile_phrase (Cmmgen.plugin_header units);
