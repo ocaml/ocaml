@@ -217,7 +217,7 @@ static atomic_uintnat stw_requested;
 
 static void poll_interrupts() {
   if (Caml_check_gc_interrupt(desired_caml_young_limit)) {
-    caml_handle_gc_interrupt();
+    caml_handle_gc_interrupt(0);
   }
 }
 
@@ -257,7 +257,7 @@ void caml_trigger_stw_gc() {
 static void stw_phase(void);
 static void check_rpc(void);
 
-void caml_handle_gc_interrupt() {
+void caml_handle_gc_interrupt(int required_words) {
   if (atomic_load_acq(&caml_young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
     while (atomic_load_acq(&caml_young_limit) == INTERRUPT_MAGIC) {
@@ -267,7 +267,9 @@ void caml_handle_gc_interrupt() {
     if (atomic_load_acq(&stw_requested)) {
       stw_phase();
     }
-  } else {
+  }
+
+  if ((uintnat)caml_young_ptr - Bhsize_wosize(required_words) < desired_caml_young_limit) {
     /* out of minor heap */
     caml_minor_collection();
   }

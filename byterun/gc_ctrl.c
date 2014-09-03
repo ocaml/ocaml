@@ -430,7 +430,7 @@ CAMLprim value caml_gc_major(value v)
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heap ();
   caml_trigger_stw_gc ();
-  caml_handle_gc_interrupt ();
+  caml_handle_gc_interrupt (0);
   /* !! caml_final_do_calls (); */
   return Val_unit;
 }
