@@ -224,13 +224,11 @@ static void poll_interrupts() {
 /* update caml_young_limit, being careful not to lose interrupts */
 void caml_update_young_limit(uintnat new_val) {
   Assert(new_val < INTERRUPT_MAGIC);
-  while (1) {
-    if (atomic_cas(&caml_young_limit, desired_caml_young_limit, new_val)) {
-      break;
-    }
-    poll_interrupts();
-    cpu_relax();
-  }
+
+  /* Either the CAS succeeds, and we have updated caml_young_limit,
+     or else the CAS fails because there's an interrupt pending,
+     so we leave the interrupt pending */
+  atomic_cas(&caml_young_limit, desired_caml_young_limit, new_val);
   desired_caml_young_limit = new_val;
 }
 
