@@ -282,9 +282,7 @@ let assemble_file infile outfile =
       let outfile_o = if debug_by_diff then
           outfile ^ ".diff.o" else outfile in
       (*    Printf.eprintf "Generating %S\n%!" outfile_o; *)
-      let oc = open_out_bin outfile_o in
-      output_string oc content;
-      close_out oc;
+      content outfile_o;
       binary_content := None;
       if debug_by_diff then begin
         Printf.eprintf "debug_by_diff\n%!";

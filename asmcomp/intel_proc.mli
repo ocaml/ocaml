@@ -67,8 +67,10 @@ val masm: bool
 
 (** Support for plumbing a binary code emitter *)
 
-val final_assembler: (Intel_ast.section Misc.StringMap.t -> string) option ref
+val final_assembler: (Intel_ast.section Misc.StringMap.t -> string -> unit) option ref
 
 (** Hooks for rewriting the assembly code *)
 
 val assembler_passes: (asm_program -> asm_program) list ref
+
+val env_OCAMLASM: string list
