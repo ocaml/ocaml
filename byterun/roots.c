@@ -55,7 +55,9 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
   while (p < end) {
     value v = Val_hp(p);
     Assert (Is_block(v) && Wosize_val(v) <= Max_young_wosize);
-    if (Tag_val(v) < No_scan_tag) {
+    if (Tag_val(v) == Stack_tag) {
+      caml_scan_stack(f, v);
+    } else if (Tag_val(v) < No_scan_tag) {
       int i;
       value* fields = Op_val(v);
       for (i = 0; i < Wosize_val(v); i++) {
@@ -86,10 +88,13 @@ void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 
   /* treat the remembered sets as roots */
   struct caml_ref_entry* r;
-  for (r = domain->remembered_set->ref.base; r < domain->remembered_set->ref.ptr; r++)
+  for (r = domain->remembered_set->ref.base; r < domain->remembered_set->ref.ptr; r++) {
     f(r->obj, 0);
-  for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++)
+  }
+  for (r = domain->remembered_set->fiber_ref.base; r < domain->remembered_set->fiber_ref.ptr; r++) {
     f(r->obj, 0);
+    caml_scan_stack(f, r->obj);
+  }
 
 
   /* look for local C and stack roots */

@@ -448,6 +448,7 @@ static __thread int stack_is_saved = 0;
 void caml_save_stack_gc()
 {
   value fib;
+  if (caml_runqueue->current == Val_unit) { stack_is_saved = 1; return; }
   Assert(!stack_is_saved);
   fib = save_context(Val_unit);
   Assert(fib == caml_runqueue->current);
@@ -457,6 +458,7 @@ void caml_save_stack_gc()
 void caml_restore_stack_gc()
 {
   Assert(stack_is_saved);
+  if (caml_runqueue->current == Val_unit) { stack_is_saved = 0; return; }
   load_context(caml_runqueue->current);
   stack_is_saved = 0;
 }
@@ -479,9 +481,11 @@ void caml_scan_dirty_stack(scanning_action f, value stack)
 {
   struct fiber_ctx* ctx = Stack_ctx(stack);
   Assert(Tag_val(stack) == Stack_tag);
-  if (ctx->dirty) {
-    ctx->dirty = 0;
-    caml_scan_stack(f, stack);
+  if (ctx->domain == caml_domain_self()) {
+    if (ctx->dirty||1) {
+      ctx->dirty = 0;
+      caml_scan_stack(f, stack);
+    }
   }
 }
 
