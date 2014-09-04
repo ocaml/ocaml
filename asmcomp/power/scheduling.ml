@@ -26,6 +26,7 @@ method oper_latency = function
   | Iload(_, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
   | Iconst_symbol _ -> 1
+  | Iconst_sexn_addr _ -> 1
   | Iintop(Imul | Imulh) -> 9
   | Iintop_imm(Imul, _) -> 5
   | Iintop(Idiv | Imod) -> 36
