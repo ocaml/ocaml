@@ -170,16 +170,19 @@ let rec instr ppf i =
         fprintf ppf "@]@,%a@]" instr cases.(i)
       done;
       fprintf ppf "@,endswitch"
-  | Icatch([i, handler], body) ->
-      fprintf
-        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
-        instr body i instr handler
-  | Icatch([i1,handler1; i2,handler2], body) ->
-      fprintf
-        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;@ and(%d)@,%a@;<0 -2>endcatch@]"
-        instr body i1 instr handler1 i2 instr handler2
-  | Icatch(_, body) ->
-      failwith "TODO print Icatch"
+  | Icatch(handlers, body) ->
+      fprintf ppf "@[<v 2>catch@,%a@;<0 -2>with" instr body;
+      let h (nfail, handler) =
+        fprintf ppf "(%d)@,%a@;" nfail instr handler in
+      let rec aux = function
+        | [] -> ()
+        | [v] -> h v
+        | v :: t ->
+            h v;
+            fprintf ppf "@ and";
+            aux t
+      in
+      aux handlers
   | Iexit i ->
       fprintf ppf "exit(%d)" i
   | Iexit_ind il ->
