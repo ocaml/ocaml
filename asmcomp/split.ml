@@ -163,8 +163,6 @@ let rec rename i sub =
       let previous_exit_subst = !exit_subst in
       exit_subst := new_subst @ !exit_subst;
       let (new_body, sub_body) = rename body sub in
-      (* exit_subst := List.tl !exit_subst; *)
-      (* Not completely sure for that one. Need to think a bit more... *)
       let res = List.map2 (fun (_, handler) (_, new_subst) -> rename handler !new_subst)
           handlers new_subst in
       exit_subst := previous_exit_subst;
@@ -177,12 +175,10 @@ let rec rename i sub =
           (nfail, handler)) handlers res in
       (instr_cons (Icatch(new_handlers, new_body)) [||] [||] new_next,
        sub_next)
-
   | Iexit nfail ->
       let r = find_exit_subst nfail in
       r := merge_substs !r sub i;
       (i, None)
-
   | Iexit_ind possible_fails ->
       List.iter
         (fun nfail ->
@@ -190,7 +186,6 @@ let rec rename i sub =
            r := merge_substs !r sub i)
         possible_fails;
       (i, None)
-
   | Itrywith(body, handler) ->
       let (new_body, sub_body) = rename body sub in
       let (new_handler, sub_handler) = rename handler sub in
