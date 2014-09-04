@@ -147,6 +147,9 @@ static value caml_promote_one(struct promotion_stack* stk, struct domain* domain
   if (Is_promoted_hd(curr_block_hd)) {
     /* already promoted */
     return caml_addrmap_lookup(&domain->remembered_set->promotion, curr) + infix_offset;
+  } else if (curr_block_hd == 0) {
+    /* promoted by minor GC */
+    return Op_val(curr)[0] + infix_offset;
   }
 
   /* otherwise, must promote */
@@ -366,20 +369,17 @@ static void unpin_promoted_object(value local, value promoted)
   caml_darken(promoted, 0);
 }
 
-static void stack_entry(value v, value* p) 
-{
-  if (Is_block(v) && !Is_young(v)) {
-    caml_darken(v, p);
-  } else {
-    caml_oldify_one(v, p);
-  }
-}
-
 static void clean_stacks()
 {
   struct caml_ref_entry* r;
+  /* darkening must precede oldifying */
   for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack(&stack_entry, r->obj);
+    caml_scan_dirty_stack(&caml_darken, r->obj);
+  }
+
+  for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
+    caml_scan_dirty_stack(&caml_oldify_one, r->obj);
+    /* caml_clean_stack(); */
   }
   clear_table (&caml_remembered_set.fiber_ref);
 }
