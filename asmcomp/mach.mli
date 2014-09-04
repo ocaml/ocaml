@@ -93,3 +93,7 @@ val instr_cons_debug:
       instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
+
+module StExnSet : Set.S with type elt = int
+
+val recursive_handlers: instruction -> StExnSet.t

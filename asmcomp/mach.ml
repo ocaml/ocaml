@@ -125,8 +125,67 @@ let rec instr_iter f i =
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
           instr_iter f i.next
       | Iexit _ -> ()
+      | Iexit_ind _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise _ -> ()
       | _ ->
           instr_iter f i.next
+
+module StExnSet = Set.Make(struct type t = int let compare x y = x-y end)
+
+type result =
+  { reachable_exits : StExnSet.t;
+    recursive_handlers : StExnSet.t }
+
+let empty_result =
+  { reachable_exits = StExnSet.empty;
+    recursive_handlers = StExnSet.empty }
+
+let result_union r1 r2 =
+  { reachable_exits =
+      StExnSet.union r1.reachable_exits r2.reachable_exits;
+    recursive_handlers =
+      StExnSet.union r1.recursive_handlers r2.recursive_handlers }
+
+let recursive_handlers i =
+  let rec loop i =
+    match i.desc with
+      Iend -> empty_result
+    | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) -> empty_result
+    | Iraise _ -> empty_result
+    | Iifthenelse(tst, ifso, ifnot) ->
+        result_union
+          (result_union (loop ifso) (loop ifnot))
+          (loop i.next)
+    | Iswitch(index, cases) ->
+        Array.fold_left (fun acc case -> result_union acc (loop case))
+          (loop i.next) cases
+    | Icatch(handlers, body) ->
+        let r =
+          List.fold_left (fun acc (nfail, handler) ->
+              let acc = result_union acc (loop handler) in
+              if StExnSet.mem nfail acc.reachable_exits
+              then { acc with
+                     recursive_handlers =
+                       StExnSet.add nfail acc.recursive_handlers }
+              else acc)
+            empty_result handlers
+        in
+        result_union r
+          (result_union (loop body) (loop i.next))
+    | Iexit n ->
+        { empty_result with
+          reachable_exits = StExnSet.singleton n }
+    | Iexit_ind l ->
+        let reachable_exits = List.fold_right StExnSet.add l StExnSet.empty in
+        { empty_result with reachable_exits }
+    | Itrywith(body, handler) ->
+        result_union
+          (result_union (loop body) (loop handler))
+          (loop i.next)
+    | Iop _ ->
+        loop i.next
+  in
+  (loop i).recursive_handlers
+
