@@ -204,6 +204,21 @@ struct domain* caml_domain_self()
   return domain_self ? &domain_self->state : 0;
 }
 
+struct domain* caml_random_domain()
+{
+  dom_internal* d;
+  int r = rand(), len = 0;
+
+  caml_plat_lock(&live_domains_lock);
+  for (d = live_domains_list; d; d = d->next) len++;
+  r %= len;
+  for (d = live_domains_list; r > 0; d = d->next) r--;
+  caml_plat_unlock(&live_domains_lock);
+
+  Assert(d);
+  return &d->state;
+}
+
 CAMLprim value caml_ml_domain_id(value unit)
 {
   return Val_int(domain_self->state.id);
