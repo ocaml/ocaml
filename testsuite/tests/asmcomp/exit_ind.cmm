@@ -1,0 +1,21 @@
+("n": string "n: \000")
+("m": string "m: \000")
+("format": string "%d\n\000")
+
+(function "pgcd_30030" (a:int)
+  (catch (exit 0 a 30030)
+   with (0 n m)
+     (if (> n m)
+         (exit 1 m n, 0)
+         (exit 1 n m, 2))
+   and (1 n m, 111)
+     (seq
+       (extcall "print_string" "n" unit)
+       (extcall "printf_int" "format" n unit)
+       (extcall "print_string" "m" unit)
+       (extcall "printf_int" "format" m unit)
+       (exit_ind 111 n m))
+    and (2 n m)
+      (if (== n 0)
+          m
+          (exit 0 (mod m n) n))))
