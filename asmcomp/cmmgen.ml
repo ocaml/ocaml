@@ -1305,15 +1305,6 @@ let cloop expr =
          (Csequence (remove_unit expr,
                      Cexit (raise_num,[],[]))))
 
-(* let cloop expr = *)
-(*   let raise_num = next_raise_count () in *)
-(*   let var = { stexn_var = raise_num } in *)
-(*   (\* there is no reason to use that as variable, but it is easy to generate... *\) *)
-(*   Ccatch(raise_num, [], [var], *)
-(*          Cexit (raise_num,[],[Stexn_cst raise_num]), *)
-(*          (Csequence (remove_unit expr, *)
-(*                      Cexit_ind (var,[],[Stexn_var var])))) *)
-
 let rec transl = function
     Uvar id ->
       Cvar id
