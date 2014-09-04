@@ -387,10 +387,10 @@ let group_by_common_children d list =
 let copy_data d = {elem = d.elem; span = d.span};;
 
 let insert_columns t nb j =
-  let t1 = Array.create (Array.length t.table) [| |] in
+  let t1 = Array.make (Array.length t.table) [| |] in
   for i = 0 to Array.length t.table - 1 do
     let line = t.table.(i) in
-    let line1 = Array.create (Array.length line + nb) line.(0) in
+    let line1 = Array.make (Array.length line + nb) line.(0) in
     t1.(i) <- line1;
     let rec loop k =
       if k = Array.length line then ()

@@ -161,7 +161,8 @@ let mk_no_app_funct f =
 ;;
 
 let mk_no_float_const_prop f =
-  "-no-float-const-prop", Arg.Unit f, " Deactivate constant propagation for floating-point operations"
+  "-no-float-const-prop", Arg.Unit f,
+  " Deactivate constant propagation for floating-point operations"
 ;;
 
 let mk_noassert f =
@@ -446,6 +447,21 @@ let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_opaque f =
+  "-opaque", Arg.Unit f,
+  " Does not generate cross-module optimization information\n\
+  \     (reduces necessary recompilation on module change)"
+;;
+
+let mk_strict_formats f =
+  "-strict-formats", Arg.Unit f,
+  " Reject invalid formats accepted by legacy implementations\n\
+  \     (Warning: Invalid formats may behave differently from\n\
+  \      previous OCaml versions, and will become always-rejected\n\
+  \      in future OCaml versions. You should use this flag\n\
+  \      to detect and fix invalid formats.)"
+;;
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -467,6 +483,7 @@ module type Common_options = sig
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _strict_formats : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -515,7 +532,6 @@ module type Compiler_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
-
   val _nopervasives : unit -> unit
 end
 ;;
@@ -578,6 +594,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -644,6 +661,7 @@ struct
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -694,6 +712,7 @@ struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -760,6 +779,7 @@ struct
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -794,6 +814,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_opaque F._opaque;
   ]
 end;;
 
@@ -822,6 +843,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;

@@ -1038,7 +1038,8 @@ fun k fmt -> match fmt with
   | Formatting_gen (Open_box (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
 
   | Format_arg (_, _, rest)          -> take_format_readers k rest
-  | Format_subst (_, fmtty, rest)    -> take_fmtty_format_readers k (erase_rel (symm fmtty)) rest
+  | Format_subst (_, fmtty, rest)    ->
+     take_fmtty_format_readers k (erase_rel (symm fmtty)) rest
   | Ignored_param (ign, rest)        -> take_ignored_format_readers k ign rest
 
   | End_of_format                    -> k Nil

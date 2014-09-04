@@ -321,7 +321,7 @@ CAMLprim value caml_gc_get(value v)
 
   res = caml_alloc_tuple (7);
   Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
-  Store_field (res, 1,Val_long(Wsize_bsize(caml_major_heap_increment)));/* i */
+  Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
   Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
   Store_field (res, 4, Val_long (caml_percent_max));                    /* O */

@@ -83,7 +83,7 @@ type stat =
 type control =
   { mutable minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
-       this parameter will trigger a minor collection.  Default: 32k. *)
+       this parameter will trigger a minor collection.  Default: 262k. *)
 
     mutable major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
@@ -131,7 +131,7 @@ type control =
     mutable stack_limit : int;
     (** The maximum size of the stack (in words).  This is only
        relevant to the byte-code runtime, as the native code runtime
-       uses the operating system's stack.  Default: 256k. *)
+       uses the operating system's stack.  Default: 1024k. *)
 
     mutable allocation_policy : int;
     (** The policy used for allocating in the heap.  Possible
@@ -214,6 +214,9 @@ val finalise : ('a -> unit) -> 'a -> unit
    as the values are allocated, that means each value is finalised
    before the values it depends upon.  Of course, this becomes
    false if additional dependencies are introduced by assignments.
+
+   In the presence of multiple OCaml threads it should be assumed that
+   any particular finaliser may be executed in any of the threads.
 
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work

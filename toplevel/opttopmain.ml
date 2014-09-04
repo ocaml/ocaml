@@ -81,6 +81,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _real_paths = set real_paths
   let _rectypes = set recursive_types
   let _strict_sequence = set strict_sequence
+  let _strict_formats = set strict_formats
   let _S = set keep_asm_file
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""

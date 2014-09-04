@@ -31,11 +31,12 @@ type addressing_mode =
 
 type specific_operation =
     Ilea of addressing_mode             (* Lea gives scaled adds *)
-  | Istore_int of nativeint * addressing_mode * bool (* Store an integer constant *)
+  | Istore_int of nativeint * addressing_mode * bool
+                                        (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ipush                               (* Push regs on stack *)
-  | Ipush_int of nativeint            (* Push an integer constant *)
+  | Ipush_int of nativeint              (* Push an integer constant *)
   | Ipush_symbol of string              (* Push a symbol *)
   | Ipush_load of addressing_mode       (* Load a scalar and push *)
   | Ipush_load_float of addressing_mode (* Load a float and push *)

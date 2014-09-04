@@ -37,7 +37,7 @@ class printer :
       Format.formatter -> Parsetree.class_type_declaration list -> unit
     method constant : Format.formatter -> Asttypes.constant -> unit
     method constant_string : Format.formatter -> string -> unit
-    method constructor_declaration : Format.formatter -> (string * Parsetree.constructor_arguments * Parsetree.core_type option) -> unit
+    method constructor_declaration : Format.formatter -> (string * Parsetree.constructor_arguments * Parsetree.core_type option * Parsetree.attributes) -> unit
     method core_type : Format.formatter -> Parsetree.core_type -> unit
     method core_type1 : Format.formatter -> Parsetree.core_type -> unit
     method direction_flag :
@@ -110,6 +110,8 @@ class printer :
       Format.formatter -> Parsetree.type_extension -> unit
     method type_param :
       Format.formatter -> Parsetree.core_type * Asttypes.variance -> unit
+    method type_params :
+      Format.formatter -> (Parsetree.core_type * Asttypes.variance) list -> unit
     method type_with_label :
       Format.formatter -> Asttypes.label * Parsetree.core_type -> unit
     method tyvar : Format.formatter -> string -> unit
@@ -120,7 +122,12 @@ class printer :
       Format.formatter -> Parsetree.value_description -> unit
     method virtual_flag : Format.formatter -> Asttypes.virtual_flag -> unit
     method attribute : Format.formatter -> Parsetree.attribute -> unit
+    method item_attribute : Format.formatter -> Parsetree.attribute -> unit
+    method floating_attribute : Format.formatter -> Parsetree.attribute -> unit
     method attributes : Format.formatter -> Parsetree.attributes -> unit
+    method item_attributes : Format.formatter -> Parsetree.attributes -> unit
+    method extension : Format.formatter -> Parsetree.extension -> unit
+    method item_extension : Format.formatter -> Parsetree.extension -> unit
   end
 val default : printer
 val toplevel_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit

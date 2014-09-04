@@ -1606,7 +1606,7 @@ let divide_tuple arity p ctx pm =
 
 
 let record_matching_line num_fields lbl_pat_list =
-  let patv = Array.create num_fields omega in
+  let patv = Array.make num_fields omega in
   List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
   Array.to_list patv
 
@@ -1896,7 +1896,7 @@ let rec explode_inter offset i j act k =
     k
 
 let max_vals cases acts =
-  let vals = Array.create (Array.length acts) 0 in
+  let vals = Array.make (Array.length acts) 0 in
   for i=Array.length cases-1 downto 0 do
     let l,h,act = cases.(i) in
     vals.(act) <- h - l + 1 + vals.(act)

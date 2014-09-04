@@ -81,7 +81,7 @@ let proceed () =
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
-  Configuration.parse_string
+  Configuration.parse_string ~source:Const.Source.builtin
     "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml\n\
      <**/*.byte>: ocaml, byte, program\n\
      <**/*.odoc>: ocaml, doc\n\
@@ -93,16 +93,21 @@ let proceed () =
      <**/*.cmx>: ocaml, native\n\
     ";
 
+  List.iter
+    (Configuration.parse_string ~source:Const.Source.command_line)
+    !Options.tag_lines;
+
   Configuration.tag_any !Options.tags;
-  if !Options.recursive
-  || Sys.file_exists (* authorized since we're not in build *) "_tags"
-  || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
+  if !Options.recursive || Options.ocamlbuild_project_heuristic ()
   then Configuration.tag_any ["traverse"];
 
   (* options related to findlib *)
-  List.iter
-    (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
-    !Options.ocaml_pkgs;
+  if !Options.use_ocamlfind then
+    List.iter
+      (fun pkg ->
+        let tag = Param_tags.make "package" pkg in
+        Configuration.tag_any [tag])
+      !Options.ocaml_pkgs;
 
   begin match !Options.ocaml_syntax with
   | Some syntax -> Configuration.tag_any [Param_tags.make "syntax" syntax]
@@ -172,8 +177,6 @@ let proceed () =
   Options.include_dirs := Pathname.current_dir_name :: List.rev !entry_include_dirs;
   dprintf 3 "include directories are:@ %a" print_string_list !Options.include_dirs;
   Options.entry := Some entry;
-
-  List.iter Configuration.parse_string !Options.tag_lines;
 
   Hooks.call_hook Hooks.Before_rules;
   Ocaml_specific.init ();

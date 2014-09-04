@@ -104,6 +104,12 @@ val map : f:(char -> char) -> string -> string
    is returned.
    @since 4.00.0 *)
 
+val mapi : f:(int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
+
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],

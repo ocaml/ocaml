@@ -693,8 +693,8 @@ let should_extend ext env = match ext with
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
-  let seen_const = Array.create nconsts false
-  and seen_constr = Array.create nconstrs false in
+  let seen_const = Array.make nconsts false
+  and seen_constr = Array.make nconstrs false in
   List.iter
     (function
       | Cstr_constant i -> seen_const.(i) <- true

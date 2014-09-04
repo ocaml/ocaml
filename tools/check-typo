@@ -39,11 +39,11 @@
 #   automatically exempt from all rules
 #     *.reference
 #     */reference
+#     */.depend*
 # - Any file whose name begins with "Makefile" is automatically exempt
 #   from the "tabs" rule.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from the "missing-header" rule.
-#     */.depend*
 #     */.ignore
 #     *.mlpack
 #     *.mllib
@@ -137,9 +137,9 @@ IGNORE_DIRS="
     add_hd(){ rules="missing-header,$rules"; }
     case "$f" in
       Makefile*|*/Makefile*) rules="tab,$rules";;
-      */.depend*|*/.ignore) add_hd;;
+      */.ignore) add_hd;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
-      *.reference|*/reference) continue;;
+      *.reference|*/reference|*/.depend*) continue;;
     esac
     case "$f" in
       ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;

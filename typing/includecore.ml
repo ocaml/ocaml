@@ -230,7 +230,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         let mark cstrs usage name decl =
           List.iter
             (fun c ->
-              Env.mark_constructor_used usage name decl
+              Env.mark_constructor_used usage env name decl
                                         (Ident.name c.Types.cd_id))
             cstrs
         in
@@ -293,7 +293,7 @@ let extension_constructors env id ext1 ext2 =
     if ext1.ext_private = Private || ext2.ext_private = Public
     then Env.Positive else Env.Privatize
   in
-  Env.mark_extension_used usage ext1 (Ident.name id);
+  Env.mark_extension_used usage env ext1 (Ident.name id);
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))
   in

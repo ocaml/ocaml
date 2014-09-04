@@ -704,8 +704,8 @@ module_type:
       { mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF module_expr %prec below_LBRACKETAT
       { mkmty(Pmty_typeof $4) }
-  | LPAREN MODULE mod_longident RPAREN
-      { mkmty (Pmty_alias (mkrhs $3 3)) }
+/*  | LPAREN MODULE mod_longident RPAREN
+      { mkmty (Pmty_alias (mkrhs $3 3)) } */
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error
@@ -827,7 +827,7 @@ class_expr:
       { $2 }
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
-  | LET rec_flag let_bindings IN class_expr
+  | LET rec_flag let_bindings_no_attrs IN class_expr
       { mkclass(Pcl_let ($2, List.rev $3, $5)) }
   | class_expr attribute
       { Cl.attr $1 $2 }
@@ -942,11 +942,7 @@ class_type:
       { mkcty(Pcty_arrow($1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_arrow("", $1, $3)) }
-  | class_type attribute
-      { Cty.attr $1 $2 }
-  | extension
-      { mkcty(Pcty_extension $1) }
-;
+ ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
       { mkcty(Pcty_constr (mkloc $4 (rhs_loc 4), List.rev $2)) }
@@ -956,6 +952,10 @@ class_signature:
       { mkcty(Pcty_signature $2) }
   | OBJECT class_sig_body error
       { unclosed "object" 1 "end" 3 }
+  | class_signature attribute
+      { Cty.attr $1 $2 }
+  | extension
+      { mkcty(Pcty_extension $1) }
 ;
 class_sig_body:
     class_self_type class_sig_fields
@@ -1082,7 +1082,7 @@ expr:
       { $1 }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET ext_attributes rec_flag let_bindings IN seq_expr
+  | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
@@ -1321,6 +1321,17 @@ let_bindings:
     let_binding                                 { [$1] }
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
+let_bindings_no_attrs:
+   let_bindings {
+     let l = $1 in
+     List.iter
+       (fun vb ->
+          if vb.pvb_attributes <> [] then
+            raise Syntaxerr.(Error(Not_expecting(vb.pvb_loc,"item attribute")))
+       )
+       l;
+     l
+   }
 
 lident_list:
     LIDENT                            { [$1] }

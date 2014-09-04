@@ -568,6 +568,9 @@ let label_name l =
   if is_optional l then String.sub l 1 (String.length l - 1)
                    else l
 
+let prefixed_label_name l =
+  if is_optional l then l else "~" ^ l
+
 let rec extract_label_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->

@@ -15,6 +15,9 @@
 
 #define OCAML_OS_TYPE "Win32"
 
+#ifdef __MINGW32__
+#define HAS_STDINT_H
+#endif
 #undef BSD_SIGNALS
 #define HAS_STRERROR
 #define HAS_SOCKETS

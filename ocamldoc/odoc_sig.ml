@@ -1290,11 +1290,19 @@ module Analyser =
     and analyse_module_kind
         ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
-        Parsetree.Pmty_ident longident
-      | Parsetree.Pmty_alias longident ->
+      | Parsetree.Pmty_ident longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
           Module_with ( k, "" )
-
+      | Parsetree.Pmty_alias longident ->
+          begin
+            match sig_module_type with
+              Types.Mty_alias path ->
+                let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
+                let ma = { ma_name = alias_name ; ma_module = None } in
+                Module_alias ma
+            | _ ->
+              raise (Failure "Parsetree.Pmty_alias _ but not Types.Mty_alias _")
+           end
       | Parsetree.Pmty_signature signature ->
           (
            let signature = filter_out_erased_items_from_signature erased signature in

@@ -43,11 +43,11 @@ struct global_root_list {
    (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
    is faster and guaranteed to be deterministic (to reproduce bugs). */
 
-static uint32 random_seed = 0;
+static uint32_t random_seed = 0;
 
 static int random_level(void)
 {
-  uint32 r;
+  uint32_t r;
   int level = 0;
 
   /* Linear congruence with modulus = 2^32, multiplier = 69069

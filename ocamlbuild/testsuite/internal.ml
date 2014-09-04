@@ -162,12 +162,23 @@ let () = test "OutputObj"
 
 let () = test "StrictSequenceFlag"
   ~options:[`no_ocamlfind; `quiet]
-  ~description:"-strict_sequence tag"
+  ~description:"strict_sequence tag"
   ~tree:[T.f "hello.ml" ~content:"let () = 1; ()";
          T.f "_tags" ~content:"true: strict_sequence\n"]
   ~failing_msg:"File \"hello.ml\", line 1, characters 9-10:
 Error: This expression has type int but an expression was expected of type
          unit\nCommand exited with code 2."
+  ~targets:("hello.byte",[]) ();;
+
+let () = test "StrictFormatsFlag"
+  ~options:[`no_ocamlfind; `quiet]
+  ~description:"strict_format tag"
+  ~tree:[T.f "hello.ml" ~content:"let _ = Printf.printf \"%.10s\"";
+         T.f "_tags" ~content:"true: strict_formats\n"]
+  ~failing_msg:"File \"hello.ml\", line 1, characters 22-29:
+Error: invalid format \"%.10s\": at character number 0, \
+`precision' is incompatible with 's' in sub-format \"%.10s\"
+Command exited with code 2."
   ~targets:("hello.byte",[]) ();;
 
 let () = test "PrincipalFlag"
@@ -263,5 +274,33 @@ let () = test "TagsInNonHygienic"
   ]
   ~matching:[M.f "main.byte"]
   ~targets:("main.byte",[]) ();;
+
+let () = test "TagsNewlines"
+  ~description:"Regression test for PR#6087 about placement \
+                of newline-escaping backslashes"
+  ~options:[`no_ocamlfind]
+  ~tree:[
+    T.f "main.ml" ~content:"";
+    T.f "_tags" ~content:
+"<foo>: debug,\\
+rectypes
+<bar>: \\
+debug, rectypes
+<baz>\\
+: debug, rectypes
+";
+  ]
+  ~matching:[M.f "main.byte"]
+  ~targets:("main.byte",[]) ();;
+
+let () = test "OpenTag"
+  ~description:"Test the parametrized tag for the new -open feature"
+  ~options:[`no_ocamlfind]
+  ~tree:[
+    T.f "test.ml" ~content:"let _ = map rev [ []; [3;2] ]";
+    T.f "_tags" ~content: "<test.*>: open(List)";
+  ]
+  ~matching:[M.f "test.byte"]
+  ~targets:("test.byte",[]) ();;
 
 run ~root:"_test_internal";;

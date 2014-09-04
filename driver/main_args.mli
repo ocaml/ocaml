@@ -26,6 +26,7 @@ module type Common_options = sig
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _strict_formats : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -137,6 +138,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig

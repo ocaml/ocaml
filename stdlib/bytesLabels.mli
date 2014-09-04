@@ -112,6 +112,11 @@ val map : f:(char -> char) -> bytes -> bytes
     stores the resulting bytes in a new sequence that is returned as
     the result. *)
 
+val mapi : f:(int -> char -> char) -> bytes -> bytes
+(** [mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the resulting bytes
+    in a new sequence that is returned as the result. *)
+
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
     whitespace. The bytes regarded as whitespace are the ASCII
@@ -204,5 +209,5 @@ external unsafe_blit :
     unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
   bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+val unsafe_to_string : bytes -> string
+val unsafe_of_string : string -> bytes

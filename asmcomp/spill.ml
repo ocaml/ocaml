@@ -64,7 +64,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
   let max_pressure = Proc.max_register_pressure op in
   let regs = Reg.add_set_array live_regs res_regs in
   (* Compute the pressure in each register class *)
-  let pressure = Array.create Proc.num_register_classes 0 in
+  let pressure = Array.make Proc.num_register_classes 0 in
   Reg.Set.iter
     (fun r ->
       if Reg.Set.mem r spilled then () else begin

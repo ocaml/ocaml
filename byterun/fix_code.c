@@ -134,12 +134,12 @@ void caml_thread_code (code_t code, asize_t len)
     }
     *p++ = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
     if (instr == SWITCH) {
-      uint32 sizes = *p++;
-      uint32 const_size = sizes & 0xFFFF;
-      uint32 block_size = sizes >> 16;
+      uint32_t sizes = *p++;
+      uint32_t const_size = sizes & 0xFFFF;
+      uint32_t block_size = sizes >> 16;
       p += const_size + block_size;
     } else if (instr == CLOSUREREC) {
-      uint32 nfuncs = *p++;
+      uint32_t nfuncs = *p++;
       p++;                      /* skip nvars */
       p += nfuncs;
     } else {

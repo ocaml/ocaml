@@ -38,7 +38,8 @@ let bind_nonvar name arg fn =
   | Cconst_blockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
-let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8  (* cf. byterun/gc.h *)
+let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
+    (* cf. byterun/gc.h *)
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
@@ -2411,7 +2412,7 @@ let cache_public_method meths tag cache =
 *)
 
 let apply_function_body arity =
-  let arg = Array.create arity (Ident.create "arg") in
+  let arg = Array.make arity (Ident.create "arg") in
   for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
   let clos = Ident.create "clos" in
   let rec app_fun clos n =

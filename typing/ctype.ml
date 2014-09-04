@@ -293,7 +293,7 @@ let flatten_fields ty =
         (l, ty)
   in
     let (l, r) = flatten [] ty in
-    (Sort.list (fun (n, _, _) (n', _, _) -> n < n') l, r)
+    (List.sort (fun (n, _, _) (n', _, _) -> compare n n') l, r)
 
 let build_fields level =
   List.fold_right
@@ -422,7 +422,7 @@ let rec class_type_arity =
                   (*  Miscellaneous operations on row types  *)
                   (*******************************************)
 
-let sort_row_fields = Sort.list (fun (p,_) (q,_) -> p < q)
+let sort_row_fields = List.sort (fun (p,_) (q,_) -> compare p q)
 
 let rec merge_rf r1 r2 pairs fi1 fi2 =
   match fi1, fi2 with
@@ -1617,12 +1617,14 @@ let generic_private_abbrev env path =
     | _ -> false
   with Not_found -> false
 
-                              (*****************)
-                              (*  Occur check  *)
-                              (*****************)
+let is_contractive env ty =
+  match (repr ty).desc with
+    Tconstr (p, _, _) ->
+      in_pervasives p ||
+      (try is_datatype (Env.find_type p env) with Not_found -> false)
+  | _ -> true
 
-
-exception Occur
+(* Code moved to Typedecl
 
 (* The marks are already used by [expand_abbrev]... *)
 let visited = ref []
@@ -1665,6 +1667,14 @@ let correct_abbrev env path params ty =
     simple_abbrevs := Mnil;
     visited := [];
     raise exn
+*)
+
+                              (*****************)
+                              (*  Occur check  *)
+                              (*****************)
+
+
+exception Occur
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
@@ -2150,7 +2160,8 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then raise (Unify [])
+    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
+      raise (Unify [])
     else
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
@@ -2776,7 +2787,8 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
     newtype_level := Some lev;
-    set_mode_pattern ~generate:true ~injective:true (fun () -> unify env ty1 ty2);
+    set_mode_pattern ~generate:true ~injective:true
+                     (fun () -> unify env ty1 ty2);
     newtype_level := None;
     TypePairs.clear unify_eq_set;
   with e ->

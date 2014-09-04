@@ -47,6 +47,7 @@ val principal : bool ref
 val real_paths : bool ref
 val recursive_types : bool ref
 val strict_sequence : bool ref
+val strict_formats : bool ref
 val applicative_functors : bool ref
 val make_runtime : bool ref
 val gprofile : bool ref
@@ -92,3 +93,4 @@ val runtime_variant : string ref
 val force_slash : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
+val opaque : bool ref

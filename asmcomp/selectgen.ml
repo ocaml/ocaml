@@ -111,7 +111,7 @@ let join opt_r1 seq1 opt_r2 seq2 =
   | (Some r1, Some r2) ->
       let l1 = Array.length r1 in
       assert (l1 = Array.length r2);
-      let r = Array.create l1 Reg.dummy in
+      let r = Array.make l1 Reg.dummy in
       for i = 0 to l1-1 do
         if Reg.anonymous r1.(i) then begin
           r.(i) <- r1.(i);
@@ -139,7 +139,7 @@ let join_array rs =
     None -> None
   | Some template ->
       let size_res = Array.length template in
-      let res = Array.create size_res Reg.dummy in
+      let res = Array.make size_res Reg.dummy in
       for i = 0 to size_res - 1 do
         res.(i) <- Reg.create template.(i).typ
       done;
@@ -393,6 +393,24 @@ method insert_moves src dst =
     self#insert_move src.(i) dst.(i)
   done
 
+(* Adjust the types of destination pseudoregs for a [Cassign] assignment.
+   The type inferred at [let] binding might be [Int] while we assign
+   something of type [Addr] (PR#6501). *)
+
+method adjust_type src dst =
+  let ts = src.typ and td = dst.typ in
+  if ts <> td then
+    match ts, td with
+    | Addr, Int -> dst.typ <- Addr
+    | Int, Addr -> ()
+    | _, _ -> fatal_error("Selection.adjust_type: bad assignment to "
+                                                           ^ Reg.name dst)
+
+method adjust_types src dst =
+  for i = 0 to min (Array.length src) (Array.length dst) - 1 do
+    self#adjust_type src.(i) dst.(i)
+  done
+
 (* Insert moves and stack offsets for function arguments and results *)
 
 method insert_move_args arg loc stacksize =
@@ -459,7 +477,7 @@ method emit_expr env exp =
           fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
       begin match self#emit_expr env e1 with
         None -> None
-      | Some r1 -> self#insert_moves r1 rv; Some [||]
+      | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
       end
   | Ctuple [] ->
       Some [||]

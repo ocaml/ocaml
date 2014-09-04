@@ -207,7 +207,7 @@ CAMLexport void caml_flush(struct channel *channel)
 
 /* Output data */
 
-CAMLexport void caml_putword(struct channel *channel, uint32 w)
+CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
     caml_failwith("output_binary_int: not a binary channel");
@@ -303,10 +303,10 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
-CAMLexport uint32 caml_getword(struct channel *channel)
+CAMLexport uint32_t caml_getword(struct channel *channel)
 {
   int i;
-  uint32 res;
+  uint32_t res;
 
   if (! caml_channel_binary_mode(channel))
     caml_failwith("input_binary_int: not a binary channel");

@@ -347,9 +347,9 @@ static void serialize_nat(value nat,
   if (len >= ((mlsize_t)1 << 32))
     failwith("output_value: nat too big");
 #endif
-  serialize_int_4((int32) len);
+  serialize_int_4((int32_t) len);
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
-  { int32 * p;
+  { int32_t * p;
     mlsize_t i;
     for (i = len, p = Data_custom_val(nat); i > 0; i -= 2, p += 2) {
       serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
@@ -369,7 +369,7 @@ static uintnat deserialize_nat(void * dst)
 
   len = deserialize_uint_4();
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
-  { uint32 * p;
+  { uint32_t * p;
     mlsize_t i;
     for (i = len, p = dst; i > 1; i -= 2, p += 2) {
       p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
@@ -385,7 +385,7 @@ static uintnat deserialize_nat(void * dst)
   deserialize_block_4(dst, len);
 #if defined(ARCH_SIXTYFOUR)
   if (len & 1){
-    ((uint32 *) dst)[len] = 0;
+    ((uint32_t *) dst)[len] = 0;
     ++ len;
   }
 #endif
@@ -396,7 +396,7 @@ static uintnat deserialize_nat(void * dst)
 static intnat hash_nat(value v)
 {
   bngsize len, i;
-  uint32 h;
+  uint32_t h;
 
   len = bng_num_digits(&Digit_val(v,0), Wosize_val(v) - 1);
   h = 0;
@@ -406,10 +406,10 @@ static intnat hash_nat(value v)
     /* Mix the two 32-bit halves as if we were on a 32-bit platform,
        namely low 32 bits first, then high 32 bits.
        Also, ignore final 32 bits if they are zero. */
-    h = caml_hash_mix_uint32(h, (uint32) d);
+    h = caml_hash_mix_uint32(h, (uint32_t) d);
     d = d >> 32;
     if (d == 0 && i + 1 == len) break;
-    h = caml_hash_mix_uint32(h, (uint32) d);
+    h = caml_hash_mix_uint32(h, (uint32_t) d);
 #else
     h = caml_hash_mix_uint32(h, d);
 #endif

@@ -17,7 +17,12 @@
 #ifdef HAS_LIBBFD
 #include <stdlib.h>
 #include <string.h>
+
+// PACKAGE: protect against binutils change
+//   https://sourceware.org/bugzilla/show_bug.cgi?id=14243
+#define PACKAGE "ocamlobjinfo"
 #include <bfd.h>
+#undef PACKAGE
 
 int main(int argc, char ** argv)
 {

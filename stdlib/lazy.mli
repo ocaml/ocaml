@@ -75,11 +75,11 @@ val is_val : 'a t -> bool;;
     did not raise an exception.
     @since 4.00.0 *)
 
-val lazy_from_fun : (unit -> 'a) -> 'a t;;
+val lazy_from_fun : (unit -> 'a) -> 'a t [@@ocaml.deprecated];;
 (** @deprecated synonym for [from_fun]. *)
 
-val lazy_from_val : 'a -> 'a t;;
+val lazy_from_val : 'a -> 'a t [@@ocaml.deprecated];;
 (** @deprecated synonym for [from_val]. *)
 
-val lazy_is_val : 'a t -> bool;;
+val lazy_is_val : 'a t -> bool [@@ocaml.deprecated];;
 (** @deprecated synonym for [is_val]. *)

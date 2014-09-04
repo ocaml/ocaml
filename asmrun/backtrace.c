@@ -217,7 +217,7 @@ static void extract_location_info(frame_descr * d,
                                   /*out*/ struct loc_info * li)
 {
   uintnat infoptr;
-  uint32 info1, info2;
+  uint32_t info1, info2;
 
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to
@@ -232,8 +232,8 @@ static void extract_location_info(frame_descr * d,
              sizeof(char *) + sizeof(short) + sizeof(short) +
              sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
             & -sizeof(frame_descr *);
-  info1 = ((uint32 *)infoptr)[0];
-  info2 = ((uint32 *)infoptr)[1];
+  info1 = ((uint32_t *)infoptr)[0];
+  info2 = ((uint32_t *)infoptr)[1];
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
                           44       36         26                       2  0

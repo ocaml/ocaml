@@ -46,9 +46,9 @@ val to_bytes : t -> bytes
 
 val sub : t -> int -> int -> string
 (** [Buffer.sub b off len] returns (a copy of) the bytes from the
-current contents of the buffer [b] starting at offset [off] of length
-[len] bytes. May raise [Invalid_argument] if out of bounds request. The
-buffer itself is unaffected. *)
+    current contents of the buffer [b] starting at offset [off] of
+    length [len] bytes. May raise [Invalid_argument] if out of bounds
+    request. The buffer itself is unaffected. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
 (** [Buffer.blit src srcoff dst dstoff len] copies [len] characters from
@@ -63,7 +63,7 @@ val blit : t -> int -> bytes -> int -> int -> unit
 
 val nth : t -> int -> char
 (** get the n-th character of the buffer. Raise [Invalid_argument] if
-index out of bounds *)
+    index out of bounds *)
 
 val length : t -> int
 (** Return the number of characters currently contained in the buffer. *)

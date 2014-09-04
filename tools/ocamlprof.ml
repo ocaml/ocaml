@@ -86,7 +86,7 @@ let add_incr_counter modul (kind,pos) =
    | Close -> fprintf !outchan ")";
 ;;
 
-let counters = ref (Array.create 0 0)
+let counters = ref (Array.make 0 0)
 
 (* User defined marker *)
 let special_id = ref ""
@@ -122,7 +122,7 @@ let init_rewrite modes mod_name =
   cur_point := 0;
   if !instr_mode then begin
     fprintf !outchan "module %sProfiling = Profiling;; " modprefix;
-    fprintf !outchan "let %s%s_cnt = Array.create 000000000" idprefix mod_name;
+    fprintf !outchan "let %s%s_cnt = Array.make 000000000" idprefix mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan
             " 0;; Profiling.counters := \
@@ -131,7 +131,7 @@ let init_rewrite modes mod_name =
   end
 
 let final_rewrite add_function =
-  to_insert := Sort.list (fun x y -> snd x < snd y) !to_insert;
+  to_insert := List.sort (fun x y -> compare (snd x) (snd y)) !to_insert;
   prof_counter := 0;
   List.iter add_function !to_insert;
   copy (in_channel_length !inchan);

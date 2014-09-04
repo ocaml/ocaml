@@ -44,6 +44,15 @@
         cmp     \reg, #0
         beq     \lbl
         .endm
+#elif defined(SYS_freebsd)
+        .arch   armv6
+        .arm
+
+    /* Compatibility macros */
+        .macro  cbz reg, lbl
+        cmp     \reg, #0
+        beq     \lbl
+        .endm
 #endif
 
 trap_ptr        .req    r8

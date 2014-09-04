@@ -18,36 +18,36 @@
 #ifndef CAML_INT64_NATIVE_H
 #define CAML_INT64_NATIVE_H
 
-#define I64_literal(hi,lo) ((int64)(hi) << 32 | (lo))
-#define I64_split(x,hi,lo) (hi = (uint32)((x)>>32), lo = (uint32)(x))
+#define I64_literal(hi,lo) ((int64_t)(hi) << 32 | (lo))
+#define I64_split(x,hi,lo) (hi = (uint32_t)((x)>>32), lo = (uint32_t)(x))
 #define I64_compare(x,y) (((x) > (y)) - ((x) < (y)))
-#define I64_ult(x,y) ((uint64)(x) < (uint64)(y))
+#define I64_ult(x,y) ((uint64_t)(x) < (uint64_t)(y))
 #define I64_neg(x) (-(x))
 #define I64_add(x,y) ((x) + (y))
 #define I64_sub(x,y) ((x) - (y))
 #define I64_mul(x,y) ((x) * (y))
 #define I64_is_zero(x) ((x) == 0)
 #define I64_is_negative(x) ((x) < 0)
-#define I64_is_min_int(x) ((x) == ((int64)1 << 63))
+#define I64_is_min_int(x) ((x) == ((int64_t)1 << 63))
 #define I64_is_minus_one(x) ((x) == -1)
 
 #define I64_div(x,y) ((x) / (y))
 #define I64_mod(x,y) ((x) % (y))
 #define I64_udivmod(x,y,quo,rem) \
-  (*(rem) = (uint64)(x) % (uint64)(y), \
-   *(quo) = (uint64)(x) / (uint64)(y))
+  (*(rem) = (uint64_t)(x) % (uint64_t)(y), \
+   *(quo) = (uint64_t)(x) / (uint64_t)(y))
 #define I64_and(x,y) ((x) & (y))
 #define I64_or(x,y) ((x) | (y))
 #define I64_xor(x,y) ((x) ^ (y))
 #define I64_lsl(x,y) ((x) << (y))
 #define I64_asr(x,y) ((x) >> (y))
-#define I64_lsr(x,y) ((uint64)(x) >> (y))
+#define I64_lsr(x,y) ((uint64_t)(x) >> (y))
 #define I64_to_intnat(x) ((intnat) (x))
 #define I64_of_intnat(x) ((intnat) (x))
-#define I64_to_int32(x) ((int32) (x))
-#define I64_of_int32(x) ((int64) (x))
+#define I64_to_int32(x) ((int32_t) (x))
+#define I64_of_int32(x) ((int64_t) (x))
 #define I64_to_double(x) ((double)(x))
-#define I64_of_double(x) ((int64)(x))
+#define I64_of_double(x) ((int64_t)(x))
 
 #define I64_bswap(x) ((((x) & 0x00000000000000FFULL) << 56) | \
                       (((x) & 0x000000000000FF00ULL) << 40) | \

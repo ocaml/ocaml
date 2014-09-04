@@ -145,6 +145,19 @@ let rec compose_coercions c1 c2 =
   | (_, _) ->
       fatal_error "Translmod.compose_coercions"
 
+(*
+let apply_coercion a b c =
+  Format.eprintf "@[<2>apply_coercion@ %a@]@." Includemod.print_coercion b;
+  apply_coercion a b c
+
+let compose_coercions c1 c2 =
+  let c3 = compose_coercions c1 c2 in
+  let open Includemod in
+  Format.eprintf "@[<2>compose_coercions@ (%a)@ (%a) =@ %a@]@."
+    print_coercion c1 print_coercion c2 print_coercion c2;
+  c3
+*)
+
 (* Record the primitive declarations occuring in the module compiled *)
 
 let primitive_declarations = ref ([] : Primitive.description list)
@@ -225,7 +238,7 @@ let reorder_rec_bindings bindings =
   and rhs = Array.of_list (List.map (fun (_,_,_,rhs) -> rhs) bindings) in
   let fv = Array.map Lambda.free_variables rhs in
   let num_bindings = Array.length id in
-  let status = Array.create num_bindings Undefined in
+  let status = Array.make num_bindings Undefined in
   let res = ref [] in
   let rec emit_binding i =
     match status.(i) with

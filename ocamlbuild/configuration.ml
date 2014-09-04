@@ -18,31 +18,35 @@ open Lexers
 
 type t = Lexers.conf
 
-let acknowledge_config config =
-  let ack (tag, loc) = Param_tags.acknowledge (Some loc) tag in
+let acknowledge_config source config =
+  let ack (tag, loc) = Param_tags.acknowledge source (Some loc) tag in
   List.iter (fun (_, config) -> List.iter ack config.plus_tags) config
 
 let cache = Hashtbl.create 107
 let (configs, add_config) =
   let configs = ref [] in
   (fun () -> !configs),
-  (fun config ->
-     acknowledge_config config;
+  (fun source config ->
+     acknowledge_config source config;
      configs := config :: !configs;
      Hashtbl.clear cache)
 
 let parse_lexbuf ?dir source lexbuf =
-  lexbuf.Lexing.lex_curr_p <-
-    { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = source };
-  let conf = Lexers.conf_lines dir lexbuf in
-  add_config conf
+  let conf = Lexers.conf_lines dir source lexbuf in
+  add_config source conf
 
-let parse_string s =
-  parse_lexbuf (Printf.sprintf "STRING(%s)" s) (Lexing.from_string s)
+let parse_string ?source s =
+  let source = match source with
+    | Some source -> source
+    | None -> Const.Source.configuration
+  in
+  parse_lexbuf source (lexbuf_of_string s)
 
 let parse_file ?dir file =
   with_input_file file begin fun ic ->
-    parse_lexbuf ?dir file (Lexing.from_channel ic)
+    let lexbuf = Lexing.from_channel ic in
+    set_lexbuf_fname file lexbuf;
+    parse_lexbuf ?dir Const.Source.file lexbuf
   end
 
 let key_match = Glob.eval

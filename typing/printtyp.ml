@@ -232,7 +232,7 @@ module Path2 = struct
     | _ -> Pervasives.compare p1 p2
 end
 module PathMap = Map.Make(Path2)
-let printing_map = ref (Lazy.lazy_from_val PathMap.empty)
+let printing_map = ref (Lazy.from_val PathMap.empty)
 
 let same_type t t' = repr t == repr t'
 
@@ -936,6 +936,7 @@ let extension_constructor id ppf ext =
 (* Print a value declaration *)
 
 let tree_of_value_description id decl =
+  (* Format.eprintf "@[%a@]@." raw_type_expr decl.val_type; *)
   let id = Ident.name id in
   let ty = tree_of_type_scheme decl.val_type in
   let prims =

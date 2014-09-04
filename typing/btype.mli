@@ -164,6 +164,10 @@ val forget_abbrev:
 
 val is_optional : label -> bool
 val label_name : label -> label
+
+(* Returns the label name with first character '?' or '~' as appropriate. *)
+val prefixed_label_name : label -> label
+
 val extract_label :
     label -> (label * 'a) list ->
     label * 'a * (label * 'a) list * (label * 'a) list

@@ -47,6 +47,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    size is only [Sys.max_array_length / 2].*)
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
+  [@@ocaml.deprecated]
 (** @deprecated [Array.create] is an alias for {!Array.make}. *)
 
 val init : int -> (int -> 'a) -> 'a array
@@ -73,6 +74,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    size is only [Sys.max_array_length / 2]. *)
 
 val create_matrix : int -> int -> 'a -> 'a array array
+  [@@ocaml.deprecated]
 (** @deprecated [Array.create_matrix] is an alias for {!Array.make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
