@@ -271,11 +271,16 @@ module Analyser =
         Types.Type_abstract ->
           Odoc_type.Type_abstract
       | Types.Type_variant l ->
-          let f {Types.cd_id=constructor_name;cd_args=type_expr_list;cd_res=ret_type} =
+          let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =
               try List.assoc constructor_name name_comment_list
               with Not_found -> None
+            in
+            let type_expr_list =
+              match cd_args with
+              | Cstr_tuple l -> l
+              | Cstr_record _ -> assert false
             in
             {
               vc_name = constructor_name ;
@@ -658,10 +663,15 @@ module Analyser =
               [] -> (maybe_more, List.rev exts_acc)
             | (name, types_ext) :: q ->
               let ext_loc_end =  types_ext.Types.ext_loc.Location.loc_end.Lexing.pos_cnum in
+              let args =
+                match types_ext.ext_args with
+                | Cstr_tuple l -> l
+                | Cstr_record _ -> assert false
+              in
               let new_x =
                 {
                   xt_name = Name.concat current_module_name name ;
-                  xt_args = List.map (Odoc_env.subst_type new_env) types_ext.ext_args ;
+                  xt_args = List.map (Odoc_env.subst_type new_env) args;
                   xt_ret = may_map (Odoc_env.subst_type new_env) types_ext.ext_ret_type ;
                   xt_type_extension = new_te;
                   xt_alias = None ;
@@ -696,11 +706,16 @@ module Analyser =
               with Not_found ->
                 raise (Failure (Odoc_messages.exception_not_found current_module_name name.txt))
             in
+            let args =
+              match types_ext.ext_args with
+              | Cstr_tuple l -> l
+              | Cstr_record _ -> assert false
+            in
             let e =
               {
                 ex_name = Name.concat current_module_name name.txt ;
                 ex_info = comment_opt ;
-                ex_args = List.map (Odoc_env.subst_type env) types_ext.ext_args ;
+                ex_args = List.map (Odoc_env.subst_type env) args;
                 ex_ret = may_map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;

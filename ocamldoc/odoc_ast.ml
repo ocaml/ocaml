@@ -1316,6 +1316,11 @@ module Analyser =
                     let new_xt =
                       match tt_ext.ext_kind with
                           Text_decl(args, ret_type) ->
+                          let args =
+                            match args with
+                            | Cstr_tuple l -> l
+                            | Cstr_record _ -> assert false
+                          in
                             {
                               xt_name = complete_name;
                               xt_args =
@@ -1373,6 +1378,11 @@ module Analyser =
               Text_decl(tt_args, tt_ret_type) ->
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+                let tt_args =
+                  match tt_args with
+                  | Cstr_tuple l -> l
+                  | Cstr_record _ -> assert false
+                in
                 {
                   ex_name = complete_name ;
                   ex_info = comment_opt ;
