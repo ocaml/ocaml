@@ -1,4 +1,5 @@
 #include <string.h>
+#include <unistd.h>
 #include "fiber.h"
 #include "gc_ctrl.h"
 #include "instruct.h"
@@ -198,6 +199,7 @@ static value find_more_work()
   CAMLlocal1(woken);
   int found = 0;
   struct caml_runqueue* rq = caml_runqueue;
+  uintnat backoff_ns = 1;
 
   while (1) {
     With_mutex(&rq->woken_lock) {
@@ -225,6 +227,7 @@ static value find_more_work()
     /* Haven't found anything locally, try work-stealing */
     value stolen;
     struct domain* target = caml_random_domain();
+    caml_gc_log("Attempting to steal work from domain [%02d]", target->id);
     caml_domain_rpc(target, &steal_work, &stolen);
     if (stolen != Val_unit) {
 
@@ -240,6 +243,10 @@ static value find_more_work()
     }
 
     caml_domain_spin();
+    if (backoff_ns < 500*1000*1000)
+      backoff_ns *= 2;
+    if (backoff_ns > 1000)
+      usleep(backoff_ns / 1000);
   }
 }
 
