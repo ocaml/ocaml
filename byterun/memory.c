@@ -208,7 +208,6 @@ static void handle_write_fault(struct domain* target, void* reqp) {
     value local =
       caml_addrmap_lookup(&target->remembered_set->promotion_rev, req->obj);
     Op_val(local)[req->field] = req->val;
-    shared_heap_write_barrier(req->obj, req->field, req->val);
     Op_val(req->obj)[req->field] = req->val;
   } else {
     caml_gc_log("Stale write fault for domain [%02d]", target->id);
@@ -221,14 +220,15 @@ static void promoted_write(value obj, int field, value val)
 {
   if (Is_young(obj)) {
     value promoted = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
-    shared_heap_write_barrier(promoted, field, val);
     Op_val(promoted)[field] = val;
     Op_val(obj)[field] = val;
+    shared_heap_write_barrier(promoted, field, val);
   } else {
     struct domain* owner = caml_owner_of_shared_block(obj);
     struct write_fault_req req = {obj, field, val};
     caml_gc_log("Write fault to domain [%02d]", owner->id);
     caml_domain_rpc(owner, &handle_write_fault, &req);
+    shared_heap_write_barrier(obj, field, val);
   }
 }
 
@@ -245,7 +245,6 @@ static int do_promoted_cas(value local, value promoted, int field, value oldval,
   value* p = &Op_val(local)[field];
   if (*p == oldval) {
     *p = newval;
-    shared_heap_write_barrier(promoted, field, newval);
     Op_val(promoted)[field] = newval;
     return 1;
   } else {
@@ -272,12 +271,17 @@ static int promoted_cas(value obj, int field, value oldval, value newval)
 {
   if (Is_young(obj)) {
     value promoted = caml_addrmap_lookup(&caml_remembered_set.promotion, obj);
-    return do_promoted_cas(obj, promoted, field, oldval, newval);
+    int success = do_promoted_cas(obj, promoted, field, oldval, newval);
+    if (success)
+      shared_heap_write_barrier(promoted, field, newval);
+    return success;
   } else {
     struct domain* owner = caml_owner_of_shared_block(obj);
     struct cas_fault_req req = {obj, field, oldval, newval, 0};
     caml_gc_log("CAS fault to domain [%02d]", owner->id);
     caml_domain_rpc(owner, &handle_cas_fault, &req);
+    if (req.success)
+      shared_heap_write_barrier(obj, field, newval);
     return req.success;
   }
 }
