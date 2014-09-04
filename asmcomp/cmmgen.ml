@@ -1530,25 +1530,9 @@ let rec transl = function
       return_unit
         (ccatch
            (raise_num, [], [],
-            (* Cloop *)
             cloop
               (exit_if_false cond (remove_unit(transl body)) raise_num),
             Ctuple []))
-
-      (* let raise_loop_num = next_raise_count () in *)
-      (* return_unit *)
-      (*   (Ccatch *)
-      (*      (raise_num, [], [], *)
-      (*       Ccatch *)
-      (*         (raise_loop_num, [], [], *)
-      (*          Cexit (raise_loop_num,[],[]), *)
-      (*          exit_if_false cond *)
-      (*            (Csequence ((remove_unit(transl body), *)
-      (*                         Cexit (raise_loop_num,[],[])))) *)
-      (*            raise_num), *)
-      (*       Ctuple [])) *)
-
-
   | Ufor(id, low, high, dir, body) ->
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
@@ -1562,7 +1546,6 @@ let rec transl = function
                 (raise_num, [], [],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar id; high]), Cexit (raise_num, [], []),
-                    (* Cloop *)
                     cloop
                       (Csequence
                          (remove_unit(transl body),
@@ -2409,7 +2392,6 @@ let cache_public_method meths tag cache =
   Csequence(
   ccatch
     (raise_num, [],[],
-     (* Cloop *)
      cloop
        (Clet(
         mi,
