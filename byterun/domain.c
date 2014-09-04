@@ -545,6 +545,7 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   target->rpc_data = data;
   target->rpc_completion_signal = &completed;
   atomic_store_rel(&target->rpc_request, RPC_REQUEST_SENT);
+  interrupt_domain(target);
 
   /* Wait for a response */
   while (atomic_load_acq(&completed) == 0) {
