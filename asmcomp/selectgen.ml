@@ -31,7 +31,6 @@ module Exn_classes = struct
       mutable st_repr : exn_class option;
       mutable st_rank : int;
 
-      mutable st_depth : int option; (* try/with depth *)
       mutable st_args : int option; (* number of arguments *)
       mutable st_k : exn_class list option; (* list of continuation arguments *)
     }
@@ -53,7 +52,6 @@ module Exn_classes = struct
     { st_id = !(env.class_count);
       st_repr = None;
       st_rank = 0;
-      st_depth = None;
       st_args = None;
       st_k = None }
 
@@ -103,19 +101,6 @@ module Exn_classes = struct
         let e = repr e1 in
 
         begin
-          match e1.st_depth, e2.st_depth with
-          | None, None -> ()
-
-          | (Some _ as r), None
-          | None, (Some _ as r) ->
-              e.st_depth <- r
-
-          | (Some r1 as r), Some r2 ->
-              assert(r1 = r2);
-              e.st_depth <- r
-        end;
-
-        begin
           match e1.st_args, e2.st_args with
           | None, None -> ()
 
@@ -151,7 +136,6 @@ module Exn_classes = struct
     c
 
   let define env i args k =
-    (* TODO: record try/with depth *)
     let k = List.map (fun x -> Stexn_var x) k in
     let c = make_class env args k in
     Hashtbl.add env.def i c
