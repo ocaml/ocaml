@@ -204,7 +204,7 @@ static void handle_write_fault(struct domain* target, void* reqp) {
   struct write_fault_req* req = reqp;
   if (Is_promoted_hd(Hd_val(req->obj)) &&
       caml_owner_of_shared_block(req->obj) == target) {
-    caml_gc_log("Handling write fault for domain [%02d]", target->id);
+    caml_gc_log("Handling write fault for domain [%02d] on %p(%d)", target->id, req->obj, req->field);
     value local =
       caml_addrmap_lookup(&target->remembered_set->promotion_rev, req->obj);
     Op_val(local)[req->field] = req->val;

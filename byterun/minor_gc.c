@@ -182,6 +182,10 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 {
   struct promotion_stack stk = {0};
 
+  if (Is_block(root) && Is_minor(root)) {
+    Assert(caml_owner_of_young_block(root) == domain);
+  }
+
   if (Is_block(root) && Tag_val(root) == Stack_tag)
     return promote_stack(domain, root);
 
