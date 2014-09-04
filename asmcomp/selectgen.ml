@@ -888,14 +888,20 @@ method emit_expr (env:environment) exp =
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
-          let exn_var = self#emit_load_sexn_var env fail_var in
           let src = self#emit_tuple ext_env simple_list in
           let src_exn = self#emit_load_sexns ext_env stex_args in
           let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_vars fail_var in
           let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
           self#insert_moves src (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
-          self#insert (Iexit_ind possible_exns) exn_var [||];
+          begin
+            match possible_exns with
+            | [nfail] ->
+                self#insert (Iexit nfail) [||] [||];
+            | _ ->
+                let exn_var = self#emit_load_sexn_var env fail_var in
+                self#insert (Iexit_ind possible_exns) exn_var [||];
+          end;
           None
       end
 
