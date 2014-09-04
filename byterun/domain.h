@@ -44,6 +44,8 @@ struct domain* caml_domain_self();
 
 typedef void (*domain_rpc_handler)(struct domain*, void*);
 
+struct domain* caml_random_domain();
+
 void caml_domain_rpc(struct domain*, 
                      domain_rpc_handler, void*);
 

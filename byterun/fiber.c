@@ -164,6 +164,34 @@ static void rq_init() {
   deque_init(&caml_runqueue->back);
 }
 
+static void steal_work(struct domain* target, void* reqp)
+{
+  struct caml_runqueue* rq = target->runqueue;
+  value* ret = reqp;
+
+  if (rq->front.len) {
+    *ret = unappend(&rq->front);
+  } else if (rq->back.len) {
+    *ret = unappend(&rq->back);
+  } else {
+    /* no work found */
+    *ret = Val_unit;
+    return;
+  }
+
+  /* promote the fiber */
+  value stack = caml_promote(target, Field(*ret, FIBER_STACK));
+  Assert(Stack_ctx(stack)->domain == target);
+  if (Field(*ret,FIBER_IS_MAIN) == Val_int(1)) {
+    //Stack_ctx(stack)->domain = caml_domain_self();
+  }
+  Op_val(*ret)[FIBER_STACK] = stack;
+  //caml_modify_field(*ret, FIBER_STACK, stack);
+  *ret = caml_promote(target, *ret);
+}
+
+static value wake_fiber(value fib, value ret);
+
 static value find_more_work()
 {
   CAMLparam0();
@@ -194,6 +222,23 @@ static value find_more_work()
       CAMLreturn (pop(&rq->front));
     }
     
+    /* Haven't found anything locally, try work-stealing */
+    value stolen;
+    struct domain* target = caml_random_domain();
+    caml_domain_rpc(target, &steal_work, &stolen);
+    if (stolen != Val_unit) {
+
+      if (Field(stolen, FIBER_IS_MAIN) == Val_long(1)) {
+        /* can't steal the main fiber */
+        caml_gc_log("Stole main fiber, woops");
+        wake_fiber(stolen, Val_unit);
+      } else {
+        caml_gc_log("Stole work from domain [%02d]", target->id);
+        Stack_ctx(Field(stolen, FIBER_STACK))->domain = caml_domain_self();
+        CAMLreturn (stolen);
+      }
+    }
+
     caml_domain_spin();
   }
 }
@@ -315,7 +360,7 @@ struct caml_runqueue* caml_init_runqueue()
 
   fib = caml_alloc(FIBER_NFIELDS, 0);
   caml_initialize_field(fib, FIBER_STACK, stack);
-  caml_initialize_field(fib, FIBER_IS_MAIN, Val_long(1));
+  caml_initialize_field(fib, FIBER_IS_MAIN, Val_long(caml_domain_self()->is_main));
   caml_initialize_field(fib, FIBER_BLOCKVAL, Val_unit); /* ignored */
 
   caml_initialize_field(fib, FIBER_NEXT, Val_unit);
@@ -357,11 +402,11 @@ CAMLprim value caml_spawn(value clos /*, value arg */)
   ctx->domain = caml_domain_self();
   ctx->dirty = 0;
   ctx->c_args = 0;
-  fib = caml_alloc(FIBER_NFIELDS, 0);
-  caml_initialize_field(fib, FIBER_IS_MAIN, Val_long(0));
-  caml_initialize_field(fib, FIBER_STACK, stack);
-  caml_initialize_field(fib, FIBER_BLOCKVAL, clos);
-  caml_initialize_field(fib, FIBER_NEXT, Val_unit);
+  fib = caml_alloc_small(FIBER_NFIELDS, 0);
+  Init_field(fib, FIBER_IS_MAIN, Val_long(0));
+  Init_field(fib, FIBER_STACK, stack);
+  Init_field(fib, FIBER_BLOCKVAL, clos);
+  Init_field(fib, FIBER_NEXT, Val_unit);
 
   /* Switch to the newly spawned fiber immediately */
   push(&caml_runqueue->front, save_context(Val_unit));
@@ -573,17 +618,18 @@ CAMLprim value caml_mvar_new(value unit)
 {
   CAMLparam1(unit);
   CAMLlocal1(ret);
-  ret = caml_alloc(MVAR_NFIELDS, 0);
-  caml_initialize_field(ret, MVAR_STATE, Val_int(MVAR_EMPTY));
-  caml_initialize_field(ret, MVAR_WAITQ_HEAD, Val_unit);
-  caml_initialize_field(ret, MVAR_WAITQ_TAIL, Val_unit);
-  caml_initialize_field(ret, MVAR_VALUE, Val_unit);
+  ret = caml_alloc_small(MVAR_NFIELDS, 0);
+  Init_field(ret, MVAR_STATE, Val_int(MVAR_EMPTY));
+  Init_field(ret, MVAR_WAITQ_HEAD, Val_unit);
+  Init_field(ret, MVAR_WAITQ_TAIL, Val_unit);
+  Init_field(ret, MVAR_VALUE, Val_unit);
   CAMLreturn (ret);
 }
 
-static value suspend_on_mvar(value m, value block, int is_first)
+static void suspend_on_mvar(value m, value block, int is_first)
 {
   value self = save_context(block);
+  caml_runqueue->current = Val_unit;
   caml_gc_log("Suspending on mvar");
   if (is_first) {
     /* first fiber on waitq, update head and tail pointers */
@@ -595,7 +641,6 @@ static value suspend_on_mvar(value m, value block, int is_first)
     caml_modify_field(m, MVAR_WAITQ_TAIL, self);
   }
   dirty_stack(Field(self, FIBER_STACK));
-  return load_context(next_fiber());
 }
 
 static value wake_fiber(value fib, value ret)
@@ -629,11 +674,12 @@ CAMLprim value caml_mvar_put(value mv)
   value m = Field(mv, 0);
   value v = Field(mv, 1);
   mvar_state state = lock_mvar(m);
-  value ret = Val_unit;
-  
+
   if (state == MVAR_EMPTY) {
     caml_modify_field(m, MVAR_VALUE, v);
     state = MVAR_FULL;
+    unlock_mvar(m, state);
+    return Val_unit;
   } else if (state == MVAR_TAKE_WAITING) {
     value fib = Field(m, MVAR_WAITQ_HEAD);
     value next = Field(fib, FIBER_NEXT);
@@ -646,25 +692,26 @@ CAMLprim value caml_mvar_put(value mv)
       state = MVAR_EMPTY;
     }
 
+    unlock_mvar(m, state);
     caml_modify_field(fib, FIBER_BLOCKVAL, v);
-    ret = wake_fiber(fib, Val_unit);
+    return wake_fiber(fib, Val_unit);
   } else {
-    ret = suspend_on_mvar(m, v, state == MVAR_FULL);
+    suspend_on_mvar(m, v, state == MVAR_FULL);
     state = MVAR_PUT_WAITING;
+    unlock_mvar(m, state);
+    return load_context(next_fiber());
   }
-
-  unlock_mvar(m, state);
-  return ret;
 }
 
 CAMLprim value caml_mvar_take(value m)
 {
   mvar_state state = lock_mvar(m);
-  value ret;
   if (state == MVAR_FULL) {
-    ret = Field(m, MVAR_VALUE);
+    value ret = Field(m, MVAR_VALUE);
     caml_modify_field(m, MVAR_VALUE, Val_unit);
     state = MVAR_EMPTY;
+    unlock_mvar(m, state);
+    return ret;
   } else if (state == MVAR_PUT_WAITING) {
     value fib = Field(m, MVAR_WAITQ_HEAD);
     value next = Field(fib, FIBER_NEXT);
@@ -677,16 +724,17 @@ CAMLprim value caml_mvar_take(value m)
       state = MVAR_FULL;
     }
 
-    ret = Field(m, MVAR_VALUE);
+    value ret = Field(m, MVAR_VALUE);
     caml_modify_field(m, MVAR_VALUE, Field(fib, FIBER_BLOCKVAL));
     caml_modify_field(fib, FIBER_BLOCKVAL, Val_unit);
+    unlock_mvar(m, state);
 
-    ret = wake_fiber(fib, ret);
+    return wake_fiber(fib, ret);
   } else {
-    ret = suspend_on_mvar(m, Val_unit, state == MVAR_EMPTY);
+    suspend_on_mvar(m, Val_unit, state == MVAR_EMPTY);
     state = MVAR_TAKE_WAITING;
-  }
+    unlock_mvar(m, state);
 
-  unlock_mvar(m, state);
-  return ret;
+    return load_context(next_fiber());
+  }
 }
