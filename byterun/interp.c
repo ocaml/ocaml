@@ -279,6 +279,16 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
+
+    Assert(!Is_foreign(accu));
+    Assert(!Is_foreign(env));
+    {
+      value* s;
+      for (s = sp; s < caml_stack_high; s++) {
+        Assert(*s != Debug_free_minor);
+        Assert(!Is_foreign(*s));
+      }
+    }
     
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();

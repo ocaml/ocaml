@@ -176,8 +176,9 @@ static value find_more_work()
       woken = caml_read_root(rq->woken);
       caml_modify_root(rq->woken, Val_unit);
     }
-    
+
     while (woken != Val_unit) {
+      caml_gc_log("Incoming - %p", (void*)woken);
       value next = Field(woken, FIBER_NEXT);
       caml_modify_field(woken, FIBER_NEXT, Val_unit);
       append(&rq->back, woken);
@@ -288,7 +289,6 @@ int caml_running_main_fiber()
 
 value caml_fiber_death()
 {
-  caml_gc_log("Fiber died");
   return load_context(next_fiber());
 }
 
@@ -611,7 +611,7 @@ static value wake_fiber(value fib, value ret)
        CAMLreturn (load_context(fib)); */
   } else {
     struct caml_runqueue* rq = owner->runqueue;
-    caml_gc_log("Waking fiber remotely");
+    caml_gc_log("Waking fiber remotely - %p, %lld", fib, Field(fib, FIBER_BLOCKVAL));
     With_mutex(&rq->woken_lock) {
       caml_modify_field(fib, FIBER_NEXT, caml_read_root(rq->woken));
       caml_modify_root(rq->woken, fib);
