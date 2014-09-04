@@ -879,7 +879,9 @@ method emit_expr (env:environment) exp =
           let src = self#emit_tuple ext_env simple_list in
           let src_exn = self#emit_load_sexns ext_env stex_args in
           let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_def nfail in
-          self#insert_moves src (Array.concat dest_args) ;
+          let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
+          self#insert_moves src (Array.concat tmp_regs) ;
+          self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
           self#insert (Iexit nfail) [||] [||];
           None
@@ -891,9 +893,11 @@ method emit_expr (env:environment) exp =
           let src = self#emit_tuple ext_env simple_list in
           let src_exn = self#emit_load_sexns ext_env stex_args in
           let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_vars fail_var in
-          let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
-          self#insert_moves src (Array.concat dest_args) ;
+          let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
+          self#insert_moves src (Array.concat tmp_regs) ;
+          self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
+          let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
           begin
             match possible_exns with
             | [nfail] ->
