@@ -58,8 +58,8 @@ let rec eliminate_ref id = function
         (eliminate_ref id e,
          List.map (fun (s, e) -> (s, eliminate_ref id e)) sw,
          Misc.may_map (eliminate_ref id) default)
-  | Lstaticraise (i,args) ->
-      Lstaticraise (i,List.map (eliminate_ref id) args)
+  | Lstaticraise (i,args,kargs) ->
+      Lstaticraise (i,List.map (eliminate_ref id) args,kargs)
   | Lstaticcatch(e1, i, e2) ->
       Lstaticcatch(eliminate_ref id e1, i, eliminate_ref id e2)
   | Ltrywith(e1, v, e2) ->
@@ -87,6 +87,9 @@ let rec eliminate_ref id = function
 
 (* Simplification of exits *)
 
+let simplify_exits lam = lam
+
+(* TODO convert to extended static exceptions
 let simplify_exits lam =
 
   (* Count occurrences of (exit n ...) statements *)
@@ -275,6 +278,7 @@ let simplify_exits lam =
   | Lifused(v, l) -> Lifused (v,simplif l)
   in
   simplif lam
+*)
 
 (* Compile-time beta-reduction of functions immediately applied:
       Lapply(Lfunction(Curried, params, body), args, loc) ->
@@ -377,7 +381,7 @@ let simplify_lets lam =
           end
       | None -> ()
       end
-  | Lstaticraise (i,ls) -> List.iter (count bv) ls
+  | Lstaticraise (i,ls,ks) -> List.iter (count bv) ls
   | Lstaticcatch(l1, (i,_), l2) -> count bv l1; count bv l2
   | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
   | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
@@ -478,8 +482,8 @@ let simplify_lets lam =
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
          Misc.may_map simplif d)
-  | Lstaticraise (i,ls) ->
-      Lstaticraise (i, List.map simplif ls)
+  | Lstaticraise (i,ls,ks) ->
+      Lstaticraise (i, List.map simplif ls, ks)
   | Lstaticcatch(l1, (i,args), l2) ->
       Lstaticcatch (simplif l1, (i,args), simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
@@ -546,7 +550,7 @@ let rec emit_tail_infos is_tail lambda =
         (fun (_,lam) ->  emit_tail_infos is_tail lam)
         sw ;
       Misc.may (emit_tail_infos is_tail) d
-  | Lstaticraise (_, l) ->
+  | Lstaticraise (_, l, _) ->
       list_emit_tail_infos false l
   | Lstaticcatch (body, _, handler) ->
       emit_tail_infos is_tail body;

@@ -469,18 +469,18 @@ module StoreExp =
     end)
 
 
-let make_exit i = Lstaticraise (i,[])
+let make_exit i = Lstaticraise (Stexn_cst i,[],[])
 
 (* Introduce a catch, if worth it *)
 let make_catch d k = match d with
-| Lstaticraise (_,[]) -> k d
+| Lstaticraise (_,[],[]) -> k d
 | _ ->
     let e = next_raise_count () in
     Lstaticcatch (k (make_exit e),(e,[]),d)
 
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
-  | Lstaticraise (i,[]) -> Some i
+  | Lstaticraise (Stexn_cst i,[],[]) -> Some i
   | Llet (Alias,_,_,e) -> as_simple_exit e
   | _ -> None
 
@@ -494,7 +494,7 @@ let make_catch_delayed handler = match as_simple_exit handler with
 *)
     i,
     (fun body -> match body with
-    | Lstaticraise (j,_) ->
+    | Lstaticraise (Stexn_cst j,_,[]) ->
         if i=j then handler else body
     | _ -> Lstaticcatch (body,(i,[]),handler))
 
@@ -1144,7 +1144,7 @@ and precompile_or argo cls ors args def k = match ors with
 
           let mk_new_action vs =
             Lstaticraise
-              (or_num, List.map (fun v -> Lvar v) vs) in
+              (Stexn_cst or_num, List.map (fun v -> Lvar v) vs, []) in
 
           let do_optrec,body,handlers = do_cases rem in
           do_opt && do_optrec,
@@ -2213,7 +2213,7 @@ let mk_res get_key env last_choice idef cant_fail ctx =
       env, None, jumps_empty
   | [p] when group_var p ->
       env,
-      Some (Lstaticraise (idef,[])),
+      Some (Lstaticraise (Stexn_cst idef,[],[])),
       jumps_singleton idef ctx
   | _ ->
       (idef,cant_fail,last_choice)::env,
@@ -2221,7 +2221,7 @@ let mk_res get_key env last_choice idef cant_fail ctx =
   let klist,jumps =
     List.fold_right
       (fun (i,cant_fail,pats) (klist,jumps) ->
-        let act = Lstaticraise (i,[])
+        let act = Lstaticraise (Stexn_cst i,[],[])
         and pat = list_as_pat pats in
         let klist =
           List.fold_right
@@ -2242,7 +2242,7 @@ let mk_failaction_neg partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
-        Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
+        Some (Lstaticraise (Stexn_cst idef,[],[])),[],jumps_singleton idef ctx
     | _ ->
        (* Act as Total, this means
           If no appropriate default matrix exists,
@@ -2265,7 +2265,7 @@ and mk_failaction_pos partial seen ctx defs  =
   | ([],_)|(_,[]) ->
       List.fold_left
         (fun  (klist,jumps) (pats,i)->
-          let action = Lstaticraise (i,[]) in
+          let action = Lstaticraise (Stexn_cst i,[],[]) in
           let klist =
             List.fold_right
               (fun pat r -> (get_key_constr pat,action)::r)
@@ -2607,7 +2607,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           let ctx = select_columns mat ctx in
           let handler_i, total_i = compile_fun ctx pm in
           match raw_action r with
-          | Lstaticraise (j,args) ->
+          | Lstaticraise (Stexn_cst j,args,[]) ->
               if i=j then
                 List.fold_right2 (bind Alias) vars args handler_i,
                 jumps_map (ctx_rshift_num (ncols mat)) total_i
@@ -2644,7 +2644,7 @@ let compile_test compile_fun partial divide combine ctx to_match =
 (* Approximation of v present in lam *)
 let rec approx_present v = function
   | Lconst _ -> false
-  | Lstaticraise (_,args) ->
+  | Lstaticraise (_,args,[]) ->
       List.exists (fun lam -> approx_present v lam) args
   | Lprim (_,args) ->
       List.exists (fun lam -> approx_present v lam) args
@@ -2686,7 +2686,7 @@ let bind_check str v arg lam = match str,arg with
 | _,_     -> bind str v arg lam
 
 let comp_exit ctx m = match m.default with
-| (_,i)::_ -> Lstaticraise (i,[]), jumps_singleton i ctx
+| (_,i)::_ -> Lstaticraise (Stexn_cst i,[],[]), jumps_singleton i ctx
 | _        -> fatal_error "Matching.comp_exit"
 
 

@@ -176,6 +176,12 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
+type stexn_var = { stexn_var : int }
+
+type stexn =
+  | Stexn_var of stexn_var
+  | Stexn_cst of int
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -188,7 +194,7 @@ type lambda =
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option
-  | Lstaticraise of int * lambda list
+  | Lstaticraise of stexn * lambda list * stexn list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda

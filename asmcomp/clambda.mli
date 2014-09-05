@@ -32,9 +32,9 @@ and uconstant =
   | Uconst_int of int
   | Uconst_ptr of int
 
-type stexn_var = { stexn_var : int }
+type stexn_var = Lambda.stexn_var = { stexn_var : int }
 
-type stexn =
+type stexn = Lambda.stexn =
   | Stexn_var of stexn_var
   | Stexn_cst of int
 

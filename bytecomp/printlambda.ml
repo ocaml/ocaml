@@ -328,10 +328,13 @@ let rec lam ppf = function
         end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
-  | Lstaticraise (i, ls)  ->
+  | Lstaticraise (i, ls, ks)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
+      fprintf ppf "@[<2>(exit@ %s%a %s)@]"
+        "TODO update print staticraise"
+        lams ls
+        "TODO update print staticraise";
   | Lstaticcatch(lbody, (i, vars), lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i

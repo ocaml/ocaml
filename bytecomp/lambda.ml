@@ -167,6 +167,12 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
+type stexn_var = { stexn_var : int }
+
+type stexn =
+  | Stexn_var of stexn_var
+  | Stexn_cst of int
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -177,7 +183,7 @@ type lambda =
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
   | Lstringswitch of lambda * (string * lambda) list * lambda option
-  | Lstaticraise of int * lambda list
+  | Lstaticraise of stexn * lambda list * stexn list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
@@ -257,8 +263,8 @@ let make_key e =
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
            tr_opt env d)
-    | Lstaticraise (i,es) ->
-        Lstaticraise (i,tr_recs env es)
+    | Lstaticraise (i,es,ks) ->
+        Lstaticraise (i,tr_recs env es,ks)
     | Lstaticcatch (e1,xs,e2) ->
         Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
     | Ltrywith (e1,x,e2) ->
@@ -340,7 +346,7 @@ let iter f = function
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
       iter_opt f default
-  | Lstaticraise (_,args) ->
+  | Lstaticraise (_,args,_) ->
       List.iter f args
   | Lstaticcatch(e1, (_,vars), e2) ->
       f e1; f e2
@@ -416,16 +422,16 @@ let next_negative_raise_count () =
   !negative_raise_count
 
 (* Anticipated staticraise, for guards *)
-let staticfail = Lstaticraise (0,[])
+let staticfail = Lstaticraise (Stexn_cst 0,[],[])
 
 let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
+  | Lifthenelse( cond, body, Lstaticraise (Stexn_cst 0,[],[])) -> true
   | Llet(str, id, lam, body) -> is_guarded body
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
+  | Lifthenelse (cond, body, Lstaticraise (Stexn_cst 0,[],[])) ->
       Lifthenelse (cond, body, patch)
   | Llet(str, id, lam, body) ->
       Llet (str, id, lam, patch_guarded patch body)
@@ -480,7 +486,7 @@ let subst_lambda s lam =
   | Lstringswitch (arg,cases,default) ->
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default)
-  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
+  | Lstaticraise (i,args,ks) ->  Lstaticraise (i, List.map subst args, ks)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
