@@ -121,7 +121,8 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
         let type_manifest () =
           match decl.type_manifest, manifest_decl with
           | Some {desc = Tconstr(Path.Pdot (m, name, _), _, _)}, _ ->
-              Some (Path.Pdot (m, name ^ "." ^ Ident.name cd_id, Path.nopos))
+              let s = Btype.inlined_record_name name (Ident.name cd_id) in
+              Some (Path.Pdot (m, s, Path.nopos))
           | Some {desc = Tconstr(Path.Pident _, _, _)},
             Some {type_kind = Type_variant cstrs} ->
               let c =

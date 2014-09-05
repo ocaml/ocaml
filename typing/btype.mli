@@ -209,3 +209,6 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
   (constructor_arguments -> unit)
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
+
+
+val inlined_record_name: string -> string -> string

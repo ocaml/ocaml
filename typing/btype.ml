@@ -686,3 +686,7 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+
+
+let inlined_record_name typ cstr =
+  typ ^ "." ^ cstr

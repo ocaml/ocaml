@@ -185,7 +185,7 @@ let transl_constructor_arguments loc env closed ty_name c_name = function
       Cstr_tuple l
   | Pcstr_record l ->
       let lbls, lbls' = transl_labels loc env closed l in
-      let id = Ident.create (ty_name ^ "." ^ c_name) in
+      let id = Ident.create (Btype.inlined_record_name ty_name c_name) in
       Types.Cstr_record (id, lbls'),
       Cstr_record lbls
 
@@ -1217,7 +1217,8 @@ let transl_extension_constructor env check_open type_path type_params
             | _ -> assert false
 	  in
 	  let id =
-            Ident.create (Path.last type_path ^ "." ^ sext.pext_name.txt)
+            Ident.create (Btype.inlined_record_name (Path.last type_path)
+                            sext.pext_name.txt)
           in
 	  Some p, Types.Cstr_record (id, lbls)
         else

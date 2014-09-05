@@ -441,7 +441,11 @@ let typedecl_subids decl =
         (fun acc pcd ->
            match pcd.pcd_args with
            | Pcstr_record _ ->
-               {loc = pcd.pcd_name.loc; txt = decl.ptype_name.txt ^ "." ^ pcd.pcd_name.txt} :: acc
+               {
+                 loc = pcd.pcd_name.loc;
+                 txt = Btype.inlined_record_name decl.ptype_name.txt
+                     pcd.pcd_name.txt
+               } :: acc
            | Pcstr_tuple _ ->
                acc
         )
