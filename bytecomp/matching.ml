@@ -476,7 +476,7 @@ let make_catch d k = match d with
 | Lstaticraise (_,[],[]) -> k d
 | _ ->
     let e = next_raise_count () in
-    Lstaticcatch (k (make_exit e),(e,[]),d)
+    lstaticcatch (k (make_exit e),(e,[]),d)
 
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
@@ -496,7 +496,7 @@ let make_catch_delayed handler = match as_simple_exit handler with
     (fun body -> match body with
     | Lstaticraise (Stexn_cst j,_,[]) ->
         if i=j then handler else body
-    | _ -> Lstaticcatch (body,(i,[]),handler))
+    | _ -> lstaticcatch (body,(i,[]),handler))
 
 
 let raw_action l =
@@ -2615,14 +2615,14 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 do_rec r total_r rem
           | _ ->
               do_rec
-                (Lstaticcatch (r,(i,vars), handler_i))
+                (lstaticcatch (r,(i,vars), handler_i))
                 (jumps_union
                    (jumps_remove i total_r)
                    (jumps_map (ctx_rshift_num (ncols mat)) total_i))
               rem
         with
         | Unused ->
-            do_rec (Lstaticcatch (r, (i,vars), lambda_unit)) total_r rem
+            do_rec (lstaticcatch (r, (i,vars), lambda_unit)) total_r rem
         end in
   do_rec lambda1 total1 to_catch
 
@@ -2710,12 +2710,12 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                       (match rem with [] -> partial | _ -> Partial)
                       ctx_i arg pm in
                   c_rec
-                    (Lstaticcatch (body,(i,[]),li))
+                    (lstaticcatch (body,(i,[]),li))
                     (jumps_union total_i total_rem)
                     rem
                 with
                 | Unused ->
-                    c_rec (Lstaticcatch (body,(i,[]),lambda_unit))
+                    c_rec (lstaticcatch (body,(i,[]),lambda_unit))
                       total_rem  rem
             end in
    try
@@ -2940,7 +2940,7 @@ let check_total total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
   else begin
-    Lstaticcatch(lambda, (i,[]), handler_fun())
+    lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
 let compile_matching loc repr handler_fun arg pat_act_list partial =

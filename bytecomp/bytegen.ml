@@ -633,7 +633,7 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, [i, vars, [] , handler]) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =
@@ -675,6 +675,7 @@ let rec comp_expr env exp sz cont =
           comp_expr env arg sz cont
       | _ -> comp_exit_args env args sz size cont
       end
+  | Lstaticcatch _
   | Lstaticraise _ ->
       failwith "extended static exceptions are not available in bytecode"
   | Ltrywith(body, id, handler) ->

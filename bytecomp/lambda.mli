@@ -195,7 +195,7 @@ type lambda =
    strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of stexn * lambda list * stexn list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * Ident.t list * stexn_var list * lambda) list
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -222,6 +222,8 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+
+val lstaticcatch: (lambda * (int * Ident.t list) * lambda) -> lambda
 
 (* Sharing key *)
 val make_key: lambda -> lambda option

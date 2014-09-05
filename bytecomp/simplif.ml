@@ -60,8 +60,11 @@ let rec eliminate_ref id = function
          Misc.may_map (eliminate_ref id) default)
   | Lstaticraise (i,args,kargs) ->
       Lstaticraise (i,List.map (eliminate_ref id) args,kargs)
-  | Lstaticcatch(e1, i, e2) ->
-      Lstaticcatch(eliminate_ref id e1, i, eliminate_ref id e2)
+  | Lstaticcatch(body, handlers) ->
+      let handlers = List.map (fun (n, ids, kids, handler) ->
+          n, ids, kids, eliminate_ref id handler)
+          handlers in
+      Lstaticcatch(eliminate_ref id body, handlers)
   | Ltrywith(e1, v, e2) ->
       Ltrywith(eliminate_ref id e1, v, eliminate_ref id e2)
   | Lifthenelse(e1, e2, e3) ->
@@ -382,7 +385,9 @@ let simplify_lets lam =
       | None -> ()
       end
   | Lstaticraise (i,ls,ks) -> List.iter (count bv) ls
-  | Lstaticcatch(l1, (i,_), l2) -> count bv l1; count bv l2
+  | Lstaticcatch(body, handlers) ->
+      count bv body;
+      List.iter (fun (_,_,_,handler) -> count bv handler) handlers
   | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
   | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
   | Lsequence(l1, l2) -> count bv l1; count bv l2
@@ -484,8 +489,11 @@ let simplify_lets lam =
          Misc.may_map simplif d)
   | Lstaticraise (i,ls,ks) ->
       Lstaticraise (i, List.map simplif ls, ks)
-  | Lstaticcatch(l1, (i,args), l2) ->
-      Lstaticcatch (simplif l1, (i,args), simplif l2)
+  | Lstaticcatch(body, handlers) ->
+      let handlers = List.map (fun (i, args, kargs, handler) ->
+          (i, args, kargs, simplif handler))
+          handlers in
+      Lstaticcatch (simplif body, handlers)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
   | Lsequence(Lifused(v, l1), l2) ->
@@ -552,9 +560,11 @@ let rec emit_tail_infos is_tail lambda =
       Misc.may (emit_tail_infos is_tail) d
   | Lstaticraise (_, l, _) ->
       list_emit_tail_infos false l
-  | Lstaticcatch (body, _, handler) ->
+  | Lstaticcatch (body, handlers) ->
       emit_tail_infos is_tail body;
-      emit_tail_infos is_tail handler
+      List.iter (fun (_,_,_,handler) ->
+          emit_tail_infos is_tail handler)
+        handlers
   | Ltrywith (body, _, handler) ->
       emit_tail_infos false body;
       emit_tail_infos is_tail handler

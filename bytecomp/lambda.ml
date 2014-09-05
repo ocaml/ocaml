@@ -184,7 +184,7 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of stexn * lambda list * stexn list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * Ident.t list * stexn_var list * lambda) list
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -216,6 +216,9 @@ and lambda_event_kind =
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
+
+let lstaticcatch (body, (e, args), handler) =
+  Lstaticcatch(body,[e, args, [], handler])
 
 (* Build sharing keys *)
 (*
@@ -265,8 +268,11 @@ let make_key e =
            tr_opt env d)
     | Lstaticraise (i,es,ks) ->
         Lstaticraise (i,tr_recs env es,ks)
-    | Lstaticcatch (e1,xs,e2) ->
-        Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
+    | Lstaticcatch (body,handlers) ->
+        let handlers = List.map (fun (nfail, ids, kids, handler) ->
+            nfail, ids, kids, tr_rec env handler)
+            handlers in
+        Lstaticcatch (tr_rec env body,handlers)
     | Ltrywith (e1,x,e2) ->
         Ltrywith (tr_rec env e1,x,tr_rec env e2)
     | Lifthenelse (cond,ifso,ifnot) ->
@@ -348,8 +354,9 @@ let iter f = function
       iter_opt f default
   | Lstaticraise (_,args,_) ->
       List.iter f args
-  | Lstaticcatch(e1, (_,vars), e2) ->
-      f e1; f e2
+  | Lstaticcatch(e1, handlers) ->
+      f e1;
+      List.iter (fun (_,_,_,handler) -> f handler) handlers
   | Ltrywith(e1, exn, e2) ->
       f e1; f e2
   | Lifthenelse(e1, e2, e3) ->
@@ -388,8 +395,10 @@ let free_ids get l =
         fv := IdentSet.remove id !fv
     | Lletrec(decl, body) ->
         List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
-    | Lstaticcatch(e1, (_,vars), e2) ->
-        List.iter (fun id -> fv := IdentSet.remove id !fv) vars
+    | Lstaticcatch(e1, handlers) ->
+        List.iter (fun (_, vars, _, _) ->
+            List.iter (fun id -> fv := IdentSet.remove id !fv) vars)
+          handlers
     | Ltrywith(e1, exn, e2) ->
         fv := IdentSet.remove exn !fv
     | Lfor(v, e1, e2, dir, e3) ->
@@ -487,7 +496,11 @@ let subst_lambda s lam =
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default)
   | Lstaticraise (i,args,ks) ->  Lstaticraise (i, List.map subst args, ks)
-  | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
+  | Lstaticcatch(e1, handlers) ->
+      let handlers = List.map (fun (nfail, ids, kids, handler) ->
+          (nfail, ids, kids, subst handler))
+          handlers in
+      Lstaticcatch(subst e1, handlers)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
   | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)

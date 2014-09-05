@@ -335,7 +335,7 @@ let rec lam ppf = function
         "TODO update print staticraise"
         lams ls
         "TODO update print staticraise";
-  | Lstaticcatch(lbody, (i, vars), lhandler) ->
+  | Lstaticcatch(lbody, [i, vars, kargs, lhandler]) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
         (fun ppf vars -> match vars with
@@ -346,6 +346,8 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
+  | Lstaticcatch(lbody, _) ->
+      fprintf ppf "TODO update print Lstaticcatch"
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler

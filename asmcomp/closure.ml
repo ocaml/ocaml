@@ -989,10 +989,14 @@ let rec close fenv cenv = function
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args, kargs) ->
       (Ustaticfail (i, close_list fenv cenv args, kargs), Value_unknown)
-  | Lstaticcatch(body, (i, vars), handler) ->
+  | Lstaticcatch(body, handlers) ->
       let (ubody, _) = close fenv cenv body in
-      let (uhandler, _) = close fenv cenv handler in
-      (Ucatch([i, vars, [], uhandler], ubody), Value_unknown)
+      let uhandlers =
+        List.map (fun (nfail, args, kargs, handler) ->
+            let (uhandler, _) = close fenv cenv handler in
+            (nfail, args, kargs, uhandler))
+          handlers in
+      (Ucatch(uhandlers, ubody), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
