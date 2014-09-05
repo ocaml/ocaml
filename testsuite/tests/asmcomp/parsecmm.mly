@@ -26,7 +26,7 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[],[])) in
+  let actv = Array.make (Array.length casev) (cexit(0,[],[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -44,9 +44,12 @@ let access_array base numelt size =
 let cloop expr =
   let raise_num = Lambda.next_raise_count () in
   ccatch(raise_num, [], [],
-         Cexit (raise_num,[],[]),
+         cexit (raise_num,[],[]),
          (Csequence (expr,
-                     Cexit (raise_num,[],[]))))
+                     cexit (raise_num,[],[]))))
+
+let cexit_ind (var, args, ks) =
+  Cexit(Stexn_var {stexn_var = var},args,ks)
 
 %}
 
@@ -203,15 +206,15 @@ expr:
       { let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[],[]))) in
+          | _ -> Cifthenelse($3, $4, (cexit(0,[],[]))) in
         Ccatch([0, [], [], Ctuple []], cloop body) }
-  | EXIT        { Cexit(0,[],[]) }
-  | LPAREN EXIT INTCONST exprlist RPAREN { Cexit($3,List.rev $4,[]) }
-  | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { Cexit($3,List.rev $4,[Stexn_cst $6]) }
-  | LPAREN EXIT_IND INTCONST exprlist RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[]) }
-  | LPAREN EXIT_IND INTCONST exprlist COMMA INTCONST RPAREN { Cexit_ind({stexn_var = $3},List.rev $4,[Stexn_cst $6]) }
+  | EXIT        { cexit(0,[],[]) }
+  | LPAREN EXIT INTCONST exprlist RPAREN { cexit($3,List.rev $4,[]) }
+  | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { cexit($3,List.rev $4,[Stexn_cst $6]) }
+  | LPAREN EXIT_IND INTCONST exprlist RPAREN { cexit_ind($3,List.rev $4,[]) }
+  | LPAREN EXIT_IND INTCONST exprlist COMMA INTCONST RPAREN { cexit_ind($3,List.rev $4,[Stexn_cst $6]) }
   | LPAREN EXIT_IND INTCONST exprlist COMMA LPAREN INTCONST RPAREN RPAREN
-      { Cexit_ind({stexn_var = $3},List.rev $4,[Stexn_var { stexn_var = $7 } ]) }
+      { cexit_ind($3,List.rev $4,[Stexn_var { stexn_var = $7 } ]) }
   | LPAREN CATCH sequence catch_with RPAREN
                 { let handlers = $4 in
                   List.iter (fun (_, l, _, _) -> List.iter unbind_ident l) handlers;
