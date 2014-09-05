@@ -187,11 +187,11 @@ module Exn_classes = struct
           aux body;
           List.iter (fun (_i, _args, _k, handler) -> aux handler) handlers
 
-      | Cexit (i, args, k) ->
+      | Cexit (Stexn_cst i, args, k) ->
           apply_direct env i args k;
           List.iter aux args
 
-      | Cexit_ind (var, args, k) ->
+      | Cexit (Stexn_var var, args, k) ->
           apply_var env var args k;
           List.iter aux args
 
@@ -856,43 +856,36 @@ method emit_expr (env:environment) exp =
       let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
       self#insert (Icatch(List.map aux2 l, s_body#extract)) [||] [||];
       r
-  | Cexit (nfail,args,stex_args) ->
+  | Cexit (stexn,args,stex_args) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
           let src = self#emit_tuple ext_env simple_list in
           let src_exn = self#emit_load_sexns ext_env stex_args in
-          let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_def nfail in
+          let dest_args, dest_exn =
+            match stexn with
+            | Stexn_var fail_var ->
+                Hashtbl.find env.st_exn_info.sti_vars fail_var
+            | Stexn_cst nfail ->
+                Hashtbl.find env.st_exn_info.sti_def nfail
+          in
           let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
           self#insert_moves src (Array.concat tmp_regs) ;
           self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
-          self#insert (Iexit nfail) [||] [||];
-          None
-      end
-  | Cexit_ind (fail_var,args,stex_args) ->
-      begin match self#emit_parts_list env args with
-        None -> None
-      | Some (simple_list, ext_env) ->
-          let src = self#emit_tuple ext_env simple_list in
-          let src_exn = self#emit_load_sexns ext_env stex_args in
-          let dest_args, dest_exn = Hashtbl.find env.st_exn_info.sti_vars fail_var in
-          let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
-          self#insert_moves src (Array.concat tmp_regs) ;
-          self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
-          self#insert_moves src_exn (Array.concat dest_exn) ;
-          let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
-          begin
-            match possible_exns with
-            | [nfail] ->
-                self#insert (Iexit nfail) [||] [||];
-            | _ ->
-                let exn_var = self#emit_load_sexn_var env fail_var in
-                self#insert (Iexit_ind possible_exns) exn_var [||];
+          begin match stexn with
+          | Stexn_cst nfail -> self#insert (Iexit nfail) [||] [||]
+          | Stexn_var fail_var ->
+              let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
+              match possible_exns with
+              | [nfail] ->
+                  self#insert (Iexit nfail) [||] [||]
+              | _ ->
+                  let exn_var = self#emit_load_sexn_var env fail_var in
+                  self#insert (Iexit_ind possible_exns) exn_var [||]
           end;
           None
       end
-
   | Ctrywith(e1, v, e2) ->
       let (r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in

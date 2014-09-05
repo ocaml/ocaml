@@ -469,7 +469,6 @@ let rec remove_unit = function
   | Cop(Cextcall(proc, mty, alloc, dbg), args) ->
       Cop(Cextcall(proc, typ_void, alloc, dbg), args)
   | Cexit (_,_,_) as c -> c
-  | Cexit_ind (_,_,_) as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
@@ -1102,7 +1101,7 @@ struct
 
   type act = expression
 
-  let default = Cexit (0,[],[])
+  let default = cexit (0,[],[])
   let make_const i =  Cconst_int i
   let make_prim p args = Cop (p,args)
   let make_offset arg n = add_const arg n
@@ -1113,7 +1112,7 @@ struct
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
-  | Cexit (i,[],[]) -> i,fun e -> e
+  | Cexit (Stexn_cst i,[],[]) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
 (*
@@ -1123,12 +1122,12 @@ struct
 *)
       i,
       (fun body -> match body with
-      | Cexit (j,_,_) ->
+      | Cexit (Stexn_cst j,_,_) ->
           if i=j then handler
           else body
       | _ ->  ccatch (i,[],[],body,handler))
 
-  let make_exit i = Cexit (i,[],[])
+  let make_exit i = cexit (i,[],[])
 
 end
 
@@ -1140,7 +1139,7 @@ module StoreExp =
       type t = expression
       type key = int
       let make_key = function
-        | Cexit (i,[],[]) -> Some i
+        | Cexit (Stexn_cst i,[],[]) -> Some i
         | _ -> None
     end)
 
@@ -1275,8 +1274,7 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cswitch(arg, index, cases) ->
         Cswitch(subst arg, index, Array.map subst cases)
     | Ccatch(handlers, body) -> map_ccatch subst handlers body
-    | Cexit (nfail, el, kel) -> Cexit (nfail, List.map subst el, kel)
-    | Cexit_ind (nfail, el, kel) -> Cexit_ind (nfail, List.map subst el, kel)
+    | Cexit (stexn, el, kel) -> Cexit (stexn, List.map subst el, kel)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | (Cconst_int _ | Cconst_natint _ | Cconst_float _
       | Cconst_symbol _ | Cconst_pointer _ |Cconst_natpointer _
@@ -1301,9 +1299,9 @@ let strmatch_compile =
 let cloop expr =
   let raise_num = next_raise_count () in
   ccatch(raise_num, [], [],
-         Cexit (raise_num,[],[]),
+         cexit (raise_num,[],[]),
          (Csequence (remove_unit expr,
-                     Cexit (raise_num,[],[]))))
+                     cexit (raise_num,[],[]))))
 
 let rec transl = function
     Uvar id ->
@@ -1484,7 +1482,7 @@ let rec transl = function
           strmatch_compile arg (Misc.may_map transl d)
             (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (nfail, args) ->
-      Cexit (nfail, List.map transl args, [])
+      cexit (nfail, List.map transl args, [])
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl body) (transl handler)
   | Ucatch(nfail, ids, body, handler) ->
@@ -1545,7 +1543,7 @@ let rec transl = function
               ccatch
                 (raise_num, [], [],
                  Cifthenelse
-                   (Cop(Ccmpi tst, [Cvar id; high]), Cexit (raise_num, [], []),
+                   (Cop(Ccmpi tst, [Cvar id; high]), cexit (raise_num, [], []),
                     cloop
                       (Csequence
                          (remove_unit(transl body),
@@ -1555,7 +1553,7 @@ let rec transl = function
                                Cop(inc, [Cvar id; Cconst_int 2])),
                              Cifthenelse
                                (Cop(Ccmpi Ceq, [Cvar id_prev; high]),
-                                Cexit (raise_num,[],[]), Ctuple [])))))),
+                                cexit (raise_num,[],[]), Ctuple [])))))),
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
@@ -2057,7 +2055,7 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
          else trbody2)
 
 and make_catch ncatch body handler = match body with
-| Cexit (nexit,[],[]) when nexit=ncatch -> handler
+| Cexit (Stexn_cst nexit,[],[]) when nexit=ncatch -> handler
 | _ ->  ccatch (ncatch, [], [], body, handler)
 
 and make_catch2 mk_body handler = match handler with
@@ -2067,24 +2065,24 @@ and make_catch2 mk_body handler = match handler with
     let nfail = next_raise_count () in
     make_catch
       nfail
-      (mk_body (Cexit (nfail,[],[])))
+      (mk_body (cexit (nfail,[],[])))
       handler
 
 and exit_if_true cond nfail otherwise =
   match cond with
   | Uconst (Uconst_ptr 0) -> otherwise
-  | Uconst (Uconst_ptr 1) -> Cexit (nfail,[],[])
+  | Uconst (Uconst_ptr 1) -> cexit (nfail,[],[])
   | Uprim(Psequor, [arg1; arg2], _) ->
       exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
   | Uprim(Psequand, _, _) ->
       begin match otherwise with
-      | Cexit (raise_num,[],[]) ->
-          exit_if_false cond (Cexit (nfail,[],[])) raise_num
+      | Cexit (Stexn_cst raise_num,[],[]) ->
+          exit_if_false cond (cexit (nfail,[],[])) raise_num
       | _ ->
           let raise_num = next_raise_count () in
           make_catch
             raise_num
-            (exit_if_false cond (Cexit (nfail,[],[])) raise_num)
+            (exit_if_false cond (cexit (nfail,[],[])) raise_num)
             otherwise
       end
   | Uprim(Pnot, [arg], _) ->
@@ -2098,23 +2096,23 @@ and exit_if_true cond nfail otherwise =
              exit_if_true ifnot nfail shared))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl cond), Cexit (nfail, [], []), otherwise)
+      Cifthenelse(test_bool(transl cond), cexit (nfail, [], []), otherwise)
 
 and exit_if_false cond otherwise nfail =
   match cond with
-  | Uconst (Uconst_ptr 0) -> Cexit (nfail,[],[])
+  | Uconst (Uconst_ptr 0) -> cexit (nfail,[],[])
   | Uconst (Uconst_ptr 1) -> otherwise
   | Uprim(Psequand, [arg1; arg2], _) ->
       exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
   | Uprim(Psequor, _, _) ->
       begin match otherwise with
-      | Cexit (raise_num,[],[]) ->
-          exit_if_true cond raise_num (Cexit (nfail,[],[]))
+      | Cexit (Stexn_cst raise_num,[],[]) ->
+          exit_if_true cond raise_num (cexit (nfail,[],[]))
       | _ ->
           let raise_num = next_raise_count () in
           make_catch
             raise_num
-            (exit_if_true cond raise_num (Cexit (nfail,[],[])))
+            (exit_if_true cond raise_num (cexit (nfail,[],[])))
             otherwise
       end
   | Uprim(Pnot, [arg], _) ->
@@ -2128,7 +2126,7 @@ and exit_if_false cond otherwise nfail =
              exit_if_false ifnot shared nfail))
         otherwise
   | _ ->
-      Cifthenelse(test_bool(transl cond), otherwise, Cexit (nfail, [],[]))
+      Cifthenelse(test_bool(transl cond), otherwise, cexit (nfail, [],[]))
 
 and transl_switch arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
@@ -2408,7 +2406,7 @@ let cache_public_method meths tag cache =
            Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2])),
            Cassign(li, Cvar mi)),
         Cifthenelse
-          (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, [],[]),
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), cexit (raise_num, [],[]),
            Ctuple [])))),
      Ctuple []),
   Clet (

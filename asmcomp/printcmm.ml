@@ -164,18 +164,13 @@ let rec expr ppf = function
         "@[<2>(catch@ %a@;<1 -2>with%a)@]"
         sequence e1
         print_handlers handlers
-  | Cexit (i, el, kl) ->
-      fprintf ppf "@[<2>(exit %d" i ;
-      List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
-      (match kl with [] -> () | _ -> fprintf ppf ",");
-      List.iter (function
-          | Stexn_var { stexn_var } ->
-              fprintf ppf "@ v%d" stexn_var
-          | Stexn_cst i ->
-              fprintf ppf "@ c%d" i) kl;
-      fprintf ppf ")@]"
-  | Cexit_ind ({stexn_var = i}, el, kl) ->
-      fprintf ppf "@[<2>(exit_ind v%d" i ;
+  | Cexit (stexn, el, kl) ->
+      begin match stexn with
+      | Stexn_var { stexn_var = i } ->
+          fprintf ppf "@[<2>(exit_ind v%d" i
+      | Stexn_cst i ->
+          fprintf ppf "@[<2>(exit %d" i
+      end;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       (match kl with [] -> () | _ -> fprintf ppf ",");
       List.iter (function

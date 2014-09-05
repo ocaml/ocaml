@@ -105,12 +105,13 @@ type expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
   | Ccatch of (int * Ident.t list * stexn_var list * expression) list * expression
-  | Cexit of int * expression list * stexn list
-  | Cexit_ind of stexn_var * expression list * stexn list
+  | Cexit of stexn * expression list * stexn list
   | Ctrywith of expression * Ident.t * expression
 
 let ccatch (i, ids, kids, e1, e2)=
   Ccatch([i, ids, kids, e2], e1)
+let cexit (nfail, args, ks) =
+  Cexit (Stexn_cst nfail, args, ks)
 
 type fundecl =
   { fun_name: string;

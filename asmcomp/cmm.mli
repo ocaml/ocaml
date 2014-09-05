@@ -91,8 +91,7 @@ type expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
   | Ccatch of (int * Ident.t list * stexn_var list * expression) list * expression
-  | Cexit of int * expression list * stexn list
-  | Cexit_ind of stexn_var * expression list * stexn list
+  | Cexit of stexn * expression list * stexn list
   | Ctrywith of expression * Ident.t * expression
 
 type fundecl =
@@ -123,3 +122,4 @@ type phrase =
   | Cdata of data_item list
 
 val ccatch : int * Ident.t list * stexn_var list * expression * expression -> expression
+val cexit : (int * expression list * stexn list) -> expression
