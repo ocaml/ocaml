@@ -82,9 +82,9 @@ type operation =
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
-type stexn_var = { stexn_var : int }
+type stexn_var = Clambda.stexn_var = { stexn_var : int }
 
-type stexn =
+type stexn = Clambda.stexn =
   | Stexn_var of stexn_var
   | Stexn_cst of int
 

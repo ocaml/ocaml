@@ -1481,19 +1481,21 @@ let rec transl = function
         (fun arg ->
           strmatch_compile arg (Misc.may_map transl d)
             (List.map (fun (s,act) -> s,transl act) sw))
-  | Ustaticfail (nfail, args) ->
-      cexit (nfail, List.map transl args, [])
-  | Ucatch(nfail, [], body, handler) ->
-      make_catch nfail (transl body) (transl handler)
-  | Ucatch(nfail, ids, body, handler) ->
-      ccatch(nfail, ids, [], transl body, transl handler)
+  | Ustaticfail (stexn, args, kargs) ->
+      Cexit (stexn, List.map transl args, kargs)
+  | Ucatch(handlers, body) ->
+      make_catches
+        (List.map (fun (nfail, ids, kids, handler) ->
+             nfail, ids, kids, transl handler)
+            handlers)
+        (transl body)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl body, exn, transl handler)
   | Uifthenelse(Uprim(Pnot, [arg], _), ifso, ifnot) ->
       transl (Uifthenelse(arg, ifnot, ifso))
-  | Uifthenelse(cond, ifso, Ustaticfail (nfail, [])) ->
+  | Uifthenelse(cond, ifso, Ustaticfail (Stexn_cst nfail, [], [])) ->
       exit_if_false cond (transl ifso) nfail
-  | Uifthenelse(cond, Ustaticfail (nfail, []), ifnot) ->
+  | Uifthenelse(cond, Ustaticfail (Stexn_cst nfail, [], []), ifnot) ->
       exit_if_true cond nfail (transl ifnot)
   | Uifthenelse(Uprim(Psequand, _, _) as cond, ifso, ifnot) ->
       let raise_num = next_raise_count () in
@@ -2053,6 +2055,21 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
          if need_boxed
          then Clet(id, box_fn(Cvar unboxed_id), trbody2)
          else trbody2)
+
+and make_catches handlers body = match body with
+  | Cexit (Stexn_cst nexit,args,[]) ->
+      begin
+        try
+          let (nfail, ids, _, handler) =
+            List.find (fun (nfail,_,_,_) -> nfail = nexit) handlers in
+          List.fold_right2
+            (fun id arg body -> Clet(id, arg, body))
+            ids args body
+        with Not_found ->
+          Ccatch (handlers, body)
+      end
+  | _ -> Ccatch (handlers, body)
+
 
 and make_catch ncatch body handler = match body with
 | Cexit (Stexn_cst nexit,[],[]) when nexit=ncatch -> handler
