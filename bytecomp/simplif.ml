@@ -598,10 +598,451 @@ and list_emit_tail_infos_fun f is_tail =
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)
 
+module IdentMap =
+  Map.Make(struct
+    type t = Ident.t
+    let compare = compare
+  end)
+
+let empty_env = IdentMap.empty
+
+let add_function env id params =
+  IdentMap.add id (List.length params) env
+
+let mem_function env id =
+  IdentMap.mem id env
+
+type result =
+  { potential_functions : IdentSet.t;
+    called_functions : IdentSet.t;
+    escaping : IdentSet.t;
+    non_tail_call : IdentSet.t }
+
+let escape id =
+  { potential_functions = IdentSet.empty;
+    called_functions = IdentSet.empty;
+    non_tail_call = IdentSet.empty;
+    escaping = IdentSet.singleton id }
+
+let non_tail_call id =
+  { potential_functions = IdentSet.empty;
+    called_functions = IdentSet.empty;
+    non_tail_call = IdentSet.singleton id;
+    escaping = IdentSet.empty }
+
+let called_function id =
+  { potential_functions = IdentSet.empty;
+    called_functions = IdentSet.singleton id;
+    non_tail_call = IdentSet.empty;
+    escaping = IdentSet.empty }
+
+let add_potential id res =
+  { res with
+    potential_functions = IdentSet.add id res.potential_functions }
+
+let empty_result =
+  { potential_functions = IdentSet.empty;
+    called_functions = IdentSet.empty;
+    non_tail_call = IdentSet.empty;
+    escaping = IdentSet.empty }
+
+let called_functions_are_escaping res =
+  { res with
+    escaping =
+      IdentSet.union
+        res.escaping
+        res.called_functions }
+
+let is_escaping_function res id =
+  IdentSet.mem id res.escaping
+
+let has_non_tail_call res id =
+  IdentSet.mem id res.non_tail_call
+
+let is_transformable_tail_function res id =
+  IdentSet.mem id res.potential_functions
+  && not (is_escaping_function res id)
+  && not (has_non_tail_call res id)
+
+let are_transformable_tail_functions res defs =
+  List.for_all (fun (id, _) -> is_transformable_tail_function res id) defs
+
+let are_transformable_inner_functions res defs =
+  List.for_all (fun (id, _) -> IdentSet.mem id res.potential_functions) defs
+
+let union r1 r2 =
+  { potential_functions =
+      IdentSet.union r1.potential_functions r2.potential_functions;
+    called_functions =
+      IdentSet.union r1.called_functions r2.called_functions;
+    escaping =
+      IdentSet.union r1.escaping r2.escaping;
+    non_tail_call =
+      IdentSet.union r1.non_tail_call r2.non_tail_call }
+
+let unions l =
+  match l with
+  | [] -> empty_result
+  | h :: t -> List.fold_left union h t
+
+let no_tail = IdentSet.empty
+
+let function_infos lam =
+
+  let rec loop (tail:IdentSet.t) env = function
+    | Lvar id ->
+        if mem_function env id
+        then escape id
+        else empty_result
+
+    | Llet ((Strict | Alias | StrictOpt), id, Lfunction (Curried, params, fbody), body) ->
+        function_decl env ~tail [id, params, fbody] ~recursive:false body
+
+    | Lapply (Lvar id, args, _) ->
+        let arg_result = loops env args in
+        let apply_result =
+          try
+            let nargs = IdentMap.find id env in
+            if nargs = List.length args
+            then
+              if IdentSet.mem id tail
+              then empty_result
+              else non_tail_call id
+            else escape id
+          with Not_found -> empty_result
+        in
+        union
+          (called_function id)
+          (union arg_result apply_result)
+
+    | Lapply (func, args, _) ->
+        union
+          (loop no_tail env func)
+          (loops env args)
+
+    | Lfunction (_kind, _args, def) ->
+        loop no_tail env def
+
+    | Lletrec (defs, body) ->
+        let funcs =
+          List.fold_right (function
+              | (id, Lfunction (Curried, params, fbody)) ->
+                  (function
+                    | None -> None
+                    | Some l -> Some ((id, params, fbody) :: l))
+              | _ ->
+                  fun _ -> None)
+            defs (Some []) in
+        begin
+          match funcs with
+          | None ->
+              union
+                (loop tail env body)
+                (loops env (List.map snd defs))
+          | Some l -> function_decl env ~tail l ~recursive:true body
+        end
+
+    | Llet (_, _, def, body) ->
+        union
+          (loop no_tail env def)
+          (loop tail env body)
+
+    | Lprim (_, args) ->
+        loops env args
+
+    | Lifthenelse(cond, ifso, ifnot) ->
+        union
+          (loop no_tail env cond)
+          (union
+            (loop tail env ifso)
+            (loop tail env ifnot))
+
+    | Lconst _ -> empty_result
+
+    | Lsequence (e1, e2) ->
+        union
+          (loop no_tail env e1)
+          (loop tail env e2)
+
+    | Lswitch (cond, sw) ->
+        let add_branches l res =
+          List.fold_left (fun res (_, lam) ->
+              union res (loop tail env lam)) res l in
+        let res_branches =
+          (match sw.sw_failaction with
+           | None -> empty_result
+           | Some lam -> loop tail env lam)
+          |> add_branches sw.sw_consts
+          |> add_branches sw.sw_blocks in
+
+        union
+          res_branches
+          (loop no_tail env cond)
+
+    | Lstringswitch (cond, cases, default) ->
+        let res =
+          union
+            (loop no_tail env cond)
+            (unions (List.map (fun (_, lam) -> loop tail env lam) cases))
+        in
+        begin
+          match default with
+          | None -> res
+          | Some lam -> union res (loop tail env lam)
+        end
+
+    | Lstaticraise (_, args, _) ->
+        loops env args
+
+    | Lstaticcatch (body, handlers) ->
+        let res_handlers =
+          unions
+            (List.map (fun (_,_,_,handler) ->
+                 loop tail env handler)
+                handlers) in
+        union
+          (loop tail env body)
+          res_handlers
+
+    | Levent (lam, _)
+    | Lifused (_, lam) ->
+        loop tail env lam
+
+    | Lwhile (cond, body) ->
+        union
+          (loop no_tail env cond)
+          (loop no_tail env body)
+
+    | Lfor (_, lo, hi, _, body) ->
+        union
+          (union
+             (loop no_tail env lo)
+             (loop no_tail env hi))
+          (loop no_tail env body)
+
+    | Lassign (_, lam) ->
+        loop no_tail env lam
+
+    | Ltrywith (body, _, handler) ->
+        union
+          (loop no_tail env body)
+          (loop tail env handler)
+
+    | Lsend (_, e1, e2, el, _) ->
+        union
+          (union
+             (loop no_tail env e1)
+             (loop no_tail env e2))
+          (loops env el)
+
+  and loops env l =
+    unions (List.map (loop no_tail env) l)
+
+  and function_decl env ~tail defs ~recursive body =
+
+    let env_body =
+      List.fold_left
+        (fun evn (id, params, _) -> add_function env id params) env defs in
+    let tail_body = List.fold_right (fun (id, _, _) -> IdentSet.add id) defs tail in
+
+    let res_body = loop tail_body env_body body in
+
+    let res_def =
+      let env_def =
+        if recursive
+        then env_body
+        else env in
+      let tail_def =
+        if recursive
+        then tail_body
+        else tail
+      in
+      unions (List.map (fun (_,_,fbody) -> loop tail_def env_def fbody) defs) in
+
+    let does_any f res = List.exists (fun (id, _, _) -> f res id) defs in
+
+    if does_any is_escaping_function res_def
+       || does_any is_escaping_function res_body
+       || does_any has_non_tail_call res_body
+       || does_any has_non_tail_call res_def
+    then
+      union
+        (called_functions_are_escaping res_def)
+        res_body
+    else
+      union
+        res_def
+        res_body |>
+      List.fold_right (fun (id,_,_) -> add_potential id) defs
+  in
+
+  loop no_tail empty_env lam
+
+
+let simplify_tail_calls lam =
+
+  let info = function_infos lam in
+
+  let empty_env = IdentMap.empty in
+  let add_function id nfail env =
+    (* Format.printf "add function %a@." Ident.print id; *)
+    IdentMap.add id nfail env in
+  let find_function env id =
+    (* Format.printf "find function %a@." Ident.print id; *)
+    IdentMap.find id env in
+
+  let rec loop (tail:IdentSet.t) env lam = match lam with
+    | Lvar _ | Lconst _ -> lam
+
+    | Llet (_, id, Lfunction (_, params, fbody), body)
+      when is_transformable_tail_function info id ->
+        let nfail = next_raise_count () in
+        let tail = IdentSet.add id tail in
+        Lstaticcatch (loop tail (add_function id nfail env) body,
+                      [nfail, params, [], loop tail env fbody])
+
+    | Lletrec (defs, body)
+        when are_transformable_tail_functions info defs ->
+        let tail = List.fold_right (fun (id, _) -> IdentSet.add id) defs tail in
+        let env = List.fold_right (fun (id, _) ->
+            let nfail = next_raise_count () in
+            add_function id nfail) defs env in
+        let handlers =
+          List.map (function
+              | (id, Lfunction (Curried, params, fbody)) ->
+                  find_function env id, params, [], loop tail env fbody
+              | _ -> assert false) defs in
+        Lstaticcatch (loop tail env body, handlers)
+
+    | Lletrec ([id, Lfunction (Curried, params, fbody)], body) ->
+        (* Multiply recursive functions are not possible in that case
+           because a function cannot have multiple entry points *)
+        let fbody_tail = IdentSet.singleton id in
+        let nfail = next_raise_count () in
+        let fbody_env = add_function id nfail env in
+
+        let params' = List.map Ident.rename params in
+        let function_entry =
+          Lstaticraise(Stexn_cst nfail,
+                       List.map (fun v -> Lvar v) params', []) in
+        let handlers = [nfail, params, [], loop fbody_tail fbody_env fbody] in
+        let fbody = Lstaticcatch (function_entry, handlers) in
+        Lletrec ([id, Lfunction (Curried, params', fbody)], loop tail env body)
+
+    | Lapply (Lvar id, args, loc)
+      when IdentSet.mem id tail ->
+        let nfail = find_function env id in
+        Lstaticraise(Stexn_cst nfail, args, [])
+
+    | Lapply (func, args, loc) ->
+        Lapply (loop no_tail env func, loops env args, loc)
+
+    | Lfunction (kind, args, def) ->
+        Lfunction (kind, args, loop no_tail env def)
+
+    | Lletrec (defs, body) ->
+        Lletrec
+          (List.map (fun (id, def) -> id, loop no_tail env def) defs,
+           loop tail env body)
+
+    | Llet (kind, id, def, body) ->
+        Llet (kind, id, loop no_tail env def,
+              loop tail env body)
+
+    | Lprim (prim, args) ->
+        Lprim (prim, loops env args)
+
+    | Lifthenelse(cond, ifso, ifnot) ->
+        Lifthenelse(loop no_tail env cond,
+                    loop tail env ifso,
+                    loop tail env ifnot)
+
+    | Lsequence (e1, e2) ->
+        Lsequence
+          (loop no_tail env e1,
+           loop tail env e2)
+
+    | Lswitch (cond, sw) ->
+        let branch (n, lam) = n, loop tail env lam in
+        let sw =
+          { sw_numconsts = sw.sw_numconsts;
+            sw_numblocks = sw.sw_numblocks;
+            sw_consts = List.map branch sw.sw_consts;
+            sw_blocks = List.map branch sw.sw_blocks;
+            sw_failaction =
+              match sw.sw_failaction with
+              | None -> None
+              | Some lam -> Some (loop tail env lam) } in
+        Lswitch (loop no_tail env cond,
+                 sw)
+
+
+    | Lstringswitch (cond, cases, default) ->
+        let branch (n, lam) = n, loop tail env lam in
+        Lstringswitch
+          (loop no_tail env cond,
+           List.map branch cases,
+           match default with
+           | None -> None
+           | Some lam -> Some (loop tail env lam))
+
+    | Lstaticraise (nfail, args, kargs) ->
+        Lstaticraise (nfail, loops env args, kargs)
+
+    | Lstaticcatch (body, handlers) ->
+        Lstaticcatch
+          (loop tail env body,
+           List.map (fun (n, ids, kids, handler) ->
+               (n, ids, kids, loop tail env handler))
+             handlers)
+
+    | Levent (lam, ev) ->
+        Levent (loop tail env lam, ev)
+    | Lifused (id, lam) ->
+        Lifused (id, loop tail env lam)
+
+    | Lwhile (cond, body) ->
+        Lwhile (
+          loop no_tail env cond,
+          loop no_tail env body)
+
+    | Lfor (id, lo, hi, dir, body) ->
+        Lfor (id, loop no_tail env lo, loop no_tail env hi, dir,
+              loop no_tail env body)
+
+    | Lassign (id, lam) ->
+        Lassign (id, loop no_tail env lam)
+
+    | Ltrywith (body, id, handler) ->
+        Ltrywith
+          (loop no_tail env body,
+           id,
+           loop tail env handler)
+
+    | Lsend (kind, e1, e2, el, loc) ->
+        Lsend
+          (kind,
+           loop no_tail env e1,
+           loop no_tail env e2,
+           loops env el,
+           loc)
+
+  and loops env lams =
+    List.map (loop no_tail env) lams
+  in
+
+  loop no_tail empty_env lam
+
+let simplify_tail_calls lam =
+  let optimize = !Clflags.native_code in
+  if optimize
+  then simplify_tail_calls lam
+  else lam
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda lam =
-  let res = simplify_lets (simplify_exits lam) in
+  let res = simplify_lets (simplify_exits (simplify_tail_calls lam)) in
   if !Clflags.annotations then emit_tail_infos true res;
   res

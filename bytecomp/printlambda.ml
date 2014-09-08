@@ -239,6 +239,12 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let stexn ppf = function
+  | Stexn_var { stexn_var } ->
+      fprintf ppf "v%d" stexn_var
+  | Stexn_cst i ->
+      fprintf ppf "c%d" i
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -331,10 +337,15 @@ let rec lam ppf = function
   | Lstaticraise (i, ls, ks)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(exit@ %s%a %s)@]"
-        "TODO update print staticraise"
+      let stexn_args ppf l =
+        match l with
+        | [] -> ()
+        | _ -> List.iter (fprintf ppf ", %a" stexn) l
+      in
+      fprintf ppf "@[<2>(exit@ %a%a%a)@]"
+        stexn i
         lams ls
-        "TODO update print staticraise";
+        stexn_args ks;
   | Lstaticcatch(lbody, [i, vars, kargs, lhandler]) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
