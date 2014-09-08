@@ -532,10 +532,36 @@ let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
 
-let rec substitute fpc sb ulam =
+module Stexn = struct
+  type t = stexn
+  let compare = compare
+end
+module StexnMap = Map.Make(Stexn)
+
+type sb =
+  { sb_id : ulambda Ident.tbl;
+    sb_stexn : stexn StexnMap.t }
+
+let empty_sb =
+  { sb_id = Ident.empty;
+    sb_stexn = StexnMap.empty }
+
+let print_stexn ppf = function
+  | Stexn_var { stexn_var } -> Format.fprintf ppf "v%i" stexn_var
+  | Stexn_cst c -> Format.fprintf ppf "c%i" c
+
+let find_id id sb = Ident.find_same id sb.sb_id
+let add_id id id' sb = { sb with sb_id = Ident.add id id' sb.sb_id }
+let subst_stexn s sb =
+  try StexnMap.find s sb.sb_stexn with
+  | Not_found -> s
+let add_stexn s s' sb =
+  { sb with sb_stexn = StexnMap.add s s' sb.sb_stexn }
+
+let rec substitute fpc (sb:sb) ulam =
   match ulam with
     Uvar v ->
-      begin try Tbl.find v sb with Not_found -> ulam end
+      begin try find_id v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       Udirect_apply(lbl, List.map (substitute fpc sb) args, dbg)
@@ -556,13 +582,13 @@ let rec substitute fpc sb ulam =
   | Ulet(id, u1, u2) ->
       let id' = Ident.rename id in
       Ulet(id', substitute fpc sb u1,
-           substitute fpc (Tbl.add id (Uvar id') sb) u2)
+           substitute fpc (add_id id (Uvar id') sb) u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
       let sb' =
         List.fold_right
-          (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
+          (fun (id, id', _) s -> add_id id (Uvar id') s)
           bindings1 sb in
       Uletrec(
         List.map
@@ -589,8 +615,22 @@ let rec substitute fpc sb ulam =
          List.map (fun (s,act) -> s,substitute fpc sb act) sw,
          Misc.may_map (substitute fpc sb) d)
   | Ustaticfail (stexn, args, kargs) ->
-      Ustaticfail (stexn, List.map (substitute fpc sb) args, kargs)
+      Ustaticfail (subst_stexn stexn sb,
+                   List.map (substitute fpc sb) args,
+                   List.map (fun s -> subst_stexn s sb) kargs)
   | Ucatch(handlers, body) ->
+      let sb, handlers = List.fold_left
+          (fun (sb,handlers) (nfail, ids, kids, handler) ->
+             let nfail' = Lambda.next_raise_count () in
+             let sb = add_stexn (Stexn_cst nfail) (Stexn_cst nfail') sb in
+             let sb, kids' =
+               List.fold_right (fun var (sb, kids) ->
+                   let var' = { stexn_var = Lambda.next_raise_count () } in
+                   add_stexn (Stexn_var var) (Stexn_var var') sb,
+                   var' :: kids) kids (sb, []) in
+             sb,
+             (nfail', ids, kids', handler) :: handlers)
+          (sb, []) handlers in
       let handlers =
         List.map (fun (nfail, ids, kids, handler) ->
             nfail, ids, kids, substitute fpc sb handler)
@@ -599,7 +639,7 @@ let rec substitute fpc sb ulam =
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute fpc sb u1, id',
-               substitute fpc (Tbl.add id (Uvar id') sb) u2)
+               substitute fpc (add_id id (Uvar id') sb) u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute fpc sb u1 with
         Uconst (Uconst_ptr n) ->
@@ -616,11 +656,11 @@ let rec substitute fpc sb ulam =
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = Ident.rename id in
       Ufor(id', substitute fpc sb u1, substitute fpc sb u2, dir,
-           substitute fpc (Tbl.add id (Uvar id') sb) u3)
+           substitute fpc (add_id id (Uvar id') sb) u3)
   | Uassign(id, u) ->
       let id' =
         try
-          match Tbl.find id sb with Uvar i -> i | _ -> assert false
+          match find_id id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
       Uassign(id', substitute fpc sb u)
@@ -643,7 +683,7 @@ let rec bind_params_rec fpc subst params args body =
     ([], []) -> substitute fpc subst body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec fpc (Tbl.add p1 a1 subst) pl al body
+        bind_params_rec fpc (add_id p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
         let u1, u2 =
@@ -654,7 +694,7 @@ let rec bind_params_rec fpc subst params args body =
               a1, Uvar p1'
         in
         let body' =
-          bind_params_rec fpc (Tbl.add p1 u2 subst) pl al body in
+          bind_params_rec fpc (add_id p1 u2 subst) pl al body in
         if occurs_var p1 body then Ulet(p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
@@ -664,7 +704,7 @@ let rec bind_params_rec fpc subst params args body =
 let bind_params fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec fpc Tbl.empty (List.rev params) (List.rev args) body
+  bind_params_rec fpc empty_sb (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -903,8 +943,8 @@ let rec close fenv cenv = function
         let sb =
           List.fold_right
             (fun (id, pos, approx) sb ->
-              Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
-            infos Tbl.empty in
+              add_id id (Uoffset(Uvar clos_ident, pos)) sb)
+            infos empty_sb in
         (Ulet(clos_ident, clos, substitute !Clflags.float_const_prop sb ubody),
          approx)
       end else begin
