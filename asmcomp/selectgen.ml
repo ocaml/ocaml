@@ -838,6 +838,7 @@ method emit_expr (env:environment) exp =
       let (r_body, s_body) = self#emit_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+        assert(List.length ids = List.length rs);
         List.iter2 name_regs ids rs;
         let new_env =
           List.fold_left
@@ -1101,6 +1102,7 @@ method emit_tail (env:environment) exp =
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+        assert(List.length ids = List.length rs);
         List.iter2 name_regs ids rs;
         let new_env =
           List.fold_left
