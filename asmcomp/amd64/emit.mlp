@@ -130,7 +130,9 @@ let emit_jump s =
   )
 
 let load_symbol_addr s arg =
-  if system = S_win64 then
+  (* TODO: review that carefully, and simplify *)
+  if system = S_win64 || system = S_mingw64 then
+    (* What about Cygwin? *)
     if !pic_code then
       I.leaq ( at_rip NO (abs_ (emit_symbol s)) 0 , arg )
     else
@@ -142,7 +144,7 @@ let load_symbol_addr s arg =
           | _ -> true)
       then at_rip NO (gotpcrel_ (emit_symbol s)) 0
       else if !pic_code
-      then at_rip NO (abs_ (emit_symbol s)) 0
+      then at_rip NO (abs_ (emit_symbol s)) 0 (* check *)
       else _offset (abs_ (emit_symbol s))
     in
     I.movq (addr,  arg)
