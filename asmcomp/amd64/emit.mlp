@@ -223,7 +223,7 @@ let emit_addressing addr pref r n =
   (*  | Ibased _ when !Clflags.dlcode -> assert false ONLY on Unix *)
   | Ibased(s, d) ->
       add_used_symbol s;
-      at_rip pref (abs_ s) d
+      at_rip pref (abs_ s) d  (* TODO: shouldn't we apply emit_symbol? *)
   | Iindexed d ->
       _mem_ptr pref d (emit_reg64 r.(n))
   | Iindexed2 d ->
