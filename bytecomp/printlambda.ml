@@ -357,8 +357,30 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
-  | Lstaticcatch(lbody, _) ->
-      fprintf ppf "TODO update print Lstaticcatch"
+  | Lstaticcatch(lbody, handlers) ->
+      let print_handler ppf (i, ids, kids, e2) =
+        fprintf ppf " (%d%a%a)@ %a"
+          i
+          (fun ppf ids ->
+             List.iter
+               (fun id -> fprintf ppf " %a" Ident.print id)
+               ids) ids
+          (fun ppf kids ->
+             List.iter
+               (fun { stexn_var = id } -> fprintf ppf " v%d" id)
+               kids) kids
+          lam e2
+      in
+      let rec print_handlers ppf = function
+        | [] -> ()
+        | [h] -> print_handler ppf h
+        | h :: t ->
+            fprintf ppf "and";
+            print_handler ppf h;
+            print_handlers ppf t
+      in
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with%a)@]"
+        lam lbody print_handlers handlers
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler
