@@ -615,26 +615,37 @@ let mem_function env id =
 type result =
   { potential_functions : IdentSet.t;
     called_functions : IdentSet.t;
+    non_rec_called_functions : IdentSet.t;
     escaping : IdentSet.t;
     non_tail_call : IdentSet.t }
 
 let escape id =
   { potential_functions = IdentSet.empty;
     called_functions = IdentSet.empty;
+    non_rec_called_functions = IdentSet.empty;
     non_tail_call = IdentSet.empty;
     escaping = IdentSet.singleton id }
 
 let non_tail_call id =
   { potential_functions = IdentSet.empty;
     called_functions = IdentSet.empty;
+    non_rec_called_functions = IdentSet.empty;
     non_tail_call = IdentSet.singleton id;
     escaping = IdentSet.empty }
 
 let called_function id =
   { potential_functions = IdentSet.empty;
     called_functions = IdentSet.singleton id;
+    non_rec_called_functions = IdentSet.empty;
     non_tail_call = IdentSet.empty;
     escaping = IdentSet.empty }
+
+let non_rec_scope id res =
+  if IdentSet.mem id res.called_functions
+  then { res with
+         non_rec_called_functions =
+           IdentSet.add id res.non_rec_called_functions }
+  else res
 
 let add_potential id res =
   { res with
@@ -643,6 +654,7 @@ let add_potential id res =
 let empty_result =
   { potential_functions = IdentSet.empty;
     called_functions = IdentSet.empty;
+    non_rec_called_functions = IdentSet.empty;
     non_tail_call = IdentSet.empty;
     escaping = IdentSet.empty }
 
@@ -650,14 +662,19 @@ let called_functions_are_escaping res =
   { res with
     escaping =
       IdentSet.union
-        res.escaping
-        res.called_functions }
+        res.non_rec_called_functions
+        (IdentSet.union
+           res.escaping
+           res.called_functions) }
 
 let is_escaping_function res id =
   IdentSet.mem id res.escaping
 
 let has_non_tail_call res id =
   IdentSet.mem id res.non_tail_call
+
+let has_non_rec_call res id =
+  IdentSet.mem id res.non_rec_called_functions
 
 let is_transformable_tail_function res id =
   IdentSet.mem id res.potential_functions
@@ -675,6 +692,8 @@ let union r1 r2 =
       IdentSet.union r1.potential_functions r2.potential_functions;
     called_functions =
       IdentSet.union r1.called_functions r2.called_functions;
+    non_rec_called_functions =
+      IdentSet.union r1.non_rec_called_functions r2.non_rec_called_functions;
     escaping =
       IdentSet.union r1.escaping r2.escaping;
     non_tail_call =
@@ -845,7 +864,10 @@ let function_infos lam =
         (fun evn (id, params, _) -> add_function env id params) env defs in
     let tail_body = List.fold_right (fun (id, _, _) -> IdentSet.add id) defs tail in
 
-    let res_body = loop tail_body env_body body in
+    let res_body =
+      loop tail_body env_body body |>
+      List.fold_right (fun (id, _, _) -> non_rec_scope id) defs
+    in
 
     let res_def =
       let env_def =
@@ -878,6 +900,24 @@ let function_infos lam =
 
   loop no_tail empty_env lam
 
+let transformable_functions defs info =
+  let functions =
+    List.fold_right (function
+        | (id, Lfunction (Curried, params, fbody)) ->
+            begin function
+            | None -> None
+            | Some l -> Some (id :: l)
+            end
+        | _ -> fun _ -> None) defs (Some []) in
+  match functions with
+  | None -> false
+  | Some l ->
+      let non_rec_called, rec_called = List.partition (has_non_rec_call info) l in
+      List.length non_rec_called = 1 &&
+      List.for_all (fun id -> not (has_non_tail_call info id)) rec_called
+      (* A function can only have a single entry point, so to transform
+         a set of mutualy recursive functions we must ensure that only
+         a single one of them is used *)
 
 let simplify_tail_calls lam =
 
@@ -928,6 +968,30 @@ let simplify_tail_calls lam =
         let handlers = [nfail, params, [], loop fbody_tail fbody_env fbody] in
         let fbody = Lstaticcatch (function_entry, handlers) in
         Lletrec ([id, Lfunction (Curried, params', fbody)], loop tail env body)
+
+    | Lletrec (defs, body)
+      when transformable_functions defs info ->
+
+        let functions = List.map (function
+            | (id, Lfunction (Curried, params, fbody)) ->
+                let nfail = next_raise_count () in
+                (id, nfail, params, fbody)
+            | _ -> assert false) defs in
+        let fbody_tail = List.fold_left (fun tail (id, _, _, _) ->
+            IdentSet.add id tail) IdentSet.empty functions in
+        let fbody_env = List.fold_left (fun env (id, nfail, _, _) ->
+            add_function id nfail env) env functions in
+        let exported_function =
+          List.find (fun (id, _, _, _) -> has_non_rec_call info id) functions in
+        let (ex_id, ex_nfail, ex_params, _) = exported_function in
+        let params' = List.map Ident.rename ex_params in
+        let function_entry =
+          Lstaticraise(Stexn_cst ex_nfail,
+                       List.map (fun v -> Lvar v) params', []) in
+        let handlers = List.map (fun (id, nfail, params, fbody) ->
+            (nfail, params, [], loop fbody_tail fbody_env fbody)) functions in
+        let fbody = Lstaticcatch (function_entry, handlers) in
+        Lletrec ([ex_id, Lfunction (Curried, params', fbody)], loop tail env body)
 
     | Lapply (Lvar id, args, loc)
       when IdentSet.mem id tail ->
