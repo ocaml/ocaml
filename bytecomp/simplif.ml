@@ -662,10 +662,12 @@ let called_functions_are_escaping res =
   { res with
     escaping =
       IdentSet.union
-        res.non_rec_called_functions
-        (IdentSet.union
-           res.escaping
-           res.called_functions) }
+        res.escaping
+        res.called_functions }
+
+let leave_function_scope res set =
+  { res with
+    called_functions = IdentSet.diff res.called_functions set }
 
 let is_escaping_function res id =
   IdentSet.mem id res.escaping
@@ -859,10 +861,13 @@ let function_infos lam =
 
   and function_decl env ~tail defs ~recursive body =
 
+    let function_set =
+      List.fold_right (fun (id, _, _) -> IdentSet.add id) defs IdentSet.empty in
+
     let env_body =
       List.fold_left
-        (fun evn (id, params, _) -> add_function env id params) env defs in
-    let tail_body = List.fold_right (fun (id, _, _) -> IdentSet.add id) defs tail in
+        (fun env (id, params, _) -> add_function env id params) env defs in
+    let tail_body = IdentSet.union function_set tail in
 
     let res_body =
       loop tail_body env_body body |>
@@ -883,10 +888,13 @@ let function_infos lam =
 
     let does_any f res = List.exists (fun (id, _, _) -> f res id) defs in
 
+    let res_def = leave_function_scope res_def function_set in
+    let res_body = leave_function_scope res_body function_set in
+
     if does_any is_escaping_function res_def
-       || does_any is_escaping_function res_body
-       || does_any has_non_tail_call res_body
-       || does_any has_non_tail_call res_def
+    || does_any is_escaping_function res_body
+    || does_any has_non_tail_call res_body
+    || does_any has_non_tail_call res_def
     then
       union
         (called_functions_are_escaping res_def)
@@ -914,7 +922,8 @@ let transformable_functions defs info =
   | Some l ->
       let non_rec_called, rec_called = List.partition (has_non_rec_call info) l in
       List.length non_rec_called = 1 &&
-      List.for_all (fun id -> not (has_non_tail_call info id)) rec_called
+      List.for_all (fun id -> not (has_non_tail_call info id)) rec_called &&
+      List.for_all (fun id -> not (is_escaping_function info id)) rec_called
       (* A function can only have a single entry point, so to transform
          a set of mutualy recursive functions we must ensure that only
          a single one of them is used *)
