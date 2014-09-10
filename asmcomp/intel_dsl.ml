@@ -409,16 +409,29 @@ module DSL64 = struct
 
   let _r r = Reg64 r
 
+  let rax = _r RAX
+  let r10 = _r R10
+  let r11 = _r R11
+  let r14 = _r R14
+  let r15 = _r R15
+  let rsp = _r RSP
+  let rbp = _r RBP
+  let xmm15 = Regf (XMM 15)
+
+(*
   let abs_ s = (s, None)
   let plt_ s = (s, Some PLT)
   let gotpcrel_ s = (s, Some GOTPCREL)
+*)
 
   let _offset l = Imm (B64, (Some l,0L))
   let _l l = Rel (B32, (Some (l, None), 0L))
   let rel_ s = Rel (B32, (Some s,0L))
 
+(*
   let at_rip pref s d =
     Mem (pref, M64 (Some (RIP, 1, None), (Some s, Int64.of_int d)))
+*)
   let _mem_reg offset reg =
     Mem (NO, M64(Some (reg, 1, None), (None, Int64.of_int offset)))
   let _mem_ptr pref offset reg = Mem (pref, M64(Some (reg, 1, None),
