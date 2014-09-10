@@ -298,7 +298,7 @@ let simplify_exits lam =
       | Not_found -> expr
       end
   | Lstaticraise (stexn,args,kargs) ->
-      Lstaticraise (stexn,args,kargs)
+      Lstaticraise (stexn,List.map simplif args,kargs)
   | Lstaticcatch (l1,[i,[],[],(Lstaticraise (Stexn_cst j,[],[]) as l2)]) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
@@ -310,7 +310,9 @@ let simplify_exits lam =
       List.iter
         (fun (_, (i, args, _, l2)) -> Hashtbl.add subst i (args,simplif l2))
         substituables;
-      Lstaticcatch(simplif l1, List.map snd kept)
+      let kept = List.map
+          (fun (_, (i, ids, kids, h)) -> (i, ids, kids, simplif h)) kept in
+      Lstaticcatch(simplif l1, kept)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
   | Lsequence(l1, l2) -> Lsequence(simplif l1, simplif l2)
