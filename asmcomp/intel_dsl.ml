@@ -433,16 +433,6 @@ module DSL64 = struct
   let _l l = Rel (B32, (Some (l, None), 0L))
   let rel_ s = Rel (B32, (Some s,0L))
 
-(*
-  let at_rip pref s d =
-    Mem (pref, M64 (Some (RIP, 1, None), (Some s, Int64.of_int d)))
-*)
-  let _mem_reg offset reg =
-    Mem (NO, M64(Some (reg, 1, None), (None, Int64.of_int offset)))
-  let _mem_ptr pref offset reg = Mem (pref, M64(Some (reg, 1, None),
-                                                (None, Int64.of_int offset)))
-  let _mem_base pref offset reg scale base =
-    Mem (pref, M64(Some (reg, scale, Some base), (None, Int64.of_int offset)))
-
-
+  let mem_ptr ?(pref = NO) ?(scale = 1) ?base offset reg =
+    Mem (pref, M64(Some (reg, scale, base), (None, Int64.of_int offset)))
 end
