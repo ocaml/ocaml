@@ -30,6 +30,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Unknown_builtin_primitive of string
+  | Not_a_toplevel_module of Longident.t
 
 exception Error of Location.t * error
 

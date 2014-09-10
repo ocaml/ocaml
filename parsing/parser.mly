@@ -1278,6 +1278,9 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
   | LPAREN MODULE module_expr RPAREN
       { mkexp (Pexp_pack $3) }
+  | LPAREN SIG mty_longident RPAREN
+      { mkexp (Pexp_sig (mkrhs $3 1))
+        (* location is probably wrong *) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
       { mkexp (Pexp_constraint (ghexp (Pexp_pack $3),
                                 ghtyp (Ptyp_package $5))) }

@@ -127,6 +127,7 @@ let iter_expression f e =
     | Pexp_extension _ (* we don't iterate under extension point *)
     | Pexp_ident _
     | Pexp_new _
+    | Pexp_sig _
     | Pexp_constant _ -> ()
     | Pexp_function pel -> List.iter case pel
     | Pexp_fun (_, eo, _, e) -> may expr eo; expr e
@@ -2673,6 +2674,22 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
+      }
+  | Pexp_sig id ->
+      let sty =
+        { ptyp_desc = Ptyp_package (id, []);
+          ptyp_loc = id.Location.loc;
+          ptyp_attributes = [] } in
+      let cty = Typetexp.transl_simple_type env false sty in
+      let ty = cty.ctyp_type in
+      let to_unify = Predef.type_sig_t ty in
+      unify_exp_types loc env to_unify ty_expected;
+      re {
+        exp_desc = Texp_sig id;
+        exp_loc = loc; exp_extra = [];
+        exp_type = instance env ty_expected;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
       }
   | Pexp_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))

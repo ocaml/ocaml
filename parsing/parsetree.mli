@@ -320,6 +320,8 @@ and expression_desc =
         *)
   | Pexp_extension of extension
         (* [%id] *)
+  | Pexp_sig of Longident.t loc
+        (* (sig S) *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {

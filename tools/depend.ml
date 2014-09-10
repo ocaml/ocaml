@@ -194,6 +194,7 @@ let rec add_expr bv exp =
   | Pexp_pack m -> add_module bv m
   | Pexp_open (_ovf, m, e) -> addmodule bv m; add_expr bv e
   | Pexp_extension _ -> ()
+  | Pexp_sig _ -> ()
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

@@ -167,7 +167,8 @@ let expression sub exp =
       sub # class_structure cl
   | Texp_pack (mexpr) ->
       sub # module_expr mexpr
-
+  | Texp_sig _ ->
+      assert false
 
 let package_type sub pack =
   List.iter (fun (_s, ct) -> sub # core_type ct) pack.pack_fields

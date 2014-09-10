@@ -294,6 +294,7 @@ and rw_exp iflag sexp =
   | Pexp_open (_ovf, _, e) -> rewrite_exp iflag e
   | Pexp_pack (smod) -> rewrite_mod iflag smod
   | Pexp_extension _ -> ()
+  | Pexp_sig _ -> ()
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
