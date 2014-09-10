@@ -396,37 +396,29 @@ let emit_float_test cmp neg i lbl =
   | (Ceq, false) | (Cne, true) ->
       let next = new_label() in
       I.ucomisd (arg i 1 , arg i 0);
-      I.jp (label next); (* skip if unordered *)
-      I.je (label lbl); (* branch taken if x=y *)
+      I.jp (label next);          (* skip if unordered *)
+      I.je lbl;                   (* branch taken if x=y *)
       def_label next
   | (Cne, false) | (Ceq, true) ->
       I.ucomisd (arg i 1, arg i 0);
-      I.jp (label lbl);(* branch taken if unordered *)
-      I.jne (label lbl) (* branch taken if x<y or x>y *)
+      I.jp lbl;                   (* branch taken if unordered *)
+      I.jne lbl                   (* branch taken if x<y or x>y *)
   | (Clt, _) ->
       I.comisd (arg i 0, arg i 1);
-      if not neg then
-        I.ja (label lbl)  (* branch taken if y>x i.e. x<y *)
-      else
-        I.jbe (label lbl) (* taken if unordered or y<=x i.e. !(x<y) *)
+      if not neg then I.ja lbl    (* branch taken if y>x i.e. x<y *)
+      else            I.jbe lbl   (* taken if unordered or y<=x i.e. !(x<y) *)
   | (Cle, _) ->
-      I.comisd (arg i 0, arg i 1);  (* swap compare *)
-      if not neg then
-        I.jae (label lbl)  (* branch taken if y>=x i.e. x<=y *)
-      else
-        I.jb (label lbl) (* taken if unordered or y<x i.e. !(x<=y) *)
+      I.comisd (arg i 0, arg i 1);(* swap compare *)
+      if not neg then I.jae lbl   (* branch taken if y>=x i.e. x<=y *)
+      else            I.jb lbl    (* taken if unordered or y<x i.e. !(x<=y) *)
   | (Cgt, _) ->
       I.comisd (arg i 1, arg i 0);
-      if not neg then
-        I.ja (label lbl)     (* branch taken if x>y *)
-      else
-        I.jbe (label lbl) (* taken if unordered or x<=y i.e. !(x>y) *)
+      if not neg then I.ja lbl    (* branch taken if x>y *)
+      else            I.jbe lbl   (* taken if unordered or x<=y i.e. !(x>y) *)
   | (Cge, _) ->
-      I.comisd (arg i 1, arg i 0);  (* swap compare *)
-      if not neg then
-        I.jae (label lbl)    (* branch taken if x>=y *)
-      else
-        I.jb (label lbl) (* taken if unordered or x<y i.e. !(x>=y) *)
+      I.comisd (arg i 1, arg i 0);(* swap compare *)
+      if not neg then I.jae lbl   (* branch taken if x>=y *)
+      else            I.jb lbl    (* taken if unordered or x<y i.e. !(x>=y) *)
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -435,9 +427,7 @@ let output_epilogue f =
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     I.addq (int n, rsp);
     cfi_adjust_cfa_offset (-n);
-    if fp then begin
-      I.popq rbp
-    end;
+    if fp then I.popq rbp;
     f ();
     (* reset CFA back cause function body may continue *)
     cfi_adjust_cfa_offset n
@@ -463,7 +453,9 @@ let emit_float_constant f lbl =
   _label (emit_label lbl);
   _qword (Const (B64, f))
 
-let emit_global_label lbl =
+let emit_global_label s =
+  let lbl = Compilenv.make_symbol (Some s) in
+  add_def_symbol lbl;
   let lbl = emit_symbol lbl in
   _global lbl;
   _label lbl
@@ -553,9 +545,8 @@ let emit_instr fallthrough i =
           load_symbol_addr "caml_young_ptr" r11;
           I.movq (mem_ptr ~pref:QWORD 0 R11, r15)
         end;
-      end else begin
+      end else
         emit_call s
-      end
   | Lop(Istackoffset n) ->
       if n < 0
       then I.addq (int (-n), rsp)
@@ -719,34 +710,35 @@ let emit_instr fallthrough i =
   | Lbranch lbl ->
       I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
+      let lbl = label lbl in
       begin match tst with
         Itruetest ->
           output_test_zero i.arg.(0);
-          I.jne (label lbl)
+          I.jne lbl
       | Ifalsetest ->
           output_test_zero i.arg.(0);
-          I.je (label lbl)
+          I.je lbl
       | Iinttest cmp ->
           I.cmpq (arg i 1, arg i 0);
           let b = name_for_cond_branch cmp in
-          I.j b (label lbl)
+          I.j b lbl
       | Iinttest_imm((Isigned Ceq | Isigned Cne |
                       Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
           output_test_zero i.arg.(0);
           let b = name_for_cond_branch cmp in
-          I.j b (label lbl)
+          I.j b lbl
       | Iinttest_imm(cmp, n) ->
           I.cmpq (int n, arg i 0);
           let b = name_for_cond_branch cmp in
-          I.j b (label lbl)
+          I.j b lbl
       | Ifloattest(cmp, neg) ->
           emit_float_test cmp neg i lbl
       | Ioddtest ->
           I.testb (int 1, arg8 i 0);
-          I.jne (label lbl)
+          I.jne lbl
       | Ieventest ->
           I.testb (int 1, arg8 i 0);
-          I.je (label lbl)
+          I.je lbl
       end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
       I.cmpq (int 1, arg i 0);
@@ -826,7 +818,7 @@ let emit_instr fallthrough i =
 
 let rec emit_all fallthrough i =
   match i.desc with
-  |  Lend -> ()
+  | Lend -> ()
   | _ ->
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
@@ -841,8 +833,7 @@ let emit_profile () =
        need to preserve other regs.  We do need to initialize rbp
        like mcount expects it, though. *)
     I.pushq r10;
-    if not fp then
-      I.movq (rsp, rbp);
+    if not fp then I.movq (rsp, rbp);
     emit_call "mcount";
     I.popq r10
   end
@@ -897,7 +888,7 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cglobal_symbol s -> _global (emit_symbol s)
+  | Cglobal_symbol s -> _global (emit_symbol s)
   | Cdefine_symbol s ->
       add_def_symbol s;
       _label (emit_symbol s)
@@ -906,23 +897,15 @@ let emit_item = function
   | Cint16 n -> _word (const n)
   | Cint32 n -> _long (const_nat n)
   | Cint n -> _qword (const_nat n)
-  | Csingle f ->
-      _long  (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
-  (*    emit_float32_directive ".long" (Int32.bits_of_float f) *)
-  | Cdouble f ->
-      (*    emit_float64_directive ".quad" (Int64.bits_of_float f) *)
-      _qword (Const (B64, Int64.bits_of_float f))
+  | Csingle f -> _long  (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
+  | Cdouble f -> _qword (Const (B64, Int64.bits_of_float f))
   | Csymbol_address s ->
       add_used_symbol s;
       _qword (ConstLabel (emit_symbol s, None))
-  | Clabel_address lbl ->
-      _qword (ConstLabel (emit_data_label lbl, None))
-  | Cstring s ->
-      _ascii s
-  | Cskip n ->
-      if n>0 then _space n
-  | Calign n ->
-      emit_align n
+  | Clabel_address lbl -> _qword (ConstLabel (emit_data_label lbl, None))
+  | Cstring s -> _ascii s
+  | Cskip n -> if n > 0 then _space n
+  | Calign n -> emit_align n
 
 (* Beginning / end of an assembly file *)
 
@@ -965,15 +948,11 @@ let begin_assembly() =
     _qword (Const (B64, 0xFFFFFFFFFFFFFFFFL));
   end;
 
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  add_def_symbol lbl_begin;
   _data ();
-  emit_global_label lbl_begin;
+  emit_global_label "data_begin";
 
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  add_def_symbol lbl_begin;
   _text ();
-  emit_global_label lbl_begin;
+  emit_global_label "code_begin";
 
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
@@ -998,20 +977,15 @@ let end_assembly() =
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  add_def_symbol lbl_end;
   _text ();
   if system = S_macosx then I.nop (); (* suppress "ld warning: atom sorting error" *)
-  emit_global_label lbl_end;
+  emit_global_label "code_end";
+
   _data ();
-  let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  add_def_symbol lbl_end;
-  emit_global_label lbl_end;
+  emit_global_label "data_end";
   _long (const 0);
 
-  let lbl = Compilenv.make_symbol (Some "frametable") in
-  add_def_symbol lbl;
-  emit_global_label lbl;
+  emit_global_label "frametable";
 
   emit_frames
     { efa_label = (fun l -> _qword (ConstLabel (emit_label l, None)));
