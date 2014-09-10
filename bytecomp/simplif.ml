@@ -1156,10 +1156,162 @@ let simplify_tail_calls lam =
   then simplify_tail_calls lam
   else lam
 
+
+(* simplify default wrapper *)
+
+let rec map f lam =
+  let lam = match lam with
+      Lvar v -> lam
+    | Lconst cst -> lam
+    | Lapply(e1, el, loc) ->
+        Lapply(map f e1, List.map (map f) el, loc)
+    | Lfunction(kind, params, body) ->
+        Lfunction(kind, params, map f body)
+    | Llet(str, v, e1, e2) ->
+        Llet(str, v, map f e1, map f e2)
+    | Lletrec(idel, e2) ->
+        Lletrec(List.map (fun (v, e) -> (v, map f e)) idel,
+                map f e2)
+    | Lprim(p, el) ->
+        Lprim(p, List.map (map f) el)
+    | Lswitch(e, sw) ->
+        Lswitch(map f e,
+                {sw_numconsts = sw.sw_numconsts;
+                 sw_consts =
+                   List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
+                 sw_numblocks = sw.sw_numblocks;
+                 sw_blocks =
+                   List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
+                 sw_failaction =
+                   Misc.may_map (map f) sw.sw_failaction; })
+    | Lstringswitch(e, sw, default) ->
+        Lstringswitch
+          (map f e,
+           List.map (fun (s, e) -> (s, map f e)) sw,
+           Misc.may_map (map f) default)
+    | Lstaticraise (i,args,kargs) ->
+        Lstaticraise (i,List.map (map f) args,kargs)
+    | Lstaticcatch(body, handlers) ->
+        let handlers = List.map (fun (n, ids, kids, handler) ->
+            n, ids, kids, map f handler)
+            handlers in
+        Lstaticcatch(map f body, handlers)
+    | Ltrywith(e1, v, e2) ->
+        Ltrywith(map f e1, v, map f e2)
+    | Lifthenelse(e1, e2, e3) ->
+        Lifthenelse(map f e1,
+                    map f e2,
+                    map f e3)
+    | Lsequence(e1, e2) ->
+        Lsequence(map f e1, map f e2)
+    | Lwhile(e1, e2) ->
+        Lwhile(map f e1, map f e2)
+    | Lfor(v, e1, e2, dir, e3) ->
+        Lfor(v, map f e1, map f e2,
+             dir, map f e3)
+    | Lassign(v, e) ->
+        Lassign(v, map f e)
+    | Lsend(k, m, o, el, loc) ->
+        Lsend(k, map f m, map f o,
+              List.map (map f) el, loc)
+    | Levent(l, ev) ->
+        Levent(map f l, ev)
+    | Lifused(v, e) ->
+        Lifused(v, map f e)
+  in
+  f lam
+
+(* Split a function with default parameters into a wrapper and an
+   inner function.  The wrapper fills in missing optional parameters
+   with their default value and tail-calls the inner function.  The
+   wrapper can then hopefully be inlined on most call sites to avoid
+   the overhead associated with boxing an optional argument with a
+   'Some' constructor, only to deconstruct it immediately in the
+   function's body. *)
+
+let split_default_wrapper fun_id kind params body =
+  let rec aux map = function
+    | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
+        Ident.name optparam = "*opt*" && List.mem optparam params
+          && not (List.mem_assoc optparam map)
+      ->
+        let wrapper_body, inner = aux ((optparam, id) :: map) rest in
+        Llet(Strict, id, def, wrapper_body), inner
+    | _ when map = [] -> raise Exit
+    | body ->
+        (* Check that those *opt* identifiers don't appear in the remaining
+           body. This should not appear, but let's be on the safe side. *)
+        let fv = Lambda.free_variables body in
+        List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
+
+        let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
+        let map_param p = try List.assoc p map with Not_found -> p in
+        let args = List.map (fun p -> Lvar (map_param p)) params in
+        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
+
+        let inner_params = List.map map_param params in
+        let new_ids = List.map Ident.rename inner_params in
+        let subst = List.fold_left2
+            (fun s id new_id ->
+               Ident.add id (Lvar new_id) s)
+            Ident.empty inner_params new_ids
+        in
+        let body = Lambda.subst_lambda subst body in
+        let inner_fun = Lfunction(Curried, new_ids, body) in
+        (wrapper_body, (inner_id, inner_fun))
+  in
+  try
+    let wrapper_body, inner = aux [] body in
+    [(fun_id, Lfunction(kind, params, wrapper_body)); inner]
+  with Exit ->
+    [(fun_id, Lfunction(kind, params, body))]
+
+let simplify_default_wrapper lam =
+  let f = function
+    | Llet(( Strict | Alias | StrictOpt), id,
+           Lfunction(kind, params, fbody), body) ->
+        begin match split_default_wrapper id kind params fbody with
+        | [fun_id, def] ->
+            Llet(Alias, fun_id, def, body)
+        | [fun_id, def; inner_fun_id, def_inner] ->
+            Llet(Alias, inner_fun_id, def_inner,
+                 Llet(Alias, fun_id, def, body))
+        | _ -> assert false
+        end
+    | Lletrec(defs, body) as lam ->
+        if List.for_all (function (_, Lfunction _) -> true | _ -> false) defs
+        then
+          let defs =
+            List.flatten
+              (List.map
+                 (function
+                   | (id, Lfunction(kind, params, body)) ->
+                       split_default_wrapper id kind params body
+                   | _ -> assert false)
+                 defs)
+          in
+          Lletrec(defs, body)
+        else lam
+    | lam -> lam
+  in
+  map f lam
+
+let simplify_default_wrapper lam =
+  let optimize = !Clflags.native_code in
+  if optimize
+  then simplify_default_wrapper lam
+  else lam
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda lam =
-  let res = simplify_lets (simplify_exits (simplify_tail_calls lam)) in
+  let res =
+    lam
+    |> simplify_default_wrapper
+    |> simplify_tail_calls
+    |> simplify_exits
+    |> simplify_lets
+  in
   if !Clflags.annotations then emit_tail_infos true res;
   res
