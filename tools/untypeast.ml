@@ -350,7 +350,7 @@ and untype_expression exp =
         Pexp_object (untype_class_structure cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (untype_module_expr mexpr)
-    | Texp_sig s -> Pexp_sig s
+    | Texp_sig _s -> assert false
   in
   List.fold_right untype_extra exp.exp_extra
     (Exp.mk ~loc:exp.exp_loc ~attrs:exp.exp_attributes desc)

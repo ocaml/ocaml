@@ -238,7 +238,7 @@ let load_compunit ic file_name file_digest compunit =
   let digest = Digest.string (file_digest ^ compunit.cu_name) in
   register_code_fragment code code_size digest;
   begin try
-    ignore((Meta.reify_bytecode code code_size) ())
+    ignore ((Meta.reify_bytecode code code_size) ())
   with exn ->
     Symtable.restore_state initial_symtable;
     raise exn
@@ -291,6 +291,44 @@ let loadfile_private file_name =
     Symtable.hide_additions initial_symtable;
     crc_interfaces := initial_crc;
     raise exn
+
+let loadfile' file_name crc =
+  init();
+  if not (Sys.file_exists file_name)
+    then raise (Error (File_not_found file_name));
+  let ic = open_in_bin file_name in
+  let file_digest = Digest.channel ic (-1) in
+  seek_in ic 0;
+  try
+    let buffer =
+      try really_input_string ic (String.length Config.cmo_magic_number)
+      with End_of_file -> raise (Error (Not_a_bytecode_file file_name))
+    in
+    let modu =
+      if buffer = Config.cmo_magic_number then begin
+        let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+        seek_in ic compunit_pos;
+        let cu = (input_value ic : compilation_unit) in
+        let cu_crc = List.assoc cu.cu_name cu.cu_imports in
+        begin match cu_crc with
+        | None -> raise (Error (Inconsistent_import file_name))
+        | Some cu_crc ->
+            if not (String.compare crc cu_crc = 0)
+            then raise (Error (Inconsistent_import file_name))
+        end;
+        load_compunit ic file_name file_digest cu;
+        Symtable.get_global_value (Ident.create_persistent cu.cu_name)
+      end else
+        raise(Error(Not_a_bytecode_file file_name))
+    in
+    close_in ic;
+    modu
+  with exc ->
+    close_in ic; raise exc
+
+let load_module file_name (crc: 'a sig_t) : 'a =
+  let crc = (Obj.magic crc:Digest.t) in
+  Obj.obj (loadfile' file_name crc)
 
 (* Error report *)
 

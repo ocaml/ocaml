@@ -144,3 +144,5 @@ val error_message : error -> string
 (** {6 Internal functions} *)
 
 val digest_interface : string -> string list -> Digest.t
+
+val load_module : string -> 'a sig_t -> 'a

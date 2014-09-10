@@ -19,6 +19,7 @@ external ndl_open: string -> bool -> handle * bytes = "caml_natdynlink_open"
 external ndl_run: handle -> string -> unit = "caml_natdynlink_run"
 external ndl_getmap: unit -> bytes = "caml_natdynlink_getmap"
 external ndl_globals_inited: unit -> int = "caml_natdynlink_globals_inited"
+external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 
 type linking_error =
     Undefined_global of string
@@ -203,6 +204,22 @@ let prohibit names =
   let ifaces = List.fold_right StrMap.remove names !global_state.ifaces in
   global_state := { !global_state with ifaces = ifaces };
   allow_extension := false
+
+let load_module filename (crc:'a sig_t) =
+  init();
+  let (filename,handle,units) = read_file filename false in
+  let nstate = loadunits filename handle units !global_state in
+  global_state := nstate;
+  match units with
+  | [unit] ->
+      let module_crc = List.assoc unit.dynu_name unit.dynu_imports_cmi in
+      if Some (Obj.magic crc:Digest.t) = module_crc
+      then
+        let module_symbol = "caml"^unit.dynu_name in
+        Obj.obj (ndl_loadsym module_symbol)
+      else
+        assert false
+  | _ -> assert false
 
 let digest_interface _ _ =
   failwith "Dynlink.digest_interface: not implemented in native code"
