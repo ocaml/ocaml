@@ -409,6 +409,9 @@ module DSL64 = struct
 
   let _r r = Reg64 r
 
+  let al  = Reg8 AL
+  let ah  = Reg8 AH
+  let cl  = Reg8 CL
   let rax = _r RAX
   let r10 = _r R10
   let r11 = _r R11
