@@ -220,7 +220,7 @@ method private kill_loads n =
 method private cse n i =
   match i.desc with
   | Iend | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _)
-  | Iexit _ | Iexit_ind _ | Iraise _ ->
+  | Ijump _ | Ijump_ind _ | Iraise _ ->
       i
   | Iop (Imove | Ispill | Ireload) ->
       (* For moves, we associate the same value number to the result reg
@@ -305,11 +305,11 @@ method private cse n i =
      let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
       {i with desc = Iswitch(index, Array.map (self#cse n1) cases);
               next = self#cse empty_numbering i.next}
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let aux (nfail, handler) =
         nfail, self#cse empty_numbering handler
       in
-      {i with desc = Icatch(List.map aux handlers, self#cse n body);
+      {i with desc = Ilabel(List.map aux handlers, self#cse n body);
               next = self#cse empty_numbering i.next}
   | Itrywith(body, handler) ->
       {i with desc = Itrywith(self#cse n body,

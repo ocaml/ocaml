@@ -855,7 +855,7 @@ method emit_expr (env:environment) exp =
       let a = Array.of_list ((r_body,s_body) :: List.map snd l) in
       let r = join_array a in
       let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
-      self#insert (Icatch(List.map aux2 l, s_body#extract)) [||] [||];
+      self#insert (Ilabel(List.map aux2 l, s_body#extract)) [||] [||];
       r
   | Cexit (stexn,args,stex_args) ->
       begin match self#emit_parts_list env args with
@@ -875,15 +875,15 @@ method emit_expr (env:environment) exp =
           self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
           self#insert_moves src_exn (Array.concat dest_exn) ;
           begin match stexn with
-          | Stexn_cst nfail -> self#insert (Iexit nfail) [||] [||]
+          | Stexn_cst nfail -> self#insert (Ijump nfail) [||] [||]
           | Stexn_var fail_var ->
               let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
               match possible_exns with
               | [nfail] ->
-                  self#insert (Iexit nfail) [||] [||]
+                  self#insert (Ijump nfail) [||] [||]
               | _ ->
                   let exn_var = self#emit_load_sexn_var env fail_var in
-                  self#insert (Iexit_ind possible_exns) exn_var [||]
+                  self#insert (Ijump_ind possible_exns) exn_var [||]
           end;
           None
       end
@@ -1114,7 +1114,7 @@ method emit_tail (env:environment) exp =
             new_env (List.combine kids krs) in
         nfail, self#emit_tail_sequence new_env e2
       in
-      self#insert (Icatch(List.map aux handlers, s_body)) [||] [||];
+      self#insert (Ilabel(List.map aux handlers, s_body)) [||] [||];
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in

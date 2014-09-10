@@ -80,7 +80,7 @@ let rec live i finally =
       done;
       i.live <- !at_fork;
       Reg.add_set_array !at_fork i.arg
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let at_join = live i.next finally in
 
       let aux (nfail,handler) (nfail', before_handler) =
@@ -124,12 +124,12 @@ let rec live i finally =
       i.live <- before_body;
       before_body
 
-  | Iexit nfail ->
+  | Ijump nfail ->
       let this_live = find_live_at_exit nfail in
       i.live <- this_live ;
       this_live
 
-  | Iexit_ind possible_fails ->
+  | Ijump_ind possible_fails ->
       let this_live =
         List.fold_left (fun set nfail ->
             let this_live = find_live_at_exit nfail in

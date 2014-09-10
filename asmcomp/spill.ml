@@ -196,7 +196,7 @@ let rec reload i before =
                    (instr_cons (Iswitch(index, new_cases))
                                i.arg i.res new_next),
        finally)
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let new_sets = List.map
           (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
       let previous_reload_at_exit = !reload_at_exit in
@@ -224,13 +224,13 @@ let rec reload i before =
       let new_handlers = List.map2
           (fun (nfail, _) (new_handler, _) -> nfail, new_handler)
           handlers res in
-      (instr_cons (Icatch(new_handlers, new_body)) i.arg i.res new_next,
+      (instr_cons (Ilabel(new_handlers, new_body)) i.arg i.res new_next,
        finally)
-  | Iexit nfail ->
+  | Ijump nfail ->
       let set = find_reload_at_exit nfail in
       set := Reg.Set.union !set before;
       (i, Reg.Set.empty)
-  | Iexit_ind possible_fails ->
+  | Ijump_ind possible_fails ->
       List.iter
         (fun nfail ->
            let set = find_reload_at_exit nfail in
@@ -350,7 +350,7 @@ let rec spill i finally =
       inside_arm := saved_inside_arm ;
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let (new_next, at_join) = spill i.next finally in
       let saved_inside_catch = !inside_catch in
       inside_catch := true ;
@@ -380,11 +380,11 @@ let rec spill i finally =
       let new_handlers = List.map2
           (fun (nfail, _) (handler, _) -> nfail, handler)
           handlers res in
-      (instr_cons (Icatch(new_handlers, new_body)) i.arg i.res new_next,
+      (instr_cons (Ilabel(new_handlers, new_body)) i.arg i.res new_next,
        before)
-  | Iexit nfail ->
+  | Ijump nfail ->
       (i, find_spill_at_exit nfail)
-  | Iexit_ind possible_fails ->
+  | Ijump_ind possible_fails ->
       let set =
         List.fold_left
           (fun set nfail ->

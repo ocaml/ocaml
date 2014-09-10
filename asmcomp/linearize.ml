@@ -195,19 +195,19 @@ let rec linear' depth i n =
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch (lbl,0) ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
-      | Iexit nfail1, Iexit nfail2, _
+      | Ijump nfail1, Ijump nfail2, _
             when is_next_catch nfail1
               && fail_depth nfail1 = depth
               && fail_depth nfail2 = depth ->
           let (_,lbl2) = find_exit_label nfail2 in
           copy_instr
             (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
-      | Iexit nfail, _, _
+      | Ijump nfail, _, _
           when fail_depth nfail = depth ->
           let n2 = linear ifnot n1
           and (_,lbl) = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
-      | _,  Iexit nfail, _
+      | _,  Ijump nfail, _
           when fail_depth nfail = depth ->
           let n2 = linear ifso n1 in
           let (_,lbl) = find_exit_label nfail in
@@ -247,7 +247,7 @@ let rec linear' depth i n =
                    i !n2
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let labels = List.map (fun (_io, handler) ->
           match handler.Mach.desc with
@@ -268,7 +268,7 @@ let rec linear' depth i n =
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := previous_exit_label;
       n3
-  | Iexit nfail ->
+  | Ijump nfail ->
       let n1 = linear i.Mach.next n in
       let (lbl_depth, lbl) = find_exit_label nfail in
       let frame_offsets = depth - lbl_depth in
@@ -278,17 +278,17 @@ let rec linear' depth i n =
         else cons_instr Lpoptrap (poptraps (count-1) n) in
       poptraps frame_offsets n1
 
-  | Iexit_ind possible_fails ->
+  | Ijump_ind possible_fails ->
       let n1 = linear i.Mach.next n in
       let lbl_depth =
         match possible_fails with
-        | [] -> Misc.fatal_error "Linearize.linear': Iexit_ind"
+        | [] -> Misc.fatal_error "Linearize.linear': Ijump_ind"
         | h :: t ->
             let depth = fail_depth h in
             List.iter
               (fun n ->
                  if fail_depth n <> depth
-                 then Misc.fatal_error "Linearize.linear': Iexit_ind not matching depth")
+                 then Misc.fatal_error "Linearize.linear': Ijump_ind not matching depth")
               t;
             depth
       in

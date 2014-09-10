@@ -71,9 +71,9 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Icatch of (int * instruction) list * instruction
-  | Iexit of int
-  | Iexit_ind of int list
+  | Ilabel of (int * instruction) list * instruction
+  | Ijump of int
+  | Ijump_ind of int list
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 

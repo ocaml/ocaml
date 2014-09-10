@@ -170,8 +170,8 @@ let rec instr ppf i =
         fprintf ppf "@]@,%a@]" instr cases.(i)
       done;
       fprintf ppf "@,endswitch"
-  | Icatch(handlers, body) ->
-      fprintf ppf "@[<v 2>catch@,%a@;<0 -2>with" instr body;
+  | Ilabel(handlers, body) ->
+      fprintf ppf "@[<v 2>label@,%a@;<0 -2>with" instr body;
       let h (nfail, handler) =
         fprintf ppf "(%d)@,%a@;" nfail instr handler in
       let rec aux = function
@@ -183,10 +183,10 @@ let rec instr ppf i =
             aux t
       in
       aux handlers
-  | Iexit i ->
-      fprintf ppf "exit(%d)" i
-  | Iexit_ind il ->
-      fprintf ppf "exit_ind(%a, %a)"
+  | Ijump i ->
+      fprintf ppf "jump(%d)" i
+  | Ijump_ind il ->
+      fprintf ppf "jump_ind(%a, %a)"
         reg i.arg.(0)
         (fun ppf -> List.iter (pp_print_int ppf)) il
   | Itrywith(body, handler) ->

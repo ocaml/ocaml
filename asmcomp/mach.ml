@@ -69,9 +69,9 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Icatch of (int * instruction) list * instruction
-  | Iexit of int
-  | Iexit_ind of int list
+  | Ilabel of (int * instruction) list * instruction
+  | Ijump of int
+  | Ijump_ind of int list
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
@@ -120,12 +120,12 @@ let rec instr_iter f i =
             instr_iter f cases.(i)
           done;
           instr_iter f i.next
-      | Icatch(handlers, body) ->
+      | Ilabel(handlers, body) ->
           instr_iter f body;
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
           instr_iter f i.next
-      | Iexit _ -> ()
-      | Iexit_ind _ -> ()
+      | Ijump _ -> ()
+      | Ijump_ind _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise _ -> ()
@@ -161,7 +161,7 @@ let recursive_handlers i =
     | Iswitch(index, cases) ->
         Array.fold_left (fun acc case -> result_union acc (loop case))
           (loop i.next) cases
-    | Icatch(handlers, body) ->
+    | Ilabel(handlers, body) ->
         let r =
           List.fold_left (fun acc (nfail, handler) ->
               let acc = result_union acc (loop handler) in
@@ -174,10 +174,10 @@ let recursive_handlers i =
         in
         result_union r
           (result_union (loop body) (loop i.next))
-    | Iexit n ->
+    | Ijump n ->
         { empty_result with
           reachable_exits = StExnSet.singleton n }
-    | Iexit_ind l ->
+    | Ijump_ind l ->
         let reachable_exits = List.fold_right StExnSet.add l StExnSet.empty in
         { empty_result with reachable_exits }
     | Itrywith(body, handler) ->

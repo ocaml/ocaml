@@ -102,13 +102,13 @@ let build_graph fundecl =
           interf cases.(i)
         done;
         interf i.next
-    | Icatch(handlers, body) ->
+    | Ilabel(handlers, body) ->
         interf body;
         List.iter (fun (_, handler) -> interf handler) handlers;
         interf i.next
-    | Iexit _ ->
+    | Ijump _ ->
         ()
-    | Iexit_ind _ ->
+    | Ijump_ind _ ->
         ()
     | Itrywith(body, handler) ->
         add_interf_set Proc.destroyed_at_raise handler.live;
@@ -176,7 +176,7 @@ let build_graph fundecl =
           prefer (weight / 2) cases.(i)
         done;
         prefer weight i.next
-    | Icatch(handlers, body) ->
+    | Ilabel(handlers, body) ->
         prefer weight body;
         List.iter (fun (nfail, handler) ->
             let weight =
@@ -189,9 +189,9 @@ let build_graph fundecl =
                 weight in
             prefer weight handler) handlers;
         prefer weight i.next
-    | Iexit _ ->
+    | Ijump _ ->
         ()
-    | Iexit_ind _ ->
+    | Ijump_ind _ ->
         ()
     | Itrywith(body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next

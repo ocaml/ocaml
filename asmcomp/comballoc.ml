@@ -27,7 +27,7 @@ let allocated_size = function
 
 let rec combine i allocstate =
   match i.desc with
-    Iend | Ireturn | Iexit _ | Iexit_ind _ | Iraise _ ->
+    Iend | Ireturn | Ijump _ | Ijump_ind _ | Iraise _ ->
       (i, allocated_size allocstate)
   | Iop(Ialloc sz) ->
       begin match allocstate with
@@ -66,12 +66,12 @@ let rec combine i allocstate =
       let newnext = combine_restart i.next in
       (instr_cons (Iswitch(table, newcases)) i.arg i.res newnext,
        allocated_size allocstate)
-  | Icatch(handlers, body) ->
+  | Ilabel(handlers, body) ->
       let (newbody, sz) = combine body allocstate in
       let newhandlers =
         List.map (fun (io, handler) -> io, combine_restart handler) handlers in
       let newnext = combine_restart i.next in
-      (instr_cons (Icatch(newhandlers, newbody)) i.arg i.res newnext, sz)
+      (instr_cons (Ilabel(newhandlers, newbody)) i.arg i.res newnext, sz)
   | Itrywith(body, handler) ->
       let (newbody, sz) = combine body allocstate in
       let newhandler = combine_restart handler in
