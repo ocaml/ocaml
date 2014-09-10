@@ -90,8 +90,8 @@ type expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
-  | Ccatch of (int * Ident.t list * stexn_var list * expression) list * expression
-  | Cexit of stexn * expression list * stexn list
+  | Clabel of (int * Ident.t list * stexn_var list * expression) list * expression
+  | Cjump of stexn * expression list * stexn list
   | Ctrywith of expression * Ident.t * expression
 
 type fundecl =

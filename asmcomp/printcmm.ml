@@ -143,7 +143,7 @@ let rec expr ppf = function
         fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
        done in
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
-  | Ccatch(handlers, e1) ->
+  | Clabel(handlers, e1) ->
       let print_handler ppf (i, ids, kids, e2) =
         fprintf ppf "(%d%a%a)@ %a"
           i
@@ -161,15 +161,15 @@ let rec expr ppf = function
         List.iter (print_handler ppf) l
       in
       fprintf ppf
-        "@[<2>(catch@ %a@;<1 -2>with%a)@]"
+        "@[<2>(label@ %a@;<1 -2>with%a)@]"
         sequence e1
         print_handlers handlers
-  | Cexit (stexn, el, kl) ->
+  | Cjump (stexn, el, kl) ->
       begin match stexn with
       | Stexn_var { stexn_var = i } ->
-          fprintf ppf "@[<2>(exit_ind v%d" i
+          fprintf ppf "@[<2>(jump_ind v%d" i
       | Stexn_cst i ->
-          fprintf ppf "@[<2>(exit %d" i
+          fprintf ppf "@[<2>(jump %d" i
       end;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       (match kl with [] -> () | _ -> fprintf ppf ",");

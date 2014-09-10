@@ -182,16 +182,16 @@ module Exn_classes = struct
       | Cswitch (e, _, a) ->
           aux e; Array.iter aux a
 
-      | Ccatch (handlers, body) ->
+      | Clabel (handlers, body) ->
           List.iter (fun (i, args, k, _handler) -> define env i args k) handlers;
           aux body;
           List.iter (fun (_i, _args, _k, handler) -> aux handler) handlers
 
-      | Cexit (Stexn_cst i, args, k) ->
+      | Cjump (Stexn_cst i, args, k) ->
           apply_direct env i args k;
           List.iter aux args
 
-      | Cexit (Stexn_var var, args, k) ->
+      | Cjump (Stexn_var var, args, k) ->
           apply_var env var args k;
           List.iter aux args
 
@@ -832,9 +832,9 @@ method emit_expr (env:environment) exp =
                       rsel [||];
           r
       end
-  | Ccatch([], e1) ->
+  | Clabel([], e1) ->
       self#emit_expr env e1
-  | Ccatch(handlers, e1) ->
+  | Clabel(handlers, e1) ->
       let (r_body, s_body) = self#emit_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
@@ -857,7 +857,7 @@ method emit_expr (env:environment) exp =
       let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
       self#insert (Ilabel(List.map aux2 l, s_body#extract)) [||] [||];
       r
-  | Cexit (stexn,args,stex_args) ->
+  | Cjump (stexn,args,stex_args) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
@@ -1096,9 +1096,9 @@ method emit_tail (env:environment) exp =
             (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
             rsel [||]
       end
-  | Ccatch([], e1) ->
+  | Clabel([], e1) ->
       self#emit_tail env e1
-  | Ccatch(handlers, e1) ->
+  | Clabel(handlers, e1) ->
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, kids, e2) =
         let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in

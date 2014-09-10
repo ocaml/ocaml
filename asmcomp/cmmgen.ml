@@ -422,7 +422,7 @@ let map_ccatch f handlers body =
   let handlers = List.map
       (fun (n, ids, kids, handler) -> (n, ids, kids, f handler))
       handlers in
-  Ccatch(handlers, f body)
+  Clabel(handlers, f body)
 
 let rec unbox_float = function
     Cop(Calloc, [header; c]) -> c
@@ -431,7 +431,7 @@ let rec unbox_float = function
       Cifthenelse(cond, unbox_float e1, unbox_float e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
   | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
-  | Ccatch(handlers, e1) ->
+  | Clabel(handlers, e1) ->
       map_ccatch unbox_float handlers e1
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
   | c -> Cop(Cload Double_u, [c])
@@ -458,7 +458,7 @@ let rec remove_unit = function
       Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
   | Cswitch(sel, index, cases) ->
       Cswitch(sel, index, Array.map remove_unit cases)
-  | Ccatch(handlers, body) ->
+  | Clabel(handlers, body) ->
       map_ccatch remove_unit handlers body
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
@@ -468,7 +468,7 @@ let rec remove_unit = function
       Cop(Capply (typ_void, dbg), args)
   | Cop(Cextcall(proc, mty, alloc, dbg), args) ->
       Cop(Cextcall(proc, typ_void, alloc, dbg), args)
-  | Cexit (_,_,_) as c -> c
+  | Cjump (_,_,_) as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
@@ -750,7 +750,7 @@ let rec unbox_int bi arg =
       Cifthenelse(cond, unbox_int bi e1, unbox_int bi e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2)
   | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_int bi) el)
-  | Ccatch(handlers, body) -> map_ccatch (unbox_int bi) handlers body
+  | Clabel(handlers, body) -> map_ccatch (unbox_int bi) handlers body
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_int bi e1, id, unbox_int bi e2)
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
@@ -1112,7 +1112,7 @@ struct
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
-  | Cexit (Stexn_cst i,[],[]) -> i,fun e -> e
+  | Cjump (Stexn_cst i,[],[]) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
 (*
@@ -1122,7 +1122,7 @@ struct
 *)
       i,
       (fun body -> match body with
-      | Cexit (Stexn_cst j,_,_) ->
+      | Cjump (Stexn_cst j,_,_) ->
           if i=j then handler
           else body
       | _ ->  ccatch (i,[],[],body,handler))
@@ -1139,7 +1139,7 @@ module StoreExp =
       type t = expression
       type key = int
       let make_key = function
-        | Cexit (Stexn_cst i,[],[]) -> Some i
+        | Cjump (Stexn_cst i,[],[]) -> Some i
         | _ -> None
     end)
 
@@ -1273,8 +1273,8 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
     | Cswitch(arg, index, cases) ->
         Cswitch(subst arg, index, Array.map subst cases)
-    | Ccatch(handlers, body) -> map_ccatch subst handlers body
-    | Cexit (stexn, el, kel) -> Cexit (stexn, List.map subst el, kel)
+    | Clabel(handlers, body) -> map_ccatch subst handlers body
+    | Cjump (stexn, el, kel) -> Cjump (stexn, List.map subst el, kel)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | (Cconst_int _ | Cconst_natint _ | Cconst_float _
       | Cconst_symbol _ | Cconst_pointer _ |Cconst_natpointer _
@@ -1482,9 +1482,9 @@ let rec transl = function
           strmatch_compile arg (Misc.may_map transl d)
             (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (stexn, args, kargs) ->
-      Cexit (stexn, List.map transl args, kargs)
+      Cjump (stexn, List.map transl args, kargs)
   | Ucatch(handlers, body) ->
-      Ccatch(
+      Clabel(
         List.map (fun (nfail, ids, kids, handler) ->
             nfail, ids, kids, transl handler)
           handlers,
@@ -2058,11 +2058,11 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
          else trbody2)
 
 and make_catch ncatch body handler = match body with
-| Cexit (Stexn_cst nexit,[],[]) when nexit=ncatch -> handler
+| Cjump (Stexn_cst nexit,[],[]) when nexit=ncatch -> handler
 | _ ->  ccatch (ncatch, [], [], body, handler)
 
 and make_catch2 mk_body handler = match handler with
-| Cexit (_,[],[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
+| Cjump (_,[],[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
     mk_body handler
 | _ ->
     let nfail = next_raise_count () in
@@ -2079,7 +2079,7 @@ and exit_if_true cond nfail otherwise =
       exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
   | Uprim(Psequand, _, _) ->
       begin match otherwise with
-      | Cexit (Stexn_cst raise_num,[],[]) ->
+      | Cjump (Stexn_cst raise_num,[],[]) ->
           exit_if_false cond (cexit (nfail,[],[])) raise_num
       | _ ->
           let raise_num = next_raise_count () in
@@ -2109,7 +2109,7 @@ and exit_if_false cond otherwise nfail =
       exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
   | Uprim(Psequor, _, _) ->
       begin match otherwise with
-      | Cexit (Stexn_cst raise_num,[],[]) ->
+      | Cjump (Stexn_cst raise_num,[],[]) ->
           exit_if_true cond raise_num (cexit (nfail,[],[]))
       | _ ->
           let raise_num = next_raise_count () in
