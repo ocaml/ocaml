@@ -320,8 +320,8 @@ and expression_desc =
         *)
   | Pexp_extension of extension
         (* [%id] *)
-  | Pexp_sig of Longident.t loc
-        (* (sig S) *)
+  | Pexp_sig of string loc * package_type
+        (* (sig M : S) *)
 
 and case =   (* (P -> E) or (P when E0 -> E) *)
     {

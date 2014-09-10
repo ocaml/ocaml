@@ -26,7 +26,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Unknown_builtin_primitive of string
-  | Not_a_toplevel_module of Longident.t
+  | Not_a_toplevel_module of Path.t
 
 exception Error of Location.t * error
 
@@ -926,14 +926,8 @@ and transl_exp0 e =
           cl_attributes = [];
          }
   | Texp_sig s ->
-      begin match s.Location.txt with
-      | Longident.Lident m ->
-        (* output_string oc Config.cmi_magic_number; *)
-        (*   output_value oc (cmi.cmi_name, cmi.cmi_sign); *)
-          Lconst(Const_base (Const_int 1234))
-      | lid ->
-          raise (Error (s.Location.loc, Not_a_toplevel_module lid))
-      end
+      let digest = Env.find_module_cmi_crc s.txt in
+      Lconst(Const_immstring digest)
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1191,12 +1185,12 @@ let transl_let rec_flag pat_expr_list body =
 
 open Format
 
-let rec fmt_longident f x =
+let rec fmt_path f x =
   match x with
-  | Longident.Lident (s) -> fprintf f "%s" s;
-  | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident y s;
-  | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident y fmt_longident z;
+  | Path.Pident (s) -> fprintf f "%a" Ident.print s;
+  | Path.Pdot (y, s, _pos) -> fprintf f "%a.%s" fmt_path y s;
+  | Path.Papply (y, z) ->
+      fprintf f "%a(%a)" fmt_path y fmt_path z;
 ;;
 
 let report_error ppf = function
@@ -1211,8 +1205,8 @@ let report_error ppf = function
         "Ancestor names can only be used to select inherited methods"
   | Unknown_builtin_primitive prim_name ->
     fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name
-  | Not_a_toplevel_module lid ->
-      fprintf ppf "Signature is not a toplevel one %a" fmt_longident lid
+  | Not_a_toplevel_module p ->
+      fprintf ppf "Signature is not a toplevel one %a" fmt_path p
 
 let () =
   Location.register_error_of_exn

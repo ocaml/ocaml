@@ -256,3 +256,5 @@ val fold_cltypes:
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
+
+val find_module_cmi_crc: string -> Digest.t

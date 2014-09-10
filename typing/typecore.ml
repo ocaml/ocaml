@@ -2675,22 +2675,33 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
-  | Pexp_sig id ->
-      let sty =
-        { ptyp_desc = Ptyp_package (id, []);
-          ptyp_loc = id.Location.loc;
-          ptyp_attributes = [] } in
-      let cty = Typetexp.transl_simple_type env false sty in
-      let ty = cty.ctyp_type in
+
+  | Pexp_sig (modu, (p,l)) ->
+
+      let p = !Typetexp.transl_modtype_longident loc env p.txt in
+      let l = List.map (fun ({ txt = name }, ct) ->
+          name, (Typetexp.transl_simple_type env false ct).ctyp_type) l in
+      let nl,tl = List.split l in
+
+      let mod_expr = {
+        pmod_desc = Pmod_ident { modu with txt = Longident.Lident modu.txt };
+        pmod_loc = modu.loc;
+        pmod_attributes = [];
+      } in
+
+      let _modl, tl' = !type_package env mod_expr p nl tl in
+
+      let ty = newty (Tpackage (p, nl, tl')) in
       let to_unify = Predef.type_sig_t ty in
       unify_exp_types loc env to_unify ty_expected;
       re {
-        exp_desc = Texp_sig id;
+        exp_desc = Texp_sig modu;
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
+
   | Pexp_extension ext ->
       raise (Error_forward (Typetexp.error_of_extension ext))
 

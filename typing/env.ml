@@ -1817,3 +1817,11 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+
+let find_module_cmi_crc name =
+  let pers_struct = find_pers_struct ~check:true name in
+  let crc = List.assoc name pers_struct.ps_crcs in
+  match crc with
+  | None -> failwith "nieh ?"
+  | Some d -> d
