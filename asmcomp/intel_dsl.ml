@@ -131,11 +131,11 @@ module DSL = struct
 
 
   let emit_nat n = emit_int (Int64.of_nativeint n)
-  let _int n = emit_int (Int64.of_int n)
+  let int n = emit_int (Int64.of_int n)
   let const_64 n = const_int n
   let const_32 n = const_int (Int64.of_int32 n)
   let const_nat n = const_int (Int64.of_nativeint n)
-  let _const n = const_int (Int64.of_int n)
+  let const n = const_int (Int64.of_int n)
 
   let emit_float64_directive f = ConstFloat f
 
@@ -407,18 +407,20 @@ module DSL64 = struct
 
   let _label s = directive (NewLabel (s, QWORD))
 
+(*
   let _r r = Reg64 r
+*)
 
   let al  = Reg8 AL
   let ah  = Reg8 AH
   let cl  = Reg8 CL
-  let rax = _r RAX
-  let r10 = _r R10
-  let r11 = _r R11
-  let r14 = _r R14
-  let r15 = _r R15
-  let rsp = _r RSP
-  let rbp = _r RBP
+  let rax = Reg64 RAX
+  let r10 = Reg64 R10
+  let r11 = Reg64 R11
+  let r14 = Reg64 R14
+  let r15 = Reg64 R15
+  let rsp = Reg64 RSP
+  let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
 
 (*

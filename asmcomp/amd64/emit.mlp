@@ -37,7 +37,7 @@ let int_reg_name =
 let float_reg_name = Array.init 16 (fun i -> XMM i)
 
 let register_name r =
-  if r < 100 then _r (int_reg_name.(r))
+  if r < 100 then Reg64 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
 (* CFI directives *)
@@ -153,7 +153,7 @@ let load_symbol_addr s arg =
       then at_rip (abs s) (* check *)
       else _offset (abs s)
     in
-    I.movq (addr,  arg)
+    I.movq (addr, arg)
 
 (* Output a label *)
 
@@ -369,7 +369,7 @@ let name_for_cond_branch = function
 let output_test_zero arg =
   match arg.loc with
     Reg.Reg r -> I.testq  (reg arg, reg arg)
-  | _  -> I.cmpq  (_int 0, reg arg)
+  | _  -> I.cmpq  (int 0, reg arg)
 
 (* Output a floating-point compare and branch *)
 
@@ -424,7 +424,7 @@ let emit_float_test cmp neg arg lbl =
 let output_epilogue f =
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.addq (_int n, rsp);
+    I.addq (int n, rsp);
     cfi_adjust_cfa_offset (-n);
     if fp then begin
       I.popq rbp
@@ -487,7 +487,7 @@ let emit_instr fallthrough i =
       if n = 0n then begin
         match i.res.(0).loc with
           Reg n -> I.xorq (reg i.res.(0), reg i.res.(0))
-        | _     -> I.movq (_int 0, reg i.res.(0))
+        | _     -> I.movq (int 0, reg i.res.(0))
       end else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
         I.movq (emit_nat n, reg i.res.(0))
       else
@@ -502,7 +502,7 @@ let emit_instr fallthrough i =
           I.xorpd (reg i.res.(0), reg i.res.(0))
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (at_rip (abs_label lbl),  reg i.res.(0))
+          I.movsd (at_rip (abs_label lbl), reg i.res.(0))
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -549,8 +549,8 @@ let emit_instr fallthrough i =
       end
   | Lop(Istackoffset n) ->
       if n < 0
-      then I.addq (_int(-n), rsp)
-      else I.subq (_int n, rsp);
+      then I.addq (int (-n), rsp)
+      else I.subq (int n, rsp);
       cfi_adjust_cfa_offset n;
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
@@ -596,7 +596,7 @@ let emit_instr fallthrough i =
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
-        I.subq (_int n, r15);
+        I.subq (int n, r15);
         if !Clflags.dlcode && system <> S_win64 then begin
           load_symbol_addr "caml_young_limit" rax;
           I.cmpq (_mem_ptr QWORD 0 RAX, r15);
@@ -615,7 +615,7 @@ let emit_instr fallthrough i =
           16  -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"
         | 32 -> emit_call "caml_alloc3"
-        | _  -> I.movq (_int n, rax);
+        | _  -> I.movq (int n, rax);
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
@@ -627,7 +627,7 @@ let emit_instr fallthrough i =
       I.set b al;
       I.movzbq (al, reg i.res.(0))
   | Lop(Iintop_imm(Icomp cmp, n)) ->
-      I.cmpq (_int n, reg i.arg.(0));
+      I.cmpq (int n, reg i.arg.(0));
       let b = name_for_cond_branch cmp in
       I.set b al;
       I.movzbq (al, reg i.res.(0))
@@ -637,7 +637,7 @@ let emit_instr fallthrough i =
       I.jbe (label lbl)
   | Lop(Iintop_imm(Icheckbound, n)) ->
       let lbl = bound_error_label i.dbg in
-      I.cmpq (_int n, reg i.arg.(0));
+      I.cmpq (int n, reg i.arg.(0));
       I.jbe (label lbl)
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqto ();
@@ -658,7 +658,7 @@ let emit_instr fallthrough i =
       I.decq (reg i.res.(0))
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
-      instr_for_intop op (_int n, reg i.res.(0))
+      instr_for_intop op (int n, reg i.res.(0))
   | Lop(Inegf) ->
       I.xorpd (at_rip ~pref:OWORD (abs "caml_negf_mask"), reg i.res.(0))
   | Lop(Iabsf) ->
@@ -679,7 +679,7 @@ let emit_instr fallthrough i =
       add_used_symbol s;
       I.movq (_offset (abs s), addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
-      I.addq (_int n, addressing addr QWORD i 0)
+      I.addq (int n, addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
       instr_for_floatarithmem op (addressing addr REAL8 i 1, reg i.res.(0))
   | Lop(Ispecific(Ibswap size)) ->
@@ -727,20 +727,20 @@ let emit_instr fallthrough i =
           let b = name_for_cond_branch cmp in
           I.j b (label lbl)
       | Iinttest_imm(cmp, n) ->
-          I.cmpq (_int n, reg i.arg.(0));
+          I.cmpq (int n, reg i.arg.(0));
           let b = name_for_cond_branch cmp in
           I.j b (label lbl)
       | Ifloattest(cmp, neg) ->
           emit_float_test cmp neg i.arg lbl
       | Ioddtest ->
-          I.testb (_int 1, reg8 i.arg.(0));
+          I.testb (int 1, reg8 i.arg.(0));
           I.jne (label lbl)
       | Ieventest ->
-          I.testb (_int 1, reg8 i.arg.(0));
+          I.testb (int 1, reg8 i.arg.(0));
           I.je (label lbl)
       end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
-      I.cmpq (_int 1, reg i.arg.(0));
+      I.cmpq (int 1, reg i.arg.(0));
       begin match lbl0 with
         None -> ()
       | Some lbl -> I.jb (label lbl)
@@ -799,7 +799,7 @@ let emit_instr fallthrough i =
   | Lpoptrap ->
       I.popq r14;
       cfi_adjust_cfa_offset (-8);
-      I.addq (_int 8, rsp);
+      I.addq (int 8, rsp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset - 16
   | Lraise k ->
@@ -873,7 +873,7 @@ let fundecl fundecl =
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
-    I.subq (_int n, rsp);
+    I.subq (int n, rsp);
     cfi_adjust_cfa_offset n;
   end;
   def_label !tailrec_entry_point;
@@ -897,8 +897,8 @@ let emit_item = function
       add_def_symbol s;
       _label (emit_symbol s)
   | Cdefine_label lbl -> _label (emit_data_label lbl)
-  | Cint8 n -> _byte (_const n)
-  | Cint16 n -> _word (_const n)
+  | Cint8 n -> _byte (const n)
+  | Cint16 n -> _word (const n)
   | Cint32 n -> _long (const_nat n)
   | Cint n -> _qword (const_nat n)
   | Csingle f ->
@@ -1002,7 +1002,7 @@ let end_assembly() =
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   add_def_symbol lbl_end;
   emit_global_label lbl_end;
-  _long (_const 0);
+  _long (const 0);
 
   let lbl = Compilenv.make_symbol (Some "frametable") in
   add_def_symbol lbl;
@@ -1010,7 +1010,7 @@ let end_assembly() =
 
   emit_frames
     { efa_label = (fun l -> _qword (ConstLabel (emit_label l, None)));
-      efa_16 = (fun n -> _word (_const n));
+      efa_16 = (fun n -> _word (const n));
       efa_32 = (fun n -> _long (const_32 n));
       efa_word = (fun n -> _qword (Const (B64, Int64.of_int n)));
       efa_align = (emit_align);
@@ -1023,7 +1023,7 @@ let end_assembly() =
             _setvar (s,
                       ConstAdd (
                         ConstLabel(emit_label lbl, None),
-                        ConstAdd (_const 4, const_32 ofs))
+                        ConstAdd (const 4, const_32 ofs))
                     );
             _long (ConstLabel (s, None))
         end else begin
