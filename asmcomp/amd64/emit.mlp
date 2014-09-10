@@ -137,25 +137,18 @@ let emit_jump s =
     else _l (emit_symbol s)
   )
 
+let windows =
+  match system with
+  | S_mingw64 | S_cygwin | S_win64 -> true
+  | _ -> false
+
 let load_symbol_addr s arg =
-  (* TODO: review that carefully, and simplify *)
-  if system = S_win64 || system = S_mingw64 then
-    (* What about Cygwin? *)
-    if !pic_code then
-      I.leaq (at_rip (abs s), arg)
-    else
-      I.movq (_offset (abs s), arg)
+  if !Clflags.dlcode && not windows then
+    I.movq (at_rip (abs s ~tbl:GOTPCREL),  arg)
+  else if !pic_code then
+    I.leaq (at_rip (abs s), arg)
   else
-    let addr =
-      if !Clflags.dlcode && (match system with
-            S_mingw64 | S_cygwin | S_win64 -> false
-          | _ -> true)
-      then at_rip (abs s ~tbl:GOTPCREL)
-      else if !pic_code
-      then at_rip (abs s) (* check *)
-      else _offset (abs s)
-    in
-    I.movq (addr, arg)
+    I.movq (_offset (abs s), arg)
 
 (* Output a label *)
 
