@@ -53,29 +53,6 @@ module ForceMem = struct
   let force_option force = function
       None -> None
     | Some arg -> Some (force arg)
-
-  let force2 f force (arg1, arg2) =
-    emit (f (force arg1, force arg2))
-
-  let force12 f force1 force2 (arg1, arg2) =
-    emit (f (force1 arg1, force2 arg2))
-
-  let force_fxxx f =
-    (fun arg -> emit (f (force_real4 arg))),
-    (fun arg -> emit (f (force_real8 arg)))
-
-  let force_cmp = force2 (fun (arg1,arg2) -> CMP (arg1,arg2))
-  let force_add = force2 (fun (arg1,arg2) -> ADD (arg1,arg2))
-  let force_sub = force2 (fun (arg1,arg2) -> SUB (arg1,arg2))
-  let force_xor = force2 (fun (arg1,arg2) -> XOR (arg1,arg2))
-  let force_or = force2 (fun (arg1,arg2) -> OR (arg1,arg2))
-  let force_and = force2 (fun (arg1,arg2) -> AND (arg1,arg2))
-  let force_test = force2 (fun (arg1,arg2) -> TEST (arg1,arg2))
-
-  let force_mov = force2 (fun (arg1,arg2) -> MOV (arg1,arg2))
-  let force_movsx = force12 (fun (arg1,arg2) -> MOVSX (arg1,arg2))
-  let force_movzx = force12 (fun (arg1,arg2) -> MOVZX (arg1,arg2))
-
 end
 
 (* A DSL to write GAS-like assembly code in OCAML. It is splitted into
@@ -195,21 +172,18 @@ module INS = struct
   let nop () = emit NOP
 
   (* Word mnemonics *)
-  let movw (arg1, arg2) = emit (MOV (
-      force_word arg1,
-      force_word arg2))
+  let movw (arg1, arg2) = emit (MOV (force_word arg1, force_word arg2))
 
   (* Byte mnemonics *)
   let decb arg = emit (DEC (force_byte arg))
-  let cmpb = force_cmp force_byte
-  let movb = force_mov force_byte
-  let andb = force_and force_byte
-  let xorb = force_xor force_byte
-  let testb = force_test force_byte
+  let cmpb (x, y) = emit (CMP (force_byte x, force_byte y))
+  let movb (x, y) = emit (MOV (force_byte x, force_byte y))
+  let andb (x, y)= emit (AND (force_byte x, force_byte y))
+  let xorb (x, y)= emit (XOR (force_byte x, force_byte y))
+  let testb (x, y)= emit (TEST (force_byte x, force_byte y))
 
   (* Long-word mnemonics *)
-  let movl = force_mov force_dword
-
+  let movl (x, y) = emit (MOV (force_dword x, force_dword y))
 end
 
 module INS32 = struct
@@ -219,25 +193,24 @@ module INS32 = struct
   include INS
 
   (* Long-word mnemonics *)
-  let addl = force_add force_dword
-  let subl = force_sub force_dword
-  let andl = force_and force_dword
-  let orl = force_or force_dword
-  let xorl = force_xor force_dword
-  let cmpl = force_cmp force_dword
-  let testl = force_test force_dword
+  let addl (x, y) = emit (ADD (force_dword x, force_dword y))
+  let subl (x, y) = emit (SUB (force_dword x, force_dword y))
+  let andl (x, y) = emit (AND (force_dword x, force_dword y))
+  let orl (x, y) = emit (OR (force_dword x, force_dword y))
+  let xorl (x, y) = emit (XOR (force_dword x, force_dword y))
+  let cmpl (x, y) = emit (CMP (force_dword x, force_dword y))
+  let testl (x, y) = emit (TEST (force_dword x, force_dword y))
 
-  let movzbl = force_movzx force_byte force_dword
-  let movsbl = force_movsx force_byte force_dword
-  let movzwl = force_movzx force_word force_dword
-  let movswl = force_movsx force_word force_dword
+  let movzbl (x, y) = emit (MOVZX (force_byte x, force_dword y))
+  let movsbl (x, y) = emit (MOVSX (force_byte x, force_dword y))
+  let movzwl (x, y) = emit (MOVZX (force_word x, force_dword y))
+  let movswl (x, y) = emit (MOVSX (force_word x, force_dword y))
 
   let sall (arg1, arg2) = emit (SAL  (arg1, force_dword arg2))
   let sarl (arg1, arg2) = emit (SAR  (arg1, force_dword arg2))
   let shrl (arg1, arg2) = emit (SHR  (arg1, force_dword arg2))
-  let imull (arg1, arg2) = emit (IMUL (
-      force_dword arg1,
-      force_option force_dword arg2))
+  let imull (arg1, arg2) =
+    emit (IMUL (force_dword arg1, force_option force_dword arg2))
 
   let idivl arg = emit (IDIV (force_dword arg))
   let popl arg = emit (POP (force_dword arg))
@@ -252,12 +225,23 @@ module INS32 = struct
   let fchs () = emit FCHS
   let fabs () = emit FABS
 
-  let fadds, faddl = force_fxxx (fun arg -> FADD arg)
-  let fsubs, fsubl = force_fxxx (fun arg -> FSUB arg)
-  let fdivs, fdivl = force_fxxx (fun arg -> FDIV arg)
-  let fmuls, fmull = force_fxxx (fun arg -> FMUL arg)
-  let fsubrs, fsubrl = force_fxxx (fun arg -> FSUBR arg)
-  let fdivrs, fdivrl = force_fxxx (fun arg -> FDIVR arg)
+  let fadds x = emit (FADD (force_real4 x))
+  let faddl x = emit (FADD (force_real8 x))
+
+  let fsubs x = emit (FSUB (force_real4 x))
+  let fsubl x = emit (FSUB (force_real8 x))
+
+  let fdivs x = emit (FDIV (force_real4 x))
+  let fdivl x = emit (FDIV (force_real8 x))
+
+  let fmuls x = emit (FMUL (force_real4 x))
+  let fmull x = emit (FMUL (force_real8 x))
+
+  let fsubrs x = emit (FSUB (force_real4 x))
+  let fsubrl x = emit (FSUB (force_real8 x))
+
+  let fdivrs x = emit (FDIV (force_real4 x))
+  let fdivrl x = emit (FDIV (force_real8 x))
 
   let faddp (arg1, arg2) = emit  (FADDP (arg1, arg2))
   let fmulp (arg1, arg2) = emit  (FMULP (arg1, arg2))
@@ -331,31 +315,28 @@ module INS64 = struct
   open ForceMem
 
   (* Qword mnemonics *)
-  let addq = force_add force_qword
-  let subq = force_sub force_qword
-  let andq = force_and force_qword
-  let orq = force_or force_qword
-  let xorq = force_xor force_qword
-  let cmpq = force_cmp force_qword
-  let testq = force_test force_qword
+  let addq (x, y) = emit (ADD (force_qword x, force_qword y))
+  let subq (x, y) = emit (SUB (force_qword x, force_qword y))
+  let andq (x, y) = emit (AND (force_qword x, force_qword y))
+  let orq (x, y) = emit (OR (force_qword x, force_qword y))
+  let xorq (x, y) = emit (XOR (force_qword x, force_qword y))
+  let cmpq (x, y) = emit (CMP (force_qword x, force_qword y))
+  let testq (x, y) = emit (TEST (force_qword x, force_qword y))
 
-  let movq = force_mov force_qword
-  let movzbq = force_movzx force_byte force_qword
-  let movsbq = force_movsx force_byte force_qword
-  let movzwq = force_movzx force_word force_qword
-  let movswq = force_movsx force_word force_qword
+  let movq (x, y) = emit (MOV (force_qword x, force_qword y))
+
+  let movzbq (x, y) = emit (MOVZX (force_byte x, force_qword y))
+  let movsbq (x, y) = emit (MOVSX (force_byte x, force_qword y))
+  let movzwq (x, y) = emit (MOVZX (force_word x, force_qword y))
+  let movswq (x, y) = emit (MOVSX (force_word x, force_qword y))
 
   let idivq arg = emit (IDIV (force_qword arg))
 
-  let salq (arg1, arg2) =
-    emit (SAL (arg1, force_qword arg2))
-  let sarq (arg1, arg2) =
-    emit (SAR (arg1, force_qword arg2))
-  let shrq (arg1, arg2) =
-    emit (SHR (arg1, force_qword arg2))
-  let imulq (arg1, arg2) = emit (IMUL (
-      force_qword arg1,
-      force_option force_qword arg2))
+  let salq (arg1, arg2) = emit (SAL (arg1, force_qword arg2))
+  let sarq (arg1, arg2) = emit (SAR (arg1, force_qword arg2))
+  let shrq (arg1, arg2) = emit (SHR (arg1, force_qword arg2))
+  let imulq (arg1, arg2) =
+    emit (IMUL (force_qword arg1, force_option force_qword arg2))
 
   let popq arg = emit (POP (force_qword arg))
   let pushq arg = emit (PUSH (force_qword arg))
@@ -403,10 +384,6 @@ module DSL64 = struct
 
   let _label s = directive (NewLabel (s, QWORD))
 
-(*
-  let _r r = Reg64 r
-*)
-
   let al  = Reg8 AL
   let ah  = Reg8 AH
   let cl  = Reg8 CL
@@ -418,12 +395,6 @@ module DSL64 = struct
   let rsp = Reg64 RSP
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
-
-(*
-  let abs_ s = (s, None)
-  let plt_ s = (s, Some PLT)
-  let gotpcrel_ s = (s, Some GOTPCREL)
-*)
 
   let _offset l = Imm (B64, (Some l,0L))
   let _l l = Rel (B32, (Some (l, None), 0L))
