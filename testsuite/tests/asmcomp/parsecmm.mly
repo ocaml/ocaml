@@ -49,7 +49,7 @@ let cloop expr =
                      cexit (raise_num,[],[]))))
 
 let cexit_ind (var, args, ks) =
-  Cexit(Stexn_var {stexn_var = var},args,ks)
+  Cjump(Stexn_var {stexn_var = var},args,ks)
 
 %}
 
@@ -207,7 +207,7 @@ expr:
           match $3 with
             Cconst_int x when x <> 0 -> $4
           | _ -> Cifthenelse($3, $4, (cexit(0,[],[]))) in
-        Ccatch([0, [], [], Ctuple []], cloop body) }
+        Clabel([0, [], [], Ctuple []], cloop body) }
   | EXIT        { cexit(0,[],[]) }
   | LPAREN EXIT INTCONST exprlist RPAREN { cexit($3,List.rev $4,[]) }
   | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { cexit($3,List.rev $4,[Stexn_cst $6]) }
@@ -218,7 +218,7 @@ expr:
   | LPAREN CATCH sequence catch_with RPAREN
                 { let handlers = $4 in
                   List.iter (fun (_, l, _, _) -> List.iter unbind_ident l) handlers;
-                  Ccatch($4, $3) }
+                  Clabel($4, $3) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
