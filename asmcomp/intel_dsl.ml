@@ -251,8 +251,8 @@ module INS32 = struct
   let fistpl arg = emit (FISTP (force_dword "fistpl" arg))
   let fildl arg = emit (FILD (force_dword "fildl" arg))
 
-  let fchs = function None -> emit FCHS | Some _ -> assert false
-  let fabs = function None -> emit FABS | Some _ -> assert false
+  let fchs () = emit FCHS
+  let fabs () = emit FABS
 
   let fadds, faddl = force_fxxx "fadd" (fun arg -> FADD arg)
   let fsubs, fsubl = force_fxxx "fsub" (fun arg -> FSUB arg)

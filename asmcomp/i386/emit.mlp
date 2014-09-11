@@ -296,9 +296,12 @@ let instr_for_intop = function
   | Iasr -> I.sarl
   | _ -> fatal_error "Emit_i386: instr_for_intop"
 
+let unary_instr_for_floatop = function
+  | Inegf -> I.fchs ()
+  | Iabsf -> I.fabs ()
+  | _ -> fatal_error "Emit_i386: unary_instr_for_floatop"
+
 let instr_for_floatop = function
-    Inegf -> I.fchs
-  | Iabsf -> I.fabs
   | Iaddf -> I.faddl
   | Isubf -> I.fsubl
   | Imulf -> I.fmull
@@ -308,7 +311,7 @@ let instr_for_floatop = function
   | _ -> fatal_error "Emit_i386: instr_for_floatop"
 
 let instr_for_floatop_reversed = function
-    Iaddf -> I.faddl
+  | Iaddf -> I.faddl
   | Isubf -> I.fsubrl
   | Imulf -> I.fmull
   | Idivf -> I.fdivrl
@@ -317,7 +320,7 @@ let instr_for_floatop_reversed = function
   | _ -> fatal_error "Emit_i386: instr_for_floatop_reversed"
 
 let instr_for_floatop_pop = function
-    Iaddf -> I.faddp
+  | Iaddf -> I.faddp
   | Isubf -> I.fsubp
   | Imulf -> I.fmulp
   | Idivf -> I.fdivp
@@ -326,7 +329,7 @@ let instr_for_floatop_pop = function
   | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
 
 let instr_for_floatarithmem double = function
-    Ifloatadd -> if double then I.faddl else I.fadds
+  | Ifloatadd -> if double then I.faddl else I.fadds
   | Ifloatsub -> if double then I.fsubl else I.fsubs
   | Ifloatsubrev -> if double then I.fsubrl else I.fsubrs
   | Ifloatmul -> if double then I.fmull else I.fmuls
@@ -334,12 +337,12 @@ let instr_for_floatarithmem double = function
   | Ifloatdivrev -> if double then I.fdivrl else I.fdivrs
 
 let name_for_cond_branch = function
-    Isigned Ceq -> E     | Isigned Cne -> NE
-  | Isigned Cle -> LE     | Isigned Cgt -> G
-  | Isigned Clt -> L     | Isigned Cge -> GE
+  | Isigned Ceq   -> E   | Isigned Cne   -> NE
+  | Isigned Cle   -> LE  | Isigned Cgt   -> G
+  | Isigned Clt   -> L   | Isigned Cge   -> GE
   | Iunsigned Ceq -> E   | Iunsigned Cne -> NE
   | Iunsigned Cle -> BE  | Iunsigned Cgt -> A
-  | Iunsigned Clt -> B  | Iunsigned Cge -> AE
+  | Iunsigned Clt -> B   | Iunsigned Cge -> AE
 
 (* Output an = 0 or <> 0 test. *)
 
@@ -518,11 +521,11 @@ let emit_instr fallthrough i =
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           I.fldz ()
       | 0x8000_0000_0000_0000L ->       (* -0.0 *)
-          I.fldz (); I.fchs None
+          I.fldz (); I.fchs ()
       | 0x3FF0_0000_0000_0000L ->       (*  1.0 *)
           I.fld1 ()
       | 0xBFF0_0000_0000_0000L ->       (* -1.0 *)
-          I.fld1 (); I.fchs None
+          I.fld1 (); I.fchs ()
       | _ ->
           let lbl = add_float_constant f in
           I.fldl (_mem_sym (emit_label lbl))
@@ -688,7 +691,7 @@ let emit_instr fallthrough i =
   | Lop(Inegf | Iabsf as floatop) ->
       if not (is_tos i.arg.(0)) then
         I.fldl (emit_reg i.arg.(0));
-      instr_for_floatop floatop None
+      unary_instr_for_floatop floatop
   | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
         as floatop) ->
       begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
