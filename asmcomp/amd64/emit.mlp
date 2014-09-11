@@ -602,10 +602,11 @@ let emit_instr fallthrough i =
             gc_frame = lbl_frame } :: !call_gc_sites
       end else begin
         begin match n with
-          16  -> emit_call "caml_alloc1"
+        | 16 -> emit_call "caml_alloc1"
         | 24 -> emit_call "caml_alloc2"
         | 32 -> emit_call "caml_alloc3"
-        | _  -> I.movq (int n, rax);
+        | _  ->
+            I.movq (int n, rax);
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
@@ -671,21 +672,18 @@ let emit_instr fallthrough i =
       I.addq (int n, addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
       instr_for_floatarithmem op (addressing addr REAL8 i 1, res i 0)
-  | Lop(Ispecific(Ibswap size)) ->
-      begin match size with
-      | 16 ->
-          I.xchg (ah, al);
-          I.movzwq (res16 i 0, res i 0)
-      | 32 ->
-          I.bswap (res32 i 0);
-          I.movslq (res32 i 0, res i 0)
-      | 64 ->
-          I.bswap (res i 0)
-      | _ -> assert false
-      end
+  | Lop(Ispecific(Ibswap 16)) ->
+      I.xchg (ah, al);
+      I.movzwq (res16 i 0, res i 0)
+  | Lop(Ispecific(Ibswap 32)) ->
+      I.bswap (res32 i 0);
+      I.movslq (res32 i 0, res i 0)
+  | Lop(Ispecific(Ibswap 64)) ->
+      I.bswap (res i 0)
+  | Lop(Ispecific(Ibswap _)) ->
+      assert false
   | Lop(Ispecific Isqrtf) ->
       I.sqrtsd (arg i 0, res i 0)
-
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0, res i 0)
   | Lreloadretaddr ->
