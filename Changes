@@ -11,6 +11,8 @@ Runtime system:
   (Xavier Leroy)
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
   (Xavier Leroy)
+- PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
+  Mark Shinwell).
 
 Ocaml 4.02.0:
 -------------
