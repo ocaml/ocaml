@@ -282,26 +282,28 @@ let split_instr = function
   | FCHS -> "fchs", []
   | FABS -> "fabs", []
 
-  | FADD (Mem ( (REAL8|QWORD), _) as  arg, None) -> "faddl", [arg]
-  | FADD (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fadds", [arg]
+  | FADD (Mem ( (REAL8|QWORD), _) as  arg) -> "faddl", [arg]
+  | FADD (Mem ( (REAL4|DWORD), _) as  arg) -> "fadds", [arg]
   | FADD _ -> assert false
 
-  | FMUL (Mem ( (REAL8|QWORD), _) as  arg, None) -> "fmull", [arg]
-  | FMUL (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fmuls", [arg]
+  | FMUL (Mem ( (REAL8|QWORD), _) as  arg) -> "fmull", [arg]
+  | FMUL (Mem ( (REAL4|DWORD), _) as  arg) -> "fmuls", [arg]
   | FMUL _ -> assert false
 
-  | FSUB (Mem ( (REAL8|QWORD), _) as  arg, None) -> "fsubl", [arg]
-  | FSUB (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fsubs", [arg]
+  | FSUB (Mem ( (REAL8|QWORD), _) as  arg) -> "fsubl", [arg]
+  | FSUB (Mem ( (REAL4|DWORD), _) as  arg) -> "fsubs", [arg]
   | FSUB _ -> assert false
-  | FSUBR (Mem ( (REAL8|QWORD), _) as  arg, None) -> "fsubrl", [arg]
-  | FSUBR (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fsubrs", [arg]
+
+  | FSUBR (Mem ( (REAL8|QWORD), _) as  arg) -> "fsubrl", [arg]
+  | FSUBR (Mem ( (REAL4|DWORD), _) as  arg) -> "fsubrs", [arg]
   | FSUBR _ -> assert false
 
-  | FDIV (Mem ( (REAL8|QWORD), _) as  arg, None) -> "fdivl", [arg]
-  | FDIV (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fdivs", [arg]
+  | FDIV (Mem ( (REAL8|QWORD), _) as  arg) -> "fdivl", [arg]
+  | FDIV (Mem ( (REAL4|DWORD), _) as  arg) -> "fdivs", [arg]
   | FDIV _ -> assert false
-  | FDIVR (Mem ( (REAL8|QWORD), _) as  arg, None) -> "fdivrl", [arg]
-  | FDIVR (Mem ( (REAL4|DWORD), _) as  arg, None) -> "fdivrs", [arg]
+
+  | FDIVR (Mem ( (REAL8|QWORD), _) as  arg) -> "fdivrl", [arg]
+  | FDIVR (Mem ( (REAL4|DWORD), _) as  arg) -> "fdivrs", [arg]
   | FDIVR _ -> assert false
 
   (* Let's be compatible with prehistoric bugs (part2):

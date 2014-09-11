@@ -269,18 +269,12 @@ let split_instr = function
 
   | FCHS -> "fchs", []
   | FABS -> "fabs", []
-  | FADD (arg, None) -> "fadd", [arg]
-  | FADD _ -> assert false
-  | FSUB (arg, None) -> "fsub", [arg]
-  | FSUB _ -> assert false
-  | FMUL (arg, None) -> "fmul", [arg]
-  | FMUL _ -> assert false
-  | FDIV (arg, None) -> "fdiv", [arg]
-  | FDIV _ -> assert false
-  | FSUBR (arg, None) -> "fsubr", [arg]
-  | FSUBR _ -> assert false
-  | FDIVR (arg, None) -> "fdivr", [arg]
-  | FDIVR _ -> assert false
+  | FADD arg -> "fadd", [arg]
+  | FSUB arg -> "fsub", [arg]
+  | FMUL arg -> "fmul", [arg]
+  | FDIV arg -> "fdiv", [arg]
+  | FSUBR arg -> "fsubr", [arg]
+  | FDIVR arg -> "fdivr", [arg]
 
   | FADDP (arg1, arg2)  -> "faddp", [ arg1; arg2 ]
   | FSUBP (arg1, arg2)  -> "fsubp", [ arg1; arg2 ]

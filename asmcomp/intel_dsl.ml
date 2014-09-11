@@ -62,9 +62,9 @@ module ForceMem = struct
 
   let force_fxxx name f =
     (function None -> assert false
-            | Some arg -> emit (f (force_real4 name arg, None))),
+            | Some arg -> emit (f (force_real4 name arg))),
     (function None -> assert false
-            | Some arg -> emit (f (force_real8 name arg, None)))
+            | Some arg -> emit (f (force_real8 name arg)))
 
   let force_cmp = force2 "cmp" (fun (arg1,arg2) -> CMP (arg1,arg2))
   let force_add = force2 "add" (fun (arg1,arg2) -> ADD (arg1,arg2))
@@ -254,14 +254,12 @@ module INS32 = struct
   let fchs = function None -> emit FCHS | Some _ -> assert false
   let fabs = function None -> emit FABS | Some _ -> assert false
 
-  let fadds, faddl = force_fxxx "fadd" (fun (arg1, arg2) -> FADD (arg1, arg2))
-  let fsubs, fsubl = force_fxxx "fsub" (fun (arg1, arg2) -> FSUB (arg1, arg2))
-  let fdivs, fdivl = force_fxxx "fdiv" (fun (arg1, arg2) -> FDIV (arg1, arg2))
-  let fmuls, fmull = force_fxxx "fmul" (fun (arg1, arg2) -> FMUL (arg1, arg2))
-  let fsubrs, fsubrl = force_fxxx "fsubr"
-      (fun (arg1, arg2) -> FSUBR (arg1, arg2))
-  let fdivrs, fdivrl = force_fxxx "fdivr"
-      (fun (arg1, arg2) -> FDIVR (arg1, arg2))
+  let fadds, faddl = force_fxxx "fadd" (fun arg -> FADD arg)
+  let fsubs, fsubl = force_fxxx "fsub" (fun arg -> FSUB arg)
+  let fdivs, fdivl = force_fxxx "fdiv" (fun arg -> FDIV arg)
+  let fmuls, fmull = force_fxxx "fmul" (fun arg -> FMUL arg)
+  let fsubrs, fsubrl = force_fxxx "fsubr" (fun arg -> FSUBR arg)
+  let fdivrs, fdivrl = force_fxxx "fdivr" (fun arg -> FDIVR arg)
 
   let faddp (arg1, arg2) = emit  (FADDP (arg1, arg2))
   let fmulp (arg1, arg2) = emit  (FMULP (arg1, arg2))

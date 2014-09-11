@@ -148,12 +148,12 @@ type instruction =
   | FSQRT
   | FLDZ
 
-  | FADD of arg * arg option
-  | FSUB of arg * arg option
-  | FMUL of arg * arg option
-  | FDIV of arg * arg option
-  | FSUBR of arg * arg option
-  | FDIVR of arg * arg option
+  | FADD of arg
+  | FSUB of arg
+  | FMUL of arg
+  | FDIV of arg
+  | FSUBR of arg
+  | FDIVR of arg
   | FILD of arg
   | FISTP of arg
   | FXCH of arg option
