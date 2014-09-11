@@ -230,13 +230,6 @@ let rec reload i before =
       let set = find_reload_at_exit nfail in
       set := Reg.Set.union !set before;
       (i, Reg.Set.empty)
-  | Ijump_ind possible_fails ->
-      List.iter
-        (fun nfail ->
-           let set = find_reload_at_exit nfail in
-           set := Reg.Set.union !set before)
-        possible_fails;
-      (i, Reg.Set.empty)
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
       (* All registers live at the beginning of the handler are destroyed,
@@ -384,13 +377,6 @@ let rec spill i finally =
        before)
   | Ijump nfail ->
       (i, find_spill_at_exit nfail)
-  | Ijump_ind possible_fails ->
-      let set =
-        List.fold_left
-          (fun set nfail ->
-             Reg.Set.union set (find_spill_at_exit nfail))
-          Reg.Set.empty possible_fails in
-      (i, set)
   | Itrywith(body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, before_handler) = spill handler at_join in

@@ -56,8 +56,6 @@ let rec deadcode i =
       ({i with desc = Ilabel(handlers', body'); next = s}, i.live)
   | Ijump nfail ->
       (i, i.live)
-  | Ijump_ind _ ->
-      (i, i.live)
   | Itrywith(body, handler) ->
       let (body', _) = deadcode body in
       let (handler', _) = deadcode handler in

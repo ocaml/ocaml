@@ -70,7 +70,6 @@ and instruction_desc =
   | Iswitch of int array * instruction array
   | Ilabel of (int * instruction) list * instruction
   | Ijump of int
-  | Ijump_ind of int list
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
@@ -124,7 +123,6 @@ let rec instr_iter f i =
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
           instr_iter f i.next
       | Ijump _ -> ()
-      | Ijump_ind _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise _ -> ()
@@ -176,9 +174,6 @@ let recursive_handlers i =
     | Ijump n ->
         { empty_result with
           reachable_exits = StExnSet.singleton n }
-    | Ijump_ind l ->
-        let reachable_exits = List.fold_right StExnSet.add l StExnSet.empty in
-        { empty_result with reachable_exits }
     | Itrywith(body, handler) ->
         result_union
           (result_union (loop body) (loop handler))

@@ -71,7 +71,6 @@ and instruction_desc =
   | Iswitch of int array * instruction array
   | Ilabel of (int * instruction) list * instruction
   | Ijump of int
-  | Ijump_ind of int list
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 

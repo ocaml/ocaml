@@ -273,10 +273,6 @@ let rec linear' depth i n =
         then add_branch ~frame_offsets lbl n
         else cons_instr Lpoptrap (poptraps (count-1) n) in
       poptraps frame_offsets n1
-
-  | Ijump_ind possible_fails ->
-      assert false
-
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
       let (lbl_body, n2) =

@@ -882,8 +882,7 @@ method emit_expr (env:environment) exp =
               | [nfail] ->
                   self#insert (Ijump nfail) [||] [||]
               | _ ->
-                  let exn_var = self#emit_load_sexn_var env fail_var in
-                  self#insert (Ijump_ind possible_exns) exn_var [||]
+                  assert false
           end;
           None
       end

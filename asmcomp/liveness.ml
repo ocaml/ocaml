@@ -129,17 +129,6 @@ let rec live i finally =
       i.live <- this_live ;
       this_live
 
-  | Ijump_ind possible_fails ->
-      let this_live =
-        List.fold_left (fun set nfail ->
-            let this_live = find_live_at_exit nfail in
-            Reg.Set.union set this_live)
-          Reg.Set.empty possible_fails
-      in
-      let this_live = Reg.Set.union (Reg.set_of_array i.arg) this_live in
-      i.live <- this_live ;
-      this_live
-
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in

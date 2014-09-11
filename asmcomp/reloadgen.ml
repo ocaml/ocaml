@@ -125,12 +125,6 @@ method private reload i =
         (self#reload i.next)
   | Ijump i ->
       instr_cons (Ijump i) [||] [||] dummy_instr
-
-  | Ijump_ind _ ->
-      let newarg = self#makereg1 i.arg in
-      insert_moves i.arg newarg
-        {i with arg = newarg}
-
   | Itrywith(body, handler) ->
       instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
         (self#reload i.next)

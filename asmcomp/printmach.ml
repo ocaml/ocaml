@@ -184,10 +184,6 @@ let rec instr ppf i =
       aux handlers
   | Ijump i ->
       fprintf ppf "jump(%d)" i
-  | Ijump_ind il ->
-      fprintf ppf "jump_ind(%a, %a)"
-        reg i.arg.(0)
-        (fun ppf -> List.iter (pp_print_int ppf)) il
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler

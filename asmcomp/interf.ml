@@ -108,8 +108,6 @@ let build_graph fundecl =
         interf i.next
     | Ijump _ ->
         ()
-    | Ijump_ind _ ->
-        ()
     | Itrywith(body, handler) ->
         add_interf_set Proc.destroyed_at_raise handler.live;
         interf body; interf handler; interf i.next
@@ -190,8 +188,6 @@ let build_graph fundecl =
             prefer weight handler) handlers;
         prefer weight i.next
     | Ijump _ ->
-        ()
-    | Ijump_ind _ ->
         ()
     | Itrywith(body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next

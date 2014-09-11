@@ -27,7 +27,7 @@ let allocated_size = function
 
 let rec combine i allocstate =
   match i.desc with
-    Iend | Ireturn | Ijump _ | Ijump_ind _ | Iraise _ ->
+    Iend | Ireturn | Ijump _ | Iraise _ ->
       (i, allocated_size allocstate)
   | Iop(Ialloc sz) ->
       begin match allocstate with
