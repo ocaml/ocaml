@@ -83,7 +83,7 @@ type stat =
 type control =
   { mutable minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
-       this parameter will trigger a minor collection.  Default: 32k. *)
+       this parameter will trigger a minor collection.  Default: 256k. *)
 
     mutable major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
@@ -131,7 +131,7 @@ type control =
     mutable stack_limit : int;
     (** The maximum size of the stack (in words).  This is only
        relevant to the byte-code runtime, as the native code runtime
-       uses the operating system's stack.  Default: 256k. *)
+       uses the operating system's stack.  Default: 1024k. *)
 
     mutable allocation_policy : int;
     (** The policy used for allocating in the heap.  Possible
