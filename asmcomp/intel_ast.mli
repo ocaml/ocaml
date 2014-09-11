@@ -62,9 +62,6 @@ type data_type = (* only used for MASM *)
   | NEAR | PROC
   (* PROC could be a display for NEAR on 32 bits ? *)
 
-type suffix = B | W | L | Q
-type float_suffix = FS | FL
-
 type register64 =
   | RAX | RBX | RDI | RSI | RDX | RCX | RBP | RSP
   | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
@@ -248,12 +245,5 @@ type asm_line =
   | Size of string * constant
 
   | Ins of instruction
-
-type arch = X64 | X86
-
-type section = {
-  sec_name: string;
-  mutable sec_instrs: asm_line array;
-}
 
 type asm_program = asm_line list

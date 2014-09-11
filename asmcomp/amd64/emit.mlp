@@ -761,8 +761,7 @@ let emit_instr fallthrough i =
       begin match system with
       | S_macosx -> _section [".const"] None []
       | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []
-      | S_win64 ->
-          () (* with MASM, use the text segment *)
+      | S_win64 -> () (* with MASM, use the text segment *)
       | _ -> _section [".rodata"] None []
       end;
       emit_align 4;
@@ -771,7 +770,7 @@ let emit_instr fallthrough i =
         _long (ConstSub (ConstLabel(emit_label jumptbl.(i) , None),
                          ConstLabel(emit_label lbl , None)))
       done;
-      _section [".text"] None []
+      _text ()
   | Lsetuptrap lbl ->
       I.call (label lbl)
   | Lpushtrap ->
