@@ -23,9 +23,9 @@ module ForceMem = struct
      since MASM requires to have data_types on memory accesses.
   *)
 
-  let force_mem data_types data_type ins = function
-    | Mem (dtype, mem) when List.mem dtype data_types ->
-        Mem (data_type, mem)
+  let force_mem data_type0 data_type ins = function
+    | Mem (NO, mem) -> Mem (data_type, mem)
+    | Mem (dtype, mem) when dtype = data_type0 -> Mem (data_type, mem)
     | Mem (dtype, _) as mem when dtype = data_type ->  mem
     | Mem (dtype, _)
       ->
@@ -44,12 +44,12 @@ module ForceMem = struct
   (* Force data_type information on argument if non-existing
      [force_mem src dst] changes memory accesses with attributes in [src]
      to the [dst] attribute. *)
-  let force_real8 = force_mem [NO; QWORD] REAL8
-  let force_real4 = force_mem [NO; DWORD] REAL4
-  let force_byte = force_mem [NO] BYTE
-  let force_word = force_mem [NO] WORD
-  let force_dword = force_mem [NO] DWORD
-  let force_qword = force_mem [NO] QWORD
+  let force_real8 = force_mem QWORD REAL8
+  let force_real4 = force_mem DWORD REAL4
+  let force_byte = force_mem NO BYTE
+  let force_word = force_mem NO WORD
+  let force_dword = force_mem NO DWORD
+  let force_qword = force_mem NO QWORD
   let force_option force ins = function
       None -> None
     | Some arg -> Some (force ins arg)
@@ -61,10 +61,8 @@ module ForceMem = struct
     emit (f (force1 name arg1, force2 name arg2))
 
   let force_fxxx name f =
-    (function None -> assert false
-            | Some arg -> emit (f (force_real4 name arg))),
-    (function None -> assert false
-            | Some arg -> emit (f (force_real8 name arg)))
+    (fun arg -> emit (f (force_real4 name arg))),
+    (fun arg -> emit (f (force_real8 name arg)))
 
   let force_cmp = force2 "cmp" (fun (arg1,arg2) -> CMP (arg1,arg2))
   let force_add = force2 "add" (fun (arg1,arg2) -> ADD (arg1,arg2))

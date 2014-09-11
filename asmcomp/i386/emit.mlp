@@ -700,14 +700,14 @@ let emit_instr fallthrough i =
           instr_for_floatop_pop floatop (Regf (ST 0) , Regf (ST 1))
       | (true, false) ->
           (* first operand on stack *)
-          instr_for_floatop floatop (Some (emit_reg i.arg.(1)))
+          instr_for_floatop floatop (emit_reg i.arg.(1))
       | (false, true) ->
           (* second operand on stack *)
-          instr_for_floatop_reversed floatop (Some (emit_reg i.arg.(0)))
+          instr_for_floatop_reversed floatop (emit_reg i.arg.(0))
       | (false, false) ->
           (* both operands in memory *)
           I.fldl (emit_reg i.arg.(0));
-          instr_for_floatop floatop (Some (emit_reg i.arg.(1)))
+          instr_for_floatop floatop (emit_reg i.arg.(1))
       end
   | Lop(Ifloatofint) ->
       begin match i.arg.(0).loc with
@@ -791,9 +791,9 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
       if not (is_tos i.arg.(0)) then
         I.fldl (emit_reg i.arg.(0));
-      instr_for_floatarithmem double op (Some (
-          emit_addressing addr
-            (if double then REAL8 else REAL4) i.arg 1))
+      instr_for_floatarithmem double op
+          (emit_addressing addr
+             (if double then REAL8 else REAL4) i.arg 1)
   | Lop(Ispecific(Ifloatspecial s)) ->
       (* Push args on float stack if necessary *)
       for k = 0 to Array.length i.arg - 1 do
