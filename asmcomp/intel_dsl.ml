@@ -396,9 +396,8 @@ module DSL64 = struct
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
 
-  let imm64 l = Imm (B64, (Some l,0L))
-  let rel_ s = Rel (B32, (Some s,0L))
-  let _l l = rel_ (l, None)
+  let imm64 s = Imm (B64, (Some s,0L))
+  let rel32 s = Rel (B32, (Some s,0L))
 
   let mem_ptr ?(pref = NO) ?(scale = 1) ?base offset reg =
     Mem (pref, M64(Some (reg, scale, base), (None, Int64.of_int offset)))

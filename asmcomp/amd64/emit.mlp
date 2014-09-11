@@ -125,7 +125,7 @@ let use_plt =
   | _ -> !Clflags.dlcode
 
 let rel_plt s =
-  rel_ (if use_plt then abs s ~tbl:PLT else abs s)
+  rel32 (if use_plt then abs s ~tbl:PLT else abs s)
 
 let emit_call s =
   I.call (rel_plt s)
