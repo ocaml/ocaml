@@ -23,33 +23,33 @@ module ForceMem = struct
      since MASM requires to have data_types on memory accesses.
   *)
 
-  let force_mem data_type0 data_type = function
-    | Mem (NO, mem) -> Mem (data_type, mem)
-    | Mem (dtype, mem) when dtype = data_type0 -> Mem (data_type, mem)
-    | Mem (dtype, _) as mem when dtype = data_type ->  mem
-    | Mem (dtype, _)
-      ->
-        Printf.kprintf failwith
-          "wrong explicit data type %S instead of %S"
-          (string_of_datatype dtype) (string_of_datatype data_type)
-    | arg -> match arg, data_type with
-      (* sanity checks on other operands *)
-      | (Reg16 _ | Reg32 _ | Reg64 _ | Regf _), BYTE -> assert false
-      | (Reg8 _ | Reg32 _ | Reg64 _ | Regf _), WORD -> assert false
-      | (Reg8 _ | Reg16 _ | Reg64 _ | Regf _), DWORD -> assert false
-      | (Reg8 _ | Reg16 _ | Reg32 _ | Regf _), QWORD -> assert false
-      | (Reg8 _ | Reg16 _ | Reg32 _ | Reg64 _), REAL8 -> assert false
-      | _ -> arg
+  let check ty = function
+    | Mem (dtype, _) -> assert(dtype = ty)
+    | arg ->
+        match arg, ty with
+        | (Reg16 _ | Reg32 _ | Reg64 _ | Regf _), BYTE
+        | (Reg8 _ | Reg32 _ | Reg64 _ | Regf _), WORD
+        | (Reg8 _ | Reg16 _ | Reg64 _ | Regf _), DWORD
+        | (Reg8 _ | Reg16 _ | Reg32 _ | Regf _), QWORD
+        | (Reg8 _ | Reg16 _ | Reg32 _ | Reg64 _), REAL8 -> assert false
+        | _ -> ()
 
-  (* Force data_type information on argument if non-existing
-     [force_mem src dst] changes memory accesses with attributes in [src]
-     to the [dst] attribute. *)
-  let force_real8 = force_mem QWORD REAL8
-  let force_real4 = force_mem DWORD REAL4
-  let force_byte = force_mem NO BYTE
-  let force_word = force_mem NO WORD
-  let force_dword = force_mem NO DWORD
-  let force_qword = force_mem NO QWORD
+  let force_mem ty = function
+    | Mem (NO, mem) -> Mem (ty, mem)
+    | arg -> check ty arg; arg
+
+  let force_real4 = function
+    | Mem ((NO | DWORD), mem) -> Mem (REAL4, mem)
+    | arg -> check REAL4 arg; arg
+
+  let force_real8 = function
+    | Mem ((NO | QWORD), mem) -> Mem (REAL8, mem)
+    | arg -> check REAL8 arg; arg
+
+  let force_byte = force_mem BYTE
+  let force_word = force_mem WORD
+  let force_dword = force_mem DWORD
+  let force_qword = force_mem QWORD
   let force_option force = function
       None -> None
     | Some arg -> Some (force arg)
@@ -243,26 +243,26 @@ module INS32 = struct
   let fdivrs x = emit (FDIV (force_real4 x))
   let fdivrl x = emit (FDIV (force_real8 x))
 
-  let faddp (arg1, arg2) = emit  (FADDP (arg1, arg2))
-  let fmulp (arg1, arg2) = emit  (FMULP (arg1, arg2))
+  let faddp (arg1, arg2) = emit (FADDP (arg1, arg2))
+  let fmulp (arg1, arg2) = emit (FMULP (arg1, arg2))
   let fcompp () = emit FCOMPP
   let fcompl arg = emit (FCOMP (force_real8 arg))
   let fldl arg = emit (FLD (force_real8 arg))
   let flds arg = emit (FLD (force_real4 arg))
   let fnstsw arg = emit (FNSTSW arg)
   let fld1 () = emit FLD1
-  let fpatan () = emit  FPATAN
-  let fptan () = emit  FPTAN
-  let fcos () = emit  FCOS
-  let fldln2 () = emit  FLDLN2
-  let fldlg2 () = emit  FLDLG2
-  let fxch arg = emit  (FXCH arg)
-  let fyl2x () = emit  FYL2X
-  let fsin () = emit  FSIN
-  let fsqrt () = emit  FSQRT
-  let fstps arg = emit  (FSTP (force_real4 arg))
-  let fstp arg = emit  (FSTP arg)
-  let fstpl arg = emit  (FSTP (force_real8 arg))
+  let fpatan () = emit FPATAN
+  let fptan () = emit FPTAN
+  let fcos () = emit FCOS
+  let fldln2 () = emit FLDLN2
+  let fldlg2 () = emit FLDLG2
+  let fxch arg = emit (FXCH arg)
+  let fyl2x () = emit FYL2X
+  let fsin () = emit FSIN
+  let fsqrt () = emit FSQRT
+  let fstps arg = emit (FSTP (force_real4 arg))
+  let fstp arg = emit (FSTP arg)
+  let fstpl arg = emit (FSTP (force_real8 arg))
   let fldz () = emit FLDZ
   let fnstcw arg = emit (FNSTCW arg)
   let fldcw arg = emit (FLDCW arg)
@@ -274,7 +274,7 @@ module INS32 = struct
   *)
   let fix_bug f1 f2 = function
     | (Regf (ST 0), (Regf (ST _) as arg2)) -> emit (f2 (Regf (ST 0), arg2))
-    | (arg1, arg2) -> emit  (f1 (arg1, arg2))
+    | (arg1, arg2) -> emit (f1 (arg1, arg2))
   let fix_bug2 f1 f2 = fix_bug f1 f2, fix_bug f2 f1
   let fsubp, fsubrp = fix_bug2
       (fun (arg1,arg2) -> FSUBP (arg1,arg2))
@@ -396,7 +396,7 @@ module DSL64 = struct
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
 
-  let _offset l = Imm (B64, (Some l,0L))
+  let imm64 l = Imm (B64, (Some l,0L))
   let _l l = Rel (B32, (Some (l, None), 0L))
   let rel_ s = Rel (B32, (Some s,0L))
 
