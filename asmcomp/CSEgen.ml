@@ -184,7 +184,6 @@ class cse_generic = object (self)
 method class_of_operation op =
   match op with
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
-  | Iconst_sexn_addr _
   | Iconst_int _ | Iconst_float _ | Iconst_symbol _
   | Iconst_blockheader _ -> Op_pure
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _

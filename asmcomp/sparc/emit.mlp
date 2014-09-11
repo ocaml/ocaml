@@ -319,9 +319,6 @@ let rec emit_instr i dslot =
     | Lop(Iconst_symbol s) ->
         `	sethi	%hi({emit_symbol s}), %g1\n`;
         `	or	%g1, %lo({emit_symbol s}), {emit_reg i.res.(0)}\n`
-    | Lop(Iconst_sexn_addr lbl) ->
-        `	sethi	%hi({emit_label lbl}), %g1\n`;
-        `	or	%g1, %lo({emit_label lbl}), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `{record_frame i.live}	call	{emit_reg i.arg.(0)}\n`;
         fill_delay_slot dslot
@@ -527,15 +524,6 @@ let rec emit_instr i dslot =
           let n = frame_offsets * 8 in
           stack_offset := !stack_offset + n
         end
-    | Lbranch_ind frame_offsets ->
-        `	jmp	{emit_reg i.arg.(0)}\n`;
-        fill_delay_slot dslot;
-        if frame_offsets <> 0
-        then begin
-          assert(frame_offsets > 0);
-          let n = frame_offsets * 8 in
-          stack_offset := !stack_offset + n
-        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
@@ -655,8 +643,7 @@ let no_interference res arg =
 let rec emit_all i =
   match i with
     {desc = Lend} -> ()
-  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false))
-                  | Lbranch _ | Lbranch_ind _ }}
+  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _ }}
     when is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next

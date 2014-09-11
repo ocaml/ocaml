@@ -31,7 +31,6 @@ and instruction_desc =
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
-  | Lbranch_ind of frame_offsets
   | Lbranch of label * frame_offsets
   | Lcondbranch of Mach.test * label
   | Lcondbranch3 of label option * label option * label option

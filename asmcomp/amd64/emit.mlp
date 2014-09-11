@@ -86,12 +86,6 @@ let emit_label lbl =
 let emit_data_label lbl =
   emit_string ".Ld"; emit_int lbl
 
-let load_label_addr s =
-  if !Clflags.dlcode || !pic_code
-  (* the label is local: no need to go through the GOT *)
-  then `leaq	{emit_label s}(%rip)`
-  else `movq	${emit_label s}`
-
 (* Output a .align directive. *)
 
 let emit_align n =
@@ -399,8 +393,6 @@ let emit_instr fallthrough i =
         end
     | Lop(Iconst_symbol s) ->
         `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
-    | Lop(Iconst_sexn_addr n) ->
-        `	{load_label_addr n}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
         record_frame i.live i.dbg
@@ -592,17 +584,6 @@ let emit_instr fallthrough i =
           cfi_adjust_cfa_offset n;
           stack_offset := !stack_offset + n
         end
-
-    | Lbranch_ind frame_offsets ->
-        `	jmp	*{emit_reg i.arg.(0)}\n`;
-        if frame_offsets <> 0
-        then begin
-          assert(frame_offsets > 0);
-          let n = frame_offsets * 16 in
-          cfi_adjust_cfa_offset n;
-          stack_offset := !stack_offset + n
-        end
-
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->

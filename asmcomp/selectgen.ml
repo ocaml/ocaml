@@ -909,8 +909,7 @@ method private emit_load_sexn (env:environment) sexn =
   match sexn with
   | Stexn_var v -> self#emit_load_sexn_var env v
   | Stexn_cst i ->
-      let r = self#regs_for typ_addr in
-      self#insert_op (Iconst_sexn_addr i) [||] r
+      assert false
 
 method private emit_load_sexns (env:environment) sexns =
   let rec emit_list = function

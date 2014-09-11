@@ -26,7 +26,6 @@ method oper_latency = function
   | Iload(_, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
   | Iconst_symbol _ -> 1
-  | Iconst_sexn_addr _ -> 1
   | Iintop(Imul | Imulh) -> 9
   | Iintop_imm(Imul, _) -> 5
   | Iintop(Idiv | Imod) -> 36
@@ -43,8 +42,7 @@ method reload_retaddr_latency = 12
 (* Issue cycles.  Rough approximations. *)
 
 method oper_issue_cycles = function
-    Iconst_float _ | Iconst_symbol _
-  | Iconst_sexn_addr _ -> 2
+    Iconst_float _ | Iconst_symbol _ -> 2
   | Iload(_, Ibased(_, _)) -> 2
   | Istore(_, Ibased(_, _), _) -> 2
   | Ialloc _ -> 4

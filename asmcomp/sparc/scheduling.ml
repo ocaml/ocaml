@@ -44,7 +44,6 @@ method oper_latency = function
 method oper_issue_cycles = function
     Iconst_float _ -> 2
   | Iconst_symbol _ -> 2
-  | Iconst_sexn_addr _ -> 2
   | Ialloc _ -> 6
   | Iintop(Icomp _) -> 4
   | Iintop(Icheckbound) -> 2

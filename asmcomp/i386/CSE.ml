@@ -38,7 +38,7 @@ method! class_of_operation op =
 method! is_cheap_operation op =
   match op with
   | Iconst_int _ | Iconst_blockheader _ -> true
-  | Iconst_symbol _ | Iconst_sexn_addr _ -> true
+  | Iconst_symbol _ -> true
   | _ -> false
 
 end

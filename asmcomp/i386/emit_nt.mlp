@@ -430,8 +430,6 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         add_used_symbol s;
         `	mov	{emit_reg i.res.(0)}, OFFSET {emit_symbol s}\n`
-    | Lop(Iconst_sexn_addr lbl) ->
-        `	mov	{emit_reg i.res.(0)}, OFFSET {emit_label lbl}\n`
     | Lop(Icall_ind) ->
         `	call	{emit_reg i.arg.(0)}\n`;
         record_frame i.live i.dbg
@@ -682,14 +680,6 @@ let emit_instr i =
         `{emit_label lbl}:\n`
     | Lbranch (lbl,frame_offsets) ->
         `	jmp	{emit_label lbl}\n`;
-        if frame_offsets <> 0
-        then begin
-          assert(frame_offsets > 0);
-          let n = frame_offsets * 8 in
-          stack_offset := !stack_offset + n
-        end
-    | Lbranch_ind frame_offsets ->
-        `	jmp	{emit_reg i.arg.(0)}\n`;
         if frame_offsets <> 0
         then begin
           assert(frame_offsets > 0);

@@ -338,9 +338,6 @@ let emit_instr i =
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
-    | Lop(Iconst_sexn_addr n) ->
-        `	adrp	{emit_reg i.res.(0)}, {emit_label n}\n`;
-        `	add	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, #:lo12:{emit_label n}\n`
     | Lop(Icall_ind) ->
         `	blr	{emit_reg i.arg.(0)}\n`;
         `{record_frame i.live i.dbg}\n`
@@ -525,15 +522,6 @@ let emit_instr i =
         `{emit_label lbl}:\n`
     | Lbranch (lbl,frame_offsets) ->
         `	b	{emit_label lbl}\n`;
-        if frame_offsets <> 0
-        then begin
-          assert(frame_offsets > 0);
-          let n = frame_offsets * 16 in
-          cfi_adjust_cfa_offset n;
-          stack_offset := !stack_offset + n
-        end
-    | Lbranch_ind frame_offsets ->
-        `	br	{emit_reg i.arg.(0)}\n`;
         if frame_offsets <> 0
         then begin
           assert(frame_offsets > 0);

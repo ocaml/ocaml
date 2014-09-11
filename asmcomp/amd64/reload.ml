@@ -27,8 +27,6 @@ open Mach
      Iconst_float               R
      Iconst_symbol (not PIC)    S
      Iconst_symbol (PIC)        R
-     Iconst_sexn_addr (not PIC) S
-     Iconst_sexn_addr (PIC)     R
      Icall_ind                          R
      Itailcall_ind                      R
      Iload                      R       R       R
@@ -94,7 +92,7 @@ method! reload_operation op arg res =
       if n <= 0x7FFFFFFFn && n >= -0x80000000n
       then (arg, res)
       else super#reload_operation op arg res
-  | Iconst_symbol _ | Iconst_sexn_addr _ ->
+  | Iconst_symbol _ ->
       if !pic_code || !Clflags.dlcode
       then super#reload_operation op arg res
       else (arg, res)
