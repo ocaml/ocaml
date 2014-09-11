@@ -215,8 +215,12 @@ let load_module filename (crc:'a sig_t) =
       let module_crc = List.assoc unit.dynu_name unit.dynu_imports_cmi in
       if Some (Obj.magic crc:Digest.t) = module_crc
       then
-        let module_symbol = "caml"^unit.dynu_name in
-        Obj.obj (ndl_loadsym module_symbol)
+        match unit.dynu_defines with
+        | [global] ->
+            let module_symbol = "caml"^global in
+            (* let module_symbol = "caml"^unit.dynu_name in *)
+            Obj.obj (ndl_loadsym module_symbol)
+        | _ -> assert false
       else
         assert false
   | _ -> assert false
