@@ -1,4 +1,6 @@
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+- PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
+  Mark Shinwell).
 
 
 OCaml 4.02.0:
