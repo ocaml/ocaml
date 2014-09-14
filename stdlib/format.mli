@@ -724,7 +724,7 @@ val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
   use regular calls to [Format.fprintf] on formatter [to_b]. *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "Use Format.ksprintf instead."]
 ;;
 (** @deprecated An alias for [ksprintf]. *)
 
@@ -734,7 +734,7 @@ val set_all_formatter_output_functions :
   newline:(unit -> unit) ->
   spaces:(int -> unit) ->
   unit
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "Use Format.set_formatter_out_functions instead."]
 ;;
 (** @deprecated Subsumed by [set_formatter_out_functions].
 *)
@@ -745,14 +745,14 @@ val get_all_formatter_output_functions :
   (unit -> unit) *
   (unit -> unit) *
   (int -> unit)
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "Use Format.get_formatter_out_functions instead."]
 ;;
 (** @deprecated Subsumed by [get_formatter_out_functions].
 *)
 val pp_set_all_formatter_output_functions :
   formatter -> out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
   newline:(unit -> unit) -> spaces:(int -> unit) -> unit
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "Use Format.pp_set_formatter_out_functions instead."]
 ;;
 (** @deprecated Subsumed by [pp_set_formatter_out_functions].
 *)
@@ -761,7 +761,7 @@ val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit)
-[@@ocaml.deprecated]
+[@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
 ;;
 (** @deprecated Subsumed by [pp_get_formatter_out_functions].
 *)

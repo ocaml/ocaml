@@ -130,7 +130,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
    [e2] is not evaluated at all. *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "Use (&&) instead."]
 (** @deprecated {!Pervasives.( && )} should be used instead. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
@@ -139,7 +139,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
    [e2] is not evaluated at all. *)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "Use (||) instead."]
 (** @deprecated {!Pervasives.( || )} should be used instead.*)
 
 (** {6 Debugging} *)
