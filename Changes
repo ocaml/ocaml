@@ -1,5 +1,6 @@
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+- PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
 
