@@ -76,7 +76,9 @@ Error: Signature mismatch:
           ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-*extension*
+_
+Matching over values of open types must include
+a wild card pattern in order to be exhaustive.
 type foo = ..
 type foo += Foo
 val f : foo -> unit = <fun>
