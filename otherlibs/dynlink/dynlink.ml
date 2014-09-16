@@ -72,6 +72,26 @@ let () =
 let crc_interfaces = ref (Consistbl.create ())
 let allow_extension = ref true
 
+(* It is in general wrong to try to execute the initialisation code
+   of a module more than once so load_module should never try it.
+   runned_unit memorize if
+   - if it is an effectively completely loaded unit
+   - if loading has been tried and failed
+
+   It does not affect loadfile for backward compatibility reasons.
+*)
+type runned_unit =
+  | Rec (* currently being loaded *)
+  | Loaded
+  | Exn of exn
+
+let runned_unit : (Digest.t, runned_unit) Hashtbl.t = Hashtbl.create 10
+
+let add_runned_unit digest v = Hashtbl.replace runned_unit digest v
+let get_runned_unit digest =
+  try Some (Hashtbl.find runned_unit digest)
+  with Not_found -> None
+
 (* Check that the object file being loaded has been compiled against
    the same interfaces as the program itself. In addition, check that
    only authorized compilation units are referenced. *)
@@ -203,6 +223,12 @@ let check_unsafe_module cu =
 external register_code_fragment: bytes -> int -> string -> unit
                                = "caml_register_code_fragment"
 
+let compunit_digest file_digest compunit =
+  (* PR#5215: identify this code fragment by
+     digest of file contents + unit name.
+     Unit name is needed for .cma files, which produce several code fragments.*)
+  Digest.string (file_digest ^ compunit.cu_name)
+
 let load_compunit ic file_name file_digest compunit =
   check_consistency file_name compunit;
   check_unsafe_module compunit;
@@ -232,19 +258,19 @@ let load_compunit ic file_name file_digest compunit =
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
-  (* PR#5215: identify this code fragment by
-     digest of file contents + unit name.
-     Unit name is needed for .cma files, which produce several code fragments.*)
-  let digest = Digest.string (file_digest ^ compunit.cu_name) in
+  let digest = compunit_digest file_digest compunit in
   register_code_fragment code code_size digest;
   begin try
-    ignore ((Meta.reify_bytecode code code_size) ())
+    add_runned_unit digest Rec;
+    ignore ((Meta.reify_bytecode code code_size) ());
+    add_runned_unit digest Loaded;
   with exn ->
+    add_runned_unit digest (Exn exn);
     Symtable.restore_state initial_symtable;
     raise exn
   end
 
-let loadfile file_name =
+let inner_loadfile file_name on_unit =
   init();
   if not (Sys.file_exists file_name)
     then raise (Error (File_not_found file_name));
@@ -260,7 +286,7 @@ let loadfile file_name =
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
       let cu = (input_value ic : compilation_unit) in
-      load_compunit ic file_name file_digest cu
+      on_unit ic file_name file_digest cu
     end else
     if buffer = Config.cma_magic_number then begin
       let toc_pos = input_binary_int ic in  (* Go to table of contents *)
@@ -272,12 +298,15 @@ let loadfile file_name =
       with Failure reason ->
         raise(Error(Cannot_open_dll reason))
       end;
-      List.iter (load_compunit ic file_name file_digest) lib.lib_units
+      List.iter (on_unit ic file_name file_digest) lib.lib_units
     end else
       raise(Error(Not_a_bytecode_file file_name));
     close_in ic
   with exc ->
     close_in ic; raise exc
+
+let loadfile file_name =
+  inner_loadfile file_name load_compunit
 
 let loadfile_private file_name =
   init();
@@ -292,43 +321,45 @@ let loadfile_private file_name =
     crc_interfaces := initial_crc;
     raise exn
 
-let loadfile' file_name crc =
-  init();
-  if not (Sys.file_exists file_name)
-    then raise (Error (File_not_found file_name));
-  let ic = open_in_bin file_name in
-  let file_digest = Digest.channel ic (-1) in
-  seek_in ic 0;
-  try
-    let buffer =
-      try really_input_string ic (String.length Config.cmo_magic_number)
-      with End_of_file -> raise (Error (Not_a_bytecode_file file_name))
-    in
-    let modu =
-      if buffer = Config.cmo_magic_number then begin
-        let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-        seek_in ic compunit_pos;
-        let cu = (input_value ic : compilation_unit) in
-        let cu_crc = List.assoc cu.cu_name cu.cu_imports in
-        begin match cu_crc with
-        | None -> raise (Error (Inconsistent_import file_name))
-        | Some cu_crc ->
-            if not (String.compare crc cu_crc = 0)
-            then raise (Error (Inconsistent_import file_name))
-        end;
-        load_compunit ic file_name file_digest cu;
-        Symtable.get_global_value (Ident.create_persistent cu.cu_name)
-      end else
-        raise(Error(Not_a_bytecode_file file_name))
-    in
-    close_in ic;
-    modu
-  with exc ->
-    close_in ic; raise exc
+type module_info = Obj.t * Digest.t
 
-let load_module file_name (crc: 'a sig_t) : 'a =
+let load_compunit_module ic file_name file_digest cu : module_info =
+  let digest = compunit_digest file_digest cu in
+  let interface_digest =
+    try
+      match List.assoc cu.cu_name cu.cu_imports with
+      | None -> raise (Error (Inconsistent_import file_name))
+      | Some d -> d
+    with Not_found ->
+      raise (Error (Inconsistent_import file_name))
+  in
+  begin
+    match get_runned_unit digest with
+    | None ->
+        load_compunit ic file_name file_digest cu
+    | Some Loaded -> ()
+    | Some Rec ->
+        raise (Error (Unavailable_unit file_name))
+    | Some (Exn exn) ->
+        raise exn
+  end;
+  Symtable.get_global_value (Ident.create_persistent cu.cu_name),
+  interface_digest
+
+let load_modules file_name : module_info list =
+  let r = ref [] in
+  let on_unit ic file_name file_digest cu =
+    r := load_compunit_module ic file_name file_digest cu :: !r
+  in
+  inner_loadfile file_name on_unit;
+  !r
+
+let check_module (mod_info:module_info) (crc: 'a sig_t) : 'a option =
   let crc = (Obj.magic crc:Digest.t) in
-  Obj.obj (loadfile' file_name crc)
+  let module_obj, interface_digest = mod_info in
+  if Digest.compare interface_digest crc = 0
+  then Some (Obj.obj module_obj)
+  else None
 
 (* Error report *)
 

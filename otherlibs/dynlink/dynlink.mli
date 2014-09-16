@@ -145,4 +145,8 @@ val error_message : error -> string
 
 val digest_interface : string -> string list -> Digest.t
 
-val load_module : string -> 'a sig_t -> 'a
+type module_info
+
+val load_modules : string -> module_info list
+
+val check_module : module_info -> 'a sig_t -> 'a option

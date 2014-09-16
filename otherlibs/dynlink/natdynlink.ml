@@ -66,6 +66,10 @@ let read_file filename priv =
 (* Management of interface and implementation CRCs *)
 
 module StrMap = Map.Make(String)
+module StrSet = struct
+  include Set.Make(String)
+  let add_list l s = List.fold_left (fun s v -> add v s) s l
+end
 
 type implem_state =
   | Loaded
@@ -74,11 +78,13 @@ type implem_state =
 type state = {
   ifaces: (string*string) StrMap.t;
   implems: (string*string*implem_state) StrMap.t;
+  defined: StrSet.t
 }
 
 let empty_state = {
   ifaces = StrMap.empty;
   implems = StrMap.empty;
+  defined = StrSet.empty
 }
 
 let global_state = ref empty_state
@@ -99,6 +105,7 @@ let default_available_units () =
         {
          ifaces = StrMap.add name (crc_intf,exe) st.ifaces;
          implems = StrMap.add name (crc_impl,exe,Check_inited !rank) st.implems;
+         defined = StrSet.add_list syms st.defined;
         }
       )
       empty_state
@@ -173,10 +180,11 @@ let loadunits filename handle units state =
       state.implems units in
 
   let defines = List.flatten (List.map (fun ui -> ui.dynu_defines) units) in
+  let new_defined = List.fold_right StrSet.add defines state.defined in
 
   ndl_run handle "_shared_startup";
   List.iter (ndl_run handle) defines;
-  { implems = new_implems; ifaces = new_ifaces }
+  { implems = new_implems; ifaces = new_ifaces; defined = new_defined }
 
 let load priv filename =
   init();
@@ -205,25 +213,36 @@ let prohibit names =
   global_state := { !global_state with ifaces = ifaces };
   allow_extension := false
 
-let load_module filename (crc:'a sig_t) =
-  init();
+type module_info = string (* symbol *) * Digest.t
+
+let load_modules filename : module_info list =
+  init ();
   let (filename,handle,units) = read_file filename false in
-  let nstate = loadunits filename handle units !global_state in
-  global_state := nstate;
-  match units with
-  | [unit] ->
-      let module_crc = List.assoc unit.dynu_name unit.dynu_imports_cmi in
-      if Some (Obj.magic crc:Digest.t) = module_crc
-      then
-        match unit.dynu_defines with
-        | [global] ->
-            let module_symbol = "caml"^global in
-            (* let module_symbol = "caml"^unit.dynu_name in *)
-            Obj.obj (ndl_loadsym module_symbol)
-        | _ -> assert false
-      else
-        assert false
-  | _ -> assert false
+  let defines = List.flatten (List.map (fun u -> u.dynu_defines) units) in
+  let has_loaded_symbols =
+    List.exists (fun sym -> StrSet.mem sym !global_state.defined) defines in
+  let all_loaded_symbols =
+    List.for_all (fun sym -> StrSet.mem sym !global_state.defined) defines in
+  if not has_loaded_symbols
+  then global_state := loadunits filename handle units !global_state
+  else if not all_loaded_symbols
+  then raise (Error (Inconsistent_implementation filename));
+  let rec aux acc = function
+    | [] -> acc
+    | sym :: t ->
+        match StrMap.find sym !global_state.ifaces with
+        | (crc, file) -> aux ((sym, crc) :: acc) t
+        | exception Not_found -> aux acc t
+  in
+  aux [] defines
+
+let check_module (mod_info: module_info) (crc:'a sig_t) : 'a option =
+  let crc = (Obj.magic crc:Digest.t) in
+  let mod_name, interface_digest = mod_info in
+  let mod_symbol = "caml"^mod_name in
+  if Digest.compare crc interface_digest = 0
+  then Some (Obj.obj (ndl_loadsym mod_symbol))
+  else None
 
 let digest_interface _ _ =
   failwith "Dynlink.digest_interface: not implemented in native code"
