@@ -446,8 +446,8 @@ let emit_floatspecial = function
     "atan"  -> I.fld1 (); I.fpatan ()
   | "atan2" -> I.fpatan ()
   | "cos"   -> I.fcos ()
-  | "log"   -> I.fldln2 (); I.fxch None; I.fyl2x ()
-  | "log10" -> I.fldlg2 (); I.fxch None; I.fyl2x ()
+  | "log"   -> I.fldln2 (); I.fxch (_st 1); I.fyl2x ()
+  | "log10" -> I.fldlg2 (); I.fxch (_st 1); I.fyl2x ()
   | "sin"   -> I.fsin ()
   | "sqrt"  -> I.fsqrt ()
   | "tan"   -> I.fptan (); I.fstp (Regf (ST 0)) (* %st(0) *)
@@ -801,7 +801,7 @@ let emit_instr fallthrough i =
       done;
       (* Fix-up for binary instrs whose args were swapped *)
       if Array.length i.arg = 2 && is_tos i.arg.(1) then
-        I.fxch (Some (_st 1));
+        I.fxch (_st 1);
       emit_floatspecial s
   | Lreloadretaddr ->
       ()

@@ -237,10 +237,6 @@ let buf_bytes_directive b directive s =
     if !pos >= 16 then begin pos := 0 end
   done
 
-
-
-let list_o arg = match arg with None -> [] | Some arg -> [arg]
-
 let split_instr = function
   | NEG arg ->  "neg", [arg]
   | NOP -> "nop", []
@@ -286,7 +282,8 @@ let split_instr = function
   | INC arg ->  "inc", [ arg ]
   | DEC arg ->  "dec", [ arg ]
 
-  | IMUL (arg1, arg2) ->  "imul", arg1 :: list_o arg2
+  | IMUL (arg1, None) ->  "imul", [ arg1 ]
+  | IMUL (arg1, Some arg2) ->  "imul", [ arg1; arg2 ]
   | IDIV arg ->  "idiv", [ arg ]
   | HLT -> assert false
   | MOV (arg1, arg2) ->  "mov", [ arg1; arg2]
@@ -322,7 +319,7 @@ let split_instr = function
   | FCOS -> "fcos", []
   | FLDLN2 -> "fldln2", []
   | FLDLG2 -> "fldlg2", []
-  | FXCH arg -> "fxch", list_o arg
+  | FXCH arg -> "fxch", [ arg ]
   | FYL2X -> "fyl2x", []
   | FSIN -> "fsin", []
   | FSQRT -> "fsqrt", []

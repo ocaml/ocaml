@@ -153,7 +153,7 @@ type instruction =
   | FDIVR of arg
   | FILD of arg
   | FISTP of arg
-  | FXCH of arg option
+  | FXCH of arg
 
   | FADDP of arg * arg
   | FSUBP of arg * arg

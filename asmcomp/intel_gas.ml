@@ -246,8 +246,6 @@ let auto_suffix ins arg =
   ins ^ suffix
 
 
-let list_o arg = match arg with None -> [] | Some arg -> [arg]
-
 let split_instr = function
   | NOP -> "nop", []
   | NEG arg ->  "neg", [ arg ]
@@ -325,7 +323,7 @@ let split_instr = function
   | FCOS -> "fcos", []
   | FLDLN2 -> "fldln2", []
   | FLDLG2 -> "fldlg2", []
-  | FXCH arg -> "fxch", list_o arg
+  | FXCH arg -> "fxch", [ arg ]
   | FYL2X -> "fyl2x", []
   | FSIN -> "fsin", []
   | FSQRT -> "fsqrt", []
