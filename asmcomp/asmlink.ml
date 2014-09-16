@@ -205,7 +205,8 @@ let make_startup_file ppf filename units_list =
   Compilenv.reset "_startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list =
-    List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
+    List.flatten (List.map (fun (info,_,_) ->
+        List.map fst info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
   let units = List.map (fun (info,_,_) -> info) units_list in
   List.iter compile_phrase (Cmmgen.generic_functions false units);
@@ -224,7 +225,7 @@ let make_startup_file ppf filename units_list =
                    | Some crc -> crc
                  with Not_found -> assert false
                in
-                 (unit.ui_name, intf_crc, crc, unit.ui_defines))
+                 (unit.ui_name, intf_crc, crc, List.map fst unit.ui_defines))
           units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));

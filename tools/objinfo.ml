@@ -98,11 +98,16 @@ let print_cmt_infos cmt =
      | None -> ""
      | Some crc -> Digest.to_hex crc)
 
+let print_define (sym, digest) =
+  match digest with
+  | None -> print_line sym
+  | Some d -> print_line (sym ^ ": " ^ Digest.to_hex d)
+
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
   printf "CRC of implementation: %s\n" (Digest.to_hex crc);
   printf "Globals defined:\n";
-  List.iter print_line defines;
+  List.iter print_define defines;
   printf "Interfaces imported:\n";
   List.iter print_name_crc cmi;
   printf "Implementations imported:\n";

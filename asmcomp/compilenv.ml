@@ -84,7 +84,7 @@ let reset ?packname name =
   let symbol = symbolname_for_pack packname name in
   current_unit.ui_name <- name;
   current_unit.ui_symbol <- symbol;
-  current_unit.ui_defines <- [symbol];
+  current_unit.ui_defines <- [symbol, None];
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
@@ -228,6 +228,12 @@ let write_unit_info info filename =
   close_out oc
 
 let save_unit_info filename =
+  current_unit.ui_defines <-
+    List.map (fun ((sym, intf) as v) ->
+        if sym = current_unit.ui_symbol
+        then (sym, Some (Env.crc_of_unit current_unit.ui_name))
+        else v)
+      current_unit.ui_defines;
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 

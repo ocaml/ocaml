@@ -179,7 +179,9 @@ let loadunits filename handle units state =
          StrMap.add ui.dynu_name (ui.dynu_crc,filename,Loaded) accu)
       state.implems units in
 
-  let defines = List.flatten (List.map (fun ui -> ui.dynu_defines) units) in
+  let defines =
+    List.flatten
+      (List.map (fun ui -> List.map fst ui.dynu_defines) units) in
   let new_defined = List.fold_right StrSet.add defines state.defined in
 
   ndl_run handle "_shared_startup";
@@ -220,19 +222,17 @@ let load_modules filename : module_info list =
   let (filename,handle,units) = read_file filename false in
   let defines = List.flatten (List.map (fun u -> u.dynu_defines) units) in
   let has_loaded_symbols =
-    List.exists (fun sym -> StrSet.mem sym !global_state.defined) defines in
+    List.exists (fun (sym,_) -> StrSet.mem sym !global_state.defined) defines in
   let all_loaded_symbols =
-    List.for_all (fun sym -> StrSet.mem sym !global_state.defined) defines in
+    List.for_all (fun (sym,_) ->StrSet.mem sym !global_state.defined) defines in
   if not has_loaded_symbols
   then global_state := loadunits filename handle units !global_state
   else if not all_loaded_symbols
   then raise (Error (Inconsistent_implementation filename));
   let rec aux acc = function
     | [] -> acc
-    | sym :: t ->
-        match StrMap.find sym !global_state.ifaces with
-        | (crc, file) -> aux ((sym, crc) :: acc) t
-        | exception Not_found -> aux acc t
+    | (sym, None) :: t -> aux acc t
+    | (sym, Some d) :: t -> aux ((sym, d) :: acc) t
   in
   aux [] defines
 
