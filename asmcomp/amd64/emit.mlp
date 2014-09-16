@@ -103,8 +103,8 @@ let emit_symbol s =
 
 let abs ?tbl s = (emit_symbol s, tbl)
 
-let at_rip ?(pref = NO) ?(ofs = 0) s =
-  Mem (pref, M64 (Some (RIP, 1, None), (Some s, Int64.of_int ofs)))
+let at_rip typ ?(ofs = 0) s =
+  Mem (typ, M64 (Some (RIP, 1, None), (Some s, Int64.of_int ofs)))
 
 
 (* Record symbols used and defined - at the end generate extern for those
@@ -140,9 +140,9 @@ let windows =
 
 let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
-    I.movq (at_rip (abs s ~tbl:GOTPCREL),  arg)
+    I.movq (at_rip QWORD (abs s ~tbl:GOTPCREL),  arg)
   else if !pic_code then
-    I.leaq (at_rip (abs s), arg)
+    I.leaq (at_rip NO (abs s), arg)
   else
     I.movq (imm64 (abs s), arg)
 
@@ -184,10 +184,10 @@ let reg = function
   | { loc = Reg.Reg r } -> register_name r
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr ~pref:REAL8 ofs RSP
+      mem_ptr REAL8 ofs RSP
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr ~pref:QWORD ofs RSP
+      mem_ptr QWORD ofs RSP
   | { loc = Unknown } ->
       assert false
 
@@ -216,13 +216,13 @@ let reg_low_32_name = Array.map (fun r -> Reg32 r)
     [| _eax; _ebx; _edi; _esi; _edx; _ecx; _r8d; _r9d;
        _r12d; _r13d; _r10d; _r11d; _ebp; |]
 
-let emit_subreg tbl pref r =
+let emit_subreg tbl typ r =
   match r.loc with
     Reg.Reg r when r < 13 ->
       tbl.(r)
   | Stack s ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr ~pref ofs RSP
+      mem_ptr typ ofs RSP
   | _ ->
       assert false
 
@@ -236,22 +236,22 @@ let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n)
 
 (* Output an addressing mode *)
 
-let addressing addr pref i n =
+let addressing addr typ i n =
   match addr with
   (*  | Ibased _ when !Clflags.dlcode -> assert false ONLY on Unix *)
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      at_rip ~pref (abs s) ~ofs
+      at_rip typ (abs s) ~ofs
   | Iindexed d ->
-      mem_ptr ~pref d (arg64 i n)
+      mem_ptr typ d (arg64 i n)
   | Iindexed2 d ->
-      mem_ptr ~pref ~base:(arg64 i n) d (arg64 i (n+1))
+      mem_ptr typ ~base:(arg64 i n) d (arg64 i (n+1))
   | Iscaled(2, d) ->
-      mem_ptr ~pref ~base:(arg64 i n) d (arg64 i n)
+      mem_ptr typ ~base:(arg64 i n) d (arg64 i n)
   | Iscaled(scale, d) ->
-      mem_ptr ~pref ~scale d (arg64 i n)
+      mem_ptr typ ~scale d (arg64 i n)
   | Iindexed2scaled(scale, d) ->
-      mem_ptr ~pref ~scale ~base:(arg64 i n) d (arg64 i (n+1))
+      mem_ptr typ ~scale ~base:(arg64 i n) d (arg64 i (n+1))
 
 (* Record live pointers at call points -- see Emitaux *)
 
@@ -493,7 +493,7 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0, res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (at_rip (abs_label lbl), res i 0)
+          I.movsd (at_rip NO (abs_label lbl), res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -533,7 +533,7 @@ let emit_instr fallthrough i =
              amd64nt.asm accordingly.
           *)
           load_symbol_addr "caml_young_ptr" r11;
-          I.movq (mem_ptr ~pref:QWORD 0 R11, r15)
+          I.movq (mem_ptr QWORD 0 R11, r15)
         end;
       end else
         emit_call s
@@ -589,13 +589,13 @@ let emit_instr fallthrough i =
         I.subq (int n, r15);
         if !Clflags.dlcode && system <> S_win64 then begin
           load_symbol_addr "caml_young_limit" rax;
-          I.cmpq (mem_ptr ~pref:QWORD 0 RAX, r15);
+          I.cmpq (mem_ptr QWORD 0 RAX, r15);
         end else
-          I.cmpq (at_rip (abs "caml_young_limit"), r15);
+          I.cmpq (at_rip QWORD (abs "caml_young_limit"), r15);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.leaq (mem_ptr 8 R15, res i 0);
+        I.leaq (mem_ptr NO 8 R15, res i 0);
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -610,7 +610,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leaq (mem_ptr 8 R15, res i 0)
+        I.leaq (mem_ptr NO 8 R15, res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpq (arg i 1, arg i 0);
@@ -642,7 +642,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (arg i 1, res i 0)
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.leaq (mem_ptr n (arg64 i 0), res i 0)
+      I.leaq (mem_ptr NO n (arg64 i 0), res i 0)
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.incq (res i 0)
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -651,9 +651,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n, res i 0)
   | Lop(Inegf) ->
-      I.xorpd (at_rip ~pref:OWORD (abs "caml_negf_mask"), res i 0)
+      I.xorpd (at_rip OWORD (abs "caml_negf_mask"), res i 0)
   | Lop(Iabsf) ->
-      I.andpd (at_rip ~pref:OWORD (abs "caml_absf_mask"), res i 0)
+      I.andpd (at_rip OWORD (abs "caml_absf_mask"), res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1, res i 0)
   | Lop(Ifloatofint) ->
@@ -753,8 +753,8 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.leaq (at_rip (abs_label lbl), reg tmp1);
-      I.movslq (mem_ptr ~pref:DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
+      I.leaq (at_rip NO (abs_label lbl), reg tmp1);
+      I.movslq (mem_ptr DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.addq (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);
 

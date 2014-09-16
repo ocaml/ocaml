@@ -399,6 +399,6 @@ module DSL64 = struct
   let imm64 s = Imm (B64, (Some s,0L))
   let rel32 s = Rel (B32, (Some s,0L))
 
-  let mem_ptr ?(pref = NO) ?(scale = 1) ?base offset reg =
-    Mem (pref, M64(Some (reg, scale, base), (None, Int64.of_int offset)))
+  let mem_ptr typ ?(scale = 1) ?base offset reg =
+    Mem (typ, M64(Some (reg, scale, base), (None, Int64.of_int offset)))
 end
