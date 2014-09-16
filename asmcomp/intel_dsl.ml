@@ -35,7 +35,7 @@ module ForceMem = struct
         | _ -> ()
 
   let force_mem ty = function
-    | Mem (NO, mem) -> Mem (ty, mem)
+    | Mem (NO, mem) -> Mem (ty, mem) (* This branch seems to be currently dead code (x64 at least).  *)
     | arg -> check ty arg; arg
 
   let force_real4 = function
