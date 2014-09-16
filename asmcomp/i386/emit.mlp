@@ -157,7 +157,7 @@ let register_name r =
 let emit_reg = function
     { loc = Reg r } -> register_name r
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
-      _mem_sym_x NO (emit_symbol "caml_extra_params") (n + 64)
+      _mem_sym_x DWORD(* TODO: check! *) (emit_symbol "caml_extra_params") (n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
       _mem_reg REAL8 ofs _esp
@@ -528,7 +528,7 @@ let emit_instr fallthrough i =
           I.fld1 (); I.fchs ()
       | _ ->
           let lbl = add_float_constant f in
-          I.fldl (_mem_sym (emit_label lbl))
+          I.fldl (_mem_sym_x REAL8 (emit_label lbl) 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -725,16 +725,16 @@ let emit_instr fallthrough i =
       I.subl (int 8 , _r _esp);
       cfi_adjust_cfa_offset 8;
       I.fnstcw (_mem_reg NO 4 _esp);
-      I.movw (_mem_reg NO 4 _esp , Reg16 AX);
+      I.movw (_mem_reg WORD 4 _esp , Reg16 AX);
       I.movb (int 12 , Reg8 AH);
-      I.movw (Reg16 AX , _mem_reg NO 0 _esp);
+      I.movw (Reg16 AX , _mem_reg WORD 0 _esp);
       I.fldcw (_mem_reg NO 0 _esp);
       begin match i.res.(0).loc with
         Stack s ->
           I.fistpl (emit_reg i.res.(0))
       | _ ->
           I.fistpl (_mem_reg DWORD 0 _esp);
-          I.movl (_mem_reg NO 0 _esp , emit_reg i.res.(0))
+          I.movl (_mem_reg DWORD 0 _esp , emit_reg i.res.(0))
       end;
       I.fldcw (_mem_reg NO 4 _esp);
       I.addl (int 8 , _r _esp);

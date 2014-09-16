@@ -35,7 +35,9 @@ module ForceMem = struct
         | _ -> ()
 
   let force_mem ty = function
-    | Mem (NO, mem) -> Mem (ty, mem) (* This branch seems to be currently dead code (x64 at least).  *)
+    | Mem (NO, mem) ->
+        Printf.printf "%s %s\n%!" (string_of_datatype ty) (Printexc.raw_backtrace_to_string (Printexc.get_callstack 10));
+        Mem (ty, mem) (* This branch seems to be currently dead code (x64 at least).  *)
     | arg -> check ty arg; arg
 
   let force_real4 = function
@@ -304,7 +306,7 @@ module DSL32 = struct
     Mem(pref, M32 (Some (reg, 1, None), (None, Int64.of_int d)))
   let _mem_sym_x pref l d =
     Mem(pref, M32(None, (Some (l, None), Int64.of_int d)))
-  let _mem_sym l = _mem_sym_x NO l 0
+  let _mem_sym l = _mem_sym_x DWORD l 0
 
 end
 
