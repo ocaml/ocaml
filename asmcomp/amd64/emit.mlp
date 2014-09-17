@@ -165,13 +165,8 @@ let def_label s =
 
 (* Output a .align directive. *)
 
-let emit_align n =
-  let n = if system = S_macosx then Misc.log2 n else n in
-  (* we must remember the segment, because text segments are filled with nop *)
-  _align n (* TODO *)
-
 let emit_Llabel fallthrough lbl =
-  if not fallthrough && !fastcode_flag then emit_align 4;
+  if not fallthrough && !fastcode_flag then _align 4;
   emit_label lbl
 
 (* Output a pseudo-register *)
@@ -760,7 +755,7 @@ let emit_instr fallthrough i =
       | S_win64 -> () (* with MASM, use the text segment *)
       | _ -> _section [".rodata"] None []
       end;
-      emit_align 4;
+      _align 4;
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
         _long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
@@ -831,7 +826,7 @@ let fundecl fundecl =
   bound_error_sites := [];
   bound_error_call := 0;
   _text ();
-  emit_align 16;
+  _align 16;
   add_def_symbol fundecl.fun_name;
   if system = S_macosx
   && not !Clflags.output_c_object
@@ -887,7 +882,7 @@ let emit_item = function
   | Clabel_address lbl -> _qword (ConstLabel (emit_data_label lbl))
   | Cstring s -> _ascii s
   | Cskip n -> if n > 0 then _space n
-  | Calign n -> emit_align n
+  | Calign n -> _align n
 
 (* Beginning / end of an assembly file *)
 
@@ -920,11 +915,11 @@ let begin_assembly() =
     | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []
     | _ -> _section [".rodata.cst8"] (Some "a") ["@progbits"]
     end;
-    emit_align 16;
+    _align 16;
     _label (emit_symbol "caml_negf_mask");
     _qword (Const (B64, 0x8000000000000000L));
     _qword (Const (B64, 0L));
-    emit_align 16;
+    _align 16;
     _label (emit_symbol "caml_absf_mask");
     _qword (Const (B64, 0x7FFFFFFFFFFFFFFFL));
     _qword (Const (B64, 0xFFFFFFFFFFFFFFFFL));
@@ -974,7 +969,7 @@ let end_assembly() =
       efa_16 = (fun n -> _word (const n));
       efa_32 = (fun n -> _long (const_32 n));
       efa_word = (fun n -> _qword (Const (B64, Int64.of_int n)));
-      efa_align = (emit_align);
+      efa_align = _align;
       efa_label_rel =
         if system = S_macosx then begin
           let setcnt = ref 0 in

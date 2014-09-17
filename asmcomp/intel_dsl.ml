@@ -289,16 +289,19 @@ module DSL32 = struct
 
   include DSL
 
-  let _st n = Regf (ST n)
-
   let _label s = directive (NewLabel (s, DWORD))
 
-  let _r r = Reg32 r
+  let eax = Reg32 (R32 RAX)
+  let ebx = Reg32 (R32 RBX)
+  let ecx = Reg32 (R32 RCX)
+  let edx = Reg32 (R32 RDX)
+  let ebp = Reg32 (R32 RBP)
+  let esp = Reg32 (R32 RSP)
 
-  let abs_ s = (s, None)
+  let st0 = Regf (ST 0)
+  let st1 = Regf (ST 1)
 
-  let _offset l = Imm (B32, (Some l,0L))
-
+  let imm32 l = Imm (B32, (Some l,0L))
   let rel32 s = Rel (B32, (Some s,0L))
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset reg =

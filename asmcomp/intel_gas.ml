@@ -401,6 +401,8 @@ let bprint_instr_name b instr =
   | Global s ->
       Printf.bprintf b "\t.globl\t%s" s;
   | Align (_data,n) ->
+      (* MacOSX assembler interprets the integer n as a 2^n alignment *)
+      let n = if system = S_macosx then Misc.log2 n else n in
       Printf.bprintf b "\t.align\t%d" n
   | NewLabel (s, _) ->
       Printf.bprintf b "%s:" s
