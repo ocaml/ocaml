@@ -202,21 +202,16 @@ and string_of_simple_constant = function
         (string_of_simple_constant c1) (string_of_simple_constant c2)
 
 let auto_suffix ins arg =
+  (* Do we need to support the NO cases here?? *)
   let suffix =
     match arg with
-    | Mem (BYTE, _)
-    | Reg8 _ -> "b"
-    | Mem (WORD, _)
-    | Reg16 _ -> "w"
-    | Mem(DWORD, _)
-    | Reg32 _ -> "l"
-    | Mem(QWORD, _)
-    | Reg64 _
-      -> "q"
-    | Mem(NO, M32 _) -> "l"
-    | Mem(NO, M64 _) -> "q"
+    | Mem (BYTE, _) | Reg8 _   -> "b"
+    | Mem (WORD, _) | Reg16 _  -> "w"
+    | Mem(DWORD, _) | Reg32 _ | Mem(NO, M32 _) -> "l"
+    | Mem(QWORD, _) | Reg64 _ | Mem(NO, M64 _) -> "q"
     | _ -> ""
   in
+  (* TODO: avoid concatenation by emitting the suffix directly to the output buffer *)
   ins ^ suffix
 
 
