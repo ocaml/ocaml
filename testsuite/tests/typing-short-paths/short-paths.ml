@@ -46,3 +46,9 @@ module M1 = struct type u = v and v = t1 end;;
 module N1 = struct type u = v and v = M1.v end;;
 type t1 = B;;
 module N2 = struct type u = v and v = M1.v end;;
+
+
+(* PR#6566 *)
+module type PR6566 = sig type t = string end;;
+module PR6566 = struct type t = int end;;
+module PR6566' : PR6566 = PR6566;;

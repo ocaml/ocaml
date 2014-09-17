@@ -69,4 +69,15 @@ type u = M.u = C
 # module N1 : sig type u = v and v = t1 end
 # type t1 = B
 # module N2 : sig type u = v and v = N1.v end
+#       module type PR6566 = sig type t = bytes end
+# module PR6566 : sig type t = int end
+# Characters 26-32:
+  module PR6566' : PR6566 = PR6566;;
+                            ^^^^^^
+Error: Signature mismatch:
+       Modules do not match: sig type t = int end is not included in PR6566
+       Type declarations do not match:
+         type t = int
+       is not included in
+         type t = bytes
 # 
