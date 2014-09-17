@@ -1007,9 +1007,10 @@ let fundecl fundecl =
       _type  (emit_symbol fundecl.fun_name) "@function";
       _size (emit_symbol fundecl.fun_name)
         (ConstSub (
-            ConstLabel "."),
+            ConstLabel ".",
             ConstLabel (emit_symbol fundecl.fun_name)))
-  | _ -> () end
+  | _ -> ()
+  end
 
 
 (* Emission of data *)
