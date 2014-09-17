@@ -131,6 +131,9 @@ let abs_label s = (emit_label s, None)
 
 let label s = rel32 (abs_label s)
 
+let def_label s =
+  directive (NewLabel (emit_label s, NO))
+
 
 (* MacOSX has its own way to reference symbols potentially defined in
    shared objects *)
@@ -240,7 +243,7 @@ let record_frame_label live dbg =
 
 let record_frame live dbg =
   let lbl = record_frame_label live dbg in
-  _llabel (emit_label lbl)
+  def_label lbl
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -252,9 +255,9 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  _llabel (emit_label gc.gc_lbl);
+  def_label gc.gc_lbl;
   emit_call "caml_call_gc";
-  _llabel (emit_label gc.gc_frame);
+  def_label gc.gc_frame;
   I.jmp (label gc.gc_return_lbl)
 
 (* Record calls to caml_ml_array_bound_error.
@@ -281,14 +284,14 @@ let bound_error_label dbg =
   end
 
 let emit_call_bound_error bd =
-  _llabel (emit_label bd.bd_lbl);
+  def_label bd.bd_lbl;
   emit_call "caml_ml_array_bound_error";
-  _llabel (emit_label bd.bd_frame)
+  def_label bd.bd_frame
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
-    _llabel (emit_label !bound_error_call);
+    def_label !bound_error_call;
     emit_call "caml_ml_array_bound_error"
   end
 
@@ -631,7 +634,7 @@ let emit_instr fallthrough i =
   | Lop(Ialloc n) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
-        _llabel (emit_label lbl_redo);
+        def_label lbl_redo;
         I.movl (sym32 "caml_young_ptr", _r _eax);
         I.subl (int n, _r _eax);
         I.movl (_r _eax, sym32 "caml_young_ptr");
@@ -1003,7 +1006,7 @@ let fundecl fundecl =
       I.subl (int n, _r _esp);
       cfi_adjust_cfa_offset n;
     end;
-  _llabel (emit_label !tailrec_entry_point);
+  def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
