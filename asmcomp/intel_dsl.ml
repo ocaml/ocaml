@@ -300,12 +300,11 @@ module DSL32 = struct
   let _offset l = Imm (B32, (Some l,0L))
   let _l l = Rel (B32, (Some (l, None), 0L))
 
-  let _mem_reg pref d reg =
-    Mem(pref, M32 (Some (reg, 1, None), (None, Int64.of_int d)))
-  let _mem_sym_x pref l d =
-    Mem(pref, M32(None, (Some (l, None), Int64.of_int d)))
-  let _mem_sym l = _mem_sym_x DWORD l 0
+  let mem_ptr typ ?(scale = 1) ?base ?sym offset reg =
+    Mem (typ, M32(Some (reg, scale, base), (sym, Int64.of_int offset)))
 
+  let mem_sym typ ?(ofs = 0) l =
+    Mem(typ, M32(None, (Some (l, None), Int64.of_int ofs)))
 end
 
 

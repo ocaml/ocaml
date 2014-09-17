@@ -154,16 +154,19 @@ let register_name r =
   if r < 100 then _r (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
+let sym32 ?ofs s =
+  mem_sym ?ofs DWORD (emit_symbol s)
+
 let emit_reg = function
     { loc = Reg r } -> register_name r
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
-      _mem_sym_x DWORD(* TODO: check! *) (emit_symbol "caml_extra_params") (n + 64)
+      sym32 "caml_extra_params" ~ofs:(n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      _mem_reg REAL8 ofs _esp
+      mem_ptr REAL8 ofs _esp
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      _mem_reg DWORD ofs _esp
+      mem_ptr DWORD ofs _esp
   | { loc = Unknown } ->
       fatal_error "Emit_i386.emit_reg"
 
@@ -188,25 +191,21 @@ let emit_reg32 = function
 
 (* Output an addressing mode *)
 
-let emit_addressing addr pref r n =
+let emit_addressing addr typ r n =
   match addr with
-    Ibased(s, d) ->
+  | Ibased(s, ofs) ->
       add_used_symbol s;
-      _mem_sym_x pref (emit_symbol s) d
+      mem_sym typ (emit_symbol s) ~ofs
   | Iindexed d ->
-      _mem_reg pref d (emit_reg32 r.(n))
+      mem_ptr typ d (emit_reg32 r.(n))
   | Iindexed2 d ->
-      Mem(pref, M32 (Some (emit_reg32 r.(n+1), 1, Some (emit_reg32 r.(n))),
-                     (None, Int64.of_int d)))
+      mem_ptr typ ~base:(emit_reg32 r.(n)) d (emit_reg32 r.(n+1))
   | Iscaled(2, d) ->
-      Mem(pref, M32 (Some (emit_reg32 r.(n), 1, Some (emit_reg32 r.(n))),
-                     (None, Int64.of_int d)))
+      mem_ptr typ ~base:(emit_reg32 r.(n)) d (emit_reg32 r.(n))
   | Iscaled(scale, d) ->
-      Mem(pref, M32 (Some (emit_reg32 r.(n), scale, None),
-                     (None, Int64.of_int d)))
+      mem_ptr typ ~scale d (emit_reg32 r.(n))
   | Iindexed2scaled(scale, d) ->
-      Mem(pref, M32 (Some  (emit_reg32 r.(n+1), scale, Some (emit_reg32 r.(n))),
-                     (None, Int64.of_int d)))
+      mem_ptr typ ~scale ~base:(emit_reg32 r.(n)) d (emit_reg32 r.(n+1))
 
 (* Record live pointers at call points *)
 
@@ -528,7 +527,7 @@ let emit_instr fallthrough i =
           I.fld1 (); I.fchs ()
       | _ ->
           let lbl = add_float_constant f in
-          I.fldl (_mem_sym_x REAL8 (emit_label lbl) 0)
+          I.fldl (mem_sym REAL8 (emit_label lbl))
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -561,7 +560,7 @@ let emit_instr fallthrough i =
         else begin
           external_symbols_indirect :=
             StringSet.add s !external_symbols_indirect;
-          I.movl (_mem_sym (Printf.sprintf "L%s$non_lazy_ptr"
+          I.movl (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
                               (emit_symbol s)) , _r _eax)
         end;
         emit_call "caml_c_call";
@@ -626,14 +625,14 @@ let emit_instr fallthrough i =
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         _llabel (emit_label lbl_redo);
-        I.movl (_mem_sym (emit_symbol "caml_young_ptr") , _r _eax);
+        I.movl (sym32 "caml_young_ptr", _r _eax);
         I.subl (int n , _r _eax);
-        I.movl (_r _eax , _mem_sym (emit_symbol "caml_young_ptr"));
-        I.cmpl (_mem_sym (emit_symbol "caml_young_limit") , _r _eax);
+        I.movl (_r _eax , sym32 "caml_young_ptr");
+        I.cmpl (sym32 "caml_young_limit", _r _eax);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (_l (emit_label lbl_call_gc));
-        I.leal  (_mem_reg NO 4 _eax , emit_reg i.res.(0));
+        I.leal  (mem_ptr NO 4 _eax , emit_reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -648,7 +647,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leal (_mem_reg NO 4 _eax , emit_reg i.res.(0))
+        I.leal (mem_ptr NO 4 _eax , emit_reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpl (emit_reg i.arg.(1) , emit_reg i.arg.(0));
@@ -680,7 +679,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (emit_reg i.arg.(1) , emit_reg i.res.(0))
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.leal (_mem_reg NO n (emit_reg32 i.arg.(0)), emit_reg i.res.(0))
+      I.leal (mem_ptr NO n (emit_reg32 i.arg.(0)), emit_reg i.res.(0))
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.incl (emit_reg i.res.(0))
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -715,7 +714,7 @@ let emit_instr fallthrough i =
           I.fildl (emit_reg i.arg.(0))
       | _ ->
           I.pushl (emit_reg i.arg.(0));
-          I.fildl (_mem_reg DWORD 0 _esp);
+          I.fildl (mem_ptr DWORD 0 _esp);
           I.addl (int 4 , _r _esp)
       end
   | Lop(Iintoffloat) ->
@@ -724,19 +723,19 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - 8;
       I.subl (int 8 , _r _esp);
       cfi_adjust_cfa_offset 8;
-      I.fnstcw (_mem_reg NO 4 _esp);
-      I.movw (_mem_reg WORD 4 _esp , Reg16 AX);
+      I.fnstcw (mem_ptr NO 4 _esp);
+      I.movw (mem_ptr WORD 4 _esp , Reg16 AX);
       I.movb (int 12 , Reg8 AH);
-      I.movw (Reg16 AX , _mem_reg WORD 0 _esp);
-      I.fldcw (_mem_reg NO 0 _esp);
+      I.movw (Reg16 AX , mem_ptr WORD 0 _esp);
+      I.fldcw (mem_ptr NO 0 _esp);
       begin match i.res.(0).loc with
         Stack s ->
           I.fistpl (emit_reg i.res.(0))
       | _ ->
-          I.fistpl (_mem_reg DWORD 0 _esp);
-          I.movl (_mem_reg DWORD 0 _esp , emit_reg i.res.(0))
+          I.fistpl (mem_ptr DWORD 0 _esp);
+          I.movl (mem_ptr DWORD 0 _esp , emit_reg i.res.(0))
       end;
-      I.fldcw (_mem_reg NO 4 _esp);
+      I.fldcw (mem_ptr NO 4 _esp);
       I.addl (int 8 , _r _esp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
@@ -757,12 +756,12 @@ let emit_instr fallthrough i =
           {loc = Reg _; typ = Float} ->
             I.subl (int 8 , _r _esp);
             cfi_adjust_cfa_offset 8;
-            I.fstpl (_mem_reg REAL8 0 _esp);
+            I.fstpl (mem_ptr REAL8 0 _esp);
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
             let ofs = slot_offset sl 1 in
-            I.pushl (_mem_reg DWORD (ofs + 4) _esp);
-            I.pushl (_mem_reg DWORD (ofs + 4) _esp);
+            I.pushl (mem_ptr DWORD (ofs + 4) _esp);
+            I.pushl (mem_ptr DWORD (ofs + 4) _esp);
             cfi_adjust_cfa_offset 8;
             stack_offset := !stack_offset + 8
         | _ ->
@@ -859,8 +858,7 @@ let emit_instr fallthrough i =
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in
-      I.jmp (Mem(NO, M32 (Some (emit_reg32 i.arg.(0), 4, None),
-                          (Some (emit_label lbl, None), 0L))));
+      I.jmp (mem_ptr NO 0 (emit_reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl, None));
       _data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
@@ -872,12 +870,12 @@ let emit_instr fallthrough i =
   | Lpushtrap ->
       if trap_frame_size > 8 then
         I.subl (int (trap_frame_size - 8) , _r _esp);
-      I.pushl (_mem_sym (emit_symbol "caml_exception_pointer"));
+      I.pushl (sym32 "caml_exception_pointer");
       cfi_adjust_cfa_offset trap_frame_size;
-      I.movl (_r _esp , _mem_sym (emit_symbol "caml_exception_pointer"));
+      I.movl (_r _esp , sym32 "caml_exception_pointer");
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
-      I.popl (_mem_sym (emit_symbol "caml_exception_pointer"));
+      I.popl (sym32 "caml_exception_pointer");
       I.addl (int (trap_frame_size - 4) , _r _esp);
       cfi_adjust_cfa_offset (-trap_frame_size);
       stack_offset := !stack_offset - trap_frame_size
@@ -891,8 +889,8 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty i.dbg
       | false, _
       | true, Lambda.Raise_notrace ->
-          I.movl (_mem_sym (emit_symbol "caml_exception_pointer") , _r _esp);
-          I.popl (_mem_sym (emit_symbol "caml_exception_pointer"));
+          I.movl (sym32 "caml_exception_pointer", _r _esp);
+          I.popl (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then
             I.addl (int (trap_frame_size - 8) , _r _esp);
           I.ret ()
