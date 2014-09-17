@@ -321,7 +321,7 @@ let emit_call_bound_errors () =
 (* Names for instructions *)
 
 let instr_for_intop = function
-    Iadd -> I.addq
+  | Iadd -> I.addq
   | Isub -> I.subq
   | Imul -> (fun (arg1, arg2) -> I.imulq (arg1, Some arg2))
   | Iand -> I.andq
@@ -333,25 +333,25 @@ let instr_for_intop = function
   | _ -> assert false
 
 let instr_for_floatop = function
-    Iaddf -> I.addsd
+  | Iaddf -> I.addsd
   | Isubf -> I.subsd
   | Imulf -> I.mulsd
   | Idivf -> I.divsd
   | _ -> assert false
 
 let instr_for_floatarithmem = function
-    Ifloatadd -> I.addsd
+  | Ifloatadd -> I.addsd
   | Ifloatsub -> I.subsd
   | Ifloatmul -> I.mulsd
   | Ifloatdiv -> I.divsd
 
 let name_for_cond_branch = function
-    Isigned Ceq -> E     | Isigned Cne -> NE
-  | Isigned Cle -> LE     | Isigned Cgt -> G
-  | Isigned Clt -> L     | Isigned Cge -> GE
+  | Isigned Ceq   -> E   | Isigned Cne   -> NE
+  | Isigned Cle   -> LE  | Isigned Cgt   -> G
+  | Isigned Clt   -> L   | Isigned Cge   -> GE
   | Iunsigned Ceq -> E   | Iunsigned Cne -> NE
   | Iunsigned Cle -> BE  | Iunsigned Cgt -> A
-  | Iunsigned Clt -> B  | Iunsigned Cge -> AE
+  | Iunsigned Clt -> B   | Iunsigned Cge -> AE
 
 (* Output an = 0 or <> 0 test. *)
 
