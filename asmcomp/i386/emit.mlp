@@ -943,7 +943,6 @@ let emit_profile () =
       I.pushl ecx;
       I.pushl edx;
       I.call (rel32 ("mcount", None));
-      I.movl (esp, ebp);
       I.popl edx;
       I.popl ecx;
       I.popl eax;
