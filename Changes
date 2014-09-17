@@ -7,6 +7,7 @@ OCaml 4.02.1:
 - PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
+- PR#6564: infinite loop in Mtype.remove_aliases
 
 
 OCaml 4.02.0:
