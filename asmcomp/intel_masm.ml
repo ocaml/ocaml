@@ -186,7 +186,6 @@ let bprint_args b args =
 let rec string_of_constant = function
   | ConstLabel _
   | Const _
-  | ConstFloat _
     as c -> string_of_simple_constant c
   | ConstAdd (c1, c2) ->
       (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
@@ -194,26 +193,9 @@ let rec string_of_constant = function
       (string_of_simple_constant c1) ^ " - " ^ (string_of_simple_constant c2)
 
 and string_of_simple_constant = function
-  | ConstLabel (l, None) -> if l = "." then  "THIS BYTE"      else l
-  | ConstLabel _ -> assert false
+  | ConstLabel l -> if l = "." then "THIS BYTE" else l
   | Const ( (B8|B16|B32), n) -> Int64.to_string n
   | Const (B64, n) -> Printf.sprintf "0%LxH" n
-  | ConstFloat s ->
-      (* MASM doesn't like floating-point constants such as 2e9.
-          Turn them into 2.0e9. *)
-      let pos_e = ref (-1) and pos_dot = ref (-1) in
-      for i = 0 to String.length s - 1 do
-        match s.[i] with
-          'e'|'E' -> pos_e := i
-        | '.'     -> pos_dot := i
-        | _       -> ()
-      done;
-      if !pos_dot < 0 && !pos_e >= 0 then begin
-        Printf.sprintf "%s.0%s"
-          (String.sub s 0 !pos_e)
-          (String.sub s !pos_e (String.length s - !pos_e))
-      end else
-        s
   | ConstAdd (c1, c2) ->
       Printf.sprintf "(%s + %s)"
         (string_of_simple_constant c1) (string_of_simple_constant c2)

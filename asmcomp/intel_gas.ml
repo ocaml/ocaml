@@ -206,7 +206,6 @@ let bprint_args b instr args =
 let rec string_of_constant = function
   | ConstLabel _
   | Const _
-  | ConstFloat _
     as c -> string_of_simple_constant c
   | ConstAdd (c1, c2) ->
       (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
@@ -214,12 +213,9 @@ let rec string_of_constant = function
       (string_of_simple_constant c1) ^ " - " ^ (string_of_simple_constant c2)
 
 and string_of_simple_constant = function
-  | ConstLabel (l, reloc_table) -> l ^ (string_of_table reloc_table)
+  | ConstLabel l -> l
   | Const (B64, n) -> Printf.sprintf "0x%Lx" n
   | Const (_, n) -> Int64.to_string n
-  | ConstFloat f ->
-      let x = Int64.bits_of_float (float_of_string f) in
-      Printf.sprintf "0x%Lx" x
   | ConstAdd (c1, c2) ->
       Printf.sprintf "(%s + %s)"
         (string_of_simple_constant c1) (string_of_simple_constant c2)

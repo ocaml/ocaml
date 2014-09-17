@@ -50,8 +50,7 @@ type data_size =
 
 type constant =
   | Const of data_size * int64
-  | ConstFloat of string
-  | ConstLabel of string * reloc_table option
+  | ConstLabel of string
   | ConstAdd of constant * constant
   | ConstSub of constant * constant
 

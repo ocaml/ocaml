@@ -114,8 +114,6 @@ module DSL = struct
   let const_nat n = const_int (Int64.of_nativeint n)
   let const n = const_int (Int64.of_int n)
 
-  let emit_float64_directive f = ConstFloat f
-
   let _cfi_startproc () = directive Cfi_startproc
   let _cfi_endproc () = directive Cfi_endproc
   let _cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)

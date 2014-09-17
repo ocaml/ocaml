@@ -864,7 +864,7 @@ let emit_instr fallthrough i =
       _data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
-        _long (ConstLabel (emit_label jumptbl.(i), None))
+        _long (ConstLabel (emit_label jumptbl.(i)))
       done;
       _text ()
   | Lsetuptrap lbl ->
@@ -1007,8 +1007,8 @@ let fundecl fundecl =
       _type  (emit_symbol fundecl.fun_name) "@function";
       _size (emit_symbol fundecl.fun_name)
         (ConstSub (
-            ConstLabel (".", None),
-            ConstLabel  (emit_symbol fundecl.fun_name, None)))
+            ConstLabel "."),
+            ConstLabel (emit_symbol fundecl.fun_name)))
   | _ -> () end
 
 
@@ -1030,8 +1030,8 @@ let emit_item = function
       emit_float64_split_directive (Int64.bits_of_float f)
   | Csymbol_address s ->
       add_used_symbol s;
-      _long (ConstLabel (emit_symbol s, None))
-  | Clabel_address lbl -> _long (ConstLabel (emit_data_label lbl, None))
+      _long (ConstLabel (emit_symbol s))
+  | Clabel_address lbl -> _long (ConstLabel (emit_data_label lbl))
   | Cstring s -> _ascii s
   | Cskip n ->
       if n > 0 then _space n
@@ -1100,15 +1100,15 @@ let end_assembly() =
   _global (emit_symbol lbl);
   _label (emit_symbol lbl);
   emit_frames
-    { efa_label = (fun l -> _long (ConstLabel (emit_label l, None)));
+    { efa_label = (fun l -> _long (ConstLabel (emit_label l)));
       efa_16 = (fun n -> _word (const n));
       efa_32 = (fun n -> _long (const_32 n));
       efa_word = (fun n -> _long (const n));
       efa_align = emit_align;
       efa_label_rel = (fun lbl ofs ->
           _long (ConstAdd (
-              ConstSub(ConstLabel(emit_label lbl, None),
-                       ConstLabel (".", None)),
+              ConstSub(ConstLabel(emit_label lbl),
+                       ConstLabel "."),
               const_32 ofs)));
       efa_def_label = (fun l -> _label (emit_label l));
       efa_string = (fun s ->
