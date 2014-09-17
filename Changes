@@ -8,6 +8,7 @@ OCaml 4.02.1:
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
 - PR#6564: infinite loop in Mtype.remove_aliases
+- PR#6563: Inclusion of packs failing to run module initializers
 
 
 OCaml 4.02.0:
