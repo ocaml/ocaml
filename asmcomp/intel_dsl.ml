@@ -403,4 +403,7 @@ module DSL64 = struct
 
   let mem_ptr typ ?(scale = 1) ?base offset reg =
     Mem (typ, M64(Some (reg, scale, base), (None, Int64.of_int offset)))
+
+  let from_rip typ ?(ofs = 0) s =
+    Mem (typ, M64 (Some (RIP, 1, None), (Some s, Int64.of_int ofs)))
 end
