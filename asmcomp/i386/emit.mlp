@@ -66,7 +66,7 @@ let frame_size () =                     (* includes return address *)
 
 let slot_offset loc cl =
   match loc with
-    Incoming n ->
+  | Incoming n ->
       assert (n >= 0);
       frame_size() + n
   | Local n ->
@@ -95,7 +95,7 @@ let trap_frame_size = Misc.align 8 stack_alignment
 
 let symbol_prefix =
   match system with
-    S_linux_elf -> ""
+  | S_linux_elf -> ""
   | S_bsd_elf -> ""
   | S_solaris -> ""
   | S_beos -> ""
@@ -116,7 +116,7 @@ let emit_call s =
 
 let label_prefix =
   match system with
-    S_linux_elf -> ".L"
+  | S_linux_elf -> ".L"
   | S_bsd_elf -> ".L"
   | S_solaris -> ".L"
   | S_beos -> ".L"
@@ -288,7 +288,7 @@ let emit_call_bound_errors () =
 (* Names for instructions *)
 
 let instr_for_intop = function
-    Iadd -> I.addl
+  | Iadd -> I.addl
   | Isub -> I.subl
   | Imul -> (fun (arg1,arg2) ->  I.imull (arg1, Some arg2))
   | Iand -> I.andl
@@ -330,7 +330,7 @@ let instr_for_floatop_reversed_pop = function
   | Idivf -> I.fdivrp
   | Ispecific Isubfrev -> I.fsubp
   | Ispecific Idivfrev -> I.fdivp
-  | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
+  | _ -> fatal_error "Emit_i386: instr_for_floatop_reversed_pop"
 
 let instr_for_floatarithmem = function
   | Ifloatadd -> I.fadd
@@ -379,7 +379,7 @@ let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 let emit_float_test cmp neg arg lbl =
   let actual_cmp =
     match (is_tos arg.(0), is_tos arg.(1)) with
-      (true, true) ->
+    | (true, true) ->
         (* both args on top of FP stack *)
         I.fcompp ();
         cmp
@@ -445,7 +445,7 @@ let emit_float_test cmp neg arg lbl =
 (* Emit a Ifloatspecial instruction *)
 
 let emit_floatspecial = function
-    "atan"  -> I.fld1 (); I.fpatan ()
+  | "atan"  -> I.fld1 (); I.fpatan ()
   | "atan2" -> I.fpatan ()
   | "cos"   -> I.fcos ()
   | "log"   -> I.fldln2 (); I.fxch st1; I.fyl2x ()
@@ -493,7 +493,7 @@ let external_symbols_indirect = ref StringSet.empty
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
-    Lend -> ()
+  | Lend -> ()
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then begin
@@ -935,35 +935,21 @@ let emit_external_symbols () =
 
 (* Emission of the profiling prelude *)
 
+let call_mcount mcount =
+  I.pushl eax;
+  I.movl (esp, ebp);
+  I.pushl ecx;
+  I.pushl edx;
+  I.call (rel32 (mcount, None));
+  I.popl edx;
+  I.popl ecx;
+  I.popl eax
+
 let emit_profile () =
   match system with
-    S_linux_elf | S_gnu ->
-      I.pushl eax;
-      I.movl  (esp, ebp);
-      I.pushl ecx;
-      I.pushl edx;
-      I.call (rel32 ("mcount", None));
-      I.popl edx;
-      I.popl ecx;
-      I.popl eax;
-  | S_bsd_elf ->
-      I.pushl eax;
-      I.movl  (esp, ebp);
-      I.pushl ecx;
-      I.pushl edx;
-      I.call (rel32 (".mcount", None));
-      I.popl edx;
-      I.popl ecx;
-      I.popl eax;
-  | S_macosx ->
-      I.pushl eax;
-      I.movl  (esp, ebp);
-      I.pushl ecx;
-      I.pushl edx;
-      I.call (rel32 ("Lmcount$stub", None));
-      I.popl edx;
-      I.popl ecx;
-      I.popl eax;
+  | S_linux_elf | S_gnu -> call_mcount "mcount"
+  | S_bsd_elf -> call_mcount ".mcount"
+  | S_macosx -> call_mcount "Lmcount$stub"
   | _ -> () (*unsupported yet*)
 
 (* Emission of a function declaration *)
