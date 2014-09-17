@@ -9,7 +9,7 @@ OCaml 4.02.1:
   Mark Shinwell).
 - PR#6564: infinite loop in Mtype.remove_aliases
 - PR#6563: Inclusion of packs failing to run module initializers
-
+- PR#6565: compilation fails with Env.Error(_)
 
 OCaml 4.02.0:
 -------------
