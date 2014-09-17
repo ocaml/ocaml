@@ -36,7 +36,7 @@ let string_of_datatype_ptr = function
   | WORD -> "WORD PTR "
   | DWORD -> "DWORD PTR "
   | NEAR -> "NEAR PTR "
-  | PROC -> "PROC PTR"
+  | PROC -> "PROC PTR "
 
 let bprint_arg_mem b string_of_register ptr mem =
   match mem with
