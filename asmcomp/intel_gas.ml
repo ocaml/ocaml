@@ -45,7 +45,6 @@ open Intel_ast
 open Intel_proc
 
 let tab b = Buffer.add_char b '\t'
-let bprint b s = tab b; Buffer.add_string b s
 
 let string_of_table = function
   | Some PLT -> "@PLT"
@@ -182,27 +181,6 @@ let bprint_arg b arg =
   | Mem (_ptr, M64 addr) ->
       bprint_arg_mem b string_of_register64 addr
 
-let bprint_args b instr args =
-  match args, instr with
-  | [], _ -> ()
-  | [ (* this is the encoding of jump labels: don't use * *)
-    Mem (_, M64 (Some (RIP, _, _), (Some _,_)))
-  | Mem (_, M32 (None, (Some _, _)))
-    as arg ],  (CALL _ | JMP _)
-    -> tab b; bprint_arg b arg
-  | [ Reg32 _
-    | Reg64 _
-    | Mem _
-      as arg ],  (CALL _ | JMP _) ->
-      tab b; Buffer.add_char b '*'; bprint_arg b arg
-  | [ arg ], _ -> tab b; bprint_arg b arg
-  | [ arg1; arg2 ], _ ->
-      tab b; bprint_arg b arg1;
-      Buffer.add_char b ',';
-      Buffer.add_char b ' ';
-      bprint_arg b arg2
-  | _ -> assert false
-
 let rec string_of_constant = function
   | ConstLabel _
   | Const _
@@ -242,159 +220,197 @@ let auto_suffix ins arg =
   ins ^ suffix
 
 
-let split_instr = function
-  | NOP -> "nop", []
-  | NEG arg ->  "neg", [ arg ]
-  | ADD (arg1, arg2) ->  auto_suffix "add" arg2, [arg1; arg2]
-  | SUB (arg1, arg2) -> auto_suffix "sub" arg2, [arg1; arg2]
-  | XOR (arg1, arg2) ->  auto_suffix "xor" arg2, [arg1; arg2]
-  | OR (arg1, arg2) -> auto_suffix "or" arg2, [arg1; arg2]
-  | AND (arg1, arg2) -> auto_suffix "and" arg2, [arg1; arg2]
-  | CMP (arg1, arg2) -> auto_suffix "cmp" arg2, [arg1; arg2]
+let i0 b s =
+  tab b;
+  Buffer.add_string b s
 
-  | LEAVE -> "leave", []
-  | SAR (arg1, arg2) -> auto_suffix "sar" arg2, [arg1; arg2]
-  | SHR (arg1, arg2) -> auto_suffix "shr" arg2, [arg1; arg2]
-  | SAL (arg1, arg2) -> auto_suffix "sal" arg2, [arg1; arg2]
+let i1 b s x =
+  tab b;
+  Buffer.add_string b s;
+  tab b;
+  bprint_arg b x
 
-  | FISTP arg -> auto_suffix "fistp" arg, [ arg ]
+let i2 b s x y =
+  tab b;
+  Buffer.add_string b s;
+  tab b;
+  bprint_arg b x;
+  Buffer.add_char b ',';
+  Buffer.add_char b ' ';
+  bprint_arg b y
 
-  | FSTP ( Mem( REAL4, _)  as arg) -> "fstps", [arg]
-  | FSTP arg -> "fstpl", [arg]
-  | FILD (arg) -> auto_suffix "fild" arg, [ arg ]
-  | HLT -> "hlt", []
+let i1_call_jmp b s x =
+  match x with
+  (* this is the encoding of jump labels: don't use * *)
+  | Mem (_, M64 (Some (RIP, _, _), (Some _,_)))
+  | Mem (_, M32 (None, (Some _, _))) ->
+      i1 b s x
+  | Reg32 _ | Reg64 _ | Mem _ ->
+      tab b;
+      Buffer.add_string b s;
+      tab b;
+      Buffer.add_char b '*';
+      bprint_arg b x
+  | _ ->
+      i1 b s x
 
-  | FCOMPP -> "fcompp", []
-  | FCOMP ( Mem ( REAL4, _ ) as arg ) -> "fcomps", [ arg ]
-  | FCOMP arg -> "fcompl", [ arg ]
-  | FLD ( Mem( REAL4, _ ) as arg ) -> "flds", [ arg ]
-  | FLD arg -> "fldl", [ arg ]
-  | FNSTSW arg -> "fnstsw", [ arg ]
-  | FNSTCW arg -> "fnstcw", [ arg ]
-  | FLDCW arg -> "fldcw", [ arg ]
+let emit_instr b = function
+  | NOP -> i0 b "nop"
+  | NEG arg -> i1 b "neg" arg
+  | ADD (arg1, arg2) -> i2 b (auto_suffix "add" arg2) arg1 arg2
+  | SUB (arg1, arg2) -> i2 b (auto_suffix "sub" arg2) arg1 arg2
+  | XOR (arg1, arg2) -> i2 b (auto_suffix "xor" arg2) arg1 arg2
+  | OR (arg1, arg2) -> i2 b (auto_suffix "or" arg2) arg1 arg2
+  | AND (arg1, arg2) -> i2 b (auto_suffix "and" arg2) arg1 arg2
+  | CMP (arg1, arg2) -> i2 b (auto_suffix "cmp" arg2) arg1 arg2
 
-  | FCHS -> "fchs", []
-  | FABS -> "fabs", []
+  | LEAVE -> i0 b "leave"
+  | SAR (arg1, arg2) -> i2 b (auto_suffix "sar" arg2) arg1 arg2
+  | SHR (arg1, arg2) -> i2 b (auto_suffix "shr" arg2) arg1 arg2
+  | SAL (arg1, arg2) -> i2 b (auto_suffix "sal" arg2) arg1 arg2
 
-  | FADD (Mem ( (REAL8|QWORD), _) as  arg) -> "faddl", [arg]
-  | FADD (Mem ( (REAL4|DWORD), _) as  arg) -> "fadds", [arg]
+  | FISTP arg -> i1 b (auto_suffix "fistp" arg) arg
+
+  | FSTP (Mem(REAL4, _)  as arg) -> i1 b "fstps" arg
+  | FSTP arg -> i1 b "fstpl" arg
+  | FILD (arg) -> i1 b (auto_suffix "fild" arg) arg
+  | HLT -> i0 b "hlt"
+
+  | FCOMPP -> i0 b "fcompp"
+  | FCOMP (Mem (REAL4, _ ) as arg ) -> i1 b "fcomps" arg
+  | FCOMP arg -> i1 b "fcompl" arg
+  | FLD (Mem(REAL4, _ ) as arg ) -> i1 b "flds" arg
+  | FLD arg -> i1 b "fldl" arg
+  | FNSTSW arg -> i1 b "fnstsw" arg
+  | FNSTCW arg -> i1 b "fnstcw" arg
+  | FLDCW arg -> i1 b "fldcw" arg
+
+  | FCHS -> i0 b "fchs"
+  | FABS -> i0 b "fabs"
+
+  | FADD (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "faddl" arg
+  | FADD (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fadds" arg
   | FADD _ -> assert false
 
-  | FMUL (Mem ( (REAL8|QWORD), _) as  arg) -> "fmull", [arg]
-  | FMUL (Mem ( (REAL4|DWORD), _) as  arg) -> "fmuls", [arg]
+  | FMUL (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fmull" arg
+  | FMUL (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fmuls" arg
   | FMUL _ -> assert false
 
-  | FSUB (Mem ( (REAL8|QWORD), _) as  arg) -> "fsubl", [arg]
-  | FSUB (Mem ( (REAL4|DWORD), _) as  arg) -> "fsubs", [arg]
+  | FSUB (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fsubl" arg
+  | FSUB (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fsubs" arg
   | FSUB _ -> assert false
 
-  | FSUBR (Mem ( (REAL8|QWORD), _) as  arg) -> "fsubrl", [arg]
-  | FSUBR (Mem ( (REAL4|DWORD), _) as  arg) -> "fsubrs", [arg]
+  | FSUBR (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fsubrl" arg
+  | FSUBR (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fsubrs" arg
   | FSUBR _ -> assert false
 
-  | FDIV (Mem ( (REAL8|QWORD), _) as  arg) -> "fdivl", [arg]
-  | FDIV (Mem ( (REAL4|DWORD), _) as  arg) -> "fdivs", [arg]
+  | FDIV (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fdivl" arg
+  | FDIV (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fdivs" arg
   | FDIV _ -> assert false
 
-  | FDIVR (Mem ( (REAL8|QWORD), _) as  arg) -> "fdivrl", [arg]
-  | FDIVR (Mem ( (REAL4|DWORD), _) as  arg) -> "fdivrs", [arg]
+  | FDIVR (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fdivrl" arg
+  | FDIVR (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fdivrs" arg
   | FDIVR _ -> assert false
 
   (* Let's be compatible with prehistoric bugs:
      https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
   *)
-  | FSUBP (Regf (ST 0), arg2)  -> "fsubrp", [ Regf (ST 0); arg2 ]
-  | FSUBRP (Regf (ST 0), arg2)  -> "fsubp", [ Regf (ST 0); arg2 ]
-  | FDIVP (Regf (ST 0), arg2)  -> "fdivrp", [ Regf (ST 0); arg2 ]
-  | FDIVRP (Regf (ST 0), arg2)  -> "fdivp", [ Regf (ST 0); arg2 ]
+  | FSUBP (Regf (ST 0), arg2)  -> i2 b "fsubrp" (Regf (ST 0)) arg2
+  | FSUBRP (Regf (ST 0), arg2) -> i2 b "fsubp" (Regf (ST 0)) arg2
+  | FDIVP (Regf (ST 0), arg2)  -> i2 b "fdivrp" (Regf (ST 0)) arg2
+  | FDIVRP (Regf (ST 0), arg2)  -> i2 b "fdivp" (Regf (ST 0)) arg2
 
-  | FSUBP (arg1, arg2)  -> "fsubp", [ arg1; arg2 ]
-  | FSUBRP (arg1, arg2)  -> "fsubrp", [ arg1; arg2 ]
-  | FDIVP (arg1, arg2)  -> "fdivp", [ arg1; arg2 ]
-  | FDIVRP (arg1, arg2)  -> "fdivrp", [ arg1; arg2 ]
+  | FSUBP (arg1, arg2)  -> i2 b "fsubp" arg1 arg2
+  | FSUBRP (arg1, arg2)  -> i2 b "fsubrp" arg1 arg2
+  | FDIVP (arg1, arg2)  -> i2 b "fdivp" arg1 arg2
+  | FDIVRP (arg1, arg2)  -> i2 b "fdivrp" arg1 arg2
 
-  | FLD1 -> "fld1", []
-  | FPATAN -> "fpatan", []
-  | FPTAN -> "fptan", []
-  | FCOS -> "fcos", []
-  | FLDLN2 -> "fldln2", []
-  | FLDLG2 -> "fldlg2", []
-  | FXCH arg -> "fxch", [ arg ]
-  | FYL2X -> "fyl2x", []
-  | FSIN -> "fsin", []
-  | FSQRT -> "fsqrt", []
-  | FLDZ -> "fldz", []
+  | FLD1 -> i0 b "fld1"
+  | FPATAN -> i0 b "fpatan"
+  | FPTAN -> i0 b "fptan"
+  | FCOS -> i0 b "fcos"
+  | FLDLN2 -> i0 b "fldln2"
+  | FLDLG2 -> i0 b "fldlg2"
+  | FXCH arg -> i1 b "fxch" arg
+  | FYL2X -> i0 b "fyl2x"
+  | FSIN -> i0 b "fsin"
+  | FSQRT -> i0 b "fsqrt"
+  | FLDZ -> i0 b "fldz"
 
-  | FADDP (arg1, arg2)  -> "faddp", [ arg1; arg2 ]
-  | FMULP (arg1, arg2)  -> "fmulp", [ arg1; arg2 ]
+  | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
+  | FMULP (arg1, arg2)  -> i2 b "fmulp" arg1 arg2
 
-  | INC arg ->  auto_suffix "inc" arg, [ arg ]
-  | DEC arg ->  auto_suffix "dec" arg, [ arg ]
+  | INC arg -> i1 b (auto_suffix "inc" arg) arg
+  | DEC arg -> i1 b (auto_suffix "dec" arg) arg
 
-  | IMUL (arg1, None) -> auto_suffix "imul" arg1, [ arg1 ]
-  | IMUL (arg1, Some arg2) -> auto_suffix "imul" arg1, [arg1 ; arg2 ]
-  | IDIV arg ->  auto_suffix "idiv" arg, [ arg ]
+  | IMUL (arg, None) -> i1 b (auto_suffix "imul" arg) arg
+  | IMUL (arg1, Some arg2) -> i2 b (auto_suffix "imul" arg1) arg1 arg2
+  | IDIV arg -> i1 b (auto_suffix "idiv" arg) arg
 
   | MOV (
       (Imm (B64, _) as arg1),
       (Reg64 _ as arg2))
-    ->  "movabsq", [arg1; arg2]
-  | MOV (arg1, arg2) ->  auto_suffix "mov" arg2, [arg1; arg2]
+    -> i2 b "movabsq" arg1 arg2
+  | MOV (arg1, arg2) -> i2 b (auto_suffix "mov" arg2) arg1 arg2
   | MOVZX (arg1, arg2) ->
-      auto_suffix (auto_suffix "movz" arg1) arg2, [arg1; arg2]
+      i2 b (auto_suffix (auto_suffix "movz" arg1) arg2) arg1 arg2
   | MOVSX (arg1, arg2) ->
-      auto_suffix (auto_suffix "movs" arg1) arg2, [arg1; arg2]
-  | MOVSS (arg1, arg2) ->  "movss", [arg1; arg2]
-  | MOVSXD (arg1, arg2) ->  "movslq", [arg1; arg2]
+      i2 b (auto_suffix (auto_suffix "movs" arg1) arg2) arg1 arg2
+  | MOVSS (arg1, arg2) -> i2 b (auto_suffix (auto_suffix "movs" arg1) arg2) arg1 arg2
+  | MOVSXD (arg1, arg2) -> i2 b "movslq" arg1 arg2
 
-  | MOVSD (arg1, arg2) ->  "movsd", [ arg1 ; arg2 ]
-  | ADDSD (arg1, arg2) ->  "addsd", [ arg1 ; arg2 ]
-  | SUBSD (arg1, arg2) ->  "subsd", [ arg1 ; arg2 ]
-  | MULSD (arg1, arg2) ->  "mulsd", [ arg1 ; arg2 ]
-  | DIVSD (arg1, arg2) ->  "divsd", [ arg1 ; arg2 ]
-  | SQRTSD (arg1, arg2) -> "sqrtsd", [ arg1; arg2 ]
+  | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
+  | ADDSD (arg1, arg2) -> i2 b "addsd" arg1 arg2
+  | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
+  | MULSD (arg1, arg2) -> i2 b "mulsd" arg1 arg2
+  | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
+  | SQRTSD (arg1, arg2) -> i2 b "sqrtsd" arg1 arg2
   | ROUNDSD (rounding, arg1, arg2) ->
-      Printf.sprintf "roundsd.%s" (match rounding with
-            RoundDown -> "down"
-          | RoundUp -> "up"
-          | RoundTruncate -> "trunc"
-          | RoundNearest -> "near"), [ arg1; arg2 ]
-  | CVTSS2SD (arg1, arg2) ->  "cvtss2sd", [ arg1; arg2 ]
-  | CVTSD2SS (arg1, arg2) ->  "cvtsd2ss", [ arg1; arg2 ]
+      let s =
+        match rounding with
+            RoundDown -> "roundsd.down"
+          | RoundUp -> "roundsd.up"
+          | RoundTruncate -> "roundsd.trunc"
+          | RoundNearest -> "roundsd.near"
+      in
+      i2 b s arg1 arg2
+  | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
+  | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
 
-  | CVTSD2SI (arg1, arg2) ->  "cvtsd2si", [ arg1; arg2 ]
+  | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
 
-  | CVTSI2SD (arg1, arg2) -> auto_suffix "cvtsi2sd" arg1, [ arg1; arg2 ]
-  | CVTTSD2SI (arg1, arg2) -> auto_suffix "cvttsd2si" arg2, [ arg1; arg2 ]
+  | CVTSI2SD (arg1, arg2) -> i2 b (auto_suffix "cvtsi2sd" arg1) arg1 arg2
+  | CVTTSD2SI (arg1, arg2) -> i2 b (auto_suffix "cvttsd2si" arg2) arg1 arg2
 
-  | UCOMISD (arg1, arg2) ->  "ucomisd", [ arg1; arg2 ]
-  | COMISD (arg1, arg2) ->  "comisd", [ arg1; arg2 ]
+  | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
+  | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
 
-  | CALL arg  ->  "call", [ arg ]
-  | JMP arg ->  "jmp", [ arg ]
-  | RET ->  "ret", []
-  | PUSH arg -> auto_suffix "push" arg, [ arg ]
-  | POP  arg -> auto_suffix "pop" arg, [ arg ]
+  | CALL arg  -> i1_call_jmp b "call" arg
+  | JMP arg -> i1_call_jmp b "jmp" arg
+  | RET ->  i0 b "ret"
+  | PUSH arg -> i1 b (auto_suffix "push" arg) arg
+  | POP  arg -> i1 b (auto_suffix "pop" arg) arg
 
-  | TEST (arg1, arg2) ->  auto_suffix "test" arg2, [ arg1; arg2]
+  | TEST (arg1, arg2) -> i2 b (auto_suffix "test" arg2) arg1 arg2
   | SET (condition, arg) ->
-      Printf.sprintf  "set%s" (string_of_condition condition), [ arg ]
+      i1 b (Printf.sprintf  "set%s" (string_of_condition condition)) arg
   | J (condition, arg) ->
-      Printf.sprintf  "j%s" (string_of_condition condition), [arg]
+      i1 b (Printf.sprintf  "j%s" (string_of_condition condition)) arg
 
 
   | CMOV (condition, arg1, arg2) ->
-      Printf.sprintf "cmov%s" (string_of_condition condition), [ arg1; arg2 ]
-  | XORPD (arg1, arg2) ->  "xorpd", [ arg1; arg2 ]
-  | ANDPD (arg1, arg2) ->  "andpd", [ arg1; arg2 ]
-  | MOVLPD (arg1, arg2) ->  "movlpd", [arg1; arg2]
-  | MOVAPD (arg1, arg2) ->  "movapd", [arg1; arg2]
-  | LEA (arg1, arg2) ->  auto_suffix "lea" arg2, [ arg1; arg2 ]
-  | CQTO ->  "cqto", []
-  | CDQ -> "cltd", []
+      i2 b (Printf.sprintf "cmov%s" (string_of_condition condition))
+        arg1 arg2
+  | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
+  | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
+  | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
+  | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
+  | LEA (arg1, arg2) -> i2 b (auto_suffix "lea" arg2) arg1 arg2
+  | CQTO ->  i0 b "cqto"
+  | CDQ -> i0 b "cltd"
 
-  | XCHG (arg1, arg2) -> "xchg", [ arg1; arg2 ]
-  | BSWAP arg -> "bswap", [ arg ]
+  | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
+  | BSWAP arg -> i1 b "bswap" arg
 
 let bprint_instr_name b instr =
   match instr with
@@ -473,9 +489,7 @@ let bprint_instr_name b instr =
         Printf.bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
 
   | Ins instr ->
-      let ins, args = split_instr instr in
-      bprint b ins;
-      bprint_args b instr args
+      emit_instr b instr
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
