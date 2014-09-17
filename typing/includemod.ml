@@ -61,12 +61,12 @@ let value_descriptions env cxt subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations env cxt subst id decl1 decl2 =
+let type_declarations env ?(old_env=env) cxt subst id decl1 decl2 =
   Env.mark_type_used env (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
   let err = Includecore.type_declarations env (Ident.name id) decl1 id decl2 in
   if err <> [] then
-    raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
+    raise(Error[cxt, old_env, Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between extension constructors *)
 
@@ -78,19 +78,20 @@ let extension_constructors env cxt subst id ext1 ext2 =
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations env cxt subst id decl1 decl2 =
+let class_type_declarations ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, env, Class_type_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, old_env,
+                  Class_type_declarations(id, decl1, decl2, reason)])
 
-let class_declarations env cxt subst id decl1 decl2 =
+let class_declarations ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, env, Class_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, old_env, Class_declarations(id, decl1, decl2, reason)])
 
 (* Expand a module type identifier when possible *)
 
@@ -314,7 +315,7 @@ and signatures env cxt subst sig1 sig2 =
         begin match unpaired with
             [] ->
               let cc =
-                signature_components new_env cxt subst (List.rev paired)
+                signature_components env new_env cxt subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion cc id_pos_list
@@ -363,36 +364,38 @@ and signatures env cxt subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components env cxt subst = function
+and signature_components old_env env cxt subst paired =
+  let comps_rec rem = signature_components old_env env cxt subst rem in
+  match paired with
     [] -> []
   | (Sig_value(id1, valdecl1), Sig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env cxt subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
-        Val_prim p -> signature_components env cxt subst rem
-      | _ -> (pos, cc) :: signature_components env cxt subst rem
+        Val_prim p -> comps_rec rem
+      | _ -> (pos, cc) :: comps_rec rem
       end
   | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
-      type_declarations env cxt subst id1 tydecl1 tydecl2;
-      signature_components env cxt subst rem
+      type_declarations ~old_env env cxt subst id1 tydecl1 tydecl2;
+      comps_rec rem
   | (Sig_typext(id1, ext1, _), Sig_typext(id2, ext2, _), pos)
     :: rem ->
       extension_constructors env cxt subst id1 ext1 ext2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
       let cc =
         modtypes env (Module id1::cxt) subst
           (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
-      (pos, cc) :: signature_components env cxt subst rem
+      (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      comps_rec rem
   | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
-      class_declarations env cxt subst id1 decl1 decl2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      class_declarations ~old_env env cxt subst id1 decl1 decl2;
+      (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_class_type(id1, info1, _),
      Sig_class_type(id2, info2, _), pos) :: rem ->
-      class_type_declarations env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      class_type_declarations ~old_env env cxt subst id1 info1 info2;
+      comps_rec rem
   | _ ->
       assert false
 
