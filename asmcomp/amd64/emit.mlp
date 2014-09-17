@@ -204,8 +204,8 @@ let reg_low_16_name = Array.map (fun r -> Reg16 r)
        R12W; R13W; R10W; R11W; BP; |]
 
 let reg_low_32_name = Array.map (fun r -> Reg32 r)
-    [| _eax; _ebx; _edi; _esi; _edx; _ecx; _r8d; _r9d;
-       _r12d; _r13d; _r10d; _r11d; _ebp; |]
+    [| EAX; EBX; EDI; ESI; EDX; ECX; R8D; R9D;
+       R12D; R13D; R10D; R11D; EBP; |]
 
 let emit_subreg tbl typ r =
   match r.loc with

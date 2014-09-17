@@ -170,6 +170,14 @@ let string_of_register32 reg32 =
   | ECX -> "ecx"
   | ESP -> "esp"
   | EBP -> "ebp"
+  | R8D -> "r8d"
+  | R9D -> "r9d"
+  | R10D -> "r10d"
+  | R11D -> "r11d"
+  | R12D -> "r12d"
+  | R13D -> "r13d"
+  | R14D -> "r14d"
+  | R15D -> "r15d"
 
 let string_of_registerf regf =
   match regf with

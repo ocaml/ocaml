@@ -78,6 +78,7 @@ type register16 =
 
 type register32 =
   | EAX | EBX | EDI | ESI | EDX | ECX | EBP | ESP
+  | R8D | R9D | R10D | R11D | R12D | R13D | R14D | R15D
 
 type registerf = XMM of int | TOS | ST of int
 
