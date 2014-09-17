@@ -298,7 +298,8 @@ module DSL32 = struct
   let abs_ s = (s, None)
 
   let _offset l = Imm (B32, (Some l,0L))
-  let _l l = Rel (B32, (Some (l, None), 0L))
+
+  let rel32 s = Rel (B32, (Some s,0L))
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset reg =
     Mem (typ, M32(Some (reg, scale, base), (sym, Int64.of_int offset)))
