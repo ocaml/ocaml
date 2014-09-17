@@ -300,7 +300,7 @@ let split_instr = function
   | FDIVR (Mem ( (REAL4|DWORD), _) as  arg) -> "fdivrs", [arg]
   | FDIVR _ -> assert false
 
-  (* Let's be compatible with prehistoric bugs (part2):
+  (* Let's be compatible with prehistoric bugs:
      https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
   *)
   | FSUBP (Regf (ST 0), arg2)  -> "fsubrp", [ Regf (ST 0); arg2 ]

@@ -269,20 +269,15 @@ module INS32 = struct
   let cltd () = emit CDQ
 
 
-  (* Let's be compatible with prehistoric bugs (part1) :
+  (* We don't maintain the prehistoric bug here:
      https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
-  *)
-  let fix_bug f1 f2 = function
-    | (Regf (ST 0), (Regf (ST _) as arg2)) -> emit (f2 (Regf (ST 0), arg2))
-    | (arg1, arg2) -> emit (f1 (arg1, arg2))
-  let fix_bug2 f1 f2 = fix_bug f1 f2, fix_bug f2 f1
-  let fsubp, fsubrp = fix_bug2
-      (fun (arg1,arg2) -> FSUBP (arg1,arg2))
-      (fun (arg1,arg2) -> FSUBRP (arg1,arg2))
-  let fdivp, fdivrp = fix_bug2
-      (fun (arg1,arg2) -> FDIVP (arg1,arg2))
-      (fun (arg1,arg2) -> FDIVRP (arg1,arg2))
 
+     This is managed by the Intel_gas.
+  *)
+  let fsubp (arg1, arg2) = emit (FSUBP (arg1, arg2))
+  let fsubrp (arg1, arg2) = emit (FSUBRP (arg1, arg2))
+  let fdivp (arg1, arg2) = emit (FDIVP (arg1, arg2))
+  let fdivrp (arg1, arg2) = emit (FDIVRP (arg1, arg2))
 end
 
 module DSL32 = struct

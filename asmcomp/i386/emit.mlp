@@ -322,13 +322,14 @@ let instr_for_floatop_reversed = function
   | Ispecific Idivfrev -> I.fdivl
   | _ -> fatal_error "Emit_i386: instr_for_floatop_reversed"
 
-let instr_for_floatop_pop = function
+
+let instr_for_floatop_reversed_pop = function
   | Iaddf -> I.faddp
-  | Isubf -> I.fsubp
+  | Isubf -> I.fsubrp
   | Imulf -> I.fmulp
-  | Idivf -> I.fdivp
-  | Ispecific Isubfrev -> I.fsubrp
-  | Ispecific Idivfrev -> I.fdivrp
+  | Idivf -> I.fdivrp
+  | Ispecific Isubfrev -> I.fsubp
+  | Ispecific Idivfrev -> I.fdivp
   | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
 
 let instr_for_floatarithmem double = function
@@ -696,7 +697,7 @@ let emit_instr fallthrough i =
       begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
         (true, true) ->
           (* both operands on top of FP stack *)
-          instr_for_floatop_pop floatop (st0, st1)
+          instr_for_floatop_reversed_pop floatop (st0, st1)
       | (true, false) ->
           (* first operand on stack *)
           instr_for_floatop floatop (reg i.arg.(1))
