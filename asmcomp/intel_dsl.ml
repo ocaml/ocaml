@@ -12,16 +12,28 @@
 
 (** Helpers for Intel code generators *)
 
+(* The DSL* modules expose functions to emit x86/x86_64 instructions
+   using a syntax close to AT&T (in particular, arguments are reversed compared
+   to the official Intel syntax).
+
+   Some notes:
+
+     - Unary floating point instructions such as fadd/fmul/fstp/fld/etc come with a single version
+       supporting both the single and double precision instructions.  (As with Intel syntax.)
+
+     - A legacy bug in GAS:
+       https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
+       is not replicated here.  It is managed by Intel_gas.
+*)
+
+
 open Intel_ast
 open Intel_proc
 
-module ForceMem = struct
+module Check = struct
 
-  (* These functions are used to force the data_type on memory locations
-     for some instructions, in case they have been forgotten. For example,
-     "movl" will force DWORD type on both its arguments. This is needed
-     since MASM requires to have data_types on memory accesses.
-  *)
+  (* These functions are used to check the datatype on instruction arguments
+     against a gas-style instruction suffix. *)
 
   let check ty = function
     | Mem (dtype, _) -> assert(dtype = ty)
@@ -34,34 +46,18 @@ module ForceMem = struct
         | (Reg8 _ | Reg16 _ | Reg32 _ | Reg64 _), REAL8 -> assert false
         | _ -> ()
 
-  let force_mem ty = function
-    | Mem (NO, mem) ->
-        Printf.printf "%s %s\n%!" (string_of_datatype ty) (Printexc.raw_backtrace_to_string (Printexc.get_callstack 10));
-        Mem (ty, mem) (* This branch seems to be currently dead code (x64 at least).  *)
-    | arg -> check ty arg; arg
-
-  let force_real4 = function
-    | Mem ((NO | DWORD), mem) -> Mem (REAL4, mem)
-    | arg -> check REAL4 arg; arg
-
-  let force_real8 = function
-    | Mem ((NO | QWORD), mem) -> Mem (REAL8, mem)
-    | arg -> check REAL8 arg; arg
-
-  let force_byte = force_mem BYTE
-  let force_word = force_mem WORD
-  let force_dword = force_mem DWORD
-  let force_qword = force_mem QWORD
-  let force_option force = function
+  let byte x = check BYTE x; x
+  let word x = check WORD x; x
+  let dword x = check DWORD x; x
+  let qword x = check QWORD x; x
+  let option chk = function
       None -> None
-    | Some arg -> Some (force arg)
+    | Some arg -> Some (chk arg)
 end
 
-(* A DSL to write GAS-like assembly code in OCAML. It is splitted into
-   three modules : DSL (the common parts), DSL32 (specialized for x86)
-   and DSL64 (specialized for amd64). *)
 module DSL = struct
 
+(*
   let _eax = R32 RAX
   let _ebx = R32 RBX
   let _edi = R32 RDI
@@ -78,6 +74,7 @@ module DSL = struct
   let _r13d = R32 R13
   let _r14d = R32 R14
   let _r15d = R32 R15
+*)
 
 
   (* Override emitaux.ml *)
@@ -149,7 +146,7 @@ end
 
 module INS = struct
 
-  open ForceMem
+  open Check
 
   (* eta-expand to create ref everytime *)
   let jmp arg = emit (JMP arg)
@@ -172,83 +169,69 @@ module INS = struct
   let nop () = emit NOP
 
   (* Word mnemonics *)
-  let movw (arg1, arg2) = emit (MOV (force_word arg1, force_word arg2))
+  let movw (arg1, arg2) = emit (MOV (word arg1, word arg2))
 
   (* Byte mnemonics *)
-  let decb arg = emit (DEC (force_byte arg))
-  let cmpb (x, y) = emit (CMP (force_byte x, force_byte y))
-  let movb (x, y) = emit (MOV (force_byte x, force_byte y))
-  let andb (x, y)= emit (AND (force_byte x, force_byte y))
-  let xorb (x, y)= emit (XOR (force_byte x, force_byte y))
-  let testb (x, y)= emit (TEST (force_byte x, force_byte y))
+  let decb arg = emit (DEC (byte arg))
+  let cmpb (x, y) = emit (CMP (byte x, byte y))
+  let movb (x, y) = emit (MOV (byte x, byte y))
+  let andb (x, y)= emit (AND (byte x, byte y))
+  let xorb (x, y)= emit (XOR (byte x, byte y))
+  let testb (x, y)= emit (TEST (byte x, byte y))
 
   (* Long-word mnemonics *)
-  let movl (x, y) = emit (MOV (force_dword x, force_dword y))
+  let movl (x, y) = emit (MOV (dword x, dword y))
 end
 
 module INS32 = struct
 
-  open ForceMem
-
+  open Check
   include INS
 
   (* Long-word mnemonics *)
-  let addl (x, y) = emit (ADD (force_dword x, force_dword y))
-  let subl (x, y) = emit (SUB (force_dword x, force_dword y))
-  let andl (x, y) = emit (AND (force_dword x, force_dword y))
-  let orl (x, y) = emit (OR (force_dword x, force_dword y))
-  let xorl (x, y) = emit (XOR (force_dword x, force_dword y))
-  let cmpl (x, y) = emit (CMP (force_dword x, force_dword y))
-  let testl (x, y) = emit (TEST (force_dword x, force_dword y))
+  let addl (x, y) = emit (ADD (dword x, dword y))
+  let subl (x, y) = emit (SUB (dword x, dword y))
+  let andl (x, y) = emit (AND (dword x, dword y))
+  let orl (x, y) = emit (OR (dword x, dword y))
+  let xorl (x, y) = emit (XOR (dword x, dword y))
+  let cmpl (x, y) = emit (CMP (dword x, dword y))
+  let testl (x, y) = emit (TEST (dword x, dword y))
 
-  let movzbl (x, y) = emit (MOVZX (force_byte x, force_dword y))
-  let movsbl (x, y) = emit (MOVSX (force_byte x, force_dword y))
-  let movzwl (x, y) = emit (MOVZX (force_word x, force_dword y))
-  let movswl (x, y) = emit (MOVSX (force_word x, force_dword y))
+  let movzbl (x, y) = emit (MOVZX (byte x, dword y))
+  let movsbl (x, y) = emit (MOVSX (byte x, dword y))
+  let movzwl (x, y) = emit (MOVZX (word x, dword y))
+  let movswl (x, y) = emit (MOVSX (word x, dword y))
 
-  let sall (arg1, arg2) = emit (SAL  (arg1, force_dword arg2))
-  let sarl (arg1, arg2) = emit (SAR  (arg1, force_dword arg2))
-  let shrl (arg1, arg2) = emit (SHR  (arg1, force_dword arg2))
-  let imull (arg1, arg2) =
-    emit (IMUL (force_dword arg1, force_option force_dword arg2))
+  let sall (arg1, arg2) = emit (SAL  (arg1, dword arg2))
+  let sarl (arg1, arg2) = emit (SAR  (arg1, dword arg2))
+  let shrl (arg1, arg2) = emit (SHR  (arg1, dword arg2))
+  let imull (arg1, arg2) = emit (IMUL (dword arg1, option dword arg2))
 
-  let idivl arg = emit (IDIV (force_dword arg))
-  let popl arg = emit (POP (force_dword arg))
-  let pushl arg = emit (PUSH (force_dword arg))
-  let decl arg = emit (DEC (force_dword arg))
-  let incl arg = emit (INC (force_dword arg))
-  let leal (arg1, arg2) = emit (LEA (arg1, force_dword arg2))
+  let idivl arg = emit (IDIV (dword arg))
+  let popl arg = emit (POP (dword arg))
+  let pushl arg = emit (PUSH (dword arg))
+  let decl arg = emit (DEC (dword arg))
+  let incl arg = emit (INC (dword arg))
+  let leal (arg1, arg2) = emit (LEA (arg1, dword arg2))
 
-  let fistpl arg = emit (FISTP (force_dword arg))
-  let fildl arg = emit (FILD (force_dword arg))
+  let fistpl arg = emit (FISTP (dword arg))
+  let fildl arg = emit (FILD (dword arg))
 
   let fchs () = emit FCHS
   let fabs () = emit FABS
 
-  let fadds x = emit (FADD (force_real4 x))
-  let faddl x = emit (FADD (force_real8 x))
-
-  let fsubs x = emit (FSUB (force_real4 x))
-  let fsubl x = emit (FSUB (force_real8 x))
-
-  let fdivs x = emit (FDIV (force_real4 x))
-  let fdivl x = emit (FDIV (force_real8 x))
-
-  let fmuls x = emit (FMUL (force_real4 x))
-  let fmull x = emit (FMUL (force_real8 x))
-
-  let fsubrs x = emit (FSUB (force_real4 x))
-  let fsubrl x = emit (FSUB (force_real8 x))
-
-  let fdivrs x = emit (FDIV (force_real4 x))
-  let fdivrl x = emit (FDIV (force_real8 x))
+  let fadd x = emit (FADD x)
+  let fsub x = emit (FSUB x)
+  let fdiv x = emit (FDIV x)
+  let fmul x = emit (FMUL x)
+  let fsubr x = emit (FSUB x)
+  let fdivr x = emit (FDIV x)
 
   let faddp (arg1, arg2) = emit (FADDP (arg1, arg2))
   let fmulp (arg1, arg2) = emit (FMULP (arg1, arg2))
   let fcompp () = emit FCOMPP
-  let fcompl arg = emit (FCOMP (force_real8 arg))
-  let fldl arg = emit (FLD (force_real8 arg))
-  let flds arg = emit (FLD (force_real4 arg))
+  let fcomp arg = emit (FCOMP arg)
+  let fld arg = emit (FLD arg)
   let fnstsw arg = emit (FNSTSW arg)
   let fld1 () = emit FLD1
   let fpatan () = emit FPATAN
@@ -260,20 +243,12 @@ module INS32 = struct
   let fyl2x () = emit FYL2X
   let fsin () = emit FSIN
   let fsqrt () = emit FSQRT
-  let fstps arg = emit (FSTP (force_real4 arg))
   let fstp arg = emit (FSTP arg)
-  let fstpl arg = emit (FSTP (force_real8 arg))
   let fldz () = emit FLDZ
   let fnstcw arg = emit (FNSTCW arg)
   let fldcw arg = emit (FLDCW arg)
   let cltd () = emit CDQ
 
-
-  (* We don't maintain the prehistoric bug here:
-     https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
-
-     This is managed by the Intel_gas.
-  *)
   let fsubp (arg1, arg2) = emit (FSUBP (arg1, arg2))
   let fsubrp (arg1, arg2) = emit (FSUBRP (arg1, arg2))
   let fdivp (arg1, arg2) = emit (FDIVP (arg1, arg2))
@@ -286,12 +261,12 @@ module DSL32 = struct
 
   let _label s = directive (NewLabel (s, DWORD))
 
-  let eax = Reg32 (R32 RAX)
-  let ebx = Reg32 (R32 RBX)
-  let ecx = Reg32 (R32 RCX)
-  let edx = Reg32 (R32 RDX)
-  let ebp = Reg32 (R32 RBP)
-  let esp = Reg32 (R32 RSP)
+  let eax = Reg32 EAX
+  let ebx = Reg32 EBX
+  let ecx = Reg32 ECX
+  let edx = Reg32 EDX
+  let ebp = Reg32 EBP
+  let esp = Reg32 ESP
 
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
@@ -308,39 +283,35 @@ end
 
 
 module INS64 = struct
+
+  open Check
   include INS
 
-  open ForceMem
+  let addq (x, y) = emit (ADD (qword x, qword y))
+  let subq (x, y) = emit (SUB (qword x, qword y))
+  let andq (x, y) = emit (AND (qword x, qword y))
+  let orq (x, y) = emit (OR (qword x, qword y))
+  let xorq (x, y) = emit (XOR (qword x, qword y))
+  let cmpq (x, y) = emit (CMP (qword x, qword y))
+  let testq (x, y) = emit (TEST (qword x, qword y))
 
-  (* Qword mnemonics *)
-  let addq (x, y) = emit (ADD (force_qword x, force_qword y))
-  let subq (x, y) = emit (SUB (force_qword x, force_qword y))
-  let andq (x, y) = emit (AND (force_qword x, force_qword y))
-  let orq (x, y) = emit (OR (force_qword x, force_qword y))
-  let xorq (x, y) = emit (XOR (force_qword x, force_qword y))
-  let cmpq (x, y) = emit (CMP (force_qword x, force_qword y))
-  let testq (x, y) = emit (TEST (force_qword x, force_qword y))
+  let movq (x, y) = emit (MOV (qword x, qword y))
 
-  let movq (x, y) = emit (MOV (force_qword x, force_qword y))
+  let movzbq (x, y) = emit (MOVZX (byte x, qword y))
+  let movsbq (x, y) = emit (MOVSX (byte x, qword y))
+  let movzwq (x, y) = emit (MOVZX (word x, qword y))
+  let movswq (x, y) = emit (MOVSX (word x, qword y))
 
-  let movzbq (x, y) = emit (MOVZX (force_byte x, force_qword y))
-  let movsbq (x, y) = emit (MOVSX (force_byte x, force_qword y))
-  let movzwq (x, y) = emit (MOVZX (force_word x, force_qword y))
-  let movswq (x, y) = emit (MOVSX (force_word x, force_qword y))
+  let idivq arg = emit (IDIV (qword arg))
 
-  let idivq arg = emit (IDIV (force_qword arg))
+  let salq (arg1, arg2) = emit (SAL (arg1, qword arg2))
+  let sarq (arg1, arg2) = emit (SAR (arg1, qword arg2))
+  let shrq (arg1, arg2) = emit (SHR (arg1, qword arg2))
+  let imulq (arg1, arg2) = emit (IMUL (qword arg1, option qword arg2))
 
-  let salq (arg1, arg2) = emit (SAL (arg1, force_qword arg2))
-  let sarq (arg1, arg2) = emit (SAR (arg1, force_qword arg2))
-  let shrq (arg1, arg2) = emit (SHR (arg1, force_qword arg2))
-  let imulq (arg1, arg2) =
-    emit (IMUL (force_qword arg1, force_option force_qword arg2))
-
-  let popq arg = emit (POP (force_qword arg))
-  let pushq arg = emit (PUSH (force_qword arg))
-  let leaq (arg1, arg2) = emit (LEA (arg1, force_qword arg2))
-
-
+  let popq arg = emit (POP (qword arg))
+  let pushq arg = emit (PUSH (qword arg))
+  let leaq (arg1, arg2) = emit (LEA (arg1, qword arg2))
 
   let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
   let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
@@ -351,7 +322,7 @@ module INS64 = struct
       | Imm(_, n) -> Imm(B64,n)
       | _ -> assert false
     in
-    emit (MOV  (arg1, force_qword arg2))
+    emit (MOV  (arg1, qword arg2))
   let xorpd (arg1, arg2) = emit (XORPD  (arg1, arg2))
   let andpd (arg1, arg2) = emit (ANDPD  (arg1, arg2))
 
@@ -369,12 +340,10 @@ module INS64 = struct
 
   let cqto () = emit CQTO
 
-  let incq arg = emit (INC (force_qword arg))
-  let decq arg = emit (DEC (force_qword arg))
+  let incq arg = emit (INC (qword arg))
+  let decq arg = emit (DEC (qword arg))
   let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
   let bswap arg = emit (BSWAP arg)
-
-
 end
 
 module DSL64 = struct

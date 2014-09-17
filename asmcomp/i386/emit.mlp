@@ -1,4 +1,4 @@
-# 2 "asmcomp/i386/emit.mlp"
+#2 "asmcomp/i386/emit.mlp"
 (***********************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
@@ -148,7 +148,7 @@ let emit_Llabel fallthrough lbl =
 
 (* Output a pseudo-register *)
 
-let int_reg_name =  [| _eax; _ebx; _ecx; _edx; _esi; _edi; _ebp  |]
+let int_reg_name =  [| EAX; EBX; ECX; EDX; ESI; EDI; EBP  |]
 
 let float_reg_name = [| TOS |]
 
@@ -165,10 +165,10 @@ let reg = function
       sym32 "caml_extra_params" ~ofs:(n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr REAL8 ofs _esp
+      mem_ptr REAL8 ofs ESP
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr DWORD ofs _esp
+      mem_ptr DWORD ofs ESP
   | { loc = Unknown } ->
       fatal_error "Emit_i386.reg"
 
@@ -305,21 +305,21 @@ let unary_instr_for_floatop = function
   | _ -> fatal_error "Emit_i386: unary_instr_for_floatop"
 
 let instr_for_floatop = function
-  | Iaddf -> I.faddl
-  | Isubf -> I.fsubl
-  | Imulf -> I.fmull
-  | Idivf -> I.fdivl
-  | Ispecific Isubfrev -> I.fsubrl
-  | Ispecific Idivfrev -> I.fdivrl
+  | Iaddf -> I.fadd
+  | Isubf -> I.fsub
+  | Imulf -> I.fmul
+  | Idivf -> I.fdiv
+  | Ispecific Isubfrev -> I.fsubr
+  | Ispecific Idivfrev -> I.fdivr
   | _ -> fatal_error "Emit_i386: instr_for_floatop"
 
 let instr_for_floatop_reversed = function
-  | Iaddf -> I.faddl
-  | Isubf -> I.fsubrl
-  | Imulf -> I.fmull
-  | Idivf -> I.fdivrl
-  | Ispecific Isubfrev -> I.fsubl
-  | Ispecific Idivfrev -> I.fdivl
+  | Iaddf -> I.fadd
+  | Isubf -> I.fsubr
+  | Imulf -> I.fmul
+  | Idivf -> I.fdivr
+  | Ispecific Isubfrev -> I.fsub
+  | Ispecific Idivfrev -> I.fdiv
   | _ -> fatal_error "Emit_i386: instr_for_floatop_reversed"
 
 
@@ -332,13 +332,13 @@ let instr_for_floatop_reversed_pop = function
   | Ispecific Idivfrev -> I.fdivp
   | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
 
-let instr_for_floatarithmem double = function
-  | Ifloatadd -> if double then I.faddl else I.fadds
-  | Ifloatsub -> if double then I.fsubl else I.fsubs
-  | Ifloatsubrev -> if double then I.fsubrl else I.fsubrs
-  | Ifloatmul -> if double then I.fmull else I.fmuls
-  | Ifloatdiv -> if double then I.fdivl else I.fdivs
-  | Ifloatdivrev -> if double then I.fdivrl else I.fdivrs
+let instr_for_floatarithmem = function
+  | Ifloatadd -> I.fadd
+  | Ifloatsub -> I.fsub
+  | Ifloatsubrev -> I.fsubr
+  | Ifloatmul -> I.fmul
+  | Ifloatdiv -> I.fdiv
+  | Ifloatdivrev -> I.fdivr
 
 let name_for_cond_branch = function
   | Isigned Ceq   -> E   | Isigned Cne   -> NE
@@ -385,15 +385,15 @@ let emit_float_test cmp neg arg lbl =
         cmp
     | (true, false) ->
         (* first arg on top of FP stack *)
-        I.fcompl (reg arg.(1));
+        I.fcomp (reg arg.(1));
         cmp
     | (false, true) ->
         (* second arg on top of FP stack *)
-        I.fcompl (reg arg.(0));
+        I.fcomp (reg arg.(0));
         Cmm.swap_comparison cmp
     | (false, false) ->
-        I.fldl    (reg arg.(0));
-        I.fcompl  (reg arg.(1));
+        I.fld     (reg arg.(0));
+        I.fcomp   (reg arg.(1));
         cmp
   in
   I.fnstsw (Reg16 AX);
@@ -499,12 +499,12 @@ let emit_instr fallthrough i =
       if src.loc <> dst.loc then begin
         if src.typ = Float then
           if is_tos src then
-            I.fstpl (reg dst)
+            I.fstp (reg dst)
           else if is_tos dst then
-            I.fldl (reg src)
+            I.fld (reg src)
           else begin
-            I.fldl  (reg src);
-            I.fstpl (reg dst)
+            I.fld  (reg src);
+            I.fstp (reg dst)
           end
         else
           I.movl (reg src, reg dst)
@@ -528,7 +528,7 @@ let emit_instr fallthrough i =
           I.fld1 (); I.fchs ()
       | _ ->
           let lbl = add_float_constant f in
-          I.fldl (mem_sym REAL8 (emit_label lbl))
+          I.fld (mem_sym REAL8 (emit_label lbl))
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -595,9 +595,9 @@ let emit_instr fallthrough i =
       | Sixteen_signed ->
           I.movswl (addressing addr WORD i 0, reg dest)
       | Single ->
-          I.flds (addressing addr REAL4 i 0)
+          I.fld (addressing addr REAL4 i 0)
       | Double | Double_u ->
-          I.fldl (addressing addr REAL8 i 0)
+          I.fld (addressing addr REAL8 i 0)
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
@@ -609,17 +609,17 @@ let emit_instr fallthrough i =
           I.movw (reg16 i.arg.(0), addressing addr WORD i 1)
       | Single ->
           if is_tos i.arg.(0) then
-            I.fstps (addressing addr REAL4 i 1)
+            I.fstp (addressing addr REAL4 i 1)
           else begin
-            I.fldl (reg i.arg.(0));
-            I.fstps (addressing addr REAL4 i 1)
+            I.fld (reg i.arg.(0));
+            I.fstp (addressing addr REAL4 i 1)
           end
       | Double | Double_u ->
           if is_tos i.arg.(0) then
-            I.fstpl (addressing addr REAL8 i 1)
+            I.fstp (addressing addr REAL8 i 1)
           else begin
-            I.fldl (reg i.arg.(0));
-            I.fstpl (addressing addr REAL8 i 1)
+            I.fld (reg i.arg.(0));
+            I.fstp (addressing addr REAL8 i 1)
           end
       end
   | Lop(Ialloc n) ->
@@ -633,7 +633,7 @@ let emit_instr fallthrough i =
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.leal  (mem_ptr NO 4 _eax, reg i.res.(0));
+        I.leal  (mem_ptr NO 4 EAX, reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -648,7 +648,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leal (mem_ptr NO 4 _eax, reg i.res.(0))
+        I.leal (mem_ptr NO 4 EAX, reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpl (reg i.arg.(1), reg i.arg.(0));
@@ -690,7 +690,7 @@ let emit_instr fallthrough i =
       instr_for_intop op (int n, reg i.res.(0))
   | Lop(Inegf | Iabsf as floatop) ->
       if not (is_tos i.arg.(0)) then
-        I.fldl (reg i.arg.(0));
+        I.fld (reg i.arg.(0));
       unary_instr_for_floatop floatop
   | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
         as floatop) ->
@@ -706,7 +706,7 @@ let emit_instr fallthrough i =
           instr_for_floatop_reversed floatop (reg i.arg.(0))
       | (false, false) ->
           (* both operands in memory *)
-          I.fldl (reg i.arg.(0));
+          I.fld (reg i.arg.(0));
           instr_for_floatop floatop (reg i.arg.(1))
       end
   | Lop(Ifloatofint) ->
@@ -715,28 +715,28 @@ let emit_instr fallthrough i =
           I.fildl (reg i.arg.(0))
       | _ ->
           I.pushl (reg i.arg.(0));
-          I.fildl (mem_ptr DWORD 0 _esp);
+          I.fildl (mem_ptr DWORD 0 ESP);
           I.addl (int 4, esp)
       end
   | Lop(Iintoffloat) ->
       if not (is_tos i.arg.(0)) then
-        I.fldl (reg i.arg.(0));
+        I.fld (reg i.arg.(0));
       stack_offset := !stack_offset - 8;
       I.subl (int 8, esp);
       cfi_adjust_cfa_offset 8;
-      I.fnstcw (mem_ptr NO 4 _esp);
-      I.movw (mem_ptr WORD 4 _esp, Reg16 AX);
+      I.fnstcw (mem_ptr NO 4 ESP);
+      I.movw (mem_ptr WORD 4 ESP, Reg16 AX);
       I.movb (int 12, Reg8 AH);
-      I.movw (Reg16 AX, mem_ptr WORD 0 _esp);
-      I.fldcw (mem_ptr NO 0 _esp);
+      I.movw (Reg16 AX, mem_ptr WORD 0 ESP);
+      I.fldcw (mem_ptr NO 0 ESP);
       begin match i.res.(0).loc with
       | Stack _ ->
           I.fistpl (reg i.res.(0))
       | _ ->
-          I.fistpl (mem_ptr DWORD 0 _esp);
-          I.movl (mem_ptr DWORD 0 _esp, reg i.res.(0))
+          I.fistpl (mem_ptr DWORD 0 ESP);
+          I.movl (mem_ptr DWORD 0 ESP, reg i.res.(0))
       end;
-      I.fldcw (mem_ptr NO 4 _esp);
+      I.fldcw (mem_ptr NO 4 ESP);
       I.addl (int 8, esp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
@@ -757,12 +757,12 @@ let emit_instr fallthrough i =
           {loc = Reg _; typ = Float} ->
             I.subl (int 8, esp);
             cfi_adjust_cfa_offset 8;
-            I.fstpl (mem_ptr REAL8 0 _esp);
+            I.fstp (mem_ptr REAL8 0 ESP);
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
             let ofs = slot_offset sl 1 in
-            I.pushl (mem_ptr DWORD (ofs + 4) _esp);
-            I.pushl (mem_ptr DWORD (ofs + 4) _esp);
+            I.pushl (mem_ptr DWORD (ofs + 4) ESP);
+            I.pushl (mem_ptr DWORD (ofs + 4) ESP);
             cfi_adjust_cfa_offset 8;
             stack_offset := !stack_offset + 8
         | _ ->
@@ -790,14 +790,14 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset + 8
   | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
       if not (is_tos i.arg.(0)) then
-        I.fldl (reg i.arg.(0));
-      instr_for_floatarithmem double op
+        I.fld (reg i.arg.(0));
+      instr_for_floatarithmem op
           (addressing addr
              (if double then REAL8 else REAL4) i 1)
   | Lop(Ispecific(Ifloatspecial s)) ->
       (* Push args on float stack if necessary *)
       for k = 0 to Array.length i.arg - 1 do
-        if not (is_tos i.arg.(k)) then I.fldl (reg i.arg.(k))
+        if not (is_tos i.arg.(k)) then I.fld (reg i.arg.(k))
       done;
       (* Fix-up for binary instrs whose args were swapped *)
       if Array.length i.arg = 2 && is_tos i.arg.(1) then

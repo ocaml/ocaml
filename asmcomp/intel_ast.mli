@@ -76,9 +76,8 @@ type register16 =
   | AX | BX | DI | SI | DX | CX | SP | BP
   | R8W | R9W | R10W | R11W | R12W | R13W | R14W | R15W
 
-type register32 = R32 of register64
-(*    EAX | EBX | EDI | ESI | EDX | ECX | R8D | R9D
-      | R10D | R11D | EBP | R12D | R13D | R14D | R15D | ESP *)
+type register32 =
+  | EAX | EBX | EDI | ESI | EDX | ECX | EBP | ESP
 
 type registerf = XMM of int | TOS | ST of int
 

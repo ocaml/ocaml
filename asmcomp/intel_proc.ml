@@ -162,23 +162,14 @@ let string_of_register16 reg16 =
 
 let string_of_register32 reg32 =
   match reg32 with
-  | R32 RAX -> "eax"
-  | R32 RBX -> "ebx"
-  | R32 RDI -> "edi"
-  | R32 RSI -> "esi"
-  | R32 RDX -> "edx"
-  | R32 RCX -> "ecx"
-  | R32 RSP -> "esp"
-  | R32 RBP -> "ebp"
-  | R32 R8 -> "r8d"
-  | R32 R9 -> "r9d"
-  | R32 R10 -> "r10d"
-  | R32 R11 -> "r11d"
-  | R32 R12 -> "r12d"
-  | R32 R13 -> "r13d"
-  | R32 R14 -> "r14d"
-  | R32 R15 -> "r15d"
-  | R32 RIP -> assert false
+  | EAX -> "eax"
+  | EBX -> "ebx"
+  | EDI -> "edi"
+  | ESI -> "esi"
+  | EDX -> "edx"
+  | ECX -> "ecx"
+  | ESP -> "esp"
+  | EBP -> "ebp"
 
 let string_of_registerf regf =
   match regf with
