@@ -1067,7 +1067,7 @@ fun formatting_gen fmt0 fmtty0 -> match formatting_gen with
   | Open_box (Format (fmt1, str)) ->
     let Fmt_fmtty_EBB (fmt2, fmtty2) = type_format_gen fmt1 fmtty0 in
     let Fmt_fmtty_EBB (fmt3, fmtty3) = type_format_gen fmt0 fmtty2 in
-    Fmt_fmtty_EBB (Formatting_gen (Open_tag (Format (fmt2, str)), fmt3), fmtty3)
+    Fmt_fmtty_EBB (Formatting_gen (Open_box (Format (fmt2, str)), fmt3), fmtty3)
 
 (* Type an Ignored_param node according to an fmtty. *)
 and type_ignored_param : type p q x y z t u v a b c d e f .
