@@ -56,26 +56,7 @@ module Check = struct
 end
 
 module DSL = struct
-
-(*
-  let _eax = R32 RAX
-  let _ebx = R32 RBX
-  let _edi = R32 RDI
-  let _esi = R32 RSI
-  let _edx = R32 RDX
-  let _ecx = R32 RCX
-  let _esp = R32 RSP
-  let _ebp = R32 RBP
-  let _r8d = R32 R8
-  let _r9d = R32 R9
-  let _r10d = R32 R10
-  let _r11d = R32 R11
-  let _r12d = R32 R12
-  let _r13d = R32 R13
-  let _r14d = R32 R14
-  let _r15d = R32 R15
-*)
-
+  let rel32 s = Rel (B32, s)
 
   (* Override emitaux.ml *)
   let emit_int n =
@@ -272,7 +253,6 @@ module DSL32 = struct
   let st1 = Regf (ST 1)
 
   let imm32 l = Imm (B32, (Some l,0L))
-  let rel32 s = Rel (B32, (Some s,0L))
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset reg =
     Mem (typ, M32(Some (reg, scale, base), (sym, Int64.of_int offset)))
@@ -364,7 +344,6 @@ module DSL64 = struct
   let xmm15 = Regf (XMM 15)
 
   let imm64 s = Imm (B64, (Some s,0L))
-  let rel32 s = Rel (B32, (Some s,0L))
 
   let mem_ptr typ ?(scale = 1) ?base offset reg =
     Mem (typ, M64(Some (reg, scale, base), (None, Int64.of_int offset)))

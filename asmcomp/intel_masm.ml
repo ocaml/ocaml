@@ -144,9 +144,10 @@ let bprint_arg b arg =
       Printf.bprintf b "0%LxH" int
   | Imm (_, (Some (s, None),0L)) ->
       Printf.bprintf b "OFFSET %s" s
-  | Rel (_, (Some (s, None),0L)) ->
+  | Rel (_, (s, tbl)) ->
+      assert(tbl == None);
       Printf.bprintf b "%s" s
-  | Imm (_, _) | Rel (_, _) -> assert false
+  | Imm (_, _) -> assert false
   | Reg8 register8 ->
       Printf.bprintf b "%s" (string_of_register8 register8)
   | Reg16 register16 ->

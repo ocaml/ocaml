@@ -149,16 +149,13 @@ let bprint_arg_mem b string_of_register ( mem : 'a addr ) =
 
 let bprint_arg b arg =
   match arg with
+  | Rel (_, sym) ->
+      Printf.bprintf b "%s" (string_of_symbol sym)
+
   | Imm (_, (None, int) ) ->
       Printf.bprintf b "$%Ld" int
-
-  | Rel (_, (Some sym,0L)) ->
-      Printf.bprintf b "%s" (string_of_symbol sym)
-  | Rel (_, _) -> assert false
-
   | Imm (_, (Some sym,0L)) ->
       Printf.bprintf b "$%s" (string_of_symbol sym)
-
   | Imm (_, (Some sym,d)) ->
       if d > 0L then
         Printf.bprintf b "$%s+%Ld" (string_of_symbol sym) d

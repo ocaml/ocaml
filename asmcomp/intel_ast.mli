@@ -101,7 +101,7 @@ type arg =
   (* operand is an immediate value *)
   | Imm of data_size * offset
   (* operand is a relative displacement *)
-  | Rel of data_size * offset
+  | Rel of data_size * symbol
 
   | Reg8 of register8
   | Reg16 of register16
