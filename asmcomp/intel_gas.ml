@@ -199,12 +199,16 @@ and string_of_simple_constant = function
         (string_of_simple_constant c1) (string_of_simple_constant c2)
 
 let suffix = function
-  (* Do we need to support the NO cases here?? *)
   | Mem (BYTE, _) | Reg8 _   -> "b"
   | Mem (WORD, _) | Reg16 _  -> "w"
-  | Mem(DWORD, _) | Reg32 _ | Mem(NO, M32 _) -> "l"
-  | Mem(QWORD, _) | Reg64 _ | Mem(NO, M64 _) -> "q"
+  | Mem (DWORD, _) | Reg32 _ | Mem (REAL8, _) -> "l"
+  | Mem (QWORD, _) | Reg64 _ -> "q"
+  | Mem (REAL4, _) -> "s"
+  | Mem (NO, _) -> assert false
   | _ -> ""
+(*
+  | Imm (_ -> Printf.eprintf "%s\n%!" (Printexc.raw_backtrace_to_string (Printexc.get_callstack 10)); exit 2
+*)
 
 let i0 b s =
   tab b;
@@ -288,14 +292,14 @@ let emit_instr b = function
 
   | FISTP arg -> i1_s b "fistp" arg
 
+
   | FSTP (Mem(REAL4, _)  as arg) -> i1 b "fstps" arg
   | FSTP arg -> i1 b "fstpl" arg
   | FILD arg -> i1_s b "fild" arg
   | HLT -> i0 b "hlt"
 
   | FCOMPP -> i0 b "fcompp"
-  | FCOMP (Mem (REAL4, _ ) as arg ) -> i1 b "fcomps" arg
-  | FCOMP arg -> i1 b "fcompl" arg
+  | FCOMP arg -> i1_s b "fcomp" arg
   | FLD (Mem(REAL4, _ ) as arg ) -> i1 b "flds" arg
   | FLD arg -> i1 b "fldl" arg
   | FNSTSW arg -> i1 b "fnstsw" arg
@@ -305,29 +309,12 @@ let emit_instr b = function
   | FCHS -> i0 b "fchs"
   | FABS -> i0 b "fabs"
 
-  | FADD (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "faddl" arg
-  | FADD (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fadds" arg
-  | FADD _ -> assert false
-
-  | FMUL (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fmull" arg
-  | FMUL (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fmuls" arg
-  | FMUL _ -> assert false
-
-  | FSUB (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fsubl" arg
-  | FSUB (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fsubs" arg
-  | FSUB _ -> assert false
-
-  | FSUBR (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fsubrl" arg
-  | FSUBR (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fsubrs" arg
-  | FSUBR _ -> assert false
-
-  | FDIV (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fdivl" arg
-  | FDIV (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fdivs" arg
-  | FDIV _ -> assert false
-
-  | FDIVR (Mem ((REAL8|QWORD), _) as  arg) -> i1 b "fdivrl" arg
-  | FDIVR (Mem ((REAL4|DWORD), _) as  arg) -> i1 b "fdivrs" arg
-  | FDIVR _ -> assert false
+  | FADD arg -> i1_s b "fadd" arg
+  | FMUL arg -> i1_s b "fmul" arg
+  | FSUB arg -> i1_s b "fsub" arg
+  | FSUBR arg -> i1_s b "fsubr" arg
+  | FDIV arg -> i1_s b "fdiv" arg
+  | FDIVR arg -> i1_s b "fdivr" arg
 
   (* Let's be compatible with prehistoric bugs:
      https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
