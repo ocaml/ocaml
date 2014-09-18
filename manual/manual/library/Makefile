@@ -69,6 +69,17 @@ $(INTF): $(MLIS)
 	mv -f Arith_status.tex Arithstatus.tex
 	mv -f Big_int.tex Bigint.tex
 
+Tk.tex: tk.mli
+	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
+	-I +labltk tk.mli \
+	-sepfiles \
+	-latextitle "6,subsection*" \
+	-latextitle "7,subsubsection*" \
+	-latex-type-prefix "TYP" \
+	-latex-module-prefix "" \
+	-latex-module-type-prefix "" \
+	-latex-value-prefix "" 
+
 clean:
 	rm -f $(FILES) 
 

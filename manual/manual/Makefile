@@ -30,6 +30,11 @@ manual: files
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
+labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
+	cd library; make Tk.tex
+	cd texstuff; \
+	TEXINPUTS=$(TEXINPUTS) latex labltk.tex
+
 index::
 	cd texstuff && \
 	  ../../tools/fix_index.sh manual.idx && \
