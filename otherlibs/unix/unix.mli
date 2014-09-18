@@ -909,8 +909,30 @@ val getgrgid : int -> group_entry
 (** {6 Internet addresses} *)
 
 
-type inet_addr
-(** The abstract type of Internet addresses. *)
+type inet_addr = private string
+(** The type of Internet addresses, a string of length 4 or 16
+    depending of the IP version of the address. *)
+
+val ipv4_addr_of_bytes : bytes -> int -> inet_addr
+(** [ipv4_addr_of_bytes buf off] returns the IPv4 address extracted
+    from [buf] at offset [off].
+
+    Raise [Invalid_argument] if [off] and [off+4] do not designate a
+    valid range of [buf].
+*)
+
+val ipv6_addr_of_bytes : bytes -> int -> inet_addr
+(** [ipv6_addr_of_bytes buf off] returns the IPv6 address extracted
+    from [buf] at offset [off].
+
+    Raise [Invalid_argument] if [off] and [off+16] do not designate a
+    valid range of [buf]. *)
+
+val inet_addr_of_string_raw : string -> inet_addr
+(** [inet_addr_of_string_raw addr] returns the IP address extracted
+    from [addr].
+
+    Raise [Invalid_argument] if [addr] has not length 4 or 16. *)
 
 val inet_addr_of_string : string -> inet_addr
 (** Conversion from the printable representation of an Internet

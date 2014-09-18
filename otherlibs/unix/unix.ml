@@ -481,6 +481,13 @@ type inet_addr = string
 
 let is_inet6_addr s = String.length s = 16
 
+let ipv4_addr_of_bytes buf off = Bytes.(sub buf off 4 |> to_string)
+let ipv6_addr_of_bytes buf off = Bytes.(sub buf off 16 |> to_string)
+let inet_addr_of_string_raw str =
+  match String.length str with
+    4 | 16 -> str
+  | _ -> invalid_arg "inet_addr_of_string_raw"
+
 external inet_addr_of_string : string -> inet_addr
                                     = "unix_inet_addr_of_string"
 external string_of_inet_addr : inet_addr -> string
