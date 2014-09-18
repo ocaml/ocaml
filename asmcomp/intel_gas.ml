@@ -371,7 +371,7 @@ let emit_instr b = function
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVZX (arg1, arg2) -> i2_ss b "movz" arg1 arg2
   | MOVSX (arg1, arg2) -> i2_ss b "movs" arg1 arg2
-  | MOVSS (arg1, arg2) -> i2_ss b "movs" arg1 arg2
+  | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
   | MOVSXD (arg1, arg2) -> i2 b "movslq" arg1 arg2
 
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
