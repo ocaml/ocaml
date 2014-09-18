@@ -201,19 +201,17 @@ and string_of_simple_constant = function
       Printf.sprintf "(%s - %s)"
         (string_of_simple_constant c1) (string_of_simple_constant c2)
 
-let auto_suffix ins arg =
+let suffix = function
   (* Do we need to support the NO cases here?? *)
-  let suffix =
-    match arg with
-    | Mem (BYTE, _) | Reg8 _   -> "b"
-    | Mem (WORD, _) | Reg16 _  -> "w"
-    | Mem(DWORD, _) | Reg32 _ | Mem(NO, M32 _) -> "l"
-    | Mem(QWORD, _) | Reg64 _ | Mem(NO, M64 _) -> "q"
-    | _ -> ""
-  in
-  (* TODO: avoid concatenation by emitting the suffix directly to the output buffer *)
-  ins ^ suffix
+  | Mem (BYTE, _) | Reg8 _   -> "b"
+  | Mem (WORD, _) | Reg16 _  -> "w"
+  | Mem(DWORD, _) | Reg32 _ | Mem(NO, M32 _) -> "l"
+  | Mem(QWORD, _) | Reg64 _ | Mem(NO, M64 _) -> "q"
+  | _ -> ""
 
+let auto_suffix ins arg =
+  (* TODO: avoid concatenation by emitting the suffix directly to the output buffer *)
+  ins ^ suffix arg
 
 let i0 b s =
   tab b;
@@ -222,6 +220,13 @@ let i0 b s =
 let i1 b s x =
   tab b;
   Buffer.add_string b s;
+  tab b;
+  bprint_arg b x
+
+let i1_s b s x =
+  tab b;
+  Buffer.add_string b s;
+  Buffer.add_string b (suffix x);
   tab b;
   bprint_arg b x
 
@@ -264,11 +269,11 @@ let emit_instr b = function
   | SHR (arg1, arg2) -> i2 b (auto_suffix "shr" arg2) arg1 arg2
   | SAL (arg1, arg2) -> i2 b (auto_suffix "sal" arg2) arg1 arg2
 
-  | FISTP arg -> i1 b (auto_suffix "fistp" arg) arg
+  | FISTP arg -> i1_s b "fistp" arg
 
   | FSTP (Mem(REAL4, _)  as arg) -> i1 b "fstps" arg
   | FSTP arg -> i1 b "fstpl" arg
-  | FILD (arg) -> i1 b (auto_suffix "fild" arg) arg
+  | FILD arg -> i1_s b "fild" arg
   | HLT -> i0 b "hlt"
 
   | FCOMPP -> i0 b "fcompp"
@@ -335,12 +340,12 @@ let emit_instr b = function
   | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
   | FMULP (arg1, arg2)  -> i2 b "fmulp" arg1 arg2
 
-  | INC arg -> i1 b (auto_suffix "inc" arg) arg
-  | DEC arg -> i1 b (auto_suffix "dec" arg) arg
+  | INC arg -> i1_s b "inc" arg
+  | DEC arg -> i1_s b "dec" arg
 
-  | IMUL (arg, None) -> i1 b (auto_suffix "imul" arg) arg
+  | IMUL (arg, None) -> i1_s b "imul" arg
   | IMUL (arg1, Some arg2) -> i2 b (auto_suffix "imul" arg1) arg1 arg2
-  | IDIV arg -> i1 b (auto_suffix "idiv" arg) arg
+  | IDIV arg -> i1_s b "idiv" arg
 
   | MOV (
       (Imm (B64, _) as arg1),
@@ -383,8 +388,8 @@ let emit_instr b = function
   | CALL arg  -> i1_call_jmp b "call" arg
   | JMP arg -> i1_call_jmp b "jmp" arg
   | RET ->  i0 b "ret"
-  | PUSH arg -> i1 b (auto_suffix "push" arg) arg
-  | POP  arg -> i1 b (auto_suffix "pop" arg) arg
+  | PUSH arg -> i1_s b "push" arg
+  | POP  arg -> i1_s b "pop" arg
 
   | TEST (arg1, arg2) -> i2 b (auto_suffix "test" arg2) arg1 arg2
   | SET (condition, arg) ->
