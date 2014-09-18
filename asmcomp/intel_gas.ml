@@ -209,10 +209,6 @@ let suffix = function
   | Mem(QWORD, _) | Reg64 _ | Mem(NO, M64 _) -> "q"
   | _ -> ""
 
-let auto_suffix ins arg =
-  (* TODO: avoid concatenation by emitting the suffix directly to the output buffer *)
-  ins ^ suffix arg
-
 let i0 b s =
   tab b;
   Buffer.add_string b s
@@ -223,6 +219,7 @@ let i1 b s x =
   tab b;
   bprint_arg b x
 
+(* Automatically add suffix derived from argument *)
 let i1_s b s x =
   tab b;
   Buffer.add_string b s;
@@ -233,6 +230,29 @@ let i1_s b s x =
 let i2 b s x y =
   tab b;
   Buffer.add_string b s;
+  tab b;
+  bprint_arg b x;
+  Buffer.add_char b ',';
+  Buffer.add_char b ' ';
+  bprint_arg b y
+
+(* Automatically add suffix derived from second argument *)
+let i2_s b s x y =
+  tab b;
+  Buffer.add_string b s;
+  Buffer.add_string b (suffix y);
+  tab b;
+  bprint_arg b x;
+  Buffer.add_char b ',';
+  Buffer.add_char b ' ';
+  bprint_arg b y
+
+(* Automatically add suffixes derived from first and second argument *)
+let i2_ss b s x y =
+  tab b;
+  Buffer.add_string b s;
+  Buffer.add_string b (suffix x);
+  Buffer.add_string b (suffix y);
   tab b;
   bprint_arg b x;
   Buffer.add_char b ',';
@@ -257,17 +277,17 @@ let i1_call_jmp b s x =
 let emit_instr b = function
   | NOP -> i0 b "nop"
   | NEG arg -> i1 b "neg" arg
-  | ADD (arg1, arg2) -> i2 b (auto_suffix "add" arg2) arg1 arg2
-  | SUB (arg1, arg2) -> i2 b (auto_suffix "sub" arg2) arg1 arg2
-  | XOR (arg1, arg2) -> i2 b (auto_suffix "xor" arg2) arg1 arg2
-  | OR (arg1, arg2) -> i2 b (auto_suffix "or" arg2) arg1 arg2
-  | AND (arg1, arg2) -> i2 b (auto_suffix "and" arg2) arg1 arg2
-  | CMP (arg1, arg2) -> i2 b (auto_suffix "cmp" arg2) arg1 arg2
+  | ADD (arg1, arg2) -> i2_s b "add" arg1 arg2
+  | SUB (arg1, arg2) -> i2_s b "sub" arg1 arg2
+  | XOR (arg1, arg2) -> i2_s b "xor" arg1 arg2
+  | OR (arg1, arg2) -> i2_s b "or" arg1 arg2
+  | AND (arg1, arg2) -> i2_s b "and" arg1 arg2
+  | CMP (arg1, arg2) -> i2_s b "cmp" arg1 arg2
 
   | LEAVE -> i0 b "leave"
-  | SAR (arg1, arg2) -> i2 b (auto_suffix "sar" arg2) arg1 arg2
-  | SHR (arg1, arg2) -> i2 b (auto_suffix "shr" arg2) arg1 arg2
-  | SAL (arg1, arg2) -> i2 b (auto_suffix "sal" arg2) arg1 arg2
+  | SAR (arg1, arg2) -> i2_s b "sar" arg1 arg2
+  | SHR (arg1, arg2) -> i2_s b "shr" arg1 arg2
+  | SAL (arg1, arg2) -> i2_s b "sal" arg1 arg2
 
   | FISTP arg -> i1_s b "fistp" arg
 
@@ -344,19 +364,17 @@ let emit_instr b = function
   | DEC arg -> i1_s b "dec" arg
 
   | IMUL (arg, None) -> i1_s b "imul" arg
-  | IMUL (arg1, Some arg2) -> i2 b (auto_suffix "imul" arg1) arg1 arg2
+  | IMUL (arg1, Some arg2) -> i2_s b "imul" arg1 arg2
   | IDIV arg -> i1_s b "idiv" arg
 
   | MOV (
       (Imm (B64, _) as arg1),
       (Reg64 _ as arg2))
     -> i2 b "movabsq" arg1 arg2
-  | MOV (arg1, arg2) -> i2 b (auto_suffix "mov" arg2) arg1 arg2
-  | MOVZX (arg1, arg2) ->
-      i2 b (auto_suffix (auto_suffix "movz" arg1) arg2) arg1 arg2
-  | MOVSX (arg1, arg2) ->
-      i2 b (auto_suffix (auto_suffix "movs" arg1) arg2) arg1 arg2
-  | MOVSS (arg1, arg2) -> i2 b (auto_suffix (auto_suffix "movs" arg1) arg2) arg1 arg2
+  | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
+  | MOVZX (arg1, arg2) -> i2_ss b "movz" arg1 arg2
+  | MOVSX (arg1, arg2) -> i2_ss b "movs" arg1 arg2
+  | MOVSS (arg1, arg2) -> i2_ss b "movs" arg1 arg2
   | MOVSXD (arg1, arg2) -> i2 b "movslq" arg1 arg2
 
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
@@ -368,10 +386,10 @@ let emit_instr b = function
   | ROUNDSD (rounding, arg1, arg2) ->
       let s =
         match rounding with
-            RoundDown -> "roundsd.down"
-          | RoundUp -> "roundsd.up"
-          | RoundTruncate -> "roundsd.trunc"
-          | RoundNearest -> "roundsd.near"
+        | RoundDown -> "roundsd.down"
+        | RoundUp -> "roundsd.up"
+        | RoundTruncate -> "roundsd.trunc"
+        | RoundNearest -> "roundsd.near"
       in
       i2 b s arg1 arg2
   | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
@@ -379,8 +397,8 @@ let emit_instr b = function
 
   | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
 
-  | CVTSI2SD (arg1, arg2) -> i2 b (auto_suffix "cvtsi2sd" arg1) arg1 arg2
-  | CVTTSD2SI (arg1, arg2) -> i2 b (auto_suffix "cvttsd2si" arg2) arg1 arg2
+  | CVTSI2SD (arg1, arg2) -> i2 b ("cvtsi2sd" ^ suffix arg1) arg1 arg2
+  | CVTTSD2SI (arg1, arg2) -> i2_s b "cvttsd2si" arg1 arg2
 
   | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
   | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
@@ -391,21 +409,20 @@ let emit_instr b = function
   | PUSH arg -> i1_s b "push" arg
   | POP  arg -> i1_s b "pop" arg
 
-  | TEST (arg1, arg2) -> i2 b (auto_suffix "test" arg2) arg1 arg2
+  | TEST (arg1, arg2) -> i2_s b "test" arg1 arg2
   | SET (condition, arg) ->
-      i1 b (Printf.sprintf  "set%s" (string_of_condition condition)) arg
+      i1 b ("set" ^ string_of_condition condition) arg
   | J (condition, arg) ->
-      i1 b (Printf.sprintf  "j%s" (string_of_condition condition)) arg
+      i1 b ("j" ^ string_of_condition condition) arg
 
 
   | CMOV (condition, arg1, arg2) ->
-      i2 b (Printf.sprintf "cmov%s" (string_of_condition condition))
-        arg1 arg2
+      i2 b ("cmov" ^ string_of_condition condition) arg1 arg2
   | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
   | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
-  | LEA (arg1, arg2) -> i2 b (auto_suffix "lea" arg2) arg1 arg2
+  | LEA (arg1, arg2) -> i2_s b "lea" arg1 arg2
   | CQTO ->  i0 b "cqto"
   | CDQ -> i0 b "cltd"
 
