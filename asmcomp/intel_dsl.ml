@@ -205,8 +205,8 @@ module INS32 = struct
   let fsub x = emit (FSUB x)
   let fdiv x = emit (FDIV x)
   let fmul x = emit (FMUL x)
-  let fsubr x = emit (FSUB x)
-  let fdivr x = emit (FDIV x)
+  let fsubr x = emit (FSUBR x)
+  let fdivr x = emit (FDIVR x)
 
   let faddp (arg1, arg2) = emit (FADDP (arg1, arg2))
   let fmulp (arg1, arg2) = emit (FMULP (arg1, arg2))
