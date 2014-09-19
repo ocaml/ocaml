@@ -81,8 +81,6 @@ open Btype
 
 (**** Errors ****)
 
-type expr_pairs = (type_expr * type_expr) list   (* shorthand *)
-
 (* Global flag to activate easytype error reporting mode *)
 
 let new_type_errors = ref false
