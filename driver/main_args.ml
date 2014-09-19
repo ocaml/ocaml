@@ -73,10 +73,6 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
-let mk_easy f =
-  "-easy", Arg.Unit f, " more informative typing errors"
-;;
-
 let mk_for_pack_byt f =
   "-for-pack", Arg.String f,
   "<ident>  Generate code that can later be `packed' with\n\
@@ -212,6 +208,10 @@ let mk_nostdlib f =
 
 let mk_o f =
   "-o", Arg.String f, "<file>  Set output file name to <file>"
+;;
+
+let mk_old_type_errors f =
+  "-old-type-errors", Arg.Unit f, " report type errors using traditional messages"
 ;;
 
 let mk_open f =
@@ -473,7 +473,6 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
-  val _easy : unit -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _no_alias_deps : unit -> unit
@@ -481,6 +480,7 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _old_type_errors : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -621,7 +621,6 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
-    mk_easy F._easy;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -656,6 +655,7 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_o F._o;
+    mk_old_type_errors F._old_type_errors;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_pack_byt F._pack;
@@ -699,7 +699,6 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
-    mk_easy F._easy;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -711,6 +710,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_old_type_errors F._old_type_errors;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -742,7 +742,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
-    mk_easy F._easy;
+    mk_old_type_errors F._old_type_errors;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -829,7 +829,6 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
-    mk_easy F._easy;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
@@ -843,6 +842,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_old_type_errors F._old_type_errors;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;

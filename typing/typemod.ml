@@ -43,12 +43,12 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-(* Wrapper for making a new call with Ctype.activate_easytype := true
-  in case the first call ends on a typing error *)
-let wrap_typing_easy fct =
+(* Wrapper for typechecking a core expression, and, in case of an error,
+   typechecking it again after setting "Ctype.new_type_errors := true". *)
+let typing_easytype_wrapper fct =
   try fct()
-  with (Typecore.Error _ | Typetexp.Error _) when !Clflags.easy ->
-    Ctype.activate_easytype := true;
+  with (Typecore.Error _ | Typetexp.Error _) when not !Clflags.old_type_errors ->
+    Ctype.new_type_errors := true;
     fct()
 
 open Typedtree
@@ -1174,7 +1174,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
 
   | Pmod_unpack sexp ->
       if !Clflags.principal then Ctype.begin_def ();
-      let exp = wrap_typing_easy (fun () -> Typecore.type_exp env sexp) in
+      let exp = typing_easytype_wrapper (fun () -> Typecore.type_exp env sexp) in
       if !Clflags.principal then begin
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
@@ -1215,7 +1215,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
-        let expr = wrap_typing_easy (fun () -> Typecore.type_expression env sexpr) in
+        let expr = typing_easytype_wrapper (fun () -> Typecore.type_expression env sexpr) in
         Tstr_eval (expr, attrs), [], env
     | Pstr_value(rec_flag, sdefs) ->
         let scope =
@@ -1232,7 +1232,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
               Some (Annot.Idef {scope with Location.loc_start = start})
         in
         let (defs, newenv) =
-          wrap_typing_easy (fun () -> Typecore.type_binding env rec_flag sdefs scope) in
+          typing_easytype_wrapper (fun () -> Typecore.type_binding env rec_flag sdefs scope) in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),

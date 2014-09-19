@@ -72,10 +72,10 @@ val report_unification_error:
     formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
-type easy_error_piece = formatter -> unit -> unit
-val get_unification_error_easy:
-    Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
-    (easy_error_piece * easy_error_piece * easy_error_piece * easy_error_piece)
+type easytype_piece = formatter -> unit -> unit
+type easytype_pieces = (easytype_piece * easytype_piece * easytype_piece * easytype_piece)
+val get_unification_error_easytype:
+    Env.t -> ?unif:bool -> (type_expr * type_expr) list -> easytype_pieces
 val report_subtyping_error:
     formatter -> Env.t -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit
@@ -86,4 +86,4 @@ val report_ambiguous_type_error:
 (* for toploop *)
 val hide_rec_items: signature_item list -> unit
 
-val hack_to_display_message_at_the_right_place_easy : bool ref
+val swap_position_of_error_messages : bool ref

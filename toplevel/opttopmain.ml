@@ -66,7 +66,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
-  let _easy = true
   let _init s = init_file := Some s
   let _inline n = inline_threshold := n * 8
   let _labels = clear classic
@@ -77,6 +76,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _old_type_errors = clear old_type_errors
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _real_paths = set real_paths

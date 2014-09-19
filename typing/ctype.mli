@@ -15,8 +15,13 @@
 open Asttypes
 open Types
 
-(* Global flag to activate easytype typing mode *)
-val activate_easytype : bool ref
+val new_type_errors : bool ref
+        (* To modify the order of unifications in order to report
+           improved error messages. *)
+
+val improved_unit_statement_type_errors : bool
+        (* To activate better errors for statements that expect
+           subexpression to be of a particular type. *)
 
 exception Unify of (type_expr * type_expr) list
 exception Tags of label * label

@@ -555,6 +555,9 @@ let label_name l =
 let prefixed_label_name l =
   if is_optional l then l else "~" ^ l
 
+
+(** ARTHUR: remove when application typing is merged *)
+
 let rec extract_label_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->
@@ -563,17 +566,17 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
-(* Note: copy paste from above, with slight generalization *)
+(* Note: copy paste from above, with slight generalization  *)
 
-let rec extract_label_aux_easy hd hd_tys l ls tys =
+let rec extract_label_aux_easytype hd hd_tys l ls tys =
   match ls,tys with
     [], [] -> raise Not_found
   | (l',t as p) :: ls, ty::tys ->
       if label_name l' = l then (l', t, ty, List.rev hd, List.rev hd_tys, ls, tys)
-      else extract_label_aux_easy (p::hd) (ty::hd_tys) l ls tys
+      else extract_label_aux_easytype (p::hd) (ty::hd_tys) l ls tys
   | _ -> assert false
 
-let extract_label_easy l ls tys = extract_label_aux_easy [] [] l ls tys
+let extract_label_easytype l ls tys = extract_label_aux_easytype [] [] l ls tys
 
                   (**********************************)
                   (*  Utilities for backtracking    *)

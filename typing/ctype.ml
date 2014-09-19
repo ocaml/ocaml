@@ -17,8 +17,6 @@ open Asttypes
 open Types
 open Btype
 
-(* Global flag to activate easytype typing mode *)
-let activate_easytype = ref false
 
 (*
    Type manipulation after type inference
@@ -82,6 +80,15 @@ let activate_easytype = ref false
 *)
 
 (**** Errors ****)
+
+(* Global flag to activate easytype error reporting mode *)
+
+let new_type_errors = ref false
+
+(* Global flag to force strict sequence and improved errors for loop bodys *)
+
+let improved_unit_statement_type_errors = not !Clflags.old_type_errors
+
 
 exception Unify of (type_expr * type_expr) list
 

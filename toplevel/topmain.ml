@@ -64,7 +64,6 @@ module Options = Main_args.Make_bytetop_options (struct
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
-  let _easy = set easy
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
@@ -75,6 +74,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _old_type_errors = clear old_type_errors
   let _open s = open_modules := s :: !open_modules
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal

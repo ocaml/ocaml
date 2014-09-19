@@ -55,7 +55,7 @@ type error =
   | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
   | Unbound_value of Longident.t
-  | Unbound_value_missing_rec_easy of Longident.t * Location.t
+  | Unbound_value_missing_rec_easytype of Longident.t * Location.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
   | Unbound_module of Longident.t

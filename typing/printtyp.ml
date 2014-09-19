@@ -22,7 +22,7 @@ open Types
 open Btype
 open Outcometree
 
-let hack_to_display_message_at_the_right_place_easy =
+let swap_position_of_error_messages =
   ref false
 
 (* Print a long identifier *)
@@ -1307,24 +1307,30 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
-(* AC: TODO: get rid of this function and have get_explanation return an option *)
+(* Remark: there is an unfortunate duplication between "has_explanation" and
+   "explanation". I suggest using only "explaination", and have it return a
+   value of type "(unit -> unit) option", where the Some case carries the
+   message pretty-printing operation. *)
+
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-  (* case added for easytype *)
+  (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when !activate_easytype && 
+     (* note: we could restrict the application of this pattern to the case 
+        where ty1 and ty2 can be unified; however, this would need to be tested
+        without actually performing any side-effects on the two types. *)
+     when !new_type_errors && 
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
-     -> hack_to_display_message_at_the_right_place_easy := true; 
+     -> swap_position_of_error_messages := true; 
         true
-  (* case added for easytype *)
+  (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when (*AC: could also generalize to: (expand_head env ty1).desc *) 
-       !activate_easytype && 
+     when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
+       !new_type_errors && 
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
-     -> hack_to_display_message_at_the_right_place_easy := true;
+     -> swap_position_of_error_messages := true;
         true
-
   | Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | Tnil, Tconstr _ | Tconstr _, Tnil
   | _, Tvar _ | Tvar _, _
@@ -1344,19 +1350,16 @@ let rec mismatch unif = function
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
-  (* case added for easytype;
-     AC--TODO: apply the case only when ty1 is unifiable with ty2,
-     however do so without performing any side-effects on them. *)
+  (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when !activate_easytype && 
+     when !new_type_errors && 
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot a `!' operator somewhere.@]"
-  (* case added for easytype *)
+  (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when !activate_easytype && 
-       (*AC: could also generalize to: (expand_head env ty1).desc *) 
+     when !new_type_errors && 
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot to provide `()' as argument somewhere.@]"
@@ -1463,7 +1466,6 @@ let unification_error unif tr txt1 ppf txt2 =
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
-      (* AC: added a dot at the end of the sentence. *)
       fprintf ppf
         "@[<v>\
           @[%t@;<1 2>%a@ \
@@ -1482,13 +1484,13 @@ let unification_error unif tr txt1 ppf txt2 =
 let report_unification_error ppf env ?(unif=true)
     tr txt1 txt2 =
   wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
-;;
 
+type easytype_piece = formatter -> unit -> unit
+type easytype_pieces = (easytype_piece * easytype_piece * easytype_piece * easytype_piece)
 
-type easy_error_piece = formatter -> unit -> unit
-
-(* Note: some code copy-pasted from original function *)
-let get_unification_error_easy env ?(unif=true) tr =
+let get_unification_error_easytype env ?(unif=true) tr =
+  (* Remark: a few lines from "get_unification_error_easytype" have been copied 
+     from the functions "unification_error" and "report_unification_error". *)
   wrap_printing_env env (fun () ->
     reset ();
     trace_same_names tr;
