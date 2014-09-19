@@ -8,6 +8,8 @@ OCaml 4.02.1:
 - PR#6536: better documentation of flag # in format strings
 - PR#6544: Bytes and CamlinternalFormat missing from threads stdlib.cma
   (Christopher Zimmermann)
+- PR#6546: -dsource omits parens for `List ((`String "A")::[]) in patterns
+  (Gabriel Scherer, report by Peter Zotov)
 - PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
