@@ -11,6 +11,8 @@ OCaml 4.02.1:
 - PR#6546: -dsource omits parens for `List ((`String "A")::[]) in patterns
   (Gabriel Scherer, report by Peter Zotov)
 - PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
+- PR#6549: Debug section is sometimes not readable when using -pack
+  (Hugo Heuzard, review by Gabriel Scherer)
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
 - PR#6564: infinite loop in Mtype.remove_aliases
