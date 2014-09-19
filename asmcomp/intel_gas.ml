@@ -56,96 +56,40 @@ let string_of_symbol = function
   | s, Some GOTPCREL -> s ^ "@GOTPCREL"
   | s, None -> s
 
-let bprint_arg_mem b string_of_register ( mem : 'a addr ) =
-  match mem with
-  | None, (None, addr) ->
-      Printf.bprintf b "%Ld" addr
-  | None, (Some (s, table), 0L)  ->
-      Printf.bprintf b "%s%s" s (string_of_table table)
-  | None, (Some (s, table), d) ->
-      Printf.bprintf b "%s%s+%Ld" s (string_of_table table) d
-  | Some (reg1, 1, None), (Some (s, table), 0L) ->
-      Printf.bprintf b "%s%s(%%%s)" s (string_of_table table)
-        (string_of_register reg1)
-  | Some (reg1, 1, None), (Some (s, table), offset) ->
-      if offset < 0L then
-        Printf.bprintf b "%s%s%Ld(%%%s)" s (string_of_table table)
-          offset (string_of_register reg1)
-      else
-        Printf.bprintf b "%s%s+%Ld(%%%s)" s (string_of_table table)
-          offset (string_of_register reg1)
+let print_ofs b strict = function
+  | 0L -> ()
+  | x when strict && x > 0L -> Printf.bprintf b "+%Ld" x
+  | x -> Printf.bprintf b "%Ld" x
 
-  | Some(reg1, scale, None), (Some (s, table), offset) ->
-      if offset = 0L then
-        Printf.bprintf b "%s%s(,%%%s,%d)" s (string_of_table table)
-          (string_of_register reg1) scale
-      else
-      if offset < 0L then
-        Printf.bprintf b "%s%s%Ld(,%%%s,%d)"
-          s (string_of_table table)
-          offset (string_of_register reg1) scale
-      else
-        Printf.bprintf b "%s%s+%Ld(,%%%s,%d)" s (string_of_table table)
-          offset (string_of_register reg1) scale
+let print_sym_tbl b (s, table) =
+  Buffer.add_string b s;
+  Buffer.add_string b (string_of_table table)
 
-  | Some (reg1, 1, None), (None, 0L) ->
+let print_opt_sym_tbl b = function
+  | None -> ()
+  | Some sym -> print_sym_tbl b sym
+
+let print_reg b f r =
+  Buffer.add_char b '%';
+  Buffer.add_string b (f r)
+
+let print_opt_reg b f = function
+  | None -> ()
+  | Some reg -> print_reg b f reg
+
+let bprint_arg_mem b string_of_register (a, (sym, offset) : 'a addr) =
+  print_opt_sym_tbl b sym;
+  print_ofs b (sym <> None) offset;
+  match a with
+  | Some (reg1, scale, base) ->
       Buffer.add_char b '(';
-      Printf.bprintf b "%%%s" (string_of_register reg1);
+      print_opt_reg b string_of_register base;
+      if base <> None || scale <> 1 then Buffer.add_char b ',';
+      print_reg b string_of_register reg1;
+      if scale <> 1 then Printf.bprintf b ",%d" scale;
       Buffer.add_char b ')'
-
-  | Some (reg1, 1, None), (None, offset) ->
-      if offset <> 0L then begin
-        if offset < 0L then
-          Printf.bprintf b "-%Ld" (Int64.sub 0L offset)
-        else
-          Printf.bprintf b "%Ld" offset
-      end;
-      Buffer.add_char b '(';
-      Printf.bprintf b "%%%s" (string_of_register reg1);
-      Buffer.add_char b ')'
-
-  | Some (reg1, scale, base), (None, offset) ->
-      if offset <> 0L then begin
-        if offset < 0L then
-          Printf.bprintf b "-%Ld" (Int64.sub 0L offset)
-        else
-          Printf.bprintf b "%Ld" offset
-      end;
-      Buffer.add_char b '(';
-      begin
-        match base with
-          None -> ()
-        | Some reg2 ->
-            Printf.bprintf b "%%%s" (string_of_register reg2)
-      end;
-      Buffer.add_char b ',';
-      Printf.bprintf b "%%%s" (string_of_register reg1);
-      if scale <> 1 then
-        Printf.bprintf b ",%d" scale;
-      Buffer.add_char b ')'
-
-  | Some (reg1, scale, base), (Some (s, table), offset) ->
-      Printf.bprintf b "%s%s" s (string_of_table table);
-      if offset <> 0L then begin
-        if offset < 0L then
-          Printf.bprintf b "-%Ld" (Int64.sub 0L offset)
-        else
-          Printf.bprintf b "+%Ld" offset
-      end;
-      Buffer.add_char b '(';
-      begin
-        match base with
-        | None -> ()
-        | Some reg2 ->
-            Printf.bprintf b "%%%s" (string_of_register reg2)
-      end;
-      Buffer.add_char b ',';
-      Printf.bprintf b "%%%s" (string_of_register reg1);
-      if scale <> 1 then
-        Printf.bprintf b ",%d" scale;
-      Buffer.add_char b ')'
-
-
+  | None ->
+      assert (sym <> None || offset <> 0L)
 
 let bprint_arg b arg =
   match arg with

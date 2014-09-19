@@ -137,6 +137,10 @@ let bprint_arg_mem b string_of_register ptr mem =
 
 let bprint_arg b arg =
   match arg with
+  | Rel (_, (s, tbl)) ->
+      assert(tbl == None);
+      Printf.bprintf b "%s" s
+
   | Imm ( (B8|B16|B32), (None, int)) ->
       Printf.bprintf b "%Ld" int
   | Imm ( B64, (None, int)) ->
@@ -144,10 +148,8 @@ let bprint_arg b arg =
       Printf.bprintf b "0%LxH" int
   | Imm (_, (Some (s, None),0L)) ->
       Printf.bprintf b "OFFSET %s" s
-  | Rel (_, (s, tbl)) ->
-      assert(tbl == None);
-      Printf.bprintf b "%s" s
   | Imm (_, _) -> assert false
+
   | Reg8 register8 ->
       Printf.bprintf b "%s" (string_of_register8 register8)
   | Reg16 register16 ->
