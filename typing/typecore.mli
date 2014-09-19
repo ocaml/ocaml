@@ -49,7 +49,7 @@ val type_exp:
 val type_approx:
         Env.t -> Parsetree.expression -> type_expr
 val type_argument:
-        Env.t -> Parsetree.expression ->
+         ?easytype: Typedtree.expression option -> Env.t -> Parsetree.expression ->
         type_expr -> type_expr -> Typedtree.expression
 
 val option_some: Typedtree.expression -> Typedtree.expression

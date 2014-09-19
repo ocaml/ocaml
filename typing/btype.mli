@@ -173,11 +173,10 @@ val extract_label :
     label * 'a * (label * 'a) list * (label * 'a) list
     (* actual label, value, before list, after list *)
 
-(** ARTHUR: remove when application typing is merged *)
-
+val uncons_opt: 'a list -> 'a option * 'a list
 val extract_label_easytype :
     label -> (label * 'a) list -> Typedtree.expression list ->
-    label * 'a * Typedtree.expression * (label * 'a) list * Typedtree.expression list * (label * 'a) list * Typedtree.expression list
+    label * 'a * Typedtree.expression option * (label * 'a) list * Typedtree.expression list * (label * 'a) list * Typedtree.expression list
 
 
 (**** Utilities for backtracking ****)

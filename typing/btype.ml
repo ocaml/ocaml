@@ -556,8 +556,6 @@ let prefixed_label_name l =
   if is_optional l then l else "~" ^ l
 
 
-(** ARTHUR: remove when application typing is merged *)
-
 let rec extract_label_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->
@@ -566,17 +564,34 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
-(* Note: copy paste from above, with slight generalization  *)
+
+let uncons_opt = function
+   | [] -> (None, [])
+   | x::l -> (Some x,l)
+
+(* [extract_label_easytype] returns a tuple of the form  
+   (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2).
+   If the argument [tys] is the empty list, then [targ0_opt] is None,
+   and [targs1] and [targs2] are the empty list as well.
+   Otherwise, [tys] must match the length of [ls], and [targ0_opt]
+   will contain the typed expression associated with [sarg0],
+   and similarly [targs1] and [targs2] match [sargs1] and [sargs2]. *)
 
 let rec extract_label_aux_easytype hd hd_tys l ls tys =
-  match ls,tys with
-    [], [] -> raise Not_found
-  | (l',t as p) :: ls, ty::tys ->
-      if label_name l' = l then (l', t, ty, List.rev hd, List.rev hd_tys, ls, tys)
-      else extract_label_aux_easytype (p::hd) (ty::hd_tys) l ls tys
-  | _ -> assert false
+  match ls with
+    [] -> raise Not_found
+  | (l',t as p) :: ls ->
+      let (ty_opt,tys) = uncons_opt tys in
+      if label_name l' = l then (l', t, ty_opt, List.rev hd, List.rev hd_tys, ls, tys)
+      else 
+         let hd_tys' = match ty_opt with  
+            | None -> hd_tys (* which is equal to [] *)
+            | Some ty -> ty::hd_tys
+            in
+         extract_label_aux_easytype (p::hd) hd_tys' l ls tys
 
 let extract_label_easytype l ls tys = extract_label_aux_easytype [] [] l ls tys
+
 
                   (**********************************)
                   (*  Utilities for backtracking    *)
