@@ -17,6 +17,9 @@ open Asttypes
 open Types
 open Btype
 
+(* Global flag to activate easytype typing mode *)
+let activate_easytype = ref false
+
 (*
    Type manipulation after type inference
    ======================================

@@ -43,6 +43,7 @@ type error =
   | Multiple_constraints_on_type of Longident.t
   | Repeated_method_label of string
   | Unbound_value of Longident.t
+  | Unbound_value_missing_rec_easy of Longident.t * Location.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
   | Unbound_module of Longident.t
@@ -978,6 +979,10 @@ let report_error env ppf = function
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf Env.fold_values env lid;
+  | Unbound_value_missing_rec_easy (lid, loc) ->
+      fprintf ppf "Unbound value %a.\n" longident lid;
+      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
+      fprintf ppf "@.You are probably missing the `rec' keyword on line %i." line;
   | Unbound_module lid ->
       fprintf ppf "Unbound module %a" longident lid;
       spellcheck ppf Env.fold_modules env lid;

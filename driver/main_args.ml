@@ -73,6 +73,10 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
+let mk_easy f =
+  "-easy", Arg.Unit f, " more informative typing errors"
+;;
+
 let mk_for_pack_byt f =
   "-for-pack", Arg.String f,
   "<ident>  Generate code that can later be `packed' with\n\
@@ -469,6 +473,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _easy : unit -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _no_alias_deps : unit -> unit
@@ -616,6 +621,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_easy F._easy;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -693,6 +699,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_easy F._easy;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -735,6 +742,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_easy F._easy;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -821,6 +829,7 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_easy F._easy;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;

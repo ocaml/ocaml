@@ -22,6 +22,9 @@ open Types
 open Btype
 open Outcometree
 
+let hack_to_display_message_at_the_right_place_easy =
+  ref false
+
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -1304,9 +1307,25 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
+(* AC: TODO: get rid of this function and have get_explanation return an option *)
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-    Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
+  (* case added for easytype *)
+  | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
+     when !activate_easytype && 
+          (match p with Pdot(Pident id, "ref", pos) 
+           when Ident.same id ident_pervasive -> true | _ -> false) 
+     -> hack_to_display_message_at_the_right_place_easy := true; 
+        true
+  (* case added for easytype *)
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when (*AC: could also generalize to: (expand_head env ty1).desc *) 
+       !activate_easytype && 
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
+     -> hack_to_display_message_at_the_right_place_easy := true;
+        true
+
+  | Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | Tnil, Tconstr _ | Tconstr _, Tnil
   | _, Tvar _ | Tvar _, _
   | Tvariant _, Tvariant _ -> true
@@ -1325,6 +1344,22 @@ let rec mismatch unif = function
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
+  (* case added for easytype;
+     AC--TODO: apply the case only when ty1 is unifiable with ty2,
+     however do so without performing any side-effects on them. *)
+  | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
+     when !activate_easytype && 
+          (match p with Pdot(Pident id, "ref", pos) 
+           when Ident.same id ident_pervasive -> true | _ -> false) ->
+      fprintf ppf
+        "@,@[You probably forgot a `!' operator somewhere.@]"
+  (* case added for easytype *)
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when !activate_easytype && 
+       (*AC: could also generalize to: (expand_head env ty1).desc *) 
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
+      fprintf ppf
+        "@,@[You probably forgot to provide `()' as argument somewhere.@]"
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _
@@ -1428,10 +1463,11 @@ let unification_error unif tr txt1 ppf txt2 =
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
+      (* AC: added a dot at the end of the sentence. *)
       fprintf ppf
         "@[<v>\
           @[%t@;<1 2>%a@ \
-            %t@;<1 2>%a\
+            %t@;<1 2>%a.\
           @]%a%t\
          @]"
         txt1 (type_expansion t1) t1'
@@ -1447,6 +1483,36 @@ let report_unification_error ppf env ?(unif=true)
     tr txt1 txt2 =
   wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
 ;;
+
+
+type easy_error_piece = formatter -> unit -> unit
+
+(* Note: some code copy-pasted from original function *)
+let get_unification_error_easy env ?(unif=true) tr =
+  wrap_printing_env env (fun () ->
+    reset ();
+    trace_same_names tr;
+    let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
+    let mis = mismatch unif tr in
+    match tr with
+    | [] | _ :: [] -> assert false
+    | t1 :: t2 :: tr ->
+      try
+        let tr = filter_trace (mis = None) tr in
+        let t1, t1' = may_prepare_expansion (tr = []) t1
+        and t2, t2' = may_prepare_expansion (tr = []) t2 in
+        print_labels := not !Clflags.classic;
+        let tr = List.map prepare_expansion tr in
+        let m1 = fun ppf () -> ((type_expansion t1) ppf t1') in
+        let m2 = fun ppf () -> ((type_expansion t2) ppf t2') in
+        let m3 = fun ppf () -> ((trace false "is not compatible with type") ppf tr) in
+        let m4 = fun ppf () -> fprintf ppf "%t" ((explanation unif mis)) in
+        print_labels := true;
+        (m1,m2,m3,m4)
+      with exn ->
+        print_labels := true;
+        raise exn
+  )
 
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;

@@ -173,6 +173,11 @@ val extract_label :
     label * 'a * (label * 'a) list * (label * 'a) list
     (* actual label, value, before list, after list *)
 
+val extract_label_easy :
+    label -> (label * 'a) list -> Typedtree.expression list ->
+    label * 'a * Typedtree.expression * (label * 'a) list * Typedtree.expression list * (label * 'a) list * Typedtree.expression list
+
+
 (**** Utilities for backtracking ****)
 
 type snapshot

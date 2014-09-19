@@ -86,7 +86,7 @@ parsing/printast.cmx : parsing/parsetree.cmi utils/misc.cmx \
 parsing/syntaxerr.cmo : parsing/location.cmi parsing/syntaxerr.cmi
 parsing/syntaxerr.cmx : parsing/location.cmx parsing/syntaxerr.cmi
 typing/annot.cmi : parsing/location.cmi
-typing/btype.cmi : typing/types.cmi typing/path.cmi parsing/asttypes.cmi
+typing/btype.cmi : typing/types.cmi typing/path.cmi parsing/asttypes.cmi typing/typedtree.cmi
 typing/cmi_format.cmi : typing/types.cmi
 typing/cmt_format.cmi : typing/types.cmi typing/typedtree.cmi \
     parsing/location.cmi typing/env.cmi typing/cmi_format.cmi

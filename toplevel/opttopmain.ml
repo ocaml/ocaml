@@ -66,6 +66,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
+  let _easy = true
   let _init s = init_file := Some s
   let _inline n = inline_threshold := n * 8
   let _labels = clear classic

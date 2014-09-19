@@ -54,6 +54,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllib = option_with_arg "-dllib"
   let _dllpath = option_with_arg "-dllpath"
   let _dtypes = option "-dtypes"
+  let _easy = option "-easy"
   let _for_pack = option_with_arg "-for-pack"
   let _g = option "-g"
   let _i = option "-i"

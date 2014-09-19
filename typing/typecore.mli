@@ -62,6 +62,9 @@ val force_delayed_checks: unit -> unit
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
+type easy_error_piece = Printtyp.easy_error_piece
+type easy_reporter = Format.formatter -> (easy_error_piece * easy_error_piece * easy_error_piece * easy_error_piece) -> unit
+
 type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
@@ -71,6 +74,8 @@ type error =
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
+  | Expr_type_clash_easy of easy_reporter * (type_expr * type_expr) list
+  | Apply_error_easy of (Format.formatter -> unit) * Location.t * error
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of string

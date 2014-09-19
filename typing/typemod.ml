@@ -43,6 +43,14 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
+(* Wrapper for making a new call with Ctype.activate_easytype := true
+  in case the first call ends on a typing error *)
+let wrap_typing_easy fct =
+  try fct()
+  with (Typecore.Error _ | Typetexp.Error _) when !Clflags.easy ->
+    Ctype.activate_easytype := true;
+    fct()
+
 open Typedtree
 
 let fst3 (x,_,_) = x
@@ -1166,7 +1174,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
 
   | Pmod_unpack sexp ->
       if !Clflags.principal then Ctype.begin_def ();
-      let exp = Typecore.type_exp env sexp in
+      let exp = wrap_typing_easy (fun () -> Typecore.type_exp env sexp) in
       if !Clflags.principal then begin
         Ctype.end_def ();
         Ctype.generalize_structure exp.exp_type
@@ -1207,7 +1215,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
-        let expr = Typecore.type_expression env sexpr in
+        let expr = wrap_typing_easy (fun () -> Typecore.type_expression env sexpr) in
         Tstr_eval (expr, attrs), [], env
     | Pstr_value(rec_flag, sdefs) ->
         let scope =
@@ -1224,7 +1232,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
               Some (Annot.Idef {scope with Location.loc_start = start})
         in
         let (defs, newenv) =
-          Typecore.type_binding env rec_flag sdefs scope in
+          wrap_typing_easy (fun () -> Typecore.type_binding env rec_flag sdefs scope) in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),

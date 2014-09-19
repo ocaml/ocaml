@@ -563,6 +563,17 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
+(* Note: copy paste from above, with slight generalization *)
+
+let rec extract_label_aux_easy hd hd_tys l ls tys =
+  match ls,tys with
+    [], [] -> raise Not_found
+  | (l',t as p) :: ls, ty::tys ->
+      if label_name l' = l then (l', t, ty, List.rev hd, List.rev hd_tys, ls, tys)
+      else extract_label_aux_easy (p::hd) (ty::hd_tys) l ls tys
+  | _ -> assert false
+
+let extract_label_easy l ls tys = extract_label_aux_easy [] [] l ls tys
 
                   (**********************************)
                   (*  Utilities for backtracking    *)
