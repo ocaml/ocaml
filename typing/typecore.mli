@@ -67,13 +67,13 @@ type easytype_reporter = Format.formatter -> Printtyp.easytype_pieces -> unit
 type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * (type_expr * type_expr) list
-  | Pattern_type_clash of (type_expr * type_expr) list
-  | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
+  | Label_mismatch of Longident.t * expr_pairs
+  | Pattern_type_clash of expr_pairs
+  | Or_pattern_type_clash of Ident.t * expr_pairs
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
-  | Expr_type_clash of (type_expr * type_expr) list
-  | Expr_type_clash_easytype of easytype_reporter * (type_expr * type_expr) list
+  | Expr_type_clash of expr_pairs
+  | Expr_type_clash_easytype of easytype_reporter * expr_pairs
   | Apply_error_easytype of (Format.formatter -> unit) * Location.t * error
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
@@ -91,22 +91,22 @@ type error =
   | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of bool * string
-  | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
+  | Not_subtype of expr_pairs * expr_pairs
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * (type_expr * type_expr) list * bool
+      type_expr * type_expr * expr_pairs * bool
   | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * (type_expr * type_expr) list
+  | Less_general of string * expr_pairs
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Recursive_local_constraint of (type_expr * type_expr) list
+  | Recursive_local_constraint of expr_pairs
   | Unexpected_existential
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval

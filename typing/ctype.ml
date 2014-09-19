@@ -81,16 +81,13 @@ open Btype
 
 (**** Errors ****)
 
+type expr_pairs = (type_expr * type_expr) list   (* shorthand *)
+
 (* Global flag to activate easytype error reporting mode *)
 
 let new_type_errors = ref false
 
-(* Global flag to force strict sequence and improved errors for loop bodys *)
-
-let improved_unit_statement_type_errors = not !Clflags.old_type_errors
-
-
-exception Unify of (type_expr * type_expr) list
+exception Unify of expr_pairs
 
 exception Tags of label * label
 
@@ -107,8 +104,7 @@ let () =
       | _ -> None
     )
 
-exception Subtype of
-        (type_expr * type_expr) list * (type_expr * type_expr) list
+exception Subtype of expr_pairs * expr_pairs
 
 exception Cannot_expand
 
@@ -117,7 +113,7 @@ exception Cannot_apply
 exception Recursive_abbrev
 
 (* GADT: recursive abbrevs can appear as a result of local constraints *)
-exception Unification_recursive_abbrev of (type_expr * type_expr) list
+exception Unification_recursive_abbrev of expr_pairs
 
 (**** Type level management ****)
 
@@ -3364,11 +3360,11 @@ let eqtype rename type_pairs subst env t1 t2 =
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Type_parameter_mismatch of Env.t * expr_pairs
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * (type_expr * type_expr) list
-  | CM_Val_type_mismatch of string * Env.t * (type_expr * type_expr) list
-  | CM_Meth_type_mismatch of string * Env.t * (type_expr * type_expr) list
+  | CM_Parameter_mismatch of Env.t * expr_pairs
+  | CM_Val_type_mismatch of string * Env.t * expr_pairs
+  | CM_Meth_type_mismatch of string * Env.t * expr_pairs
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string

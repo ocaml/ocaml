@@ -67,6 +67,8 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
+type expr_pairs = (type_expr * type_expr) list   (* shorthand *)
+
 module TypeOps : sig
   type t = type_expr
   val compare : t -> t -> int

@@ -77,8 +77,8 @@ val type_classes :
 *)
 
 type error =
-    Unconsistent_constraint of (type_expr * type_expr) list
-  | Field_type_mismatch of string * string * (type_expr * type_expr) list
+    Unconsistent_constraint of expr_pairs
+  | Field_type_mismatch of string * string * expr_pairs
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of label
@@ -87,10 +87,10 @@ type error =
   | Unbound_class_2 of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
-  | Constructor_type_mismatch of string * (type_expr * type_expr) list
+  | Constructor_type_mismatch of string * expr_pairs
   | Virtual_class of bool * bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
-  | Parameter_mismatch of (type_expr * type_expr) list
+  | Parameter_mismatch of expr_pairs
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
@@ -99,8 +99,8 @@ type error =
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
-      Ident.t * Types.class_declaration * (type_expr * type_expr) list
-  | Final_self_clash of (type_expr * type_expr) list
+      Ident.t * Types.class_declaration * expr_pairs
+  | Final_self_clash of expr_pairs
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string

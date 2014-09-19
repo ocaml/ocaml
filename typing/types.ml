@@ -67,6 +67,8 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
+type expr_pairs = (type_expr * type_expr) list   (* shorthand *)
+
 module TypeOps = struct
   type t = type_expr
   let compare t1 t2 = t1.id - t2.id

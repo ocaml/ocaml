@@ -126,8 +126,9 @@ let create fn arg =
   thread_new
     (fun () ->
       try
-        (* ARTHUR: I needed to add 'ignore' here; but maybe the signature 
-           of the function should be changed instead *)
+        (* Note: in strict sequence mode, we need an 'ignore' below;
+           Maybe the signature of fn could be restricted? 
+           What about backward compatibility, though? *)
         ignore (fn arg); exit()
       with x ->
         flush stdout; flush stderr;

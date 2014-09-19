@@ -67,18 +67,17 @@ val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
-    bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
+    bool -> bool-> string -> formatter -> expr_pairs -> unit
 val report_unification_error:
-    formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> ?unif:bool -> expr_pairs ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 type easytype_piece = formatter -> unit -> unit
 type easytype_pieces = (easytype_piece * easytype_piece * easytype_piece * easytype_piece)
 val get_unification_error_easytype:
-    Env.t -> ?unif:bool -> (type_expr * type_expr) list -> easytype_pieces
+    Env.t -> ?unif:bool -> expr_pairs -> easytype_pieces
 val report_subtyping_error:
-    formatter -> Env.t -> (type_expr * type_expr) list ->
-    string -> (type_expr * type_expr) list -> unit
+    formatter -> Env.t -> expr_pairs -> string -> expr_pairs -> unit
 val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
