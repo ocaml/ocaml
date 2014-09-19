@@ -126,7 +126,9 @@ let create fn arg =
   thread_new
     (fun () ->
       try
-        fn arg; exit()
+        (* ARTHUR: I needed to add 'ignore' here; but maybe the signature 
+           of the function should be changed instead *)
+        ignore (fn arg); exit()
       with x ->
         flush stdout; flush stderr;
         thread_uncaught_exception x;

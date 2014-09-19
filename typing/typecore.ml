@@ -3890,7 +3890,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         )
         pat_env_list caselist
      end else begin
-        (* Warning: behavior with GADTs might be broken *)
+        (* ARTHUR: behavior with GADTs might be broken; how to fix it? *)
         (* Note: some lines may have been copy-pasted from above *)
         let cases = List.map2
           (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
