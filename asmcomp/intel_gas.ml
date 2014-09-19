@@ -51,23 +51,9 @@ let string_of_table = function
   | Some GOTPCREL -> "@GOTPCREL"
   | None -> ""
 
-let string_of_symbol = function
-  | s, Some PLT -> s ^ "@PLT"
-  | s, Some GOTPCREL -> s ^ "@GOTPCREL"
-  | s, None -> s
-
-let print_ofs b strict = function
-  | 0L -> ()
-  | x when strict && x > 0L -> Printf.bprintf b "+%Ld" x
-  | x -> Printf.bprintf b "%Ld" x
-
 let print_sym_tbl b (s, table) =
   Buffer.add_string b s;
   Buffer.add_string b (string_of_table table)
-
-let print_opt_sym_tbl b = function
-  | None -> ()
-  | Some sym -> print_sym_tbl b sym
 
 let print_reg b f r =
   Buffer.add_char b '%';
@@ -77,9 +63,17 @@ let print_opt_reg b f = function
   | None -> ()
   | Some reg -> print_reg b f reg
 
-let bprint_arg_mem b string_of_register (a, (sym, offset) : 'a addr) =
-  print_opt_sym_tbl b sym;
-  print_ofs b (sym <> None) offset;
+let print_sym_offset b = function
+  | (None, x) -> Printf.bprintf b "%Ld" x
+  | (Some s, x) ->
+      print_sym_tbl b s;
+      match x with
+      | 0L -> ()
+      | x when x > 0L -> Printf.bprintf b "+%Ld" x
+      | x -> Printf.bprintf b "%Ld" x
+
+let bprint_arg_mem b string_of_register (a, x : 'a addr) =
+  print_sym_offset b x;
   match a with
   | Some (reg1, scale, base) ->
       Buffer.add_char b '(';
@@ -89,22 +83,16 @@ let bprint_arg_mem b string_of_register (a, (sym, offset) : 'a addr) =
       if scale <> 1 then Printf.bprintf b ",%d" scale;
       Buffer.add_char b ')'
   | None ->
-      assert (sym <> None || offset <> 0L)
+      ()
 
 let bprint_arg b arg =
   match arg with
   | Rel (_, sym) ->
-      Printf.bprintf b "%s" (string_of_symbol sym)
+      print_sym_tbl b sym
 
-  | Imm (_, (None, int) ) ->
-      Printf.bprintf b "$%Ld" int
-  | Imm (_, (Some sym,0L)) ->
-      Printf.bprintf b "$%s" (string_of_symbol sym)
-  | Imm (_, (Some sym,d)) ->
-      if d > 0L then
-        Printf.bprintf b "$%s+%Ld" (string_of_symbol sym) d
-      else
-        Printf.bprintf b "$%s%Ld" (string_of_symbol sym) d
+  | Imm (_, x) ->
+      Buffer.add_char b '$';
+      print_sym_offset b x
 
   | Reg8 register8 ->
       Printf.bprintf b "%%%s" (string_of_register8 register8)
@@ -150,9 +138,6 @@ let suffix = function
   | Mem (REAL4, _) -> "s"
   | Mem (NO, _) -> assert false
   | _ -> ""
-(*
-  | Imm (_ -> Printf.eprintf "%s\n%!" (Printexc.raw_backtrace_to_string (Printexc.get_callstack 10)); exit 2
-*)
 
 let i0 b s =
   tab b;
@@ -295,10 +280,7 @@ let emit_instr b = function
   | IMUL (arg1, Some arg2) -> i2_s b "imul" arg1 arg2
   | IDIV arg -> i1_s b "idiv" arg
 
-  | MOV (
-      (Imm (B64, _) as arg1),
-      (Reg64 _ as arg2))
-    -> i2 b "movabsq" arg1 arg2
+  | MOV ((Imm (B64, _) as arg1), (Reg64 _ as arg2)) -> i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVZX (arg1, arg2) -> i2_ss b "movz" arg1 arg2
   | MOVSX (arg1, arg2) -> i2_ss b "movs" arg1 arg2
@@ -438,4 +420,4 @@ let bprint_instr_name b instr =
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
-  Buffer.add_string b "\n"
+  Buffer.add_char b '\n'
