@@ -1453,6 +1453,7 @@ let rec trace_same_names = function
   | _ -> ()
 
 let unification_error unif tr txt1 ppf txt2 =
+  (* Warning: some of the lines below are duplicated in "get_unification_error_easytype" *)
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
