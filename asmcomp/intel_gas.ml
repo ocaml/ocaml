@@ -85,35 +85,19 @@ let bprint_arg_mem b string_of_register (a, x : 'a addr) =
   | None ->
       ()
 
-let bprint_arg b arg =
-  match arg with
-  | Rel (_, sym) ->
-      print_sym_tbl b sym
-
-  | Imm (_, x) ->
-      Buffer.add_char b '$';
-      print_sym_offset b x
-
-  | Reg8 register8 ->
-      Printf.bprintf b "%%%s" (string_of_register8 register8)
-  | Reg16 register16 ->
-      Printf.bprintf b "%%%s" (string_of_register16 register16)
-  | Reg32 register32 ->
-      Printf.bprintf b "%%%s" (string_of_register32 register32)
-  | Reg64 register ->
-      Printf.bprintf b "%%%s" (string_of_register64 register)
-  | Regf registerf ->
-      Printf.bprintf b "%%%s" (string_of_registerf registerf)
-
-  | Mem (_ptr, M32 addr) ->
-      bprint_arg_mem b string_of_register32 addr
-  | Mem (_ptr, M64 addr) ->
-      bprint_arg_mem b string_of_register64 addr
+let bprint_arg b = function
+  | Rel (_, sym) -> print_sym_tbl b sym
+  | Imm (_, x) -> Buffer.add_char b '$'; print_sym_offset b x
+  | Reg8  x -> print_reg b string_of_register8 x
+  | Reg16 x -> print_reg b string_of_register16 x
+  | Reg32 x -> print_reg b string_of_register32 x
+  | Reg64 x -> print_reg b string_of_register64 x
+  | Regf x  -> print_reg b string_of_registerf x
+  | Mem (_ptr, M32 addr) -> bprint_arg_mem b string_of_register32 addr
+  | Mem (_ptr, M64 addr) -> bprint_arg_mem b string_of_register64 addr
 
 let rec string_of_constant = function
-  | ConstLabel _
-  | Const _
-    as c -> string_of_simple_constant c
+  | ConstLabel _ | Const _ as c -> string_of_simple_constant c
   | ConstAdd (c1, c2) ->
       (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
   | ConstSub (c1, c2) ->
