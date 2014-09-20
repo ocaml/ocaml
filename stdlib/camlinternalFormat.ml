@@ -1229,6 +1229,18 @@ let recast :
 (* Add padding spaces arround a string. *)
 let fix_padding padty width str =
   let len = String.length str in
+  let width, padty =
+    abs width,
+    (* while literal padding widths are always non-negative,
+       dynamically-set widths (Arg_padding, eg. %*d) may be negative;
+       we interpret those as specifying a padding-to-the-left; this
+       means that '0' may get dropped even if it was explicitly set,
+       but:
+       - this is what the legacy implementation does, and
+         we preserve compatibility if possible
+       - we could only signal this issue by failing at runtime,
+         which is not very nice... *)
+    if width < 0 then Left else padty in
   if width <= len then str else
     let res = Bytes.make width (if padty = Zeros then '0' else ' ') in
     begin match padty with
