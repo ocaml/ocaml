@@ -1935,9 +1935,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_literal str_ind =
       let new_ind, prec = parse_positive str_ind end_ind 0 in
-      if new_ind = end_ind then unexpected_end_of_format end_ind;
-      parse_conversion pct_ind (new_ind + 1) end_ind plus sharp space ign pad
-        (Lit_precision prec) str.[new_ind] in
+      parse_after_precision pct_ind new_ind end_ind plus sharp space ign
+        pad (Lit_precision prec) in
     match str.[str_ind] with
     | '0' .. '9' -> parse_literal str_ind
     | ('+' | '-') when legacy_behavior ->
@@ -1989,7 +1988,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     and get_prec  () = prec_used  := true; prec in
 
     (* Check that padty <> Zeros. *)
-    let check_no_0 symb (type a) (type b) (pad : (a,b) padding) =
+    let check_no_0 symb (type a) (type b) (pad : (a, b) padding) =
       match pad with
       | No_padding -> pad
       | Lit_padding ((Left | Right), _) -> pad
@@ -2014,7 +2013,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       | Lit_padding (Left, width) ->
         if legacy_behavior then Some width
         else incompatible_flag pct_ind str_ind c "'-'"
-      | Arg_padding _          -> incompatible_flag pct_ind str_ind c "'*'"
+      | Arg_padding _ -> incompatible_flag pct_ind str_ind c "'*'"
     in
 
     (* Get precision as a prec_option (see "%_f").
