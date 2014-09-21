@@ -30,6 +30,7 @@ try
   (*test (sprintf "%#d/%#i" 42 43 = "42/43");*)
     (* >> '#' is incompatible with 'd' *)
   test (sprintf "%4d/%5i" 42 43 = "  42/   43");
+  test (sprintf "%*d" (-4) 42 = "42  ");
   test (sprintf "%*d/%*i" 4 42 5 43 = "  42/   43");
   (*test (sprintf "%-0+#4d/%-0 #5i" 42 43 = "+42 / 43  ");*)
     (* >> '#' is incompatible with 'd' *)
@@ -43,6 +44,7 @@ try
   (*test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");*)
     (* >> '#' is incompatible with 'd' *)
   test (sprintf "%4d/%5i" (-42) (-43) = " -42/  -43");
+  test (sprintf "%*d" (-4) (-42) = "-42 ");
   test (sprintf "%*d/%*i" 4 (-42) 5 (-43) = " -42/  -43");
   (*test (sprintf "%-0+ #4d/%-0+ #5i" (-42) (-43) = "-42 /-43  ");*)
     (* >> '0' is incompatible with '-', '#' is incompatible with 'd' *)
@@ -59,8 +61,7 @@ try
     (* >> '#' is incompatible with 'u' *)
   test (sprintf "%4u" 42 = "  42");
   test (sprintf "%*u" 4 42 = "  42");
-  (*test (sprintf "%-0+ #6d" 42 = "+42   ");*)
-    (* >> '-' is incompatible with '0', '#' is incompatible with 'd' *)
+  test (sprintf "%*u" (-4) 42 = "42  ");
 
   printf "\nu negative\n%!";
   begin match Sys.word_size with
@@ -82,8 +83,11 @@ try
   test (sprintf "%#x" 42 = "0x2a");
   test (sprintf "%4x" 42 = "  2a");
   test (sprintf "%*x" 5 42 = "   2a");
-  (*test (sprintf "%-0+ #*x" 5 42 = "0x2a ");*)
-    (* >> '-' is incompatible with '0' *)
+  test (sprintf "%*x" (-5) 42 = "2a   ");
+  test (sprintf "%#*x" 5 42 = " 0x2a");
+  test (sprintf "%#*x" (-5) 42 = "0x2a ");
+  test (sprintf "%#-*x" 5 42 = "0x2a ");
+  test (sprintf "%-0+ #*x" 5 42 = "0x2a ");
 
   printf "\nx negative\n%!";
   begin match Sys.word_size with
@@ -154,6 +158,7 @@ try
   test (sprintf "%5s" "foo" = "  foo");
   test (sprintf "%1s" "foo" = "foo");
   test (sprintf "%*s" 6 "foo" = "   foo");
+  test (sprintf "%*s" (-6) "foo" = "foo   ");
   test (sprintf "%*s" 2 "foo" = "foo");
   (*test (sprintf "%-0+ #5s" "foo" = "foo  ");*)
     (* >> '-' is incompatible with '0', '#' is incompatible with 's' *)
@@ -173,7 +178,8 @@ try
     (* >> '#' is incompatible with 'S' *)
 (*  test (sprintf "%5S" "foo" = "  \"foo\"");    padding not done *)
   test (sprintf "%1S" "foo" = "\"foo\"");
-(*  test (sprintf "%*S" 6 "foo" = "   \"foo\"");  padding not done *)
+  test (sprintf "%*S" 8 "foo" = "   \"foo\"");
+  test (sprintf "%*S" (-8) "foo" = "\"foo\"   ");
   test (sprintf "%*S" 2 "foo" = "\"foo\"");
 (*  test (sprintf "%-0+ #5S" "foo" = "\"foo\"  ");  padding not done *)
   test (sprintf "%S@" "foo" = "\"foo\"@");
@@ -262,7 +268,13 @@ try
   test (sprintf "%F" 42.42e42 =* "4.242e+43");
   test (sprintf "%F" 42.00 = "42.");
   test (sprintf "%F" 0.042 = "0.042");
-(* no padding, no precision
+  test (sprintf "%4F" 3. = "  3.");
+  test (sprintf "%-4F" 3. = "3.  ");
+  test (sprintf "%04F" 3. = "003.");
+(* plus-padding unsupported
+  test (sprintf "%+4F" 3. = " +3.");
+*)
+(* no precision
   test (sprintf "%.3F" 42.42 = "42.420");
   test (sprintf "%12.3F" 42.42e42 = "   4.242e+43");
   test (sprintf "%.3F" 42.00 = "42.000");
