@@ -2905,6 +2905,8 @@ and type_format loc str env =
           mk_constr "Ignored_scan_get_counter" [
             mk_counter counter
           ]
+        | Ignored_scan_next_char ->
+          mk_constr "Ignored_scan_next_char" []
       and mk_padding : type x y . (x, y) padding -> Parsetree.expression =
       fun pad -> match pad with
         | No_padding         -> mk_constr "No_padding" []
@@ -2970,6 +2972,8 @@ and type_format loc str env =
             mk_int_opt width_opt; mk_string char_set; mk_fmt rest ]
         | Scan_get_counter (cnt, rest) ->
           mk_constr "Scan_get_counter" [ mk_counter cnt; mk_fmt rest ]
+        | Scan_next_char rest ->
+          mk_constr "Scan_next_char" [ mk_fmt rest ]
         | Ignored_param (ign, rest) ->
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
