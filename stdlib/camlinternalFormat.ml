@@ -94,6 +94,8 @@ fun ign fmt -> match ign with
     Param_format_EBB (Scan_char_set (width_opt, char_set, fmt))
   | Ignored_scan_get_counter counter ->
     Param_format_EBB (Scan_get_counter (counter, fmt))
+  | Ignored_scan_next_char ->
+    Param_format_EBB (Scan_next_char fmt)
 
 
 (******************************************************************************)
@@ -568,6 +570,10 @@ let bprint_fmt buf fmt =
       buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
       buffer_add_char buf (char_of_counter counter);
       fmtiter rest false;
+    | Scan_next_char rest ->
+      buffer_add_char buf '%'; bprint_ignored_flag buf ign_flag;
+      bprint_string_literal buf "0c"; fmtiter rest false;
+
     | Ignored_param (ign, rest) ->
       let Param_format_EBB fmt' = param_format_of_ignored_format ign rest in
       fmtiter fmt' true;
@@ -842,6 +848,7 @@ fun fmtty -> match fmtty with
 
   | Scan_char_set (_, _, rest) -> String_ty (fmtty_of_fmt rest)
   | Scan_get_counter (_, rest) -> Int_ty (fmtty_of_fmt rest)
+  | Scan_next_char rest        -> Char_ty (fmtty_of_fmt rest)
   | Ignored_param (ign, rest)  -> fmtty_of_ignored_format ign rest
   | Formatting_lit (_, rest)   -> fmtty_of_fmt rest
   | Formatting_gen (fmting_gen, rest)  ->
@@ -871,6 +878,7 @@ fun ign fmt -> match ign with
   | Ignored_reader                  -> Ignored_reader_ty (fmtty_of_fmt fmt)
   | Ignored_scan_char_set _         -> fmtty_of_fmt fmt
   | Ignored_scan_get_counter _      -> fmtty_of_fmt fmt
+  | Ignored_scan_next_char          -> fmtty_of_fmt fmt
 
 (* Add an Int_ty node if padding is taken as an extra argument (ex: "%*s"). *)
 and fmtty_of_padding_fmtty : type x a b c d e f .
@@ -1088,6 +1096,7 @@ fun ign fmt fmtty -> match ign with
   | Ignored_bool               as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_scan_char_set _    as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_scan_get_counter _ as ign' -> type_ignored_param_one ign' fmt fmtty
+  | Ignored_scan_next_char     as ign' -> type_ignored_param_one ign' fmt fmtty
   | Ignored_format_arg (pad_opt, sub_fmtty) ->
     type_ignored_param_one (Ignored_format_arg (pad_opt, sub_fmtty)) fmt fmtty
   | Ignored_format_subst (pad_opt, sub_fmtty) ->
@@ -1426,6 +1435,10 @@ fun k o acc fmt -> match fmt with
     fun n ->
       let new_acc = Acc_data_string (acc, format_int "%u" n) in
       make_printf k o new_acc rest
+  | Scan_next_char rest ->
+    fun c ->
+      let new_acc = Acc_data_char (acc, c) in
+      make_printf k o new_acc rest
   | Ignored_param (ign, rest) ->
     make_ignored_param k o acc ign rest
 
@@ -1465,6 +1478,7 @@ fun k o acc ign fmt -> match ign with
   | Ignored_reader                  -> assert false
   | Ignored_scan_char_set _         -> make_invalid_arg k o acc fmt
   | Ignored_scan_get_counter _      -> make_invalid_arg k o acc fmt
+  | Ignored_scan_next_char          -> make_invalid_arg k o acc fmt
 
 
 (* Special case of printf "%_(". *)
@@ -2305,7 +2319,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   fun str_ind end_ind ->
     let next_ind, formatting_lit =
       try
-        if str_ind = end_ind || str.[str_ind] <> '<' then raise Not_found; 
+        if str_ind = end_ind || str.[str_ind] <> '<' then raise Not_found;
         let str_ind_1 = parse_spaces (str_ind + 1) end_ind in
         match str.[str_ind_1] with
         | '0' .. '9' | '-' -> (
