@@ -228,6 +228,11 @@ try
   (*test (sprintf "%-0+ #12f" 42.42 = "+42.420000  ");*)
     (* >> '-' is incompatible with '0', '#' is incompatible with 'f' *)
   test (sprintf "%.3f" (-42.42) = "-42.420");
+  test (sprintf "%.*f" (-3) 42.42 = "42.420");
+    (* dynamically-provided negative precisions are currently silently
+       turned into their absolute value; we could error on this
+       in the future (the behavior is unspecified), but the previous
+       buggy output "%.0-3f-" is not desirable. *)
   test (sprintf "%-13.3f" (-42.42) = "-42.420      ");
   test (sprintf "%013.3f" (-42.42) = "-00000042.420");
   test (sprintf "%+.3f" 42.42 = "+42.420");

@@ -5,6 +5,8 @@ OCaml 4.02.1:
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
 - PR#6533: broken semantics of %(%) when substitued by a box
   (Benoît Vaugon, report by Boris Yakobowski)
+- PR#6534: legacy support for %.10s
+  (Benoît Vaugon, Gabriel Scherer, report by Nick Chapman)
 - PR#6536: better documentation of flag # in format strings
 - PR#6544: Bytes and CamlinternalFormat missing from threads stdlib.cma
   (Christopher Zimmermann)
