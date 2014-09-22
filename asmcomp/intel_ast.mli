@@ -73,7 +73,7 @@ type 'reg addr =
     sym: string option;
     displ: int64;
   }
-  (* displ + base + idx * scale *)
+  (* displ + sym + base + idx * scale   (if scale = 0, idx is ignored and base must be None) *)
 
 type arg =
   | Imm of int64
@@ -88,145 +88,131 @@ type arg =
   | Reg32 of register32
   | Reg64 of register64
   | Regf of registerf
+
   | Mem32 of register32 addr
   | Mem64 of register64 addr
 
 type instruction =
-  | NOP
-
   | ADD of arg * arg
-  | SUB of arg * arg
-  | XOR of arg * arg
-  | OR of arg * arg
-  | AND of arg * arg
-  | CMP of arg * arg
-  | LEA of arg * arg
-
-  | FSTP of arg
-
-  | FCOMPP
-  | FCOMP of arg
-  | FLD of arg
-  | FNSTSW of arg
-  | FNSTCW of arg
-  | FLDCW of arg
-
-  | HLT
-  | FCHS
-  | FABS
-  | FLD1
-  | FPATAN
-  | FPTAN
-  | FCOS
-  | FLDLN2
-  | FLDLG2
-  | FYL2X
-  | FSIN
-  | FSQRT
-  | FLDZ
-
-  | FADD of arg
-  | FSUB of arg
-  | FMUL of arg
-  | FDIV of arg
-  | FSUBR of arg
-  | FDIVR of arg
-  | FILD of arg
-  | FISTP of arg
-  | FXCH of arg
-
-  | FADDP of arg * arg
-  | FSUBP of arg * arg
-  | FMULP of arg * arg
-  | FDIVP of arg * arg
-  | FSUBRP of arg * arg
-  | FDIVRP of arg * arg
-
-
-  | SAR of arg * arg
-  | SHR of arg * arg
-  | SAL of arg * arg
-  | INC of arg
-  | DEC of arg
-  | IMUL of arg * arg option
-  | IDIV of arg
-  | PUSH of arg
-  | POP of arg
-
-  | MOV of arg * arg
-
-  | MOVZX of arg * arg
-  | MOVSX of arg * arg
-  | MOVSS of arg * arg
-  | MOVSXD (* MOVSLQ *) of arg * arg
-
-  | MOVSD of arg * arg
   | ADDSD of arg * arg
-  | SUBSD of arg * arg
-  | MULSD of arg * arg
-  | DIVSD of arg * arg
-  | SQRTSD of arg * arg
-  | ROUNDSD of rounding * arg * arg
-  | NEG of arg
-
-  | CVTSS2SD of arg * arg
+  | AND of arg * arg
+  | ANDPD of arg * arg
+  | BSWAP of arg
+  | CALL of arg
+  | CDQ
+  | CMOV of condition * arg * arg
+  | CMP of arg * arg
+  | COMISD of arg * arg
+  | CQTO
+  | CVTSD2SI of arg * arg
   | CVTSD2SS of arg * arg
   | CVTSI2SD of arg * arg
-  | CVTSD2SI of arg * arg
+  | CVTSS2SD of arg * arg
   | CVTTSD2SI of arg * arg
-  | UCOMISD of arg * arg
-  | COMISD of arg * arg
-
-  | CALL of arg
-  | JMP of arg
-  | RET
-
-  | TEST of arg * arg
-  | SET of condition * arg
+  | DEC of arg
+  | DIVSD of arg * arg
+  | FABS
+  | FADD of arg
+  | FADDP of arg * arg
+  | FCHS
+  | FCOMP of arg
+  | FCOMPP
+  | FCOS
+  | FDIV of arg
+  | FDIVP of arg * arg
+  | FDIVR of arg
+  | FDIVRP of arg * arg
+  | FILD of arg
+  | FISTP of arg
+  | FLD of arg
+  | FLD1
+  | FLDCW of arg
+  | FLDLG2
+  | FLDLN2
+  | FLDZ
+  | FMUL of arg
+  | FMULP of arg * arg
+  | FNSTCW of arg
+  | FNSTSW of arg
+  | FPATAN
+  | FPTAN
+  | FSIN
+  | FSQRT
+  | FSTP of arg
+  | FSUB of arg
+  | FSUBP of arg * arg
+  | FSUBR of arg
+  | FSUBRP of arg * arg
+  | FXCH of arg
+  | FYL2X
+  | HLT
+  | IDIV of arg
+  | IMUL of arg * arg option
+  | INC of arg
   | J of condition * arg
-
-  | CMOV of condition * arg * arg
-  | XORPD of arg * arg
-  | ANDPD of arg * arg
+  | JMP of arg
+  | LEA of arg * arg
+  | LEAVE
+  | MOV of arg * arg
   | MOVAPD of arg * arg
   | MOVLPD of arg * arg
-
-  | CDQ
-  | CQTO
-  | LEAVE
-
+  | MOVSD of arg * arg
+  | MOVSS of arg * arg
+  | MOVSX of arg * arg
+  | MOVSXD (* MOVSLQ *) of arg * arg
+  | MOVZX of arg * arg
+  | MULSD of arg * arg
+  | NEG of arg
+  | NOP
+  | OR of arg * arg
+  | POP of arg
+  | PUSH of arg
+  | RET
+  | ROUNDSD of rounding * arg * arg
+  | SAL of arg * arg
+  | SAR of arg * arg
+  | SET of condition * arg
+  | SHR of arg * arg
+  | SQRTSD of arg * arg
+  | SUB of arg * arg
+  | SUBSD of arg * arg
+  | TEST of arg * arg
+  | UCOMISD of arg * arg
   | XCHG of arg * arg
-  | BSWAP of arg
+  | XOR of arg * arg
+  | XORPD of arg * arg
 
 type asm_line =
-  | Section of string list * string option * string list
-  | Global of string
-  | Quad of constant
-  | Long of constant
-  | Word of constant
-  | Byte of constant
+  | Ins of instruction
+
   | Align of bool * int
-  | NewLabel of string * data_type
+  | Byte of constant
   | Bytes of string
-  | Space of int
   | Comment of string
-  | External of string * data_type
-  | Set of string * constant
   | End
+  | Global of string
+  | Long of constant
+  | NewLabel of string * data_type
+  | Quad of constant
+  | Section of string list * string option * string list
+  | Space of int
+  | Word of constant
+
   (* Windows only ? *)
+  | External of string * data_type
   | Mode386
   | Model of string
+
   (* Unix only ? *)
-  | Cfi_startproc
-  | Cfi_endproc
   | Cfi_adjust_cfa_offset of int
+  | Cfi_endproc
+  | Cfi_startproc
   | File of int * string (* file_num * filename *)
+  | Indirect_symbol of string
   | Loc of int * int (* file_num x line *)
   | Private_extern of string
-  | Indirect_symbol of string
-  | Type of string * string
+  | Set of string * constant
   | Size of string * constant
-
-  | Ins of instruction
+  | Type of string * string
 
 type asm_program = asm_line list

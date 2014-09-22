@@ -36,21 +36,6 @@ type system =
   | S_unknown
 
 
-let string_of_datatype = function
-  | QWORD -> "QWORD"
-  | OWORD -> "OWORD"
-  | NO -> assert false
-  | REAL4 -> "REAL4"
-  | REAL8 -> "REAL8"
-  | REAL10 -> "REAL10"
-  | BYTE -> "BYTE"
-  | TBYTE -> "TBYTE"
-  | WORD -> "WORD"
-  | DWORD -> "DWORD"
-  | NEAR -> "NEAR"
-  | PROC -> "PROC"
-
-
 let system = match Config.system with
   | "macosx" -> S_macosx
   | "solaris" -> S_solaris
@@ -236,6 +221,12 @@ let string_of_condition condition =
   | C -> "c"
   | NO -> "no"
   | O -> "o"
+
+let string_of_rounding = function
+  | RoundDown -> "roundsd.down"
+  | RoundUp -> "roundsd.up"
+  | RoundTruncate -> "roundsd.trunc"
+  | RoundNearest -> "roundsd.near"
 
 
 (* These hooks can be used to insert optimization passes on

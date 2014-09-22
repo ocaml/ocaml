@@ -24,8 +24,8 @@ val string_of_register64: register64 -> string
 val string_of_registerf: registerf -> string
 val string_of_string_literal: string -> string
 val string_of_condition: condition -> string
-val string_of_datatype: data_type -> string
 val string_of_symbol: (*prefix*) string -> string -> string
+val string_of_rounding: rounding -> string
 
 (** Buffer of assembly code *)
 

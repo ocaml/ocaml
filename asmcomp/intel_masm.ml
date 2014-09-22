@@ -16,6 +16,22 @@ open Intel_ast
 open Intel_proc
 
 let tab b = Buffer.add_char b '\t'
+let bprintf = Printf.bprintf
+
+let string_of_datatype = function
+  | QWORD -> "QWORD"
+  | OWORD -> "OWORD"
+  | NO -> assert false
+  | REAL4 -> "REAL4"
+  | REAL8 -> "REAL8"
+  | REAL10 -> "REAL10"
+  | BYTE -> "BYTE"
+  | TBYTE -> "TBYTE"
+  | WORD -> "WORD"
+  | DWORD -> "DWORD"
+  | NEAR -> "NEAR"
+  | PROC -> "PROC"
+
 
 let string_of_datatype_ptr = function
   | QWORD -> "QWORD PTR "
@@ -41,7 +57,7 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
   if scale <> 0 then begin
     if sym <> None then Buffer.add_char b '+';
     Buffer.add_string b (string_of_register idx);
-    if scale <> 1 then Printf.bprintf b "*%d" scale;
+    if scale <> 1 then bprintf b "*%d" scale;
   end;
   begin match base with
   | None -> ()
@@ -50,19 +66,19 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
       Buffer.add_char b '+';
       Buffer.add_string b (string_of_register r);
   end;
-  begin if displ > 0L then Printf.bprintf b "+%Ld" displ
-    else if displ < 0L then Printf.bprintf b "%Ld" displ
+  begin if displ > 0L then bprintf b "+%Ld" displ
+    else if displ < 0L then bprintf b "%Ld" displ
   end;
   Buffer.add_char b ']'
 
 let bprint_arg b arg =
   match arg with
   | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      Printf.bprintf b "%Ld" n
+      bprintf b "%Ld" n
   | Imm int ->
       (* force ml64 to use mov reg, imm64 instruction *)
-      Printf.bprintf b "0%LxH" int
-  | Sym s -> Printf.bprintf b "OFFSET %s" s
+      bprintf b "0%LxH" int
+  | Sym s -> bprintf b "OFFSET %s" s
   | Reg8 x -> Buffer.add_string b (string_of_register8 x)
   | Reg16 x -> Buffer.add_string b (string_of_register16 x)
   | Reg32 x -> Buffer.add_string b (string_of_register32 x)
@@ -73,32 +89,26 @@ let bprint_arg b arg =
      the list of external symbols that need this addressing mode, and
      MASM will automatically use RIP addressing when needed. *)
   | Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ} ->
-      Printf.bprintf b "%s %s" (string_of_datatype_ptr typ) s;
-      if displ > 0L then Printf.bprintf b "+%Ld" displ
-      else if displ < 0L then Printf.bprintf b "%Ld" displ
+      bprintf b "%s%s" (string_of_datatype_ptr typ) s;
+      if displ > 0L then bprintf b "+%Ld" displ
+      else if displ < 0L then bprintf b "%Ld" displ
 
   | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
 
 
-let rec string_of_constant = function
-  | ConstLabel _ | Const _ | ConstThis as c -> string_of_simple_constant c
-  | ConstAdd (c1, c2) ->
-      (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
-  | ConstSub (c1, c2) ->
-      (string_of_simple_constant c1) ^ " - " ^ (string_of_simple_constant c2)
+let rec cst = function
+  | ConstLabel _ | Const _ | ConstThis as c -> cst c
+  | ConstAdd (c1, c2) -> scst c1 ^ " + " ^ scst c2
+  | ConstSub (c1, c2) -> scst c1 ^ " - " ^ scst c2
 
-and string_of_simple_constant = function
+and scst = function
   | ConstThis -> "THIS BYTE"
   | ConstLabel l -> l
   | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Int64.to_string n
   | Const n -> Printf.sprintf "0%LxH" n
-  | ConstAdd (c1, c2) ->
-      Printf.sprintf "(%s + %s)"
-        (string_of_simple_constant c1) (string_of_simple_constant c2)
-  | ConstSub (c1, c2) ->
-      Printf.sprintf "(%s - %s)"
-        (string_of_simple_constant c1) (string_of_simple_constant c2)
+  | ConstAdd (c1, c2) -> Printf.sprintf "(%s + %s)" (scst c1) (scst c2)
+  | ConstSub (c1, c2) -> Printf.sprintf "(%s - %s)" (scst c1) (scst c2)
 
 let buf_bytes_directive b directive s =
   let pos = ref 0 in
@@ -111,7 +121,7 @@ let buf_bytes_directive b directive s =
       Buffer.add_char b '\t';
     end
     else Buffer.add_char b ',';
-    Printf.bprintf b "%d" (Char.code s.[i]);
+    bprintf b "%d" (Char.code s.[i]);
     incr pos;
     if !pos >= 16 then begin pos := 0 end
   done
@@ -146,54 +156,67 @@ let i1_call_jmp b s x =
       i1 b s x
 
 let print_instr b = function
-  | NEG arg -> i1 b "neg" arg
-  | NOP -> i0 b "nop"
   | ADD (arg1, arg2) -> i2 b "add" arg1 arg2
-  | SUB (arg1, arg2) -> i2 b "sub" arg1 arg2
-  | XOR (arg1, arg2) -> i2 b "xor" arg1 arg2
-  | OR (arg1, arg2) -> i2 b "or" arg1 arg2
+  | ADDSD (arg1, arg2) -> i2 b "addsd" arg1 arg2
   | AND (arg1, arg2) -> i2 b "and" arg1 arg2
+  | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
+  | BSWAP arg -> i1 b "bswap" arg
+  | CALL arg  -> i1_call_jmp b "call" arg
+  | CDQ -> i0 b "cdq"
+  | CMOV (c, arg1, arg2) -> i2 b ("cmov" ^ string_of_condition c) arg1 arg2
   | CMP (arg1, arg2) -> i2 b "cmp" arg1 arg2
-
-  | LEAVE -> i0 b "leave"
-  | SAR (arg1, arg2) -> i2 b "sar" arg1 arg2
-  | SHR (arg1, arg2) -> i2 b "shr" arg1 arg2
-  | SAL (arg1, arg2) -> i2 b "sal" arg1 arg2
-
-  | FSTP arg -> i1 b "fstp" arg
-  | FILD arg -> i1 b "fild" arg
-  | FCOMPP -> i0 b "fcompp"
-  | FCOMP arg -> i1 b "fcomp" arg
-  | FLD arg -> i1 b "fld" arg
-  | FLDCW arg -> i1 b "fldcw" arg
-  | FISTP arg -> i1 b "fistp" arg
-
-  | FNSTSW arg -> i1 b "fnstsw" arg
-  | FNSTCW arg -> i1 b "fnstcw" arg
-
-  | FCHS -> i0 b "fchs"
+  | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
+  | CQTO -> i0 b "cqo"
+  | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
+  | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
+  | CVTSI2SD (arg1, arg2) -> i2 b "cvtsi2sd" arg1 arg2
+  | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
+  | CVTTSD2SI (arg1, arg2) -> i2 b "cvttsd2si" arg1 arg2
+  | DEC arg -> i1 b "dec" arg
+  | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
   | FABS -> i0 b "fabs"
   | FADD arg -> i1 b "fadd" arg
-  | FSUB arg -> i1 b "fsub" arg
-  | FMUL arg -> i1 b "fmul" arg
-  | FDIV arg -> i1 b "fdiv" arg
-  | FSUBR arg -> i1 b "fsubr" arg
-  | FDIVR arg -> i1 b "fdivr" arg
-
   | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
-  | FSUBP (arg1, arg2)  -> i2 b "fsubp" arg1 arg2
-  | FMULP (arg1, arg2)  -> i2 b "fmulp" arg1 arg2
+  | FCHS -> i0 b "fchs"
+  | FCOMP arg -> i1 b "fcomp" arg
+  | FCOMPP -> i0 b "fcompp"
+  | FCOS -> i0 b "fcos"
+  | FDIV arg -> i1 b "fdiv" arg
   | FDIVP (arg1, arg2)  -> i2 b "fdivp" arg1 arg2
-  | FSUBRP (arg1, arg2)  -> i2 b "fsubrp" arg1 arg2
+  | FDIVR arg -> i1 b "fdivr" arg
   | FDIVRP (arg1, arg2)  -> i2 b "fdivrp" arg1 arg2
-
-  | INC arg -> i1 b "inc" arg
-  | DEC arg -> i1 b "dec" arg
-
+  | FILD arg -> i1 b "fild" arg
+  | FISTP arg -> i1 b "fistp" arg
+  | FLD arg -> i1 b "fld" arg
+  | FLD1 -> i0 b "fld1"
+  | FLDCW arg -> i1 b "fldcw" arg
+  | FLDLG2 -> i0 b "fldlg2"
+  | FLDLN2 -> i0 b "fldln2"
+  | FLDZ -> i0 b "fldz"
+  | FMUL arg -> i1 b "fmul" arg
+  | FMULP (arg1, arg2)  -> i2 b "fmulp" arg1 arg2
+  | FNSTCW arg -> i1 b "fnstcw" arg
+  | FNSTSW arg -> i1 b "fnstsw" arg
+  | FPATAN -> i0 b "fpatan"
+  | FPTAN -> i0 b "fptan"
+  | FSIN -> i0 b "fsin"
+  | FSQRT -> i0 b "fsqrt"
+  | FSTP arg -> i1 b "fstp" arg
+  | FSUB arg -> i1 b "fsub" arg
+  | FSUBP (arg1, arg2)  -> i2 b "fsubp" arg1 arg2
+  | FSUBR arg -> i1 b "fsubr" arg
+  | FSUBRP (arg1, arg2)  -> i2 b "fsubrp" arg1 arg2
+  | FXCH arg -> i1 b "fxch" arg
+  | FYL2X -> i0 b "fyl2x"
+  | HLT -> assert false
+  | IDIV arg -> i1 b "idiv" arg
   | IMUL (arg, None) -> i1 b "imul" arg
   | IMUL (arg1, Some arg2) -> i2 b "imul" arg1 arg2
-  | IDIV arg -> i1 b "idiv" arg
-  | HLT -> assert false
+  | INC arg -> i1 b "inc" arg
+  | J (c, arg) -> i1_call_jmp b ("j" ^ string_of_condition c) arg
+  | JMP arg -> i1_call_jmp b "jmp" arg
+  | LEA (arg1, arg2) -> i2 b "lea" arg1 arg2
+  | LEAVE -> i0 b "leave"
   | MOV (Imm n as arg1, Reg64 r) when
       n >= 0x8000_0000L && n <= 0xFFFF_FFFFL ->
       (* Work-around a bug in ml64.  Use a mov to the corresponding
@@ -201,126 +224,71 @@ let print_instr b = function
          The associated higher 32-bit register will be zeroed. *)
       i2 b "mov" arg1 (Reg32 (Intel_proc.reg_low_32 r))
   | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
-
-  | MOVZX (arg1, arg2) -> i2 b "movzx" arg1 arg2
-  | MOVSX (arg1, arg2) -> i2 b "movsx" arg1 arg2
-  | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
-  | MOVSXD (arg1, arg2) -> i2 b "movsxd" arg1 arg2
-
-  | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
-  | ADDSD (arg1, arg2) -> i2 b "addsd" arg1 arg2
-  | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
-  | MULSD (arg1, arg2) -> i2 b "mulsd" arg1 arg2
-  | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
-  | SQRTSD (arg1, arg2) -> i2 b "sqrtsd" arg1 arg2
-  | ROUNDSD (rounding, arg1, arg2) ->
-      i2 b
-        (Printf.sprintf "roundsd.%s" (match rounding with
-               RoundDown -> "down"
-             | RoundUp -> "up"
-             | RoundTruncate -> "trunc"
-             | RoundNearest -> "near")) arg1 arg2
-  | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
-  | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
-  | CVTSI2SD (arg1, arg2) -> i2 b "cvtsi2sd" arg1 arg2
-  | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
-  | CVTTSD2SI (arg1, arg2) -> i2 b "cvttsd2si" arg1 arg2
-  | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
-  | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
-
-  | FLD1 -> i0 b "fld1"
-  | FPATAN -> i0 b "fpatan"
-  | FPTAN -> i0 b "fptan"
-  | FCOS -> i0 b "fcos"
-  | FLDLN2 -> i0 b "fldln2"
-  | FLDLG2 -> i0 b "fldlg2"
-  | FXCH arg -> i1 b "fxch" arg
-  | FYL2X -> i0 b "fyl2x"
-  | FSIN -> i0 b "fsin"
-  | FSQRT -> i0 b "fsqrt"
-  | FLDZ -> i0 b "fldz"
-
-  | CALL arg  -> i1_call_jmp b "call" arg
-  | JMP arg -> i1_call_jmp b "jmp" arg
-  | RET -> i0 b "ret"
-  | PUSH arg -> i1 b "push" arg
-  | POP arg -> i1 b "pop" arg
-
-  | TEST (arg1, arg2) -> i2 b "test" arg1 arg2
-  | SET (condition, arg) ->
-      i1 b
-        (Printf.sprintf  "set%s" (string_of_condition condition)) arg
-  | J (condition, arg) -> (* TODO: fix sym case *)
-      i1_call_jmp b
-        (Printf.sprintf  "j%s" (string_of_condition condition)) arg
-
-  | CMOV (condition, arg1, arg2) ->
-      i2 b (Printf.sprintf "cmov%s" (string_of_condition condition))
-        arg1 arg2
-  | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
-  | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
-  | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
-  | CDQ -> i0 b "cdq"
-
-  | LEA (arg1, arg2) -> i2 b "lea" arg1 arg2
-  | CQTO -> i0 b "cqo"
+  | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
+  | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
+  | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
+  | MOVSX (arg1, arg2) -> i2 b "movsx" arg1 arg2
+  | MOVSXD (arg1, arg2) -> i2 b "movsxd" arg1 arg2
+  | MOVZX (arg1, arg2) -> i2 b "movzx" arg1 arg2
+  | MULSD (arg1, arg2) -> i2 b "mulsd" arg1 arg2
+  | NEG arg -> i1 b "neg" arg
+  | NOP -> i0 b "nop"
+  | OR (arg1, arg2) -> i2 b "or" arg1 arg2
+  | POP arg -> i1 b "pop" arg
+  | PUSH arg -> i1 b "push" arg
+  | RET -> i0 b "ret"
+  | ROUNDSD (r, arg1, arg2) -> i2 b (string_of_rounding r) arg1 arg2
+  | SAL (arg1, arg2) -> i2 b "sal" arg1 arg2
+  | SAR (arg1, arg2) -> i2 b "sar" arg1 arg2
+  | SET (c, arg) -> i1 b ("set" ^ string_of_condition c) arg
+  | SHR (arg1, arg2) -> i2 b "shr" arg1 arg2
+  | SQRTSD (arg1, arg2) -> i2 b "sqrtsd" arg1 arg2
+  | SUB (arg1, arg2) -> i2 b "sub" arg1 arg2
+  | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
+  | TEST (arg1, arg2) -> i2 b "test" arg1 arg2
+  | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
   | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
-  | BSWAP arg -> i1 b "bswap" arg
+  | XOR (arg1, arg2) -> i2 b "xor" arg1 arg2
+  | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
 
 
-let bprint_instr_name b instr =
-  match instr with
-  | Global s ->
-      Printf.bprintf b "\tPUBLIC\t%s" s
-  | Align (_data,n) ->
-      Printf.bprintf b "\tALIGN\t%d" n
-  | NewLabel (s, NO) ->
-      Printf.bprintf b "%s:" s
-  | NewLabel (s, ptr) ->
-      Printf.bprintf b "%s LABEL %s" s (string_of_datatype ptr)
-  | Comment s ->
-      Printf.bprintf b " ; %s " s
+let bprint_instr_name b = function
+  | Ins instr -> print_instr b instr
 
-  | Cfi_startproc -> assert false
-  | Cfi_endproc -> assert false
-  | Cfi_adjust_cfa_offset _ -> assert false
-  | File _ -> assert false
-  | Loc _ -> assert false
-  | Private_extern _ -> assert false
-  | Indirect_symbol _ -> assert false
-  | Type _ -> assert false
-  | Size _ -> assert false
-
-  | Mode386 -> Printf.bprintf b "\t.386"
-  | Model name -> Printf.bprintf b "\t.MODEL %s" name (* name = FLAT *)
-  | Section (name, None, []) ->
-      Printf.bprintf b "\t%s" (match name with
-          | [".text"] -> ".CODE"
-          | [".data"] -> ".DATA"
-          | _ -> assert false)
-  | Section _ -> assert false
-
-  | Quad n -> Printf.bprintf b "\tQWORD\t%s" (string_of_constant n)
-  | Long n -> Printf.bprintf b "\tDWORD\t%s" (string_of_constant n)
-  | Word n -> Printf.bprintf b "\tWORD\t%s" (string_of_constant n)
-  | Byte n -> Printf.bprintf b "\tBYTE\t%s" (string_of_constant n)
-
-  | External (s, ptr) ->
-      Printf.bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
-
-  | End ->
-      Printf.bprintf b "END"
-
-  | Space n ->
-      Printf.bprintf b "\tBYTE\t%d DUP (?)" n
-  | Set (arg1, arg2) ->
-      Printf.bprintf b "\t.set %s, %s" arg1 (string_of_constant arg2)
-
+  | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
+  | Byte n -> bprintf b "\tBYTE\t%s" (cst n)
   | Bytes s -> buf_bytes_directive b "BYTE" s
+  | Comment s -> bprintf b " ; %s " s
+  | End -> bprintf b "END"
+  | Global s -> bprintf b "\tPUBLIC\t%s" s
+  | Long n -> bprintf b "\tDWORD\t%s" (cst n)
+  | NewLabel (s, NO) -> bprintf b "%s:" s
+  | NewLabel (s, ptr) -> bprintf b "%s LABEL %s" s (string_of_datatype ptr)
+  | Quad n -> bprintf b "\tQWORD\t%s" (cst n)
+  | Section ([".data"], None, []) -> bprintf b "\t.DATA"
+  | Section ([".text"], None, []) -> bprintf b "\t.CODE"
+  | Section _ -> assert false
+  | Space n -> bprintf b "\tBYTE\t%d DUP (?)" n
+  | Word n -> bprintf b "\tWORD\t%s" (cst n)
 
-  | Ins instr ->
-      print_instr b instr
+  (* windows only *)
+  | External (s, ptr) -> bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
+  | Mode386 -> bprintf b "\t.386"
+  | Model name -> bprintf b "\t.MODEL %s" name (* name = FLAT *)
+
+  (* gas only *)
+  | Cfi_adjust_cfa_offset _
+  | Cfi_endproc
+  | Cfi_startproc
+  | File _
+  | Indirect_symbol _
+  | Loc _
+  | Private_extern _
+  | Set _
+  | Size _
+  | Type _
+    -> assert false
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
