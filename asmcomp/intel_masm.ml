@@ -16,7 +16,6 @@ open Intel_ast
 open Intel_proc
 
 let tab b = Buffer.add_char b '\t'
-let bprint b s = tab b; Buffer.add_string b s
 
 let string_of_data_size = function
   | B64 -> "QWORD"
@@ -176,17 +175,6 @@ let bprint_arg b arg =
       bprint_arg_mem b string_of_register64 addr
 
 
-let bprint_args b args =
-  match args with
-  | [] -> ()
-  | [ arg ] -> tab b; bprint_arg b arg
-  | [ arg2; arg1 ] ->
-      tab b; bprint_arg b arg1;
-      Buffer.add_char b ',';
-      Buffer.add_char b ' ';
-      bprint_arg b arg2
-  | _ -> assert false
-
 let rec string_of_constant = function
   | ConstLabel _
   | Const _
@@ -223,118 +211,151 @@ let buf_bytes_directive b directive s =
     if !pos >= 16 then begin pos := 0 end
   done
 
-let split_instr = function
-  | NEG arg ->  "neg", [arg]
-  | NOP -> "nop", []
-  | ADD (arg1, arg2) ->  "add", [arg1; arg2]
-  | SUB (arg1, arg2) ->   "sub", [arg1; arg2]
-  | XOR (arg1, arg2) ->   "xor", [arg1; arg2]
-  | OR (arg1, arg2) ->    "or", [arg1; arg2]
-  | AND (arg1, arg2) ->   "and", [arg1; arg2]
-  | CMP (arg1, arg2) ->  "cmp", [arg1; arg2]
+let i0 b s =
+  tab b;
+  Buffer.add_string b s
 
-  | LEAVE -> "leave", []
-  | SAR (arg1, arg2) ->  "sar", [arg1; arg2]
-  | SHR (arg1, arg2) ->  "shr", [arg1; arg2]
-  | SAL (arg1, arg2) ->  "sal", [arg1; arg2]
+let i1 b s x =
+  tab b;
+  Buffer.add_string b s;
+  tab b;
+  bprint_arg b x
 
-  | FSTP arg -> "fstp", [ arg ]
-  | FILD arg -> "fild", [arg]
-  | FCOMPP -> "fcompp", []
-  | FCOMP arg -> "fcomp", [ arg ]
-  | FLD arg -> "fld", [ arg ]
-  | FLDCW arg -> "fldcw", [ arg ]
-  | FISTP arg -> "fistp", [ arg]
+let i2 b s x y =
+  tab b;
+  Buffer.add_string b s;
+  tab b;
+  bprint_arg b y;
+  Buffer.add_char b ',';
+  Buffer.add_char b ' ';
+  bprint_arg b x
 
-  | FNSTSW arg -> "fnstsw", [ arg ]
-  | FNSTCW arg -> "fnstcw", [ arg ]
+let i1_call_jmp b s x =
+  match x with
+  | Sym x ->
+      tab b;
+      Buffer.add_string b s;
+      tab b;
+      Buffer.add_string b x
+  | _ ->
+      i1 b s x
 
-  | FCHS -> "fchs", []
-  | FABS -> "fabs", []
-  | FADD arg -> "fadd", [arg]
-  | FSUB arg -> "fsub", [arg]
-  | FMUL arg -> "fmul", [arg]
-  | FDIV arg -> "fdiv", [arg]
-  | FSUBR arg -> "fsubr", [arg]
-  | FDIVR arg -> "fdivr", [arg]
+let print_instr b = function
+  | NEG arg -> i1 b "neg" arg
+  | NOP -> i0 b "nop"
+  | ADD (arg1, arg2) -> i2 b "add" arg1 arg2
+  | SUB (arg1, arg2) -> i2 b "sub" arg1 arg2
+  | XOR (arg1, arg2) -> i2 b "xor" arg1 arg2
+  | OR (arg1, arg2) -> i2 b "or" arg1 arg2
+  | AND (arg1, arg2) -> i2 b "and" arg1 arg2
+  | CMP (arg1, arg2) -> i2 b "cmp" arg1 arg2
 
-  | FADDP (arg1, arg2)  -> "faddp", [ arg1; arg2 ]
-  | FSUBP (arg1, arg2)  -> "fsubp", [ arg1; arg2 ]
-  | FMULP (arg1, arg2)  -> "fmulp", [ arg1; arg2 ]
-  | FDIVP (arg1, arg2)  -> "fdivp", [ arg1; arg2 ]
-  | FSUBRP (arg1, arg2)  -> "fsubrp", [ arg1; arg2 ]
-  | FDIVRP (arg1, arg2)  -> "fdivrp", [ arg1; arg2 ]
+  | LEAVE -> i0 b "leave"
+  | SAR (arg1, arg2) -> i2 b "sar" arg1 arg2
+  | SHR (arg1, arg2) -> i2 b "shr" arg1 arg2
+  | SAL (arg1, arg2) -> i2 b "sal" arg1 arg2
 
-  | INC arg ->  "inc", [ arg ]
-  | DEC arg ->  "dec", [ arg ]
+  | FSTP arg -> i1 b "fstp" arg
+  | FILD arg -> i1 b "fild" arg
+  | FCOMPP -> i0 b "fcompp"
+  | FCOMP arg -> i1 b "fcomp" arg
+  | FLD arg -> i1 b "fld" arg
+  | FLDCW arg -> i1 b "fldcw" arg
+  | FISTP arg -> i1 b "fistp" arg
 
-  | IMUL (arg1, None) ->  "imul", [ arg1 ]
-  | IMUL (arg1, Some arg2) ->  "imul", [ arg1; arg2 ]
-  | IDIV arg ->  "idiv", [ arg ]
+  | FNSTSW arg -> i1 b "fnstsw" arg
+  | FNSTCW arg -> i1 b "fnstcw" arg
+
+  | FCHS -> i0 b "fchs"
+  | FABS -> i0 b "fabs"
+  | FADD arg -> i1 b "fadd" arg
+  | FSUB arg -> i1 b "fsub" arg
+  | FMUL arg -> i1 b "fmul" arg
+  | FDIV arg -> i1 b "fdiv" arg
+  | FSUBR arg -> i1 b "fsubr" arg
+  | FDIVR arg -> i1 b "fdivr" arg
+
+  | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
+  | FSUBP (arg1, arg2)  -> i2 b "fsubp" arg1 arg2
+  | FMULP (arg1, arg2)  -> i2 b "fmulp" arg1 arg2
+  | FDIVP (arg1, arg2)  -> i2 b "fdivp" arg1 arg2
+  | FSUBRP (arg1, arg2)  -> i2 b "fsubrp" arg1 arg2
+  | FDIVRP (arg1, arg2)  -> i2 b "fdivrp" arg1 arg2
+
+  | INC arg -> i1 b "inc" arg
+  | DEC arg -> i1 b "dec" arg
+
+  | IMUL (arg, None) -> i1 b "imul" arg
+  | IMUL (arg1, Some arg2) -> i2 b "imul" arg1 arg2
+  | IDIV arg -> i1 b "idiv" arg
   | HLT -> assert false
-  | MOV (arg1, arg2) ->  "mov", [ arg1; arg2]
+  | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
 
-  | MOVZX (arg1, arg2) ->  "movzx", [ arg1; arg2]
-  | MOVSX (arg1, arg2) ->  "movsx",  [ arg1; arg2]
-  | MOVSS (arg1, arg2) ->  "movss", [ arg1; arg2 ]
-  | MOVSXD (arg1, arg2) ->  "movsxd", [ arg1; arg2 ]
+  | MOVZX (arg1, arg2) -> i2 b "movzx" arg1 arg2
+  | MOVSX (arg1, arg2) -> i2 b "movsx" arg1 arg2
+  | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
+  | MOVSXD (arg1, arg2) -> i2 b "movsxd" arg1 arg2
 
-  | MOVSD (arg1, arg2) ->  "movsd", [ arg1; arg2 ]
-  | ADDSD (arg1, arg2) ->  "addsd", [ arg1 ; arg2 ]
-  | SUBSD (arg1, arg2) ->  "subsd", [ arg1 ; arg2 ]
-  | MULSD (arg1, arg2) ->  "mulsd", [ arg1 ; arg2 ]
-  | DIVSD (arg1, arg2) ->  "divsd", [ arg1 ; arg2 ]
-  | SQRTSD (arg1, arg2) -> "sqrtsd", [ arg1; arg2]
+  | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
+  | ADDSD (arg1, arg2) -> i2 b "addsd" arg1 arg2
+  | SUBSD (arg1, arg2) -> i2 b "subsd" arg1 arg2
+  | MULSD (arg1, arg2) -> i2 b "mulsd" arg1 arg2
+  | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
+  | SQRTSD (arg1, arg2) -> i2 b "sqrtsd" arg1 arg2
   | ROUNDSD (rounding, arg1, arg2) ->
-      Printf.sprintf "roundsd.%s" (match rounding with
-            RoundDown -> "down"
-          | RoundUp -> "up"
-          | RoundTruncate -> "trunc"
-          | RoundNearest -> "near"), [ arg1 ; arg2 ]
-  | CVTSS2SD (arg1, arg2) ->  "cvtss2sd", [ arg1; arg2 ]
-  | CVTSD2SS (arg1, arg2) ->  "cvtsd2ss", [ arg1; arg2 ]
-  | CVTSI2SD (arg1, arg2) ->  "cvtsi2sd", [ arg1; arg2 ]
-  | CVTSD2SI (arg1, arg2) ->  "cvtsd2si", [ arg1; arg2 ]
-  | CVTTSD2SI (arg1, arg2) ->  "cvttsd2si", [ arg1; arg2 ]
-  | UCOMISD (arg1, arg2) ->  "ucomisd", [ arg1; arg2]
-  | COMISD (arg1, arg2) ->  "comisd", [arg1; arg2]
+      i2 b
+        (Printf.sprintf "roundsd.%s" (match rounding with
+               RoundDown -> "down"
+             | RoundUp -> "up"
+             | RoundTruncate -> "trunc"
+             | RoundNearest -> "near")) arg1 arg2
+  | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
+  | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
+  | CVTSI2SD (arg1, arg2) -> i2 b "cvtsi2sd" arg1 arg2
+  | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
+  | CVTTSD2SI (arg1, arg2) -> i2 b "cvttsd2si" arg1 arg2
+  | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
+  | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
 
-  | FLD1 -> "fld1", []
-  | FPATAN -> "fpatan", []
-  | FPTAN -> "fptan", []
-  | FCOS -> "fcos", []
-  | FLDLN2 -> "fldln2", []
-  | FLDLG2 -> "fldlg2", []
-  | FXCH arg -> "fxch", [ arg ]
-  | FYL2X -> "fyl2x", []
-  | FSIN -> "fsin", []
-  | FSQRT -> "fsqrt", []
-  | FLDZ -> "fldz", []
+  | FLD1 -> i0 b "fld1"
+  | FPATAN -> i0 b "fpatan"
+  | FPTAN -> i0 b "fptan"
+  | FCOS -> i0 b "fcos"
+  | FLDLN2 -> i0 b "fldln2"
+  | FLDLG2 -> i0 b "fldlg2"
+  | FXCH arg -> i1 b "fxch" arg
+  | FYL2X -> i0 b "fyl2x"
+  | FSIN -> i0 b "fsin"
+  | FSQRT -> i0 b "fsqrt"
+  | FLDZ -> i0 b "fldz"
 
-  | CALL arg  ->  "call", [ arg ] (* TODO: fix sym case *)
-  | JMP arg ->  "jmp", [ arg] (* TODO: fix sym case *)
-  | RET ->  "ret", []
-  | PUSH arg ->  "push", [arg]
-  | POP arg ->  "pop", [arg]
+  | CALL arg  -> i1_call_jmp b "call" arg
+  | JMP arg -> i1_call_jmp b "jmp" arg
+  | RET -> i0 b "ret"
+  | PUSH arg -> i1 b "push" arg
+  | POP arg -> i1 b "pop" arg
 
-  | TEST (arg1, arg2) ->  "test", [arg1; arg2]
+  | TEST (arg1, arg2) -> i2 b "test" arg1 arg2
   | SET (condition, arg) ->
-      Printf.sprintf  "set%s" (string_of_condition condition), [ arg ]
+      i1 b
+        (Printf.sprintf  "set%s" (string_of_condition condition)) arg
   | J (condition, arg) -> (* TODO: fix sym case *)
-      Printf.sprintf  "j%s" (string_of_condition condition), [ arg ]
+      i1_call_jmp b
+        (Printf.sprintf  "j%s" (string_of_condition condition)) arg
 
   | CMOV (condition, arg1, arg2) ->
-      Printf.sprintf "cmov%s" (string_of_condition condition), [ arg1; arg2]
-  | XORPD (arg1, arg2) ->  "xorpd", [ arg1; arg2 ]
-  | ANDPD (arg1, arg2) ->  "andpd", [ arg1; arg2 ]
-  | MOVLPD (arg1, arg2) ->  "movlpd", [ arg1; arg2 ]
-  | MOVAPD (arg1, arg2) ->  "movapd", [ arg1; arg2 ]
-  | CDQ -> "cdq", []
+      i2 b (Printf.sprintf "cmov%s" (string_of_condition condition))
+        arg1 arg2
+  | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
+  | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
+  | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
+  | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
+  | CDQ -> i0 b "cdq"
 
-  | LEA (arg1, arg2) ->  "lea", [arg1; arg2]
-  | CQTO ->  "cqo", []
-  | XCHG (arg1, arg2) -> "xchg", [ arg1; arg2 ]
-  | BSWAP arg -> "bswap", [ arg ]
+  | LEA (arg1, arg2) -> i2 b "lea" arg1 arg2
+  | CQTO -> i0 b "cqo"
+  | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
+  | BSWAP arg -> i1 b "bswap" arg
 
 
 let bprint_instr_name b instr =
@@ -360,8 +381,8 @@ let bprint_instr_name b instr =
   | Type _ -> assert false
   | Size _ -> assert false
 
-  | Mode386 ->  Printf.bprintf b "\t.386"
-  | Model name ->  Printf.bprintf b "\t.MODEL %s" name (* name = FLAT *)
+  | Mode386 -> Printf.bprintf b "\t.386"
+  | Model name -> Printf.bprintf b "\t.MODEL %s" name (* name = FLAT *)
   | Section (name, None, []) ->
       Printf.bprintf b "\t%s" (match name with
           | [".text"] -> ".CODE"
@@ -386,9 +407,7 @@ let bprint_instr_name b instr =
   | Bytes s -> buf_bytes_directive b "BYTE" s
 
   | Ins instr ->
-      let name, args = split_instr instr in
-      bprint b name;
-      bprint_args b args
+      print_instr b instr
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
