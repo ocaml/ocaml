@@ -73,7 +73,11 @@ type 'reg addr =
     sym: string option;
     displ: int64;
   }
-  (* displ + sym + base + idx * scale   (if scale = 0, idx is ignored and base must be None) *)
+  (** Addressing modes:
+      displ + sym + base + idx * scale
+      
+      (if scale = 0, idx is ignored and base must be None)
+  *)
 
 type arg =
   | Imm of int64
@@ -159,7 +163,7 @@ type instruction =
   | MOVSD of arg * arg
   | MOVSS of arg * arg
   | MOVSX of arg * arg
-  | MOVSXD (* MOVSLQ *) of arg * arg
+  | MOVSXD of arg * arg
   | MOVZX of arg * arg
   | MULSD of arg * arg
   | NEG of arg
@@ -198,12 +202,12 @@ type asm_line =
   | Space of int
   | Word of constant
 
-  (* Windows only ? *)
+  (* masm only *)
   | External of string * data_type
   | Mode386
   | Model of string
 
-  (* Unix only ? *)
+  (* gas only *)
   | Cfi_adjust_cfa_offset of int
   | Cfi_endproc
   | Cfi_startproc
