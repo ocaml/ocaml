@@ -36,10 +36,6 @@ type rounding =
   | RoundNearest
   | RoundTruncate
 
-type reloc_table =
-  | PLT
-  | GOTPCREL
-
 (* When an integer is immediate, the [data_size] information must
    indicate in which range it is. For symbols, the [data_size] size
    depends on how the symbol will be used, i.e. B32 for displacements
