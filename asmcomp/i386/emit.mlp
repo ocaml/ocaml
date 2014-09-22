@@ -107,7 +107,7 @@ let emit_symbol s =
 
 let abs s = (emit_symbol s, None)
 
-let immsym s = imm32 (emit_symbol s)
+let immsym s = sym (emit_symbol s)
 
 let emit_call s =
   I.call (rel32 (emit_symbol s))

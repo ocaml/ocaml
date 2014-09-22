@@ -138,7 +138,7 @@ let load_symbol_addr s arg =
   else if !pic_code then
     I.leaq (from_rip NO (emit_symbol s), arg)
   else
-    I.movq (imm64 (emit_symbol s), arg)
+    I.movq (sym (emit_symbol s), arg)
 
 (* Output a label *)
 

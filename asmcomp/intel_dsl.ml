@@ -58,6 +58,7 @@ end
 
 module DSL = struct
   let rel32 s = Rel32 s
+  let sym s = Sym s
 
   (* Override emitaux.ml *)
   let emit_int n =
@@ -253,8 +254,6 @@ module DSL32 = struct
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
 
-  let imm32 l = Sym l
-
   let mem_ptr typ ?(scale = 1) ?base ?sym offset idx =
     assert(scale > 0);
     Mem32 {typ; idx; scale; base; displ=(sym, Int64.of_int offset)}
@@ -345,8 +344,6 @@ module DSL64 = struct
   let rsp = Reg64 RSP
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
-
-  let imm64 s = Sym s
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);
