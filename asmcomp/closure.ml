@@ -945,14 +945,14 @@ let rec close fenv cenv = function
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let fail = sw.sw_failaction in
       begin match fail with
-      | None|Some (Lstaticraise (_,_,_)) -> fn fail
+      | None|Some (Lstaticraise (_,_)) -> fn fail
       | Some lamfail ->
           if
             (sw.sw_numconsts - List.length sw.sw_consts) +
             (sw.sw_numblocks - List.length sw.sw_blocks) > 1
           then
             let i = next_raise_count () in
-            let ubody,_ = fn (Some (Lstaticraise (Stexn_cst i,[],[])))
+            let ubody,_ = fn (Some (Lstaticraise (Stexn_cst i,[])))
             and uhandler,_ = close fenv cenv lamfail in
             Ucatch ([i,[],uhandler],ubody),Value_unknown
           else fn fail
@@ -971,13 +971,12 @@ let rec close fenv cenv = function
             let ud,_ = close fenv cenv d in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
-  | Lstaticraise (Stexn_var i, args, kargs) -> assert false
-  | Lstaticraise (Stexn_cst i, args, kargs) ->
+  | Lstaticraise (Stexn_cst i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
   | Lstaticcatch(body, handlers) ->
       let (ubody, _) = close fenv cenv body in
       let uhandlers =
-        List.map (fun (nfail, args, kargs, handler) ->
+        List.map (fun (nfail, args, handler) ->
             let (uhandler, _) = close fenv cenv handler in
             (nfail, args, uhandler))
           handlers in
@@ -1188,7 +1187,7 @@ and close_switch arg fenv cenv cases num_keys default =
   let actions =
     Array.map
       (function
-        | Single lam|Shared (Lstaticraise (_,[],[]) as lam) ->
+        | Single lam|Shared (Lstaticraise (_,[]) as lam) ->
             let ulam,_ = close fenv cenv lam in
             ulam
         | Shared lam ->

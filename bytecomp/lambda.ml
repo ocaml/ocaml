@@ -167,11 +167,7 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
-type stexn_var = { stexn_var : int }
-
-type stexn =
-  | Stexn_var of stexn_var
-  | Stexn_cst of int
+type stexn = Stexn_cst of int
 
 type lambda =
     Lvar of Ident.t
@@ -183,8 +179,8 @@ type lambda =
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
   | Lstringswitch of lambda * (string * lambda) list * lambda option
-  | Lstaticraise of stexn * lambda list * stexn list
-  | Lstaticcatch of lambda * (int * Ident.t list * stexn_var list * lambda) list
+  | Lstaticraise of stexn * lambda list
+  | Lstaticcatch of lambda * (int * Ident.t list * lambda) list
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -218,7 +214,7 @@ let const_unit = Const_pointer 0
 let lambda_unit = Lconst const_unit
 
 let lstaticcatch (body, (e, args), handler) =
-  Lstaticcatch(body,[e, args, [], handler])
+  Lstaticcatch(body,[e, args, handler])
 
 (* Build sharing keys *)
 (*
@@ -266,11 +262,11 @@ let make_key e =
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
            tr_opt env d)
-    | Lstaticraise (i,es,ks) ->
-        Lstaticraise (i,tr_recs env es,ks)
+    | Lstaticraise (i,es) ->
+        Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (body,handlers) ->
-        let handlers = List.map (fun (nfail, ids, kids, handler) ->
-            nfail, ids, kids, tr_rec env handler)
+        let handlers = List.map (fun (nfail, ids, handler) ->
+            nfail, ids, tr_rec env handler)
             handlers in
         Lstaticcatch (tr_rec env body,handlers)
     | Ltrywith (e1,x,e2) ->
@@ -352,11 +348,11 @@ let iter f = function
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
       iter_opt f default
-  | Lstaticraise (_,args,_) ->
+  | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, handlers) ->
       f e1;
-      List.iter (fun (_,_,_,handler) -> f handler) handlers
+      List.iter (fun (_,_,handler) -> f handler) handlers
   | Ltrywith(e1, exn, e2) ->
       f e1; f e2
   | Lifthenelse(e1, e2, e3) ->
@@ -396,7 +392,7 @@ let free_ids get l =
     | Lletrec(decl, body) ->
         List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
     | Lstaticcatch(e1, handlers) ->
-        List.iter (fun (_, vars, _, _) ->
+        List.iter (fun (_, vars, _) ->
             List.iter (fun id -> fv := IdentSet.remove id !fv) vars)
           handlers
     | Ltrywith(e1, exn, e2) ->
@@ -425,16 +421,16 @@ let next_raise_count () =
   !raise_count
 
 (* Anticipated staticraise, for guards *)
-let staticfail = Lstaticraise (Stexn_cst 0,[],[])
+let staticfail = Lstaticraise (Stexn_cst 0,[])
 
 let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (Stexn_cst 0,[],[])) -> true
+  | Lifthenelse( cond, body, Lstaticraise (Stexn_cst 0,[])) -> true
   | Llet(str, id, lam, body) -> is_guarded body
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (Stexn_cst 0,[],[])) ->
+  | Lifthenelse (cond, body, Lstaticraise (Stexn_cst 0,[])) ->
       Lifthenelse (cond, body, patch)
   | Llet(str, id, lam, body) ->
       Llet (str, id, lam, patch_guarded patch body)
@@ -489,10 +485,10 @@ let subst_lambda s lam =
   | Lstringswitch (arg,cases,default) ->
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default)
-  | Lstaticraise (i,args,ks) ->  Lstaticraise (i, List.map subst args, ks)
+  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, handlers) ->
-      let handlers = List.map (fun (nfail, ids, kids, handler) ->
-          (nfail, ids, kids, subst handler))
+      let handlers = List.map (fun (nfail, ids, handler) ->
+          (nfail, ids, subst handler))
           handlers in
       Lstaticcatch(subst e1, handlers)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)

@@ -58,11 +58,11 @@ let rec eliminate_ref id = function
         (eliminate_ref id e,
          List.map (fun (s, e) -> (s, eliminate_ref id e)) sw,
          Misc.may_map (eliminate_ref id) default)
-  | Lstaticraise (i,args,kargs) ->
-      Lstaticraise (i,List.map (eliminate_ref id) args,kargs)
+  | Lstaticraise (i,args) ->
+      Lstaticraise (i,List.map (eliminate_ref id) args)
   | Lstaticcatch(body, handlers) ->
-      let handlers = List.map (fun (n, ids, kids, handler) ->
-          n, ids, kids, eliminate_ref id handler)
+      let handlers = List.map (fun (n, ids, handler) ->
+          n, ids, eliminate_ref id handler)
           handlers in
       Lstaticcatch(eliminate_ref id body, handlers)
   | Ltrywith(e1, v, e2) ->
@@ -146,21 +146,15 @@ let simplify_exits lam =
         | []|[_] -> count tail d
         | _ -> count tail d; count tail d (* default will get replicated *)
       end
-  | Lstaticraise (stexn,ls,ks) ->
+  | Lstaticraise (stexn,ls) ->
       begin match stexn with
       | Stexn_cst i ->
           incr_exit i;
           if not (IntSet.mem i tail)
           then non_substituable i
-      | Stexn_var _ -> ()
       end;
-      List.iter (function
-          | Stexn_cst i ->
-              incr_exit i;
-              non_substituable i
-          | Stexn_var _ -> ()) ks;
       List.iter (count no_tail) ls
-  | Lstaticcatch (l1,[i,[],[],Lstaticraise (Stexn_cst j,[],[])]) ->
+  | Lstaticcatch (l1,[i,[],Lstaticraise (Stexn_cst j,[])]) ->
       (* i will be replaced by j in l1, so each occurence of i in l1
          increases j's ref count *)
       let tail = IntSet.add i tail in
@@ -175,14 +169,12 @@ let simplify_exits lam =
       if is_non_substituable i
       then non_substituable j
   | Lstaticcatch(l1, handlers) ->
-      let tail = List.fold_right (fun (i, _, _, _) -> IntSet.add i)
+      let tail = List.fold_right (fun (i, _, _) -> IntSet.add i)
           handlers tail in
-      List.iter (fun (i, _, ks, _) -> if ks = [] then non_substituable i)
-        handlers;
       count tail l1;
       let rec fixpoint handlers =
         let handlers' =
-          List.filter (fun (i, _, _, l2) ->
+          List.filter (fun (i, _, l2) ->
               (* If (exit i) is not reachable,
                  l2 will be removed, so don't count its exits *)
               if count_exit i > 0
@@ -275,14 +267,14 @@ let simplify_exits lam =
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
          Misc.may_map simplif d)
-  | Lstaticraise (Stexn_cst i,[],[]) as l ->
+  | Lstaticraise (Stexn_cst i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
         handler
       with
       | Not_found -> l
       end
-  | Lstaticraise (Stexn_cst i,ls,[]) as expr ->
+  | Lstaticraise (Stexn_cst i,ls) as expr ->
       let ls = List.map simplif ls in
       begin try
         let xs,handler = Hashtbl.find subst i in
@@ -297,21 +289,19 @@ let simplify_exits lam =
       with
       | Not_found -> expr
       end
-  | Lstaticraise (stexn,args,kargs) ->
-      Lstaticraise (stexn,List.map simplif args,kargs)
-  | Lstaticcatch (l1,[i,[],[],(Lstaticraise (Stexn_cst j,[],[]) as l2)]) ->
+  | Lstaticcatch (l1,[i,[],(Lstaticraise (Stexn_cst j,[]) as l2)]) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
   | Lstaticcatch(l1, handlers) ->
-      let hs = List.map (fun ((i, _, _, _) as h) -> count_exit i, h) handlers in
+      let hs = List.map (fun ((i, _, _) as h) -> count_exit i, h) handlers in
       let hs = List.filter (fun (count, _) -> count > 0) hs in
-      let substituables, kept = List.partition (fun (count, (i,_,_,_)) ->
+      let substituables, kept = List.partition (fun (count, (i,_,_)) ->
           count = 1 && not (is_non_substituable i)) hs in
       List.iter
-        (fun (_, (i, args, _, l2)) -> Hashtbl.add subst i (args,simplif l2))
+        (fun (_, (i, args, l2)) -> Hashtbl.add subst i (args,simplif l2))
         substituables;
       let kept = List.map
-          (fun (_, (i, ids, kids, h)) -> (i, ids, kids, simplif h)) kept in
+          (fun (_, (i, ids, h)) -> (i, ids, simplif h)) kept in
       Lstaticcatch(simplif l1, kept)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
@@ -428,10 +418,10 @@ let simplify_lets lam =
           end
       | None -> ()
       end
-  | Lstaticraise (i,ls,ks) -> List.iter (count bv) ls
+  | Lstaticraise (i,ls) -> List.iter (count bv) ls
   | Lstaticcatch(body, handlers) ->
       count bv body;
-      List.iter (fun (_,_,_,handler) -> count bv handler) handlers
+      List.iter (fun (_,_,handler) -> count bv handler) handlers
   | Ltrywith(l1, v, l2) -> count bv l1; count bv l2
   | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
   | Lsequence(l1, l2) -> count bv l1; count bv l2
@@ -531,11 +521,11 @@ let simplify_lets lam =
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
          Misc.may_map simplif d)
-  | Lstaticraise (i,ls,ks) ->
-      Lstaticraise (i, List.map simplif ls, ks)
+  | Lstaticraise (i,ls) ->
+      Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(body, handlers) ->
-      let handlers = List.map (fun (i, args, kargs, handler) ->
-          (i, args, kargs, simplif handler))
+      let handlers = List.map (fun (i, args, handler) ->
+          (i, args, simplif handler))
           handlers in
       Lstaticcatch (simplif body, handlers)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
@@ -602,11 +592,11 @@ let rec emit_tail_infos is_tail lambda =
         (fun (_,lam) ->  emit_tail_infos is_tail lam)
         sw ;
       Misc.may (emit_tail_infos is_tail) d
-  | Lstaticraise (_, l, _) ->
+  | Lstaticraise (_, l) ->
       list_emit_tail_infos false l
   | Lstaticcatch (body, handlers) ->
       emit_tail_infos is_tail body;
-      List.iter (fun (_,_,_,handler) ->
+      List.iter (fun (_,_,handler) ->
           emit_tail_infos is_tail handler)
         handlers
   | Ltrywith (body, _, handler) ->
@@ -856,13 +846,13 @@ let function_infos lam =
           | Some lam -> union res (loop tail env lam)
         end
 
-    | Lstaticraise (_, args, _) ->
+    | Lstaticraise (_, args) ->
         loops env args
 
     | Lstaticcatch (body, handlers) ->
         let res_handlers =
           unions
-            (List.map (fun (_,_,_,handler) ->
+            (List.map (fun (_,_,handler) ->
                  loop tail env handler)
                 handlers) in
         union
@@ -992,7 +982,7 @@ let simplify_tail_calls lam =
         let nfail = next_raise_count () in
         let tail = IdentSet.add id tail in
         Lstaticcatch (loop tail (add_function id nfail env) body,
-                      [nfail, params, [], loop tail env fbody])
+                      [nfail, params, loop tail env fbody])
 
     | Lletrec (defs, body)
         when are_transformable_tail_functions info defs ->
@@ -1003,7 +993,7 @@ let simplify_tail_calls lam =
         let handlers =
           List.map (function
               | (id, Lfunction (Curried, params, fbody)) ->
-                  find_function env id, params, [], loop tail env fbody
+                  find_function env id, params, loop tail env fbody
               | _ -> assert false) defs in
         Lstaticcatch (loop tail env body, handlers)
 
@@ -1017,8 +1007,8 @@ let simplify_tail_calls lam =
         let params' = List.map Ident.rename params in
         let function_entry =
           Lstaticraise(Stexn_cst nfail,
-                       List.map (fun v -> Lvar v) params', []) in
-        let handlers = [nfail, params, [], loop fbody_tail fbody_env fbody] in
+                       List.map (fun v -> Lvar v) params') in
+        let handlers = [nfail, params, loop fbody_tail fbody_env fbody] in
         let fbody = Lstaticcatch (function_entry, handlers) in
         Lletrec ([id, Lfunction (Curried, params', fbody)], loop tail env body)
 
@@ -1040,16 +1030,16 @@ let simplify_tail_calls lam =
         let params' = List.map Ident.rename ex_params in
         let function_entry =
           Lstaticraise(Stexn_cst ex_nfail,
-                       List.map (fun v -> Lvar v) params', []) in
+                       List.map (fun v -> Lvar v) params') in
         let handlers = List.map (fun (id, nfail, params, fbody) ->
-            (nfail, params, [], loop fbody_tail fbody_env fbody)) functions in
+            (nfail, params, loop fbody_tail fbody_env fbody)) functions in
         let fbody = Lstaticcatch (function_entry, handlers) in
         Lletrec ([ex_id, Lfunction (Curried, params', fbody)], loop tail env body)
 
     | Lapply (Lvar id, args, loc)
       when IdentSet.mem id tail ->
         let nfail = find_function env id in
-        Lstaticraise(Stexn_cst nfail, args, [])
+        Lstaticraise(Stexn_cst nfail, args)
 
     | Lapply (func, args, loc) ->
         Lapply (loop no_tail env func, loops env args, loc)
@@ -1103,14 +1093,14 @@ let simplify_tail_calls lam =
            | None -> None
            | Some lam -> Some (loop tail env lam))
 
-    | Lstaticraise (nfail, args, kargs) ->
-        Lstaticraise (nfail, loops env args, kargs)
+    | Lstaticraise (nfail, args) ->
+        Lstaticraise (nfail, loops env args)
 
     | Lstaticcatch (body, handlers) ->
         Lstaticcatch
           (loop tail env body,
-           List.map (fun (n, ids, kids, handler) ->
-               (n, ids, kids, loop tail env handler))
+           List.map (fun (n, ids, handler) ->
+               (n, ids, loop tail env handler))
              handlers)
 
     | Levent (lam, ev) ->
@@ -1189,11 +1179,11 @@ let rec map f lam =
           (map f e,
            List.map (fun (s, e) -> (s, map f e)) sw,
            Misc.may_map (map f) default)
-    | Lstaticraise (i,args,kargs) ->
-        Lstaticraise (i,List.map (map f) args,kargs)
+    | Lstaticraise (i,args) ->
+        Lstaticraise (i,List.map (map f) args)
     | Lstaticcatch(body, handlers) ->
-        let handlers = List.map (fun (n, ids, kids, handler) ->
-            n, ids, kids, map f handler)
+        let handlers = List.map (fun (n, ids, handler) ->
+            n, ids, map f handler)
             handlers in
         Lstaticcatch(map f body, handlers)
     | Ltrywith(e1, v, e2) ->
