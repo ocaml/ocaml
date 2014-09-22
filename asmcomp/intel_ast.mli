@@ -75,7 +75,6 @@ type 'reg addr =
   }
   (** Addressing modes:
       displ + sym + base + idx * scale
-      
       (if scale = 0, idx is ignored and base must be None)
   *)
 
