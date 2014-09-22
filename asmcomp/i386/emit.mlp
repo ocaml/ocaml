@@ -988,7 +988,7 @@ let fundecl fundecl =
       _type  (emit_symbol fundecl.fun_name) "@function";
       _size (emit_symbol fundecl.fun_name)
         (ConstSub (
-            ConstLabel ".",
+            ConstThis,
             ConstLabel (emit_symbol fundecl.fun_name)))
   | _ -> ()
   end
@@ -1090,7 +1090,7 @@ let end_assembly() =
       efa_label_rel = (fun lbl ofs ->
           _long (ConstAdd (
               ConstSub(ConstLabel(emit_label lbl),
-                       ConstLabel "."),
+                       ConstThis),
               const_32 ofs)));
       efa_def_label = (fun l -> _label (emit_label l));
       efa_string = (fun s ->

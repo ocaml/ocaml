@@ -83,14 +83,15 @@ let bprint_arg b arg =
 
 
 let rec string_of_constant = function
-  | ConstLabel _ | Const _ as c -> string_of_simple_constant c
+  | ConstLabel _ | Const _ | ConstThis as c -> string_of_simple_constant c
   | ConstAdd (c1, c2) ->
       (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
   | ConstSub (c1, c2) ->
       (string_of_simple_constant c1) ^ " - " ^ (string_of_simple_constant c2)
 
 and string_of_simple_constant = function
-  | ConstLabel l -> if l = "." then "THIS BYTE" else l
+  | ConstThis -> "THIS BYTE"
+  | ConstLabel l -> l
   | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Int64.to_string n
   | Const n -> Printf.sprintf "0%LxH" n
   | ConstAdd (c1, c2) ->

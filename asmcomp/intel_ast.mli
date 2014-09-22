@@ -38,6 +38,7 @@ type rounding =
 
 type constant =
   | Const of int64
+  | ConstThis
   | ConstLabel of string
   | ConstAdd of constant * constant
   | ConstSub of constant * constant
