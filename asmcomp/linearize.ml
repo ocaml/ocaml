@@ -152,7 +152,7 @@ let add_branch ?(frame_offsets=0) lbl n =
 
 (* Current labels for exit handler *)
 
-let exit_label : (int * (int * label)) list ref = ref []
+let exit_label : (Mach.label * (int * label)) list ref = ref []
 
 let find_exit_label k =
   try

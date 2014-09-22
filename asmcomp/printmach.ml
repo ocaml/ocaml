@@ -172,7 +172,7 @@ let rec instr ppf i =
   | Ilabel(handlers, body) ->
       fprintf ppf "@[<v 2>label@,%a@;<0 -2>with" instr body;
       let h (nfail, handler) =
-        fprintf ppf "(%d)@,%a@;" nfail instr handler in
+        fprintf ppf "(%d)@,%a@;" (nfail:label:>int) instr handler in
       let rec aux = function
         | [] -> ()
         | [v] -> h v
@@ -183,7 +183,7 @@ let rec instr ppf i =
       in
       aux handlers
   | Ijump i ->
-      fprintf ppf "jump(%d)" i
+      fprintf ppf "jump(%d)" (i:label:>int)
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler

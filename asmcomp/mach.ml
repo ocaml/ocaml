@@ -54,6 +54,8 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
 
+type label = Cmm.label
+
 type instruction =
   { desc: instruction_desc;
     next: instruction;
@@ -68,8 +70,8 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Ilabel of (int * instruction) list * instruction
-  | Ijump of int
+  | Ilabel of (label * instruction) list * instruction
+  | Ijump of label
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
@@ -129,21 +131,21 @@ let rec instr_iter f i =
       | _ ->
           instr_iter f i.next
 
-module StExnSet = Set.Make(struct type t = int let compare x y = x-y end)
+module LabelSet = Set.Make(struct type t = label let compare = compare end)
 
 type result =
-  { reachable_exits : StExnSet.t;
-    recursive_handlers : StExnSet.t }
+  { reachable_exits : LabelSet.t;
+    recursive_handlers : LabelSet.t }
 
 let empty_result =
-  { reachable_exits = StExnSet.empty;
-    recursive_handlers = StExnSet.empty }
+  { reachable_exits = LabelSet.empty;
+    recursive_handlers = LabelSet.empty }
 
 let result_union r1 r2 =
   { reachable_exits =
-      StExnSet.union r1.reachable_exits r2.reachable_exits;
+      LabelSet.union r1.reachable_exits r2.reachable_exits;
     recursive_handlers =
-      StExnSet.union r1.recursive_handlers r2.recursive_handlers }
+      LabelSet.union r1.recursive_handlers r2.recursive_handlers }
 
 let recursive_handlers i =
   let rec loop i =
@@ -162,10 +164,10 @@ let recursive_handlers i =
         let r =
           List.fold_left (fun acc (nfail, handler) ->
               let acc = result_union acc (loop handler) in
-              if StExnSet.mem nfail acc.reachable_exits
+              if LabelSet.mem nfail acc.reachable_exits
               then { acc with
                      recursive_handlers =
-                       StExnSet.add nfail acc.recursive_handlers }
+                       LabelSet.add nfail acc.recursive_handlers }
               else acc)
             empty_result handlers
         in
@@ -173,7 +175,7 @@ let recursive_handlers i =
           (result_union (loop body) (loop i.next))
     | Ijump n ->
         { empty_result with
-          reachable_exits = StExnSet.singleton n }
+          reachable_exits = LabelSet.singleton n }
     | Itrywith(body, handler) ->
         result_union
           (result_union (loop body) (loop handler))

@@ -178,7 +178,7 @@ let build_graph fundecl =
         prefer weight body;
         List.iter (fun (nfail, handler) ->
             let weight =
-              if StExnSet.mem nfail recursive_handlers
+              if LabelSet.mem nfail recursive_handlers
               then
                 (* Avoid overflow of weight and spill_cost *)
                 if weight < 1000 then 8 * weight else weight
