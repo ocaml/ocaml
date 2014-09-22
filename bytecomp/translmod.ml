@@ -85,19 +85,12 @@ let rec apply_coercion strict restr arg =
       name_lambda strict arg (fun id ->
         let lam =
           Lprim(Pmakeblock(0, Immutable),
-                List.map (apply_coercion_field id) pos_cc_list) in
-        let fv = free_variables lam in
-        let (lam,s) =
-          List.fold_left (fun (lam,s) (id',pos,c) ->
-            if IdentSet.mem id' fv then
-              let id'' = Ident.create (Ident.name id') in
-              (Llet(Alias,id'',
-                    apply_coercion Alias c (Lprim(Pfield pos,[Lvar id])),lam),
-               Ident.add id' (Lvar id'') s)
-            else (lam,s))
-            (lam, Ident.empty) id_pos_list
+                List.map (apply_coercion_field id) pos_cc_list)
+        and v =
+          Array.init (List.length pos_cc_list)
+            (fun pos -> (Lprim(Pfield pos,[Lvar id])))
         in
-        if s == Ident.empty then lam else subst_lambda s lam)
+        wrap_id_pos_list id_pos_list v lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -113,6 +106,24 @@ let rec apply_coercion strict restr arg =
 
 and apply_coercion_field id (pos, cc) =
   apply_coercion Alias cc (Lprim(Pfield pos, [Lvar id]))
+
+and wrap_id_pos_list id_pos_list v lam =
+  let fv = free_variables lam in
+  (*Format.eprintf "%a@." Printlambda.lambda lam;
+  IdentSet.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
+  Format.eprintf "@.";*)
+  let (lam,s) =
+    List.fold_left (fun (lam,s) (id',pos,c) ->
+      if IdentSet.mem id' fv then
+        let id'' = Ident.create (Ident.name id') in
+        (Llet(Alias,id'',
+              apply_coercion Alias c v.(pos),lam),
+         Ident.add id' (Lvar id'') s)
+      else (lam,s))
+      (lam, Ident.empty) id_pos_list
+  in
+  if s == Ident.empty then lam else subst_lambda s lam
+  
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -154,7 +165,7 @@ let compose_coercions c1 c2 =
   let c3 = compose_coercions c1 c2 in
   let open Includemod in
   Format.eprintf "@[<2>compose_coercions@ (%a)@ (%a) =@ %a@]@."
-    print_coercion c1 print_coercion c2 print_coercion c2;
+    print_coercion c1 print_coercion c2 print_coercion c3;
   c3
 *)
 
@@ -362,18 +373,25 @@ and transl_structure fields cc rootpath = function
           Lprim(Pmakeblock(0, Immutable),
                 List.map (fun id -> Lvar id) (List.rev fields))
       | Tcoerce_structure(pos_cc_list, id_pos_list) ->
-              (* ignore id_pos_list as the ids are already bound *)
-          let v = Array.of_list (List.rev fields) in
-          (*List.fold_left
-            (fun lam (id, pos) -> Llet(Alias, id, Lvar v.(pos), lam))*)
+              (* Do not ignore id_pos_list ! *)
+          (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
+          List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
+            fields;
+          Format.eprintf "@]@.";*)
+          let v = Array.of_list (List.map (fun i -> Lvar i) (List.rev fields))
+          and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+          let lam =
             (Lprim(Pmakeblock(0, Immutable),
                 List.map
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p -> transl_primitive Location.none p
-                    | _ -> apply_coercion Strict cc (Lvar v.(pos)))
+                    | _ -> apply_coercion Strict cc v.(pos))
                   pos_cc_list))
-            (*id_pos_list*)
+          and id_pos_list =
+            List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
+          in
+          wrap_id_pos_list id_pos_list v lam
       | _ ->
           fatal_error "Translmod.transl_structure"
       end

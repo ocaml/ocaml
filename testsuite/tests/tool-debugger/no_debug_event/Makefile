@@ -51,7 +51,7 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result *.cm* noev.* c$(EXE)
+	@rm -f *.result *.cm* c$(EXE)
 	@rm -rf compiler-libs
 
 include $(BASEDIR)/makefiles/Makefile.common

@@ -21,6 +21,8 @@ OCaml 4.02.1:
 - PR#6563: Inclusion of packs failing to run module initializers
 - PR#6565: compilation fails with Env.Error(_)
 - PR#6566: -short-paths and signature inclusion errors
+- PR#6572: Fatal error with recursive modules
+
 
 OCaml 4.02.0:
 -------------
