@@ -372,7 +372,6 @@ module Make(I:I) = struct
     | Cjump (e,[]) ->  k arg
     | _ ->
         let e =  next_raise_count () in
-        let e = (e:>int) in
         ccatch (e,[],k (cexit (e,[])),arg)
 
     let compile str default cases =

@@ -599,7 +599,7 @@ method emit_expr (env:environment) exp =
           handlers in
       let env =
         List.fold_left (fun env (nfail, ids, rs, e2) ->
-            env_add_exn nfail rs env)
+            env_add_exn (nfail:label:>int) rs env)
           env handlers in
       let (r_body, s_body) = self#emit_sequence env e1 in
       let aux (nfail, ids, rs, e2) =
@@ -614,10 +614,11 @@ method emit_expr (env:environment) exp =
       let l = List.map aux handlers in
       let a = Array.of_list ((r_body,s_body) :: List.map snd l) in
       let r = join_array a in
-      let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
+      let aux2 (nfail, (_r, s)) = ((nfail:label:>int), s#extract) in
       self#insert (Ilabel(List.map aux2 l, s_body#extract)) [||] [||];
       r
   | Cjump (nfail,args) ->
+      let nfail = (nfail:label:>int) in
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
@@ -829,7 +830,7 @@ method emit_tail (env:environment) exp =
           handlers in
       let env =
         List.fold_left (fun env (nfail, ids, rs, e2) ->
-            env_add_exn nfail rs env)
+            env_add_exn (nfail:label:>int) rs env)
           env handlers in
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, rs, e2) =
@@ -838,7 +839,7 @@ method emit_tail (env:environment) exp =
           List.fold_left
             (fun env (id,r) -> env_add id r env)
             env (List.combine ids rs) in
-        nfail, self#emit_tail_sequence new_env e2
+        (nfail:label:>int), self#emit_tail_sequence new_env e2
       in
       self#insert (Ilabel(List.map aux handlers, s_body)) [||] [||]
   | Ctrywith(e1, v, e2) ->

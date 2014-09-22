@@ -419,8 +419,11 @@ let next_raise_count () =
   incr raise_count ;
   !raise_count
 
+let default_stexn = 0
+let bogus_stexn = -1
+
 (* Anticipated staticraise, for guards *)
-let staticfail = Lstaticraise (0,[])
+let staticfail = Lstaticraise (default_stexn,[])
 
 let rec is_guarded = function
   | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
@@ -557,4 +560,3 @@ let lam_of_loc kind loc =
 let reset () =
   raise_count := 0
 
-let bogus_stexn = -1

@@ -68,6 +68,8 @@ type operation =
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
+type label = Lambda.stexn
+
 type expression =
     Cconst_int of int
   | Cconst_natint of nativeint
@@ -84,8 +86,8 @@ type expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
-  | Clabel of (int * Ident.t list * expression) list * expression
-  | Cjump of int * expression list
+  | Clabel of (label * Ident.t list * expression) list * expression
+  | Cjump of label * expression list
   | Ctrywith of expression * Ident.t * expression
 
 type fundecl =
@@ -115,5 +117,5 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-val ccatch : int * Ident.t list * expression * expression -> expression
-val cexit : (int * expression list) -> expression
+val ccatch : label * Ident.t list * expression * expression -> expression
+val cexit : (label * expression list) -> expression

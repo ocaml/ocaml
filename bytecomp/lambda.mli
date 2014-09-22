@@ -262,4 +262,5 @@ val lam_of_loc : loc_kind -> Location.t -> lambda
 
 val reset: unit -> unit
 
+val default_stexn: stexn
 val bogus_stexn: stexn

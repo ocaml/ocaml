@@ -146,7 +146,7 @@ let rec expr ppf = function
   | Clabel(handlers, e1) ->
       let print_handler ppf (i, ids, e2) =
         fprintf ppf "(%d%a)@ %a"
-          i
+          (i:label:>int)
           (fun ppf ids ->
              List.iter
                (fun id -> fprintf ppf " %a" Ident.print id)
@@ -161,7 +161,7 @@ let rec expr ppf = function
         sequence e1
         print_handlers handlers
   | Cjump (i, el) ->
-      fprintf ppf "@[<2>(jump %d" i;
+      fprintf ppf "@[<2>(jump %d" (i:label:>int);
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       fprintf ppf ")@]"
   | Ctrywith(e1, id, e2) ->
