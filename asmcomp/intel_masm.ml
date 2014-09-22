@@ -37,111 +37,33 @@ let string_of_datatype_ptr = function
   | NEAR -> "NEAR PTR "
   | PROC -> "PROC PTR "
 
-let bprint_arg_mem b string_of_register mem =
-  let ptr = mem.typ in
-  match mem.idx, mem.scale, mem.base, mem.displ with
-  | _, 0, None, (None, _) -> assert false (* not implemented *)
-  | _, 0, None, (Some s , 0L) ->
-      Printf.bprintf b "%s %s" (string_of_datatype_ptr ptr) s
-  | _, 0, None, (Some s , d) ->
-      if d > 0L then
-        Printf.bprintf b "%s %s+%Ld" (string_of_datatype_ptr ptr) s d
-      else
-        Printf.bprintf b "%s %s%Ld" (string_of_datatype_ptr ptr) s d
-
-  | reg1, 1, None, (None, 0L) ->
-      Printf.bprintf b "%s[%s]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg1);
-
-  | reg1, 1, None, (None, offset) ->
-      Printf.bprintf b "%s[%s%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg1)
-        (if offset > 0L then "+" else "")
-        offset
-
-  | reg1, scale, None, (None, 0L) ->
-      Printf.bprintf b "%s[%s*%d]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg1)
-        scale
-  | reg1, scale, None, (None, offset) ->
-      Printf.bprintf b "%s[%s*%d%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg1)
-        scale
-        (if offset > 0L then "+" else "")
-        offset
-  | reg1, 1, Some reg2, (None, 0L) ->
-      Printf.bprintf b "%s[%s+%s]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg2)
-        (string_of_register reg1)
-  | reg1, 1, None, (Some s, 0L) ->
-      Printf.bprintf b "%s[%s+%s]"
-        (string_of_datatype_ptr ptr)
-        s
-        (string_of_register reg1)
-  | reg1, 1, Some reg2, (None, offset) ->
-      Printf.bprintf b "%s[%s+%s%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg2)
-        (string_of_register reg1)
-        (if offset > 0L then "+" else "")
-        offset
-  | reg1, 1, None, (Some s, offset ) ->
-      Printf.bprintf b "%s[%s+%s%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        s
-        (string_of_register reg1)
-        (if offset > 0L then "+" else "")
-        offset
-  | reg1, scale, Some reg2, (None, 0L) ->
-      Printf.bprintf b "%s[%s+%s*%d]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg2)
-        (string_of_register reg1)
-        scale
-  | reg1, scale, None, (Some s, 0L ) ->
-      Printf.bprintf b "%s[%s+%s*%d]"
-        (string_of_datatype_ptr ptr)
-        s
-        (string_of_register reg1)
-        scale
-  | reg1, scale, Some reg2, (None, offset) ->
-      Printf.bprintf b "%s[%s+%s*%d%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        (string_of_register reg2)
-        (string_of_register reg1)
-        scale
-        (if offset > 0L then "+" else "")
-        offset
-  | reg1, scale, Some reg2, (Some s, offset) ->
-      Printf.bprintf b "%s[%s+%s+%s*%d%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        s
-        (string_of_register reg2)
-        (string_of_register reg1)
-        scale
-        (if offset > 0L then "+" else "")
-        offset
-  | reg1, scale, None, (Some s, offset) ->
-      Printf.bprintf b "%s[%s+%s*%d%s%Ld]"
-        (string_of_datatype_ptr ptr)
-        s
-        (string_of_register reg1)
-        scale
-        (if offset > 0L then "+" else "")
-        offset
+let bprint_arg_mem b string_of_register {typ; idx; scale; base; displ} =
+  Buffer.add_string b (string_of_datatype_ptr typ);
+  Buffer.add_char b '[';
+  let (s, o) = displ in
+  begin match s with
+  | None -> ()
+  | Some s -> Buffer.add_string b s;
+  end;
+  if scale <> 0 then begin
+    if s <> None then Buffer.add_char b '+';
+    Buffer.add_string b (string_of_register idx);
+    if scale <> 1 then Printf.bprintf b "*%d" scale;
+  end;
+  begin match base with
+  | None -> ()
+  | Some r ->
+      assert(scale > 0);
+      Buffer.add_char b '+';
+      Buffer.add_string b (string_of_register r);
+  end;
+  begin if o > 0L then Printf.bprintf b "+%Ld" o
+    else if o < 0L then Printf.bprintf b "%Ld" o
+  end;
+  Buffer.add_char b ']'
 
 let bprint_arg b arg =
   match arg with
-(*
-  | Rel32 s ->
-      Printf.bprintf b "%s" s
-*)
-
   | Imm ( (B8|B16|B32), int) ->
       Printf.bprintf b "%Ld" int
   | Imm ( B64, int) ->
