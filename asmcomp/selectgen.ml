@@ -623,7 +623,12 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some (simple_list, ext_env) ->
           let src = self#emit_tuple ext_env simple_list in
-          let dest_args = env_find_exn nfail env in
+          let dest_args =
+            try env_find_exn nfail env
+            with Not_found ->
+              fatal_error ("Selection.emit_expr: unboun label "^
+                           string_of_int (nfail:>int))
+          in
           let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
           self#insert_moves src (Array.concat tmp_regs) ;
           self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
