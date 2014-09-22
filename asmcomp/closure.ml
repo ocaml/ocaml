@@ -493,6 +493,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       begin match c with
         | Big_endian -> make_const_bool Arch.big_endian
         | Word_size -> make_const_int (8*Arch.size_int)
+        | Int_size -> make_const_int (8*Arch.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")

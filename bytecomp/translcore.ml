@@ -154,6 +154,8 @@ let primitives_table = create_hashtable 57 [
   "%boolnot", Pnot;
   "%big_endian", Pctconst Big_endian;
   "%word_size", Pctconst Word_size;
+  "%int_size", Pctconst Int_size;
+  "%max_wosize", Pctconst Max_wosize;
   "%ostype_unix", Pctconst Ostype_unix;
   "%ostype_win32", Pctconst Ostype_win32;
   "%ostype_cygwin", Pctconst Ostype_cygwin;

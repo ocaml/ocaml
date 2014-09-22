@@ -405,6 +405,16 @@ CAMLprim value caml_sys_const_word_size(value unit)
   return Val_long(8 * sizeof(value));
 }
 
+CAMLprim value caml_sys_const_int_size(value unit)
+{
+  return Val_long(8 * sizeof(value) - 1) ;
+}
+
+CAMLprim value caml_sys_const_max_wosize(value unit)
+{
+  return Val_long(Max_wosize) ;
+}
+
 CAMLprim value caml_sys_const_ostype_unix(value unit)
 {
   return Val_long(0 == strcmp(OCAML_OS_TYPE,"Unix"));
