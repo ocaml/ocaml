@@ -45,7 +45,7 @@ type data_size =
   | B8 | B16 | B32 | B64
 
 type constant =
-  | Const of data_size * int64
+  | Const of int64
   | ConstLabel of string
   | ConstAdd of constant * constant
   | ConstSub of constant * constant

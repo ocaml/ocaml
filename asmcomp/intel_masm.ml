@@ -97,8 +97,8 @@ let rec string_of_constant = function
 
 and string_of_simple_constant = function
   | ConstLabel l -> if l = "." then "THIS BYTE" else l
-  | Const ((B8|B16|B32), n) -> Int64.to_string n
-  | Const (B64, n) -> Printf.sprintf "0%LxH" n
+  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Int64.to_string n
+  | Const n -> Printf.sprintf "0%LxH" n
   | ConstAdd (c1, c2) ->
       Printf.sprintf "(%s + %s)"
         (string_of_simple_constant c1) (string_of_simple_constant c2)

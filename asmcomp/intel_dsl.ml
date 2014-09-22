@@ -60,26 +60,13 @@ module DSL = struct
   let sym s = Sym s
 
   (* Override emitaux.ml *)
-  let const_int n =
-    if n >= -0x80L && n <= 0x7FL then
-      Const (B8, n)
-    else
-    if n >= -0x8000L && n <= 0x7FFFL then
-      Const (B16, n)
-    else
-    if n >= -0x8000_0000L && n <= 0x7FFF_FFFFL then
-      Const (B32, n)
-    else
-      Const (B64, n)
-
-
   let emit_nat n = Imm (Int64.of_nativeint n)
   let int n = Imm (Int64.of_int n)
 
-  let const_64 n = const_int n
-  let const_32 n = const_int (Int64.of_int32 n)
-  let const_nat n = const_int (Int64.of_nativeint n)
-  let const n = const_int (Int64.of_int n)
+  let const_64 n = Const n
+  let const_32 n = Const (Int64.of_int32 n)
+  let const_nat n = Const (Int64.of_nativeint n)
+  let const n = Const (Int64.of_int n)
 
   let _cfi_startproc () = directive Cfi_startproc
   let _cfi_endproc () = directive Cfi_endproc

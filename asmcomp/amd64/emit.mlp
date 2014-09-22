@@ -427,7 +427,7 @@ let add_float_constant cst =
 
 let emit_float_constant f lbl =
   _label (emit_label lbl);
-  _qword (Const (B64, f))
+  _qword (Const f)
 
 let emit_global_label s =
   let lbl = Compilenv.make_symbol (Some s) in
@@ -864,8 +864,8 @@ let emit_item = function
   | Cint16 n -> _word (const n)
   | Cint32 n -> _long (const_nat n)
   | Cint n -> _qword (const_nat n)
-  | Csingle f -> _long  (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
-  | Cdouble f -> _qword (Const (B64, Int64.bits_of_float f))
+  | Csingle f -> _long  (Const (Int64.of_int32 (Int32.bits_of_float f)))
+  | Cdouble f -> _qword (Const (Int64.bits_of_float f))
   | Csymbol_address s ->
       add_used_symbol s;
       _qword (ConstLabel (emit_symbol s))
@@ -907,12 +907,12 @@ let begin_assembly() =
     end;
     _align 16;
     _label (emit_symbol "caml_negf_mask");
-    _qword (Const (B64, 0x8000000000000000L));
-    _qword (Const (B64, 0L));
+    _qword (Const 0x8000000000000000L);
+    _qword (Const 0L);
     _align 16;
     _label (emit_symbol "caml_absf_mask");
-    _qword (Const (B64, 0x7FFFFFFFFFFFFFFFL));
-    _qword (Const (B64, 0xFFFFFFFFFFFFFFFFL));
+    _qword (Const 0x7FFFFFFFFFFFFFFFL);
+    _qword (Const 0xFFFFFFFFFFFFFFFFL);
   end;
 
   _data ();
@@ -958,7 +958,7 @@ let end_assembly() =
     { efa_label = (fun l -> _qword (ConstLabel (emit_label l)));
       efa_16 = (fun n -> _word (const n));
       efa_32 = (fun n -> _long (const_32 n));
-      efa_word = (fun n -> _qword (Const (B64, Int64.of_int n)));
+      efa_word = (fun n -> _qword (Const (Int64.of_int n)));
       efa_align = _align;
       efa_label_rel =
         if system = S_macosx then begin

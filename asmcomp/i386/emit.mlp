@@ -468,8 +468,8 @@ let add_float_constant cst =
 let emit_float64_split_directive x =
   let lo = Int64.logand x 0xFFFF_FFFFL
   and hi = Int64.shift_right_logical x 32 in
-  _long (Const (B32, if Arch.big_endian then hi else lo));
-  _long (Const (B32, if Arch.big_endian then lo else hi));
+  _long (Const (if Arch.big_endian then hi else lo));
+  _long (Const (if Arch.big_endian then lo else hi));
   ()
 
 let emit_float_constant cst lbl =
@@ -1007,7 +1007,7 @@ let emit_item = function
   | Cint32 n -> _long (const_nat n)
   | Cint n -> _long (const_nat n)
   | Csingle f ->
-      _long (Const (B32, Int64.of_int32 (Int32.bits_of_float f)))
+      _long (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f ->
       emit_float64_split_directive (Int64.bits_of_float f)
   | Csymbol_address s ->
