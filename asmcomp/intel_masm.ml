@@ -40,76 +40,76 @@ let string_of_datatype_ptr = function
 
 let bprint_arg_mem b string_of_register mem =
   match mem with
-  | _, None, (None, _) -> assert false (* not implemented *)
-  | ptr, None, (Some (s,_) , 0L) ->
+  | _, (_, 0, None), (None, _) -> assert false (* not implemented *)
+  | ptr, (_, 0, None), (Some (s,_) , 0L) ->
       Printf.bprintf b "%s %s" (string_of_datatype_ptr ptr) s
-  | ptr, None, (Some (s,_) , d) ->
+  | ptr, (_, 0, None), (Some (s,_) , d) ->
       if d > 0L then
         Printf.bprintf b "%s %s+%Ld" (string_of_datatype_ptr ptr) s d
       else
         Printf.bprintf b "%s %s%Ld" (string_of_datatype_ptr ptr) s d
 
-  | ptr, Some (reg1, 1, None), (None, 0L) ->
+  | ptr, (reg1, 1, None), (None, 0L) ->
       Printf.bprintf b "%s[%s]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg1);
 
-  | ptr, Some (reg1, 1, None), (None, offset) ->
+  | ptr, (reg1, 1, None), (None, offset) ->
       Printf.bprintf b "%s[%s%s%Ld]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg1)
         (if offset > 0L then "+" else "")
         offset
 
-  | ptr, Some (reg1, scale, None), (None, 0L) ->
+  | ptr, (reg1, scale, None), (None, 0L) ->
       Printf.bprintf b "%s[%s*%d]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg1)
         scale
-  | ptr, Some (reg1, scale, None), (None, offset) ->
+  | ptr, (reg1, scale, None), (None, offset) ->
       Printf.bprintf b "%s[%s*%d%s%Ld]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg1)
         scale
         (if offset > 0L then "+" else "")
         offset
-  | ptr, Some (reg1, 1, Some reg2), (None, 0L) ->
+  | ptr, (reg1, 1, Some reg2), (None, 0L) ->
       Printf.bprintf b "%s[%s+%s]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg2)
         (string_of_register reg1)
-  | ptr, Some (reg1, 1, None), (Some (s,_), 0L) ->
+  | ptr, (reg1, 1, None), (Some (s,_), 0L) ->
       Printf.bprintf b "%s[%s+%s]"
         (string_of_datatype_ptr ptr)
         s
         (string_of_register reg1)
-  | ptr, Some (reg1, 1, Some reg2), (None, offset) ->
+  | ptr, (reg1, 1, Some reg2), (None, offset) ->
       Printf.bprintf b "%s[%s+%s%s%Ld]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg2)
         (string_of_register reg1)
         (if offset > 0L then "+" else "")
         offset
-  | ptr, Some (reg1, 1, None), (Some (s,_), offset ) ->
+  | ptr, (reg1, 1, None), (Some (s,_), offset ) ->
       Printf.bprintf b "%s[%s+%s%s%Ld]"
         (string_of_datatype_ptr ptr)
         s
         (string_of_register reg1)
         (if offset > 0L then "+" else "")
         offset
-  | ptr, Some (reg1, scale, Some reg2), (None, 0L) ->
+  | ptr, (reg1, scale, Some reg2), (None, 0L) ->
       Printf.bprintf b "%s[%s+%s*%d]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg2)
         (string_of_register reg1)
         scale
-  | ptr, Some (reg1, scale, None), (Some (s,_), 0L ) ->
+  | ptr, (reg1, scale, None), (Some (s,_), 0L ) ->
       Printf.bprintf b "%s[%s+%s*%d]"
         (string_of_datatype_ptr ptr)
         s
         (string_of_register reg1)
         scale
-  | ptr, Some (reg1, scale, Some reg2), (None, offset) ->
+  | ptr, (reg1, scale, Some reg2), (None, offset) ->
       Printf.bprintf b "%s[%s+%s*%d%s%Ld]"
         (string_of_datatype_ptr ptr)
         (string_of_register reg2)
@@ -117,7 +117,7 @@ let bprint_arg_mem b string_of_register mem =
         scale
         (if offset > 0L then "+" else "")
         offset
-  | ptr, Some (reg1, scale, Some reg2), (Some (s,_), offset) ->
+  | ptr, (reg1, scale, Some reg2), (Some (s,_), offset) ->
       Printf.bprintf b "%s[%s+%s+%s*%d%s%Ld]"
         (string_of_datatype_ptr ptr)
         s
@@ -126,7 +126,7 @@ let bprint_arg_mem b string_of_register mem =
         scale
         (if offset > 0L then "+" else "")
         offset
-  | ptr, Some (reg1, scale, None), (Some (s,_), offset) ->
+  | ptr, (reg1, scale, None), (Some (s,_), offset) ->
       Printf.bprintf b "%s[%s+%s*%d%s%Ld]"
         (string_of_datatype_ptr ptr)
         s
@@ -164,9 +164,9 @@ let bprint_arg b arg =
   (* We don't need to specify RIP on Win64, since EXTERN will provide
      the list of external symbols that need this addressing mode, and
      MASM will automatically use RIP addressing when needed. *)
-  | Mem64 (ptr, Some (RIP, 1, None), (Some (s,_) , 0L)) ->
+  | Mem64 (ptr, (RIP, 1, None), (Some (s,_) , 0L)) ->
       Printf.bprintf b "%s %s" (string_of_datatype_ptr ptr) s
-  | Mem64 (ptr, Some (RIP, 1, None), (Some (s,_), d)) ->
+  | Mem64 (ptr, (RIP, 1, None), (Some (s,_), d)) ->
       Printf.bprintf b "%s %s+%Ld" (string_of_datatype_ptr ptr) s d
 
   | Mem32 addr ->

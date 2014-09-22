@@ -90,7 +90,7 @@ type symbol = string * reloc_table option
 *)
 type offset = symbol option * int64
 
-type 'reg addr = data_type * ('reg * (* scale *) int * 'reg option) option * offset
+type 'reg addr = data_type * ('reg * (* scale *) int * 'reg option) * offset
 
 type arg =
   (* operand is an immediate value *)

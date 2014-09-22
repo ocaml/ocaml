@@ -72,18 +72,18 @@ let print_sym_offset b = function
       | x when x > 0L -> Printf.bprintf b "+%Ld" x
       | x -> Printf.bprintf b "%Ld" x
 
-let bprint_arg_mem b string_of_register (_ty, a, x : 'a addr) =
+let bprint_arg_mem b string_of_register (_ty, (idx, scale, base), x : 'a addr) =
   print_sym_offset b x;
-  match a with
-  | Some (reg1, scale, base) ->
-      Buffer.add_char b '(';
-      print_opt_reg b string_of_register base;
+  if scale <> 0 || base != None then begin
+    Buffer.add_char b '(';
+    print_opt_reg b string_of_register base;
+    if scale <> 0 then begin
       if base <> None || scale <> 1 then Buffer.add_char b ',';
-      print_reg b string_of_register reg1;
+      print_reg b string_of_register idx;
       if scale <> 1 then Printf.bprintf b ",%d" scale;
       Buffer.add_char b ')'
-  | None ->
-      ()
+    end
+  end
 
 let bprint_arg b = function
   | Rel (_, sym) -> print_sym_tbl b sym
@@ -177,8 +177,8 @@ let i2_ss b s x y =
 let i1_call_jmp b s x =
   match x with
   (* this is the encoding of jump labels: don't use * *)
-  | Mem64 (_, Some (RIP, _, _), (Some _,_))
-  | Mem32 (_, None, (Some _, _)) ->
+  | Mem64 (_, (RIP, _, _), (Some _,_))
+  | Mem32 (_, (_, 0, None), (Some _, _)) (*used?*) ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ ->
       tab b;
