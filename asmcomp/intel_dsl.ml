@@ -36,7 +36,8 @@ module Check = struct
      against a gas-style instruction suffix. *)
 
   let check ty = function
-    | Mem (dtype, _) -> assert(dtype = ty)
+    | Mem32 (dtype, _, _)
+    | Mem64 (dtype, _, _) -> assert(dtype = ty)
     | arg ->
         match arg, ty with
         | (Reg16 _ | Reg32 _ | Reg64 _ | Regf _), BYTE
@@ -255,10 +256,11 @@ module DSL32 = struct
   let imm32 l = Imm (B32, (Some l,0L))
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset reg =
-    Mem (typ, M32(Some (reg, scale, base), (sym, Int64.of_int offset)))
+    assert(scale > 0);
+    Mem32 (typ, Some (reg, scale, base), (sym, Int64.of_int offset))
 
   let mem_sym typ ?(ofs = 0) l =
-    Mem(typ, M32(None, (Some (l, None), Int64.of_int ofs)))
+    Mem32 (typ, None, (Some (l, None), Int64.of_int ofs))
 end
 
 
@@ -346,8 +348,9 @@ module DSL64 = struct
   let imm64 s = Imm (B64, (Some s,0L))
 
   let mem_ptr typ ?(scale = 1) ?base offset reg =
-    Mem (typ, M64(Some (reg, scale, base), (None, Int64.of_int offset)))
+    assert(scale > 0);
+    Mem64 (typ, Some (reg, scale, base), (None, Int64.of_int offset))
 
   let from_rip typ ?(ofs = 0) s =
-    Mem (typ, M64 (Some (RIP, 1, None), (Some s, Int64.of_int ofs)))
+    Mem64 (typ, Some (RIP, 1, None), (Some s, Int64.of_int ofs))
 end

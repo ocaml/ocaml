@@ -90,12 +90,7 @@ type symbol = string * reloc_table option
 *)
 type offset = symbol option * int64
 
-(* if scale = 0, reg = EAX => only symbol value is used *)
-type 'reg addr = ('reg * (* scale *) int * 'reg option) option * offset
-
-type mem =
-  | M32 of register32 addr
-  | M64 of register64 addr
+type 'reg addr = data_type * ('reg * (* scale *) int * 'reg option) option * offset
 
 type arg =
   (* operand is an immediate value *)
@@ -108,7 +103,8 @@ type arg =
   | Reg32 of register32
   | Reg64 of register64
   | Regf of registerf
-  | Mem of data_type * mem
+  | Mem32 of register32 addr
+  | Mem64 of register64 addr
 
 type instruction =
   | NOP
