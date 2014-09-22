@@ -105,8 +105,6 @@ let symbol_prefix =
 let emit_symbol s =
   string_of_symbol symbol_prefix s
 
-let abs s = (emit_symbol s, None)
-
 let immsym s = sym (emit_symbol s)
 
 let emit_call s =
@@ -570,7 +568,7 @@ let emit_instr fallthrough i =
         else begin
           external_symbols_direct :=
             StringSet.add s !external_symbols_direct;
-          I.call (rel32 (Printf.sprintf "L%s$stub" (emit_symbol s), None))
+          I.call (rel32 (Printf.sprintf "L%s$stub" (emit_symbol s)))
         end
       end
   | Lop(Istackoffset n) ->
@@ -858,7 +856,7 @@ let emit_instr fallthrough i =
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in
-      I.jmp (mem_ptr NO 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl, None));
+      I.jmp (mem_ptr NO 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
       _data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
@@ -938,7 +936,7 @@ let call_mcount mcount =
   I.movl (esp, ebp);
   I.pushl ecx;
   I.pushl edx;
-  I.call (rel32 (mcount, None));
+  I.call (rel32 mcount);
   I.popl edx;
   I.popl ecx;
   I.popl eax
