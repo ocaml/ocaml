@@ -64,24 +64,16 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; displ} =
 
 let bprint_arg b arg =
   match arg with
-  | Imm ( (B8|B16|B32), int) ->
-      Printf.bprintf b "%Ld" int
-  | Imm ( B64, int) ->
+  | Imm ((B8|B16|B32), int) -> Printf.bprintf b "%Ld" int
+  | Imm (B64, int) ->
       (* force ml64 to use mov reg, imm64 instruction *)
       Printf.bprintf b "0%LxH" int
-  | Sym s ->
-      Printf.bprintf b "OFFSET %s" s
-
-  | Reg8 register8 ->
-      Printf.bprintf b "%s" (string_of_register8 register8)
-  | Reg16 register16 ->
-      Printf.bprintf b "%s" (string_of_register16 register16)
-  | Reg32 register32 ->
-      Printf.bprintf b "%s" (string_of_register32 register32)
-  | Reg64 register ->
-      Printf.bprintf b "%s" (string_of_register64 register)
-  | Regf registerf ->
-      Printf.bprintf b "%s" (string_of_registerf registerf)
+  | Sym s -> Printf.bprintf b "OFFSET %s" s
+  | Reg8 x -> Buffer.add_string b (string_of_register8 x)
+  | Reg16 x -> Buffer.add_string b (string_of_register16 x)
+  | Reg32 x -> Buffer.add_string b (string_of_register32 x)
+  | Reg64 x -> Buffer.add_string b (string_of_register64 x)
+  | Regf x -> Buffer.add_string b (string_of_registerf x)
 
   (* We don't need to specify RIP on Win64, since EXTERN will provide
      the list of external symbols that need this addressing mode, and
@@ -91,16 +83,12 @@ let bprint_arg b arg =
   | Mem64 {typ; idx=RIP; scale=1; base=None; displ=(Some s, d)} ->
       Printf.bprintf b "%s %s+%Ld" (string_of_datatype_ptr typ) s d
 
-  | Mem32 addr ->
-      bprint_arg_mem b string_of_register32 addr
-  | Mem64 addr ->
-      bprint_arg_mem b string_of_register64 addr
+  | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
+  | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
 
 
 let rec string_of_constant = function
-  | ConstLabel _
-  | Const _
-    as c -> string_of_simple_constant c
+  | ConstLabel _ | Const _ as c -> string_of_simple_constant c
   | ConstAdd (c1, c2) ->
       (string_of_simple_constant c1) ^ " + " ^ (string_of_simple_constant c2)
   | ConstSub (c1, c2) ->
@@ -108,7 +96,7 @@ let rec string_of_constant = function
 
 and string_of_simple_constant = function
   | ConstLabel l -> if l = "." then "THIS BYTE" else l
-  | Const ( (B8|B16|B32), n) -> Int64.to_string n
+  | Const ((B8|B16|B32), n) -> Int64.to_string n
   | Const (B64, n) -> Printf.sprintf "0%LxH" n
   | ConstAdd (c1, c2) ->
       Printf.sprintf "(%s + %s)"
@@ -333,4 +321,4 @@ let bprint_instr_name b instr =
 
 let bprint_instr b instr =
   bprint_instr_name b instr;
-  Buffer.add_string b "\n"
+  Buffer.add_char b '\n'
