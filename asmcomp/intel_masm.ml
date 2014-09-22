@@ -64,8 +64,9 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; displ} =
 
 let bprint_arg b arg =
   match arg with
-  | Imm ((B8|B16|B32), int) -> Printf.bprintf b "%Ld" int
-  | Imm (B64, int) ->
+  | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
+      Printf.bprintf b "%Ld" n
+  | Imm int ->
       (* force ml64 to use mov reg, imm64 instruction *)
       Printf.bprintf b "0%LxH" int
   | Sym s -> Printf.bprintf b "OFFSET %s" s
@@ -199,6 +200,12 @@ let print_instr b = function
   | IMUL (arg1, Some arg2) -> i2 b "imul" arg1 arg2
   | IDIV arg -> i1 b "idiv" arg
   | HLT -> assert false
+  | MOV (Imm n as arg1, Reg64 r) when
+      n >= 0x8000_0000L && n <= 0xFFFF_FFFFL ->
+      (* Work-around a bug in ml64.  Use a mov to the corresponding
+         32-bit lower register when the constant fits in 32-bit.
+         The associated higher 32-bit register will be zeroed. *)
+      i2 b "mov" arg1 (Reg32 (Intel_proc.reg_low_32 r))
   | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
 
   | MOVZX (arg1, arg2) -> i2 b "movzx" arg1 arg2

@@ -118,6 +118,25 @@ let string_of_register64 reg64 =
   | R15 -> "r15"
   | RIP -> "rip"
 
+let reg_low_32 = function
+  | RAX -> EAX
+  | RBX -> EBX
+  | RDI -> EDI
+  | RSI -> ESI
+  | RDX -> EDX
+  | RCX -> ECX
+  | RBP -> EBP
+  | RSP -> ESP
+  | R8 -> R8D
+  | R9 -> R9D
+  | R10 -> R10D
+  | R11 -> R11D
+  | R12 -> R12D
+  | R13 -> R13D
+  | R14 -> R14D
+  | R15 -> R15D
+  | RIP -> assert false
+
 let string_of_register8 reg8 =
   match reg8 with
   | AL -> "al"

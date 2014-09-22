@@ -82,3 +82,8 @@ val register_internal_assembler: (asm_program -> string -> unit) -> unit
 (** Hooks for rewriting the assembly code *)
 
 val assembler_passes: (asm_program -> asm_program) list ref
+
+
+(** Misc *)
+
+val reg_low_32: register64 -> register32

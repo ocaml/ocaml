@@ -465,7 +465,12 @@ let emit_instr fallthrough i =
         match i.res.(0).loc with
         | Reg _ -> I.xorq (res i 0, res i 0)
         | _     -> I.movq (int 0, res i 0)
-      end else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
+      end
+      else
+        I.movabsq (Int64.of_nativeint n, res i 0)
+          (* will use a short form is n fit in 32-bit *)
+(*
+else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
         I.movq (emit_nat n, res i 0)
       else
       if system = S_win64 && n >= 0x80000000n && n <= 0xFFFFFFFFn  then
@@ -473,7 +478,8 @@ let emit_instr fallthrough i =
         (* Should this go in intel_masm instead?? *)
         I.movl (emit_nat n, res32 i 0)
       else
-        I.movabsq (emit_nat n, res i 0)
+        I.movabsq (n, res i 0)
+*)
   | Lop(Iconst_float f) ->
       begin match Int64.bits_of_float f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)

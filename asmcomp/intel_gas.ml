@@ -76,7 +76,7 @@ let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
 
 let bprint_arg b = function
   | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
-  | Imm (_, x) -> Printf.bprintf b "$%Ld" x
+  | Imm x -> Printf.bprintf b "$%Ld" x
   | Reg8  x -> print_reg b string_of_register8 x
   | Reg16 x -> print_reg b string_of_register16 x
   | Reg32 x -> print_reg b string_of_register32 x
@@ -259,7 +259,9 @@ let emit_instr b = function
   | IMUL (arg1, Some arg2) -> i2_s b "imul" arg1 arg2
   | IDIV arg -> i1_s b "idiv" arg
 
-  | MOV ((Imm (B64, _) as arg1), (Reg64 _ as arg2)) -> i2 b "movabsq" arg1 arg2
+  | MOV ((Imm n as arg1), (Reg64 _ as arg2))
+      when not (n <= 0x7FFF_FFFFL && n >= -0x8000_0000L)
+      -> i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVZX (arg1, arg2) -> i2_ss b "movz" arg1 arg2
   | MOVSX (arg1, arg2) -> i2_ss b "movs" arg1 arg2

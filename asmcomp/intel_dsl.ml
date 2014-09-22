@@ -60,19 +60,6 @@ module DSL = struct
   let sym s = Sym s
 
   (* Override emitaux.ml *)
-  let emit_int n =
-    if n >= -0x80L && n <= 0x7FL then
-      Imm (B8, n)
-    else
-    if n >= -0x8000L && n <= 0x7FFFL then
-      Imm (B16, n)
-    else
-      (* We emit all immediates as B32, even if they are bigger.
-         The only instruction (movabsq) taking an immediate B64 will cast
-          B8|B16|B32 to B64. *)
-      Imm (B32, n)
-
-  (* Override emitaux.ml *)
   let const_int n =
     if n >= -0x80L && n <= 0x7FL then
       Const (B8, n)
@@ -86,8 +73,9 @@ module DSL = struct
       Const (B64, n)
 
 
-  let emit_nat n = emit_int (Int64.of_nativeint n)
-  let int n = emit_int (Int64.of_int n)
+  let emit_nat n = Imm (Int64.of_nativeint n)
+  let int n = Imm (Int64.of_int n)
+
   let const_64 n = const_int n
   let const_32 n = const_int (Int64.of_int32 n)
   let const_nat n = const_int (Int64.of_nativeint n)
@@ -297,15 +285,10 @@ module INS64 = struct
   let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
   let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
   let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
-  let movapd (arg1, arg2) = emit (MOVAPD  (arg1, arg2))
-  let movabsq (arg1, arg2) =
-    let arg1 = match arg1 with
-      | Imm(_, n) -> Imm(B64,n)
-      | _ -> assert false
-    in
-    emit (MOV  (arg1, qword arg2))
-  let xorpd (arg1, arg2) = emit (XORPD  (arg1, arg2))
-  let andpd (arg1, arg2) = emit (ANDPD  (arg1, arg2))
+  let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
+  let movabsq (arg1, arg2) = emit (MOV (Imm arg1, qword arg2))
+  let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
+  let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
 
   let movslq (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
   let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))

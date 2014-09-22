@@ -100,8 +100,8 @@ type 'reg addr =
   (* displ + base + idx * scale *)
 
 type arg =
-  (* operand is an immediate value *)
-  | Imm of data_size * int64
+  | Imm of int64
+  (** Operand is an immediate constant integer *)
 
   | Sym of  string
   (** Address of a symbol (absolute address except for call/jmp target
