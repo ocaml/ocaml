@@ -36,8 +36,8 @@ module Check = struct
      against a gas-style instruction suffix. *)
 
   let check ty = function
-    | Mem32 (dtype, _, _)
-    | Mem64 (dtype, _, _) -> assert(dtype = ty)
+    | Mem32 {typ; _}
+    | Mem64 {typ; _} -> assert(typ = ty)
     | arg ->
         match arg, ty with
         | (Reg16 _ | Reg32 _ | Reg64 _ | Regf _), BYTE
@@ -57,7 +57,7 @@ module Check = struct
 end
 
 module DSL = struct
-  let rel32 s = Rel (B32, s)
+  let rel32 s = Rel32 s
 
   (* Override emitaux.ml *)
   let emit_int n =
@@ -257,10 +257,11 @@ module DSL32 = struct
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset idx =
     assert(scale > 0);
-    Mem32 (typ, (idx, scale, base), (sym, Int64.of_int offset))
+    Mem32 {typ; idx; scale; base; displ=(sym, Int64.of_int offset)}
 
   let mem_sym typ ?(ofs = 0) l =
-    Mem32 (typ, (EAX, 0, None), (Some (l, None), Int64.of_int ofs))
+    Mem32 {typ; idx=EAX; scale=0; base=None;
+           displ=(Some (l, None), Int64.of_int ofs)}
 end
 
 
@@ -349,8 +350,8 @@ module DSL64 = struct
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);
-    Mem64 (typ, (idx, scale, base), (None, Int64.of_int offset))
+    Mem64 {typ; idx; scale; base; displ=(None, Int64.of_int offset)}
 
   let from_rip typ ?(ofs = 0) s =
-    Mem64 (typ, (RIP, 1, None), (Some s, Int64.of_int ofs))
+    Mem64 {typ; idx=RIP; scale=1; base=None; displ=(Some s, Int64.of_int ofs)}
 end

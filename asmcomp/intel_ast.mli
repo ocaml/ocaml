@@ -90,13 +90,22 @@ type symbol = string * reloc_table option
 *)
 type offset = symbol option * int64
 
-type 'reg addr = data_type * ('reg * (* scale *) int * 'reg option) * offset
+type 'reg addr =
+  {
+    typ: data_type;
+    idx: 'reg;
+    scale: int;
+    base: 'reg option;
+    displ: offset;
+  }
+  (* displ + base + idx * scale *)
 
 type arg =
   (* operand is an immediate value *)
   | Imm of data_size * offset
-  (* operand is a relative displacement *)
-  | Rel of data_size * symbol
+
+  (* operand is a relative displacement (call/jmp targets) *)
+  | Rel32 of symbol
 
   | Reg8 of register8
   | Reg16 of register16

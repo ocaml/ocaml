@@ -72,8 +72,8 @@ let print_sym_offset b = function
       | x when x > 0L -> Printf.bprintf b "+%Ld" x
       | x -> Printf.bprintf b "%Ld" x
 
-let bprint_arg_mem b string_of_register (_ty, (idx, scale, base), x : 'a addr) =
-  print_sym_offset b x;
+let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
+  print_sym_offset b displ;
   if scale <> 0 || base != None then begin
     Buffer.add_char b '(';
     print_opt_reg b string_of_register base;
@@ -86,7 +86,7 @@ let bprint_arg_mem b string_of_register (_ty, (idx, scale, base), x : 'a addr) =
   end
 
 let bprint_arg b = function
-  | Rel (_, sym) -> print_sym_tbl b sym
+  | Rel32 sym -> print_sym_tbl b sym
   | Imm (_, x) -> Buffer.add_char b '$'; print_sym_offset b x
   | Reg8  x -> print_reg b string_of_register8 x
   | Reg16 x -> print_reg b string_of_register16 x
@@ -115,13 +115,13 @@ and string_of_simple_constant = function
         (string_of_simple_constant c1) (string_of_simple_constant c2)
 
 let suffix = function
-  | Mem32 (BYTE, _, _)  | Mem64 (BYTE, _, _)  | Reg8 _   -> "b"
-  | Mem32 (WORD, _, _)  | Mem64 (WORD, _, _)  | Reg16 _  -> "w"
-  | Mem32 (DWORD, _, _) | Mem64 (DWORD, _, _) | Reg32 _
-  | Mem32 (REAL8, _, _) | Mem64 (REAL8, _, _)            -> "l"
-  | Mem32 (QWORD, _, _) | Mem64 (QWORD, _, _) | Reg64 _  -> "q"
-  | Mem32 (REAL4, _, _) | Mem64 (REAL4, _, _)            -> "s"
-  | Mem32 (NO, _, _) | Mem64 (NO, _, _) -> assert false
+  | Mem32 {typ=BYTE; _}  | Mem64 {typ=BYTE; _}  | Reg8 _   -> "b"
+  | Mem32 {typ=WORD; _}  | Mem64 {typ=WORD; _}  | Reg16 _  -> "w"
+  | Mem32 {typ=DWORD; _} | Mem64 {typ=DWORD; _} | Reg32 _
+  | Mem32 {typ=REAL8; _} | Mem64 {typ=REAL8; _}            -> "l"
+  | Mem32 {typ=QWORD; _} | Mem64 {typ=QWORD; _} | Reg64 _  -> "q"
+  | Mem32 {typ=REAL4; _} | Mem64 {typ=REAL4; _}            -> "s"
+  | Mem32 {typ=NO; _} | Mem64 {typ=NO; _} -> assert false
   | _ -> ""
 
 let i0 b s =
@@ -177,8 +177,8 @@ let i2_ss b s x y =
 let i1_call_jmp b s x =
   match x with
   (* this is the encoding of jump labels: don't use * *)
-  | Mem64 (_, (RIP, _, _), (Some _,_))
-  | Mem32 (_, (_, 0, None), (Some _, _)) (*used?*) ->
+  | Mem64 {idx=RIP; scale=1; base=None; displ=(Some _,_); _}
+  | Mem32 {idx=_;   scale=0; base=None; displ=(Some _,_); _} (*used?*) ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ ->
       tab b;
@@ -207,14 +207,14 @@ let emit_instr b = function
   | FISTP arg -> i1_s b "fistp" arg
 
 
-  | FSTP (Mem32(REAL4, _, _)  as arg) -> i1 b "fstps" arg
+  | FSTP (Mem32 {typ=REAL4; _} as arg) -> i1 b "fstps" arg
   | FSTP arg -> i1 b "fstpl" arg
   | FILD arg -> i1_s b "fild" arg
   | HLT -> i0 b "hlt"
 
   | FCOMPP -> i0 b "fcompp"
   | FCOMP arg -> i1_s b "fcomp" arg
-  | FLD (Mem32(REAL4, _ , _) as arg ) -> i1 b "flds" arg
+  | FLD (Mem32 {typ=REAL4; _} as arg ) -> i1 b "flds" arg
   | FLD arg -> i1 b "fldl" arg
   | FNSTSW arg -> i1 b "fnstsw" arg
   | FNSTCW arg -> i1 b "fnstcw" arg
