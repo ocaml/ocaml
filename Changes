@@ -131,7 +131,7 @@ Runtime system:
 - Fixed bug in native code version of [caml_raise_with_string] that could
   potentially lead to heap corruption.
   (Mark Shinwell)
-- Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
+* Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
   [Val_unit] rather than zero.
   (Mark Shinwell)
 - Fixed a major performance problem on large heaps (~1GB) by making heap
