@@ -377,16 +377,16 @@ let bprint_instr_name b instr =
       Printf.bprintf b "\t.type %s,%s" s typ
   | Size (s, cst) ->
       Printf.bprintf b "\t.size %s,%s" s (string_of_constant cst)
-  | Constant (n, B8) ->
+  | Byte n ->
       Printf.bprintf b "\t.byte\t%s" (string_of_constant n)
-  | Constant (n, B16) ->
+  | Word n ->
       if system = S_solaris then
         Printf.bprintf b "\t.value\t%s" (string_of_constant n)
       else
         Printf.bprintf b "\t.word\t%s" (string_of_constant n)
-  | Constant (n, B32) ->
+  | Long n ->
       Printf.bprintf b "\t.long\t%s" (string_of_constant n)
-  | Constant (n, B64) ->
+  | Quad n ->
       Printf.bprintf b "\t.quad\t%s" (string_of_constant n)
   | Bytes s ->
       if system = S_solaris then

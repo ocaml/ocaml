@@ -17,12 +17,6 @@ open Intel_proc
 
 let tab b = Buffer.add_char b '\t'
 
-let string_of_data_size = function
-  | B64 -> "QWORD"
-  | B32 -> "DWORD"
-  | B16 -> "WORD"
-  | B8 -> "BYTE"
-
 let string_of_datatype_ptr = function
   | QWORD -> "QWORD PTR "
   | OWORD -> "OWORD PTR "
@@ -307,8 +301,10 @@ let bprint_instr_name b instr =
           | _ -> assert false)
   | Section _ -> assert false
 
-  | Constant (n, ptr) ->
-      Printf.bprintf b "\t%s\t%s" (string_of_data_size ptr) (string_of_constant n)
+  | Quad n -> Printf.bprintf b "\tQWORD\t%s" (string_of_constant n)
+  | Long n -> Printf.bprintf b "\tDWORD\t%s" (string_of_constant n)
+  | Word n -> Printf.bprintf b "\tWORD\t%s" (string_of_constant n)
+  | Byte n -> Printf.bprintf b "\tBYTE\t%s" (string_of_constant n)
 
   | External (s, ptr) ->
       Printf.bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)

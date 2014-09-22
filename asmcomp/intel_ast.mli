@@ -36,14 +36,6 @@ type rounding =
   | RoundNearest
   | RoundTruncate
 
-(* When an integer is immediate, the [data_size] information must
-   indicate in which range it is. For symbols, the [data_size] size
-   depends on how the symbol will be used, i.e. B32 for displacements
-   and B64 for immediate in 64 bits. *)
-
-type data_size =
-  | B8 | B16 | B32 | B64
-
 type constant =
   | Const of int64
   | ConstLabel of string
@@ -221,7 +213,10 @@ type instruction =
 type asm_line =
   | Section of string list * string option * string list
   | Global of string
-  | Constant of constant * data_size
+  | Quad of constant
+  | Long of constant
+  | Word of constant
+  | Byte of constant
   | Align of bool * int
   | NewLabel of string * data_type
   | Bytes of string
