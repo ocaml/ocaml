@@ -135,9 +135,25 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
-  | Ucatch(_, lhandler) ->
-      eprintf "TODO: print Ucatch";
-      fprintf ppf "TODO: print Ucatch"
+  | Ucatch(handlers, lbody) ->
+      let print_handler ppf (i, vars, lhandler) =
+        fprintf ppf "(%d%a)@ %a"
+          (i:stexn:>int)
+          (fun ppf vars -> match vars with
+             | [] -> ()
+             | _ ->
+                 List.iter
+                   (fun x -> fprintf ppf " %a" Ident.print x)
+                   vars)
+          vars
+          lam lhandler
+      in
+      let print_handlers ppf l =
+        List.iter (print_handler ppf) l
+      in
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with%a)@]"
+        lam lbody
+        print_handlers handlers
   | Utrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler
