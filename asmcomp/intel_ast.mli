@@ -102,14 +102,10 @@ type 'reg addr =
 type arg =
   (* operand is an immediate value *)
   | Imm of data_size * int64
-  | Sym of string
 
-(* TODO:
-   split Imm into immediate symbol (no offset, no reloc table)
-   and pure constant *)
-
-  (* operand is a relative displacement (call/jmp targets) *)
-  | Rel32 of string
+  | Sym of  string
+  (** Address of a symbol (absolute address except for call/jmp target
+      where it is interpreted as a relative displacement *)
 
   | Reg8 of register8
   | Reg16 of register16

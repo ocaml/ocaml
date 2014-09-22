@@ -57,7 +57,6 @@ module Check = struct
 end
 
 module DSL = struct
-  let rel32 s = Rel32 s
   let sym s = Sym s
 
   (* Override emitaux.ml *)

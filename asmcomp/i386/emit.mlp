@@ -108,7 +108,7 @@ let emit_symbol s =
 let immsym s = sym (emit_symbol s)
 
 let emit_call s =
-  I.call (rel32 (emit_symbol s))
+  I.call (immsym s)
 
 (* Output a label *)
 
@@ -127,7 +127,7 @@ let emit_label lbl =
 let emit_data_label lbl =
   Printf.sprintf "%sd%d" label_prefix lbl
 
-let label s = rel32 (emit_label s)
+let label s = sym (emit_label s)
 
 let def_label s =
   directive (NewLabel (emit_label s, NO))
@@ -546,7 +546,7 @@ let emit_instr fallthrough i =
       else begin
         output_epilogue begin fun () ->
           add_used_symbol s;
-          I.jmp (rel32 (emit_symbol s))
+          I.jmp (immsym s)
         end
       end
   | Lop(Iextcall(s, alloc)) ->
@@ -568,7 +568,7 @@ let emit_instr fallthrough i =
         else begin
           external_symbols_direct :=
             StringSet.add s !external_symbols_direct;
-          I.call (rel32 (Printf.sprintf "L%s$stub" (emit_symbol s)))
+          I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol s)))
         end
       end
   | Lop(Istackoffset n) ->
@@ -936,7 +936,7 @@ let call_mcount mcount =
   I.movl (esp, ebp);
   I.pushl ecx;
   I.pushl edx;
-  I.call (rel32 mcount);
+  I.call (sym mcount);
   I.popl edx;
   I.popl ecx;
   I.popl eax

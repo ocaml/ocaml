@@ -138,8 +138,10 @@ let bprint_arg_mem b string_of_register mem =
 
 let bprint_arg b arg =
   match arg with
+(*
   | Rel32 s ->
       Printf.bprintf b "%s" s
+*)
 
   | Imm ( (B8|B16|B32), int) ->
       Printf.bprintf b "%Ld" int
@@ -309,8 +311,8 @@ let split_instr = function
   | FSQRT -> "fsqrt", []
   | FLDZ -> "fldz", []
 
-  | CALL arg  ->  "call", [ arg ]
-  | JMP arg ->  "jmp", [ arg]
+  | CALL arg  ->  "call", [ arg ] (* TODO: fix sym case *)
+  | JMP arg ->  "jmp", [ arg] (* TODO: fix sym case *)
   | RET ->  "ret", []
   | PUSH arg ->  "push", [arg]
   | POP arg ->  "pop", [arg]
@@ -318,7 +320,7 @@ let split_instr = function
   | TEST (arg1, arg2) ->  "test", [arg1; arg2]
   | SET (condition, arg) ->
       Printf.sprintf  "set%s" (string_of_condition condition), [ arg ]
-  | J (condition, arg) ->
+  | J (condition, arg) -> (* TODO: fix sym case *)
       Printf.sprintf  "j%s" (string_of_condition condition), [ arg ]
 
   | CMOV (condition, arg1, arg2) ->

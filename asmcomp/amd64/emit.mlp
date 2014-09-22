@@ -119,7 +119,7 @@ let use_plt =
   | _ -> !Clflags.dlcode
 
 let rel_plt s =
-  rel32 (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
+  sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
 let emit_call s =
   I.call (rel_plt s)
@@ -154,7 +154,7 @@ let emit_data_label lbl =
   else
     Printf.sprintf ".Ld%d" lbl
 
-let label s = rel32 (emit_label s)
+let label s = sym (emit_label s)
 
 let def_label s =
   directive (NewLabel (emit_label s, NO))

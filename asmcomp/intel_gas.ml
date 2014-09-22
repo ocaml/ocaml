@@ -75,7 +75,6 @@ let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
   end
 
 let bprint_arg b = function
-  | Rel32 s -> Buffer.add_string b s
   | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
   | Imm (_, x) -> Printf.bprintf b "$%Ld" x
   | Reg8  x -> print_reg b string_of_register8 x
@@ -176,8 +175,13 @@ let i1_call_jmp b s x =
       tab b;
       Buffer.add_char b '*';
       bprint_arg b x
+  | Sym x ->
+      tab b;
+      Buffer.add_string b s;
+      tab b;
+      Buffer.add_string b x
   | _ ->
-      i1 b s x
+      assert false
 
 let emit_instr b = function
   | NOP -> i0 b "nop"
@@ -298,7 +302,7 @@ let emit_instr b = function
   | SET (condition, arg) ->
       i1 b ("set" ^ string_of_condition condition) arg
   | J (condition, arg) ->
-      i1 b ("j" ^ string_of_condition condition) arg
+      i1_call_jmp b ("j" ^ string_of_condition condition) arg
 
 
   | CMOV (condition, arg1, arg2) ->
