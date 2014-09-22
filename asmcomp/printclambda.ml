@@ -118,24 +118,13 @@ let rec lam ppf = function
         end in
       fprintf ppf
         "@[<1>(switch %a@ @[<v 0>%a@])@]" lam larg switch sw
-  | Ustaticfail (stexn, ls, kl) ->
-      begin match stexn with
-      | Stexn_var { stexn_var = i } ->
-          fprintf ppf "@[<2>(exit_ind@ v%d" i
-      | Stexn_cst i ->
-          fprintf ppf "@[<2>(exit@ %d" i
-      end;
+  | Ustaticfail (i, ls) ->
+      fprintf ppf "@[<2>(exit@ %d" i;
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       lams ppf ls;
-      (match kl with [] -> () | _ -> fprintf ppf ",");
-      List.iter (function
-          | Stexn_var { stexn_var } ->
-              fprintf ppf "@ v%d" stexn_var
-          | Stexn_cst i ->
-              fprintf ppf "@ c%d" i) kl;
       fprintf ppf ")@]"
-  | Ucatch([i, vars, [], lhandler], lbody) ->
+  | Ucatch([i, vars, lhandler], lbody) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
         (fun ppf vars -> match vars with

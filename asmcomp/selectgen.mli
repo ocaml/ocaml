@@ -13,16 +13,7 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-type static_exception_info =
-  { sti_vars : (Cmm.stexn_var, Reg.t array list * Reg.t array list) Hashtbl.t;
-    sti_def : (int, Reg.t array list * Reg.t array list) Hashtbl.t;
-    sti_bind : (Cmm.stexn_var, int list) Hashtbl.t }
-
-type environment =
-  { var : (Ident.t, Reg.t array) Tbl.t;
-    exn : (Cmm.stexn_var, Reg.t array) Tbl.t;
-    st_exn_info : static_exception_info;
-  }
+type environment
 
 val size_expr : environment -> Cmm.expression -> int
 

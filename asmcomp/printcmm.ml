@@ -144,17 +144,13 @@ let rec expr ppf = function
        done in
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Clabel(handlers, e1) ->
-      let print_handler ppf (i, ids, kids, e2) =
-        fprintf ppf "(%d%a%a)@ %a"
+      let print_handler ppf (i, ids, e2) =
+        fprintf ppf "(%d%a)@ %a"
           i
           (fun ppf ids ->
              List.iter
                (fun id -> fprintf ppf " %a" Ident.print id)
                ids) ids
-          (fun ppf kids ->
-             List.iter
-               (fun { stexn_var = id } -> fprintf ppf " v%d" id)
-               kids) kids
           sequence e2
       in
       let print_handlers ppf l =
@@ -164,20 +160,9 @@ let rec expr ppf = function
         "@[<2>(label@ %a@;<1 -2>with%a)@]"
         sequence e1
         print_handlers handlers
-  | Cjump (stexn, el, kl) ->
-      begin match stexn with
-      | Stexn_var { stexn_var = i } ->
-          fprintf ppf "@[<2>(jump_ind v%d" i
-      | Stexn_cst i ->
-          fprintf ppf "@[<2>(jump %d" i
-      end;
+  | Cjump (i, el) ->
+      fprintf ppf "@[<2>(jump %d" i;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
-      (match kl with [] -> () | _ -> fprintf ppf ",");
-      List.iter (function
-          | Stexn_var { stexn_var } ->
-              fprintf ppf "@ v%d" stexn_var
-          | Stexn_cst i ->
-              fprintf ppf "@ c%d" i) kl;
       fprintf ppf ")@]"
   | Ctrywith(e1, id, e2) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"

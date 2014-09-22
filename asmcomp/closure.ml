@@ -72,10 +72,10 @@ let occurs_var var u =
         occurs arg ||
         List.exists (fun (_,e) -> occurs e) sw ||
         (match d with None -> false | Some d -> occurs d)
-    | Ustaticfail (_, args, _) -> List.exists occurs args
+    | Ustaticfail (_, args) -> List.exists occurs args
     | Ucatch(handlers, body) ->
         occurs body ||
-        List.exists (fun (_,_,_,hdlr) -> occurs hdlr) handlers
+        List.exists (fun (_,_,hdlr) -> occurs hdlr) handlers
     | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
     | Uifthenelse(cond, ifso, ifnot) ->
         occurs cond || occurs ifso || occurs ifnot
@@ -163,10 +163,10 @@ let lambda_smaller lam threshold =
             lambda_size lam)
           sw ;
         Misc.may lambda_size d
-    | Ustaticfail (_,args,_) -> lambda_list_size args
+    | Ustaticfail (_,args) -> lambda_list_size args
     | Ucatch(handlers, body) ->
         incr size;
-        List.iter (fun (_,_,_,handler) -> lambda_size handler) handlers;
+        List.iter (fun (_,_,handler) -> lambda_size handler) handlers;
         lambda_size body
     | Utrywith(body, id, handler) ->
         size := !size + 8; lambda_size body; lambda_size handler
@@ -486,31 +486,27 @@ let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
 
-module Stexn = struct
-  type t = stexn
+module Int = struct
+  type t = int
   let compare = compare
 end
-module StexnMap = Map.Make(Stexn)
+module IntMap = Map.Make(Int)
 
 type sb =
   { sb_id : ulambda Ident.tbl;
-    sb_stexn : stexn StexnMap.t }
+    sb_stexn : int IntMap.t }
 
 let empty_sb =
   { sb_id = Ident.empty;
-    sb_stexn = StexnMap.empty }
-
-let print_stexn ppf = function
-  | Stexn_var { stexn_var } -> Format.fprintf ppf "v%i" stexn_var
-  | Stexn_cst c -> Format.fprintf ppf "c%i" c
+    sb_stexn = IntMap.empty }
 
 let find_id id sb = Ident.find_same id sb.sb_id
 let add_id id id' sb = { sb with sb_id = Ident.add id id' sb.sb_id }
 let subst_stexn s sb =
-  try StexnMap.find s sb.sb_stexn with
+  try IntMap.find s sb.sb_stexn with
   | Not_found -> s
 let add_stexn s s' sb =
-  { sb with sb_stexn = StexnMap.add s s' sb.sb_stexn }
+  { sb with sb_stexn = IntMap.add s s' sb.sb_stexn }
 
 let rec substitute fpc (sb:sb) ulam =
   match ulam with
@@ -568,26 +564,20 @@ let rec substitute fpc (sb:sb) ulam =
         (substitute fpc sb arg,
          List.map (fun (s,act) -> s,substitute fpc sb act) sw,
          Misc.may_map (substitute fpc sb) d)
-  | Ustaticfail (stexn, args, kargs) ->
+  | Ustaticfail (stexn, args) ->
       Ustaticfail (subst_stexn stexn sb,
-                   List.map (substitute fpc sb) args,
-                   List.map (fun s -> subst_stexn s sb) kargs)
+                   List.map (substitute fpc sb) args)
   | Ucatch(handlers, body) ->
       let sb, handlers = List.fold_left
-          (fun (sb,handlers) (nfail, ids, kids, handler) ->
+          (fun (sb,handlers) (nfail, ids, handler) ->
              let nfail' = Lambda.next_raise_count () in
-             let sb = add_stexn (Stexn_cst nfail) (Stexn_cst nfail') sb in
-             let sb, kids' =
-               List.fold_right (fun var (sb, kids) ->
-                   let var' = { stexn_var = Lambda.next_raise_count () } in
-                   add_stexn (Stexn_var var) (Stexn_var var') sb,
-                   var' :: kids) kids (sb, []) in
+             let sb = add_stexn nfail nfail' sb in
              sb,
-             (nfail', ids, kids', handler) :: handlers)
+             (nfail', ids, handler) :: handlers)
           (sb, []) handlers in
       let handlers =
-        List.map (fun (nfail, ids, kids, handler) ->
-            nfail, ids, kids, substitute fpc sb handler)
+        List.map (fun (nfail, ids, handler) ->
+            nfail, ids, substitute fpc sb handler)
           handlers in
       Ucatch(handlers, substitute fpc sb body)
   | Utrywith(u1, id, u2) ->
@@ -964,7 +954,7 @@ let rec close fenv cenv = function
             let i = next_raise_count () in
             let ubody,_ = fn (Some (Lstaticraise (Stexn_cst i,[],[])))
             and uhandler,_ = close fenv cenv lamfail in
-            Ucatch ([i,[],[],uhandler],ubody),Value_unknown
+            Ucatch ([i,[],uhandler],ubody),Value_unknown
           else fn fail
       end
   | Lstringswitch(arg,sw,d) ->
@@ -981,14 +971,15 @@ let rec close fenv cenv = function
             let ud,_ = close fenv cenv d in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
-  | Lstaticraise (i, args, kargs) ->
-      (Ustaticfail (i, close_list fenv cenv args, kargs), Value_unknown)
+  | Lstaticraise (Stexn_var i, args, kargs) -> assert false
+  | Lstaticraise (Stexn_cst i, args, kargs) ->
+      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
   | Lstaticcatch(body, handlers) ->
       let (ubody, _) = close fenv cenv body in
       let uhandlers =
         List.map (fun (nfail, args, kargs, handler) ->
             let (uhandler, _) = close fenv cenv handler in
-            (nfail, args, kargs, uhandler))
+            (nfail, args, uhandler))
           handlers in
       (Ucatch(uhandlers, ubody), Value_unknown)
   | Ltrywith(body, id, handler) ->
@@ -1212,8 +1203,8 @@ and close_switch arg fenv cenv cases num_keys default =
                 (string_of_lambda lam) ;
 *)
             let ohs = !hs in
-            hs := (fun e -> Ucatch ([i,[],[], ulam], ohs e)) ;
-            Ustaticfail (Stexn_cst i,[],[]))
+            hs := (fun e -> Ucatch ([i,[], ulam], ohs e)) ;
+            Ustaticfail (i,[]))
       acts in
   match actions with
   | [| |] -> [| |], [| |], !hs (* May happen when default is None *)
@@ -1263,9 +1254,9 @@ let collect_exported_structured_constants a =
         ulam u ;
         List.iter (fun (_,act) -> ulam act) sw ;
         Misc.may ulam d
-    | Ustaticfail (_, ul, _) -> List.iter ulam ul
+    | Ustaticfail (_, ul) -> List.iter ulam ul
     | Ucatch (handlers, body) ->
-        List.iter (fun (_,_,_,handler) -> ulam handler) handlers;
+        List.iter (fun (_,_,handler) -> ulam handler) handlers;
         ulam body
     | Utrywith (u1, _, u2)
     | Usequence (u1, u2)

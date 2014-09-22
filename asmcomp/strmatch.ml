@@ -369,10 +369,10 @@ module Make(I:I) = struct
 (* Module entry point *)
 
     let catch arg k = match arg with
-    | Cjump (e,[],[]) ->  k arg
+    | Cjump (e,[]) ->  k arg
     | _ ->
         let e =  next_raise_count () in
-        ccatch (e,[],[],k (cexit (e,[],[])),arg)
+        ccatch (e,[],k (cexit (e,[])),arg)
 
     let compile str default cases =
 (* We do not attempt to really optimise default=None *)

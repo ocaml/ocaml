@@ -18,269 +18,23 @@ open Cmm
 open Reg
 open Mach
 
-type static_exception_info =
-  { sti_vars : (stexn_var, Reg.t array list * Reg.t array list) Hashtbl.t;
-    sti_def : (int, Reg.t array list * Reg.t array list) Hashtbl.t;
-    sti_bind : (stexn_var, int list) Hashtbl.t }
-
-module Exn_classes = struct
-
-  type exn_class =
-    {
-      st_id : int;
-      mutable st_repr : exn_class option;
-      mutable st_rank : int;
-
-      mutable st_args : int option; (* number of arguments *)
-      mutable st_k : exn_class list option; (* list of continuation arguments *)
-    }
-
-  type env_exn =
-    { vars : (stexn_var,exn_class) Hashtbl.t;
-      def : (int,exn_class) Hashtbl.t;
-      class_count : int ref }
-
-  let fresh_env () =
-    { vars = Hashtbl.create 0;
-      def = Hashtbl.create 0;
-      class_count = ref 0 }
-
-  let class_count = ref 0
-
-  let new_class env =
-    incr env.class_count;
-    { st_id = !(env.class_count);
-      st_repr = None;
-      st_rank = 0;
-      st_args = None;
-      st_k = None }
-
-  let rec repr e =
-    match e.st_repr with
-    | None -> e
-    | Some e' ->
-        let e'' = repr e' in
-        if e'' != e' then e.st_repr <- Some e'';
-        e''
-
-  let var_class env var =
-    try Hashtbl.find env.vars var with
-    | Not_found ->
-        let c = new_class env in
-        Hashtbl.add env.vars var c;
-        c
-
-  let stexn env = function
-    | Stexn_cst i ->
-        begin
-          try Hashtbl.find env.def i
-          with Not_found ->
-            assert false (* must have been filled before *)
-        end
-    | Stexn_var var ->
-        var_class env var
-
-  let rec union e1 e2 =
-    let e1 = repr e1 in
-    let e2 = repr e2 in
-
-    if e1 != e2
-    then
-      begin
-        begin
-          if e1.st_rank < e2.st_rank
-          then e1.st_repr <- Some e2
-          else
-          if e1.st_rank > e2.st_rank
-          then e2.st_repr <- Some e1
-          else
-            (e2.st_repr <- Some e1;
-             e1.st_rank <- e1.st_rank + 1)
-        end;
-
-        let e = repr e1 in
-
-        begin
-          match e1.st_args, e2.st_args with
-          | None, None -> ()
-
-          | (Some _ as r), None
-          | None, (Some _ as r) ->
-              e.st_args <- r
-
-          | (Some r1 as r), Some r2 ->
-              assert(r1 = r2);
-              e.st_args <- r
-        end;
-
-        begin
-          match e1.st_k, e2.st_k with
-          | None, None -> ()
-
-          | (Some _ as r), None
-          | None, (Some _ as r) ->
-              e.st_k <- r
-
-          | (Some r1 as r), Some r2 ->
-              assert(List.length r1 = List.length r2);
-              e.st_k <- r;
-              List.iter2 union r1 r2
-        end
-      end
-
-  let make_class env args k =
-    let c = new_class env in
-    c.st_args <- Some (List.length args);
-    let k = List.map (stexn env) k in
-    c.st_k <- Some k;
-    c
-
-  let define env i args k =
-    let k = List.map (fun x -> Stexn_var x) k in
-    let c = make_class env args k in
-    Hashtbl.add env.def i c
-
-  let apply env e args k =
-    let c_expect = make_class env args k in
-    let c = stexn env e in
-    union c_expect c
-
-  let apply_direct env i args k =
-    apply env (Stexn_cst i) args k
-
-  let apply_var env v args k =
-    apply env (Stexn_var v) args k
-
-
-  let mark_exception_classes cmm =
-    let env = fresh_env () in
-    let rec aux = function
-      | Cconst_int _
-      | Cconst_natint _
-      | Cconst_float _
-      | Cconst_symbol _
-      | Cconst_pointer _
-      | Cconst_natpointer _
-      | Cconst_blockheader _
-      | Cvar _ -> ()
-
-      | Clet (_, e1, e2)
-      | Csequence (e1, e2)
-      | Ctrywith (e1, _, e2) ->
-          aux e1; aux e2
-
-      | Cassign (_, e) ->
-          aux e
-
-      | Ctuple l
-      | Cop (_, l) ->
-          List.iter aux l
-
-      | Cifthenelse (e1, e2, e3) ->
-          aux e1; aux e2; aux e3
-
-      | Cswitch (e, _, a) ->
-          aux e; Array.iter aux a
-
-      | Clabel (handlers, body) ->
-          List.iter (fun (i, args, k, _handler) -> define env i args k) handlers;
-          aux body;
-          List.iter (fun (_i, _args, _k, handler) -> aux handler) handlers
-
-      | Cjump (Stexn_cst i, args, k) ->
-          apply_direct env i args k;
-          List.iter aux args
-
-      | Cjump (Stexn_var var, args, k) ->
-          apply_var env var args k;
-          List.iter aux args
-
-    in
-    aux cmm;
-    env
-
-  let result regs_for_addr env =
-
-    (* allocates registers for each equivalence class *)
-    let classes = Hashtbl.create !(env.class_count) in
-    let sti_vars = Hashtbl.create (Hashtbl.length env.vars) in
-    let sti_def = Hashtbl.create (Hashtbl.length env.def) in
-    let aux t v cl =
-      let cl = repr cl in
-      let regs =
-        try Hashtbl.find classes cl.st_id
-        with Not_found ->
-          let args =
-            match cl.st_args with
-            | None -> [] (* if not used anything will be ok *)
-            | Some args ->
-                Array.to_list (Array.init args (fun _ -> regs_for_addr ()))
-          in
-          let k =
-            match cl.st_k with
-            | None -> []
-            | Some k -> List.map (fun _ -> regs_for_addr ()) k
-          in
-          let r = args, k in
-          Hashtbl.add classes cl.st_id r;
-          r
-      in
-      Hashtbl.add t v regs
-    in
-    Hashtbl.iter (aux sti_vars) env.vars;
-    Hashtbl.iter (aux sti_def) env.def;
-
-    (* marks which static exception belong to which class *)
-    let equiv_classes = Hashtbl.create !(env.class_count) in
-    let aux' i cl =
-      let cl = repr cl in
-      let l =
-        try Hashtbl.find equiv_classes cl.st_id
-        with Not_found ->
-          let r = ref [] in
-          Hashtbl.add equiv_classes cl.st_id r;
-          r
-      in
-      l := i :: !l
-    in
-    Hashtbl.iter aux' env.def;
-
-    (* marks which static exception can be contained by each variables *)
-    let sti_bind = Hashtbl.create (Hashtbl.length env.vars) in
-    let aux'' v cl =
-      let cl = repr cl in
-      let l = try !(Hashtbl.find equiv_classes cl.st_id) with Not_found -> [] in
-      Hashtbl.add sti_bind v l
-    in
-    Hashtbl.iter aux'' env.vars;
-
-    { sti_vars; sti_def; sti_bind }
-
-  let static_exceptions_registers regs_for_addr cmm =
-    let env = mark_exception_classes cmm in
-    result regs_for_addr env
-
-end
-
 type environment =
   { var : (Ident.t, Reg.t array) Tbl.t;
-    exn : (Cmm.stexn_var, Reg.t array) Tbl.t;
-    st_exn_info : static_exception_info;
-  }
+    exn : (int, Reg.t array list) Tbl.t }
 
 let env_add id v env =
   { env with var = Tbl.add id v env.var }
 
-let env_add_ex id v env =
+let env_add_exn id v env =
   { env with exn = Tbl.add id v env.exn }
 
 let env_find id env =
   Tbl.find id env.var
 
-let env_find_ex id env =
+let env_find_exn id env =
   Tbl.find id env.exn
 
-let env_empty st_exn_info = { var = Tbl.empty; exn = Tbl.empty; st_exn_info }
+let env_empty = { var = Tbl.empty; exn = Tbl.empty }
 
 (* Infer the type of the result of an operation *)
 
@@ -835,19 +589,25 @@ method emit_expr (env:environment) exp =
   | Clabel([], e1) ->
       self#emit_expr env e1
   | Clabel(handlers, e1) ->
+      let handlers =
+        List.map (fun (nfail, ids, e2) ->
+            let rs =
+              List.map
+                (fun id -> let r = self#regs_for typ_addr in name_regs id r; r)
+                ids in
+            (nfail, ids, rs, e2))
+          handlers in
+      let env =
+        List.fold_left (fun env (nfail, ids, rs, e2) ->
+            env_add_exn nfail rs env)
+          env handlers in
       let (r_body, s_body) = self#emit_sequence env e1 in
-      let aux (nfail, ids, kids, e2) =
-        let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+      let aux (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
-        List.iter2 name_regs ids rs;
         let new_env =
           List.fold_left
             (fun env (id,r) -> env_add id r env)
             env (List.combine ids rs) in
-        let new_env =
-          List.fold_left
-            (fun env (id,r) -> env_add_ex id r env)
-            new_env (List.combine kids krs) in
         let (r, s) = self#emit_sequence new_env e2 in
         (nfail, (r, s))
       in
@@ -857,33 +617,16 @@ method emit_expr (env:environment) exp =
       let aux2 (nfail, (_r, s)) = (nfail, s#extract) in
       self#insert (Ilabel(List.map aux2 l, s_body#extract)) [||] [||];
       r
-  | Cjump (stexn,args,stex_args) ->
+  | Cjump (nfail,args) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some (simple_list, ext_env) ->
           let src = self#emit_tuple ext_env simple_list in
-          let src_exn = self#emit_load_sexns ext_env stex_args in
-          let dest_args, dest_exn =
-            match stexn with
-            | Stexn_var fail_var ->
-                Hashtbl.find env.st_exn_info.sti_vars fail_var
-            | Stexn_cst nfail ->
-                Hashtbl.find env.st_exn_info.sti_def nfail
-          in
+          let dest_args = env_find_exn nfail env in
           let tmp_regs = List.map (fun _ -> self#regs_for typ_addr) dest_args in
           self#insert_moves src (Array.concat tmp_regs) ;
           self#insert_moves (Array.concat tmp_regs) (Array.concat dest_args) ;
-          self#insert_moves src_exn (Array.concat dest_exn) ;
-          begin match stexn with
-          | Stexn_cst nfail -> self#insert (Ijump nfail) [||] [||]
-          | Stexn_var fail_var ->
-              let possible_exns = Hashtbl.find env.st_exn_info.sti_bind fail_var in
-              match possible_exns with
-              | [nfail] ->
-                  self#insert (Ijump nfail) [||] [||]
-              | _ ->
-                  assert false
-          end;
+          self#insert (Ijump nfail) [||] [||];
           None
       end
   | Ctrywith(e1, v, e2) ->
@@ -897,27 +640,6 @@ method emit_expr (env:environment) exp =
                              (s2#extract)))
         [||] [||];
       r
-
-method private emit_load_sexn_var (env:environment) var =
-  try env_find_ex var env
-  with Not_found ->
-    fatal_error("Selection.emit_load_sexn_var: unbound exn var v" ^
-                (string_of_int var.stexn_var))
-
-method private emit_load_sexn (env:environment) sexn =
-  match sexn with
-  | Stexn_var v -> self#emit_load_sexn_var env v
-  | Stexn_cst i ->
-      assert false
-
-method private emit_load_sexns (env:environment) sexns =
-  let rec emit_list = function
-    [] -> []
-  | exp :: rem ->
-      let loc_rem = emit_list rem in
-      let loc_exp = self#emit_load_sexn env exp in
-      loc_exp :: loc_rem in
-  Array.concat(emit_list sexns)
 
 method private emit_sequence (env:environment) exp =
   let s = {< instr_seq = dummy_instr >} in
@@ -1097,22 +819,28 @@ method emit_tail (env:environment) exp =
   | Clabel([], e1) ->
       self#emit_tail env e1
   | Clabel(handlers, e1) ->
+      let handlers =
+        List.map (fun (nfail, ids, e2) ->
+            let rs =
+              List.map
+                (fun id -> let r = self#regs_for typ_addr in name_regs id r; r)
+                ids in
+            (nfail, ids, rs, e2))
+          handlers in
+      let env =
+        List.fold_left (fun env (nfail, ids, rs, e2) ->
+            env_add_exn nfail rs env)
+          env handlers in
       let s_body = self#emit_tail_sequence env e1 in
-      let aux (nfail, ids, kids, e2) =
-        let rs, krs = Hashtbl.find env.st_exn_info.sti_def nfail in
+      let aux (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
-        List.iter2 name_regs ids rs;
         let new_env =
           List.fold_left
             (fun env (id,r) -> env_add id r env)
             env (List.combine ids rs) in
-        let new_env =
-          List.fold_left
-            (fun env (id,r) -> env_add_ex id r env)
-            new_env (List.combine kids krs) in
         nfail, self#emit_tail_sequence new_env e2
       in
-      self#insert (Ilabel(List.map aux handlers, s_body)) [||] [||];
+      self#insert (Ilabel(List.map aux handlers, s_body)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = self#regs_for typ_addr in
@@ -1148,16 +876,11 @@ method emit_fundecl f =
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in
 
-  let static_exn_regs =
-    Exn_classes.static_exceptions_registers
-      (fun () -> self#regs_for typ_addr)
-      f.Cmm.fun_body in
-
   let env =
     List.fold_right2
       (fun (id, ty) r env -> env_add id r env)
       f.Cmm.fun_args rargs
-      (env_empty static_exn_regs) in
+      env_empty in
 
   self#insert_moves loc_arg rarg;
   self#emit_tail env f.Cmm.fun_body;
