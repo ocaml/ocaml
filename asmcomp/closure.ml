@@ -486,27 +486,27 @@ let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
 
-module Int = struct
-  type t = int
-  let compare = compare
-end
-module IntMap = Map.Make(Int)
+module StexnMap = Map.Make(
+  struct
+    type t = stexn
+    let compare (x:stexn) (y:stexn) = (x:>int) - (y:stexn:>int)
+  end)
 
 type sb =
   { sb_id : ulambda Ident.tbl;
-    sb_stexn : int IntMap.t }
+    sb_stexn : stexn StexnMap.t }
 
 let empty_sb =
   { sb_id = Ident.empty;
-    sb_stexn = IntMap.empty }
+    sb_stexn = StexnMap.empty }
 
 let find_id id sb = Ident.find_same id sb.sb_id
 let add_id id id' sb = { sb with sb_id = Ident.add id id' sb.sb_id }
 let subst_stexn s sb =
-  try IntMap.find s sb.sb_stexn with
+  try StexnMap.find s sb.sb_stexn with
   | Not_found -> s
 let add_stexn s s' sb =
-  { sb with sb_stexn = IntMap.add s s' sb.sb_stexn }
+  { sb with sb_stexn = StexnMap.add s s' sb.sb_stexn }
 
 let rec substitute fpc (sb:sb) ulam =
   match ulam with
@@ -952,7 +952,7 @@ let rec close fenv cenv = function
             (sw.sw_numblocks - List.length sw.sw_blocks) > 1
           then
             let i = next_raise_count () in
-            let ubody,_ = fn (Some (Lstaticraise (Stexn_cst i,[])))
+            let ubody,_ = fn (Some (Lstaticraise (i,[])))
             and uhandler,_ = close fenv cenv lamfail in
             Ucatch ([i,[],uhandler],ubody),Value_unknown
           else fn fail
@@ -971,7 +971,7 @@ let rec close fenv cenv = function
             let ud,_ = close fenv cenv d in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
-  | Lstaticraise (Stexn_cst i, args) ->
+  | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
   | Lstaticcatch(body, handlers) ->
       let (ubody, _) = close fenv cenv body in

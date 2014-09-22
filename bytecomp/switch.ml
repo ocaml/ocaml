@@ -98,6 +98,7 @@ module type S =
    val geint : primitive
    val gtint : primitive
    type act
+   type label
 
    val bind : act -> (act -> act) -> act
    val make_const : int -> act
@@ -107,8 +108,8 @@ module type S =
    val make_isin : act -> act -> act
    val make_if : act -> act -> act -> act
    val make_switch : act -> int array -> act array -> act
-   val make_catch : act -> int * (act -> act)
-   val make_exit : int -> act
+   val make_catch : act -> label * (act -> act)
+   val make_exit : label -> act
  end
 
 (* The module will ``produce good code for the case statement'' *)

@@ -90,7 +90,11 @@ let rec eliminate_ref id = function
 
 (* Simplification of exits *)
 
-module IntSet = Set.Make(struct type t = int let compare = (-) end)
+module StexnSet = Set.Make(
+  struct
+    type t = stexn
+    let compare (x:stexn) (y:stexn) = (x:>int) - (y:>int)
+  end)
 
 let simplify_exits lam =
 
@@ -120,7 +124,7 @@ let simplify_exits lam =
     Hashtbl.replace non_substituable i true
   in
 
-  let no_tail = IntSet.empty in
+  let no_tail = StexnSet.empty in
 
   let rec count tail = function
   | (Lvar _| Lconst _) -> ()
@@ -148,16 +152,16 @@ let simplify_exits lam =
       end
   | Lstaticraise (stexn,ls) ->
       begin match stexn with
-      | Stexn_cst i ->
+      | i ->
           incr_exit i;
-          if not (IntSet.mem i tail)
+          if not (StexnSet.mem i tail)
           then non_substituable i
       end;
       List.iter (count no_tail) ls
-  | Lstaticcatch (l1,[i,[],Lstaticraise (Stexn_cst j,[])]) ->
+  | Lstaticcatch (l1,[i,[],Lstaticraise (j,[])]) ->
       (* i will be replaced by j in l1, so each occurence of i in l1
          increases j's ref count *)
-      let tail = IntSet.add i tail in
+      let tail = StexnSet.add i tail in
       count tail l1;
       let ic = count_exit i in
       begin try
@@ -169,7 +173,7 @@ let simplify_exits lam =
       if is_non_substituable i
       then non_substituable j
   | Lstaticcatch(l1, handlers) ->
-      let tail = List.fold_right (fun (i, _, _) -> IntSet.add i)
+      let tail = List.fold_right (fun (i, _, _) -> StexnSet.add i)
           handlers tail in
       count tail l1;
       let rec fixpoint handlers =
@@ -209,7 +213,7 @@ let simplify_exits lam =
         count tail al
       end
   in
-  count IntSet.empty lam;
+  count StexnSet.empty lam;
 
   (*
      Second pass simplify  ``catch body with (i ...) handler''
@@ -267,14 +271,14 @@ let simplify_exits lam =
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
          Misc.may_map simplif d)
-  | Lstaticraise (Stexn_cst i,[]) as l ->
+  | Lstaticraise (i,[]) as l ->
       begin try
         let _,handler =  Hashtbl.find subst i in
         handler
       with
       | Not_found -> l
       end
-  | Lstaticraise (Stexn_cst i,ls) as expr ->
+  | Lstaticraise (i,ls) as expr ->
       let ls = List.map simplif ls in
       begin try
         let xs,handler = Hashtbl.find subst i in
@@ -289,7 +293,7 @@ let simplify_exits lam =
       with
       | Not_found -> expr
       end
-  | Lstaticcatch (l1,[i,[],(Lstaticraise (Stexn_cst j,[]) as l2)]) ->
+  | Lstaticcatch (l1,[i,[],(Lstaticraise (j,[]) as l2)]) ->
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
   | Lstaticcatch(l1, handlers) ->
@@ -1006,7 +1010,7 @@ let simplify_tail_calls lam =
 
         let params' = List.map Ident.rename params in
         let function_entry =
-          Lstaticraise(Stexn_cst nfail,
+          Lstaticraise(nfail,
                        List.map (fun v -> Lvar v) params') in
         let handlers = [nfail, params, loop fbody_tail fbody_env fbody] in
         let fbody = Lstaticcatch (function_entry, handlers) in
@@ -1029,7 +1033,7 @@ let simplify_tail_calls lam =
         let (ex_id, ex_nfail, ex_params, _) = exported_function in
         let params' = List.map Ident.rename ex_params in
         let function_entry =
-          Lstaticraise(Stexn_cst ex_nfail,
+          Lstaticraise(ex_nfail,
                        List.map (fun v -> Lvar v) params') in
         let handlers = List.map (fun (id, nfail, params, fbody) ->
             (nfail, params, loop fbody_tail fbody_env fbody)) functions in
@@ -1039,7 +1043,7 @@ let simplify_tail_calls lam =
     | Lapply (Lvar id, args, loc)
       when IdentSet.mem id tail ->
         let nfail = find_function env id in
-        Lstaticraise(Stexn_cst nfail, args)
+        Lstaticraise(nfail, args)
 
     | Lapply (func, args, loc) ->
         Lapply (loop no_tail env func, loops env args, loc)

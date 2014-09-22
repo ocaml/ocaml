@@ -32,6 +32,8 @@ and uconstant =
   | Uconst_int of int
   | Uconst_ptr of int
 
+type stexn = Lambda.stexn
+
 type ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
@@ -44,8 +46,8 @@ type ulambda =
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
-  | Ustaticfail of int * ulambda list
-  | Ucatch of (int * Ident.t list * ulambda) list * ulambda
+  | Ustaticfail of stexn * ulambda list
+  | Ucatch of (stexn * Ident.t list * ulambda) list * ulambda
   | Utrywith of ulambda * Ident.t * ulambda
   | Uifthenelse of ulambda * ulambda * ulambda
   | Usequence of ulambda * ulambda

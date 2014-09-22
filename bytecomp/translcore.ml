@@ -1143,7 +1143,7 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   let static_catch body val_ids handler =
     let static_exception_id = next_raise_count () in
     lstaticcatch
-      (Ltrywith (Lstaticraise (Stexn_cst static_exception_id, body), id,
+      (Ltrywith (Lstaticraise (static_exception_id, body), id,
                  Matching.for_trywith (Lvar id) exn_cases),
        (static_exception_id, val_ids),
        handler)

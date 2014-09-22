@@ -141,7 +141,6 @@ and bigarray_kind =
   | Pbigarray_int32 | Pbigarray_int64
   | Pbigarray_caml_int | Pbigarray_native_int
   | Pbigarray_complex32 | Pbigarray_complex64
-
 and bigarray_layout =
     Pbigarray_unknown_layout
   | Pbigarray_c_layout
@@ -167,7 +166,7 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
-type stexn = Stexn_cst of int
+type stexn = int
 
 type lambda =
     Lvar of Ident.t
@@ -180,7 +179,7 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstringswitch of lambda * (string * lambda) list * lambda option
   | Lstaticraise of stexn * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list * lambda) list
+  | Lstaticcatch of lambda * (stexn * Ident.t list * lambda) list
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -421,16 +420,16 @@ let next_raise_count () =
   !raise_count
 
 (* Anticipated staticraise, for guards *)
-let staticfail = Lstaticraise (Stexn_cst 0,[])
+let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (Stexn_cst 0,[])) -> true
+  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
   | Llet(str, id, lam, body) -> is_guarded body
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (Stexn_cst 0,[])) ->
+  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
       Lifthenelse (cond, body, patch)
   | Llet(str, id, lam, body) ->
       Llet (str, id, lam, patch_guarded patch body)
@@ -557,3 +556,5 @@ let lam_of_loc kind loc =
 
 let reset () =
   raise_count := 0
+
+let bogus_stexn = -1

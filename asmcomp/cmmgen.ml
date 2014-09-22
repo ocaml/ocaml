@@ -22,6 +22,8 @@ open Clambda
 open Cmm
 open Cmx_format
 
+let next_raise_count () = (next_raise_count ():stexn:>int)
+
 (* Local binding of complex expressions *)
 
 let bind name arg fn =
@@ -1100,6 +1102,7 @@ struct
   let gtint = Ccmpi Cgt
 
   type act = expression
+  type label = int
 
   let default = cexit (0,[])
   let make_const i =  Cconst_int i
@@ -1482,10 +1485,12 @@ let rec transl = function
           strmatch_compile arg (Misc.may_map transl d)
             (List.map (fun (s,act) -> s,transl act) sw))
   | Ustaticfail (stexn, args) ->
+      let stexn = (stexn:>int) in
       Cjump (stexn, List.map transl args)
   | Ucatch(handlers, body) ->
       Clabel(
         List.map (fun (nfail, ids, handler) ->
+            let nfail = (nfail:stexn:>int) in
             nfail, ids, transl handler)
           handlers,
         transl body)
@@ -1495,8 +1500,10 @@ let rec transl = function
   | Uifthenelse(Uprim(Pnot, [arg], _), ifso, ifnot) ->
       transl (Uifthenelse(arg, ifnot, ifso))
   | Uifthenelse(cond, ifso, Ustaticfail (nfail, [])) ->
+      let nfail = (nfail:stexn:>int) in
       exit_if_false cond (transl ifso) nfail
   | Uifthenelse(cond, Ustaticfail (nfail, []), ifnot) ->
+      let nfail = (nfail:stexn:>int) in
       exit_if_true cond nfail (transl ifnot)
   | Uifthenelse(Uprim(Psequand, _, _) as cond, ifso, ifnot) ->
       let raise_num = next_raise_count () in

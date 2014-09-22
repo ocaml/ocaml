@@ -239,8 +239,8 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
-let stexn ppf (Stexn_cst i:Lambda.stexn) =
-  fprintf ppf "%d" i
+let stexn ppf (i:Lambda.stexn) =
+  fprintf ppf "%d" (i:>int)
 
 let rec lam ppf = function
   | Lvar id ->
@@ -339,7 +339,7 @@ let rec lam ppf = function
         lams ls;
   | Lstaticcatch(lbody, [i, vars, lhandler]) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
-        lam lbody i
+        lam lbody (i:>int)
         (fun ppf vars -> match vars with
           | [] -> ()
           | _ ->
@@ -351,7 +351,7 @@ let rec lam ppf = function
   | Lstaticcatch(lbody, handlers) ->
       let print_handler ppf (i, ids, e2) =
         fprintf ppf " (%d%a)@ %a"
-          i
+          (i:stexn:>int)
           (fun ppf ids ->
              List.iter
                (fun id -> fprintf ppf " %a" Ident.print id)
