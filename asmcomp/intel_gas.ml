@@ -50,15 +50,14 @@ let print_reg b f r =
   Buffer.add_char b '%';
   Buffer.add_string b (f r)
 
-let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
-  begin match displ with
-  | (None, x) -> Printf.bprintf b "%Ld" x
-  | (Some s, x) ->
+let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
+  begin match sym with
+  | None -> Printf.bprintf b "%Ld" displ
+  | Some s ->
       Buffer.add_string b s;
-      match x with
-      | 0L -> ()
-      | x when x > 0L -> Printf.bprintf b "+%Ld" x
-      | x -> Printf.bprintf b "%Ld" x
+      if displ = 0L then ()
+      else if displ > 0L then Printf.bprintf b "+%Ld" displ
+      else Printf.bprintf b "%Ld" displ
   end;
   if scale <> 0 || base != None then begin
     Buffer.add_char b '(';
@@ -167,8 +166,8 @@ let i2_ss b s x y =
 let i1_call_jmp b s x =
   match x with
   (* this is the encoding of jump labels: don't use * *)
-  | Mem64 {idx=RIP; scale=1; base=None; displ=(Some _,_); _}
-  | Mem32 {idx=_;   scale=0; base=None; displ=(Some _,_); _} (*used?*) ->
+  | Mem64 {idx=RIP; scale=1; base=None; sym=Some _; _}
+  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ ->
       tab b;

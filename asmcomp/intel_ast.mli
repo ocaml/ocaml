@@ -13,22 +13,14 @@
 (** Structured representation of Intel assembly language (32 and 64 bit). *)
 
 type condition =
-  | O
-  | NO
-  | B | C | NAE
-  | NB | NC | AE
-  | Z | E
-  | NZ | NE
-  | BE | NA
-  | NBE | A
-  | S
-  | NS
-  | P | PE
-  | NP | PO
-  | L | NGE
-  | NL | GE
-  | LE | NG
-  | NLE | G
+  | O | NO
+  | B | C | NAE | NB | NC | AE
+  | Z | E | NZ | NE
+  | BE | NA | NBE | A
+  | S | NS
+  | P | PE | NP | PO
+  | L | NGE | NL | GE
+  | LE | NG | NLE | G
 
 type rounding =
   | RoundUp
@@ -72,19 +64,14 @@ type register32 =
 type registerf = XMM of int | TOS | ST of int
 
 
-(* A direct value is a combination of:
-   * an integer offset
-   * a symbol
-*)
-type offset = string option * int64
-
 type 'reg addr =
   {
     typ: data_type;
     idx: 'reg;
     scale: int;
     base: 'reg option;
-    displ: offset;
+    sym: string option;
+    displ: int64;
   }
   (* displ + base + idx * scale *)
 

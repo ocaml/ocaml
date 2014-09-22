@@ -31,16 +31,15 @@ let string_of_datatype_ptr = function
   | NEAR -> "NEAR PTR "
   | PROC -> "PROC PTR "
 
-let bprint_arg_mem b string_of_register {typ; idx; scale; base; displ} =
+let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
   Buffer.add_string b (string_of_datatype_ptr typ);
   Buffer.add_char b '[';
-  let (s, o) = displ in
-  begin match s with
+  begin match sym with
   | None -> ()
-  | Some s -> Buffer.add_string b s;
+  | Some s -> Buffer.add_string b s
   end;
   if scale <> 0 then begin
-    if s <> None then Buffer.add_char b '+';
+    if sym <> None then Buffer.add_char b '+';
     Buffer.add_string b (string_of_register idx);
     if scale <> 1 then Printf.bprintf b "*%d" scale;
   end;
@@ -51,8 +50,8 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; displ} =
       Buffer.add_char b '+';
       Buffer.add_string b (string_of_register r);
   end;
-  begin if o > 0L then Printf.bprintf b "+%Ld" o
-    else if o < 0L then Printf.bprintf b "%Ld" o
+  begin if displ > 0L then Printf.bprintf b "+%Ld" displ
+    else if displ < 0L then Printf.bprintf b "%Ld" displ
   end;
   Buffer.add_char b ']'
 
@@ -73,10 +72,10 @@ let bprint_arg b arg =
   (* We don't need to specify RIP on Win64, since EXTERN will provide
      the list of external symbols that need this addressing mode, and
      MASM will automatically use RIP addressing when needed. *)
-  | Mem64 {typ; idx=RIP; scale=1; base=None; displ=(Some s, 0L)} ->
-      Printf.bprintf b "%s %s" (string_of_datatype_ptr typ) s
-  | Mem64 {typ; idx=RIP; scale=1; base=None; displ=(Some s, d)} ->
-      Printf.bprintf b "%s %s+%Ld" (string_of_datatype_ptr typ) s d
+  | Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ} ->
+      Printf.bprintf b "%s %s" (string_of_datatype_ptr typ) s;
+      if displ > 0L then Printf.bprintf b "+%Ld" displ
+      else if displ < 0L then Printf.bprintf b "%Ld" displ
 
   | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr

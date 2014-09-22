@@ -230,11 +230,11 @@ module DSL32 = struct
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset idx =
     assert(scale > 0);
-    Mem32 {typ; idx; scale; base; displ=(sym, Int64.of_int offset)}
+    Mem32 {typ; idx; scale; base; sym; displ=Int64.of_int offset}
 
   let mem_sym typ ?(ofs = 0) l =
     Mem32 {typ; idx=EAX; scale=0; base=None;
-           displ=(Some l, Int64.of_int ofs)}
+           sym=Some l; displ=Int64.of_int ofs}
 end
 
 
@@ -316,8 +316,8 @@ module DSL64 = struct
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);
-    Mem64 {typ; idx; scale; base; displ=(None, Int64.of_int offset)}
+    Mem64 {typ; idx; scale; base; sym=None; displ=Int64.of_int offset}
 
   let from_rip typ ?(ofs = 0) s =
-    Mem64 {typ; idx=RIP; scale=1; base=None; displ=(Some s, Int64.of_int ofs)}
+    Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ=Int64.of_int ofs}
 end
