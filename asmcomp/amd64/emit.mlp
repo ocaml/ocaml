@@ -101,8 +101,6 @@ let symbol_prefix = if system = S_macosx then "_" else ""
 let emit_symbol s =
   string_of_symbol symbol_prefix s
 
-let abs ?tbl s = (emit_symbol s, tbl)
-
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
@@ -121,7 +119,7 @@ let use_plt =
   | _ -> !Clflags.dlcode
 
 let rel_plt s =
-  rel32 (if use_plt then abs s ~tbl:PLT else abs s)
+  rel32 (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
 let emit_call s =
   I.call (rel_plt s)
@@ -136,11 +134,11 @@ let windows =
 
 let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
-    I.movq (from_rip QWORD (abs s ~tbl:GOTPCREL),  arg)
+    I.movq (from_rip QWORD (emit_symbol s ^ "@GOTPCREL"),  arg)
   else if !pic_code then
-    I.leaq (from_rip NO (abs s), arg)
+    I.leaq (from_rip NO (emit_symbol s), arg)
   else
-    I.movq (imm64 (abs s), arg)
+    I.movq (imm64 (emit_symbol s), arg)
 
 (* Output a label *)
 
@@ -156,9 +154,7 @@ let emit_data_label lbl =
   else
     Printf.sprintf ".Ld%d" lbl
 
-let abs_label s = (emit_label s, None)
-
-let label s = rel32 (abs_label s)
+let label s = rel32 (emit_label s)
 
 let def_label s =
   directive (NewLabel (emit_label s, NO))
@@ -232,7 +228,7 @@ let addressing addr typ i n =
   (*  | Ibased _ when !Clflags.dlcode -> assert false ONLY on Unix *)
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      from_rip typ (abs s) ~ofs
+      from_rip typ (emit_symbol s) ~ofs
   | Iindexed d ->
       mem_ptr typ d (arg64 i n)
   | Iindexed2 d ->
@@ -484,7 +480,7 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0, res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (from_rip NO (abs_label lbl), res i 0)
+          I.movsd (from_rip NO (emit_label lbl), res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -582,7 +578,7 @@ let emit_instr fallthrough i =
           load_symbol_addr "caml_young_limit" rax;
           I.cmpq (mem_ptr QWORD 0 RAX, r15);
         end else
-          I.cmpq (from_rip QWORD (abs "caml_young_limit"), r15);
+          I.cmpq (from_rip QWORD (emit_symbol "caml_young_limit"), r15);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
@@ -642,9 +638,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n, res i 0)
   | Lop(Inegf) ->
-      I.xorpd (from_rip OWORD (abs "caml_negf_mask"), res i 0)
+      I.xorpd (from_rip OWORD (emit_symbol "caml_negf_mask"), res i 0)
   | Lop(Iabsf) ->
-      I.andpd (from_rip OWORD (abs "caml_absf_mask"), res i 0)
+      I.andpd (from_rip OWORD (emit_symbol "caml_absf_mask"), res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1, res i 0)
   | Lop(Ifloatofint) ->
@@ -744,7 +740,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.leaq (from_rip NO (abs_label lbl), reg tmp1);
+      I.leaq (from_rip NO (emit_label lbl), reg tmp1);
       I.movslq (mem_ptr DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.addq (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);

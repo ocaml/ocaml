@@ -82,13 +82,12 @@ type register32 =
 
 type registerf = XMM of int | TOS | ST of int
 
-type symbol = string * reloc_table option
 
 (* A direct value is a combination of:
    * an integer offset
    * a symbol
 *)
-type offset = symbol option * int64
+type offset = string option * int64
 
 type 'reg addr =
   {
@@ -102,10 +101,15 @@ type 'reg addr =
 
 type arg =
   (* operand is an immediate value *)
-  | Imm of data_size * offset
+  | Imm of data_size * int64
+  | Sym of string
+
+(* TODO:
+   split Imm into immediate symbol (no offset, no reloc table)
+   and pure constant *)
 
   (* operand is a relative displacement (call/jmp targets) *)
-  | Rel32 of symbol
+  | Rel32 of string
 
   | Reg8 of register8
   | Reg16 of register16

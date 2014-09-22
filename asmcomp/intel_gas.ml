@@ -46,37 +46,26 @@ open Intel_proc
 
 let tab b = Buffer.add_char b '\t'
 
-let string_of_table = function
-  | Some PLT -> "@PLT"
-  | Some GOTPCREL -> "@GOTPCREL"
-  | None -> ""
-
-let print_sym_tbl b (s, table) =
-  Buffer.add_string b s;
-  Buffer.add_string b (string_of_table table)
-
 let print_reg b f r =
   Buffer.add_char b '%';
   Buffer.add_string b (f r)
 
-let print_opt_reg b f = function
-  | None -> ()
-  | Some reg -> print_reg b f reg
-
-let print_sym_offset b = function
+let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
+  begin match displ with
   | (None, x) -> Printf.bprintf b "%Ld" x
   | (Some s, x) ->
-      print_sym_tbl b s;
+      Buffer.add_string b s;
       match x with
       | 0L -> ()
       | x when x > 0L -> Printf.bprintf b "+%Ld" x
       | x -> Printf.bprintf b "%Ld" x
-
-let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
-  print_sym_offset b displ;
+  end;
   if scale <> 0 || base != None then begin
     Buffer.add_char b '(';
-    print_opt_reg b string_of_register base;
+    begin match base with
+    | None -> ()
+    | Some base -> print_reg b string_of_register base
+    end;
     if scale <> 0 then begin
       if base <> None || scale <> 1 then Buffer.add_char b ',';
       print_reg b string_of_register idx;
@@ -86,8 +75,9 @@ let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; displ} =
   end
 
 let bprint_arg b = function
-  | Rel32 sym -> print_sym_tbl b sym
-  | Imm (_, x) -> Buffer.add_char b '$'; print_sym_offset b x
+  | Rel32 s -> Buffer.add_string b s
+  | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
+  | Imm (_, x) -> Printf.bprintf b "$%Ld" x
   | Reg8  x -> print_reg b string_of_register8 x
   | Reg16 x -> print_reg b string_of_register16 x
   | Reg32 x -> print_reg b string_of_register32 x

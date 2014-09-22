@@ -107,10 +107,10 @@ let emit_symbol s =
 
 let abs s = (emit_symbol s, None)
 
-let immsym s = imm32 (abs s)
+let immsym s = imm32 (emit_symbol s)
 
 let emit_call s =
-  I.call (rel32 (abs s))
+  I.call (rel32 (emit_symbol s))
 
 (* Output a label *)
 
@@ -129,9 +129,7 @@ let emit_label lbl =
 let emit_data_label lbl =
   Printf.sprintf "%sd%d" label_prefix lbl
 
-let abs_label s = (emit_label s, None)
-
-let label s = rel32 (abs_label s)
+let label s = rel32 (emit_label s)
 
 let def_label s =
   directive (NewLabel (emit_label s, NO))
@@ -550,7 +548,7 @@ let emit_instr fallthrough i =
       else begin
         output_epilogue begin fun () ->
           add_used_symbol s;
-          I.jmp (rel32 (abs s))
+          I.jmp (rel32 (emit_symbol s))
         end
       end
   | Lop(Iextcall(s, alloc)) ->

@@ -62,15 +62,15 @@ module DSL = struct
   (* Override emitaux.ml *)
   let emit_int n =
     if n >= -0x80L && n <= 0x7FL then
-      Imm (B8, (None, n))
+      Imm (B8, n)
     else
     if n >= -0x8000L && n <= 0x7FFFL then
-      Imm (B16, (None, n))
+      Imm (B16, n)
     else
       (* We emit all immediates as B32, even if they are bigger.
          The only instruction (movabsq) taking an immediate B64 will cast
           B8|B16|B32 to B64. *)
-      Imm (B32, (None, n))
+      Imm (B32, n)
 
   (* Override emitaux.ml *)
   let const_int n =
@@ -253,7 +253,7 @@ module DSL32 = struct
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
 
-  let imm32 l = Imm (B32, (Some l,0L))
+  let imm32 l = Sym l
 
   let mem_ptr typ ?(scale = 1) ?base ?sym offset idx =
     assert(scale > 0);
@@ -261,7 +261,7 @@ module DSL32 = struct
 
   let mem_sym typ ?(ofs = 0) l =
     Mem32 {typ; idx=EAX; scale=0; base=None;
-           displ=(Some (l, None), Int64.of_int ofs)}
+           displ=(Some l, Int64.of_int ofs)}
 end
 
 
@@ -346,7 +346,7 @@ module DSL64 = struct
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
 
-  let imm64 s = Imm (B64, (Some s,0L))
+  let imm64 s = Sym s
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);
