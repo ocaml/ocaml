@@ -222,13 +222,12 @@ module DSL32 = struct
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
 
-  let mem_ptr typ ?(scale = 1) ?base ?sym offset idx =
+  let mem_ptr typ ?(scale = 1) ?base ?sym displ idx =
     assert(scale > 0);
-    Mem32 {typ; idx; scale; base; sym; displ=Int64.of_int offset}
+    Mem32 {typ; idx; scale; base; sym; displ}
 
   let mem_sym typ ?(ofs = 0) l =
-    Mem32 {typ; idx=EAX; scale=0; base=None;
-           sym=Some l; displ=Int64.of_int ofs}
+    Mem32 {typ; idx=EAX; scale=0; base=None; sym=Some l; displ=ofs}
 end
 
 
@@ -309,8 +308,8 @@ module DSL64 = struct
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);
-    Mem64 {typ; idx; scale; base; sym=None; displ=Int64.of_int offset}
+    Mem64 {typ; idx; scale; base; sym=None; displ=offset}
 
   let from_rip typ ?(ofs = 0) s =
-    Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ=Int64.of_int ofs}
+    Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ=ofs}
 end

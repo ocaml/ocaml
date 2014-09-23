@@ -53,13 +53,13 @@ let print_reg b f r =
 let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
   begin match sym with
   | None ->
-      if displ <> 0L || scale = 0 then
-        Buffer.add_string b (Int64.to_string displ)
+      if displ <> 0 || scale = 0 then
+        Buffer.add_string b (string_of_int displ)
   | Some s ->
       Buffer.add_string b s;
-      if displ = 0L then ()
-      else if displ > 0L then bprintf b "+%Ld" displ
-      else bprintf b "%Ld" displ
+      if displ = 0 then ()
+      else if displ > 0 then bprintf b "+%d" displ
+      else bprintf b "%d" displ
   end;
   if scale <> 0 then begin
     Buffer.add_char b '(';

@@ -71,7 +71,7 @@ type 'reg addr =
     scale: int;
     base: 'reg option;
     sym: string option;
-    displ: int64;
+    displ: int;
   }
   (** Addressing modes:
       displ + sym + base + idx * scale

@@ -66,8 +66,8 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
       Buffer.add_char b '+';
       Buffer.add_string b (string_of_register r);
   end;
-  begin if displ > 0L then bprintf b "+%Ld" displ
-    else if displ < 0L then bprintf b "%Ld" displ
+  begin if displ > 0 then bprintf b "+%d" displ
+    else if displ < 0 then bprintf b "%d" displ
   end;
   Buffer.add_char b ']'
 
@@ -90,8 +90,8 @@ let bprint_arg b arg =
      MASM will automatically use RIP addressing when needed. *)
   | Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ} ->
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
-      if displ > 0L then bprintf b "+%Ld" displ
-      else if displ < 0L then bprintf b "%Ld" displ
+      if displ > 0 then bprintf b "+%d" displ
+      else if displ < 0 then bprintf b "%d" displ
 
   | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
