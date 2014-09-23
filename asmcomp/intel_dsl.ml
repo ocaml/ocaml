@@ -59,7 +59,6 @@ end
 module DSL = struct
   let sym s = Sym s
 
-  (* Override emitaux.ml *)
   let emit_nat n = Imm (Int64.of_nativeint n)
   let int n = Imm (Int64.of_int n)
 
@@ -97,15 +96,12 @@ module DSL = struct
   let _space n = directive (Space n)
   let _setvar (arg1, arg2) = directive (Set (arg1, arg2))
   let _end () = directive End
-  (* mnemonics *)
-
 end
 
 module INS = struct
 
   open Check
 
-  (* eta-expand to create ref everytime *)
   let jmp arg = emit (JMP arg)
   let call arg = emit (CALL arg)
   let set cond arg = emit (SET (cond, arg))
@@ -119,7 +115,6 @@ module INS = struct
   let ja = j A
   let jne = j NE
   let jp = j P
-
 
   let ret () = emit RET
   let hlt () = emit HLT
@@ -213,7 +208,6 @@ module INS32 = struct
 end
 
 module DSL32 = struct
-
   include DSL
 
   let _label s = directive (NewLabel (s, DWORD))
@@ -239,7 +233,6 @@ end
 
 
 module INS64 = struct
-
   open Check
   include INS
 
