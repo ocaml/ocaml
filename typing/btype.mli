@@ -212,3 +212,4 @@ val map_type_expr_cstr_args: (type_expr -> type_expr) ->
 
 
 val inlined_record_name: string -> string -> string
+val uninlined_record_name: string -> (string * string) option

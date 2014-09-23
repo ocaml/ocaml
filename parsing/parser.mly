@@ -2008,10 +2008,11 @@ label_longident:
 type_longident:
     type_ident                                  { Lident $1 }
   | mod_ext_longident DOT type_ident            { Ldot($1, $3) }
+  | BANG constr_longident                       { $2 }
 ;
 type_ident:
     LIDENT                                      { $1 }
-  | LIDENT DOT UIDENT                           { $1 ^ "." ^ $3 }
+/*  | LIDENT DOT UIDENT                       { $1 ^ "." ^ $3 } */
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }

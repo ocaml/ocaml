@@ -689,4 +689,11 @@ let backtrack (changes, old) =
 
 
 let inlined_record_name typ cstr =
-  typ ^ "." ^ cstr
+  Printf.sprintf "!%s.%s" typ cstr
+
+let uninlined_record_name s =
+  if s.[0] = '!' then
+    let i = String.index s '.' in
+    Some (String.sub s 1 (i - 1), String.sub s (i + 1) (String.length s - i - 1))
+  else
+    None

@@ -224,6 +224,30 @@ let find_type env loc lid =
 
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+
+let find_type env loc lid =
+  let s = Longident.last lid in
+  match s.[0] with
+  | 'A'..'Z' ->
+      let cstr = find_constructor env loc lid in
+      if not cstr.cstr_inlined then
+        failwith (Printf.sprintf
+                    "Constructor %s does not have an inline record argument"
+                    s
+                 );
+      begin match cstr.cstr_args with
+      | [{desc=Tconstr(path, _, _)}] ->
+          let decl =
+            try Env.find_type path env
+            with Not_found ->
+              assert false
+          in
+          (path, decl)
+      | _ -> assert false
+      end
+  | _ ->
+      find_type env loc lid
+
 let find_all_constructors =
   find_component Env.lookup_all_constructors
     (fun lid -> Unbound_constructor lid)

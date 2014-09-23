@@ -69,12 +69,22 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
+(* Note: this logic is duplicated in Oprint.print_type_ident *)
 let rec string_of_out_ident = function
-  | Oide_ident s -> s
-  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
+  | Oide_ident s ->
+      begin match Btype.uninlined_record_name s with
+      | None -> s
+      | Some (_typ, cstr) -> Printf.sprintf "!%s" cstr
+      end
+  | Oide_dot (m, s) ->
+      begin match Btype.uninlined_record_name s with
+      | None -> Printf.sprintf "%s.%s" (string_of_out_ident m) s
+      | Some (_typ, cstr) ->
+          Printf.sprintf "!%s.%s" (string_of_out_ident m) cstr
+      end
   | Oide_apply (id1, id2) ->
-      String.concat ""
-        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
+      Printf.sprintf "%s(%s)" (string_of_out_ident id1)
+        (string_of_out_ident id2)
 
 let string_of_path p = string_of_out_ident (tree_of_path p)
 
