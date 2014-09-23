@@ -11,7 +11,7 @@
 #########################################################################
 
 BASEDIR=../../..
-ADD_COMPFLAGS=-g
+ADD_COMPFLAGS=-g -custom
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
 .PHONY: default
