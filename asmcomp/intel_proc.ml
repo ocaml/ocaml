@@ -72,15 +72,23 @@ let string_of_string_literal s =
   Buffer.contents b
 
 let string_of_symbol prefix s =
-  let b = Buffer.create (1 + String.length s) in
-  Buffer.add_string b prefix;
-  String.iter
-    (function
-      | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-      | c -> Printf.bprintf b "$%02x" (Char.code c)
-    )
-    s;
-  Buffer.contents b
+  let spec = ref false in
+  for i = 0 to String.length s - 1 do
+    match String.unsafe_get s i with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+    | _ -> spec := true;
+  done;
+  if not !spec then if prefix = "" then s else prefix ^ s
+  else
+    let b = Buffer.create (String.length s + 10) in
+    Buffer.add_string b prefix;
+    String.iter
+      (function
+        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
+        | c -> Printf.bprintf b "$%02x" (Char.code c)
+      )
+      s;
+    Buffer.contents b
 
 
 let string_of_register64 reg64 =
