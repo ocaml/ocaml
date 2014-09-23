@@ -98,7 +98,7 @@ let bprint_arg b arg =
 
 
 let rec cst = function
-  | ConstLabel _ | Const _ | ConstThis as c -> cst c
+  | ConstLabel _ | Const _ | ConstThis as c -> scst c
   | ConstAdd (c1, c2) -> scst c1 ^ " + " ^ scst c2
   | ConstSub (c1, c2) -> scst c1 ^ " - " ^ scst c2
 

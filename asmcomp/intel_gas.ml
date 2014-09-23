@@ -86,7 +86,7 @@ let bprint_arg b = function
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
 
 let rec cst = function
-  | ConstLabel _ | Const _ | ConstThis as c -> cst c
+  | ConstLabel _ | Const _ | ConstThis as c -> scst c
   | ConstAdd (c1, c2) -> scst c1 ^ " + " ^ scst c2
   | ConstSub (c1, c2) -> scst c1 ^ " - " ^ scst c2
 
