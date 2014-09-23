@@ -344,3 +344,15 @@ let bprint_instr_name b = function
 let bprint_instr b instr =
   bprint_instr_name b instr;
   Buffer.add_char b '\n'
+
+let generate_asm oc lines =
+  let b = Buffer.create 10000 in
+  List.iter
+    (fun i ->
+       Buffer.clear b;
+       bprint_instr b i;
+       Buffer.output_buffer oc b
+    )
+    lines
+
+

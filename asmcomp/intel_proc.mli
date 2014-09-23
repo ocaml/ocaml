@@ -35,7 +35,7 @@ val reset_asm_code: unit -> unit
 
 (** Code emission *)
 
-val generate_code: (out_channel * (Buffer.t -> Intel_ast.asm_line -> unit)) option -> unit
+val generate_code: (Intel_ast.asm_line list -> unit) option -> unit
   (** Post-process the stream of instructions.  Dump it (using
       the provided syntax emitter) in a file (if provided) and
       compile it with an internal assembler (if registered

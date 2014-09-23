@@ -1117,9 +1117,9 @@ let end_assembly() =
   let asm =
     if !Emitaux.create_asm_file then
       Some
-        (!Emitaux.output_channel,
-         if Intel_proc.masm then Intel_masm.bprint_instr
-         else Intel_gas.bprint_instr
+        (
+         (if Intel_proc.masm then Intel_gas.generate_asm
+          else Intel_gas.generate_asm) !Emitaux.output_channel
         )
     else
       None

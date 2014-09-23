@@ -275,15 +275,7 @@ let generate_code asm =
     List.fold_left (fun instrs pass -> pass instrs) instrs !assembler_passes
   in
   begin match asm with
-  | Some (oc, syntax) ->
-      let b = Buffer.create 10000 in
-      List.iter
-        (fun i ->
-           Buffer.clear b;
-           syntax b i;
-           Buffer.output_buffer oc b
-        )
-        instrs
+  | Some f -> f instrs
   | None -> ()
   end;
   begin match !internal_assembler with

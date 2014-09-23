@@ -12,4 +12,4 @@
 
 (** Emit assembly instructions for gas. *)
 
-val bprint_instr: Buffer.t -> Intel_ast.asm_line -> unit
+val generate_asm: out_channel -> Intel_ast.asm_line list -> unit
