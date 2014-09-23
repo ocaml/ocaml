@@ -101,6 +101,8 @@ let simplify_exits lam =
   (* Count occurrences of (exit n ...) statements *)
   let exits = Hashtbl.create 17 in
   let non_substituable = Hashtbl.create 17 in
+  let ordering = Hashtbl.create 17 in
+  let rev_ordering = Hashtbl.create 17 in
 
   let count_exit i =
     try
@@ -123,6 +125,38 @@ let simplify_exits lam =
   and non_substituable i =
     Hashtbl.replace non_substituable i true
   in
+
+  let get_dep i =
+    try Hashtbl.find ordering i
+    with Not_found -> [] in
+  let get_rev_dep i =
+    try Hashtbl.find rev_ordering i
+    with Not_found -> [] in
+
+  let add_dep i j =
+    Hashtbl.replace ordering i (j::(get_dep i));
+    Hashtbl.replace rev_ordering j (i::(get_rev_dep j)) in
+
+  let transitive_closure ordering i =
+    let set = ref StexnSet.empty in
+    let q = Queue.create () in
+    Queue.push i q;
+    while not (Queue.is_empty q) do
+      let v = Queue.pop q in
+      try
+        let l = Hashtbl.find ordering v in
+        List.iter (fun e ->
+            if not (StexnSet.mem e !set)
+            then (Queue.push e q;
+                  set := StexnSet.add e !set)) l
+      with Not_found -> ()
+    done;
+    !set in
+
+  let reachable i = transitive_closure ordering i in
+  let coreachable i = transitive_closure rev_ordering i in
+  let connected_component i =
+    StexnSet.inter (reachable i) (coreachable i) in
 
   let no_tail = StexnSet.empty in
 
@@ -176,18 +210,30 @@ let simplify_exits lam =
       let tail = List.fold_right (fun (i, _, _) -> StexnSet.add i)
           handlers tail in
       count tail l1;
-      let rec fixpoint handlers =
-        let handlers' =
-          List.filter (fun (i, _, l2) ->
+      let counts () = List.map (fun (i, _, _) -> i, count_exit i) handlers in
+      let add_deps i c1 c2 =
+        List.iter2 (fun (j, c1) (_, c2) -> if c1 <> c2 then add_dep i j) c1 c2
+      in
+      let curr_counts = ref (counts ()) in
+      let rec fixpoint not_kept kept =
+        let not_kept, new_kept =
+          List.partition (fun (i, _, l2) ->
               (* If (exit i) is not reachable,
                  l2 will be removed, so don't count its exits *)
               if count_exit i > 0
               then
-                (count tail l2; false)
-              else true) handlers in
-        if List.length handlers' <> List.length handlers
-        then fixpoint handlers' in
-      fixpoint handlers
+                (count tail l2;
+                 let c' = counts () in
+                 add_deps i !curr_counts c';
+                 curr_counts := c';
+                 false)
+              else true) not_kept in
+        if not (new_kept = [] || not_kept = [])
+        then fixpoint not_kept (new_kept @ kept) in
+      fixpoint handlers [];
+      List.iter (fun (i, _, _) ->
+          if StexnSet.mem i (reachable i) then non_substituable i)
+        handlers
   | Ltrywith(l1, v, l2) -> count no_tail l1; count tail l2
   | Lifthenelse(l1, l2, l3) -> count no_tail l1; count tail l2; count tail l3
   | Lsequence(l1, l2) -> count no_tail l1; count tail l2
@@ -234,6 +280,8 @@ let simplify_exits lam =
 
   let subst = Hashtbl.create 17 in
 
+  let substituable i = (count_exit i = 1 && not (is_non_substituable i)) in
+
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
@@ -276,12 +324,15 @@ let simplify_exits lam =
         let _,handler =  Hashtbl.find subst i in
         handler
       with
-      | Not_found -> l
+      | Not_found ->
+          assert(not (substituable i));
+          l
       end
   | Lstaticraise (i,ls) as expr ->
       let ls = List.map simplif ls in
       begin try
         let xs,handler = Hashtbl.find subst i in
+        (try
         let ys = List.map Ident.rename xs in
         let env =
           List.fold_right2
@@ -290,8 +341,11 @@ let simplify_exits lam =
         List.fold_right2
           (fun y l r -> Llet (Alias, y, l, r))
           ys ls (Lambda.subst_lambda env handler)
+        with Not_found -> assert false)
       with
-      | Not_found -> expr
+      | Not_found ->
+          assert(not (substituable i));
+          expr
       end
   | Lstaticcatch (l1,[i,[],(Lstaticraise (j,[]) as l2)]) ->
       Hashtbl.add subst i ([],simplif l2) ;
@@ -299,13 +353,35 @@ let simplify_exits lam =
   | Lstaticcatch(l1, handlers) ->
       let hs = List.map (fun ((i, _, _) as h) -> count_exit i, h) handlers in
       let hs = List.filter (fun (count, _) -> count > 0) hs in
-      let substituables, kept = List.partition (fun (count, (i,_,_)) ->
-          count = 1 && not (is_non_substituable i)) hs in
-      List.iter
-        (fun (_, (i, args, l2)) -> Hashtbl.add subst i (args,simplif l2))
-        substituables;
-      let kept = List.map
-          (fun (_, (i, ids, h)) -> (i, ids, simplif h)) kept in
+      let handlers = List.map snd hs in
+      let rec fixpoint done_set kept handlers =
+        (* topological sort by loop: quadratic *)
+        let aux (done_set, kept, not_done) (i, args, handler) =
+          let cc = connected_component i in
+          let deps = List.filter
+              (fun i ->
+                 (not (StexnSet.mem i cc)) &&
+                 (not (StexnSet.mem i done_set))) (get_dep i) in
+          if deps = []
+          then
+            let done_set = StexnSet.add i done_set in
+            if substituable i
+            then begin
+              Hashtbl.replace subst i (args,simplif handler);
+              done_set, kept, not_done
+            end
+            else
+              let kept = (i, args, simplif handler) :: kept in
+              done_set, kept, not_done
+          else
+            done_set, kept, (i, args, handler) :: not_done
+        in
+        let done_set, kept, not_done =
+          List.fold_left aux (done_set, kept, []) handlers in
+        if not_done <> []
+        then fixpoint done_set kept not_done
+        else kept in
+      let kept = fixpoint StexnSet.empty [] handlers in
       Lstaticcatch(simplif l1, kept)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
