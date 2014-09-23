@@ -44,19 +44,16 @@ let register_name r =
 
 (* CFI directives *)
 
-let is_cfi_enabled () =
-  Config.asm_cfi_supported
-
 let cfi_startproc () =
-  if is_cfi_enabled () then
+  if Config.asm_cfi_supported then
     _cfi_startproc ()
 
 let cfi_endproc () =
-  if is_cfi_enabled () then
+  if Config.asm_cfi_supported then
     _cfi_endproc ()
 
 let cfi_adjust_cfa_offset n =
-  if is_cfi_enabled () then
+  if Config.asm_cfi_supported then
     _cfi_adjust_cfa_offset n
 
 let emit_debug_info dbg =
@@ -87,7 +84,7 @@ let frame_size () =                     (* includes return address *)
 
 let slot_offset loc cl =
   match loc with
-    Incoming n -> frame_size() + n
+  | Incoming n -> frame_size() + n
   | Local n ->
       if cl = 0
       then !stack_offset + n * 8
@@ -437,12 +434,9 @@ let emit_instr fallthrough i =
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
         begin match src.typ, src.loc, dst.loc with
-          Float, Reg.Reg _, Reg.Reg _ ->
-            I.movapd (reg src, reg dst)
-        | Float, _, _ ->
-            I.movsd (reg src, reg dst)
-        | _ ->
-            I.movq (reg src, reg dst)
+        | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src, reg dst)
+        | Float, _, _ -> I.movsd (reg src, reg dst)
+        | _ -> I.movq (reg src, reg dst)
         end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
       if n = 0n then begin
@@ -522,7 +516,6 @@ let emit_instr fallthrough i =
       | Sixteen_signed ->
           I.movswq (addressing addr WORD i 0, dest);
       | Thirtytwo_unsigned ->
-          (* load to low 32 bits sets high 32 bits to 0. TODO: check ! *)
           I.movl (addressing addr DWORD i 0, res32 i 0)
       | Thirtytwo_signed ->
           I.movslq (addressing addr DWORD i 0, dest)
@@ -765,8 +758,6 @@ let emit_instr fallthrough i =
           I.ret ()
       end
 
-(* DONE UNTIL HERE REVERSING ARGUMENTS *)
-
 let rec emit_all fallthrough i =
   match i.desc with
   | Lend -> ()
@@ -908,17 +899,12 @@ let begin_assembly() =
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
 
-
-
 let data l =
   _data ();
   List.iter emit_item l
 
-(* TODO: emit_string_directive *)
-
 let end_assembly() =
   if !float_constants <> [] then begin
-
     begin match system with
     | S_macosx -> _section [".literal8"] None []
     | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []

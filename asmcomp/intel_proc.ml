@@ -91,8 +91,7 @@ let string_of_symbol prefix s =
     Buffer.contents b
 
 
-let string_of_register64 reg64 =
-  match reg64 with
+let string_of_register64 = function
   | RAX -> "rax"
   | RBX -> "rbx"
   | RDI -> "rdi"
@@ -130,8 +129,7 @@ let reg_low_32 = function
   | R15 -> R15D
   | RIP -> assert false
 
-let string_of_register8 reg8 =
-  match reg8 with
+let string_of_register8 = function
   | AL -> "al"
   | BL -> "bl"
   | DL -> "dl"
@@ -153,8 +151,7 @@ let string_of_register8 reg8 =
   | R14B -> "r14b"
   | R15B -> "r15b"
 
-let string_of_register16 reg16 =
-  match reg16 with
+let string_of_register16 = function
   | AX -> "ax"
   | BX -> "bx"
   | DI -> "di"
@@ -172,8 +169,7 @@ let string_of_register16 reg16 =
   | R14W -> "r14w"
   | R15W -> "r15w"
 
-let string_of_register32 reg32 =
-  match reg32 with
+let string_of_register32 = function
   | EAX -> "eax"
   | EBX -> "ebx"
   | EDI -> "edi"
@@ -191,14 +187,12 @@ let string_of_register32 reg32 =
   | R14D -> "r14d"
   | R15D -> "r15d"
 
-let string_of_registerf regf =
-  match regf with
+let string_of_registerf = function
   | XMM n -> Printf.sprintf "xmm%d" n
   | TOS -> Printf.sprintf "tos"
   | ST n -> Printf.sprintf "st(%d)" n
 
-let string_of_condition condition =
-  match condition with
+let string_of_condition = function
   | E -> "e"
   | AE -> "ae"
   | A -> "a"
