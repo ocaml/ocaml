@@ -44,7 +44,6 @@ FDIVR ST(i), ST(0)
 open Intel_ast
 open Intel_proc
 
-let tab b = Buffer.add_char b '\t'
 let bprintf = Printf.bprintf
 
 let print_reg b f r =
@@ -53,25 +52,25 @@ let print_reg b f r =
 
 let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
   begin match sym with
-  | None -> bprintf b "%Ld" displ
+  | None ->
+      if displ <> 0L || scale = 0 then
+        Buffer.add_string b (Int64.to_string displ)
   | Some s ->
       Buffer.add_string b s;
       if displ = 0L then ()
       else if displ > 0L then bprintf b "+%Ld" displ
       else bprintf b "%Ld" displ
   end;
-  if scale <> 0 || base != None then begin
+  if scale <> 0 then begin
     Buffer.add_char b '(';
     begin match base with
     | None -> ()
     | Some base -> print_reg b string_of_register base
     end;
-    if scale <> 0 then begin
-      if base <> None || scale <> 1 then Buffer.add_char b ',';
-      print_reg b string_of_register idx;
-      if scale <> 1 then bprintf b ",%d" scale;
-      Buffer.add_char b ')'
-    end
+    if base != None || scale <> 1 then Buffer.add_char b ',';
+    print_reg b string_of_register idx;
+    if scale <> 1 then bprintf b ",%s" (string_of_int scale);
+    Buffer.add_char b ')'
   end
 
 let bprint_arg b = function
@@ -85,18 +84,18 @@ let bprint_arg b = function
   | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
 
-let rec cst = function
-  | ConstLabel _ | Const _ | ConstThis as c -> scst c
-  | ConstAdd (c1, c2) -> scst c1 ^ " + " ^ scst c2
-  | ConstSub (c1, c2) -> scst c1 ^ " - " ^ scst c2
+let rec cst b = function
+  | ConstLabel _ | Const _ | ConstThis as c -> scst b c
+  | ConstAdd (c1, c2) -> bprintf b "%a + %a" scst c1 scst c2
+  | ConstSub (c1, c2) -> bprintf b "%a - %a" scst c1 scst c2
 
-and scst = function
-  | ConstThis -> "."
-  | ConstLabel l -> l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Int64.to_string n
-  | Const n -> Printf.sprintf "0x%Lx" n
-  | ConstAdd (c1, c2) -> Printf.sprintf "(%s + %s)" (scst c1) (scst c2)
-  | ConstSub (c1, c2) -> Printf.sprintf "(%s - %s)" (scst c1) (scst c2)
+and scst b = function
+  | ConstThis -> Buffer.add_string b "."
+  | ConstLabel l -> Buffer.add_string b l
+  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Buffer.add_string b (Int64.to_string n)
+  | Const n -> bprintf b "0x%Lx" n
+  | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
+  | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
 let suffix = function
   | Mem32 {typ=BYTE; _}  | Mem64 {typ=BYTE; _}  | Reg8 _   -> "b"
@@ -109,54 +108,25 @@ let suffix = function
   | _ -> ""
 
 let i0 b s =
-  tab b;
-  Buffer.add_string b s
+  bprintf b "\t%s" s
 
 let i1 b s x =
-  tab b;
-  Buffer.add_string b s;
-  tab b;
-  bprint_arg b x
+  bprintf b "\t%s\t%a" s bprint_arg x
 
 (* Automatically add suffix derived from argument *)
 let i1_s b s x =
-  tab b;
-  Buffer.add_string b s;
-  Buffer.add_string b (suffix x);
-  tab b;
-  bprint_arg b x
+  bprintf b "\t%s%s\t%a" s (suffix x) bprint_arg x
 
 let i2 b s x y =
-  tab b;
-  Buffer.add_string b s;
-  tab b;
-  bprint_arg b x;
-  Buffer.add_char b ',';
-  Buffer.add_char b ' ';
-  bprint_arg b y
+  bprintf b "\t%s\t%a, %a" s bprint_arg x bprint_arg y
 
 (* Automatically add suffix derived from second argument *)
 let i2_s b s x y =
-  tab b;
-  Buffer.add_string b s;
-  Buffer.add_string b (suffix y);
-  tab b;
-  bprint_arg b x;
-  Buffer.add_char b ',';
-  Buffer.add_char b ' ';
-  bprint_arg b y
+  bprintf b "\t%s%s\t%a, %a" s (suffix y) bprint_arg x bprint_arg y
 
 (* Automatically add suffixes derived from first and second argument *)
 let i2_ss b s x y =
-  tab b;
-  Buffer.add_string b s;
-  Buffer.add_string b (suffix x);
-  Buffer.add_string b (suffix y);
-  tab b;
-  bprint_arg b x;
-  Buffer.add_char b ',';
-  Buffer.add_char b ' ';
-  bprint_arg b y
+  bprintf b "\t%s%s%s\t%a, %a" s (suffix x) (suffix y) bprint_arg x bprint_arg y
 
 let i1_call_jmp b s x =
   match x with
@@ -165,16 +135,8 @@ let i1_call_jmp b s x =
   | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ ->
-      tab b;
-      Buffer.add_string b s;
-      tab b;
-      Buffer.add_char b '*';
-      bprint_arg b x
-  | Sym x ->
-      tab b;
-      Buffer.add_string b s;
-      tab b;
-      Buffer.add_string b x
+      bprintf b "\t%s\t*%a" s bprint_arg x
+  | Sym x -> bprintf b "\t%s\t%s" s x
   | _ ->
       assert false
 
@@ -291,16 +253,16 @@ let bprint_instr_name b = function
       (* MacOSX assembler interprets the integer n as a 2^n alignment *)
       let n = if system = S_macosx then Misc.log2 n else n in
       bprintf b "\t.align\t%d" n
-  | Byte n -> bprintf b "\t.byte\t%s" (cst n)
+  | Byte n -> bprintf b "\t.byte\t%a" cst n
   | Bytes s ->
       if system = S_solaris then assert false (* TODO *)
       else bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
   | Comment s -> bprintf b "\t\t\t\t(* %s *)" s
   | End -> ()
   | Global s -> bprintf b "\t.globl\t%s" s;
-  | Long n -> bprintf b "\t.long\t%s" (cst n)
+  | Long n -> bprintf b "\t.long\t%a" cst n
   | NewLabel (s, _) -> bprintf b "%s:" s
-  | Quad n -> bprintf b "\t.quad\t%s" (cst n)
+  | Quad n -> bprintf b "\t.quad\t%a" cst n
   | Section ([".data" ], _, _) -> bprintf b "\t.data"
   | Section ([".text" ], _, _) -> bprintf b "\t.text"
   | Section (name, flags, args) ->
@@ -317,8 +279,8 @@ let bprint_instr_name b = function
       if system = S_solaris then bprintf b "\t.zero\t%d" n
       else bprintf b "\t.space\t%d" n
   | Word n ->
-      if system = S_solaris then bprintf b "\t.value\t%s" (cst n)
-      else bprintf b "\t.word\t%s" (cst n)
+      if system = S_solaris then bprintf b "\t.value\t%a" cst n
+      else bprintf b "\t.word\t%a" cst n
 
   (* gas only *)
   | Cfi_adjust_cfa_offset n -> bprintf b "\t.cfi_adjust_cfa_offset %d" n
@@ -330,8 +292,8 @@ let bprint_instr_name b = function
   | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
   | Loc (file_num, line) -> bprintf b "\t.loc\t%d\t%d" file_num line
   | Private_extern s -> bprintf b "\t.private_extern %s" s
-  | Set (arg1, arg2) -> bprintf b "\t.set %s, %s" arg1 (cst arg2)
-  | Size (s, c) -> bprintf b "\t.size %s,%s" s (cst c)
+  | Set (arg1, arg2) -> bprintf b "\t.set %s, %a" arg1 cst arg2
+  | Size (s, c) -> bprintf b "\t.size %s,%a" s cst c
   | Type (s, typ) -> bprintf b "\t.type %s,%s" s typ
 
   (* masm only *)
@@ -351,8 +313,6 @@ let generate_asm oc lines =
     (fun i ->
        Buffer.clear b;
        bprint_instr b i;
-       Buffer.output_buffer oc b
+       Buffer.output_buffer oc b;
     )
     lines
-
-
