@@ -26,10 +26,10 @@ default:
 .PHONY: compile
 compile: $(ML_FILES) $(CMO_FILES)
 	@rm -f c$(EXE)
-	@$(OCAMLC) -g -c a.ml -for-pack foo
-	@$(OCAMLC) -g a.cmo -pack -o foo.cmo
-	@$(OCAMLC) -g -c b.ml
-	@$(OCAMLC) -g foo.cmo b.cmo -o c$(EXE)
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c a.ml -for-pack foo
+	@$(OCAMLC) $(ADD_COMPFLAGS) a.cmo -pack -o foo.cmo
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c b.ml
+	@$(OCAMLC) $(ADD_COMPFLAGS) foo.cmo b.cmo -o c$(EXE)
 	@mkdir -p compiler-libs
 	@cp $(TOPDIR)/toplevel/topdirs.cmi compiler-libs/
 
