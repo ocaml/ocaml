@@ -98,8 +98,7 @@ let slot_offset loc cl =
 
 let symbol_prefix = if system = S_macosx then "_" else ""
 
-let emit_symbol s =
-  string_of_symbol symbol_prefix s
+let emit_symbol s = string_of_symbol symbol_prefix s
 
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
@@ -107,11 +106,8 @@ let emit_symbol s =
 let symbols_defined = ref StringSet.empty
 let symbols_used = ref StringSet.empty
 
-let add_def_symbol s =
-  symbols_defined := StringSet.add s !symbols_defined
-
-let add_used_symbol s =
-  symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
+let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
 
 let rel_plt s =
   let use_plt =
@@ -121,11 +117,9 @@ let rel_plt s =
   in
   sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
-let emit_call s =
-  I.call (rel_plt s)
+let emit_call s = I.call (rel_plt s)
 
-let emit_jump s =
-  I.jmp (rel_plt s)
+let emit_jump s = I.jmp (rel_plt s)
 
 let windows =
   match system with
@@ -143,21 +137,18 @@ let load_symbol_addr s arg =
 (* Output a label *)
 
 let emit_label lbl =
-  if system = S_win64 then
-    Printf.sprintf "L%d" lbl
-  else
-    Printf.sprintf ".L%d" lbl
+  match system with
+  | S_win64 -> "L" ^ string_of_int lbl
+  | _ -> ".L" ^ string_of_int lbl
 
 let emit_data_label lbl =
-  if system = S_win64 then
-    Printf.sprintf "Ld%d" lbl
-  else
-    Printf.sprintf ".Ld%d" lbl
+  match system with
+  | S_win64 -> "Ld" ^ string_of_int lbl
+  | _ -> ".Ld" ^ string_of_int lbl
 
 let label s = sym (emit_label s)
 
-let def_label s =
-  directive (NewLabel (emit_label s, NO))
+let def_label s = directive (NewLabel (emit_label s, NO))
 
 (* Output a .align directive. *)
 
@@ -183,11 +174,9 @@ let reg64 = function
   | _ -> assert false
 
 
-let res i n =
-  reg i.res.(n)
+let res i n = reg i.res.(n)
 
-let arg i n =
-  reg i.arg.(n)
+let arg i n = reg i.arg.(n)
 
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
@@ -205,13 +194,9 @@ let reg_low_32_name = Array.map (fun r -> Reg32 r)
 
 let emit_subreg tbl typ r =
   match r.loc with
-    Reg.Reg r when r < 13 ->
-      tbl.(r)
-  | Stack s ->
-      let ofs = slot_offset s (register_class r) in
-      mem_ptr typ ofs RSP
-  | _ ->
-      assert false
+  | Reg.Reg r when r < 13 -> tbl.(r)
+  | Stack s -> mem_ptr typ (slot_offset s (register_class r)) RSP
+  | _ -> assert false
 
 let arg8 i n = emit_subreg reg_low_8_name BYTE i.arg.(n)
 let arg16 i n = emit_subreg reg_low_16_name WORD i.arg.(n)
@@ -225,7 +210,6 @@ let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n)
 
 let addressing addr typ i n =
   match addr with
-  (*  | Ibased _ when !Clflags.dlcode -> assert false ONLY on Unix *)
   | Ibased(s, ofs) ->
       add_used_symbol s;
       from_rip typ (emit_symbol s) ~ofs
@@ -247,11 +231,12 @@ let record_frame_label live dbg =
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-        {typ = Addr; loc = Reg r} ->
+      | {typ = Addr; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
       | {typ = Addr; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
-      | _ -> ())
+      | _ -> ()
+    )
     live;
   frame_descriptors :=
     { fd_lbl = lbl;
@@ -419,11 +404,10 @@ let add_float_constant cst =
   let repr = Int64.bits_of_float cst in
   try
     List.assoc repr !float_constants
-  with
-    Not_found ->
-      let lbl = new_label() in
-      float_constants := (repr, lbl) :: !float_constants;
-      lbl
+  with Not_found ->
+    let lbl = new_label() in
+    float_constants := (repr, lbl) :: !float_constants;
+    lbl
 
 let emit_float_constant f lbl =
   _label (emit_label lbl);
@@ -448,7 +432,7 @@ let tailrec_entry_point = ref 0
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
-    Lend -> ()
+  | Lend -> ()
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -482,7 +466,7 @@ let emit_instr fallthrough i =
   | Lop(Icall_ind) ->
       I.call (arg i 0);
       record_frame i.live i.dbg
-  | Lop(Icall_imm(s)) ->
+  | Lop(Icall_imm s) ->
       add_used_symbol s;
       emit_call s;
       record_frame i.live i.dbg
@@ -680,7 +664,7 @@ let emit_instr fallthrough i =
   | Lcondbranch(tst, lbl) ->
       let lbl = label lbl in
       begin match tst with
-        Itruetest ->
+      | Itruetest ->
           output_test_zero i.arg.(0);
           I.jne lbl
       | Ifalsetest ->
@@ -711,19 +695,19 @@ let emit_instr fallthrough i =
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
       I.cmpq (int 1, arg i 0);
       begin match lbl0 with
-        None -> ()
+      | None -> ()
       | Some lbl -> I.jb (label lbl)
       end;
       begin match lbl1 with
-        None -> ()
+      | None -> ()
       | Some lbl -> I.je (label lbl)
       end;
       begin match lbl2 with
-        None -> ()
+      | None -> ()
       | Some lbl -> I.jg (label lbl)
       end
   | Lswitch jumptbl ->
-      let lbl = new_label() in
+      let lbl = emit_label (new_label()) in
       (* rax and rdx are clobbered by the Lswitch,
          meaning that no variable that is live across the Lswitch
          is assigned to rax or rdx.  However, the argument to Lswitch
@@ -734,7 +718,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.leaq (from_rip NO (emit_label lbl), reg tmp1);
+      I.leaq (from_rip NO lbl, reg tmp1);
       I.movslq (mem_ptr DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.addq (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);
@@ -746,10 +730,10 @@ let emit_instr fallthrough i =
       | _ -> _section [".rodata"] None []
       end;
       _align 4;
-      _label (emit_label lbl);
+      _label lbl;
       for i = 0 to Array.length jumptbl - 1 do
         _long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
-                         ConstLabel(emit_label lbl)))
+                         ConstLabel lbl))
       done;
       _text ()
   | Lsetuptrap lbl ->
