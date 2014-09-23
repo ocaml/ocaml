@@ -21,7 +21,8 @@ exception Error of error
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
 val file : formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
-val apply_rewriters : tool_name:string -> string -> 'a -> 'a
+val apply_rewriters: restore:bool -> tool_name:string -> string -> 'a -> 'a
+val apply_rewriters_str: restore:bool -> tool_name:string -> Parsetree.structure -> Parsetree.structure
 val report_error : formatter -> error -> unit
 
 
