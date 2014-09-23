@@ -1,9 +1,9 @@
 (function "pgcd_30030" (a:int)
-  (catch (exit 0 a 30030)
-   with (0 n m)
+  (catch (exit pgcd a 30030)
+   with (pgcd n m)
      (if (> n m)
-         (exit 0 m n)
+         (exit pgcd m n)
          (if (== n 0)
              m
              (let (r (mod m n))
-                     (exit 0 r n))))))
+                     (exit pgcd r n))))))

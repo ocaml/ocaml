@@ -26,7 +26,8 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (cexit(0,[],[])) in
+  let actv =
+    Array.make (Array.length casev) (cexit(Lambda.default_stexn,[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -43,13 +44,10 @@ let access_array base numelt size =
 
 let cloop expr =
   let raise_num = Lambda.next_raise_count () in
-  ccatch(raise_num, [], [],
-         cexit (raise_num,[],[]),
+  ccatch(raise_num, [],
+         cexit (raise_num,[]),
          (Csequence (expr,
-                     cexit (raise_num,[],[]))))
-
-let cexit_ind (var, args, ks) =
-  Cjump(Stexn_var {stexn_var = var},args,ks)
+                     cexit (raise_num,[]))))
 
 %}
 
@@ -206,19 +204,15 @@ expr:
       { let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (cexit(0,[],[]))) in
-        Clabel([0, [], [], Ctuple []], cloop body) }
-  | EXIT        { cexit(0,[],[]) }
-  | LPAREN EXIT INTCONST exprlist RPAREN { cexit($3,List.rev $4,[]) }
-  | LPAREN EXIT INTCONST exprlist COMMA INTCONST RPAREN { cexit($3,List.rev $4,[Stexn_cst $6]) }
-  | LPAREN EXIT_IND INTCONST exprlist RPAREN { cexit_ind($3,List.rev $4,[]) }
-  | LPAREN EXIT_IND INTCONST exprlist COMMA INTCONST RPAREN { cexit_ind($3,List.rev $4,[Stexn_cst $6]) }
-  | LPAREN EXIT_IND INTCONST exprlist COMMA LPAREN INTCONST RPAREN RPAREN
-      { cexit_ind($3,List.rev $4,[Stexn_var { stexn_var = $7 } ]) }
+          | _ -> Cifthenelse($3, $4, (cexit(Lambda.default_stexn,[]))) in
+        Clabel([Lambda.default_stexn, [], Ctuple []], cloop body) }
+  | EXIT        { cexit(Lambda.default_stexn,[]) }
+  | LPAREN EXIT IDENT exprlist RPAREN
+    { cexit(find_label $3,List.rev $4) }
   | LPAREN CATCH sequence catch_with RPAREN
-                { let handlers = $4 in
-                  List.iter (fun (_, l, _, _) -> List.iter unbind_ident l) handlers;
-                  Clabel($4, $3) }
+    { let handlers = $4 in
+      List.iter (fun (_, l, _) -> List.iter unbind_ident l) handlers;
+      Clabel($4, $3) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
@@ -245,11 +239,9 @@ catch_handlers:
 
 catch_handler:
   | sequence
-    { 0, [], [], $1 }
-  | LPAREN INTCONST bind_identlist RPAREN sequence
-    { $2, $3, [], $5 }
-  | LPAREN INTCONST bind_identlist COMMA INTCONST RPAREN sequence
-    { $2, $3, [{stexn_var = $5}], $7 }
+    { Lambda.default_stexn, [], $1 }
+  | LPAREN IDENT bind_identlist RPAREN sequence
+    { find_label $2, $3, $5 }
 
 bind_identlist:
     /**/                        { [] }

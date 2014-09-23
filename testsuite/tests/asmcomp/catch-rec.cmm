@@ -1,5 +1,5 @@
 (function "catch_fact" (b:int)
-  (catch (exit 0 b 1)
-   with (0 c acc)
+  (catch (exit fact b 1)
+   with (fact c acc)
      (if (== c 0) acc
-         (exit 0 (- c 1) ( * c acc)))))
+         (exit fact (- c 1) ( * c acc)))))

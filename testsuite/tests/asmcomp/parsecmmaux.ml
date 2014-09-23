@@ -18,6 +18,7 @@ type error =
 exception Error of error
 
 let tbl_ident = (Hashtbl.create 57 : (string, Ident.t) Hashtbl.t)
+let tbl_label = (Hashtbl.create 57 : (string, Cmm.label) Hashtbl.t)
 
 let bind_ident s =
   let id = Ident.create s in
@@ -32,6 +33,14 @@ let find_ident s =
 
 let unbind_ident id =
   Hashtbl.remove tbl_ident (Ident.name id)
+
+let find_label s =
+  try
+    Hashtbl.find tbl_label s
+  with Not_found ->
+    let lbl = Lambda.next_raise_count () in
+    Hashtbl.add tbl_label s lbl;
+    lbl
 
 let report_error = function
     Unbound s ->

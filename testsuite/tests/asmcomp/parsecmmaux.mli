@@ -16,6 +16,8 @@ val bind_ident: string -> Ident.t
 val find_ident: string -> Ident.t
 val unbind_ident: Ident.t -> unit
 
+val find_label: string -> Cmm.label
+
 type error =
     Unbound of string
 
