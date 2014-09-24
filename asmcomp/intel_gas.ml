@@ -92,7 +92,8 @@ let rec cst b = function
 and scst b = function
   | ConstThis -> Buffer.add_string b "."
   | ConstLabel l -> Buffer.add_string b l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Buffer.add_string b (Int64.to_string n)
+  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
+      Buffer.add_string b (Int64.to_string n)
   | Const n -> bprintf b "0x%Lx" n
   | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
   | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
@@ -128,20 +129,18 @@ let i2_s b s x y =
 let i2_ss b s x y =
   bprintf b "\t%s%s%s\t%a, %a" s (suffix x) (suffix y) bprint_arg x bprint_arg y
 
-let i1_call_jmp b s x =
-  match x with
+let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
   | Mem64 {idx=RIP; scale=1; base=None; sym=Some _; _}
-  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) ->
+  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) as x ->
       i1 b s x
-  | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ ->
+  | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ as x ->
       bprintf b "\t%s\t*%a" s bprint_arg x
   | Sym x -> bprintf b "\t%s\t%s" s x
-  | _ ->
-      assert false
+  | _ -> assert false
 
 
-let emit_instr b = function
+let print_instr b = function
   | ADD (arg1, arg2) -> i2_s b "add" arg1 arg2
   | ADDSD (arg1, arg2) -> i2 b "addsd" arg1 arg2
   | AND (arg1, arg2) -> i2_s b "and" arg1 arg2
@@ -247,7 +246,7 @@ let emit_instr b = function
 
 
 let bprint_instr_name b = function
-  | Ins instr -> emit_instr b instr
+  | Ins instr -> print_instr b instr
 
   | Align (_data,n) ->
       (* MacOSX assembler interprets the integer n as a 2^n alignment *)

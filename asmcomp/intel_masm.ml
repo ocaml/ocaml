@@ -15,7 +15,6 @@
 open Intel_ast
 open Intel_proc
 
-let tab b = Buffer.add_char b '\t'
 let bprintf = Printf.bprintf
 
 let string_of_datatype = function
@@ -71,14 +70,10 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
   end;
   Buffer.add_char b ']'
 
-let bprint_arg b arg =
-  match arg with
-  | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      bprintf b "%Ld" n
-  | Imm int ->
-      (* force ml64 to use mov reg, imm64 instruction *)
-      bprintf b "0%LxH" int
+let bprint_arg b = function
   | Sym s -> bprintf b "OFFSET %s" s
+  | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> bprintf b "%Ld" n
+  | Imm int -> bprintf b "0%LxH" int (* force ml64 to use mov reg, imm64 *)
   | Reg8 x -> Buffer.add_string b (string_of_register8 x)
   | Reg16 x -> Buffer.add_string b (string_of_register16 x)
   | Reg32 x -> Buffer.add_string b (string_of_register32 x)
@@ -92,23 +87,23 @@ let bprint_arg b arg =
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
       if displ > 0 then bprintf b "+%d" displ
       else if displ < 0 then bprintf b "%d" displ
-
   | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
   | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
 
 
-let rec cst = function
-  | ConstLabel _ | Const _ | ConstThis as c -> scst c
-  | ConstAdd (c1, c2) -> scst c1 ^ " + " ^ scst c2
-  | ConstSub (c1, c2) -> scst c1 ^ " - " ^ scst c2
+let rec cst b = function
+  | ConstLabel _ | Const _ | ConstThis as c -> scst b c
+  | ConstAdd (c1, c2) -> bprintf b "%a + %a" scst c1 scst c2
+  | ConstSub (c1, c2) -> bprintf b "%a - %a" scst c1 scst c2
 
-and scst = function
-  | ConstThis -> "THIS BYTE"
-  | ConstLabel l -> l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> Int64.to_string n
-  | Const n -> Printf.sprintf "0%LxH" n
-  | ConstAdd (c1, c2) -> Printf.sprintf "(%s + %s)" (scst c1) (scst c2)
-  | ConstSub (c1, c2) -> Printf.sprintf "(%s - %s)" (scst c1) (scst c2)
+and scst b = function
+  | ConstThis -> Buffer.add_string b "THIS BYTE"
+  | ConstLabel l -> Buffer.add_string b l
+  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
+      Buffer.add_string b (Int64.to_string n)
+  | Const n -> bprintf b "0%LxH" n
+  | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
+  | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
 let buf_bytes_directive b directive s =
   let pos = ref 0 in
@@ -127,33 +122,17 @@ let buf_bytes_directive b directive s =
   done
 
 let i0 b s =
-  tab b;
-  Buffer.add_string b s
+  bprintf b "\t%s" s
 
 let i1 b s x =
-  tab b;
-  Buffer.add_string b s;
-  tab b;
-  bprint_arg b x
+  bprintf b "\t%s\t%a" s bprint_arg x
 
 let i2 b s x y =
-  tab b;
-  Buffer.add_string b s;
-  tab b;
-  bprint_arg b y;
-  Buffer.add_char b ',';
-  Buffer.add_char b ' ';
-  bprint_arg b x
+  bprintf b "\t%s\t%a, %a" s bprint_arg y bprint_arg x
 
-let i1_call_jmp b s x =
-  match x with
-  | Sym x ->
-      tab b;
-      Buffer.add_string b s;
-      tab b;
-      Buffer.add_string b x
-  | _ ->
-      i1 b s x
+let i1_call_jmp b s = function
+  | Sym x -> bprintf b "\t%s\t%s" s x
+  | x -> i1 b s x
 
 let print_instr b = function
   | ADD (arg1, arg2) -> i2 b "add" arg1 arg2
@@ -257,20 +236,20 @@ let bprint_instr_name b = function
   | Ins instr -> print_instr b instr
 
   | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
-  | Byte n -> bprintf b "\tBYTE\t%s" (cst n)
+  | Byte n -> bprintf b "\tBYTE\t%a" cst n
   | Bytes s -> buf_bytes_directive b "BYTE" s
   | Comment s -> bprintf b " ; %s " s
   | End -> bprintf b "END"
   | Global s -> bprintf b "\tPUBLIC\t%s" s
-  | Long n -> bprintf b "\tDWORD\t%s" (cst n)
+  | Long n -> bprintf b "\tDWORD\t%a" cst n
   | NewLabel (s, NO) -> bprintf b "%s:" s
   | NewLabel (s, ptr) -> bprintf b "%s LABEL %s" s (string_of_datatype ptr)
-  | Quad n -> bprintf b "\tQWORD\t%s" (cst n)
+  | Quad n -> bprintf b "\tQWORD\t%a" cst n
   | Section ([".data"], None, []) -> bprintf b "\t.DATA"
   | Section ([".text"], None, []) -> bprintf b "\t.CODE"
   | Section _ -> assert false
   | Space n -> bprintf b "\tBYTE\t%d DUP (?)" n
-  | Word n -> bprintf b "\tWORD\t%s" (cst n)
+  | Word n -> bprintf b "\tWORD\t%a" cst n
 
   (* windows only *)
   | External (s, ptr) -> bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
