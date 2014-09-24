@@ -316,7 +316,7 @@ let instr_for_floatarithmem = function
   | Ifloatdiv -> I.fdiv
   | Ifloatdivrev -> I.fdivr
 
-let name_for_cond_branch = function
+let cond = function
   | Isigned Ceq   -> E   | Isigned Cne   -> NE
   | Isigned Cle   -> LE  | Isigned Cgt   -> G
   | Isigned Clt   -> L   | Isigned Cge   -> GE
@@ -634,14 +634,12 @@ let emit_instr fallthrough i =
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpl (reg i.arg.(1), reg i.arg.(0));
-      let b = name_for_cond_branch cmp in
-      I.set b (Reg8 AL);
-      I.movzbl (Reg8 AL, reg i.res.(0));
+      I.set (cond cmp) al;
+      I.movzbl (al, reg i.res.(0));
   | Lop(Iintop_imm(Icomp cmp, n)) ->
       I.cmpl (int n, reg i.arg.(0));
-      let b = name_for_cond_branch cmp in
-      I.set b (Reg8 AL);
-      I.movzbl (Reg8 AL, reg i.res.(0))
+      I.set (cond cmp) al;
+      I.movzbl (al, reg i.res.(0))
   | Lop(Iintop Icheckbound) ->
       let lbl = bound_error_label i.dbg in
       I.cmpl (reg i.arg.(1), reg i.arg.(0));
@@ -806,17 +804,14 @@ let emit_instr fallthrough i =
           I.je lbl
       | Iinttest cmp ->
           I.cmpl (reg i.arg.(1), reg i.arg.(0));
-          let b = name_for_cond_branch cmp in
-          I.j b lbl
+          I.j (cond cmp) lbl
       | Iinttest_imm((Isigned Ceq | Isigned Cne |
                       Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
           output_test_zero i.arg.(0);
-          let b = name_for_cond_branch cmp in
-          I.j b lbl
+          I.j (cond cmp) lbl
       | Iinttest_imm(cmp, n) ->
           I.cmpl (int n, reg i.arg.(0));
-          let b = name_for_cond_branch cmp in
-          I.j b lbl
+          I.j (cond cmp) lbl
       | Ifloattest(cmp, neg) ->
           emit_float_test cmp neg i.arg lbl
       | Ioddtest ->
