@@ -281,7 +281,7 @@ module INS64 = struct
   let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
   let sqrtsd (arg1, arg2) = emit (SQRTSD (arg1, arg2))
 
-  let cqto () = emit CQTO
+  let cqto () = emit CQO
 
   let incq arg = emit (INC (qword arg))
   let decq arg = emit (DEC (qword arg))

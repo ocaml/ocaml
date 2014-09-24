@@ -140,7 +140,7 @@ let print_instr b = function
   | CMOV (c, arg1, arg2) -> i2 b ("cmov" ^ string_of_condition c) arg1 arg2
   | CMP (arg1, arg2) -> i2 b "cmp" arg1 arg2
   | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
-  | CQTO -> i0 b "cqo"
+  | CQO -> i0 b "cqo"
   | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
   | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
   | CVTSI2SD (arg1, arg2) -> i2 b "cvtsi2sd" arg1 arg2

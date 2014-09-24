@@ -106,7 +106,7 @@ type instruction =
   | CMOV of condition * arg * arg
   | CMP of arg * arg
   | COMISD of arg * arg
-  | CQTO
+  | CQO
   | CVTSD2SI of arg * arg
   | CVTSD2SS of arg * arg
   | CVTSI2SD of arg * arg
