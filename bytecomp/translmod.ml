@@ -83,14 +83,12 @@ let rec apply_coercion strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
+        let get_field pos = Lprim(Pfield pos,[Lvar id]) in
         let lam =
           Lprim(Pmakeblock(0, Immutable),
-                List.map (apply_coercion_field id) pos_cc_list)
-        and v =
-          Array.init (List.length pos_cc_list)
-            (fun pos -> (Lprim(Pfield pos,[Lvar id])))
+                List.map (apply_coercion_field get_field) pos_cc_list)
         in
-        wrap_id_pos_list id_pos_list v lam)
+        wrap_id_pos_list id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -104,10 +102,10 @@ let rec apply_coercion strict restr arg =
       name_lambda strict arg
         (fun id -> apply_coercion Alias cc (transl_normal_path path))
 
-and apply_coercion_field id (pos, cc) =
-  apply_coercion Alias cc (Lprim(Pfield pos, [Lvar id]))
+and apply_coercion_field get_field (pos, cc) =
+  apply_coercion Alias cc (get_field pos)
 
-and wrap_id_pos_list id_pos_list v lam =
+and wrap_id_pos_list id_pos_list get_field lam =
   let fv = free_variables lam in
   (*Format.eprintf "%a@." Printlambda.lambda lam;
   IdentSet.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
@@ -117,7 +115,7 @@ and wrap_id_pos_list id_pos_list v lam =
       if IdentSet.mem id' fv then
         let id'' = Ident.create (Ident.name id') in
         (Llet(Alias,id'',
-              apply_coercion Alias c v.(pos),lam),
+              apply_coercion Alias c (get_field pos),lam),
          Ident.add id' (Lvar id'') s)
       else (lam,s))
       (lam, Ident.empty) id_pos_list
@@ -378,7 +376,8 @@ and transl_structure fields cc rootpath = function
           List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
             fields;
           Format.eprintf "@]@.";*)
-          let v = Array.of_list (List.map (fun i -> Lvar i) (List.rev fields))
+          let v = Array.of_list (List.rev fields) in
+          let get_field pos = Lvar v.(pos)
           and ids = List.fold_right IdentSet.add fields IdentSet.empty in
           let lam =
             (Lprim(Pmakeblock(0, Immutable),
@@ -386,12 +385,12 @@ and transl_structure fields cc rootpath = function
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p -> transl_primitive Location.none p
-                    | _ -> apply_coercion Strict cc v.(pos))
+                    | _ -> apply_coercion Strict cc (get_field pos))
                   pos_cc_list))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
           in
-          wrap_id_pos_list id_pos_list v lam
+          wrap_id_pos_list id_pos_list get_field lam
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
