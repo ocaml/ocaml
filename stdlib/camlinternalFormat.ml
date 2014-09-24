@@ -1344,7 +1344,11 @@ let convert_float fconv prec x =
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
-  String.concat (Char.escaped c) ["'"; "'"]
+  let str = Char.escaped c in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\'' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
 (* Convert a format type to string *)
 let string_of_fmtty fmtty =
