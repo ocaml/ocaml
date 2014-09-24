@@ -232,7 +232,7 @@ let print_instr b = function
   | XORPD (arg1, arg2) -> i2 b "xorpd" arg1 arg2
 
 
-let bprint_instr_name b = function
+let print_line b = function
   | Ins instr -> print_instr b instr
 
   | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
@@ -269,16 +269,13 @@ let bprint_instr_name b = function
   | Type _
     -> assert false
 
-let bprint_instr b instr =
-  bprint_instr_name b instr;
-  Buffer.add_char b '\n'
-
 let generate_asm oc lines =
   let b = Buffer.create 10000 in
   List.iter
     (fun i ->
        Buffer.clear b;
-       bprint_instr b i;
+       print_line b i;
+       Buffer.add_char b '\n';
        Buffer.output_buffer oc b
     )
     lines
