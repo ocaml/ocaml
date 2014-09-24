@@ -240,7 +240,7 @@ let print_line b = function
   | Bytes s ->
       if system = S_solaris then assert false (* TODO *)
       else bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
-  | Comment s -> bprintf b "\t\t\t\t(* %s *)" s
+  | Comment s -> bprintf b "\t\t\t\t/* %s */" s
   | End -> ()
   | Global s -> bprintf b "\t.globl\t%s" s;
   | Long n -> bprintf b "\t.long\t%a" cst n
