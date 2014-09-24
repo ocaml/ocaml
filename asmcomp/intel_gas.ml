@@ -50,7 +50,7 @@ let print_reg b f r =
   Buffer.add_char b '%';
   Buffer.add_string b (f r)
 
-let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
+let arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
   begin match sym with
   | None ->
       if displ <> 0 || scale = 0 then
@@ -73,7 +73,7 @@ let bprint_arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
     Buffer.add_char b ')'
   end
 
-let bprint_arg b = function
+let arg b = function
   | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
   | Imm x -> bprintf b "$%Ld" x
   | Reg8  x -> print_reg b string_of_register8 x
@@ -81,8 +81,8 @@ let bprint_arg b = function
   | Reg32 x -> print_reg b string_of_register32 x
   | Reg64 x -> print_reg b string_of_register64 x
   | Regf x  -> print_reg b string_of_registerf x
-  | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
-  | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
+  | Mem32 addr -> arg_mem b string_of_register32 addr
+  | Mem64 addr -> arg_mem b string_of_register64 addr
 
 let rec cst b = function
   | ConstLabel _ | Const _ | ConstThis as c -> scst b c
@@ -98,7 +98,7 @@ and scst b = function
   | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
   | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
-let suffix = function
+let suf = function
   | Mem32 {typ=BYTE; _}  | Mem64 {typ=BYTE; _}  | Reg8 _   -> "b"
   | Mem32 {typ=WORD; _}  | Mem64 {typ=WORD; _}  | Reg16 _  -> "w"
   | Mem32 {typ=DWORD; _} | Mem64 {typ=DWORD; _} | Reg32 _
@@ -108,37 +108,21 @@ let suffix = function
   | Mem32 {typ=NO; _} | Mem64 {typ=NO; _} -> assert false
   | _ -> ""
 
-let i0 b s =
-  bprintf b "\t%s" s
-
-let i1 b s x =
-  bprintf b "\t%s\t%a" s bprint_arg x
-
-(* Automatically add suffix derived from argument *)
-let i1_s b s x =
-  bprintf b "\t%s%s\t%a" s (suffix x) bprint_arg x
-
-let i2 b s x y =
-  bprintf b "\t%s\t%a, %a" s bprint_arg x bprint_arg y
-
-(* Automatically add suffix derived from second argument *)
-let i2_s b s x y =
-  bprintf b "\t%s%s\t%a, %a" s (suffix y) bprint_arg x bprint_arg y
-
-(* Automatically add suffixes derived from first and second argument *)
-let i2_ss b s x y =
-  bprintf b "\t%s%s%s\t%a, %a" s (suffix x) (suffix y) bprint_arg x bprint_arg y
+let i0 b s = bprintf b "\t%s" s
+let i1 b s x = bprintf b "\t%s\t%a" s arg x
+let i1_s b s x = bprintf b "\t%s%s\t%a" s (suf x) arg x
+let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg x arg y
+let i2_s b s x y = bprintf b "\t%s%s\t%a, %a" s (suf y) arg x arg y
+let i2_ss b s x y = bprintf b "\t%s%s%s\t%a, %a" s (suf x) (suf y) arg x arg y
 
 let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
   | Mem64 {idx=RIP; scale=1; base=None; sym=Some _; _}
   | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) as x ->
       i1 b s x
-  | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ as x ->
-      bprintf b "\t%s\t*%a" s bprint_arg x
+  | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ as x -> bprintf b "\t%s\t*%a" s arg x
   | Sym x -> bprintf b "\t%s\t%s" s x
   | _ -> assert false
-
 
 let print_instr b = function
   | ADD (arg1, arg2) -> i2_s b "add" arg1 arg2
@@ -154,7 +138,7 @@ let print_instr b = function
   | CQTO ->  i0 b "cqto"
   | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
   | CVTSD2SS (arg1, arg2) -> i2 b "cvtsd2ss" arg1 arg2
-  | CVTSI2SD (arg1, arg2) -> i2 b ("cvtsi2sd" ^ suffix arg1) arg1 arg2
+  | CVTSI2SD (arg1, arg2) -> i2 b ("cvtsi2sd" ^ suf arg1) arg1 arg2
   | CVTSS2SD (arg1, arg2) -> i2 b "cvtss2sd" arg1 arg2
   | CVTTSD2SI (arg1, arg2) -> i2_s b "cvttsd2si" arg1 arg2
   | DEC arg -> i1_s b "dec" arg

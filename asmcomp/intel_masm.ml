@@ -46,7 +46,7 @@ let string_of_datatype_ptr = function
   | NEAR -> "NEAR PTR "
   | PROC -> "PROC PTR "
 
-let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
+let arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
   Buffer.add_string b (string_of_datatype_ptr typ);
   Buffer.add_char b '[';
   begin match sym with
@@ -70,7 +70,7 @@ let bprint_arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
   end;
   Buffer.add_char b ']'
 
-let bprint_arg b = function
+let arg b = function
   | Sym s -> bprintf b "OFFSET %s" s
   | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> bprintf b "%Ld" n
   | Imm int -> bprintf b "0%LxH" int (* force ml64 to use mov reg, imm64 *)
@@ -87,8 +87,8 @@ let bprint_arg b = function
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
       if displ > 0 then bprintf b "+%d" displ
       else if displ < 0 then bprintf b "%d" displ
-  | Mem32 addr -> bprint_arg_mem b string_of_register32 addr
-  | Mem64 addr -> bprint_arg_mem b string_of_register64 addr
+  | Mem32 addr -> arg_mem b string_of_register32 addr
+  | Mem64 addr -> arg_mem b string_of_register64 addr
 
 
 let rec cst b = function
@@ -121,14 +121,9 @@ let buf_bytes_directive b directive s =
     if !pos >= 16 then begin pos := 0 end
   done
 
-let i0 b s =
-  bprintf b "\t%s" s
-
-let i1 b s x =
-  bprintf b "\t%s\t%a" s bprint_arg x
-
-let i2 b s x y =
-  bprintf b "\t%s\t%a, %a" s bprint_arg y bprint_arg x
+let i0 b s = bprintf b "\t%s" s
+let i1 b s x = bprintf b "\t%s\t%a" s arg x
+let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg y arg x
 
 let i1_call_jmp b s = function
   | Sym x -> bprintf b "\t%s\t%s" s x

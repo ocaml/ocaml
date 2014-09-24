@@ -32,24 +32,17 @@ module I = Intel_dsl.INS32
 
 (* CFI directives *)
 
-let is_cfi_enabled () =
-  Config.asm_cfi_supported
-
 let cfi_startproc () =
-  if is_cfi_enabled () then
-    _cfi_startproc ()
+  if Config.asm_cfi_supported then _cfi_startproc ()
 
 let cfi_endproc () =
-  if is_cfi_enabled () then
-    _cfi_endproc ()
+  if Config.asm_cfi_supported then _cfi_endproc ()
 
 let cfi_adjust_cfa_offset n =
-  if is_cfi_enabled () then
-    _cfi_adjust_cfa_offset n
+  if Config.asm_cfi_supported then _cfi_adjust_cfa_offset n
 
 let emit_debug_info dbg =
-  if system <> S_win32 then
-    emit_debug_info_gen dbg _file _loc
+  emit_debug_info_gen dbg _file _loc
 
 (* Tradeoff between code size and code speed *)
 
@@ -83,11 +76,8 @@ let slot_offset loc cl =
 let symbols_defined = ref StringSet.empty
 let symbols_used = ref StringSet.empty
 
-let add_def_symbol s =
-  symbols_defined := StringSet.add s !symbols_defined
-
-let add_used_symbol s =
-  symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
+let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
 
 let trap_frame_size = Misc.align 8 stack_alignment
 
@@ -102,13 +92,11 @@ let symbol_prefix =
   | S_gnu -> ""
   | _ -> "_" (* win32 & others *)
 
-let emit_symbol s =
-  string_of_symbol symbol_prefix s
+let emit_symbol s = string_of_symbol symbol_prefix s
 
 let immsym s = sym (emit_symbol s)
 
-let emit_call s =
-  I.call (immsym s)
+let emit_call s = I.call (immsym s)
 
 (* Output a label *)
 
@@ -129,18 +117,11 @@ let emit_data_label lbl =
 
 let label s = sym (emit_label s)
 
-let def_label s =
-  directive (NewLabel (emit_label s, NO))
-
-
-(* MacOSX has its own way to reference symbols potentially defined in
-   shared objects *)
-
+let def_label s = _llabel (emit_label s)
 
 let emit_Llabel fallthrough lbl =
-  if not fallthrough && !fastcode_flag then
-    _align 16 ;
-  _llabel (emit_label lbl)
+  if not fallthrough && !fastcode_flag then _align 16 ;
+  def_label lbl
 
 (* Output a pseudo-register *)
 
@@ -152,8 +133,7 @@ let register_name r =
   if r < 100 then Reg32 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
-let sym32 ?ofs s =
-  mem_sym ?ofs DWORD (emit_symbol s)
+let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
 
 let reg = function
   | { loc = Reg r } -> register_name r
@@ -469,12 +449,18 @@ let emit_float64_split_directive x =
   let lo = Int64.logand x 0xFFFF_FFFFL
   and hi = Int64.shift_right_logical x 32 in
   _long (Const (if Arch.big_endian then hi else lo));
-  _long (Const (if Arch.big_endian then lo else hi));
-  ()
+  _long (Const (if Arch.big_endian then lo else hi))
 
 let emit_float_constant cst lbl =
   _label (emit_label lbl);
   emit_float64_split_directive cst
+
+let emit_global_label s =
+  let lbl = Compilenv.make_symbol (Some s) in
+  add_def_symbol lbl;
+  let lbl = emit_symbol lbl in
+  _global lbl;
+  _label lbl
 
 (* Output the assembly code for an instruction *)
 
@@ -973,18 +959,17 @@ let fundecl fundecl =
   cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
-  if n > 0 then
-    begin
-      I.subl (int n, esp);
-      cfi_adjust_cfa_offset n;
-    end;
+  if n > 0 then  begin
+    I.subl (int n, esp);
+    cfi_adjust_cfa_offset n;
+  end;
   def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   cfi_endproc ();
   begin match system with
-    S_linux_elf | S_bsd_elf | S_gnu ->
+  | S_linux_elf | S_bsd_elf | S_gnu ->
       _type  (emit_symbol fundecl.fun_name) "@function";
       _size (emit_symbol fundecl.fun_name)
         (ConstSub (
@@ -997,28 +982,20 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cglobal_symbol s -> _global (emit_symbol s)
-  | Cdefine_symbol s ->
-      add_def_symbol s;
-      _label (emit_symbol s)
+  | Cglobal_symbol s -> _global (emit_symbol s)
+  | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
   | Cdefine_label lbl -> _label (emit_data_label lbl)
   | Cint8 n -> _byte (const n)
   | Cint16 n -> _word (const n)
   | Cint32 n -> _long (const_nat n)
   | Cint n -> _long (const_nat n)
-  | Csingle f ->
-      _long (Const (Int64.of_int32 (Int32.bits_of_float f)))
-  | Cdouble f ->
-      emit_float64_split_directive (Int64.bits_of_float f)
-  | Csymbol_address s ->
-      add_used_symbol s;
-      _long (ConstLabel (emit_symbol s))
+  | Csingle f -> _long (Const (Int64.of_int32 (Int32.bits_of_float f)))
+  | Cdouble f -> emit_float64_split_directive (Int64.bits_of_float f)
+  | Csymbol_address s -> add_used_symbol s; _long (ConstLabel (emit_symbol s))
   | Clabel_address lbl -> _long (ConstLabel (emit_data_label lbl))
   | Cstring s -> _ascii s
-  | Cskip n ->
-      if n > 0 then _space n
-  | Calign n ->
-      _align n
+  | Cskip n -> if n > 0 then _space n
+  | Calign n -> _align n
 
 let data l =
   _data ();
@@ -1047,40 +1024,33 @@ let begin_assembly() =
     _extrn "_caml_raise_exn" PROC;
     _extrn "_caml_reraise_exn" PROC;
   end;
-  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
-  add_def_symbol lbl_begin;
+
   _data ();
-  _global (emit_symbol lbl_begin);
-  _label (emit_symbol lbl_begin);
-  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  add_def_symbol lbl_begin;
+  emit_global_label "data_begin";
+
   _text ();
-  _global (emit_symbol lbl_begin);
-  _label (emit_symbol lbl_begin);
-  if system = S_macosx then I.nop () (* PR#4690 *)
+  emit_global_label "code_begin";
+  if system = S_macosx then I.nop (); (* PR#4690 *)
+  ()
 
 let end_assembly() =
   if !float_constants <> [] then begin
     _data ();
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
-  let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  add_def_symbol lbl_end;
+
   _text ();
-  if system = S_macosx then
-    I.nop (); (* suppress "ld warning: atom sorting error" *)
-  _global (emit_symbol lbl_end);
-  _label (emit_symbol lbl_end);
+  if system = S_macosx then I.nop ();
+  (* suppress "ld warning: atom sorting error" *)
+
+  emit_global_label "code_end";
+
   _data ();
-  let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  add_def_symbol lbl_end;
-  _global (emit_symbol lbl_end);
-  _label (emit_symbol lbl_end);
+  emit_global_label "data_end";
   _long (const 0);
-  let lbl = Compilenv.make_symbol (Some "frametable") in
-  add_def_symbol lbl;
-  _global (emit_symbol lbl);
-  _label (emit_symbol lbl);
+
+  emit_global_label "frametable";
+
   emit_frames
     { efa_label = (fun l -> _long (ConstLabel (emit_label l)));
       efa_16 = (fun n -> _word (const n));
@@ -1093,10 +1063,9 @@ let end_assembly() =
                        ConstThis),
               const_32 ofs)));
       efa_def_label = (fun l -> _label (emit_label l));
-      efa_string = (fun s ->
-          let s = s ^ "\000" in
-          _ascii s
-        ) };
+      efa_string = (fun s -> _ascii (s ^ "\000"))
+    };
+
   if system = S_macosx then emit_external_symbols ();
   if system = S_linux_elf then
     (* Mark stack as non-executable, PR#4564 *)
@@ -1111,8 +1080,9 @@ let end_assembly() =
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;
-    _end ();
   end;
+
+  _end ();
 
   let asm =
     if !Emitaux.create_asm_file then
