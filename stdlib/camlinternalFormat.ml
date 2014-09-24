@@ -1266,7 +1266,11 @@ let fix_int_precision prec str =
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
-  String.concat (String.escaped str) ["\""; "\""]
+  let str = String.escaped str in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\"' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
 (* Generate the format_int/int32/nativeint/int64 first argument
    from an int_conv. *)
