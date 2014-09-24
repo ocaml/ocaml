@@ -67,5 +67,4 @@ let rec update_mod shape o n =
       for i = 0 to Array.length comps - 1 do
         update_mod comps.(i) (Obj.field o i) (Obj.field n i)
       done
-  | Value v ->
-      overwrite o n
+  | Value v -> () (* the value is already there *)
