@@ -96,6 +96,29 @@ module DSL = struct
   let _space n = directive (Space n)
   let _setvar (arg1, arg2) = directive (Set (arg1, arg2))
   let _end () = directive End
+
+  let al  = Reg8 AL
+  let ah  = Reg8 AH
+  let cl  = Reg8 CL
+
+  let ax  = Reg16 AX
+
+  let rax = Reg64 RAX
+  let r10 = Reg64 R10
+  let r11 = Reg64 R11
+  let r14 = Reg64 R14
+  let r15 = Reg64 R15
+  let rsp = Reg64 RSP
+  let rbp = Reg64 RBP
+  let xmm15 = Regf (XMM 15)
+  let eax = Reg32 EAX
+  let ebx = Reg32 EBX
+  let ecx = Reg32 ECX
+  let edx = Reg32 EDX
+  let ebp = Reg32 EBP
+  let esp = Reg32 ESP
+  let st0 = Regf (ST 0)
+  let st1 = Regf (ST 1)
 end
 
 module INS = struct
@@ -212,16 +235,6 @@ module DSL32 = struct
 
   let _label s = directive (NewLabel (s, DWORD))
 
-  let eax = Reg32 EAX
-  let ebx = Reg32 EBX
-  let ecx = Reg32 ECX
-  let edx = Reg32 EDX
-  let ebp = Reg32 EBP
-  let esp = Reg32 ESP
-
-  let st0 = Regf (ST 0)
-  let st1 = Regf (ST 1)
-
   let mem_ptr typ ?(scale = 1) ?base ?sym displ idx =
     assert(scale > 0);
     Mem32 {typ; idx; scale; base; sym; displ}
@@ -293,18 +306,6 @@ module DSL64 = struct
   include DSL
 
   let _label s = directive (NewLabel (s, QWORD))
-
-  let al  = Reg8 AL
-  let ah  = Reg8 AH
-  let cl  = Reg8 CL
-  let rax = Reg64 RAX
-  let r10 = Reg64 R10
-  let r11 = Reg64 R11
-  let r14 = Reg64 R14
-  let r15 = Reg64 R15
-  let rsp = Reg64 RSP
-  let rbp = Reg64 RBP
-  let xmm15 = Regf (XMM 15)
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);

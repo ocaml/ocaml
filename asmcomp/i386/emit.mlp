@@ -372,48 +372,48 @@ let emit_float_test cmp neg arg lbl =
         I.fcomp   (reg arg.(1));
         cmp
   in
-  I.fnstsw (Reg16 AX);
+  I.fnstsw ax;
   match actual_cmp with
   | Ceq ->
       if neg then begin
-        I.andb (int 68, Reg8 AH);
-        I.xorb (int 64, Reg8 AH);
+        I.andb (int 68, ah);
+        I.xorb (int 64, ah);
         I.jne lbl
       end else begin
-        I.andb (int 69, Reg8 AH);
-        I.cmpb (int 64, Reg8 AH);
+        I.andb (int 69, ah);
+        I.cmpb (int 64, ah);
         I.je lbl
       end
   | Cne ->
       if neg then begin
-        I.andb (int 69, Reg8 AH);
-        I.cmpb (int 64, Reg8 AH);
+        I.andb (int 69, ah);
+        I.cmpb (int 64, ah);
         I.je lbl
       end else begin
-        I.andb (int 68, Reg8 AH);
-        I.xorb (int 64, Reg8 AH);
+        I.andb (int 68, ah);
+        I.xorb (int 64, ah);
         I.jne lbl
       end
   | Cle ->
-      I.andb (int 69, Reg8 AH);
-      I.decb (Reg8 AH);
-      I.cmpb (int 64, Reg8 AH);
+      I.andb (int 69, ah);
+      I.decb ah;
+      I.cmpb (int 64, ah);
       if neg
       then I.jae lbl
       else I.jb lbl
   | Cge ->
-      I.andb (int 5, Reg8 AH);
+      I.andb (int 5, ah);
       if neg
       then I.jne lbl
       else I.je lbl
   | Clt ->
-      I.andb (int 69, Reg8 AH);
-      I.cmpb (int 1, Reg8 AH);
+      I.andb (int 69, ah);
+      I.cmpb (int 1, ah);
       if neg
       then I.jne lbl
       else I.je lbl
   | Cgt ->
-      I.andb (int 69, Reg8 AH);
+      I.andb (int 69, ah);
       if neg
       then I.jne lbl
       else I.je lbl
@@ -653,7 +653,7 @@ let emit_instr fallthrough i =
       I.idivl (reg i.arg.(1))
   | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
       (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %ecx *)
-      instr_for_intop op (Reg8 CL, reg i.res.(0))
+      instr_for_intop op (cl, reg i.res.(0))
   | Lop(Iintop Imulh) ->
       I.imull (reg i.arg.(1), None)
   | Lop(Iintop op) ->
@@ -705,9 +705,9 @@ let emit_instr fallthrough i =
       I.subl (int 8, esp);
       cfi_adjust_cfa_offset 8;
       I.fnstcw (mem_ptr NO 4 ESP);
-      I.movw (mem_ptr WORD 4 ESP, Reg16 AX);
-      I.movb (int 12, Reg8 AH);
-      I.movw (Reg16 AX, mem_ptr WORD 0 ESP);
+      I.movw (mem_ptr WORD 4 ESP, ax);
+      I.movb (int 12, ah);
+      I.movw (ax, mem_ptr WORD 0 ESP);
       I.fldcw (mem_ptr NO 0 ESP);
       begin match i.res.(0).loc with
       | Stack _ ->
