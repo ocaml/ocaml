@@ -1266,10 +1266,15 @@ let fix_int_precision prec str =
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
-  String.concat (String.escaped str) ["\""; "\""]
+  let str = String.escaped str in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\"' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
-(* Generate the format_int first argument from an int_conv. *)
-let format_of_iconv iconv = match iconv with
+(* Generate the format_int/int32/nativeint/int64 first argument
+   from an int_conv. *)
+let format_of_iconv = function
   | Int_d -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
   | Int_i -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
   | Int_x -> "%x" | Int_Cx -> "%#x"
@@ -1277,17 +1282,29 @@ let format_of_iconv iconv = match iconv with
   | Int_o -> "%o" | Int_Co -> "%#o"
   | Int_u -> "%u"
 
-(* Generate the format_int32, format_nativeint and format_int64 first
-   argument from an int_conv. *)
-let format_of_aconv iconv c =
-  let seps = match iconv with
-  | Int_d -> ["%";"d"] | Int_pd -> ["%+";"d"] | Int_sd -> ["% ";"d"]
-  | Int_i -> ["%";"i"] | Int_pi -> ["%+";"i"] | Int_si -> ["% ";"i"]
-  | Int_x -> ["%";"x"] | Int_Cx -> ["%#";"x"]
-  | Int_X -> ["%";"X"] | Int_CX -> ["%#";"X"]
-  | Int_o -> ["%";"o"] | Int_Co -> ["%#";"o"]
-  | Int_u -> ["%";"u"]
-  in String.concat (String.make 1 c) seps
+let format_of_iconvL = function
+  | Int_d -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
+  | Int_i -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
+  | Int_x -> "%Lx" | Int_Cx -> "%#Lx"
+  | Int_X -> "%LX" | Int_CX -> "%#LX"
+  | Int_o -> "%Lo" | Int_Co -> "%#Lo"
+  | Int_u -> "%Lu"
+
+let format_of_iconvl = function
+  | Int_d -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
+  | Int_i -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
+  | Int_x -> "%lx" | Int_Cx -> "%#lx"
+  | Int_X -> "%lX" | Int_CX -> "%#lX"
+  | Int_o -> "%lo" | Int_Co -> "%#lo"
+  | Int_u -> "%lu"
+
+let format_of_iconvn = function
+  | Int_d -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
+  | Int_i -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
+  | Int_x -> "%nx" | Int_Cx -> "%#nx"
+  | Int_X -> "%nX" | Int_CX -> "%#nX"
+  | Int_o -> "%no" | Int_Co -> "%#no"
+  | Int_u -> "%nu"
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
@@ -1302,9 +1319,9 @@ let format_of_fconv fconv prec =
 
 (* Convert an integer to a string according to a conversion. *)
 let convert_int iconv n = format_int (format_of_iconv iconv) n
-let convert_int32 iconv n = format_int32 (format_of_aconv iconv 'l') n
-let convert_nativeint iconv n = format_nativeint (format_of_aconv iconv 'n') n
-let convert_int64 iconv n = format_int64 (format_of_aconv iconv 'L') n
+let convert_int32 iconv n = format_int32 (format_of_iconvl iconv) n
+let convert_nativeint iconv n = format_nativeint (format_of_iconvn iconv) n
+let convert_int64 iconv n = format_int64 (format_of_iconvL iconv) n
 
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
@@ -1327,7 +1344,11 @@ let convert_float fconv prec x =
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
-  String.concat (Char.escaped c) ["'"; "'"]
+  let str = Char.escaped c in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\'' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
 (* Convert a format type to string *)
 let string_of_fmtty fmtty =

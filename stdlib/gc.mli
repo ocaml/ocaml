@@ -83,7 +83,7 @@ type stat =
 type control =
   { mutable minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
-       this parameter will trigger a minor collection.  Default: 262k. *)
+       this parameter will trigger a minor collection.  Default: 256k. *)
 
     mutable major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
