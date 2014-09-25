@@ -1270,21 +1270,23 @@ let fix_padding padty width str =
 let fix_int_precision prec str =
   let prec = abs prec in
   let len = String.length str in
-  if prec <= len then str else
-    let res = Bytes.make prec '0' in
-    begin match str.[0] with
-    | ('+' | '-' | ' ') as c ->
-      Bytes.set res 0 c;
-      String.blit str 1 res (prec - len + 1) (len - 1);
-    | '0' when len > 1 && (str.[1] = 'x' || str.[1] = 'X') ->
-      Bytes.set res 1 str.[1];
-      String.blit str 2 res (prec - len + 2) (len - 2);
-    | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ->
-      String.blit str 0 res (prec - len) len;
-    | _ ->
-      assert false
-    end;
+  match str.[0] with
+  | ('+' | '-' | ' ') as c when prec + 1 > len ->
+    let res = Bytes.make (prec + 1) '0' in
+    Bytes.set res 0 c;
+    String.blit str 1 res (prec - len + 2) (len - 1);
     Bytes.unsafe_to_string res
+  | '0' when prec + 2 > len && len > 1 && (str.[1] = 'x' || str.[1] = 'X') ->
+    let res = Bytes.make (prec + 2) '0' in
+    Bytes.set res 1 str.[1];
+    String.blit str 2 res (prec - len + 4) (len - 2);
+    Bytes.unsafe_to_string res
+  | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' when prec > len ->
+    let res = Bytes.make prec '0' in
+    String.blit str 0 res (prec - len) len;
+    Bytes.unsafe_to_string res
+  | _ ->
+    str
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
@@ -2130,8 +2132,31 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let ignored = Ignored_int (iconv, get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
+	(* %5.3d is accepted and meaningful: pad to length 5 with
+	   spaces, but first pad with zeros upto length 3 (0-padding
+	   is the interpretation of "precision" for integer formats).
+
+           %05.3d is redundant: pad to length 5 *with zeros*, but
+           first pad with zeros... To add insult to the injury, the
+           legacy implementation ignores the 0-padding indication and
+           does the 5 padding with spaces instead. We reuse this
+           interpretation for compatiblity, but statically reject this
+           format when the legacy mode is disabled, to protect strict
+           users from this corner case.
+	 *)
+        let pad = match get_pad (), get_prec () with
+          | pad, No_precision -> pad
+          | No_padding, _     -> No_padding
+          | Lit_padding (Zeros, n), _ ->
+            if legacy_behavior then Lit_padding (Right, n)
+            else incompatible_flag pct_ind str_ind '0' "precision"
+          | Arg_padding Zeros, _ ->
+            if legacy_behavior then Arg_padding Right
+            else incompatible_flag pct_ind str_ind '0' "precision"
+          | Lit_padding _ as pad, _ -> pad
+          | Arg_padding _ as pad, _ -> pad in
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb pad (get_prec ()) fmt_rest in
         Fmt_EBB (Int (iconv, pad', prec', fmt_rest'))
     | 'N' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
@@ -2619,24 +2644,24 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | _, true, _, 'x' when legacy_behavior -> Int_Cx
     | _, true, _, 'X' when legacy_behavior -> Int_CX
     | _, true, _, 'o' when legacy_behavior -> Int_Co
-    | _, true, _, _ ->
+    | _, true, _, ('d' | 'i' | 'u') ->
       if legacy_behavior then (* ignore *)
         compute_int_conv pct_ind str_ind plus false space symb
       else incompatible_flag pct_ind str_ind symb "'#'"
-    | true, false, true, _ ->
+    | true, _, true, _ ->
       if legacy_behavior then
         (* plus and space: legacy implementation prefers plus *)
         compute_int_conv pct_ind str_ind plus sharp false symb
       else incompatible_flag pct_ind str_ind ' ' "'+'"
-    | false, false, true, _    ->
+    | false, _, true, _    ->
       if legacy_behavior then (* ignore *)
         compute_int_conv pct_ind str_ind plus sharp false symb
       else incompatible_flag pct_ind str_ind symb "' '"
-    | true, false, false, _    ->
+    | true, _, false, _    ->
       if legacy_behavior then (* ignore *)
         compute_int_conv pct_ind str_ind false sharp space symb
       else incompatible_flag pct_ind str_ind symb "'+'"
-    | false, false, false, _ -> assert false
+    | false, _, false, _ -> assert false
 
   (* Convert (plus, symb) to its associated float_conv. *)
   and compute_float_conv pct_ind str_ind plus space symb =
