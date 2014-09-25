@@ -20,3 +20,5 @@ type t =
 val flatten: t -> string list
 val last: t -> string
 val parse: string -> t
+val concat: t -> t -> t
+val split_lident: t -> (t * t) option

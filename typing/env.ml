@@ -860,6 +860,41 @@ let lookup_constructor lid env =
       use ();
       desc
 
+(*
+let lookup_constructor lid env =
+  match Longident.split_lident lid with
+  | None -> lookup_constructor lid env
+  | Some (ty_id, cstr_id) ->
+      let (ty_path, ty_decl) = lookup_type ty_id env in
+      match ty_decl.type_kind with
+      | Type_variant _ ->
+          let (cstrs, _, _) = find_type_descrs ty_path env in
+          begin match cstr_id with
+          | Lident s ->
+              List.find (fun c -> c.cstr_name = s) cstrs
+          | _ ->
+              failwith "Type %s is a regular variant type: constructor name must be local"
+          end
+      | Type_open ->
+          let cstrs = lookup_all_constructors cstr_id env in
+          let (c, use) =
+            try
+              List.find
+                (fun (c, _) ->
+                   match (repr c.cstr_res).desc with
+                   | Tconstr(p, _, _) -> Path.same ty_path p
+                   | _ -> false
+                )
+                cstrs
+            with Not_found ->
+              failwith "No constructor with qualified name %s found in type %s"
+          in
+          use ();
+          c
+      | _ ->
+          failwith "Type %s is not a variant type"
+*)
+
 let is_lident = function
     Lident _ -> true
   | _ -> false

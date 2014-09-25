@@ -49,9 +49,12 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
+  | Unbound_constructor_in_type of Longident.t * Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Constructor_must_be_local of Longident.t
+  | Not_a_variant_type of Longident.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -225,29 +228,6 @@ let find_type env loc lid =
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
 
-let find_type env loc lid =
-  let s = Longident.last lid in
-  match s.[0] with
-  | 'A'..'Z' ->
-      let cstr = find_constructor env loc lid in
-      if not cstr.cstr_inlined then
-        failwith (Printf.sprintf
-                    "Constructor %s does not have an inline record argument"
-                    s
-                 );
-      begin match cstr.cstr_args with
-      | [{desc=Tconstr(path, _, _)}] ->
-          let decl =
-            try Env.find_type path env
-            with Not_found ->
-              assert false
-          in
-          (path, decl)
-      | _ -> assert false
-      end
-  | _ ->
-      find_type env loc lid
-
 let find_all_constructors =
   find_component Env.lookup_all_constructors
     (fun lid -> Unbound_constructor lid)
@@ -305,6 +285,70 @@ let unbound_constructor_error env lid =
 let unbound_label_error env lid =
   narrow_unbound_lid_error env lid.loc lid.txt
     (fun lid -> Unbound_label lid)
+
+let find_constructor_in_type env loc ty_id cstr_id =
+  let err e = raise (Error (loc, env, e)) in
+  let (ty_path, ty_decl) = find_type env loc ty_id in
+  match ty_decl.type_kind with
+  | Type_variant _ ->
+      let (cstrs, _, _) =
+        try Env.find_type_descrs ty_path env
+        with Not_found -> assert false
+      in
+      begin match cstr_id with
+      | Longident.Lident s ->
+          begin try List.find (fun c -> c.cstr_name = s) cstrs
+          with Not_found ->
+            err (Unbound_constructor_in_type (cstr_id, ty_id))
+          end
+      | _ ->
+          err (Constructor_must_be_local ty_id)
+      end
+  | Type_open ->
+      let cstrs = find_all_constructors env loc cstr_id in
+      let has_type (c, _) =
+        match (repr c.cstr_res).desc with
+        | Tconstr(p, _, _) -> Path.same ty_path p
+        | _ -> false
+      in
+      let (c, use) =
+        try List.find has_type cstrs
+        with Not_found ->
+          err (Unbound_constructor_in_type (cstr_id, ty_id))
+      in
+      use ();
+      c
+  | _ ->
+      err (Not_a_variant_type ty_id)
+
+let find_constructor env loc lid =
+  match Longident.split_lident lid with
+  | None -> find_constructor env loc lid
+  | Some (ty_id, cstr_id) -> find_constructor_in_type env loc ty_id cstr_id
+
+let find_type env loc lid =
+  let s = Longident.last lid in
+  match s.[0] with
+  | 'A'..'Z' ->
+      let cstr = find_constructor env loc lid in
+      if not cstr.cstr_inlined then
+        failwith (Printf.sprintf
+                    "Constructor %s does not have an inline record argument"
+                    s
+                 );
+      begin match cstr.cstr_args with
+      | [{desc=Tconstr(path, _, _)}] ->
+          let decl =
+            try Env.find_type path env
+            with Not_found ->
+              assert false
+          in
+          (path, decl)
+      | _ -> assert false
+      end
+  | _ ->
+      find_type env loc lid
+
 
 (* Support for first-class modules. *)
 
@@ -1021,12 +1065,24 @@ let report_error env ppf = function
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
       spellcheck ppf Env.fold_cltypes env lid;
+  | Unbound_constructor_in_type (c_lid, t_lid) ->
+      fprintf ppf "Unbound constructor %a in type %a" longident c_lid
+        longident t_lid
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
       fprintf ppf "The module %a is a functor, not a structure" longident lid
+  | Constructor_must_be_local lid ->
+      fprintf ppf
+        "The type %a is a regular variant type (not an extensible one);@ "
+        longident lid;
+      fprintf ppf "qualified constructors are not allowed"
+  | Not_a_variant_type lid ->
+      fprintf ppf
+        "The type %a is not a variant type"
+        longident lid
 
 let () =
   Location.register_error_of_exn
