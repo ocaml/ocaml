@@ -1995,21 +1995,18 @@ val_longident:
   | mod_longident DOT val_ident                 { Ldot($1, $3) }
 ;
 constr_longident:
-    constr_longident2       %prec below_DOT         { $1 }
+    mod_longident       %prec below_DOT         { $1 }
   | LBRACKET RBRACKET                           { Lident "[]" }
   | LPAREN RPAREN                               { Lident "()" }
   | FALSE                                       { Lident "false" }
   | TRUE                                        { Lident "true" }
 ;
-constr_longident2:
+constr_qual_longident:
     mod_longident %prec below_DOT { $1 }
-  | mod_longident DOT LIDENT DOT mod_longident %prec below_DOT {
-    Longident.concat (Ldot($1, $3)) $5
-  }
-
-  | LIDENT DOT mod_longident %prec below_DOT {
-      Longident.concat (Lident $1) $3
-    }
+  | mod_longident DOT LIDENT DOT mod_longident %prec below_DOT
+    { Longident.concat (Ldot($1, $3)) $5 }
+  | LIDENT DOT mod_longident %prec below_DOT
+    { Longident.concat (Lident $1) $3 }
 ;
 label_longident:
     LIDENT                                      { Lident $1 }
@@ -2018,7 +2015,7 @@ label_longident:
 type_longident:
     type_ident                                  { Lident $1 }
   | mod_ext_longident DOT type_ident            { Ldot($1, $3) }
-  | BANG constr_longident                       { $2 }
+  | BANG constr_qual_longident                  { $2 }
 ;
 type_ident:
     LIDENT                                      { $1 }

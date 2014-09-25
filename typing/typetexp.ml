@@ -321,7 +321,7 @@ let find_constructor_in_type env loc ty_id cstr_id =
   | _ ->
       err (Not_a_variant_type ty_id)
 
-let find_constructor env loc lid =
+let find_qual_constructor env loc lid =
   match Longident.split_lident lid with
   | None -> find_constructor env loc lid
   | Some (ty_id, cstr_id) -> find_constructor_in_type env loc ty_id cstr_id
@@ -330,7 +330,7 @@ let find_type env loc lid =
   let s = Longident.last lid in
   match s.[0] with
   | 'A'..'Z' ->
-      let cstr = find_constructor env loc lid in
+      let cstr = find_qual_constructor env loc lid in
       if not cstr.cstr_inlined then
         failwith (Printf.sprintf
                     "Constructor %s does not have an inline record argument"
