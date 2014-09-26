@@ -640,7 +640,6 @@ and transl_signature env sg =
                 (get_extension_constructors rem)
                 && Subst.sub_ids_ext ext.ext_type = []
             in
-            if shadowed then print_endline "XXXX" else print_endline "YYYYY";
             mksig (Tsig_exception ext) env loc :: trem,
             (if shadowed then rem else
                Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
