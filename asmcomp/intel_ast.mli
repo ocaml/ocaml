@@ -203,12 +203,12 @@ type asm_line =
   | Space of int
   | Word of constant
 
-  (* masm only *)
+  (* masm only (the gas emitter will fail on them) *)
   | External of string * data_type
   | Mode386
   | Model of string
 
-  (* gas only *)
+  (* gas only (the masm emitter will fail on them) *)
   | Cfi_adjust_cfa_offset of int
   | Cfi_endproc
   | Cfi_startproc
