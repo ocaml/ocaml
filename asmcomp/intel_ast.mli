@@ -14,13 +14,15 @@
 
 type condition =
   | O | NO
-  | B | C | NAE | NB | NC | AE
-  | Z | E | NZ | NE
-  | BE | NA | NBE | A
+  | B
+  | AE
+  | E
+  | NE
+  | BE | A
   | S | NS
-  | P | PE | NP | PO
-  | L | NGE | NL | GE
-  | LE | NG | NLE | G
+  | P | NP
+  | L | GE
+  | LE | G
 
 type rounding =
   | RoundUp
