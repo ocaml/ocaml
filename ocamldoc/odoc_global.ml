@@ -40,13 +40,6 @@ let dump = ref (None : string option)
 
 let load = ref ([] : string list)
 
-(** Allow arbitrary recursive types. *)
-let recursive_types = Clflags.recursive_types
-
-(** Optional preprocessor command. *)
-let preprocessor = Clflags.preprocessor
-let ppx = Clflags.all_ppx
-
 let sort_modules = ref false
 
 let no_custom_tags = ref false
@@ -65,11 +58,9 @@ let hidden_modules = ref ([] : string list)
 
 let files = ref []
 
-
-
 let out_file = ref Odoc_messages.default_out_file
 
-let verbose = ref false
+let verbose = Clflags.verbose
 
 let target_dir = ref Filename.current_dir_name
 

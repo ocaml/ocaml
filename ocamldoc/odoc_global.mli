@@ -21,13 +21,6 @@ type source_file =
 (** The include_dirs in the OCaml compiler. *)
 val include_dirs : string list ref
 
-(** Optional preprocessor command to pass to ocaml compiler. *)
-val preprocessor : string option ref (* -pp *)
-val ppx : string list ref (* -ppx *)
-
-(** Recursive types flag to passe to ocaml compiler. *)
-val recursive_types : bool ref
-
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref
 
