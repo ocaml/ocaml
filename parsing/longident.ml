@@ -41,24 +41,11 @@ let parse s =
   | hd :: tl -> List.fold_left (fun p s -> Ldot(p, s)) (Lident hd) tl
 
 
-
-let rec concat t = function
-  | Lident s -> Ldot (t, s)
-  | Ldot (a, s) -> Ldot (concat t a, s)
-  | _ -> assert false
-
 let is_lident s =
   match s.[0] with
   | 'a'..'z' | '_' -> true
   | _ -> false
 
-let rec split_lident = function
-  | Ldot(t, s) when is_lident (last t) ->
-      Some (t, Lident s)
-  | Ldot(Ldot (t1, s1) as t, s) ->
-      begin match split_lident t with
-      | None -> None
-      | Some (x, y) -> Some (x, Ldot(y, s))
-      end
-  | _ ->
-      None
+let typqual_constructor = function
+  | Ldot(t, s) when is_lident (last t) -> Some (t, s)
+  | _ -> None
