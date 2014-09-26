@@ -37,12 +37,16 @@ type constant =
   | ConstAdd of constant * constant
   | ConstSub of constant * constant
 
-type data_type = (* only used for MASM *)
+(* data_type is used mainly on memory addressing to specify
+   the size of the addressed memory chunk.  It is directly
+   used by the MASM emitter and indirectly by the GAS emitter
+   to infer the instruction suffix. *)
+
+type data_type =
   | NO
-  | REAL4 | REAL8 | REAL10 (* floating point values *)
-  | BYTE | WORD | DWORD | QWORD | TBYTE  | OWORD (* integer values *)
+  | REAL4 | REAL8 (* floating point values *)
+  | BYTE | WORD | DWORD | QWORD | OWORD (* integer values *)
   | NEAR | PROC
-  (* PROC could be a display for NEAR on 32 bits ? *)
 
 type register64 =
   | RAX | RBX | RDI | RSI | RDX | RCX | RBP | RSP
