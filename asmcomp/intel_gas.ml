@@ -12,34 +12,6 @@
 
 [@@@ocaml.warning "+A-42-4"]
 
-(*
-
-
-9.13.16 AT&T Syntax bugs
-
-The UnixWare assembler, and probably other AT&T derived ix86 Unix
-assemblers, generate floating point instructions with reversed source
-and destination registers in certain cases. Unfortunately, gcc and
-possibly many other programs use this reversed syntax, so we're stuck
-with it.
-
-For example
-
-             fsub %st,%st(3)
-
-results in `%st(3)' being updated to `%st - %st(3)' rather than the
-expected `%st(3) - %st'. This happens with all the non-commutative
-arithmetic floating point operations with two register operands where
-the source register is `%st' and the destination register is `%st(i)'.
-
-# gas
-fdiv %st, %st(i)
-semantics : %st(i) = %st / %st(i)
-# masm
-FDIVR ST(i), ST(0)
-
-*)
-
 
 open Intel_ast
 open Intel_proc
@@ -226,6 +198,25 @@ let print_instr b = function
 
 (* bug:
    https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
+ 
+   The AT&T syntax has a bug for fsub/fdiv/fsubr/fdivr instructions when
+   the source register is %st and the destination is %st(i).  In those
+   case, AT&T use fsub (resp. fsubr) in place of fsubr (resp. fsub),
+   and idem form fdiv/fdivr.
+
+   Concretely, AT&T syntax interpretation of:
+
+      fsub  %st, %st(3)
+
+   should normally be:
+
+      %st(3) := %st(3) - %st
+
+   but it should actually be interpreted as:
+
+      %st(3) := %st - %st(3)
+
+   which means the FSUBR instruction should be used.
 *)
 
 
