@@ -1,5 +1,7 @@
 OCaml 4.02.1:
 -------------
+Standard library:
+* Add optional argument ?limit to Arg.align.
 
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
@@ -24,6 +26,7 @@ OCaml 4.02.1:
 - PR#6572: Fatal error with recursive modules
 - PR#6578: Recursive module containing alias causes Segmentation fault
 - PR#6581: Some bugs in generative functors
+- PR#6553: Missing command line options for ocamldoc
 
 OCaml 4.02.0:
 -------------
