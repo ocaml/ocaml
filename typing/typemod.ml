@@ -640,6 +640,7 @@ and transl_signature env sg =
                 (get_extension_constructors rem)
                 && Subst.sub_ids_ext ext.ext_type = []
             in
+            if shadowed then print_endline "XXXX" else print_endline "YYYYY";
             mksig (Tsig_exception ext) env loc :: trem,
             (if shadowed then rem else
                Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
@@ -857,22 +858,31 @@ and transl_recmodule_modtypes loc env sdecls =
    keep only the last (rightmost) one. *)
 
 let simplify_signature sg =
-  let rec simplif val_names ext_names res = function
-    [] -> res
-  | (Sig_value(id, descr) as component) :: sg ->
-      let name = Ident.name id in
-      simplif (StringSet.add name val_names) ext_names
-              (if StringSet.mem name val_names then res else component :: res)
-              sg
-  | (Sig_typext(id, ext, es) as component) :: sg ->
-      let name = Ident.name id in
-      simplif val_names (StringSet.add name ext_names)
-              (if StringSet.mem name ext_names then res else component :: res)
-              sg
-  | component :: sg ->
-      simplif val_names ext_names (component :: res) sg
+  let rec aux = function
+    | [] -> [], StringSet.empty, StringSet.empty
+    | (Sig_value(id, descr) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name val_names then k
+        else (component :: sg, StringSet.add name val_names, ext_names)
+    | (Sig_typext(id, ext, es) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name ext_names && Subst.sub_ids_ext ext = [] then
+          (* #6510 *)
+          match es, sg with
+          | Text_first, Sig_typext(id2, ext2, Text_next) :: rest ->
+              (Sig_typext(id2, ext2, Text_first) :: rest,
+               val_names, ext_names)
+          | _ -> k
+        else
+          (component :: sg, val_names, StringSet.add name ext_names)
+    | component :: sg ->
+        let (sg, val_names, ext_names) = aux sg in
+        (component :: sg, val_names, ext_names)
   in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+  let (sg, _, _) = aux sg in
+  sg
 
 (* Try to convert a module expression to a module path. *)
 
@@ -1532,49 +1542,6 @@ and normalize_signature_item env = function
     Sig_value(id, desc) -> Ctype.normalize_type env desc.val_type
   | Sig_module(id, md, _) -> normalize_modtype env md.md_type
   | _ -> ()
-
-(* Simplify multiple specifications of a value or an extension in a signature.
-   (Other signature components, e.g. types, modules, etc, are checked for
-   name uniqueness.)  If multiple specifications with the same name,
-   keep only the last (rightmost) one. *)
-
-let rec simplify_modtype mty =
-  match mty with
-    Mty_ident path -> mty
-  | Mty_alias path -> mty
-  | Mty_functor(id, arg, res) -> Mty_functor(id, arg, simplify_modtype res)
-  | Mty_signature sg -> Mty_signature(simplify_signature sg)
-
-and simplify_signature sg =
-  let rec aux = function
-    | [] -> [], StringSet.empty, StringSet.empty
-    | (Sig_value(id, descr) as component) :: sg ->
-        let (sg, val_names, ext_names) as k = aux sg in
-        let name = Ident.name id in
-        if StringSet.mem name val_names then k
-        else (component :: sg, StringSet.add name val_names, ext_names)
-    | (Sig_typext(id, ext, es) as component) :: sg ->
-        let (sg, val_names, ext_names) as k = aux sg in
-        let name = Ident.name id in
-        if StringSet.mem name ext_names && Subst.sub_ids_ext ext = [] then
-          (* #6510 *)
-          match es, sg with
-          | Text_first, Sig_typext(id2, ext2, Text_next) :: rest ->
-              (Sig_typext(id2, ext2, Text_first) :: rest,
-               val_names, ext_names)
-          | _ -> k
-        else
-          (component :: sg, val_names, StringSet.add name ext_names)
-    | Sig_module(id, md, rs) :: sg ->
-        let (sg, val_names, ext_names) = aux sg in
-        let md = {md with md_type = simplify_modtype md.md_type} in
-        (Sig_module(id, md, rs) :: sg, val_names, ext_names)
-    | component :: sg ->
-        let (sg, val_names, ext_names) = aux sg in
-        (component :: sg, val_names, ext_names)
-  in
-  let (sg, _, _) = aux sg in
-  sg
 
 (* Extract the module type of a module expression *)
 

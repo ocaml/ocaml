@@ -18,6 +18,10 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 
+Type system:
+- PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
+  constructors (Alain Frisch)
+
 Ocaml 4.02.0:
 -------------
 
