@@ -31,29 +31,36 @@ open Intel_ast
 open Intel_proc
 
 module Check = struct
-
   (* These functions are used to check the datatype on instruction arguments
      against a gas-style instruction suffix. *)
 
-  let check ty = function
-    | Mem32 {typ; _}
-    | Mem64 {typ; _} -> assert(typ = ty)
-    | arg ->
-        match arg, ty with
-        | (Reg16 _ | Reg32 _ | Reg64 _ | Regf _), BYTE
-        | (Reg8 _ | Reg32 _ | Reg64 _ | Regf _), WORD
-        | (Reg8 _ | Reg16 _ | Reg64 _ | Regf _), DWORD
-        | (Reg8 _ | Reg16 _ | Reg32 _ | Regf _), QWORD
-        | (Reg8 _ | Reg16 _ | Reg32 _ | Reg64 _), REAL8 -> assert false
-        | _ -> ()
+  let byte = function
+    | Mem32{typ=BYTE; _} | Mem64{typ=BYTE; _} | Reg8 _
+    | Imm _ (* check range? *)
+      as arg -> arg
+    | _ -> assert false
 
-  let byte x = check BYTE x; x
-  let word x = check WORD x; x
-  let dword x = check DWORD x; x
-  let qword x = check QWORD x; x
-  let option chk = function
-      None -> None
-    | Some arg -> Some (chk arg)
+  let word = function
+    | Mem32{typ=WORD; _} | Mem64{typ=WORD; _} | Reg16 _
+    | Imm _ (* check range? *)
+      as arg -> arg
+    | _ -> assert false
+
+  let dword = function
+    | Mem32{typ=DWORD; _} | Mem64{typ=DWORD; _} | Reg32 _
+    | Imm _ (* check range? *)
+    | Sym _
+      as arg -> arg
+    | _ -> assert false
+
+  let qword = function
+    | Mem32{typ=QWORD; _} | Mem64{typ=QWORD; _} | Reg64 _
+    | Imm _ (* check range? *)
+    | Sym _
+      as arg -> arg
+    | _ -> assert false
+
+  let option chk = function None -> None | Some arg -> Some (chk arg)
 end
 
 module DSL = struct
