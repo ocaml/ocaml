@@ -3,6 +3,7 @@ OCaml 4.02.1:
 Standard library:
 * Add optional argument ?limit to Arg.align.
 
+- PR#4099: Bug in Makefile.nt: won't stop on error (George Necula)
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
 - PR#6533: broken semantics of %(%) when substitued by a box
