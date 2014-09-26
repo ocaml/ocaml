@@ -23,6 +23,7 @@ OCaml 4.02.1:
 - PR#6566: -short-paths and signature inclusion errors
 - PR#6572: Fatal error with recursive modules
 - PR#6578: Recursive module containing alias causes Segmentation fault
+- PR#6581: Some bugs in generative functors
 
 OCaml 4.02.0:
 -------------

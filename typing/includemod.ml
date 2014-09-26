@@ -543,7 +543,7 @@ let rec context ppf = function
   | Modtype id :: rem ->
       fprintf ppf "@[<2>module type %a =@ %a@]" ident id context_mty rem
   | Body x :: rem ->
-      fprintf ppf "functor (%a) ->@ %a" ident x context_mty rem
+      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
   | Arg x :: rem ->
       fprintf ppf "functor (%a : %a) -> ..." ident x context_mty rem
   | [] ->
@@ -554,11 +554,14 @@ and context_mty ppf = function
   | cxt -> context ppf cxt
 and args ppf = function
     Body x :: rem ->
-      fprintf ppf "(%a)%a" ident x args rem
+      fprintf ppf "(%s)%a" (argname x) args rem
   | Arg x :: rem ->
       fprintf ppf "(%a :@ %a) : ..." ident x context_mty rem
   | cxt ->
       fprintf ppf " :@ %a" context_mty cxt
+and argname x =
+  let s = Ident.name x in
+  if s = "*" then "" else s
 
 let path_of_context = function
     Module id :: rem ->
