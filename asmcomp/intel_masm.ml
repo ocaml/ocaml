@@ -18,7 +18,7 @@ let bprintf = Printf.bprintf
 let string_of_datatype = function
   | QWORD -> "QWORD"
   | OWORD -> "OWORD"
-  | NO -> assert false
+  | NONE -> assert false
   | REAL4 -> "REAL4"
   | REAL8 -> "REAL8"
   | BYTE -> "BYTE"
@@ -31,7 +31,7 @@ let string_of_datatype = function
 let string_of_datatype_ptr = function
   | QWORD -> "QWORD PTR "
   | OWORD -> "OWORD PTR "
-  | NO -> ""
+  | NONE -> ""
   | REAL4 -> "REAL4 PTR "
   | REAL8 -> "REAL8 PTR "
   | BYTE -> "BYTE PTR "
@@ -231,7 +231,7 @@ let print_line b = function
   | End -> bprintf b "END"
   | Global s -> bprintf b "\tPUBLIC\t%s" s
   | Long n -> bprintf b "\tDWORD\t%a" cst n
-  | NewLabel (s, NO) -> bprintf b "%s:" s
+  | NewLabel (s, NONE) -> bprintf b "%s:" s
   | NewLabel (s, ptr) -> bprintf b "%s LABEL %s" s (string_of_datatype ptr)
   | Quad n -> bprintf b "\tQWORD\t%a" cst n
   | Section ([".data"], None, []) -> bprintf b "\t.DATA"

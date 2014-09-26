@@ -123,7 +123,7 @@ let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
     I.movq (from_rip QWORD (emit_symbol s ^ "@GOTPCREL"),  arg)
   else if !pic_code then
-    I.leaq (from_rip NO (emit_symbol s), arg)
+    I.leaq (from_rip NONE (emit_symbol s), arg)
   else
     I.movq (sym (emit_symbol s), arg)
 
@@ -446,7 +446,7 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0, res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (from_rip NO (emit_label lbl), res i 0)
+          I.movsd (from_rip NONE (emit_label lbl), res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -547,7 +547,7 @@ let emit_instr fallthrough i =
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.leaq (mem_ptr NO 8 R15, res i 0);
+        I.leaq (mem_ptr NONE 8 R15, res i 0);
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -562,7 +562,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leaq (mem_ptr NO 8 R15, res i 0)
+        I.leaq (mem_ptr NONE 8 R15, res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpq (arg i 1, arg i 0);
@@ -592,7 +592,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (arg i 1, res i 0)
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.leaq (mem_ptr NO n (arg64 i 0), res i 0)
+      I.leaq (mem_ptr NONE n (arg64 i 0), res i 0)
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.incq (res i 0)
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -611,7 +611,7 @@ let emit_instr fallthrough i =
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0, res i 0)
   | Lop(Ispecific(Ilea addr)) ->
-      I.leaq (addressing addr NO i 0, res i 0)
+      I.leaq (addressing addr NONE i 0, res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
       I.movq (emit_nat n, addressing addr QWORD i 0)
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
@@ -700,7 +700,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.leaq (from_rip NO lbl, reg tmp1);
+      I.leaq (from_rip NONE lbl, reg tmp1);
       I.movslq (mem_ptr DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.addq (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);

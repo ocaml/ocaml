@@ -74,7 +74,7 @@ let suf = function
   | Mem32 {typ=REAL8; _} | Mem64 {typ=REAL8; _}            -> "l"
   | Mem32 {typ=QWORD; _} | Mem64 {typ=QWORD; _} | Reg64 _  -> "q"
   | Mem32 {typ=REAL4; _} | Mem64 {typ=REAL4; _}            -> "s"
-  | Mem32 {typ=NO; _} | Mem64 {typ=NO; _} -> assert false
+  | Mem32 {typ=NONE; _}  | Mem64 {typ=NONE; _} -> assert false
   | _ -> ""
 
 let i0 b s = bprintf b "\t%s" s

@@ -43,7 +43,7 @@ type constant =
    to infer the instruction suffix. *)
 
 type data_type =
-  | NO
+  | NONE
   | REAL4 | REAL8 (* floating point values *)
   | BYTE | WORD | DWORD | QWORD | OWORD (* integer values *)
   | NEAR | PROC

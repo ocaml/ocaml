@@ -615,7 +615,7 @@ let emit_instr fallthrough i =
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.leal  (mem_ptr NO 4 EAX, reg i.res.(0));
+        I.leal  (mem_ptr NONE 4 EAX, reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -630,7 +630,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leal (mem_ptr NO 4 EAX, reg i.res.(0))
+        I.leal (mem_ptr NONE 4 EAX, reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpl (reg i.arg.(1), reg i.arg.(0));
@@ -660,7 +660,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (reg i.arg.(1), reg i.res.(0))
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.leal (mem_ptr NO n (reg32 i.arg.(0)), reg i.res.(0))
+      I.leal (mem_ptr NONE n (reg32 i.arg.(0)), reg i.res.(0))
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.incl (reg i.res.(0))
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -704,11 +704,11 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - 8;
       I.subl (int 8, esp);
       cfi_adjust_cfa_offset 8;
-      I.fnstcw (mem_ptr NO 4 ESP);
+      I.fnstcw (mem_ptr NONE 4 ESP);
       I.movw (mem_ptr WORD 4 ESP, ax);
       I.movb (int 12, ah);
       I.movw (ax, mem_ptr WORD 0 ESP);
-      I.fldcw (mem_ptr NO 0 ESP);
+      I.fldcw (mem_ptr NONE 0 ESP);
       begin match i.res.(0).loc with
       | Stack _ ->
           I.fistpl (reg i.res.(0))
@@ -716,7 +716,7 @@ let emit_instr fallthrough i =
           I.fistpl (mem_ptr DWORD 0 ESP);
           I.movl (mem_ptr DWORD 0 ESP, reg i.res.(0))
       end;
-      I.fldcw (mem_ptr NO 4 ESP);
+      I.fldcw (mem_ptr NONE 4 ESP);
       I.addl (int 8, esp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
@@ -837,7 +837,7 @@ let emit_instr fallthrough i =
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in
-      I.jmp (mem_ptr NO 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
+      I.jmp (mem_ptr NONE 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
       _data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
