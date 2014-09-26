@@ -9,10 +9,6 @@ Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
   types {,u}int{32,64}.
   (Xavier Leroy)
-- PR#6529: fix quadratic-time algorithm in Consistbl.extract.
-  (Xavier Leroy)
-- PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
-  Mark Shinwell).
 
 Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
@@ -21,6 +17,16 @@ Standard library:
 Type system:
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
+
+OCaml 4.02.1:
+-------------
+
+- PR#4099: Bug in Makefile.nt: won't stop on error (George Necula)
+- PR#6466: Non-exhaustive matching warning message for open types is confusing
+- PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+  (Xavier Leroy)
+- PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
+  Mark Shinwell).
 
 Ocaml 4.02.0:
 -------------
