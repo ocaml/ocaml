@@ -431,71 +431,47 @@ let check cl loc set_ref name =
   then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
   else set_ref := StringSet.add name !set_ref
 
-let check_name cl set_ref name =
-  check cl name.loc set_ref name.txt
+type names =
+  {
+    types: StringSet.t ref;
+    modules: StringSet.t ref;
+    modtypes: StringSet.t ref;
+    typexts: StringSet.t ref;
+  }
 
-let typedecl_subids decl =
-  match decl.ptype_kind with
-  | Ptype_variant cstrs ->
-      List.fold_left
-        (fun acc pcd ->
-           match pcd.pcd_args with
-           | Pcstr_record _ ->
-               {
-                 loc = pcd.pcd_name.loc;
-                 txt = Btype.inlined_record_name decl.ptype_name.txt
-                     pcd.pcd_name.txt
-               } :: acc
-           | Pcstr_tuple _ ->
-               acc
-        )
-        [] cstrs
-  | _ ->
-      []
+let new_names () =
+  {
+    types = ref StringSet.empty;
+    modules = ref StringSet.empty;
+    modtypes = ref StringSet.empty;
+    typexts = ref StringSet.empty;
+  }
 
-let check_types loc type_names ids =
-  List.iter
-    (fun id -> check "type" loc type_names (Ident.name id))
-    ids
 
-let check_ext_decl loc type_names decl =
-  check_types loc type_names (Subst.sub_ids_ext decl)
+let check_name check names name = check names name.loc name.txt
+let check_type names loc s = check "type" loc names.types s
+let check_module names loc s = check "module" loc names.modules s
+let check_modtype names loc s = check "type" loc names.modtypes s
+let check_typext names loc s = check "extension constructor" loc names.typexts s
 
-let check_sig_item type_names module_names modtype_names loc = function
-    Sig_type(id, decl, _) ->
-      check_types loc type_names (id :: Subst.sub_ids decl)
-  | Sig_module(id, _, _) ->
-      check "module" loc module_names (Ident.name id)
-  | Sig_modtype(id, _) ->
-      check "module type" loc modtype_names (Ident.name id)
-  | Sig_typext(_, ext, _) ->
-      check_ext_decl loc type_names ext
+
+let check_sig_item names loc = function
+  | Sig_type(id, _, _) -> check_type names loc (Ident.name id)
+  | Sig_module(id, _, _) -> check_module names loc (Ident.name id)
+  | Sig_modtype(id, _) -> check_modtype names loc (Ident.name id)
+  | Sig_typext(id, _, _) -> check_typext names loc (Ident.name id)
   | _ -> ()
 
-let rec remove_duplicates val_ids ext_ids = function
+let rec remove_duplicates val_ids = function
     [] -> []
-  | Sig_value (id, _) :: rem
-    when List.exists (Ident.equal id) val_ids ->
-      remove_duplicates val_ids ext_ids rem
-  | Sig_typext (id, decl, Text_first) :: Sig_typext (id2, ext2, Text_next) :: rem
-    when List.exists (Ident.equal id) ext_ids && Subst.sub_ids_ext decl = [] ->
-      (* #6510 *)
-      remove_duplicates val_ids ext_ids
-        (Sig_typext (id2, ext2, Text_first) :: rem)
-  | Sig_typext (id, decl, _) :: rem
-    when List.exists (Ident.equal id) ext_ids && Subst.sub_ids_ext decl = [] ->
-      remove_duplicates val_ids ext_ids rem
-  | f :: rem -> f :: remove_duplicates val_ids ext_ids rem
+  | Sig_value (id, _) :: rem when List.exists (Ident.equal id) val_ids ->
+      remove_duplicates val_ids rem
+  | f :: rem -> f :: remove_duplicates val_ids rem
 
 let rec get_values = function
     [] -> []
   | Sig_value (id, _) :: rem -> id :: get_values rem
   | f :: rem -> get_values rem
-
-let rec get_extension_constructors = function
-    [] -> []
-  | Sig_typext (id, _, _) :: rem -> id :: get_extension_constructors rem
-  | f :: rem -> get_extension_constructors rem
 
 (* Check and translate a module type expression *)
 
@@ -577,9 +553,7 @@ let rec transl_modtype env smty =
       raise (Error_forward (Typetexp.error_of_extension ext))
 
 and transl_signature env sg =
-  let type_names = ref StringSet.empty
-  and module_names = ref StringSet.empty
-  and modtype_names = ref StringSet.empty in
+  let names = new_names () in
   let rec transl_sig env sg =
     Ctype.init_def(Ident.current_time());
     match sg with
@@ -597,10 +571,7 @@ and transl_signature env sg =
               final_env
         | Psig_type sdecls ->
             List.iter
-              (fun decl ->
-                 List.iter (check_name "type" type_names)
-                   (decl.ptype_name :: typedecl_subids decl)
-              )
+              (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -608,44 +579,26 @@ and transl_signature env sg =
             prepend_sig_types decls rem,
             final_env
         | Psig_typext styext ->
+            List.iter
+              (fun pext -> check_name check_typext names pext.pext_name)
+              styext.ptyext_constructors;
             let (tyext, newenv) =
               Typedecl.transl_type_extension false env item.psig_loc styext
             in
-            List.iter
-              (fun ext ->
-                 check_ext_decl ext.ext_loc type_names ext.ext_type
-              )
-              tyext.tyext_constructors;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            let constructors =
-              List.filter
-                (fun ext -> not
-                  (List.exists (Ident.equal ext.ext_id)
-                               (get_extension_constructors rem))
-                   && Subst.sub_ids_ext ext.ext_type = []
-                )
-                tyext.tyext_constructors
-            in
-              mksig (Tsig_typext tyext) env loc :: trem,
-              map_ext (fun es ext ->
-                Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
-              final_env
+            mksig (Tsig_typext tyext) env loc :: trem,
+            map_ext (fun es ext ->Sig_typext(ext.ext_id, ext.ext_type, es))
+              tyext.tyext_constructors rem,
+            final_env
         | Psig_exception sext ->
+            check_name check_typext names sext.pext_name;
             let (ext, newenv) = Typedecl.transl_exception env sext in
-            check_ext_decl ext.ext_loc type_names ext.ext_type;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            let shadowed =
-              List.exists
-                (Ident.equal ext.ext_id)
-                (get_extension_constructors rem)
-                && Subst.sub_ids_ext ext.ext_type = []
-            in
             mksig (Tsig_exception ext) env loc :: trem,
-            (if shadowed then rem else
-               Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
+            (Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
             final_env
         | Psig_module pmd ->
-            check_name "module" module_names pmd.pmd_name;
+            check_name check_module names pmd.pmd_name;
             let tmty = transl_modtype env pmd.pmd_type in
             let md = {
               md_type=tmty.mty_type;
@@ -664,7 +617,7 @@ and transl_signature env sg =
             final_env
         | Psig_recmodule sdecls ->
             List.iter
-              (fun pmd -> check_name "module" module_names pmd.pmd_name)
+              (fun pmd -> check_name check_module names pmd.pmd_name)
               sdecls;
             let (decls, newenv) =
               transl_recmodule_modtypes item.psig_loc env sdecls in
@@ -680,7 +633,7 @@ and transl_signature env sg =
             final_env
         | Psig_modtype pmtd ->
             let newenv, mtd, sg =
-              transl_modtype_decl modtype_names env item.psig_loc pmtd
+              transl_modtype_decl names env item.psig_loc pmtd
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
@@ -697,10 +650,7 @@ and transl_signature env sg =
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
-            List.iter
-              (check_sig_item type_names module_names modtype_names
-                              item.psig_loc)
-              sg;
+            List.iter (check_sig_item names item.psig_loc) sg;
             let newenv = Env.add_signature sg env in
             let incl =
               { incl_mod = tmty;
@@ -711,12 +661,11 @@ and transl_signature env sg =
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include incl) env loc :: trem,
-            remove_duplicates (get_values rem)
-              (get_extension_constructors rem) sg @ rem,
+            remove_duplicates (get_values rem) sg @ rem,
             final_env
         | Psig_class cl ->
             List.iter
-              (fun {pci_name = name} -> check_name "type" type_names name)
+              (fun {pci_name} -> check_name check_type names pci_name)
               cl;
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -738,7 +687,7 @@ and transl_signature env sg =
             final_env
         | Psig_class_type cl ->
             List.iter
-              (fun {pci_name = name} -> check_name "type" type_names name)
+              (fun {pci_name} -> check_name check_type names pci_name)
               cl;
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let (trem,rem, final_env) = transl_sig newenv srem in
@@ -770,9 +719,9 @@ and transl_signature env sg =
     ((Cmt_format.Partial_signature sg) :: previous_saved_types);
   sg
 
-and transl_modtype_decl modtype_names env loc
+and transl_modtype_decl names env loc
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
-  check_name "module type" modtype_names pmtd_name;
+  check_name check_modtype names pmtd_name;
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
   let decl =
     {
@@ -858,29 +807,17 @@ and transl_recmodule_modtypes loc env sdecls =
 
 let simplify_signature sg =
   let rec aux = function
-    | [] -> [], StringSet.empty, StringSet.empty
+    | [] -> [], StringSet.empty
     | (Sig_value(id, descr) as component) :: sg ->
-        let (sg, val_names, ext_names) as k = aux sg in
+        let (sg, val_names) as k = aux sg in
         let name = Ident.name id in
         if StringSet.mem name val_names then k
-        else (component :: sg, StringSet.add name val_names, ext_names)
-    | (Sig_typext(id, ext, es) as component) :: sg ->
-        let (sg, val_names, ext_names) as k = aux sg in
-        let name = Ident.name id in
-        if StringSet.mem name ext_names && Subst.sub_ids_ext ext = [] then
-          (* #6510 *)
-          match es, sg with
-          | Text_first, Sig_typext(id2, ext2, Text_next) :: rest ->
-              (Sig_typext(id2, ext2, Text_first) :: rest,
-               val_names, ext_names)
-          | _ -> k
-        else
-          (component :: sg, val_names, StringSet.add name ext_names)
+        else (component :: sg, StringSet.add name val_names)
     | component :: sg ->
-        let (sg, val_names, ext_names) = aux sg in
-        (component :: sg, val_names, ext_names)
+        let (sg, val_names) = aux sg in
+        (component :: sg, val_names)
   in
-  let (sg, _, _) = aux sg in
+  let (sg, _) = aux sg in
   sg
 
 (* Try to convert a module expression to a module path. *)
@@ -1245,10 +1182,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
       raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
-  let type_names = ref StringSet.empty
-  and module_names = ref StringSet.empty
-  and modtype_names = ref StringSet.empty in
-
+  let names = new_names () in
   let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
@@ -1281,39 +1215,34 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
     | Pstr_type sdecls ->
         List.iter
-          (fun decl ->
-             List.iter (check_name "type" type_names)
-               (decl.ptype_name :: typedecl_subids decl)
-          )
+          (fun decl -> check_name check_type names decl.ptype_name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         Tstr_type decls,
         prepend_sig_types decls [],
         enrich_type_decls anchor decls env newenv
     | Pstr_typext styext ->
+        List.iter
+          (fun pext -> check_name check_typext names pext.pext_name)
+          styext.ptyext_constructors;
         let (tyext, newenv) =
           Typedecl.transl_type_extension true env loc styext
         in
-        List.iter
-          (fun ext ->
-             check_ext_decl ext.ext_loc type_names ext.ext_type
-          )
-          tyext.tyext_constructors;
         (Tstr_typext tyext,
          map_ext
            (fun es ext -> Sig_typext(ext.ext_id, ext.ext_type, es))
            tyext.tyext_constructors [],
          newenv)
     | Pstr_exception sext ->
+        check_name check_typext names sext.pext_name;
         let (ext, newenv) = Typedecl.transl_exception env sext in
-        check_ext_decl ext.ext_loc type_names ext.ext_type;
         Tstr_exception ext,
         [Sig_typext(ext.ext_id, ext.ext_type, Text_exception)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
-        check_name "module" module_names name;
+        check_name check_module names name;
         let modl =
           type_module ~alias:true true funct_body
             (anchor_submodule name.txt anchor) env smodl in
@@ -1350,7 +1279,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             sbind
         in
         List.iter
-          (fun (name, _, _, _, _) -> check_name "module" module_names name)
+          (fun (name, _, _, _, _) -> check_name check_module names name)
           sbind;
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
@@ -1397,7 +1326,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
         let newenv, mtd, sg =
-          transl_modtype_decl modtype_names env loc pmtd
+          transl_modtype_decl names env loc pmtd
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
@@ -1405,7 +1334,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_open od, [], newenv
     | Pstr_class cl ->
         List.iter
-          (fun {pci_name = name} -> check_name "type" type_names name)
+          (fun {pci_name} -> check_name check_type names pci_name)
           cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         Tstr_class
@@ -1432,7 +1361,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         new_env
     | Pstr_class_type cl ->
         List.iter
-          (fun {pci_name = name} -> check_name "type" type_names name)
+          (fun {pci_name} -> check_name check_type names pci_name)
           cl;
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         Tstr_class_type
@@ -1478,8 +1407,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                 sg
           | _ -> sg
         in
-        List.iter
-          (check_sig_item type_names module_names modtype_names loc) sg;
+        List.iter (check_sig_item names loc) sg;
         let new_env = Env.add_signature sg env in
         let incl =
           { incl_mod = modl;
