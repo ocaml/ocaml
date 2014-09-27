@@ -1833,10 +1833,10 @@ let fmt_ebb_of_string ?legacy_behavior str =
       "unexpected end of format"
   in
 
-  (* Used for %0c: no other widths are accepted *)
+  (* Used for %0c: no other widths are implemented *)
   let invalid_nonnull_char_width str_ind =
     invalid_format_message str_ind
-      "non-zero widths are invalid for %c conversions"
+      "non-zero widths are unsupported for %c conversions"
   in
   (* Raise Failure with a friendly error message about an option dependencie
      problem. *)
@@ -2088,17 +2088,24 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | ',' ->
       parse str_ind end_ind
     | 'c' ->
+      let char_format fmt_rest = (* %c *)
+        if get_ign ()
+        then Fmt_EBB (Ignored_param (Ignored_char, fmt_rest))
+        else Fmt_EBB (Char fmt_rest)
+      in
+      let scan_format fmt_rest = (* %0c *)
+        if get_ign ()
+        then Fmt_EBB (Ignored_param (Ignored_scan_next_char, fmt_rest))
+        else Fmt_EBB (Scan_next_char fmt_rest)
+      in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       begin match get_pad_opt 'c' with
-        | None ->
-           if get_ign ()
-           then Fmt_EBB (Ignored_param (Ignored_char, fmt_rest))
-           else Fmt_EBB (Char fmt_rest)
-        | Some 0 ->
-           if get_ign ()
-           then Fmt_EBB (Ignored_param (Ignored_scan_next_char, fmt_rest))
-           else Fmt_EBB (Scan_next_char fmt_rest)
-        | Some _n -> invalid_nonnull_char_width str_ind
+        | None -> char_format fmt_rest
+        | Some 0 -> scan_format fmt_rest
+        | Some _n ->
+	   if not legacy_behavior
+	   then invalid_nonnull_char_width str_ind
+	   else (* legacy ignores %c widths *) char_format fmt_rest
       end
     | 'C' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in

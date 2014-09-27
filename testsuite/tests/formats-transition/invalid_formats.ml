@@ -48,6 +48,10 @@ in
     "%0X";
     "%0x";
   ];
+
+  List.iter (show 'a') [
+    "%5c";
+  ];
 ;;
 
 let fmt = format_of_string "%0.*f" in
