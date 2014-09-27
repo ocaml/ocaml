@@ -63,7 +63,7 @@ SUPPORTS_SHARED_LIBRARIES=true
 SHAREDCCCOMPOPTS=
 NATIVECCPROFOPTS=
 NATIVECCRPATH=
-ASM=ml /nologo /coff /Cp /c /Fo
+ASM=ml -nologo -coff -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
 PROFILING=noprof
@@ -81,23 +81,23 @@ GRAPHLIB=win32graph
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
+BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=/Ox /MD
+BYTECCCOMPOPTS=-Ox -MD
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=/Ox /MD
+DLLCCCOMPOPTS=-Ox -MD
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib ws2_32.lib
 NATIVECCLIBS=advapi32.lib ws2_32.lib
 
 ### How to invoke the C preprocessor
-CPP=cl /nologo /EP
+CPP=cl -nologo -EP
 
 ### Flexlink
 FLEXLINK=flexlink -merge-manifest -stack 16777216
@@ -108,8 +108,8 @@ MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library
-MKLIB=link /lib /nologo /out:$(1) $(2)
-#ml let mklib out files opts = Printf.sprintf "link /lib /nologo /out:%s %s %s" out opts files;;
+MKLIB=link -lib -nologo -out:$(1) $(2)
+#ml let mklib out files opts = Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
 MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library
@@ -135,16 +135,16 @@ MODEL=default
 SYSTEM=win32
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
+NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=/Ox /MD
+NATIVECCCOMPOPTS=-Ox -MD
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
-PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'
+PACKLD=link -lib -nologo -out:# there must be no space after this '-out:'
 
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
