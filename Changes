@@ -1,5 +1,7 @@
 OCaml 4.02.1:
 -------------
+(Changes that can break existing programs are marked with a "*")
+
 Standard library:
 * Add optional argument ?limit to Arg.align.
 
