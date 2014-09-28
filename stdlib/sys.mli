@@ -100,7 +100,10 @@ val word_size : int
    program, in bits: 32 or 64. *)
 
 val int_size : int
-(** Size of one int, in bits: 31 or 63. *)
+(** Size of an int.  It is 31 bits (resp. 63 bits) when using the
+    OCaml compiler on a 32 bits (resp. 64 bits) platform.  It may
+    differ for other compilers, e.g. it is 32 bits when compiling to
+    JavaScript. *)
 
 val big_endian : bool
 (** Whether the machine currently executing the Caml program is big-endian.
