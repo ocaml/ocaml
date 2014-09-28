@@ -1571,6 +1571,8 @@ and transl_prim_1 p arg dbg =
         match c with
         | Big_endian -> const_of_bool Arch.big_endian
         | Word_size -> tag_int (Cconst_int (8*Arch.size_int))
+        | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1))
+        | Max_wosize -> tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 ))
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
