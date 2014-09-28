@@ -9,6 +9,7 @@ Standard library:
 - PR#6181: Improve MSVC build (Chen Gang)
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
+- PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
 - PR#6533: broken semantics of %(%) when substitued by a box
   (Benoît Vaugon, report by Boris Yakobowski)
 - PR#6534: legacy support for %.10s

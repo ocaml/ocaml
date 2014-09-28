@@ -1324,7 +1324,8 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
+  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
+  |amd64,openbsd|i386,bsd_elf)
     inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
