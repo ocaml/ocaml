@@ -475,6 +475,77 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let is_uident s =
+  match s.[0] with
+  | 'A'..'Z' -> true
+  | _ -> false
+
+let find_type_full path env =
+  match path with
+  | Pdot (Pdot(mod_path, "*ext*", _), s, _) ->
+      let _constr_path = Pdot(mod_path, s, Path.nopos) in
+      (* this is how extension constructor paths are encoded *)
+      (* We should lookup all constructors with constr_path,
+         and keep the only one (if any) that is an extension constructor. *)
+      (* Pb: we don't have access to its extension_constructor anymore... *)
+      (* We should also have an encoding for local extension constructors *)
+      assert false
+  | Pdot (ty_path, s, _) when is_uident s ->
+      (* perhaps we should pre-compute the inner type_declaration
+         in Datarepr in keep it as part of the constructor_description
+         (instead of recreating it here)? *)
+      let (decl, _) = find_type_full ty_path env in
+      let cds =
+        match decl.type_kind with
+        | Type_variant cds -> cds
+        | _ -> assert false
+      in
+      let rec find tag = function
+        | [] -> assert false
+        | cd :: rest when Ident.name cd.cd_id = s -> tag, cd
+        | {cd_args = Cstr_tuple []; _} :: rest -> find tag rest
+        | _ :: rest -> find (tag + 1) rest
+      in
+      let tag, cd = find 0 cds in
+      let lbls =
+        match cd.cd_args with
+        | Cstr_record (_, lbls) -> lbls
+        | _ -> assert false
+      in
+      let tyl = List.map (fun ld -> ld.ld_type) lbls in
+      let (_, type_params) =
+        Datarepr.free_vars (newgenty (Ttuple tyl))
+      in
+      let repr = Record_inlined tag in
+      let type_manifest =
+        match decl.type_manifest with
+        | Some {desc = Tconstr(ty_manifest, _, _)} ->
+            let p = Path.Pdot(ty_manifest, s, Path.nopos) in
+            Some (newgenty (Tconstr (p, type_params, ref Mnil)))
+        | _ -> None
+      in
+      let tdecl =
+        {
+          type_params;
+          type_arity = List.length type_params;
+          type_kind = Type_record (lbls, repr);
+          type_private = Public;
+          type_manifest;
+          type_variance = List.map (fun _ -> Variance.full) type_params;
+          type_newtype_level = None;
+          type_loc = cd.cd_loc;
+          type_attributes = [];
+        }
+      in
+      let ty_res = newgenty (Tconstr(path, tdecl.type_params, ref Mnil)) in
+      let labels =
+        Datarepr.label_descrs ty_res lbls repr Public
+      in
+      (tdecl, ([], List.map snd labels, true))
+  | _ -> find_type_full path env
+
+
+
 let find_type p env =
   fst (find_type_full p env)
 let find_type_descrs p env =

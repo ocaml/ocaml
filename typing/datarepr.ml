@@ -47,10 +47,13 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args ty_path type_manifest arg_vars rep =
+let constructor_args name ty_path type_manifest arg_vars rep =
   function
   | Cstr_tuple l -> l, false, []
   | Cstr_record (id, lbls) ->
+      let ty = newgenconstr (Path.Pdot(ty_path, name, Path.nopos)) arg_vars in
+      [ty], true, []
+(*
       let path =
         match ty_path with
         | Path.Pdot(m, _, _) -> Path.Pdot(m, Ident.name id, Path.nopos)
@@ -77,6 +80,7 @@ let constructor_args ty_path type_manifest arg_vars rep =
       in
       [ newgenconstr path arg_vars ],
       true, [ (id, path, tdecl) ]
+*)
 
 let constructor_descrs ty_path decl manifest_decl cstrs =
   let ty_res = newgenconstr ty_path decl.type_params in
@@ -139,7 +143,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
           | _ -> None
         in
         let cstr_args, cstr_inlined, tds =
-          constructor_args ty_path type_manifest
+          constructor_args (Ident.name cd_id) ty_path type_manifest
             arg_vars
             (Record_inlined idx_nonconst)
             cd_args
@@ -186,7 +190,7 @@ let extension_descr ?rebind path_ext ext =
           TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
   let cstr_args, cstr_inlined, tds =
-    constructor_args path_ext (fun () -> rebind)
+    constructor_args (Path.last path_ext) path_ext (fun () -> rebind)
       arg_vars
       (Record_extension path_ext)
       ext.ext_args

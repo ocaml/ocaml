@@ -37,3 +37,6 @@ exception Constr_not_found
 val find_constr_by_tag:
   constructor_tag -> constructor_declaration list ->
     constructor_declaration
+
+
+val free_vars: type_expr -> Btype.TypeSet.t * type_expr list
