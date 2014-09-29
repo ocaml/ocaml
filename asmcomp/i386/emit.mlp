@@ -125,7 +125,7 @@ let emit_Llabel fallthrough lbl =
 
 (* Output a pseudo-register *)
 
-let int_reg_name =  [| EAX; EBX; ECX; EDX; ESI; EDI; EBP  |]
+let int_reg_name =  [| RAX; RBX; RCX; RDX; RSI; RDI; RBP  |]
 
 let float_reg_name = [| TOS |]
 
@@ -141,10 +141,10 @@ let reg = function
       sym32 "caml_extra_params" ~ofs:(n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr REAL8 ofs ESP
+      mem_ptr REAL8 ofs RSP
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr DWORD ofs ESP
+      mem_ptr DWORD ofs RSP
   | { loc = Unknown } ->
       fatal_error "Emit_i386.reg"
 
@@ -155,12 +155,12 @@ let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
 
 let reg8 r =
   match r.loc with
-  | Reg r when r < 4 -> reg_low_byte_name.(r)
+  | Reg r when r < 4 -> reg_low_8_name.(r)
   | _ -> fatal_error "Emit_i386.reg8"
 
 let reg16 r =
   match r.loc with
-  | Reg r when r < 7 -> reg_low_half_name.(r)
+  | Reg r when r < 7 -> reg_low_16_name.(r)
   | _ -> fatal_error "Emit_i386.reg16"
 
 let reg32 = function
@@ -615,7 +615,7 @@ let emit_instr fallthrough i =
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.leal  (mem_ptr NONE 4 EAX, reg i.res.(0));
+        I.leal  (mem_ptr NONE 4 RAX, reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -630,7 +630,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.leal (mem_ptr NONE 4 EAX, reg i.res.(0))
+        I.leal (mem_ptr NONE 4 RAX, reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmpl (reg i.arg.(1), reg i.arg.(0));
@@ -695,7 +695,7 @@ let emit_instr fallthrough i =
           I.fildl (reg i.arg.(0))
       | _ ->
           I.pushl (reg i.arg.(0));
-          I.fildl (mem_ptr DWORD 0 ESP);
+          I.fildl (mem_ptr DWORD 0 RSP);
           I.addl (int 4, esp)
       end
   | Lop(Iintoffloat) ->
@@ -704,19 +704,19 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - 8;
       I.subl (int 8, esp);
       cfi_adjust_cfa_offset 8;
-      I.fnstcw (mem_ptr NONE 4 ESP);
-      I.movw (mem_ptr WORD 4 ESP, ax);
+      I.fnstcw (mem_ptr NONE 4 RSP);
+      I.movw (mem_ptr WORD 4 RSP, ax);
       I.movb (int 12, ah);
-      I.movw (ax, mem_ptr WORD 0 ESP);
-      I.fldcw (mem_ptr NONE 0 ESP);
+      I.movw (ax, mem_ptr WORD 0 RSP);
+      I.fldcw (mem_ptr NONE 0 RSP);
       begin match i.res.(0).loc with
       | Stack _ ->
           I.fistpl (reg i.res.(0))
       | _ ->
-          I.fistpl (mem_ptr DWORD 0 ESP);
-          I.movl (mem_ptr DWORD 0 ESP, reg i.res.(0))
+          I.fistpl (mem_ptr DWORD 0 RSP);
+          I.movl (mem_ptr DWORD 0 RSP, reg i.res.(0))
       end;
-      I.fldcw (mem_ptr NONE 4 ESP);
+      I.fldcw (mem_ptr NONE 4 RSP);
       I.addl (int 8, esp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
@@ -737,12 +737,12 @@ let emit_instr fallthrough i =
           {loc = Reg _; typ = Float} ->
             I.subl (int 8, esp);
             cfi_adjust_cfa_offset 8;
-            I.fstp (mem_ptr REAL8 0 ESP);
+            I.fstp (mem_ptr REAL8 0 RSP);
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
             let ofs = slot_offset sl 1 in
-            I.pushl (mem_ptr DWORD (ofs + 4) ESP);
-            I.pushl (mem_ptr DWORD (ofs + 4) ESP);
+            I.pushl (mem_ptr DWORD (ofs + 4) RSP);
+            I.pushl (mem_ptr DWORD (ofs + 4) RSP);
             cfi_adjust_cfa_offset 8;
             stack_offset := !stack_offset + 8
         | _ ->
