@@ -150,17 +150,17 @@ let reg = function
 
 (* Output a reference to the lower 8 bits or lower 16 bits of a register *)
 
-let reg_low_byte_name = [| AL; BL; CL; DL |]
-let reg_low_half_name = [| AX; BX; CX; DX; SI; DI; BP |]
+let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
+let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
 
 let reg8 r =
   match r.loc with
-  | Reg r when r < 4 -> Reg8 (reg_low_byte_name.(r))
+  | Reg r when r < 4 -> reg_low_byte_name.(r)
   | _ -> fatal_error "Emit_i386.reg8"
 
 let reg16 r =
   match r.loc with
-  | Reg r when r < 7 -> Reg16 (reg_low_half_name.(r))
+  | Reg r when r < 7 -> reg_low_half_name.(r)
   | _ -> fatal_error "Emit_i386.reg16"
 
 let reg32 = function

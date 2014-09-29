@@ -36,7 +36,7 @@ module Check = struct
 
   let byte = function
     | Mem32{typ=BYTE; _} | Mem64{typ=BYTE; _} | Mem64_RIP(BYTE, _, _)
-    | Reg8 _
+    | Reg8L _ | Reg8H _
     | Imm _ (* check range? *)
       as arg -> arg
     | _ -> assert false
@@ -108,11 +108,11 @@ module DSL = struct
   let _setvar (arg1, arg2) = directive (Set (arg1, arg2))
   let _end () = directive End
 
-  let al  = Reg8 AL
-  let ah  = Reg8 AH
-  let cl  = Reg8 CL
+  let al  = Reg8L RAX
+  let ah  = Reg8H AH
+  let cl  = Reg8L RCX
 
-  let ax  = Reg16 AX
+  let ax  = Reg16 RAX
 
   let rax = Reg64 RAX
   let r10 = Reg64 R10
@@ -122,12 +122,12 @@ module DSL = struct
   let rsp = Reg64 RSP
   let rbp = Reg64 RBP
   let xmm15 = Regf (XMM 15)
-  let eax = Reg32 EAX
-  let ebx = Reg32 EBX
-  let ecx = Reg32 ECX
-  let edx = Reg32 EDX
-  let ebp = Reg32 EBP
-  let esp = Reg32 ESP
+  let eax = Reg32 RAX
+  let ebx = Reg32 RBX
+  let ecx = Reg32 RCX
+  let edx = Reg32 RDX
+  let ebp = Reg32 RBP
+  let esp = Reg32 RSP
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
 end
@@ -251,7 +251,7 @@ module DSL32 = struct
     Mem32 {typ; idx; scale; base; sym; displ}
 
   let mem_sym typ ?(ofs = 0) l =
-    Mem32 {typ; idx=EAX; scale=0; base=None; sym=Some l; displ=ofs}
+    Mem32 {typ; idx=RAX; scale=0; base=None; sym=Some l; displ=ofs}
 end
 
 

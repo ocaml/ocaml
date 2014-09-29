@@ -68,10 +68,11 @@ let arg b = function
   | Sym s -> bprintf b "OFFSET %s" s
   | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> bprintf b "%Ld" n
   | Imm int -> bprintf b "0%LxH" int (* force ml64 to use mov reg, imm64 *)
-  | Reg8 x -> Buffer.add_string b (string_of_register8 x)
-  | Reg16 x -> Buffer.add_string b (string_of_register16 x)
-  | Reg32 x -> Buffer.add_string b (string_of_register32 x)
-  | Reg64 x -> Buffer.add_string b (string_of_register64 x)
+  | Reg8L x -> Buffer.add_string b (string_of_reg8l x)
+  | Reg8H x -> Buffer.add_string b (string_of_reg8h x)
+  | Reg16 x -> Buffer.add_string b (string_of_reg16 x)
+  | Reg32 x -> Buffer.add_string b (string_of_reg32 x)
+  | Reg64 x -> Buffer.add_string b (string_of_reg64 x)
   | Regf x -> Buffer.add_string b (string_of_registerf x)
 
   (* We don't need to specify RIP on Win64, since EXTERN will provide
@@ -81,8 +82,8 @@ let arg b = function
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
       if displ > 0 then bprintf b "+%d" displ
       else if displ < 0 then bprintf b "%d" displ
-  | Mem32 addr -> arg_mem b string_of_register32 addr
-  | Mem64 addr -> arg_mem b string_of_register64 addr
+  | Mem32 addr -> arg_mem b string_of_reg32 addr
+  | Mem64 addr -> arg_mem b string_of_reg64 addr
 
 
 let rec cst b = function
@@ -190,7 +191,7 @@ let print_instr b = function
       (* Work-around a bug in ml64.  Use a mov to the corresponding
          32-bit lower register when the constant fits in 32-bit.
          The associated higher 32-bit register will be zeroed. *)
-      i2 b "mov" arg1 (Reg32 (Intel_proc.reg_low_32 r))
+      i2 b "mov" arg1 (Reg32 r)
   | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2

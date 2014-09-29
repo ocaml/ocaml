@@ -175,8 +175,8 @@ module DSL32 : sig
 
   val _label: string -> unit
   val mem_ptr:
-    data_type -> ?scale:int -> ?base:register32 -> ?sym:string ->
-    int -> register32 -> arg
+    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+    int -> reg64 -> arg
   val mem_sym: data_type -> ?ofs:int -> string -> arg
 end
 module INS64 : sig
@@ -231,7 +231,7 @@ module DSL64 : sig
 
   val _label: string -> unit
   val mem_ptr:
-    data_type -> ?scale:int -> ?base:register64 ->
-    int -> register64 -> arg
+    data_type -> ?scale:int -> ?base:reg64 ->
+    int -> reg64 -> arg
   val from_rip: data_type -> ?ofs:int -> string -> arg
 end

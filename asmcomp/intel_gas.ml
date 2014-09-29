@@ -48,13 +48,14 @@ let arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
 let arg b = function
   | Sym x -> Buffer.add_char b '$'; Buffer.add_string b x
   | Imm x -> bprintf b "$%Ld" x
-  | Reg8  x -> print_reg b string_of_register8 x
-  | Reg16 x -> print_reg b string_of_register16 x
-  | Reg32 x -> print_reg b string_of_register32 x
-  | Reg64 x -> print_reg b string_of_register64 x
+  | Reg8L x -> print_reg b string_of_reg8l x
+  | Reg8H x -> print_reg b string_of_reg8h x
+  | Reg16 x -> print_reg b string_of_reg16 x
+  | Reg32 x -> print_reg b string_of_reg32 x
+  | Reg64 x -> print_reg b string_of_reg64 x
   | Regf x  -> print_reg b string_of_registerf x
-  | Mem32 addr -> arg_mem b string_of_register32 addr
-  | Mem64 addr -> arg_mem b string_of_register64 addr
+  | Mem32 addr -> arg_mem b string_of_reg32 addr
+  | Mem64 addr -> arg_mem b string_of_reg64 addr
   | Mem64_RIP (_, s, displ) -> bprintf b "%s%a(%%rip)" s opt_displ displ
 
 let rec cst b = function
@@ -73,7 +74,7 @@ and scst b = function
 
 let typeof = function
   | Mem32 {typ; _} | Mem64 {typ; _} | Mem64_RIP (typ, _, _) -> typ
-  | Reg8 _ -> BYTE
+  | Reg8L _ | Reg8H _ -> BYTE
   | Reg16 _ -> WORD
   | Reg32 _ -> DWORD
   | Reg64 _ -> QWORD

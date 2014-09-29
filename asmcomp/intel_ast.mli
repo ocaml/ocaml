@@ -48,33 +48,22 @@ type data_type =
   | BYTE | WORD | DWORD | QWORD | OWORD (* integer values *)
   | NEAR | PROC
 
-type register64 =
-  | RAX | RBX | RDI | RSI | RDX | RCX | RBP | RSP
+type reg64 =
+  | RAX | RBX | RCX | RDX | RSP | RBP | RSI | RDI
   | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
 
-type register8 =
-  | AL | BL | CL | DL
+type reg8h =
   | AH | BH | CH | DH
-  | DIL | SIL | R8B | R9B
-  | R10B | R11B | BPL | R12B | R13B | SPL | R14B | R15B
 
-type register16 =
-  | AX | BX | DI | SI | DX | CX | SP | BP
-  | R8W | R9W | R10W | R11W | R12W | R13W | R14W | R15W
-
-type register32 =
-  | EAX | EBX | EDI | ESI | EDX | ECX | EBP | ESP
-  | R8D | R9D | R10D | R11D | R12D | R13D | R14D | R15D
 
 type registerf = XMM of int | TOS | ST of int
 
-
-type 'reg addr =
+type addr =
   {
     typ: data_type;
-    idx: 'reg;
+    idx: reg64;
     scale: int;
-    base: 'reg option;
+    base: reg64 option;
     sym: string option;
     displ: int;
   }
@@ -91,14 +80,15 @@ type arg =
   (** Address of a symbol (absolute address except for call/jmp target
       where it is interpreted as a relative displacement *)
 
-  | Reg8 of register8
-  | Reg16 of register16
-  | Reg32 of register32
-  | Reg64 of register64
+  | Reg8L of reg64
+  | Reg8H of reg8h
+  | Reg16 of reg64
+  | Reg32 of reg64
+  | Reg64 of reg64
   | Regf of registerf
 
-  | Mem32 of register32 addr
-  | Mem64 of register64 addr
+  | Mem32 of addr
+  | Mem64 of addr
   | Mem64_RIP of data_type * string * int
 
 type instruction =

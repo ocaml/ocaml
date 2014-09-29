@@ -17,10 +17,11 @@ open Intel_ast
 
 (** Helpers for textual emitters *)
 
-val string_of_register8: register8 -> string
-val string_of_register16: register16 -> string
-val string_of_register32: register32 -> string
-val string_of_register64: register64 -> string
+val string_of_reg8l: reg64 -> string
+val string_of_reg8h: reg8h -> string
+val string_of_reg16: reg64 -> string
+val string_of_reg32: reg64 -> string
+val string_of_reg64: reg64 -> string
 val string_of_registerf: registerf -> string
 val string_of_string_literal: string -> string
 val string_of_condition: condition -> string
@@ -82,8 +83,3 @@ val register_internal_assembler: (asm_program -> string -> unit) -> unit
 (** Hooks for rewriting the assembly code *)
 
 val assembler_passes: (asm_program -> asm_program) list ref
-
-
-(** Misc *)
-
-val reg_low_32: register64 -> register32

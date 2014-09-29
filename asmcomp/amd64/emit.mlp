@@ -171,17 +171,9 @@ let arg i n = reg i.arg.(n)
 
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
-let reg_low_8_name =  Array.map (fun r -> Reg8 r)
-    [| AL; BL; DIL; SIL; DL; CL; R8B; R9B;
-       R12B; R13B; R10B; R11B; BPL; |]
-
-let reg_low_16_name = Array.map (fun r -> Reg16 r)
-    [| AX; BX; DI; SI; DX; CX; R8W; R9W;
-       R12W; R13W; R10W; R11W; BP; |]
-
-let reg_low_32_name = Array.map (fun r -> Reg32 r)
-    [| EAX; EBX; EDI; ESI; EDX; ECX; R8D; R9D;
-       R12D; R13D; R10D; R11D; EBP; |]
+let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
+let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
+let reg_low_32_name = Array.map (fun r -> Reg32 r) int_reg_name
 
 let emit_subreg tbl typ r =
   match r.loc with

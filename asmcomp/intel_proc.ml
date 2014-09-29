@@ -89,7 +89,7 @@ let string_of_symbol prefix s =
     Buffer.contents b
 
 
-let string_of_register64 = function
+let string_of_reg64 = function
   | RAX -> "rax"
   | RBX -> "rbx"
   | RDI -> "rdi"
@@ -98,8 +98,8 @@ let string_of_register64 = function
   | RCX -> "rcx"
   | RBP -> "rbp"
   | RSP -> "rsp"
-  | R8 -> "r8"
-  | R9 -> "r9"
+  | R8  -> "r8"
+  | R9  -> "r9"
   | R10 -> "r10"
   | R11 -> "r11"
   | R12 -> "r12"
@@ -107,81 +107,65 @@ let string_of_register64 = function
   | R14 -> "r14"
   | R15 -> "r15"
 
-let reg_low_32 = function
-  | RAX -> EAX
-  | RBX -> EBX
-  | RDI -> EDI
-  | RSI -> ESI
-  | RDX -> EDX
-  | RCX -> ECX
-  | RBP -> EBP
-  | RSP -> ESP
-  | R8 -> R8D
-  | R9 -> R9D
-  | R10 -> R10D
-  | R11 -> R11D
-  | R12 -> R12D
-  | R13 -> R13D
-  | R14 -> R14D
-  | R15 -> R15D
+let string_of_reg8l = function
+  | RAX -> "al"
+  | RBX -> "bl"
+  | RCX -> "cl"
+  | RDX -> "dl"
+  | RSP -> "spl"
+  | RBP -> "bpl"
+  | RSI -> "dil"
+  | RDI -> "sil"
+  | R8  -> "r8b"
+  | R9  -> "r9b"
+  | R10 -> "r10b"
+  | R11 -> "r11b"
+  | R12 -> "r12b"
+  | R13 -> "r13b"
+  | R14 -> "r14b"
+  | R15 -> "r15b"
 
-let string_of_register8 = function
-  | AL -> "al"
-  | BL -> "bl"
-  | DL -> "dl"
-  | CL -> "cl"
+let string_of_reg8h = function
   | AH -> "ah"
   | BH -> "bh"
   | CH -> "ch"
   | DH -> "dh"
-  | DIL -> "dil"
-  | SIL -> "sil"
-  | R8B -> "r8b"
-  | R9B -> "r9b"
-  | R10B -> "r10b"
-  | R11B -> "r11b"
-  | BPL -> "bpl"
-  | R12B -> "r12b"
-  | R13B -> "r13b"
-  | SPL -> "spl"
-  | R14B -> "r14b"
-  | R15B -> "r15b"
 
-let string_of_register16 = function
-  | AX -> "ax"
-  | BX -> "bx"
-  | DI -> "di"
-  | SI -> "si"
-  | DX -> "dx"
-  | CX -> "cx"
-  | SP -> "sp"
-  | BP -> "bp"
-  | R8W -> "r8w"
-  | R9W -> "r9w"
-  | R10W -> "r10w"
-  | R11W -> "r11w"
-  | R12W -> "r12w"
-  | R13W -> "r13w"
-  | R14W -> "r14w"
-  | R15W -> "r15w"
+let string_of_reg16 = function
+  | RAX -> "ax"
+  | RBX -> "bx"
+  | RCX -> "cx"
+  | RDX -> "dx"
+  | RSP -> "sp"
+  | RBP -> "bp"
+  | RSI -> "si"
+  | RDI -> "di"
+  | R8  -> "r8w"
+  | R9  -> "r9w"
+  | R10 -> "r10w"
+  | R11 -> "r11w"
+  | R12 -> "r12w"
+  | R13 -> "r13w"
+  | R14 -> "r14w"
+  | R15 -> "r15w"
 
-let string_of_register32 = function
-  | EAX -> "eax"
-  | EBX -> "ebx"
-  | EDI -> "edi"
-  | ESI -> "esi"
-  | EDX -> "edx"
-  | ECX -> "ecx"
-  | ESP -> "esp"
-  | EBP -> "ebp"
-  | R8D -> "r8d"
-  | R9D -> "r9d"
-  | R10D -> "r10d"
-  | R11D -> "r11d"
-  | R12D -> "r12d"
-  | R13D -> "r13d"
-  | R14D -> "r14d"
-  | R15D -> "r15d"
+let string_of_reg32 = function
+  | RAX -> "eax"
+  | RBX -> "ebx"
+  | RCX -> "ecx"
+  | RDX -> "edx"
+  | RSP -> "esp"
+  | RBP -> "ebp"
+  | RSI -> "esi"
+  | RDI -> "edi"
+  | R8  -> "r8d"
+  | R9  -> "r9d"
+  | R10 -> "r10d"
+  | R11 -> "r11d"
+  | R12 -> "r12d"
+  | R13 -> "r13d"
+  | R14 -> "r14d"
+  | R15 -> "r15d"
 
 let string_of_registerf = function
   | XMM n -> Printf.sprintf "xmm%d" n
