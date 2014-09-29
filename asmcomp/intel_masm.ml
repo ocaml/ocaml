@@ -77,7 +77,7 @@ let arg b = function
   (* We don't need to specify RIP on Win64, since EXTERN will provide
      the list of external symbols that need this addressing mode, and
      MASM will automatically use RIP addressing when needed. *)
-  | Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ} ->
+  | Mem64_RIP (typ, s, displ) ->
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
       if displ > 0 then bprintf b "+%d" displ
       else if displ < 0 then bprintf b "%d" displ

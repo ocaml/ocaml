@@ -19,6 +19,11 @@ let print_reg b f r =
   Buffer.add_char b '%';
   Buffer.add_string b (f r)
 
+let opt_displ b displ =
+  if displ = 0 then ()
+  else if displ > 0 then bprintf b "+%d" displ
+  else bprintf b "%d" displ
+
 let arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
   begin match sym with
   | None ->
@@ -26,9 +31,7 @@ let arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
         Buffer.add_string b (string_of_int displ)
   | Some s ->
       Buffer.add_string b s;
-      if displ = 0 then ()
-      else if displ > 0 then bprintf b "+%d" displ
-      else bprintf b "%d" displ
+      opt_displ b displ
   end;
   if scale <> 0 then begin
     Buffer.add_char b '(';
@@ -52,6 +55,7 @@ let arg b = function
   | Regf x  -> print_reg b string_of_registerf x
   | Mem32 addr -> arg_mem b string_of_register32 addr
   | Mem64 addr -> arg_mem b string_of_register64 addr
+  | Mem64_RIP (_, s, displ) -> bprintf b "%s%a(%%rip)" s opt_displ displ
 
 let rec cst b = function
   | ConstLabel _ | Const _ | ConstThis as c -> scst b c
@@ -67,15 +71,22 @@ and scst b = function
   | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
   | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
-let suf = function
-  | Mem32 {typ=BYTE; _}  | Mem64 {typ=BYTE; _}  | Reg8 _   -> "b"
-  | Mem32 {typ=WORD; _}  | Mem64 {typ=WORD; _}  | Reg16 _  -> "w"
-  | Mem32 {typ=DWORD; _} | Mem64 {typ=DWORD; _} | Reg32 _
-  | Mem32 {typ=REAL8; _} | Mem64 {typ=REAL8; _}            -> "l"
-  | Mem32 {typ=QWORD; _} | Mem64 {typ=QWORD; _} | Reg64 _  -> "q"
-  | Mem32 {typ=REAL4; _} | Mem64 {typ=REAL4; _}            -> "s"
-  | Mem32 {typ=NONE; _}  | Mem64 {typ=NONE; _} -> assert false
-  | _ -> ""
+let typeof = function
+  | Mem32 {typ; _} | Mem64 {typ; _} | Mem64_RIP (typ, _, _) -> typ
+  | Reg8 _ -> BYTE
+  | Reg16 _ -> WORD
+  | Reg32 _ -> DWORD
+  | Reg64 _ -> QWORD
+  | _ -> assert false
+
+let suf arg =
+  match typeof arg with
+  | BYTE -> "b"
+  | WORD -> "w"
+  | DWORD | REAL8 -> "l"
+  | QWORD -> "q"
+  | REAL4 -> "s"
+  | NONE | OWORD | NEAR | PROC -> assert false
 
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
@@ -86,8 +97,8 @@ let i2_ss b s x y = bprintf b "\t%s%s%s\t%a, %a" s (suf x) (suf y) arg x arg y
 
 let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
-  | Mem64 {idx=RIP; scale=1; base=None; sym=Some _; _}
-  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} (*used?*) as x ->
+  | Mem64_RIP _
+  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} as x ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ as x -> bprintf b "\t%s\t*%a" s arg x
   | Sym x -> bprintf b "\t%s\t%s" s x

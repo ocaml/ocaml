@@ -106,7 +106,6 @@ let string_of_register64 = function
   | R13 -> "r13"
   | R14 -> "r14"
   | R15 -> "r15"
-  | RIP -> "rip"
 
 let reg_low_32 = function
   | RAX -> EAX
@@ -125,7 +124,6 @@ let reg_low_32 = function
   | R13 -> R13D
   | R14 -> R14D
   | R15 -> R15D
-  | RIP -> assert false
 
 let string_of_register8 = function
   | AL -> "al"

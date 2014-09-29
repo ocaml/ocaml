@@ -35,26 +35,30 @@ module Check = struct
      against a gas-style instruction suffix. *)
 
   let byte = function
-    | Mem32{typ=BYTE; _} | Mem64{typ=BYTE; _} | Reg8 _
+    | Mem32{typ=BYTE; _} | Mem64{typ=BYTE; _} | Mem64_RIP(BYTE, _, _)
+    | Reg8 _
     | Imm _ (* check range? *)
       as arg -> arg
     | _ -> assert false
 
   let word = function
-    | Mem32{typ=WORD; _} | Mem64{typ=WORD; _} | Reg16 _
+    | Mem32{typ=WORD; _} | Mem64{typ=WORD; _} | Mem64_RIP(WORD, _, _)
+    | Reg16 _
     | Imm _ (* check range? *)
       as arg -> arg
     | _ -> assert false
 
   let dword = function
-    | Mem32{typ=DWORD; _} | Mem64{typ=DWORD; _} | Reg32 _
+    | Mem32{typ=DWORD; _} | Mem64{typ=DWORD; _} | Mem64_RIP(DWORD, _, _)
+    | Reg32 _
     | Imm _ (* check range? *)
     | Sym _
       as arg -> arg
     | _ -> assert false
 
   let qword = function
-    | Mem32{typ=QWORD; _} | Mem64{typ=QWORD; _} | Reg64 _
+    | Mem32{typ=QWORD; _} | Mem64{typ=QWORD; _} | Mem64_RIP(QWORD, _, _)
+    | Reg64 _
     | Imm _ (* check range? *)
     | Sym _
       as arg -> arg
@@ -319,5 +323,5 @@ module DSL64 = struct
     Mem64 {typ; idx; scale; base; sym=None; displ=offset}
 
   let from_rip typ ?(ofs = 0) s =
-    Mem64 {typ; idx=RIP; scale=1; base=None; sym=Some s; displ=ofs}
+    Mem64_RIP (typ, s, ofs)
 end

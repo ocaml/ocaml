@@ -51,7 +51,6 @@ type data_type =
 type register64 =
   | RAX | RBX | RDI | RSI | RDX | RCX | RBP | RSP
   | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
-  | RIP
 
 type register8 =
   | AL | BL | CL | DL
@@ -100,6 +99,7 @@ type arg =
 
   | Mem32 of register32 addr
   | Mem64 of register64 addr
+  | Mem64_RIP of data_type * string * int
 
 type instruction =
   | ADD of arg * arg
