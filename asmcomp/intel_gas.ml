@@ -78,7 +78,8 @@ let typeof = function
   | Reg16 _ -> WORD
   | Reg32 _ -> DWORD
   | Reg64 _ -> QWORD
-  | _ -> assert false
+  | Imm _ | Sym _ -> NONE
+  | Regf _ -> assert false
 
 let suf arg =
   match typeof arg with
@@ -87,7 +88,8 @@ let suf arg =
   | DWORD | REAL8 -> "l"
   | QWORD -> "q"
   | REAL4 -> "s"
-  | NONE | OWORD | NEAR | PROC -> assert false
+  | NONE -> ""
+  | OWORD | NEAR | PROC -> assert false
 
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
