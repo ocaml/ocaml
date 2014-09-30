@@ -30,6 +30,47 @@
 open Intel_ast
 open Intel_proc
 
+let sym s = Sym s
+
+let nat n = Imm (Int64.of_nativeint n)
+let int n = Imm (Int64.of_int n)
+
+let const_32 n = Const (Int64.of_int32 n)
+let const_nat n = Const (Int64.of_nativeint n)
+let const n = Const (Int64.of_int n)
+
+let al  = Reg8L RAX
+let ah  = Reg8H AH
+let cl  = Reg8L RCX
+let ax  = Reg16 RAX
+let rax = Reg64 RAX
+let r10 = Reg64 R10
+let r11 = Reg64 R11
+let r14 = Reg64 R14
+let r15 = Reg64 R15
+let rsp = Reg64 RSP
+let rbp = Reg64 RBP
+let xmm15 = Regf (XMM 15)
+let eax = Reg32 RAX
+let ebx = Reg32 RBX
+let ecx = Reg32 RCX
+let edx = Reg32 RDX
+let ebp = Reg32 RBP
+let esp = Reg32 RSP
+let st0 = Regf (ST 0)
+let st1 = Regf (ST 1)
+
+let mem32 typ ?(scale = 1) ?base ?sym displ idx =
+  assert(scale > 0);
+  Mem32 {typ; idx; scale; base; sym; displ}
+
+let mem64 typ ?(scale = 1) ?base ?sym offset idx =
+  assert(scale > 0);
+  Mem64 {typ; idx; scale; base; sym; displ=offset}
+
+let mem64_rip typ ?(ofs = 0) s =
+  Mem64_RIP (typ, s, ofs)
+
 module D = struct
   let section segment flags args = directive (Section (segment, flags, args))
   let align n = directive (Align (false, n))
@@ -57,53 +98,6 @@ module D = struct
   let text () = section [ ".text" ] None []
   let type_ name typ = directive (Type (name, typ))
   let word cst = directive (Word cst)
-end
-
-module DSL = struct
-  let sym s = Sym s
-
-  let emit_nat n = Imm (Int64.of_nativeint n)
-  let int n = Imm (Int64.of_int n)
-
-  let const_64 n = Const n
-  let const_32 n = Const (Int64.of_int32 n)
-  let const_nat n = Const (Int64.of_nativeint n)
-  let const n = Const (Int64.of_int n)
-
-
-  let al  = Reg8L RAX
-  let ah  = Reg8H AH
-  let cl  = Reg8L RCX
-
-  let ax  = Reg16 RAX
-
-  let rax = Reg64 RAX
-  let r10 = Reg64 R10
-  let r11 = Reg64 R11
-  let r14 = Reg64 R14
-  let r15 = Reg64 R15
-  let rsp = Reg64 RSP
-  let rbp = Reg64 RBP
-  let xmm15 = Regf (XMM 15)
-  let eax = Reg32 RAX
-  let ebx = Reg32 RBX
-  let ecx = Reg32 RCX
-  let edx = Reg32 RDX
-  let ebp = Reg32 RBP
-  let esp = Reg32 RSP
-  let st0 = Regf (ST 0)
-  let st1 = Regf (ST 1)
-
-  let mem32 typ ?(scale = 1) ?base ?sym displ idx =
-    assert(scale > 0);
-    Mem32 {typ; idx; scale; base; sym; displ}
-
-  let mem64 typ ?(scale = 1) ?base ?sym offset idx =
-    assert(scale > 0);
-    Mem64 {typ; idx; scale; base; sym; displ=offset}
-
-  let mem64_rip typ ?(ofs = 0) s =
-    Mem64_RIP (typ, s, ofs)
 end
 
 module I = struct

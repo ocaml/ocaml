@@ -27,7 +27,6 @@ open Emitaux
 open Intel_ast
 open Intel_proc
 open Intel_dsl
-open Intel_dsl.DSL
 
 let _label s = D.label ~typ:QWORD s
 
@@ -432,7 +431,7 @@ let emit_instr fallthrough i =
         | _     -> I.mov (int 0, res i 0)
       end
       else
-        I.mov (emit_nat n, res i 0)
+        I.mov (nat n, res i 0)
   | Lop(Iconst_float f) ->
       begin match Int64.bits_of_float f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -606,7 +605,7 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr NONE i 0, res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
-      I.mov (emit_nat n, addressing addr QWORD i 0)
+      I.mov (nat n, addressing addr QWORD i 0)
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
       assert (not !pic_code && not !Clflags.dlcode);
       add_used_symbol s;

@@ -29,6 +29,44 @@
 
 open Intel_ast
 
+val sym: string -> arg
+val nat: nativeint -> arg
+val int: int -> arg
+val const_32: int32 -> constant
+val const_nat: nativeint -> constant
+val const: int -> constant
+val al: arg
+val ah: arg
+val cl: arg
+val ax: arg
+val rax: arg
+val r10: arg
+val r11: arg
+val r14: arg
+val r15: arg
+val rsp: arg
+val rbp: arg
+val xmm15: arg
+val eax: arg
+val ebx: arg
+val ecx: arg
+val edx: arg
+val ebp: arg
+val esp: arg
+val st0: arg
+val st1: arg
+
+val mem32:
+  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  int -> reg64 -> arg
+
+val mem64:
+  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  int -> reg64 -> arg
+
+val mem64_rip: data_type -> ?ofs:int -> string -> arg
+
+
 module D : sig
   (** Directives *)
 
@@ -60,45 +98,6 @@ module D : sig
   val word: constant -> unit
 end
 
-module DSL : sig
-  val sym: string -> arg
-  val emit_nat: nativeint -> arg
-  val int: int -> arg
-  val const_64: int64 -> constant
-  val const_32: int32 -> constant
-  val const_nat: nativeint -> constant
-  val const: int -> constant
-  val al: arg
-  val ah: arg
-  val cl: arg
-  val ax: arg
-  val rax: arg
-  val r10: arg
-  val r11: arg
-  val r14: arg
-  val r15: arg
-  val rsp: arg
-  val rbp: arg
-  val xmm15: arg
-  val eax: arg
-  val ebx: arg
-  val ecx: arg
-  val edx: arg
-  val ebp: arg
-  val esp: arg
-  val st0: arg
-  val st1: arg
-
-  val mem32:
-    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
-    int -> reg64 -> arg
-
-  val mem64:
-    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
-    int -> reg64 -> arg
-
-  val mem64_rip: data_type -> ?ofs:int -> string -> arg
-end
 module I : sig
   val add: arg * arg -> unit
   val addsd: arg * arg -> unit
