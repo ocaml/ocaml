@@ -30,43 +30,6 @@
 open Intel_ast
 open Intel_proc
 
-module Check = struct
-  (* These functions are used to check the datatype on instruction arguments
-     against a gas-style instruction suffix. *)
-
-  let byte = function
-    | Mem32{typ=BYTE; _} | Mem64{typ=BYTE; _} | Mem64_RIP(BYTE, _, _)
-    | Reg8L _ | Reg8H _
-    | Imm _ (* check range? *)
-      as arg -> arg
-    | _ -> assert false
-
-  let word = function
-    | Mem32{typ=WORD; _} | Mem64{typ=WORD; _} | Mem64_RIP(WORD, _, _)
-    | Reg16 _
-    | Imm _ (* check range? *)
-      as arg -> arg
-    | _ -> assert false
-
-  let dword = function
-    | Mem32{typ=DWORD; _} | Mem64{typ=DWORD; _} | Mem64_RIP(DWORD, _, _)
-    | Reg32 _
-    | Imm _ (* check range? *)
-    | Sym _
-      as arg -> arg
-    | _ -> assert false
-
-  let qword = function
-    | Mem32{typ=QWORD; _} | Mem64{typ=QWORD; _} | Mem64_RIP(QWORD, _, _)
-    | Reg64 _
-    | Imm _ (* check range? *)
-    | Sym _
-      as arg -> arg
-    | _ -> assert false
-
-  let option chk = function None -> None | Some arg -> Some (chk arg)
-end
-
 module DSL = struct
   let sym s = Sym s
 
@@ -134,8 +97,6 @@ end
 
 module INS = struct
 
-  open Check
-
   let jmp arg = emit (JMP arg)
   let call arg = emit (CALL arg)
   let set cond arg = emit (SET (cond, arg))
@@ -155,53 +116,52 @@ module INS = struct
   let nop () = emit NOP
 
   (* Word mnemonics *)
-  let movw (arg1, arg2) = emit (MOV (word arg1, word arg2))
+  let movw (arg1, arg2) = emit (MOV (arg1, arg2))
 
   (* Byte mnemonics *)
-  let decb arg = emit (DEC (byte arg))
-  let cmpb (x, y) = emit (CMP (byte x, byte y))
-  let movb (x, y) = emit (MOV (byte x, byte y))
-  let andb (x, y)= emit (AND (byte x, byte y))
-  let xorb (x, y)= emit (XOR (byte x, byte y))
-  let testb (x, y)= emit (TEST (byte x, byte y))
+  let decb arg = emit (DEC arg)
+  let cmpb (x, y) = emit (CMP (x, y))
+  let movb (x, y) = emit (MOV (x, y))
+  let andb (x, y)= emit (AND (x, y))
+  let xorb (x, y)= emit (XOR (x, y))
+  let testb (x, y)= emit (TEST (x, y))
 
-  (* Long-word mnemonics *)
-  let movl (x, y) = emit (MOV (dword x, dword y))
+  (* Long-mnemonics *)
+  let movl (x, y) = emit (MOV (x, y))
 end
 
 module INS32 = struct
 
-  open Check
   include INS
 
-  (* Long-word mnemonics *)
-  let addl (x, y) = emit (ADD (dword x, dword y))
-  let subl (x, y) = emit (SUB (dword x, dword y))
-  let andl (x, y) = emit (AND (dword x, dword y))
-  let orl (x, y) = emit (OR (dword x, dword y))
-  let xorl (x, y) = emit (XOR (dword x, dword y))
-  let cmpl (x, y) = emit (CMP (dword x, dword y))
-  let testl (x, y) = emit (TEST (dword x, dword y))
+  (* Long-mnemonics *)
+  let addl (x, y) = emit (ADD (x, y))
+  let subl (x, y) = emit (SUB (x, y))
+  let andl (x, y) = emit (AND (x, y))
+  let orl (x, y) = emit (OR (x, y))
+  let xorl (x, y) = emit (XOR (x, y))
+  let cmpl (x, y) = emit (CMP (x, y))
+  let testl (x, y) = emit (TEST (x, y))
 
-  let movzbl (x, y) = emit (MOVZX (byte x, dword y))
-  let movsbl (x, y) = emit (MOVSX (byte x, dword y))
-  let movzwl (x, y) = emit (MOVZX (word x, dword y))
-  let movswl (x, y) = emit (MOVSX (word x, dword y))
+  let movzbl (x, y) = emit (MOVZX (x, y))
+  let movsbl (x, y) = emit (MOVSX (x, y))
+  let movzwl (x, y) = emit (MOVZX (x, y))
+  let movswl (x, y) = emit (MOVSX (x, y))
 
-  let sall (arg1, arg2) = emit (SAL  (arg1, dword arg2))
-  let sarl (arg1, arg2) = emit (SAR  (arg1, dword arg2))
-  let shrl (arg1, arg2) = emit (SHR  (arg1, dword arg2))
-  let imull (arg1, arg2) = emit (IMUL (dword arg1, option dword arg2))
+  let sall (arg1, arg2) = emit (SAL  (arg1, arg2))
+  let sarl (arg1, arg2) = emit (SAR  (arg1, arg2))
+  let shrl (arg1, arg2) = emit (SHR  (arg1, arg2))
+  let imull (arg1, arg2) = emit (IMUL (arg1, arg2))
 
-  let idivl arg = emit (IDIV (dword arg))
-  let popl arg = emit (POP (dword arg))
-  let pushl arg = emit (PUSH (dword arg))
-  let decl arg = emit (DEC (dword arg))
-  let incl arg = emit (INC (dword arg))
-  let leal (arg1, arg2) = emit (LEA (arg1, dword arg2))
+  let idivl arg = emit (IDIV arg)
+  let popl arg = emit (POP arg)
+  let pushl arg = emit (PUSH arg)
+  let decl arg = emit (DEC arg)
+  let incl arg = emit (INC arg)
+  let leal (arg1, arg2) = emit (LEA (arg1, arg2))
 
-  let fistpl arg = emit (FISTP (dword arg))
-  let fildl arg = emit (FILD (dword arg))
+  let fistpl arg = emit (FISTP arg)
+  let fildl arg = emit (FILD arg)
 
   let fchs () = emit FCHS
   let fabs () = emit FABS
@@ -256,40 +216,39 @@ end
 
 
 module INS64 = struct
-  open Check
   include INS
 
-  let addq (x, y) = emit (ADD (qword x, qword y))
-  let subq (x, y) = emit (SUB (qword x, qword y))
-  let andq (x, y) = emit (AND (qword x, qword y))
-  let orq (x, y) = emit (OR (qword x, qword y))
-  let xorq (x, y) = emit (XOR (qword x, qword y))
-  let cmpq (x, y) = emit (CMP (qword x, qword y))
-  let testq (x, y) = emit (TEST (qword x, qword y))
+  let addq (x, y) = emit (ADD (x, y))
+  let subq (x, y) = emit (SUB (x, y))
+  let andq (x, y) = emit (AND (x, y))
+  let orq (x, y) = emit (OR (x, y))
+  let xorq (x, y) = emit (XOR (x, y))
+  let cmpq (x, y) = emit (CMP (x, y))
+  let testq (x, y) = emit (TEST (x, y))
 
-  let movq (x, y) = emit (MOV (qword x, qword y))
+  let movq (x, y) = emit (MOV (x, y))
 
-  let movzbq (x, y) = emit (MOVZX (byte x, qword y))
-  let movsbq (x, y) = emit (MOVSX (byte x, qword y))
-  let movzwq (x, y) = emit (MOVZX (word x, qword y))
-  let movswq (x, y) = emit (MOVSX (word x, qword y))
+  let movzbq (x, y) = emit (MOVZX (x, y))
+  let movsbq (x, y) = emit (MOVSX (x, y))
+  let movzwq (x, y) = emit (MOVZX (x, y))
+  let movswq (x, y) = emit (MOVSX (x, y))
 
-  let idivq arg = emit (IDIV (qword arg))
+  let idivq arg = emit (IDIV arg)
 
-  let salq (arg1, arg2) = emit (SAL (arg1, qword arg2))
-  let sarq (arg1, arg2) = emit (SAR (arg1, qword arg2))
-  let shrq (arg1, arg2) = emit (SHR (arg1, qword arg2))
-  let imulq (arg1, arg2) = emit (IMUL (qword arg1, option qword arg2))
+  let salq (arg1, arg2) = emit (SAL (arg1, arg2))
+  let sarq (arg1, arg2) = emit (SAR (arg1, arg2))
+  let shrq (arg1, arg2) = emit (SHR (arg1, arg2))
+  let imulq (arg1, arg2) = emit (IMUL (arg1, arg2))
 
-  let popq arg = emit (POP (qword arg))
-  let pushq arg = emit (PUSH (qword arg))
-  let leaq (arg1, arg2) = emit (LEA (arg1, qword arg2))
+  let popq arg = emit (POP arg)
+  let pushq arg = emit (PUSH arg)
+  let leaq (arg1, arg2) = emit (LEA (arg1, arg2))
 
   let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
   let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
   let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
   let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
-  let movabsq (arg1, arg2) = emit (MOV (Imm arg1, qword arg2))
+  let movabsq (arg1, arg2) = emit (MOV (Imm arg1, arg2))
   let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
   let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
 
@@ -307,8 +266,8 @@ module INS64 = struct
 
   let cqto () = emit CQO
 
-  let incq arg = emit (INC (qword arg))
-  let decq arg = emit (DEC (qword arg))
+  let incq arg = emit (INC arg)
+  let decq arg = emit (DEC arg)
   let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
   let bswap arg = emit (BSWAP arg)
 end
