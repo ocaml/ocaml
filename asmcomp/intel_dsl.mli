@@ -113,29 +113,27 @@ end
 module INS32 : sig
   include module type of INS
 
-  val addl: arg * arg -> unit
-  val subl: arg * arg -> unit
-  val andl: arg * arg -> unit
-  val orl: arg * arg -> unit
-  val xorl: arg * arg -> unit
-  val cmpl: arg * arg -> unit
-  val testl: arg * arg -> unit
-  val movzbl: arg * arg -> unit
-  val movsbl: arg * arg -> unit
-  val movzwl: arg * arg -> unit
-  val movswl: arg * arg -> unit
-  val sall: arg * arg -> unit
-  val sarl: arg * arg -> unit
-  val shrl: arg * arg -> unit
-  val imull: arg * arg option -> unit
-  val idivl: arg -> unit
-  val popl: arg -> unit
-  val pushl: arg -> unit
-  val decl: arg -> unit
-  val incl: arg -> unit
-  val leal: arg * arg -> unit
-  val fistpl: arg -> unit
-  val fildl: arg -> unit
+  val add: arg * arg -> unit
+  val sub: arg * arg -> unit
+  val and_: arg * arg -> unit
+  val or_: arg * arg -> unit
+  val xor: arg * arg -> unit
+  val cmp: arg * arg -> unit
+  val test: arg * arg -> unit
+  val movzx: arg * arg -> unit
+  val movsx: arg * arg -> unit
+  val sal: arg * arg -> unit
+  val sar: arg * arg -> unit
+  val shr: arg * arg -> unit
+  val imul: arg * arg option -> unit
+  val idiv: arg -> unit
+  val pop: arg -> unit
+  val push: arg -> unit
+  val dec: arg -> unit
+  val inc: arg -> unit
+  val lea: arg * arg -> unit
+  val fistp: arg -> unit
+  val fild: arg -> unit
   val fchs: unit -> unit
   val fabs: unit -> unit
   val fadd: arg -> unit
@@ -164,7 +162,7 @@ module INS32 : sig
   val fldz: unit -> unit
   val fnstcw: arg -> unit
   val fldcw: arg -> unit
-  val cltd: unit -> unit
+  val cdq: unit -> unit
   val fsubp: arg * arg -> unit
   val fsubrp: arg * arg -> unit
   val fdivp: arg * arg -> unit

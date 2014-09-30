@@ -135,33 +135,31 @@ module INS32 = struct
   include INS
 
   (* Long-mnemonics *)
-  let addl (x, y) = emit (ADD (x, y))
-  let subl (x, y) = emit (SUB (x, y))
-  let andl (x, y) = emit (AND (x, y))
-  let orl (x, y) = emit (OR (x, y))
-  let xorl (x, y) = emit (XOR (x, y))
-  let cmpl (x, y) = emit (CMP (x, y))
-  let testl (x, y) = emit (TEST (x, y))
+  let add (x, y) = emit (ADD (x, y))
+  let sub (x, y) = emit (SUB (x, y))
+  let and_ (x, y) = emit (AND (x, y))
+  let or_ (x, y) = emit (OR (x, y))
+  let xor (x, y) = emit (XOR (x, y))
+  let cmp (x, y) = emit (CMP (x, y))
+  let test (x, y) = emit (TEST (x, y))
 
-  let movzbl (x, y) = emit (MOVZX (x, y))
-  let movsbl (x, y) = emit (MOVSX (x, y))
-  let movzwl (x, y) = emit (MOVZX (x, y))
-  let movswl (x, y) = emit (MOVSX (x, y))
+  let movzx (x, y) = emit (MOVZX (x, y))
+  let movsx (x, y) = emit (MOVSX (x, y))
 
-  let sall (arg1, arg2) = emit (SAL  (arg1, arg2))
-  let sarl (arg1, arg2) = emit (SAR  (arg1, arg2))
-  let shrl (arg1, arg2) = emit (SHR  (arg1, arg2))
-  let imull (arg1, arg2) = emit (IMUL (arg1, arg2))
+  let sal (arg1, arg2) = emit (SAL  (arg1, arg2))
+  let sar (arg1, arg2) = emit (SAR  (arg1, arg2))
+  let shr (arg1, arg2) = emit (SHR  (arg1, arg2))
+  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
 
-  let idivl arg = emit (IDIV arg)
-  let popl arg = emit (POP arg)
-  let pushl arg = emit (PUSH arg)
-  let decl arg = emit (DEC arg)
-  let incl arg = emit (INC arg)
-  let leal (arg1, arg2) = emit (LEA (arg1, arg2))
+  let idiv arg = emit (IDIV arg)
+  let pop arg = emit (POP arg)
+  let push arg = emit (PUSH arg)
+  let dec arg = emit (DEC arg)
+  let inc arg = emit (INC arg)
+  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
 
-  let fistpl arg = emit (FISTP arg)
-  let fildl arg = emit (FILD arg)
+  let fistp arg = emit (FISTP arg)
+  let fild arg = emit (FILD arg)
 
   let fchs () = emit FCHS
   let fabs () = emit FABS
@@ -193,7 +191,7 @@ module INS32 = struct
   let fldz () = emit FLDZ
   let fnstcw arg = emit (FNSTCW arg)
   let fldcw arg = emit (FLDCW arg)
-  let cltd () = emit CDQ
+  let cdq () = emit CDQ
 
   let fsubp (arg1, arg2) = emit (FSUBP (arg1, arg2))
   let fsubrp (arg1, arg2) = emit (FSUBRP (arg1, arg2))
