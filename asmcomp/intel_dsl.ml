@@ -219,54 +219,45 @@ module INS64 = struct
   include INS
 
   let add (x, y) = emit (ADD (x, y))
-  let sub (x, y) = emit (SUB (x, y))
+  let addsd (arg1, arg2) = emit (ADDSD (arg1, arg2))
   let and_ (x, y) = emit (AND (x, y))
-  let or_ (x, y) = emit (OR (x, y))
-  let xor (x, y) = emit (XOR (x, y))
+  let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
+  let bswap arg = emit (BSWAP arg)
   let cmp (x, y) = emit (CMP (x, y))
-  let test (x, y) = emit (TEST (x, y))
-
-  let mov (x, y) = emit (MOV (x, y))
-
-  let movzx (x, y) = emit (MOVZX (x, y))
-  let movsx (x, y) = emit (MOVSX (x, y))
-
+  let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
+  let cqo () = emit CQO
+  let cvtsd2ss (arg1, arg2) = emit (CVTSD2SS (arg1, arg2))
+  let cvtsi2sd (arg1, arg2) = emit (CVTSI2SD (arg1, arg2))
+  let cvtss2sd (arg1, arg2) = emit (CVTSS2SD (arg1, arg2))
+  let cvttsd2si (arg1, arg2) = emit (CVTTSD2SI (arg1, arg2))
+  let dec arg = emit (DEC arg)
+  let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
   let idiv arg = emit (IDIV arg)
-
+  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
+  let inc arg = emit (INC arg)
+  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
+  let mov (x, y) = emit (MOV (x, y))
+  let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
+  let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
+  let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))
+  let movsx (x, y) = emit (MOVSX (x, y))
+  let movsxd (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
+  let movzx (x, y) = emit (MOVZX (x, y))
+  let mulsd (arg1, arg2) = emit (MULSD (arg1, arg2))
+  let or_ (x, y) = emit (OR (x, y))
+  let pop arg = emit (POP arg)
+  let push arg = emit (PUSH arg)
   let sal (arg1, arg2) = emit (SAL (arg1, arg2))
   let sar (arg1, arg2) = emit (SAR (arg1, arg2))
   let shr (arg1, arg2) = emit (SHR (arg1, arg2))
-  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
-
-  let pop arg = emit (POP arg)
-  let push arg = emit (PUSH arg)
-  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
-
-  let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
-  let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
-  let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
-  let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
-  let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
-  let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
-
-  let movsxd (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
-  let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))
-  let cvtss2sd (arg1, arg2) = emit (CVTSS2SD (arg1, arg2))
-  let cvtsd2ss (arg1, arg2) = emit (CVTSD2SS (arg1, arg2))
-  let cvtsi2sd (arg1, arg2) = emit (CVTSI2SD (arg1, arg2))
-  let cvttsd2si (arg1, arg2) = emit (CVTTSD2SI (arg1, arg2))
-  let addsd (arg1, arg2) = emit (ADDSD (arg1, arg2))
-  let subsd  (arg1, arg2) = emit (SUBSD (arg1, arg2))
-  let mulsd (arg1, arg2) = emit (MULSD (arg1, arg2))
-  let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
   let sqrtsd (arg1, arg2) = emit (SQRTSD (arg1, arg2))
-
-  let cqo () = emit CQO
-
-  let inc arg = emit (INC arg)
-  let dec arg = emit (DEC arg)
+  let sub (x, y) = emit (SUB (x, y))
+  let subsd  (arg1, arg2) = emit (SUBSD (arg1, arg2))
+  let test (x, y) = emit (TEST (x, y))
+  let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
   let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
-  let bswap arg = emit (BSWAP arg)
+  let xor (x, y) = emit (XOR (x, y))
+  let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
 end
 
 module DSL64 = struct

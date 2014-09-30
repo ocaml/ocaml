@@ -183,45 +183,45 @@ module INS64 : sig
   include module type of INS
 
   val add: arg * arg -> unit
-  val sub: arg * arg -> unit
+  val addsd: arg * arg -> unit
   val and_: arg * arg -> unit
-  val or_: arg * arg -> unit
-  val xor: arg * arg -> unit
+  val andpd: arg * arg -> unit
+  val bswap: arg -> unit
   val cmp: arg * arg -> unit
-  val test: arg * arg -> unit
-  val mov: arg * arg -> unit
-  val movzx: arg * arg -> unit
-  val movsx: arg * arg -> unit
+  val comisd: arg * arg -> unit
+  val cqo: unit -> unit
+  val cvtsd2ss: arg * arg -> unit
+  val cvtsi2sd: arg * arg -> unit
+  val cvtss2sd: arg * arg -> unit
+  val cvttsd2si: arg * arg -> unit
+  val dec: arg -> unit
+  val divsd: arg * arg -> unit
   val idiv: arg -> unit
+  val imul: arg * arg option -> unit
+  val inc: arg -> unit
+  val lea: arg * arg -> unit
+  val mov: arg * arg -> unit
+  val movapd: arg * arg -> unit
+  val movsd: arg * arg -> unit
+  val movss: arg * arg -> unit
+  val movsx: arg * arg -> unit
+  val movsxd: arg * arg -> unit
+  val movzx: arg * arg -> unit
+  val mulsd: arg * arg -> unit
+  val or_: arg * arg -> unit
+  val pop: arg -> unit
+  val push: arg -> unit
   val sal: arg * arg -> unit
   val sar: arg * arg -> unit
   val shr: arg * arg -> unit
-  val imul: arg * arg option -> unit
-  val pop: arg -> unit
-  val push: arg -> unit
-  val lea: arg * arg -> unit
-  val movsd: arg * arg -> unit
-  val ucomisd: arg * arg -> unit
-  val comisd: arg * arg -> unit
-  val movapd: arg * arg -> unit
-  val xorpd: arg * arg -> unit
-  val andpd: arg * arg -> unit
-  val movsxd: arg * arg -> unit
-  val movss: arg * arg -> unit
-  val cvtss2sd: arg * arg -> unit
-  val cvtsd2ss: arg * arg -> unit
-  val cvtsi2sd: arg * arg -> unit
-  val cvttsd2si: arg * arg -> unit
-  val addsd: arg * arg -> unit
-  val subsd: arg * arg -> unit
-  val mulsd: arg * arg -> unit
-  val divsd: arg * arg -> unit
   val sqrtsd: arg * arg -> unit
-  val cqo: unit -> unit
-  val inc: arg -> unit
-  val dec: arg -> unit
+  val sub: arg * arg -> unit
+  val subsd: arg * arg -> unit
+  val test: arg * arg -> unit
+  val ucomisd: arg * arg -> unit
   val xchg: arg * arg -> unit
-  val bswap: arg -> unit
+  val xor: arg * arg -> unit
+  val xorpd: arg * arg -> unit
 end
 module DSL64 : sig
   include module type of DSL
