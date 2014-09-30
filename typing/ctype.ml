@@ -779,7 +779,7 @@ let rec update_level env level ty =
           if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
           iter_type_expr (update_level env level) ty
         end
-    | Tpackage (p, nl, tl) when level < get_level env p ->
+    | Tpackage (p, nl, tl) when level < Path.binding_time p (*get_level env p*) ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
