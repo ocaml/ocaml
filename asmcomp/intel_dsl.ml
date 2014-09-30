@@ -32,10 +32,9 @@ open Intel_proc
 
 module D = struct
   let section segment flags args = directive (Section (segment, flags, args))
-  let mode386 () = directive Mode386
   let align n = directive (Align (false, n))
-  let ascii s = directive (Bytes s)
   let byte n = directive (Byte n)
+  let bytes s = directive (Bytes s)
   let cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
   let cfi_endproc () = directive Cfi_endproc
   let cfi_startproc () = directive Cfi_startproc
@@ -49,6 +48,7 @@ module D = struct
   let label ?(typ = NONE) s = directive (NewLabel (s, typ))
   let loc num loc = directive (Loc (num, loc))
   let long cst = directive (Long cst)
+  let mode386 () = directive Mode386
   let model name = directive (Model name)
   let private_extern s = directive (Private_extern s)
   let qword cst = directive (Quad cst)

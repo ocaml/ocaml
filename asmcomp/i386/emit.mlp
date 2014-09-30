@@ -992,7 +992,7 @@ let emit_item = function
   | Cdouble f -> emit_float64_split_directive (Int64.bits_of_float f)
   | Csymbol_address s -> add_used_symbol s; D.long (ConstLabel (emit_symbol s))
   | Clabel_address lbl -> D.long (ConstLabel (emit_data_label lbl))
-  | Cstring s -> D.ascii s
+  | Cstring s -> D.bytes s
   | Cskip n -> if n > 0 then D.space n
   | Calign n -> D.align n
 
@@ -1062,7 +1062,7 @@ let end_assembly() =
                        ConstThis),
               const_32 ofs)));
       efa_def_label = (fun l -> _label (emit_label l));
-      efa_string = (fun s -> D.ascii (s ^ "\000"))
+      efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
   if system = S_macosx then emit_external_symbols ();

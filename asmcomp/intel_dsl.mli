@@ -32,10 +32,9 @@ open Intel_ast
 module D : sig
   (** Directives *)
 
-  val mode386: unit -> unit
   val align: int -> unit
-  val ascii: string -> unit
   val byte: constant -> unit
+  val bytes: string -> unit
   val cfi_adjust_cfa_offset: int -> unit
   val cfi_endproc: unit -> unit
   val cfi_startproc: unit -> unit
@@ -49,6 +48,7 @@ module D : sig
   val label: ?typ:data_type -> string -> unit
   val loc: int -> int -> unit
   val long: constant -> unit
+  val mode386: unit -> unit
   val model: string -> unit
   val private_extern: string -> unit
   val qword: constant -> unit
