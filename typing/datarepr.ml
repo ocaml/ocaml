@@ -157,10 +157,10 @@ let extension_descr ?rebind path_ext ext =
   let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
   let existentials =
     match ext.ext_ret_type with
-      | None -> []
-      | Some type_ret ->
-          let res_vars, _ = free_vars type_ret in
-          TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
+    | None -> []
+    | Some type_ret ->
+        let res_vars, _ = free_vars type_ret in
+        TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
   let cstr_args, cstr_inlined =
     constructor_args (Path.last path_ext) path_ext rebind
@@ -182,9 +182,7 @@ let extension_descr ?rebind path_ext ext =
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
       cstr_inlined;
-    },
-    []
-
+    }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)

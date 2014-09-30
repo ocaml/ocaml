@@ -24,7 +24,7 @@ val constructor_descrs:
 val extension_descr:
   ?rebind:Path.t ->
   Path.t -> extension_constructor ->
-  constructor_description * (Ident.t * Path.t * type_declaration) list
+  constructor_description
 
 val label_descrs:
   type_expr -> label_declaration list ->

@@ -1112,7 +1112,7 @@ let scrape_alias env mty = scrape_alias env mty
 
 (* Compute constructor descriptions *)
 
-let constructors_of_type env ty_path decl =
+let constructors_of_type ty_path decl =
   match decl.type_kind with
   | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
   | Type_record _ | Type_abstract | Type_open -> []
@@ -1262,7 +1262,7 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constrs = constructors_of_type !env path decl' in
+            let constrs = constructors_of_type path decl' in
             let constructors = List.map snd constrs in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
@@ -1282,7 +1282,7 @@ and components_of_module_maker (env, sub, path, mty) =
             env := store_type_infos None id (Pident id) decl !env !env
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
-            let descr, _ = Datarepr.extension_descr path ext' in
+            let descr = Datarepr.extension_descr path ext' in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
             incr pos
@@ -1362,7 +1362,7 @@ and store_type ~check slot id path info env renv =
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors = constructors_of_type env path info in
+  let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels, false) in
 
@@ -1436,7 +1436,7 @@ and store_extension ?rebind ~check slot id path ext env renv =
     end;
 
   end;
-  let constr, _ = Datarepr.extension_descr ?rebind path ext in
+  let constr = Datarepr.extension_descr ?rebind path ext in
   { env with
     constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
