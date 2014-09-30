@@ -1081,8 +1081,6 @@ let end_assembly() =
     symbols_defined := StringSet.empty;
   end;
 
-  D.end_ ();
-
   let asm =
     if !Emitaux.create_asm_file then
       Some

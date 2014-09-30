@@ -40,7 +40,6 @@ module D = struct
   let cfi_startproc () = directive Cfi_startproc
   let comment s = directive (Comment s)
   let data () = section [ ".data" ] None []
-  let end_ () = directive End
   let extrn s ptr = directive (External (s, ptr))
   let file num filename = directive (File (num, filename))
   let global s = directive (Global s)

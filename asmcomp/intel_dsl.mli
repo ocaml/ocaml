@@ -40,7 +40,6 @@ module D : sig
   val cfi_startproc: unit -> unit
   val comment: string -> unit
   val data: unit -> unit
-  val end_: unit -> unit
   val extrn: string -> data_type -> unit
   val file: int -> string -> unit
   val global: string -> unit

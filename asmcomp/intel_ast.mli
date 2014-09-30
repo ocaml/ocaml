@@ -188,7 +188,6 @@ type asm_line =
   | Byte of constant
   | Bytes of string
   | Comment of string
-  | End
   | Global of string
   | Long of constant
   | NewLabel of string * data_type

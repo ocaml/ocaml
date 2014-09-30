@@ -229,7 +229,6 @@ let print_line b = function
   | Byte n -> bprintf b "\tBYTE\t%a" cst n
   | Bytes s -> buf_bytes_directive b "BYTE" s
   | Comment s -> bprintf b " ; %s " s
-  | End -> bprintf b "END"
   | Global s -> bprintf b "\tPUBLIC\t%s" s
   | Long n -> bprintf b "\tDWORD\t%a" cst n
   | NewLabel (s, NONE) -> bprintf b "%s:" s
@@ -268,4 +267,5 @@ let generate_asm oc lines =
        Buffer.add_char b '\n';
        Buffer.output_buffer oc b
     )
-    lines
+    lines;
+  output_string oc "\tEND\n"
