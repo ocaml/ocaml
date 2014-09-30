@@ -26,9 +26,8 @@ open Emitaux
 
 open Intel_ast
 open Intel_proc
+open Intel_dsl
 open Intel_dsl.DSL64
-
-module I = Intel_dsl.INS64
 
 (* Override proc.ml *)
 
@@ -502,7 +501,7 @@ let emit_instr fallthrough i =
       | Sixteen_signed ->
           I.movsx (addressing addr WORD i 0, dest);
       | Thirtytwo_unsigned ->
-          I.movl (addressing addr DWORD i 0, res32 i 0)
+          I.mov (addressing addr DWORD i 0, res32 i 0)
       | Thirtytwo_signed ->
           I.movsxd (addressing addr DWORD i 0, dest)
       | Single ->
@@ -515,11 +514,11 @@ let emit_instr fallthrough i =
       | Word ->
           I.mov (arg i 0, addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
-          I.movb (arg8 i 0, addressing addr BYTE i 1)
+          I.mov (arg8 i 0, addressing addr BYTE i 1)
       | Sixteen_unsigned | Sixteen_signed ->
-          I.movw (arg16 i 0, addressing addr WORD i 1)
+          I.mov (arg16 i 0, addressing addr WORD i 1)
       | Thirtytwo_signed | Thirtytwo_unsigned ->
-          I.movl (arg32 i 0, addressing addr DWORD i 1)
+          I.mov (arg32 i 0, addressing addr DWORD i 1)
       | Single ->
           I.cvtsd2ss (arg i 0, xmm15);
           I.movss (xmm15, addressing addr REAL4 i 1)
@@ -660,10 +659,10 @@ let emit_instr fallthrough i =
       | Ifloattest(cmp, neg) ->
           emit_float_test cmp neg i lbl
       | Ioddtest ->
-          I.testb (int 1, arg8 i 0);
+          I.test (int 1, arg8 i 0);
           I.jne lbl
       | Ieventest ->
-          I.testb (int 1, arg8 i 0);
+          I.test (int 1, arg8 i 0);
           I.je lbl
       end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->

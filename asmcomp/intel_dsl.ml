@@ -95,108 +95,97 @@ module DSL = struct
   let st1 = Regf (ST 1)
 end
 
-module INS = struct
-
-  let jmp arg = emit (JMP arg)
-  let call arg = emit (CALL arg)
-  let set cond arg = emit (SET (cond, arg))
-
-  let j cond arg = emit (J (cond, arg))
-  let je = j E
-  let jae = j AE
-  let jb = j B
-  let jg = j G
-  let jbe = j BE
-  let ja = j A
-  let jne = j NE
-  let jp = j P
-
-  let ret () = emit RET
-  let hlt () = emit HLT
-  let nop () = emit NOP
-
-  (* Word mnemonics *)
-  let movw (arg1, arg2) = emit (MOV (arg1, arg2))
-
-  (* Byte mnemonics *)
-  let decb arg = emit (DEC arg)
-  let cmpb (x, y) = emit (CMP (x, y))
-  let movb (x, y) = emit (MOV (x, y))
-  let andb (x, y)= emit (AND (x, y))
-  let xorb (x, y)= emit (XOR (x, y))
-  let testb (x, y)= emit (TEST (x, y))
-
-  (* Long-mnemonics *)
-  let movl (x, y) = emit (MOV (x, y))
-end
-
-module INS32 = struct
-
-  include INS
-
-  (* Long-mnemonics *)
+module I = struct
   let add (x, y) = emit (ADD (x, y))
-  let sub (x, y) = emit (SUB (x, y))
-  let and_ (x, y) = emit (AND (x, y))
-  let or_ (x, y) = emit (OR (x, y))
-  let xor (x, y) = emit (XOR (x, y))
+  let addsd (arg1, arg2) = emit (ADDSD (arg1, arg2))
+  let and_ (x, y)= emit (AND (x, y))
+  let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
+  let bswap arg = emit (BSWAP arg)
+  let call arg = emit (CALL arg)
+  let cdq () = emit CDQ
   let cmp (x, y) = emit (CMP (x, y))
-  let test (x, y) = emit (TEST (x, y))
-
-  let movzx (x, y) = emit (MOVZX (x, y))
-  let movsx (x, y) = emit (MOVSX (x, y))
-
-  let sal (arg1, arg2) = emit (SAL  (arg1, arg2))
-  let sar (arg1, arg2) = emit (SAR  (arg1, arg2))
-  let shr (arg1, arg2) = emit (SHR  (arg1, arg2))
-  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
-
-  let idiv arg = emit (IDIV arg)
-  let pop arg = emit (POP arg)
-  let push arg = emit (PUSH arg)
+  let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
+  let cqo () = emit CQO
+  let cvtsd2ss (arg1, arg2) = emit (CVTSD2SS (arg1, arg2))
+  let cvtsi2sd (arg1, arg2) = emit (CVTSI2SD (arg1, arg2))
+  let cvtss2sd (arg1, arg2) = emit (CVTSS2SD (arg1, arg2))
+  let cvttsd2si (arg1, arg2) = emit (CVTTSD2SI (arg1, arg2))
   let dec arg = emit (DEC arg)
-  let inc arg = emit (INC arg)
-  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
-
-  let fistp arg = emit (FISTP arg)
-  let fild arg = emit (FILD arg)
-
-  let fchs () = emit FCHS
+  let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
   let fabs () = emit FABS
-
   let fadd x = emit (FADD x)
-  let fsub x = emit (FSUB x)
-  let fdiv x = emit (FDIV x)
-  let fmul x = emit (FMUL x)
-  let fsubr x = emit (FSUBR x)
-  let fdivr x = emit (FDIVR x)
-
   let faddp (arg1, arg2) = emit (FADDP (arg1, arg2))
-  let fmulp (arg1, arg2) = emit (FMULP (arg1, arg2))
-  let fcompp () = emit FCOMPP
+  let fchs () = emit FCHS
   let fcomp arg = emit (FCOMP arg)
+  let fcompp () = emit FCOMPP
+  let fcos () = emit FCOS
+  let fdiv x = emit (FDIV x)
+  let fdivp (arg1, arg2) = emit (FDIVP (arg1, arg2))
+  let fdivr x = emit (FDIVR x)
+  let fdivrp (arg1, arg2) = emit (FDIVRP (arg1, arg2))
+  let fild arg = emit (FILD arg)
+  let fistp arg = emit (FISTP arg)
   let fld arg = emit (FLD arg)
-  let fnstsw arg = emit (FNSTSW arg)
   let fld1 () = emit FLD1
+  let fldcw arg = emit (FLDCW arg)
+  let fldlg2 () = emit FLDLG2
+  let fldln2 () = emit FLDLN2
+  let fldz () = emit FLDZ
+  let fmul x = emit (FMUL x)
+  let fmulp (arg1, arg2) = emit (FMULP (arg1, arg2))
+  let fnstcw arg = emit (FNSTCW arg)
+  let fnstsw arg = emit (FNSTSW arg)
   let fpatan () = emit FPATAN
   let fptan () = emit FPTAN
-  let fcos () = emit FCOS
-  let fldln2 () = emit FLDLN2
-  let fldlg2 () = emit FLDLG2
-  let fxch arg = emit (FXCH arg)
-  let fyl2x () = emit FYL2X
   let fsin () = emit FSIN
   let fsqrt () = emit FSQRT
   let fstp arg = emit (FSTP arg)
-  let fldz () = emit FLDZ
-  let fnstcw arg = emit (FNSTCW arg)
-  let fldcw arg = emit (FLDCW arg)
-  let cdq () = emit CDQ
-
+  let fsub x = emit (FSUB x)
   let fsubp (arg1, arg2) = emit (FSUBP (arg1, arg2))
+  let fsubr x = emit (FSUBR x)
   let fsubrp (arg1, arg2) = emit (FSUBRP (arg1, arg2))
-  let fdivp (arg1, arg2) = emit (FDIVP (arg1, arg2))
-  let fdivrp (arg1, arg2) = emit (FDIVRP (arg1, arg2))
+  let fxch arg = emit (FXCH arg)
+  let fyl2x () = emit FYL2X
+  let hlt () = emit HLT
+  let idiv arg = emit (IDIV arg)
+  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
+  let inc arg = emit (INC arg)
+  let j cond arg = emit (J (cond, arg))
+  let ja = j A
+  let jae = j AE
+  let jb = j B
+  let jbe = j BE
+  let je = j E
+  let jg = j G
+  let jmp arg = emit (JMP arg)
+  let jne = j NE
+  let jp = j P
+  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
+  let mov (arg1, arg2) = emit (MOV (arg1, arg2))
+  let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
+  let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
+  let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))
+  let movsx (x, y) = emit (MOVSX (x, y))
+  let movsxd (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
+  let movzx (x, y) = emit (MOVZX (x, y))
+  let mulsd (arg1, arg2) = emit (MULSD (arg1, arg2))
+  let nop () = emit NOP
+  let or_ (x, y) = emit (OR (x, y))
+  let pop arg = emit (POP arg)
+  let push arg = emit (PUSH arg)
+  let ret () = emit RET
+  let sal (arg1, arg2) = emit (SAL (arg1, arg2))
+  let sar (arg1, arg2) = emit (SAR (arg1, arg2))
+  let set cond arg = emit (SET (cond, arg))
+  let shr (arg1, arg2) = emit (SHR (arg1, arg2))
+  let sqrtsd (arg1, arg2) = emit (SQRTSD (arg1, arg2))
+  let sub (x, y) = emit (SUB (x, y))
+  let subsd  (arg1, arg2) = emit (SUBSD (arg1, arg2))
+  let test (x, y)= emit (TEST (x, y))
+  let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
+  let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
+  let xor (x, y)= emit (XOR (x, y))
+  let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
 end
 
 module DSL32 = struct
@@ -210,52 +199,6 @@ module DSL32 = struct
 
   let mem_sym typ ?(ofs = 0) l =
     Mem32 {typ; idx=RAX; scale=0; base=None; sym=Some l; displ=ofs}
-end
-
-
-module INS64 = struct
-  include INS
-
-  let add (x, y) = emit (ADD (x, y))
-  let addsd (arg1, arg2) = emit (ADDSD (arg1, arg2))
-  let and_ (x, y) = emit (AND (x, y))
-  let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
-  let bswap arg = emit (BSWAP arg)
-  let cmp (x, y) = emit (CMP (x, y))
-  let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
-  let cqo () = emit CQO
-  let cvtsd2ss (arg1, arg2) = emit (CVTSD2SS (arg1, arg2))
-  let cvtsi2sd (arg1, arg2) = emit (CVTSI2SD (arg1, arg2))
-  let cvtss2sd (arg1, arg2) = emit (CVTSS2SD (arg1, arg2))
-  let cvttsd2si (arg1, arg2) = emit (CVTTSD2SI (arg1, arg2))
-  let dec arg = emit (DEC arg)
-  let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
-  let idiv arg = emit (IDIV arg)
-  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
-  let inc arg = emit (INC arg)
-  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
-  let mov (x, y) = emit (MOV (x, y))
-  let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
-  let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
-  let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))
-  let movsx (x, y) = emit (MOVSX (x, y))
-  let movsxd (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
-  let movzx (x, y) = emit (MOVZX (x, y))
-  let mulsd (arg1, arg2) = emit (MULSD (arg1, arg2))
-  let or_ (x, y) = emit (OR (x, y))
-  let pop arg = emit (POP arg)
-  let push arg = emit (PUSH arg)
-  let sal (arg1, arg2) = emit (SAL (arg1, arg2))
-  let sar (arg1, arg2) = emit (SAR (arg1, arg2))
-  let shr (arg1, arg2) = emit (SHR (arg1, arg2))
-  let sqrtsd (arg1, arg2) = emit (SQRTSD (arg1, arg2))
-  let sub (x, y) = emit (SUB (x, y))
-  let subsd  (arg1, arg2) = emit (SUBSD (arg1, arg2))
-  let test (x, y) = emit (TEST (x, y))
-  let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
-  let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
-  let xor (x, y) = emit (XOR (x, y))
-  let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
 end
 
 module DSL64 = struct

@@ -26,9 +26,8 @@ open Emitaux
 
 open Intel_ast
 open Intel_proc
+open Intel_dsl
 open Intel_dsl.DSL32
-
-module I = Intel_dsl.INS32
 
 (* CFI directives *)
 
@@ -376,44 +375,44 @@ let emit_float_test cmp neg arg lbl =
   match actual_cmp with
   | Ceq ->
       if neg then begin
-        I.andb (int 68, ah);
-        I.xorb (int 64, ah);
+        I.and_ (int 68, ah);
+        I.xor (int 64, ah);
         I.jne lbl
       end else begin
-        I.andb (int 69, ah);
-        I.cmpb (int 64, ah);
+        I.and_ (int 69, ah);
+        I.cmp (int 64, ah);
         I.je lbl
       end
   | Cne ->
       if neg then begin
-        I.andb (int 69, ah);
-        I.cmpb (int 64, ah);
+        I.and_ (int 69, ah);
+        I.cmp (int 64, ah);
         I.je lbl
       end else begin
-        I.andb (int 68, ah);
-        I.xorb (int 64, ah);
+        I.and_ (int 68, ah);
+        I.xor (int 64, ah);
         I.jne lbl
       end
   | Cle ->
-      I.andb (int 69, ah);
-      I.decb ah;
-      I.cmpb (int 64, ah);
+      I.and_ (int 69, ah);
+      I.dec ah;
+      I.cmp (int 64, ah);
       if neg
       then I.jae lbl
       else I.jb lbl
   | Cge ->
-      I.andb (int 5, ah);
+      I.and_ (int 5, ah);
       if neg
       then I.jne lbl
       else I.je lbl
   | Clt ->
-      I.andb (int 69, ah);
-      I.cmpb (int 1, ah);
+      I.and_ (int 69, ah);
+      I.cmp (int 1, ah);
       if neg
       then I.jne lbl
       else I.je lbl
   | Cgt ->
-      I.andb (int 69, ah);
+      I.and_ (int 69, ah);
       if neg
       then I.jne lbl
       else I.je lbl
@@ -489,15 +488,15 @@ let emit_instr fallthrough i =
             I.fstp (reg dst)
           end
         else
-          I.movl (reg src, reg dst)
+          I.mov (reg src, reg dst)
       end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
       if n = 0n then begin
         match i.res.(0).loc with
         | Reg _ -> I.xor (reg i.res.(0), reg i.res.(0))
-        | _     -> I.movl (int 0, reg i.res.(0))
+        | _     -> I.mov (int 0, reg i.res.(0))
       end else
-        I.movl (emit_nat n, reg i.res.(0))
+        I.mov (emit_nat n, reg i.res.(0))
   | Lop(Iconst_float f) ->
       begin match Int64.bits_of_float f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -514,7 +513,7 @@ let emit_instr fallthrough i =
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
-      I.movl (immsym s, reg i.res.(0))
+      I.mov (immsym s, reg i.res.(0))
   | Lop(Icall_ind) ->
       I.call (reg i.arg.(0));
       record_frame i.live i.dbg
@@ -539,11 +538,11 @@ let emit_instr fallthrough i =
       add_used_symbol s;
       if alloc then begin
         if system <> S_macosx then
-          I.movl (immsym s, eax)
+          I.mov (immsym s, eax)
         else begin
           external_symbols_indirect :=
             StringSet.add s !external_symbols_indirect;
-          I.movl (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
+          I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
                               (emit_symbol s)), eax)
         end;
         emit_call "caml_c_call";
@@ -567,7 +566,7 @@ let emit_instr fallthrough i =
       let dest = i.res.(0) in
       begin match chunk with
       | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
-          I.movl (addressing addr DWORD i 0, reg dest)
+          I.mov (addressing addr DWORD i 0, reg dest)
       | Byte_unsigned ->
           I.movzx (addressing addr BYTE i 0, reg dest)
       | Byte_signed ->
@@ -584,11 +583,11 @@ let emit_instr fallthrough i =
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
       | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
-          I.movl (reg i.arg.(0), addressing addr DWORD i 1)
+          I.mov (reg i.arg.(0), addressing addr DWORD i 1)
       | Byte_unsigned | Byte_signed ->
-          I.movb (reg8 i.arg.(0), addressing addr BYTE i 1)
+          I.mov (reg8 i.arg.(0), addressing addr BYTE i 1)
       | Sixteen_unsigned | Sixteen_signed ->
-          I.movw (reg16 i.arg.(0), addressing addr WORD i 1)
+          I.mov (reg16 i.arg.(0), addressing addr WORD i 1)
       | Single ->
           if is_tos i.arg.(0) then
             I.fstp (addressing addr REAL4 i 1)
@@ -608,9 +607,9 @@ let emit_instr fallthrough i =
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
-        I.movl (sym32 "caml_young_ptr", eax);
+        I.mov (sym32 "caml_young_ptr", eax);
         I.sub (int n, eax);
-        I.movl (eax, sym32 "caml_young_ptr");
+        I.mov (eax, sym32 "caml_young_ptr");
         I.cmp (sym32 "caml_young_limit", eax);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
@@ -626,7 +625,7 @@ let emit_instr fallthrough i =
         | 12 -> emit_call "caml_alloc2"
         | 16 -> emit_call "caml_alloc3"
         | _  ->
-            I.movl (int n, eax);
+            I.mov (int n, eax);
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
@@ -705,16 +704,16 @@ let emit_instr fallthrough i =
       I.sub (int 8, esp);
       cfi_adjust_cfa_offset 8;
       I.fnstcw (mem_ptr NONE 4 RSP);
-      I.movw (mem_ptr WORD 4 RSP, ax);
-      I.movb (int 12, ah);
-      I.movw (ax, mem_ptr WORD 0 RSP);
+      I.mov (mem_ptr WORD 4 RSP, ax);
+      I.mov (int 12, ah);
+      I.mov (ax, mem_ptr WORD 0 RSP);
       I.fldcw (mem_ptr NONE 0 RSP);
       begin match i.res.(0).loc with
       | Stack _ ->
           I.fistp (reg i.res.(0))
       | _ ->
           I.fistp (mem_ptr DWORD 0 RSP);
-          I.movl (mem_ptr DWORD 0 RSP, reg i.res.(0))
+          I.mov (mem_ptr DWORD 0 RSP, reg i.res.(0))
       end;
       I.fldcw (mem_ptr NONE 4 RSP);
       I.add (int 8, esp);
@@ -723,10 +722,10 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr DWORD i 0, reg i.res.(0))
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
-      I.movl (emit_nat n, addressing addr DWORD i 0)
+      I.mov (emit_nat n, addressing addr DWORD i 0)
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
       add_used_symbol s;
-      I.movl (immsym s, addressing addr DWORD i 0)
+      I.mov (immsym s, addressing addr DWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
       I.add (int n, addressing addr DWORD i 0)
   | Lop(Ispecific(Ipush)) ->
@@ -851,7 +850,7 @@ let emit_instr fallthrough i =
         I.sub (int (trap_frame_size - 8), esp);
       I.push (sym32 "caml_exception_pointer");
       cfi_adjust_cfa_offset trap_frame_size;
-      I.movl (esp, sym32 "caml_exception_pointer");
+      I.mov (esp, sym32 "caml_exception_pointer");
       stack_offset := !stack_offset + trap_frame_size
   | Lpoptrap ->
       I.pop (sym32 "caml_exception_pointer");
@@ -868,7 +867,7 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty i.dbg
       | false, _
       | true, Lambda.Raise_notrace ->
-          I.movl (sym32 "caml_exception_pointer", esp);
+          I.mov (sym32 "caml_exception_pointer", esp);
           I.pop (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8), esp);
@@ -914,7 +913,7 @@ let emit_external_symbols () =
 
 let call_mcount mcount =
   I.push eax;
-  I.movl (esp, ebp);
+  I.mov (esp, ebp);
   I.push ecx;
   I.push edx;
   I.call (sym mcount);

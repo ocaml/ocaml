@@ -85,106 +85,14 @@ module DSL : sig
   val st0: arg
   val st1: arg
 end
-module INS : sig
-  val jmp: arg -> unit
-  val call: arg -> unit
-  val set: condition -> arg -> unit
-  val j: condition -> arg -> unit
-  val je: arg -> unit
-  val jae: arg -> unit
-  val jb: arg -> unit
-  val jg: arg -> unit
-  val jbe: arg -> unit
-  val ja: arg -> unit
-  val jne: arg -> unit
-  val jp: arg -> unit
-  val ret: unit -> unit
-  val hlt: unit -> unit
-  val nop: unit -> unit
-  val movw: arg * arg -> unit
-  val decb: arg -> unit
-  val cmpb: arg * arg -> unit
-  val movb: arg * arg -> unit
-  val andb: arg * arg -> unit
-  val xorb: arg * arg -> unit
-  val testb: arg * arg -> unit
-  val movl: arg * arg -> unit
-end
-module INS32 : sig
-  include module type of INS
-
-  val add: arg * arg -> unit
-  val sub: arg * arg -> unit
-  val and_: arg * arg -> unit
-  val or_: arg * arg -> unit
-  val xor: arg * arg -> unit
-  val cmp: arg * arg -> unit
-  val test: arg * arg -> unit
-  val movzx: arg * arg -> unit
-  val movsx: arg * arg -> unit
-  val sal: arg * arg -> unit
-  val sar: arg * arg -> unit
-  val shr: arg * arg -> unit
-  val imul: arg * arg option -> unit
-  val idiv: arg -> unit
-  val pop: arg -> unit
-  val push: arg -> unit
-  val dec: arg -> unit
-  val inc: arg -> unit
-  val lea: arg * arg -> unit
-  val fistp: arg -> unit
-  val fild: arg -> unit
-  val fchs: unit -> unit
-  val fabs: unit -> unit
-  val fadd: arg -> unit
-  val fsub: arg -> unit
-  val fdiv: arg -> unit
-  val fmul: arg -> unit
-  val fsubr: arg -> unit
-  val fdivr: arg -> unit
-  val faddp: arg * arg -> unit
-  val fmulp: arg * arg -> unit
-  val fcompp: unit -> unit
-  val fcomp: arg -> unit
-  val fld: arg -> unit
-  val fnstsw: arg -> unit
-  val fld1: unit -> unit
-  val fpatan: unit -> unit
-  val fptan: unit -> unit
-  val fcos: unit -> unit
-  val fldln2: unit -> unit
-  val fldlg2: unit -> unit
-  val fxch: arg -> unit
-  val fyl2x: unit -> unit
-  val fsin: unit -> unit
-  val fsqrt: unit -> unit
-  val fstp: arg -> unit
-  val fldz: unit -> unit
-  val fnstcw: arg -> unit
-  val fldcw: arg -> unit
-  val cdq: unit -> unit
-  val fsubp: arg * arg -> unit
-  val fsubrp: arg * arg -> unit
-  val fdivp: arg * arg -> unit
-  val fdivrp: arg * arg -> unit
-end
-module DSL32 : sig
-  include module type of DSL
-
-  val _label: string -> unit
-  val mem_ptr:
-    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
-    int -> reg64 -> arg
-  val mem_sym: data_type -> ?ofs:int -> string -> arg
-end
-module INS64 : sig
-  include module type of INS
-
+module I : sig
   val add: arg * arg -> unit
   val addsd: arg * arg -> unit
   val and_: arg * arg -> unit
   val andpd: arg * arg -> unit
   val bswap: arg -> unit
+  val call: arg -> unit
+  val cdq: unit -> unit
   val cmp: arg * arg -> unit
   val comisd: arg * arg -> unit
   val cqo: unit -> unit
@@ -194,9 +102,54 @@ module INS64 : sig
   val cvttsd2si: arg * arg -> unit
   val dec: arg -> unit
   val divsd: arg * arg -> unit
+  val fabs: unit -> unit
+  val fadd: arg -> unit
+  val faddp: arg * arg -> unit
+  val fchs: unit -> unit
+  val fcomp: arg -> unit
+  val fcompp: unit -> unit
+  val fcos: unit -> unit
+  val fdiv: arg -> unit
+  val fdivp: arg * arg -> unit
+  val fdivr: arg -> unit
+  val fdivrp: arg * arg -> unit
+  val fild: arg -> unit
+  val fistp: arg -> unit
+  val fld1: unit -> unit
+  val fld: arg -> unit
+  val fldcw: arg -> unit
+  val fldlg2: unit -> unit
+  val fldln2: unit -> unit
+  val fldz: unit -> unit
+  val fmul: arg -> unit
+  val fmulp: arg * arg -> unit
+  val fnstcw: arg -> unit
+  val fnstsw: arg -> unit
+  val fpatan: unit -> unit
+  val fptan: unit -> unit
+  val fsin: unit -> unit
+  val fsqrt: unit -> unit
+  val fstp: arg -> unit
+  val fsub: arg -> unit
+  val fsubp: arg * arg -> unit
+  val fsubr: arg -> unit
+  val fsubrp: arg * arg -> unit
+  val fxch: arg -> unit
+  val fyl2x: unit -> unit
+  val hlt: unit -> unit
   val idiv: arg -> unit
   val imul: arg * arg option -> unit
   val inc: arg -> unit
+  val j: condition -> arg -> unit
+  val ja: arg -> unit
+  val jae: arg -> unit
+  val jb: arg -> unit
+  val jbe: arg -> unit
+  val je: arg -> unit
+  val jg: arg -> unit
+  val jmp: arg -> unit
+  val jne: arg -> unit
+  val jp: arg -> unit
   val lea: arg * arg -> unit
   val mov: arg * arg -> unit
   val movapd: arg * arg -> unit
@@ -206,11 +159,14 @@ module INS64 : sig
   val movsxd: arg * arg -> unit
   val movzx: arg * arg -> unit
   val mulsd: arg * arg -> unit
+  val nop: unit -> unit
   val or_: arg * arg -> unit
   val pop: arg -> unit
   val push: arg -> unit
+  val ret: unit -> unit
   val sal: arg * arg -> unit
   val sar: arg * arg -> unit
+  val set: condition -> arg -> unit
   val shr: arg * arg -> unit
   val sqrtsd: arg * arg -> unit
   val sub: arg * arg -> unit
@@ -220,6 +176,15 @@ module INS64 : sig
   val xchg: arg * arg -> unit
   val xor: arg * arg -> unit
   val xorpd: arg * arg -> unit
+end
+module DSL32 : sig
+  include module type of DSL
+
+  val _label: string -> unit
+  val mem_ptr:
+    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+    int -> reg64 -> arg
+  val mem_sym: data_type -> ?ofs:int -> string -> arg
 end
 module DSL64 : sig
   include module type of DSL
