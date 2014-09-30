@@ -93,7 +93,7 @@ typing/cmt_format.cmi : typing/types.cmi typing/typedtree.cmi \
 typing/ctype.cmi : typing/types.cmi typing/path.cmi parsing/longident.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi
 typing/datarepr.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi \
-    parsing/asttypes.cmi
+    typing/btype.cmi parsing/asttypes.cmi
 typing/env.cmi : utils/warnings.cmi typing/types.cmi typing/subst.cmi \
     typing/path.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi utils/consistbl.cmi parsing/asttypes.cmi
@@ -228,10 +228,10 @@ typing/mtype.cmx : typing/types.cmx typing/subst.cmx typing/path.cmx \
     utils/misc.cmx parsing/location.cmx typing/ident.cmx typing/env.cmx \
     typing/ctype.cmx utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
     typing/mtype.cmi
-typing/oprint.cmo : typing/outcometree.cmi typing/btype.cmi \
-    parsing/asttypes.cmi typing/oprint.cmi
-typing/oprint.cmx : typing/outcometree.cmi typing/btype.cmx \
-    parsing/asttypes.cmi typing/oprint.cmi
+typing/oprint.cmo : typing/outcometree.cmi parsing/asttypes.cmi \
+    typing/oprint.cmi
+typing/oprint.cmx : typing/outcometree.cmi parsing/asttypes.cmi \
+    typing/oprint.cmi
 typing/parmatch.cmo : utils/warnings.cmi typing/types.cmi \
     typing/typedtree.cmi typing/subst.cmi typing/predef.cmi typing/path.cmi \
     parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \

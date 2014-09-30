@@ -168,7 +168,7 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
           (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
           (arg1) (arg2)
       then [] else [Field_type cstr]
-  | Types.Cstr_record (_, l1), Types.Cstr_record (_, l2) ->
+  | Types.Cstr_record l1, Types.Cstr_record l2 ->
       compare_records env params1 params2 0 l1 l2
   | _ ->
       (* TODO: better report? *)

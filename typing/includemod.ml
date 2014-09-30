@@ -334,44 +334,18 @@ and signatures env cxt subst sig1 sig2 =
               Field_type (String.sub s 0 (String.length s - 4)), false
           | _ -> name2, true
         in
-        let equate_subtypes ids1 ids2 subst =
-          if List.length ids1 = List.length ids2 then
-            List.fold_left2
-              (fun sub id1 id2 ->
-                 if Ident.name id1 = Ident.name id2 then
-                   Subst.add_type id2 (Pident id1) sub
-                 else
-                   sub
-              ) subst ids1 ids2
-          else
-            subst
-        in
         begin try
           let (id1, item1, pos1) = Tbl.find name2 comps1 in
           let new_subst =
             match item2 with
-              Sig_type (id2', decl2, _) ->
-                let subst = Subst.add_type id2 (Pident id1) subst in
-                begin match item1 with
-                | Sig_type (id1', decl1, _) ->
-                    let ids1 = Subst.sub_ids decl1 in
-                    let ids2 = Subst.sub_ids decl2 in
-                    equate_subtypes ids1 ids2 subst
-                | _ -> assert false
-                end
+              Sig_type _ ->
+                Subst.add_type id2 (Pident id1) subst
             | Sig_module _ ->
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->
                 Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
-            | Sig_typext (id2', decl2, _) ->
-                begin match item1 with
-                | Sig_typext (id1', decl1, _) ->
-                    let ids1 = Subst.sub_ids_ext decl1 in
-                    let ids2 = Subst.sub_ids_ext decl2 in
-                    equate_subtypes ids1 ids2 subst
-                | _ -> assert false
-                end
-            | Sig_value _ | Sig_class _ | Sig_class_type _ ->
+            | Sig_value _ | Sig_typext _
+            | Sig_class _ | Sig_class_type _ ->
                 subst
           in
           pair_components new_subst

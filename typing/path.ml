@@ -52,3 +52,12 @@ let rec last = function
   | Pident id -> Ident.name id
   | Pdot(_, s, _) -> s
   | Papply(_, p) -> last p
+
+let is_uident s =
+  match s.[0] with
+  | 'A'..'Z' -> true
+  | _ -> false
+
+let constructor_typath = function
+  | Pdot(ty_path, s, _) when is_uident s -> Some (ty_path, s)
+  | _ -> None

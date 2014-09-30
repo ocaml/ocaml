@@ -207,7 +207,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Cstr_tuple of type_expr list
-  | Cstr_record of Ident.t * label_declaration list
+  | Cstr_record of label_declaration list
 
 type extension_constructor =
     {

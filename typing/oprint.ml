@@ -27,23 +27,6 @@ let rec print_ident ppf =
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
-
-let print_type_ident ppf = function
-  | Oide_ident s ->
-      begin match Btype.uninlined_record_name s with
-      | None -> pp_print_string ppf s
-      | Some (_typ, cstr) ->
-          fprintf ppf "!%s" cstr
-      end
-  | Oide_dot (m, s) as id ->
-      begin match Btype.uninlined_record_name s with
-      | None -> print_ident ppf id
-      | Some (_typ, cstr) ->
-          fprintf ppf "!%a.%s" print_ident m cstr
-      end
-  | Oide_apply _ as id ->
-      print_ident ppf id
-
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
   ||
@@ -209,7 +192,7 @@ and print_simple_out_type ppf =
   | Otyp_constr (id, tyl) ->
       pp_open_box ppf 0;
       print_typargs ppf tyl;
-      print_type_ident ppf id;
+      print_ident ppf id;
       pp_close_box ppf ()
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields

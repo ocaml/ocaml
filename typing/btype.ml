@@ -255,12 +255,12 @@ type type_iterators =
 
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
-  | Cstr_record (_, lbls) -> List.iter (fun d -> f d.ld_type) lbls
+  | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
 
 let map_type_expr_cstr_args f = function
   | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
-  | Cstr_record (r, lbls) ->
-      Cstr_record (r, List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
+  | Cstr_record lbls ->
+      Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
 
 let iter_type_expr_kind f = function
   | Type_abstract -> ()
@@ -686,14 +686,3 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
-
-
-let inlined_record_name typ cstr =
-  Printf.sprintf "!%s.%s" typ cstr
-
-let uninlined_record_name s =
-  if s.[0] = '!' then
-    let i = String.index s '.' in
-    Some (String.sub s 1 (i - 1), String.sub s (i + 1) (String.length s - i - 1))
-  else
-    None

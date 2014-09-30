@@ -475,29 +475,13 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let is_uident s =
-  match s.[0] with
-  | 'A'..'Z' -> true
-  | _ -> false
-
 let labels_of_type_fwd = ref (fun _ _ -> assert false)
 
 let find_type_full path env =
-  match path with
-  | Pdot (Pdot(mod_path, "*ext*", _), s, _) ->
-      let _constr_path = Pdot(mod_path, s, Path.nopos) in
-      (* this is how extension constructor paths are encoded *)
-      (* We should lookup all constructors with constr_path,
-         and keep the only one (if any) that is an extension constructor. *)
-      (* Pb: we don't have access to its extension_constructor anymore... *)
-      (* We should also have an encoding for local extension constructors *)
-      assert false
-  | Pdot (ty_path, s, _) when is_uident s ->
-      print_endline "XXXX";
-      (* perhaps we should pre-compute the inner type_declaration
-         in Datarepr in keep it as part of the constructor_description
-         (instead of recreating it here)? *)
-      let (decl, (cstrs, _, _)) =
+  match Path.constructor_typath path with
+  | None -> find_type_full path env
+  | Some (ty_path, s) ->
+      let (_, (cstrs, _, _)) =
         try find_type_full ty_path env
         with Not_found -> assert false
       in
@@ -512,9 +496,6 @@ let find_type_full path env =
       in
       let labels = !labels_of_type_fwd path tdecl in
       (tdecl, ([], List.map snd labels, true))
-  | _ -> find_type_full path env
-
-
 
 let find_type p env =
   fst (find_type_full p env)
@@ -1154,13 +1135,11 @@ let rec prefix_idents root pos sub = function
       (p::pl, final_sub)
   | Sig_type(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
-      let sub = Subst.add_prefixes root (Subst.sub_ids decl) sub in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Sig_typext(id, ext, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
-      let sub = Subst.add_prefixes root (Subst.sub_ids_ext ext) sub in
       let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
   | Sig_module(id, mty, _) :: rem ->

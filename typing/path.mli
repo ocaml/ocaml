@@ -28,3 +28,5 @@ val name: ?paren:(string -> bool) -> t -> string
 val head: t -> Ident.t
 
 val last: t -> string
+
+val constructor_typath: t -> (t * string) option

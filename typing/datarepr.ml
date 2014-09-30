@@ -50,7 +50,7 @@ let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 let constructor_args name ty_path type_manifest arg_vars rep =
   function
   | Cstr_tuple l -> l, None
-  | Cstr_record (_, lbls) ->
+  | Cstr_record lbls ->
       let path = Path.Pdot(ty_path, name, Path.nopos) in
       let type_manifest =
         match type_manifest with
@@ -98,7 +98,7 @@ let constructor_descrs ty_path decl cstrs =
         let tyl =
           match cd_args with
           | Cstr_tuple l -> l
-          | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
+          | Cstr_record l -> List.map (fun l -> l.ld_type) l
         in
         (* Note: variables bound by Tpoly are Tvar, not Tunivar,
            and thus they are not considered as free, which is
@@ -152,7 +152,7 @@ let extension_descr ?rebind path_ext ext =
   let tyl =
     match ext.ext_args with
     | Cstr_tuple l -> l
-    | Cstr_record (_, l) -> List.map (fun l -> l.ld_type) l
+    | Cstr_record l -> List.map (fun l -> l.ld_type) l
   in
   let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
   let existentials =

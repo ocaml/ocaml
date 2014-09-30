@@ -69,22 +69,12 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
-(* Note: this logic is duplicated in Oprint.print_type_ident *)
 let rec string_of_out_ident = function
-  | Oide_ident s ->
-      begin match Btype.uninlined_record_name s with
-      | None -> s
-      | Some (_typ, cstr) -> Printf.sprintf "!%s" cstr
-      end
-  | Oide_dot (m, s) ->
-      begin match Btype.uninlined_record_name s with
-      | None -> Printf.sprintf "%s.%s" (string_of_out_ident m) s
-      | Some (_typ, cstr) ->
-          Printf.sprintf "!%s.%s" (string_of_out_ident m) cstr
-      end
+  | Oide_ident s -> s
+  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
   | Oide_apply (id1, id2) ->
-      Printf.sprintf "%s(%s)" (string_of_out_ident id1)
-        (string_of_out_ident id2)
+      String.concat ""
+        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
 
 let string_of_path p = string_of_out_ident (tree_of_path p)
 
@@ -752,7 +742,7 @@ let string_of_mutable = function
 
 let mark_loops_constructor_arguments = function
   | Cstr_tuple l -> List.iter mark_loops l
-  | Cstr_record (_, l) -> List.iter (fun l -> mark_loops l.ld_type) l
+  | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
 
 let rec tree_of_type_decl id decl =
 
@@ -865,7 +855,7 @@ let rec tree_of_type_decl id decl =
 
 and tree_of_constructor_arguments = function
   | Cstr_tuple l -> tree_of_typlist false l
-  | Cstr_record (_, l) -> [ Otyp_record (List.map tree_of_label l) ]
+  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
 
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in

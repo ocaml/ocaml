@@ -21,12 +21,10 @@ type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    typids: (Ident.t, Ident.t) Tbl.t; (* only for Cstr_record ids *)
     for_saving: bool }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    typids = Tbl.empty;
     for_saving = false }
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
@@ -36,38 +34,6 @@ let add_module id p s = { s with modules = Tbl.add id p s.modules }
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
-
-
-
-let sub_ids_args = function
-  | Cstr_record (id, _) -> [id]
-  | Cstr_tuple _ -> []
-
-let sub_ids decl =
-  match decl.type_kind with
-  | Type_variant cstrs ->
-      List.fold_left (fun l c -> sub_ids_args c.cd_args @ l) [] cstrs
-  | _ -> []
-
-
-let sub_ids_ext ext = sub_ids_args ext.ext_args
-
-let add_prefixes root ids sub =
-  List.fold_left
-    (fun sub id -> add_type id (Pdot(root, Ident.name id, nopos)) sub)
-    sub ids
-
-let rename_types ids sub =
-  List.fold_left
-    (fun s id ->
-       assert(not (Tbl.mem id s.types));
-       let id' = Ident.rename id in
-       {s with typids = Tbl.add id id' s.typids;
-               types = Tbl.add id (Pident id') s.types
-       }
-    )
-    sub ids
-
 
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
@@ -109,6 +75,11 @@ let type_path s = function
       Pdot(module_path s p, n, pos)
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
+
+let type_path s p =
+  match Path.constructor_typath p with
+  | None -> type_path s p
+  | Some (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
 
 (* Special type ids for saved signatures *)
 
@@ -230,9 +201,8 @@ let label_declaration s l =
 let constructor_arguments s = function
   | Cstr_tuple l ->
       Cstr_tuple (List.map (typexp s) l)
-  | Cstr_record (id, l) ->
-      let id = try Tbl.find id s.typids with Not_found -> id in
-      Cstr_record (id, List.map (label_declaration s) l)
+  | Cstr_record l ->
+      Cstr_record (List.map (label_declaration s) l)
 
 let type_declaration s decl =
   let decl =
@@ -354,7 +324,6 @@ let extension_constructor s ext =
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
   | Sig_type(id, d, _) :: sg ->
-      let s = rename_types (sub_ids d) s in
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
   | Sig_module(id, mty, _) :: sg ->
@@ -365,7 +334,6 @@ let rec rename_bound_idents s idents = function
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
   | Sig_typext(id, d, _) :: sg ->
-      let s = rename_types (sub_ids_ext d) s in
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
   | (Sig_value(id, _) | Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
@@ -392,12 +360,11 @@ let rec modtype s = function
       Mty_alias(module_path s p)
 
 and signature s sg =
-  (* TODO: rename the Ident.t in Cstr_record *)
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
   let (new_idents, s') =
-    rename_bound_idents {s with typids = Tbl.empty} [] sg
+    rename_bound_idents s [] sg
   in
   (* ... then apply it to each signature component in turn *)
   List.map2 (signature_component s') sg new_idents
@@ -446,5 +413,4 @@ let compose s1 s2 =
   { types = merge_tbls (type_path s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    typids = Tbl.empty;
     for_saving = false }

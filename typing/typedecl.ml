@@ -185,8 +185,7 @@ let transl_constructor_arguments loc env closed ty_name c_name = function
       Cstr_tuple l
   | Pcstr_record l ->
       let lbls, lbls' = transl_labels loc env closed l in
-      let id = Ident.create (Btype.inlined_record_name ty_name c_name) in
-      Types.Cstr_record (id, lbls'),
+      Types.Cstr_record lbls',
       Cstr_record lbls
 
 let make_constructor loc env type_path type_params c_name sargs sret_type =
@@ -415,7 +414,7 @@ let check_constraints env sdecl (_, decl) =
                 (fun sty ty ->
                    check_constraints_rec env sty.ptyp_loc visited ty)
                 styl tyl
-          | Cstr_record (_, tyl), Pcstr_record styl ->
+          | Cstr_record tyl, Pcstr_record styl ->
               check_constraints_labels env visited tyl styl
           | _ -> assert false (* todo *)
           end;
@@ -795,7 +794,7 @@ let constrained env vars ty =
 
 let for_constr = function
   | Types.Cstr_tuple l -> add_false l
-  | Types.Cstr_record (_, l) ->
+  | Types.Cstr_record l ->
       List.map
         (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
         l
@@ -1556,7 +1555,7 @@ let explain_unbound_single ppf tv ty =
 
 let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
-  | Types.Cstr_record (_, lbls) -> List.map (fun l -> l.Types.ld_type) lbls
+  | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
 let report_error ppf = function
   | Repeated_parameter ->
