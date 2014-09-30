@@ -46,7 +46,7 @@ module D = struct
   let file num filename = directive (File (num, filename))
   let global s = directive (Global s)
   let indirect_symbol s = directive (Indirect_symbol s)
-  let llabel ?(typ = NONE) s = directive (NewLabel (s, typ))
+  let label ?(typ = NONE) s = directive (NewLabel (s, typ))
   let loc num loc = directive (Loc (num, loc))
   let long cst = directive (Long cst)
   let model name = directive (Model name)

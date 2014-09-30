@@ -46,7 +46,7 @@ module D : sig
   val file: int -> string -> unit
   val global: string -> unit
   val indirect_symbol: string -> unit
-  val llabel: ?typ:data_type -> string -> unit
+  val label: ?typ:data_type -> string -> unit
   val loc: int -> int -> unit
   val long: constant -> unit
   val model: string -> unit

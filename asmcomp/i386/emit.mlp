@@ -29,7 +29,7 @@ open Intel_proc
 open Intel_dsl
 open Intel_dsl.DSL
 
-let _label s = D.llabel ~typ:DWORD s
+let _label s = D.label ~typ:DWORD s
 
 let mem_sym typ ?(ofs = 0) sym =
   mem32 typ ~scale:0 ?base:None ~sym ofs RAX (*ignored since scale=0*)
@@ -121,7 +121,7 @@ let emit_data_label lbl =
 
 let label s = sym (emit_label s)
 
-let def_label s = D.llabel (emit_label s)
+let def_label s = D.label (emit_label s)
 
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 16 ;
@@ -953,7 +953,7 @@ let fundecl fundecl =
     D.private_extern (emit_symbol fundecl.fun_name)
   else
     D.global (emit_symbol fundecl.fun_name);
-  D.llabel (emit_symbol fundecl.fun_name);
+  D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
