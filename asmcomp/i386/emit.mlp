@@ -27,9 +27,12 @@ open Emitaux
 open Intel_ast
 open Intel_proc
 open Intel_dsl
-open Intel_dsl.DSL32
+open Intel_dsl.DSL
 
 let _label s = _llabel ~typ:DWORD s
+
+let mem_sym typ ?ofs sym =
+  mem32 typ ~scale:0 ?base:None ~sym ofs RAX (*ignored since scale=0*)
 
 (* CFI directives *)
 

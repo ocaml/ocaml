@@ -84,6 +84,16 @@ module DSL : sig
   val esp: arg
   val st0: arg
   val st1: arg
+
+  val mem32:
+    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+    int -> reg64 -> arg
+
+  val mem64:
+    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+    int -> reg64 -> arg
+
+  val mem64_rip: data_type -> ?ofs:int -> string -> arg
 end
 module I : sig
   val add: arg * arg -> unit
@@ -176,20 +186,4 @@ module I : sig
   val xchg: arg * arg -> unit
   val xor: arg * arg -> unit
   val xorpd: arg * arg -> unit
-end
-module DSL32 : sig
-  include module type of DSL
-
-  val mem32:
-    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
-    int -> reg64 -> arg
-  val mem_sym: data_type -> ?ofs:int -> string -> arg
-end
-module DSL64 : sig
-  include module type of DSL
-
-  val mem64:
-    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
-    int -> reg64 -> arg
-  val from_rip: data_type -> ?ofs:int -> string -> arg
 end

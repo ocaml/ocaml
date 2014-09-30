@@ -93,6 +93,17 @@ module DSL = struct
   let esp = Reg32 RSP
   let st0 = Regf (ST 0)
   let st1 = Regf (ST 1)
+
+  let mem32 typ ?(scale = 1) ?base ?sym displ idx =
+    assert(scale > 0);
+    Mem32 {typ; idx; scale; base; sym; displ}
+
+  let mem64 typ ?(scale = 1) ?base ?sym offset idx =
+    assert(scale > 0);
+    Mem64 {typ; idx; scale; base; sym; displ=offset}
+
+  let mem64_rip typ ?(ofs = 0) s =
+    Mem64_RIP (typ, s, ofs)
 end
 
 module I = struct
@@ -186,26 +197,4 @@ module I = struct
   let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
   let xor (x, y)= emit (XOR (x, y))
   let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
-end
-
-module DSL32 = struct
-  include DSL
-
-  let mem32 typ ?(scale = 1) ?base ?sym displ idx =
-    assert(scale > 0);
-    Mem32 {typ; idx; scale; base; sym; displ}
-
-  let mem_sym typ ?(ofs = 0) l =
-    Mem32 {typ; idx=RAX; scale=0; base=None; sym=Some l; displ=ofs}
-end
-
-module DSL64 = struct
-  include DSL
-
-  let mem64 typ ?(scale = 1) ?base ?sym offset idx =
-    assert(scale > 0);
-    Mem64 {typ; idx; scale; base; sym; displ=offset}
-
-  let from_rip typ ?(ofs = 0) s =
-    Mem64_RIP (typ, s, ofs)
 end

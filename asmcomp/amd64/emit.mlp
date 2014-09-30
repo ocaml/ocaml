@@ -27,7 +27,7 @@ open Emitaux
 open Intel_ast
 open Intel_proc
 open Intel_dsl
-open Intel_dsl.DSL64
+open Intel_dsl.DSL
 
 let _label s = _llabel ~typ:QWORD s
 
@@ -122,9 +122,9 @@ let windows =
 
 let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
-    I.mov (from_rip QWORD (emit_symbol s ^ "@GOTPCREL"),  arg)
+    I.mov (mem64_rip QWORD (emit_symbol s ^ "@GOTPCREL"),  arg)
   else if !pic_code then
-    I.lea (from_rip NONE (emit_symbol s), arg)
+    I.lea (mem64_rip NONE (emit_symbol s), arg)
   else
     I.mov (sym (emit_symbol s), arg)
 
@@ -196,7 +196,7 @@ let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
       add_used_symbol s;
-      from_rip typ (emit_symbol s) ~ofs
+      mem64_rip typ (emit_symbol s) ~ofs
   | Iindexed d ->
       mem64 typ d (arg64 i n)
   | Iindexed2 d ->
@@ -439,7 +439,7 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0, res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (from_rip NONE (emit_label lbl), res i 0)
+          I.movsd (mem64_rip NONE (emit_label lbl), res i 0)
       end
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
@@ -536,7 +536,7 @@ let emit_instr fallthrough i =
           load_symbol_addr "caml_young_limit" rax;
           I.cmp (mem64 QWORD 0 RAX, r15);
         end else
-          I.cmp (from_rip QWORD (emit_symbol "caml_young_limit"), r15);
+          I.cmp (mem64_rip QWORD (emit_symbol "caml_young_limit"), r15);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
@@ -594,9 +594,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n, res i 0)
   | Lop(Inegf) ->
-      I.xorpd (from_rip OWORD (emit_symbol "caml_negf_mask"), res i 0)
+      I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask"), res i 0)
   | Lop(Iabsf) ->
-      I.andpd (from_rip OWORD (emit_symbol "caml_absf_mask"), res i 0)
+      I.andpd (mem64_rip OWORD (emit_symbol "caml_absf_mask"), res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1, res i 0)
   | Lop(Ifloatofint) ->
@@ -693,7 +693,7 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.lea (from_rip NONE lbl, reg tmp1);
+      I.lea (mem64_rip NONE lbl, reg tmp1);
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.add (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);
