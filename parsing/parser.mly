@@ -1725,7 +1725,7 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters /*label_longident*/ type_longident with_type_binder core_type constraints
+    TYPE type_parameters label_longident with_type_binder core_type constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
@@ -2013,13 +2013,9 @@ label_longident:
   | mod_longident DOT LIDENT                    { Ldot($1, $3) }
 ;
 type_longident:
-    type_ident                                  { Lident $1 }
-  | mod_ext_longident DOT type_ident            { Ldot($1, $3) }
+    LIDENT                                      { Lident $1 }
+  | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
   | BANG constr_qual_longident                  { $2 }
-;
-type_ident:
-    LIDENT                                      { $1 }
-/*  | LIDENT DOT UIDENT                       { $1 ^ "." ^ $3 } */
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }

@@ -1280,14 +1280,6 @@ class printer  ()= object(self:'self)
              (self#list ~sep:"@\n" constructor_declaration) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-(*
-          self#record_declaration f l
-      | Ptype_open ->
-          pp f ".."
-      ) x
-      (self#list
-         (fun f (ct1,ct2,_) ->
-*)
           pp f "%t@;{@\n%a}" intro
              (self#list ~sep:"@\n" label_declaration)  l ;
       | Ptype_open -> pp f "%t@;.." intro
