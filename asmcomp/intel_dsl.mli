@@ -182,34 +182,31 @@ end
 module INS64 : sig
   include module type of INS
 
-  val addq: arg * arg -> unit
-  val subq: arg * arg -> unit
-  val andq: arg * arg -> unit
-  val orq: arg * arg -> unit
-  val xorq: arg * arg -> unit
-  val cmpq: arg * arg -> unit
-  val testq: arg * arg -> unit
-  val movq: arg * arg -> unit
-  val movzbq: arg * arg -> unit
-  val movsbq: arg * arg -> unit
-  val movzwq: arg * arg -> unit
-  val movswq: arg * arg -> unit
-  val idivq: arg -> unit
-  val salq: arg * arg -> unit
-  val sarq: arg * arg -> unit
-  val shrq: arg * arg -> unit
-  val imulq: arg * arg option -> unit
-  val popq: arg -> unit
-  val pushq: arg -> unit
-  val leaq: arg * arg -> unit
+  val add: arg * arg -> unit
+  val sub: arg * arg -> unit
+  val and_: arg * arg -> unit
+  val or_: arg * arg -> unit
+  val xor: arg * arg -> unit
+  val cmp: arg * arg -> unit
+  val test: arg * arg -> unit
+  val mov: arg * arg -> unit
+  val movzx: arg * arg -> unit
+  val movsx: arg * arg -> unit
+  val idiv: arg -> unit
+  val sal: arg * arg -> unit
+  val sar: arg * arg -> unit
+  val shr: arg * arg -> unit
+  val imul: arg * arg option -> unit
+  val pop: arg -> unit
+  val push: arg -> unit
+  val lea: arg * arg -> unit
   val movsd: arg * arg -> unit
   val ucomisd: arg * arg -> unit
   val comisd: arg * arg -> unit
   val movapd: arg * arg -> unit
-  val movabsq: int64 * arg -> unit
   val xorpd: arg * arg -> unit
   val andpd: arg * arg -> unit
-  val movslq: arg * arg -> unit
+  val movsxd: arg * arg -> unit
   val movss: arg * arg -> unit
   val cvtss2sd: arg * arg -> unit
   val cvtsd2ss: arg * arg -> unit
@@ -220,9 +217,9 @@ module INS64 : sig
   val mulsd: arg * arg -> unit
   val divsd: arg * arg -> unit
   val sqrtsd: arg * arg -> unit
-  val cqto: unit -> unit
-  val incq: arg -> unit
-  val decq: arg -> unit
+  val cqo: unit -> unit
+  val inc: arg -> unit
+  val dec: arg -> unit
   val xchg: arg * arg -> unit
   val bswap: arg -> unit
 end

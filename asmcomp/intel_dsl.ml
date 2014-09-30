@@ -218,41 +218,38 @@ end
 module INS64 = struct
   include INS
 
-  let addq (x, y) = emit (ADD (x, y))
-  let subq (x, y) = emit (SUB (x, y))
-  let andq (x, y) = emit (AND (x, y))
-  let orq (x, y) = emit (OR (x, y))
-  let xorq (x, y) = emit (XOR (x, y))
-  let cmpq (x, y) = emit (CMP (x, y))
-  let testq (x, y) = emit (TEST (x, y))
+  let add (x, y) = emit (ADD (x, y))
+  let sub (x, y) = emit (SUB (x, y))
+  let and_ (x, y) = emit (AND (x, y))
+  let or_ (x, y) = emit (OR (x, y))
+  let xor (x, y) = emit (XOR (x, y))
+  let cmp (x, y) = emit (CMP (x, y))
+  let test (x, y) = emit (TEST (x, y))
 
-  let movq (x, y) = emit (MOV (x, y))
+  let mov (x, y) = emit (MOV (x, y))
 
-  let movzbq (x, y) = emit (MOVZX (x, y))
-  let movsbq (x, y) = emit (MOVSX (x, y))
-  let movzwq (x, y) = emit (MOVZX (x, y))
-  let movswq (x, y) = emit (MOVSX (x, y))
+  let movzx (x, y) = emit (MOVZX (x, y))
+  let movsx (x, y) = emit (MOVSX (x, y))
 
-  let idivq arg = emit (IDIV arg)
+  let idiv arg = emit (IDIV arg)
 
-  let salq (arg1, arg2) = emit (SAL (arg1, arg2))
-  let sarq (arg1, arg2) = emit (SAR (arg1, arg2))
-  let shrq (arg1, arg2) = emit (SHR (arg1, arg2))
-  let imulq (arg1, arg2) = emit (IMUL (arg1, arg2))
+  let sal (arg1, arg2) = emit (SAL (arg1, arg2))
+  let sar (arg1, arg2) = emit (SAR (arg1, arg2))
+  let shr (arg1, arg2) = emit (SHR (arg1, arg2))
+  let imul (arg1, arg2) = emit (IMUL (arg1, arg2))
 
-  let popq arg = emit (POP arg)
-  let pushq arg = emit (PUSH arg)
-  let leaq (arg1, arg2) = emit (LEA (arg1, arg2))
+  let pop arg = emit (POP arg)
+  let push arg = emit (PUSH arg)
+  let lea (arg1, arg2) = emit (LEA (arg1, arg2))
 
   let movsd (arg1, arg2) = emit (MOVSD (arg1, arg2))
   let ucomisd (arg1, arg2) = emit (UCOMISD (arg1, arg2))
   let comisd (arg1, arg2) = emit (COMISD (arg1, arg2))
   let movapd (arg1, arg2) = emit (MOVAPD (arg1, arg2))
-  let movabsq (arg1, arg2) = emit (MOV (Imm arg1, arg2))
   let xorpd (arg1, arg2) = emit (XORPD (arg1, arg2))
   let andpd (arg1, arg2) = emit (ANDPD (arg1, arg2))
 
-  let movslq (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
+  let movsxd (arg1, arg2) = emit (MOVSXD  (arg1, arg2))
   let movss (arg1, arg2) = emit (MOVSS (arg1, arg2))
   let cvtss2sd (arg1, arg2) = emit (CVTSS2SD (arg1, arg2))
   let cvtsd2ss (arg1, arg2) = emit (CVTSD2SS (arg1, arg2))
@@ -264,10 +261,10 @@ module INS64 = struct
   let divsd (arg1, arg2) = emit (DIVSD (arg1, arg2))
   let sqrtsd (arg1, arg2) = emit (SQRTSD (arg1, arg2))
 
-  let cqto () = emit CQO
+  let cqo () = emit CQO
 
-  let incq arg = emit (INC arg)
-  let decq arg = emit (DEC arg)
+  let inc arg = emit (INC arg)
+  let dec arg = emit (DEC arg)
   let xchg (arg1, arg2) = emit (XCHG (arg1, arg2))
   let bswap arg = emit (BSWAP arg)
 end
