@@ -29,7 +29,7 @@ open Intel_proc
 open Intel_dsl
 open Intel_dsl.DSL
 
-let _label s = _llabel ~typ:QWORD s
+let _label s = D.llabel ~typ:QWORD s
 
 (* Override proc.ml *)
 
@@ -46,16 +46,16 @@ let register_name r =
 (* CFI directives *)
 
 let cfi_startproc () =
-  if Config.asm_cfi_supported then _cfi_startproc ()
+  if Config.asm_cfi_supported then D.cfi_startproc ()
 
 let cfi_endproc () =
-  if Config.asm_cfi_supported then _cfi_endproc ()
+  if Config.asm_cfi_supported then D.cfi_endproc ()
 
 let cfi_adjust_cfa_offset n =
-  if Config.asm_cfi_supported then _cfi_adjust_cfa_offset n
+  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
 let emit_debug_info dbg =
-  emit_debug_info_gen dbg _file _loc
+  emit_debug_info_gen dbg D.file D.loc
 
 let fp = Config.with_frame_pointers
 
@@ -142,10 +142,10 @@ let emit_data_label lbl =
 
 let label s = sym (emit_label s)
 
-let def_label s = _llabel (emit_label s)
+let def_label s = D.llabel (emit_label s)
 
 let emit_Llabel fallthrough lbl =
-  if not fallthrough && !fastcode_flag then _align 4;
+  if not fallthrough && !fastcode_flag then D.align 4;
   def_label lbl
 
 (* Output a pseudo-register *)
@@ -395,13 +395,13 @@ let add_float_constant cst =
 
 let emit_float_constant f lbl =
   _label (emit_label lbl);
-  _qword (Const f)
+  D.qword (Const f)
 
 let emit_global_label s =
   let lbl = Compilenv.make_symbol (Some s) in
   add_def_symbol lbl;
   let lbl = emit_symbol lbl in
-  _global lbl;
+  D.global lbl;
   _label lbl
 
 
@@ -699,18 +699,18 @@ let emit_instr fallthrough i =
       I.jmp (reg tmp1);
 
       begin match system with
-      | S_macosx -> _section [".const"] None []
-      | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []
+      | S_macosx -> D.section [".const"] None []
+      | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
       | S_win64 -> () (* with MASM, use the text segment *)
-      | _ -> _section [".rodata"] None []
+      | _ -> D.section [".rodata"] None []
       end;
-      _align 4;
+      D.align 4;
       _label lbl;
       for i = 0 to Array.length jumptbl - 1 do
-        _long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
+        D.long (ConstSub (ConstLabel(emit_label jumptbl.(i)),
                          ConstLabel lbl))
       done;
-      _text ()
+      D.text ()
   | Lsetuptrap lbl ->
       I.call (label lbl)
   | Lpushtrap ->
@@ -772,17 +772,17 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  _text ();
-  _align 16;
+  D.text ();
+  D.align 16;
   add_def_symbol fundecl.fun_name;
   if system = S_macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
-    _private_extern (emit_symbol fundecl.fun_name)
+    D.private_extern (emit_symbol fundecl.fun_name)
   else
-    _global (emit_symbol fundecl.fun_name);
-  _llabel (emit_symbol fundecl.fun_name);
+    D.global (emit_symbol fundecl.fun_name);
+  D.llabel (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if fp then begin
@@ -803,8 +803,8 @@ let fundecl fundecl =
   cfi_endproc ();
   begin match system with
   | S_gnu | S_linux ->
-      _type (emit_symbol fundecl.fun_name) "@function";
-      _size (emit_symbol fundecl.fun_name)
+      D.type_ (emit_symbol fundecl.fun_name) "@function";
+      D.size (emit_symbol fundecl.fun_name)
         (ConstSub (
             ConstThis,
             ConstLabel (emit_symbol fundecl.fun_name)))
@@ -814,23 +814,23 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-  | Cglobal_symbol s -> _global (emit_symbol s)
+  | Cglobal_symbol s -> D.global (emit_symbol s)
   | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
   | Cdefine_label lbl -> _label (emit_data_label lbl)
-  | Cint8 n -> _byte (const n)
-  | Cint16 n -> _word (const n)
-  | Cint32 n -> _long (const_nat n)
-  | Cint n -> _qword (const_nat n)
-  | Csingle f -> _long  (Const (Int64.of_int32 (Int32.bits_of_float f)))
-  | Cdouble f -> _qword (Const (Int64.bits_of_float f))
-  | Csymbol_address s -> add_used_symbol s; _qword (ConstLabel (emit_symbol s))
-  | Clabel_address lbl -> _qword (ConstLabel (emit_data_label lbl))
-  | Cstring s -> _ascii s
-  | Cskip n -> if n > 0 then _space n
-  | Calign n -> _align n
+  | Cint8 n -> D.byte (const n)
+  | Cint16 n -> D.word (const n)
+  | Cint32 n -> D.long (const_nat n)
+  | Cint n -> D.qword (const_nat n)
+  | Csingle f -> D.long  (Const (Int64.of_int32 (Int32.bits_of_float f)))
+  | Cdouble f -> D.qword (Const (Int64.bits_of_float f))
+  | Csymbol_address s -> add_used_symbol s; D.qword (ConstLabel (emit_symbol s))
+  | Clabel_address lbl -> D.qword (ConstLabel (emit_data_label lbl))
+  | Cstring s -> D.ascii s
+  | Cskip n -> if n > 0 then D.space n
+  | Calign n -> D.align n
 
 let data l =
-  _data ();
+  D.data ();
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
@@ -840,44 +840,44 @@ let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
   float_constants := [];
   if system = S_win64 then begin
-    _extrn "caml_young_ptr" QWORD;
-    _extrn "caml_young_limit" QWORD;
-    _extrn "caml_exception_pointer" QWORD;
-    _extrn "caml_absf_mask" QWORD;
-    _extrn "caml_negf_mask" QWORD;
-    _extrn "caml_call_gc" NEAR;
-    _extrn "caml_c_call" NEAR;
-    _extrn "caml_allocN" NEAR;
-    _extrn "caml_alloc1" NEAR;
-    _extrn "caml_alloc2" NEAR;
-    _extrn "caml_alloc3" NEAR;
-    _extrn "caml_ml_array_bound_error" NEAR;
-    _extrn "caml_raise_exn" NEAR;
-    _extrn "caml_reraise_exn" NEAR;
+    D.extrn "caml_young_ptr" QWORD;
+    D.extrn "caml_young_limit" QWORD;
+    D.extrn "caml_exception_pointer" QWORD;
+    D.extrn "caml_absf_mask" QWORD;
+    D.extrn "caml_negf_mask" QWORD;
+    D.extrn "caml_call_gc" NEAR;
+    D.extrn "caml_c_call" NEAR;
+    D.extrn "caml_allocN" NEAR;
+    D.extrn "caml_alloc1" NEAR;
+    D.extrn "caml_alloc2" NEAR;
+    D.extrn "caml_alloc3" NEAR;
+    D.extrn "caml_ml_array_bound_error" NEAR;
+    D.extrn "caml_raise_exn" NEAR;
+    D.extrn "caml_reraise_exn" NEAR;
   end;
 
 
   if !Clflags.dlcode && system <> S_win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     begin match system with
-    | S_macosx -> _section [".literal16"] None []
-    | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []
-    | _ -> _section [".rodata.cst8"] (Some "a") ["@progbits"]
+    | S_macosx -> D.section [".literal16"] None []
+    | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
+    | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
     end;
-    _align 16;
+    D.align 16;
     _label (emit_symbol "caml_negf_mask");
-    _qword (Const 0x8000000000000000L);
-    _qword (Const 0L);
-    _align 16;
+    D.qword (Const 0x8000000000000000L);
+    D.qword (Const 0L);
+    D.align 16;
     _label (emit_symbol "caml_absf_mask");
-    _qword (Const 0x7FFFFFFFFFFFFFFFL);
-    _qword (Const 0xFFFFFFFFFFFFFFFFL);
+    D.qword (Const 0x7FFFFFFFFFFFFFFFL);
+    D.qword (Const 0xFFFFFFFFFFFFFFFFL);
   end;
 
-  _data ();
+  D.data ();
   emit_global_label "data_begin";
 
-  _text ();
+  D.text ();
   emit_global_label "code_begin";
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
@@ -885,72 +885,72 @@ let begin_assembly() =
 let end_assembly() =
   if !float_constants <> [] then begin
     begin match system with
-    | S_macosx -> _section [".literal8"] None []
-    | S_mingw64 | S_cygwin -> _section [".rdata"] (Some "dr") []
-    | S_win64 -> _data ()
-    | _ -> _section [".rodata.cst8"] (Some "a") ["@progbits"]
+    | S_macosx -> D.section [".literal8"] None []
+    | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
+    | S_win64 -> D.data ()
+    | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
     end;
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  _text ();
+  D.text ();
   if system = S_macosx then I.nop ();
   (* suppress "ld warning: atom sorting error" *)
 
   emit_global_label "code_end";
 
-  _data ();
+  D.data ();
   emit_global_label "data_end";
-  _long (const 0);
+  D.long (const 0);
 
   emit_global_label "frametable";
 
   emit_frames
-    { efa_label = (fun l -> _qword (ConstLabel (emit_label l)));
-      efa_16 = (fun n -> _word (const n));
-      efa_32 = (fun n -> _long (const_32 n));
-      efa_word = (fun n -> _qword (const n));
-      efa_align = _align;
+    { efa_label = (fun l -> D.qword (ConstLabel (emit_label l)));
+      efa_16 = (fun n -> D.word (const n));
+      efa_32 = (fun n -> D.long (const_32 n));
+      efa_word = (fun n -> D.qword (const n));
+      efa_align = D.align;
       efa_label_rel =
         if system = S_macosx then begin
           let setcnt = ref 0 in
           fun lbl ofs ->
             incr setcnt;
             let s = Printf.sprintf "L$set$%d" !setcnt in
-            _setvar (s,
+            D.setvar (s,
                       ConstAdd (
                         ConstLabel(emit_label lbl),
                         ConstAdd (const 4, const_32 ofs))
                     );
-            _long (ConstLabel s)
+            D.long (ConstLabel s)
         end else begin
           fun lbl ofs ->
-            _long (ConstAdd (
+            D.long (ConstAdd (
                 ConstSub(
                   ConstLabel(emit_label lbl),
                   ConstThis),
                 const_32 ofs))
         end;
       efa_def_label = (fun l -> _label (emit_label l));
-      efa_string = (fun s -> _ascii (s ^ "\000"))
+      efa_string = (fun s -> D.ascii (s ^ "\000"))
     };
 
   if system = S_linux then
     (* Mark stack as non-executable, PR#4564 *)
-    _section [".note.GNU-stack"] (Some "") [ "%progbits" ];
+    D.section [".note.GNU-stack"] (Some "") [ "%progbits" ];
 
   if system = S_win64 then begin
-    _comment "External functions";
+    D.comment "External functions";
     StringSet.iter
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
-           _extrn (emit_symbol s) NEAR)
+           D.extrn (emit_symbol s) NEAR)
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;
   end;
 
-  _end ();
+  D.end_ ();
 
   let asm =
     if !Emitaux.create_asm_file then

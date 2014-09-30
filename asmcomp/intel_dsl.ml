@@ -30,6 +30,36 @@
 open Intel_ast
 open Intel_proc
 
+module D = struct
+  let section segment flags args = directive (Section (segment, flags, args))
+  let mode386 () = directive Mode386
+  let align n = directive (Align (false, n))
+  let ascii s = directive (Bytes s)
+  let byte n = directive (Byte n)
+  let cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
+  let cfi_endproc () = directive Cfi_endproc
+  let cfi_startproc () = directive Cfi_startproc
+  let comment s = directive (Comment s)
+  let data () = section [ ".data" ] None []
+  let end_ () = directive End
+  let extrn s ptr = directive (External (s, ptr))
+  let file num filename = directive (File (num, filename))
+  let global s = directive (Global s)
+  let indirect_symbol s = directive (Indirect_symbol s)
+  let llabel ?(typ = NONE) s = directive (NewLabel (s, typ))
+  let loc num loc = directive (Loc (num, loc))
+  let long cst = directive (Long cst)
+  let model name = directive (Model name)
+  let private_extern s = directive (Private_extern s)
+  let qword cst = directive (Quad cst)
+  let setvar (arg1, arg2) = directive (Set (arg1, arg2))
+  let size name cst = directive (Size (name, cst))
+  let space n = directive (Space n)
+  let text () = section [ ".text" ] None []
+  let type_ name typ = directive (Type (name, typ))
+  let word cst = directive (Word cst)
+end
+
 module DSL = struct
   let sym s = Sym s
 
@@ -41,35 +71,6 @@ module DSL = struct
   let const_nat n = Const (Int64.of_nativeint n)
   let const n = Const (Int64.of_int n)
 
-  let _cfi_startproc () = directive Cfi_startproc
-  let _cfi_endproc () = directive Cfi_endproc
-  let _cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
-  let _file num filename = directive (File (num, filename))
-  let _loc num loc = directive (Loc (num, loc))
-  let _section segment flags args = directive (Section (segment, flags, args))
-  let _text () = _section [ ".text" ] None []
-  let _data () = _section [ ".data" ] None []
-  let _section segment flags args = directive (Section (segment, flags, args))
-  let _386 () = directive Mode386
-  let _model name = directive (Model name)
-  let _global s = directive (Global s)
-  let _align n = directive (Align (false, n))
-  let _llabel ?(typ = NONE) s = directive (NewLabel (s, typ))
-  let _comment s = directive (Comment s)
-  let _extrn s ptr = directive (External (s, ptr))
-  let _private_extern s = directive (Private_extern s)
-  let _indirect_symbol s = directive (Indirect_symbol s)
-  let _size name cst = directive (Size (name, cst))
-  let _type name typ = directive (Type (name, typ))
-
-  let _qword cst = directive (Quad cst)
-  let _long cst = directive (Long cst)
-  let _word cst = directive (Word cst)
-  let _byte n = directive (Byte n)
-  let _ascii s = directive (Bytes s)
-  let _space n = directive (Space n)
-  let _setvar (arg1, arg2) = directive (Set (arg1, arg2))
-  let _end () = directive End
 
   let al  = Reg8L RAX
   let ah  = Reg8H AH

@@ -29,6 +29,38 @@
 
 open Intel_ast
 
+module D : sig
+  (** Directives *)
+
+  val mode386: unit -> unit
+  val align: int -> unit
+  val ascii: string -> unit
+  val byte: constant -> unit
+  val cfi_adjust_cfa_offset: int -> unit
+  val cfi_endproc: unit -> unit
+  val cfi_startproc: unit -> unit
+  val comment: string -> unit
+  val data: unit -> unit
+  val end_: unit -> unit
+  val extrn: string -> data_type -> unit
+  val file: int -> string -> unit
+  val global: string -> unit
+  val indirect_symbol: string -> unit
+  val llabel: ?typ:data_type -> string -> unit
+  val loc: int -> int -> unit
+  val long: constant -> unit
+  val model: string -> unit
+  val private_extern: string -> unit
+  val qword: constant -> unit
+  val section: string list -> string option -> string list -> unit
+  val setvar: string * constant -> unit
+  val size: string -> constant -> unit
+  val space: int -> unit
+  val text: unit -> unit
+  val type_: string -> string -> unit
+  val word: constant -> unit
+end
+
 module DSL : sig
   val sym: string -> arg
   val emit_nat: nativeint -> arg
@@ -37,33 +69,6 @@ module DSL : sig
   val const_32: int32 -> constant
   val const_nat: nativeint -> constant
   val const: int -> constant
-  val _cfi_startproc: unit -> unit
-  val _cfi_endproc: unit -> unit
-  val _cfi_adjust_cfa_offset: int -> unit
-  val _file: int -> string -> unit
-  val _loc: int -> int -> unit
-  val _text: unit -> unit
-  val _data: unit -> unit
-  val _section: string list -> string option -> string list -> unit
-  val _386: unit -> unit
-  val _model: string -> unit
-  val _global: string -> unit
-  val _align: int -> unit
-  val _llabel: ?typ:data_type -> string -> unit
-  val _comment: string -> unit
-  val _extrn: string -> data_type -> unit
-  val _private_extern: string -> unit
-  val _indirect_symbol: string -> unit
-  val _size: string -> constant -> unit
-  val _type: string -> string -> unit
-  val _qword: constant -> unit
-  val _long: constant -> unit
-  val _word: constant -> unit
-  val _byte: constant -> unit
-  val _ascii: string -> unit
-  val _space: int -> unit
-  val _setvar: string * constant -> unit
-  val _end: unit -> unit
   val al: arg
   val ah: arg
   val cl: arg
