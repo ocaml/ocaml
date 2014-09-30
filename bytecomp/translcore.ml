@@ -788,7 +788,7 @@ and transl_exp0 e =
         match lbl.lbl_repres with
           Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
         | Record_float -> Pfloatfield lbl.lbl_pos
-        | Record_extension _ -> Pfield (lbl.lbl_pos + 1)
+        | Record_extension -> Pfield (lbl.lbl_pos + 1)
       in
       Lprim(access, [transl_exp arg])
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -797,8 +797,7 @@ and transl_exp0 e =
           Record_regular
         | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension _ ->
-            Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
+        | Record_extension -> Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
       in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
@@ -1097,7 +1096,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
           let access =
             match all_labels.(i).lbl_repres with
               Record_regular | Record_inlined _ -> Pfield i
-            | Record_extension _ -> Pfield (i + 1)
+            | Record_extension -> Pfield (i + 1)
             | Record_float -> Pfloatfield i in
           lv.(i) <- Lprim(access, [Lvar init_id])
         done
@@ -1119,14 +1118,19 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
-        | Record_extension _ ->
+        | Record_extension ->
             raise Not_constant
       with Not_constant ->
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
         | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
-        | Record_extension path ->
+        | Record_extension ->
+            let path =
+              match all_labels.(0).lbl_res.desc with
+              | Tconstr(p, _, _) -> p
+              | _ -> assert false
+            in
             let slot = transl_path env path in
             Lprim(Pmakeblock(0, Immutable), slot :: ll)
     in
@@ -1146,7 +1150,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
           Record_regular
         | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension _ -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
+        | Record_extension -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
       in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with

@@ -148,7 +148,7 @@ let report_type_mismatch0 first second decl ppf err =
         | Record_regular -> "regular"
         | Record_inlined i -> Printf.sprintf"inlined(tag %i)" i
         | Record_float -> "unboxed float"
-        | Record_extension p -> Printf.sprintf "exception %s" (Path.name p)
+        | Record_extension -> Printf.sprintf "extension"
       in
       pr "Their internal representations differ:@ %s vs %s"
         (repr r1)
@@ -217,8 +217,7 @@ let record_representations r1 r2 =
   | Record_regular, Record_regular -> true
   | Record_inlined i, Record_inlined j -> i = j
   | Record_float, Record_float -> true
-  | Record_extension _, Record_extension _ -> true
-  (* allow a different path to support exception rebinding *)
+  | Record_extension, Record_extension -> true
   | _ -> false
 
 let type_declarations ?(equality = false) env name decl1 id decl2 =

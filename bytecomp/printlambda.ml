@@ -86,7 +86,7 @@ let record_rep ppf r =
   | Record_regular -> fprintf ppf "regular"
   | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
-  | Record_extension p -> fprintf ppf "ext (%s)" (Path.name p)
+  | Record_extension -> fprintf ppf "ext"
 ;;
 
 let string_of_loc_kind = function

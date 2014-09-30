@@ -1131,18 +1131,6 @@ let constructors_of_type ty_path decl =
 let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record(labels, rep) ->
-      let rep =
-        match rep with
-        | Record_extension (Pident id) ->
-            begin match ty_path with
-            | Path.Pdot (path, _, pos) ->
-                Record_extension (Path.Pdot (path, Ident.name id, pos))
-            | Path.Pident _ ->
-                rep
-            | Path.Papply _ -> assert false
-            end
-        | rep -> rep
-      in
       Datarepr.label_descrs
         (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private

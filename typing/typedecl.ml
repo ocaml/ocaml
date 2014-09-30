@@ -1212,7 +1212,7 @@ let transl_extension_constructor env check_open type_path type_params
               List.iter2 (Ctype.unify env) decl.type_params tl;
               let lbls =
                 match decl.type_kind with
-                | Type_record (lbls, Record_extension _) -> lbls
+                | Type_record (lbls, Record_extension) -> lbls
                 | _ -> assert false
               in
               Some p, Types.Cstr_record lbls

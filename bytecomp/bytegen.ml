@@ -146,7 +146,7 @@ let rec size_of_lambda = function
       begin match kind with
       | Record_regular | Record_inlined _ -> RHS_block size
       | Record_float -> RHS_floatblock size
-      | Record_extension _ -> RHS_block (size + 1)
+      | Record_extension -> RHS_block (size + 1)
       end
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
@@ -157,7 +157,7 @@ let rec size_of_lambda = function
   | Lprim (Pmakearray Pgenarray, args) -> assert false
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), args) ->
       RHS_block size
-  | Lprim (Pduprecord (Record_extension _, size), args) ->
+  | Lprim (Pduprecord (Record_extension, size), args) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), args) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda lam

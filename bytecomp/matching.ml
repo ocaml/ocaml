@@ -1632,7 +1632,7 @@ let make_record_matching all_labels def = function
             match lbl.lbl_repres with
               Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
             | Record_float -> Pfloatfield lbl.lbl_pos
-            | Record_extension _ -> Pfield (lbl.lbl_pos + 1)
+            | Record_extension -> Pfield (lbl.lbl_pos + 1)
           in
           let str =
             match lbl.lbl_mut with

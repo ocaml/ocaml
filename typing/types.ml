@@ -177,7 +177,7 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_inlined of int               (* Same, for inlined records *)
   | Record_float                        (* All fields are floats *)
-  | Record_extension of Path.t          (* Inlined record under exception *)
+  | Record_extension                    (* Inlined record under exception *)
 
 (* Type definitions *)
 

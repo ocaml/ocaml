@@ -166,7 +166,7 @@ let extension_descr ?rebind path_ext ext =
   let cstr_args, cstr_inlined =
     constructor_args (Path.last path_ext) path_ext rebind
       arg_vars
-      (Record_extension path_ext)
+      Record_extension
       ext.ext_args
   in
     { cstr_name = Path.last path_ext;

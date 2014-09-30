@@ -319,7 +319,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let pos =
                           match rep with
-                          | Record_extension _ -> 1
+                          | Record_extension -> 1
                           | _ -> 0
                         in
                         tree_of_record_fields depth
