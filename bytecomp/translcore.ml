@@ -746,7 +746,7 @@ and transl_exp0 e =
       end
   | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
-      if cstr.cstr_inlined then begin match ll with
+      if cstr.cstr_inlined <> None then begin match ll with
         | [x] -> x
         | _ -> assert false
       end else begin match cstr.cstr_tag with

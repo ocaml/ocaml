@@ -49,19 +49,11 @@ let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
 let constructor_args name ty_path type_manifest arg_vars rep =
   function
-  | Cstr_tuple l -> l, false, []
-  | Cstr_record (id, lbls) ->
-      let ty = newgenconstr (Path.Pdot(ty_path, name, Path.nopos)) arg_vars in
-      [ty], true, []
-(*
-      let path =
-        match ty_path with
-        | Path.Pdot(m, _, _) -> Path.Pdot(m, Ident.name id, Path.nopos)
-        | Path.Pident _ -> Path.Pident id
-        | Path.Papply _ -> assert false
-      in
+  | Cstr_tuple l -> l, None
+  | Cstr_record (_, lbls) ->
+      let path = Path.Pdot(ty_path, name, Path.nopos) in
       let type_manifest =
-        match type_manifest () with
+        match type_manifest with
         | Some p -> Some (newgenconstr p arg_vars)
         | None -> None
       in
@@ -79,10 +71,9 @@ let constructor_args name ty_path type_manifest arg_vars rep =
         }
       in
       [ newgenconstr path arg_vars ],
-      true, [ (id, path, tdecl) ]
-*)
+      Some tdecl
 
-let constructor_descrs ty_path decl manifest_decl cstrs =
+let constructor_descrs ty_path decl cstrs =
   let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
@@ -90,7 +81,6 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
       if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
       if cd_res = None then incr num_normal)
     cstrs;
-  let tdecls = ref [] in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | {cd_id; cd_args; cd_res; cd_loc; cd_attributes} :: rem ->
@@ -116,39 +106,23 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
         let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
         let existentials =
           match cd_res with
-          | None ->
-              []
+          | None -> []
           | Some type_ret ->
               let res_vars, _ = free_vars type_ret in
               TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
         in
-        let type_manifest () =
-          match decl.type_manifest, manifest_decl with
-          | Some {desc = Tconstr(Path.Pdot (m, name, _), _, _)}, _ ->
-              let s = Btype.inlined_record_name name (Ident.name cd_id) in
-              Some (Path.Pdot (m, s, Path.nopos))
-          | Some {desc = Tconstr(Path.Pident _, _, _)},
-            Some {type_kind = Type_variant cstrs} ->
-              let c =
-                try
-                  List.find
-                    (fun c -> Ident.name c.cd_id = Ident.name cd_id)
-                    cstrs
-                with Not_found -> assert false
-              in
-              begin match c.cd_args with
-              | Cstr_record (id, _) -> Some (Path.Pident id)
-              | _ -> assert false
-              end
+        let type_manifest =
+          match decl.type_manifest with
+          | Some {desc = Tconstr(p, _, _)} ->
+              Some (Path.Pdot (p, Ident.name cd_id, Path.nopos))
           | _ -> None
         in
-        let cstr_args, cstr_inlined, tds =
+        let cstr_args, cstr_inlined =
           constructor_args (Ident.name cd_id) ty_path type_manifest
             arg_vars
             (Record_inlined idx_nonconst)
             cd_args
         in
-        tdecls := tds @ !tdecls;
         let cstr =
           { cstr_name = Ident.name cd_id;
             cstr_res = ty_res;
@@ -166,8 +140,7 @@ let constructor_descrs ty_path decl manifest_decl cstrs =
             cstr_inlined;
           } in
         (cd_id, cstr) :: descr_rem in
-  let r = describe_constructors 0 0 cstrs in
-  r, !tdecls
+  describe_constructors 0 0 cstrs
 
 let extension_descr ?rebind path_ext ext =
   let ty_res =
@@ -189,8 +162,8 @@ let extension_descr ?rebind path_ext ext =
           let res_vars, _ = free_vars type_ret in
           TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
-  let cstr_args, cstr_inlined, tds =
-    constructor_args (Path.last path_ext) path_ext (fun () -> rebind)
+  let cstr_args, cstr_inlined =
+    constructor_args (Path.last path_ext) path_ext rebind
       arg_vars
       (Record_extension path_ext)
       ext.ext_args
@@ -210,7 +183,7 @@ let extension_descr ?rebind path_ext ext =
       cstr_attributes = ext.ext_attributes;
       cstr_inlined;
     },
-    tds
+    []
 
 
 let none = {desc = Ttuple []; level = -1; id = -1}

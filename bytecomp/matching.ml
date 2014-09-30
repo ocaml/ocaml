@@ -1348,7 +1348,7 @@ let make_constr_matching p def ctx = function
   | ((arg, mut) :: argl) ->
       let cstr = pat_as_constr p in
       let newargs =
-        if cstr.cstr_inlined then
+        if cstr.cstr_inlined <> None then
           (arg, Alias) :: argl
         else match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->

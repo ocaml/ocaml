@@ -310,7 +310,7 @@ let find_type env loc lid =
   match s.[0] with
   | 'A'..'Z' ->
       let cstr = find_qual_constructor env loc lid in
-      if not cstr.cstr_inlined then
+      if cstr.cstr_inlined = None then
         failwith (Printf.sprintf
                     "Constructor %s does not have an inline record argument"
                     s

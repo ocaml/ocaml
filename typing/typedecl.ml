@@ -1199,6 +1199,8 @@ let transl_extension_constructor env check_open type_path type_params
           | _ -> assert false
         in
         let rebind, args =
+        if cdescr.cstr_inlined <> None then assert false
+(*
         if cdescr.cstr_inlined then
           let p, tl =
             match args with
@@ -1221,6 +1223,7 @@ let transl_extension_constructor env check_open type_path type_params
                             sext.pext_name.txt)
           in
 	  Some p, Types.Cstr_record (id, lbls)
+*)
         else
           None, Types.Cstr_tuple args
         in

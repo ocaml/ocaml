@@ -440,7 +440,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if not (EVP.same_value slot (EVP.eval_path env path))
         then raise Not_found;
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name cstr.cstr_inlined 1 depth bucket
+           (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
+           1 depth bucket
            cstr.cstr_args
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with

@@ -480,6 +480,8 @@ let is_uident s =
   | 'A'..'Z' -> true
   | _ -> false
 
+let labels_of_type_fwd = ref (fun _ _ -> assert false)
+
 let find_type_full path env =
   match path with
   | Pdot (Pdot(mod_path, "*ext*", _), s, _) ->
@@ -491,56 +493,24 @@ let find_type_full path env =
       (* We should also have an encoding for local extension constructors *)
       assert false
   | Pdot (ty_path, s, _) when is_uident s ->
+      print_endline "XXXX";
       (* perhaps we should pre-compute the inner type_declaration
          in Datarepr in keep it as part of the constructor_description
          (instead of recreating it here)? *)
-      let (decl, _) = find_type_full ty_path env in
-      let cds =
-        match decl.type_kind with
-        | Type_variant cds -> cds
-        | _ -> assert false
+      let (decl, (cstrs, _, _)) =
+        try find_type_full ty_path env
+        with Not_found -> assert false
       in
-      let rec find tag = function
-        | [] -> assert false
-        | cd :: rest when Ident.name cd.cd_id = s -> tag, cd
-        | {cd_args = Cstr_tuple []; _} :: rest -> find tag rest
-        | _ :: rest -> find (tag + 1) rest
-      in
-      let tag, cd = find 0 cds in
-      let lbls =
-        match cd.cd_args with
-        | Cstr_record (_, lbls) -> lbls
-        | _ -> assert false
-      in
-      let tyl = List.map (fun ld -> ld.ld_type) lbls in
-      let (_, type_params) =
-        Datarepr.free_vars (newgenty (Ttuple tyl))
-      in
-      let repr = Record_inlined tag in
-      let type_manifest =
-        match decl.type_manifest with
-        | Some {desc = Tconstr(ty_manifest, _, _)} ->
-            let p = Path.Pdot(ty_manifest, s, Path.nopos) in
-            Some (newgenty (Tconstr (p, type_params, ref Mnil)))
-        | _ -> None
+      let cstr =
+        try List.find (fun cstr -> cstr.cstr_name = s) cstrs
+        with Not_found -> assert false
       in
       let tdecl =
-        {
-          type_params;
-          type_arity = List.length type_params;
-          type_kind = Type_record (lbls, repr);
-          type_private = Public;
-          type_manifest;
-          type_variance = List.map (fun _ -> Variance.full) type_params;
-          type_newtype_level = None;
-          type_loc = cd.cd_loc;
-          type_attributes = [];
-        }
+        match cstr.cstr_inlined with
+        | None -> assert false
+        | Some d -> d
       in
-      let ty_res = newgenty (Tconstr(path, tdecl.type_params, ref Mnil)) in
-      let labels =
-        Datarepr.label_descrs ty_res lbls repr Public
-      in
+      let labels = !labels_of_type_fwd path tdecl in
       (tdecl, ([], List.map snd labels, true))
   | _ -> find_type_full path env
 
@@ -1144,17 +1114,8 @@ let scrape_alias env mty = scrape_alias env mty
 
 let constructors_of_type env ty_path decl =
   match decl.type_kind with
-  | Type_variant cstrs ->
-      let manifest_decl =
-        match decl.type_manifest with
-        | Some {desc = Tconstr((Path.Pident id) as p, _, _)} ->
-            begin try Some (find_type p env)
-            with Not_found -> None
-            end
-        | _ -> None
-      in
-      Datarepr.constructor_descrs ty_path decl manifest_decl cstrs
-  | Type_record _ | Type_abstract | Type_open -> [], []
+  | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
+  | Type_record _ | Type_abstract | Type_open -> []
 
 (* Compute label descriptions *)
 
@@ -1177,6 +1138,9 @@ let labels_of_type ty_path decl =
         (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
   | Type_variant _ | Type_abstract | Type_open -> []
+
+let () =
+  labels_of_type_fwd := labels_of_type
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
@@ -1287,7 +1251,7 @@ and components_of_module_maker (env, sub, path, mty) =
       let pl, sub, _ = prefix_idents_and_subst path sub sg in
       let env = ref env in
       let pos = ref 0 in
-      let rec aux item path =
+      let aux item path =
         match item with
           Sig_value(id, decl) ->
             let decl' = Subst.value_description sub decl in
@@ -1298,17 +1262,13 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constrs, tdecls = constructors_of_type !env path decl' in
+            let constrs = constructors_of_type !env path decl' in
             let constructors = List.map snd constrs in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
                 ((decl', (constructors, labels, false)), nopos)
                   c.comp_types;
-            List.iter
-              (fun (id, path, td) ->
-                 aux (Sig_type(id, td, Trec_next)) path;
-              ) tdecls;
             List.iter
               (fun descr ->
                 c.comp_constrs <-
@@ -1322,11 +1282,7 @@ and components_of_module_maker (env, sub, path, mty) =
             env := store_type_infos None id (Pident id) decl !env !env
         | Sig_typext(id, ext, _) ->
             let ext' = Subst.extension_constructor sub ext in
-            let descr, tdecls = Datarepr.extension_descr path ext' in
-            List.iter
-              (fun (id, path, td) ->
-                 aux (Sig_type(id, td, Trec_next)) path;
-              ) tdecls;
+            let descr, _ = Datarepr.extension_descr path ext' in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, !pos) c.comp_constrs;
             incr pos
@@ -1401,32 +1357,12 @@ and store_value ?check slot id path decl env renv =
     values = EnvTbl.add "value" slot id (path, decl) env.values renv.values;
     summary = Env_value(env.summary, id, decl) }
 
-and store_extra_tdecls slot tdecls env renv =
-  List.fold_left
-    (fun env (id, path, td) -> store_extra_tdecl slot id path td env renv)
-    env tdecls
-
-and store_extra_tdecl slot id path info env renv =
-  (* Simplified version of store_type, used to insert
-     synthesized inlined record types.  We don't update the summary
-     (since inserting again the main sum type will result in the synthesized
-     record to be inserted) and we don't add labels to
-     the environment (this could only be used through type-based
-     selection). *)
-
-  let labels = labels_of_type path info in
-  let descrs = ([], List.map snd labels, true) in
-  { env with
-    types = EnvTbl.add "type" slot id (path, (info, descrs)) env.types
-        renv.types
-  }
-
 and store_type ~check slot id path info env renv =
   let loc = info.type_loc in
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors, tdecls = constructors_of_type env path info in
+  let constructors = constructors_of_type env path info in
   let labels = labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels, false) in
 
@@ -1450,7 +1386,6 @@ and store_type ~check slot id path info env renv =
       end
       constructors
   end;
-  let env = store_extra_tdecls slot tdecls env renv in
   { env with
     constrs =
       List.fold_right
@@ -1501,8 +1436,7 @@ and store_extension ?rebind ~check slot id path ext env renv =
     end;
 
   end;
-  let constr, tdecls = Datarepr.extension_descr ?rebind path ext in
-  let env = store_extra_tdecls slot tdecls env renv in
+  let constr, _ = Datarepr.extension_descr ?rebind path ext in
   { env with
     constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
