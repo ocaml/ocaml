@@ -29,6 +29,8 @@ open Intel_proc
 open Intel_dsl
 open Intel_dsl.DSL32
 
+let _label s = _llabel ~typ:DWORD s
+
 (* CFI directives *)
 
 let cfi_startproc () =

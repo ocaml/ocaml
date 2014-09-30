@@ -54,7 +54,7 @@ module DSL = struct
   let _model name = directive (Model name)
   let _global s = directive (Global s)
   let _align n = directive (Align (false, n))
-  let _llabel s = directive (NewLabel (s, NONE)) (* local label *)
+  let _llabel ?(typ = NONE) s = directive (NewLabel (s, typ))
   let _comment s = directive (Comment s)
   let _extrn s ptr = directive (External (s, ptr))
   let _private_extern s = directive (Private_extern s)
@@ -191,8 +191,6 @@ end
 module DSL32 = struct
   include DSL
 
-  let _label s = directive (NewLabel (s, DWORD))
-
   let mem_ptr typ ?(scale = 1) ?base ?sym displ idx =
     assert(scale > 0);
     Mem32 {typ; idx; scale; base; sym; displ}
@@ -203,8 +201,6 @@ end
 
 module DSL64 = struct
   include DSL
-
-  let _label s = directive (NewLabel (s, QWORD))
 
   let mem_ptr typ ?(scale = 1) ?base offset idx =
     assert(scale > 0);

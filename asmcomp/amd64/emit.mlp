@@ -29,6 +29,8 @@ open Intel_proc
 open Intel_dsl
 open Intel_dsl.DSL64
 
+let _label s = _llabel ~typ:QWORD s
+
 (* Override proc.ml *)
 
 let int_reg_name =

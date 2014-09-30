@@ -49,7 +49,7 @@ module DSL : sig
   val _model: string -> unit
   val _global: string -> unit
   val _align: int -> unit
-  val _llabel: string -> unit
+  val _llabel: ?typ:data_type -> string -> unit
   val _comment: string -> unit
   val _extrn: string -> data_type -> unit
   val _private_extern: string -> unit
@@ -180,7 +180,6 @@ end
 module DSL32 : sig
   include module type of DSL
 
-  val _label: string -> unit
   val mem_ptr:
     data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
     int -> reg64 -> arg
@@ -189,7 +188,6 @@ end
 module DSL64 : sig
   include module type of DSL
 
-  val _label: string -> unit
   val mem_ptr:
     data_type -> ?scale:int -> ?base:reg64 ->
     int -> reg64 -> arg
