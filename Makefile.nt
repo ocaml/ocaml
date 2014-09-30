@@ -252,7 +252,9 @@ installbyt:
 	cp expunge $(INSTALL_LIBDIR)/expunge.exe
 	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
 	cd tools ; $(MAKEREC) install
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i install || exit $$?; \
+	done
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
 	  else :; fi
 	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
