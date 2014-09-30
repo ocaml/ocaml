@@ -335,10 +335,8 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | Sig_typext(id, d, _) :: sg ->
-      let id' = Ident.rename id in
-      rename_bound_idents s (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+  | (Sig_value(id, _) | Sig_typext(id, _, _) |
+     Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
@@ -365,9 +363,7 @@ and signature s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
-  let (new_idents, s') =
-    rename_bound_idents s [] sg
-  in
+  let (new_idents, s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
   List.map2 (signature_component s') sg new_idents
 
