@@ -477,10 +477,19 @@ and find_cltype =
 
 let labels_of_type_fwd = ref (fun _ _ -> assert false)
 
+let type_of_cstr path cstr =
+  let tdecl =
+    match cstr.cstr_inlined with
+    | None -> assert false
+    | Some d -> d
+  in
+  let labels = !labels_of_type_fwd path tdecl in
+  (tdecl, ([], List.map snd labels, true))
+
 let find_type_full path env =
   match Path.constructor_typath path with
-  | None -> find_type_full path env
-  | Some (ty_path, s) ->
+  | Regular p -> find_type_full p env
+  | Cstr (ty_path, s) ->
       let (_, (cstrs, _, _)) =
         try find_type_full ty_path env
         with Not_found -> assert false
@@ -489,13 +498,32 @@ let find_type_full path env =
         try List.find (fun cstr -> cstr.cstr_name = s) cstrs
         with Not_found -> assert false
       in
-      let tdecl =
-        match cstr.cstr_inlined with
-        | None -> assert false
-        | Some d -> d
+      type_of_cstr path cstr
+  | LocalExt id ->
+      let cstr =
+        try EnvTbl.find_same id env.constrs
+        with Not_found -> assert false
       in
-      let labels = !labels_of_type_fwd path tdecl in
-      (tdecl, ([], List.map snd labels, true))
+      type_of_cstr path cstr
+  | Ext (mod_path, s) ->
+      let comps =
+        try find_module_descr mod_path env
+        with Not_found -> assert false
+      in
+      let comps =
+        match EnvLazy.force !components_of_module_maker' comps with
+        | Structure_comps c -> c
+        | Functor_comps _ -> assert false
+      in
+      let exts =
+        List.filter
+          (function ({cstr_tag=Cstr_extension _}, _) -> true | _ -> false)
+          (try Tbl.find s comps.comp_constrs
+           with Not_found -> assert false)
+      in
+      match exts with
+      | [(cstr, _)] -> type_of_cstr path cstr
+      | _ -> assert false
 
 let find_type p env =
   fst (find_type_full p env)
@@ -1140,7 +1168,9 @@ let rec prefix_idents root pos sub = function
       (p::pl, final_sub)
   | Sig_typext(id, ext, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
-      let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
+      (* we extend the substitution in case of an inlined record *)
+      let (pl, final_sub) =
+        prefix_idents root (pos+1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Sig_module(id, mty, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in

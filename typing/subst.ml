@@ -78,8 +78,10 @@ let type_path s = function
 
 let type_path s p =
   match Path.constructor_typath p with
-  | None -> type_path s p
-  | Some (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
+  | Regular p -> type_path s p
+  | Cstr (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
+  | LocalExt _ -> type_path s p
+  | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
 
 (* Special type ids for saved signatures *)
 

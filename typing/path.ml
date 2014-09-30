@@ -58,6 +58,15 @@ let is_uident s =
   | 'A'..'Z' -> true
   | _ -> false
 
+type typath =
+  | Regular of t
+  | Ext of t * string
+  | LocalExt of Ident.t
+  | Cstr of t * string
+
 let constructor_typath = function
-  | Pdot(ty_path, s, _) when is_uident s -> Some (ty_path, s)
-  | _ -> None
+  | Pident id when is_uident (Ident.name id) -> LocalExt id
+  | Pdot(ty_path, s, _) when is_uident s ->
+      if is_uident (last ty_path) then Ext (ty_path, s)
+      else Cstr (ty_path, s)
+  | p -> Regular p

@@ -805,9 +805,13 @@ let transl_toplevel_item item =
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       in
+      (* we need to use unique name in case of multiple
+         definitions of the same extension constructor in the toplevel *)
+      List.iter set_toplevel_unique_name idents;
         transl_type_extension item.str_env None tyext
           (make_sequence toploop_setvalue_id idents)
   | Tstr_exception ext ->
+      set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id
         (transl_extension_constructor item.str_env None ext)
   | Tstr_module {mb_id=id; mb_expr=modl} ->

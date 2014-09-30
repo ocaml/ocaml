@@ -29,4 +29,10 @@ val head: t -> Ident.t
 
 val last: t -> string
 
-val constructor_typath: t -> (t * string) option
+type typath =
+  | Regular of t
+  | Ext of t * string
+  | LocalExt of Ident.t
+  | Cstr of t * string
+
+val constructor_typath: t -> typath

@@ -47,11 +47,10 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args name ty_path type_manifest arg_vars rep =
+let constructor_args name path type_manifest arg_vars rep =
   function
   | Cstr_tuple l -> l, None
   | Cstr_record lbls ->
-      let path = Path.Pdot(ty_path, name, Path.nopos) in
       let type_manifest =
         match type_manifest with
         | Some p -> Some (newgenconstr p arg_vars)
@@ -111,14 +110,16 @@ let constructor_descrs ty_path decl cstrs =
               let res_vars, _ = free_vars type_ret in
               TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
         in
+        let name = Ident.name cd_id in
         let type_manifest =
           match decl.type_manifest with
           | Some {desc = Tconstr(p, _, _)} ->
-              Some (Path.Pdot (p, Ident.name cd_id, Path.nopos))
+              Some (Path.Pdot (p, name, Path.nopos))
           | _ -> None
         in
         let cstr_args, cstr_inlined =
-          constructor_args (Ident.name cd_id) ty_path type_manifest
+          constructor_args name (Path.Pdot(ty_path, name, Path.nopos))
+            type_manifest
             arg_vars
             (Record_inlined idx_nonconst)
             cd_args
