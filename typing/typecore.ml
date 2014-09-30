@@ -686,10 +686,11 @@ end) = struct
         with Not_found -> try
           let lbl, inlined = lookup_from_type env tpath lid in
           check_lk tpath lbl;
-          if not inlined then begin
-            let s = Printtyp.string_of_path tpath in
-            warn lid.loc
-              (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
+          if not inlined then
+          begin
+          let s = Printtyp.string_of_path tpath in
+          warn lid.loc
+            (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           end;
           if not pr then warn_pr ();
           lbl, inlined
@@ -708,12 +709,12 @@ end) = struct
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
     in
     if not inlined then
-      begin match scope with
-        (lab1,_)::_ when lab1 == lbl -> ()
-      | _ ->
-          Location.prerr_warning lid.loc
-            (Warnings.Disambiguated_name(get_name lbl))
-      end;
+    begin match scope with
+      (lab1,_)::_ when lab1 == lbl -> ()
+    | _ ->
+        Location.prerr_warning lid.loc
+          (Warnings.Disambiguated_name(get_name lbl))
+    end;
     lbl
 end
 

@@ -1248,7 +1248,7 @@ and components_of_module_maker (env, sub, path, mty) =
       let pl, sub, _ = prefix_idents_and_subst path sub sg in
       let env = ref env in
       let pos = ref 0 in
-      let aux item path =
+      List.iter2 (fun item path ->
         match item with
           Sig_value(id, decl) ->
             let decl' = Subst.value_description sub decl in
@@ -1259,8 +1259,7 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constrs = constructors_of_type path decl' in
-            let constructors = List.map snd constrs in
+            let constructors = List.map snd (constructors_of_type path decl') in
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
@@ -1306,10 +1305,9 @@ and components_of_module_maker (env, sub, path, mty) =
         | Sig_class_type(id, decl, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes
-      in
-      List.iter2 aux sg pl;
-      Structure_comps c
+              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
+        sg pl;
+        Structure_comps c
   | Mty_functor(param, ty_arg, ty_res) ->
         Functor_comps {
           fcomp_param = param;
