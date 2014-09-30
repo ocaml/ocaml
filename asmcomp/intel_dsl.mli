@@ -180,7 +180,7 @@ end
 module DSL32 : sig
   include module type of DSL
 
-  val mem_ptr:
+  val mem32:
     data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
     int -> reg64 -> arg
   val mem_sym: data_type -> ?ofs:int -> string -> arg
@@ -188,8 +188,8 @@ end
 module DSL64 : sig
   include module type of DSL
 
-  val mem_ptr:
-    data_type -> ?scale:int -> ?base:reg64 ->
+  val mem64:
+    data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
     int -> reg64 -> arg
   val from_rip: data_type -> ?ofs:int -> string -> arg
 end

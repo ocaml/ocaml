@@ -142,10 +142,10 @@ let reg = function
       sym32 "caml_extra_params" ~ofs:(n + 64)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr REAL8 ofs RSP
+      mem32 REAL8 ofs RSP
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr DWORD ofs RSP
+      mem32 DWORD ofs RSP
   | { loc = Unknown } ->
       fatal_error "Emit_i386.reg"
 
@@ -178,15 +178,15 @@ let addressing addr typ i n =
       add_used_symbol s;
       mem_sym typ (emit_symbol s) ~ofs
   | Iindexed d ->
-      mem_ptr typ d (arg32 i n)
+      mem32 typ d (arg32 i n)
   | Iindexed2 d ->
-      mem_ptr typ ~base:(arg32 i n) d (arg32 i (n+1))
+      mem32 typ ~base:(arg32 i n) d (arg32 i (n+1))
   | Iscaled(2, d) ->
-      mem_ptr typ ~base:(arg32 i n) d (arg32 i n)
+      mem32 typ ~base:(arg32 i n) d (arg32 i n)
   | Iscaled(scale, d) ->
-      mem_ptr typ ~scale d (arg32 i n)
+      mem32 typ ~scale d (arg32 i n)
   | Iindexed2scaled(scale, d) ->
-      mem_ptr typ ~scale ~base:(arg32 i n) d (arg32 i (n+1))
+      mem32 typ ~scale ~base:(arg32 i n) d (arg32 i (n+1))
 
 (* Record live pointers at call points *)
 
@@ -616,7 +616,7 @@ let emit_instr fallthrough i =
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.lea  (mem_ptr NONE 4 RAX, reg i.res.(0));
+        I.lea  (mem32 NONE 4 RAX, reg i.res.(0));
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -631,7 +631,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.lea (mem_ptr NONE 4 RAX, reg i.res.(0))
+        I.lea (mem32 NONE 4 RAX, reg i.res.(0))
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (reg i.arg.(1), reg i.arg.(0));
@@ -661,7 +661,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (reg i.arg.(1), reg i.res.(0))
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.lea (mem_ptr NONE n (reg32 i.arg.(0)), reg i.res.(0))
+      I.lea (mem32 NONE n (reg32 i.arg.(0)), reg i.res.(0))
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.inc (reg i.res.(0))
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -696,7 +696,7 @@ let emit_instr fallthrough i =
           I.fild (reg i.arg.(0))
       | _ ->
           I.push (reg i.arg.(0));
-          I.fild (mem_ptr DWORD 0 RSP);
+          I.fild (mem32 DWORD 0 RSP);
           I.add (int 4, esp)
       end
   | Lop(Iintoffloat) ->
@@ -705,19 +705,19 @@ let emit_instr fallthrough i =
       stack_offset := !stack_offset - 8;
       I.sub (int 8, esp);
       cfi_adjust_cfa_offset 8;
-      I.fnstcw (mem_ptr NONE 4 RSP);
-      I.mov (mem_ptr WORD 4 RSP, ax);
+      I.fnstcw (mem32 NONE 4 RSP);
+      I.mov (mem32 WORD 4 RSP, ax);
       I.mov (int 12, ah);
-      I.mov (ax, mem_ptr WORD 0 RSP);
-      I.fldcw (mem_ptr NONE 0 RSP);
+      I.mov (ax, mem32 WORD 0 RSP);
+      I.fldcw (mem32 NONE 0 RSP);
       begin match i.res.(0).loc with
       | Stack _ ->
           I.fistp (reg i.res.(0))
       | _ ->
-          I.fistp (mem_ptr DWORD 0 RSP);
-          I.mov (mem_ptr DWORD 0 RSP, reg i.res.(0))
+          I.fistp (mem32 DWORD 0 RSP);
+          I.mov (mem32 DWORD 0 RSP, reg i.res.(0))
       end;
-      I.fldcw (mem_ptr NONE 4 RSP);
+      I.fldcw (mem32 NONE 4 RSP);
       I.add (int 8, esp);
       cfi_adjust_cfa_offset (-8);
       stack_offset := !stack_offset + 8
@@ -738,12 +738,12 @@ let emit_instr fallthrough i =
           {loc = Reg _; typ = Float} ->
             I.sub (int 8, esp);
             cfi_adjust_cfa_offset 8;
-            I.fstp (mem_ptr REAL8 0 RSP);
+            I.fstp (mem32 REAL8 0 RSP);
             stack_offset := !stack_offset + 8
         | {loc = Stack sl; typ = Float} ->
             let ofs = slot_offset sl 1 in
-            I.push (mem_ptr DWORD (ofs + 4) RSP);
-            I.push (mem_ptr DWORD (ofs + 4) RSP);
+            I.push (mem32 DWORD (ofs + 4) RSP);
+            I.push (mem32 DWORD (ofs + 4) RSP);
             cfi_adjust_cfa_offset 8;
             stack_offset := !stack_offset + 8
         | _ ->
@@ -838,7 +838,7 @@ let emit_instr fallthrough i =
       end
   | Lswitch jumptbl ->
       let lbl = new_label() in
-      I.jmp (mem_ptr NONE 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
+      I.jmp (mem32 NONE 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
       _data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do

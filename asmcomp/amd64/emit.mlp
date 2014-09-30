@@ -154,10 +154,10 @@ let reg = function
   | { loc = Reg.Reg r } -> register_name r
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr REAL8 ofs RSP
+      mem64 REAL8 ofs RSP
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
-      mem_ptr QWORD ofs RSP
+      mem64 QWORD ofs RSP
   | { loc = Unknown } ->
       assert false
 
@@ -179,7 +179,7 @@ let reg_low_32_name = Array.map (fun r -> Reg32 r) int_reg_name
 let emit_subreg tbl typ r =
   match r.loc with
   | Reg.Reg r when r < 13 -> tbl.(r)
-  | Stack s -> mem_ptr typ (slot_offset s (register_class r)) RSP
+  | Stack s -> mem64 typ (slot_offset s (register_class r)) RSP
   | _ -> assert false
 
 let arg8 i n = emit_subreg reg_low_8_name BYTE i.arg.(n)
@@ -198,15 +198,15 @@ let addressing addr typ i n =
       add_used_symbol s;
       from_rip typ (emit_symbol s) ~ofs
   | Iindexed d ->
-      mem_ptr typ d (arg64 i n)
+      mem64 typ d (arg64 i n)
   | Iindexed2 d ->
-      mem_ptr typ ~base:(arg64 i n) d (arg64 i (n+1))
+      mem64 typ ~base:(arg64 i n) d (arg64 i (n+1))
   | Iscaled(2, d) ->
-      mem_ptr typ ~base:(arg64 i n) d (arg64 i n)
+      mem64 typ ~base:(arg64 i n) d (arg64 i n)
   | Iscaled(scale, d) ->
-      mem_ptr typ ~scale d (arg64 i n)
+      mem64 typ ~scale d (arg64 i n)
   | Iindexed2scaled(scale, d) ->
-      mem_ptr typ ~scale ~base:(arg64 i n) d (arg64 i (n+1))
+      mem64 typ ~scale ~base:(arg64 i n) d (arg64 i (n+1))
 
 (* Record live pointers at call points -- see Emitaux *)
 
@@ -479,7 +479,7 @@ let emit_instr fallthrough i =
              amd64nt.asm accordingly.
           *)
           load_symbol_addr "caml_young_ptr" r11;
-          I.mov (mem_ptr QWORD 0 R11, r15)
+          I.mov (mem64 QWORD 0 R11, r15)
         end;
       end else
         emit_call s
@@ -534,13 +534,13 @@ let emit_instr fallthrough i =
         I.sub (int n, r15);
         if !Clflags.dlcode && system <> S_win64 then begin
           load_symbol_addr "caml_young_limit" rax;
-          I.cmp (mem_ptr QWORD 0 RAX, r15);
+          I.cmp (mem64 QWORD 0 RAX, r15);
         end else
           I.cmp (from_rip QWORD (emit_symbol "caml_young_limit"), r15);
         let lbl_call_gc = new_label() in
         let lbl_frame = record_frame_label i.live Debuginfo.none in
         I.jb (label lbl_call_gc);
-        I.lea (mem_ptr NONE 8 R15, res i 0);
+        I.lea (mem64 NONE 8 R15, res i 0);
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
@@ -555,7 +555,7 @@ let emit_instr fallthrough i =
             emit_call "caml_allocN"
         end;
         record_frame i.live Debuginfo.none;
-        I.lea (mem_ptr NONE 8 R15, res i 0)
+        I.lea (mem64 NONE 8 R15, res i 0)
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1, arg i 0);
@@ -585,7 +585,7 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (arg i 1, res i 0)
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-      I.lea (mem_ptr NONE n (arg64 i 0), res i 0)
+      I.lea (mem64 NONE n (arg64 i 0), res i 0)
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.inc (res i 0)
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -694,7 +694,7 @@ let emit_instr fallthrough i =
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
       I.lea (from_rip NONE lbl, reg tmp1);
-      I.movsxd (mem_ptr DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
+      I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1), reg tmp2);
       I.add (reg tmp2, reg tmp1);
       I.jmp (reg tmp1);
 

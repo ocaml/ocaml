@@ -191,7 +191,7 @@ end
 module DSL32 = struct
   include DSL
 
-  let mem_ptr typ ?(scale = 1) ?base ?sym displ idx =
+  let mem32 typ ?(scale = 1) ?base ?sym displ idx =
     assert(scale > 0);
     Mem32 {typ; idx; scale; base; sym; displ}
 
@@ -202,9 +202,9 @@ end
 module DSL64 = struct
   include DSL
 
-  let mem_ptr typ ?(scale = 1) ?base offset idx =
+  let mem64 typ ?(scale = 1) ?base ?sym offset idx =
     assert(scale > 0);
-    Mem64 {typ; idx; scale; base; sym=None; displ=offset}
+    Mem64 {typ; idx; scale; base; sym; displ=offset}
 
   let from_rip typ ?(ofs = 0) s =
     Mem64_RIP (typ, s, ofs)
