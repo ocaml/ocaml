@@ -13,8 +13,6 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
-[@@@ocaml.warning "+A-4-9-24-45-41-42"]
-
 open Misc
 open Cmm
 open Arch
