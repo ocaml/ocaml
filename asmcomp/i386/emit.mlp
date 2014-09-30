@@ -31,7 +31,7 @@ open Intel_dsl.DSL
 
 let _label s = _llabel ~typ:DWORD s
 
-let mem_sym typ ?ofs sym =
+let mem_sym typ ?(ofs = 0) sym =
   mem32 typ ~scale:0 ?base:None ~sym ofs RAX (*ignored since scale=0*)
 
 (* CFI directives *)
