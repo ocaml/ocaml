@@ -29,7 +29,7 @@ open Intel_proc
 open Intel_dsl
 open Intel_dsl.DSL
 
-let _label s = _llabel ~typ:DWORD s
+let _label s = D.llabel ~typ:DWORD s
 
 let mem_sym typ ?(ofs = 0) sym =
   mem32 typ ~scale:0 ?base:None ~sym ofs RAX (*ignored since scale=0*)
@@ -37,16 +37,16 @@ let mem_sym typ ?(ofs = 0) sym =
 (* CFI directives *)
 
 let cfi_startproc () =
-  if Config.asm_cfi_supported then _cfi_startproc ()
+  if Config.asm_cfi_supported then D.cfi_startproc ()
 
 let cfi_endproc () =
-  if Config.asm_cfi_supported then _cfi_endproc ()
+  if Config.asm_cfi_supported then D.cfi_endproc ()
 
 let cfi_adjust_cfa_offset n =
-  if Config.asm_cfi_supported then _cfi_adjust_cfa_offset n
+  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
 let emit_debug_info dbg =
-  emit_debug_info_gen dbg _file _loc
+  emit_debug_info_gen dbg D.file D.loc
 
 (* Tradeoff between code size and code speed *)
 
@@ -121,10 +121,10 @@ let emit_data_label lbl =
 
 let label s = sym (emit_label s)
 
-let def_label s = _llabel (emit_label s)
+let def_label s = D.llabel (emit_label s)
 
 let emit_Llabel fallthrough lbl =
-  if not fallthrough && !fastcode_flag then _align 16 ;
+  if not fallthrough && !fastcode_flag then D.align 16 ;
   def_label lbl
 
 (* Output a pseudo-register *)
@@ -452,8 +452,8 @@ let add_float_constant cst =
 let emit_float64_split_directive x =
   let lo = Int64.logand x 0xFFFF_FFFFL
   and hi = Int64.shift_right_logical x 32 in
-  _long (Const (if Arch.big_endian then hi else lo));
-  _long (Const (if Arch.big_endian then lo else hi))
+  D.long (Const (if Arch.big_endian then hi else lo));
+  D.long (Const (if Arch.big_endian then lo else hi))
 
 let emit_float_constant cst lbl =
   _label (emit_label lbl);
@@ -463,7 +463,7 @@ let emit_global_label s =
   let lbl = Compilenv.make_symbol (Some s) in
   add_def_symbol lbl;
   let lbl = emit_symbol lbl in
-  _global lbl;
+  D.global lbl;
   _label lbl
 
 (* Output the assembly code for an instruction *)
@@ -842,12 +842,12 @@ let emit_instr fallthrough i =
   | Lswitch jumptbl ->
       let lbl = new_label() in
       I.jmp (mem32 NONE 0 (reg32 i.arg.(0)) ~scale:4 ~sym:(emit_label lbl));
-      _data ();
+      D.data ();
       _label (emit_label lbl);
       for i = 0 to Array.length jumptbl - 1 do
-        _long (ConstLabel (emit_label jumptbl.(i)))
+        D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
-      _text ()
+      D.text ()
   | Lsetuptrap lbl ->
       I.call (label lbl)
   | Lpushtrap ->
@@ -892,25 +892,25 @@ let rec emit_all fallthrough i =
 
 let emit_external_symbol_direct s =
   _label (Printf.sprintf "L%s$stub" (emit_symbol s));
-  _indirect_symbol (emit_symbol s);
+  D.indirect_symbol (emit_symbol s);
   I.hlt (); I.hlt (); I.hlt (); I.hlt () ; I.hlt ()
 
 let emit_external_symbol_indirect s =
   _label (Printf.sprintf "L%s$non_lazy_ptr" (emit_symbol s));
-  _indirect_symbol (emit_symbol s);
-  _long (const 0)
+  D.indirect_symbol (emit_symbol s);
+  D.long (const 0)
 
 let emit_external_symbols () =
-  _section [ "__IMPORT"; "__pointers"] None ["non_lazy_symbol_pointers" ];
+  D.section [ "__IMPORT"; "__pointers"] None ["non_lazy_symbol_pointers" ];
   StringSet.iter emit_external_symbol_indirect !external_symbols_indirect;
   external_symbols_indirect := StringSet.empty;
-  _section [ "__IMPORT"; "__jump_table"] None
+  D.section [ "__IMPORT"; "__jump_table"] None
     [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ];
   StringSet.iter emit_external_symbol_direct !external_symbols_direct;
   external_symbols_direct := StringSet.empty;
   if !Clflags.gprofile then begin
     _label "Lmcount$stub";
-    _indirect_symbol "mcount";
+    D.indirect_symbol "mcount";
     I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
   end
 
@@ -943,17 +943,17 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
-  _text ();
+  D.text ();
   add_def_symbol fundecl.fun_name;
-  _align (if system = S_win32 then 4 else 16);
+  D.align (if system = S_win32 then 4 else 16);
   if system = S_macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
-    _private_extern (emit_symbol fundecl.fun_name)
+    D.private_extern (emit_symbol fundecl.fun_name)
   else
-    _global (emit_symbol fundecl.fun_name);
-  _llabel (emit_symbol fundecl.fun_name);
+    D.global (emit_symbol fundecl.fun_name);
+  D.llabel (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
@@ -969,8 +969,8 @@ let fundecl fundecl =
   cfi_endproc ();
   begin match system with
   | S_linux_elf | S_bsd_elf | S_gnu ->
-      _type  (emit_symbol fundecl.fun_name) "@function";
-      _size (emit_symbol fundecl.fun_name)
+      D.type_ (emit_symbol fundecl.fun_name) "@function";
+      D.size (emit_symbol fundecl.fun_name)
         (ConstSub (
             ConstThis,
             ConstLabel (emit_symbol fundecl.fun_name)))
@@ -981,23 +981,23 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-  | Cglobal_symbol s -> _global (emit_symbol s)
+  | Cglobal_symbol s -> D.global (emit_symbol s)
   | Cdefine_symbol s -> add_def_symbol s; _label (emit_symbol s)
   | Cdefine_label lbl -> _label (emit_data_label lbl)
-  | Cint8 n -> _byte (const n)
-  | Cint16 n -> _word (const n)
-  | Cint32 n -> _long (const_nat n)
-  | Cint n -> _long (const_nat n)
-  | Csingle f -> _long (Const (Int64.of_int32 (Int32.bits_of_float f)))
+  | Cint8 n -> D.byte (const n)
+  | Cint16 n -> D.word (const n)
+  | Cint32 n -> D.long (const_nat n)
+  | Cint n -> D.long (const_nat n)
+  | Csingle f -> D.long (Const (Int64.of_int32 (Int32.bits_of_float f)))
   | Cdouble f -> emit_float64_split_directive (Int64.bits_of_float f)
-  | Csymbol_address s -> add_used_symbol s; _long (ConstLabel (emit_symbol s))
-  | Clabel_address lbl -> _long (ConstLabel (emit_data_label lbl))
-  | Cstring s -> _ascii s
-  | Cskip n -> if n > 0 then _space n
-  | Calign n -> _align n
+  | Csymbol_address s -> add_used_symbol s; D.long (ConstLabel (emit_symbol s))
+  | Clabel_address lbl -> D.long (ConstLabel (emit_data_label lbl))
+  | Cstring s -> D.ascii s
+  | Cskip n -> if n > 0 then D.space n
+  | Calign n -> D.align n
 
 let data l =
-  _data ();
+  D.data ();
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
@@ -1007,81 +1007,81 @@ let begin_assembly() =
   reset_debug_info();                   (* PR#5603 *)
   float_constants := [];
   if system = S_win32 then begin
-    _386 ();
-    _model "FLAT";
-    _extrn "_caml_young_ptr" DWORD;
-    _extrn "_caml_young_limit" DWORD;
-    _extrn "_caml_exception_pointer" DWORD;
-    _extrn "_caml_extra_params" DWORD;
-    _extrn "_caml_call_gc" PROC;
-    _extrn "_caml_c_call" PROC;
-    _extrn "_caml_allocN" PROC;
-    _extrn "_caml_alloc1" PROC;
-    _extrn "_caml_alloc2" PROC;
-    _extrn "_caml_alloc3" PROC;
-    _extrn "_caml_ml_array_bound_error" PROC;
-    _extrn "_caml_raise_exn" PROC;
-    _extrn "_caml_reraise_exn" PROC;
+    D.mode386 ();
+    D.model "FLAT";
+    D.extrn "_caml_young_ptr" DWORD;
+    D.extrn "_caml_young_limit" DWORD;
+    D.extrn "_caml_exception_pointer" DWORD;
+    D.extrn "_caml_extra_params" DWORD;
+    D.extrn "_caml_call_gc" PROC;
+    D.extrn "_caml_c_call" PROC;
+    D.extrn "_caml_allocN" PROC;
+    D.extrn "_caml_alloc1" PROC;
+    D.extrn "_caml_alloc2" PROC;
+    D.extrn "_caml_alloc3" PROC;
+    D.extrn "_caml_ml_array_bound_error" PROC;
+    D.extrn "_caml_raise_exn" PROC;
+    D.extrn "_caml_reraise_exn" PROC;
   end;
 
-  _data ();
+  D.data ();
   emit_global_label "data_begin";
 
-  _text ();
+  D.text ();
   emit_global_label "code_begin";
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
 
 let end_assembly() =
   if !float_constants <> [] then begin
-    _data ();
+    D.data ();
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
-  _text ();
+  D.text ();
   if system = S_macosx then I.nop ();
   (* suppress "ld warning: atom sorting error" *)
 
   emit_global_label "code_end";
 
-  _data ();
+  D.data ();
   emit_global_label "data_end";
-  _long (const 0);
+  D.long (const 0);
 
   emit_global_label "frametable";
 
   emit_frames
-    { efa_label = (fun l -> _long (ConstLabel (emit_label l)));
-      efa_16 = (fun n -> _word (const n));
-      efa_32 = (fun n -> _long (const_32 n));
-      efa_word = (fun n -> _long (const n));
-      efa_align = _align;
+    { efa_label = (fun l -> D.long (ConstLabel (emit_label l)));
+      efa_16 = (fun n -> D.word (const n));
+      efa_32 = (fun n -> D.long (const_32 n));
+      efa_word = (fun n -> D.long (const n));
+      efa_align = D.align;
       efa_label_rel = (fun lbl ofs ->
-          _long (ConstAdd (
+          D.long (ConstAdd (
               ConstSub(ConstLabel(emit_label lbl),
                        ConstThis),
               const_32 ofs)));
       efa_def_label = (fun l -> _label (emit_label l));
-      efa_string = (fun s -> _ascii (s ^ "\000"))
+      efa_string = (fun s -> D.ascii (s ^ "\000"))
     };
 
   if system = S_macosx then emit_external_symbols ();
   if system = S_linux_elf then
     (* Mark stack as non-executable, PR#4564 *)
-    _section [".note.GNU-stack"] (Some "") ["%progbits"];
+    D.section [".note.GNU-stack"] (Some "") ["%progbits"];
 
   if system = S_win32 then begin
-    _comment "External functions";
+    D.comment "External functions";
     StringSet.iter
       (fun s ->
          if not (StringSet.mem s !symbols_defined) then
-           _extrn (emit_symbol s) PROC)
+           D.extrn (emit_symbol s) PROC)
       !symbols_used;
     symbols_used := StringSet.empty;
     symbols_defined := StringSet.empty;
   end;
 
-  _end ();
+  D.end_ ();
 
   let asm =
     if !Emitaux.create_asm_file then
