@@ -27,6 +27,17 @@ let rec print_ident ppf =
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
+let is_uident s =
+  match s.[0] with
+  | 'A'..'Z' -> true
+  | _ -> false
+
+let print_type_ident ppf = function
+  | Oide_ident s | Oide_dot (_, s) as p when is_uident s ->
+      fprintf ppf "!%a" print_ident p
+  | p ->
+      print_ident ppf p
+
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
   ||
@@ -192,7 +203,7 @@ and print_simple_out_type ppf =
   | Otyp_constr (id, tyl) ->
       pp_open_box ppf 0;
       print_typargs ppf tyl;
-      print_ident ppf id;
+      print_type_ident ppf id;
       pp_close_box ppf ()
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
