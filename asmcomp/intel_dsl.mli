@@ -13,17 +13,9 @@
 (** Helpers for Intel code generators *)
 
 (* The DSL* modules expose functions to emit x86/x86_64 instructions
-   using a syntax close to AT&T (in particular, arguments are reversed compared
-   to the official Intel syntax).
-
-   Some notes:
-
-     - Unary floating point instructions such as fadd/fmul/fstp/fld/etc come with a single version
-       supporting both the single and double precision instructions.  (As with Intel syntax.)
-
-     - A legacy bug in GAS:
-       https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
-       is not replicated here.  It is managed by Intel_gas.
+   using a syntax close to the official Intel syntax, except that
+   source and destination operands are reversed (as in the AT&T
+   syntax).
 *)
 
 
@@ -99,6 +91,8 @@ module D : sig
 end
 
 module I : sig
+  (* Instructions *)
+
   val add: arg * arg -> unit
   val addsd: arg * arg -> unit
   val and_: arg * arg -> unit
