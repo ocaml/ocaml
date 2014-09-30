@@ -1198,33 +1198,24 @@ let transl_extension_constructor env check_open type_path type_params
           | _ -> assert false
         in
         let rebind, args =
-        if cdescr.cstr_inlined <> None then assert false
-(*
-        if cdescr.cstr_inlined then
-          let p, tl =
-            match args with
-            | [ {desc=Tconstr(p, tl, _)} ] -> p, tl
-            | _ -> assert false
-	  in
-	  let decl =
-	    try Env.find_type p env with Not_found -> assert false
-	  in
-          let decl = Ctype.instance_declaration decl in
-          assert (List.length decl.type_params = List.length tl);
-          List.iter2 (Ctype.unify env) decl.type_params tl;
-          let lbls =
-            match decl.type_kind with
-            | Type_record (lbls, _) -> lbls
-            | _ -> assert false
-	  in
-	  let id =
-            Ident.create (Btype.inlined_record_name (Path.last type_path)
-                            sext.pext_name.txt)
-          in
-	  Some p, Types.Cstr_record (id, lbls)
-*)
-        else
-          None, Types.Cstr_tuple args
+          match cdescr.cstr_inlined with
+          | None ->
+              None, Types.Cstr_tuple args
+          | Some decl ->
+              let p, tl =
+                match args with
+                | [ {desc=Tconstr(p, tl, _)} ] -> p, tl
+                | _ -> assert false
+              in
+              let decl = Ctype.instance_declaration decl in
+              assert (List.length decl.type_params = List.length tl);
+              List.iter2 (Ctype.unify env) decl.type_params tl;
+              let lbls =
+                match decl.type_kind with
+                | Type_record (lbls, Record_extension _) -> lbls
+                | _ -> assert false
+              in
+              Some p, Types.Cstr_record lbls
         in
         rebind, args, ret_type, Text_rebind(path, lid)
   in
