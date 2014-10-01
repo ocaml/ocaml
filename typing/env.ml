@@ -1435,8 +1435,7 @@ let _ =
 
 (* Insertion of bindings by identifier *)
 
-let add_functor_arg ?(arg=false) id env =
-  if not arg then env else
+let add_functor_arg id env =
   {env with
    functor_args = Ident.add id () env.functor_args;
    summary = Env_functor_arg (env.summary, id)}
@@ -1450,14 +1449,14 @@ let add_type ~check id info env =
 and add_extension ~check id ext env =
   store_extension ~check None id (Pident id) ext env env
 
-and add_module_declaration ?arg id md env =
+and add_module_declaration ?(arg=false) id md env =
   let path =
     (*match md.md_type with
       Mty_alias path -> normalize_path env path
     | _ ->*) Pident id
   in
   let env = store_module None id path md env env in
-  add_functor_arg ?arg id env
+  if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
   store_modtype None id (Pident id) info env env
@@ -1508,7 +1507,7 @@ let add_item comp env =
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, md, _)  -> add_module_declaration id md env
+  | Sig_module(id, md, _)   -> add_module_declaration id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env

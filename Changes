@@ -17,6 +17,11 @@ Standard library:
 Type system:
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
+* PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
+  This is done by adding equations to submodules when expanding aliases.
+  In theory this may be incompatible is some corner cases defining a module
+  type through inference, but no breakage known on published code.
+  
 
 OCaml 4.02.1:
 -------------
