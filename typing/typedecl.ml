@@ -50,14 +50,35 @@ open Typedtree
 
 exception Error of Location.t * error
 
-(* Enter all declared types in the environment as abstract types *)
+(* Enter all declared types in the environment as abstract types
+   (special support variant types to allow self-referencing to
+   inline records) *)
+
+let approx_kind = function
+  | Ptype_variant pcds ->
+      let f pcd =
+        {
+          cd_id = Ident.create pcd.pcd_name.txt;
+          cd_args =
+            begin match pcd.pcd_args with
+            | Pcstr_tuple _ -> Cstr_tuple []
+            | Pcstr_record lbls -> Cstr_record []
+            end;
+          cd_res = None;
+          cd_loc = pcd.pcd_loc;
+          cd_attributes = pcd.pcd_attributes;
+        }
+      in
+      Type_variant (List.map f pcds)
+  | _ ->
+      Type_abstract
 
 let enter_type env sdecl id =
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = List.length sdecl.ptype_params;
-      type_kind = Type_abstract;
+      type_kind = approx_kind sdecl.ptype_kind;
       type_private = sdecl.ptype_private;
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None

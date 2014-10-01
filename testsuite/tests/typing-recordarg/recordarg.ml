@@ -102,3 +102,13 @@ module Z = struct
 end;;
 let f = Z.f;;
 let g = Z.g;;
+
+
+(* Self-reference to !-types *)
+
+module X = struct
+  type t = A of {x : int} | B of !A
+  type s =
+    | A of {x : !B; y : !s.B; z : !t.A; mutable u : !A option}
+    | B of {y : int}
+end;;

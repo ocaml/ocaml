@@ -61,4 +61,11 @@ Error: Multiple definition of the extension constructor name A.
   end
 # val f : X1.t -> !Z.A = <fun>
 # val g : Z.t -> !Z.t.A = <fun>
+#                   module X :
+  sig
+    type t = A of { x : int; } | B of !t.A
+    type s =
+        A of { x : !s.B; y : !s.B; z : !t.A; mutable u : !s.A option; }
+      | B of { y : int; }
+  end
 # 
