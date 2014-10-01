@@ -24,7 +24,7 @@ module M = struct
     | A of {x : 'a}
     | B: {u : 'b} -> unit t
 
-(*  exception Foo of {x : int} *)
+  exception Foo of {x : int}
 end;;
 
 module N : sig
@@ -32,13 +32,13 @@ module N : sig
     | A of {x : 'b}
     | B: {u : 'bla} -> unit t
 
-(*  exception Foo of {x : int} *)
+  exception Foo of {x : int}
 end = struct
   type 'b t = 'b M.t =
     | A of {x : 'b}
     | B: {u : 'z} -> unit t
 
-(*  exception Foo = M.Foo *)
+  exception Foo = M.Foo
 end;;
 
 
@@ -81,7 +81,6 @@ end;;
 
 module M = struct
   exception A = M1.A
-  exception A
 end;;
 
 module X1 = struct
@@ -101,3 +100,5 @@ module Z = struct
   type t = A of {x: int}
   let g = function A r -> r
 end;;
+let f = Z.f;;
+let g = Z.g;;

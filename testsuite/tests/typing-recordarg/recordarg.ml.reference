@@ -1,11 +1,11 @@
 
-#       module M : sig type t = A of { x : int; } val f : t -> t.A end
-# - : M.t -> M.t.A = <fun>
-#               module A : sig type t = A of { x : int; } val f : t -> t.A end
-#   module type S = sig type t = A of { x : int; } val f : t -> t.A end
-# module N : sig type t = M.t = A of { x : int; } val f : t -> t.A end
+#       module M : sig type t = A of { x : int; } val f : t -> !t.A end
+# - : M.t -> !M.t.A = <fun>
+#               module A : sig type t = A of { x : int; } val f : t -> !t.A end
+#   module type S = sig type t = A of { x : int; } val f : t -> !t.A end
+# module N : sig type t = M.t = A of { x : int; } val f : t -> !t.A end
 #     type 'a t = A : { x : 'a; y : 'b; } -> 'a t
-# val f : ('a, 'b) t.A -> 'a t = <fun>
+# val f : ('a, 'b) !t.A -> 'a t = <fun>
 #               module M :
   sig
     type 'a t = A of { x : 'a; } | B : { u : 'b; } -> unit t
@@ -22,51 +22,43 @@
                ^^^^^^^^^
 Error: This expression creates fresh types.
        It is not allowed inside applicative functors.
-#           Characters 61-78:
+#           Characters 61-62:
     exception A of {x : string}
-              ^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the type name exn.A.
+              ^
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
-#         Characters 58-75:
+#         Characters 58-59:
     exception A of {x : string}
-              ^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the type name exn.A.
+              ^
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 #         module M1 : sig exception A of { x : int; } end
 #         Characters 34-44:
     include M1
     ^^^^^^^^^^
-Error: Multiple definition of the type name exn.A.
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 #         module type S1 = sig exception A of { x : int; } end
 #         Characters 36-46:
     include S1
     ^^^^^^^^^^
-Error: Multiple definition of the type name exn.A.
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
-#         Characters -1--1:
-  
-  
-Error: In module M:
-       Modules do not match:
-         sig exception A of { x : int; } exception A end
-       is not included in
-         sig exception A of { x : int; } exception A end
-       In module M:
-       Extension declarations do not match:
-         type exn += A
-       is not included in
-         type exn += A of { x : int; }
+#       module M : sig exception A of { x : int; } end
 #       module X1 : sig type t = .. end
 #     module X2 : sig type t = .. end
-#       Characters 62-75:
+#       Characters 62-63:
     type X2.t += A of {x: int}
-                 ^^^^^^^^^^^^^
-Error: Multiple definition of the type name t.A.
+                 ^
+Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
-#             Characters 107-108:
-    type t = A of {x: int}
-             ^
-Error: Multiple definition of the type name t.A.
-       Names must be unique in a given structure or signature.
+#             module Z :
+  sig
+    type X1.t += A of { x : int; }
+    val f : X1.t -> !A
+    type t = A of { x : int; }
+    val g : t -> !t.A
+  end
+# val f : X1.t -> !Z.A = <fun>
+# val g : Z.t -> !Z.t.A = <fun>
 # 
