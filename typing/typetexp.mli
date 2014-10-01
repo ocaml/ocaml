@@ -66,6 +66,7 @@ type error =
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Not_a_variant_type of Longident.t
+  | Not_an_inlined_record of Longident.t
 
 exception Error of Location.t * Env.t * error
 

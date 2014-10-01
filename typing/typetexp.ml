@@ -54,6 +54,7 @@ type error =
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Not_a_variant_type of Longident.t
+  | Not_an_inlined_record of Longident.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -311,10 +312,7 @@ let find_type env loc lid =
   | 'A'..'Z' ->
       let cstr = find_qual_constructor env loc lid in
       if cstr.cstr_inlined = None then
-        failwith (Printf.sprintf
-                    "Constructor %s does not have an inline record argument"
-                    s
-                 );
+        raise (Error (loc, env, Not_an_inlined_record lid));
       begin match cstr.cstr_args with
       | [{desc=Tconstr(path, _, _)}] ->
           let decl =
@@ -1056,6 +1054,10 @@ let report_error env ppf = function
   | Not_a_variant_type lid ->
       fprintf ppf
         "The type %a is not a regular variant type"
+        longident lid
+  | Not_an_inlined_record lid ->
+      fprintf ppf
+        "Constructor %a does not have an inline record argument"
         longident lid
 
 let () =
