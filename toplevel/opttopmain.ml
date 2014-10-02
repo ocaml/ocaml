@@ -76,7 +76,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
-  let _old_type_errors = clear old_type_errors
+  let _new_type_errors = set new_type_errors
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _real_paths = set real_paths

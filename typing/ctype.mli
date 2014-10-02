@@ -15,9 +15,7 @@
 open Asttypes
 open Types
 
-val new_type_errors : bool ref
-        (* To modify the order of unifications in order to report
-           improved error messages. *)
+val new_type_errors_activated : bool ref
 
 exception Unify of expr_pairs
 exception Tags of label * label

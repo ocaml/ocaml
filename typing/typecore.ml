@@ -20,12 +20,6 @@ open Typedtree
 open Btype
 open Ctype
 
-
-(* Flag to control the behavior of error reporting 
-   on application, whether or not to show the original
-   ocaml error message *)
-let show_original_error_after_easytype = false
-
 type easytype_reporter = Format.formatter -> Printtyp.easytype_pieces -> unit
 
 type error =
@@ -1838,7 +1832,7 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_ident lid ->
       begin
         let (path, desc) = 
-          if not !new_type_errors then 
+          if not !new_type_errors_activated then 
             Typetexp.find_value env loc lid.txt
           else
             begin
@@ -2017,7 +2011,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
         in
-      if not !new_type_errors then begin
+      if not !new_type_errors_activated then begin
         let ty = instance env funct.exp_type in
         end_def (); (* end the one more level *)
         old_error_typing ty 
@@ -2328,7 +2322,7 @@ and type_expect_ ?in_function env sexp ty_expected =
             exp_type = ifso.exp_type;
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
-      | Some sifnot when !new_type_errors ->
+      | Some sifnot when !new_type_errors_activated ->
           let scheme_exp env sexp =
             begin_def ();
             let exp = type_exp env sexp in
@@ -3664,17 +3658,17 @@ and easytype_report_but_string s : easytype_reporter =
    and the "strict_sequence" flag. *)
 
 and type_statement_easify_strict_sequence env sexp report =
-  if !new_type_errors && !Clflags.strict_sequence
+  if !new_type_errors_activated && !Clflags.strict_sequence
     then type_statement_easytype env sexp report
     else type_statement env sexp
 
 and type_statement_easify env sexp report =
-  if !new_type_errors
+  if !new_type_errors_activated
     then type_statement_easytype env sexp report
     else type_statement env sexp
 
 and type_cases_easify ?in_function env ty_arg ty_res partial_flag loc caselist =
-  (* Note: the dispatch on "!new_type_errors" occurs inside the function "type_cases" *)
+  (* Note: the dispatch on "!new_type_errors_activated" occurs inside the function "type_cases" *)
   type_cases ?in_function env ty_arg ty_res partial_flag loc caselist
 
 and type_statement_easytype env sexp report =
@@ -3715,7 +3709,7 @@ and type_statement_easytype env sexp report =
    that is a predefined type only if it is not polymorphic *)
 
 and type_expect_easify ?in_function env sexp ty_expected (report:easytype_reporter) =
-  if !new_type_errors
+  if !new_type_errors_activated
     then type_expect_predef_easytype env sexp ty_expected report
     else type_expect ?in_function env sexp ty_expected 
 
@@ -3821,7 +3815,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
-    if not !new_type_errors then begin
+    if not !new_type_errors_activated then begin
       (* Warning: some of the lines below are duplicated in the else branch. *)
       List.map2
         (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
@@ -3952,7 +3946,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   (* Prepare a ghost environment for finding missing "rec" keywords *)
   let ghost_env = 
-    if !new_type_errors && not is_recursive 
+    if !new_type_errors_activated && not is_recursive 
       then Some (add_pattern_variables_ghost_easytype loc env pv)
       else None in
 
@@ -3990,7 +3984,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   List.iter (fun f -> f()) force;
   let exp_env =
     if is_recursive then new_env
-    else if !new_type_errors && not is_recursive then 
+    else if !new_type_errors_activated && not is_recursive then 
       (match ghost_env with Some env' -> env' | _ -> assert false)
     else env in
 
@@ -4188,7 +4182,7 @@ let rec report_error env ppf = function
           else ((fun () -> ()), m4)
         in
       m4a_call();
-      if show_original_error_after_easytype then begin
+      if false then begin (* to include old type error *)
         Format.fprintf ppf "----@.";
         Location.print_error ppf loc;
         let msg1 = "This expression has type" in
@@ -4213,7 +4207,7 @@ let rec report_error env ppf = function
       end
   | Apply_error_easytype (explain, loc, original_error) ->
       explain ppf;
-      if show_original_error_after_easytype then begin
+      if false then begin  (* to include old type error *)
         fprintf ppf "@\n";
         Location.print_error ppf loc;
         report_error env ppf original_error
@@ -4291,7 +4285,7 @@ let rec report_error env ppf = function
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
   | Unbound_instance_variable v ->
-      fprintf ppf "Unbound instance variable %s" v
+      fprintf ppf "Unknown instance variable %s" v
   | Instance_variable_not_mutable (b, v) ->
       if b then
         fprintf ppf "The instance variable %s is not mutable" v

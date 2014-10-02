@@ -125,7 +125,7 @@ let find_printer_type ppf lid =
     (ty_arg, path, is_old_style)
   with
   | Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
+      fprintf ppf "Unknown value %a.@." Printtyp.longident lid;
       raise Exit
   | Ctype.Unify _ ->
       fprintf ppf "%a has a wrong type for a printing function.@."

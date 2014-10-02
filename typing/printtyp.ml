@@ -1319,7 +1319,7 @@ let has_explanation unif t3 t4 =
      (* note: we could restrict the application of this pattern to the case 
         where ty1 and ty2 can be unified; however, this would need to be tested
         without actually performing any side-effects on the two types. *)
-     when !new_type_errors && 
+     when !new_type_errors_activated && 
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
      -> swap_position_of_error_messages := true; 
@@ -1327,7 +1327,7 @@ let has_explanation unif t3 t4 =
   (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
      when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
-       !new_type_errors && 
+       !new_type_errors_activated && 
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
      -> swap_position_of_error_messages := true;
         true
@@ -1352,14 +1352,14 @@ let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when !new_type_errors && 
+     when !new_type_errors_activated && 
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot a `!' operator somewhere.@]"
   (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when !new_type_errors && 
+     when !new_type_errors_activated && 
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot to provide `()' as argument somewhere.@]"

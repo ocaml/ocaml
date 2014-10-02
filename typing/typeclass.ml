@@ -1771,7 +1771,7 @@ let report_error env ppf = function
   | Class_match_failure error ->
       Includeclass.report_error ppf error
   | Unbound_val lab ->
-      fprintf ppf "Unbound instance variable %s" lab
+      fprintf ppf "Unknown instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
       let print_common ppf kind ty0 real lab ty =
         let ty1 =

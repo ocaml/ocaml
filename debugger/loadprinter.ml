@@ -161,7 +161,7 @@ let report_error ppf = function
       fprintf ppf "@[Error during code loading: %s@]@."
         (Dynlink.error_message e)
   | Unbound_identifier lid ->
-      fprintf ppf "@[Unbound identifier %a@]@."
+      fprintf ppf "@[Unknown identifier %a@]@."
       Printtyp.longident lid
   | Unavailable_module(md, lid) ->
       fprintf ppf

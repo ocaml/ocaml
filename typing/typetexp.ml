@@ -910,9 +910,9 @@ type cd = string list * int
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
-    fprintf ppf "Unbound type parameter %s@." name
+    fprintf ppf "Unknown type parameter %s@." name
   | Unbound_type_constructor lid ->
-    fprintf ppf "Unbound type constructor %a" longident lid;
+    fprintf ppf "Unknown type constructor %a" longident lid;
     spellcheck ppf Env.fold_types env lid;
   | Unbound_type_constructor_2 p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
@@ -929,7 +929,7 @@ let report_error env ppf = function
   | Unbound_row_variable lid ->
       (* we don't use "spellcheck" here: this error is not raised
          anywhere so it's unclear how it should be handled *)
-      fprintf ppf "Unbound row variable in #%a" longident lid
+      fprintf ppf "Unknown row variable in #%a" longident lid
   | Type_mismatch trace ->
       Printtyp.report_unification_error ppf Env.empty trace
         (function ppf ->
@@ -977,30 +977,30 @@ let report_error env ppf = function
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."
   | Unbound_value lid ->
-      fprintf ppf "Unbound value %a" longident lid;
+      fprintf ppf "Unknown value %a" longident lid;
       spellcheck ppf Env.fold_values env lid;
   | Unbound_value_missing_rec_easytype (lid, loc) ->
-      fprintf ppf "Unbound value %a.\n" longident lid;
+      fprintf ppf "Unknown value %a.\n" longident lid;
       let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
       fprintf ppf "@.You are probably missing the `rec' keyword on line %i." line;
   | Unbound_module lid ->
-      fprintf ppf "Unbound module %a" longident lid;
+      fprintf ppf "Unknown module %a" longident lid;
       spellcheck ppf Env.fold_modules env lid;
   | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" longident lid;
+      fprintf ppf "Unknown constructor %a" longident lid;
       spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
         env lid;
   | Unbound_label lid ->
-      fprintf ppf "Unbound record field %a" longident lid;
+      fprintf ppf "Unknown record field %a" longident lid;
       spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
   | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid;
+      fprintf ppf "Unknown class %a" longident lid;
       spellcheck ppf Env.fold_classs env lid;
   | Unbound_modtype lid ->
-      fprintf ppf "Unbound module type %a" longident lid;
+      fprintf ppf "Unknown module type %a" longident lid;
       spellcheck ppf Env.fold_modtypes env lid;
   | Unbound_cltype lid ->
-      fprintf ppf "Unbound class type %a" longident lid;
+      fprintf ppf "Unknown class type %a" longident lid;
       spellcheck ppf Env.fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid

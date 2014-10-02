@@ -210,8 +210,8 @@ let mk_o f =
   "-o", Arg.String f, "<file>  Set output file name to <file>"
 ;;
 
-let mk_old_type_errors f =
-  "-old-type-errors", Arg.Unit f, " report type errors using traditional messages"
+let mk_new_type_errors f =
+  "-new-type-errors", Arg.Unit f, " report type errors using traditional messages"
 ;;
 
 let mk_open f =
@@ -480,7 +480,7 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
-  val _old_type_errors : unit -> unit
+  val _new_type_errors : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -655,7 +655,7 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_o F._o;
-    mk_old_type_errors F._old_type_errors;
+    mk_new_type_errors F._new_type_errors;
     mk_open F._open;
     mk_output_obj F._output_obj;
     mk_pack_byt F._pack;
@@ -710,7 +710,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
-    mk_old_type_errors F._old_type_errors;
+    mk_new_type_errors F._new_type_errors;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -742,7 +742,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
-    mk_old_type_errors F._old_type_errors;
+    mk_new_type_errors F._new_type_errors;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -842,7 +842,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
-    mk_old_type_errors F._old_type_errors;
+    mk_new_type_errors F._new_type_errors;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;

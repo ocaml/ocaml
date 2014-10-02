@@ -1,5 +1,5 @@
 
-*** Improved type error branch ****   (Arthur Charguéraud, 2014/09/19)
+*** Improved type error branch ****   (Arthur Chargueraud, 2014/09/19)
 
 
 Argumentation:

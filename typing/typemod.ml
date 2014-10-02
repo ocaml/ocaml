@@ -44,11 +44,11 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 (* Wrapper for typechecking a core expression, and, in case of an error,
-   typechecking it again after setting "Ctype.new_type_errors := true". *)
+   typechecking it again after setting "Ctype.new_type_errors_activated := true". *)
 let typing_easytype_wrapper fct =
   try fct()
-  with (Typecore.Error _ | Typetexp.Error _) when not !Clflags.old_type_errors ->
-    Ctype.new_type_errors := true;
+  with (Typecore.Error _ | Typetexp.Error _) when !Clflags.new_type_errors ->
+    Ctype.new_type_errors_activated := true;
     fct()
 
 open Typedtree

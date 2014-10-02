@@ -81,9 +81,7 @@ open Btype
 
 (**** Errors ****)
 
-(* Global flag to activate easytype error reporting mode *)
-
-let new_type_errors = ref false
+let new_type_errors_activated = ref false
 
 exception Unify of expr_pairs
 

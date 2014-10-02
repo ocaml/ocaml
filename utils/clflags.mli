@@ -94,4 +94,4 @@ val force_slash : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
-val old_type_errors : bool ref
+val new_type_errors : bool ref

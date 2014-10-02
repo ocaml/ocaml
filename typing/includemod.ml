@@ -531,9 +531,9 @@ let include_err ppf = function
       (Printtyp.class_declaration id) d2
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
-      fprintf ppf "Unbound module type %a" Printtyp.path path
+      fprintf ppf "Unknown module type %a" Printtyp.path path
   | Unbound_module_path path ->
-      fprintf ppf "Unbound module %a" Printtyp.path path
+      fprintf ppf "Unknown module %a" Printtyp.path path
   | Invalid_module_alias path ->
       fprintf ppf "Module %a cannot be aliased" Printtyp.path path
 

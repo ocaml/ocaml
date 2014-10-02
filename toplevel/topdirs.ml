@@ -216,7 +216,7 @@ let find_printer_type ppf lid =
     (ty_arg, path, is_old_style)
   with
   | Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
+      fprintf ppf "Unknown value %a.@." Printtyp.longident lid;
       raise Exit
   | Ctype.Unify _ ->
       fprintf ppf "%a has a wrong type for a printing function.@."
@@ -292,7 +292,7 @@ let dir_trace ppf lid =
             fprintf ppf "%a is now traced.@." Printtyp.longident lid
         end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
   with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+  | Not_found -> fprintf ppf "Unknown value %a.@." Printtyp.longident lid
 
 let dir_untrace ppf lid =
   try
@@ -309,7 +309,7 @@ let dir_untrace ppf lid =
         end else f :: remove rem in
     traced_functions := remove !traced_functions
   with
-  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+  | Not_found -> fprintf ppf "Unknown value %a.@." Printtyp.longident lid
 
 let dir_untrace_all ppf () =
   List.iter
