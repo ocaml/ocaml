@@ -2339,7 +2339,7 @@ and type_expect_ ?in_function env sexp ty_expected =
              (fun ppf (m1,m2,m3,m4) ->
                 Format.fprintf ppf
                   "@[<v>The then-branch has type %a @,but the else-branch has type @,%a. @,\
-                    @[%s@, [%a] @,%s@, [%a].@,\
+                    @[%s@, %a @,%s@, %a.@,\
                     @]%a\
                     %a
                    @]"
@@ -3633,8 +3633,8 @@ and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
     (* Note: we might benefit from using "@;<1 2>", like in original error messages *)
     Format.fprintf ppf 
       "@[<v>\
-        @[%a @,[%a]@ @,\
-          %a @,[%a].\
+        @[%a @,%a@ @,\
+          %a @,%a.\
         @]%a@,\
         %a
        @]"
@@ -3860,7 +3860,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
                   Some
                     (type_expect_easify ext_env (wrap_unpacks scond unpacks)
                        Predef.type_bool
-                      (easytype_report_so_but_string "this expression is a when-clause condition"))
+                      (easytype_report_so_but_string "This expression is a when-clause condition"))
             in
             let exp = type_exp ext_env sexp in
             {
@@ -3875,10 +3875,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           let first_branch = (List.hd cases).c_rhs in
           List.iter (fun c ->
             ignore (unify_exp_easytype env c.c_rhs first_branch.exp_type  
-              (easytype_report ~swap:true (format_string "the previous branches produce values of type") (format_string "but this branch has type")))
+              (easytype_report ~swap:true (format_string "The previous branches produce values of type") (format_string "but this branch has type")))
             ) cases;
           ignore (unify_exp_easytype env first_branch ty_res  
-            (easytype_report ~swap:true (format_string "the branches of the matching are required by the context to produce values of type") (format_string "but they have type")))
+            (easytype_report ~swap:true (format_string "The branches of the matching are required by the context to produce values of type") (format_string "but they have type")))
         end;
         cases
      end
@@ -4182,15 +4182,15 @@ let rec report_error env ppf = function
           else ((fun () -> ()), m4)
         in
       m4a_call();
-      if false then begin (* to include old type error *)
+      if false then begin (* use this code to include the old type error *)
         Format.fprintf ppf "----@.";
         Location.print_error ppf loc;
         let msg1 = "This expression has type" in
         let msg2 = "but an expression was expected of type" in
         Format.fprintf ppf
           "@[<v>\
-            @[%s@;<1 2>[%a]@ \
-              %s@;<1 2>[%a].\
+            @[%s@;<1 2>%a@ \
+              %s@;<1 2>%a.\
             @]%a \
             %a \
            @]"
@@ -4302,7 +4302,7 @@ let rec report_error env ppf = function
         (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
            fprintf ppf
-             "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
+             "This expression cannot be coerced to type@;<1 2>[%a];@ it has type"
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type");

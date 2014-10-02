@@ -1256,7 +1256,7 @@ let type_path_expansion tp ppf tp' =
 let rec trace fst txt ppf = function
   | (t1, t1') :: (t2, t2') :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
+      fprintf ppf "@[Type@;<1 2>[%a]@ %s@;<1 2>[%a]@] %a"
        (type_expansion t1) t1' txt (type_expansion t2) t2'
        (trace false txt) rem
   | _ -> ()
@@ -1467,10 +1467,17 @@ let unification_error unif tr txt1 ppf txt2 =
       and t2, t2' = may_prepare_expansion (tr = []) t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
-      fprintf ppf
-        "@[<v>\
+      (* original pattern was:
+              "@[<v>\
           @[%t@;<1 2>%a@ \
             %t@;<1 2>%a.\
+          @]%a%t\
+         @]"
+      *)
+      fprintf ppf
+        "@[<v>\
+          @[%t@;<1 2>[%a]@ \
+            %t@;<1 2>[%a].\
           @]%a%t\
          @]"
         txt1 (type_expansion t1) t1'
@@ -1506,8 +1513,8 @@ let get_unification_error_easytype env ?(unif=true) tr =
         and t2, t2' = may_prepare_expansion (tr = []) t2 in
         print_labels := not !Clflags.classic;
         let tr = List.map prepare_expansion tr in
-        let m1 = fun ppf () -> ((type_expansion t1) ppf t1') in
-        let m2 = fun ppf () -> ((type_expansion t2) ppf t2') in
+        let m1 = fun ppf () -> fprintf ppf "[%a]" (type_expansion t1) t1' in
+        let m2 = fun ppf () -> fprintf ppf "[%a]" (type_expansion t2) t2' in
         let m3 = fun ppf () -> ((trace false "is not compatible with type") ppf tr) in
         let m4 = fun ppf () -> fprintf ppf "%t" ((explanation unif mis)) in
         print_labels := true;
@@ -1535,10 +1542,10 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     reset ();
     let tr1 = List.map prepare_expansion tr1
     and tr2 = List.map prepare_expansion tr2 in
-    fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
+    fprintf ppf "@[<v>[%a]" (trace true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
     let mis = mismatch true tr2 in
-    fprintf ppf "%a%t@]"
+    fprintf ppf "[%a]%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
       (explanation true mis))
 
@@ -1552,15 +1559,15 @@ let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
       [] -> assert false
     | [tp, tp'] ->
         fprintf ppf
-          "@[%t@;<1 2>%a@ \
-             %t@;<1 2>%a\
+          "@[%t@;<1 2>[%a]@ \
+             %t@;<1 2>[%a]\
            @]"
           txt1 (type_path_expansion tp) tp'
           txt3 (type_path_expansion tp0) tp0'
     | _ ->
         fprintf ppf
-          "@[%t@;<1 2>@[<hv>%a@]\
-             @ %t@;<1 2>%a\
+          "@[%t@;<1 2>@[<hv>[%a]@]\
+             @ %t@;<1 2>[%a]\
            @]"
           txt2 type_path_list tpl
           txt3 (type_path_expansion tp0) tp0')
