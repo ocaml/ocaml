@@ -53,9 +53,11 @@ value win_create_process_native(value cmd, value cmdline, value env,
   /* Create the process */
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, flags, envp, NULL, &si, &pi)) {
+    caml_stat_free(exefile);
     win32_maperr(GetLastError());
     uerror("create_process", cmd);
   }
+  caml_stat_free(exefile);
   CloseHandle(pi.hThread);
   /* Return the process handle as pseudo-PID
      (this is consistent with the wait() emulation in the MSVC C library */
