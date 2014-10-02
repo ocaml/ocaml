@@ -293,7 +293,7 @@ let current_unit = ref ""
 
 type pers_struct =
   { ps_name: string;
-    ps_sig: signature;
+    ps_sig: signature Lazy.t;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t option) list;
     mutable ps_crcs_checked: bool;
@@ -348,7 +348,7 @@ let read_pers_struct modname filename =
                              (Mty_signature sign)
   in
   let ps = { ps_name = name;
-             ps_sig = sign;
+             ps_sig = lazy (Subst.signature Subst.identity sign);
              ps_comps = comps;
              ps_crcs = crcs;
              ps_filename = filename;
@@ -489,7 +489,7 @@ let find_module ~alias path env =
       with Not_found ->
         if Ident.persistent id then
           let ps = find_pers_struct (Ident.name id) in
-          md (Mty_signature(ps.ps_sig))
+          md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
@@ -1552,7 +1552,8 @@ let open_signature slot root sg env0 =
 
 let open_pers_signature name env =
   let ps = find_pers_struct name in
-  open_signature None (Pident(Ident.create_persistent name)) ps.ps_sig env
+  open_signature None (Pident(Ident.create_persistent name))
+    (Lazy.force ps.ps_sig) env
 
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
@@ -1589,7 +1590,7 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in
   check_consistency ps;
-  ps.ps_sig
+  Lazy.force ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
@@ -1635,7 +1636,7 @@ let save_signature_with_imports sg modname filename imports =
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
       { ps_name = modname;
-        ps_sig = sg;
+        ps_sig = lazy (Subst.signature Subst.identity sg);
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
@@ -1709,7 +1710,7 @@ let fold_modules f lid env acc =
               None -> acc
             | Some ps ->
               f name (Pident(Ident.create_persistent name))
-                     (md (Mty_signature ps.ps_sig)) acc)
+                     (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
         persistent_structures
         acc
     | Some l ->

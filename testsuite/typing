@@ -1,3 +1,12 @@
+tests/basic
+tests/basic-float
+tests/basic-io
+tests/basic-io-2
+tests/basic-manyargs
+tests/basic-modules
+tests/basic-more
+tests/basic-multdef
+tests/basic-private
 tests/typing-extensions
 tests/typing-fstclassmod
 tests/typing-gadts
