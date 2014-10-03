@@ -7,6 +7,7 @@ Standard library:
 
 - PR#4099: Bug in Makefile.nt: won't stop on error (George Necula)
 - PR#6181: Improve MSVC build (Chen Gang)
+- PR#6207: Configure doesn't detect features correctly on Haiku
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
 - PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
