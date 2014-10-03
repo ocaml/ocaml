@@ -17,22 +17,21 @@ open Asttypes
 open Types
 open Btype
 
-(* Simplified version of Ctype.free_vars.  Also compute
-   an ordered sequence of type variables (in the order in which
-   they appear, syntactically). *)
+type error =
+  | GADT_inlined_record_arity
+
+exception Error of Location.t * error
+
+(* Simplified version of Ctype.free_vars.  *)
 let free_vars ty =
   let ret = ref TypeSet.empty in
-  let l = ref [] in
   let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
       match ty.desc with
       | Tvar _ ->
-          if not (TypeSet.mem ty !ret) then begin
-            ret := TypeSet.add ty !ret;
-            l := ty :: !l
-          end;
+          ret := TypeSet.add ty !ret
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
@@ -43,50 +42,55 @@ let free_vars ty =
   in
   loop ty;
   unmark_type ty;
-  !ret, List.rev !l
+  !ret
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args cd_args cd_res path type_manifest rep =
+let constructor_args cd_args cd_res type_params loc path type_manifest rep =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
     | Cstr_record l -> List.map (fun l -> l.ld_type) l
   in
-  (* Note: variables bound by Tpoly are Tunivar, not Tvar,
-     and thus they are not considered as free, which is
-     what we want. *)
-  let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
+  let arg_vars_set = free_vars (newgenty (Ttuple tyl)) in
   let existentials =
     match cd_res with
     | None -> []
     | Some type_ret ->
-        let res_vars, _ = free_vars type_ret in
+        let res_vars = free_vars type_ret in
         TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
+      let type_params =
+        match cd_res with
+        | None -> type_params
+        | Some _ ->
+            match TypeSet.elements arg_vars_set with
+            | [] | [_] as l -> l
+            | _ -> raise (Error (loc, GADT_inlined_record_arity))
+      in
       let type_manifest =
         match type_manifest with
-        | Some p -> Some (newgenconstr p arg_vars)
+        | Some p -> Some (newgenconstr p type_params)
         | None -> None
       in
       let tdecl =
         {
-          type_params = arg_vars;
-          type_arity = List.length arg_vars;
+          type_params;
+          type_arity = List.length type_params;
           type_kind = Type_record (lbls, rep);
           type_private = Public;
           type_manifest;
-          type_variance = List.map (fun _ -> Variance.full) arg_vars;
+          type_variance = List.map (fun _ -> Variance.full) type_params;
           type_newtype_level = None;
           type_loc = Location.none;
           type_attributes = [];
         }
       in
       existentials,
-      [ newgenconstr path arg_vars ],
+      [ newgenconstr path type_params ],
       Some tdecl
 
 let constructor_descrs ty_path decl cstrs =
@@ -121,6 +125,7 @@ let constructor_descrs ty_path decl cstrs =
         in
         let existentials, cstr_args, cstr_inlined =
           constructor_args cd_args cd_res
+            decl.type_params cd_loc
             (subpath ty_path) type_manifest (Record_inlined idx_nonconst)
         in
         let cstr =
@@ -150,6 +155,7 @@ let extension_descr ?rebind path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_args ext.ext_ret_type
+      ext.ext_type_params ext.ext_loc
       path_ext rebind Record_extension
   in
     { cstr_name = Path.last path_ext;
@@ -215,3 +221,19 @@ let rec find_constr tag num_const num_nonconst = function
 
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist
+
+
+let report_error ppf = function
+  | GADT_inlined_record_arity ->
+      Format.fprintf ppf
+        "A record argument on a GADT constructor can have at most \
+         one free variable."
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (loc, err) ->
+          Some (Location.error_of_printer loc report_error err)
+      | _ -> None
+    )
+
