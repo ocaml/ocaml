@@ -475,14 +475,11 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let type_of_cstr path cstr =
-  let tdecl =
-    match cstr.cstr_inlined with
-    | None -> assert false
-    | Some d -> d
-  in
-  let labels = Datarepr.labels_of_type path tdecl in
-  (tdecl, ([], List.map snd labels))
+let type_of_cstr path = function
+  | {cstr_inlined = Some d; _} ->
+      (d, ([], List.map snd (Datarepr.labels_of_type path d)))
+  | _ ->
+      assert false
 
 let find_type_full path env =
   match Path.constructor_typath path with
