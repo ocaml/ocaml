@@ -457,7 +457,7 @@ let new_names () =
 let check_name check names name = check names name.loc name.txt
 let check_type names loc s = check "type" loc names.types s
 let check_module names loc s = check "module" loc names.modules s
-let check_modtype names loc s = check "type" loc names.modtypes s
+let check_modtype names loc s = check "module type" loc names.modtypes s
 let check_typext names loc s = check "extension constructor" loc names.typexts s
 
 
@@ -505,13 +505,6 @@ let mksig desc env loc =
   sg
 
 (* let signature sg = List.map (fun item -> item.sig_type) sg *)
-
-let prepend_sig_types decls rem =
-  map_rec'' (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem
-
-let prepend_sig_types' decls rem =
-  map_rec (fun rs (id, td) -> Sig_type(id, td, rs)) decls rem
-
 
 let rec transl_modtype env smty =
   let loc = smty.pmty_loc in
@@ -582,7 +575,8 @@ and transl_signature env sg =
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type decls) env loc :: trem,
-            prepend_sig_types decls rem,
+            map_rec'' (fun rs td ->
+                Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
         | Psig_typext styext ->
             List.iter
@@ -1227,7 +1221,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         Tstr_type decls,
-        prepend_sig_types decls [],
+        map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
+          decls [],
         enrich_type_decls anchor decls env newenv
     | Pstr_typext styext ->
         List.iter
