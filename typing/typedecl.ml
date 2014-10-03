@@ -368,6 +368,18 @@ let rec check_constraints_rec env loc visited ty =
 
 module SMap = Map.Make(String)
 
+let check_constraints_labels env visited l pl =
+  let rec get_loc name = function
+      [] -> assert false
+    | pld :: tl ->
+        if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
+        else get_loc name tl
+  in
+  List.iter
+    (fun {Types.ld_id=name; ld_type=ty} ->
+       check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
+    l
+
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
   begin match decl.type_kind with
@@ -385,15 +397,15 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun {Types.cd_id=name; cd_args=tyl; cd_res=ret_type} ->
-          let {pcd_args = styl; pcd_res = sret_type; _} =
+        (fun {Types.cd_id=name; cd_args; cd_res} ->
+          let {pcd_args; pcd_res; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
-            styl tyl;
-          match sret_type, ret_type with
+            pcd_args cd_args;
+          match pcd_res, cd_res with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
           | _ ->
@@ -405,16 +417,7 @@ let check_constraints env sdecl (_, decl) =
         | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
-      let rec get_loc name = function
-          [] -> assert false
-        | pld :: tl ->
-            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
-            else get_loc name tl
-      in
-      List.iter
-        (fun {Types.ld_id=name; ld_type=ty} ->
-          check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
-        l
+      check_constraints_labels env visited l pl
   | Type_open -> ()
   end;
   begin match decl.type_manifest with
