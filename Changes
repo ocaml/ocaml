@@ -33,6 +33,8 @@ Standard library:
 - PR#6578: Recursive module containing alias causes Segmentation fault
 - PR#6581: Some bugs in generative functors
 - PR#6553: Missing command line options for ocamldoc
+- PR#6562: Fix ocamldebug module source lookup
+  (Leo White)
 
 OCaml 4.02.0:
 -------------
