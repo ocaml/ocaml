@@ -134,8 +134,28 @@ val attribute_of_warning: Location.t -> string -> attribute
 
 (** {2 Helper functions to call external mappers} *)
 
-val ppx_context: tool_name:string -> unit -> Parsetree.attribute
+val add_ppx_context_str: tool_name:string -> Parsetree.structure -> Parsetree.structure
 (** Extract information from the current environment and encode it
-    into an attribute an attribute which can be prepended to
-    signature/structure items of an AST to pass the information to an
-    external processor. *)
+    into an attribute which is prepended to the list of structure
+    items in order to pass the information to an external
+    processor. *)
+
+val add_ppx_context_sig: tool_name:string -> Parsetree.signature -> Parsetree.signature
+(** Same as [ad_ppx_context_str] for signatures. *)
+
+val drop_ppx_context_str: restore:bool -> Parsetree.structure -> Parsetree.structure
+(** Drop the ocaml.ppx.context attribute from a structure.  If
+    [restore] is true, also restore the associated data in the current
+    process. *)
+
+val drop_ppx_context_sig: restore:bool -> Parsetree.signature -> Parsetree.signature
+(** Same as [drop_ppx_context_str] for signatures. *)
+
+(** {2 Cookies} *)
+
+(** Cookies are used to pass information from a ppx processor to
+    a further invocation of itself, when called from the OCaml
+    toplevel (or other tools that support cookies). *)
+
+val set_cookie: string -> Parsetree.expression -> unit
+val get_cookie: string -> Parsetree.expression option

@@ -293,7 +293,7 @@ let current_unit = ref ""
 
 type pers_struct =
   { ps_name: string;
-    ps_sig: signature;
+    ps_sig: signature Lazy.t;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t option) list;
     mutable ps_crcs_checked: bool;
@@ -348,7 +348,7 @@ let read_pers_struct modname filename =
                              (Mty_signature sign)
   in
   let ps = { ps_name = name;
-             ps_sig = sign;
+             ps_sig = lazy (Subst.signature Subst.identity sign);
              ps_comps = comps;
              ps_crcs = crcs;
              ps_filename = filename;
@@ -489,7 +489,7 @@ let find_module ~alias path env =
       with Not_found ->
         if Ident.persistent id then
           let ps = find_pers_struct (Ident.name id) in
-          md (Mty_signature(ps.ps_sig))
+          md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
@@ -1069,28 +1069,6 @@ let rec scrape_alias env ?path mty =
 
 let scrape_alias env mty = scrape_alias env mty
 
-(* Compute constructor descriptions *)
-
-let constructors_of_type ty_path decl =
-  let handle_variants cstrs =
-    Datarepr.constructor_descrs
-      (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-      cstrs decl.type_private
-  in
-  match decl.type_kind with
-  | Type_variant cstrs -> handle_variants cstrs
-  | Type_record _ | Type_abstract | Type_open -> []
-
-(* Compute label descriptions *)
-
-let labels_of_type ty_path decl =
-  match decl.type_kind with
-    Type_record(labels, rep) ->
-      Datarepr.label_descrs
-        (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep decl.type_private
-  | Type_variant _ | Type_abstract | Type_open -> []
-
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
 
@@ -1209,8 +1187,10 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constructors = List.map snd (constructors_of_type path decl') in
-            let labels = List.map snd (labels_of_type path decl') in
+            let constructors =
+              List.map snd (Datarepr.constructors_of_type path decl') in
+            let labels =
+              List.map snd (Datarepr.labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
                 ((decl', (constructors, labels)), nopos)
@@ -1307,8 +1287,8 @@ and store_type ~check slot id path info env renv =
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors = constructors_of_type path info in
-  let labels = labels_of_type path info in
+  let constructors = Datarepr.constructors_of_type path info in
+  let labels = Datarepr.labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
 
   if check && not loc.Location.loc_ghost &&
@@ -1435,8 +1415,7 @@ let _ =
 
 (* Insertion of bindings by identifier *)
 
-let add_functor_arg ?(arg=false) id env =
-  if not arg then env else
+let add_functor_arg id env =
   {env with
    functor_args = Ident.add id () env.functor_args;
    summary = Env_functor_arg (env.summary, id)}
@@ -1450,14 +1429,14 @@ let add_type ~check id info env =
 and add_extension ~check id ext env =
   store_extension ~check None id (Pident id) ext env env
 
-and add_module_declaration ?arg id md env =
+and add_module_declaration ?(arg=false) id md env =
   let path =
     (*match md.md_type with
       Mty_alias path -> normalize_path env path
     | _ ->*) Pident id
   in
   let env = store_module None id path md env env in
-  add_functor_arg ?arg id env
+  if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
   store_modtype None id (Pident id) info env env
@@ -1508,7 +1487,7 @@ let add_item comp env =
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, md, _)  -> add_module_declaration id md env
+  | Sig_module(id, md, _)   -> add_module_declaration id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env
@@ -1553,7 +1532,8 @@ let open_signature slot root sg env0 =
 
 let open_pers_signature name env =
   let ps = find_pers_struct name in
-  open_signature None (Pident(Ident.create_persistent name)) ps.ps_sig env
+  open_signature None (Pident(Ident.create_persistent name))
+    (Lazy.force ps.ps_sig) env
 
 let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
@@ -1590,7 +1570,7 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in
   check_consistency ps;
-  ps.ps_sig
+  Lazy.force ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
@@ -1636,7 +1616,7 @@ let save_signature_with_imports sg modname filename imports =
         (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
     let ps =
       { ps_name = modname;
-        ps_sig = sg;
+        ps_sig = lazy (Subst.signature Subst.identity sg);
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
@@ -1710,7 +1690,7 @@ let fold_modules f lid env acc =
               None -> acc
             | Some ps ->
               f name (Pident(Ident.create_persistent name))
-                     (md (Mty_signature ps.ps_sig)) acc)
+                     (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
         persistent_structures
         acc
     | Some l ->

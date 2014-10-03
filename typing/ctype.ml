@@ -775,7 +775,7 @@ let rec update_level env level ty =
           if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
           iter_type_expr (update_level env level) ty
         end
-    | Tpackage (p, nl, tl) when level < get_level env p ->
+    | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
@@ -1185,26 +1185,31 @@ let instance_parameterized_type_2 sch_args sch_lst sch =
   cleanup_types ();
   (ty_args, ty_lst, ty)
 
+let map_kind f = function
+  | Type_abstract -> Type_abstract
+  | Type_open -> Type_open
+  | Type_variant cl ->
+      Type_variant (
+        List.map
+          (fun c ->
+             {c with
+              cd_args = List.map f c.cd_args;
+              cd_res = may_map f c.cd_res
+             })
+          cl)
+  | Type_record (fl, rr) ->
+      Type_record (
+        List.map
+          (fun l ->
+             {l with ld_type = f l.ld_type}
+          ) fl, rr)
+
+
 let instance_declaration decl =
   let decl =
     {decl with type_params = List.map simple_copy decl.type_params;
      type_manifest = may_map simple_copy decl.type_manifest;
-     type_kind = match decl.type_kind with
-     | Type_abstract -> Type_abstract
-     | Type_variant cl ->
-         Type_variant (
-           List.map
-             (fun c ->
-                {c with cd_args=List.map simple_copy c.cd_args;
-                        cd_res=may_map simple_copy c.cd_res})
-             cl)
-     | Type_record (fl, rr) ->
-         Type_record (
-           List.map
-             (fun l ->
-                {l with ld_type = copy l.ld_type}
-             ) fl, rr)
-     | Type_open -> Type_open
+     type_kind = map_kind simple_copy decl.type_kind;
     }
   in
   cleanup_types ();
@@ -4325,29 +4330,7 @@ let nondep_type_decl env mid id is_covariant decl =
   try
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
-      try match decl.type_kind with
-        Type_abstract ->
-          Type_abstract
-      | Type_variant cstrs ->
-          Type_variant
-            (List.map
-               (fun c ->
-                 {c with
-                  cd_args = List.map (nondep_type_rec env mid) c.cd_args;
-                  cd_res = may_map (nondep_type_rec env mid) c.cd_res;
-                 }
-               )
-               cstrs)
-      | Type_record(lbls, rep) ->
-          Type_record
-            (List.map
-               (fun l ->
-                  {l with ld_type = nondep_type_rec env mid l.ld_type}
-               )
-               lbls,
-             rep)
-      | Type_open ->
-          Type_open
+      try map_kind (nondep_type_rec env mid) decl.type_kind
       with Not_found when is_covariant -> Type_abstract
     and tm =
       try match decl.type_manifest with
