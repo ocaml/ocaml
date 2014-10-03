@@ -39,7 +39,10 @@ let free_vars ty =
   unmark_type ty;
   !ret
 
-let constructor_descrs ty_res cstrs priv =
+let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
+
+let constructor_descrs ty_path decl cstrs =
+  let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
     (fun {cd_args; cd_res; _} ->
@@ -78,7 +81,7 @@ let constructor_descrs ty_res cstrs priv =
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
-            cstr_private = priv;
+            cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;

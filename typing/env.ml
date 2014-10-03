@@ -1072,13 +1072,8 @@ let scrape_alias env mty = scrape_alias env mty
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
-  let handle_variants cstrs =
-    Datarepr.constructor_descrs
-      (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-      cstrs decl.type_private
-  in
   match decl.type_kind with
-  | Type_variant cstrs -> handle_variants cstrs
+  | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
   | Type_record _ | Type_abstract | Type_open -> []
 
 (* Compute label descriptions *)
