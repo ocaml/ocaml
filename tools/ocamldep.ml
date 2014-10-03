@@ -223,8 +223,14 @@ let read_parse_and_extract parse_function extract_function magic source_file =
     let input_file = Pparse.preprocess source_file in
     begin try
       let ast =
-        Pparse.file ~tool_name Format.err_formatter input_file parse_function magic in
-      extract_function Depend.StringSet.empty ast;
+        Pparse.file ~tool_name Format.err_formatter
+		    input_file parse_function magic
+      in
+      let bound_vars = Depend.StringSet.empty in
+      List.iter (fun modname ->
+	Depend.open_module bound_vars (Longident.Lident modname)
+      ) !Clflags.open_modules;
+      extract_function bound_vars ast;
       Pparse.remove_preprocessed input_file;
       !Depend.free_structure_names
     with x ->
@@ -431,6 +437,8 @@ let _ =
         " Generate dependencies for native-code only (no .cmo files)";
      "-one-line", Arg.Set one_line,
         " Output one line per file, regardless of the length";
+     "-open", Arg.String (add_to_list Clflags.open_modules),
+        "<module>  Opens the module <module> before typing";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),

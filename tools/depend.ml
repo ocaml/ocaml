@@ -21,20 +21,21 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let free_structure_names = ref StringSet.empty
 
-let rec addmodule bv lid =
-  match lid with
-    Lident s ->
+let rec add_path bv = function
+  | Lident s ->
       if not (StringSet.mem s bv)
       then free_structure_names := StringSet.add s !free_structure_names
-  | Ldot(l, _s) -> addmodule bv l
-  | Lapply(l1, l2) -> addmodule bv l1; addmodule bv l2
+  | Ldot(l, _s) -> add_path bv l
+  | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
+
+let open_module bv lid = add_path bv lid
 
 let add bv lid =
   match lid.txt with
-    Ldot(l, _s) -> addmodule bv l
+    Ldot(l, _s) -> add_path bv l
   | _ -> ()
 
-let addmodule bv lid = addmodule bv lid.txt
+let addmodule bv lid = add_path bv lid.txt
 
 let rec add_type bv ty =
   match ty.ptyp_desc with
@@ -192,7 +193,7 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
-  | Pexp_open (_ovf, m, e) -> addmodule bv m; add_expr bv e
+  | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
   | Pexp_extension _ -> ()
 
 and add_cases bv cases =
@@ -260,7 +261,7 @@ and add_sig_item bv item =
       end;
       bv
   | Psig_open od ->
-      addmodule bv od.popen_lid; bv
+      open_module bv od.popen_lid.txt; bv
   | Psig_include incl ->
       add_modtype bv incl.pincl_mod; bv
   | Psig_class cdl ->
@@ -321,7 +322,7 @@ and add_struct_item bv item =
       end;
       bv
   | Pstr_open od ->
-      addmodule bv od.popen_lid; bv
+      open_module bv od.popen_lid.txt; bv
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->
