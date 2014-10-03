@@ -679,8 +679,6 @@ let compute_variance env visited vari ty =
   in
   compute_variance_rec vari ty
 
-let make_variance ty = (ty, ref Variance.null)
-
 let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
@@ -775,7 +773,7 @@ let add_false = List.map (fun ty -> false, ty)
 
 (* A parameter is constrained if either is is instantiated,
    or it is a variable appearing in another parameter *)
-let constrained env vars ty =
+let constrained vars ty =
   match ty.desc with
   | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
@@ -788,7 +786,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
         (add_false tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
-      | {desc=Tconstr (path, tyl, _)} ->
+      | {desc=Tconstr (_, tyl, _)} ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
           let tyl = List.map Ctype.repr tyl in
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
@@ -798,7 +796,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                    if (c||n) && constrained (fv1 @ fv2) ty then
                       raise (Error(loc, Varying_anonymous));
                     (fv :: fv1, fv2))
               ([], fvl) tyl required
@@ -813,7 +811,7 @@ let compute_variance_extension env check decl ext rloc =
     {decl with type_params = ext.ext_type_params}
     (ext.ext_args, ext.ext_ret_type)
 
-let compute_variance_decl env check decl (required, loc as rloc) =
+let compute_variance_decl env check decl (required, _ as rloc) =
   if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
        && decl.type_manifest = None then
     List.map
@@ -1099,7 +1097,7 @@ let transl_type_decl env sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env check_open type_path type_params
+let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create sext.pext_name.txt in
   let args, ret_type, kind =
@@ -1240,7 +1238,7 @@ let transl_type_extension check_open env loc styext =
     (Ctype.instance_list env type_decl.type_params)
     type_params;
   let constructors =
-    List.map (transl_extension_constructor env check_open type_path
+    List.map (transl_extension_constructor env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1287,7 +1285,7 @@ let transl_exception env sext =
   reset_type_variables();
   Ctype.begin_def();
   let ext =
-    transl_extension_constructor env false
+    transl_extension_constructor env
       Predef.path_exn [] [] Asttypes.Public sext
   in
   Ctype.end_def();
