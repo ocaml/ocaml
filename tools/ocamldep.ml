@@ -56,18 +56,21 @@ let readdir dir =
     dirs := StringMap.add dir contents !dirs;
     contents
 
+let add_to_list li s =
+  li := s :: !li
+
 let add_to_load_path dir =
   try
     let dir = Misc.expand_directory Config.standard_library dir in
     let contents = readdir dir in
-    load_path := (dir, contents) :: !load_path
+    add_to_list load_path (dir, contents)
   with Sys_error msg ->
     Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
-    synonyms := suffix :: !synonyms
+    add_to_list synonyms suffix
   else begin
     Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
     error_occurred := true
@@ -405,14 +408,14 @@ let print_version_num () =
 
 let _ =
   Clflags.classic := false;
-  first_include_dirs := Filename.current_dir_name :: !first_include_dirs;
+  add_to_list first_include_dirs Filename.current_dir_name;
   Compenv.readenv ppf Before_args;
   Arg.parse [
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
-     "-I", Arg.String (fun s -> Clflags.include_dirs := s :: !Clflags.include_dirs),
+     "-I", Arg.String (add_to_list Clflags.include_dirs),
         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
         "<f>  Process <f> as a .ml file";
@@ -430,7 +433,7 @@ let _ =
         " Output one line per file, regardless of the length";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
-     "-ppx", Arg.String(fun s -> first_ppx := s :: !first_ppx),
+     "-ppx", Arg.String (add_to_list first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
      "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";
