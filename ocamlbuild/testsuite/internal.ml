@@ -303,4 +303,15 @@ let () = test "OpenTag"
   ~matching:[M.f "test.byte"]
   ~targets:("test.byte",[]) ();;
 
+let () = test "OpenDependencies"
+  ~description:"Test dependency computation for the new -open feature (PR#6584)"
+  ~options:[`no_ocamlfind]
+  ~tree:[
+    T.f "a.ml" ~content:"let x = 1";
+    T.f "b.ml" ~content:"print_int x; print_newline ()";
+    T.f "_tags" ~content: "<b.*>: open(A)";
+  ]
+  ~matching:[M.f "b.byte"]
+  ~targets:("b.byte",[]) ();;
+
 run ~root:"_test_internal";;
