@@ -84,9 +84,7 @@ run-all:
 run-file:
 	@printf " $(DESC)"
 	@rm -f program program.exe
-	echo XXXX
-	$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
-	echo YYYY
+	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
