@@ -49,12 +49,12 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
-  | Unbound_constructor_in_type of string * Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Not_a_variant_type of Longident.t
   | Not_an_inlined_record of Longident.t
+  | Unbound_constructor_in_type of string * Longident.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -227,7 +227,6 @@ let find_type env loc lid =
 
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
-
 let find_all_constructors =
   find_component Env.lookup_all_constructors
     (fun lid -> Unbound_constructor lid)
@@ -1042,9 +1041,6 @@ let report_error env ppf = function
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
       spellcheck ppf Env.fold_cltypes env lid;
-  | Unbound_constructor_in_type (c_lid, t_lid) ->
-      fprintf ppf "Unbound constructor %s in type %a" c_lid
-        longident t_lid
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
@@ -1059,6 +1055,9 @@ let report_error env ppf = function
       fprintf ppf
         "Constructor %a does not have an inline record argument"
         longident lid
+  | Unbound_constructor_in_type (c_lid, t_lid) ->
+      fprintf ppf "Unbound constructor %s in type %a" c_lid
+        longident t_lid
 
 let () =
   Location.register_error_of_exn

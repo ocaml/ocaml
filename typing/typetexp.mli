@@ -61,12 +61,12 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
-  | Unbound_constructor_in_type of string * Longident.t
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Not_a_variant_type of Longident.t
   | Not_an_inlined_record of Longident.t
+  | Unbound_constructor_in_type of string * Longident.t
 
 exception Error of Location.t * Env.t * error
 
