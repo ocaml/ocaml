@@ -162,7 +162,7 @@ module EnvTbl =
   end
 
 type type_descriptions =
-    constructor_description list * label_description list * bool
+    constructor_description list * label_description list
 
 let in_signature_flag = 0x01
 let implicit_coercion_flag = 0x02
@@ -484,13 +484,13 @@ let type_of_cstr path cstr =
     | Some d -> d
   in
   let labels = !labels_of_type_fwd path tdecl in
-  (tdecl, ([], List.map snd labels, true))
+  (tdecl, ([], List.map snd labels))
 
 let find_type_full path env =
   match Path.constructor_typath path with
   | Regular p -> find_type_full p env
   | Cstr (ty_path, s) ->
-      let (_, (cstrs, _, _)) =
+      let (_, (cstrs, _)) =
         try find_type_full ty_path env
         with Not_found -> assert false
       in
@@ -1263,7 +1263,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let labels = List.map snd (labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
-                ((decl', (constructors, labels, false)), nopos)
+                ((decl', (constructors, labels)), nopos)
                   c.comp_types;
             List.iter
               (fun descr ->
@@ -1359,7 +1359,7 @@ and store_type ~check slot id path info env renv =
       type_declarations;
   let constructors = constructors_of_type path info in
   let labels = labels_of_type path info in
-  let descrs = (List.map snd constructors, List.map snd labels, false) in
+  let descrs = (List.map snd constructors, List.map snd labels) in
 
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_constructor ("", false, false))
@@ -1405,7 +1405,7 @@ and store_type_infos slot id path info env renv =
      keep track of type abbreviations (e.g. type t = float) in the
      computation of label representations. *)
   { env with
-    types = EnvTbl.add "type" slot id (path, (info,([],[],false))) env.types
+    types = EnvTbl.add "type" slot id (path, (info,([],[]))) env.types
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 

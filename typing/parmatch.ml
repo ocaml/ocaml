@@ -733,7 +733,7 @@ let rec get_variant_constructors env ty =
   | Tconstr (path,_,_) -> begin
       match Env.find_type path env with
       | {type_kind=Type_variant _} ->
-          let (constrs, _, _) = Env.find_type_descrs path env in
+          let (constrs, _) = Env.find_type_descrs path env in
           constrs
       | {type_manifest = Some _} ->
           get_variant_constructors env

@@ -33,10 +33,7 @@ val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
 
-type type_descriptions =
-    constructor_description list * label_description list * bool
-    (* true -> inlined record *)
-
+type type_descriptions = constructor_description list * label_description list
 
 (* For short-paths *)
 val iter_types:

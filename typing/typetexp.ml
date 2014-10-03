@@ -291,7 +291,7 @@ let find_constructor_in_type env loc ty_id cstr_id =
   let (ty_path, ty_decl) = find_type env loc ty_id in
   match ty_decl.type_kind with
   | Type_variant _ ->
-      let (cstrs, _, _) =
+      let (cstrs, _) =
         try Env.find_type_descrs ty_path env
         with Not_found -> assert false
       in
