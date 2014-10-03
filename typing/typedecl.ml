@@ -423,8 +423,8 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun {Types.cd_id=name; cd_args; cd_res=ret_type} ->
-          let {pcd_args; pcd_res = sret_type; _} =
+        (fun {Types.cd_id=name; cd_args; cd_res} ->
+          let {pcd_args; pcd_res; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
           begin match cd_args, pcd_args with
@@ -437,7 +437,7 @@ let check_constraints env sdecl (_, decl) =
               check_constraints_labels env visited tyl styl
           | _ -> assert false (* todo *)
           end;
-          match sret_type, ret_type with
+          match pcd_res, cd_res with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
           | _ ->
