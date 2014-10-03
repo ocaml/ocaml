@@ -61,7 +61,7 @@ let st0 = Regf (ST 0)
 let st1 = Regf (ST 1)
 
 let mem32 typ ?(scale = 1) ?base ?sym displ idx =
-  assert(scale > 0);
+  assert(scale >= 0);
   Mem32 {typ; idx; scale; base; sym; displ}
 
 let mem64 typ ?(scale = 1) ?base ?sym offset idx =
