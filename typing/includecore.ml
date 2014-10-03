@@ -146,9 +146,8 @@ let report_type_mismatch0 first second decl ppf err =
   | Record_representation (r1, r2) ->
       let repr = function
         | Record_regular -> "regular"
-        | Record_inlined i -> Printf.sprintf"inlined(tag %i)" i
+        | Record_inlined _ | Record_extension -> "inlined record"
         | Record_float -> "unboxed float"
-        | Record_extension -> Printf.sprintf "extension"
       in
       pr "Their internal representations differ:@ %s vs %s"
         (repr r1)
