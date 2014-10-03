@@ -62,7 +62,7 @@ let approx_kind = function
           cd_args =
             begin match pcd.pcd_args with
             | Pcstr_tuple _ -> Cstr_tuple []
-            | Pcstr_record lbls -> Cstr_record []
+            | Pcstr_record _ -> Cstr_record []
             end;
           cd_res = None;
           cd_loc = pcd.pcd_loc;
@@ -199,7 +199,7 @@ let transl_labels loc env closed lbls =
       lbls in
   lbls, lbls'
 
-let transl_constructor_arguments loc env closed ty_name c_name = function
+let transl_constructor_arguments loc env closed = function
   | Pcstr_tuple l ->
       let l = List.map (transl_simple_type env closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
@@ -209,12 +209,11 @@ let transl_constructor_arguments loc env closed ty_name c_name = function
       Types.Cstr_record lbls',
       Cstr_record lbls
 
-let make_constructor loc env type_path type_params c_name sargs sret_type =
-  let ty_name = Path.last type_path in
+let make_constructor loc env type_path type_params sargs sret_type =
   match sret_type with
   | None ->
       let args, targs =
-        transl_constructor_arguments loc env true ty_name c_name sargs
+        transl_constructor_arguments loc env true sargs
       in
         targs, None, args, None
   | Some sret_type ->
@@ -223,7 +222,7 @@ let make_constructor loc env type_path type_params c_name sargs sret_type =
       let z = narrow () in
       reset_type_variables ();
       let args, targs =
-        transl_constructor_arguments loc env false ty_name c_name sargs
+        transl_constructor_arguments loc env false sargs
       in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
@@ -271,7 +270,6 @@ let transl_declaration env sdecl id =
           let name = Ident.create scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type =
             make_constructor scstr.pcd_loc env (Path.Pident id) params
-                             scstr.pcd_name.txt
                              scstr.pcd_args scstr.pcd_res
           in
           let tcstr =
@@ -712,8 +710,6 @@ let compute_variance env visited vari ty =
   in
   compute_variance_rec vari ty
 
-let make_variance ty = (ty, ref Variance.null)
-
 let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
@@ -808,7 +804,7 @@ let add_false = List.map (fun ty -> false, ty)
 
 (* A parameter is constrained if either is is instantiated,
    or it is a variable appearing in another parameter *)
-let constrained env vars ty =
+let constrained vars ty =
   match ty.desc with
   | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
@@ -828,7 +824,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
         (for_constr tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
-      | {desc=Tconstr (path, tyl, _)} ->
+      | {desc=Tconstr (_, tyl, _)} ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
           let tyl = List.map Ctype.repr tyl in
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
@@ -838,7 +834,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                    if (c||n) && constrained (fv1 @ fv2) ty then
                       raise (Error(loc, Varying_anonymous));
                     (fv :: fv1, fv2))
               ([], fvl) tyl required
@@ -853,7 +849,7 @@ let compute_variance_extension env check decl ext rloc =
     {decl with type_params = ext.ext_type_params}
     (ext.ext_args, ext.ext_ret_type)
 
-let compute_variance_decl env check decl (required, loc as rloc) =
+let compute_variance_decl env check decl (required, _ as rloc) =
   if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
        && decl.type_manifest = None then
     List.map
@@ -1140,14 +1136,14 @@ let transl_type_decl env sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env check_open type_path type_params
+let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create sext.pext_name.txt in
   let rebind, args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
-          make_constructor sext.pext_loc env type_path typext_params sext.pext_name.txt
+          make_constructor sext.pext_loc env type_path typext_params
             sargs sret_type
         in
           None, args, ret_type, Text_decl(targs, tret_type)
@@ -1303,7 +1299,7 @@ let transl_type_extension check_open env loc styext =
     (Ctype.instance_list env type_decl.type_params)
     type_params;
   let rebind_constructors =
-    List.map (transl_extension_constructor env check_open type_path
+    List.map (transl_extension_constructor env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1351,7 +1347,7 @@ let transl_exception env sext =
   reset_type_variables();
   Ctype.begin_def();
   let rebind, ext =
-    transl_extension_constructor env false
+    transl_extension_constructor env
       Predef.path_exn [] [] Asttypes.Public sext
   in
   Ctype.end_def();
