@@ -1197,14 +1197,8 @@ let map_kind f = function
         List.map
           (fun c ->
              {c with
-              cd_args =
-                begin match c.cd_args with
-                | Cstr_tuple l-> Cstr_tuple (List.map f l)
-                | Cstr_record l ->
-                    let field l = {l with ld_type = f l.ld_type} in
-                    Cstr_record (List.map field l)
-                end;
-              cd_res=may_map f c.cd_res
+              cd_args = map_type_expr_cstr_args f c.cd_args;
+              cd_res = may_map f c.cd_res
              })
           cl)
   | Type_record (fl, rr) ->
