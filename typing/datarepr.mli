@@ -13,19 +13,18 @@
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
 
-open Asttypes
 open Types
 
-val constructor_descrs:
-  Path.t -> type_declaration ->
-  constructor_declaration list ->
-  (Ident.t * constructor_description) list
 val extension_descr:
   Path.t -> extension_constructor -> constructor_description
-val label_descrs:
-  type_expr -> label_declaration list ->
-    record_representation -> private_flag ->
-    (Ident.t * label_description) list
+
+val labels_of_type:
+  Path.t -> type_declaration ->
+  (Ident.t * label_description) list
+val constructors_of_type:
+  Path.t -> type_declaration ->
+  (Ident.t * constructor_description) list
+
 
 exception Constr_not_found
 
