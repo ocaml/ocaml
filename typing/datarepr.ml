@@ -113,14 +113,14 @@ let constructor_descrs ty_path decl cstrs =
                    describe_constructors idx_const (idx_nonconst+1) rem) in
 
         let name = Ident.name cd_id in
+        let subpath p = Path.Pdot (p, name, Path.nopos) in
         let type_manifest =
           match decl.type_manifest with
-          | Some {desc = Tconstr(p, _, _)} ->
-              Some (Path.Pdot (p, name, Path.nopos))
+          | Some {desc = Tconstr(p, _, _)} -> Some (subpath p)
           | _ -> None
         in
         let existentials, cstr_args, cstr_inlined =
-          constructor_args (Path.Pdot(ty_path, name, Path.nopos)) type_manifest
+          constructor_args (subpath ty_path) type_manifest
             (Record_inlined idx_nonconst) cd_args cd_res
         in
         let cstr =
