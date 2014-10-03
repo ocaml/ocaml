@@ -1566,8 +1566,8 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h && \
-   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
+if ./hasgot -DPACKAGE=ocaml -i bfd.h && \
+   ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
   inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
