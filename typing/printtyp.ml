@@ -1169,35 +1169,34 @@ and tree_of_signature sg =
 
 and tree_of_signature_rec env' = function
     [] -> []
-  | item :: rem ->
+  | item :: rem as items ->
       begin match item with
         Sig_type (_, _, rs) when rs <> Trec_next -> ()
       | _ -> set_printing_env env'
       end;
       let (sg, rem) = filter_rem_sig item rem in
-      let trees =
-        match item with
-        | Sig_value(id, decl) ->
-            [tree_of_value_description id decl]
-        | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
-            []
-        | Sig_type(id, decl, rs) ->
-            hide_rec_items (item :: rem);
-            [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
-        | Sig_typext(id, ext, es) ->
-            [tree_of_extension_constructor id ext es]
-        | Sig_module(id, md, rs) ->
-            [Osig_module (Ident.name id, tree_of_modtype md.md_type,
-                          tree_of_rec rs)]
-        | Sig_modtype(id, decl) ->
-            [tree_of_modtype_declaration id decl]
-        | Sig_class(id, decl, rs) ->
-            [tree_of_class_declaration id decl rs]
-        | Sig_class_type(id, decl, rs) ->
-            [tree_of_cltype_declaration id decl rs]
-      in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
       let env' = Env.add_signature (item :: sg) env' in
       trees @ tree_of_signature_rec env' rem
+
+and trees_of_sigitem = function
+  | Sig_value(id, decl) ->
+      [tree_of_value_description id decl]
+  | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+      []
+  | Sig_type(id, decl, rs) ->
+      [tree_of_type_declaration id decl rs]
+  | Sig_typext(id, ext, es) ->
+      [tree_of_extension_constructor id ext es]
+  | Sig_module(id, md, rs) ->
+      [tree_of_module id md.md_type rs]
+  | Sig_modtype(id, decl) ->
+      [tree_of_modtype_declaration id decl]
+  | Sig_class(id, decl, rs) ->
+      [tree_of_class_declaration id decl rs]
+  | Sig_class_type(id, decl, rs) ->
+      [tree_of_cltype_declaration id decl rs]
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -1207,12 +1206,22 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty rs =
+and tree_of_module id mty rs =
   Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_modtype_declaration id decl)
+
+(* For the toplevel: merge with tree_of_signature? *)
+let rec print_items showval env = function
+  | [] -> []
+  | item :: rem as items ->
+      let (sg, rem) = filter_rem_sig item rem in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
+      List.map (fun d -> (d, showval env item)) trees @
+      print_items showval env rem
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
