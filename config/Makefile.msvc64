@@ -83,7 +83,7 @@ GRAPHLIB=win32graph
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-Ox -MD
+BYTECCCOMPOPTS=-O2 -MD
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
@@ -92,7 +92,7 @@ BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
 BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-Ox -MD
+DLLCCCOMPOPTS=-O2 -MD
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
@@ -105,7 +105,7 @@ CPP=cl -nologo -EP
 
 ### Flexlink
 FLEXLINK=flexlink -x64 -merge-manifest -stack 33554432
-FLEXDIR=$(shell $(FLEXLINK) -where)
+FLEXDIR:=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
@@ -142,7 +142,7 @@ SYSTEM=win64
 NATIVECC=cl -nologo
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-Ox -MD
+NATIVECCCOMPOPTS=-O2 -MD
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=

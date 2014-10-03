@@ -35,6 +35,8 @@ Standard library:
 - PR#6553: Missing command line options for ocamldoc
 - PR#6562: Fix ocamldebug module source lookup
   (Leo White)
+- PR#6590: Improve Windows (MSVC and mingw) build
+  (Chen Gang)
 
 OCaml 4.02.0:
 -------------
