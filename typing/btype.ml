@@ -253,6 +253,21 @@ type type_iterators =
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
 
+let iter_type_expr_kind f = function
+  | Type_abstract -> ()
+  | Type_variant cstrs ->
+      List.iter
+        (fun cd ->
+           List.iter f cd.cd_args;
+           Misc.may f cd.cd_res
+        )
+        cstrs
+  | Type_record(lbls, _) ->
+      List.iter (fun d -> f d.ld_type) lbls
+  | Type_open ->
+      ()
+
+
 let type_iterators =
   let it_signature it =
     List.iter (it.it_signature_item it)
@@ -309,16 +324,8 @@ let type_iterators =
     | Cty_arrow  (_, ty, cty) ->
         it.it_type_expr it ty;
         it.it_class_type it cty
-  and it_type_kind it = function
-      Type_abstract -> ()
-    | Type_record (ll, _) ->
-        List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
-    | Type_variant cl ->
-        List.iter (fun cd ->
-          List.iter (it.it_type_expr it) cd.cd_args;
-          may (it.it_type_expr it) cd.cd_res)
-          cl
-    | Type_open -> ()
+  and it_type_kind it kind =
+    iter_type_expr_kind (it.it_type_expr it) kind
   and it_do_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match ty.desc with

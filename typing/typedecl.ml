@@ -146,19 +146,58 @@ let make_params env params =
   in
     List.map make_param params
 
+let transl_labels loc env closed lbls =
+  if lbls = [] then
+    Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
+  let all_labels = ref StringSet.empty in
+  List.iter
+    (fun {pld_name = {txt=name; loc}} ->
+       if StringSet.mem name !all_labels then
+         raise(Error(loc, Duplicate_label name));
+       all_labels := StringSet.add name !all_labels)
+    lbls;
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} =
+    let arg = Ast_helper.Typ.force_poly arg in
+    let cty = transl_simple_type env closed arg in
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
+     ld_loc = loc; ld_attributes = attrs}
+  in
+  let lbls = List.map mk lbls in
+  let lbls' =
+    List.map
+      (fun ld ->
+         let ty = ld.ld_type.ctyp_type in
+         let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         {Types.ld_id = ld.ld_id;
+          ld_mutable = ld.ld_mutable;
+          ld_type = ty;
+          ld_loc = ld.ld_loc;
+          ld_attributes = ld.ld_attributes
+         }
+      )
+      lbls in
+  lbls, lbls'
+
+let transl_constructor_arguments env closed l =
+  let l = List.map (transl_simple_type env closed) l in
+  List.map (fun t -> t.ctyp_type) l,
+  l
+
 let make_constructor env type_path type_params sargs sret_type =
   match sret_type with
   | None ->
-      let targs = List.map (transl_simple_type env true) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments env true sargs
+      in
         targs, None, args, None
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       let z = narrow () in
       reset_type_variables ();
-      let targs = List.map (transl_simple_type env false) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments env false sargs
+      in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
       begin
@@ -227,43 +266,13 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
-        if lbls = [] then
-          Syntaxerr.ill_formed_ast sdecl.ptype_loc "Records cannot be empty.";
-        let all_labels = ref StringSet.empty in
-        List.iter
-          (fun {pld_name = {txt=name}} ->
-            if StringSet.mem name !all_labels then
-              raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := StringSet.add name !all_labels)
-          lbls;
-        let lbls = List.map (fun {pld_name=name;
-                                  pld_mutable=mut;
-                                  pld_type=arg;
-                                  pld_loc=loc;
-                                  pld_attributes=attrs} ->
-          let arg = Ast_helper.Typ.force_poly arg in
-          let cty = transl_simple_type env true arg in
-          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
-          ) lbls in
-        let lbls' =
-          List.map
-            (fun ld ->
-              let ty = ld.ld_type.ctyp_type in
-              let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
-              {Types.ld_id = ld.ld_id;
-               ld_mutable = ld.ld_mutable;
-               ld_type = ty;
-               ld_loc = ld.ld_loc;
-               ld_attributes = ld.ld_attributes
-              }
-            )
-            lbls in
-        let rep =
-          if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-          then Record_float
-          else Record_regular in
-        Ttype_record lbls, Type_record(lbls', rep)
+          let lbls, lbls' = transl_labels sdecl.ptype_loc env true lbls in
+          let rep =
+            if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+            then Record_float
+            else Record_regular
+          in
+          Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -324,20 +333,7 @@ let transl_declaration env sdecl id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract ->
-      ()
-  | Type_variant v ->
-      List.iter
-        (fun c ->
-          List.iter Ctype.generalize c.Types.cd_args;
-          may Ctype.generalize c.Types.cd_res)
-        v
-  | Type_record(r, rep) ->
-      List.iter (fun l -> Ctype.generalize l.Types.ld_type) r
-  | Type_open ->
-      ()
-  end;
+  Btype.iter_type_expr_kind Ctype.generalize decl.type_kind;
   begin match decl.type_manifest with
   | None    -> ()
   | Some ty -> Ctype.generalize ty
