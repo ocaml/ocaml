@@ -198,16 +198,22 @@ CAMLexport void caml_hash_mix_string(hash_t h, value s)
 #define MAX_FORWARD_DEREFERENCE 1000
 
 /* The generic hash function */
+static value hash(hash_t h, value count, value limit, value obj);
 
 CAMLprim value caml_hash(value count, value limit, value seed, value obj)
+{
+  char mem[CAML_HASH_T_SIZE];
+  hash_t h = caml_hash_init(mem, Int_val(seed));
+  return hash(h, count, limit, obj);
+}
+
+static value hash(hash_t h, value count, value limit, value obj)
 {
   value queue[HASH_QUEUE_SIZE]; /* Queue of values to examine */
   intnat rd;                    /* Position of first value in queue */
   intnat wr;                    /* One past position of last value in queue */
   intnat sz;                    /* Max number of values to put in queue */
   intnat num;                   /* Max number of meaningful values to see */
-  char a[CAML_HASH_T_SIZE];     /* Heap allocation for the hash's state */
-  hash_t h;                     /* Rolling hash */
   value v;
   mlsize_t i, len;
 
@@ -215,7 +221,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
   num = Long_val(count);
 
-  h = caml_hash_init(a, Int_val(seed));
   queue[0] = obj; rd = 0; wr = 1;
 
   while (rd < wr && num > 0) {
