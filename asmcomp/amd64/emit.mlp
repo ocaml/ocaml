@@ -617,7 +617,7 @@ let emit_instr fallthrough i =
       I.movzx (res16 i 0, res i 0)
   | Lop(Ispecific(Ibswap 32)) ->
       I.bswap (res32 i 0);
-      I.movsx (res32 i 0, res i 0)
+      I.movsxd (res32 i 0, res i 0)
   | Lop(Ispecific(Ibswap 64)) ->
       I.bswap (res i 0)
   | Lop(Ispecific(Ibswap _)) ->
