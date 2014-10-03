@@ -32,6 +32,8 @@ Standard library:
 - PR#6572: Fatal error with recursive modules
 - PR#6578: Recursive module containing alias causes Segmentation fault
 - PR#6581: Some bugs in generative functors
+- PR#6584: ocamldep support for "-open M"
+  (Gabriel Scherer, review by Damien Doligez, report by Hezekiah M. Carty)
 - PR#6553: Missing command line options for ocamldoc
 - PR#6562: Fix ocamldebug module source lookup
   (Leo White)
