@@ -475,15 +475,13 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let labels_of_type_fwd = ref (fun _ _ -> assert false)
-
 let type_of_cstr path cstr =
   let tdecl =
     match cstr.cstr_inlined with
     | None -> assert false
     | Some d -> d
   in
-  let labels = !labels_of_type_fwd path tdecl in
+  let labels = Datarepr.labels_of_type path tdecl in
   (tdecl, ([], List.map snd labels))
 
 let find_type_full path env =
@@ -1119,26 +1117,6 @@ let rec scrape_alias env ?path mty =
 
 let scrape_alias env mty = scrape_alias env mty
 
-(* Compute constructor descriptions *)
-
-let constructors_of_type ty_path decl =
-  match decl.type_kind with
-  | Type_variant cstrs -> Datarepr.constructor_descrs ty_path decl cstrs
-  | Type_record _ | Type_abstract | Type_open -> []
-
-(* Compute label descriptions *)
-
-let labels_of_type ty_path decl =
-  match decl.type_kind with
-    Type_record(labels, rep) ->
-      Datarepr.label_descrs
-        (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep decl.type_private
-  | Type_variant _ | Type_abstract | Type_open -> []
-
-let () =
-  labels_of_type_fwd := labels_of_type
-
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
 
@@ -1259,8 +1237,10 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            let constructors = List.map snd (constructors_of_type path decl') in
-            let labels = List.map snd (labels_of_type path decl') in
+            let constructors =
+              List.map snd (Datarepr.constructors_of_type path decl') in
+            let labels =
+              List.map snd (Datarepr.labels_of_type path decl') in
             c.comp_types <-
               Tbl.add (Ident.name id)
                 ((decl', (constructors, labels)), nopos)
@@ -1357,8 +1337,8 @@ and store_type ~check slot id path info env renv =
   if check then
     check_usage loc id (fun s -> Warnings.Unused_type_declaration s)
       type_declarations;
-  let constructors = constructors_of_type path info in
-  let labels = labels_of_type path info in
+  let constructors = Datarepr.constructors_of_type path info in
+  let labels = Datarepr.labels_of_type path info in
   let descrs = (List.map snd constructors, List.map snd labels) in
 
   if check && not loc.Location.loc_ghost &&
