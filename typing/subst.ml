@@ -206,6 +206,15 @@ let constructor_arguments s = function
   | Cstr_record l ->
       Cstr_record (List.map (label_declaration s) l)
 
+let constructor_declaration s c =
+  {
+    cd_id = c.cd_id;
+    cd_args = constructor_arguments s c.cd_args;
+    cd_res = may_map (typexp s) c.cd_res;
+    cd_loc = loc s c.cd_loc;
+    cd_attributes = attrs s c.cd_attributes;
+  }
+
 let type_declaration s decl =
   let decl =
     { type_params = List.map (typexp s) decl.type_params;
@@ -214,18 +223,7 @@ let type_declaration s decl =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
         | Type_variant cstrs ->
-            Type_variant
-              (List.map
-                 (fun c ->
-                    {
-                      cd_id = c.cd_id;
-                      cd_args = constructor_arguments s c.cd_args;
-                      cd_res = may_map (typexp s) c.cd_res;
-                      cd_loc = loc s c.cd_loc;
-                      cd_attributes = attrs s c.cd_attributes;
-                    }
-                 )
-                 cstrs)
+            Type_variant (List.map (constructor_declaration s) cstrs)
         | Type_record(lbls, rep) ->
             Type_record (List.map (label_declaration s) lbls, rep)
         | Type_open -> Type_open
