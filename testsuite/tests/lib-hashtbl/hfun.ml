@@ -19,8 +19,14 @@ open Printf
 
 let _ =
   printf "-- Strings:\n";
-  printf "\"\"\t\t%08x\n" (Hashtbl.hash "");
-  printf "\"Hello world\"\t%08x\n" (Hashtbl.hash "Hello world");
+  let string s = printf "%S\t\t%08x\n" s @@ Hashtbl.hash s in
+  string "";
+  string "Hello world";
+  string "\000";
+  string "\000\001";
+  string "\000\001\002";
+  string "\000\001\002\003";
+  string "\000\001\002\003\004";
 
   printf "-- Integers:\n";
   printf "0\t\t%08x\n" (Hashtbl.hash 0);
