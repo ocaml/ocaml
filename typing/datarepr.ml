@@ -47,9 +47,25 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args name path type_manifest arg_vars rep =
-  function
-  | Cstr_tuple l -> l, None
+let constructor_args path type_manifest rep cd_args cd_res =
+  let tyl =
+    match cd_args with
+    | Cstr_tuple l -> l
+    | Cstr_record l -> List.map (fun l -> l.ld_type) l
+  in
+  (* Note: variables bound by Tpoly are Tunivar, not Tvar,
+     and thus they are not considered as free, which is
+     what we want. *)
+  let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
+  let existentials =
+    match cd_res with
+    | None -> []
+    | Some type_ret ->
+        let res_vars, _ = free_vars type_ret in
+        TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
+  in
+  match cd_args with
+  | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
       let type_manifest =
         match type_manifest with
@@ -69,6 +85,7 @@ let constructor_args name path type_manifest arg_vars rep =
           type_attributes = [];
         }
       in
+      existentials,
       [ newgenconstr path arg_vars ],
       Some tdecl
 
@@ -94,22 +111,7 @@ let constructor_descrs ty_path decl cstrs =
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-        let tyl =
-          match cd_args with
-          | Cstr_tuple l -> l
-          | Cstr_record l -> List.map (fun l -> l.ld_type) l
-        in
-        (* Note: variables bound by Tpoly are Tvar, not Tunivar,
-           and thus they are not considered as free, which is
-           what we want. *)
-        let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
-        let existentials =
-          match cd_res with
-          | None -> []
-          | Some type_ret ->
-              let res_vars, _ = free_vars type_ret in
-              TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
-        in
+
         let name = Ident.name cd_id in
         let type_manifest =
           match decl.type_manifest with
@@ -117,12 +119,9 @@ let constructor_descrs ty_path decl cstrs =
               Some (Path.Pdot (p, name, Path.nopos))
           | _ -> None
         in
-        let cstr_args, cstr_inlined =
-          constructor_args name (Path.Pdot(ty_path, name, Path.nopos))
-            type_manifest
-            arg_vars
-            (Record_inlined idx_nonconst)
-            cd_args
+        let existentials, cstr_args, cstr_inlined =
+          constructor_args (Path.Pdot(ty_path, name, Path.nopos)) type_manifest
+            (Record_inlined idx_nonconst) cd_args cd_res
         in
         let cstr =
           { cstr_name = Ident.name cd_id;
@@ -149,25 +148,9 @@ let extension_descr ?rebind path_ext ext =
         Some type_ret -> type_ret
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
-  (* TODO #5528: merge code below with constructor_descrs *)
-  let tyl =
-    match ext.ext_args with
-    | Cstr_tuple l -> l
-    | Cstr_record l -> List.map (fun l -> l.ld_type) l
-  in
-  let arg_vars_set, arg_vars = free_vars (newgenty (Ttuple tyl)) in
-  let existentials =
-    match ext.ext_ret_type with
-    | None -> []
-    | Some type_ret ->
-        let res_vars, _ = free_vars type_ret in
-        TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
-  in
-  let cstr_args, cstr_inlined =
-    constructor_args (Path.last path_ext) path_ext rebind
-      arg_vars
-      Record_extension
-      ext.ext_args
+  let existentials, cstr_args, cstr_inlined =
+    constructor_args path_ext rebind Record_extension
+      ext.ext_args ext.ext_ret_type
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
