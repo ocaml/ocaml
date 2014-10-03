@@ -608,8 +608,7 @@ end) = struct
         then get_name d else "") env lid
 
   let lookup_from_type env tpath lid =
-    let descrs = Env.find_type_descrs tpath env in
-    let descrs = get_descrs descrs in
+    let descrs = get_descrs (Env.find_type_descrs tpath env) in
     Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
@@ -646,7 +645,7 @@ end) = struct
   let disambiguate ?(warn=Location.prerr_warning) ?(check_lk=fun _ _ -> ())
       ?scope lid env opath lbls =
     let scope = match scope with None -> lbls | Some l -> l in
-    let lbl, in_env = match opath with
+    let lbl = match opath with
       None ->
         begin match lbls with
           [] -> unbound_name_error env lid
@@ -657,7 +656,7 @@ end) = struct
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                           paths, false));
-            lbl, true
+            lbl
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
@@ -683,19 +682,18 @@ end) = struct
                       (Warnings.Ambiguous_name ([Longident.last lid.txt],
                                                 paths, false))
           end;
-          lbl, in_env lbl
+          lbl
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
-          let in_env = in_env lbl in
           check_lk tpath lbl;
-          if in_env then
+          if in_env lbl then
           begin
           let s = Printtyp.string_of_path tpath in
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           end;
           if not pr then warn_pr ();
-          lbl, in_env
+          lbl
         with Not_found ->
           if lbls = [] then unbound_name_error env lid else
           let tp = (tpath0, expand_path env tpath) in
@@ -710,7 +708,7 @@ end) = struct
           raise (Error (lid.loc, env,
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
     in
-    if in_env then
+    if in_env lbl then
     begin match scope with
       (lab1,_)::_ when lab1 == lbl -> ()
     | _ ->
