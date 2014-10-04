@@ -148,6 +148,7 @@ OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
 
 STDLIB_MLIS=../stdlib/*.mli \
+  ../parsing/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli \
 	../otherlibs/bigarray/bigarray.mli \
