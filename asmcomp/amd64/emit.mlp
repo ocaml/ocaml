@@ -902,6 +902,7 @@ let end_assembly() =
 
   emit_global_label "frametable";
 
+  let setcnt = ref 0 in
   emit_frames
     { efa_label = (fun l -> D.qword (ConstLabel (emit_label l)));
       efa_16 = (fun n -> D.word (const n));
@@ -909,25 +910,20 @@ let end_assembly() =
       efa_word = (fun n -> D.qword (const n));
       efa_align = D.align;
       efa_label_rel =
-        if system = S_macosx then begin
-          let setcnt = ref 0 in
-          fun lbl ofs ->
-            incr setcnt;
-            let s = Printf.sprintf "L$set$%d" !setcnt in
-            D.setvar (s,
-                      ConstAdd (
-                        ConstLabel(emit_label lbl),
-                        ConstAdd (const 4, const_32 ofs))
-                    );
-            D.long (ConstLabel s)
-        end else begin
-          fun lbl ofs ->
-            D.long (ConstAdd (
-                ConstSub(
-                  ConstLabel(emit_label lbl),
-                  ConstThis),
-                const_32 ofs))
-        end;
+        (fun lbl ofs ->
+           let c =
+             ConstAdd (
+               ConstSub(ConstLabel(emit_label lbl), ConstThis),
+               const_32 ofs
+             ) in
+           if system = S_macosx then begin
+             incr setcnt;
+             let s = Printf.sprintf "L$set$%d" !setcnt in
+             D.setvar (s, c);
+             D.long (ConstLabel s)
+           end else
+             D.long c
+        );
       efa_def_label = (fun l -> _label (emit_label l));
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
