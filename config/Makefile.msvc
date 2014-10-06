@@ -84,13 +84,13 @@ GRAPHLIB=win32graph
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-O2 -MD
+BYTECCCOMPOPTS=-O2 -Gy- -MD
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-O2 -MD
+DLLCCCOMPOPTS=-O2 -Gy- -MD
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib ws2_32.lib
@@ -138,7 +138,7 @@ SYSTEM=win32
 NATIVECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-O2 -MD
+NATIVECCCOMPOPTS=-O2 -Gy- -MD
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
