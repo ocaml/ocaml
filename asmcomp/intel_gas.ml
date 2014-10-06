@@ -250,7 +250,7 @@ let print_line b = function
   | Section ([".data" ], _, _) -> bprintf b "\t.data"
   | Section ([".text" ], _, _) -> bprintf b "\t.text"
   | Section (name, flags, args) ->
-      bprintf b ".section %s" (String.concat "," name);
+      bprintf b "\t.section %s" (String.concat "," name);
       begin match flags with
       | None -> ()
       | Some flags -> bprintf b ",%S" flags
