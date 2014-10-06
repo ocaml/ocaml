@@ -63,6 +63,42 @@ let rec samelist pred l1 l2 =
   | (hd1 :: tl1, hd2 :: tl2) -> pred hd1 hd2 && samelist pred tl1 tl2
   | (_, _) -> false
 
+let sameoption pred o1 o2 =
+  match (o1, o2) with
+  | None, None -> true
+  | Some e1, Some e2 -> pred e1 e2
+  | _, _ -> false
+
+let rec map2_head f l1 l2 =
+  match l1, l2 with
+  | [], _ -> [], l2
+  | h::t, [] -> raise (Invalid_argument "map2_head")
+  | h1::t1, h2::t2 ->
+      let h = f h1 h2 in
+      let (t,rem) = map2_head f t1 t2 in
+      h::t, rem
+
+let rec some_if_all_elements_are_some = function
+  | [] -> Some []
+  | h::t ->
+      match some_if_all_elements_are_some t with
+      | None -> None
+      | Some t' -> match h with
+        | None -> None
+        | Some h' -> Some (h' :: t')
+
+let uniq_sort compare l =
+  let l = List.sort compare l in
+  let rec aux = function
+    | [] -> []
+    | [_] as l -> l
+    | h1 :: ((h2 :: _) as t) ->
+        if compare h1 h2 = 0
+        then aux t
+        else h1 :: aux t
+  in
+  aux l
+
 (* Options *)
 
 let may f = function
