@@ -696,7 +696,7 @@ let emit_instr fallthrough i =
       I.jmp (reg tmp1);
 
       begin match system with
-      | S_macosx -> D.section [".const"] None []
+      | S_macosx -> D.section ["__TEXT";"__const"] None []
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
       | S_win64 -> () (* with MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
@@ -857,7 +857,7 @@ let begin_assembly() =
   if !Clflags.dlcode && system <> S_win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     begin match system with
-    | S_macosx -> D.section [".literal16"] None []
+    | S_macosx -> D.section ["__TEXT";"__literal16"] None ["16byte_literals"]
     | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
     | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
     end;
@@ -882,7 +882,7 @@ let begin_assembly() =
 let end_assembly() =
   if !float_constants <> [] then begin
     begin match system with
-    | S_macosx -> D.section [".literal8"] None []
+    | S_macosx -> D.section ["__TEXT";"__literal8"] None ["8byte_literals"]
     | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
     | S_win64 -> D.data ()
     | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
