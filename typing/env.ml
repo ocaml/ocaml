@@ -1406,7 +1406,6 @@ and store_extension ~check slot id path ext env renv =
               )
         )
     end;
-
   end;
   { env with
     constrs = EnvTbl.add "constructor" slot id
