@@ -77,6 +77,7 @@ and as a
 \label{p:library}
 \input{core.tex}
 \input{stdlib.tex}
+\input{compilerlibs.tex}
 \input{libunix.tex}
 \input{libnum.tex}
 \input{libstr.tex}
@@ -87,7 +88,7 @@ and as a
 
 \part{Appendix}
 \label{p:appendix}
- 
+
 \ifouthtml
 \begin{links}
 \item \ahref{libref/index_modules.html}{Index of modules}

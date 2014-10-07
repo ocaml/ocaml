@@ -14,6 +14,8 @@ TEXT=-fix -exec xxdate.exe -text -w 79
 SRC2=../$(SRC)
 OCAMLDOC=$(SRC2)/byterun/ocamlrun $(SRC2)/ocamldoc/ocamldoc -hide Pervasives
 MLIS=$(SRC2)/stdlib/*.mli \
+	$(SRC2)/utils/*.mli \
+	$(SRC2)/parsing/*.mli \
 	$(SRC2)/otherlibs/bigarray/bigarray.mli \
 	$(SRC2)/otherlibs/dynlink/dynlink.mli \
 	$(SRC2)/otherlibs/graph/graphics.mli \
@@ -57,6 +59,8 @@ html: files
 	$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
 	-I $(SRC2)/stdlib  \
+	-I $(SRC2)/utils  \
+	-I $(SRC2)/parsing \
 	-I $(SRC2)/otherlibs/bigarray \
 	-I $(SRC2)/otherlibs/dynlink \
 	-I $(SRC2)/otherlibs/graph \
