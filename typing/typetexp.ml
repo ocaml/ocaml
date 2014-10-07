@@ -310,10 +310,18 @@ let find_type env loc lid =
   match s.[0] with
   | 'A'..'Z' ->
       let cstr = find_qual_constructor env loc lid in
-      if cstr.cstr_inlined = None then
-        raise (Error (loc, env, Not_an_inlined_record lid));
+      if cstr.cstr_inlined = None then begin
+        let full_name =
+          match cstr with
+          | {cstr_tag = Cstr_constant _ | Cstr_block _;
+             cstr_res = {desc = Tconstr(p, _, _)} } ->
+              Longident.Ldot (Ctype.lid_of_path p, s)
+          | _ -> lid
+        in
+        raise (Error (loc, env, Not_an_inlined_record full_name));
+      end;
       begin match cstr.cstr_args with
-      | [{desc=Tconstr(path, _, _)}] ->
+        | [{desc=Tconstr(path, _, _)}] ->
           let decl =
             try Env.find_type path env
             with Not_found ->
