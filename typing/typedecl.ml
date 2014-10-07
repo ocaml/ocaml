@@ -1139,14 +1139,14 @@ let transl_type_decl env sdecl_list =
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create sext.pext_name.txt in
-  let rebind, args, ret_type, kind =
+  let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
           make_constructor sext.pext_loc env type_path typext_params
             sargs sret_type
         in
-          None, args, ret_type, Text_decl(targs, tret_type)
+          args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
         let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
         let usage =
@@ -1214,14 +1214,14 @@ let transl_extension_constructor env type_path type_params
             Cstr_extension(path, _) -> path
           | _ -> assert false
         in
-        let rebind, args =
+        let args =
           match cdescr.cstr_inlined with
           | None ->
-              None, Types.Cstr_tuple args
+              Types.Cstr_tuple args
           | Some decl ->
-              let p, tl =
+              let tl =
                 match args with
-                | [ {desc=Tconstr(p, tl, _)} ] -> p, tl
+                | [ {desc=Tconstr(_, tl, _)} ] -> tl
                 | _ -> assert false
               in
               let decl = Ctype.instance_declaration decl in
@@ -1232,9 +1232,9 @@ let transl_extension_constructor env type_path type_params
                 | Type_record (lbls, Record_extension) -> lbls
                 | _ -> assert false
               in
-              Some p, Types.Cstr_record lbls
+              Types.Cstr_record lbls
         in
-        rebind, args, ret_type, Text_rebind(path, lid)
+        args, ret_type, Text_rebind(path, lid)
   in
   let ext =
     { ext_type_path = type_path;
@@ -1245,7 +1245,6 @@ let transl_extension_constructor env type_path type_params
       Types.ext_loc = sext.pext_loc;
       Types.ext_attributes = sext.pext_attributes; }
   in
-  rebind,
     { ext_id = id;
       ext_name = sext.pext_name;
       ext_type = ext;
@@ -1298,12 +1297,11 @@ let transl_type_extension check_open env loc styext =
   List.iter2 (Ctype.unify_var env)
     (Ctype.instance_list env type_decl.type_params)
     type_params;
-  let rebind_constructors =
+  let constructors =
     List.map (transl_extension_constructor env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
-  let constructors = List.map snd rebind_constructors in
   Ctype.end_def();
   (* Generalize types *)
   List.iter Ctype.generalize type_params;
@@ -1322,16 +1320,16 @@ let transl_type_extension check_open env loc styext =
     constructors;
   (* Check variances are correct *)
   List.iter
-    (fun ext ->
+    (fun ext->
       ignore (compute_variance_extension env true type_decl
                 ext.ext_type (type_variance, loc)))
     constructors;
   (* Add extension constructors to the environment *)
   let newenv =
     List.fold_left
-      (fun env (rebind, ext) ->
-         Env.add_extension ?rebind ~check:true ext.ext_id ext.ext_type env)
-      env rebind_constructors
+      (fun env ext ->
+         Env.add_extension ~check:true ext.ext_id ext.ext_type env)
+      env constructors
   in
   let tyext =
     { tyext_path = type_path;
@@ -1346,7 +1344,7 @@ let transl_type_extension check_open env loc styext =
 let transl_exception env sext =
   reset_type_variables();
   Ctype.begin_def();
-  let rebind, ext =
+  let ext =
     transl_extension_constructor env
       Predef.path_exn [] [] Asttypes.Public sext
   in
@@ -1360,7 +1358,7 @@ let transl_exception env sext =
       raise (Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))
   | None -> ()
   end;
-  let newenv = Env.add_extension ?rebind ~check:true ext.ext_id ext.ext_type env in
+  let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
 (* Translate a value declaration *)

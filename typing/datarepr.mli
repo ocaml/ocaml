@@ -16,7 +16,6 @@
 open Types
 
 val extension_descr:
-  ?rebind:Path.t ->
   Path.t -> extension_constructor -> constructor_description
 
 val labels_of_type:

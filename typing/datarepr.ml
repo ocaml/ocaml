@@ -22,7 +22,7 @@ type error =
 
 exception Error of Location.t * error
 
-(* Simplified version of Ctype.free_vars.  *)
+(* Simplified version of Ctype.free_vars *)
 let free_vars ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
@@ -144,7 +144,7 @@ let constructor_descrs ty_path decl cstrs =
         (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
-let extension_descr ?rebind path_ext ext =
+let extension_descr path_ext ext =
   let ty_res =
     match ext.ext_ret_type with
         Some type_ret -> type_ret
@@ -153,7 +153,7 @@ let extension_descr ?rebind path_ext ext =
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_args ext.ext_ret_type
       ext.ext_type_params ext.ext_loc
-      path_ext rebind Record_extension
+      path_ext None Record_extension
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;

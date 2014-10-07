@@ -1386,7 +1386,7 @@ and store_type_infos slot id path info env renv =
                        renv.types;
     summary = Env_type(env.summary, id, info) }
 
-and store_extension ?rebind ~check slot id path ext env renv =
+and store_extension ~check slot id path ext env renv =
   let loc = ext.ext_loc in
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, false))
@@ -1408,7 +1408,7 @@ and store_extension ?rebind ~check slot id path ext env renv =
     end;
 
   end;
-  let constr = Datarepr.extension_descr ?rebind path ext in
+  let constr = Datarepr.extension_descr path ext in
   { env with
     constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
@@ -1473,8 +1473,8 @@ let add_value ?check id desc env =
 let add_type ~check id info env =
   store_type ~check None id (Pident id) info env env
 
-and add_extension ?rebind ~check id ext env =
-  store_extension ?rebind ~check None id (Pident id) ext env env
+and add_extension ~check id ext env =
+  store_extension ~check None id (Pident id) ext env env
 
 and add_module_declaration ?(arg=false) id md env =
   let path =
@@ -1514,7 +1514,7 @@ let enter store_fun name data env =
 
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
-and enter_extension ?rebind = enter (store_extension ?rebind ~check:true)
+and enter_extension = enter (store_extension ~check:true)
 and enter_module_declaration ?arg name md env =
   let id = Ident.create name in
   (id, add_module_declaration ?arg id md env)
@@ -1774,7 +1774,7 @@ and fold_cltypes f =
 let (initial_safe_string, initial_unsafe_string) =
   Predef.build_initial_env
     (add_type ~check:false)
-    (add_extension ?rebind:None ~check:false)
+    (add_extension ~check:false)
     empty
 
 (* Return the environment summary *)
