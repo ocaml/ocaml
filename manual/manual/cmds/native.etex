@@ -336,8 +336,9 @@ errors, the intermediate file is deleted afterwards.
 
 \item["-ppx" \var{command}]
 After parsing, pipe the abstract syntax tree through the preprocessor
-\var{command}. The format of the input and ouput of the preprocessor
-are not yet documented.
+\var{command}. The module "Ast_mapper", described in
+chapter~\ref{Ast-underscoremapper}, implements the external interface
+of a preprocessor.
 
 \item["-principal"]
 Check information path during type-checking, to make sure that all
