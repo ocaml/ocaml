@@ -39,6 +39,8 @@ Standard library:
   (Leo White)
 - PR#6590: Improve Windows (MSVC and mingw) build
   (Chen Gang)
+- PR#6599: ocamlbuild: add -bin-annot when using -pack
+  (Christopher Zimmermann)
 
 OCaml 4.02.0:
 -------------
