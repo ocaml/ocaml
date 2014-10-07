@@ -5,7 +5,6 @@ TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 SRC=../../release
-OCAMLDOC=$(SRC)/ocamldoc/ocamldoc -hide Pervasives
 HEVEA=hevea
 HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
@@ -13,6 +12,7 @@ HTML=-fix -exec xxdate.exe -O
 TEXT=-fix -exec xxdate.exe -text -w 79
 
 SRC2=../$(SRC)
+OCAMLDOC=$(SRC2)/byterun/ocamlrun $(SRC2)/ocamldoc/ocamldoc -hide Pervasives
 MLIS=$(SRC2)/stdlib/*.mli \
 	$(SRC2)/otherlibs/bigarray/bigarray.mli \
 	$(SRC2)/otherlibs/dynlink/dynlink.mli \
@@ -54,7 +54,7 @@ index::
 html: files
 	cd htmlman; \
 	mkdir -p libref ; \
-	../$(OCAMLDOC) -colorize-code -sort -html \
+	$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
 	-I $(SRC2)/stdlib  \
 	-I $(SRC2)/otherlibs/bigarray \
