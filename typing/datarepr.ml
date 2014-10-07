@@ -18,7 +18,7 @@ open Types
 open Btype
 
 type error =
-  | GADT_inlined_record_arity
+  | GADT_inlined_record
 
 exception Error of Location.t * error
 
@@ -66,10 +66,7 @@ let constructor_args cd_args cd_res type_params loc path type_manifest rep =
       let type_params =
         match cd_res with
         | None -> type_params
-        | Some _ ->
-            match TypeSet.elements arg_vars_set with
-            | [] | [_] as l -> l
-            | _ -> raise (Error (loc, GADT_inlined_record_arity))
+        | Some _ -> raise (Error (loc, GADT_inlined_record))
       in
       let type_manifest =
         match type_manifest with
@@ -235,10 +232,9 @@ let labels_of_type ty_path decl =
   | Type_variant _ | Type_abstract | Type_open -> []
 
 let report_error ppf = function
-  | GADT_inlined_record_arity ->
+  | GADT_inlined_record ->
       Format.fprintf ppf
-        "A record argument on a GADT constructor can have at most \
-         one free variable."
+        "Record arguments are not allowed on GADT constructors."
 
 let () =
   Location.register_error_of_exn
