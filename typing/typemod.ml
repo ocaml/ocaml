@@ -468,16 +468,25 @@ let check_sig_item names loc = function
   | Sig_typext(id, _, _) -> check_typext names loc (Ident.name id)
   | _ -> ()
 
-let rec remove_duplicates val_ids = function
-    [] -> []
-  | Sig_value (id, _) :: rem when List.exists (Ident.equal id) val_ids ->
-      remove_duplicates val_ids rem
-  | f :: rem -> f :: remove_duplicates val_ids rem
+(* Simplify multiple specifications of a value or an extension in a signature.
+   (Other signature components, e.g. types, modules, etc, are checked for
+   name uniqueness.)  If multiple specifications with the same name,
+   keep only the last (rightmost) one. *)
 
-let rec get_values = function
-    [] -> []
-  | Sig_value (id, _) :: rem -> id :: get_values rem
-  | f :: rem -> get_values rem
+let simplify_signature sg =
+  let rec aux = function
+    | [] -> [], StringSet.empty
+    | (Sig_value(id, descr) as component) :: sg ->
+        let (sg, val_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name val_names then k
+        else (component :: sg, StringSet.add name val_names)
+    | component :: sg ->
+        let (sg, val_names) = aux sg in
+        (component :: sg, val_names)
+  in
+  let (sg, _) = aux sg in
+  sg
 
 (* Check and translate a module type expression *)
 
@@ -565,8 +574,7 @@ and transl_signature env sg =
               Typedecl.transl_value_decl env item.psig_loc sdesc in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value tdesc) env loc :: trem,
-            (if List.exists (Ident.equal tdesc.val_id) (get_values rem) then rem
-            else Sig_value(tdesc.val_id, tdesc.val_val) :: rem),
+            Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
               final_env
         | Psig_type sdecls ->
             List.iter
@@ -586,16 +594,17 @@ and transl_signature env sg =
               Typedecl.transl_type_extension false env item.psig_loc styext
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_typext tyext) env loc :: trem,
-            map_ext (fun es ext ->Sig_typext(ext.ext_id, ext.ext_type, es))
-              tyext.tyext_constructors rem,
-            final_env
+            let constructors = tyext.tyext_constructors in
+              mksig (Tsig_typext tyext) env loc :: trem,
+              map_ext (fun es ext ->
+                Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
+              final_env
         | Psig_exception sext ->
             check_name check_typext names sext.pext_name;
             let (ext, newenv) = Typedecl.transl_exception env sext in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception ext) env loc :: trem,
-            (Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
+            Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
@@ -661,7 +670,7 @@ and transl_signature env sg =
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include incl) env loc :: trem,
-            remove_duplicates (get_values rem) sg @ rem,
+            sg @ rem,
             final_env
         | Psig_class cl ->
             List.iter
@@ -713,6 +722,7 @@ and transl_signature env sg =
   let previous_saved_types = Cmt_format.get_saved_types () in
   Typetexp.warning_enter_scope ();
   let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
+  let rem = simplify_signature rem in
   let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
   Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
@@ -799,26 +809,6 @@ and transl_recmodule_modtypes loc env sdecls =
       sdecls dcl2
   in
   (dcl2, env2)
-
-(* Simplify multiple specifications of a value or an extension in a signature.
-   (Other signature components, e.g. types, modules, etc, are checked for
-   name uniqueness.)  If multiple specifications with the same name,
-   keep only the last (rightmost) one. *)
-
-let simplify_signature sg =
-  let rec aux = function
-    | [] -> [], StringSet.empty
-    | (Sig_value(id, descr) as component) :: sg ->
-        let (sg, val_names) as k = aux sg in
-        let name = Ident.name id in
-        if StringSet.mem name val_names then k
-        else (component :: sg, StringSet.add name val_names)
-    | component :: sg ->
-        let (sg, val_names) = aux sg in
-        (component :: sg, val_names)
-  in
-  let (sg, _) = aux sg in
-  sg
 
 (* Try to convert a module expression to a module path. *)
 

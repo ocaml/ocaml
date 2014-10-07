@@ -855,7 +855,7 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$system" in
-  amd64,macosx)   if ./searchpath clang; then
+  amd64,macosx)   if sh ./searchpath clang; then
                       as='clang -arch x86_64 -c'
                       aspp='clang -arch x86_64 -c'
                     else
@@ -1348,7 +1348,7 @@ if test "$pthread_wanted" = "yes"; then
     *)             pthread_link="-lpthread"
                    pthread_caml_link="-cclib -lpthread";;
   esac
-  if ./hasgot -i pthread.h $pthread_link pthread_self; then
+  if sh ./hasgot -i pthread.h $pthread_link pthread_self; then
     inf "POSIX threads library supported."
     systhread_support=true
     otherlibraries="$otherlibraries systhreads"
@@ -1538,7 +1538,7 @@ if test "x11_include" != "not found"; then
   if test "$x11_include" = "-I/usr/include"; then
     x11_include=""
   fi
-  if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
+  if sh ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
     inf "X11 works"
   else
     wrn "Cannot compile X11 program."
@@ -1566,8 +1566,8 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h && \
-   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
+if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
+   sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
   inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile

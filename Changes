@@ -28,11 +28,14 @@ OCaml 4.02.1:
 -------------
 
 - PR#4099: Bug in Makefile.nt: won't stop on error (George Necula)
+- PR#6181: Improve MSVC build (Chen Gang)
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
   (Xavier Leroy)
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
+- PR#6590: Improve Windows (MSVC and mingw) build
+  (Chen Gang)
 
 Ocaml 4.02.0:
 -------------

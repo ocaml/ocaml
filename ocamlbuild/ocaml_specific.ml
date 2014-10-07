@@ -612,6 +612,8 @@ let () =
     (fun param -> S [A "-w"; A param]);
   pflag ["ocaml";"compile";] "warn_error"
     (fun param -> S [A "-warn-error"; A param]);
+  pflag ["ocaml"; "ocamldep"] "open"
+    (fun param -> S [A "-open"; A param]);
   pflag ["ocaml"; "compile"] "open"
     (fun param -> S [A "-open"; A param]);
   ()
