@@ -1408,9 +1408,10 @@ and store_extension ~check slot id path ext env renv =
     end;
 
   end;
-  let constr = Datarepr.extension_descr path ext in
   { env with
-    constrs = EnvTbl.add "constructor" slot id constr env.constrs renv.constrs;
+    constrs = EnvTbl.add "constructor" slot id
+                (Datarepr.extension_descr path ext)
+                env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
 and store_module slot id path md env renv =
