@@ -19,7 +19,9 @@ let live_at_exit = ref []
 
 let find_live_at_exit k =
   try
-    List.assoc k !live_at_exit
+    let (used, set) = List.assoc k !live_at_exit in
+    used := true;
+    set
   with
   | Not_found -> Misc.fatal_error "Liveness.find_live_at_exit"
 
@@ -78,34 +80,55 @@ let rec live i finally =
       done;
       i.live <- !at_fork;
       Reg.add_set_array !at_fork i.arg
-  | Iloop(body) ->
-      let at_top = ref Reg.Set.empty in
-      (* Yes, there are better algorithms, but we'll just iterate till
-         reaching a fixpoint. *)
-      begin try
-        while true do
-          let new_at_top = Reg.Set.union !at_top (live body !at_top) in
-          if Reg.Set.equal !at_top new_at_top then raise Exit;
-          at_top := new_at_top
-        done
-      with Exit -> ()
-      end;
-      i.live <- !at_top;
-      !at_top
-  | Icatch(nfail, body, handler) ->
+  | Ilabel(handlers, body) ->
       let at_join = live i.next finally in
-      let before_handler = live handler at_join in
-      let before_body =
-          live_at_exit := (nfail,before_handler) :: !live_at_exit ;
-          let before_body = live body at_join in
-          live_at_exit := List.tl !live_at_exit ;
-          before_body in
+
+      let aux (nfail,handler) (nfail', before_handler) =
+        assert(nfail = nfail');
+        let before_handler' = live handler at_join in
+        nfail, Reg.Set.union before_handler before_handler' in
+
+      let aux_equal (nfail, before_handler) (nfail', before_handler') =
+        assert(nfail = nfail');
+        Reg.Set.equal before_handler before_handler' in
+
+      let live_at_exit_before = !live_at_exit in
+
+      let live_at_exit_add before_handlers =
+        List.map (fun (nfail, before_handler) ->
+            (nfail, (ref false, before_handler)))
+          before_handlers in
+
+      let rec fixpoint before_handlers =
+        let live_at_exit_add = live_at_exit_add before_handlers in
+        live_at_exit := live_at_exit_add @ !live_at_exit;
+        let before_handlers' = List.map2 aux handlers before_handlers in
+        live_at_exit := live_at_exit_before;
+        let not_used = List.for_all
+            (fun (_,(used,_)) -> not !used) live_at_exit_add in
+        if not_used || List.for_all2 aux_equal before_handlers before_handlers'
+        then before_handlers'
+        else fixpoint before_handlers'
+      in
+
+      let init_state =
+        List.map (fun (nfail, _handler) -> nfail, Reg.Set.empty) handlers in
+      let before_handler = fixpoint init_state in
+      (* We could use handler.live instead of Reg.Set.empty as the initialisation
+         but we would need to clean the live field before doing the analysis
+         (to remove remaining of previous passes) *)
+
+      live_at_exit := (live_at_exit_add before_handler) @ !live_at_exit;
+      let before_body = live body at_join in
+      live_at_exit := live_at_exit_before;
       i.live <- before_body;
       before_body
-  | Iexit nfail ->
+
+  | Ijump nfail ->
       let this_live = find_live_at_exit nfail in
       i.live <- this_live ;
       this_live
+
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in

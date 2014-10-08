@@ -73,7 +73,9 @@ let occurs_var var u =
         List.exists (fun (_,e) -> occurs e) sw ||
         (match d with None -> false | Some d -> occurs d)
     | Ustaticfail (_, args) -> List.exists occurs args
-    | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
+    | Ucatch(handlers, body) ->
+        occurs body ||
+        List.exists (fun (_,_,hdlr) -> occurs hdlr) handlers
     | Utrywith(body, exn, hdlr) -> occurs body || occurs hdlr
     | Uifthenelse(cond, ifso, ifnot) ->
         occurs cond || occurs ifso || occurs ifnot
@@ -92,52 +94,6 @@ let occurs_var var u =
     with Exit ->
       true
   in occurs u
-
-(* Split a function with default parameters into a wrapper and an
-   inner function.  The wrapper fills in missing optional parameters
-   with their default value and tail-calls the inner function.  The
-   wrapper can then hopefully be inlined on most call sites to avoid
-   the overhead associated with boxing an optional argument with a
-   'Some' constructor, only to deconstruct it immediately in the
-   function's body. *)
-
-let split_default_wrapper fun_id kind params body =
-  let rec aux map = function
-    | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
-        Ident.name optparam = "*opt*" && List.mem optparam params
-          && not (List.mem_assoc optparam map)
-      ->
-        let wrapper_body, inner = aux ((optparam, id) :: map) rest in
-        Llet(Strict, id, def, wrapper_body), inner
-    | _ when map = [] -> raise Exit
-    | body ->
-        (* Check that those *opt* identifiers don't appear in the remaining
-           body. This should not appear, but let's be on the safe side. *)
-        let fv = Lambda.free_variables body in
-        List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
-
-        let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
-        let map_param p = try List.assoc p map with Not_found -> p in
-        let args = List.map (fun p -> Lvar (map_param p)) params in
-        let wrapper_body = Lapply (Lvar inner_id, args, Location.none) in
-
-        let inner_params = List.map map_param params in
-        let new_ids = List.map Ident.rename inner_params in
-        let subst = List.fold_left2
-            (fun s id new_id ->
-               Ident.add id (Lvar new_id) s)
-            Ident.empty inner_params new_ids
-        in
-        let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction(Curried, new_ids, body) in
-        (wrapper_body, (inner_id, inner_fun))
-  in
-  try
-    let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction(kind, params, wrapper_body)); inner]
-  with Exit ->
-    [(fun_id, Lfunction(kind, params, body))]
-
 
 (* Determine whether the estimated size of a clambda term is below
    some threshold *)
@@ -208,8 +164,10 @@ let lambda_smaller lam threshold =
           sw ;
         Misc.may lambda_size d
     | Ustaticfail (_,args) -> lambda_list_size args
-    | Ucatch(_, _, body, handler) ->
-        incr size; lambda_size body; lambda_size handler
+    | Ucatch(handlers, body) ->
+        incr size;
+        List.iter (fun (_,_,handler) -> lambda_size handler) handlers;
+        lambda_size body
     | Utrywith(body, id, handler) ->
         size := !size + 8; lambda_size body; lambda_size handler
     | Uifthenelse(cond, ifso, ifnot) ->
@@ -528,10 +486,32 @@ let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
 
-let rec substitute fpc sb ulam =
+module StexnMap = Map.Make(
+  struct
+    type t = stexn
+    let compare (x:stexn) (y:stexn) = (x:>int) - (y:stexn:>int)
+  end)
+
+type sb =
+  { sb_id : ulambda Ident.tbl;
+    sb_stexn : stexn StexnMap.t }
+
+let empty_sb =
+  { sb_id = Ident.empty;
+    sb_stexn = StexnMap.empty }
+
+let find_id id sb = Ident.find_same id sb.sb_id
+let add_id id id' sb = { sb with sb_id = Ident.add id id' sb.sb_id }
+let subst_stexn s sb =
+  try StexnMap.find s sb.sb_stexn with
+  | Not_found -> s
+let add_stexn s s' sb =
+  { sb with sb_stexn = StexnMap.add s s' sb.sb_stexn }
+
+let rec substitute fpc (sb:sb) ulam =
   match ulam with
     Uvar v ->
-      begin try Tbl.find v sb with Not_found -> ulam end
+      begin try find_id v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       Udirect_apply(lbl, List.map (substitute fpc sb) args, dbg)
@@ -552,13 +532,13 @@ let rec substitute fpc sb ulam =
   | Ulet(id, u1, u2) ->
       let id' = Ident.rename id in
       Ulet(id', substitute fpc sb u1,
-           substitute fpc (Tbl.add id (Uvar id') sb) u2)
+           substitute fpc (add_id id (Uvar id') sb) u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
       let sb' =
         List.fold_right
-          (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
+          (fun (id, id', _) s -> add_id id (Uvar id') s)
           bindings1 sb in
       Uletrec(
         List.map
@@ -584,14 +564,26 @@ let rec substitute fpc sb ulam =
         (substitute fpc sb arg,
          List.map (fun (s,act) -> s,substitute fpc sb act) sw,
          Misc.may_map (substitute fpc sb) d)
-  | Ustaticfail (nfail, args) ->
-      Ustaticfail (nfail, List.map (substitute fpc sb) args)
-  | Ucatch(nfail, ids, u1, u2) ->
-      Ucatch(nfail, ids, substitute fpc sb u1, substitute fpc sb u2)
+  | Ustaticfail (stexn, args) ->
+      Ustaticfail (subst_stexn stexn sb,
+                   List.map (substitute fpc sb) args)
+  | Ucatch(handlers, body) ->
+      let sb, handlers = List.fold_left
+          (fun (sb,handlers) (nfail, ids, handler) ->
+             let nfail' = Lambda.next_raise_count () in
+             let sb = add_stexn nfail nfail' sb in
+             sb,
+             (nfail', ids, handler) :: handlers)
+          (sb, []) handlers in
+      let handlers =
+        List.map (fun (nfail, ids, handler) ->
+            nfail, ids, substitute fpc sb handler)
+          handlers in
+      Ucatch(handlers, substitute fpc sb body)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute fpc sb u1, id',
-               substitute fpc (Tbl.add id (Uvar id') sb) u2)
+               substitute fpc (add_id id (Uvar id') sb) u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute fpc sb u1 with
         Uconst (Uconst_ptr n) ->
@@ -608,11 +600,11 @@ let rec substitute fpc sb ulam =
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = Ident.rename id in
       Ufor(id', substitute fpc sb u1, substitute fpc sb u2, dir,
-           substitute fpc (Tbl.add id (Uvar id') sb) u3)
+           substitute fpc (add_id id (Uvar id') sb) u3)
   | Uassign(id, u) ->
       let id' =
         try
-          match Tbl.find id sb with Uvar i -> i | _ -> assert false
+          match find_id id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
       Uassign(id', substitute fpc sb u)
@@ -635,7 +627,7 @@ let rec bind_params_rec fpc subst params args body =
     ([], []) -> substitute fpc subst body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec fpc (Tbl.add p1 a1 subst) pl al body
+        bind_params_rec fpc (add_id p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
         let u1, u2 =
@@ -646,7 +638,7 @@ let rec bind_params_rec fpc subst params args body =
               a1, Uvar p1'
         in
         let body' =
-          bind_params_rec fpc (Tbl.add p1 u2 subst) pl al body in
+          bind_params_rec fpc (add_id p1 u2 subst) pl al body in
         if occurs_var p1 body then Ulet(p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
@@ -656,7 +648,7 @@ let rec bind_params_rec fpc subst params args body =
 let bind_params fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec fpc Tbl.empty (List.rev params) (List.rev args) body
+  bind_params_rec fpc empty_sb (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -895,8 +887,8 @@ let rec close fenv cenv = function
         let sb =
           List.fold_right
             (fun (id, pos, approx) sb ->
-              Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
-            infos Tbl.empty in
+              add_id id (Uoffset(Uvar clos_ident, pos)) sb)
+            infos empty_sb in
         (Ulet(clos_ident, clos, substitute !Clflags.float_const_prop sb ubody),
          approx)
       end else begin
@@ -962,7 +954,7 @@ let rec close fenv cenv = function
             let i = next_raise_count () in
             let ubody,_ = fn (Some (Lstaticraise (i,[])))
             and uhandler,_ = close fenv cenv lamfail in
-            Ucatch (i,[],ubody,uhandler),Value_unknown
+            Ucatch ([i,[],uhandler],ubody),Value_unknown
           else fn fail
       end
   | Lstringswitch(arg,sw,d) ->
@@ -981,10 +973,14 @@ let rec close fenv cenv = function
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
-  | Lstaticcatch(body, (i, vars), handler) ->
+  | Lstaticcatch(body, handlers) ->
       let (ubody, _) = close fenv cenv body in
-      let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(i, vars, ubody, uhandler), Value_unknown)
+      let uhandlers =
+        List.map (fun (nfail, args, handler) ->
+            let (uhandler, _) = close fenv cenv handler in
+            (nfail, args, uhandler))
+          handlers in
+      (Ucatch(uhandlers, ubody), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
@@ -1043,16 +1039,6 @@ and close_named fenv cenv id = function
 (* Build a shared closure for a set of mutually recursive functions *)
 
 and close_functions fenv cenv fun_defs =
-  let fun_defs =
-    List.flatten
-      (List.map
-         (function
-           | (id, Lfunction(kind, params, body)) ->
-               split_default_wrapper id kind params body
-           | _ -> assert false
-         )
-         fun_defs)
-  in
 
   (* Update and check nesting depth *)
   incr function_nesting_depth;
@@ -1216,7 +1202,7 @@ and close_switch arg fenv cenv cases num_keys default =
                 (string_of_lambda lam) ;
 *)
             let ohs = !hs in
-            hs := (fun e -> Ucatch (i,[],ohs e,ulam)) ;
+            hs := (fun e -> Ucatch ([i,[], ulam], ohs e)) ;
             Ustaticfail (i,[]))
       acts in
   match actions with
@@ -1268,7 +1254,9 @@ let collect_exported_structured_constants a =
         List.iter (fun (_,act) -> ulam act) sw ;
         Misc.may ulam d
     | Ustaticfail (_, ul) -> List.iter ulam ul
-    | Ucatch (_, _, u1, u2)
+    | Ucatch (handlers, body) ->
+        List.iter (fun (_,_,handler) -> ulam handler) handlers;
+        ulam body
     | Utrywith (u1, _, u2)
     | Usequence (u1, u2)
     | Uwhile (u1, u2)  -> ulam u1; ulam u2

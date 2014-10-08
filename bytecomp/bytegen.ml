@@ -248,7 +248,7 @@ let find_raise_label i =
   with
   | Not_found ->
       Misc.fatal_error
-        ("exit("^string_of_int i^") outside appropriated catch")
+        ("exit("^string_of_int (i:stexn:>int)^") outside appropriated catch")
 
 (* Will the translation of l lead to a jump to label ? *)
 let code_as_jump l sz = match l with
@@ -633,7 +633,9 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, []) ->
+      comp_expr env body sz cont
+  | Lstaticcatch (body, [i, vars, handler]) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =
@@ -675,6 +677,8 @@ let rec comp_expr env exp sz cont =
           comp_expr env arg sz cont
       | _ -> comp_exit_args env args sz size cont
       end
+  | Lstaticcatch (_, _ :: _ :: _ ) ->
+      failwith "extended static exceptions are not available in bytecode"
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in

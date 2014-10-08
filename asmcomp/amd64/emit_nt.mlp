@@ -565,8 +565,14 @@ let emit_instr fallthrough i =
         `	ret\n`
     | Llabel lbl ->
         `{emit_Llabel fallthrough lbl}:\n`
-    | Lbranch lbl ->
-        `	jmp	{emit_label lbl}\n`
+    | Lbranch (lbl,frame_offsets) ->
+        `	jmp	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 16 in
+          stack_offset := !stack_offset - 16
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->

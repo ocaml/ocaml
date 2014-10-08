@@ -45,16 +45,16 @@ let rec deadcode i =
       let (s, _) = deadcode i.next in
       ({i with desc = Iswitch(index, cases'); next = s},
        Reg.add_set_array i.live i.arg)
-  | Iloop(body) ->
+  | Ilabel(handlers, body) ->
       let (body', _) = deadcode body in
+      let handlers' =
+        List.map (fun (nfail, handler) ->
+            let (handler', _) = deadcode handler in
+            nfail, handler')
+          handlers in
       let (s, _) = deadcode i.next in
-      ({i with desc = Iloop body'; next = s}, i.live)
-  | Icatch(nfail, body, handler) ->
-      let (body', _) = deadcode body in
-      let (handler', _) = deadcode handler in
-      let (s, _) = deadcode i.next in
-      ({i with desc = Icatch(nfail, body', handler'); next = s}, i.live)
-  | Iexit nfail ->
+      ({i with desc = Ilabel(handlers', body'); next = s}, i.live)
+  | Ijump nfail ->
       (i, i.live)
   | Itrywith(body, handler) ->
       let (body', _) = deadcode body in

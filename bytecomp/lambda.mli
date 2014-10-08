@@ -176,6 +176,8 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
+type stexn = private int
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -188,8 +190,8 @@ type lambda =
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of lambda * (string * lambda) list * lambda option
-  | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticraise of stexn * lambda list
+  | Lstaticcatch of lambda * (stexn * Ident.t list * lambda) list
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -216,6 +218,8 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+
+val lstaticcatch: (lambda * (stexn * Ident.t list) * lambda) -> lambda
 
 (* Sharing key *)
 val make_key: lambda -> lambda option
@@ -245,12 +249,7 @@ val negate_comparison : comparison -> comparison
 (***********************)
 
 (* Get a new static failure ident *)
-val next_raise_count : unit -> int
-val next_negative_raise_count : unit -> int
-  (* Negative raise counts are used to compile 'match ... with
-     exception x -> ...'.  This disabled some simplifications
-     performed by the Simplif module that assume that static raises
-     are in tail position in their handler. *)
+val next_raise_count : unit -> stexn
 
 val staticfail : lambda (* Anticipated static failure *)
 
@@ -262,3 +261,6 @@ val raise_kind: raise_kind -> string
 val lam_of_loc : loc_kind -> Location.t -> lambda
 
 val reset: unit -> unit
+
+val default_stexn: stexn
+val bogus_stexn: stexn

@@ -40,6 +40,7 @@ let keyword_table =
     "catch", CATCH;
     "checkbound", CHECKBOUND;
     "exit", EXIT;
+    "exit_ind", EXIT_IND;
     "extcall", EXTCALL;
     "float", FLOAT;
     "float32", FLOAT32;
@@ -133,7 +134,9 @@ let report_error lexbuf msg =
 }
 
 rule token = parse
-    [' ' '\010' '\013' '\009' '\012'] +
+    ['\010']
+      { Lexing.new_line lexbuf; token lexbuf }
+  | [' ' '\013' '\009' '\012'] +
       { token lexbuf }
   | "+a" { ADDA }
   | "+f" { ADDF }
@@ -173,6 +176,7 @@ rule token = parse
   | "-a" { SUBA }
   | "-f" { SUBF }
   | "-" { SUBI }
+  | "," { COMMA }
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
                      | "0o" ['0'-'7']+ | "0b" ['0'-'1']+)
       { INTCONST(int_of_string(Lexing.lexeme lexbuf)) }

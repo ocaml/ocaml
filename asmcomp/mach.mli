@@ -55,6 +55,8 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
 
+type label = Cmm.label
+
 type instruction =
   { desc: instruction_desc;
     next: instruction;
@@ -69,9 +71,8 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
-  | Icatch of int * instruction * instruction
-  | Iexit of int
+  | Ilabel of (label * instruction) list * instruction
+  | Ijump of label
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
 
@@ -91,3 +92,7 @@ val instr_cons_debug:
       instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
+
+module LabelSet : Set.S with type elt = label
+
+val recursive_handlers: instruction -> LabelSet.t

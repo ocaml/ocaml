@@ -26,7 +26,8 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
+  let actv =
+    Array.make (Array.length casev) (cexit(Lambda.default_stexn,[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -40,6 +41,13 @@ let access_array base numelt size =
   | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)])
   | _ -> Cop(Cadda, [base;
                      Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)])])
+
+let cloop expr =
+  let raise_num = Lambda.next_raise_count () in
+  ccatch(raise_num, [],
+         cexit (raise_num,[]),
+         (Csequence (expr,
+                     cexit (raise_num,[]))))
 
 %}
 
@@ -66,6 +74,7 @@ let access_array base numelt size =
 %token EQF
 %token EQI
 %token EXIT
+%token EXIT_IND
 %token EXTCALL
 %token FLOAT
 %token FLOAT32
@@ -133,6 +142,7 @@ let access_array base numelt size =
 %token ADDRASET
 %token INTASET
 %token FLOATASET
+%token COMMA
 
 %start phrase
 %type <Cmm.phrase> phrase
@@ -194,10 +204,15 @@ expr:
       { let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(0, [], Cloop body, Ctuple []) }
-  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], $3, $5) }
-  | EXIT        { Cexit(0,[]) }
+          | _ -> Cifthenelse($3, $4, (cexit(Lambda.default_stexn,[]))) in
+        Clabel([Lambda.default_stexn, [], Ctuple []], cloop body) }
+  | EXIT        { cexit(Lambda.default_stexn,[]) }
+  | LPAREN EXIT IDENT exprlist RPAREN
+    { cexit(find_label $3,List.rev $4) }
+  | LPAREN CATCH sequence catch_with RPAREN
+    { let handlers = $4 in
+      List.iter (fun (_, l, _) -> List.iter unbind_ident l) handlers;
+      Clabel($4, $3) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
@@ -212,6 +227,25 @@ expr:
       { Cop(Cstore Word, [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { Cop(Cstore Double_u, [access_array $3 $4 Arch.size_float; $5]) }
+;
+catch_with:
+  | WITH catch_handlers
+    { $2 }
+catch_handlers:
+  | catch_handler
+    { [$1] }
+  | catch_handler AND catch_handlers
+    { $1 :: $3 }
+
+catch_handler:
+  | sequence
+    { Lambda.default_stexn, [], $1 }
+  | LPAREN IDENT bind_identlist RPAREN sequence
+    { find_label $2, $3, $5 }
+
+bind_identlist:
+    /**/                        { [] }
+  | bind_ident bind_identlist   { $1 :: $2 }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }

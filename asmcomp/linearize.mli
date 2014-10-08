@@ -15,6 +15,8 @@
 type label = int
 val new_label: unit -> label
 
+type frame_offsets = int
+
 type instruction =
   { mutable desc: instruction_desc;
     mutable next: instruction;
@@ -29,7 +31,7 @@ and instruction_desc =
   | Lreloadretaddr
   | Lreturn
   | Llabel of label
-  | Lbranch of label
+  | Lbranch of label * frame_offsets
   | Lcondbranch of Mach.test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
@@ -50,5 +52,4 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t }
 
-val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl

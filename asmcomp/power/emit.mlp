@@ -348,7 +348,7 @@ let instr_size = function
   | Lreloadretaddr -> 2
   | Lreturn -> 2
   | Llabel lbl -> 0
-  | Lbranch lbl -> 1
+  | Lbranch (lbl,_) -> 1
   | Lcondbranch(tst, lbl) -> 2
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
       1 + (if lbl0 = None then 0 else 1)
@@ -397,7 +397,7 @@ let fixup_branches codesize map code =
     | Lcondbranch(test, lbl) when branch_overflows map pc lbl ->
         let lbl2 = new_label() in
         let cont =
-          instr_cons (Lbranch lbl) [||] [||]
+          instr_cons (Lbranch (lbl,0)) [||] [||]
             (instr_cons (Llabel lbl2) [||] [||] instr.next) in
         instr.desc <- Lcondbranch(invert_test test, lbl2);
         instr.next <- cont;
@@ -659,8 +659,15 @@ let rec emit_instr i dslot =
         `	blr\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
-    | Lbranch lbl ->
-        `	b	{emit_label lbl}\n`
+    | Lbranch (lbl,frame_offsets) ->
+        `	b	{emit_label lbl}\n`;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 16 in
+          cfi_adjust_cfa_offset n;
+          stack_offset := !stack_offset + n
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->

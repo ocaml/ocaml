@@ -61,6 +61,7 @@ module type S =
     val gtint : primitive
     (* type of actions *)
     type act
+    type label
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
@@ -77,8 +78,8 @@ module type S =
     val make_switch :
         act -> int array -> act array -> act
    (* Build last minute sharing of action stuff *)
-   val make_catch : act -> int * (act -> act)
-   val make_exit : int -> act
+   val make_catch : act -> label * (act -> act)
+   val make_exit : label -> act
 
   end
 

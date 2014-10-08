@@ -106,7 +106,7 @@ let operation op arg ppf res =
   | Iconst_int n
   | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" f
-  | Iconst_symbol s -> fprintf ppf "\"%s\"" s
+  | Iconst_symbol s -> fprintf ppf "%s" s
   | Icall_ind -> fprintf ppf "call %a" regs arg
   | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
   | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
@@ -169,14 +169,21 @@ let rec instr ppf i =
         fprintf ppf "@]@,%a@]" instr cases.(i)
       done;
       fprintf ppf "@,endswitch"
-  | Iloop(body) ->
-      fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(i, body, handler) ->
-      fprintf
-        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
-        instr body i instr handler
-  | Iexit i ->
-      fprintf ppf "exit(%d)" i
+  | Ilabel(handlers, body) ->
+      fprintf ppf "@[<v 2>label@,%a@;<0 -2>with" instr body;
+      let h (nfail, handler) =
+        fprintf ppf "(%d)@,%a@;" (nfail:label:>int) instr handler in
+      let rec aux = function
+        | [] -> ()
+        | [v] -> h v
+        | v :: t ->
+            h v;
+            fprintf ppf "@ and";
+            aux t
+      in
+      aux handlers
+  | Ijump i ->
+      fprintf ppf "jump(%d)" (i:label:>int)
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler

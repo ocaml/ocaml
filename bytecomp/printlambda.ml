@@ -239,6 +239,9 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let stexn ppf (i:Lambda.stexn) =
+  fprintf ppf "%d" (i:>int)
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -331,10 +334,12 @@ let rec lam ppf = function
   | Lstaticraise (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
-  | Lstaticcatch(lbody, (i, vars), lhandler) ->
+      fprintf ppf "@[<2>(exit@ %a%a)@]"
+        stexn i
+        lams ls;
+  | Lstaticcatch(lbody, [i, vars, lhandler]) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
-        lam lbody i
+        lam lbody (i:>int)
         (fun ppf vars -> match vars with
           | [] -> ()
           | _ ->
@@ -343,6 +348,26 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
+  | Lstaticcatch(lbody, handlers) ->
+      let print_handler ppf (i, ids, e2) =
+        fprintf ppf " (%d%a)@ %a"
+          (i:stexn:>int)
+          (fun ppf ids ->
+             List.iter
+               (fun id -> fprintf ppf " %a" Ident.print id)
+               ids) ids
+          lam e2
+      in
+      let rec print_handlers ppf = function
+        | [] -> ()
+        | [h] -> print_handler ppf h
+        | h :: t ->
+            fprintf ppf "and";
+            print_handler ppf h;
+            print_handlers ppf t
+      in
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with%a)@]"
+        lam lbody print_handlers handlers
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler

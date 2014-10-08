@@ -291,14 +291,14 @@ let ctx_match ctx pss =
         pss)
     ctx
 
-type jumps = (int * ctx list) list
+type jumps = (Lambda.stexn * ctx list) list
 
 let pretty_jumps (env : jumps) = match env with
 | [] -> ()
 | _ ->
     List.iter
       (fun (i,ctx) ->
-        Printf.fprintf stderr "jump for %d\n" i ;
+        Printf.fprintf stderr "jump for %d\n" (i:stexn:>int) ;
         pretty_ctx ctx)
       env
 
@@ -338,7 +338,7 @@ let jumps_add i pss jumps = match pss with
     add jumps
 
 
-let rec jumps_union (env1:(int*ctx list)list) env2 = match env1,env2 with
+let rec jumps_union (env1:(stexn*ctx list)list) env2 = match env1,env2 with
 | [],_ -> env2
 | _,[] -> env1
 | ((i1,pss1) as x1::rem1), ((i2,pss2) as x2::rem2) ->
@@ -369,14 +369,14 @@ let jumps_map f env =
 type pattern_matching =
   { mutable cases : (pattern list * lambda) list;
     args : (lambda * let_kind) list ;
-    default : (matrix * int) list}
+    default : (matrix * stexn) list}
 
 (* Pattern matching after application of both the or-pat rule and the
    mixture rule *)
 
 type pm_or_compiled =
   {body : pattern_matching ;
-   handlers : (matrix * int * Ident.t list * pattern_matching) list ;
+   handlers : (matrix * stexn * Ident.t list * pattern_matching) list ;
    or_matrix : matrix ; }
 
 type pm_half_compiled =
@@ -390,7 +390,7 @@ and pm_var_compiled =
 type pm_half_compiled_info =
     {me : pm_half_compiled ;
      matrix : matrix ;
-     top_default : (matrix * int) list ; }
+     top_default : (matrix * stexn) list ; }
 
 let pretty_cases cases =
   List.iter
@@ -413,7 +413,7 @@ let pretty_def def =
   prerr_endline "+++++ Defaults +++++" ;
   List.iter
     (fun (pss,i) ->
-      Printf.fprintf stderr "Matrix for %d\n"  i ;
+      Printf.fprintf stderr "Matrix for %d\n"  (i:stexn:>int);
       pretty_matrix pss)
     def ;
   prerr_endline "+++++++++++++++++++++"
@@ -434,7 +434,7 @@ let rec pretty_precompiled = function
       pretty_matrix x.or_matrix ;
       List.iter
         (fun (_,i,_,pm) ->
-          eprintf "++ Handler %d ++\n" i ;
+          eprintf "++ Handler %d ++\n" (i:stexn:>int) ;
           pretty_pm pm)
         x.handlers
 
@@ -442,7 +442,7 @@ let pretty_precompiled_res first nexts =
   pretty_precompiled first ;
   List.iter
     (fun (e, pmh) ->
-      eprintf "** DEFAULT %d **\n" e ;
+      eprintf "** DEFAULT %d **\n" (e:stexn:>int) ;
       pretty_precompiled pmh)
     nexts
 
@@ -476,7 +476,7 @@ let make_catch d k = match d with
 | Lstaticraise (_,[]) -> k d
 | _ ->
     let e = next_raise_count () in
-    Lstaticcatch (k (make_exit e),(e,[]),d)
+    lstaticcatch (k (make_exit e),(e,[]),d)
 
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
@@ -496,7 +496,7 @@ let make_catch_delayed handler = match as_simple_exit handler with
     (fun body -> match body with
     | Lstaticraise (j,_) ->
         if i=j then handler else body
-    | _ -> Lstaticcatch (body,(i,[]),handler))
+    | _ -> lstaticcatch (body,(i,[]),handler))
 
 
 let raw_action l =
@@ -1936,6 +1936,7 @@ module SArg = struct
   let gtint = Pintcomp Cgt
 
   type act = Lambda.lambda
+  type label = Lambda.stexn
 
   let make_prim p args = Lprim (p,args)
   let make_offset arg n = match n with
@@ -2009,7 +2010,7 @@ let reintroduce_fail sw = match sw.sw_failaction with
     | None -> () in
     List.iter seen sw.sw_consts ;
     List.iter seen sw.sw_blocks ;
-    let i_max = ref (-1)
+    let i_max = ref bogus_stexn
     and max = ref (-1) in
     Hashtbl.iter
       (fun i c ->
@@ -2615,14 +2616,14 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 do_rec r total_r rem
           | _ ->
               do_rec
-                (Lstaticcatch (r,(i,vars), handler_i))
+                (lstaticcatch (r,(i,vars), handler_i))
                 (jumps_union
                    (jumps_remove i total_r)
                    (jumps_map (ctx_rshift_num (ncols mat)) total_i))
               rem
         with
         | Unused ->
-            do_rec (Lstaticcatch (r, (i,vars), lambda_unit)) total_r rem
+            do_rec (lstaticcatch (r, (i,vars), lambda_unit)) total_r rem
         end in
   do_rec lambda1 total1 to_catch
 
@@ -2710,12 +2711,12 @@ let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                       (match rem with [] -> partial | _ -> Partial)
                       ctx_i arg pm in
                   c_rec
-                    (Lstaticcatch (body,(i,[]),li))
+                    (lstaticcatch (body,(i,[]),li))
                     (jumps_union total_i total_rem)
                     rem
                 with
                 | Unused ->
-                    c_rec (Lstaticcatch (body,(i,[]),lambda_unit))
+                    c_rec (lstaticcatch (body,(i,[]),lambda_unit))
                       total_rem  rem
             end in
    try
@@ -2940,7 +2941,7 @@ let check_total total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
   else begin
-    Lstaticcatch(lambda, (i,[]), handler_fun())
+    lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
 let compile_matching loc repr handler_fun arg pat_act_list partial =
@@ -3085,7 +3086,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
           args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
           default = [[[omega]],raise_num] }
     | _ ->
-        -1,
+        bogus_stexn,
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
           args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
           default = [] } in

@@ -515,9 +515,15 @@ let rec emit_instr i dslot =
           `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
-    | Lbranch lbl ->
+    | Lbranch (lbl,frame_offsets) ->
         `	b	{emit_label lbl}\n`;
-        fill_delay_slot dslot
+        fill_delay_slot dslot;
+        if frame_offsets <> 0
+        then begin
+          assert(frame_offsets > 0);
+          let n = frame_offsets * 8 in
+          stack_offset := !stack_offset + n
+        end
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
@@ -637,7 +643,7 @@ let no_interference res arg =
 let rec emit_all i =
   match i with
     {desc = Lend} -> ()
-  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _}}
+  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _ }}
     when is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next

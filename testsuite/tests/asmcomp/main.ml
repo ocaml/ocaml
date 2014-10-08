@@ -30,8 +30,11 @@ let compile_file filename =
         close_in ic; Lexcmm.report_error lb msg
     | Parsing.Parse_error ->
         close_in ic;
-        prerr_string "Syntax error near character ";
-        prerr_int (Lexing.lexeme_start lb);
+        let p = Lexing.lexeme_start_p lb in
+        prerr_string "Syntax error near line ";
+        prerr_int p.Lexing.pos_lnum;
+        prerr_string " character ";
+        prerr_int (p.Lexing.pos_cnum - p.Lexing.pos_bol);
         prerr_newline()
     | Parsecmmaux.Error msg ->
         close_in ic; Parsecmmaux.report_error msg
@@ -52,6 +55,7 @@ let main() =
      "-dprefer", Arg.Set dump_prefer, "";
      "-dalloc", Arg.Set dump_regalloc, "";
      "-dreload", Arg.Set dump_reload, "";
+     "-dcse", Arg.Set dump_cse, "";
      "-dscheduling", Arg.Set dump_scheduling, "";
      "-dlinear", Arg.Set dump_linear, ""
     ] compile_file usage
