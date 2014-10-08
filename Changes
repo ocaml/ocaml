@@ -41,6 +41,7 @@ Standard library:
   (Chen Gang)
 - PR#6599: ocamlbuild: add -bin-annot when using -pack
   (Christopher Zimmermann)
+- PR#6602: Fatal error when tracing a function with abstract type
 
 OCaml 4.02.0:
 -------------
