@@ -92,8 +92,7 @@ typing/cmt_format.cmi : typing/types.cmi typing/typedtree.cmi \
     parsing/location.cmi typing/env.cmi typing/cmi_format.cmi
 typing/ctype.cmi : typing/types.cmi typing/path.cmi parsing/longident.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi
-typing/datarepr.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi \
-    typing/btype.cmi parsing/asttypes.cmi
+typing/datarepr.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi
 typing/env.cmi : utils/warnings.cmi typing/types.cmi typing/subst.cmi \
     typing/path.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi utils/consistbl.cmi parsing/asttypes.cmi
@@ -503,10 +502,10 @@ bytecomp/printinstr.cmx : bytecomp/printlambda.cmx parsing/location.cmx \
     bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx \
     bytecomp/printinstr.cmi
 bytecomp/printlambda.cmo : typing/types.cmi typing/primitive.cmi \
-    typing/path.cmi parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi \
     parsing/asttypes.cmi bytecomp/printlambda.cmi
 bytecomp/printlambda.cmx : typing/types.cmx typing/primitive.cmx \
-    typing/path.cmx parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx \
     parsing/asttypes.cmi bytecomp/printlambda.cmi
 bytecomp/runtimedef.cmo : bytecomp/runtimedef.cmi
 bytecomp/runtimedef.cmx : bytecomp/runtimedef.cmi
