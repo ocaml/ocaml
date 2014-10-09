@@ -786,7 +786,9 @@ let rec tree_of_type_decl id decl =
   | Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter
-        (fun cd -> mark_loops_constructor_arguments cd.cd_args)
+        (fun c ->
+           mark_loops_constructor_arguments c.cd_args;
+           may mark_loops c.cd_res)
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
