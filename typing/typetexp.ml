@@ -1061,7 +1061,7 @@ let report_error env ppf = function
         longident lid
   | Not_an_inlined_record lid ->
       fprintf ppf
-        "Constructor %a does not have an inline record argument"
+        "The constructor %a does not have an inline record argument"
         longident lid
   | Unbound_constructor_in_type (c_lid, t_lid) ->
       fprintf ppf "Unbound constructor %s in type %a" c_lid
