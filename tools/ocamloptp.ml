@@ -59,6 +59,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I s = option_with_arg "-I" s
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _inline n = option_with_int "-inline" n
+  let _rounds n = option_with_int "-rounds" n
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _keep_locs = option "-keep-locs"
@@ -107,6 +108,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
   let _dclambda = option "-dclambda"
+  let _dflambda = option "-dflambda"
   let _dcmm = option "-dcmm"
   let _dsel = option "-dsel"
   let _dcombine = option "-dcombine"

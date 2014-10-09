@@ -136,6 +136,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _dflambda = set dump_flambda
   let _dinstr = set dump_instr
   let anonymous = anonymous
 end)

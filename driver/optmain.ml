@@ -88,6 +88,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline n = inline_threshold := n * 8
+  let _rounds n = simplify_rounds := n
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_locs = set keep_locs
@@ -136,6 +137,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dclambda = set dump_clambda
+  let _dflambda = set dump_flambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine

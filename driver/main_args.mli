@@ -43,6 +43,7 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -113,6 +114,7 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
+  val _rounds : int -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit

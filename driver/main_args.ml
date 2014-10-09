@@ -113,6 +113,10 @@ let mk_inline f =
   "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
 ;;
 
+let mk_rounds f =
+  "-rounds", Arg.Int f, "<n>  Set number of simplification rounds to <n>"
+;;
+
 let mk_intf f =
   "-intf", Arg.String f, "<file>  Compile <file> as a .mli file"
 ;;
@@ -387,6 +391,10 @@ let mk_dclambda f =
   "-dclambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dflambda f =
+  "-dflambda", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
@@ -497,6 +505,7 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dflambda : unit -> unit
 
   val anonymous : string -> unit
 end;;
@@ -566,8 +575,10 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
+  val _rounds : int -> unit
 
   val _dclambda : unit -> unit
+  val _dflambda : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -701,6 +712,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
   ]
 end;;
@@ -743,6 +755,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dflambda F._dflambda;
     mk_dinstr F._dinstr;
   ]
 end;;
@@ -767,6 +780,7 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
+    mk_rounds F._rounds;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_locs F._keep_locs;
@@ -816,6 +830,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
@@ -841,6 +856,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
+    mk_rounds F._rounds;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
@@ -874,6 +890,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dclambda F._dclambda;
+    mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;
