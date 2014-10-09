@@ -169,9 +169,7 @@ let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
       then [] else [Field_type cstr]
   | Types.Cstr_record l1, Types.Cstr_record l2 ->
       compare_records env params1 params2 0 l1 l2
-  | _ ->
-      (* TODO: better report? *)
-      [Field_arity cstr]
+  | _ -> [Field_type cstr]
 
 and compare_variants env params1 params2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
