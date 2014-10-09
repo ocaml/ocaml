@@ -221,3 +221,15 @@ let make_key_generator () =
     let stamp = !c in
     decr c ;
     { id with name = key_name; stamp = stamp; }
+
+let compare x y =
+  let c = x.stamp - y.stamp in
+  if c = 0
+  then compare x.name y.name
+  else
+    if c = 0
+    then compare x.flags y.flags
+    else c
+
+let output oc id = output_string oc (unique_name id)
+let hash i = (Char.code i.name.[0]) lxor i.stamp
