@@ -37,7 +37,7 @@ let build_graph fundecl =
   let add_interf ri rj =
     if Proc.register_class ri = Proc.register_class rj then begin
       let i = ri.stamp and j = rj.stamp in
-      if i <> j then begin
+      if i <> j && (ri.loc != Unknown || rj.loc != Unknown) then begin
         let p = if i < j then (i, j) else (j, i) in
         if not(IntPairSet.mem p !mat) then begin
           mat := IntPairSet.add p !mat;
