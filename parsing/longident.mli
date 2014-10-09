@@ -20,5 +20,3 @@ type t =
 val flatten: t -> string list
 val last: t -> string
 val parse: string -> t
-
-val typqual_constructor: t -> (t * string) option

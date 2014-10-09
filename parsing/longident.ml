@@ -39,13 +39,3 @@ let parse s =
     [] -> Lident ""  (* should not happen, but don't put assert false
                         so as not to crash the toplevel (see Genprintval) *)
   | hd :: tl -> List.fold_left (fun p s -> Ldot(p, s)) (Lident hd) tl
-
-
-let is_lident s =
-  match s.[0] with
-  | 'a'..'z' | '_' -> true
-  | _ -> false
-
-let typqual_constructor = function
-  | Ldot(t, s) when is_lident (last t) -> Some (t, s)
-  | _ -> None

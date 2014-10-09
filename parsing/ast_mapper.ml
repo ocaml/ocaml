@@ -576,10 +576,9 @@ let default_mapper =
 
     constructor_declaration =
       (fun this {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} ->
-        let args = T.map_constructor_arguments this pcd_args in
         Type.constructor
           (map_loc this pcd_name)
-          ~args
+          ~args:(T.map_constructor_arguments this pcd_args)
           ?res:(map_opt (this.typ this) pcd_res)
           ~loc:(this.location this pcd_loc)
           ~attrs:(this.attributes this pcd_attributes)

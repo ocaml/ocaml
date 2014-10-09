@@ -300,38 +300,43 @@ let find_constructor_in_type env loc ty_id cstr_id =
   | _ ->
       err (Not_a_variant_type ty_id)
 
+let is_typ_lid lid =
+  match (Longident.last lid).[0] with
+  | 'a'..'z' | '_' -> true
+  | _ -> false
+
 let find_qual_constructor env loc lid =
-  match Longident.typqual_constructor lid with
-  | None -> find_constructor env loc lid
-  | Some (ty_id, cstr_id) -> find_constructor_in_type env loc ty_id cstr_id
+  match lid with
+  | Longident.Ldot (ty_id, cstr_id) when is_typ_lid ty_id ->
+      find_constructor_in_type env loc ty_id cstr_id
+  | _ -> find_constructor env loc lid
 
 let find_type env loc lid =
-  let s = Longident.last lid in
-  match s.[0] with
-  | 'A'..'Z' ->
-      let cstr = find_qual_constructor env loc lid in
-      if cstr.cstr_inlined = None then begin
-        let full_name =
-          match cstr with
-          | {cstr_tag = Cstr_constant _ | Cstr_block _;
-             cstr_res = {desc = Tconstr(p, _, _)} } ->
-              Longident.Ldot (Ctype.lid_of_path p, s)
-          | _ -> lid
+  if is_typ_lid lid then
+    find_type env loc lid
+  else
+    let cstr = find_qual_constructor env loc lid in
+    if cstr.cstr_inlined = None then begin
+      let full_name =
+        match cstr with
+        | {cstr_name;
+           cstr_tag = Cstr_constant _ | Cstr_block _;
+           cstr_res = {desc = Tconstr(p, _, _)} } ->
+            Longident.Ldot (Ctype.lid_of_path p, cstr_name)
+        | _ -> lid
+      in
+      raise (Error (loc, env, Not_an_inlined_record full_name));
+    end;
+    begin match cstr.cstr_args with
+    | [{desc=Tconstr(path, _, _)}] ->
+        let decl =
+          try Env.find_type path env
+          with Not_found ->
+            assert false
         in
-        raise (Error (loc, env, Not_an_inlined_record full_name));
-      end;
-      begin match cstr.cstr_args with
-        | [{desc=Tconstr(path, _, _)}] ->
-          let decl =
-            try Env.find_type path env
-            with Not_found ->
-              assert false
-          in
-          (path, decl)
-      | _ -> assert false
-      end
-  | _ ->
-      find_type env loc lid
+        (path, decl)
+    | _ -> assert false
+    end
 
 
 (* Support for first-class modules. *)
