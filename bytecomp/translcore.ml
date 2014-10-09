@@ -1132,7 +1132,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
               | _ -> assert false
             in
             let slot = transl_path env path in
-            Lprim(Pmakeblock(0, Immutable), slot :: ll)
+            Lprim(Pmakeblock(0, mut), slot :: ll)
     in
     begin match opt_init_expr with
       None -> lam
