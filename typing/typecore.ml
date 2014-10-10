@@ -67,7 +67,7 @@ type error =
   | Invalid_for_loop_index
   | No_value_clauses
   | Exception_pattern_below_toplevel
-  | Constraint_pattern_inlined_record
+  | Inlined_record_escape
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1085,7 +1085,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         | Ppat_alias (p, _) ->
             check_non_escaping p
         | Ppat_constraint _ ->
-            raise (Error (p.ppat_loc, !env, Constraint_pattern_inlined_record))
+            raise (Error (p.ppat_loc, !env, Inlined_record_escape))
         | _ ->
             ()
       in
@@ -1794,7 +1794,7 @@ and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
         if is_recarg desc <> allow_recarg then
-          raise (Error (loc, env, Outside_class));
+          raise (Error (loc, env, Inlined_record_escape));
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -4011,9 +4011,10 @@ let report_error env ppf = function
   | Exception_pattern_below_toplevel ->
       fprintf ppf
         "@[Exception patterns must be at the top level of a match case.@]"
-  | Constraint_pattern_inlined_record ->
+  | Inlined_record_escape ->
       fprintf ppf
-        "@[Type constraint is not allowed on an inlined record argument.@]"
+        "@[This form is not allowed as the type of the inlined record could \
+         escape.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

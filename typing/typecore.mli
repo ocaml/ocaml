@@ -109,7 +109,7 @@ type error =
   | Invalid_for_loop_index
   | No_value_clauses
   | Exception_pattern_below_toplevel
-  | Constraint_pattern_inlined_record
+  | Inlined_record_escape
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
