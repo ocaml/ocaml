@@ -1752,9 +1752,9 @@ let unify_exp env exp expected_ty =
     Printtyp.raw_type_expr expected_ty; *)
     unify_exp_types exp.exp_loc env exp.exp_type expected_ty
 
-let rec type_exp ?allow_recarg env sexp =
+let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
-  type_expect ?allow_recarg env sexp (newvar ())
+  type_expect ?recarg env sexp (newvar ())
 
 (* Typing of an expression with an expected type.
    This provide better error messages, and allows controlled
@@ -1762,17 +1762,17 @@ let rec type_exp ?allow_recarg env sexp =
    In the principal case, [type_expected'] may be at generic_level.
  *)
 
-and type_expect ?in_function ?allow_recarg env sexp ty_expected =
+and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
   Typetexp.warning_enter_scope ();
   Typetexp.warning_attribute sexp.pexp_attributes;
-  let exp = type_expect_ ?in_function ?allow_recarg env sexp ty_expected in
+  let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
   Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
+and type_expect_ ?in_function ?(recarg=false) env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
@@ -1792,7 +1792,7 @@ and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        if is_recarg desc <> allow_recarg then
+        if is_recarg desc <> recarg then
           raise (Error (loc, env, Inlined_record_escape));
         rue {
           exp_desc =
@@ -2050,7 +2050,7 @@ and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
           None -> None
         | Some sexp ->
             if !Clflags.principal then begin_def ();
-            let exp = type_exp ~allow_recarg env sexp in
+            let exp = type_exp ~recarg env sexp in
             if !Clflags.principal then begin
               end_def ();
               generalize_structure exp.exp_type
@@ -2767,7 +2767,7 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();
-  let record = type_exp ~allow_recarg:true env srecord in
+  let record = type_exp ~recarg:true env srecord in
   if !Clflags.principal then begin
     end_def ();
     generalize_structure record.exp_type
@@ -3072,7 +3072,7 @@ and type_label_exp create env loc ty_expected
   in
   (lid, label, {arg with exp_type = instance env arg.exp_type})
 
-and type_argument ?allow_recarg env sarg ty_expected' ty_expected =
+and type_argument ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -3157,7 +3157,7 @@ and type_argument ?allow_recarg env sarg ty_expected' ty_expected =
                      func let_var) }
       end
   | _ ->
-      let texp = type_expect ?allow_recarg env sarg ty_expected' in
+      let texp = type_expect ?recarg env sarg ty_expected' in
       unify_exp env texp ty_expected;
       texp
 
@@ -3399,18 +3399,18 @@ and type_construct env loc lid sarg ty_expected attrs =
   in
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp env texp (instance env ty_expected);
-  let allow_recarg = constr.cstr_inlined <> None in
-  if allow_recarg then begin
+  let recarg = constr.cstr_inlined <> None in
+  if recarg then begin
     match sargs with
     | [{pexp_desc =
           Pexp_ident _ |
           Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
         ()
     | _ ->
-        raise (Error(loc, env, Outside_class))
+        raise (Error(loc, env, Inlined_record_escape))
   end;
   let args =
-    List.map2 (fun e (t,t0) -> type_argument ~allow_recarg env e t t0) sargs
+    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
@@ -4032,7 +4032,7 @@ let () =
 let () =
   Env.add_delayed_check_forward := add_delayed_check
 
-(* drop ?allow_recarg argument from the external API *)
+(* drop ?recarg argument from the external API *)
 let type_expect ?in_function env e ty = type_expect ?in_function env e ty
 let type_exp env e = type_exp env e
 let type_argument env e t1 t2 = type_argument env e t1 t2
