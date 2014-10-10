@@ -1793,6 +1793,8 @@ and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
+        if is_recarg desc <> allow_recarg then
+          raise (Error (loc, env, Outside_class));
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -1816,8 +1818,6 @@ and type_expect_ ?in_function ?(allow_recarg=false) env sexp ty_expected =
                 Env.add_required_global (Path.head p);
                 Texp_ident(path, lid, desc)*)
             | _ ->
-                if not allow_recarg && is_recarg desc then
-                  raise (Error (loc, env, Outside_class));
                 Texp_ident(path, lid, desc)
           end;
           exp_loc = loc; exp_extra = [];
@@ -3401,19 +3401,18 @@ and type_construct env loc lid sarg ty_expected attrs =
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp env texp (instance env ty_expected);
   let allow_recarg = constr.cstr_inlined <> None in
+  if allow_recarg then begin
+    match sargs with
+    | [{pexp_desc =
+          Pexp_ident _ |
+          Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
+        ()
+    | _ ->
+        raise (Error(loc, env, Outside_class))
+  end;
   let args =
     List.map2 (fun e (t,t0) -> type_argument ~allow_recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
-  if allow_recarg then begin (* check inlined argument *)
-    match args with
-    | [{exp_desc =
-        (Texp_ident (_, _, d) |
-         Texp_record (_, Some {exp_desc = Texp_ident (_, _, d)}))}]
-      when is_recarg d
-        -> ()
-    | [{exp_desc = Texp_record (_, None)}] -> ()
-    | _ -> raise (Error(loc, env, Outside_class))
-  end;
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
