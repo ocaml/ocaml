@@ -1089,8 +1089,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         | _ ->
             ()
       in
-      if constr.cstr_inlined <> None then
-        List.iter check_non_escaping sargs;
+      if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
 
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
