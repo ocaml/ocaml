@@ -67,6 +67,7 @@ type error =
   | Invalid_for_loop_index
   | No_value_clauses
   | Exception_pattern_below_toplevel
+  | Constraint_pattern_inlined_record
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -112,7 +113,7 @@ let rp node =
 
 
 let is_recarg d =
-  match d.val_type.desc with
+  match (repr d.val_type).desc with
   | Tconstr(p, _, _) ->
       begin match Path.constructor_typath p with
       | Path.Regular _ -> false
@@ -1075,15 +1076,23 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types_gadt loc env ty_res expected_ty
       else
         unify_pat_types loc !env ty_res expected_ty;
-      let args =
-        if constr.cstr_inlined = None then
-          List.map2 (fun p t -> type_pat p t) sargs ty_args
-        else match sargs, ty_args with
-          (* TODO: accept Ppat_alias *)
-        | [{ppat_desc=Ppat_any | Ppat_record _ | Ppat_var _} as p], [ty] ->
-            [type_pat p ty]
-        | _ -> raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt, 1, 1)))
+
+      let rec check_non_escaping p =
+        match p.ppat_desc with
+        | Ppat_or (p1, p2) ->
+            check_non_escaping p1;
+            check_non_escaping p2
+        | Ppat_alias (p, _) ->
+            check_non_escaping p
+        | Ppat_constraint _ ->
+            raise (Error (p.ppat_loc, !env, Constraint_pattern_inlined_record))
+        | _ ->
+            ()
       in
+      if constr.cstr_inlined <> None then
+        List.iter check_non_escaping sargs;
+
+      let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
         pat_desc=Tpat_construct(lid, constr, args);
         pat_loc = loc; pat_extra=[];
@@ -4003,6 +4012,9 @@ let report_error env ppf = function
   | Exception_pattern_below_toplevel ->
       fprintf ppf
         "@[Exception patterns must be at the top level of a match case.@]"
+  | Constraint_pattern_inlined_record ->
+      fprintf ppf
+        "@[Type constraint is not allowed on an inlined record argument.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
