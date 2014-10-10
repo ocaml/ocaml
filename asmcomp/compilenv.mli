@@ -62,6 +62,7 @@ val new_structured_constant:
 val structured_constants:
   unit -> (string * bool * Clambda.ustructured_constant) list
 val add_exported_constant: string -> unit
+val clear_structured_constants: unit -> unit
 
 type structured_constants
 val snapshot: unit -> structured_constants

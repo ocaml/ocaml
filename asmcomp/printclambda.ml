@@ -31,14 +31,16 @@ let rec structured_constant ppf = function
       List.iter (fun f -> fprintf ppf ",%F" f) fl;
       fprintf ppf ")"
   | Uconst_string s -> fprintf ppf "%S" s
+  | Uconst_closure _ -> failwith "TODO"
 
 and uconstant ppf = function
-  | Uconst_ref (s, c) ->
+  | Uconst_ref (s, Some c) ->
       fprintf ppf "%S=%a" s structured_constant c
+  | Uconst_ref (s, None) -> fprintf ppf "%S"s
   | Uconst_int i -> fprintf ppf "%i" i
   | Uconst_ptr i -> fprintf ppf "%ia" i
 
-let rec lam ppf = function
+and lam ppf = function
   | Uvar id ->
       Ident.print ppf id
   | Uconst c -> uconstant ppf c
@@ -157,6 +159,8 @@ let rec lam ppf = function
         else if k = Lambda.Cached then "cache"
         else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
+  | Uunreachable ->
+      fprintf ppf "unreachable"
 
 and sequence ppf ulam = match ulam with
   | Usequence(l1, l2) ->
