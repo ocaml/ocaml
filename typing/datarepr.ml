@@ -17,11 +17,6 @@ open Asttypes
 open Types
 open Btype
 
-type error =
-  | GADT_inlined_record
-
-exception Error of Location.t * error
-
 (* Simplified version of Ctype.free_vars *)
 let free_vars ty =
   let ret = ref TypeSet.empty in
@@ -46,7 +41,7 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args cd_args cd_res type_params loc path type_manifest rep =
+let constructor_args cd_args cd_res loc path rep =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
@@ -63,23 +58,14 @@ let constructor_args cd_args cd_res type_params loc path type_manifest rep =
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
-      let type_params =
-        match cd_res with
-        | None -> type_params
-        | Some _ -> raise (Error (loc, GADT_inlined_record))
-      in
-      let type_manifest =
-        match type_manifest with
-        | Some p -> Some (newgenconstr p type_params)
-        | None -> None
-      in
+      let type_params = TypeSet.elements arg_vars_set in
       let tdecl =
         {
           type_params;
           type_arity = List.length type_params;
           type_kind = Type_record (lbls, rep);
           type_private = Public;
-          type_manifest;
+          type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
           type_newtype_level = None;
           type_loc = Location.none;
@@ -114,16 +100,11 @@ let constructor_descrs ty_path decl cstrs =
                    describe_constructors idx_const (idx_nonconst+1) rem) in
 
         let name = Ident.name cd_id in
-        let subpath p = Path.Pdot (p, name, Path.nopos) in
-        let type_manifest =
-          match decl.type_manifest with
-          | Some {desc = Tconstr(p, _, _)} -> Some (subpath p)
-          | _ -> None
-        in
         let existentials, cstr_args, cstr_inlined =
           constructor_args cd_args cd_res
-            decl.type_params cd_loc
-            (subpath ty_path) type_manifest (Record_inlined idx_nonconst)
+            cd_loc
+            (Path.Pdot (ty_path, name, Path.nopos))
+            (Record_inlined idx_nonconst)
         in
         let cstr =
           { cstr_name = Ident.name cd_id;
@@ -152,8 +133,8 @@ let extension_descr path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_args ext.ext_ret_type
-      ext.ext_type_params ext.ext_loc
-      path_ext None Record_extension
+      ext.ext_loc
+      path_ext Record_extension
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
@@ -230,16 +211,3 @@ let labels_of_type ty_path decl =
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
   | Type_variant _ | Type_abstract | Type_open -> []
-
-let report_error ppf = function
-  | GADT_inlined_record ->
-      Format.fprintf ppf
-        "Record arguments are not allowed on GADT constructors."
-
-let () =
-  Location.register_error_of_exn
-    (function
-      | Error (loc, err) ->
-          Some (Location.error_of_printer loc report_error err)
-      | _ -> None
-    )
