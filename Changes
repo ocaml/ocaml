@@ -35,6 +35,8 @@ Standard library:
 - PR#6584: ocamldep support for "-open M"
   (Gabriel Scherer, review by Damien Doligez, report by Hezekiah M. Carty)
 - PR#6553: Missing command line options for ocamldoc
+- PR#6557: String.sub throws Invalid_argument("Bytes.sub")
+  (Damien Doligez, report by Oliver Bandel)
 - PR#6562: Fix ocamldebug module source lookup
   (Leo White)
 - PR#6588: Code generation errors for ARM
