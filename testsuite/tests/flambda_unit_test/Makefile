@@ -140,9 +140,10 @@ main.cmo: $(OBJS:.cmo=.cmi)
 main: $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -g -o main $(OTHEROBJS) $(OBJS) main.cmo
 
+# run: main
+# 	@$(OCAMLRUN) main \
+# 	&& echo " => passed" || echo " => failed"
 run: main
-	@$(OCAMLRUN) main \
-	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
 	@rm -f ./main *.out
