@@ -36,3 +36,4 @@ type typath =
   | Cstr of t * string
 
 val constructor_typath: t -> typath
+val is_constructor_typath: t -> bool

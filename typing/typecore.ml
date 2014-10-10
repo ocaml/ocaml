@@ -114,13 +114,8 @@ let rp node =
 
 let is_recarg d =
   match (repr d.val_type).desc with
-  | Tconstr(p, _, _) ->
-      begin match Path.constructor_typath p with
-      | Path.Regular _ -> false
-      | _ -> true
-      end
-  | _ ->
-      false
+  | Tconstr(p, _, _) -> Path.is_constructor_typath p
+  | _ -> false
 
 type recarg =
   | Allowed
@@ -3887,6 +3882,12 @@ let report_error env ppf = function
       fprintf ppf "The record field %a is not mutable" longident lid
   | Wrong_name (eorp, ty, kind, p, lid) ->
       reset_and_mark_loops ty;
+      if Path.is_constructor_typath p then begin
+        fprintf ppf "@[The field %a is not part of the inlined record \
+                     argument for the %a constructor@]"
+          longident lid
+          path p;
+      end else begin
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
       fprintf ppf "The %s %a does not belong to type %a@]"
@@ -3894,6 +3895,7 @@ let report_error env ppf = function
         longident lid (*kind*) path p;
       if kind = "record" then Label.spellcheck ppf env p lid
                          else Constructor.spellcheck ppf env p lid
+      end
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let name = if kind = "record" then "field" else "constructor" in
       report_ambiguous_type_error ppf env tp tpl

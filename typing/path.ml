@@ -70,3 +70,8 @@ let constructor_typath = function
       if is_uident (last ty_path) then Ext (ty_path, s)
       else Cstr (ty_path, s)
   | p -> Regular p
+
+let is_constructor_typath p =
+  match constructor_typath p with
+  | Regular _ -> false
+  | _ -> true
