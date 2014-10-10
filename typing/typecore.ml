@@ -122,6 +122,12 @@ let is_recarg d =
   | _ ->
       false
 
+type recarg =
+  | Allowed
+  | Required
+  | Rejected
+
+
 let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
 
@@ -1772,7 +1778,7 @@ and type_expect ?in_function ?recarg env sexp ty_expected =
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_ ?in_function ?(recarg=false) env sexp ty_expected =
+and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
@@ -1792,8 +1798,11 @@ and type_expect_ ?in_function ?(recarg=false) env sexp ty_expected =
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
         end;
-        if is_recarg desc <> recarg then
-          raise (Error (loc, env, Inlined_record_escape));
+        begin match is_recarg desc, recarg with
+        | _, Allowed | true, Required | false, Rejected -> ()
+        | true, Rejected | false, Required ->
+            raise (Error (loc, env, Inlined_record_escape));
+        end;
         rue {
           exp_desc =
             begin match desc.val_kind with
@@ -2767,7 +2776,7 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();
-  let record = type_exp ~recarg:true env srecord in
+  let record = type_exp ~recarg:Allowed env srecord in
   if !Clflags.principal then begin
     end_def ();
     generalize_structure record.exp_type
@@ -3399,16 +3408,19 @@ and type_construct env loc lid sarg ty_expected attrs =
   in
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp env texp (instance env ty_expected);
-  let recarg = constr.cstr_inlined <> None in
-  if recarg then begin
-    match sargs with
-    | [{pexp_desc =
-          Pexp_ident _ |
-          Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
-        ()
-    | _ ->
-        raise (Error(loc, env, Inlined_record_escape))
-  end;
+  let recarg =
+    match constr.cstr_inlined with
+    | None -> Rejected
+    | Some _ ->
+        begin match sargs with
+        | [{pexp_desc =
+              Pexp_ident _ |
+              Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
+            Required
+        | _ ->
+            raise (Error(loc, env, Inlined_record_escape))
+        end
+  in
   let args =
     List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
