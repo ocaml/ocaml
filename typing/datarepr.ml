@@ -41,7 +41,7 @@ let free_vars ty =
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
 
-let constructor_args cd_args cd_res loc path rep =
+let constructor_args cd_args cd_res path rep =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
@@ -102,7 +102,6 @@ let constructor_descrs ty_path decl cstrs =
         let name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           constructor_args cd_args cd_res
-            cd_loc
             (Path.Pdot (ty_path, name, Path.nopos))
             (Record_inlined idx_nonconst)
         in
@@ -133,7 +132,6 @@ let extension_descr path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_args ext.ext_ret_type
-      ext.ext_loc
       path_ext Record_extension
   in
     { cstr_name = Path.last path_ext;

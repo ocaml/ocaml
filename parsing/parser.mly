@@ -2001,13 +2001,6 @@ constr_longident:
   | FALSE                                       { Lident "false" }
   | TRUE                                        { Lident "true" }
 ;
-constr_qual_longident:
-    mod_longident %prec below_DOT { $1 }
-  | mod_longident DOT LIDENT DOT UIDENT %prec below_DOT
-    { Ldot(Ldot($1, $3), $5) }
-  | LIDENT DOT UIDENT %prec below_DOT
-    { Ldot(Lident $1, $3) }
-;
 label_longident:
     LIDENT                                      { Lident $1 }
   | mod_longident DOT LIDENT                    { Ldot($1, $3) }
@@ -2015,7 +2008,6 @@ label_longident:
 type_longident:
     LIDENT                                      { Lident $1 }
   | mod_ext_longident DOT LIDENT                { Ldot($1, $3) }
-  | BANG constr_qual_longident                  { $2 }
 ;
 mod_longident:
     UIDENT                                      { Lident $1 }

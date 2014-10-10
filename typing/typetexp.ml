@@ -52,9 +52,6 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
-  | Not_a_variant_type of Longident.t
-  | Not_an_inlined_record of Longident.t
-  | Unbound_constructor_in_type of string * Longident.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -284,60 +281,6 @@ let unbound_constructor_error env lid =
 let unbound_label_error env lid =
   narrow_unbound_lid_error env lid.loc lid.txt
     (fun lid -> Unbound_label lid)
-
-let find_constructor_in_type env loc ty_id cstr_id =
-  let err e = raise (Error (loc, env, e)) in
-  let (ty_path, ty_decl) = find_type env loc ty_id in
-  match ty_decl.type_kind with
-  | Type_variant _ ->
-      let (cstrs, _) =
-        try Env.find_type_descrs ty_path env
-        with Not_found -> assert false
-      in
-      begin try List.find (fun c -> c.cstr_name = cstr_id) cstrs
-      with Not_found -> err (Unbound_constructor_in_type (cstr_id, ty_id))
-      end
-  | _ ->
-      err (Not_a_variant_type ty_id)
-
-let is_typ_lid lid =
-  match (Longident.last lid).[0] with
-  | 'a'..'z' | '_' -> true
-  | _ -> false
-
-let find_qual_constructor env loc lid =
-  match lid with
-  | Longident.Ldot (ty_id, cstr_id) when is_typ_lid ty_id ->
-      find_constructor_in_type env loc ty_id cstr_id
-  | _ -> find_constructor env loc lid
-
-let find_type env loc lid =
-  if is_typ_lid lid then
-    find_type env loc lid
-  else
-    let cstr = find_qual_constructor env loc lid in
-    if cstr.cstr_inlined = None then begin
-      let full_name =
-        match cstr with
-        | {cstr_name;
-           cstr_tag = Cstr_constant _ | Cstr_block _;
-           cstr_res = {desc = Tconstr(p, _, _)} } ->
-            Longident.Ldot (Ctype.lid_of_path p, cstr_name)
-        | _ -> lid
-      in
-      raise (Error (loc, env, Not_an_inlined_record full_name));
-    end;
-    begin match cstr.cstr_args with
-    | [{desc=Tconstr(path, _, _)}] ->
-        let decl =
-          try Env.find_type path env
-          with Not_found ->
-            assert false
-        in
-        (path, decl)
-    | _ -> assert false
-    end
-
 
 (* Support for first-class modules. *)
 
@@ -1060,17 +1003,6 @@ let report_error env ppf = function
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
       fprintf ppf "The module %a is a functor, not a structure" longident lid
-  | Not_a_variant_type lid ->
-      fprintf ppf
-        "The type %a is not a regular variant type"
-        longident lid
-  | Not_an_inlined_record lid ->
-      fprintf ppf
-        "The constructor %a does not have an inline record argument"
-        longident lid
-  | Unbound_constructor_in_type (c_lid, t_lid) ->
-      fprintf ppf "Unbound constructor %s in type %a" c_lid
-        longident t_lid
 
 let () =
   Location.register_error_of_exn
