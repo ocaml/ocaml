@@ -34,6 +34,8 @@ OCaml 4.02.1:
   (Xavier Leroy)
 - PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
   Mark Shinwell).
+- PR#6588: Code generation errors for ARM
+  (Mark Shinwell, Xavier Leroy)
 - PR#6590: Improve Windows (MSVC and mingw) build
   (Chen Gang)
 
