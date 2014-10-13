@@ -48,6 +48,7 @@ val uniq_sort : ('a -> 'a -> int) -> 'a list -> 'a list
            comparison function *)
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
+val may_fold: ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)

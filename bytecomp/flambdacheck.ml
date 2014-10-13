@@ -34,7 +34,7 @@ let every_used_identifier_is_bound flam =
 
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _ | Flet _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
       -> ()
@@ -67,7 +67,7 @@ let every_used_identifier_is_bound flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _
-    | Fprim _ | Fswitch _ | Fstaticraise _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
       as exp ->
@@ -132,7 +132,7 @@ let no_identifier_bound_multiple_times flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _
-    | Fprim _ | Fswitch _ | Fstaticraise _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
       -> ()
@@ -168,7 +168,7 @@ let every_bound_variable_is_from_current_compilation_unit
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _
-    | Fprim _ | Fswitch _ | Fstaticraise _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
       -> ()
@@ -200,7 +200,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
       as exp ->
@@ -287,7 +287,7 @@ let used_function_within_closure flam =
     | Fassign _ | Fvar _ | Fclosure _
     | Fsymbol _ | Fconst _ | Fapply _
     | Flet _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
       -> ()

@@ -106,6 +106,22 @@ let rec lam ppf = function
         (IntSet.cardinal sw.fs_numconsts)
         (IntSet.cardinal sw.fs_numblocks)
         lam larg switch sw
+  | Fstringswitch(arg, cases, default, _) ->
+      let switch ppf cases =
+        let spc = ref false in
+        List.iter
+         (fun (s, l) ->
+           if !spc then fprintf ppf "@ " else spc := true;
+           fprintf ppf "@[<hv 1>case \"%s\":@ %a@]" (String.escaped s) lam l)
+          cases;
+        begin match default with
+        | Some default ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>default:@ %a@]" lam default
+        | None -> ()
+        end in
+      fprintf ppf
+       "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
   | Fstaticraise (i, ls,_)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

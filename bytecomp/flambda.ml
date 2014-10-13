@@ -35,6 +35,9 @@ type 'a flambda =
   | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
   | Fprim of Lambda.primitive * 'a flambda list * Debuginfo.t * 'a
   | Fswitch of 'a flambda * 'a fswitch * 'a
+  (* Restrictions on Lambda.Lstringswitch also apply here *)
+  | Fstringswitch of 'a flambda * (string * 'a flambda) list *
+                     'a flambda option * 'a
   | Fstaticraise of static_exception * 'a flambda list * 'a
   | Fstaticcatch of
       static_exception * Variable.t list * 'a flambda * 'a flambda * 'a
@@ -137,6 +140,7 @@ let data_at_toplevel_node = function
   | Fvariable_in_closure(_,data)
   | Fapply(_,data)
   | Fswitch(_,_,data)
+  | Fstringswitch(_,_,_,data)
   | Fsend(_,_,_,_,_,data)
   | Fprim(_,_,_,data)
   | Fstaticraise (_,_,data)
@@ -164,6 +168,7 @@ let description_of_toplevel_node = function
   | Fvariable_in_closure(_,data) -> "variable_in_closure"
   | Fapply(_,data) -> "apply"
   | Fswitch(arg, sw,data) -> "switch"
+  | Fstringswitch(arg, cases, default, data) -> "stringswitch"
   | Fsend(kind, met, obj, args, _,data) -> "send"
   | Fprim(_, args, _,data) -> "prim"
   | Fstaticraise (i, args,data) -> "staticraise"
@@ -247,6 +252,11 @@ let rec same l1 l2 =
   | Fswitch (a1, s1, _), Fswitch (a2, s2, _) ->
       same a1 a2 && sameswitch s1 s2
   | Fswitch _, _ | _, Fswitch _ -> false
+  | Fstringswitch (a1, s1, d1, _), Fstringswitch (a2, s2, d2, _) ->
+      same a1 a2 &&
+      samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
+      sameoption same d1 d2
+  | Fstringswitch _, _ | _, Fstringswitch _ -> false
   | Fstaticraise (e1, a1, _), Fstaticraise (e2, a2, _) ->
       Static_exception.equal e1 e2 && samelist same a1 a2
   | Fstaticraise _, _ | _, Fstaticraise _ -> false
@@ -293,9 +303,6 @@ and sameswitch fs1 fs2 =
   fs1.fs_numblocks = fs2.fs_numblocks &&
   samelist samecase fs1.fs_consts fs2.fs_consts &&
   samelist samecase fs1.fs_blocks fs2.fs_blocks &&
-  (match (fs1.fs_failaction, fs2.fs_failaction) with
-    | (None, None) -> true
-    | (Some a1, Some a2) -> same a1 a2
-    | _ -> false)
+  sameoption same fs1.fs_failaction fs2.fs_failaction
 
 let can_be_merged = same

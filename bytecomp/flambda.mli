@@ -104,6 +104,9 @@ type 'a flambda =
   | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
   | Fprim of Lambda.primitive * 'a flambda list * Debuginfo.t * 'a
   | Fswitch of 'a flambda * 'a fswitch * 'a
+  (* Restrictions on Lambda.Lstringswitch also apply here *)
+  | Fstringswitch of 'a flambda * (string * 'a flambda) list *
+                     'a flambda option * 'a
   | Fstaticraise of static_exception * 'a flambda list * 'a
   | Fstaticcatch of
       static_exception * Variable.t list * 'a flambda * 'a flambda * 'a

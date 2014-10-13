@@ -109,6 +109,11 @@ let may_map f = function
     Some x -> Some (f x)
   | None -> None
 
+let may_fold f a b =
+  match a with
+  | None -> b
+  | Some a -> f a b
+
 (* File functions *)
 
 let find_in_path path name =

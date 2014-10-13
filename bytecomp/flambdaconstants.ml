@@ -292,6 +292,12 @@ module NotConstants(P:Param) = struct
       List.iter (fun (_,l) -> mark_loop [] l) sw.fs_blocks;
       Misc.may (fun l -> mark_loop [] l) sw.fs_failaction
 
+    | Fstringswitch (arg,sw,def,_) ->
+      mark_curr curr;
+      mark_loop [] arg;
+      List.iter (fun (_,l) -> mark_loop [] l) sw;
+      Misc.may (fun l -> mark_loop [] l) def
+
     | Fsend (_,f1,f2,fl,_,_) ->
       mark_curr curr;
       mark_loop [] f1;

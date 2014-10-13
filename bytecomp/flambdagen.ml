@@ -212,6 +212,12 @@ let to_flambda
                   fs_blocks = List.map aux sw.sw_blocks;
                   fs_failaction = Misc.may_map (close env) sw.sw_failaction },
                 nid ~name:"switch" ())
+    | Lstringswitch(arg, sw, def) ->
+        Fstringswitch(
+          close env arg,
+          List.map (fun (s, e) -> s, close env e) sw,
+          Misc.may_map (close env) def,
+          nid ~name:"stringswitch" ())
     | Lstaticraise (i, args) ->
         Fstaticraise (Static_exception.of_int i, close_list env args, nid ())
     | Lstaticcatch(body, (i, ids), handler) ->
@@ -372,9 +378,9 @@ let to_flambda
 let rec lift_strings acc = function
     | Lvar _ as lam ->
         acc, lam
-    | Lconst (Const_base (Asttypes.Const_string s)) ->
+    | Lconst (Const_base (Asttypes.Const_string (s,o))) ->
         let id = Ident.create "constant_string" in
-        (id, s) :: acc, Lvar id
+        (id, (s,o)) :: acc, Lvar id
     | Lconst (Const_base (Asttypes.Const_nativeint _ | Asttypes.Const_char _ |
                           Asttypes.Const_float _ | Asttypes.Const_int32 _ |
                           Asttypes.Const_int64 _ | Asttypes.Const_int _) |
@@ -414,6 +420,16 @@ let rec lift_strings acc = function
               let acc, failaction = lift_strings acc failaction in
               acc, Some failaction in
         acc, Lswitch(arg, { sw with sw_consts; sw_blocks; sw_failaction })
+    | Lstringswitch(arg, sw, def) ->
+        let acc, arg = lift_strings acc arg in
+        let acc, sw = lift_strings_couple_list acc sw in
+        let acc, def =
+          match def with
+          | None -> acc, None
+          | Some def ->
+              let acc, def = lift_strings acc def in
+              acc, Some def in
+        acc, Lstringswitch(arg, sw, def)
     | Lstaticraise (i, args) ->
         let acc, args = lift_strings_list acc args in
         acc, Lstaticraise (i, args)
@@ -468,9 +484,9 @@ and lift_strings_couple_list :
 
 let lift_strings_to_toplevel lam =
   let bindings, lam = lift_strings [] lam in
-  List.fold_left (fun lam (id, string) ->
+  List.fold_left (fun lam (id, (string,opt)) ->
       Llet(Strict,id,
-           Lconst (Const_base (Asttypes.Const_string string)),
+           Lconst (Const_base (Asttypes.Const_string (string,opt))),
            lam))
     lam bindings
 
