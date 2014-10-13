@@ -164,10 +164,10 @@ let to_flambda
     | Lprim(Pdirapply loc,[funct;arg])
     | Lprim(Prevapply loc,[arg;funct]) ->
         close env (Lapply(funct, [arg], loc))
-    | Lprim(Praise, [Levent(arg, ev)]) ->
+    | Lprim(Praise kind, [Levent(arg, ev)]) ->
         let arg = close env arg in
         let arg = if for_bytecode then Fevent (arg, ev, nid ()) else arg in
-        Fprim(Praise, [arg], Debuginfo.from_raise ev, nid ())
+        Fprim(Praise kind, [arg], Debuginfo.from_raise ev, nid ())
     | Lprim(Pfield i, [Lprim(Pgetglobal id, [])])
       when Ident.same id current_unit_id ->
         Fprim(Pgetglobalfield(id,i), [], Debuginfo.none,
