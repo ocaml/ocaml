@@ -670,6 +670,7 @@ flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
+flag ["ocaml"; "annot"; "pack"] (A "-annot");;
 flag ["ocaml"; "bin_annot"; "compile"] (A "-bin-annot");;
 flag ["ocaml"; "bin_annot"; "pack"] (A "-bin-annot");;
 flag ["ocaml"; "safe_string"; "compile"] (A "-safe-string");;
