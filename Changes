@@ -46,6 +46,8 @@ Standard library:
 - PR#6599: ocamlbuild: add -bin-annot when using -pack
   (Christopher Zimmermann)
 - PR#6602: Fatal error when tracing a function with abstract type
+- ocamlbuild: add an -ocamlmklib option to change the ocamlmklib command
+  (Jérôme Vouillon)
 
 OCaml 4.02.0:
 -------------
