@@ -40,7 +40,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo
+  utils/consistbl.cmo utils/ext_types.cmo \
+  utils/sort_connected_components.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/ast_helper.cmo \
@@ -70,6 +71,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+  bytecomp/symbol.cmo bytecomp/abstract_identifiers.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
 
