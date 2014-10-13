@@ -168,7 +168,7 @@ and sequence ppf ulam = match ulam with
 and const ppf c = let open Asttypes in match c with
   | Fconst_base(Const_int n) -> fprintf ppf "%i" n
   | Fconst_base(Const_char c) -> fprintf ppf "%C" c
-  | Fconst_base(Const_string s) -> fprintf ppf "%S" s
+  | Fconst_base(Const_string (s,_)) -> fprintf ppf "%S" s
   | Fconst_immstring s -> fprintf ppf "#%S" s
   | Fconst_base(Const_float f) -> fprintf ppf "%s" f
   | Fconst_base(Const_int32 n) -> fprintf ppf "%lil" n
