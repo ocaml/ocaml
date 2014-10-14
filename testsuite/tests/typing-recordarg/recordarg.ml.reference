@@ -10,7 +10,7 @@ Error: This form is not allowed as the type of the inlined record could escape.
 # Characters 14-15:
   let f () = A {a = 1};; (* customized error message *)
                 ^
-Error: The field a is not part of the inlined record argument for the t.A constructor
+Error: The field a is not part of the record argument for the t.A constructor
 # val f : unit -> t = <fun>
 #   type _ t = A : { x : 'a; y : 'b; } -> 'a t
 # val f : 'a t -> 'a t = <fun>
