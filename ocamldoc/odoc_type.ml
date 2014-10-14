@@ -17,20 +17,24 @@ module Name = Odoc_name
 type private_flag = Asttypes.private_flag =
     Private | Public
 
-(** Description of a variant type constructor. *)
-type variant_constructor = {
-    vc_name : string ;
-    vc_args : Types.type_expr list ; (** arguments of the constructor *)
-    vc_ret : Types.type_expr option ;
-    mutable vc_text : Odoc_types.info option ; (** optional user description *)
-  }
-
 (** Description of a record type field. *)
 type record_field = {
     rf_name : string ;
     rf_mutable : bool ; (** true if mutable *)
     rf_type : Types.type_expr ;
     mutable rf_text : Odoc_types.info option ; (** optional user description *)
+  }
+
+type constructor_args =
+  | Cstr_record of record_field list
+  | Cstr_tuple of Types.type_expr list
+
+(** Description of a variant type constructor. *)
+type variant_constructor = {
+    vc_name : string ;
+    vc_args : constructor_args ;
+    vc_ret : Types.type_expr option ;
+    mutable vc_text : Odoc_types.info option ; (** optional user description *)
   }
 
 (** The various kinds of type. *)

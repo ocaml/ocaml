@@ -1316,15 +1316,14 @@ module Analyser =
                     let new_xt =
                       match tt_ext.ext_kind with
                           Text_decl(args, ret_type) ->
-                          let args =
+                          let xt_args =
                             match args with
-                            | Cstr_tuple l -> l
+                            | Cstr_tuple l -> Cstr_tuple (List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) l)
                             | Cstr_record _ -> assert false
                           in
                             {
                               xt_name = complete_name;
-                              xt_args =
-                                List.map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) args;
+                              xt_args;
                               xt_ret =
                                 may_map (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type) ret_type;
                               xt_type_extension = new_te;
@@ -1335,7 +1334,7 @@ module Analyser =
                         | Text_rebind(path, _) ->
                             {
                               xt_name = complete_name;
-                              xt_args = [];
+                              xt_args = Cstr_tuple [];
                               xt_ret = None;
                               xt_type_extension = new_te;
                               xt_alias =
@@ -1378,18 +1377,15 @@ module Analyser =
               Text_decl(tt_args, tt_ret_type) ->
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
-                let tt_args =
+                let ex_args =
                   match tt_args with
-                  | Cstr_tuple l -> l
-                  | Cstr_record _ -> assert false
+                  | Cstr_tuple l -> Cstr_tuple (List.map (fun c -> Odoc_env.subst_type env c.ctyp_type) l)
+                  | Cstr_record l -> assert false (* TODO *)
                 in
                 {
                   ex_name = complete_name ;
                   ex_info = comment_opt ;
-                  ex_args =
-                    List.map
-                      (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type)
-                      tt_args;
+                  ex_args;
                   ex_ret =
                     Misc.may_map
                       (fun ctyp -> Odoc_env.subst_type new_env ctyp.ctyp_type)
@@ -1408,7 +1404,7 @@ module Analyser =
                 {
                   ex_name = complete_name ;
                   ex_info = comment_opt ;
-                  ex_args = [] ;
+                  ex_args = Cstr_tuple [] ;
                   ex_ret = None ;
                   ex_alias =
                     Some { ea_name =

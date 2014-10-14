@@ -222,12 +222,13 @@ let string_of_type t =
            in
            P.sprintf "  | %s%s%s" cons.M.vc_name (
              match cons.M.vc_args, cons.M.vc_ret with
-              | [], None -> ""
-              | li, None -> " of " ^ (string_of_parameters li)
-              | [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
-              | li, Some r ->
+              | M.Cstr_tuple [], None -> ""
+              | M.Cstr_tuple li, None -> " of " ^ (string_of_parameters li)
+              | M.Cstr_tuple [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
+              | M.Cstr_tuple li, Some r ->
                  P.sprintf " : %s -> %s" (string_of_parameters li)
                    (Odoc_print.string_of_type_expr r)
+              | M.Cstr_record _, _ -> assert false
              ) comment
            ) l
         )
@@ -256,6 +257,7 @@ let string_of_type t =
 
 let string_of_type_extension te =
   let module M = Odoc_extension in
+  let module T = Odoc_type in
     "type "
     ^(String.concat ""
         (List.map
@@ -272,19 +274,21 @@ let string_of_type_extension te =
               "  | "
               ^(Name.simple x.M.xt_name)
               ^(match x.M.xt_args, x.M.xt_ret with
-                  | [], None -> ""
-                  | l, None ->
+                  | T.Cstr_tuple [], None -> ""
+                  | T.Cstr_tuple l, None ->
                       " of " ^
                         (String.concat " * "
                            (List.map
                               (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
-                  | [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
-                  | l, Some r ->
+                  | T.Cstr_tuple [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
+                  | T.Cstr_tuple l, Some r ->
                       " : " ^
                         (String.concat " * "
                            (List.map
                               (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
                       ^ " -> " ^ Odoc_print.string_of_type_expr r
+                  | T.Cstr_record _, _ ->
+                      assert false
                )
               ^(match x.M.xt_alias with
                     None -> ""
@@ -309,23 +313,26 @@ let string_of_type_extension te =
      )
 
 let string_of_exception e =
+  let module T = Odoc_type in
   let module M = Odoc_exception in
   "exception "^(Name.simple e.M.ex_name)^
   (match e.M.ex_args, e.M.ex_ret with
-     [], None -> ""
-   | l,None ->
+     T.Cstr_tuple [], None -> ""
+   | T.Cstr_tuple l,None ->
        " of "^
        (String.concat " * "
          (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
-   | [],Some r ->
+   | T.Cstr_tuple [],Some r ->
        " : "^
        (Odoc_print.string_of_type_expr r)
-   | l,Some r ->
+   | T.Cstr_tuple l,Some r ->
        " : "^
        (String.concat " * "
          (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))^
        " -> "^
        (Odoc_print.string_of_type_expr r)
+   | T.Cstr_record _, _ ->
+       assert false
   )^
   (match e.M.ex_alias with
     None -> ""

@@ -383,12 +383,15 @@ class man =
       bs b "\n"
 
     (** Print groff string to display a [Types.type_expr list].*)
-    method man_of_type_expr_list ?par b m_name sep l =
-      let s = Odoc_str.string_of_type_list ?par sep l in
-      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-      bs b "\n.B ";
-      bs b (self#relative_idents m_name s2);
-      bs b "\n"
+    method man_of_cstr_args ?par b m_name sep = function
+      | Cstr_tuple l ->
+          let s = Odoc_str.string_of_type_list ?par sep l in
+          let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+          bs b "\n.B ";
+          bs b (self#relative_idents m_name s2);
+          bs b "\n"
+      | Cstr_record _ ->
+          assert false
 
     (** Print groff string to display the parameters of a type.*)
     method man_of_type_expr_param_list b m_name t =
@@ -448,16 +451,16 @@ class man =
            bs b ("| "^(Name.simple x.xt_name));
            (
              match x.xt_args, x.xt_ret with
-               | [], None -> bs b "\n"
+               | Cstr_tuple [], None -> bs b "\n"
                | l, None ->
                    bs b "\n.B of ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
-               | [], Some r ->
+                   self#man_of_cstr_args ~par: false b father " * " l;
+               | Cstr_tuple [], Some r ->
                    bs b "\n.B : ";
                    self#man_of_type_expr b father r;
                | l, Some r ->
                    bs b "\n.B : ";
-                   self#man_of_type_expr_list ~par: false b father " * " l;
+                   self#man_of_cstr_args ~par: false b father " * " l;
                    bs b ".B -> ";
                    self#man_of_type_expr b father r;
            );
@@ -498,18 +501,18 @@ class man =
       bs b " \n";
       (
         match e.ex_args, e.ex_ret with
-        | [], None -> ()
+        | Cstr_tuple [], None -> ()
         | l, None ->
            bs b ".B of ";
-           self#man_of_type_expr_list
+           self#man_of_cstr_args
              ~par: false
              b (Name.father e.ex_name) " * " e.ex_args
-        | [], Some r ->
+        | Cstr_tuple [], Some r ->
             bs b ".B : ";
             self#man_of_type_expr b (Name.father e.ex_name) r
         | l, Some r ->
             bs b ".B : ";
-            self#man_of_type_expr_list
+            self#man_of_cstr_args
                    ~par: false
                    b (Name.father e.ex_name) " * " l;
             bs b ".B -> ";
@@ -586,36 +589,36 @@ class man =
              bs b " *)\n "
            in
            match constr.vc_args, constr.vc_text,constr.vc_ret with
-           | [], None, None -> bs b "\n "
-           | [], (Some t), None ->
+           | Cstr_tuple [], None, None -> bs b "\n "
+           | Cstr_tuple [], (Some t), None ->
              print_text t
            | l, None, None ->
              bs b "\n.B of ";
-             self#man_of_type_expr_list ~par: false b father " * " l;
+             self#man_of_cstr_args ~par: false b father " * " l;
              bs b " "
            | l, (Some t), None ->
              bs b "\n.B of ";
-             self#man_of_type_expr_list ~par: false b father " * " l;
+             self#man_of_cstr_args ~par: false b father " * " l;
              bs b ".I \"  \"\n";
              print_text t
-           | [], None, Some r ->
+           | Cstr_tuple [], None, Some r ->
              bs b "\n.B : ";
              self#man_of_type_expr b father r;
              bs b " "
-           | [], (Some t), Some r ->
+           | Cstr_tuple [], (Some t), Some r ->
              bs b "\n.B : ";
              self#man_of_type_expr b father r;
              bs b ".I \"  \"\n";
              print_text t
            | l, None, Some r ->
              bs b "\n.B : ";
-             self#man_of_type_expr_list ~par: false b father " * " l;
+             self#man_of_cstr_args ~par: false b father " * " l;
              bs b ".B -> ";
              self#man_of_type_expr b father r;
              bs b " "
            | l, (Some t), Some r ->
              bs b "\n.B of ";
-             self#man_of_type_expr_list ~par: false b father " * " l;
+             self#man_of_cstr_args ~par: false b father " * " l;
              bs b ".B -> ";
              self#man_of_type_expr b father r;
              bs b ".I \"  \"\n";
@@ -822,8 +825,8 @@ class man =
       bs b ".I ";
       bs b (c.vc_name^" ");
       (match c.vc_args with
-         [] -> ()
-       | h::q ->
+       | Cstr_tuple [] -> ()
+       | Cstr_tuple (h::q) ->
          bs b "of ";
          self#man_of_type_expr b modname h;
          List.iter
@@ -831,6 +834,7 @@ class man =
               bs b " * ";
               self#man_of_type_expr b modname ty)
             q
+       | Cstr_record _ -> assert false
       );
       bs b "\n.sp\n";
       self#man_of_info b c.vc_text;

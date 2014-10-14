@@ -187,7 +187,7 @@ module Extension :
     and t_extension_constructor = Odoc_extension.t_extension_constructor =
         {
           xt_name : Name.t ;
-          xt_args: Types.type_expr list ; (** the types of the parameters *)
+          xt_args: Odoc_type.constructor_args;
           xt_ret: Types.type_expr option ; (** the optional return type of the extension *)
           xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
           xt_alias: extension_alias option ; (** [None] when the extension is not a rebind. *)
@@ -226,7 +226,7 @@ module Exception :
         {
           ex_name : Name.t ;
           mutable ex_info : info option ; (** Information found in the optional associated comment. *)
-          ex_args : Types.type_expr list ; (** The types of the parameters. *)
+          ex_args : Odoc_type.constructor_args;
           ex_ret : Types.type_expr option ; (** The the optional return type of the exception. *)
           ex_alias : exception_alias option ; (** [None] when the exception is not a rebind. *)
           mutable ex_loc : location ;
@@ -240,15 +240,6 @@ module Type :
     type private_flag = Odoc_type.private_flag =
       Private | Public
 
-    (** Description of a variant type constructor. *)
-    type variant_constructor = Odoc_type.variant_constructor =
-        {
-          vc_name : string ; (** Name of the constructor. *)
-          vc_args : Types.type_expr list ; (** Arguments of the constructor. *)
-          vc_ret : Types.type_expr option ;
-          mutable vc_text : info option ; (** Optional description in the associated comment. *)
-        }
-
     (** Description of a record type field. *)
     type record_field = Odoc_type.record_field =
         {
@@ -256,6 +247,19 @@ module Type :
           rf_mutable : bool ; (** [true] if mutable. *)
           rf_type : Types.type_expr ; (** Type of the field. *)
           mutable rf_text : info option ; (** Optional description in the associated comment.*)
+        }
+
+    (** Description of a variant type constructor. *)
+    type constructor_args = Odoc_type.constructor_args =
+      | Cstr_record of record_field list
+      | Cstr_tuple of Types.type_expr list
+
+    type variant_constructor = Odoc_type.variant_constructor =
+        {
+          vc_name : string ; (** Name of the constructor. *)
+          vc_args : constructor_args;
+          vc_ret : Types.type_expr option ;
+          mutable vc_text : info option ; (** Optional description in the associated comment. *)
         }
 
     (** The various kinds of a type. *)

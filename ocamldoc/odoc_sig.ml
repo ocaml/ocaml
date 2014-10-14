@@ -220,6 +220,7 @@ module Analyser =
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (pcd.pcd_name.txt, comment_opt) ])
             | pcd :: (pcd2 :: _ as q) ->
+                (* TODO: support annotations on fields for inline records *)
                 let pos_end_first = pcd.pcd_loc.Location.loc_end.Lexing.pos_cnum in
                 let pos_start_second = pcd2.pcd_loc.Location.loc_start.Lexing.pos_cnum in
                 let s = get_string_of_file pos_end_first pos_start_second in
@@ -266,6 +267,19 @@ module Analyser =
         Object_type (List.map f @@ fst @@ Ctype.flatten_fields fields)
       | _ -> Other (Odoc_env.subst_type env type_expr)
 
+    let get_field env name_comment_list {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
+      let field_name = Ident.name field_name in
+      let comment_opt =
+        try List.assoc field_name name_comment_list
+        with Not_found -> None
+      in
+      {
+        rf_name = field_name ;
+        rf_mutable = mutable_flag = Mutable ;
+        rf_type = Odoc_env.subst_type env type_expr ;
+        rf_text = comment_opt
+      }
+
     let get_type_kind env name_comment_list type_kind =
       match type_kind with
         Types.Type_abstract ->
@@ -277,14 +291,14 @@ module Analyser =
               try List.assoc constructor_name name_comment_list
               with Not_found -> None
             in
-            let type_expr_list =
+            let vc_args =
               match cd_args with
-              | Cstr_tuple l -> l
-              | Cstr_record _ -> assert false
+              | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
+              | Cstr_record l -> Cstr_record (List.map (get_field env []) l)
             in
             {
               vc_name = constructor_name ;
-              vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
+              vc_args;
               vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
             }
@@ -292,20 +306,7 @@ module Analyser =
           Odoc_type.Type_variant (List.map f l)
 
       | Types.Type_record (l, _) ->
-          let f {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
-            let field_name = Ident.name field_name in
-            let comment_opt =
-              try List.assoc field_name name_comment_list
-              with Not_found -> None
-            in
-            {
-              rf_name = field_name ;
-              rf_mutable = mutable_flag = Mutable ;
-              rf_type = Odoc_env.subst_type env type_expr ;
-              rf_text = comment_opt
-            }
-          in
-          Odoc_type.Type_record (List.map f l)
+          Odoc_type.Type_record (List.map (get_field env name_comment_list) l)
 
       | Types.Type_open ->
           Odoc_type.Type_open
@@ -663,15 +664,15 @@ module Analyser =
               [] -> (maybe_more, List.rev exts_acc)
             | (name, types_ext) :: q ->
               let ext_loc_end =  types_ext.Types.ext_loc.Location.loc_end.Lexing.pos_cnum in
-              let args =
+              let xt_args =
                 match types_ext.ext_args with
-                | Cstr_tuple l -> l
-                | Cstr_record _ -> assert false
+                | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type new_env) l)
+                | Cstr_record l -> Cstr_record (List.map (get_field new_env []) l)
               in
               let new_x =
                 {
                   xt_name = Name.concat current_module_name name ;
-                  xt_args = List.map (Odoc_env.subst_type new_env) args;
+                  xt_args;
                   xt_ret = may_map (Odoc_env.subst_type new_env) types_ext.ext_ret_type ;
                   xt_type_extension = new_te;
                   xt_alias = None ;
@@ -706,16 +707,16 @@ module Analyser =
               with Not_found ->
                 raise (Failure (Odoc_messages.exception_not_found current_module_name name.txt))
             in
-            let args =
+            let ex_args =
               match types_ext.ext_args with
-              | Cstr_tuple l -> l
-              | Cstr_record _ -> assert false
+              | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
+              | Cstr_record l -> Cstr_record (List.map (get_field env []) l)
             in
             let e =
               {
                 ex_name = Name.concat current_module_name name.txt ;
                 ex_info = comment_opt ;
-                ex_args = List.map (Odoc_env.subst_type env) args;
+                ex_args;
                 ex_ret = may_map (Odoc_env.subst_type env) types_ext.ext_ret_type ;
                 ex_alias = None ;
                 ex_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
