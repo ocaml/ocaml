@@ -383,15 +383,18 @@ class man =
       bs b "\n"
 
     (** Print groff string to display a [Types.type_expr list].*)
-    method man_of_cstr_args ?par b m_name sep = function
-      | Cstr_tuple l ->
-          let s = Odoc_str.string_of_type_list ?par sep l in
-          let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-          bs b "\n.B ";
-          bs b (self#relative_idents m_name s2);
-          bs b "\n"
-      | Cstr_record _ ->
-          assert false
+    method man_of_cstr_args ?par b m_name sep l =
+      let s =
+        match l with
+        | Cstr_tuple l ->
+            Odoc_str.string_of_type_list ?par sep l
+        | Cstr_record l ->
+            Odoc_str.string_of_record l
+      in
+      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+      bs b "\n.B ";
+      bs b (self#relative_idents m_name s2);
+      bs b "\n"
 
     (** Print groff string to display the parameters of a type.*)
     method man_of_type_expr_param_list b m_name t =
@@ -834,7 +837,7 @@ class man =
               bs b " * ";
               self#man_of_type_expr b modname ty)
             q
-       | Cstr_record _ -> assert false
+       | Cstr_record _ -> bs b "{ ... }"
       );
       bs b "\n.sp\n";
       self#man_of_info b c.vc_text;
