@@ -725,6 +725,8 @@ val string_of_info : info -> string
 (** @return a string to describe the given type. *)
 val string_of_type : Type.t_type -> string
 
+val string_of_record : Type.record_field list -> string
+
 (** @return a string to describe the given type extension. *)
 val string_of_type_extension : Extension.t_type_extension -> string
 

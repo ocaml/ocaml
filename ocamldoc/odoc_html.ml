@@ -1218,18 +1218,21 @@ class html =
       bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list]. *)
-    method html_of_cstr_args ?par b m_name sep = function
-      | Cstr_tuple l ->
-          print_DEBUG "html#html_of_cstr_args";
-          let s = Odoc_info.string_of_type_list ?par sep l in
-          print_DEBUG "html#html_of_cstr_args: 1";
-          let s2 = newline_to_indented_br s in
-          print_DEBUG "html#html_of_cstr_args: 2";
-          bs b "<code class=\"type\">";
-          bs b (self#create_fully_qualified_idents_links m_name s2);
-          bs b "</code>"
-      | Cstr_record _ ->
-          assert false
+    method html_of_cstr_args ?par b m_name sep l =
+      print_DEBUG "html#html_of_cstr_args";
+      let s =
+        match l with
+        | Cstr_tuple l ->
+            Odoc_info.string_of_type_list ?par sep l
+        | Cstr_record l ->
+            Odoc_info.string_of_record l
+      in
+      print_DEBUG "html#html_of_cstr_args: 1";
+      let s2 = newline_to_indented_br s in
+      print_DEBUG "html#html_of_cstr_args: 2";
+      bs b "<code class=\"type\">";
+      bs b (self#create_fully_qualified_idents_links m_name s2);
+      bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list] as type parameters
        of a class of class type. *)
