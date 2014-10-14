@@ -639,13 +639,16 @@ class texi =
             (String.concat ", " (List.map f l))
 
     method string_of_type_args (args:constructor_args) (ret:Types.type_expr option) =
+      let f = function
+        | Cstr_tuple l -> Odoc_info.string_of_type_list " * " l
+        | Cstr_record l -> Odoc_info.string_of_record l
+      in
       match args, ret with
       | Cstr_tuple [], None -> ""
-      | Cstr_tuple args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
+      | args, None -> " of " ^ (f args)
       | Cstr_tuple [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
-      | Cstr_tuple args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^
+      | args, Some r -> " : " ^ (f args) ^
                                 " -> " ^ (Odoc_info.string_of_type_expr r)
-      | Cstr_record _, _ -> assert false
 
     (** Return Texinfo code for a type. *)
     method texi_of_type ty =
