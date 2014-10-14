@@ -233,7 +233,7 @@ class virtual to_text =
 
     method normal_cstr_args ?par m_name = function
       | Cstr_tuple l -> self#normal_type_list ?par m_name " * " l
-      | Cstr_record _ -> assert false
+      | Cstr_record _ -> "{...}" (* TODO *)
 
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)

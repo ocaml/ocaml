@@ -600,18 +600,17 @@ class latex =
                    p fmt2 "@[<h 6>  | %s" constr.vc_name ;
                    begin match constr.vc_args, constr.vc_ret with
                    | Cstr_tuple [], None -> ()
-                   | Cstr_tuple l, None ->
+                   | l, None ->
                      p fmt2 " of@ %s"
-                       (self#normal_type_list ~par: false mod_name " * " l)
+                       (self#normal_cstr_args ~par: false mod_name l)
                    | Cstr_tuple [], Some r ->
                      p fmt2 " :@ %s"
                        (self#normal_type mod_name r)
-                   | Cstr_tuple l, Some r ->
+                   | l, Some r ->
                      p fmt2 " :@ %s@ %s@ %s"
-                       (self#normal_type_list ~par: false mod_name " * " l)
+                       (self#normal_cstr_args ~par: false mod_name l)
                        "->"
                        (self#normal_type mod_name r)
-                   | Cstr_record _, _ -> assert false
                    end ;
                    flush2 ()
                  in
