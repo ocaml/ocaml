@@ -154,7 +154,7 @@ module Type:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?params:(core_type * variance) list -> ?cstrs:(core_type * core_type * loc) list -> ?kind:type_kind -> ?priv:private_flag -> ?manifest:core_type -> str -> type_declaration
 
-    val constructor: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> constructor_declaration
+    val constructor: ?loc:loc -> ?attrs:attrs -> ?args:constructor_arguments -> ?res:core_type -> str -> constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?mut:mutable_flag -> str -> core_type -> label_declaration
   end
 
@@ -165,7 +165,7 @@ module Te:
 
     val constructor: ?loc:loc -> ?attrs:attrs -> str -> extension_constructor_kind -> extension_constructor
 
-    val decl: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> extension_constructor
+    val decl: ?loc:loc -> ?attrs:attrs -> ?args:constructor_arguments -> ?res:core_type -> str -> extension_constructor
     val rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> extension_constructor
   end
 

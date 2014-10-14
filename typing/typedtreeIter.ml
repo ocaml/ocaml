@@ -160,8 +160,12 @@ module MakeIterator(Iter : IteratorArgument) : sig
       iter_core_type v.val_desc;
       Iter.leave_value_description v
 
+    and iter_constructor_arguments = function
+      | Cstr_tuple l -> List.iter iter_core_type l
+      | Cstr_record l -> List.iter (fun ld -> iter_core_type ld.ld_type) l
+
     and iter_constructor_declaration cd =
-      List.iter iter_core_type cd.cd_args;
+      iter_constructor_arguments cd.cd_args;
       option iter_core_type cd.cd_res;
 
     and iter_type_parameter (ct, v) =
@@ -192,7 +196,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
       Iter.enter_extension_constructor ext;
       begin match ext.ext_kind with
           Text_decl(args, ret) ->
-            List.iter iter_core_type args;
+          iter_constructor_arguments args;
             option iter_core_type ret
         | Text_rebind _ -> ()
       end;

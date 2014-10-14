@@ -39,8 +39,12 @@ let structure_item sub x =
 let value_description sub x =
   sub # core_type x.val_desc
 
+let constructor_args sub = function
+  | Cstr_tuple l -> List.iter (sub # core_type) l
+  | Cstr_record l -> List.iter (fun ld -> sub # core_type ld.ld_type) l
+
 let constructor_decl sub cd =
-  List.iter (sub # core_type) cd.cd_args;
+  constructor_args sub cd.cd_args;
   opt (sub # core_type) cd.cd_res
 
 let label_decl sub ld =
@@ -66,7 +70,7 @@ let type_extension sub te =
 let extension_constructor sub ext =
   match ext.ext_kind with
     Text_decl(ctl, cto) ->
-      List.iter (sub # core_type) ctl;
+      constructor_args sub ctl;
       opt (sub # core_type) cto
   | Text_rebind _ -> ()
 

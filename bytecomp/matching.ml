@@ -1348,7 +1348,9 @@ let make_constr_matching p def ctx = function
   | ((arg, mut) :: argl) ->
       let cstr = pat_as_constr p in
       let newargs =
-        match cstr.cstr_tag with
+        if cstr.cstr_inlined <> None then
+          (arg, Alias) :: argl
+        else match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
         | Cstr_extension _ ->
@@ -1628,8 +1630,10 @@ let make_record_matching all_labels def = function
           let lbl = all_labels.(pos) in
           let access =
             match lbl.lbl_repres with
-              Record_regular -> Pfield lbl.lbl_pos
-            | Record_float -> Pfloatfield lbl.lbl_pos in
+              Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
+            | Record_float -> Pfloatfield lbl.lbl_pos
+            | Record_extension -> Pfield (lbl.lbl_pos + 1)
+          in
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias

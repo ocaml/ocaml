@@ -739,6 +739,11 @@ let string_of_mutable = function
   | Immutable -> ""
   | Mutable -> "mutable "
 
+
+let mark_loops_constructor_arguments = function
+  | Cstr_tuple l -> List.iter mark_loops l
+  | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -782,8 +787,8 @@ let rec tree_of_type_decl id decl =
   | Type_variant cstrs ->
       List.iter
         (fun c ->
-          List.iter mark_loops c.cd_args;
-          may mark_loops c.cd_res)
+           mark_loops_constructor_arguments c.cd_args;
+           may mark_loops c.cd_res)
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -850,15 +855,20 @@ let rec tree_of_type_decl id decl =
       otype_private = priv;
       otype_cstrs = constraints }
 
+and tree_of_constructor_arguments = function
+  | Cstr_tuple l -> tree_of_typlist false l
+  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
+  let arg () = tree_of_constructor_arguments cd.cd_args in
   match cd.cd_res with
-  | None -> (name, tree_of_typlist false cd.cd_args, None)
+  | None -> (name, arg (), None)
   | Some res ->
       let nm = !names in
       names := [];
       let ret = tree_of_typexp false res in
-      let args = tree_of_typlist false cd.cd_args in
+      let args = arg () in
       names := nm;
       (name, args, Some ret)
 
@@ -871,6 +881,10 @@ let tree_of_type_declaration id decl rs =
 let type_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
 
+let constructor_arguments ppf a =
+  let tys = tree_of_constructor_arguments a in
+  !Oprint.out_type ppf (Otyp_tuple tys)
+
 (* Print an extension declaration *)
 
 let tree_of_extension_constructor id ext es =
@@ -880,7 +894,7 @@ let tree_of_extension_constructor id ext es =
   List.iter add_alias ty_params;
   List.iter mark_loops ty_params;
   List.iter check_name_of_type (List.map proxy ty_params);
-  List.iter mark_loops ext.ext_args;
+  mark_loops_constructor_arguments ext.ext_args;
   may mark_loops ext.ext_ret_type;
   let type_param =
     function
@@ -893,12 +907,12 @@ let tree_of_extension_constructor id ext es =
   let name = Ident.name id in
   let args, ret =
     match ext.ext_ret_type with
-    | None -> (tree_of_typlist false ext.ext_args, None)
+    | None -> (tree_of_constructor_arguments ext.ext_args, None)
     | Some res ->
         let nm = !names in
         names := [];
         let ret = tree_of_typexp false res in
-        let args = tree_of_typlist false ext.ext_args in
+        let args = tree_of_constructor_arguments ext.ext_args in
         names := nm;
         (args, Some ret)
   in

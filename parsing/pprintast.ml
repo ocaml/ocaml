@@ -1313,18 +1313,21 @@ class printer  ()= object(self:'self)
         pp f "%s%a%a" name
           self#attributes attrs
           (fun f -> function
-             | [] -> ()
-             | l ->
+             | Pcstr_tuple [] -> ()
+             | Pcstr_tuple l ->
                  pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
+             | Pcstr_record l -> pp f "@;of@;%a" (self#record_declaration) l
           ) args
     | Some r ->
         pp f "%s%a:@;%a" name
           self#attributes attrs
           (fun f -> function
-             | [] -> self#core_type1 f r
-             | l -> pp f "%a@;->@;%a"
+             | Pcstr_tuple [] -> self#core_type1 f r
+             | Pcstr_tuple l -> pp f "%a@;->@;%a"
                                   (self#list self#core_type1 ~sep:"*@;") l
                                   self#core_type1 r
+             | Pcstr_record l ->
+                 pp f "%a@;->@;%a" (self#record_declaration) l self#core_type1 r
           )
           args
 

@@ -638,12 +638,16 @@ class texi =
           Printf.sprintf "(%s) "
             (String.concat ", " (List.map f l))
 
-    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) =
+    method string_of_type_args (args:constructor_args) (ret:Types.type_expr option) =
+      let f = function
+        | Cstr_tuple l -> Odoc_info.string_of_type_list " * " l
+        | Cstr_record l -> Odoc_info.string_of_record l
+      in
       match args, ret with
-      | [], None -> ""
-      | args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
-      | [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
-      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^
+      | Cstr_tuple [], None -> ""
+      | args, None -> " of " ^ (f args)
+      | Cstr_tuple [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
+      | args, Some r -> " : " ^ (f args) ^
                                 " -> " ^ (Odoc_info.string_of_type_expr r)
 
     (** Return Texinfo code for a type. *)

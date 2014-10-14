@@ -37,7 +37,7 @@ class printer :
       Format.formatter -> Parsetree.class_type_declaration list -> unit
     method constant : Format.formatter -> Asttypes.constant -> unit
     method constant_string : Format.formatter -> string -> unit
-    method constructor_declaration : Format.formatter -> (string * Parsetree.core_type list * Parsetree.core_type option * Parsetree.attributes) -> unit
+    method constructor_declaration : Format.formatter -> (string * Parsetree.constructor_arguments * Parsetree.core_type option * Parsetree.attributes) -> unit
     method core_type : Format.formatter -> Parsetree.core_type -> unit
     method core_type1 : Format.formatter -> Parsetree.core_type -> unit
     method direction_flag :

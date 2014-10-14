@@ -454,7 +454,7 @@ let rec filter_row_fields erase = function
                     (**************************************)
 
 
-exception Non_closed
+exception Non_closed0
 
 let rec closed_schema_rec ty =
   let ty = repr ty in
@@ -463,7 +463,7 @@ let rec closed_schema_rec ty =
     ty.level <- pivot_level - level;
     match ty.desc with
       Tvar _ when level <> generic_level ->
-        raise Non_closed
+        raise Non_closed0
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
           closed_schema_rec t1;
@@ -482,7 +482,7 @@ let closed_schema ty =
     closed_schema_rec ty;
     unmark_type ty;
     true
-  with Non_closed ->
+  with Non_closed0 ->
     unmark_type ty;
     false
 
@@ -561,7 +561,11 @@ let closed_type_decl decl =
           (fun {cd_args; cd_res; _} ->
             match cd_res with
             | Some _ -> ()
-            | None -> List.iter closed_type cd_args)
+            | None ->
+                match cd_args with
+                | Cstr_tuple l ->  List.iter closed_type l
+                | Cstr_record l -> List.iter (fun l -> closed_type l.ld_type) l
+          )
           v
     | Type_record(r, rep) ->
         List.iter (fun l -> closed_type l.ld_type) r
@@ -582,7 +586,7 @@ let closed_extension_constructor ext =
     List.iter mark_type ext.ext_type_params;
     begin match ext.ext_ret_type with
     | Some _ -> ()
-    | None -> List.iter closed_type ext.ext_args
+    | None -> iter_type_expr_cstr_args closed_type ext.ext_args
     end;
     unmark_extension_constructor ext;
     None
@@ -594,7 +598,7 @@ type closed_class_failure =
     CC_Method of type_expr * bool * string * type_expr
   | CC_Value of type_expr * bool * string * type_expr
 
-exception Failure of closed_class_failure
+exception CCFailure of closed_class_failure
 
 let closed_class params sign =
   let ty = object_fields (repr sign.csig_self) in
@@ -610,13 +614,13 @@ let closed_class params sign =
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
         try closed_type ty with Non_closed (ty0, real) ->
-          raise (Failure (CC_Method (ty0, real, lab, ty))))
+          raise (CCFailure (CC_Method (ty0, real, lab, ty))))
       fields;
     mark_type_params (repr sign.csig_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     None
-  with Failure reason ->
+  with CCFailure reason ->
     mark_type_params (repr sign.csig_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
@@ -1193,7 +1197,7 @@ let map_kind f = function
         List.map
           (fun c ->
              {c with
-              cd_args = List.map f c.cd_args;
+              cd_args = map_type_expr_cstr_args f c.cd_args;
               cd_res = may_map f c.cd_res
              })
           cl)
@@ -2178,7 +2182,12 @@ and mcomp_variant_description type_pairs env xs ys =
     match x, y with
     | c1 :: xs, c2 :: ys   ->
       mcomp_type_option type_pairs env c1.cd_res c2.cd_res;
-      mcomp_list type_pairs env c1.cd_args c2.cd_args;
+      begin match c1.cd_args, c2.cd_args with
+      | Cstr_tuple l1, Cstr_tuple l2 -> mcomp_list type_pairs env l1 l2
+      | Cstr_record l1, Cstr_record l2 ->
+          mcomp_record_description type_pairs env l1 l2
+      | _ -> raise (Unify [])
+      end;
      if Ident.name c1.cd_id = Ident.name c2.cd_id
       then iter xs ys
       else raise (Unify [])
@@ -4380,7 +4389,7 @@ let nondep_extension_constructor env mid ext =
         in
           ext.ext_type_path, type_params
     in
-    let args = List.map (nondep_type_rec env mid) ext.ext_args in
+    let args = map_type_expr_cstr_args (nondep_type_rec env mid) ext.ext_args in
     let ret_type = may_map (nondep_type_rec env mid) ext.ext_ret_type in
       clear_hash ();
       { ext_type_path = type_path;

@@ -64,8 +64,13 @@ let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
 
+let add_constructor_arguments bv = function
+  | Pcstr_tuple l -> List.iter (add_type bv) l
+  | Pcstr_record l -> List.iter (fun l -> add_type bv l.pld_type) l
+
 let add_constructor_decl bv pcd =
-  List.iter (add_type bv) pcd.pcd_args; Misc.may (add_type bv) pcd.pcd_res
+  add_constructor_arguments bv pcd.pcd_args;
+  Misc.may (add_type bv) pcd.pcd_res
 
 let add_type_declaration bv td =
   List.iter
@@ -83,9 +88,10 @@ let add_type_declaration bv td =
 
 let add_extension_constructor bv ext =
   match ext.pext_kind with
-      Pext_decl(args, rty) ->
-        List.iter (add_type bv) args; Misc.may (add_type bv) rty
-    | Pext_rebind lid -> add bv lid
+    Pext_decl(args, rty) ->
+      add_constructor_arguments bv args;
+      Misc.may (add_type bv) rty
+  | Pext_rebind lid -> add bv lid
 
 let add_type_extension bv te =
   add bv te.ptyext_path;

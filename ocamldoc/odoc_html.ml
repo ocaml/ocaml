@@ -1218,12 +1218,18 @@ class html =
       bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list]. *)
-    method html_of_type_expr_list ?par b m_name sep l =
-      print_DEBUG "html#html_of_type_expr_list";
-      let s = Odoc_info.string_of_type_list ?par sep l in
-      print_DEBUG "html#html_of_type_expr_list: 1";
+    method html_of_cstr_args ?par b m_name sep l =
+      print_DEBUG "html#html_of_cstr_args";
+      let s =
+        match l with
+        | Cstr_tuple l ->
+            Odoc_info.string_of_type_list ?par sep l
+        | Cstr_record l ->
+            Odoc_info.string_of_record l
+      in
+      print_DEBUG "html#html_of_cstr_args: 1";
       let s2 = newline_to_indented_br s in
-      print_DEBUG "html#html_of_type_expr_list: 2";
+      print_DEBUG "html#html_of_cstr_args: 2";
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -1478,16 +1484,16 @@ class html =
           (Name.simple x.xt_name);
         (
           match x.xt_args, x.xt_ret with
-              [], None -> ()
+              Cstr_tuple [], None -> ()
             | l,None ->
                 bs b (" " ^ (self#keyword "of") ^ " ");
-                self#html_of_type_expr_list ~par: false b father " * " l;
-            | [],Some r ->
+                self#html_of_cstr_args ~par: false b father " * " l;
+            | Cstr_tuple [],Some r ->
                 bs b (" " ^ (self#keyword ":") ^ " ");
                 self#html_of_type_expr b father r;
             | l,Some r ->
                 bs b (" " ^ (self#keyword ":") ^ " ");
-                self#html_of_type_expr_list ~par: false b father " * " l;
+                self#html_of_cstr_args ~par: false b father " * " l;
                 bs b (" " ^ (self#keyword "->") ^ " ");
                 self#html_of_type_expr b father r;
         );
@@ -1539,17 +1545,17 @@ class html =
       bs b "</span>";
       (
         match e.ex_args, e.ex_ret with
-          [], None -> ()
+          Cstr_tuple [], None -> ()
         | l,None ->
             bs b (" "^(self#keyword "of")^" ");
-            self#html_of_type_expr_list
+            self#html_of_cstr_args
                    ~par: false b (Name.father e.ex_name) " * " e.ex_args
-        | [],Some r ->
+        | Cstr_tuple [],Some r ->
             bs b (" " ^ (self#keyword ":") ^ " ");
             self#html_of_type_expr b (Name.father e.ex_name) r;
         | l,Some r ->
             bs b (" " ^ (self#keyword ":") ^ " ");
-            self#html_of_type_expr_list
+            self#html_of_cstr_args
                    ~par: false b (Name.father e.ex_name) " * " l;
             bs b (" " ^ (self#keyword "->") ^ " ");
             self#html_of_type_expr b (Name.father e.ex_name) r;
@@ -1659,16 +1665,16 @@ class html =
               (self#constructor constr.vc_name);
             (
              match constr.vc_args, constr.vc_ret with
-               [], None -> ()
+               Cstr_tuple [], None -> ()
              | l,None ->
                  bs b (" " ^ (self#keyword "of") ^ " ");
-                 self#html_of_type_expr_list ~par: false b father " * " l;
-             | [],Some r ->
+                 self#html_of_cstr_args ~par: false b father " * " l;
+             | Cstr_tuple [],Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
                  self#html_of_type_expr b father r;
              | l,Some r ->
                  bs b (" " ^ (self#keyword ":") ^ " ");
-                 self#html_of_type_expr_list ~par: false b father " * " l;
+                 self#html_of_cstr_args ~par: false b father " * " l;
                  bs b (" " ^ (self#keyword "->") ^ " ");
                  self#html_of_type_expr b father r;
             );

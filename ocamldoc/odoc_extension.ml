@@ -25,7 +25,7 @@ type extension_alias = {
 
 and t_extension_constructor = {
     xt_name : Name.t ;
-    xt_args: Types.type_expr list ; (** the types of the parameters *)
+    xt_args: Odoc_type.constructor_args;
     xt_ret: Types.type_expr option ; (** the optional return type of the extension *)
     xt_type_extension: t_type_extension ; (** the type extension containing this constructor *)
     xt_alias: extension_alias option ;

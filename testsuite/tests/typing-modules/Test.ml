@@ -52,6 +52,7 @@ type u = X of bool;;
 module type B = A with type t = u;; (* fail *)
 
 (* PR#5815 *)
+(* ---> duplicated exception name is now an error *)
 
 module type S = sig exception Foo of int  exception Foo of bool end;;
 

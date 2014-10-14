@@ -156,6 +156,8 @@ and type_kind =
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
+  | Record_inlined of int               (* Inlined record *)
+  | Record_extension                    (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -169,16 +171,20 @@ and label_declaration =
 and constructor_declaration =
   {
     cd_id: Ident.t;
-    cd_args: type_expr list;
+    cd_args: constructor_arguments;
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
   }
 
+and constructor_arguments =
+  | Cstr_tuple of type_expr list
+  | Cstr_record of label_declaration list
+
 type extension_constructor =
     { ext_type_path: Path.t;
       ext_type_params: type_expr list;
-      ext_args: type_expr list;
+      ext_args: constructor_arguments;
       ext_ret_type: type_expr option;
       ext_private: private_flag;
       ext_loc: Location.t;
@@ -285,6 +291,7 @@ type constructor_description =
     cstr_private: private_flag;         (* Read-only constructor? *)
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
+    cstr_inlined: type_declaration option;
    }
 
 and constructor_tag =

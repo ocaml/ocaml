@@ -84,7 +84,9 @@ let print_bigarray name unsafe kind ppf layout =
 let record_rep ppf r =
   match r with
   | Record_regular -> fprintf ppf "regular"
+  | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
+  | Record_extension -> fprintf ppf "ext"
 ;;
 
 let string_of_loc_kind = function
