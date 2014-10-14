@@ -1,30 +1,21 @@
-module M = struct
-  type t = A of {x:int}
-  let f (A r) = r
-end;;
-M.f;;
+type t = A of {x:int; mutable y:int};;
+let f (A r) = r;;  (* -> escape *)
+let f (A r) = r.x;; (* ok *)
+let f x = A {x; y = x};; (* ok *)
+let f (A r) = A {r with y = r.x + 1};; (* ok *)
+let f () = A {a = 1};; (* customized error message *)
+let f () = A {x = 1; y = 3};; (* ok *)
 
-module A : sig
-  type t = A of {x:int}
-  val f: t -> !t.A
-end = struct
-  type t = A of {x:int}
-  let f (A r) = r
-end;;
-
-module type S = sig type t = A of {x:int}  val f: t -> !t.A end;;
-module N : S with type t = M.t = M;;
-
-
-type 'a t = A: {x : 'a; y : 'b} -> 'a t;;
-let f r = A r;;
+type _ t = A: {x : 'a; y : 'b} -> 'a t;;
+let f (A {x; y}) = A {x; y = ()};;  (* ok *)
+let f (A ({x; y} as r)) = A {x = r.x; y = r.y};; (* ok *)
 
 module M = struct
   type 'a t =
     | A of {x : 'a}
-    | B: {u : 'b} -> unit t
+    | B: {u : 'b} -> unit t;;
 
-  exception Foo of {x : int}
+  exception Foo of {x : int};;
 end;;
 
 module N : sig
@@ -46,7 +37,7 @@ module type S = sig exception A of {x:int}  end;;
 
 module F (X : sig val x : (module S) end) = struct
   module A = (val X.x)
-end;;
+end;;  (* -> this expression creates fresh types (not really!) *)
 
 
 module type S = sig
@@ -102,13 +93,3 @@ module Z = struct
 end;;
 let f = Z.f;;
 let g = Z.g;;
-
-
-(* Self-reference to !-types *)
-
-module X = struct
-  type t = A of {x : int} | B of !A
-  type s =
-    | A of {x : !B; y : !s.B; z : !t.A; mutable u : !A option}
-    | B of {y : int}
-end;;
