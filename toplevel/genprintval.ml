@@ -307,7 +307,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           let r =
                             tree_of_record_fields depth
                               env path type_params ty_list
-                              lbls 0
+                              lbls 0 obj
                           in
                           Oval_constr(tree_of_constr env path
                                         (Ident.name cd_id),
@@ -324,7 +324,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                         in
                         tree_of_record_fields depth
                           env path decl.type_params ty_list
-                          lbl_list pos
+                          lbl_list pos obj
                     end
                 | {type_kind = Type_open} ->
                     tree_of_extension path depth obj
@@ -373,7 +373,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         end
 
       and tree_of_record_fields depth env path type_params ty_list
-          lbl_list pos =
+          lbl_list pos obj =
         let rec tree_of_fields pos = function
           | [] -> []
           | {ld_id; ld_type} :: remainder ->
