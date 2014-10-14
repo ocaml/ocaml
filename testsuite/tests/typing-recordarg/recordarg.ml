@@ -84,12 +84,3 @@ module Z = struct
   type X1.t += A of {x: int}
   type X2.t += A of {x: int}
 end;;
-module Z = struct
-  type X1.t += A of {x: int}
-  let f = function A r -> r | _ -> assert false
-
-  type t = A of {x: int}
-  let g = function A r -> r
-end;;
-let f = Z.f;;
-let g = Z.g;;
