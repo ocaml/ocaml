@@ -54,6 +54,7 @@ let rec last = function
   | Papply(_, p) -> last p
 
 let is_uident s =
+  assert (s <> "");
   match s.[0] with
   | 'A'..'Z' -> true
   | _ -> false
