@@ -3883,7 +3883,7 @@ let report_error env ppf = function
   | Wrong_name (eorp, ty, kind, p, lid) ->
       reset_and_mark_loops ty;
       if Path.is_constructor_typath p then begin
-        fprintf ppf "@[The field %a is not part of the inlined record \
+        fprintf ppf "@[The field %a is not part of the record \
                      argument for the %a constructor@]"
           longident lid
           path p;
