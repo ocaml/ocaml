@@ -99,14 +99,14 @@ let constructor_descrs ty_path decl cstrs =
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
 
-        let name = Ident.name cd_id in
+        let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           constructor_args cd_args cd_res
-            (Path.Pdot (ty_path, name, Path.nopos))
+            (Path.Pdot (ty_path, cstr_name, Path.nopos))
             (Record_inlined idx_nonconst)
         in
         let cstr =
-          { cstr_name = Ident.name cd_id;
+          { cstr_name;
             cstr_res = ty_res;
             cstr_existentials = existentials;
             cstr_args;

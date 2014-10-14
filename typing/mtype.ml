@@ -265,6 +265,11 @@ and contains_type_item env = function
                  {type_kind = Type_abstract; type_private = Private}),_)
   | Sig_modtype _
   | Sig_typext (_, {ext_args = Cstr_record _}, _) ->
+      (* We consider that extension constructors with an inlined
+         record create a type (the inlined record), even though
+         it would be technically safe to ignore that considering
+         the current constraints which guarantee that this type
+         is kept local to expressions.  *)
       raise Exit
   | Sig_module (_, {md_type = mty}, _) ->
       contains_type env mty

@@ -120,7 +120,7 @@ type type_mismatch =
   | Field_arity of Ident.t
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
-  | Record_representation of record_representation * record_representation
+  | Record_representation of bool
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -143,15 +143,10 @@ let report_type_mismatch0 first second decl ppf err =
   | Field_missing (b, s) ->
       pr "The field %s is only present in %s %s"
         (Ident.name s) (if b then second else first) decl
-  | Record_representation (r1, r2) ->
-      let repr = function
-        | Record_regular -> "regular"
-        | Record_inlined _ | Record_extension -> "inlined record"
-        | Record_float -> "unboxed float"
-      in
-      pr "Their internal representations differ:@ %s vs %s"
-        (repr r1)
-        (repr r2)
+  | Record_representation b ->
+      pr "Their internal representations differ:@ %s %s %s"
+        (if b then second else first) decl
+        "uses unboxed float representation"
 
 let report_type_mismatch first second decl ppf =
   List.iter
@@ -209,14 +204,6 @@ and compare_records env params1 params2 n labels1 labels2 =
       then compare_records env params1 params2 (n+1) rem1 rem2
       else [Field_type lab1]
 
-let record_representations r1 r2 =
-  match r1, r2 with
-  | Record_regular, Record_regular -> true
-  | Record_inlined i, Record_inlined j -> i = j
-  | Record_float, Record_float -> true
-  | Record_extension, Record_extension -> true
-  | _ -> false
-
 let type_declarations ?(equality = false) env name decl1 id decl2 =
   if decl1.type_arity <> decl2.type_arity then [Arity] else
   if not (private_flags decl1 decl2) then [Privacy] else
@@ -240,8 +227,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1.type_params decl2.type_params
             1 labels1 labels2 in
-        if err <> [] || record_representations rep1 rep2 then err else
-        [Record_representation (rep1, rep2)]
+        if err <> [] || rep1 = rep2 then err else
+        [Record_representation (rep2 = Record_float)]
     | (Type_open, Type_open) -> []
     | (_, _) -> [Kind]
   in

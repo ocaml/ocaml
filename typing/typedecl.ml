@@ -414,7 +414,7 @@ let check_constraints env sdecl (_, decl) =
                 styl tyl
           | Cstr_record tyl, Pcstr_record styl ->
               check_constraints_labels env visited tyl styl
-          | _ -> assert false (* todo *)
+          | _ -> assert false
           end;
           match pcd_res, cd_res with
           | Some sr, Some r ->
