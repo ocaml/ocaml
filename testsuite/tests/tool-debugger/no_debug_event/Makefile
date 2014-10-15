@@ -11,7 +11,6 @@
 #########################################################################
 
 BASEDIR=../../..
-MAIN_MODULE=debuggee
 ADD_COMPFLAGS=-g -custom
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 
@@ -25,24 +24,26 @@ default:
 	fi
 
 .PHONY: compile
-compile: $(ML_FILES) $(CMO_FILES) $(MAIN_MODULE).cmo
-	@rm -f program.byte program.byte.exe
-	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte$(EXE) \
-	           $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
-	           $(MAIN_MODULE).cmo
+compile: $(ML_FILES) $(CMO_FILES)
+	@rm -f c$(EXE)
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c a.ml -for-pack foo
+	@$(OCAMLC) $(ADD_COMPFLAGS) a.cmo -pack -o foo.cmo
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c b.ml
+	@$(OCAMLC) $(ADD_COMPFLAGS) foo.cmo b.cmo -o c$(EXE)
 	@mkdir -p compiler-libs
 	@cp $(TOPDIR)/toplevel/topdirs.cmi compiler-libs/
 
 .PHONY: run
 run:
 	@printf " ... testing with ocamlc"
-	@rm -f $(MAIN_MODULE).result
+	@rm -f noev.result
 	@echo 'source input_script' | \
 	 $(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/debugger/ocamldebug$(EXE)` \
-	             program.byte$(EXE) >$(MAIN_MODULE).raw.result 2>&1 \
-	 && sed -e '/Debugger version/d' -e '/^Time:/d' -e '$$d' \
-	        $(MAIN_MODULE).raw.result >$(MAIN_MODULE).result \
-	 && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null \
+	             c$(EXE) >noev.raw.result 2>&1 \
+	 && sed -e '/Debugger version/d' -e '/^Time:/d' \
+	        -e '/Breakpoint [0-9]* at [0-9]*:/d' -e '$$d' \
+	        noev.raw.result >noev.result \
+	 && $(DIFF) noev.reference noev.result >/dev/null \
 	 && echo " => passed" || echo " => failed"
 
 .PHONY: promote
@@ -50,9 +51,7 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result program.byte program.byte.exe \
-	       program.native program.native.exe \
-	       $(GENERATED_SOURCES) $(O_FILES) $(TEST_TEMP_FILES)
+	@rm -f *.result *.cm* c$(EXE)
 	@rm -rf compiler-libs
 
 include $(BASEDIR)/makefiles/Makefile.common

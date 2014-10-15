@@ -30,3 +30,4 @@
 #define HAS_LOCALE
 #define HAS_BROKEN_PRINTF
 #define HAS_IPV6
+#define HAS_NICE

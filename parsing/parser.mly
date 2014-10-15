@@ -547,7 +547,7 @@ parse_pattern:
 
 functor_arg:
     LPAREN RPAREN
-      { mkrhs "()" 2, None }
+      { mkrhs "*" 2, None }
   | LPAREN functor_arg_name COLON module_type RPAREN
       { mkrhs $2 2, Some $4 }
 ;
@@ -776,7 +776,7 @@ module_declaration:
   | LPAREN UIDENT COLON module_type RPAREN module_declaration
       { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
   | LPAREN RPAREN module_declaration
-      { mkmty(Pmty_functor(mkrhs "()" 1, None, $3)) }
+      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
 ;
 module_rec_declarations:
     module_rec_declaration                              { [$1] }

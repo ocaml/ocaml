@@ -367,6 +367,13 @@ installoptopt:
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
+# Run all tests
+
+tests: opt.opt
+	cd testsuite; $(MAKE) clean && $(MAKE) all
+
+# The clean target
+
 clean:: partialclean
 
 # Shared parts of the system

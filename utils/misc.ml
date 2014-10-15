@@ -87,6 +87,22 @@ let find_in_path path name =
     in try_dir path
   end
 
+let find_in_path_rel path name =
+  let rec simplify s =
+    let open Filename in
+    let base = basename s in
+    let dir = dirname s in
+    if dir = s then dir
+    else if base = current_dir_name then simplify dir
+    else concat (simplify dir) base
+  in
+  let rec try_dir = function
+    [] -> raise Not_found
+  | dir::rem ->
+      let fullname = simplify (Filename.concat dir name) in
+      if Sys.file_exists fullname then fullname else try_dir rem
+  in try_dir path
+
 let find_in_path_uncap path name =
   let uname = String.uncapitalize name in
   let rec try_dir = function

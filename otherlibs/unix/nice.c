@@ -22,7 +22,11 @@ CAMLprim value unix_nice(value incr)
 {
   int ret;
   errno = 0;
+#ifdef HAS_NICE
   ret = nice(Int_val(incr));
+#else
+  ret = 0;
+#endif
   if (ret == -1 && errno != 0) uerror("nice", Nothing);
   return Val_int(ret);
 }

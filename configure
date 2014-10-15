@@ -333,6 +333,10 @@ case "$bytecc,$target" in
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
+  *,*-*-haiku*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    # No -lm library
+    mathlib="";;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
@@ -635,7 +639,7 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -747,6 +751,7 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-netbsd*)          natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
+    i[3456]86-*-haiku*)           natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
     arm*-*-freebsd*)              natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
@@ -779,6 +784,7 @@ case "$target" in
                                 else
                                   arch=i386; system=solaris
                                 fi;;
+  i[3456]86-*-haiku*)           arch=i386; system=beos;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
   i[3456]86-*-darwin*)          if $arch64; then
@@ -1026,9 +1032,15 @@ if sh ./hasgot socket socketpair bind listen accept connect; then
   inf "You have BSD sockets."
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
-elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
+elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect
+then
   inf "You have BSD sockets (with libraries '-lnsl -lsocket')"
   cclibs="$cclibs -lnsl -lsocket"
+  echo "#define HAS_SOCKETS" >> s.h
+  has_sockets=yes
+elif sh ./hasgot -lnetwork socket socketpair bind listen accept connect; then
+  echo "You have BSD sockets (with library '-lnetwork')"
+  cclibs="$cclibs -lnetwork"
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
 else
@@ -1294,6 +1306,11 @@ if sh ./hasgot mkstemp; then
   echo "#define HAS_MKSTEMP" >> s.h
 fi
 
+if sh ./hasgot nice; then
+  inf "nice() found"
+  echo "#define HAS_NICE" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1309,7 +1326,8 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
+  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
+  |amd64,openbsd|i386,bsd_elf)
     inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
@@ -1345,6 +1363,8 @@ if test "$pthread_wanted" = "yes"; then
                    pthread_caml_link="-cclib -pthread";;
     *-*-openbsd*)  pthread_link="-pthread"
                    pthread_caml_link="-cclib -pthread";;
+    *-*-haiku*)    pthread_link=""
+                   pthread_caml_link="";;
     *)             pthread_link="-lpthread"
                    pthread_caml_link="-cclib -lpthread";;
   esac
@@ -1375,7 +1395,8 @@ if test "$pthread_wanted" = "yes"; then
 else
   pthread_link=""
 fi
-echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
+echo "PTHREAD_LINK=$pthread_link" >> Makefile
+echo "PTHREAD_CAML_LINK=$pthread_caml_link" >> Makefile
 
 # Determine if the bytecode thread library is supported
 

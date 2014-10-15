@@ -1032,6 +1032,7 @@ fun k fmt -> match fmt with
 
   | Scan_char_set (_, _, rest)       -> take_format_readers k rest
   | Scan_get_counter (_, rest)       -> take_format_readers k rest
+  | Scan_next_char rest              -> take_format_readers k rest
 
   | Formatting_lit (_, rest)         -> take_format_readers k rest
   | Formatting_gen (Open_tag (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
@@ -1096,6 +1097,7 @@ fun k ign fmt -> match ign with
   | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
   | Ignored_scan_char_set _         -> take_format_readers k fmt
   | Ignored_scan_get_counter _      -> take_format_readers k fmt
+  | Ignored_scan_next_char          -> take_format_readers k fmt
 
 (******************************************************************************)
                           (* Generic scanning *)
@@ -1225,6 +1227,9 @@ fun ib fmt readers -> match fmt with
   | Scan_get_counter (counter, rest) ->
     let count = get_counter ib counter in
     Cons (count, make_scanf ib rest readers)
+  | Scan_next_char rest ->
+    let c = Scanning.checked_peek_char ib in
+    Cons (c, make_scanf ib rest readers)
 
   | Formatting_lit (formatting_lit, rest) ->
     String.iter (check_char ib) (string_of_formatting_lit formatting_lit);
