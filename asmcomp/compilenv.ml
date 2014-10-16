@@ -15,6 +15,8 @@
 open Config
 open Misc
 open Clambda
+open Symbol
+open Abstract_identifiers
 open Cmx_format
 
 type error =
@@ -26,6 +28,12 @@ exception Error of error
 
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
+let export_infos_table =
+  (Hashtbl.create 10 : (string, Flambdaexport.exported) Hashtbl.t)
+
+let imported_closure_table =
+  (FunTbl.create 10
+   : ExprId.t Flambda.function_declarations FunTbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -52,6 +60,12 @@ let structured_constants = ref structured_constants_empty
 
 let exported_constants = Hashtbl.create 17
 
+let structured_constants =
+  ref ([] : (string * bool * Clambda.ustructured_constant) list)
+
+let current_unit_id = ref (Ident.create_persistent "___UNINITIALIZED___")
+let merged_environment = ref Flambdaexport.empty_export
+
 let current_unit =
   { ui_name = "";
     ui_symbol = "";
@@ -62,7 +76,8 @@ let current_unit =
     ui_curry_fun = [];
     ui_apply_fun = [];
     ui_send_fun = [];
-    ui_force_link = false }
+    ui_force_link = false;
+    ui_export_info = Flambdaexport.empty_export }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -78,10 +93,13 @@ let symbolname_for_pack pack name =
       Buffer.add_string b name;
       Buffer.contents b
 
+let unit_id_from_name name = Ident.create_persistent name
 
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
+  FunTbl.clear imported_closure_table;
   let symbol = symbolname_for_pack packname name in
+  current_unit_id := unit_id_from_name name;
   current_unit.ui_name <- name;
   current_unit.ui_symbol <- symbol;
   current_unit.ui_defines <- [symbol];
@@ -92,13 +110,18 @@ let reset ?packname name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false;
   Hashtbl.clear exported_constants;
-  structured_constants := structured_constants_empty
+  structured_constants := structured_constants_empty;
+  current_unit.ui_export_info <- Flambdaexport.empty_export;
+  merged_environment := Flambdaexport.empty_export;
+  Hashtbl.clear export_infos_table
 
 let current_unit_infos () =
   current_unit
 
 let current_unit_name () =
   current_unit.ui_name
+
+let current_unit_id () = !current_unit_id
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
@@ -186,6 +209,11 @@ let global_approx id =
       | None -> Value_unknown
       | Some ui -> ui.ui_approx
 
+let get_unit_name id =
+  match get_global_info id with
+  | None -> Ident.name id
+  | Some ui -> ui.ui_symbol
+
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
@@ -197,10 +225,61 @@ let symbol_for_global id =
     | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
 
+let unit_for_global id =
+  let sym_label = linkage_name (symbol_for_global id) in
+  Compilation_unit.create (Ident.name id) sym_label
+
+let predefined_exception_compilation_unit =
+  Compilation_unit.create "__dummy__" (linkage_name "__dummy__")
+
+let is_predefined_exception sym =
+  Compilation_unit.equal
+    predefined_exception_compilation_unit
+    sym.sym_unit
+
+let symbol_for_global' id =
+  let open Symbol in
+  let sym_label = linkage_name (symbol_for_global id) in
+  if Ident.is_predef_exn id then
+    { sym_unit = predefined_exception_compilation_unit;
+      sym_label }
+  else
+    { sym_unit = unit_for_global id;
+      sym_label }
+
+let current_unit_linkage_name () =
+  linkage_name
+    (make_symbol ~unitname:current_unit.ui_symbol None)
+
 (* Register the approximation of the module being compiled *)
 
 let set_global_approx approx =
   current_unit.ui_approx <- approx
+
+(* Exporting and importing cross module informations *)
+
+let set_export_info export_info =
+  current_unit.ui_export_info <- export_info
+
+let approx_for_global comp_unit =
+  let id = Compilation_unit.get_persistent_ident comp_unit in
+  if (Compilation_unit.equal
+      predefined_exception_compilation_unit
+      comp_unit)
+     || Ident.is_predef_exn id
+     || not (Ident.global id)
+  then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
+  let modname = Ident.name id in
+  try Hashtbl.find export_infos_table modname with
+  | Not_found ->
+    let exported = match get_global_info id with
+      | None -> Flambdaexport.empty_export
+      | Some ui -> ui.ui_export_info in
+    Hashtbl.add export_infos_table modname exported;
+    merged_environment := Flambdaexport.merge !merged_environment exported;
+    exported
+
+let approx_env () = !merged_environment
 
 (* Record that a currying function or application function is needed *)
 
@@ -231,7 +310,18 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
+let current_unit_linkage_name () =
+  linkage_name
+    (make_symbol ~unitname:current_unit.ui_symbol None)
 
+let current_unit () =
+  Compilation_unit.create
+    (Ident.name (current_unit_id ()))
+    (current_unit_linkage_name ())
+
+let current_unit_symbol () =
+  { sym_unit = current_unit ();
+    sym_label = current_unit_linkage_name () }
 
 let const_label = ref 0
 
@@ -278,6 +368,84 @@ let structured_constants () =
     (fun (lbl, cst) ->
        (lbl, Hashtbl.mem exported_constants lbl, cst)
     ) (!structured_constants).strcst_all
+
+let new_const_symbol' () =
+  let sym_label = new_const_symbol () in
+  { sym_unit = current_unit ();
+    sym_label = linkage_name sym_label }
+
+let concat_symbol unitname id =
+  unitname ^ "__" ^ id
+
+let closure_symbol fv =
+  let compilation_unit = Closure_function.get_compilation_unit fv in
+  let unitname =
+    Symbol.string_of_linkage_name
+      (Compilation_unit.get_linkage_name compilation_unit) in
+  { Symbol.sym_unit = compilation_unit;
+    sym_label =
+      linkage_name
+        (concat_symbol unitname
+           ((Closure_function.unique_name fv) ^ "_closure")) }
+
+let function_label fv =
+  let open Symbol in
+  let compilation_unit = Closure_function.get_compilation_unit fv in
+  let unitname =
+    string_of_linkage_name
+      (Compilation_unit.get_linkage_name compilation_unit) in
+  (concat_symbol unitname (Closure_function.unique_name fv))
+
+
+let new_structured_constant cst global =
+  let lbl = new_const_symbol() in
+  structured_constants := (lbl, global, cst) :: !structured_constants;
+  lbl
+
+let add_structured_constant lbl cst global =
+  structured_constants := (lbl, global, cst) :: !structured_constants
+
+let clear_structured_constants () = structured_constants := []
+
+let structured_constants () = !structured_constants
+
+let imported_closure =
+  let open Symbol in
+  let open Flambda in
+  let import_closure clos =
+
+    let orig_var_map clos =
+      VarMap.fold
+        (fun id _ acc ->
+           let fun_id = Closure_function.wrap id in
+           let sym = closure_symbol fun_id in
+           SymbolMap.add sym id acc)
+        clos.funs SymbolMap.empty in
+
+    let sym_map = orig_var_map clos in
+
+    let f = function
+      | Fsymbol (sym, ()) as e ->
+          (try Fvar(SymbolMap.find sym sym_map,()) with
+           | Not_found -> e)
+      | e -> e in
+
+    { clos with
+      funs =
+        VarMap.map
+          (fun ff ->
+             let body = Flambdaiter.map_toplevel f ff.body in
+             let body = Flambdaiter.map_data ExprId.create body in
+             let free_variables = Flambdaiter.free_variables body in
+             { ff with body; free_variables })
+          clos.funs } in
+  let aux fun_id =
+    let ex_info = approx_env () in
+    let closure = FunMap.find fun_id ex_info.Flambdaexport.ex_functions in
+    let cl = import_closure closure in
+    cl
+  in
+  FunTbl.memoize imported_closure_table aux
 
 (* Error report *)
 
