@@ -93,19 +93,14 @@ val new_structured_constant:
   string
 val structured_constants:
   unit -> (string * bool * Clambda.ustructured_constant) list
+(* val add_structured_constant : string -> Clambda.ustructured_constant -> *)
+(*   bool -> unit *)
 val add_exported_constant: string -> unit
 val clear_structured_constants: unit -> unit
 
 type structured_constants
 val snapshot: unit -> structured_constants
 val backtrack: structured_constants -> unit
-
-val new_structured_constant : Clambda.ustructured_constant -> bool -> string
-val add_structured_constant : string -> Clambda.ustructured_constant ->
-  bool -> unit
-val structured_constants :
-  unit -> (string * bool * Clambda.ustructured_constant) list
-val clear_structured_constants : unit -> unit
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and MD5 from a [.cmx] file. *)

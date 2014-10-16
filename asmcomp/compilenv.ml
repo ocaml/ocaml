@@ -60,9 +60,6 @@ let structured_constants = ref structured_constants_empty
 
 let exported_constants = Hashtbl.create 17
 
-let structured_constants =
-  ref ([] : (string * bool * Clambda.ustructured_constant) list)
-
 let current_unit_id = ref (Ident.create_persistent "___UNINITIALIZED___")
 let merged_environment = ref Flambdaexport.empty_export
 
@@ -336,6 +333,9 @@ let new_const_symbol () =
 let snapshot () = !structured_constants
 let backtrack s = structured_constants := s
 
+(* let add_structured_constant lbl cst global = *)
+(*   structured_constants := (lbl, global, cst) :: !structured_constants *)
+
 let new_structured_constant cst ~shared =
   let {strcst_shared; strcst_all} = !structured_constants in
   if shared then
@@ -396,19 +396,6 @@ let function_label fv =
       (Compilation_unit.get_linkage_name compilation_unit) in
   (concat_symbol unitname (Closure_function.unique_name fv))
 
-
-let new_structured_constant cst global =
-  let lbl = new_const_symbol() in
-  structured_constants := (lbl, global, cst) :: !structured_constants;
-  lbl
-
-let add_structured_constant lbl cst global =
-  structured_constants := (lbl, global, cst) :: !structured_constants
-
-let clear_structured_constants () = structured_constants := []
-
-let structured_constants () = !structured_constants
-
 let imported_closure =
   let open Symbol in
   let open Flambda in
@@ -435,7 +422,7 @@ let imported_closure =
         VarMap.map
           (fun ff ->
              let body = Flambdaiter.map_toplevel f ff.body in
-             let body = Flambdaiter.map_data ExprId.create body in
+             let body = Flambdaiter.map_data(fun () -> ExprId.create ()) body in
              let free_variables = Flambdaiter.free_variables body in
              { ff with body; free_variables })
           clos.funs } in
