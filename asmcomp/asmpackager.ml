@@ -122,7 +122,25 @@ let build_package_cmx members cmxfile =
       (fun m accu ->
         match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
       members [] in
+  let pack_units =
+    List.fold_left
+      (fun set info ->
+         let unit_id = Compilenv.unit_id_from_name info.ui_name in
+         Symbol.CompilationUnitSet.add
+           (Compilenv.unit_for_global unit_id) set)
+      Symbol.CompilationUnitSet.empty units in
+  let units = List.map (fun info ->
+      { info with
+        ui_export_info =
+          Flambdaexport.import_for_pack ~pack_units
+            ~pack:(Compilenv.current_unit ()) info.ui_export_info })
+      units in
   let ui = Compilenv.current_unit_infos() in
+  let ui_export_info =
+    List.fold_left (fun acc info -> Flambdaexport.merge acc info.ui_export_info)
+      (Flambdaexport.import_for_pack ~pack_units
+         ~pack:(Compilenv.current_unit ()) ui.ui_export_info)
+      units in
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;
@@ -143,6 +161,7 @@ let build_package_cmx members cmxfile =
           union(List.map (fun info -> info.ui_send_fun) units);
       ui_force_link =
           List.exists (fun info -> info.ui_force_link) units;
+      ui_export_info;
     } in
   Compilenv.write_unit_info pkg_infos cmxfile
 
