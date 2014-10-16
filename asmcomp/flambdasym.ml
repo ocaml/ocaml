@@ -522,6 +522,13 @@ module Conv(P:Param1) = struct
                   fs_failaction = may_map (conv env) sw.fs_failaction }, ()),
         Value_unknown
 
+    | Fstringswitch(arg, sw, def, _) ->
+        Fstringswitch
+          (conv env arg,
+           List.map (fun (i,lam) -> i, conv env lam) sw,
+           may_map (conv env) def, ()),
+        Value_unknown
+
     | Fprim(Lambda.Pgetglobal id, l, dbg, _) ->
         assert(l = []);
         let sym = Compilenv.symbol_for_global' id in
