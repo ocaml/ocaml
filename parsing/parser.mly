@@ -1668,7 +1668,7 @@ generalized_constructor_arguments:
 
 constructor_arguments:
   | core_type_list { Pcstr_tuple (List.rev $1) }
-  | LBRACE label_declarations RBRACE { Pcstr_record (List.rev $2) }
+  | LBRACE label_declarations opt_semi RBRACE { Pcstr_record (List.rev $2) }
 ;
 label_declarations:
     label_declaration                           { [$1] }
