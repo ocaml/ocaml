@@ -214,3 +214,7 @@ val data_at_toplevel_node : 'a flambda -> 'a
 val description_of_toplevel_node : 'a flambda -> string
 
 val recursive_functions : 'a function_declarations -> VarSet.t
+
+(* Sharing key *)
+type sharing_key
+val make_key : 'a flambda -> sharing_key option

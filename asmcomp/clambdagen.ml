@@ -74,6 +74,14 @@ end
 
 module Offsets(P:Param1) = struct
 
+  module Storer =
+    Switch.Store
+      (struct
+        type t = P.t flambda
+        type key = Flambda.sharing_key
+        let make_key = Flambda.make_key
+      end)
+
   (* The offset table associate a function label to its offset
      inside a closure *)
   let fun_offset_table = ref ClosureFunctionMap.empty
@@ -145,6 +153,15 @@ type const_lbl =
   | Not_const
 
 module Conv(P:Param2) = struct
+
+  module Storer =
+    Switch.Store
+      (struct
+        type t = P.t flambda
+        type key = Flambda.sharing_key
+        let make_key = Flambda.make_key
+      end)
+
   (* The offset table associate a function label to its offset
      inside a closure *)
   let fun_offset_table = P.fun_offset_table
@@ -236,12 +253,12 @@ module Conv(P:Param2) = struct
         end
 
     | Fsymbol (sym,_) ->
-        Uconst (Uconst_label
+        Uconst (Uconst_ref
                   (* Should delay the conversion a bit more *)
-                  (string_of_linkage_name sym.sym_label), None)
+                  (string_of_linkage_name sym.sym_label, None))
 
     | Fconst (cst,_) ->
-        Uconst (conv_const cst, None)
+        Uconst (conv_const cst)
 
     | Flet(str, id, lam, body, _) ->
         Ulet(Variable.unique_ident id, conv env lam, conv env body)
@@ -319,6 +336,12 @@ module Conv(P:Param2) = struct
             conv env expr
         end
 
+    | Fstringswitch(arg, sw, def, d) ->
+        let arg = conv env arg in
+        let sw = List.map (fun (s, e) -> s, conv env e) sw in
+        let def = Misc.may_map (conv env) def in
+        Ustringswitch(arg, sw, def)
+
     | Fprim(Pgetglobal id, l, dbg, _) ->
         assert false
 
@@ -342,7 +365,9 @@ module Conv(P:Param2) = struct
         | None ->
             Uprim(p, args, dbg)
         | Some l ->
-            Uconst(Uconst_block (tag,l), None)
+            let cst = Uconst_block (tag,l) in
+            let lbl = Compilenv.new_structured_constant ~shared:true cst in
+            Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
     | Fprim(p, args, dbg, _) ->
@@ -379,8 +404,8 @@ module Conv(P:Param2) = struct
       if Ext_types.IntSet.cardinal num_keys = 0
       then 0
       else Ext_types.IntSet.max_elt num_keys + 1 in
-    let index = Array.create num_keys 0
-    and store = Switch.mk_store (fun lam -> lam) Flambda.can_be_merged in
+    let index = Array.make num_keys 0
+    and store = Storer.mk_store () in
 
     (* First default case *)
     begin match default with
@@ -538,51 +563,62 @@ module Conv(P:Param2) = struct
       | None -> assert false
       | Some fv_const ->
           let cst = Uconst_closure (ufunct, closure_lbl, fv_const) in
-          Uconst(cst,Some closure_lbl)
+          Uconst(Uconst_ref (closure_lbl, Some cst))
     else
       Uclosure (ufunct, List.map snd fv_ulam)
 
   and conv_list env l = List.map (conv env) l
 
-  and conv_const = function
-    | Fconst_base c -> Uconst_base c
-    | Fconst_pointer c -> Uconst_pointer c
-    | Fconst_float_array c -> Uconst_float_array c
-    | Fconst_immstring c -> Uconst_immstring c
+  and conv_const cst =
+    let open Asttypes in
+    let str ~shared cst =
+      let name =
+        Compilenv.new_structured_constant cst ~shared
+      in
+      Uconst_ref (name, Some cst)
+    in
+    match cst with
+    | Fconst_pointer c -> Uconst_ptr c
+    | Fconst_base (Const_int c) -> Uconst_int c
+    | Fconst_base (Const_char c) -> Uconst_int (Char.code c)
+    | Fconst_base (Const_float x) ->
+        str ~shared:true (Uconst_float (float_of_string x))
+    | Fconst_base (Const_int32 x) ->
+        str ~shared:true (Uconst_int32 x)
+    | Fconst_base (Const_int64 x) ->
+        str ~shared:true (Uconst_int64 x)
+    | Fconst_base (Const_nativeint x) ->
+        str ~shared:true (Uconst_nativeint x)
+    | Fconst_base (Const_string (s,o)) ->
+        str ~shared:false (Uconst_string s)
+    | Fconst_float_array c ->
+        (* constant float arrays are really immutable *)
+        str ~shared:true (Uconst_float_array (List.map float_of_string c))
+    | Fconst_immstring c ->
+        str ~shared:true (Uconst_string c)
 
   and constant_list l =
     let rec aux acc = function
       | [] ->
           Some (List.rev acc)
-      | Uconst(v,None) :: q ->
+      | Uconst(v) :: q ->
           aux (v :: acc) q
-      | Uconst(_,Some lbl) :: q ->
-          aux (Uconst_label lbl :: acc) q
       | _ -> None
     in
     aux [] l
 
   and constant_label : ulambda -> const_lbl = function
-    | Uconst(
-        (Uconst_base(Asttypes.Const_int _ | Asttypes.Const_char _)
-        | Uconst_pointer _), _) -> No_lbl
-    | Uconst(Uconst_label lbl, _)
-    | Uconst(_, Some lbl) -> Lbl lbl
-    | Uconst(cst, None) ->
-        Lbl (Compilenv.new_structured_constant cst false)
+    | Uconst(Uconst_int _ | Uconst_ptr _) -> No_lbl
+    | Uconst(Uconst_ref (lbl, _)) -> Lbl lbl
     | Uprim(Pgetglobal id, [], _) ->
         Lbl (Ident.name id)
     | _ -> Not_const
 
   let structured_constant_for_symbol sym = function
-    | Uconst(
-        (Uconst_base(Asttypes.Const_int _ | Asttypes.Const_char _)
-        | Uconst_pointer _), _)
-    | Uconst(Uconst_label _, _) -> assert false
-    | Uconst(cst, Some lbl') ->
+    | Uconst(Uconst_ref (lbl', Some cst)) ->
         let lbl = string_of_linkage_name sym.sym_label in
         assert(lbl = lbl'); cst
-    | Uconst(cst, None) -> cst
+    (* | Uconst(Uconst_ref(None, Some cst)) -> cst *)
     | _ -> assert false
 
   let constants =

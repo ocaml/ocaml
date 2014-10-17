@@ -306,3 +306,9 @@ and sameswitch fs1 fs2 =
   sameoption same fs1.fs_failaction fs2.fs_failaction
 
 let can_be_merged = same
+
+(* Sharing key TODO
+   Not implemented yet: this avoids sharing anything *)
+
+type sharing_key = unit
+let make_key _ = None

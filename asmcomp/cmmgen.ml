@@ -2240,14 +2240,17 @@ let rec transl_all_functions already_translated cont =
   with Queue.Empty ->
     cont, already_translated
 
-let cdefine_symbol (global,symb) =
-  if global
-  then [Cglobal_symbol symb; Cdefine_symbol symb]
-  else [Cdefine_symbol symb]
+let cdefine_symbol l =
+  let aux (symb, global) =
+    if global
+    then [Cglobal_symbol symb; Cdefine_symbol symb]
+    else [Cdefine_symbol symb]
+  in
+  List.flatten (List.map aux l)
 
 (* Emit structured constants *)
 
-let rec emit_structured_constant symb cst cont =
+let rec emit_structured_constant (symb:(string*bool) list) cst cont =
   let emit_block white_header symb cont =
     (* Headers for structured constants must be marked black in case we
        are in no-naked-pointers mode.  See [caml_darken]. *)
@@ -2317,7 +2320,8 @@ and emit_boxed_int64_constant n cont =
 (* Emit constant closures *)
 
 let emit_constant_closure symb fundecls clos_vars cont =
-  let closure_symbol f = fst symb, f.label ^ "_closure" in
+  let global_symb = List.exists snd symb in
+  let closure_symbol f = [f.label ^ "_closure", global_symb] in
   match fundecls with
     [] -> assert false
   | f1 :: remainder ->
@@ -2357,14 +2361,14 @@ let emit_constant_closure symb fundecls clos_vars cont =
 let emit_all_constants cont =
   let c = ref cont in
   List.iter
-    (fun (lbl, global, cst) ->
-       let cst = emit_structured_constant (global,lbl) cst [] in
+    (fun (lbls, cst) ->
+       let cst = emit_structured_constant lbls cst [] in
          c:= Cdata(cst):: !c)
     (Compilenv.structured_constants());
   Compilenv.clear_structured_constants ();
   List.iter
     (fun (symb, fundecls, clos_vars) ->
-       c := Cdata(emit_constant_closure (true,symb) fundecls clos_vars []) :: !c)
+       c := Cdata(emit_constant_closure [symb,true] fundecls clos_vars []) :: !c)
     !constant_closures;
   constant_closures := [];
   !c
@@ -2742,7 +2746,7 @@ let reference_symbols namelist =
   Cdata(List.map mksym namelist)
 
 let global_data name v =
-  Cdata(emit_structured_constant (true,name)
+  Cdata(emit_structured_constant [name,true]
           (Uconst_string (Marshal.to_string v [])) [])
 
 let globals_map v = global_data "caml_globals_map" v
@@ -2782,9 +2786,9 @@ let predef_exception i name =
   let symname = "caml_exn_" ^ name in
   let cst = Uconst_string name in
   let label = Compilenv.new_const_symbol () in
-  let cont = emit_structured_constant (true,label) cst [] in
+  let cont = emit_structured_constant [label,true] cst [] in
   Cdata(Cglobal_symbol symname ::
-        emit_structured_constant (true,symname)
+        emit_structured_constant [symname,true]
           (Uconst_block(Obj.object_tag,
                        [
                          Uconst_ref(label, Some cst);

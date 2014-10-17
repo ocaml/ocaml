@@ -91,10 +91,12 @@ val new_structured_constant:
   Clambda.ustructured_constant ->
   shared:bool -> (* can be shared with another structually equal constant *)
   string
+val add_structured_constant:
+  string -> Clambda.ustructured_constant ->
+  shared:bool ->
+  unit
 val structured_constants:
-  unit -> (string * bool * Clambda.ustructured_constant) list
-(* val add_structured_constant : string -> Clambda.ustructured_constant -> *)
-(*   bool -> unit *)
+  unit -> ((string * bool) list * Clambda.ustructured_constant) list
 val add_exported_constant: string -> unit
 val clear_structured_constants: unit -> unit
 
