@@ -145,7 +145,11 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
     {!Pervasives.at_exit} have already been called. Because of this you must
     make sure any output channel [fn] writes on is flushed.
 
-    If [fn] raises an exception, it is ignored.
+    Also note that exceptions raised by user code in the interactive toplevel
+    are not passed to this function as they are caught by the toplevel itself.
+
+    If [fn] raises an exception, both the exceptions passed to [fn] and raised
+    by [fn] will be printed with their respective backtrace.
 
     @since 4.02.0
 *)
