@@ -36,7 +36,18 @@ let pass_dump_linear_if ppf flag message phrase =
   phrase
 
 let clambda_dump_if ppf ulambda =
-  if !dump_clambda then Printclambda.clambda ppf ulambda; ulambda
+  if !dump_clambda then
+    begin
+      Printclambda.clambda ppf ulambda;
+      List.iter (fun (lbls,cst) ->
+          let lbl = match lbls with
+            | [] -> assert false
+            | (lbl, _) :: _ -> lbl in
+          Format.fprintf ppf "%s: %a@." lbl
+            Printclambda.structured_constant cst)
+        (Compilenv.structured_constants ())
+    end;
+  ulambda
 
 let rec regalloc ppf round fd =
   if round > 50 then
