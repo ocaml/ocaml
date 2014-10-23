@@ -46,6 +46,11 @@ let mkoperator name pos =
 let mkpatvar name pos =
   Pat.mk ~loc:(rhs_loc pos) (Ppat_var (mkrhs name pos))
 
+let mkrec_flag x default =
+  match x with
+  | None -> default
+  | Some x -> x
+
 (*
   Ghost expressions and patterns:
   expressions and patterns that do not appear explicitly in the
@@ -372,6 +377,7 @@ let mkctf_attrs d attrs =
 %token MUTABLE
 %token <nativeint> NATIVEINT
 %token NEW
+%token NONREC
 %token OBJECT
 %token OF
 %token OPEN
@@ -630,7 +636,7 @@ structure_item:
             let exp = wrap_exp_attrs exp $2 in
             mkstr(Pstr_eval (exp, attrs))
         | l ->
-            let str = mkstr(Pstr_value($3, List.rev l)) in
+            let str = mkstr(Pstr_value(mkrec_flag $3 Nonrecursive, List.rev l)) in
             let (ext, attrs) = $2 in
             if attrs <> [] then not_expecting 2 "attribute";
             match ext with
@@ -642,10 +648,11 @@ structure_item:
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
-  | TYPE type_declarations
-      { mkstr(Pstr_type (List.rev $2) ) }
-  | TYPE str_type_extension
-      { mkstr(Pstr_typext $2) }
+  | TYPE rec_flag type_declarations
+      { mkstr(Pstr_type (mkrec_flag $2 Recursive, List.rev $3) ) }
+  | TYPE rec_flag str_type_extension
+      { if $2 <> None then not_expecting 2 "rec/nonrec flag";
+        mkstr(Pstr_typext $3) }
   | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
   | MODULE module_binding
@@ -729,10 +736,11 @@ signature_item:
       { mksig(Psig_value
                 (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
                    ~loc:(symbol_rloc()))) }
-  | TYPE type_declarations
-      { mksig(Psig_type (List.rev $2)) }
-  | TYPE sig_type_extension
-      { mksig(Psig_typext $2) }
+  | TYPE rec_flag type_declarations
+      { mksig(Psig_type (mkrec_flag $2 Recursive, List.rev $3)) }
+  | TYPE rec_flag sig_type_extension
+      { if $2 <> None then not_expecting 2 "rec flag";
+        mksig(Psig_typext $3) }
   | EXCEPTION sig_exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
@@ -828,7 +836,7 @@ class_expr:
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings_no_attrs IN class_expr
-      { mkclass(Pcl_let ($2, List.rev $3, $5)) }
+      { mkclass(Pcl_let (mkrec_flag $2 Nonrecursive, List.rev $3, $5)) }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
@@ -1083,7 +1091,7 @@ expr:
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
-      { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
+      { mkexp_attrs (Pexp_let(mkrec_flag $3 Nonrecursive, List.rev $4, $6)) $2 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
@@ -2049,8 +2057,9 @@ name_tag:
     BACKQUOTE ident                             { $2 }
 ;
 rec_flag:
-    /* empty */                                 { Nonrecursive }
-  | REC                                         { Recursive }
+    /* empty */                                 { None }
+  | REC                                         { Some Recursive }
+  | NONREC                                      { Some Nonrecursive }
 ;
 direction_flag:
     TO                                          { Upto }
