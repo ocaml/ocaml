@@ -110,6 +110,43 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
+let flambda ppf (size, lam) =
+  let current_compilation_unit = Compilenv.current_unit () in
+  let dump_and_check s flam =
+    if !Clflags.dump_flambda
+    then Format.fprintf ppf "%s:@ %a@." s Printflambda.flambda flam;
+    try Flambdacheck.check ~current_compilation_unit flam
+    with e ->
+      Format.fprintf ppf "%a@."
+        Printflambda.flambda flam;
+      raise e in
+  let _, flam =
+    Flambdagen.intro
+      ~current_compilation_unit
+      ~current_unit_id:(Compilenv.current_unit_id ())
+      ~symbol_for_global':Compilenv.symbol_for_global'
+      lam in
+  dump_and_check "flambdagen" flam;
+  let fl_sym =
+    Flambdasym.convert ~compilation_unit:current_compilation_unit flam in
+  let fl,const,export = fl_sym in
+  Compilenv.set_export_info export;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "flambdasym@ %a@." Printflambda.flambda fl;
+    Symbol.SymbolMap.iter (fun sym lam ->
+        Format.fprintf ppf "sym: %a@ %a@."
+          Symbol.print sym
+          Printflambda.flambda lam)
+      const
+  end;
+  Flambdacheck.check ~current_compilation_unit ~flambdasym:true fl;
+  Symbol.SymbolMap.iter (fun _ lam ->
+      Flambdacheck.check ~current_compilation_unit
+        ~flambdasym:true ~cmxfile:true lam)
+    const;
+  Clambdagen.convert fl_sym
+
 let compile_unit asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
@@ -132,6 +169,7 @@ let compile_unit asm_filename keep_asm obj_filename gen =
 
 let gen_implementation ?toplevel ppf (size, lam) =
   Emit.begin_assembly ();
+  let _ = flambda ppf (size, lam) in
   Closure.intro size lam
   ++ clambda_dump_if ppf
   ++ Cmmgen.compunit size
@@ -150,6 +188,74 @@ let gen_implementation ?toplevel ppf (size, lam) =
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
   Emit.end_assembly ()
+
+(*
+  (* Flambdareachability.test ~current_compilation_unit flam; *)
+
+  (* keep passes linked in the cma *)
+  ignore (Flambdasimplify.passes);
+  ignore (Flambdaspec.passes);
+  ignore (Flambdamovelets.passes);
+  ignore (Flambdaifstaticraise.passes);
+
+  let run_pass flambda pass =
+    let flambda = pass.Flambdapasses.pass flambda current_compilation_unit in
+    dump_and_check pass.Flambdapasses.name flambda;
+    flambda
+  in
+  let before = Flambdapasses.before_passes () in
+  let loop = Flambdapasses.loop_passes () in
+  let after = Flambdapasses.after_passes () in
+
+  if !Clflags.dump_flambda
+  then Format.fprintf ppf "@.flambda before@.";
+
+  let flam = List.fold_left run_pass flam before in
+
+  let flam = ref flam in
+  for i = 1 to !Clflags.simplify_rounds do
+    if !Clflags.dump_flambda
+    then Format.fprintf ppf "@.flambda round %i@." i;
+    flam := List.fold_left run_pass !flam loop
+  done;
+
+  if !Clflags.dump_flambda
+  then Format.fprintf ppf "@.flambda after@.";
+
+  let flam = List.fold_left run_pass !flam after in
+
+  let flam =
+    if Clflags.experiments
+    then begin
+      let flam = Flambdareachability.test ~current_compilation_unit flam in
+      dump_and_check "clean unreachable calls" flam;
+      let flam = Flambdamovelets.move_lets flam in
+      let flam = Flambdamovelets.remove_trivial_lets flam in
+      dump_and_check "move lets" flam;
+      flam
+    end
+    else flam in
+
+  let fl_sym =
+    Flambdasym.convert ~compilation_unit:current_compilation_unit flam in
+  let fl,const,export = fl_sym in
+  Compilenv.set_export_info export;
+  if !Clflags.dump_flambda
+  then begin
+    Format.fprintf ppf "flambdasym@ %a@." Printflambda.flambda fl;
+    Symbol.SymbolMap.iter (fun sym lam ->
+        Format.fprintf ppf "sym: %a@ %a@."
+          Symbol.print sym
+          Printflambda.flambda lam)
+      const
+  end;
+  Flambdacheck.check ~current_compilation_unit ~flambdasym:true fl;
+  Symbol.SymbolMap.iter (fun _ lam ->
+      Flambdacheck.check ~current_compilation_unit
+        ~flambdasym:true ~cmxfile:true lam)
+    const;
+  Clambdagen.convert fl_sym
+*)
 
 let compile_implementation ?toplevel prefixname ppf (size, lam) =
   let asmfile =
