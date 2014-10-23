@@ -66,6 +66,15 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr =
   let fv_map = ClosureVariableSet.fold (f' extern_fv_offset_table) !set_fv in
   fun_map, fv_map
 
+let structured_constant_label expected_symbol ~shared cst =
+  match expected_symbol with
+  | None ->
+      Compilenv.new_structured_constant cst ~shared
+  | Some sym ->
+      let lbl = string_of_linkage_name sym.sym_label in
+      Compilenv.add_structured_constant lbl cst ~shared;
+      lbl
+
 module type Param1 = sig
   type t
   val expr : t flambda
@@ -258,7 +267,7 @@ module Conv(P:Param2) = struct
                   (string_of_linkage_name sym.sym_label, None))
 
     | Fconst (cst,_) ->
-        Uconst (conv_const cst)
+        Uconst (conv_const expected_symbol cst)
 
     | Flet(str, id, lam, body, _) ->
         Ulet(Variable.unique_ident id, conv env lam, conv env body)
@@ -366,7 +375,7 @@ module Conv(P:Param2) = struct
             Uprim(p, args, dbg)
         | Some l ->
             let cst = Uconst_block (tag,l) in
-            let lbl = Compilenv.new_structured_constant ~shared:true cst in
+            let lbl = structured_constant_label expected_symbol ~shared:true cst in
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
@@ -569,12 +578,10 @@ module Conv(P:Param2) = struct
 
   and conv_list env l = List.map (conv env) l
 
-  and conv_const cst =
+  and conv_const expected_symbol cst =
     let open Asttypes in
     let str ~shared cst =
-      let name =
-        Compilenv.new_structured_constant cst ~shared
-      in
+      let name = structured_constant_label expected_symbol ~shared cst in
       Uconst_ref (name, Some cst)
     in
     match cst with
