@@ -572,6 +572,7 @@ module Conv(P:Param2) = struct
       | None -> assert false
       | Some fv_const ->
           let cst = Uconst_closure (ufunct, closure_lbl, fv_const) in
+          Compilenv.add_structured_constant closure_lbl cst ~shared:true;
           Uconst(Uconst_ref (closure_lbl, Some cst))
     else
       Uclosure (ufunct, List.map snd fv_ulam)
@@ -676,6 +677,6 @@ let convert (type a)
   SymbolMap.iter
     (fun sym cst ->
        let lbl = string_of_linkage_name sym.sym_label in
-       Compilenv.add_structured_constant lbl cst true)
+       Compilenv.add_exported_constant lbl)
     C.constants;
   C.res
