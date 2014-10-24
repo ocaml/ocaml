@@ -169,8 +169,9 @@ let compile_unit asm_filename keep_asm obj_filename gen =
 
 let gen_implementation ?toplevel ppf (size, lam) =
   Emit.begin_assembly ();
-  let _ = flambda ppf (size, lam) in
-  Closure.intro size lam
+  let clambda = flambda ppf (size, lam) in
+  (* Closure.intro size lam *)
+  clambda
   ++ clambda_dump_if ppf
   ++ Cmmgen.compunit size
   ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
