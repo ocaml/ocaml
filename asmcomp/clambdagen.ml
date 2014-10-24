@@ -244,21 +244,38 @@ module Conv(P:Param2) = struct
         fatal_error (Format.asprintf "missing closure %a"
                        FunId.print fid)
 
-  type env = ulambda VarMap.t (* substitution *)
+  type env =
+    { subst : ulambda VarMap.t;
+      var : Ident.t VarMap.t }
 
-  let empty_env () = VarMap.empty
+  let empty_env =
+    { subst = VarMap.empty;
+      var = VarMap.empty }
 
-  let add_sb id subst env = VarMap.add id subst env
+  let add_sb id subst env =
+    { env with subst = VarMap.add id subst env.subst }
+
+  let find_sb id env = VarMap.find id env.subst
+  let find_var id env = VarMap.find id env.var
+
+  let add_unique_ident var env =
+    let id = Variable.unique_ident var in
+    id, { env with var = VarMap.add var id env.var }
 
   let rec conv ?(expected_symbol:Symbol.t option) (env : env) = function
-    | Fvar (id,_) ->
+    | Fvar (var,_) ->
         begin
           (* If the variable is a recursive access to the function
              currently being defined: it is replaced by an offset in the
              closure. If the variable is bound by the closure, it is
              replace by a field access inside the closure *)
-          try VarMap.find id env
-          with Not_found -> Uvar (Variable.unique_ident id)
+          try find_sb var env
+          with Not_found ->
+            try Uvar (find_var var env)
+            with Not_found ->
+              fatal_error
+                (Format.asprintf "Clambdagen.conv: unbound variable %a@."
+                   Variable.print var)
         end
 
     | Fsymbol (sym,_) ->
@@ -269,12 +286,15 @@ module Conv(P:Param2) = struct
     | Fconst (cst,_) ->
         Uconst (conv_const expected_symbol cst)
 
-    | Flet(str, id, lam, body, _) ->
-        Ulet(Variable.unique_ident id, conv env lam, conv env body)
+    | Flet(str, var, lam, body, _) ->
+        let id, env_body = add_unique_ident var env in
+        Ulet(id, conv env lam, conv env_body body)
 
     | Fletrec(defs, body, _) ->
-        let udefs = List.map (fun (id,def) ->
-            Variable.unique_ident id, conv env def) defs in
+        let env, defs = List.fold_right (fun (var,def) (env, defs) ->
+            let id, env = add_unique_ident var env in
+            env, (id, def) :: defs) defs (env, []) in
+        let udefs = List.map (fun (id,def) -> id, conv env def) defs in
         Uletrec(udefs, conv env body)
 
     | Fclosure({ cl_fun = funct; cl_free_var = fv }, _) ->
@@ -384,20 +404,27 @@ module Conv(P:Param2) = struct
     | Fstaticraise (i, args, _) ->
         Ustaticfail (Static_exception.to_int i, conv_list env args)
     | Fstaticcatch (i, vars, body, handler, _) ->
-        Ucatch (Static_exception.to_int i, List.map Variable.unique_ident vars,
-                conv env body, conv env handler)
-    | Ftrywith(body, id, handler, _) ->
-        Utrywith(conv env body, Variable.unique_ident id, conv env handler)
+        let env_handler, ids =
+          List.fold_right (fun var (env, ids) ->
+              let id, env = add_unique_ident var env in
+              env, id :: ids) vars (env, []) in
+        Ucatch (Static_exception.to_int i, ids,
+                conv env body, conv env_handler handler)
+    | Ftrywith(body, var, handler, _) ->
+        let id, env_handler = add_unique_ident var env in
+        Utrywith(conv env body, id, conv env_handler handler)
     | Fifthenelse(arg, ifso, ifnot, _) ->
         Uifthenelse(conv env arg, conv env ifso, conv env ifnot)
     | Fsequence(lam1, lam2, _) ->
         Usequence(conv env lam1, conv env lam2)
     | Fwhile(cond, body, _) ->
         Uwhile(conv env cond, conv env body)
-    | Ffor(id, lo, hi, dir, body, _) ->
-        Ufor(Variable.unique_ident id, conv env lo, conv env hi, dir, conv env body)
-    | Fassign(id, lam, _) ->
-        Uassign(Variable.unique_ident id, conv env lam)
+    | Ffor(var, lo, hi, dir, body, _) ->
+        let id, env_body = add_unique_ident var env in
+        Ufor(id, conv env lo, conv env hi, dir, conv env_body body)
+    | Fassign(var, lam, _) ->
+        let id = try find_var var env with Not_found -> assert false in
+        Uassign(id, conv env lam)
     | Fsend(kind, met, obj, args, dbg, _) ->
         Usend(kind, conv env met, conv env obj, conv_list env args, dbg)
 
@@ -524,7 +551,7 @@ module Conv(P:Param2) = struct
 
       (* inside the body of the function, we cannot access variables
          declared outside, so take a clean substitution table. *)
-      let env = VarMap.empty in
+      let env = empty_env in
 
       let env =
         (* Add to the substitution the value of the free variables *)
@@ -556,12 +583,15 @@ module Conv(P:Param2) = struct
           List.fold_left (add_offset_subst fun_offset) env funct
       in
 
-      let params = List.map Variable.unique_ident func.params in
+      let env_body, params =
+        List.fold_right (fun var (env, params) ->
+            let id, env = add_unique_ident var env in
+            env, id :: params) func.params (env, []) in
 
       { Clambda.label = Compilenv.function_label cf;
         arity = Flambda.function_arity func;
         params = if closed then params else params @ [env_var];
-        body = conv env func.body;
+        body = conv env_body func.body;
         dbg = func.dbg } in
 
     let ufunct = List.map conv_function funct in
@@ -632,11 +662,11 @@ module Conv(P:Param2) = struct
   let constants =
     SymbolMap.mapi
       (fun sym lam ->
-         let ulam = conv (empty_env ()) ~expected_symbol:sym lam in
+         let ulam = conv empty_env ~expected_symbol:sym lam in
          structured_constant_for_symbol sym ulam)
       P.constants
 
-  let res = conv (empty_env ()) P.expr
+  let res = conv empty_env P.expr
 
 end
 
