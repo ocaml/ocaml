@@ -1315,6 +1315,13 @@ let print_tags ppf fields =
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
   (* special case handled specially by new_type_errors *)
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
+       !new_type_errors_activated && 
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
+     -> swap_position_of_error_messages := true;
+        true
+  (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
      (* note: we could restrict the application of this pattern to the case 
         where ty1 and ty2 can be unified; however, this would need to be tested
@@ -1323,13 +1330,6 @@ let has_explanation unif t3 t4 =
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
      -> swap_position_of_error_messages := true; 
-        true
-  (* special case handled specially by new_type_errors *)
-  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
-       !new_type_errors_activated && 
-       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
-     -> swap_position_of_error_messages := true;
         true
   | Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | Tnil, Tconstr _ | Tconstr _, Tnil
@@ -1351,18 +1351,18 @@ let rec mismatch unif = function
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   (* special case handled specially by new_type_errors *)
+  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
+     when !new_type_errors_activated && 
+       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
+      fprintf ppf
+        "@,@[You probably forgot to provide `()' as argument somewhere.@]"
+  (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
      when !new_type_errors_activated && 
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot a `!' operator somewhere.@]"
-  (* special case handled specially by new_type_errors *)
-  | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when !new_type_errors_activated && 
-       (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
-      fprintf ppf
-        "@,@[You probably forgot to provide `()' as argument somewhere.@]"
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _

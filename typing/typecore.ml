@@ -3669,7 +3669,16 @@ and type_statement_easify env sexp report =
 
 and type_cases_easify ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* Note: the dispatch on "!new_type_errors_activated" occurs inside the function "type_cases" *)
-  type_cases ?in_function env ty_arg ty_res partial_flag loc caselist
+  if !new_type_errors_activated then begin
+    let ty = newvar() in
+    let cases, partial = type_cases ?in_function env ty ty_res partial_flag loc caselist in
+    unify_exp_types_easytype loc env ty ty_arg
+        (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "@,The argument of the pattern matching has type@,") (format_string "but the patterns have type"));
+    (cases, partial)   
+  end else begin
+    type_cases ?in_function env ty_arg ty_res partial_flag loc caselist
+  end
+
 
 and type_statement_easytype env sexp report =
   (* Note: 2 lines below, it is not obvious whether we really need to use begin_def/end_def 
@@ -3718,9 +3727,12 @@ and type_expect_predef_easytype env sexp predef_expected report =
   let expected_ty = instance_def predef_expected in
   unify_exp_easytype env exp expected_ty report
 
-and unify_exp_types_easytype loc env exp expected_ty report =
+  (* Note: could use polymorphic recursion to write an helper function
+     to factorize the body of the three following functions *)
+
+and unify_exp_types_easytype loc env exp_ty expected_ty report =
   try 
-    unify_exp_types loc env exp expected_ty
+    unify_exp_types loc env exp_ty expected_ty
   with 
   | Error (loc', env', Expr_type_clash(trace')) ->
       raise (Error (loc', env', Expr_type_clash_easytype(report,trace')))

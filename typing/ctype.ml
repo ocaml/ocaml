@@ -81,7 +81,9 @@ open Btype
 
 (**** Errors ****)
 
-let new_type_errors_activated = ref false
+  (* Note: set the reference below to "true" in order to force using 
+     the new type error algorithms even when there are no errors. *)
+let new_type_errors_activated = ref false 
 
 exception Unify of expr_pairs
 
