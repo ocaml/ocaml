@@ -152,16 +152,13 @@ let mkexp_constraint e (t1, t2) =
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
-let safe_string_on =
-  let on = ref false in
-  Array.iter (fun x -> if x = "-safe-string" then on := true) Sys.argv;
-  !on
+let safe_string_flag = not !Clflags.unsafe_string
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
 
 let unclosed opening_name opening_num closing_name closing_num =
-  raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
+  raise (Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
 
 let expecting pos nonterm =
@@ -1176,7 +1173,7 @@ expr:
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(ghexp(Pexp_ident
-                                (array_function (if safe_string_on then 
+                                (array_function (if safe_string_flag then 
                                                  "Bytes" else "String") "set")),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
