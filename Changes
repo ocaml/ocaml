@@ -24,6 +24,11 @@ Type system:
   type through inference, but no breakage known on published code.
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
+OCaml 4.02.2:
+-------------
+
+- PR#6628: Configure script rejects legitimate arguments
+
 OCaml 4.02.1:
 -------------
 

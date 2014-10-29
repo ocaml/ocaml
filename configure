@@ -77,17 +77,13 @@ wrn() {
 }
 
 err() {
-  printf "[ERROR!]%b\n" "$*" 1>&3
+  printf "[ERROR!] %b\n" "$*" 1>&3
   exit 2
 }
 
 exec 3>&1
 
 # Parse command-line arguments
-
-if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
-  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
-fi
 
 while : ; do
   case "$1" in
@@ -155,7 +151,12 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
-    *) err "Unknown option \"$1\".";;
+    *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
+         err "configure expects arguments of the form '-prefix /foo/bar'," \
+             "not '-prefix=/foo/bar' (note the '=')."
+       else
+         err "Unknown option \"$1\"."
+       fi;;
   esac
   shift
 done
