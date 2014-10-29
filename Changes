@@ -1,3 +1,8 @@
+OCaml 4.02.2:
+-------------
+
+- PR#6628: Configure script rejects legitimate arguments
+
 OCaml 4.02.1:
 -------------
 (Changes that can break existing programs are marked with a "*")
