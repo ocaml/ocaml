@@ -158,7 +158,7 @@ let syntax_error () =
   raise Syntaxerr.Escape_error
 
 let unclosed opening_name opening_num closing_name closing_num =
-  raise (Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
+  raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
 
 let expecting pos nonterm =
