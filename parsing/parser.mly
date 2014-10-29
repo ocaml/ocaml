@@ -1175,7 +1175,9 @@ expr:
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function (if safe_string_on then "Bytes" else "String") "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident
+                                (array_function (if safe_string_on then 
+                                                 "Bytes" else "String") "set")),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
