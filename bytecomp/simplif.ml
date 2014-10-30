@@ -517,7 +517,9 @@ let rec emit_tail_infos is_tail lambda =
   | Lvar _ -> ()
   | Lconst _ -> ()
   | Lapply (func, l, ({apply_loc=loc} as info)) ->
-      if info.apply_should_be_tailcall && not is_tail
+      if info.apply_should_be_tailcall
+      && not is_tail
+      && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning loc Warnings.Expect_tailcall;
       list_emit_tail_infos false l;
       Stypes.record (Stypes.An_call (loc, call_kind l))
