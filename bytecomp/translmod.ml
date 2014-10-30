@@ -96,8 +96,8 @@ let rec apply_coercion strict restr arg =
           apply_coercion Strict cc_res
             (Lapply(Lvar id, [apply_coercion Alias cc_arg (Lvar param)],
                     Location.none))))
-  | Tcoerce_primitive p ->
-      transl_primitive Location.none p
+  | Tcoerce_primitive {pc_desc; pc_type; pc_env} ->
+      transl_primitive Location.none pc_desc
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion Alias cc (transl_normal_path path))
@@ -121,7 +121,7 @@ and wrap_id_pos_list id_pos_list get_field lam =
       (lam, Ident.empty) id_pos_list
   in
   if s == Ident.empty then lam else subst_lambda s lam
-  
+
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -384,7 +384,8 @@ and transl_structure fields cc rootpath = function
                 List.map
                   (fun (pos, cc) ->
                     match cc with
-                      Tcoerce_primitive p -> transl_primitive Location.none p
+                      Tcoerce_primitive p ->
+                        transl_primitive Location.none p.pc_desc
                     | _ -> apply_coercion Strict cc (get_field pos))
                   pos_cc_list))
           and id_pos_list =
@@ -703,7 +704,7 @@ let transl_store_structure glob map prims str =
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
                     [Lprim(Pgetglobal glob, []);
-                     transl_primitive Location.none prim]),
+                     transl_primitive Location.none prim.pc_desc]),
               cont)
 
   in List.fold_right store_primitive prims

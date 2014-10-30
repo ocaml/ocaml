@@ -84,7 +84,28 @@ module ClearEnv  = TypedtreeMap.MakeMap (struct
   let leave_class_expr c =
     { c with cl_env = keep_only_summary c.cl_env }
   let leave_module_expr m =
-    { m with mod_env = keep_only_summary m.mod_env }
+    let rec module_coercion = function
+      | Tcoerce_none -> Tcoerce_none
+      | Tcoerce_functor (c1,c2) ->
+          Tcoerce_functor (module_coercion c1, module_coercion c2)
+      | Tcoerce_alias (p, c1) ->
+          Tcoerce_alias (p, module_coercion c1)
+      | Tcoerce_structure (l1, l2) ->
+          let l1' = List.map (fun (i,c) -> i, module_coercion c) l1 in
+          let l2' = List.map (fun (id,i,c) -> id, i, module_coercion c) l2 in
+          Tcoerce_structure (l1', l2')
+      | Tcoerce_primitive pc ->
+          Tcoerce_primitive {pc with pc_env = keep_only_summary pc.pc_env}
+    in
+    let module_expr_desc = function
+        Tmod_ident _ | Tmod_structure _ | Tmod_functor _ | Tmod_unpack _ as me
+        -> me
+      | Tmod_apply (me1,me2,mc) -> Tmod_apply (me1, me2, module_coercion mc)
+      | Tmod_constraint (me, mty, mtyc, mc) ->
+          Tmod_constraint (me, mty, mtyc, module_coercion mc)
+    in
+    { m with mod_desc = module_expr_desc m.mod_desc;
+             mod_env = keep_only_summary m.mod_env }
   let leave_structure s =
     { s with str_final_env = keep_only_summary s.str_final_env }
   let leave_structure_item str =
