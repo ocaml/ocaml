@@ -522,7 +522,8 @@ let rec emit_tail_infos is_tail lambda =
       && Warnings.is_active Warnings.Expect_tailcall
         then Location.prerr_warning loc Warnings.Expect_tailcall;
       list_emit_tail_infos false l;
-      Stypes.record (Stypes.An_call (loc, call_kind l))
+      if !Clflags.annotations
+        then Stypes.record (Stypes.An_call (loc, call_kind l))
   | Lfunction (_, _, lam) ->
       emit_tail_infos true lam
   | Llet (_, _, lam, body) ->
@@ -578,7 +579,8 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false meth;
       emit_tail_infos false obj;
       list_emit_tail_infos false args;
-      Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
+      if !Clflags.annotations
+        then Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
   | Levent (lam, _) ->
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
