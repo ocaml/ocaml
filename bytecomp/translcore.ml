@@ -138,6 +138,7 @@ let comparisons_table = create_hashtable 11 [
        false)
 ]
 
+
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
@@ -322,6 +323,9 @@ let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
+let make_bigarray_ref n = Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
+let make_bigarray_set n =  Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
+
 let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
@@ -331,6 +335,20 @@ let find_primitive loc prim_name =
     | "%loc_LINE" -> Ploc Loc_LINE
     | "%loc_POS" -> Ploc Loc_POS
     | "%loc_MODULE" -> Ploc Loc_MODULE
+    | "%array_opt_get" ->
+        if !Clflags.fast then Parrayrefu Pgenarray else Parrayrefs Pgenarray
+    | "%array_opt_set"->
+        if !Clflags.fast then Parraysetu Pgenarray else Parraysets Pgenarray
+    | "%string_opt_get"->
+        if !Clflags.fast then Pstringrefu else Pstringrefs
+    | "%string_opt_set"->
+        if !Clflags.fast then Pstringsetu else Pstringsets
+    | "%caml_ba_opt_ref_1" -> make_bigarray_ref 1
+    | "%caml_ba_opt_ref_2" -> make_bigarray_ref 2
+    | "%caml_ba_opt_ref_3" -> make_bigarray_ref 3
+    | "%caml_ba_opt_set_1" -> make_bigarray_set 1
+    | "%caml_ba_opt_set_2" -> make_bigarray_set 2
+    | "%caml_ba_opt_set_3" -> make_bigarray_set 3
     | name -> Hashtbl.find primitives_table name
 
 let transl_prim loc prim args =
