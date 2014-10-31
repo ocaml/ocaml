@@ -1,0 +1,807 @@
+
+# 0a
+external cmp : 'a -> 'a -> int = "%compare"
+# 0a
+external eq : 'a -> 'a -> bool = "%equal"
+# 0a
+external ne : 'a -> 'a -> bool = "%notequal"
+# 0a
+external lt : 'a -> 'a -> bool = "%lessthan"
+# 0a
+external gt : 'a -> 'a -> bool = "%greaterthan"
+# 0a
+external le : 'a -> 'a -> bool = "%lessequal"
+# 0a
+external ge : 'a -> 'a -> bool = "%greaterequal"
+#       (let (gen_cmp/1213 = (function x/1214 y/1215 (caml_compare x/1214 y/1215)))
+  (apply (field 1 (global Toploop!)) "gen_cmp" gen_cmp/1213))
+val gen_cmp : 'a -> 'a -> int = <fun>
+# (let
+  (int_cmp/1216 = (function x/1217 y/1218 (caml_int_compare x/1217 y/1218)))
+  (apply (field 1 (global Toploop!)) "int_cmp" int_cmp/1216))
+val int_cmp : int -> int -> int = <fun>
+# (let
+  (float_cmp/1219 =
+     (function x/1220 y/1221 (caml_float_compare x/1220 y/1221)))
+  (apply (field 1 (global Toploop!)) "float_cmp" float_cmp/1219))
+val float_cmp : float -> float -> int = <fun>
+# (let
+  (string_cmp/1222 =
+     (function x/1223 y/1224 (caml_string_compare x/1223 y/1224)))
+  (apply (field 1 (global Toploop!)) "string_cmp" string_cmp/1222))
+val string_cmp : string -> string -> int = <fun>
+# (let
+  (int32_cmp/1225 =
+     (function x/1226 y/1227 (caml_int32_compare x/1226 y/1227)))
+  (apply (field 1 (global Toploop!)) "int32_cmp" int32_cmp/1225))
+val int32_cmp : int32 -> int32 -> int = <fun>
+# (let
+  (int64_cmp/1228 =
+     (function x/1229 y/1230 (caml_int64_compare x/1229 y/1230)))
+  (apply (field 1 (global Toploop!)) "int64_cmp" int64_cmp/1228))
+val int64_cmp : int64 -> int64 -> int = <fun>
+# (let
+  (nativeint_cmp/1231 =
+     (function x/1232 y/1233 (caml_nativeint_compare x/1232 y/1233)))
+  (apply (field 1 (global Toploop!)) "nativeint_cmp" nativeint_cmp/1231))
+val nativeint_cmp : nativeint -> nativeint -> int = <fun>
+#   (let (gen_eq/1234 = (function x/1235 y/1236 (caml_equal x/1235 y/1236)))
+  (apply (field 1 (global Toploop!)) "gen_eq" gen_eq/1234))
+val gen_eq : 'a -> 'a -> bool = <fun>
+# (let (int_eq/1237 = (function x/1238 y/1239 (== x/1238 y/1239)))
+  (apply (field 1 (global Toploop!)) "int_eq" int_eq/1237))
+val int_eq : int -> int -> bool = <fun>
+# (let (float_eq/1240 = (function x/1241 y/1242 (==. x/1241 y/1242)))
+  (apply (field 1 (global Toploop!)) "float_eq" float_eq/1240))
+val float_eq : float -> float -> bool = <fun>
+# (let
+  (string_eq/1243 =
+     (function x/1244 y/1245 (caml_string_equal x/1244 y/1245)))
+  (apply (field 1 (global Toploop!)) "string_eq" string_eq/1243))
+val string_eq : string -> string -> bool = <fun>
+# (let (int32_eq/1246 = (function x/1247 y/1248 (Int32.== x/1247 y/1248)))
+  (apply (field 1 (global Toploop!)) "int32_eq" int32_eq/1246))
+val int32_eq : int32 -> int32 -> bool = <fun>
+# (let (int64_eq/1249 = (function x/1250 y/1251 (Int64.== x/1250 y/1251)))
+  (apply (field 1 (global Toploop!)) "int64_eq" int64_eq/1249))
+val int64_eq : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_eq/1252 = (function x/1253 y/1254 (Nativeint.== x/1253 y/1254)))
+  (apply (field 1 (global Toploop!)) "nativeint_eq" nativeint_eq/1252))
+val nativeint_eq : nativeint -> nativeint -> bool = <fun>
+#   (let (gen_ne/1255 = (function x/1256 y/1257 (caml_notequal x/1256 y/1257)))
+  (apply (field 1 (global Toploop!)) "gen_ne" gen_ne/1255))
+val gen_ne : 'a -> 'a -> bool = <fun>
+# (let (int_ne/1258 = (function x/1259 y/1260 (!= x/1259 y/1260)))
+  (apply (field 1 (global Toploop!)) "int_ne" int_ne/1258))
+val int_ne : int -> int -> bool = <fun>
+# (let (float_ne/1261 = (function x/1262 y/1263 (!=. x/1262 y/1263)))
+  (apply (field 1 (global Toploop!)) "float_ne" float_ne/1261))
+val float_ne : float -> float -> bool = <fun>
+# (let
+  (string_ne/1264 =
+     (function x/1265 y/1266 (caml_string_notequal x/1265 y/1266)))
+  (apply (field 1 (global Toploop!)) "string_ne" string_ne/1264))
+val string_ne : string -> string -> bool = <fun>
+# (let (int32_ne/1267 = (function x/1268 y/1269 (Int32.!= x/1268 y/1269)))
+  (apply (field 1 (global Toploop!)) "int32_ne" int32_ne/1267))
+val int32_ne : int32 -> int32 -> bool = <fun>
+# (let (int64_ne/1270 = (function x/1271 y/1272 (Int64.!= x/1271 y/1272)))
+  (apply (field 1 (global Toploop!)) "int64_ne" int64_ne/1270))
+val int64_ne : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_ne/1273 = (function x/1274 y/1275 (Nativeint.!= x/1274 y/1275)))
+  (apply (field 1 (global Toploop!)) "nativeint_ne" nativeint_ne/1273))
+val nativeint_ne : nativeint -> nativeint -> bool = <fun>
+#   (let (gen_lt/1276 = (function x/1277 y/1278 (caml_lessthan x/1277 y/1278)))
+  (apply (field 1 (global Toploop!)) "gen_lt" gen_lt/1276))
+val gen_lt : 'a -> 'a -> bool = <fun>
+# (let (int_lt/1279 = (function x/1280 y/1281 (< x/1280 y/1281)))
+  (apply (field 1 (global Toploop!)) "int_lt" int_lt/1279))
+val int_lt : int -> int -> bool = <fun>
+# (let (float_lt/1282 = (function x/1283 y/1284 (<. x/1283 y/1284)))
+  (apply (field 1 (global Toploop!)) "float_lt" float_lt/1282))
+val float_lt : float -> float -> bool = <fun>
+# (let
+  (string_lt/1285 =
+     (function x/1286 y/1287 (caml_string_lessthan x/1286 y/1287)))
+  (apply (field 1 (global Toploop!)) "string_lt" string_lt/1285))
+val string_lt : string -> string -> bool = <fun>
+# (let (int32_lt/1288 = (function x/1289 y/1290 (Int32.< x/1289 y/1290)))
+  (apply (field 1 (global Toploop!)) "int32_lt" int32_lt/1288))
+val int32_lt : int32 -> int32 -> bool = <fun>
+# (let (int64_lt/1291 = (function x/1292 y/1293 (Int64.< x/1292 y/1293)))
+  (apply (field 1 (global Toploop!)) "int64_lt" int64_lt/1291))
+val int64_lt : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_lt/1294 = (function x/1295 y/1296 (Nativeint.< x/1295 y/1296)))
+  (apply (field 1 (global Toploop!)) "nativeint_lt" nativeint_lt/1294))
+val nativeint_lt : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (gen_gt/1297 = (function x/1298 y/1299 (caml_greaterthan x/1298 y/1299)))
+  (apply (field 1 (global Toploop!)) "gen_gt" gen_gt/1297))
+val gen_gt : 'a -> 'a -> bool = <fun>
+# (let (int_gt/1300 = (function x/1301 y/1302 (> x/1301 y/1302)))
+  (apply (field 1 (global Toploop!)) "int_gt" int_gt/1300))
+val int_gt : int -> int -> bool = <fun>
+# (let (float_gt/1303 = (function x/1304 y/1305 (>. x/1304 y/1305)))
+  (apply (field 1 (global Toploop!)) "float_gt" float_gt/1303))
+val float_gt : float -> float -> bool = <fun>
+# (let
+  (string_gt/1306 =
+     (function x/1307 y/1308 (caml_string_greaterthan x/1307 y/1308)))
+  (apply (field 1 (global Toploop!)) "string_gt" string_gt/1306))
+val string_gt : string -> string -> bool = <fun>
+# (let (int32_gt/1309 = (function x/1310 y/1311 (Int32.> x/1310 y/1311)))
+  (apply (field 1 (global Toploop!)) "int32_gt" int32_gt/1309))
+val int32_gt : int32 -> int32 -> bool = <fun>
+# (let (int64_gt/1312 = (function x/1313 y/1314 (Int64.> x/1313 y/1314)))
+  (apply (field 1 (global Toploop!)) "int64_gt" int64_gt/1312))
+val int64_gt : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_gt/1315 = (function x/1316 y/1317 (Nativeint.> x/1316 y/1317)))
+  (apply (field 1 (global Toploop!)) "nativeint_gt" nativeint_gt/1315))
+val nativeint_gt : nativeint -> nativeint -> bool = <fun>
+#   (let (gen_le/1318 = (function x/1319 y/1320 (caml_lessequal x/1319 y/1320)))
+  (apply (field 1 (global Toploop!)) "gen_le" gen_le/1318))
+val gen_le : 'a -> 'a -> bool = <fun>
+# (let (int_le/1321 = (function x/1322 y/1323 (<= x/1322 y/1323)))
+  (apply (field 1 (global Toploop!)) "int_le" int_le/1321))
+val int_le : int -> int -> bool = <fun>
+# (let (float_le/1324 = (function x/1325 y/1326 (<=. x/1325 y/1326)))
+  (apply (field 1 (global Toploop!)) "float_le" float_le/1324))
+val float_le : float -> float -> bool = <fun>
+# (let
+  (string_le/1327 =
+     (function x/1328 y/1329 (caml_string_lessequal x/1328 y/1329)))
+  (apply (field 1 (global Toploop!)) "string_le" string_le/1327))
+val string_le : string -> string -> bool = <fun>
+# (let (int32_le/1330 = (function x/1331 y/1332 (Int32.<= x/1331 y/1332)))
+  (apply (field 1 (global Toploop!)) "int32_le" int32_le/1330))
+val int32_le : int32 -> int32 -> bool = <fun>
+# (let (int64_le/1333 = (function x/1334 y/1335 (Int64.<= x/1334 y/1335)))
+  (apply (field 1 (global Toploop!)) "int64_le" int64_le/1333))
+val int64_le : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_le/1336 = (function x/1337 y/1338 (Nativeint.<= x/1337 y/1338)))
+  (apply (field 1 (global Toploop!)) "nativeint_le" nativeint_le/1336))
+val nativeint_le : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (gen_ge/1339 = (function x/1340 y/1341 (caml_greaterequal x/1340 y/1341)))
+  (apply (field 1 (global Toploop!)) "gen_ge" gen_ge/1339))
+val gen_ge : 'a -> 'a -> bool = <fun>
+# (let (int_ge/1342 = (function x/1343 y/1344 (>= x/1343 y/1344)))
+  (apply (field 1 (global Toploop!)) "int_ge" int_ge/1342))
+val int_ge : int -> int -> bool = <fun>
+# (let (float_ge/1345 = (function x/1346 y/1347 (>=. x/1346 y/1347)))
+  (apply (field 1 (global Toploop!)) "float_ge" float_ge/1345))
+val float_ge : float -> float -> bool = <fun>
+# (let
+  (string_ge/1348 =
+     (function x/1349 y/1350 (caml_string_greaterequal x/1349 y/1350)))
+  (apply (field 1 (global Toploop!)) "string_ge" string_ge/1348))
+val string_ge : string -> string -> bool = <fun>
+# (let (int32_ge/1351 = (function x/1352 y/1353 (Int32.>= x/1352 y/1353)))
+  (apply (field 1 (global Toploop!)) "int32_ge" int32_ge/1351))
+val int32_ge : int32 -> int32 -> bool = <fun>
+# (let (int64_ge/1354 = (function x/1355 y/1356 (Int64.>= x/1355 y/1356)))
+  (apply (field 1 (global Toploop!)) "int64_ge" int64_ge/1354))
+val int64_ge : int64 -> int64 -> bool = <fun>
+# (let
+  (nativeint_ge/1357 = (function x/1358 y/1359 (Nativeint.>= x/1358 y/1359)))
+  (apply (field 1 (global Toploop!)) "nativeint_ge" nativeint_ge/1357))
+val nativeint_ge : nativeint -> nativeint -> bool = <fun>
+#       (let
+  (eta_gen_cmp/1360 =
+     (function prim/1362 prim/1361 (caml_compare prim/1362 prim/1361)))
+  (apply (field 1 (global Toploop!)) "eta_gen_cmp" eta_gen_cmp/1360))
+val eta_gen_cmp : 'a -> 'a -> int = <fun>
+# (let
+  (eta_int_cmp/1363 =
+     (function prim/1365 prim/1364 (caml_int_compare prim/1365 prim/1364)))
+  (apply (field 1 (global Toploop!)) "eta_int_cmp" eta_int_cmp/1363))
+val eta_int_cmp : int -> int -> int = <fun>
+# (let
+  (eta_float_cmp/1366 =
+     (function prim/1368 prim/1367 (caml_float_compare prim/1368 prim/1367)))
+  (apply (field 1 (global Toploop!)) "eta_float_cmp" eta_float_cmp/1366))
+val eta_float_cmp : float -> float -> int = <fun>
+# (let
+  (eta_string_cmp/1369 =
+     (function prim/1371 prim/1370 (caml_string_compare prim/1371 prim/1370)))
+  (apply (field 1 (global Toploop!)) "eta_string_cmp" eta_string_cmp/1369))
+val eta_string_cmp : string -> string -> int = <fun>
+# (let
+  (eta_int32_cmp/1372 =
+     (function prim/1374 prim/1373 (caml_int32_compare prim/1374 prim/1373)))
+  (apply (field 1 (global Toploop!)) "eta_int32_cmp" eta_int32_cmp/1372))
+val eta_int32_cmp : int32 -> int32 -> int = <fun>
+# (let
+  (eta_int64_cmp/1375 =
+     (function prim/1377 prim/1376 (caml_int64_compare prim/1377 prim/1376)))
+  (apply (field 1 (global Toploop!)) "eta_int64_cmp" eta_int64_cmp/1375))
+val eta_int64_cmp : int64 -> int64 -> int = <fun>
+# (let
+  (eta_nativeint_cmp/1378 =
+     (function prim/1380 prim/1379
+       (caml_nativeint_compare prim/1380 prim/1379)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_cmp"
+    eta_nativeint_cmp/1378))
+val eta_nativeint_cmp : nativeint -> nativeint -> int = <fun>
+#   (let
+  (eta_gen_eq/1381 =
+     (function prim/1383 prim/1382 (caml_equal prim/1383 prim/1382)))
+  (apply (field 1 (global Toploop!)) "eta_gen_eq" eta_gen_eq/1381))
+val eta_gen_eq : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_eq/1384 = (function prim/1386 prim/1385 (== prim/1386 prim/1385)))
+  (apply (field 1 (global Toploop!)) "eta_int_eq" eta_int_eq/1384))
+val eta_int_eq : int -> int -> bool = <fun>
+# (let
+  (eta_float_eq/1387 =
+     (function prim/1389 prim/1388 (==. prim/1389 prim/1388)))
+  (apply (field 1 (global Toploop!)) "eta_float_eq" eta_float_eq/1387))
+val eta_float_eq : float -> float -> bool = <fun>
+# (let
+  (eta_string_eq/1390 =
+     (function prim/1392 prim/1391 (caml_string_equal prim/1392 prim/1391)))
+  (apply (field 1 (global Toploop!)) "eta_string_eq" eta_string_eq/1390))
+val eta_string_eq : string -> string -> bool = <fun>
+# (let
+  (eta_int32_eq/1393 =
+     (function prim/1395 prim/1394 (Int32.== prim/1395 prim/1394)))
+  (apply (field 1 (global Toploop!)) "eta_int32_eq" eta_int32_eq/1393))
+val eta_int32_eq : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_eq/1396 =
+     (function prim/1398 prim/1397 (Int64.== prim/1398 prim/1397)))
+  (apply (field 1 (global Toploop!)) "eta_int64_eq" eta_int64_eq/1396))
+val eta_int64_eq : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_eq/1399 =
+     (function prim/1401 prim/1400 (Nativeint.== prim/1401 prim/1400)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_eq"
+    eta_nativeint_eq/1399))
+val eta_nativeint_eq : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (eta_gen_ne/1402 =
+     (function prim/1404 prim/1403 (caml_notequal prim/1404 prim/1403)))
+  (apply (field 1 (global Toploop!)) "eta_gen_ne" eta_gen_ne/1402))
+val eta_gen_ne : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_ne/1405 = (function prim/1407 prim/1406 (!= prim/1407 prim/1406)))
+  (apply (field 1 (global Toploop!)) "eta_int_ne" eta_int_ne/1405))
+val eta_int_ne : int -> int -> bool = <fun>
+# (let
+  (eta_float_ne/1408 =
+     (function prim/1410 prim/1409 (!=. prim/1410 prim/1409)))
+  (apply (field 1 (global Toploop!)) "eta_float_ne" eta_float_ne/1408))
+val eta_float_ne : float -> float -> bool = <fun>
+# (let
+  (eta_string_ne/1411 =
+     (function prim/1413 prim/1412
+       (caml_string_notequal prim/1413 prim/1412)))
+  (apply (field 1 (global Toploop!)) "eta_string_ne" eta_string_ne/1411))
+val eta_string_ne : string -> string -> bool = <fun>
+# (let
+  (eta_int32_ne/1414 =
+     (function prim/1416 prim/1415 (Int32.!= prim/1416 prim/1415)))
+  (apply (field 1 (global Toploop!)) "eta_int32_ne" eta_int32_ne/1414))
+val eta_int32_ne : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_ne/1417 =
+     (function prim/1419 prim/1418 (Int64.!= prim/1419 prim/1418)))
+  (apply (field 1 (global Toploop!)) "eta_int64_ne" eta_int64_ne/1417))
+val eta_int64_ne : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_ne/1420 =
+     (function prim/1422 prim/1421 (Nativeint.!= prim/1422 prim/1421)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_ne"
+    eta_nativeint_ne/1420))
+val eta_nativeint_ne : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (eta_gen_lt/1423 =
+     (function prim/1425 prim/1424 (caml_lessthan prim/1425 prim/1424)))
+  (apply (field 1 (global Toploop!)) "eta_gen_lt" eta_gen_lt/1423))
+val eta_gen_lt : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_lt/1426 = (function prim/1428 prim/1427 (< prim/1428 prim/1427)))
+  (apply (field 1 (global Toploop!)) "eta_int_lt" eta_int_lt/1426))
+val eta_int_lt : int -> int -> bool = <fun>
+# (let
+  (eta_float_lt/1429 =
+     (function prim/1431 prim/1430 (<. prim/1431 prim/1430)))
+  (apply (field 1 (global Toploop!)) "eta_float_lt" eta_float_lt/1429))
+val eta_float_lt : float -> float -> bool = <fun>
+# (let
+  (eta_string_lt/1432 =
+     (function prim/1434 prim/1433
+       (caml_string_lessthan prim/1434 prim/1433)))
+  (apply (field 1 (global Toploop!)) "eta_string_lt" eta_string_lt/1432))
+val eta_string_lt : string -> string -> bool = <fun>
+# (let
+  (eta_int32_lt/1435 =
+     (function prim/1437 prim/1436 (Int32.< prim/1437 prim/1436)))
+  (apply (field 1 (global Toploop!)) "eta_int32_lt" eta_int32_lt/1435))
+val eta_int32_lt : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_lt/1438 =
+     (function prim/1440 prim/1439 (Int64.< prim/1440 prim/1439)))
+  (apply (field 1 (global Toploop!)) "eta_int64_lt" eta_int64_lt/1438))
+val eta_int64_lt : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_lt/1441 =
+     (function prim/1443 prim/1442 (Nativeint.< prim/1443 prim/1442)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_lt"
+    eta_nativeint_lt/1441))
+val eta_nativeint_lt : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (eta_gen_gt/1444 =
+     (function prim/1446 prim/1445 (caml_greaterthan prim/1446 prim/1445)))
+  (apply (field 1 (global Toploop!)) "eta_gen_gt" eta_gen_gt/1444))
+val eta_gen_gt : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_gt/1447 = (function prim/1449 prim/1448 (> prim/1449 prim/1448)))
+  (apply (field 1 (global Toploop!)) "eta_int_gt" eta_int_gt/1447))
+val eta_int_gt : int -> int -> bool = <fun>
+# (let
+  (eta_float_gt/1450 =
+     (function prim/1452 prim/1451 (>. prim/1452 prim/1451)))
+  (apply (field 1 (global Toploop!)) "eta_float_gt" eta_float_gt/1450))
+val eta_float_gt : float -> float -> bool = <fun>
+# (let
+  (eta_string_gt/1453 =
+     (function prim/1455 prim/1454
+       (caml_string_greaterthan prim/1455 prim/1454)))
+  (apply (field 1 (global Toploop!)) "eta_string_gt" eta_string_gt/1453))
+val eta_string_gt : string -> string -> bool = <fun>
+# (let
+  (eta_int32_gt/1456 =
+     (function prim/1458 prim/1457 (Int32.> prim/1458 prim/1457)))
+  (apply (field 1 (global Toploop!)) "eta_int32_gt" eta_int32_gt/1456))
+val eta_int32_gt : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_gt/1459 =
+     (function prim/1461 prim/1460 (Int64.> prim/1461 prim/1460)))
+  (apply (field 1 (global Toploop!)) "eta_int64_gt" eta_int64_gt/1459))
+val eta_int64_gt : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_gt/1462 =
+     (function prim/1464 prim/1463 (Nativeint.> prim/1464 prim/1463)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_gt"
+    eta_nativeint_gt/1462))
+val eta_nativeint_gt : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (eta_gen_le/1465 =
+     (function prim/1467 prim/1466 (caml_lessequal prim/1467 prim/1466)))
+  (apply (field 1 (global Toploop!)) "eta_gen_le" eta_gen_le/1465))
+val eta_gen_le : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_le/1468 = (function prim/1470 prim/1469 (<= prim/1470 prim/1469)))
+  (apply (field 1 (global Toploop!)) "eta_int_le" eta_int_le/1468))
+val eta_int_le : int -> int -> bool = <fun>
+# (let
+  (eta_float_le/1471 =
+     (function prim/1473 prim/1472 (<=. prim/1473 prim/1472)))
+  (apply (field 1 (global Toploop!)) "eta_float_le" eta_float_le/1471))
+val eta_float_le : float -> float -> bool = <fun>
+# (let
+  (eta_string_le/1474 =
+     (function prim/1476 prim/1475
+       (caml_string_lessequal prim/1476 prim/1475)))
+  (apply (field 1 (global Toploop!)) "eta_string_le" eta_string_le/1474))
+val eta_string_le : string -> string -> bool = <fun>
+# (let
+  (eta_int32_le/1477 =
+     (function prim/1479 prim/1478 (Int32.<= prim/1479 prim/1478)))
+  (apply (field 1 (global Toploop!)) "eta_int32_le" eta_int32_le/1477))
+val eta_int32_le : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_le/1480 =
+     (function prim/1482 prim/1481 (Int64.<= prim/1482 prim/1481)))
+  (apply (field 1 (global Toploop!)) "eta_int64_le" eta_int64_le/1480))
+val eta_int64_le : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_le/1483 =
+     (function prim/1485 prim/1484 (Nativeint.<= prim/1485 prim/1484)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_le"
+    eta_nativeint_le/1483))
+val eta_nativeint_le : nativeint -> nativeint -> bool = <fun>
+#   (let
+  (eta_gen_ge/1486 =
+     (function prim/1488 prim/1487 (caml_greaterequal prim/1488 prim/1487)))
+  (apply (field 1 (global Toploop!)) "eta_gen_ge" eta_gen_ge/1486))
+val eta_gen_ge : 'a -> 'a -> bool = <fun>
+# (let
+  (eta_int_ge/1489 = (function prim/1491 prim/1490 (>= prim/1491 prim/1490)))
+  (apply (field 1 (global Toploop!)) "eta_int_ge" eta_int_ge/1489))
+val eta_int_ge : int -> int -> bool = <fun>
+# (let
+  (eta_float_ge/1492 =
+     (function prim/1494 prim/1493 (>=. prim/1494 prim/1493)))
+  (apply (field 1 (global Toploop!)) "eta_float_ge" eta_float_ge/1492))
+val eta_float_ge : float -> float -> bool = <fun>
+# (let
+  (eta_string_ge/1495 =
+     (function prim/1497 prim/1496
+       (caml_string_greaterequal prim/1497 prim/1496)))
+  (apply (field 1 (global Toploop!)) "eta_string_ge" eta_string_ge/1495))
+val eta_string_ge : string -> string -> bool = <fun>
+# (let
+  (eta_int32_ge/1498 =
+     (function prim/1500 prim/1499 (Int32.>= prim/1500 prim/1499)))
+  (apply (field 1 (global Toploop!)) "eta_int32_ge" eta_int32_ge/1498))
+val eta_int32_ge : int32 -> int32 -> bool = <fun>
+# (let
+  (eta_int64_ge/1501 =
+     (function prim/1503 prim/1502 (Int64.>= prim/1503 prim/1502)))
+  (apply (field 1 (global Toploop!)) "eta_int64_ge" eta_int64_ge/1501))
+val eta_int64_ge : int64 -> int64 -> bool = <fun>
+# (let
+  (eta_nativeint_ge/1504 =
+     (function prim/1506 prim/1505 (Nativeint.>= prim/1506 prim/1505)))
+  (apply (field 1 (global Toploop!)) "eta_nativeint_ge"
+    eta_nativeint_ge/1504))
+val eta_nativeint_ge : nativeint -> nativeint -> bool = <fun>
+#       (let (int_vec/1507 = [0: [0: 1 1] [0: [0: 1 2] [0: [0: 2 1] 0a]]])
+  (apply (field 1 (global Toploop!)) "int_vec" int_vec/1507))
+val int_vec : (int * int) list = [(1, 1); (1, 2); (2, 1)]
+# (let (float_vec/1508 = [0: [0: 1. 1.] [0: [0: 1. 2.] [0: [0: 2. 1.] 0a]]])
+  (apply (field 1 (global Toploop!)) "float_vec" float_vec/1508))
+val float_vec : (float * float) list = [(1., 1.); (1., 2.); (2., 1.)]
+# (let
+  (string_vec/1509 = [0: [0: "1" "1"] [0: [0: "1" "2"] [0: [0: "2" "1"] 0a]]])
+  (apply (field 1 (global Toploop!)) "string_vec" string_vec/1509))
+val string_vec : (string * string) list =
+  [("1", "1"); ("1", "2"); ("2", "1")]
+# (let (int32_vec/1510 = [0: [0: 1l 1l] [0: [0: 1l 2l] [0: [0: 2l 1l] 0a]]])
+  (apply (field 1 (global Toploop!)) "int32_vec" int32_vec/1510))
+val int32_vec : (int32 * int32) list = [(1l, 1l); (1l, 2l); (2l, 1l)]
+# (let (int64_vec/1511 = [0: [0: 1L 1L] [0: [0: 1L 2L] [0: [0: 2L 1L] 0a]]])
+  (apply (field 1 (global Toploop!)) "int64_vec" int64_vec/1511))
+val int64_vec : (int64 * int64) list = [(1L, 1L); (1L, 2L); (2L, 1L)]
+# (let
+  (nativeint_vec/1512 = [0: [0: 1n 1n] [0: [0: 1n 2n] [0: [0: 2n 1n] 0a]]])
+  (apply (field 1 (global Toploop!)) "nativeint_vec" nativeint_vec/1512))
+val nativeint_vec : (nativeint * nativeint) list =
+  [(1n, 1n); (1n, 2n); (2n, 1n)]
+#               (let
+  (gen_ge/1339 = (apply (field 0 (global Toploop!)) "gen_ge")
+   gen_le/1318 = (apply (field 0 (global Toploop!)) "gen_le")
+   gen_gt/1297 = (apply (field 0 (global Toploop!)) "gen_gt")
+   gen_lt/1276 = (apply (field 0 (global Toploop!)) "gen_lt")
+   gen_ne/1255 = (apply (field 0 (global Toploop!)) "gen_ne")
+   gen_eq/1234 = (apply (field 0 (global Toploop!)) "gen_eq")
+   gen_cmp/1213 = (apply (field 0 (global Toploop!)) "gen_cmp")
+   test_vec/1513 =
+     (function cmp/1514 eq/1515 ne/1516 lt/1517 gt/1518 le/1519 ge/1520
+       vec/1521
+       (let
+         (uncurry/1522 =
+            (function f/1523 param/1575
+              (apply f/1523 (field 0 param/1575) (field 1 param/1575)))
+          map/1526 =
+            (function f/1527 l/1528
+              (apply (field 11 (global List!)) (apply uncurry/1522 f/1527)
+                l/1528)))
+         (makeblock 0
+           (makeblock 0 (apply map/1526 gen_cmp/1213 vec/1521)
+             (apply map/1526 cmp/1514 vec/1521))
+           (apply map/1526
+             (function gen/1529 spec/1530
+               (makeblock 0 (apply map/1526 gen/1529 vec/1521)
+                 (apply map/1526 spec/1530 vec/1521)))
+             (makeblock 0 (makeblock 0 gen_eq/1234 eq/1515)
+               (makeblock 0 (makeblock 0 gen_ne/1255 ne/1516)
+                 (makeblock 0 (makeblock 0 gen_lt/1276 lt/1517)
+                   (makeblock 0 (makeblock 0 gen_gt/1297 gt/1518)
+                     (makeblock 0 (makeblock 0 gen_le/1318 le/1519)
+                       (makeblock 0 (makeblock 0 gen_ge/1339 ge/1520) 0a)))))))))))
+  (apply (field 1 (global Toploop!)) "test_vec" test_vec/1513))
+val test_vec :
+  ('a -> 'a -> 'b) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a * 'a) list -> (int list * 'b list) * (bool list * 'c list) list = <fun>
+#       (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   int_vec/1507 = (apply (field 0 (global Toploop!)) "int_vec")
+   int_ge/1342 = (apply (field 0 (global Toploop!)) "int_ge")
+   int_le/1321 = (apply (field 0 (global Toploop!)) "int_le")
+   int_gt/1300 = (apply (field 0 (global Toploop!)) "int_gt")
+   int_lt/1279 = (apply (field 0 (global Toploop!)) "int_lt")
+   int_ne/1258 = (apply (field 0 (global Toploop!)) "int_ne")
+   int_eq/1237 = (apply (field 0 (global Toploop!)) "int_eq")
+   int_cmp/1216 = (apply (field 0 (global Toploop!)) "int_cmp"))
+  (apply test_vec/1513 int_cmp/1216 int_eq/1237 int_ne/1258 int_lt/1279
+    int_gt/1300 int_le/1321 int_ge/1342 int_vec/1507))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#     (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   float_vec/1508 = (apply (field 0 (global Toploop!)) "float_vec")
+   float_ge/1345 = (apply (field 0 (global Toploop!)) "float_ge")
+   float_le/1324 = (apply (field 0 (global Toploop!)) "float_le")
+   float_gt/1303 = (apply (field 0 (global Toploop!)) "float_gt")
+   float_lt/1282 = (apply (field 0 (global Toploop!)) "float_lt")
+   float_ne/1261 = (apply (field 0 (global Toploop!)) "float_ne")
+   float_eq/1240 = (apply (field 0 (global Toploop!)) "float_eq")
+   float_cmp/1219 = (apply (field 0 (global Toploop!)) "float_cmp"))
+  (apply test_vec/1513 float_cmp/1219 float_eq/1240 float_ne/1261
+    float_lt/1282 float_gt/1303 float_le/1324 float_ge/1345 float_vec/1508))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#     (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   string_vec/1509 = (apply (field 0 (global Toploop!)) "string_vec")
+   string_ge/1348 = (apply (field 0 (global Toploop!)) "string_ge")
+   string_le/1327 = (apply (field 0 (global Toploop!)) "string_le")
+   string_gt/1306 = (apply (field 0 (global Toploop!)) "string_gt")
+   string_lt/1285 = (apply (field 0 (global Toploop!)) "string_lt")
+   string_ne/1264 = (apply (field 0 (global Toploop!)) "string_ne")
+   string_eq/1243 = (apply (field 0 (global Toploop!)) "string_eq")
+   string_cmp/1222 = (apply (field 0 (global Toploop!)) "string_cmp"))
+  (apply test_vec/1513 string_cmp/1222 string_eq/1243 string_ne/1264
+    string_lt/1285 string_gt/1306 string_le/1327 string_ge/1348
+    string_vec/1509))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#     (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   int32_vec/1510 = (apply (field 0 (global Toploop!)) "int32_vec")
+   int32_ge/1351 = (apply (field 0 (global Toploop!)) "int32_ge")
+   int32_le/1330 = (apply (field 0 (global Toploop!)) "int32_le")
+   int32_gt/1309 = (apply (field 0 (global Toploop!)) "int32_gt")
+   int32_lt/1288 = (apply (field 0 (global Toploop!)) "int32_lt")
+   int32_ne/1267 = (apply (field 0 (global Toploop!)) "int32_ne")
+   int32_eq/1246 = (apply (field 0 (global Toploop!)) "int32_eq")
+   int32_cmp/1225 = (apply (field 0 (global Toploop!)) "int32_cmp"))
+  (apply test_vec/1513 int32_cmp/1225 int32_eq/1246 int32_ne/1267
+    int32_lt/1288 int32_gt/1309 int32_le/1330 int32_ge/1351 int32_vec/1510))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#     (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   int64_vec/1511 = (apply (field 0 (global Toploop!)) "int64_vec")
+   int64_ge/1354 = (apply (field 0 (global Toploop!)) "int64_ge")
+   int64_le/1333 = (apply (field 0 (global Toploop!)) "int64_le")
+   int64_gt/1312 = (apply (field 0 (global Toploop!)) "int64_gt")
+   int64_lt/1291 = (apply (field 0 (global Toploop!)) "int64_lt")
+   int64_ne/1270 = (apply (field 0 (global Toploop!)) "int64_ne")
+   int64_eq/1249 = (apply (field 0 (global Toploop!)) "int64_eq")
+   int64_cmp/1228 = (apply (field 0 (global Toploop!)) "int64_cmp"))
+  (apply test_vec/1513 int64_cmp/1228 int64_eq/1249 int64_ne/1270
+    int64_lt/1291 int64_gt/1312 int64_le/1333 int64_ge/1354 int64_vec/1511))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (test_vec/1513 = (apply (field 0 (global Toploop!)) "test_vec")
+   nativeint_vec/1512 = (apply (field 0 (global Toploop!)) "nativeint_vec")
+   nativeint_ge/1357 = (apply (field 0 (global Toploop!)) "nativeint_ge")
+   nativeint_le/1336 = (apply (field 0 (global Toploop!)) "nativeint_le")
+   nativeint_gt/1315 = (apply (field 0 (global Toploop!)) "nativeint_gt")
+   nativeint_lt/1294 = (apply (field 0 (global Toploop!)) "nativeint_lt")
+   nativeint_ne/1273 = (apply (field 0 (global Toploop!)) "nativeint_ne")
+   nativeint_eq/1252 = (apply (field 0 (global Toploop!)) "nativeint_eq")
+   nativeint_cmp/1231 = (apply (field 0 (global Toploop!)) "nativeint_cmp"))
+  (apply test_vec/1513 nativeint_cmp/1231 nativeint_eq/1252 nativeint_ne/1273
+    nativeint_lt/1294 nativeint_gt/1315 nativeint_le/1336 nativeint_ge/1357
+    nativeint_vec/1512))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#                 (let
+  (eta_gen_ge/1486 = (apply (field 0 (global Toploop!)) "eta_gen_ge")
+   eta_gen_le/1465 = (apply (field 0 (global Toploop!)) "eta_gen_le")
+   eta_gen_gt/1444 = (apply (field 0 (global Toploop!)) "eta_gen_gt")
+   eta_gen_lt/1423 = (apply (field 0 (global Toploop!)) "eta_gen_lt")
+   eta_gen_ne/1402 = (apply (field 0 (global Toploop!)) "eta_gen_ne")
+   eta_gen_eq/1381 = (apply (field 0 (global Toploop!)) "eta_gen_eq")
+   eta_gen_cmp/1360 = (apply (field 0 (global Toploop!)) "eta_gen_cmp")
+   eta_test_vec/1576 =
+     (function cmp/1577 eq/1578 ne/1579 lt/1580 gt/1581 le/1582 ge/1583
+       vec/1584
+       (let
+         (uncurry/1585 =
+            (function f/1586 param/1594
+              (apply f/1586 (field 0 param/1594) (field 1 param/1594)))
+          map/1589 =
+            (function f/1590 l/1591
+              (apply (field 11 (global List!)) (apply uncurry/1585 f/1590)
+                l/1591)))
+         (makeblock 0
+           (makeblock 0 (apply map/1589 eta_gen_cmp/1360 vec/1584)
+             (apply map/1589 cmp/1577 vec/1584))
+           (apply map/1589
+             (function gen/1592 spec/1593
+               (makeblock 0 (apply map/1589 gen/1592 vec/1584)
+                 (apply map/1589 spec/1593 vec/1584)))
+             (makeblock 0 (makeblock 0 eta_gen_eq/1381 eq/1578)
+               (makeblock 0 (makeblock 0 eta_gen_ne/1402 ne/1579)
+                 (makeblock 0 (makeblock 0 eta_gen_lt/1423 lt/1580)
+                   (makeblock 0 (makeblock 0 eta_gen_gt/1444 gt/1581)
+                     (makeblock 0 (makeblock 0 eta_gen_le/1465 le/1582)
+                       (makeblock 0 (makeblock 0 eta_gen_ge/1486 ge/1583) 0a)))))))))))
+  (apply (field 1 (global Toploop!)) "eta_test_vec" eta_test_vec/1576))
+val eta_test_vec :
+  ('a -> 'a -> 'b) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a -> 'a -> 'c) ->
+  ('a * 'a) list -> (int list * 'b list) * (bool list * 'c list) list = <fun>
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   int_vec/1507 = (apply (field 0 (global Toploop!)) "int_vec")
+   eta_int_ge/1489 = (apply (field 0 (global Toploop!)) "eta_int_ge")
+   eta_int_le/1468 = (apply (field 0 (global Toploop!)) "eta_int_le")
+   eta_int_gt/1447 = (apply (field 0 (global Toploop!)) "eta_int_gt")
+   eta_int_lt/1426 = (apply (field 0 (global Toploop!)) "eta_int_lt")
+   eta_int_ne/1405 = (apply (field 0 (global Toploop!)) "eta_int_ne")
+   eta_int_eq/1384 = (apply (field 0 (global Toploop!)) "eta_int_eq")
+   eta_int_cmp/1363 = (apply (field 0 (global Toploop!)) "eta_int_cmp"))
+  (apply eta_test_vec/1576 eta_int_cmp/1363 eta_int_eq/1384 eta_int_ne/1405
+    eta_int_lt/1426 eta_int_gt/1447 eta_int_le/1468 eta_int_ge/1489
+    int_vec/1507))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   float_vec/1508 = (apply (field 0 (global Toploop!)) "float_vec")
+   eta_float_ge/1492 = (apply (field 0 (global Toploop!)) "eta_float_ge")
+   eta_float_le/1471 = (apply (field 0 (global Toploop!)) "eta_float_le")
+   eta_float_gt/1450 = (apply (field 0 (global Toploop!)) "eta_float_gt")
+   eta_float_lt/1429 = (apply (field 0 (global Toploop!)) "eta_float_lt")
+   eta_float_ne/1408 = (apply (field 0 (global Toploop!)) "eta_float_ne")
+   eta_float_eq/1387 = (apply (field 0 (global Toploop!)) "eta_float_eq")
+   eta_float_cmp/1366 = (apply (field 0 (global Toploop!)) "eta_float_cmp"))
+  (apply eta_test_vec/1576 eta_float_cmp/1366 eta_float_eq/1387
+    eta_float_ne/1408 eta_float_lt/1429 eta_float_gt/1450 eta_float_le/1471
+    eta_float_ge/1492 float_vec/1508))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   string_vec/1509 = (apply (field 0 (global Toploop!)) "string_vec")
+   eta_string_ge/1495 = (apply (field 0 (global Toploop!)) "eta_string_ge")
+   eta_string_le/1474 = (apply (field 0 (global Toploop!)) "eta_string_le")
+   eta_string_gt/1453 = (apply (field 0 (global Toploop!)) "eta_string_gt")
+   eta_string_lt/1432 = (apply (field 0 (global Toploop!)) "eta_string_lt")
+   eta_string_ne/1411 = (apply (field 0 (global Toploop!)) "eta_string_ne")
+   eta_string_eq/1390 = (apply (field 0 (global Toploop!)) "eta_string_eq")
+   eta_string_cmp/1369 = (apply (field 0 (global Toploop!)) "eta_string_cmp"))
+  (apply eta_test_vec/1576 eta_string_cmp/1369 eta_string_eq/1390
+    eta_string_ne/1411 eta_string_lt/1432 eta_string_gt/1453
+    eta_string_le/1474 eta_string_ge/1495 string_vec/1509))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   int32_vec/1510 = (apply (field 0 (global Toploop!)) "int32_vec")
+   eta_int32_ge/1498 = (apply (field 0 (global Toploop!)) "eta_int32_ge")
+   eta_int32_le/1477 = (apply (field 0 (global Toploop!)) "eta_int32_le")
+   eta_int32_gt/1456 = (apply (field 0 (global Toploop!)) "eta_int32_gt")
+   eta_int32_lt/1435 = (apply (field 0 (global Toploop!)) "eta_int32_lt")
+   eta_int32_ne/1414 = (apply (field 0 (global Toploop!)) "eta_int32_ne")
+   eta_int32_eq/1393 = (apply (field 0 (global Toploop!)) "eta_int32_eq")
+   eta_int32_cmp/1372 = (apply (field 0 (global Toploop!)) "eta_int32_cmp"))
+  (apply eta_test_vec/1576 eta_int32_cmp/1372 eta_int32_eq/1393
+    eta_int32_ne/1414 eta_int32_lt/1435 eta_int32_gt/1456 eta_int32_le/1477
+    eta_int32_ge/1498 int32_vec/1510))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   int64_vec/1511 = (apply (field 0 (global Toploop!)) "int64_vec")
+   eta_int64_ge/1501 = (apply (field 0 (global Toploop!)) "eta_int64_ge")
+   eta_int64_le/1480 = (apply (field 0 (global Toploop!)) "eta_int64_le")
+   eta_int64_gt/1459 = (apply (field 0 (global Toploop!)) "eta_int64_gt")
+   eta_int64_lt/1438 = (apply (field 0 (global Toploop!)) "eta_int64_lt")
+   eta_int64_ne/1417 = (apply (field 0 (global Toploop!)) "eta_int64_ne")
+   eta_int64_eq/1396 = (apply (field 0 (global Toploop!)) "eta_int64_eq")
+   eta_int64_cmp/1375 = (apply (field 0 (global Toploop!)) "eta_int64_cmp"))
+  (apply eta_test_vec/1576 eta_int64_cmp/1375 eta_int64_eq/1396
+    eta_int64_ne/1417 eta_int64_lt/1438 eta_int64_gt/1459 eta_int64_le/1480
+    eta_int64_ge/1501 int64_vec/1511))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+#       (let
+  (eta_test_vec/1576 = (apply (field 0 (global Toploop!)) "eta_test_vec")
+   nativeint_vec/1512 = (apply (field 0 (global Toploop!)) "nativeint_vec")
+   eta_nativeint_ge/1504 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_ge")
+   eta_nativeint_le/1483 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_le")
+   eta_nativeint_gt/1462 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_gt")
+   eta_nativeint_lt/1441 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_lt")
+   eta_nativeint_ne/1420 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_ne")
+   eta_nativeint_eq/1399 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_eq")
+   eta_nativeint_cmp/1378 =
+     (apply (field 0 (global Toploop!)) "eta_nativeint_cmp"))
+  (apply eta_test_vec/1576 eta_nativeint_cmp/1378 eta_nativeint_eq/1399
+    eta_nativeint_ne/1420 eta_nativeint_lt/1441 eta_nativeint_gt/1462
+    eta_nativeint_le/1483 eta_nativeint_ge/1504 nativeint_vec/1512))
+- : (int list * int list) * (bool list * bool list) list =
+(([0; -1; 1], [0; -1; 1]),
+ [([true; false; false], [true; false; false]);
+  ([false; true; true], [false; true; true]);
+  ([false; true; false], [false; true; false]);
+  ([false; false; true], [false; false; true]);
+  ([true; true; false], [true; true; false]);
+  ([true; false; true], [true; false; true])])
+# 
