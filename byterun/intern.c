@@ -472,7 +472,11 @@ static void intern_rec(value *dest)
 
         if (ops->finalize != NULL && Is_young(v)) {
           /* Remembered that the block has a finalizer */
-          caml_add_to_table(&caml_finalize_table, (value *)v);
+          if (caml_finalize_table.ptr >= caml_finalize_table.limit){
+            CAMLassert (caml_finalize_table.ptr == caml_finalize_table.limit);
+            caml_realloc_ref_table (&caml_finalize_table);
+          }
+          *caml_finalize_table.ptr++ = (value *)v;
         }
 
         intern_dest += 1 + size;

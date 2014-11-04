@@ -33,7 +33,11 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL) {
       /* Remembered that the block has a finalizer */
-      caml_add_to_table(&caml_finalize_table, (value *)result);
+      if (caml_finalize_table.ptr >= caml_finalize_table.limit){
+        CAMLassert (caml_finalize_table.ptr == caml_finalize_table.limit);
+        caml_realloc_ref_table (&caml_finalize_table);
+      }
+      *caml_finalize_table.ptr++ = (value *)result;
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);

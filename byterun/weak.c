@@ -50,7 +50,11 @@ static void do_set (value ar, mlsize_t offset, value v)
     value old = Field (ar, offset);
     Field (ar, offset) = v;
     if (!(Is_block (old) && Is_young (old))){
-      caml_add_to_table(&caml_weak_ref_table, &Field (ar, offset));
+      if (caml_weak_ref_table.ptr >= caml_weak_ref_table.limit){
+        CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.limit);
+        caml_realloc_ref_table (&caml_weak_ref_table);
+      }
+      *caml_weak_ref_table.ptr++ = &Field (ar, offset);
     }
   }else{
     Field (ar, offset) = v;
