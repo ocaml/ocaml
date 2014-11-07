@@ -252,8 +252,12 @@ method private cse n i =
          is a derived heap pointer (a pointer into the heap that does
          not point to the beginning of a Caml block).  PR#6484 is an
          example of this situation.  Such pseudoregs have type [Addr].
-         Pseudoregs with types other than [Addr] can be kept. *)
-       let n1 = kill_addr_regs n in
+         Pseudoregs with types other than [Addr] can be kept.
+         Moreover, allocation can trigger the asynchronous execution
+         of arbitrary Caml code (finalizer, signal handler, context
+         switch), which can contain non-initializing stores.
+         Hence, all equations over loads must be removed. *)
+       let n1 = kill_addr_regs (self#kill_loads n) in
        let n2 = set_unknown_regs n1 i.res in
        {i with next = self#cse n2 i.next}
   | Iop op ->
