@@ -1147,12 +1147,15 @@ let rec prefix_idents root pos sub = function
                       (Subst.add_modtype id (Mty_ident p) sub) rem in
       (p::pl, final_sub)
   | Sig_class(id, decl, _) :: rem ->
+      (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id, pos) in
-      let (pl, final_sub) = prefix_idents root (pos + 1) sub rem in
+      let (pl, final_sub) =
+        prefix_idents root (pos + 1) (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
   | Sig_class_type(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
-      let (pl, final_sub) = prefix_idents root pos sub rem in
+      let (pl, final_sub) =
+        prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
 
 let subst_signature sub sg =

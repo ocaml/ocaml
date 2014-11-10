@@ -26,6 +26,7 @@ Type system:
 
 Bug fixes:
 - PR#6648: show_module should indicate its elision
+- PR#6650: Cty_constr not handled correctly by Subst
 
 OCaml 4.02.2:
 -------------
