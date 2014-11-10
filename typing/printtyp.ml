@@ -1163,18 +1163,18 @@ let hide_rec_items = function
            ids !printing_env)
   | _ -> ()
 
-let rec tree_of_modtype = function
+let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
       Omty_ident (tree_of_path p)
   | Mty_signature sg ->
-      Omty_signature (tree_of_signature sg)
+      Omty_signature (if ellipsis then [Osig_ellipsis] else tree_of_signature sg)
   | Mty_functor(param, ty_arg, ty_res) ->
       let res =
-        match ty_arg with None -> tree_of_modtype ty_res
+        match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
         | Some mty ->
-            wrap_env (Env.add_module ~arg:true param mty) tree_of_modtype ty_res
+            wrap_env (Env.add_module ~arg:true param mty) (tree_of_modtype ~ellipsis) ty_res
       in
-      Omty_functor (Ident.name param, may_map tree_of_modtype ty_arg, res)
+      Omty_functor (Ident.name param, may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
   | Mty_alias p ->
       Omty_alias (tree_of_path p)
 
@@ -1204,7 +1204,10 @@ and trees_of_sigitem = function
   | Sig_typext(id, ext, es) ->
       [tree_of_extension_constructor id ext es]
   | Sig_module(id, md, rs) ->
-      [tree_of_module id md.md_type rs]
+      let ellipsis =
+        List.exists (function ({txt="..."}, Parsetree.PStr []) -> true | _ -> false)
+          md.md_attributes in
+      [tree_of_module id md.md_type rs ~ellipsis]
   | Sig_modtype(id, decl) ->
       [tree_of_modtype_declaration id decl]
   | Sig_class(id, decl, rs) ->
@@ -1220,8 +1223,8 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-and tree_of_module id mty rs =
-  Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
+and tree_of_module id ?ellipsis mty rs =
+  Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =

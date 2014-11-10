@@ -327,19 +327,14 @@ let parse_warnings ppf iserr s =
 
 (* Typing information *)
 
-let rec trim_modtype = function
-    Mty_signature _ -> Mty_signature []
-  | Mty_functor (id, mty, mty') ->
-      Mty_functor (id, mty, trim_modtype mty')
-  | Mty_ident _ | Mty_alias _ as mty -> mty
-
 let trim_signature = function
     Mty_signature sg ->
       Mty_signature
         (List.map
            (function
                Sig_module (id, md, rs) ->
-                 Sig_module (id, {md with md_type = trim_modtype md.md_type},
+                 Sig_module (id, {md with md_attributes =
+                                  (Location.mknoloc "...", Parsetree.PStr []) :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)

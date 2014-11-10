@@ -24,6 +24,9 @@ Type system:
   type through inference, but no breakage known on published code.
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
+Bug fixes:
+- PR#6648: show_module should indicate its elision
+
 OCaml 4.02.2:
 -------------
 

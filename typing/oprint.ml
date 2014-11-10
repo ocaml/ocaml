@@ -439,6 +439,8 @@ and print_out_sig_item ppf =
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
+  | Osig_ellipsis ->
+      fprintf ppf "..."
 
 and print_out_type_decl kwd ppf td =
   let print_constraints ppf =
