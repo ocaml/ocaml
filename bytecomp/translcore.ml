@@ -694,7 +694,7 @@ and transl_exp0 e =
       in
       Lfunction(kind, params, body)
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
-                exp_type = prim_type }, oargs)
+                exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
@@ -702,7 +702,7 @@ and transl_exp0 e =
         if args' = []
         then event_after e f
         else
-          let should_be_tailcall = has_tailcall_attribute e in
+          let should_be_tailcall = has_tailcall_attribute funct in
           event_after e (transl_apply ~should_be_tailcall f args' e.exp_loc)
       in
       let wrap0 f =
@@ -751,7 +751,7 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      let should_be_tailcall = has_tailcall_attribute e in
+      let should_be_tailcall = has_tailcall_attribute funct in
       event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
