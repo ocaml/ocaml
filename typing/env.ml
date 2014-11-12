@@ -209,8 +209,6 @@ and functor_components = {
   fcomp_param: Ident.t;                 (* Formal parameter *)
   fcomp_arg: module_type option;        (* Argument signature *)
   fcomp_res: module_type;               (* Result signature *)
-  fcomp_env: t;     (* Environment in which the result signature makes sense *)
-  fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
   fcomp_cache: (Path.t, module_components) Hashtbl.t;  (* For memoization *)
   fcomp_subst_cache: (Path.t, module_type) Hashtbl.t
 }
@@ -270,8 +268,8 @@ let components_of_module_maker' =
   ref ((fun (env, sub, path, mty) -> assert false) :
           t * Subst.t * Path.t * module_type -> module_components_repr)
 let components_of_functor_appl' =
-  ref ((fun f p1 p2 -> assert false) :
-          functor_components -> Path.t -> Path.t -> module_components)
+  ref ((fun f env p1 p2 -> assert false) :
+          functor_components -> t -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
   ref ((fun env mty1 path1 mty2 -> assert false) :
@@ -442,7 +440,7 @@ let rec find_module_descr path env =
         EnvLazy.force !components_of_module_maker' (find_module_descr p1 env)
       with
         Functor_comps f ->
-          !components_of_functor_appl' f p1 p2
+          !components_of_functor_appl' f env p1 p2
       | Structure_comps c ->
           raise Not_found
       end
@@ -552,8 +550,7 @@ let find_module ~alias path env =
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           md begin match f.fcomp_res with
-          | Mty_alias p ->
-              Mty_alias (Subst.module_path f.fcomp_subst p)
+          | Mty_alias p as mty-> mty
           | mty ->
               if alias then mty else
               try
@@ -561,7 +558,7 @@ let find_module ~alias path env =
               with Not_found ->
                 let mty =
                   Subst.modtype
-                    (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
+                    (Subst.add_module f.fcomp_param p2 Subst.identity)
                     f.fcomp_res in
                 Hashtbl.add f.fcomp_subst_cache p2 mty;
                 mty
@@ -692,7 +689,7 @@ let rec lookup_module_descr lid env =
       begin match EnvLazy.force !components_of_module_maker' desc1 with
         Functor_comps f ->
           Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
-          (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
+          (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
       | Structure_comps c ->
           raise Not_found
       end
@@ -1291,13 +1288,10 @@ and components_of_module_maker (env, sub, path, mty) =
   | Mty_functor(param, ty_arg, ty_res) ->
         Functor_comps {
           fcomp_param = param;
-          (* fcomp_arg must be prefixed eagerly, because it is interpreted
-             in the outer environment, not in env *)
+          (* fcomp_arg and fcomp_res must be prefixed eagerly, because they are interpreted
+             in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
-          (* fcomp_res is prefixed lazily, because it is interpreted in env *)
-          fcomp_res = ty_res;
-          fcomp_env = env;
-          fcomp_subst = sub;
+          fcomp_res = Subst.modtype sub ty_res;
           fcomp_cache = Hashtbl.create 17;
           fcomp_subst_cache = Hashtbl.create 17 }
   | Mty_ident _
@@ -1444,15 +1438,14 @@ and store_cltype slot id path desc env renv =
 
 (* Compute the components of a functor application in a path. *)
 
-let components_of_functor_appl f p1 p2 =
+let components_of_functor_appl f env p1 p2 =
   try
     Hashtbl.find f.fcomp_cache p2
   with Not_found ->
     let p = Papply(p1, p2) in
-    let mty =
-      Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                    f.fcomp_res in
-    let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
+    let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
+    let mty = Subst.modtype sub f.fcomp_res in
+    let comps = components_of_module env Subst.identity p mty in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
 
