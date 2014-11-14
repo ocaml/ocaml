@@ -217,6 +217,57 @@ let report_err exn =
 
 let tool_name = "ocamldep"
 
+let rec lexical_approximation lexbuf =
+  (* Approximation when a file can't be parsed.
+     Heuristic:
+     - first component of any path starting with an uppercase character is a
+       dependency.
+     - always skip the token after a dot, unless dot is preceded by a
+       lower-case identifier
+     - always skip the token after a backquote
+  *)
+  try
+    let rec process after_lident lexbuf =
+      match Lexer.token lexbuf with
+      | Parser.UIDENT name ->
+          Depend.free_structure_names :=
+            Depend.StringSet.add name !Depend.free_structure_names;
+          process false lexbuf
+      | Parser.LIDENT _ -> process true lexbuf
+      | Parser.DOT when after_lident -> process false lexbuf
+      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.EOF -> ()
+      | _ -> process false lexbuf
+    and skip_one lexbuf =
+      match Lexer.token lexbuf with
+      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.EOF -> ()
+      | _ -> process false lexbuf
+
+    in
+    process false lexbuf
+  with Lexer.Error _ -> lexical_approximation lexbuf
+
+let read_and_approximate inputfile =
+  error_occurred := false;
+  let ic = open_in_bin inputfile in
+  try
+    seek_in ic 0;
+    Location.input_name := inputfile;
+    let lexbuf = Lexing.from_channel ic in
+    Location.init lexbuf inputfile;
+    lexical_approximation lexbuf;
+    close_in ic;
+    !Depend.free_structure_names
+  with exn ->
+    close_in ic;
+    report_err exn;
+    !Depend.free_structure_names
+
+let allow_approximation =
+  try Sys.getenv "OCAMLDEP_APPROX" = "1"
+  with Not_found -> false
+
 let read_parse_and_extract parse_function extract_function magic source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
@@ -239,7 +290,10 @@ let read_parse_and_extract parse_function extract_function magic source_file =
     end
   with x ->
     report_err x;
-    Depend.StringSet.empty
+    if allow_approximation then
+      read_and_approximate source_file
+    else
+      Depend.StringSet.empty
 
 let ml_file_dependencies source_file =
   let parse_use_file_as_impl lexbuf =
