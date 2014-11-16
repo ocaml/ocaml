@@ -565,6 +565,29 @@ val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation. *)
 
 
+
+
+(** {6 Array index operators} *)
+
+external  ( .() ) : 'a array -> int -> 'a  = "%array_opt_get"
+(** Parenthesis index operator for arrays.
+ [ a.(index) ] is desugared to [ ( .() ) a index ]. *)
+
+external  ( .() <- ) : 'a array -> int -> 'a -> unit = "%array_opt_set"
+(** Parenthesis indexed assignment operator for arrays.
+ [ a.(index) <- val ] is desugared to [ ( .() <- ) a index val ]*)
+
+
+(** {6 String index operators} *)
+
+external  ( .[] ) : string -> int -> char= "%string_opt_get"
+(** Bracket index operator for strings.
+ [ a.[index] ] is desugared to [ (.[]) a index ]. *)
+
+external  ( .[] <- ) : bytes -> int -> char-> unit =  "%string_opt_set"
+(** Bracket indexed assignment operator for bytes.
+ [ a.[index] <- val ]  is desugared to [ ( .[]<- ) a index val ]. *)
+
 (** {6 Input/output}
     Note: all input/output functions can raise [Sys_error] when the system
     calls they invoke fail. *)
