@@ -1,0 +1,97 @@
+
+#             (seq 0a 0a 0a 0a
+  (let (int_ref/1218 = (makemutable 0 1))
+    (apply (field 1 (global Toploop!)) "int_ref" int_ref/1218)))
+type 'a custom_rec = { x : unit; mutable y : 'a; }
+type float_rec = { w : float; mutable z : float; }
+type cst = A | B
+type gen = C | D of string
+val int_ref : int ref = {contents = 1}
+# (let (var_ref/1219 = (makemutable 0 65a))
+  (apply (field 1 (global Toploop!)) "var_ref" var_ref/1219))
+val var_ref : _[> `A ] ref = {contents = `A}
+# (let (vargen_ref/1220 = (makemutable 0 65a))
+  (apply (field 1 (global Toploop!)) "vargen_ref" vargen_ref/1220))
+val vargen_ref : _[> `A ] ref = {contents = `A}
+# (let (cst_ref/1221 = (makemutable 0 0a))
+  (apply (field 1 (global Toploop!)) "cst_ref" cst_ref/1221))
+val cst_ref : cst ref = {contents = A}
+# (let (gen_ref/1222 = (makemutable 0 0a))
+  (apply (field 1 (global Toploop!)) "gen_ref" gen_ref/1222))
+val gen_ref : gen ref = {contents = C}
+# (let (flt_ref/1223 = (makemutable 0 0.))
+  (apply (field 1 (global Toploop!)) "flt_ref" flt_ref/1223))
+val flt_ref : float ref = {contents = 0.}
+#   (let (int_ref/1218 = (apply (field 0 (global Toploop!)) "int_ref"))
+  (setfield_imm 0 int_ref/1218 2))
+- : unit = ()
+# (let (var_ref/1219 = (apply (field 0 (global Toploop!)) "var_ref"))
+  (setfield_ptr 0 var_ref/1219 66a))
+- : unit = ()
+# (let (vargen_ref/1220 = (apply (field 0 (global Toploop!)) "vargen_ref"))
+  (setfield_ptr 0 vargen_ref/1220 [0: 66 0]))
+- : unit = ()
+# (let (vargen_ref/1220 = (apply (field 0 (global Toploop!)) "vargen_ref"))
+  (setfield_ptr 0 vargen_ref/1220 67a))
+- : unit = ()
+# (let (cst_ref/1221 = (apply (field 0 (global Toploop!)) "cst_ref"))
+  (setfield_imm 0 cst_ref/1221 1a))
+- : unit = ()
+# (let (gen_ref/1222 = (apply (field 0 (global Toploop!)) "gen_ref"))
+  (setfield_ptr 0 gen_ref/1222 [0: "foo"]))
+- : unit = ()
+# (let (gen_ref/1222 = (apply (field 0 (global Toploop!)) "gen_ref"))
+  (setfield_ptr 0 gen_ref/1222 0a))
+- : unit = ()
+# (let (flt_ref/1223 = (apply (field 0 (global Toploop!)) "flt_ref"))
+  (setfield_ptr 0 flt_ref/1223 1.))
+- : unit = ()
+#   (let (int_rec/1224 = (makemutable 0 0a 1))
+  (apply (field 1 (global Toploop!)) "int_rec" int_rec/1224))
+val int_rec : int custom_rec = {x = (); y = 1}
+# (let (var_rec/1226 = (makemutable 0 0a 65a))
+  (apply (field 1 (global Toploop!)) "var_rec" var_rec/1226))
+val var_rec : _[> `A ] custom_rec = {x = (); y = `A}
+# (let (vargen_rec/1228 = (makemutable 0 0a 65a))
+  (apply (field 1 (global Toploop!)) "vargen_rec" vargen_rec/1228))
+val vargen_rec : _[> `A ] custom_rec = {x = (); y = `A}
+# (let (cst_rec/1230 = (makemutable 0 0a 0a))
+  (apply (field 1 (global Toploop!)) "cst_rec" cst_rec/1230))
+val cst_rec : cst custom_rec = {x = (); y = A}
+# (let (gen_rec/1232 = (makemutable 0 0a 0a))
+  (apply (field 1 (global Toploop!)) "gen_rec" gen_rec/1232))
+val gen_rec : gen custom_rec = {x = (); y = C}
+# (let (flt_rec/1234 = (makemutable 0 0a 0.))
+  (apply (field 1 (global Toploop!)) "flt_rec" flt_rec/1234))
+val flt_rec : float custom_rec = {x = (); y = 0.}
+# (let (flt_rec'/1236 = (makearray[float] 0. 0.))
+  (apply (field 1 (global Toploop!)) "flt_rec'" flt_rec'/1236))
+val flt_rec' : float_rec = {w = 0.; z = 0.}
+#   (let (int_rec/1224 = (apply (field 0 (global Toploop!)) "int_rec"))
+  (setfield_imm 1 int_rec/1224 2))
+- : unit = ()
+# (let (var_rec/1226 = (apply (field 0 (global Toploop!)) "var_rec"))
+  (setfield_ptr 1 var_rec/1226 66a))
+- : unit = ()
+# (let (vargen_rec/1228 = (apply (field 0 (global Toploop!)) "vargen_rec"))
+  (setfield_ptr 1 vargen_rec/1228 [0: 66 0]))
+- : unit = ()
+# (let (vargen_rec/1228 = (apply (field 0 (global Toploop!)) "vargen_rec"))
+  (setfield_ptr 1 vargen_rec/1228 67a))
+- : unit = ()
+# (let (cst_rec/1230 = (apply (field 0 (global Toploop!)) "cst_rec"))
+  (setfield_imm 1 cst_rec/1230 1a))
+- : unit = ()
+# (let (gen_rec/1232 = (apply (field 0 (global Toploop!)) "gen_rec"))
+  (setfield_ptr 1 gen_rec/1232 [0: "foo"]))
+- : unit = ()
+# (let (gen_rec/1232 = (apply (field 0 (global Toploop!)) "gen_rec"))
+  (setfield_ptr 1 gen_rec/1232 0a))
+- : unit = ()
+# (let (flt_rec/1234 = (apply (field 0 (global Toploop!)) "flt_rec"))
+  (setfield_ptr 1 flt_rec/1234 1.))
+- : unit = ()
+# (let (flt_rec'/1236 = (apply (field 0 (global Toploop!)) "flt_rec'"))
+  (setfloatfield 1 flt_rec'/1236 1.))
+- : unit = ()
+# 

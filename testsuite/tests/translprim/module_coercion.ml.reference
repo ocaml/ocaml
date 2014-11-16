@@ -1,0 +1,225 @@
+
+#                           (apply (field 1 (global Toploop!)) "M/1218" (makeblock 0))
+module M :
+  sig
+    external len : 'a array -> int = "%array_length"
+    external safe_get : 'a array -> int -> 'a = "%array_safe_get"
+    external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
+    external safe_set : 'a array -> int -> 'a -> unit = "%array_safe_set"
+    external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+    external cmp : 'a -> 'a -> int = "%compare"
+    external eq : 'a -> 'a -> bool = "%equal"
+    external ne : 'a -> 'a -> bool = "%notequal"
+    external lt : 'a -> 'a -> bool = "%lessthan"
+    external gt : 'a -> 'a -> bool = "%greaterthan"
+    external le : 'a -> 'a -> bool = "%lessequal"
+    external ge : 'a -> 'a -> bool = "%greaterequal"
+  end
+#                               0a
+module type T =
+  sig
+    type t
+    val len : t array -> int
+    val safe_get : t array -> int -> t
+    val unsafe_get : t array -> int -> t
+    val safe_set : t array -> int -> t -> unit
+    val unsafe_set : t array -> int -> t -> unit
+    val cmp : t -> t -> int
+    val eq : t -> t -> bool
+    val ne : t -> t -> bool
+    val lt : t -> t -> bool
+    val gt : t -> t -> bool
+    val le : t -> t -> bool
+    val ge : t -> t -> bool
+  end
+#   (apply (field 1 (global Toploop!)) "M_int/1270"
+  (makeblock 0 (function prim/1272 (array.length[int] prim/1272))
+    (function prim/1274 prim/1273 (array.get[int] prim/1274 prim/1273))
+    (function prim/1276 prim/1275
+      (array.unsafe_get[int] prim/1276 prim/1275))
+    (function prim/1279 prim/1278 prim/1277
+      (array.set[int] prim/1279 prim/1278 prim/1277))
+    (function prim/1282 prim/1281 prim/1280
+      (array.unsafe_set[int] prim/1282 prim/1281 prim/1280))
+    (function prim/1284 prim/1283 (caml_int_compare prim/1284 prim/1283))
+    (function prim/1286 prim/1285 (== prim/1286 prim/1285))
+    (function prim/1288 prim/1287 (!= prim/1288 prim/1287))
+    (function prim/1290 prim/1289 (< prim/1290 prim/1289))
+    (function prim/1292 prim/1291 (> prim/1292 prim/1291))
+    (function prim/1294 prim/1293 (<= prim/1294 prim/1293))
+    (function prim/1296 prim/1295 (>= prim/1296 prim/1295))))
+module M_int :
+  sig
+    val len : int array -> int
+    val safe_get : int array -> int -> int
+    val unsafe_get : int array -> int -> int
+    val safe_set : int array -> int -> int -> unit
+    val unsafe_set : int array -> int -> int -> unit
+    val cmp : int -> int -> int
+    val eq : int -> int -> bool
+    val ne : int -> int -> bool
+    val lt : int -> int -> bool
+    val gt : int -> int -> bool
+    val le : int -> int -> bool
+    val ge : int -> int -> bool
+  end
+# (apply (field 1 (global Toploop!)) "M_float/1321"
+  (makeblock 0 (function prim/1323 (array.length[float] prim/1323))
+    (function prim/1325 prim/1324 (array.get[float] prim/1325 prim/1324))
+    (function prim/1327 prim/1326
+      (array.unsafe_get[float] prim/1327 prim/1326))
+    (function prim/1330 prim/1329 prim/1328
+      (array.set[float] prim/1330 prim/1329 prim/1328))
+    (function prim/1333 prim/1332 prim/1331
+      (array.unsafe_set[float] prim/1333 prim/1332 prim/1331))
+    (function prim/1335 prim/1334 (caml_float_compare prim/1335 prim/1334))
+    (function prim/1337 prim/1336 (==. prim/1337 prim/1336))
+    (function prim/1339 prim/1338 (!=. prim/1339 prim/1338))
+    (function prim/1341 prim/1340 (<. prim/1341 prim/1340))
+    (function prim/1343 prim/1342 (>. prim/1343 prim/1342))
+    (function prim/1345 prim/1344 (<=. prim/1345 prim/1344))
+    (function prim/1347 prim/1346 (>=. prim/1347 prim/1346))))
+module M_float :
+  sig
+    val len : float array -> int
+    val safe_get : float array -> int -> float
+    val unsafe_get : float array -> int -> float
+    val safe_set : float array -> int -> float -> unit
+    val unsafe_set : float array -> int -> float -> unit
+    val cmp : float -> float -> int
+    val eq : float -> float -> bool
+    val ne : float -> float -> bool
+    val lt : float -> float -> bool
+    val gt : float -> float -> bool
+    val le : float -> float -> bool
+    val ge : float -> float -> bool
+  end
+# (apply (field 1 (global Toploop!)) "M_string/1372"
+  (makeblock 0 (function prim/1374 (array.length[addr] prim/1374))
+    (function prim/1376 prim/1375 (array.get[addr] prim/1376 prim/1375))
+    (function prim/1378 prim/1377
+      (array.unsafe_get[addr] prim/1378 prim/1377))
+    (function prim/1381 prim/1380 prim/1379
+      (array.set[addr] prim/1381 prim/1380 prim/1379))
+    (function prim/1384 prim/1383 prim/1382
+      (array.unsafe_set[addr] prim/1384 prim/1383 prim/1382))
+    (function prim/1386 prim/1385 (caml_string_compare prim/1386 prim/1385))
+    (function prim/1388 prim/1387 (caml_string_equal prim/1388 prim/1387))
+    (function prim/1390 prim/1389 (caml_string_notequal prim/1390 prim/1389))
+    (function prim/1392 prim/1391 (caml_string_lessthan prim/1392 prim/1391))
+    (function prim/1394 prim/1393
+      (caml_string_greaterthan prim/1394 prim/1393))
+    (function prim/1396 prim/1395
+      (caml_string_lessequal prim/1396 prim/1395))
+    (function prim/1398 prim/1397
+      (caml_string_greaterequal prim/1398 prim/1397))))
+module M_string :
+  sig
+    val len : string array -> int
+    val safe_get : string array -> int -> string
+    val unsafe_get : string array -> int -> string
+    val safe_set : string array -> int -> string -> unit
+    val unsafe_set : string array -> int -> string -> unit
+    val cmp : string -> string -> int
+    val eq : string -> string -> bool
+    val ne : string -> string -> bool
+    val lt : string -> string -> bool
+    val gt : string -> string -> bool
+    val le : string -> string -> bool
+    val ge : string -> string -> bool
+  end
+# (apply (field 1 (global Toploop!)) "M_int32/1423"
+  (makeblock 0 (function prim/1425 (array.length[addr] prim/1425))
+    (function prim/1427 prim/1426 (array.get[addr] prim/1427 prim/1426))
+    (function prim/1429 prim/1428
+      (array.unsafe_get[addr] prim/1429 prim/1428))
+    (function prim/1432 prim/1431 prim/1430
+      (array.set[addr] prim/1432 prim/1431 prim/1430))
+    (function prim/1435 prim/1434 prim/1433
+      (array.unsafe_set[addr] prim/1435 prim/1434 prim/1433))
+    (function prim/1437 prim/1436 (caml_int32_compare prim/1437 prim/1436))
+    (function prim/1439 prim/1438 (Int32.== prim/1439 prim/1438))
+    (function prim/1441 prim/1440 (Int32.!= prim/1441 prim/1440))
+    (function prim/1443 prim/1442 (Int32.< prim/1443 prim/1442))
+    (function prim/1445 prim/1444 (Int32.> prim/1445 prim/1444))
+    (function prim/1447 prim/1446 (Int32.<= prim/1447 prim/1446))
+    (function prim/1449 prim/1448 (Int32.>= prim/1449 prim/1448))))
+module M_int32 :
+  sig
+    val len : int32 array -> int
+    val safe_get : int32 array -> int -> int32
+    val unsafe_get : int32 array -> int -> int32
+    val safe_set : int32 array -> int -> int32 -> unit
+    val unsafe_set : int32 array -> int -> int32 -> unit
+    val cmp : int32 -> int32 -> int
+    val eq : int32 -> int32 -> bool
+    val ne : int32 -> int32 -> bool
+    val lt : int32 -> int32 -> bool
+    val gt : int32 -> int32 -> bool
+    val le : int32 -> int32 -> bool
+    val ge : int32 -> int32 -> bool
+  end
+# (apply (field 1 (global Toploop!)) "M_int64/1474"
+  (makeblock 0 (function prim/1476 (array.length[addr] prim/1476))
+    (function prim/1478 prim/1477 (array.get[addr] prim/1478 prim/1477))
+    (function prim/1480 prim/1479
+      (array.unsafe_get[addr] prim/1480 prim/1479))
+    (function prim/1483 prim/1482 prim/1481
+      (array.set[addr] prim/1483 prim/1482 prim/1481))
+    (function prim/1486 prim/1485 prim/1484
+      (array.unsafe_set[addr] prim/1486 prim/1485 prim/1484))
+    (function prim/1488 prim/1487 (caml_int64_compare prim/1488 prim/1487))
+    (function prim/1490 prim/1489 (Int64.== prim/1490 prim/1489))
+    (function prim/1492 prim/1491 (Int64.!= prim/1492 prim/1491))
+    (function prim/1494 prim/1493 (Int64.< prim/1494 prim/1493))
+    (function prim/1496 prim/1495 (Int64.> prim/1496 prim/1495))
+    (function prim/1498 prim/1497 (Int64.<= prim/1498 prim/1497))
+    (function prim/1500 prim/1499 (Int64.>= prim/1500 prim/1499))))
+module M_int64 :
+  sig
+    val len : int64 array -> int
+    val safe_get : int64 array -> int -> int64
+    val unsafe_get : int64 array -> int -> int64
+    val safe_set : int64 array -> int -> int64 -> unit
+    val unsafe_set : int64 array -> int -> int64 -> unit
+    val cmp : int64 -> int64 -> int
+    val eq : int64 -> int64 -> bool
+    val ne : int64 -> int64 -> bool
+    val lt : int64 -> int64 -> bool
+    val gt : int64 -> int64 -> bool
+    val le : int64 -> int64 -> bool
+    val ge : int64 -> int64 -> bool
+  end
+# (apply (field 1 (global Toploop!)) "M_nativeint/1525"
+  (makeblock 0 (function prim/1527 (array.length[addr] prim/1527))
+    (function prim/1529 prim/1528 (array.get[addr] prim/1529 prim/1528))
+    (function prim/1531 prim/1530
+      (array.unsafe_get[addr] prim/1531 prim/1530))
+    (function prim/1534 prim/1533 prim/1532
+      (array.set[addr] prim/1534 prim/1533 prim/1532))
+    (function prim/1537 prim/1536 prim/1535
+      (array.unsafe_set[addr] prim/1537 prim/1536 prim/1535))
+    (function prim/1539 prim/1538
+      (caml_nativeint_compare prim/1539 prim/1538))
+    (function prim/1541 prim/1540 (Nativeint.== prim/1541 prim/1540))
+    (function prim/1543 prim/1542 (Nativeint.!= prim/1543 prim/1542))
+    (function prim/1545 prim/1544 (Nativeint.< prim/1545 prim/1544))
+    (function prim/1547 prim/1546 (Nativeint.> prim/1547 prim/1546))
+    (function prim/1549 prim/1548 (Nativeint.<= prim/1549 prim/1548))
+    (function prim/1551 prim/1550 (Nativeint.>= prim/1551 prim/1550))))
+module M_nativeint :
+  sig
+    val len : nativeint array -> int
+    val safe_get : nativeint array -> int -> nativeint
+    val unsafe_get : nativeint array -> int -> nativeint
+    val safe_set : nativeint array -> int -> nativeint -> unit
+    val unsafe_set : nativeint array -> int -> nativeint -> unit
+    val cmp : nativeint -> nativeint -> int
+    val eq : nativeint -> nativeint -> bool
+    val ne : nativeint -> nativeint -> bool
+    val lt : nativeint -> nativeint -> bool
+    val gt : nativeint -> nativeint -> bool
+    val le : nativeint -> nativeint -> bool
+    val ge : nativeint -> nativeint -> bool
+  end
+# 

@@ -1,0 +1,194 @@
+
+#                 (seq 0a 0a 0a 0a 0a
+  (let (int_a/1211 = (makearray[int] 1 2 3))
+    (apply (field 1 (global Toploop!)) "int_a" int_a/1211)))
+external len : 'a array -> int = "%array_length"
+external safe_get : 'a array -> int -> 'a = "%array_safe_get"
+external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
+external safe_set : 'a array -> int -> 'a -> unit = "%array_safe_set"
+external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+val int_a : int array = [|1; 2; 3|]
+# (let (float_a/1212 = (makearray[float] 1. 2. 3.))
+  (apply (field 1 (global Toploop!)) "float_a" float_a/1212))
+val float_a : float array = [|1.; 2.; 3.|]
+# (let (addr_a/1213 = (makearray[addr] "a" "b" "c"))
+  (apply (field 1 (global Toploop!)) "addr_a" addr_a/1213))
+val addr_a : string array = [|"a"; "b"; "c"|]
+#   (let (int_a/1211 = (apply (field 0 (global Toploop!)) "int_a"))
+  (array.length[int] int_a/1211))
+- : int = 3
+# (let (float_a/1212 = (apply (field 0 (global Toploop!)) "float_a"))
+  (array.length[float] float_a/1212))
+- : int = 3
+# (let (addr_a/1213 = (apply (field 0 (global Toploop!)) "addr_a"))
+  (array.length[addr] addr_a/1213))
+- : int = 3
+# (function a/1214 (array.length[gen] a/1214))
+- : 'a array -> int = <fun>
+#   (let (int_a/1211 = (apply (field 0 (global Toploop!)) "int_a"))
+  (array.get[int] int_a/1211 0))
+- : int = 1
+# (let (float_a/1212 = (apply (field 0 (global Toploop!)) "float_a"))
+  (array.get[float] float_a/1212 0))
+- : float = 1.
+# (let (addr_a/1213 = (apply (field 0 (global Toploop!)) "addr_a"))
+  (array.get[addr] addr_a/1213 0))
+- : string = "a"
+# (function a/1215 (array.get[gen] a/1215 0))
+- : 'a array -> 'a = <fun>
+#   (let (int_a/1211 = (apply (field 0 (global Toploop!)) "int_a"))
+  (array.unsafe_get[int] int_a/1211 0))
+- : int = 1
+# (let (float_a/1212 = (apply (field 0 (global Toploop!)) "float_a"))
+  (array.unsafe_get[float] float_a/1212 0))
+- : float = 1.
+# (let (addr_a/1213 = (apply (field 0 (global Toploop!)) "addr_a"))
+  (array.unsafe_get[addr] addr_a/1213 0))
+- : string = "a"
+# (function a/1216 (array.unsafe_get[gen] a/1216 0))
+- : 'a array -> 'a = <fun>
+#   (let (int_a/1211 = (apply (field 0 (global Toploop!)) "int_a"))
+  (array.set[int] int_a/1211 0 1))
+- : unit = ()
+# (let (float_a/1212 = (apply (field 0 (global Toploop!)) "float_a"))
+  (array.set[float] float_a/1212 0 1.))
+- : unit = ()
+# (let (addr_a/1213 = (apply (field 0 (global Toploop!)) "addr_a"))
+  (array.set[addr] addr_a/1213 0 "a"))
+- : unit = ()
+# (function a/1217 x/1218 (array.set[gen] a/1217 0 x/1218))
+- : 'a array -> 'a -> unit = <fun>
+#   (let (int_a/1211 = (apply (field 0 (global Toploop!)) "int_a"))
+  (array.unsafe_set[int] int_a/1211 0 1))
+- : unit = ()
+# (let (float_a/1212 = (apply (field 0 (global Toploop!)) "float_a"))
+  (array.unsafe_set[float] float_a/1212 0 1.))
+- : unit = ()
+# (let (addr_a/1213 = (apply (field 0 (global Toploop!)) "addr_a"))
+  (array.unsafe_set[addr] addr_a/1213 0 "a"))
+- : unit = ()
+# (function a/1219 x/1220 (array.unsafe_set[gen] a/1219 0 x/1220))
+- : 'a array -> 'a -> unit = <fun>
+#       (let (eta_gen_len/1221 = (function prim/1222 (array.length[gen] prim/1222)))
+  (apply (field 1 (global Toploop!)) "eta_gen_len" eta_gen_len/1221))
+val eta_gen_len : 'a array -> int = <fun>
+# (let
+  (eta_gen_safe_get/1223 =
+     (function prim/1225 prim/1224 (array.get[gen] prim/1225 prim/1224)))
+  (apply (field 1 (global Toploop!)) "eta_gen_safe_get"
+    eta_gen_safe_get/1223))
+val eta_gen_safe_get : 'a array -> int -> 'a = <fun>
+# (let
+  (eta_gen_unsafe_get/1226 =
+     (function prim/1228 prim/1227
+       (array.unsafe_get[gen] prim/1228 prim/1227)))
+  (apply (field 1 (global Toploop!)) "eta_gen_unsafe_get"
+    eta_gen_unsafe_get/1226))
+val eta_gen_unsafe_get : 'a array -> int -> 'a = <fun>
+# (let
+  (eta_gen_safe_set/1229 =
+     (function prim/1232 prim/1231 prim/1230
+       (array.set[gen] prim/1232 prim/1231 prim/1230)))
+  (apply (field 1 (global Toploop!)) "eta_gen_safe_set"
+    eta_gen_safe_set/1229))
+val eta_gen_safe_set : 'a array -> int -> 'a -> unit = <fun>
+# (let
+  (eta_gen_unsafe_set/1233 =
+     (function prim/1236 prim/1235 prim/1234
+       (array.unsafe_set[gen] prim/1236 prim/1235 prim/1234)))
+  (apply (field 1 (global Toploop!)) "eta_gen_unsafe_set"
+    eta_gen_unsafe_set/1233))
+val eta_gen_unsafe_set : 'a array -> int -> 'a -> unit = <fun>
+#   (let (eta_int_len/1237 = (function prim/1238 (array.length[int] prim/1238)))
+  (apply (field 1 (global Toploop!)) "eta_int_len" eta_int_len/1237))
+val eta_int_len : int array -> int = <fun>
+# (let
+  (eta_int_safe_get/1239 =
+     (function prim/1241 prim/1240 (array.get[int] prim/1241 prim/1240)))
+  (apply (field 1 (global Toploop!)) "eta_int_safe_get"
+    eta_int_safe_get/1239))
+val eta_int_safe_get : int array -> int -> int = <fun>
+# (let
+  (eta_int_unsafe_get/1242 =
+     (function prim/1244 prim/1243
+       (array.unsafe_get[int] prim/1244 prim/1243)))
+  (apply (field 1 (global Toploop!)) "eta_int_unsafe_get"
+    eta_int_unsafe_get/1242))
+val eta_int_unsafe_get : int array -> int -> int = <fun>
+# (let
+  (eta_int_safe_set/1245 =
+     (function prim/1248 prim/1247 prim/1246
+       (array.set[int] prim/1248 prim/1247 prim/1246)))
+  (apply (field 1 (global Toploop!)) "eta_int_safe_set"
+    eta_int_safe_set/1245))
+val eta_int_safe_set : int array -> int -> int -> unit = <fun>
+# (let
+  (eta_int_unsafe_set/1249 =
+     (function prim/1252 prim/1251 prim/1250
+       (array.unsafe_set[int] prim/1252 prim/1251 prim/1250)))
+  (apply (field 1 (global Toploop!)) "eta_int_unsafe_set"
+    eta_int_unsafe_set/1249))
+val eta_int_unsafe_set : int array -> int -> int -> unit = <fun>
+#   (let
+  (eta_float_len/1253 = (function prim/1254 (array.length[float] prim/1254)))
+  (apply (field 1 (global Toploop!)) "eta_float_len" eta_float_len/1253))
+val eta_float_len : float array -> int = <fun>
+# (let
+  (eta_float_safe_get/1255 =
+     (function prim/1257 prim/1256 (array.get[float] prim/1257 prim/1256)))
+  (apply (field 1 (global Toploop!)) "eta_float_safe_get"
+    eta_float_safe_get/1255))
+val eta_float_safe_get : float array -> int -> float = <fun>
+# (let
+  (eta_float_unsafe_get/1258 =
+     (function prim/1260 prim/1259
+       (array.unsafe_get[float] prim/1260 prim/1259)))
+  (apply (field 1 (global Toploop!)) "eta_float_unsafe_get"
+    eta_float_unsafe_get/1258))
+val eta_float_unsafe_get : float array -> int -> float = <fun>
+# (let
+  (eta_float_safe_set/1261 =
+     (function prim/1264 prim/1263 prim/1262
+       (array.set[float] prim/1264 prim/1263 prim/1262)))
+  (apply (field 1 (global Toploop!)) "eta_float_safe_set"
+    eta_float_safe_set/1261))
+val eta_float_safe_set : float array -> int -> float -> unit = <fun>
+# (let
+  (eta_float_unsafe_set/1265 =
+     (function prim/1268 prim/1267 prim/1266
+       (array.unsafe_set[float] prim/1268 prim/1267 prim/1266)))
+  (apply (field 1 (global Toploop!)) "eta_float_unsafe_set"
+    eta_float_unsafe_set/1265))
+val eta_float_unsafe_set : float array -> int -> float -> unit = <fun>
+#   (let
+  (eta_addr_len/1269 = (function prim/1270 (array.length[addr] prim/1270)))
+  (apply (field 1 (global Toploop!)) "eta_addr_len" eta_addr_len/1269))
+val eta_addr_len : string array -> int = <fun>
+# (let
+  (eta_addr_safe_get/1271 =
+     (function prim/1273 prim/1272 (array.get[addr] prim/1273 prim/1272)))
+  (apply (field 1 (global Toploop!)) "eta_addr_safe_get"
+    eta_addr_safe_get/1271))
+val eta_addr_safe_get : string array -> int -> string = <fun>
+# (let
+  (eta_addr_unsafe_get/1274 =
+     (function prim/1276 prim/1275
+       (array.unsafe_get[addr] prim/1276 prim/1275)))
+  (apply (field 1 (global Toploop!)) "eta_addr_unsafe_get"
+    eta_addr_unsafe_get/1274))
+val eta_addr_unsafe_get : string array -> int -> string = <fun>
+# (let
+  (eta_addr_safe_set/1277 =
+     (function prim/1280 prim/1279 prim/1278
+       (array.set[addr] prim/1280 prim/1279 prim/1278)))
+  (apply (field 1 (global Toploop!)) "eta_addr_safe_set"
+    eta_addr_safe_set/1277))
+val eta_addr_safe_set : string array -> int -> string -> unit = <fun>
+# (let
+  (eta_addr_unsafe_set/1281 =
+     (function prim/1284 prim/1283 prim/1282
+       (array.unsafe_set[addr] prim/1284 prim/1283 prim/1282)))
+  (apply (field 1 (global Toploop!)) "eta_addr_unsafe_set"
+    eta_addr_unsafe_set/1281))
+val eta_addr_unsafe_set : string array -> int -> string -> unit = <fun>
+# 
