@@ -17,7 +17,7 @@
 default:
 	@for file in *.ml; do \
 	  $(OCAMLC) -dlambda -c $$file 2>&1 | \
-	  sed -e 's|\([A-Za-z_]\+\)/[0-9]\+|\1|g' > $$file.result; \
+	  sed -e 's|\([A-Za-z_][A-Za-z_]*\)/[0-9][0-9]*|\1|g' > $$file.result; \
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \
