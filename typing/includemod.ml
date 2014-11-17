@@ -179,8 +179,9 @@ let rec print_coercion ppf c =
       pr "@[<2>functor@ (%a)@ (%a)@]"
         print_coercion inp
         print_coercion out
-  | Tcoerce_primitive pd ->
-      pr "prim %s" pd.Primitive.prim_name
+  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
+      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
+        Printtyp.raw_type_expr pc_type
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
