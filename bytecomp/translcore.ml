@@ -340,7 +340,8 @@ let specialize_comparison table env ty =
            nativeintcomp, int32comp, int64comp, _) = table in
   match () with
   | () when is_base_type env ty Predef.path_int
-         || is_base_type env ty Predef.path_char      -> intcomp
+         || is_base_type env ty Predef.path_char
+         || not (maybe_pointer_type env ty)           -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
