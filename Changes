@@ -10,6 +10,8 @@ Language features:
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
+- improve type-specialization of unapplied primitives
+  (Frédéric Bour, review by Gabriel Scherer)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
@@ -20,6 +22,8 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
+- expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
+  (Hugo Heuzard)
 
 Type system:
 * PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
