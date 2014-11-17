@@ -333,82 +333,66 @@ let find_primitive loc prim_name =
     | "%loc_MODULE" -> Ploc Loc_MODULE
     | name -> Hashtbl.find primitives_table name
 
-let transl_prim loc prim args =
-  let prim_name = prim.prim_name in
+let specialize_comparison table env ty =
+  let (gencomp, intcomp, floatcomp, stringcomp,
+           nativeintcomp, int32comp, int64comp, _) = table in
+  match () with
+  | () when is_base_type env ty Predef.path_int
+         || is_base_type env ty Predef.path_char      -> intcomp
+  | () when is_base_type env ty Predef.path_float     -> floatcomp
+  | () when is_base_type env ty Predef.path_string    -> stringcomp
+  | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
+  | () when is_base_type env ty Predef.path_int32     -> int32comp
+  | () when is_base_type env ty Predef.path_int64     -> int64comp
+  | () -> gencomp
+
+(* Specialize a primitive from available type information,
+   raise Not_found if primitive is unknown  *)
+
+let specialize_primitive loc p env ty ~has_constant_constructor =
   try
-    let (gencomp, intcomp, floatcomp, stringcomp,
-         nativeintcomp, int32comp, int64comp,
-         simplify_constant_constructor) =
-      Hashtbl.find comparisons_table prim_name in
-    begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
-      when simplify_constant_constructor ->
-        intcomp
-    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
-      when simplify_constant_constructor ->
-        intcomp
-    | [arg1; {exp_desc = Texp_variant(_, None)}]
-      when simplify_constant_constructor ->
-        intcomp
-    | [{exp_desc = Texp_variant(_, None)}; exp2]
-      when simplify_constant_constructor ->
-        intcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int
-                     || has_base_type arg1 Predef.path_char ->
-        intcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_float ->
-        floatcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_string ->
-        stringcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_nativeint ->
-        nativeintcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int32 ->
-        int32comp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int64 ->
-        int64comp
-    | _ ->
-        gencomp
-    end
+    let table = Hashtbl.find comparisons_table p.prim_name in
+    let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
+      table in
+    if has_constant_constructor && simplify_constant_constructor then
+      intcomp
+    else
+      match is_function_type env ty with
+      | Some (lhs,rhs) -> specialize_comparison table env lhs
+      | None -> gencomp
   with Not_found ->
-  try
-    let p = find_primitive loc prim_name in
+    let p = find_primitive loc p.prim_name in
     (* Try strength reduction based on the type of the argument *)
-    begin match (p, args) with
-        (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
-      | (Parraylength Pgenarray, [arg])   -> Parraylength(array_kind arg)
-      | (Parrayrefu Pgenarray, arg1 :: _) -> Parrayrefu(array_kind arg1)
-      | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
-      | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
-      | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
-      | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-                      arg1 :: _) ->
-            let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayref(unsafe, n, k, l)
-      | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-                      arg1 :: _) ->
-            let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayset(unsafe, n, k, l)
-      | _ -> p
-    end
-  with Not_found ->
-    if String.length prim_name > 0 && prim_name.[0] = '%' then
-      raise(Error(loc, Unknown_builtin_primitive prim_name));
-    Pccall prim
+    let params = match is_function_type env ty with
+      | None -> []
+      | Some (p1, rhs) -> match is_function_type env rhs with
+        | None -> [p1]
+        | Some (p2, _) -> [p1;p2]
+    in
+    match (p, params) with
+      (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
+    | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
+    | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
+    | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
+    | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
+    | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
+    | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+       p1 :: _) ->
+        let (k, l) = bigarray_type_kind_and_layout env p1 in
+        Pbigarrayref(unsafe, n, k, l)
+    | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+       p1 :: _) ->
+        let (k, l) = bigarray_type_kind_and_layout env p1 in
+        Pbigarrayset(unsafe, n, k, l)
+    | _ -> p
 
+(* Eta-expand a primitive *)
 
-(* Eta-expand a primitive without knowing the types of its arguments *)
-
-let transl_primitive loc p =
+let transl_primitive loc p env ty =
   let prim =
-    try
-      let (gencomp, _, _, _, _, _, _, _) =
-        Hashtbl.find comparisons_table p.prim_name in
-      gencomp
-    with Not_found ->
-    try
-      find_primitive loc p.prim_name
-    with Not_found ->
-      Pccall p in
+    try specialize_primitive loc p env ty ~has_constant_constructor:false
+    with Not_found -> Pccall p
+  in
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
@@ -430,6 +414,23 @@ let transl_primitive loc p =
       let params = make_params p.prim_arity in
       Lfunction(Curried, params,
                 Lprim(prim, List.map (fun id -> Lvar id) params))
+
+let transl_primitive_application loc prim env ty args =
+  let prim_name = prim.prim_name in
+  try
+    let has_constant_constructor = match args with
+        [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
+      | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; _]
+      | [_; {exp_desc = Texp_variant(_, None)}]
+      | [{exp_desc = Texp_variant(_, None)}; _] -> true
+      | _ -> false
+    in
+    specialize_primitive loc prim env ty ~has_constant_constructor
+  with Not_found ->
+    if String.length prim_name > 0 && prim_name.[0] = '%' then
+      raise(Error(loc, Unknown_builtin_primitive prim_name));
+    Pccall prim
+
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -651,7 +652,7 @@ and transl_exp0 e =
                   Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos],
                         e.exp_loc))
       else
-        transl_primitive e.exp_loc p
+        transl_primitive e.exp_loc p e.exp_env e.exp_type
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
@@ -669,8 +670,8 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})},
-               oargs)
+  | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
+                exp_type = prim_type }, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
@@ -695,7 +696,8 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        let prim = transl_prim e.exp_loc p args in
+        let prim = transl_primitive_application
+            e.exp_loc p e.exp_env prim_type args in
         match (prim, args) with
           (Praise k, [arg1]) ->
             let targ = List.hd argl in

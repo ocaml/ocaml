@@ -20,18 +20,26 @@ open Lambda
 let scrape env ty =
   (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
 
-let has_base_type exp base_ty_path =
-  match scrape exp.exp_env exp.exp_type with
+let is_function_type env ty =
+  match scrape env ty with
+  | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
+  | _ -> None
+
+let is_base_type env ty base_ty_path =
+  match scrape env ty with
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
-let maybe_pointer exp =
-  match scrape exp.exp_env exp.exp_type with
+let has_base_type exp base_ty_path =
+  is_base_type exp.exp_env exp.exp_type base_ty_path
+
+let maybe_pointer_type env typ =
+  match scrape env typ with
   | Tconstr(p, args, abbrev) ->
       not (Path.same p Predef.path_int) &&
       not (Path.same p Predef.path_char) &&
       begin try
-        match Env.find_type p exp.exp_env with
+        match Env.find_type p env with
         | {type_kind = Type_variant []} -> true (* type exn *)
         | {type_kind = Type_variant cstrs} ->
             List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
@@ -42,6 +50,8 @@ let maybe_pointer exp =
            Maybe we should emit a warning. *)
       end
   | _ -> true
+
+let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
 let array_element_kind env ty =
   match scrape env ty with
@@ -78,7 +88,7 @@ let array_element_kind env ty =
   | _ ->
       Paddrarray
 
-let array_kind_gen ty env =
+let array_type_kind env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
@@ -87,9 +97,9 @@ let array_kind_gen ty env =
       (* This can happen with e.g. Obj.field *)
       Pgenarray
 
-let array_kind exp = array_kind_gen exp.exp_type exp.exp_env
+let array_kind exp = array_type_kind exp.exp_env exp.exp_type
 
-let array_pattern_kind pat = array_kind_gen pat.pat_type pat.pat_env
+let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
@@ -117,11 +127,11 @@ let layout_table =
   ["c_layout", Pbigarray_c_layout;
    "fortran_layout", Pbigarray_fortran_layout]
 
-let bigarray_kind_and_layout exp =
-  match scrape exp.exp_env exp.exp_type with
+let bigarray_type_kind_and_layout env typ =
+  match scrape env typ with
   | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
-      (bigarray_decode_type exp.exp_env elt_type kind_table Pbigarray_unknown,
-       bigarray_decode_type exp.exp_env layout_type layout_table
+      (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
+       bigarray_decode_type env layout_type layout_table
                             Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
