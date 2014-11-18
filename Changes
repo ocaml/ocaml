@@ -81,7 +81,7 @@ Language features:
   (Alain Frisch)
 - Generative functors (PR#5905)
   (Jacques Garrigue)
-- Module aliases
+* Module aliases
   (Jacques Garrigue)
 * Alternative syntax for string literals {id|...|id} (can break comments)
   (Alain Frisch)
@@ -112,8 +112,8 @@ Type system:
   an applicative functor if no types are created
   (Jacques Garrigue, suggestion by Leo White)
 * Module aliases are now typed in a specific way, which remembers their
-  identity. In particular this changes the signature inferred by
-  "module type of"
+  identity. Compiled interfaces become smaller, but may depend on the
+  original modules. This also changes the signature inferred by "module type of".
   (Jacques Garrigue, feedback from Leo White, Mark Shinwell and Nick Chapman)
 - PR#6331: Slight change in the criterion to distinguish private
   abbreviations and private row types: create a private abbreviation for
