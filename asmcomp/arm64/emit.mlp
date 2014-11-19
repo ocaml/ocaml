@@ -644,7 +644,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   bound_error_sites := [];
   `	.text\n`;
-  `	.align	2\n`;
+  `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
@@ -685,6 +685,7 @@ let emit_item = function
 
 let data l =
   `	.data\n`;
+  `	.align 3\n`;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)

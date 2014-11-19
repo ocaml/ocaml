@@ -69,7 +69,7 @@ let do_aborts abort_env genev performed =
 let basic_sync abort_env genev =
   let performed = ref (-1) in
   let condition = Condition.create() in
-  let bev = Array.create (Array.length genev)
+  let bev = Array.make (Array.length genev)
                          (fst (genev.(0)) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
     bev.(i) <- (fst genev.(i)) performed condition i
@@ -143,7 +143,7 @@ let sync ev =
 let basic_poll abort_env genev =
   let performed = ref (-1) in
   let condition = Condition.create() in
-  let bev = Array.create(Array.length genev)
+  let bev = Array.make(Array.length genev)
                         (fst genev.(0) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
     bev.(i) <- fst genev.(i) performed condition i

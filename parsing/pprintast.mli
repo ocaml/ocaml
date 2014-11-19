@@ -108,6 +108,8 @@ class printer :
       Format.formatter -> Parsetree.type_extension -> unit
     method type_param :
       Format.formatter -> Parsetree.core_type * Asttypes.variance -> unit
+    method type_params :
+      Format.formatter -> (Parsetree.core_type * Asttypes.variance) list -> unit
     method type_with_label :
       Format.formatter -> Asttypes.label * Parsetree.core_type -> unit
     method tyvar : Format.formatter -> string -> unit
@@ -118,7 +120,12 @@ class printer :
       Format.formatter -> Parsetree.value_description -> unit
     method virtual_flag : Format.formatter -> Asttypes.virtual_flag -> unit
     method attribute : Format.formatter -> Parsetree.attribute -> unit
+    method item_attribute : Format.formatter -> Parsetree.attribute -> unit
+    method floating_attribute : Format.formatter -> Parsetree.attribute -> unit
     method attributes : Format.formatter -> Parsetree.attributes -> unit
+    method item_attributes : Format.formatter -> Parsetree.attributes -> unit
+    method extension : Format.formatter -> Parsetree.extension -> unit
+    method item_extension : Format.formatter -> Parsetree.extension -> unit
   end
 val default : printer
 val toplevel_phrase : Format.formatter -> Parsetree.toplevel_phrase -> unit

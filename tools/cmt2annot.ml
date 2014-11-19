@@ -156,7 +156,7 @@ let gen_annot target_filename filename
     match target_filename with
     | None -> Some (filename ^ ".annot")
     | Some "-" -> None
-    | Some filename -> target_filename
+    | Some _ -> target_filename
   in
   let iterator = iterator cmt_use_summaries in
   match cmt_annots with
@@ -179,9 +179,13 @@ let gen_ml target_filename filename cmt =
   let (printer, ext) =
     match cmt.Cmt_format.cmt_annots with
       | Cmt_format.Implementation typedtree ->
-        (fun ppf -> Pprintast.structure ppf (Untypeast.untype_structure typedtree)), ".ml"
+        (fun ppf -> Pprintast.structure ppf
+                                        (Untypeast.untype_structure typedtree)),
+        ".ml"
       | Cmt_format.Interface typedtree ->
-        (fun ppf -> Pprintast.signature ppf (Untypeast.untype_signature typedtree)), ".mli"
+        (fun ppf -> Pprintast.signature ppf
+                                        (Untypeast.untype_signature typedtree)),
+        ".mli"
       | _ ->
         Printf.fprintf stderr "File was generated with an error\n%!";
         exit 2
@@ -189,7 +193,7 @@ let gen_ml target_filename filename cmt =
   let target_filename = match target_filename with
       None -> Some (filename ^ ext)
     | Some "-" -> None
-    | Some filename -> target_filename
+    | Some _ -> target_filename
   in
   let oc = match target_filename with
       None -> None

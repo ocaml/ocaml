@@ -137,8 +137,8 @@ getaddrinfo.o: getaddrinfo.c ../../byterun/mlvalues.h \
   ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
   ../../byterun/fail.h ../../byterun/memory.h ../../byterun/gc.h \
   ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/signals.h unixsupport.h \
-  cst2constr.h socketaddr.h ../../byterun/misc.h
+  ../../byterun/minor_gc.h ../../byterun/misc.h ../../byterun/signals.h \
+  unixsupport.h cst2constr.h socketaddr.h
 getcwd.o: getcwd.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
@@ -301,7 +301,8 @@ open.o: open.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
   ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/gc.h \
   ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/signals.h unixsupport.h
+  ../../byterun/minor_gc.h ../../byterun/misc.h ../../byterun/signals.h \
+  unixsupport.h
 opendir.o: opendir.c ../../byterun/mlvalues.h \
   ../../byterun/compatibility.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \

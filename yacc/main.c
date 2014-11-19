@@ -55,11 +55,7 @@ char *text_file_name;
 char *union_file_name;
 char *verbose_file_name;
 
-#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || (__APPLE__)
-#define HAVE_MKSTEMP
-#endif
-
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
 int action_fd = -1, entry_fd = -1, text_fd = -1, union_fd = -1;
 #endif
 
@@ -101,7 +97,7 @@ char  *rassoc;
 short **derives;
 char *nullable;
 
-#if !defined(HAVE_MKSTEMP)
+#if !defined(HAS_MKSTEMP)
 extern char *mktemp(char *);
 #endif
 #ifndef NO_UNIX
@@ -111,7 +107,7 @@ extern char *getenv(const char *);
 
 void done(int k)
 {
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
     if (action_fd != -1)
        unlink(action_file_name);
     if (entry_fd != -1)
@@ -325,7 +321,7 @@ void create_file_names(void)
     text_file_name[len + 5] = 't';
     union_file_name[len + 5] = 'u';
 
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
     action_fd = mkstemp(action_file_name);
     if (action_fd == -1)
         open_error(action_file_name);
@@ -384,7 +380,7 @@ void open_files(void)
             open_error(input_file_name);
     }
 
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
     action_file = fdopen(action_fd, "w");
 #else
     action_file = fopen(action_file_name, "w");
@@ -392,7 +388,7 @@ void open_files(void)
     if (action_file == 0)
         open_error(action_file_name);
 
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
     entry_file = fdopen(entry_fd, "w");
 #else
     entry_file = fopen(entry_file_name, "w");
@@ -400,7 +396,7 @@ void open_files(void)
     if (entry_file == 0)
         open_error(entry_file_name);
 
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
     text_file = fdopen(text_fd, "w");
 #else
     text_file = fopen(text_file_name, "w");
@@ -420,7 +416,7 @@ void open_files(void)
         defines_file = fopen(defines_file_name, "w");
         if (defines_file == 0)
             open_error(defines_file_name);
-#ifdef HAVE_MKSTEMP
+#ifdef HAS_MKSTEMP
         union_file = fdopen(union_fd, "w");
 #else
         union_file = fopen(union_file_name, "w");

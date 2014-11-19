@@ -172,7 +172,14 @@ let type_deps t =
 
   (match t.T.ty_manifest with
     None -> ()
-  | Some e ->
+  | Some (T.Object_type fields) ->
+      List.iter
+        (fun r ->
+          let s = Odoc_print.string_of_type_expr r.T.of_type in
+          ignore (Str.global_substitute re f s)
+          )
+        fields
+  | Some (T.Other e) ->
       let s = Odoc_print.string_of_type_expr e in
       ignore (Str.global_substitute re f s)
   );

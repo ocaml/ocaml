@@ -479,7 +479,7 @@ CAMLprim value caml_int64_bswap(value v)
      ((x & 0x000000FF00000000ULL) >> 8) |
      ((x & 0x0000FF0000000000ULL) >> 24) |
      ((x & 0x00FF000000000000ULL) >> 40) |
-     ((x & 0xFF00000000000000ULL) >> 56)); 
+     ((x & 0xFF00000000000000ULL) >> 56));
 }
 
 CAMLprim value caml_int64_of_int(value v)

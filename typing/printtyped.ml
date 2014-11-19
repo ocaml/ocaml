@@ -513,12 +513,11 @@ and class_expr i ppf x =
   | Tcl_structure (cs) ->
       line i ppf "Pcl_structure\n";
       class_structure i ppf cs;
-  | Tcl_fun (l, eo, p, e, _) -> assert false (* TODO *)
-(*      line i ppf "Pcl_fun\n";
+  | Tcl_fun (l, p, _, ce, _) ->
+      line i ppf "Pcl_fun\n";
       label i ppf l;
-      option i expression ppf eo;
       pattern i ppf p;
-      class_expr i ppf e; *)
+      class_expr i ppf ce
   | Tcl_apply (ce, l) ->
       line i ppf "Pcl_apply\n";
       class_expr i ppf ce;
@@ -531,46 +530,47 @@ and class_expr i ppf x =
   | Tcl_constraint (ce, Some ct, _, _, _) ->
       line i ppf "Pcl_constraint\n";
       class_expr i ppf ce;
-      class_type i ppf ct;
-  | Tcl_constraint (_, None, _, _, _) -> assert false
-        (* TODO : is it possible ? see parsetree *)
+      class_type i ppf ct
+  | Tcl_constraint (ce, None, _, _, _) -> class_expr i ppf ce
 
 and class_structure i ppf { cstr_self = p; cstr_fields = l } =
   line i ppf "class_structure\n";
   pattern (i+1) ppf p;
   list (i+1) class_field ppf l;
 
-and class_field i ppf x = assert false (* TODO *)
-(*  let loc = x.cf_loc in
+and class_field i ppf x =
+  line i ppf "class_field %a\n" fmt_location x.cf_loc;
+  let i = i + 1 in
+  attributes i ppf x.cf_attributes;
   match x.cf_desc with
-  | Tcf_inher (ovf, ce, so) ->
-      line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
+  | Tcf_inherit (ovf, ce, so, _, _) ->
+      line i ppf "Pcf_inherit %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
-  | Tcf_valvirt (s, mf, ct) ->
-      line i ppf "Pcf_valvirt \"%s\" %a %a\n"
-        s.txt fmt_mutable_flag mf fmt_location loc;
-      core_type (i+1) ppf ct;
-  | Tcf_val (s, mf, ovf, e) ->
-      line i ppf "Pcf_val \"%s\" %a %a %a\n"
-        s.txt fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
-      expression (i+1) ppf e;
-  | Tcf_virt (s, pf, ct) ->
-      line i ppf "Pcf_virt \"%s\" %a %a\n"
-        s.txt fmt_private_flag pf fmt_location loc;
-      core_type (i+1) ppf ct;
-  | Tcf_meth (s, pf, ovf, e) ->
-      line i ppf "Pcf_meth \"%s\" %a %a %a\n"
-        s.txt fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
-      expression (i+1) ppf e;
-  | Tcf_constr (ct1, ct2) ->
-      line i ppf "Pcf_constr %a\n" fmt_location loc;
+  | Tcf_val (s, mf, _, k, _) ->
+      line i ppf "Pcf_val \"%s\" %a\n" s.txt fmt_mutable_flag mf;
+      class_field_kind (i+1) ppf k
+  | Tcf_method (s, pf, k) ->
+      line i ppf "Pcf_method \"%s\" %a\n" s.txt fmt_private_flag pf;
+      class_field_kind (i+1) ppf k
+  | Tcf_constraint (ct1, ct2) ->
+      line i ppf "Pcf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Tcf_init (e) ->
-      line i ppf "Pcf_init\n";
+  | Tcf_initializer (e) ->
+      line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
-*)
+  | Tcf_attribute (s, arg) ->
+      line i ppf "Pcf_attribute \"%s\"\n" s.txt;
+      Printast.payload i ppf arg
+
+and class_field_kind i ppf = function
+  | Tcfk_concrete (o, e) ->
+      line i ppf "Concrete %a\n" fmt_override_flag o;
+      expression i ppf e
+  | Tcfk_virtual t ->
+      line i ppf "Virtual\n";
+      core_type i ppf t
 
 and class_declaration i ppf x =
   line i ppf "class_declaration %a\n" fmt_location x.ci_loc;
@@ -698,10 +698,7 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
-  | Tmod_constraint (me, _, Tmodtype_implicit, _) -> assert false (* TODO *)
-(*      line i ppf "Pmod_constraint\n";
-      module_expr i ppf me;
-      module_type i ppf mt; *)
+  | Tmod_constraint (me, _, Tmodtype_implicit, _) -> module_expr i ppf me
   | Tmod_unpack (e, _) ->
       line i ppf "Pmod_unpack\n";
       expression i ppf e;

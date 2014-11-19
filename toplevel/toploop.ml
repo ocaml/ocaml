@@ -31,17 +31,18 @@ type directive_fun =
 
 (* The table of toplevel value bindings and its accessors *)
 
-let toplevel_value_bindings =
-  (Hashtbl.create 37 : (string, Obj.t) Hashtbl.t)
+module StringMap = Map.Make(String)
+
+let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
 let getvalue name =
   try
-    Hashtbl.find toplevel_value_bindings name
+    StringMap.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  Hashtbl.replace toplevel_value_bindings name v
+  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -52,7 +53,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          Hashtbl.find toplevel_value_bindings name
+          StringMap.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -150,6 +151,7 @@ let load_lambda ppf lam =
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
+  let initial_bindings = !toplevel_value_bindings in
   try
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
@@ -165,6 +167,7 @@ let load_lambda ppf lam =
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
+    toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
 
@@ -320,11 +323,14 @@ let protect r newval body =
 
 let use_print_results = ref true
 
-let phrase ppf phr =
+let preprocess_phrase ppf phr =
   let phr =
     match phr with
     | Ptop_def str ->
-        Ptop_def (Pparse.apply_rewriters ast_impl_magic_number str)
+        let str =
+          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
+        in
+        Ptop_def str
     | phr -> phr
   in
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
@@ -351,7 +357,7 @@ let use_file ppf wrap_mod name =
         try
           List.iter
             (fun ph ->
-              let ph = phrase ppf ph in
+              let ph = preprocess_phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
             (if wrap_mod then
                parse_mod_use_file name lb
@@ -426,7 +432,7 @@ let _ =
   Compmisc.init_path false;
   List.iter
     (fun (name, crco) ->
-      Env.imported_units := name :: !Env.imported_units;
+      Env.add_import name;
       match crco with
         None -> ()
       | Some crc->
@@ -477,7 +483,7 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = phrase ppf phr  in
+      let phr = preprocess_phrase ppf phr  in
       Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with

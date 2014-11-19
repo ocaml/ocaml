@@ -258,7 +258,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Oval_array []
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
-              if Lazy.lazy_is_val (O.obj obj)
+              if Lazy.is_val (O.obj obj)
               then let v =
                      nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg
                    in

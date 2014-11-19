@@ -267,6 +267,16 @@ module Type :
                    (** fields *)
       | Type_open (** Type is open *)
 
+    type object_field = Odoc_type.object_field = {
+      of_name : string ;
+      of_type : Types.type_expr ;
+      mutable of_text : Odoc_types.info option ; (** optional user description *)
+    }
+
+    type type_manifest = Odoc_type.type_manifest =
+      | Other of Types.type_expr (** Type manifest directly taken from Typedtre. *)
+      | Object_type of object_field list
+
     (** Representation of a type. *)
     type t_type = Odoc_type.t_type =
         {
@@ -276,7 +286,7 @@ module Type :
                     (** type parameters: (type, covariant, contravariant) *)
           ty_kind : type_kind; (** Type kind. *)
           ty_private : private_flag; (** Private or public type. *)
-          ty_manifest : Types.type_expr option; (** Type manifest. *)
+          ty_manifest : type_manifest option ;
           mutable ty_loc : location ;
           mutable ty_code : string option;
         }

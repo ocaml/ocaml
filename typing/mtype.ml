@@ -241,8 +241,11 @@ and no_code_needed_sig env sg =
 
 let rec contains_type env = function
     Mty_ident path ->
-      (try Misc.may (contains_type env) (Env.find_modtype path env).mtd_type
-       with Not_found -> raise Exit)
+      begin try match (Env.find_modtype path env).mtd_type with
+      | None -> raise Exit (* PR#6427 *)
+      | Some mty -> contains_type env mty
+      with Not_found -> raise Exit
+      end
   | Mty_signature sg ->
       contains_type_sig env sg
   | Mty_functor (_, _, body) ->
@@ -347,7 +350,9 @@ let rec remove_aliases env excl mty =
     Mty_signature sg ->
       Mty_signature (remove_aliases_sig env excl sg)
   | Mty_alias _ ->
-      remove_aliases env excl (Env.scrape_alias env mty)
+      let mty' = Env.scrape_alias env mty in
+      if mty' = mty then mty else
+      remove_aliases env excl mty'
   | mty ->
       mty
 

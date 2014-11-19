@@ -21,7 +21,7 @@ type 'a prodcons =
     notfull: Condition.t }
 
 let create size init =
-  { buffer = Array.create size init;
+  { buffer = Array.make size init;
     lock = Mutex.create();
     readpos = 0;
     writepos = 0;

@@ -39,6 +39,10 @@ let remove_preprocessed inputfile =
     None -> ()
   | Some _ -> Misc.remove_file inputfile
 
+
+(* Note: some of the functions here should go to Ast_mapper instead,
+   which would encapsulate the "binary AST" protocol. *)
+
 let write_ast magic ast =
   let fn = Filename.temp_file "camlppx" "" in
   let oc = open_out_bin fn in
@@ -87,21 +91,40 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
-let apply_rewriters magic ast =
+let rewrite magic ast ppxs =
+  read_ast magic
+    (List.fold_left (apply_rewriter magic) (write_ast magic ast)
+       (List.rev ppxs))
+
+let apply_rewriters_str ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      let fn =
-        List.fold_left (apply_rewriter magic) (write_ast magic ast)
-          (List.rev ppxs)
-      in
-      read_ast magic fn
+      let ast = Ast_mapper.add_ppx_context_str ~tool_name ast in
+      let ast = rewrite Config.ast_impl_magic_number ast ppxs in
+      Ast_mapper.drop_ppx_context_str ~restore ast
+
+let apply_rewriters_sig ?(restore = true) ~tool_name ast =
+  match !Clflags.all_ppx with
+  | [] -> ast
+  | ppxs ->
+      let ast = Ast_mapper.add_ppx_context_sig ~tool_name ast in
+      let ast = rewrite Config.ast_intf_magic_number ast ppxs in
+      Ast_mapper.drop_ppx_context_sig ~restore ast
+
+let apply_rewriters ?restore ~tool_name magic ast =
+  if magic = Config.ast_impl_magic_number then
+    Obj.magic (apply_rewriters_str ?restore ~tool_name (Obj.magic ast))
+  else if magic = Config.ast_intf_magic_number then
+    Obj.magic (apply_rewriters_sig ?restore ~tool_name (Obj.magic ast))
+  else
+    assert false
 
 (* Parse a file or get a dumped syntax tree from it *)
 
 exception Outdated_version
 
-let file ppf inputfile parse_fun ast_magic =
+let file ppf ~tool_name inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -134,7 +157,7 @@ let file ppf inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ast_magic ast
+  apply_rewriters ~restore:false ~tool_name ast_magic ast
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -151,11 +174,11 @@ let () =
       | _ -> None
     )
 
-let parse_all parse_fun magic ppf sourcefile =
+let parse_all ~tool_name parse_fun magic ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    try file ppf inputfile parse_fun magic
+    try file ppf ~tool_name inputfile parse_fun magic
     with exn ->
       remove_preprocessed inputfile;
       raise exn
@@ -163,7 +186,9 @@ let parse_all parse_fun magic ppf sourcefile =
   remove_preprocessed inputfile;
   ast
 
-let parse_implementation ppf sourcefile =
-  parse_all Parse.implementation Config.ast_impl_magic_number ppf sourcefile
-let parse_interface ppf sourcefile =
-  parse_all Parse.interface Config.ast_intf_magic_number ppf sourcefile
+let parse_implementation ppf ~tool_name sourcefile =
+  parse_all ~tool_name Parse.implementation
+    Config.ast_impl_magic_number ppf sourcefile
+let parse_interface ppf ~tool_name sourcefile =
+  parse_all ~tool_name Parse.interface
+    Config.ast_intf_magic_number ppf sourcefile

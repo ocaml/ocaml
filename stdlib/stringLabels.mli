@@ -23,26 +23,33 @@ external get : string -> int -> char = "%string_safe_get"
    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "Use BytesLabels.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
 
    Raise [Invalid_argument] if [n] is not a valid index in [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.set}. *)
+   @deprecated This is a deprecated alias of {!BytesLabels.set}. *)
 
-external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
+external create : int -> bytes = "caml_create_string"
+  [@@ocaml.deprecated "Use BytesLabels.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
 
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
 
-   @deprecated This is a deprecated alias of {!Bytes.create}. *)
+   @deprecated This is a deprecated alias of {!BytesLabels.create}. *)
 
 val make : int -> char -> string
 (** [String.make n c] returns a fresh string of length [n],
    filled with the character [c].
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
+val init : int -> f:(int -> char) -> string
+(** [init n f] returns a string of length [n],
+    with character [i] initialized to the result of [f i].
 
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
@@ -57,14 +64,15 @@ val sub : string -> pos:int -> len:int -> string
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid substring of [s]. *)
 
-val fill : bytes -> pos:int -> len:int -> char -> unit [@@ocaml.deprecated]
+val fill : bytes -> pos:int -> len:int -> char -> unit
+  [@@ocaml.deprecated "Use BytesLabels.fill instead."]
 (** [String.fill s start len c] modifies byte sequence [s] in place,
    replacing [len] bytes by [c], starting at [start].
 
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid substring of [s].
 
-   @deprecated This is a deprecated alias of {!Bytes.fill}. *)
+   @deprecated This is a deprecated alias of {!BytesLabels.fill}. *)
 
 val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
@@ -97,6 +105,12 @@ val map : f:(char -> char) -> string -> string
    the characters of [s] and stores the results in a new string that
    is returned.
    @since 4.00.0 *)
+
+val mapi : f:(int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
 
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing

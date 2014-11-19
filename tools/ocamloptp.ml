@@ -78,8 +78,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _output_obj = option "-output-obj"
   let _p = option "-p"
   let _pack = option "-pack"
-  let _pp s = incompatible "-pp"
-  let _ppx s = incompatible "-ppx"
+  let _pp _s = incompatible "-pp"
+  let _ppx _s = incompatible "-ppx"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _runtime_variant s = option_with_arg "-runtime-variant" s
@@ -87,6 +87,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _safe_string = option "-safe-string"
   let _short_paths = option "-short-paths"
   let _strict_sequence = option "-strict-sequence"
+  let _strict_formats = option "-strict-formats"
   let _shared = option "-shared"
   let _thread = option "-thread"
   let _unsafe = option "-unsafe"
@@ -121,6 +122,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = option "-dscheduling"
   let _dlinear = option "-dlinear"
   let _dstartup = option "-dstartup"
+  let _opaque = option "-opaque"
 
   let anonymous = process_file
 end);;

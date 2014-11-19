@@ -19,6 +19,7 @@ type error =
   | Applicative_path of Location.t
   | Variable_in_scope of Location.t * string
   | Other of Location.t
+  | Ill_formed_ast of Location.t * string
 
 exception Error of error
 exception Escape_error
@@ -51,6 +52,8 @@ let prepare_error = function
         var var
   | Other loc ->
       Location.error ~loc "Error: Syntax error"
+  | Ill_formed_ast (loc, s) ->
+      Location.errorf ~loc "Error: broken invariant in parsetree: %s" s
 
 let () =
   Location.register_error_of_exn
@@ -69,4 +72,9 @@ let location_of_error = function
   | Variable_in_scope(l,_)
   | Other l
   | Not_expecting (l, _)
+  | Ill_formed_ast (l, _)
   | Expecting (l, _) -> l
+
+
+let ill_formed_ast loc s =
+  raise (Error (Ill_formed_ast (loc, s)))

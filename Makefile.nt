@@ -252,7 +252,9 @@ installbyt:
 	cp expunge $(INSTALL_LIBDIR)/expunge.exe
 	cp toplevel/topdirs.cmi $(INSTALL_LIBDIR)
 	cd tools ; $(MAKEREC) install
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i install || exit $$?; \
+	done
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) install); \
 	  else :; fi
 	if test -n "$(WITH_DEBUGGER)"; then (cd debugger; $(MAKEREC) install); \
@@ -392,7 +394,6 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
-	@chmod -w utils/config.ml
 
 partialclean::
 	rm -f utils/config.ml
@@ -727,7 +728,13 @@ depend: beforedepend
 alldepend:: depend
 
 distclean:
-	./build/distclean.sh
+	$(MAKE) clean
+	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
+	      boot/*.cm* boot/libcamlrun.a
+	rm -f config/Makefile config/m.h config/s.h
+	rm -f tools/*.bak
+	rm -f ocaml ocamlc
+	rm -f testsuite/_log
 
 .PHONY: all backup bootstrap checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart

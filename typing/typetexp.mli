@@ -96,7 +96,9 @@ val find_value:
 val find_class:
     Env.t -> Location.t -> Longident.t -> Path.t * class_declaration
 val find_module:
-    Env.t -> Location.t -> Longident.t -> Path.t
+    Env.t -> Location.t -> Longident.t -> Path.t * module_declaration
+val lookup_module:
+    ?load:bool -> Env.t -> Location.t -> Longident.t -> Path.t
 val find_modtype:
     Env.t -> Location.t -> Longident.t -> Path.t * modtype_declaration
 val find_class_type:

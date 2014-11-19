@@ -216,10 +216,13 @@ CAMLprim value caml_make_array(value init)
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {
-      Assert(size < Max_young_wosize);
       wsize = size * Double_wosize;
-      ALLOCATION_ENTRY_POINT;
-      res = caml_alloc_small_with_profinfo(wsize, Double_array_tag, MY_PROFINFO);
+      if (wsize <= Max_young_wosize) {
+        res = caml_alloc_small_with_profinfo(wsize, Double_array_tag, MY_PROFINFO);
+      } else {
+        res = caml_alloc_shr_with_profinfo(wsize, Double_array_tag, MY_PROFINFO);
+        res = caml_check_urgent_gc(res);
+      }
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));
       }

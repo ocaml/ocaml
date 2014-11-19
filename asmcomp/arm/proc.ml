@@ -82,14 +82,14 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 9 Reg.dummy in
+  let v = Array.make 9 Reg.dummy in
   for i = 0 to 8 do
     v.(i) <- Reg.at_location Int (Reg i)
   done;
   v
 
 let hard_float_reg =
-  let v = Array.create 32 Reg.dummy in
+  let v = Array.make 32 Reg.dummy in
   for i = 0 to 31 do
     v.(i) <- Reg.at_location Float (Reg(100 + i))
   done;
@@ -108,7 +108,7 @@ let stack_slot slot ty =
 
 let calling_conventions
     first_int last_int first_float last_float make_stack arg =
-  let loc = Array.create (Array.length arg) Reg.dummy in
+  let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
@@ -166,13 +166,17 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_alloc =            (* r0-r6, d0-d15 preserved *)
   Array.of_list (List.map
                    phys_reg
                    [7;8;
-                    116;116;118;119;120;121;122;123;
+                    116;117;118;119;120;121;122;123;
                     124;125;126;127;128;129;130;131])
 
 let destroyed_at_c_call =
@@ -183,12 +187,12 @@ let destroyed_at_c_call =
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
                          108;109;110;111;112;113;114;115;
-                         116;116;118;119;120;121;122;123;
+                         116;117;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]
                     | EABI_HF ->    (* r4-r7, d8-d15 preserved *)
                         [0;1;2;3;8;
                          100;101;102;103;104;105;106;107;
-                         116;116;118;119;120;121;122;123;
+                         116;117;118;119;120;121;122;123;
                          124;125;126;127;128;129;130;131]))
 
 let destroyed_at_oper = function
@@ -215,6 +219,7 @@ let safe_register_pressure = function
     Iextcall(_, _) -> if abi = EABI then 0 else 4
   | Ialloc _ -> if abi = EABI then 0 else 7
   | Iconst_symbol _ when !pic_code -> 7
+  | Iintop Imulh when !arch < ARMv6 -> 8
   | _ -> 9
 
 let max_register_pressure = function
@@ -223,6 +228,7 @@ let max_register_pressure = function
   | Iconst_symbol _ when !pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
+  | Iintop Imulh when !arch < ARMv6 -> [| 8; 16; 32 |]
   | _ -> [| 9; 16; 32 |]
 
 (* Pure operations (without any side effect besides updating their result

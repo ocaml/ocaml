@@ -21,7 +21,7 @@
 let l = 32768;;
 let m = 1000;;
 
-let ar = Array.create l "";;
+let ar = Array.make l "";;
 
 Random.init 1234;;
 

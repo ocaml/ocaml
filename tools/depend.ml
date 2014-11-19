@@ -21,31 +21,32 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let free_structure_names = ref StringSet.empty
 
-let rec addmodule bv lid =
-  match lid with
-    Lident s ->
+let rec add_path bv = function
+  | Lident s ->
       if not (StringSet.mem s bv)
       then free_structure_names := StringSet.add s !free_structure_names
-  | Ldot(l, s) -> addmodule bv l
-  | Lapply(l1, l2) -> addmodule bv l1; addmodule bv l2
+  | Ldot(l, _s) -> add_path bv l
+  | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
+
+let open_module bv lid = add_path bv lid
 
 let add bv lid =
   match lid.txt with
-    Ldot(l, s) -> addmodule bv l
+    Ldot(l, _s) -> add_path bv l
   | _ -> ()
 
-let addmodule bv lid = addmodule bv lid.txt
+let addmodule bv lid = add_path bv lid.txt
 
 let rec add_type bv ty =
   match ty.ptyp_desc with
     Ptyp_any -> ()
-  | Ptyp_var v -> ()
+  | Ptyp_var _ -> ()
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object (fl, _) -> List.iter (fun (_, _, t) -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_alias(t, s) -> add_type bv t
+  | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter
         (function Rtag(_,_,_,stl) -> List.iter (add_type bv) stl
@@ -179,10 +180,10 @@ let rec add_expr bv exp =
   | Pexp_constraint(e1, ty2) ->
       add_expr bv e1;
       add_type bv ty2
-  | Pexp_send(e, m) -> add_expr bv e
+  | Pexp_send(e, _m) -> add_expr bv e
   | Pexp_new li -> add bv li
-  | Pexp_setinstvar(v, e) -> add_expr bv e
-  | Pexp_override sel -> List.iter (fun (s, e) -> add_expr bv e) sel
+  | Pexp_setinstvar(_v, e) -> add_expr bv e
+  | Pexp_override sel -> List.iter (fun (_s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
       add_module bv m; add_expr (StringSet.add id.txt bv) e
   | Pexp_assert (e) -> add_expr bv e
@@ -192,7 +193,7 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module bv m
-  | Pexp_open (_ovf, m, e) -> addmodule bv m; add_expr bv e
+  | Pexp_open (_ovf, m, e) -> open_module bv m.txt; add_expr bv e
   | Pexp_extension _ -> ()
 
 and add_cases bv cases =
@@ -260,7 +261,7 @@ and add_sig_item bv item =
       end;
       bv
   | Psig_open od ->
-      addmodule bv od.popen_lid; bv
+      open_module bv od.popen_lid.txt; bv
   | Psig_include incl ->
       add_modtype bv incl.pincl_mod; bv
   | Psig_class cdl ->
@@ -321,7 +322,7 @@ and add_struct_item bv item =
       end;
       bv
   | Pstr_open od ->
-      addmodule bv od.popen_lid; bv
+      open_module bv od.popen_lid.txt; bv
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; bv
   | Pstr_class_type cdtl ->

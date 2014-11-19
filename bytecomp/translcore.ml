@@ -669,7 +669,7 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})} as fn,
+  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})},
                oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
@@ -695,12 +695,6 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        if p.prim_name = "%sequand" && Path.last path = "&" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (&); you should use (&&) instead");
-        if p.prim_name = "%sequor" && Path.last path = "or" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise k, [arg1]) ->
@@ -901,7 +895,6 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_exn
                 || has_base_type e Predef.path_array
                 || has_base_type e Predef.path_list
-                || has_base_type e Predef.path_format6
                 || has_base_type e Predef.path_option
                 || has_base_type e Predef.path_nativeint
                 || has_base_type e Predef.path_int32
@@ -1079,7 +1072,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.create (Array.length all_labels) staticfail in
+    let lv = Array.make (Array.length all_labels) staticfail in
     let init_id = Ident.create "init" in
     begin match opt_init_expr with
       None -> ()
@@ -1155,7 +1148,7 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   | {exp_desc = Texp_tuple argl}, _ :: _ ->
     let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
     let lvars = List.map (fun id -> Lvar id) val_ids in
-    static_catch (transl_list argl) val_ids 
+    static_catch (transl_list argl) val_ids
       (Matching.for_multiple_match e.exp_loc lvars cases partial)
   | arg, [] ->
     Matching.for_function e.exp_loc None (transl_exp arg) cases partial

@@ -14,3 +14,11 @@ type 'a t = 'a;;
 let f (x : 'a t as 'a) = ();; (* fails *)
 
 let f (x : 'a t) (y : 'a) = x = y;;
+
+(* PR#6505 *)
+module type PR6505 = sig
+  type 'o is_an_object = < .. > as 'o
+  and 'o abs constraint 'o = 'o is_an_object
+  val abs : 'o is_an_object -> 'o abs
+  val unabs : 'o abs -> 'o
+end;; (* fails *)

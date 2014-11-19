@@ -1090,13 +1090,13 @@ let test46, test47 =
      Printf.sprintf "%i %(%s%)."
        1 "spells one, %s" "in english"),
   (fun () ->
-     Printf.sprintf "%i ,%{%s%}, %s."
+     Printf.sprintf "%i %{%s%}, %s."
        1 "spells one %s" "in english")
 ;;
 
 test (test46 () = "1 spells one, in english.")
 ;;
-test (test47 () = "1 ,%s, in english.")
+test (test47 () = "1 %s, in english.")
 ;;
 
 (* Testing scanning of meta formats. *)
@@ -1439,6 +1439,8 @@ let test58 () =
 test (test58 ())
 ;;
 
+(* skip test number "59" which is commented below *)
+let () = test (true);;
 (*
 let test59 () =
 ;;
@@ -1470,3 +1472,15 @@ let scan_record scan_field ib =
 let scan_field ib =
   bscanf ib "%s = %[^;]" (fun finame ficont -> finame, ficont);;
 *)
+
+(* testing formats that do not consume their input *)
+let test60 () =
+  sscanf "abc" "%0c%0c%c%n" (fun c1 c2 c3 n ->
+    c1 = 'a' && c2 = 'a' && c3 = 'a' && n = 1)
+  &&
+  sscanf "abc" "%0s%s" (fun s1 s2 -> s1 = "" && s2 = "abc")
+  &&
+  sscanf "abc" "%1s%s" (fun s1 s2 -> s1 = "a" && s2 = "bc")
+;;
+
+test (test60 ());

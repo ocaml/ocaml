@@ -255,18 +255,24 @@ let add_padding len ksd =
       ksd
   | (kwd, (Symbol (l, _) as spec), msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make (len - cutcol + 3) ' ' in
+      let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
       (kwd, spec, "\n" ^ spaces ^ msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make (len - String.length kwd - cutcol) ' ' in
-      let prefix = String.sub msg 0 cutcol in
-      let suffix = String.sub msg cutcol (String.length msg - cutcol) in
-      (kwd, spec, prefix ^ spaces ^ suffix)
+      let kwd_len = String.length kwd in
+      let diff = len - kwd_len - cutcol in
+      if diff <= 0 then
+        (kwd, spec, msg)
+      else
+        let spaces = String.make diff ' ' in
+        let prefix = String.sub msg 0 cutcol in
+        let suffix = String.sub msg cutcol (String.length msg - cutcol) in
+        (kwd, spec, prefix ^ spaces ^ suffix)
 ;;
 
-let align speclist =
+let align ?(limit=max_int) speclist =
   let completed = add_help speclist in
   let len = List.fold_left max_arg_len 0 completed in
+  let len = min len limit in
   List.map (add_padding len) completed
 ;;

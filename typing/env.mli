@@ -87,7 +87,7 @@ val lookup_label: Longident.t -> t -> label_description
 val lookup_all_labels:
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: Longident.t -> t -> Path.t
+val lookup_module: load:bool -> Longident.t -> t -> Path.t
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
@@ -168,7 +168,7 @@ val imports: unit -> (string * Digest.t option) list
 (* Direct access to the table of imported compilation units with their CRC *)
 
 val crc_units: Consistbl.t
-val imported_units: string list ref
+val add_import: string -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
@@ -197,18 +197,19 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: string -> value_description -> unit
-val mark_type_used: string -> type_declaration -> unit
+val mark_value_used: t -> string -> value_description -> unit
+val mark_type_used: t -> string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> string -> type_declaration -> string -> unit
+    constructor_usage -> t -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
 val mark_extension_used:
-    constructor_usage -> extension_constructor -> string -> unit
+    constructor_usage -> t -> extension_constructor -> string -> unit
 
 val in_signature: t -> t
+val implicit_coercion: t -> t
 
 val set_value_used_callback:
     string -> value_description -> (unit -> unit) -> unit

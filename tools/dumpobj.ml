@@ -481,7 +481,7 @@ let print_reloc (info, pos) =
 
 (* Print a .cmo file *)
 
-let dump_obj filename ic =
+let dump_obj ic =
   let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer <> cmo_magic_number then begin
     prerr_endline "Not an object file"; exit 2
@@ -519,7 +519,7 @@ let dump_exe ic =
   primitives := read_primitive_table ic prim_size;
   ignore(Bytesections.seek_section ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
-  globals := Array.create (Array.length init_data) Empty;
+  globals := Array.make (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))
   done;
@@ -557,7 +557,7 @@ let arg_fun filename =
   begin try
           objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
-      objfile := true; seek_in ic 0; dump_obj filename ic
+      objfile := true; seek_in ic 0; dump_obj ic
   end;
   close_in ic;
   printf "## end of ocaml dump of %S\n%!" filename

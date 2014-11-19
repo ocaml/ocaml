@@ -26,4 +26,9 @@ Error: This alias is bound to type 'a t = 'a
        but is used as an instance of type 'a
        The type variable 'a occurs inside 'a
 #   val f : 'a t -> 'a -> bool = <fun>
+#               Characters 83-122:
+    and 'o abs constraint 'o = 'o is_an_object
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of abs contains a cycle:
+       'a is_an_object as 'a
 # 

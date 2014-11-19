@@ -236,7 +236,7 @@ end;;
 let d = new d () in d#xc, d#xd;;
 
 class virtual ['a] matrix (sz, init : int * 'a) = object
-  val m = Array.create_matrix sz sz init
+  val m = Array.make_matrix sz sz init
   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 end;;
 
@@ -305,26 +305,28 @@ class c () = object method virtual m : int method private m = 1 end;;
 
 (* Marshaling (cf. PR#5436) *)
 
-Oo.id (object end);;
-Oo.id (object end);;
-Oo.id (object end);;
+let r = ref 0;;
+let id o = Oo.id o - !r;;
+r := Oo.id (object end);;
+id (object end);;
+id (object end);;
 let o = object end in
   let s = Marshal.to_string o [] in
   let o' : < > = Marshal.from_string s 0 in
   let o'' : < > = Marshal.from_string s 0 in
-  (Oo.id o, Oo.id o', Oo.id o'');;
+  (id o, id o', id o'');;
 
 let o = object val x = 33 method m = x end in
   let s = Marshal.to_string o [Marshal.Closures] in
   let o' : <m:int> = Marshal.from_string s 0 in
   let o'' : <m:int> = Marshal.from_string s 0 in
-  (Oo.id o, Oo.id o', Oo.id o'', o#m, o'#m);;
+  (id o, id o', id o'', o#m, o'#m);;
 
 let o = object val x = 33 val y = 44 method m = x end in
-  let s = Marshal.to_string o [Marshal.Closures] in
-  let o' : <m:int> = Marshal.from_string s 0 in
-  let o'' : <m:int> = Marshal.from_string s 0 in
-  (Oo.id o, Oo.id o', Oo.id o'', o#m, o'#m);;
+  let s = Marshal.to_string (o,o) [Marshal.Closures] in
+  let (o1, o2) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
+  let (o3, o4) : (<m:int> * <m:int>) = Marshal.from_string s 0 in
+  (id o, id o1, id o2, id o3, id o4, o#m, o1#m);;
 
 (* Recursion (cf. PR#5291) *)
 

@@ -166,7 +166,7 @@ let rec lastpos = function
 
 
 let followpos size name_regexp_list =
-  let v = Array.create size [] in
+  let v = Array.make size [] in
     let fill_pos first = function
         OnChars pos -> v.(pos) <- merge_trans first v.(pos); ()
       | ToAction _  -> () in
@@ -223,8 +223,8 @@ let goto_state = function
 
 
 let transition_from chars follow pos_set =
-  let tr = Array.create 256 []
-  and shift = Array.create 256 Backtrack in
+  let tr = Array.make 256 []
+  and shift = Array.make 256 Backtrack in
     List.iter
       (fun pos ->
         List.iter
@@ -263,6 +263,6 @@ let make_dfa lexdef =
   let states =
     map_on_states (translate_state chars follow) in
   let v =
-    Array.create (number_of_states()) (Perform 0) in
+    Array.make (number_of_states()) (Perform 0) in
   List.iter (fun (auto, i) -> v.(i) <- auto) states;
   (initial_states, v, actions)

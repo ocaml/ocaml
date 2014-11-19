@@ -21,6 +21,7 @@ type error =
   | Applicative_path of Location.t
   | Variable_in_scope of Location.t * string
   | Other of Location.t
+  | Ill_formed_ast of Location.t * string
 
 exception Error of error
 exception Escape_error
@@ -29,3 +30,4 @@ val report_error: formatter -> error -> unit
  (* Deprecated.  Use Location.{error_of_exn, report_error}. *)
 
 val location_of_error: error -> Location.t
+val ill_formed_ast: Location.t -> string -> 'a

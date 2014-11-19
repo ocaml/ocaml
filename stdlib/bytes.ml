@@ -14,21 +14,32 @@
 (* Byte sequence operations *)
 
 external length : bytes -> int = "%string_length"
+external string_length : string -> int = "%string_length"
 external get : bytes -> int -> char = "%string_safe_get"
 external set : bytes -> int -> char -> unit = "%string_safe_set"
 external create : int -> bytes = "caml_create_string"
 external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
 external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
-external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
 external unsafe_fill : bytes -> int -> int -> char -> unit
                      = "caml_fill_string" "noalloc"
 external unsafe_to_string : bytes -> string = "%identity"
 external unsafe_of_string : string -> bytes = "%identity"
 
+external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
+                     = "caml_blit_string" "noalloc"
+external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
+                     = "caml_blit_string" "noalloc"
+
 let make n c =
   let s = create n in
   unsafe_fill s 0 n c;
+  s
+
+let init n f =
+  let s = create n in
+  for i = 0 to n - 1 do
+    unsafe_set s i (f i)
+  done;
   s
 
 let empty = create 0;;
@@ -44,7 +55,7 @@ let of_string s = copy (unsafe_of_string s)
 
 let sub s ofs len =
   if ofs < 0 || len < 0 || ofs > length s - len
-  then invalid_arg "Bytes.sub"
+  then invalid_arg "String.sub / Bytes.sub"
   else begin
     let r = create len in
     unsafe_blit s ofs r 0 len;
@@ -53,9 +64,17 @@ let sub s ofs len =
 
 let sub_string b ofs len = unsafe_to_string (sub b ofs len)
 
+let extend s left right =
+  let len = length s + left + right in
+  let r = create len in
+  let (srcoff, dstoff) = if left < 0 then -left, 0 else 0, left in
+  let cpylen = min (length s - srcoff) (len - dstoff) in
+  if cpylen > 0 then unsafe_blit s srcoff r dstoff cpylen;
+  r
+
 let fill s ofs len c =
   if ofs < 0 || len < 0 || ofs > length s - len
-  then invalid_arg "Bytes.fill"
+  then invalid_arg "String.fill / Bytes.fill"
   else unsafe_fill s ofs len c
 
 let blit s1 ofs1 s2 ofs2 len =
@@ -63,6 +82,12 @@ let blit s1 ofs1 s2 ofs2 len =
              || ofs2 < 0 || ofs2 > length s2 - len
   then invalid_arg "Bytes.blit"
   else unsafe_blit s1 ofs1 s2 ofs2 len
+
+let blit_string s1 ofs1 s2 ofs2 len =
+  if len < 0 || ofs1 < 0 || ofs1 > string_length s1 - len
+             || ofs2 < 0 || ofs2 > length s2 - len
+  then invalid_arg "String.blit / Bytes.blit_string"
+  else unsafe_blit_string s1 ofs1 s2 ofs2 len
 
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
@@ -87,6 +112,15 @@ let concat sep l =
           pos := !pos + length s)
         tl;
       r
+
+let cat s1 s2 =
+  let l1 = length s1 in
+  let l2 = length s2 in
+  let r = create (l1 + l2) in
+  unsafe_blit s1 0 r 0 l1;
+  unsafe_blit s2 0 r l1 l2;
+  r
+;;
 
 external is_printable: char -> bool = "caml_is_printable"
 external char_code: char -> int = "%identity"
@@ -157,7 +191,15 @@ let map f s =
   let l = length s in
   if l = 0 then s else begin
     let r = create l in
-    for i = 0 to l - 1 do unsafe_set r i (f(unsafe_get s i)) done;
+    for i = 0 to l - 1 do unsafe_set r i (f (unsafe_get s i)) done;
+    r
+  end
+
+let mapi f s =
+  let l = length s in
+  if l = 0 then s else begin
+    let r = create l in
+    for i = 0 to l - 1 do unsafe_set r i (f i (unsafe_get s i)) done;
     r
   end
 
@@ -182,7 +224,7 @@ let index s c = index_rec s (length s) 0 c;;
 
 let index_from s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "Bytes.index_from" else
+  if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
   index_rec s l i c;;
 
 let rec rindex_rec s i c =
@@ -192,19 +234,28 @@ let rec rindex_rec s i c =
 let rindex s c = rindex_rec s (length s - 1) c;;
 
 let rindex_from s i c =
-  if i < -1 || i >= length s then invalid_arg "Bytes.rindex_from" else
-  rindex_rec s i c;;
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from / Bytes.rindex_from"
+  else
+    rindex_rec s i c
+;;
 
 let contains_from s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "Bytes.contains_from" else
-  try ignore (index_rec s l i c); true with Not_found -> false;;
+  if i < 0 || i > l then
+    invalid_arg "String.contains_from / Bytes.contains_from"
+  else
+    try ignore (index_rec s l i c); true with Not_found -> false
+;;
 
 let contains s c = contains_from s 0 c;;
 
 let rcontains_from s i c =
-  if i < 0 || i >= length s then invalid_arg "Bytes.rcontains_from" else
-  try ignore (rindex_rec s i c); true with Not_found -> false;;
+  if i < 0 || i >= length s then
+    invalid_arg "String.rcontains_from / Bytes.rcontains_from"
+  else
+    try ignore (rindex_rec s i c); true with Not_found -> false
+;;
 
 type t = bytes
 

@@ -23,6 +23,7 @@ COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB) -safe-string
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
 PACK_CMO=\
+  const.cmo \
   loc.cmo \
   discard_printf.cmo \
   signatures.cmi \
@@ -73,6 +74,7 @@ EXTRA_CMO=\
 
 PACK_CMX=$(PACK_CMO:.cmo=.cmx)
 EXTRA_CMX=$(EXTRA_CMO:.cmo=.cmx)
+EXTRA_CMI=$(EXTRA_CMO:.cmo=.cmi)
 
 INSTALL_LIB=\
   ocamlbuildlib.cma \
@@ -196,6 +198,10 @@ clean::
 
 depend: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
+
+$(EXTRA_CMI): ocamlbuild_pack.cmi
+$(EXTRA_CMO): ocamlbuild_pack.cmo ocamlbuild_pack.cmi
+$(EXTRA_CMX): ocamlbuild_pack.cmx ocamlbuild_pack.cmi
 
 include .depend
 

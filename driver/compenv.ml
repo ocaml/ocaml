@@ -169,6 +169,7 @@ let read_OCAMLPARAM ppf position =
       | "rectypes" -> set "rectypes" [ recursive_types ] v
       | "safe-string" -> clear "safe-string" [ unsafe_string ] v
       | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
+      | "strict-formats" -> set "strict-formats" [ strict_formats ] v
       | "thread" -> set "thread" [ use_threads ] v
       | "unsafe" -> set "unsafe" [ fast ] v
       | "verbose" -> set "verbose" [ verbose ] v

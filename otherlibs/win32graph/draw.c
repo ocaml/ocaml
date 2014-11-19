@@ -57,12 +57,12 @@ CAMLprim value caml_gr_moveto(value vx, value vy)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_current_x(void)
+CAMLprim value caml_gr_current_x(value unit)
 {
         return Val_int(grwindow.grx);
 }
 
-CAMLprim value caml_gr_current_y(void)
+CAMLprim value caml_gr_current_y(value unit)
 {
         return Val_int(grwindow.gry);
 }
@@ -311,7 +311,7 @@ CAMLprim value caml_gr_show_bitmap(value filename,int x,int y)
 
 
 
-CAMLprim value caml_gr_get_mousex(void)
+CAMLprim value caml_gr_get_mousex(value unit)
 {
         POINT pt;
         GetCursorPos(&pt);
@@ -319,7 +319,7 @@ CAMLprim value caml_gr_get_mousex(void)
         return pt.x;
 }
 
-CAMLprim value caml_gr_get_mousey(void)
+CAMLprim value caml_gr_get_mousey(value unit)
 {
         POINT pt;
         GetCursorPos(&pt);

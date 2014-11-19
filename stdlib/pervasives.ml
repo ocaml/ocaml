@@ -81,7 +81,7 @@ external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"
 external ( - ) : int -> int -> int = "%subint"
-external ( *  ) : int -> int -> int = "%mulint"
+external ( * ) : int -> int -> int = "%mulint"
 external ( / ) : int -> int -> int = "%divint"
 external ( mod ) : int -> int -> int = "%modint"
 
@@ -290,6 +290,8 @@ let flush_all () =
 
 external unsafe_output : out_channel -> bytes -> int -> int -> unit
                        = "caml_ml_output"
+external unsafe_output_string : out_channel -> string -> int -> int -> unit
+                              = "caml_ml_output"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
 
@@ -297,7 +299,7 @@ let output_bytes oc s =
   unsafe_output oc s 0 (bytes_length s)
 
 let output_string oc s =
-  unsafe_output oc (bytes_unsafe_of_string s) 0 (string_length s)
+  unsafe_output_string oc s 0 (string_length s)
 
 let output oc s ofs len =
   if ofs < 0 || len < 0 || ofs > bytes_length s - len
@@ -305,7 +307,9 @@ let output oc s ofs len =
   else unsafe_output oc s ofs len
 
 let output_substring oc s ofs len =
-  output oc (bytes_unsafe_of_string s) ofs len
+  if ofs < 0 || len < 0 || ofs > string_length s - len
+  then invalid_arg "output_substring"
+  else unsafe_output_string oc s ofs len
 
 external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
 external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"
@@ -447,30 +451,25 @@ module LargeFile =
   end
 
 (* Formats *)
+
+type ('a, 'b, 'c, 'd, 'e, 'f) format6
+   = ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+   = Format of ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
+               * string
+
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+let string_of_format (Format (fmt, str)) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-
-let (( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
-  fun fmt1 fmt2 ->
-    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
-;;
-
-(* Have to return a copy for compatibility with unsafe-string mode *)
-(* String.copy is not available here, so use ^ to make a copy of the string *)
-let string_of_format fmt = format_to_string fmt ^ ""
+let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
+  Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
+          str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 

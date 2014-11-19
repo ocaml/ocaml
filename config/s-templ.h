@@ -212,3 +212,7 @@
    The value of this symbol is the number of arguments of
    gethostbyaddr_r(): either 7 or 8 depending on prototype.
    (7 is the Solaris version, 8 is the Linux version). */
+
+#define HAS_NICE
+
+/* Define HAS_NICE if you have nice(). */

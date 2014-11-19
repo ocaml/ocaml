@@ -80,7 +80,8 @@ let expand_module =
 
 let string_list_of_file file =
   with_input_file file begin fun ic ->
-    Lexers.blank_sep_strings (Lexing.from_channel ic)
+    Lexers.blank_sep_strings
+      Const.Source.file (Lexing.from_channel ic)
   end
 let print_path_list = Pathname.print_path_list
 
@@ -149,7 +150,8 @@ let read_path_dependencies =
     let depends = path-.-"depends" in
     with_input_file depends begin fun ic ->
       let ocamldep_output =
-        try Lexers.ocamldep_output (Lexing.from_channel ic)
+        try Lexers.ocamldep_output
+              Const.Source.ocamldep (Lexing.from_channel ic)
         with Lexers.Error (msg,_) -> raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: bad output (%s)" msg)) in
       let deps =
         List.fold_right begin fun (path, deps) acc ->

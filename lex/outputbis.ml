@@ -20,7 +20,7 @@ let output_auto_defs oc has_refill =
   output_string oc
     "let __ocaml_lex_init_lexbuf lexbuf mem_size =\
 \n  let pos = lexbuf.Lexing.lex_curr_pos in\
-\n  lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;\
+\n  lexbuf.Lexing.lex_mem <- Array.make mem_size (-1) ;\
 \n  lexbuf.Lexing.lex_start_pos <- pos ;\
 \n  lexbuf.Lexing.lex_last_pos <- pos ;\
 \n  lexbuf.Lexing.lex_last_action <- -1\

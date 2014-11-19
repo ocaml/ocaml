@@ -545,30 +545,25 @@ module LargeFile =
   end
 
 (* Formats *)
+
+type ('a, 'b, 'c, 'd, 'e, 'f) format6
+   = ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+   = Format of ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
+               * string
+
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+let string_of_format (Format (fmt, str)) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-
-let (( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
-  fun fmt1 fmt2 ->
-    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
-;;
-
-(* Have to return a copy for compatibility with unsafe-string mode *)
-(* String.copy is not available here, so use ^ to make a copy of the string *)
-let string_of_format fmt = format_to_string fmt ^ ""
+let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
+  Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
+          str1 ^ "%," ^ str2)
 
 (* Miscellaneous *)
 

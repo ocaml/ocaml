@@ -107,6 +107,14 @@ let check_deprecated loc attrs s =
     attrs
 
 let emit_external_warnings =
+  (* Note: this is run as a preliminary pass when type-checking an
+     interface or implementation.  This allows to cover all kinds of
+     attributes, but the drawback is that it doesn't take local
+     configuration of warnings (with '@@warning'/'@@warnerror'
+     attributes) into account.  We should rather check for
+     'ppwarning' attributes during the actual type-checking, making
+     sure to cover all contexts (easier and more ugly alternative:
+     duplicate here the logic which control warnings locally). *)
   let open Ast_mapper in
   {
     default_mapper with
@@ -127,21 +135,18 @@ let emit_external_warnings =
 let warning_scope = ref []
 
 let warning_enter_scope () =
-  warning_scope := ref None :: !warning_scope
+  warning_scope := (Warnings.backup ()) :: !warning_scope
 let warning_leave_scope () =
   match !warning_scope with
   | [] -> assert false
   | hd :: tl ->
-      may Warnings.restore !hd;
+      Warnings.restore hd;
       warning_scope := tl
 
 let warning_attribute attrs =
-  let prev_warnings = List.hd !warning_scope in
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
-        if !prev_warnings = None then
-          prev_warnings := Some (Warnings.backup ());
         begin try Warnings.parse_options errflag s
         with Arg.Bad _ ->
           Location.prerr_warning loc
@@ -175,16 +180,9 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    let old = !Clflags.transparent_modules in
-    Clflags.transparent_modules := false;
-    try
-      ignore (Env.lookup_module mlid env);
-      Clflags.transparent_modules := old
-    with
+    try ignore (Env.lookup_module true mlid env) with
     | Not_found ->
-        Clflags.transparent_modules := old;
-        narrow_unbound_lid_error env loc mlid
-          (fun lid -> Unbound_module lid)
+        narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
     | Env.Recmodule ->
         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
@@ -192,7 +190,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   | Longident.Lident _ -> ()
   | Longident.Ldot (mlid, _) ->
       check_module mlid;
-      let md = Env.find_module (Env.lookup_module mlid env) env in
+      let md = Env.find_module (Env.lookup_module true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
         Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
@@ -248,13 +246,17 @@ let find_value env loc lid =
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
-let find_module env loc lid =
+let lookup_module ?(load=false) env loc lid =
   let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module lid env, ()))
+    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
       (fun lid -> Unbound_module lid) env loc lid
-  in
-  (* check_deprecated loc decl.md_attributes (Path.name path); *)
-  path
+  in path
+
+let find_module env loc lid =
+  let path = lookup_module ~load:true env loc lid in
+  let decl = Env.find_module path env in
+  check_deprecated loc decl.md_attributes (Path.name path);
+  (path, decl)
 
 let find_modtype env loc lid =
   let (path, decl) as r =
@@ -422,6 +424,8 @@ let rec transl_type env policy styp =
     let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
+    if List.length stl < 2 then
+      Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
     let ctys = List.map (transl_type env policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty

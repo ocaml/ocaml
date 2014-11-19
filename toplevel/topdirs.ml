@@ -62,7 +62,7 @@ let check_consistency ppf filename cu =
   try
     List.iter
       (fun (name, crco) ->
-       Env.imported_units := name :: !Env.imported_units;
+       Env.add_import name;
        match crco with
          None -> ()
        | Some crc->
@@ -271,6 +271,8 @@ let dir_trace ppf lid =
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
+            with {desc=Tarrow _} -> true | _ -> false)
         then begin
         match is_traced clos with
         | Some opath ->
@@ -410,8 +412,7 @@ let () =
 let () =
   reg_show_prim "show_module"
     (fun env loc id lid ->
-       let path = Typetexp.find_module env loc lid in
-       let md = Env.find_module path env in
+       let path, md = Typetexp.find_module env loc lid in
        [ Sig_module (id, {md with md_type = trim_signature md.md_type},
                      Trec_not) ]
     )
@@ -472,6 +473,9 @@ let _ =
 
   Hashtbl.add directive_table "rectypes"
              (Directive_none(fun () -> Clflags.recursive_types := true));
+
+  Hashtbl.add directive_table "ppx"
+    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx));
 
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));

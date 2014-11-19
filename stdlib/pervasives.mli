@@ -130,6 +130,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
    [e2] is not evaluated at all. *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
+  [@@ocaml.deprecated "Use (&&) instead."]
 (** @deprecated {!Pervasives.( && )} should be used instead. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
@@ -138,6 +139,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
    [e2] is not evaluated at all. *)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
+  [@@ocaml.deprecated "Use (||) instead."]
 (** @deprecated {!Pervasives.( || )} should be used instead.*)
 
 (** {6 Debugging} *)
@@ -967,7 +969,7 @@ external decr : int ref -> unit = "%decr"
 *)
 
 (** Format strings have a general and highly polymorphic type
-    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+    [('a, 'b, 'c, 'd, 'e, 'f) format6].
     The two simplified types, [format] and [format4] below are
     included for backward compatibility with earlier releases of
     OCaml.
@@ -1006,6 +1008,10 @@ external decr : int ref -> unit = "%decr"
       for the [scanf]-style functions, it is typically the result type of the
       receiver function.
 *)
+
+type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+  ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
