@@ -42,6 +42,8 @@ OCaml 4.02.2:
 
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
+- PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
+  (report by user 'william')
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
 - ocamlbuild on cygwin cannot find ocamlfind
