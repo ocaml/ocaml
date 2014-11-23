@@ -57,7 +57,7 @@ let show_documentation () =
    they should be marked as useful, to avoid the "unused tag" warning. *)
 let builtin_useful_tags =
   Tags.of_list [
-    "include"; "traverse"; "not_hygienic";
+    "include"; "traverse"; "not_hygienic"; "precious";
     "pack"; "ocamlmklib"; "native"; "thread";
     "nopervasives"; "use_menhir"; "ocamldep";
     "thread";
