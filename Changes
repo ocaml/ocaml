@@ -41,6 +41,8 @@ OCaml 4.02.2:
 -------------
 
 - PR#6628: Configure script rejects legitimate arguments
+- PR#6669: fix regression in toplevel printing of lazy values
+  (Leo White, review by Gabriel Scherer)
 
 OCaml 4.02.1:
 -------------

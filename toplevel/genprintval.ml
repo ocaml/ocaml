@@ -258,12 +258,35 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Oval_array []
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
-              if Lazy.is_val (O.obj obj)
-              then let v =
-                     nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg
-                   in
-                     Oval_constr (Oide_ident "lazy", [v])
-              else Oval_stuff "<lazy>"
+             if not (Lazy.is_val (O.obj obj)) then Oval_stuff "<lazy>"
+             else begin
+                 let forced_obj =
+                   (* we know that (Lazy.is_val (O.obj obj)),
+                      forcing will not block *)
+                   Lazy.force (O.obj obj) in
+                 (* calling oneself recursively on forced_obj risks
+                    having a false positive for cycle detection; indeed,
+                    if the value has been created with Lazy.from_val,
+                    it may be stored as-is instead of being wrapped in a
+                    forward pointer. It means that, for (lazy "foo"), we have
+                      forced_obj == obj
+                    and it is easy to wrongly print (lazy <cycle>) in such
+                    a case (PR#6669).
+
+                    Unfortunately, there is a corner-case that *is*
+                    a real cycle: using -rectypes one can define
+                      let rec x = lazy x
+                    which creates a Forward_tagged block that points to
+                    itself. For this reason, we still "nest"
+                    (detect head cycles) on forward tags.
+                  *)
+                 let maybe_nest tree_of_val =
+                   if O.tag obj = Obj.forward_tag
+                   then nest tree_of_val
+                   else tree_of_val in
+                 let v = maybe_nest tree_of_val depth forced_obj ty_arg in
+                  Oval_constr (Oide_ident "lazy", [v])
+               end
           | Tconstr(path, ty_list, _) -> begin
               try
                 let decl = Env.find_type path env in
