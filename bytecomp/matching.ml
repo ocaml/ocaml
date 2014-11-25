@@ -2055,10 +2055,10 @@ let as_interval_canfail fail low high l =
   let store = StoreExp.mk_store () in
 
   let do_store tag act =
+
     let i =  store.act_store act in
 (*
-    Printlambda.lambda Format.str_formatter act ;
-    eprintf "STORE [%s] %i %s\n" tag i (Format.flush_str_formatter ()) ;
+    eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
     i in
 
@@ -2095,7 +2095,7 @@ let as_interval_canfail fail low high l =
           nofail_rec i i index rem in
 
   let init_rec = function
-    | [] -> []
+    | [] -> [low,high,0]
     | (i,act_i)::rem ->
         let index = do_store "INIT" act_i in
         if index=0 then
@@ -2303,8 +2303,14 @@ let mk_failaction_pos partial seen ctx defs  =
   end else begin (* Two many non-matched constructors -> reduced information *)
     if dbg then eprintf "POS->NEG!!!\n%!" ;
     let fail,jumps =  mk_failaction_neg partial ctx defs in
+    if dbg then
+      eprintf "FAIL: %s\n"
+        (match fail with 
+        | None -> "<none>"
+        | Some lam -> string_of_lam lam) ;
     fail,[],jumps
   end
+
 let combine_constant arg cst partial ctx def
     (const_lambda_list, total, pats) =
   let fail, local_jumps =
