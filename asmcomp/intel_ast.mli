@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*         Fabrice Le Fessant, projet Gallium, INRIA Rocquencourt      *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -13,16 +13,14 @@
 (** Structured representation of Intel assembly language (32 and 64 bit). *)
 
 type condition =
-  | O | NO
-  | B
-  | AE
-  | E
-  | NE
-  | BE | A
-  | S | NS
-  | P | NP
-  | L | GE
+  | L | GE     (* signed comparisons: less/greater *)
   | LE | G
+  | B | AE     (* unsigned comparisons: below/above *)
+  | BE | A
+  | E | NE     (* equal *)
+  | O | NO     (* overflow *)
+  | S | NS     (* sign *)
+  | P | NP     (* parity *)
 
 type rounding =
   | RoundUp

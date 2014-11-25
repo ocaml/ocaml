@@ -18,8 +18,9 @@
 
    Some notes:
 
-     - Unary floating point instructions such as fadd/fmul/fstp/fld/etc come with a single version
-       supporting both the single and double precision instructions.  (As with Intel syntax.)
+     - Unary floating point instructions such as fadd/fmul/fstp/fld/etc.
+       come with a single version supporting both the single and double
+       precision instructions.  (As with Intel syntax.)
 
      - A legacy bug in GAS:
        https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
