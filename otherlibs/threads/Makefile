@@ -29,7 +29,7 @@ LIB=../../stdlib
 
 LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/bytes.cmo	\
-  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo $(LIB)/marshal.cmo	\
+  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo	        \
   $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo			\
   $(LIB)/nativeint.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo		\
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo	\
