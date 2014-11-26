@@ -619,7 +619,7 @@ let default_mapper =
       );
   }
 
-let rec extension_of_error {loc; msg; if_highlight; sub} =
+let rec extension_of_error {location = loc; msg; if_highlight; sub} =
   { loc; txt = "ocaml.error" },
   PStr ([Str.eval (Exp.constant (Const_string (msg, None)));
          Str.eval (Exp.constant (Const_string (if_highlight, None)))] @
