@@ -47,7 +47,8 @@ val string_tag : int   (* both [string] and [bytes] *)
 val double_tag : int
 val double_array_tag : int
 val custom_tag : int
-val final_tag : int [@@ocaml.deprecated]
+val final_tag : int
+  [@@ocaml.deprecated "Replaced by custom_tag."]
 
 val int_tag : int
 val out_of_heap_tag : int
@@ -60,5 +61,7 @@ val extension_slot : 'a -> t
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
 
-val marshal : t -> bytes [@@ocaml.deprecated]
-val unmarshal : bytes -> int -> t * int [@@ocaml.deprecated]
+val marshal : t -> bytes
+  [@@ocaml.deprecated "Use Marshal.to_bytes instead."]
+val unmarshal : bytes -> int -> t * int
+  [@@ocaml.deprecated "Use Marshal.from_bytes and Marshal.total_size instead."]

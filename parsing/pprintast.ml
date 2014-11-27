@@ -351,7 +351,7 @@ class printer  ()= object(self:'self)
       | p -> self#pattern1 f p in
     if x.ppat_attributes <> [] then self#pattern f x
     else match x.ppat_desc with
-    | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#pattern1 p (*RA*)
+    | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#simple_pattern p
     | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> self#simple_pattern f x
     | Ppat_construct (({txt;_} as li), po) -> (* FIXME The third field always false *)
         if txt = Lident "::" then
@@ -1240,6 +1240,13 @@ class printer  ()= object(self:'self)
     | x :: xs -> pp f "@[<v>%a@,%a@]"
           (type_decl "type") x
           (self#list ~sep:"@," (type_decl "and")) xs
+
+  method record_declaration f lbls =
+    let type_record_field f pld =
+      pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
+    pp f "{@\n%a}"
+      (self#list type_record_field ~sep:";@\n" )  lbls
+
   method type_declaration f x =
     let priv f =
       match x.ptype_private with
@@ -1252,18 +1259,8 @@ class printer  ()= object(self:'self)
       | Some y -> pp f "@;%a" self#core_type y
     in
     let constructor_declaration f pcd =
-      match pcd.pcd_res with
-      | None ->
-          pp f "|@;%s%a%a" pcd.pcd_name.txt
-             self#attributes pcd.pcd_attributes
-             (fun f -> function
-              | [] -> ()
-              | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l)
-             pcd.pcd_args
-      | Some x ->
-          pp f "|@;%s%a:@;%a" pcd.pcd_name.txt
-             self#attributes pcd.pcd_attributes
-             (self#list self#core_type1 ~sep:"@;->@;") (pcd.pcd_args@[x])
+      pp f "|@;";
+      self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
     in
     let label_declaration f pld =
       pp f "@[<2>%a%s%a:@;%a;@]"
@@ -1310,23 +1307,35 @@ class printer  ()= object(self:'self)
          x.ptyext_constructors
          self#item_attributes x.ptyext_attributes
 
+  method constructor_declaration f (name, args, res, attrs) =
+    match res with
+    | None ->
+        pp f "%s%a%a" name
+          self#attributes attrs
+          (fun f -> function
+             | Pcstr_tuple [] -> ()
+             | Pcstr_tuple l ->
+                 pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
+             | Pcstr_record l -> pp f "@;of@;%a" (self#record_declaration) l
+          ) args
+    | Some r ->
+        pp f "%s%a:@;%a" name
+          self#attributes attrs
+          (fun f -> function
+             | Pcstr_tuple [] -> self#core_type1 f r
+             | Pcstr_tuple l -> pp f "%a@;->@;%a"
+                                  (self#list self#core_type1 ~sep:"*@;") l
+                                  self#core_type1 r
+             | Pcstr_record l ->
+                 pp f "%a@;->@;%a" (self#record_declaration) l self#core_type1 r
+          )
+          args
+
+
   method extension_constructor f x =
     match x.pext_kind with
-    | Pext_decl(l, None) ->
-        pp f "%s%a%a" x.pext_name.txt
-          self#attributes x.pext_attributes
-          (fun f -> function
-                 | [] -> ()
-                 | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l) l
-    | Pext_decl(l, Some r) ->
-        pp f "%s%a:@;%a" x.pext_name.txt
-          self#attributes x.pext_attributes
-          (fun f -> function
-                 | [] -> self#core_type1 f r
-                 | l -> pp f "%a@;->@;%a"
-                           (self#list self#core_type1 ~sep:"*@;") l
-                           self#core_type1 r)
-          l
+    | Pext_decl(l, r) ->
+        self#constructor_declaration f (x.pext_name.txt, l, r, x.pext_attributes)
     | Pext_rebind li ->
         pp f "%s%a@;=@;%a" x.pext_name.txt
           self#attributes x.pext_attributes

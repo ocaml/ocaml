@@ -40,6 +40,12 @@ let rec struct_const ppf = function
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
+let array_kind = function
+  | Pgenarray -> "gen"
+  | Paddrarray -> "addr"
+  | Pintarray -> "int"
+  | Pfloatarray -> "float"
+
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
   | Pint32 -> "int32"
@@ -84,7 +90,9 @@ let print_bigarray name unsafe kind ppf layout =
 let record_rep ppf r =
   match r with
   | Record_regular -> fprintf ppf "regular"
+  | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
+  | Record_extension -> fprintf ppf "ext"
 ;;
 
 let string_of_loc_kind = function
@@ -156,16 +164,18 @@ let primitive ppf = function
   | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
-  | Parraylength _ -> fprintf ppf "array.length"
-  | Pmakearray _ -> fprintf ppf "makearray "
-  | Parrayrefu _ -> fprintf ppf "array.unsafe_get"
-  | Parraysetu _ -> fprintf ppf "array.unsafe_set"
-  | Parrayrefs _ -> fprintf ppf "array.get"
-  | Parraysets _ -> fprintf ppf "array.set"
+  | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
+  | Pmakearray k -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
+  | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
+  | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
+  | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"
        | Word_size -> "word_size"
+       | Int_size -> "int_size"
+       | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin" in

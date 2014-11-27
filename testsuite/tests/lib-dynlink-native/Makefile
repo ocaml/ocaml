@@ -49,7 +49,7 @@ run:
 
 main$(EXE): api.cmx main.cmx
 	@$(OCAMLOPT) -thread -o main$(EXE) -linkall unix.cmxa threads.cmxa \
-	             dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
+	             dynlink.cmxa api.cmx main.cmx
 
 main_ext$(EXE): api.cmx main.cmx factorial.$(O)
 	@$(OCAMLOPT) -o main_ext$(EXE) dynlink.cmxa api.cmx main.cmx \

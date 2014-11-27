@@ -16,13 +16,11 @@ let ok = "Ok"
 let software = "OCamldoc"
 let config_version = Config.version
 let magic = config_version^""
-let message_version = software^" "^config_version
 
 (** Messages for command line *)
 
 let usage = "Usage: "^(Sys.argv.(0))^" [options] <files>\n"
 let options_are = "Options are:"
-let option_version = "\tPrint version and exit"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
 let latex_texi_only = "(LaTeX and TeXinfo only)"
@@ -30,51 +28,45 @@ let html_only = "(HTML only)"
 let html_latex_only = "(HTML and LaTeX only)"
 let html_latex_texi_only = "(HTML, LaTeX and TeXinfo only)"
 let man_only = "(man only)"
-let verbose_mode = "\t\tverbose mode"
-let include_dirs = "<dir>\tAdd <dir> to the list of include directories"
-let rectypes = "\tAllow arbitrary recursive types"
-let preprocess = "<command>\tPipe sources through preprocessor <command>"
-let ppx = "<command>\n\t\tPipe abstract syntax tree through preprocessor <command>"
-let option_impl ="<file>\tConsider <file> as a .ml file"
-let option_intf ="<file>\tConsider <file> as a .mli file"
-let option_text ="<file>\tConsider <file> as a .txt file"
-let display_custom_generators_dir = "\tDisplay custom generators standard directory and exit"
-let add_load_dir = "<dir>\tAdd the given directory to the search path for custom\n"^
+let option_impl ="<file> Consider <file> as a .ml file"
+let option_intf ="<file> Consider <file> as a .mli file"
+let option_text ="<file> Consider <file> as a .txt file"
+let display_custom_generators_dir = "Display custom generators standard directory and exit"
+let add_load_dir = "<dir> Add the given directory to the search path for custom\n"^
   "\t\tgenerators"
-let load_file = "<file.cm[o|a|xs]>\n\t\tLoad file defining a new documentation generator"
-let nolabels = "\tIgnore non-optional labels in types"
-let werr = "\tTreat ocamldoc warnings as errors"
-let hide_warnings = "\n\t\tdo not print ocamldoc warnings"
-let target_dir = "<dir>\tGenerate files in directory <dir>, rather than in current\n"^
+let load_file = "<file.cm[o|a|xs]> Load file defining a new documentation generator"
+let werr = " Treat ocamldoc warnings as errors"
+let hide_warnings = " do not print ocamldoc warnings"
+let target_dir = "<dir> Generate files in directory <dir>, rather than in current\n"^
   "\t\tdirectory (for man and HTML generators)"
-let dump = "<file>\tDump collected information into <file>"
-let load = "<file>\tLoad information from <file> ; may be used several times"
-let css_style = "<file>\n\t\tUse content of <file> as CSS style definition "^html_only
-let index_only = "\tGenerate index files only "^html_only
-let colorize_code = "\n\t\tColorize code even in documentation pages "^html_only
-let html_short_functors = "\n\t\tUse short form to display functor types "^html_only
+let dump = "<file> Dump collected information into <file>"
+let load = "<file> Load information from <file> ; may be used several times"
+let css_style = "<file> Use content of <file> as CSS style definition "^html_only
+let index_only = " Generate index files only "^html_only
+let colorize_code = " Colorize code even in documentation pages "^html_only
+let html_short_functors = " Use short form to display functor types "^html_only
 let charset c = Printf.sprintf
-  "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
+  "<s> Add information about character encoding being s\n\t\t(default is %s)"
   c
-let generate_html = "\tGenerate HTML documentation"
-let generate_latex = "\tGenerate LaTeX documentation"
-let generate_texinfo = "\tGenerate TeXinfo documentation"
-let generate_man = "\t\tGenerate man pages"
-let generate_dot = "\t\tGenerate dot code of top modules dependencies"
+let generate_html = " Generate HTML documentation"
+let generate_latex = " Generate LaTeX documentation"
+let generate_texinfo = " Generate TeXinfo documentation"
+let generate_man = " Generate man pages"
+let generate_dot = " Generate dot code of top modules dependencies"
 
 let option_not_in_native_code op = "Option "^op^" not available in native code version."
 
 let default_out_file = "ocamldoc.out"
 let out_file =
-  "<file>\tSet the output file name, used by texi, latex and dot generators\n"^
+  "<file> Set the output file name, used by texi, latex and dot generators\n"^
   "\t\t(default is "^default_out_file^")\n"^
   "\t\tor the prefix of index files for the HTML generator\n"^
   "\t\t(default is index)"
 
 let dot_include_all =
-  "\n\t\tInclude all modules in the dot output, not only the\n"^
+  " Include all modules in the dot output, not only the\n"^
   "\t\tmodules given on the command line"
-let dot_types = "\tGenerate dependency graph for types instead of modules"
+let dot_types = " Generate dependency graph for types instead of modules"
 let default_dot_colors =
   [ [ "darkturquoise" ; "darkgoldenrod2" ; "cyan" ; "green" ; ] ;
     [ "magenta" ; "yellow" ; "burlywood1" ; "aquamarine" ; "floralwhite" ; "lightpink" ] ;
@@ -82,36 +74,37 @@ let default_dot_colors =
   ]
 
 let dot_colors =
-  "<c1,c2,...,cn>\n\t\tUse colors c1,c1,...,cn in the dot output\n"^
+  " <c1,c2,...,cn>\n"^
+  "\t\tUse colors c1,c1,...,cn in the dot output\n"^
   "\t\t(default list is "^
   (String.concat ",\n\t\t" (List.map (String.concat ",") default_dot_colors))^")"
 
 let dot_reduce =
-  "\tPerform a transitive reduction on the selected dependency graph\n"^
+  " Perform a transitive reduction on the selected dependency graph\n"^
   "\t\tbefore the dot output"
 
-let man_mini = "\tGenerate man pages only for modules, module types, classes\n"^
+let man_mini = " Generate man pages only for modules, module types, classes\n"^
   "\t\tand class types "^man_only
 let default_man_section = "3"
-let man_section = "<section>\n\t\tUse <section> in man page files "^
+let man_section = "<section> Use <section> in man page files "^
   "(default is "^default_man_section^") "^man_only^"\n"
 
 let default_man_suffix = default_man_section^"o"
-let man_suffix = "<suffix>\n\t\tUse <suffix> for man page files "^
+let man_suffix = "<suffix> Use <suffix> for man page files "^
   "(default is "^default_man_suffix^") "^man_only^"\n"
 
-let option_title = "<title>\tUse <title> as title for the generated documentation"
+let option_title = "<title> Use <title> as title for the generated documentation"
 let option_intro =
-  "<file>\tUse content of <file> as ocamldoc text to use as introduction\n"^
+  "<file> Use content of <file> as ocamldoc text to use as introduction\n"^
   "\t\t"^(html_latex_texi_only)
-let with_parameter_list = "\tDisplay the complete list of parameters for functions and\n"^
+let with_parameter_list = " Display the complete list of parameters for functions and\n"^
   "\t\tmethods "^html_only
-let hide_modules = "<M1,M2.M3,...>\n\t\tHide the given complete module names in generated doc"
-let no_header = "\tSuppress header in generated documentation\n\t\t"^latex_texi_only
-let no_trailer = "\tSuppress trailer in generated documentation\n\t\t"^latex_texi_only
-let separate_files = "\tGenerate one file per toplevel module "^latex_only
+let hide_modules = "<M1,M2.M3,...> Hide the given complete module names in generated doc"
+let no_header = " Suppress header in generated documentation\n\t\t"^latex_texi_only
+let no_trailer = " Suppress trailer in generated documentation\n\t\t"^latex_texi_only
+let separate_files = " Generate one file per toplevel module "^latex_only
 let latex_title ref_titles =
-  "n,style\n\t\tAssociate {n } to the given sectionning style\n"^
+  "n,style Associate {n } to the given sectionning style\n"^
   "\t\t(e.g. 'section') in the latex output "^latex_only^"\n"^
   "\t\tDefault sectionning is:\n\t\t"^
   (String.concat "\n\t\t"
@@ -119,67 +112,78 @@ let latex_title ref_titles =
 
 let default_latex_value_prefix = "val:"
 let latex_value_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of values.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of values.\n"^
   "\t\t(default is \""^default_latex_value_prefix^"\")"
 
 let default_latex_type_prefix = "type:"
 let latex_type_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of types.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of types.\n"^
   "\t\t(default is \""^default_latex_type_prefix^"\")"
 
 let default_latex_type_elt_prefix = "typeelt:"
 let latex_type_elt_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of type elements.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of type elements.\n"^
   "\t\t(default is \""^default_latex_type_elt_prefix^"\")"
 
 let default_latex_extension_prefix = "extension:"
 let latex_extension_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of extensions.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of extensions.\n"^
   "\t\t(default is \""^default_latex_extension_prefix^"\")"
 
 let default_latex_exception_prefix = "exception:"
 let latex_exception_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of exceptions.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of exceptions.\n"^
   "\t\t(default is \""^default_latex_exception_prefix^"\")"
 
 let default_latex_module_prefix = "module:"
 let latex_module_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of modules.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of modules.\n"^
   "\t\t(default is \""^default_latex_module_prefix^"\")"
 
 let default_latex_module_type_prefix = "moduletype:"
 let latex_module_type_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of module types.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of module types.\n"^
   "\t\t(default is \""^default_latex_module_type_prefix^"\")"
 
 let default_latex_class_prefix = "class:"
 let latex_class_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of classes.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of classes.\n"^
   "\t\t(default is \""^default_latex_class_prefix^"\")"
 
 let default_latex_class_type_prefix = "classtype:"
 let latex_class_type_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of class types.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of class types.\n"^
   "\t\t(default is \""^default_latex_class_type_prefix^"\")"
 
 let default_latex_attribute_prefix = "val:"
 let latex_attribute_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of attributes.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of attributes.\n"^
   "\t\t(default is \""^default_latex_attribute_prefix^"\")"
 
 let default_latex_method_prefix = "method:"
 let latex_method_prefix =
-  "<string>\n\t\tUse <string> as prefix for the LaTeX labels of methods.\n"^
+  "<string>\n"^
+  "\t\tUse <string> as prefix for the LaTeX labels of methods.\n"^
   "\t\t(default is \""^default_latex_method_prefix^"\")"
 
-let no_toc = "\tDo not generate table of contents "^latex_only
-let sort_modules = "\tSort the list of top modules before generating the documentation"
-let no_stop = "\tDo not stop at (**/**) comments"
-let no_custom_tags = "\n\t\tDo not allow custom @-tags"
-let remove_stars = "\tRemove beginning blanks of comment lines, until the first '*'"
-let keep_code = "\tAlways keep code when available"
-let inverse_merge_ml_mli = "\n\t\tInverse implementations and interfaces when merging"
-let no_filter_with_module_constraints = "\n\t\tDo not filter module elements using module type constraints"
+let no_toc = " Do not generate table of contents "^latex_only
+let sort_modules = " Sort the list of top modules before generating the documentation"
+let no_stop = " Do not stop at (**/**) comments"
+let no_custom_tags = " Do not allow custom @-tags"
+let remove_stars = " Remove beginning blanks of comment lines, until the first '*'"
+let keep_code = " Always keep code when available"
+let inverse_merge_ml_mli = " Inverse implementations and interfaces when merging"
+let no_filter_with_module_constraints = "Do not filter module elements using module type constraints"
 let merge_description = ('d', "merge description")
 let merge_author = ('a', "merge @author")
 let merge_version = ('v', "merge @version")
@@ -193,10 +197,10 @@ let merge_return_value = ('r', "merge @return")
 let merge_custom = ('c', "merge custom @-tags")
 let merge_all = ('A', "merge all")
 
-let no_index = "\tDo not build index for Info files "^texi_only
-let esc_8bits = "\tEscape accentuated characters in Info files "^texi_only
-let info_section = "Specify section of Info directory "^texi_only
-let info_entry = "\tSpecify Info directory entry "^texi_only
+let no_index = " Do not build index for Info files "^texi_only
+let esc_8bits = " Escape accentuated characters in Info files "^texi_only
+let info_section = " Specify section of Info directory "^texi_only
+let info_entry = " Specify Info directory entry "^texi_only
 
 let options_can_be = "<options> can be one or more of the following characters:"
 let string_of_options_list l =
@@ -205,7 +209,7 @@ let string_of_options_list l =
     l
 
 let merge_options =
-  "<options>\tspecify merge options between .mli and .ml\n\t\t"^
+  "<options> specify merge options between .mli and .ml\n\t\t"^
   options_can_be^
   (string_of_options_list
      [ merge_description ;
@@ -222,7 +226,7 @@ let merge_options =
        merge_all ]
   )
 
-let help = "\t\tDisplay this list of options"
+let help = " Display this list of options"
 
 
 (** Error and warning messages *)

@@ -67,6 +67,7 @@ type error =
   | Invalid_for_loop_index
   | No_value_clauses
   | Exception_pattern_below_toplevel
+  | Inlined_record_escape
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -109,6 +110,17 @@ let rp node =
   Stypes.record (Stypes.Ti_pat node);
   node
 ;;
+
+
+let is_recarg d =
+  match (repr d.val_type).desc with
+  | Tconstr(p, _, _) -> Path.is_constructor_typath p
+  | _ -> false
+
+type recarg =
+  | Allowed
+  | Required
+  | Rejected
 
 
 let fst3 (x, _, _) = x
@@ -592,6 +604,7 @@ module NameChoice(Name : sig
   val get_descrs: Env.type_descriptions -> t list
   val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
   val unbound_name_error: Env.t -> Longident.t loc -> 'a
+  val in_env: t -> bool
 end) = struct
   open Name
 
@@ -685,9 +698,12 @@ end) = struct
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
           check_lk tpath lbl;
+          if in_env lbl then
+          begin
           let s = Printtyp.string_of_path tpath in
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
+          end;
           if not pr then warn_pr ();
           lbl
         with Not_found ->
@@ -704,6 +720,7 @@ end) = struct
           raise (Error (lid.loc, env,
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
     in
+    if in_env lbl then
     begin match scope with
       (lab1,_)::_ when lab1 == lbl -> ()
     | _ ->
@@ -725,6 +742,10 @@ module Label = NameChoice (struct
   let get_descrs = snd
   let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
+  let in_env lbl =
+    match lbl.lbl_repres with
+    | Record_regular | Record_float -> true
+    | Record_inlined _ | Record_extension -> false
 end)
 
 let disambiguate_label_by_ids keep env closed ids labels =
@@ -877,6 +898,7 @@ module Constructor = NameChoice (struct
   let get_descrs = fst
   let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
+  let in_env _ = true
 end)
 
 (* unification of a type with a tconstr with
@@ -1055,6 +1077,21 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types_gadt loc env ty_res expected_ty
       else
         unify_pat_types loc !env ty_res expected_ty;
+
+      let rec check_non_escaping p =
+        match p.ppat_desc with
+        | Ppat_or (p1, p2) ->
+            check_non_escaping p1;
+            check_non_escaping p2
+        | Ppat_alias (p, _) ->
+            check_non_escaping p
+        | Ppat_constraint _ ->
+            raise (Error (p.ppat_loc, !env, Inlined_record_escape))
+        | _ ->
+            ()
+      in
+      if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
+
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
         pat_desc=Tpat_construct(lid, constr, args);
@@ -1716,9 +1753,9 @@ let unify_exp env exp expected_ty =
     Printtyp.raw_type_expr expected_ty; *)
     unify_exp_types exp.exp_loc env exp.exp_type expected_ty
 
-let rec type_exp env sexp =
+let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
-  type_expect env sexp (newvar ())
+  type_expect ?recarg env sexp (newvar ())
 
 (* Typing of an expression with an expected type.
    This provide better error messages, and allows controlled
@@ -1726,17 +1763,17 @@ let rec type_exp env sexp =
    In the principal case, [type_expected'] may be at generic_level.
  *)
 
-and type_expect ?in_function env sexp ty_expected =
+and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
   Typetexp.warning_enter_scope ();
   Typetexp.warning_attribute sexp.pexp_attributes;
-  let exp = type_expect_ ?in_function env sexp ty_expected in
+  let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
   Typetexp.warning_leave_scope ();
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_ ?in_function env sexp ty_expected =
+and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
@@ -1755,6 +1792,11 @@ and type_expect_ ?in_function env sexp ty_expected =
           in
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
+        end;
+        begin match is_recarg desc, recarg with
+        | _, Allowed | true, Required | false, Rejected -> ()
+        | true, Rejected | false, Required ->
+            raise (Error (loc, env, Inlined_record_escape));
         end;
         rue {
           exp_desc =
@@ -2012,7 +2054,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           None -> None
         | Some sexp ->
             if !Clflags.principal then begin_def ();
-            let exp = type_exp env sexp in
+            let exp = type_exp ~recarg env sexp in
             if !Clflags.principal then begin
               end_def ();
               generalize_structure exp.exp_type
@@ -2729,7 +2771,7 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();
-  let record = type_exp env srecord in
+  let record = type_exp ~recarg:Allowed env srecord in
   if !Clflags.principal then begin
     end_def ();
     generalize_structure record.exp_type
@@ -2905,6 +2947,8 @@ and type_format loc str env =
           mk_constr "Ignored_scan_get_counter" [
             mk_counter counter
           ]
+        | Ignored_scan_next_char ->
+          mk_constr "Ignored_scan_next_char" []
       and mk_padding : type x y . (x, y) padding -> Parsetree.expression =
       fun pad -> match pad with
         | No_padding         -> mk_constr "No_padding" []
@@ -2970,6 +3014,8 @@ and type_format loc str env =
             mk_int_opt width_opt; mk_string char_set; mk_fmt rest ]
         | Scan_get_counter (cnt, rest) ->
           mk_constr "Scan_get_counter" [ mk_counter cnt; mk_fmt rest ]
+        | Scan_next_char rest ->
+          mk_constr "Scan_next_char" [ mk_fmt rest ]
         | Ignored_param (ign, rest) ->
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
@@ -3034,7 +3080,7 @@ and type_label_exp create env loc ty_expected
   in
   (lid, label, {arg with exp_type = instance env arg.exp_type})
 
-and type_argument env sarg ty_expected' ty_expected =
+and type_argument ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -3119,7 +3165,7 @@ and type_argument env sarg ty_expected' ty_expected =
                      func let_var) }
       end
   | _ ->
-      let texp = type_expect env sarg ty_expected' in
+      let texp = type_expect ?recarg env sarg ty_expected' in
       unify_exp env texp ty_expected;
       texp
 
@@ -3361,7 +3407,21 @@ and type_construct env loc lid sarg ty_expected attrs =
   in
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp env texp (instance env ty_expected);
-  let args = List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
+  let recarg =
+    match constr.cstr_inlined with
+    | None -> Rejected
+    | Some _ ->
+        begin match sargs with
+        | [{pexp_desc =
+              Pexp_ident _ |
+              Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
+            Required
+        | _ ->
+            raise (Error(loc, env, Inlined_record_escape))
+        end
+  in
+  let args =
+    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
@@ -3826,6 +3886,12 @@ let report_error env ppf = function
       fprintf ppf "The record field %a is not mutable" longident lid
   | Wrong_name (eorp, ty, kind, p, lid) ->
       reset_and_mark_loops ty;
+      if Path.is_constructor_typath p then begin
+        fprintf ppf "@[The field %a is not part of the record \
+                     argument for the %a constructor@]"
+          longident lid
+          path p;
+      end else begin
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
       fprintf ppf "The %s %a does not belong to type %a@]"
@@ -3833,6 +3899,7 @@ let report_error env ppf = function
         longident lid (*kind*) path p;
       if kind = "record" then Label.spellcheck ppf env p lid
                          else Constructor.spellcheck ppf env p lid
+      end
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let name = if kind = "record" then "field" else "constructor" in
       report_ambiguous_type_error ppf env tp tpl
@@ -3961,6 +4028,10 @@ let report_error env ppf = function
   | Exception_pattern_below_toplevel ->
       fprintf ppf
         "@[Exception patterns must be at the top level of a match case.@]"
+  | Inlined_record_escape ->
+      fprintf ppf
+        "@[This form is not allowed as the type of the inlined record could \
+         escape.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
@@ -3978,3 +4049,8 @@ let () =
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check
+
+(* drop ?recarg argument from the external API *)
+let type_expect ?in_function env e ty = type_expect ?in_function env e ty
+let type_exp env e = type_exp env e
+let type_argument env e t1 t2 = type_argument env e t1 t2

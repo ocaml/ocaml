@@ -271,6 +271,8 @@ let dir_trace ppf lid =
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
+            with {desc=Tarrow _} -> true | _ -> false)
         then begin
         match is_traced clos with
         | Some opath ->
@@ -325,19 +327,14 @@ let parse_warnings ppf iserr s =
 
 (* Typing information *)
 
-let rec trim_modtype = function
-    Mty_signature _ -> Mty_signature []
-  | Mty_functor (id, mty, mty') ->
-      Mty_functor (id, mty, trim_modtype mty')
-  | Mty_ident _ | Mty_alias _ as mty -> mty
-
 let trim_signature = function
     Mty_signature sg ->
       Mty_signature
         (List.map
            (function
                Sig_module (id, md, rs) ->
-                 Sig_module (id, {md with md_type = trim_modtype md.md_type},
+                 Sig_module (id, {md with md_attributes =
+                                  (Location.mknoloc "...", Parsetree.PStr []) :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
@@ -398,7 +395,7 @@ let () =
        let ext =
          { ext_type_path = Predef.path_exn;
            ext_type_params = [];
-           ext_args = desc.cstr_args;
+           ext_args = Cstr_tuple desc.cstr_args;
            ext_ret_type = ret_type;
            ext_private = Asttypes.Public;
            Types.ext_loc = desc.cstr_loc;

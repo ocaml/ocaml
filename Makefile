@@ -383,6 +383,13 @@ installoptopt:
 	cd $(INSTALL_COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
 	   ocamloptcomp.a
 
+# Run all tests
+
+tests: opt.opt
+	cd testsuite; $(MAKE) clean && $(MAKE) all
+
+# The clean target
+
 clean:: partialclean
 
 # Shared parts of the system
@@ -630,7 +637,8 @@ beforedepend:: asmcomp/scheduling.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
+	echo \# 1 \"$(ARCH)/emit.mlp\" > asmcomp/emit.ml
+	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp >> asmcomp/emit.ml \
 	|| { rm -f asmcomp/emit.ml; exit 2; }
 
 asmclean::

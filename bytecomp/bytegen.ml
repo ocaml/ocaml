@@ -128,6 +128,7 @@ type rhs_kind =
   | RHS_block of int
   | RHS_floatblock of int
   | RHS_nonrec
+  | RHS_function of int * int
 ;;
 
 let rec check_recordwith_updates id e =
@@ -140,12 +141,13 @@ let rec check_recordwith_updates id e =
 
 let rec size_of_lambda = function
   | Lfunction(kind, params, body) as funct ->
-      RHS_block (1 + IdentSet.cardinal(free_variables funct))
+      RHS_function (1 + IdentSet.cardinal(free_variables funct), List.length params)
   | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
     when check_recordwith_updates id body ->
       begin match kind with
-      | Record_regular -> RHS_block size
+      | Record_regular | Record_inlined _ -> RHS_block size
       | Record_float -> RHS_floatblock size
+      | Record_extension -> RHS_block (size + 1)
       end
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
@@ -154,7 +156,10 @@ let rec size_of_lambda = function
       RHS_block (List.length args)
   | Lprim (Pmakearray Pfloatarray, args) -> RHS_floatblock (List.length args)
   | Lprim (Pmakearray Pgenarray, args) -> assert false
-  | Lprim (Pduprecord (Record_regular, size), args) -> RHS_block size
+  | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), args) ->
+      RHS_block size
+  | Lprim (Pduprecord (Record_extension, size), args) ->
+      RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), args) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
@@ -363,6 +368,8 @@ let comp_primitive p args =
      let const_name = match c with
        | Big_endian -> "big_endian"
        | Word_size -> "word_size"
+       | Int_size -> "int_size"
+       | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin" in
@@ -441,7 +448,6 @@ let rec comp_expr env exp sz cont =
         let ofs = Ident.find_same id env.ce_rec in
         Koffsetclosure(ofs) :: cont
       with Not_found ->
-        Format.eprintf "%a@." Ident.print id;
         fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
       end
   | Lconst cst ->
@@ -535,19 +541,25 @@ let rec comp_expr env exp sz cont =
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
+          | (id, exp, RHS_function (blocksize,arity)) :: rem ->
+              Kconst(Const_base(Const_int arity)) ::
+              Kpush ::
+              Kconst(Const_base(Const_int blocksize)) ::
+              Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, exp, RHS_nonrec) :: rem ->
               Kconst(Const_base(Const_int 0)) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
-          | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _)) :: rem ->
               comp_nonrec new_env sz (i-1) rem
           | (id, exp, RHS_nonrec) :: rem ->
               comp_expr new_env exp sz
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
           | [] -> comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _ | RHS_function _)) :: rem ->
               comp_expr new_env exp sz
                 (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)

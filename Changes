@@ -1,9 +1,17 @@
 OCaml 4.03.0:
 -------------
 
+Language features:
+- PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
+  constructors (Alain Frisch)
+- allow field punning in object copying expressions: {< x; >} for {< x = x; >}
+  (Jeremy Yallop)
+
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
+- improve type-specialization of unapplied primitives
+  (Frédéric Bour, review by Gabriel Scherer)
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
@@ -14,25 +22,102 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
+- expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
+  (Hugo Heuzard)
 
 Type system:
-- PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
-  constructors (Alain Frisch)
 * PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
   This is done by adding equations to submodules when expanding aliases.
   In theory this may be incompatible is some corner cases defining a module
   type through inference, but no breakage known on published code.
-- PR#6593: Functor application in tests/basic-modules fails after commit 15405  
+- PR#6593: Functor application in tests/basic-modules fails after commit 15405
+
+Bug fixes:
+- PR#6648: show_module should indicate its elision
+- PR#6650: Cty_constr not handled correctly by Subst
+- PR#6651: Failing component lookup
+
+OCaml 4.02.2:
+-------------
+
+- PR#6628: Configure script rejects legitimate arguments
+  (Michael Grünewald, Damien Doligez)
+- PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
+  (report by user 'william')
+- PR#6669: fix 4.02 regression in toplevel printing of lazy values
+  (Leo White, review by Gabriel Scherer)
+- ocamlbuild on cygwin cannot find ocamlfind
+  (user 'algoriddle')
+
 
 OCaml 4.02.1:
 -------------
 
-- PR#4099: Bug in Makefile.nt: won't stop on error (George Necula)
+(Changes that can break existing programs are marked with a "*")
+
+Standard library:
+* Add optional argument ?limit to Arg.align.
+
+- PR#4099: Bug in Makefile.nt: won't stop on error
+  (George Necula)
+- PR#6181: Improve MSVC build
+  (Chen Gang)
+- PR#6207: Configure doesn't detect features correctly on Haiku
+  (Jessica Hamilton)
 - PR#6466: Non-exhaustive matching warning message for open types is confusing
+  (Peter Zotov)
 - PR#6529: fix quadratic-time algorithm in Consistbl.extract.
-  (Xavier Leroy)
-- PR#6554: fix race condition when retrieving backtraces (Jérémie Dimino,
-  Mark Shinwell).
+  (Xavier Leroy, Alain Frisch, relase-worthy report by Jacques-Pascal Deplaix)
+- PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
+  (Cristopher Zimmermann)
+- PR#6533: broken semantics of %(%) when substitued by a box
+  (Benoît Vaugon, report by Boris Yakobowski)
+- PR#6534: legacy support for %.10s
+  (Benoît Vaugon, Gabriel Scherer, report by Nick Chapman)
+- PR#6536: better documentation of flag # in format strings
+  (Damien Doligez, report by Nick Chapman)
+- PR#6544: Bytes and CamlinternalFormat missing from threads stdlib.cma
+  (Christopher Zimmermann)
+- PR#6546: -dsource omits parens for `List ((`String "A")::[]) in patterns
+  (Gabriel Scherer, report by Peter Zotov)
+- PR#6547: __MODULE__ aborts the compiler if the module name cannot be inferred
+  (Jacques Garrigue, report by Kaustuv Chaudhuri)
+- PR#6549: Debug section is sometimes not readable when using -pack
+  (Hugo Heuzard, review by Gabriel Scherer)
+- PR#6553: Missing command line options for ocamldoc
+  (Maxence Guesdon)
+- PR#6554: fix race condition when retrieving backtraces
+  (Jérémie Dimino, Mark Shinwell).
+- PR#6557: String.sub throws Invalid_argument("Bytes.sub")
+  (Damien Doligez, report by Oliver Bandel)
+- PR#6562: Fix ocamldebug module source lookup
+  (Leo White)
+- PR#6563: Inclusion of packs failing to run module initializers
+  (Jacques Garrigue, report by Mark Shinwell)
+- PR#6564: infinite loop in Mtype.remove_aliases
+  (Jacques Garrigue, report by Mark Shinwell)
+- PR#6565: compilation fails with Env.Error(_)
+  (Jacques Garrigue and Mark Shinwell)
+- PR#6566: -short-paths and signature inclusion errors
+  (Jacques Garrigue, report by Mark Shinwell)
+- PR#6572: Fatal error with recursive modules
+  (Jacques Garrigue, report by Quentin Stievenart)
+- PR#6578: Recursive module containing alias causes Segmentation fault
+  (Jacques Garrigue)
+- PR#6581: Some bugs in generative functors
+  (Jacques Garrigue, report by Mark Shinwell)
+- PR#6584: ocamldep support for "-open M"
+  (Gabriel Scherer, review by Damien Doligez, report by Hezekiah M. Carty)
+- PR#6588: Code generation errors for ARM
+  (Mark Shinwell, Xavier Leroy)
+- PR#6590: Improve Windows (MSVC and mingw) build
+  (Chen Gang)
+- PR#6599: ocamlbuild: add -bin-annot when using -pack
+  (Christopher Zimmermann)
+- PR#6602: Fatal error when tracing a function with abstract type
+  (Jacques Garrigue, report by Hugo Herbelin)
+- ocamlbuild: add an -ocamlmklib option to change the ocamlmklib command
+  (Jérôme Vouillon)
 
 Ocaml 4.02.0:
 -------------
@@ -143,7 +228,7 @@ Runtime system:
 - Fixed bug in native code version of [caml_raise_with_string] that could
   potentially lead to heap corruption.
   (Mark Shinwell)
-- Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
+* Blocks initialized by [CAMLlocal*] and [caml_alloc] are now filled with
   [Val_unit] rather than zero.
   (Mark Shinwell)
 - Fixed a major performance problem on large heaps (~1GB) by making heap

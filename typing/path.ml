@@ -52,3 +52,27 @@ let rec last = function
   | Pident id -> Ident.name id
   | Pdot(_, s, _) -> s
   | Papply(_, p) -> last p
+
+let is_uident s =
+  assert (s <> "");
+  match s.[0] with
+  | 'A'..'Z' -> true
+  | _ -> false
+
+type typath =
+  | Regular of t
+  | Ext of t * string
+  | LocalExt of Ident.t
+  | Cstr of t * string
+
+let constructor_typath = function
+  | Pident id when is_uident (Ident.name id) -> LocalExt id
+  | Pdot(ty_path, s, _) when is_uident s ->
+      if is_uident (last ty_path) then Ext (ty_path, s)
+      else Cstr (ty_path, s)
+  | p -> Regular p
+
+let is_constructor_typath p =
+  match constructor_typath p with
+  | Regular _ -> false
+  | _ -> true

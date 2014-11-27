@@ -83,21 +83,12 @@ let rec apply_coercion strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
+        let get_field pos = Lprim(Pfield pos,[Lvar id]) in
         let lam =
           Lprim(Pmakeblock(0, Immutable),
-                List.map (apply_coercion_field id) pos_cc_list) in
-        let fv = free_variables lam in
-        let (lam,s) =
-          List.fold_left (fun (lam,s) (id',pos,c) ->
-            if IdentSet.mem id' fv then
-              let id'' = Ident.create (Ident.name id') in
-              (Llet(Alias,id'',
-                    apply_coercion Alias c (Lprim(Pfield pos,[Lvar id])),lam),
-               Ident.add id' (Lvar id'') s)
-            else (lam,s))
-            (lam, Ident.empty) id_pos_list
+                List.map (apply_coercion_field get_field) pos_cc_list)
         in
-        if s == Ident.empty then lam else subst_lambda s lam)
+        wrap_id_pos_list id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -105,14 +96,32 @@ let rec apply_coercion strict restr arg =
           apply_coercion Strict cc_res
             (Lapply(Lvar id, [apply_coercion Alias cc_arg (Lvar param)],
                     Location.none))))
-  | Tcoerce_primitive p ->
-      transl_primitive Location.none p
+  | Tcoerce_primitive {pc_desc; pc_type; pc_env} ->
+      transl_primitive Location.none pc_desc pc_env pc_type
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion Alias cc (transl_normal_path path))
 
-and apply_coercion_field id (pos, cc) =
-  apply_coercion Alias cc (Lprim(Pfield pos, [Lvar id]))
+and apply_coercion_field get_field (pos, cc) =
+  apply_coercion Alias cc (get_field pos)
+
+and wrap_id_pos_list id_pos_list get_field lam =
+  let fv = free_variables lam in
+  (*Format.eprintf "%a@." Printlambda.lambda lam;
+  IdentSet.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
+  Format.eprintf "@.";*)
+  let (lam,s) =
+    List.fold_left (fun (lam,s) (id',pos,c) ->
+      if IdentSet.mem id' fv then
+        let id'' = Ident.create (Ident.name id') in
+        (Llet(Alias,id'',
+              apply_coercion Alias c (get_field pos),lam),
+         Ident.add id' (Lvar id'') s)
+      else (lam,s))
+      (lam, Ident.empty) id_pos_list
+  in
+  if s == Ident.empty then lam else subst_lambda s lam
+
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -154,7 +163,7 @@ let compose_coercions c1 c2 =
   let c3 = compose_coercions c1 c2 in
   let open Includemod in
   Format.eprintf "@[<2>compose_coercions@ (%a)@ (%a) =@ %a@]@."
-    print_coercion c1 print_coercion c2 print_coercion c2;
+    print_coercion c1 print_coercion c2 print_coercion c3;
   c3
 *)
 
@@ -322,7 +331,7 @@ let rec transl_module cc rootpath mexp =
   | _ ->
   match mexp.mod_desc with
     Tmod_ident (path,_) ->
-      apply_coercion StrictOpt cc
+      apply_coercion Strict cc
         (transl_path ~loc:mexp.mod_loc mexp.mod_env path)
   | Tmod_structure str ->
       transl_struct [] cc rootpath str
@@ -362,18 +371,28 @@ and transl_structure fields cc rootpath = function
           Lprim(Pmakeblock(0, Immutable),
                 List.map (fun id -> Lvar id) (List.rev fields))
       | Tcoerce_structure(pos_cc_list, id_pos_list) ->
-              (* ignore id_pos_list as the ids are already bound *)
+              (* Do not ignore id_pos_list ! *)
+          (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
+          List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
+            fields;
+          Format.eprintf "@]@.";*)
           let v = Array.of_list (List.rev fields) in
-          (*List.fold_left
-            (fun lam (id, pos) -> Llet(Alias, id, Lvar v.(pos), lam))*)
+          let get_field pos = Lvar v.(pos)
+          and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+          let lam =
             (Lprim(Pmakeblock(0, Immutable),
                 List.map
                   (fun (pos, cc) ->
                     match cc with
-                      Tcoerce_primitive p -> transl_primitive Location.none p
-                    | _ -> apply_coercion Strict cc (Lvar v.(pos)))
+                      Tcoerce_primitive p ->
+                        transl_primitive Location.none
+                          p.pc_desc p.pc_env p.pc_type
+                    | _ -> apply_coercion Strict cc (get_field pos))
                   pos_cc_list))
-            (*id_pos_list*)
+          and id_pos_list =
+            List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
+          in
+          wrap_id_pos_list id_pos_list get_field lam
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
@@ -686,7 +705,8 @@ let transl_store_structure glob map prims str =
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
                     [Lprim(Pgetglobal glob, []);
-                     transl_primitive Location.none prim]),
+                     transl_primitive Location.none
+                       prim.pc_desc prim.pc_env prim.pc_type]),
               cont)
 
   in List.fold_right store_primitive prims
@@ -805,9 +825,13 @@ let transl_toplevel_item item =
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       in
+      (* we need to use unique name in case of multiple
+         definitions of the same extension constructor in the toplevel *)
+      List.iter set_toplevel_unique_name idents;
         transl_type_extension item.str_env None tyext
           (make_sequence toploop_setvalue_id idents)
   | Tstr_exception ext ->
+      set_toplevel_unique_name ext.ext_id;
       toploop_setvalue ext.ext_id
         (transl_extension_constructor item.str_env None ext)
   | Tstr_module {mb_id=id; mb_expr=modl} ->

@@ -143,6 +143,7 @@ let string_of_text t = Odoc_misc.string_of_text t
 let string_of_info i = Odoc_misc.string_of_info i
 
 let string_of_type t = Odoc_str.string_of_type t
+let string_of_record t = Odoc_str.string_of_record t
 
 let string_of_type_extension te = Odoc_str.string_of_type_extension te
 

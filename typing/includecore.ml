@@ -26,7 +26,9 @@ let value_descriptions env vd1 vd2 =
     match (vd1.val_kind, vd2.val_kind) with
         (Val_prim p1, Val_prim p2) ->
           if p1 = p2 then Tcoerce_none else raise Dont_match
-      | (Val_prim p, _) -> Tcoerce_primitive p
+      | (Val_prim p, _) ->
+          let pc = {pc_desc = p; pc_type = vd2.val_type; pc_env = env } in
+          Tcoerce_primitive pc
       | (_, Val_prim p) -> raise Dont_match
       | (_, _) -> Tcoerce_none
   end else
@@ -154,7 +156,19 @@ let report_type_mismatch first second decl ppf =
       if err = Manifest then () else
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
-let rec compare_variants env params1 params2 n cstrs1 cstrs2 =
+let rec compare_constructor_arguments env cstr params1 params2 arg1 arg2 =
+  match arg1, arg2 with
+  | Types.Cstr_tuple arg1, Types.Cstr_tuple arg2 ->
+      if List.length arg1 <> List.length arg2 then [Field_arity cstr]
+      else if Misc.for_all2
+          (fun ty1 ty2 -> Ctype.equal env true (ty1::params1) (ty2::params2))
+          (arg1) (arg2)
+      then [] else [Field_type cstr]
+  | Types.Cstr_record l1, Types.Cstr_record l2 ->
+      compare_records env params1 params2 0 l1 l2
+  | _ -> [Field_type cstr]
+
+and compare_variants env params1 params2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
   | [], c::_ -> [Field_missing (true, c.Types.cd_id)]
@@ -163,24 +177,21 @@ let rec compare_variants env params1 params2 n cstrs1 cstrs2 =
     {Types.cd_id=cstr2; cd_args=arg2; cd_res=ret2}::rem2 ->
       if Ident.name cstr1 <> Ident.name cstr2 then
         [Field_names (n, cstr1, cstr2)]
-      else if List.length arg1 <> List.length arg2 then
-        [Field_arity cstr1]
       else match ret1, ret2 with
       | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) ->
           [Field_type cstr1]
       | Some _, None | None, Some _ ->
           [Field_type cstr1]
       | _ ->
-          if Misc.for_all2
-              (fun ty1 ty2 ->
-                Ctype.equal env true (ty1::params1) (ty2::params2))
-              (arg1) (arg2)
-          then
-            compare_variants env params1 params2 (n+1) rem1 rem2
-          else [Field_type cstr1]
+          let r =
+            compare_constructor_arguments env cstr1
+              params1 params2 arg1 arg2
+          in
+          if r <> [] then r
+          else compare_variants env params1 params2 (n+1) rem1 rem2
 
 
-let rec compare_records env params1 params2 n labels1 labels2 =
+and compare_records env params1 params2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
   | [], l::_ -> [Field_missing (true, l.ld_id)]
@@ -278,17 +289,13 @@ let extension_constructors env id ext1 ext2 =
        (ty1 :: ext1.ext_type_params)
        (ty2 :: ext2.ext_type_params)
   then
-    if List.length ext1.ext_args = List.length ext2.ext_args then
+    if compare_constructor_arguments env (Ident.create "")
+        ext1.ext_type_params ext2.ext_type_params
+        ext1.ext_args ext2.ext_args = [] then
       if match ext1.ext_ret_type, ext2.ext_ret_type with
           Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> false
         | Some _, None | None, Some _ -> false
-        | _ ->
-            Misc.for_all2
-              (fun ty1 ty2 ->
-                Ctype.equal env true
-                  (ty1 :: ext1.ext_type_params)
-                  (ty2 :: ext2.ext_type_params))
-              ext1.ext_args ext2.ext_args
+        | _ -> true
       then
         match ext1.ext_private, ext2.ext_private with
             Private, Public -> false

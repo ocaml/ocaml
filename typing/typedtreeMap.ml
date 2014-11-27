@@ -190,8 +190,17 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_type_parameter (ct, v) = (map_core_type ct, v)
 
+  and map_constructor_arguments = function
+    | Cstr_tuple l ->
+        Cstr_tuple (List.map map_core_type l)
+    | Cstr_record l ->
+        Cstr_record
+          (List.map (fun ld -> {ld with ld_type = map_core_type ld.ld_type})
+             l)
+
   and map_constructor_declaration cd =
-    {cd with cd_args = List.map map_core_type cd.cd_args;
+    let cd_args = map_constructor_arguments cd.cd_args in
+    {cd with cd_args;
      cd_res = may_map map_core_type cd.cd_res
     }
 
@@ -208,7 +217,7 @@ module MakeMap(Map : MapArgument) = struct
     let ext = Map.enter_extension_constructor ext in
     let ext_kind = match ext.ext_kind with
         Text_decl(args, ret) ->
-          let args = List.map map_core_type args in
+          let args = map_constructor_arguments args in
           let ret = may_map map_core_type ret in
             Text_decl(args, ret)
       | Text_rebind(p, lid) -> Text_rebind(p, lid)

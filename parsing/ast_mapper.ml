@@ -137,6 +137,11 @@ module T = struct
     | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
     | Ptype_open -> Ptype_open
 
+  let map_constructor_arguments sub = function
+    | Pcstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
+    | Pcstr_record l ->
+        Pcstr_record (List.map (sub.label_declaration sub) l)
+
   let map_type_extension sub
       {ptyext_path; ptyext_params;
        ptyext_constructors;
@@ -151,7 +156,7 @@ module T = struct
 
   let map_extension_constructor_kind sub = function
       Pext_decl(ctl, cto) ->
-        Pext_decl(List.map (sub.typ sub) ctl, map_opt (sub.typ sub) cto)
+        Pext_decl(map_constructor_arguments sub ctl, map_opt (sub.typ sub) cto)
     | Pext_rebind li ->
         Pext_rebind (map_loc sub li)
 
@@ -573,7 +578,7 @@ let default_mapper =
       (fun this {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} ->
         Type.constructor
           (map_loc this pcd_name)
-          ~args:(List.map (this.typ this) pcd_args)
+          ~args:(T.map_constructor_arguments this pcd_args)
           ?res:(map_opt (this.typ this) pcd_res)
           ~loc:(this.location this pcd_loc)
           ~attrs:(this.attributes this pcd_attributes)

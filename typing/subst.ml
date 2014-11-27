@@ -76,6 +76,13 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
+let type_path s p =
+  match Path.constructor_typath p with
+  | Regular p -> type_path s p
+  | Cstr (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
+  | LocalExt _ -> type_path s p
+  | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
+
 (* Special type ids for saved signatures *)
 
 let new_id = ref (-1)
@@ -193,8 +200,11 @@ let label_declaration s l =
     ld_attributes = attrs s l.ld_attributes;
   }
 
-let constructor_arguments s args =
-  List.map (typexp s) args
+let constructor_arguments s = function
+  | Cstr_tuple l ->
+      Cstr_tuple (List.map (typexp s) l)
+  | Cstr_record l ->
+      Cstr_record (List.map (label_declaration s) l)
 
 let constructor_declaration s c =
   {
@@ -323,8 +333,11 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_typext(id, _, _) |
-     Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+  | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+      (* cheat and pretend they are types cf. PR#6650 *)
+      let id' = Ident.rename id in
+      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+  | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 

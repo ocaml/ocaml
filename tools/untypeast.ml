@@ -134,10 +134,14 @@ and untype_type_declaration decl =
 
 and untype_type_parameter (ct, v) = (untype_core_type ct, v)
 
+and untype_constructor_arguments = function
+   | Cstr_tuple l -> Pcstr_tuple (List.map untype_core_type l)
+   | Cstr_record l -> Pcstr_record (List.map untype_label_declaration l)
+
 and untype_constructor_declaration cd =
   {
    pcd_name = cd.cd_name;
-   pcd_args = List.map untype_core_type cd.cd_args;
+   pcd_args = untype_constructor_arguments cd.cd_args;
    pcd_res = option untype_core_type cd.cd_res;
    pcd_loc = cd.cd_loc;
    pcd_attributes = cd.cd_attributes;
@@ -167,7 +171,7 @@ and untype_extension_constructor ext =
     pext_name = ext.ext_name;
     pext_kind = (match ext.ext_kind with
         Text_decl (args, ret) ->
-          Pext_decl (List.map untype_core_type args,
+          Pext_decl (untype_constructor_arguments args,
                      option untype_core_type ret)
       | Text_rebind (_p, lid) -> Pext_rebind lid
     );

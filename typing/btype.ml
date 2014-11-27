@@ -253,6 +253,30 @@ type type_iterators =
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
 
+let iter_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> List.iter f tl
+  | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
+
+let map_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
+  | Cstr_record lbls ->
+      Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
+
+let iter_type_expr_kind f = function
+  | Type_abstract -> ()
+  | Type_variant cstrs ->
+      List.iter
+        (fun cd ->
+           iter_type_expr_cstr_args f cd.cd_args;
+           Misc.may f cd.cd_res
+        )
+        cstrs
+  | Type_record(lbls, _) ->
+      List.iter (fun d -> f d.ld_type) lbls
+  | Type_open ->
+      ()
+
+
 let type_iterators =
   let it_signature it =
     List.iter (it.it_signature_item it)
@@ -273,7 +297,7 @@ let type_iterators =
   and it_extension_constructor it td =
     it.it_path td.ext_type_path;
     List.iter (it.it_type_expr it) td.ext_type_params;
-    List.iter (it.it_type_expr it) td.ext_args;
+    iter_type_expr_cstr_args (it.it_type_expr it) td.ext_args;
     may (it.it_type_expr it) td.ext_ret_type
   and it_module_declaration it md =
     it.it_module_type it md.md_type
@@ -309,16 +333,8 @@ let type_iterators =
     | Cty_arrow  (_, ty, cty) ->
         it.it_type_expr it ty;
         it.it_class_type it cty
-  and it_type_kind it = function
-      Type_abstract -> ()
-    | Type_record (ll, _) ->
-        List.iter (fun ld -> it.it_type_expr it ld.ld_type) ll
-    | Type_variant cl ->
-        List.iter (fun cd ->
-          List.iter (it.it_type_expr it) cd.cd_args;
-          may (it.it_type_expr it) cd.cd_res)
-          cl
-    | Type_open -> ()
+  and it_type_kind it kind =
+    iter_type_expr_kind (it.it_type_expr it) kind
   and it_do_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match ty.desc with
@@ -464,7 +480,7 @@ let unmark_type_decl decl =
 
 let unmark_extension_constructor ext =
   List.iter unmark_type ext.ext_type_params;
-  List.iter unmark_type ext.ext_args;
+  iter_type_expr_cstr_args unmark_type ext.ext_args;
   Misc.may unmark_type ext.ext_ret_type
 
 let unmark_class_signature sign =

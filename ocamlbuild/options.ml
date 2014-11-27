@@ -238,8 +238,7 @@ let spec = ref (
    "-ocamlyacc", set_cmd ocamlyacc, "<command> Set the ocamlyacc tool";
    "-menhir", set_cmd ocamlyacc, "<command> Set the menhir tool (use it after -use-menhir)";
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";
-   (* Not set since we perhaps want to replace ocamlmklib *)
-   (* "-ocamlmklib", set_cmd ocamlmklib, "<command> Set the ocamlmklib tool"; *)
+   "-ocamlmklib", set_cmd ocamlmklib, "<command> Set the ocamlmklib tool";
    "-ocamlmktop", set_cmd ocamlmktop, "<command> Set the ocamlmktop tool";
    "-ocamlrun", set_cmd ocamlrun, "<command> Set the ocamlrun tool";
 
@@ -316,6 +315,7 @@ let init () =
       "ocamlopt", ocamlopt;
       "ocamldep", ocamldep;
       "ocamldoc", ocamldoc;
+      "ocamlmklib", ocamlmklib;
       "ocamlmktop", ocamlmktop;
     ]
   end;

@@ -147,41 +147,31 @@ let type_deps t =
     l := s2 :: !l ;
     s2
   in
+  let ty t =
+    let s = Odoc_print.string_of_type_expr t in
+    ignore (Str.global_substitute re f s)
+  in
   (match t.T.ty_kind with
     T.Type_abstract -> ()
   | T.Type_variant cl ->
       List.iter
         (fun c ->
-          List.iter
-            (fun e ->
-              let s = Odoc_print.string_of_type_expr e in
-              ignore (Str.global_substitute re f s)
-            )
-            c.T.vc_args
+           match c.T.vc_args with
+           | T.Cstr_tuple l -> List.iter ty l
+           | T.Cstr_record l -> List.iter (fun r -> ty r.T.rf_type) l
         )
         cl
   | T.Type_record rl ->
-      List.iter
-        (fun r ->
-          let s = Odoc_print.string_of_type_expr r.T.rf_type in
-          ignore (Str.global_substitute re f s)
-        )
-        rl
+      List.iter (fun r -> ty r.T.rf_type) rl
   | T.Type_open -> ()
   );
 
   (match t.T.ty_manifest with
     None -> ()
   | Some (T.Object_type fields) ->
-      List.iter
-        (fun r ->
-          let s = Odoc_print.string_of_type_expr r.T.of_type in
-          ignore (Str.global_substitute re f s)
-          )
-        fields
+      List.iter (fun r -> ty r.T.of_type) fields
   | Some (T.Other e) ->
-      let s = Odoc_print.string_of_type_expr e in
-      ignore (Str.global_substitute re f s)
+      ty e
   );
 
   !l

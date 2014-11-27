@@ -146,19 +146,63 @@ let make_params env params =
   in
     List.map make_param params
 
-let make_constructor env type_path type_params sargs sret_type =
+let transl_labels loc env closed lbls =
+  if lbls = [] then
+    Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
+  let all_labels = ref StringSet.empty in
+  List.iter
+    (fun {pld_name = {txt=name; loc}} ->
+       if StringSet.mem name !all_labels then
+         raise(Error(loc, Duplicate_label name));
+       all_labels := StringSet.add name !all_labels)
+    lbls;
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;pld_attributes=attrs} =
+    let arg = Ast_helper.Typ.force_poly arg in
+    let cty = transl_simple_type env closed arg in
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut; ld_type = cty;
+     ld_loc = loc; ld_attributes = attrs}
+  in
+  let lbls = List.map mk lbls in
+  let lbls' =
+    List.map
+      (fun ld ->
+         let ty = ld.ld_type.ctyp_type in
+         let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         {Types.ld_id = ld.ld_id;
+          ld_mutable = ld.ld_mutable;
+          ld_type = ty;
+          ld_loc = ld.ld_loc;
+          ld_attributes = ld.ld_attributes
+         }
+      )
+      lbls in
+  lbls, lbls'
+
+let transl_constructor_arguments loc env closed = function
+  | Pcstr_tuple l ->
+      let l = List.map (transl_simple_type env closed) l in
+      Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
+      Cstr_tuple l
+  | Pcstr_record l ->
+      let lbls, lbls' = transl_labels loc env closed l in
+      Types.Cstr_record lbls',
+      Cstr_record lbls
+
+let make_constructor loc env type_path type_params sargs sret_type =
   match sret_type with
   | None ->
-      let targs = List.map (transl_simple_type env true) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments loc env true sargs
+      in
         targs, None, args, None
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       let z = narrow () in
       reset_type_variables ();
-      let targs = List.map (transl_simple_type env false) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments loc env false sargs
+      in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
       begin
@@ -198,13 +242,13 @@ let transl_declaration env sdecl id =
             all_constrs := StringSet.add name !all_constrs)
           scstrs;
         if List.length
-          (List.filter (fun cd -> cd.pcd_args <> []) scstrs)
+          (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type =
-            make_constructor env (Path.Pident id) params
+            make_constructor scstr.pcd_loc env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
           let tcstr =
@@ -227,43 +271,13 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
-        if lbls = [] then
-          Syntaxerr.ill_formed_ast sdecl.ptype_loc "Records cannot be empty.";
-        let all_labels = ref StringSet.empty in
-        List.iter
-          (fun {pld_name = {txt=name}} ->
-            if StringSet.mem name !all_labels then
-              raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := StringSet.add name !all_labels)
-          lbls;
-        let lbls = List.map (fun {pld_name=name;
-                                  pld_mutable=mut;
-                                  pld_type=arg;
-                                  pld_loc=loc;
-                                  pld_attributes=attrs} ->
-          let arg = Ast_helper.Typ.force_poly arg in
-          let cty = transl_simple_type env true arg in
-          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
-          ) lbls in
-        let lbls' =
-          List.map
-            (fun ld ->
-              let ty = ld.ld_type.ctyp_type in
-              let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
-              {Types.ld_id = ld.ld_id;
-               ld_mutable = ld.ld_mutable;
-               ld_type = ty;
-               ld_loc = ld.ld_loc;
-               ld_attributes = ld.ld_attributes
-              }
-            )
-            lbls in
-        let rep =
-          if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-          then Record_float
-          else Record_regular in
-        Ttype_record lbls, Type_record(lbls', rep)
+          let lbls, lbls' = transl_labels sdecl.ptype_loc env true lbls in
+          let rep =
+            if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+            then Record_float
+            else Record_regular
+          in
+          Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -324,20 +338,7 @@ let transl_declaration env sdecl id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract ->
-      ()
-  | Type_variant v ->
-      List.iter
-        (fun c ->
-          List.iter Ctype.generalize c.Types.cd_args;
-          may Ctype.generalize c.Types.cd_res)
-        v
-  | Type_record(r, rep) ->
-      List.iter (fun l -> Ctype.generalize l.Types.ld_type) r
-  | Type_open ->
-      ()
-  end;
+  Btype.iter_type_expr_kind Ctype.generalize decl.type_kind;
   begin match decl.type_manifest with
   | None    -> ()
   | Some ty -> Ctype.generalize ty
@@ -372,6 +373,18 @@ let rec check_constraints_rec env loc visited ty =
 
 module SMap = Map.Make(String)
 
+let check_constraints_labels env visited l pl =
+  let rec get_loc name = function
+      [] -> assert false
+    | pld :: tl ->
+        if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
+        else get_loc name tl
+  in
+  List.iter
+    (fun {Types.ld_id=name; ld_type=ty} ->
+       check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
+    l
+
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
   begin match decl.type_kind with
@@ -389,15 +402,21 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun {Types.cd_id=name; cd_args=tyl; cd_res=ret_type} ->
-          let {pcd_args = styl; pcd_res = sret_type; _} =
+        (fun {Types.cd_id=name; cd_args; cd_res} ->
+          let {pcd_args; pcd_res; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
-          List.iter2
-            (fun sty ty ->
-              check_constraints_rec env sty.ptyp_loc visited ty)
-            styl tyl;
-          match sret_type, ret_type with
+          begin match cd_args, pcd_args with
+          | Cstr_tuple tyl, Pcstr_tuple styl ->
+              List.iter2
+                (fun sty ty ->
+                   check_constraints_rec env sty.ptyp_loc visited ty)
+                styl tyl
+          | Cstr_record tyl, Pcstr_record styl ->
+              check_constraints_labels env visited tyl styl
+          | _ -> assert false
+          end;
+          match pcd_res, cd_res with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
           | _ ->
@@ -409,16 +428,7 @@ let check_constraints env sdecl (_, decl) =
         | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
-      let rec get_loc name = function
-          [] -> assert false
-        | pld :: tl ->
-            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
-            else get_loc name tl
-      in
-      List.iter
-        (fun {Types.ld_id=name; ld_type=ty} ->
-          check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
-        l
+      check_constraints_labels env visited l pl
   | Type_open -> ()
   end;
   begin match decl.type_manifest with
@@ -679,8 +689,6 @@ let compute_variance env visited vari ty =
   in
   compute_variance_rec vari ty
 
-let make_variance ty = (ty, ref Variance.null)
-
 let make p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
@@ -775,20 +783,27 @@ let add_false = List.map (fun ty -> false, ty)
 
 (* A parameter is constrained if either is is instantiated,
    or it is a variable appearing in another parameter *)
-let constrained env vars ty =
+let constrained vars ty =
   match ty.desc with
   | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
+
+let for_constr = function
+  | Types.Cstr_tuple l -> add_false l
+  | Types.Cstr_record l ->
+      List.map
+        (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
+        l
 
 let compute_variance_gadt env check (required, loc as rloc) decl
     (tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
       compute_variance_type env check rloc {decl with type_private = Private}
-        (add_false tl)
+        (for_constr tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
-      | {desc=Tconstr (path, tyl, _)} ->
+      | {desc=Tconstr (_, tyl, _)} ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
           let tyl = List.map Ctype.repr tyl in
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
@@ -798,14 +813,14 @@ let compute_variance_gadt env check (required, loc as rloc) decl
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                    if (c||n) && constrained (fv1 @ fv2) ty then
                       raise (Error(loc, Varying_anonymous));
                     (fv :: fv1, fv2))
               ([], fvl) tyl required
           in
           compute_variance_type env check rloc
             {decl with type_params = tyl; type_private = Private}
-            (add_false tl)
+            (for_constr tl)
       | _ -> assert false
 
 let compute_variance_extension env check decl ext rloc =
@@ -813,7 +828,7 @@ let compute_variance_extension env check decl ext rloc =
     {decl with type_params = ext.ext_type_params}
     (ext.ext_args, ext.ext_ret_type)
 
-let compute_variance_decl env check decl (required, loc as rloc) =
+let compute_variance_decl env check decl (required, _ as rloc) =
   if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
        && decl.type_manifest = None then
     List.map
@@ -832,11 +847,11 @@ let compute_variance_decl env check decl (required, loc as rloc) =
   | Type_variant tll ->
       if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env check rloc decl
-          (mn @
-           add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
+          (mn @ List.flatten (List.map (fun c -> for_constr c.Types.cd_args)
+                                tll))
       else begin
         let mn =
-          List.map (fun (_,ty) -> ([ty],None)) mn in
+          List.map (fun (_,ty) -> (Types.Cstr_tuple [ty],None)) mn in
         let tll =
           mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env check rloc decl) tll with
@@ -983,6 +998,7 @@ let transl_type_decl env sdecl_list =
       fixed_types
     @ sdecl_list
   in
+
   (* Create identifiers. *)
   let id_list =
     List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
@@ -1099,14 +1115,15 @@ let transl_type_decl env sdecl_list =
 
 (* Translating type extensions *)
 
-let transl_extension_constructor env check_open type_path type_params
+let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
-          make_constructor env type_path typext_params sargs sret_type
+          make_constructor sext.pext_loc env type_path typext_params
+            sargs sret_type
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
@@ -1176,7 +1193,27 @@ let transl_extension_constructor env check_open type_path type_params
             Cstr_extension(path, _) -> path
           | _ -> assert false
         in
-          args, ret_type, Text_rebind(path, lid)
+        let args =
+          match cdescr.cstr_inlined with
+          | None ->
+              Types.Cstr_tuple args
+          | Some decl ->
+              let tl =
+                match args with
+                | [ {desc=Tconstr(_, tl, _)} ] -> tl
+                | _ -> assert false
+              in
+              let decl = Ctype.instance_declaration decl in
+              assert (List.length decl.type_params = List.length tl);
+              List.iter2 (Ctype.unify env) decl.type_params tl;
+              let lbls =
+                match decl.type_kind with
+                | Type_record (lbls, Record_extension) -> lbls
+                | _ -> assert false
+              in
+              Types.Cstr_record lbls
+        in
+        args, ret_type, Text_rebind(path, lid)
   in
   let ext =
     { ext_type_path = type_path;
@@ -1240,7 +1277,7 @@ let transl_type_extension check_open env loc styext =
     (Ctype.instance_list env type_decl.type_params)
     type_params;
   let constructors =
-    List.map (transl_extension_constructor env check_open type_path
+    List.map (transl_extension_constructor env type_path
                type_decl.type_params type_params styext.ptyext_private)
       styext.ptyext_constructors
   in
@@ -1249,7 +1286,7 @@ let transl_type_extension check_open env loc styext =
   List.iter Ctype.generalize type_params;
   List.iter
     (fun ext ->
-       List.iter Ctype.generalize ext.ext_type.ext_args;
+       Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
        may Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
   (* Check that all type variable are closed *)
@@ -1287,12 +1324,12 @@ let transl_exception env sext =
   reset_type_variables();
   Ctype.begin_def();
   let ext =
-    transl_extension_constructor env false
+    transl_extension_constructor env
       Predef.path_exn [] [] Asttypes.Public sext
   in
   Ctype.end_def();
   (* Generalize types *)
-  List.iter Ctype.generalize ext.ext_type.ext_args;
+  Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
   may Ctype.generalize ext.ext_type.ext_ret_type;
   (* Check that all type variable are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
@@ -1464,16 +1501,20 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
-let explain_unbound ppf tv tl typ kwd lab =
+let explain_unbound_gen ppf tv tl typ kwd pr =
   try
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
     fprintf ppf
-      ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-      kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr tv
+      ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
+      kwd pr ti Printtyp.type_expr tv
   with Not_found -> ()
+
+let explain_unbound ppf tv tl typ kwd lab =
+  explain_unbound_gen ppf tv tl typ kwd
+    (fun ppf ti -> fprintf ppf "%s%a" (lab ti) Printtyp.type_expr (typ ti))
 
 let explain_unbound_single ppf tv ty =
   let trivial ty =
@@ -1495,6 +1536,11 @@ let explain_unbound_single ppf tv ty =
         | _ -> Btype.newgenty (Ttuple[]))
         "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
+
+
+let tys_of_constr_args = function
+  | Types.Cstr_tuple tl -> tl
+  | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
 let report_error ppf = function
   | Repeated_parameter ->
@@ -1554,9 +1600,14 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun c ->
-            Btype.newgenty (Ttuple c.Types.cd_args))
-            "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
+          explain_unbound_gen ppf ty tl (fun c ->
+              let tl = tys_of_constr_args c.cd_args in
+              Btype.newgenty (Ttuple tl)
+            )
+            "case" (fun ppf c ->
+                fprintf ppf
+                  "%s of %a" (Ident.name c.Types.cd_id)
+                  Printtyp.constructor_arguments c.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
@@ -1566,7 +1617,8 @@ let report_error ppf = function
       end
   | Unbound_type_var_ext (ty, ext) ->
       fprintf ppf "A type variable is unbound in this extension constructor";
-      explain_unbound ppf ty ext.ext_args (fun c -> c) "type" (fun _ -> "")
+      let args = tys_of_constr_args ext.ext_args in
+      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
   | Not_open_type path ->
       fprintf ppf "@[%s@ %a@]"
         "Cannot extend type definition"

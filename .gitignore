@@ -414,6 +414,7 @@
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/stdlib_man
+/ocamldoc/stdlib_html
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
 /ocamldoc/test_latex

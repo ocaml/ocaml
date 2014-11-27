@@ -547,7 +547,7 @@ parse_pattern:
 
 functor_arg:
     LPAREN RPAREN
-      { mkrhs "()" 2, None }
+      { mkrhs "*" 2, None }
   | LPAREN functor_arg_name COLON module_type RPAREN
       { mkrhs $2 2, Some $4 }
 ;
@@ -776,7 +776,7 @@ module_declaration:
   | LPAREN UIDENT COLON module_type RPAREN module_declaration
       { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
   | LPAREN RPAREN module_declaration
-      { mkmty(Pmty_functor(mkrhs "()" 1, None, $3)) }
+      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
 ;
 module_rec_declarations:
     module_rec_declaration                              { [$1] }
@@ -1264,15 +1264,15 @@ simple_expr:
       { mkexp(Pexp_apply(mkoperator "!" 1, ["",$2])) }
   | NEW ext_attributes class_longident
       { mkexp_attrs (Pexp_new(mkrhs $3 3)) $2 }
-  | LBRACELESS field_expr_list opt_semi GREATERRBRACE
-      { mkexp (Pexp_override(List.rev $2)) }
-  | LBRACELESS field_expr_list opt_semi error
+  | LBRACELESS field_expr_list GREATERRBRACE
+      { mkexp (Pexp_override $2) }
+  | LBRACELESS field_expr_list error
       { unclosed "{<" 1 ">}" 4 }
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
-  | mod_longident DOT LBRACELESS field_expr_list opt_semi GREATERRBRACE
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override(List.rev $4))))}
-  | mod_longident DOT LBRACELESS field_expr_list opt_semi error
+  | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+  | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
@@ -1412,10 +1412,14 @@ lbl_expr:
       { (mkrhs $1 1, exp_of_label $1 1) }
 ;
 field_expr_list:
+    field_expr opt_semi { [$1] }
+  | field_expr SEMI field_expr_list { $1 :: $3 }
+;
+field_expr:
     label EQUAL expr
-      { [mkrhs $1 1,$3] }
-  | field_expr_list SEMI label EQUAL expr
-      { (mkrhs $3 3, $5) :: $1 }
+      { (mkrhs $1 1, $3) }
+  | label
+      { (mkrhs $1 1, exp_of_label (Lident $1) 1) }
 ;
 expr_semi_list:
     expr                                        { [$1] }
@@ -1658,16 +1662,18 @@ sig_exception_declaration:
       }
 ;
 generalized_constructor_arguments:
-    /*empty*/                                   { ([],None) }
-  | OF core_type_list                           { (List.rev $2,None) }
-  | COLON core_type_list MINUSGREATER simple_core_type
-                                                { (List.rev $2,Some $4) }
+    /*empty*/                     { (Pcstr_tuple [],None) }
+  | OF constructor_arguments      { ($2,None) }
+  | COLON constructor_arguments MINUSGREATER simple_core_type
+                                  { ($2,Some $4) }
   | COLON simple_core_type
-                                                { ([],Some $2) }
+                                  { (Pcstr_tuple [],Some $2) }
 ;
 
-
-
+constructor_arguments:
+  | core_type_list { Pcstr_tuple (List.rev $1) }
+  | LBRACE label_declarations opt_semi RBRACE { Pcstr_record (List.rev $2) }
+;
 label_declarations:
     label_declaration                           { [$1] }
   | label_declarations SEMI label_declaration   { $3 :: $1 }

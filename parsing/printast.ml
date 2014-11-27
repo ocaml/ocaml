@@ -439,7 +439,7 @@ and extension_constructor_kind i ppf x =
   match x with
       Pext_decl(a, r) ->
         line i ppf "Pext_decl\n";
-        list (i+1) core_type ppf a;
+        constructor_arguments (i+1) ppf a;
         option (i+1) core_type ppf r;
     | Pext_rebind li ->
         line i ppf "Pext_rebind\n";
@@ -810,8 +810,12 @@ and constructor_decl i ppf
   line i ppf "%a\n" fmt_location pcd_loc;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
   attributes i ppf pcd_attributes;
-  list (i+1) core_type ppf pcd_args;
+  constructor_arguments (i+1) ppf pcd_args;
   option (i+1) core_type ppf pcd_res
+
+and constructor_arguments i ppf = function
+  | Pcstr_tuple l -> list i core_type ppf l
+  | Pcstr_record l -> list i label_decl ppf l
 
 and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line i ppf "%a\n" fmt_location pld_loc;

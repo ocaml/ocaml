@@ -641,8 +641,10 @@ let rec expr_size env = function
       RHS_block (List.length args)
   | Uprim(Pmakearray(Pfloatarray), args, _) ->
       RHS_floatblock (List.length args)
-  | Uprim (Pduprecord (Record_regular, sz), _, _) ->
+  | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
+  | Uprim (Pduprecord (Record_extension, sz), _, _) ->
+      RHS_block (sz + 1)
   | Uprim (Pduprecord (Record_float, sz), _, _) ->
       RHS_floatblock sz
   | Usequence(exp, exp') ->
@@ -1571,6 +1573,8 @@ and transl_prim_1 p arg dbg =
         match c with
         | Big_endian -> const_of_bool Arch.big_endian
         | Word_size -> tag_int (Cconst_int (8*Arch.size_int))
+        | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1))
+        | Max_wosize -> tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 ))
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")

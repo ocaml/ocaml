@@ -739,6 +739,11 @@ let string_of_mutable = function
   | Immutable -> ""
   | Mutable -> "mutable "
 
+
+let mark_loops_constructor_arguments = function
+  | Cstr_tuple l -> List.iter mark_loops l
+  | Cstr_record l -> List.iter (fun l -> mark_loops l.ld_type) l
+
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -782,8 +787,8 @@ let rec tree_of_type_decl id decl =
   | Type_variant cstrs ->
       List.iter
         (fun c ->
-          List.iter mark_loops c.cd_args;
-          may mark_loops c.cd_res)
+           mark_loops_constructor_arguments c.cd_args;
+           may mark_loops c.cd_res)
         cstrs
   | Type_record(l, rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -850,15 +855,20 @@ let rec tree_of_type_decl id decl =
       otype_private = priv;
       otype_cstrs = constraints }
 
+and tree_of_constructor_arguments = function
+  | Cstr_tuple l -> tree_of_typlist false l
+  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+
 and tree_of_constructor cd =
   let name = Ident.name cd.cd_id in
+  let arg () = tree_of_constructor_arguments cd.cd_args in
   match cd.cd_res with
-  | None -> (name, tree_of_typlist false cd.cd_args, None)
+  | None -> (name, arg (), None)
   | Some res ->
       let nm = !names in
       names := [];
       let ret = tree_of_typexp false res in
-      let args = tree_of_typlist false cd.cd_args in
+      let args = arg () in
       names := nm;
       (name, args, Some ret)
 
@@ -871,6 +881,10 @@ let tree_of_type_declaration id decl rs =
 let type_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
 
+let constructor_arguments ppf a =
+  let tys = tree_of_constructor_arguments a in
+  !Oprint.out_type ppf (Otyp_tuple tys)
+
 (* Print an extension declaration *)
 
 let tree_of_extension_constructor id ext es =
@@ -880,7 +894,7 @@ let tree_of_extension_constructor id ext es =
   List.iter add_alias ty_params;
   List.iter mark_loops ty_params;
   List.iter check_name_of_type (List.map proxy ty_params);
-  List.iter mark_loops ext.ext_args;
+  mark_loops_constructor_arguments ext.ext_args;
   may mark_loops ext.ext_ret_type;
   let type_param =
     function
@@ -893,12 +907,12 @@ let tree_of_extension_constructor id ext es =
   let name = Ident.name id in
   let args, ret =
     match ext.ext_ret_type with
-    | None -> (tree_of_typlist false ext.ext_args, None)
+    | None -> (tree_of_constructor_arguments ext.ext_args, None)
     | Some res ->
         let nm = !names in
         names := [];
         let ret = tree_of_typexp false res in
-        let args = tree_of_typlist false ext.ext_args in
+        let args = tree_of_constructor_arguments ext.ext_args in
         names := nm;
         (args, Some ret)
   in
@@ -1149,18 +1163,18 @@ let hide_rec_items = function
            ids !printing_env)
   | _ -> ()
 
-let rec tree_of_modtype = function
+let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
       Omty_ident (tree_of_path p)
   | Mty_signature sg ->
-      Omty_signature (tree_of_signature sg)
+      Omty_signature (if ellipsis then [Osig_ellipsis] else tree_of_signature sg)
   | Mty_functor(param, ty_arg, ty_res) ->
       let res =
-        match ty_arg with None -> tree_of_modtype ty_res
+        match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
         | Some mty ->
-            wrap_env (Env.add_module ~arg:true param mty) tree_of_modtype ty_res
+            wrap_env (Env.add_module ~arg:true param mty) (tree_of_modtype ~ellipsis) ty_res
       in
-      Omty_functor (Ident.name param, may_map tree_of_modtype ty_arg, res)
+      Omty_functor (Ident.name param, may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
   | Mty_alias p ->
       Omty_alias (tree_of_path p)
 
@@ -1169,35 +1183,37 @@ and tree_of_signature sg =
 
 and tree_of_signature_rec env' = function
     [] -> []
-  | item :: rem ->
+  | item :: rem as items ->
       begin match item with
         Sig_type (_, _, rs) when rs <> Trec_next -> ()
       | _ -> set_printing_env env'
       end;
       let (sg, rem) = filter_rem_sig item rem in
-      let trees =
-        match item with
-        | Sig_value(id, decl) ->
-            [tree_of_value_description id decl]
-        | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
-            []
-        | Sig_type(id, decl, rs) ->
-            hide_rec_items (item :: rem);
-            [Osig_type(tree_of_type_decl id decl, tree_of_rec rs)]
-        | Sig_typext(id, ext, es) ->
-            [tree_of_extension_constructor id ext es]
-        | Sig_module(id, md, rs) ->
-            [Osig_module (Ident.name id, tree_of_modtype md.md_type,
-                          tree_of_rec rs)]
-        | Sig_modtype(id, decl) ->
-            [tree_of_modtype_declaration id decl]
-        | Sig_class(id, decl, rs) ->
-            [tree_of_class_declaration id decl rs]
-        | Sig_class_type(id, decl, rs) ->
-            [tree_of_cltype_declaration id decl rs]
-      in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
       let env' = Env.add_signature (item :: sg) env' in
       trees @ tree_of_signature_rec env' rem
+
+and trees_of_sigitem = function
+  | Sig_value(id, decl) ->
+      [tree_of_value_description id decl]
+  | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+      []
+  | Sig_type(id, decl, rs) ->
+      [tree_of_type_declaration id decl rs]
+  | Sig_typext(id, ext, es) ->
+      [tree_of_extension_constructor id ext es]
+  | Sig_module(id, md, rs) ->
+      let ellipsis =
+        List.exists (function ({txt="..."}, Parsetree.PStr []) -> true | _ -> false)
+          md.md_attributes in
+      [tree_of_module id md.md_type rs ~ellipsis]
+  | Sig_modtype(id, decl) ->
+      [tree_of_modtype_declaration id decl]
+  | Sig_class(id, decl, rs) ->
+      [tree_of_class_declaration id decl rs]
+  | Sig_class_type(id, decl, rs) ->
+      [tree_of_cltype_declaration id decl rs]
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -1207,12 +1223,22 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty rs =
-  Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
+and tree_of_module id ?ellipsis mty rs =
+  Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_modtype_declaration id decl)
+
+(* For the toplevel: merge with tree_of_signature? *)
+let rec print_items showval env = function
+  | [] -> []
+  | item :: rem as items ->
+      let (sg, rem) = filter_rem_sig item rem in
+      hide_rec_items items;
+      let trees = trees_of_sigitem item in
+      List.map (fun d -> (d, showval env item)) trees @
+      print_items showval env rem
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 

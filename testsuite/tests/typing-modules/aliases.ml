@@ -235,3 +235,12 @@ module R = struct
   module Q = M
 end;;
 module R' : S = R;; (* should be ok *)
+
+(* PR#6578 *)
+
+module M = struct let f x = x end
+module rec R : sig module M : sig val f : 'a -> 'a end end =
+  struct module M = M end;;
+R.M.f 3;;
+module rec R : sig module M = M end = struct module M = M end;;
+R.M.f 3;;
