@@ -14,8 +14,10 @@
 
 (* The DSL* modules expose functions to emit x86/x86_64 instructions
    using a syntax close to the official Intel syntax, except that
-   source and destination operands are reversed (as in the AT&T
-   syntax).
+   source and destination operands are reversed as in the AT&T
+   syntax:
+
+     mov (src, dst)
 *)
 
 
