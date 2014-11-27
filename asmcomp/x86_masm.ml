@@ -10,8 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Intel_ast
-open Intel_proc
+open X86_ast
+open X86_proc
 
 let bprintf = Printf.bprintf
 

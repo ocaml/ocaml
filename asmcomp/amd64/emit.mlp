@@ -22,9 +22,9 @@ open Mach
 open Linearize
 open Emitaux
 
-open Intel_ast
-open Intel_proc
-open Intel_dsl
+open X86_ast
+open X86_proc
+open X86_dsl
 
 let _label s = D.label ~typ:QWORD s
 
@@ -833,7 +833,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  Intel_proc.reset_asm_code ();
+  X86_proc.reset_asm_code ();
   reset_debug_info();                   (* PR#5603 *)
   float_constants := [];
   if system = S_win64 then begin
@@ -947,11 +947,11 @@ let end_assembly() =
     if !Emitaux.create_asm_file then
       Some
         (
-         (if Intel_proc.masm then Intel_masm.generate_asm
-          else Intel_gas.generate_asm) !Emitaux.output_channel
+         (if X86_proc.masm then X86_masm.generate_asm
+          else X86_gas.generate_asm) !Emitaux.output_channel
         )
     else
       None
   in
-  Intel_proc.generate_code asm
+  X86_proc.generate_code asm
 

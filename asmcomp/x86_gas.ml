@@ -10,8 +10,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Intel_ast
-open Intel_proc
+open X86_ast
+open X86_proc
 
 let bprintf = Printf.bprintf
 
@@ -272,7 +272,7 @@ let print_line b = function
   | Cfi_startproc -> bprintf b "\t.cfi_startproc"
   | File (file_num, file_name) ->
       bprintf b "\t.file\t%d\t\"%s\""
-        file_num (Intel_proc.string_of_string_literal file_name)
+        file_num (X86_proc.string_of_string_literal file_name)
   | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
   | Loc (file_num, line) -> bprintf b "\t.loc\t%d\t%d" file_num line
   | Private_extern s -> bprintf b "\t.private_extern %s" s

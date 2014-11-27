@@ -21,7 +21,7 @@
 *)
 
 
-open Intel_ast
+open X86_ast
 
 val sym: string -> arg
 val nat: nativeint -> arg

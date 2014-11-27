@@ -318,7 +318,7 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Intel_proc.assemble_file infile outfile
+  X86_proc.assemble_file infile outfile
 
 let init () =
   if fp then begin

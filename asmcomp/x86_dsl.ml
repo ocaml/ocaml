@@ -24,12 +24,12 @@
 
      - A legacy bug in GAS:
        https://sourceware.org/binutils/docs-2.22/as/i386_002dBugs.html#i386_002dBugs
-       is not replicated here.  It is managed by Intel_gas.
+       is not replicated here.  It is managed by X86_gas.
 *)
 
 
-open Intel_ast
-open Intel_proc
+open X86_ast
+open X86_proc
 
 let sym s = Sym s
 
