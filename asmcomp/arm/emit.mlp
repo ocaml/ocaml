@@ -372,6 +372,34 @@ let emit_load_symbol_addr dst s =
     1
   end
 
+(* Load VFP immediate constant *)
+
+type vfp_imm_case =
+  | F_imm_none
+  | F_imm_binary of int
+  | F_imm_decimal of string
+
+let encode_vfp_immediate imm =
+  let sg = Int64.to_int (Int64.shift_right_logical imm 63) in
+  let ex = Int64.to_int (Int64.shift_right_logical imm 52) in
+  let ex = (ex land 0x7ff) - 1023 in
+  let mn = Int64.logand imm 0xfffffffffffffL in
+  if Int64.logand mn 0xffffffffffffL <> 0L || ex < -3 || ex > 4
+  then
+    F_imm_none
+  else begin
+      let mn = Int64.to_int (Int64.shift_right_logical mn 48) in
+      if mn land 0x0f <> mn then
+        F_imm_none
+      else
+        if macosx then
+          (* Apple needs vmov.f64 with a decimal immediate *)
+          F_imm_decimal (Printf.sprintf "%1.6e" (Int64.float_of_bits imm))
+        else
+          let ex = ((ex + 3) land 0x07) lxor 0x04 in
+          F_imm_binary ((sg lsl 7) lor (ex lsl 4) lor mn)
+    end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -416,28 +444,14 @@ let emit_instr i =
         `	vldr.64	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
         1
     | Lop(Iconst_float f) ->
-        let encode imm =
-          let sg = Int64.to_int (Int64.shift_right_logical imm 63) in
-          let ex = Int64.to_int (Int64.shift_right_logical imm 52) in
-          let ex = (ex land 0x7ff) - 1023 in
-          let mn = Int64.logand imm 0xfffffffffffffL in
-          if Int64.logand mn 0xffffffffffffL <> 0L || ex < -3 || ex > 4
-          then
-            None
-          else begin
-            let mn = Int64.to_int (Int64.shift_right_logical mn 48) in
-            if mn land 0x0f <> mn then
-              None
-            else
-              let ex = ((ex + 3) land 0x07) lxor 0x04 in
-              Some((sg lsl 7) lor (ex lsl 4) lor mn)
-          end in
-        begin match encode f with
-          None ->
+        begin match encode_vfp_immediate f with
+          F_imm_none ->
             let lbl = float_literal f in
             `	vldr.64	{emit_reg i.res.(0)}, {emit_label lbl}\n`
-        | Some imm8 ->
+        | F_imm_binary imm8 ->
             `	vmov.f64	{emit_reg i.res.(0)}, #{emit_int imm8}\n`
+        | F_imm_decimal imm ->
+            `	vmov.f64	{emit_reg i.res.(0)}, #{emit_string imm}\n`
         end; 1
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
