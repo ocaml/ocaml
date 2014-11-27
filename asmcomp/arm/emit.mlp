@@ -17,6 +17,8 @@
 
 (* Emission of ARM assembly code *)
 
+module StrMap = Map.Make(String)
+
 open Misc
 open Cmm
 open Arch
@@ -287,6 +289,8 @@ let float_literals = ref ([] : (int64 * label) list)
 let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
 let symbol_literals = ref ([] : (string * label) list)
+(* Symbol literals emitted at the end of the object *)
+let delayed_symbol_literals = ref (StrMap.empty : label StrMap.t)
 (* Total space (in words) occupied by pending literals *)
 let num_literals = ref 0
 
@@ -317,7 +321,16 @@ let symbol_literal s =
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
-(* Emit all pending literals *)
+let delayed_symbol_literal s =
+  try
+    StrMap.find s !delayed_symbol_literals
+  with Not_found ->
+    let lbl = new_label() in
+    delayed_symbol_literals := StrMap.add s lbl !delayed_symbol_literals;
+    lbl
+
+
+(* Emit all pending literals, but not the delayed ones *)
 let emit_literals() =
   if !float_literals <> [] then begin
     `	.align	3\n`;
@@ -344,10 +357,60 @@ let emit_literals() =
   end;
   num_literals := 0
 
+
+let emit_delayed_symbol_literals() =
+  if !delayed_symbol_literals <> StrMap.empty then begin
+    assert macosx;
+    let direct, indirect =
+      List.partition
+        (fun (sym, _lbl) ->
+           Compilenv.symbol_in_current_unit sym
+        )
+        (StrMap.bindings !delayed_symbol_literals) in
+    (* references to symbols defined in this object can be resolved by the
+       assembler
+     *)
+    if direct <> [] then begin
+      `	.data\n`;
+      `	.align	2\n`;
+      List.iter
+        (fun (sym, lbl) ->
+           `{emit_label lbl}:	.word	{emit_symbol sym}\n`;
+        )
+        direct
+    end;
+    (* references to symbols defined in other objects need to go into the
+       section for indirect symbols, and will be resolved statically by ld.
+     *)
+    if indirect <> [] then begin
+      `	.non_lazy_symbol_pointer\n`;
+      `	.align	2\n`;
+      List.iter
+        (fun (sym, lbl) ->
+          `{emit_label lbl}:	.indirect_symbol	{emit_symbol sym}\n`;
+          `	.long 0\n`;
+        )
+        indirect;
+    end;
+    delayed_symbol_literals := StrMap.empty
+  end
+
+
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if !Clflags.pic_code then begin
+  if !pie_code then begin
+    assert macosx;
+    let offset = if !thumb then 4 else 8 in
+    let lbl_pic = new_label() in
+    let lbl_sym = delayed_symbol_literal s in
+    `	movw	{emit_reg dst}, #:lower16:({emit_label lbl_sym}-({emit_label lbl_pic}+{emit_int offset}))\n`;
+    `	movt	{emit_reg dst}, #:upper16:({emit_label lbl_sym}-({emit_label lbl_pic}+{emit_int offset}))\n`;
+    `{emit_label lbl_pic}:	add	{emit_reg dst}, pc\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg dst}]\n`;
+    4
+  end else if !Clflags.pic_code then begin
+    assert (not macosx);
     let lbl_pic = new_label() in
     let lbl_got = gotrel_literal lbl_pic in
     let lbl_sym = symbol_literal s in
@@ -843,7 +906,7 @@ let emit_instr i =
             if tramtbl.(j) <> jumptbl.(j) then
               `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`
           done
-        end else if not !Clflags.pic_code then begin
+        end else if not !Clflags.pic_code && not !pie_code then begin
           `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
           `	nop\n`;
           for j = 0 to Array.length jumptbl - 1 do
@@ -982,6 +1045,7 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
+  delayed_symbol_literals := StrMap.empty;
   `	.file	\"\"\n`;  (* PR#7037 *)
   `	.syntax	unified\n`;
   if not macosx then begin
@@ -1062,6 +1126,7 @@ let end_assembly () =
     `	.type	{emit_symbol lbl}, %object\n`;
     `	.size	{emit_symbol lbl}, .-{emit_symbol lbl}\n`;
   end;
+  emit_delayed_symbol_literals();
   begin match Config.system with
     "linux_eabihf" | "linux_eabi" | "netbsd" ->
       (* Mark stack as non-executable *)
