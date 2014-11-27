@@ -186,6 +186,7 @@ let name_for_int_operation = function
   | Isub  -> "subs"
   | Imul  -> "mul"
   | Imulh -> "smmul"
+  | Idiv  -> "sdiv"   (* only armv7s *)
   | Iand  -> "ands"
   | Ior   -> "orrs"
   | Ixor  -> "eors"
@@ -606,6 +607,13 @@ let emit_instr i =
         `	smull	r12, {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
     | Lop(Ispecific Imulhadd) ->
         `	smmla	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`; 1
+    | Lop(Iintop Imod) ->
+        (* This path is only chosen for ARMv7s *)
+        `       sdiv    {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i
+.arg.(1)}\n`;
+        `       mls     {emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_reg i
+.arg.(1)}, {emit_reg i.arg.(0)}\n`;
+        2
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
