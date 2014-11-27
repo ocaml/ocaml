@@ -22,6 +22,9 @@ open Mach
 open Linearize
 open Emitaux
 
+let macosx =
+  Config.system = "macosx"
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true

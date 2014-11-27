@@ -19,6 +19,9 @@ open Reg
 open Arch
 open Mach
 
+let macosx =
+  Config.system = "macosx"
+
 (* Instruction selection *)
 
 let word_addressed = false

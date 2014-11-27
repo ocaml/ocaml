@@ -15,14 +15,16 @@
 
 open Format
 
-type abi = EABI | EABI_HF
-type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7
+(* EABI is actually GNU EABI *)
+type abi = EABI | EABI_HF | EABI_APPLE
+type arch = ARMv4 | ARMv5 | ARMv5TE | ARMv6 | ARMv6T2 | ARMv7 | ARMv7s
 type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 
 let abi =
   match Config.system with
     "linux_eabi" | "freebsd" -> EABI
   | "linux_eabihf" -> EABI_HF
+  | "macosx" -> EABI_APPLE
   | _ -> assert false
 
 let string_of_arch = function
@@ -32,6 +34,7 @@ let string_of_arch = function
   | ARMv6   -> "armv6"
   | ARMv6T2 -> "armv6t2"
   | ARMv7   -> "armv7"
+  | ARMv7s  -> "armv7s"  (* = armv7 + div *)
 
 let string_of_fpu = function
     Soft      -> "soft"
@@ -41,22 +44,30 @@ let string_of_fpu = function
 
 (* Machine-specific command-line options *)
 
-let (arch, fpu, thumb) =
-  let (def_arch, def_fpu, def_thumb) =
+let (arch, fpu, thumb, supp_pic, supp_pie) =
+  let (def_arch, def_fpu, def_thumb, supp_pic, supp_pie) =
     begin match abi, Config.model with
-    (* Defaults for architecture, FPU and Thumb *)
-      EABI, "armv5"    -> ARMv5,   Soft,      false
-    | EABI, "armv5te"  -> ARMv5TE, Soft,      false
-    | EABI, "armv6"    -> ARMv6,   Soft,      false
-    | EABI, "armv6t2"  -> ARMv6T2, Soft,      false
-    | EABI, "armv7"    -> ARMv7,   Soft,      false
-    | EABI, _          -> ARMv4,   Soft,      false
-    | EABI_HF, "armv6" -> ARMv6,   VFPv2,     false
-    | EABI_HF, _       -> ARMv7,   VFPv3_D16, true
+    (* Defaults for architecture, FPU, Thumb, PIC and PIE *)
+      EABI,       "armv5"    -> ARMv5,   Soft,      false, true,  false
+    | EABI,       "armv5te"  -> ARMv5TE, Soft,      false, true,  false
+    | EABI,       "armv6"    -> ARMv6,   Soft,      false, true,  false
+    | EABI,       "armv6t2"  -> ARMv6T2, Soft,      false, true,  false
+    | EABI,       "armv7"    -> ARMv7,   Soft,      false, true,  false
+    | EABI,       "armv7s"   -> ARMv7,   Soft,      false, true,  false
+    | EABI,       _          -> ARMv4,   Soft,      false, true,  false
+    | EABI_HF,    "armv6t2"  -> ARMv6,   VFPv2,     true,  true,  false
+    | EABI_HF,    "armv7"    -> ARMv7,   VFPv3_D16, true,  true,  false
+    | EABI_HF,    "armv7s"   -> ARMv7s,  VFPv3_D16, true,  true,  false
+    | EABI_HF,    _          -> ARMv6,   VFPv2,     false, true,  false
+    | EABI_APPLE, "armv7"    -> ARMv7,   VFPv3,     true,  false, true
+    | EABI_APPLE, "armv7s"   -> ARMv7s,  VFPv3,     true,  false, true
+    | EABI_APPLE, _          -> ARMv6,   VFPv2,     false, false, false
     end in
-  (ref def_arch, ref def_fpu, ref def_thumb)
+  (ref def_arch, ref def_fpu, ref def_thumb, supp_pic, supp_pie)
 
-let pic_code = ref false
+(* if pic/pie is supported the default is to enable it *)
+let pic_code = ref supp_pic
+let pie_code = ref supp_pie
 
 let farch spec =
   arch := (match spec with
@@ -66,15 +77,27 @@ let farch spec =
            | "armv6"                       -> ARMv6
            | "armv6t2"                     -> ARMv6T2
            | "armv7"                       -> ARMv7
+           | "armv7s"                      -> ARMv7s
            | spec -> raise (Arg.Bad spec))
+
+let have_hf =
+  abi = EABI_HF || abi = EABI_APPLE
 
 let ffpu spec =
   fpu := (match spec with
-            "soft" when abi <> EABI_HF     -> Soft
-          | "vfpv2" when abi = EABI_HF     -> VFPv2
-          | "vfpv3-d16" when abi = EABI_HF -> VFPv3_D16
-          | "vfpv3" when abi = EABI_HF     -> VFPv3
+            "soft" when not have_hf        -> Soft
+          | "vfpv2" when have_hf           -> VFPv2
+          | "vfpv3-d16" when have_hf       -> VFPv3_D16
+          | "vfpv3" when have_hf           -> VFPv3
           | spec -> raise (Arg.Bad spec))
+
+let set_pic() =
+  if not supp_pic then raise(Arg.Bad "PIC not supported for this model");
+  pic_code := true
+
+let set_pie() =
+  if not supp_pie then raise(Arg.Bad "PIE not supported for this model");
+  pie_code := true
 
 let command_line_options =
   [ "-farch", Arg.String farch,
@@ -83,9 +106,13 @@ let command_line_options =
     "-ffpu", Arg.String ffpu,
       "<fpu>  Select the floating-point hardware"
       ^ " (default: " ^ (string_of_fpu !fpu) ^ ")";
-    "-fPIC", Arg.Set pic_code,
-      " Generate position-independent machine code";
+    "-fPIC", Arg.Unit set_pic,
+      " Generate position-independent machine code for shared libs";
     "-fno-PIC", Arg.Clear pic_code,
+      " Generate position-dependent machine code";
+    "-fPIE", Arg.Unit set_pie,
+      " Generate position-independent machine code for executables";
+    "-fno-PIE", Arg.Clear pie_code,
       " Generate position-dependent machine code";
     "-fthumb", Arg.Set thumb,
       " Enable Thumb/Thumb-2 code generation"
