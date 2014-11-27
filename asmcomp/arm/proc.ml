@@ -22,6 +22,9 @@ open Reg
 open Arch
 open Mach
 
+let macosx =
+  Config.system = "macosx"
+
 (* Instruction selection *)
 
 let word_addressed = false
@@ -111,20 +114,24 @@ let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
 
 (* Calling conventions *)
 
-let calling_conventions first_int last_int first_float last_float make_stack
-      arg =
+let no_max_words = 9999
+
+let calling_conventions first_int last_int first_float last_float max_words
+      make_stack arg =
   let loc = Array.make (Array.length arg) [| Reg.dummy |] in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
+  let w = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | [| arg |] ->
       begin match arg.typ with
       | Val | Int | Addr as ty ->
-          if !int <= last_int then begin
+          if !int <= last_int && !w < max_words then begin
             loc.(i) <- [| phys_reg !int |];
-            incr int
+            incr int;
+            incr w
           end else begin
             loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
             ofs := !ofs + size_int
@@ -132,9 +139,10 @@ let calling_conventions first_int last_int first_float last_float make_stack
       | Float ->
           assert (abi = EABI_HF || abi = EABI_APPLE);
           assert (!fpu >= VFPv2);
-          if !float <= last_float then begin
+          if !float <= last_float && !w < max_words then begin
             loc.(i) <- [| phys_reg !float |];
-            incr float
+            incr float;
+            w := !w + 2
           end else begin
             ofs := Misc.align !ofs size_float;
             loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
@@ -196,29 +204,45 @@ let ensure_single_regs res =
 
 let loc_arguments arg =
   let (loc, alignment) =
-    calling_conventions 0 7 100 115 outgoing (single_regs arg)
+    calling_conventions 0 7 100 115 no_max_words outgoing (single_regs arg)
   in
   ensure_single_regs loc, alignment
 let loc_parameters arg =
-  let (loc, _) = calling_conventions 0 7 100 115 incoming (single_regs arg) in
+  let (loc, _) = calling_conventions 0 7 100 115 no_max_words incoming (single_regs arg) in
   ensure_single_regs loc
 let loc_results res =
   let (loc, _) =
-    calling_conventions 0 7 100 115 not_supported (single_regs res)
+    calling_conventions 0 7 100 115 no_max_words not_supported (single_regs res)
   in
   ensure_single_regs loc
 
-(* C calling convention:
+(* C calling convention for GNU:
      first integer args in r0...r3
      first float args in d0...d7 (EABI+VFP)
      remaining args on stack.
-   Return values in r0...r1 or d0. *)
+   Return values in r0...r1 or d0.
+
+   C calling convention for iOS:
+     first integer args in r0...r3
+     first float args in pairs of regs r0/r1, r1/r2, or r2/r3
+     remaining args on stack.
+   Return values in r0 or r0/r1 for floats.
+
+   iOS: As we cannot represent register pairs properly, we pretend here that
+   we have two float registers d0..d1 for arguments and one float reg d0 for
+   the result. When emitting code for Iextcall we move the floats to the
+   registers where they should really be. The max_words constraint ensures
+   that we don't put too many parameters into registers.
+ *)
 
 let loc_external_arguments arg =
-  calling_conventions 0 3 100 107 outgoing arg
+  if macosx then
+    calling_conventions 0 3 100 101 4 outgoing arg
+  else
+    calling_conventions 0 3 100 107 no_max_words outgoing arg
 let loc_external_results res =
   let (loc, _) =
-    calling_conventions 0 1 100 100 not_supported (single_regs res)
+    calling_conventions 0 1 100 100 no_max_words not_supported (single_regs res)
   in
   ensure_single_regs loc
 

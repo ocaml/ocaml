@@ -400,6 +400,56 @@ let encode_vfp_immediate imm =
           F_imm_binary ((sg lsl 7) lor (ex lsl 4) lor mn)
     end
 
+(* Helpers for Apple EABI *)
+
+(* We pretended that we pass floats via d0 and d1. Actually, these values
+   are put into the pairs r0/r1 or r1/r2 or r2/r3, potentially mixed with
+   int values. We already ensured that we do not pass more than four
+   32 bit words via registers. Now move the values where iOS expects them.
+ *)
+
+let move_extcall_args i =
+  let l = ref [] in
+  let d = ref 0 in
+  Array.iter
+    (fun arg ->
+       match arg with
+         | { loc = Reg r } when r >= 100 ->
+              l := (r, !d) :: !l;
+              d := !d + 2
+         | { loc = Reg r } ->
+              l := (r, !d) :: !l;
+              incr d
+         | { loc = _ } ->
+              ()
+    )
+    i.arg;
+  List.iter
+    (fun (src, dst) ->
+       if src <> dst then (
+         let srcname = register_name src in
+         let dstname = register_name dst in
+         if src >= 100 then
+           let d2name = register_name (dst+1) in
+           `	vmov	{emit_string dstname}, {emit_string d2name}, {emit_string srcname}\n`
+         else
+           `	mov	{emit_string dstname}, {emit_string srcname}\n`
+       )
+    )
+    !l;
+  List.length !l
+
+let move_extcall_res i =
+  (* there can be at most one float result: move it from r0/r1 to d0 *)
+  if Array.length i.res > 0 then
+    match i.res.(0) with
+      | { loc = Reg r } when r = 100 ->
+           `	vmov	d0, r0, r1\n`; 1
+      | _ ->
+           0
+  else
+    0
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -484,12 +534,17 @@ let emit_instr i =
           end
         end
     | Lop(Iextcall { func; alloc = false; }) ->
-        `	{emit_call func}\n`; 1
+        let n1 = if abi = EABI_APPLE then move_extcall_args i else 0 in
+        ` {emit_call func}\n`;
+        let n2 = if abi = EABI_APPLE then move_extcall_res i else 0 in
+        n1 + 1 + n2
     | Lop(Iextcall { func; alloc = true; label_after; }) ->
+        let n1 = if abi = EABI_APPLE then move_extcall_args i else 0 in
         let ninstr = emit_load_symbol_addr (phys_reg 7 (* r7 *)) func in
-        `	{emit_call "caml_c_call"}\n`;
+        ` {emit_call "caml_c_call"}\n`;
+        let n2 = if abi = EABI_APPLE then move_extcall_res i else 0 in
         `{record_frame i.live false i.dbg ~label:label_after}\n`;
-        1 + ninstr
+        n1 + 1 + ninstr + n2
     | Lop(Istackoffset n) ->
         assert (n mod 8 = 0);
         let ninstr = emit_stack_adjustment (-n) in
