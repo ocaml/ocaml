@@ -46,25 +46,34 @@ P($0):  .word Glo($0)
 P($0):  .word Loc($0)
         .endm
 #else
+        /* for ARM>=7 we can easily support PIE because we have movw and movt */
         .thumb
+        Lpcreloffs = 4     /* for .arm: 8 */
         .macro .funtype
         .thumb_func $0
         .endm
-        /* load global address, non-PIE */
+        /* load global address, PIE */
         .macro ldgaddr
-        ldr $0, P($1)
+        movw $0, #:lower16:(P($1) - (9f + Lpcreloffs))
+        movt $0, #:upper16:(P($1) - (9f + Lpcreloffs))
+9:
+        add $0, pc               /* actually $0 := $0 + pc + Lpcreloffs */
+        ldr $0, [$0]
         .endm
-        /* indirection for global address, non-PIE */
+        /* indirection for global address, PIE */
         .macro gaddr
-P($0):  .word Glo($0)
+P($0):  .indirect_symbol Glo($0)
+        .long 0
         .endm
-        /* load local address, non-PIE */
+        /* load local address, PIE */
         .macro ldladdr
-        ldr $0, P($1)
+        movw $0, #:lower16:(Loc($1) - (9f + Lpcreloffs))
+        movt $0, #:upper16:(Loc($1) - (9f + Lpcreloffs))
+9:
+        add $0, pc               /* actually $0 := $0 + pc + Lpcreloffs */
         .endm
-        /* indirection for local address, non-PIE */
+        /* indirection for local address, PIE */
         .macro laddr
-P($0):  .word Loc($0)
         .endm
 #endif
         .macro  .type
@@ -558,6 +567,9 @@ Glo(caml_ml_array_bound_error):
 
 /* Indirection block for macosx */
 #if defined(SYS_macosx)
+#if !defined(MODEL_armv6)
+        .non_lazy_symbol_pointer
+#endif
         .align 2
          gaddr caml_last_return_address
          gaddr caml_bottom_of_stack
