@@ -383,15 +383,15 @@ let emit_instr i =
         if src.loc = dst.loc then 0 else begin
           begin match (src, dst) with
             {loc = Reg _; typ = Float}, {loc = Reg _} ->
-              `	fcpyd	{emit_reg dst}, {emit_reg src}\n`
+              `	vmov.f64	{emit_reg dst}, {emit_reg src}\n`
           | {loc = Reg _}, {loc = Reg _} ->
               `	mov	{emit_reg dst}, {emit_reg src}\n`
           | {loc = Reg _; typ = Float}, _ ->
-              `	fstd	{emit_reg src}, {emit_stack dst}\n`
+              `	vstr.64	{emit_reg src}, {emit_stack dst}\n`
           | {loc = Reg _}, _ ->
               `	str	{emit_reg src}, {emit_stack dst}\n`
           | {typ = Float}, _ ->
-              `	fldd	{emit_reg dst}, {emit_stack src}\n`
+              `	vldr.64	{emit_reg dst}, {emit_stack src}\n`
           | _ ->
               `	ldr	{emit_reg dst}, {emit_stack src}\n`
           end; 1
@@ -413,7 +413,7 @@ let emit_instr i =
         end
     | Lop(Iconst_float f) when !fpu = VFPv2 ->
         let lbl = float_literal f in
-        `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
+        `	vldr.64	{emit_reg i.res.(0)}, {emit_label lbl}\n`;
         1
     | Lop(Iconst_float f) ->
         let encode imm =
@@ -435,9 +435,9 @@ let emit_instr i =
         begin match encode f with
           None ->
             let lbl = float_literal f in
-            `	fldd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
+            `	vldr.64	{emit_reg i.res.(0)}, {emit_label lbl}\n`
         | Some imm8 ->
-            `	fconstd	{emit_reg i.res.(0)}, #{emit_int imm8}\n`
+            `	vmov.f64	{emit_reg i.res.(0)}, #{emit_int imm8}\n`
         end; 1
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
@@ -482,8 +482,8 @@ let emit_instr i =
         stack_offset := !stack_offset + n;
         ninstr
     | Lop(Iload(Single, addr)) when !fpu >= VFPv2 ->
-        `	flds	s14, {emit_addressing addr i.arg 0}\n`;
-        `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2
+        `	vldr.32	s14, {emit_addressing addr i.arg 0}\n`;
+        `	vcvt.f64.f32	{emit_reg i.res.(0)}, s14\n`; 2
     | Lop(Iload((Double | Double_u), addr)) when !fpu = Soft ->
         (* Use LDM or LDRD if possible *)
         begin match i.res.(0), i.res.(1), addr with
@@ -512,12 +512,12 @@ let emit_instr i =
           | Sixteen_unsigned -> "ldrh"
           | Sixteen_signed -> "ldrsh"
           | Double
-          | Double_u -> "fldd"
+          | Double_u -> "vldr.64"
           | _ (* 32-bit quantities *) -> "ldr" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 0}\n`; 1
     | Lop(Istore(Single, addr, _)) when !fpu >= VFPv2 ->
-        `	fcvtsd	s14, {emit_reg i.arg.(0)}\n`;
-        `	fsts	s14, {emit_addressing addr i.arg 1}\n`; 2
+        `	vcvt.f32.f64	s14, {emit_reg i.arg.(0)}\n`;
+        `	vstr.f32	s14, {emit_addressing addr i.arg 1}\n`; 2
     | Lop(Istore((Double | Double_u), addr, _)) when !fpu = Soft ->
         (* Use STM or STRD if possible *)
         begin match i.arg.(0), i.arg.(1), addr with
@@ -541,7 +541,7 @@ let emit_instr i =
           | Sixteen_unsigned
           | Sixteen_signed -> "strh"
           | Double
-          | Double_u -> "fstd"
+          | Double_u -> "vstr.64"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
     | Lop(Ialloc { words = n; label_after_call_gc; }) ->
@@ -628,9 +628,9 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg i.res.(1)}, {emit_reg i.arg.(1)}, #0x80000000\n`; 1
     | Lop(Iabsf | Inegf | Ispecific Isqrtf as op) ->
         let instr = (match op with
-                       Iabsf            -> "fabsd"
-                     | Inegf            -> "fnegd"
-                     | Ispecific Isqrtf -> "fsqrtd"
+                       Iabsf            -> "vabs.f64"
+                     | Inegf            -> "vneg.f64"
+                     | Ispecific Isqrtf -> "vsqrt.f64"
                      | _                -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`; 1
     | Lop(Ifloatofint) ->
@@ -641,20 +641,20 @@ let emit_instr i =
         `	fmrs	{emit_reg i.res.(0)}, s14\n`; 2
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf as op) ->
         let instr = (match op with
-                       Iaddf              -> "faddd"
-                     | Isubf              -> "fsubd"
-                     | Imulf              -> "fmuld"
-                     | Idivf              -> "fdivd"
-                     | Ispecific Inegmulf -> "fnmuld"
+                       Iaddf              -> "vadd.f64"
+                     | Isubf              -> "vsub.f64"
+                     | Imulf              -> "vmul.f64"
+                     | Idivf              -> "vdiv.f64"
+                     | Ispecific Inegmulf -> "vnmul.f64"
                      | _                  -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         1
     | Lop(Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf as op)) ->
         let instr = (match op with
-                       Imuladdf    -> "fmacd"
-                     | Inegmuladdf -> "fnmacd"
-                     | Imulsubf    -> "fmscd"
-                     | Inegmulsubf -> "fnmscd"
+                       Imuladdf    -> "vmla.f64"
+                     | Inegmuladdf -> "vmls.f64"
+                     | Imulsubf    -> "vnmls.f64"
+                     | Inegmulsubf -> "vnmla.f64"
                      | _ -> assert false) in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`;
         1
