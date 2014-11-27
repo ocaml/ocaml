@@ -95,33 +95,33 @@ end
 module I : sig
   (* Instructions *)
 
-  val add: arg * arg -> unit
-  val addsd: arg * arg -> unit
-  val and_: arg * arg -> unit
-  val andpd: arg * arg -> unit
+  val add: arg -> arg -> unit
+  val addsd: arg -> arg -> unit
+  val and_: arg -> arg -> unit
+  val andpd: arg -> arg -> unit
   val bswap: arg -> unit
   val call: arg -> unit
   val cdq: unit -> unit
-  val cmp: arg * arg -> unit
-  val comisd: arg * arg -> unit
+  val cmp: arg -> arg -> unit
+  val comisd: arg -> arg -> unit
   val cqo: unit -> unit
-  val cvtsd2ss: arg * arg -> unit
-  val cvtsi2sd: arg * arg -> unit
-  val cvtss2sd: arg * arg -> unit
-  val cvttsd2si: arg * arg -> unit
+  val cvtsd2ss: arg -> arg -> unit
+  val cvtsi2sd: arg -> arg -> unit
+  val cvtss2sd: arg -> arg -> unit
+  val cvttsd2si: arg -> arg -> unit
   val dec: arg -> unit
-  val divsd: arg * arg -> unit
+  val divsd: arg -> arg -> unit
   val fabs: unit -> unit
   val fadd: arg -> unit
-  val faddp: arg * arg -> unit
+  val faddp: arg -> arg -> unit
   val fchs: unit -> unit
   val fcomp: arg -> unit
   val fcompp: unit -> unit
   val fcos: unit -> unit
   val fdiv: arg -> unit
-  val fdivp: arg * arg -> unit
+  val fdivp: arg -> arg -> unit
   val fdivr: arg -> unit
-  val fdivrp: arg * arg -> unit
+  val fdivrp: arg -> arg -> unit
   val fild: arg -> unit
   val fistp: arg -> unit
   val fld1: unit -> unit
@@ -131,7 +131,7 @@ module I : sig
   val fldln2: unit -> unit
   val fldz: unit -> unit
   val fmul: arg -> unit
-  val fmulp: arg * arg -> unit
+  val fmulp: arg -> arg -> unit
   val fnstcw: arg -> unit
   val fnstsw: arg -> unit
   val fpatan: unit -> unit
@@ -140,14 +140,14 @@ module I : sig
   val fsqrt: unit -> unit
   val fstp: arg -> unit
   val fsub: arg -> unit
-  val fsubp: arg * arg -> unit
+  val fsubp: arg -> arg -> unit
   val fsubr: arg -> unit
-  val fsubrp: arg * arg -> unit
+  val fsubrp: arg -> arg -> unit
   val fxch: arg -> unit
   val fyl2x: unit -> unit
   val hlt: unit -> unit
   val idiv: arg -> unit
-  val imul: arg * arg option -> unit
+  val imul: arg -> arg option -> unit
   val inc: arg -> unit
   val j: condition -> arg -> unit
   val ja: arg -> unit
@@ -159,30 +159,30 @@ module I : sig
   val jmp: arg -> unit
   val jne: arg -> unit
   val jp: arg -> unit
-  val lea: arg * arg -> unit
-  val mov: arg * arg -> unit
-  val movapd: arg * arg -> unit
-  val movsd: arg * arg -> unit
-  val movss: arg * arg -> unit
-  val movsx: arg * arg -> unit
-  val movsxd: arg * arg -> unit
-  val movzx: arg * arg -> unit
-  val mulsd: arg * arg -> unit
+  val lea: arg -> arg -> unit
+  val mov: arg -> arg -> unit
+  val movapd: arg -> arg -> unit
+  val movsd: arg -> arg -> unit
+  val movss: arg -> arg -> unit
+  val movsx: arg -> arg -> unit
+  val movsxd: arg -> arg -> unit
+  val movzx: arg -> arg -> unit
+  val mulsd: arg -> arg -> unit
   val nop: unit -> unit
-  val or_: arg * arg -> unit
+  val or_: arg -> arg -> unit
   val pop: arg -> unit
   val push: arg -> unit
   val ret: unit -> unit
-  val sal: arg * arg -> unit
-  val sar: arg * arg -> unit
+  val sal: arg -> arg -> unit
+  val sar: arg -> arg -> unit
   val set: condition -> arg -> unit
-  val shr: arg * arg -> unit
-  val sqrtsd: arg * arg -> unit
-  val sub: arg * arg -> unit
-  val subsd: arg * arg -> unit
-  val test: arg * arg -> unit
-  val ucomisd: arg * arg -> unit
-  val xchg: arg * arg -> unit
-  val xor: arg * arg -> unit
-  val xorpd: arg * arg -> unit
+  val shr: arg -> arg -> unit
+  val sqrtsd: arg -> arg -> unit
+  val sub: arg -> arg -> unit
+  val subsd: arg -> arg -> unit
+  val test: arg -> arg -> unit
+  val ucomisd: arg -> arg -> unit
+  val xchg: arg -> arg -> unit
+  val xor: arg -> arg -> unit
+  val xorpd: arg -> arg -> unit
 end
