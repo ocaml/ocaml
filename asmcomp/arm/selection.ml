@@ -59,6 +59,10 @@ let pseudoregs_for_operation op arg res =
      is also a result of the mul / mla operation. *)
     Iintop Imul | Ispecific Imuladd when !arch < ARMv6 ->
       (arg, [| res.(0); arg.(0) |])
+  (* For the emulation of Imod the result reg must not be the same as
+     an operand reg *)
+  | Iintop Imod ->
+      (arg, [| res.(0); arg.(0); arg.(1) |])
   (* For smull rdlo,rdhi,rn,rm (pre-ARMv6) the registers rdlo, rdhi and rn
      must be different.  Also, rdlo (whose contents we discard) is always
      forced to be r12 in proc.ml, which means that neither rdhi and rn can
@@ -191,11 +195,15 @@ method! select_operation op args =
   | (Cmulhi, args) ->
       (Iintop Imulh, args)
   (* Turn integer division/modulus into runtime ABI calls *)
-  | (Cdivi, args) ->
+  | (Cdivi, args) when (abi = EABI || abi = EABI_HF) && !arch < ARMv7s ->
       (Iextcall("__aeabi_idiv", false), args)
-  | (Cmodi, args) ->
+  | (Cdivi, args) when abi = EABI_APPLE && !arch < ARMv7s ->
+      (Iextcall("__divsi3", false), args)
+  | (Cmodi, args) when (abi = EABI || abi = EABI_HF) && !arch < ARMv7s ->
       (* See above for fix up of return register *)
       (Iextcall("__aeabi_idivmod", false), args)
+  | (Cmodi, args) when abi = EABI_APPLE && !arch < ARMv7s ->
+       (Iextcall("__modsi3", false), args)
   (* Recognize 16-bit bswap instruction (ARMv6T2 because we need movt) *)
   | (Cextcall("caml_bswap16_direct", _, _, _), args) when !arch >= ARMv6T2 ->
       (Ispecific(Ibswap 16), args)
