@@ -70,7 +70,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
-  Modify(&Field(array, idx), newval);
+  caml_modify_field(array, idx, newval);
   return Val_unit;
 }
 
@@ -117,7 +117,7 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
-  Modify(&Field(array, idx), newval);
+  caml_modify_field(array, idx, newval);
   return Val_unit;
 }
 
@@ -191,7 +191,7 @@ CAMLprim value caml_make_vect(value len, value init)
     }
     else {
       res = caml_alloc_shr(size, 0);
-      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
+      for (i = 0; i < size; i++) caml_initialize_field(res, i, init);
       res = caml_check_urgent_gc (res);
     }
   }
@@ -234,7 +234,7 @@ CAMLprim value caml_make_array(value init)
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
-  value * src, * dst;
+  intnat src, dst;
   intnat count;
 
   if (Tag_val(a2) == Double_array_tag) {
@@ -261,18 +261,18 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   count = Long_val(n);
   if (a1 == a2 && Long_val(ofs1) < Long_val(ofs2)) {
     /* Copy in descending order */
-    for (dst = &Field(a2, Long_val(ofs2) + count - 1),
-           src = &Field(a1, Long_val(ofs1) + count - 1);
+    for (dst = Long_val(ofs2) + count - 1,
+           src = Long_val(ofs1) + count - 1;
          count > 0;
          count--, src--, dst--) {
-      caml_modify(dst, *src);
+      caml_modify_field(a2, dst, Field(a1, src));
     }
   } else {
     /* Copy in ascending order */
-    for (dst = &Field(a2, Long_val(ofs2)), src = &Field(a1, Long_val(ofs1));
+    for (dst = Long_val(ofs2), src = Long_val(ofs1);
          count > 0;
          count--, src++, dst++) {
-      caml_modify(dst, *src);
+      caml_modify_field(a2, dst, Field(a1, src));
     }
   }
   /* Many caml_modify in a row can create a lot of old-to-young refs.
@@ -342,7 +342,7 @@ static value caml_array_gather(intnat num_arrays,
       for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
            count > 0;
            count--, src++, pos++) {
-        caml_initialize(&Field(res, pos), *src);
+        caml_initialize_field(res, pos, *src);
       }
     }
     Assert(pos == size);

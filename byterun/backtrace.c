@@ -493,7 +493,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
               /* caml_convert_raw_backtrace_slot will not fail with
                caml_failwith as we checked (events != NULL) already */
               slot = caml_convert_raw_backtrace_slot(raw_slot);
-              caml_modify(&Field(arr, i), slot);
+              caml_modify_field(arr, i, slot);
           }
       }
       res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
