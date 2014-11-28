@@ -240,7 +240,7 @@ let print_line b = function
       bprintf b "\t.align\t%d" n
   | Byte n -> bprintf b "\t.byte\t%a" cst n
   | Bytes s ->
-      if system = S_solaris then assert false (* TODO *)
+      if system = S_solaris then buf_bytes_directive b ".byte" s
       else bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
   | Comment s -> bprintf b "\t\t\t\t/* %s */" s
   | Global s -> bprintf b "\t.globl\t%s" s;

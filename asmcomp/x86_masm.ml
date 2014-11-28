@@ -100,22 +100,6 @@ and scst b = function
   | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
   | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
-let buf_bytes_directive b directive s =
-  let pos = ref 0 in
-  for i = 0 to String.length s - 1 do
-    if !pos = 0
-    then begin
-      if i > 0 then Buffer.add_char b '\n';
-      Buffer.add_char b '\t';
-      Buffer.add_string b directive;
-      Buffer.add_char b '\t';
-    end
-    else Buffer.add_char b ',';
-    bprintf b "%d" (Char.code s.[i]);
-    incr pos;
-    if !pos >= 16 then begin pos := 0 end
-  done
-
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
 let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg y arg x
