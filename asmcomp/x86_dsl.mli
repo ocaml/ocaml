@@ -17,7 +17,7 @@
    source and destination operands are reversed as in the AT&T
    syntax:
 
-     mov (src, dst)
+     mov src dst
 *)
 
 
