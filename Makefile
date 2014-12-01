@@ -79,7 +79,23 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+INTEL_ASM=\
+  asmcomp/x86_proc.cmo \
+  asmcomp/x86_dsl.cmo \
+  asmcomp/x86_gas.cmo \
+  asmcomp/x86_masm.cmo
+
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+
+ASMCOMP=\
+  $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \

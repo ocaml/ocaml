@@ -2,27 +2,14 @@
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*        Fabrice Le Fessant, projet Gallium, INRIA Rocquencourt       *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
-(* From lambda to assembly code *)
+(** Emit assembly instructions for gas. *)
 
-val compile_implementation :
-    ?toplevel:(string -> bool) ->
-    string -> Format.formatter -> int * Lambda.lambda -> unit
-val compile_phrase :
-    Format.formatter -> Cmm.phrase -> unit
-
-type error = Assembler_error of string
-exception Error of error
-val report_error: Format.formatter -> error -> unit
-
-
-val compile_unit:
-  string(*asm file*) -> bool(*keep asm*) ->
-  string(*obj file*) -> (unit -> unit) -> unit
+val generate_asm: out_channel -> X86_ast.asm_line list -> unit
