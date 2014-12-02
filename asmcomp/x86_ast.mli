@@ -56,8 +56,11 @@ type reg8h =
 
 type registerf = XMM of int | TOS | ST of int
 
+type arch = X64 | X86
+
 type addr =
   {
+    arch: arch;
     typ: data_type;
     idx: reg64;
     scale: int;
@@ -85,8 +88,7 @@ type arg =
   | Reg64 of reg64
   | Regf of registerf
 
-  | Mem32 of addr
-  | Mem64 of addr
+  | Mem of addr
   | Mem64_RIP of data_type * string * int
 
 type instruction =

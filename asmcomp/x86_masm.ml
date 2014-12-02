@@ -40,7 +40,12 @@ let string_of_datatype_ptr = function
   | NEAR -> "NEAR PTR "
   | PROC -> "PROC PTR "
 
-let arg_mem b string_of_register {typ; idx; scale; base; sym; displ} =
+let arg_mem b {arch; typ; idx; scale; base; sym; displ} =
+  let string_of_register =
+    match arch with
+    | X86 -> string_of_reg32
+    | X64 -> string_of_reg64
+  in
   Buffer.add_string b (string_of_datatype_ptr typ);
   Buffer.add_char b '[';
   begin match sym with
@@ -82,9 +87,7 @@ let arg b = function
       bprintf b "%s%s" (string_of_datatype_ptr typ) s;
       if displ > 0 then bprintf b "+%d" displ
       else if displ < 0 then bprintf b "%d" displ
-  | Mem32 addr -> arg_mem b string_of_reg32 addr
-  | Mem64 addr -> arg_mem b string_of_reg64 addr
-
+  | Mem addr -> arg_mem b addr
 
 let rec cst b = function
   | ConstLabel _ | Const _ | ConstThis as c -> scst b c

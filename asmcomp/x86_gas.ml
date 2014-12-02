@@ -24,7 +24,12 @@ let opt_displ b displ =
   else if displ > 0 then bprintf b "+%d" displ
   else bprintf b "%d" displ
 
-let arg_mem b string_of_register {typ=_; idx; scale; base; sym; displ} =
+let arg_mem b {arch; typ=_; idx; scale; base; sym; displ} =
+  let string_of_register = 
+    match arch with
+    | X86 -> string_of_reg32
+    | X64 -> string_of_reg64
+  in
   begin match sym with
   | None ->
       if displ <> 0 || scale = 0 then
@@ -54,8 +59,7 @@ let arg b = function
   | Reg32 x -> print_reg b string_of_reg32 x
   | Reg64 x -> print_reg b string_of_reg64 x
   | Regf x  -> print_reg b string_of_registerf x
-  | Mem32 addr -> arg_mem b string_of_reg32 addr
-  | Mem64 addr -> arg_mem b string_of_reg64 addr
+  | Mem addr -> arg_mem b addr
   | Mem64_RIP (_, s, displ) -> bprintf b "%s%a(%%rip)" s opt_displ displ
 
 let rec cst b = function
@@ -73,7 +77,7 @@ and scst b = function
   | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
 let typeof = function
-  | Mem32 {typ; _} | Mem64 {typ; _} | Mem64_RIP (typ, _, _) -> typ
+  | Mem {typ; _} | Mem64_RIP (typ, _, _) -> typ
   | Reg8L _ | Reg8H _ -> BYTE
   | Reg16 _ -> WORD
   | Reg32 _ -> DWORD
@@ -101,9 +105,9 @@ let i2_ss b s x y = bprintf b "\t%s%s%s\t%a, %a" s (suf x) (suf y) arg x arg y
 let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
   | Mem64_RIP _
-  | Mem32 {idx=_;   scale=0; base=None; sym=Some _; _} as x ->
+  | Mem {arch=X86; idx=_;   scale=0; base=None; sym=Some _; _} as x ->
       i1 b s x
-  | Reg32 _ | Reg64 _ | Mem32 _ | Mem64 _ as x -> bprintf b "\t%s\t*%a" s arg x
+  | Reg32 _ | Reg64 _ | Mem _ as x -> bprintf b "\t%s\t*%a" s arg x
   | Sym x -> bprintf b "\t%s\t%s" s x
   | _ -> assert false
 
@@ -141,7 +145,7 @@ let print_instr b = function
   | FDIVRP (arg1, arg2)  -> i2 b "fdivrp" arg1 arg2
   | FILD arg -> i1_s b "fild" arg
   | FISTP arg -> i1_s b "fistp" arg
-  | FLD (Mem32 {typ=REAL4; _} as arg ) -> i1 b "flds" arg
+  | FLD (Mem {typ=REAL4; _} as arg) -> i1 b "flds" arg
   | FLD arg -> i1 b "fldl" arg
   | FLD1 -> i0 b "fld1"
   | FLDCW arg -> i1 b "fldcw" arg
@@ -156,7 +160,7 @@ let print_instr b = function
   | FPTAN -> i0 b "fptan"
   | FSIN -> i0 b "fsin"
   | FSQRT -> i0 b "fsqrt"
-  | FSTP (Mem32 {typ=REAL4; _} as arg) -> i1 b "fstps" arg
+  | FSTP (Mem {typ=REAL4; _} as arg) -> i1 b "fstps" arg
   | FSTP arg -> i1 b "fstpl" arg
   | FSUB arg -> i1_s b "fsub" arg
   | FSUBP (Regf (ST 0), arg2)  -> i2 b "fsubrp" (Regf (ST 0)) arg2 (* bug *)

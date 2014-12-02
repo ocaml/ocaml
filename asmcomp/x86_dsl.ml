@@ -63,11 +63,11 @@ let st1 = Regf (ST 1)
 
 let mem32 typ ?(scale = 1) ?base ?sym displ idx =
   assert(scale >= 0);
-  Mem32 {typ; idx; scale; base; sym; displ}
+  Mem {arch = X86; typ; idx; scale; base; sym; displ}
 
-let mem64 typ ?(scale = 1) ?base ?sym offset idx =
+let mem64 typ ?(scale = 1) ?base ?sym displ idx =
   assert(scale > 0);
-  Mem64 {typ; idx; scale; base; sym; displ=offset}
+  Mem {arch = X64; typ; idx; scale; base; sym; displ}
 
 let mem64_rip typ ?(ofs = 0) s =
   Mem64_RIP (typ, s, ofs)
