@@ -142,7 +142,7 @@ let format_string (s:string) pff () =
 
 (* Helper function for printing a type *)
 let format_type ppf ty =
-  Format.fprintf ppf "@[[%a]@]" Printtyp.type_expr ty
+  Format.fprintf ppf "@[%a@]" Printtyp.type_expr ty
 
 (* Helper function for printing possibly-labelled type *)
 let format_labelled_type ppf (l,ty) =
@@ -150,7 +150,7 @@ let format_labelled_type ppf (l,ty) =
     format_type ppf ty 
   else 
     let lab = if is_optional l then l else ("~" ^ l) in
-    Format.fprintf ppf "@[%s[%a]@]" lab Printtyp.type_expr ty
+    Format.fprintf ppf "@[%s%a@]" lab Printtyp.type_expr ty
 
 (* Helper function for decomposing an arrow type; this function returns a pair,
    made of the list of types of the arguments, and the return type. *)
@@ -2338,7 +2338,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           let _ = unify_exp_types_easytype loc env ifso.exp_type ifnot.exp_type
              (fun ppf (m1,m2,m3,m4) ->
                 Format.fprintf ppf
-                  "@[<v>The then-branch has type %a @,but the else-branch has type @,%a. @,\
+                  "@[<v>The then-branch has type @.@[<b 2>  %a@]@.but the else-branch has type @.@[<b 2>  %a.@]@.\
                     @[%s@, %a @,%s@, %a.@,\
                     @]%a\
                     %a
@@ -3630,7 +3630,6 @@ and type_statement env sexp =
 and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
   fun ppf (m1,m2,m3,m4) ->
     let (m1,m2) = if swap then (m2,m1) else (m1,m2) in
-    (* Note: we might benefit from using "@;<1 2>", like in original error messages *)
     Format.fprintf ppf 
       "@[<v>\
         @[%a @,%a@ @,\
@@ -3640,10 +3639,22 @@ and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
        @]"
      msg1 () m1 () msg2 () m2 () m3 () m4 ()
 
+(* ARTHUR: deprecated
+    (* Note: we might benefit from using "@;<1 2>", like in original error messages *)
+    Format.fprintf ppf 
+      "@[<v>\
+        @[%a @,%a@ @,\
+          %a @,%a.\
+        @]%a@,\
+        %a
+       @]"
+     msg1 () m1 () msg2 () m2 () m3 () m4 ()
+     *)
+
 (* Derived helper functions for building error messages *)
 
 and easytype_report_but msg : easytype_reporter = 
-  easytype_report ~swap:true msg (fun pff () -> Format.fprintf pff "@,but it has type@,")
+  easytype_report ~swap:true msg (fun pff () -> Format.fprintf pff "but it has type")
 
 and easytype_report_so_but msg : easytype_reporter = 
   easytype_report_but (fun pff () -> Format.fprintf pff "%a,@, so it should have type@," msg ())
@@ -3698,11 +3709,11 @@ and type_statement_easytype env sexp report =
       match ltys with
       | [] -> None (* was not a function *)
       | [(l,ty)] when is_type_unit ty -> 
-          Some "You probably forgot to provide `()' as argument."
+          Some "You probably forgot to provide `()' as argument to the function."
       | [(l,ty)] -> 
-          Some "You probably forgot to provide an argument." 
+          Some "You probably forgot to provide an argument to the function." 
       | _ -> 
-          Some "You probably forgot to provide several arguments." 
+          Some "You probably forgot to provide several arguments to the function." 
     end
     in
   let expected_ty = instance_def Predef.type_unit in
@@ -4201,8 +4212,8 @@ let rec report_error env ppf = function
         let msg2 = "but an expression was expected of type" in
         Format.fprintf ppf
           "@[<v>\
-            @[%s@;<1 2>%a@ \
-              %s@;<1 2>%a.\
+             @[%s@;<1 2>%a@ \
+             %s@;<1 2>%a.\
             @]%a \
             %a \
            @]"
@@ -4314,7 +4325,7 @@ let rec report_error env ppf = function
         (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
            fprintf ppf
-             "This expression cannot be coerced to type@;<1 2>[%a];@ it has type"
+             "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type");
