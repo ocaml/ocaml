@@ -2053,7 +2053,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                 let show_type_list ltys =
                   format_fprintf_list ppf (fun ppf -> Format.fprintf ppf "@, and ") format_labelled_type ltys in
                 if expected_ltys = [] then begin
-                  Format.fprintf ppf "@[The expression%a has type %a.@.It is not a function" show_func_name ()  format_type funct_sch;
+                  Format.fprintf ppf "@[The expression%a has type %a. It is not a function" show_func_name ()  format_type funct_sch;
                 end else begin
                   Format.fprintf ppf "@[The function%a expects argument%s of type%s @," show_func_name () (format_plural expected_ltys) (format_plural expected_ltys);
                   show_type_list expected_ltys;
@@ -2338,17 +2338,16 @@ and type_expect_ ?in_function env sexp ty_expected =
           let _ = unify_exp_types_easytype loc env ifso.exp_type ifnot.exp_type
              (fun ppf (m1,m2,m3,m4) ->
                 Format.fprintf ppf
-                  "@[<v>The then-branch has type @.@[<b 2>  %a@]@.but the else-branch has type @.@[<b 2>  %a.@]@.\
+                  "The then-branch has type @\n@[<b 2>   %a@]@\nbut the else-branch has type @\n@[<b 2>   %a.@]@\n\
                     %a\
-                    %a
-                   @]"
+                    %a"
                  format_type schso 
                  format_type schnot
                  m3 () m4 ())
                 (* Note: full message:
                 Format.fprintf ppf
-                  "@[<v>The then-branch has type @.@[<b 2>  %a@]@.but the else-branch has type @.@[<b 2>  %a.@]@.@.\
-                    @[%s@.@[<b 2>  %a@]@.%s@.@[<b 2>  %a.@]@.\
+                  "@[<v>The then-branch has type @\n@[<b 2>   %a@]@\nbut the else-branch has type @.@[<b 2>  %a.@]@\n@\n\
+                    @[%s@\n@[<b 2>   %a@]@\n%s@\n@[<b 2>    %a.@]@\n\
                     @]%a\
                     %a
                    @]"
@@ -3641,11 +3640,17 @@ and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
   fun ppf (m1,m2,m3,m4) ->
     let (m1,m2) = if swap then (m2,m1) else (m1,m2) in
     Format.fprintf ppf 
-      "%a@.@[<b 2>  %a@]@.\
-       %a@.@[<b 2>  %a.@]@.\
+      "%a@\n@[<b 2>   %a@]@\n\
+       %a@\n@[<b 2>   %a.@]@\n\
        %a\
        %a"
      msg1 () m1 () msg2 () m2 () m3 () m4 ()
+  (* Note: with boxes:
+      "@[<v>%a@\n@[<b 2>   %a@]@\n\
+       %a@\n@[<b 2>   %a.@]@]@\n\
+       %a\
+       %a"
+  *)
 
 (* Derived helper functions for building error messages *)
 
@@ -3717,7 +3722,7 @@ and type_statement_easytype env sexp report =
     (fun ppf (m1,m2,m3,m4) -> report ppf (m1,m2,m3,
       fun ppf () -> match msg_add with 
         | Some m -> 
-            Format.fprintf ppf "@.%s" m; 
+            Format.fprintf ppf "@\n%s" m; 
             Printtyp.swap_position_of_error_messages := true
         | None -> m4 ppf ()))
 

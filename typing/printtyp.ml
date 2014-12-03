@@ -1475,11 +1475,10 @@ let unification_error unif tr txt1 ppf txt2 =
             @]%a%t\
            @]"
          else 
-            Format.fprintf ppf "@[<v>\
-              @[%t@.@[<b 2>  %a@]@.\
-                %t@.@[<b 2>  %a.@]@.\
-              @]%a%t\
-             @]"
+            Format.fprintf ppf 
+             "@[%t@\n@[<b 2>   %a@]@\n\
+             %t@\n@[<b 2>   %a.@]@\n\
+             @]%a%t"
          in
        show
         txt1 (type_expansion t1) t1'
