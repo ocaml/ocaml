@@ -72,3 +72,8 @@ Open questions:
 - If a file contains only the code "print_newline", without parentheses,
   should this file compile or not in mode "strict-sequence"?
 
+- Remark: there is an unfortunate duplication between "has_explanation" and
+  "explanation". I suggest using only "explaination", and have it return a
+  value of type "(unit -> unit) option", where the Some case carries the
+  message pretty-printing operation.
+

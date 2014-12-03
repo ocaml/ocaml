@@ -1307,11 +1307,6 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
-(* Remark: there is an unfortunate duplication between "has_explanation" and
-   "explanation". I suggest using only "explaination", and have it return a
-   value of type "(unit -> unit) option", where the Some case carries the
-   message pretty-printing operation. *)
-
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
   (* special case handled specially by new_type_errors *)
@@ -1453,7 +1448,6 @@ let rec trace_same_names = function
   | _ -> ()
 
 let unification_error unif tr txt1 ppf txt2 =
-  (* Warning: some of the lines below are duplicated in "get_unification_error_easytype" *)
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in

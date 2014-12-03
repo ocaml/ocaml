@@ -14,5 +14,3 @@ BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.okbad
 include $(BASEDIR)/makefiles/Makefile.common
 COMPFLAGS = -strict-sequence
-
-# ARTHUR: several tests are reporting "pass", although they sould fail. Why?

@@ -149,7 +149,7 @@ let format_labelled_type ppf (l,ty) =
   if l = "" then 
     format_type ppf ty 
   else 
-    let lab = if is_optional l then l else ("~" ^ l) in
+    let lab = (if is_optional l then "" else "~") ^ l ^ " : " in
     Format.fprintf ppf "@[%s%a@]" lab Printtyp.type_expr ty
 
 (* Helper function for decomposing an arrow type; this function returns a pair,
@@ -162,6 +162,74 @@ let decompose_function_type env ty =
     in
   aux [] ty
 
+(* Break a string into multiple lines of fixed width, 
+   and indent lines after the first one. Returns a 
+   list of strings. *)
+let string_break_into_lines col_width col_indent str = 
+  assert (col_width - col_indent > 0);
+  let len = String.length str in
+  let tab = String.make col_indent ' ' in
+  let rec aux acc n =
+    if n >= len then List.rev acc else begin
+      let first = (acc = []) in 
+      let w = if first then col_width else col_width - col_indent in
+      let s =
+        if n + w >= len 
+          then String.sub str n (len-n)
+          else String.sub str n w
+        in
+      let s = if first then s else tab ^ s in
+      aux (s::acc) (n+w)
+      end
+    in
+  aux [] 0
+
+(* Helper function for reporting application errors *)
+let message_for_application_error_easytype expected provided =
+  let nb1 = List.length expected in
+  let nb2 = List.length provided in
+  let nb = max nb1 nb2 in
+  let col0_width = if nb >= 100 then 3 else 2 in
+  let coli_width = 35 in
+  let col_indent = 3 in
+  let b = Buffer.create 100 in
+  let add s = Buffer.add_string b s in
+  let spaces_complete len width =
+    if len <= width then String.make (width - len) ' ' else "" in
+  let print_row t1 t2 t3 =
+    add (spaces_complete (String.length t1) col0_width);
+    add t1;
+    add " | ";
+    add t2;
+    add (spaces_complete (String.length t2) coli_width);
+    add " | ";
+    add t3;
+    add "\n";
+    in
+  print_row "" "Types expected:" "Types provided:";
+  add (String.make (col0_width+1) '-');
+  add "|";
+  add (String.make (coli_width+2) '-');
+  add "|";
+  add (String.make (coli_width+1) '-');
+  add "\n";
+  for row = 0 to nb-1 do
+    let s0f = string_of_int (row + 1) in
+    let s1str = if row < nb1 then List.nth expected row else "___" in
+    let s2str = if row < nb2 then List.nth provided row else "___" in
+    let s1s = string_break_into_lines coli_width col_indent s1str in
+    let s2s = string_break_into_lines coli_width col_indent s2str in
+    let n1 = List.length s1s in
+    let n2 = List.length s2s in
+    let n = max n1 n2 in
+    for line = 0 to n-1 do
+      let t0 = if line = 0 then s0f else "" in
+      let t1 = if line < n1 then List.nth s1s line else "" in
+      let t2 = if line < n2 then List.nth s2s line else "" in
+      print_row t0 t1 t2;
+    done;
+  done;
+  Buffer.contents b
 
 let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
@@ -2052,15 +2120,36 @@ and type_expect_ ?in_function env sexp ty_expected =
                   in
                 let show_type_list ltys =
                   format_fprintf_list ppf (fun ppf -> Format.fprintf ppf "@, and ") format_labelled_type ltys in
+                let string_of_type lty =
+                  let b = Buffer.create 32 in
+                  let sppf = Format.formatter_of_buffer b in
+                  format_labelled_type sppf lty;
+                  Format.pp_print_flush sppf ();
+                  Buffer.contents b 
+                  in
+                let strings_of_type_list ltys =
+                  List.map string_of_type ltys 
+                  in
                 if expected_ltys = [] then begin
-                  Format.fprintf ppf "@[The expression%a has type %a. It is not a function" show_func_name ()  format_type funct_sch;
+                  Format.fprintf ppf "@[The expression%a has type %a. It is not a function, but it is given argument%s of type%s" show_func_name () format_type funct_sch (format_plural provided_ltys) (format_plural provided_ltys);
+                  show_type_list provided_ltys;
+                  Format.fprintf ppf ".@]@\n";
                 end else begin
-                  Format.fprintf ppf "@[The function%a expects argument%s of type%s @," show_func_name () (format_plural expected_ltys) (format_plural expected_ltys);
-                  show_type_list expected_ltys;
+                  if List.length provided_ltys > List.length expected_ltys then begin
+                    Format.fprintf ppf "@[The function%a is applied to too many arguments.@]" show_func_name ();
+                  end else begin
+                    Format.fprintf ppf "@[The function%a is applied to arguments not of the expected types.@]" show_func_name ();
+                  end;
+                  Format.fprintf ppf "@.@.%s" (message_for_application_error_easytype (strings_of_type_list expected_ltys) (strings_of_type_list provided_ltys));
+
+
+                  (* Note: classic inline version
+                    Format.fprintf ppf "@[The function%a expects argument%s of type%s @," show_func_name () (format_plural expected_ltys) (format_plural expected_ltys);
+                    show_type_list expected_ltys;
+                    Format.fprintf ppf ", @,but it is given argument%s of type%s @," (format_plural provided_ltys) (format_plural provided_ltys);
+                    show_type_list provided_ltys;
+                    Format.fprintf ppf ".@]@."; *)
                 end;
-                Format.fprintf ppf ", @,but it is given argument%s of type%s @," (format_plural provided_ltys) (format_plural provided_ltys);
-                show_type_list provided_ltys;
-                Format.fprintf ppf ".@.@]";
                 in
               raise (Error ((*loc*) funct.exp_loc, env, Apply_error_easytype (explain, loc', err')))
             end in
@@ -3378,7 +3467,7 @@ and type_application_easytype env funct sargs (targs:expression list) =
            (List.rev args),
          instance env (result_type omitted ty_fun))
     | (l1, sarg1) :: sargl ->
-        let (targ1_opt,targl) = uncons_opt targs in
+        let (targ1_opt,targl) = uncons_as_option targs in
         let (ty1, ty2) =
           let ty_fun = expand_head env ty_fun in
           match ty_fun.desc with
@@ -3461,7 +3550,7 @@ and type_application_easytype env funct sargs (targs:expression list) =
                 raise(Error(sarg0.pexp_loc, env,
                             Apply_wrong_label(l', ty_old)))
             | _, (l', sarg0) :: more_sargs ->
-                let (targ0_opt, more_targs) = uncons_opt more_targs in
+                let (targ0_opt, more_targs) = uncons_as_option more_targs in
                 if l <> l' && l' <> "" then
                   raise(Error(sarg0.pexp_loc, env,
                               Apply_wrong_label(l', ty_fun')))
@@ -3474,14 +3563,14 @@ and type_application_easytype env funct sargs (targs:expression list) =
             try
             let (l', sarg0, targ0_opt, sargs, (targs:expression list), more_sargs, (more_targs:expression list)) =
               try
-                let (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2) = extract_label_easytype name sargs targs in
+                let (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2) = extract_label_and_expr name sargs targs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
                     (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, targ0_opt, sargs1 @ sargs2, targs1 @ targs2, more_sargs, more_targs)
               with Not_found ->
                 let (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2) =
-                   extract_label_easytype name more_sargs more_targs in
+                   extract_label_and_expr name more_sargs more_targs in
                 if sargs1 <> [] || sargs <> [] then
                   may_warn sarg0.pexp_loc
                     (Warnings.Not_principal "commuting this argument");

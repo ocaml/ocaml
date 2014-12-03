@@ -565,11 +565,11 @@ let rec extract_label_aux hd l = function
 let extract_label l ls = extract_label_aux [] l ls
 
 
-let uncons_opt = function
+let uncons_as_option = function
    | [] -> (None, [])
    | x::l -> (Some x,l)
 
-(* [extract_label_easytype] returns a tuple of the form  
+(* [extract_label_and_expr] returns a tuple of the form  
    (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2).
    If the argument [tys] is the empty list, then [targ0_opt] is None,
    and [targs1] and [targs2] are the empty list as well.
@@ -577,20 +577,21 @@ let uncons_opt = function
    will contain the typed expression associated with [sarg0],
    and similarly [targs1] and [targs2] match [sargs1] and [sargs2]. *)
 
-let rec extract_label_aux_easytype hd hd_tys l ls tys =
+let rec extract_label_and_expr_aux hd hd_tys l ls tys =
   match ls with
     [] -> raise Not_found
   | (l',t as p) :: ls ->
-      let (ty_opt,tys) = uncons_opt tys in
+      let (ty_opt,tys) = uncons_as_option tys in
       if label_name l' = l then (l', t, ty_opt, List.rev hd, List.rev hd_tys, ls, tys)
       else 
          let hd_tys' = match ty_opt with  
             | None -> hd_tys (* which is equal to [] *)
             | Some ty -> ty::hd_tys
             in
-         extract_label_aux_easytype (p::hd) hd_tys' l ls tys
+         extract_label_and_expr_aux (p::hd) hd_tys' l ls tys
 
-let extract_label_easytype l ls tys = extract_label_aux_easytype [] [] l ls tys
+let extract_label_and_expr l ls tys = 
+  extract_label_and_expr_aux [] [] l ls tys
 
 
                   (**********************************)
