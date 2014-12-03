@@ -138,7 +138,7 @@ let format_plural ls =
 
 (* Helper function for printing a constant string *)
 let format_string (s:string) pff () =
-  Format.fprintf pff "@,%s@," s
+  Format.fprintf pff "%s" s
 
 (* Helper function for printing a type *)
 let format_type ppf ty =
@@ -2053,7 +2053,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                 let show_type_list ltys =
                   format_fprintf_list ppf (fun ppf -> Format.fprintf ppf "@, and ") format_labelled_type ltys in
                 if expected_ltys = [] then begin
-                  Format.fprintf ppf "@[The expression%a has type %a.@, It is not a function" show_func_name ()  format_type funct_sch;
+                  Format.fprintf ppf "@[The expression%a has type %a.@.It is not a function" show_func_name ()  format_type funct_sch;
                 end else begin
                   Format.fprintf ppf "@[The function%a expects argument%s of type%s @," show_func_name () (format_plural expected_ltys) (format_plural expected_ltys);
                   show_type_list expected_ltys;
@@ -2339,16 +2339,26 @@ and type_expect_ ?in_function env sexp ty_expected =
              (fun ppf (m1,m2,m3,m4) ->
                 Format.fprintf ppf
                   "@[<v>The then-branch has type @.@[<b 2>  %a@]@.but the else-branch has type @.@[<b 2>  %a.@]@.\
-                    @[%s@, %a @,%s@, %a.@,\
+                    %a\
+                    %a
+                   @]"
+                 format_type schso 
+                 format_type schnot
+                 m3 () m4 ())
+                (* Note: full message:
+                Format.fprintf ppf
+                  "@[<v>The then-branch has type @.@[<b 2>  %a@]@.but the else-branch has type @.@[<b 2>  %a.@]@.@.\
+                    @[%s@.@[<b 2>  %a@]@.%s@.@[<b 2>  %a.@]@.\
                     @]%a\
                     %a
                    @]"
                  format_type schso 
                  format_type schnot
                  "Cannot unify type" m1 () "with type" m2 () m3 () m4 ())
+                 *)
             in
           let _ = unify_exp_easytype env ifso ty_expected  
-            (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "@,The branches of the conditional are required@, by the context@, to have type@,") (format_string "but they have type")) in
+            (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "The branches of the conditional are required by the context to have type") (format_string "but they have type")) in
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = loc; exp_extra = [];
@@ -3631,25 +3641,11 @@ and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
   fun ppf (m1,m2,m3,m4) ->
     let (m1,m2) = if swap then (m2,m1) else (m1,m2) in
     Format.fprintf ppf 
-      "@[<v>\
-        @[%a @,%a@ @,\
-          %a @,%a.\
-        @]%a@,\
-        %a
-       @]"
+      "%a@.@[<b 2>  %a@]@.\
+       %a@.@[<b 2>  %a.@]@.\
+       %a\
+       %a"
      msg1 () m1 () msg2 () m2 () m3 () m4 ()
-
-(* ARTHUR: deprecated
-    (* Note: we might benefit from using "@;<1 2>", like in original error messages *)
-    Format.fprintf ppf 
-      "@[<v>\
-        @[%a @,%a@ @,\
-          %a @,%a.\
-        @]%a@,\
-        %a
-       @]"
-     msg1 () m1 () msg2 () m2 () m3 () m4 ()
-     *)
 
 (* Derived helper functions for building error messages *)
 
@@ -3657,7 +3653,7 @@ and easytype_report_but msg : easytype_reporter =
   easytype_report ~swap:true msg (fun pff () -> Format.fprintf pff "but it has type")
 
 and easytype_report_so_but msg : easytype_reporter = 
-  easytype_report_but (fun pff () -> Format.fprintf pff "%a,@, so it should have type@," msg ())
+  easytype_report_but (fun pff () -> Format.fprintf pff "%a, so it should have type" msg ())
 
 and easytype_report_so_but_string s : easytype_reporter = 
   easytype_report_so_but (format_string s)
@@ -3684,7 +3680,7 @@ and type_cases_easify ?in_function env ty_arg ty_res partial_flag loc caselist =
     let ty = newvar() in
     let cases, partial = type_cases ?in_function env ty ty_res partial_flag loc caselist in
     unify_exp_types_easytype loc env ty ty_arg
-        (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "@,The argument of the pattern matching has type@,") (format_string "but the patterns have type"));
+        (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "The argument of the pattern matching has type") (format_string "but the patterns have type"));
     (cases, partial)   
   end else begin
     type_cases ?in_function env ty_arg ty_res partial_flag loc caselist

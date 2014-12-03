@@ -19,6 +19,8 @@ Overview:
       triggered the error using a new algorithm, that may (or may not)
       produce improved error messages.
 
+- Types in error messages are separated from the text by new lines.
+
 Implementation notes:
 
 - CType.new_type_errors is a reference used to know whether we have already
