@@ -73,8 +73,6 @@ type error =
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of expr_pairs
-  | Expr_type_clash_easytype of easytype_reporter * expr_pairs
-  | Apply_error_easytype of (Format.formatter -> unit) * Location.t * error
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of string
@@ -113,6 +111,8 @@ type error =
   | Invalid_for_loop_index
   | No_value_clauses
   | Exception_pattern_below_toplevel
+  | Expr_type_clash_easytype of easytype_reporter * expr_pairs
+  | Apply_error_easytype of (Format.formatter -> unit) * Location.t * error
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

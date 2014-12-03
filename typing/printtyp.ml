@@ -1312,7 +1312,7 @@ let has_explanation unif t3 t4 =
   (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
      when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
-       !new_type_errors_activated && 
+       (* !use_new_type_errors && *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
      -> swap_position_of_error_messages := true;
         true
@@ -1321,7 +1321,7 @@ let has_explanation unif t3 t4 =
      (* note: we could restrict the application of this pattern to the case 
         where ty1 and ty2 can be unified; however, this would need to be tested
         without actually performing any side-effects on the two types. *)
-     when !new_type_errors_activated && 
+     when (* !use_new_type_errors && *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
      -> swap_position_of_error_messages := true; 
@@ -1345,15 +1345,13 @@ let rec mismatch unif = function
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
-  (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when !new_type_errors_activated && 
+     when (* !use_new_type_errors && *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot to provide `()' as argument somewhere.@]"
-  (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when !new_type_errors_activated && 
+     when (* !use_new_type_errors && *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
@@ -1462,13 +1460,14 @@ let unification_error unif tr txt1 ppf txt2 =
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
       let show = 
-        if not !new_type_errors_activated then 
+        if not !use_new_type_errors then 
             Format.fprintf ppf "@[<v>\
             @[%t@;<1 2>%a@ \
               %t@;<1 2>%a.\
             @]%a%t\
            @]"
          else 
+            (* Uses newlines to isolate types from the text *)
             Format.fprintf ppf 
              "@[%t@\n@[<b 2>   %a@]@\n\
              %t@\n@[<b 2>   %a.@]@\n\
@@ -1488,12 +1487,14 @@ let report_unification_error ppf env ?(unif=true)
     tr txt1 txt2 =
   wrap_printing_env env (fun () -> unification_error unif tr txt1 ppf txt2)
 
+(* begin easytype *)
+
 type easytype_piece = formatter -> unit -> unit
 type easytype_pieces = (easytype_piece * easytype_piece * easytype_piece * easytype_piece)
 
 let get_unification_error_easytype env ?(unif=true) tr =
-  (* Remark: a few lines from "get_unification_error_easytype" have been copied 
-     from the functions "unification_error" and "report_unification_error". *)
+  (* Remark: some of the code below has been copied from the 
+     functions "unification_error" and "report_unification_error". *)
   wrap_printing_env env (fun () ->
     reset ();
     trace_same_names tr;
@@ -1518,6 +1519,8 @@ let get_unification_error_easytype env ?(unif=true) tr =
         print_labels := true;
         raise exn
   )
+
+(* end easytype *)
 
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;

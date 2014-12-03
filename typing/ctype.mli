@@ -15,7 +15,7 @@
 open Asttypes
 open Types
 
-val new_type_errors_activated : bool ref
+val use_new_type_errors : bool ref
 
 exception Unify of expr_pairs
 exception Tags of label * label
