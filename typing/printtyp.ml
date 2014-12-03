@@ -22,9 +22,6 @@ open Types
 open Btype
 open Outcometree
 
-let swap_position_of_error_messages =
-  ref false
-
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -1312,20 +1309,18 @@ let has_explanation unif t3 t4 =
   (* special case handled specially by new_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
      when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
-       (* !use_new_type_errors && *)
+       (* !use_new_type_errors && *) (* Note: activated by default *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
-     -> swap_position_of_error_messages := true;
-        true
+     -> true
   (* special case handled specially by new_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
      (* note: we could restrict the application of this pattern to the case 
         where ty1 and ty2 can be unified; however, this would need to be tested
         without actually performing any side-effects on the two types. *)
-     when (* !use_new_type_errors && *)
+     when (* !use_new_type_errors && *) (* Note: activated by default *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
-     -> swap_position_of_error_messages := true; 
-        true
+     -> true
   | Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
   | Tnil, Tconstr _ | Tconstr _, Tnil
   | _, Tvar _ | Tvar _, _
@@ -1346,12 +1341,12 @@ let rec mismatch unif = function
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when (* !use_new_type_errors && *)
+     when (* !use_new_type_errors && *) (* Note: activated by default *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot to provide `()' as argument somewhere.@]"
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when (* !use_new_type_errors && *)
+     when (* !use_new_type_errors && *) (* Note: activated by default *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
@@ -1469,9 +1464,9 @@ let unification_error unif tr txt1 ppf txt2 =
          else 
             (* Uses newlines to isolate types from the text *)
             Format.fprintf ppf 
-             "@[%t@\n@[<b 2>   %a@]@\n\
+             "%t@\n@[<b 2>   %a@]@\n\
              %t@\n@[<b 2>   %a.@]@\n\
-             @]%a%t"
+             %a%t"
          in
        show
         txt1 (type_expansion t1) t1'

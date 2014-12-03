@@ -17,7 +17,6 @@ open Asttypes
 open Types
 open Btype
 
-
 (*
    Type manipulation after type inference
    ======================================

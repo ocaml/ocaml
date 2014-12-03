@@ -555,7 +555,6 @@ let label_name l =
 let prefixed_label_name l =
   if is_optional l then l else "~" ^ l
 
-
 let rec extract_label_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->
@@ -564,6 +563,7 @@ let rec extract_label_aux hd l = function
 
 let extract_label l ls = extract_label_aux [] l ls
 
+(* begin easytype *)
 
 let uncons_as_option = function
    | [] -> (None, [])
@@ -593,6 +593,7 @@ let rec extract_label_and_expr_aux hd hd_tys l ls tys =
 let extract_label_and_expr l ls tys = 
   extract_label_and_expr_aux [] [] l ls tys
 
+(* end easytype *)
 
                   (**********************************)
                   (*  Utilities for backtracking    *)

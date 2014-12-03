@@ -127,7 +127,6 @@ let ghost_ident_easytype id =
 (* Add pattern variables as ghost bindings, i.e., bindings that may be
    used for the error message "you are probably missing the rec keyword". *)
 let add_pattern_variables_ghost_easytype loc_let ?check ?check_as env pv =
-  (* Note: shares code with add_pattern_variables_general *)
   (* Note: the arguments ?check ?check_as might not be needed *)
   List.fold_right
      (fun (id, ty, name, loc, as_var) env ->
@@ -738,7 +737,7 @@ let rec expand_path env p =
 let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
-(* Format *)
+(* Factorized test for format detection *)
 
 let fmt6_path =
   Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"), "format6", 0)) 
@@ -1923,7 +1922,7 @@ and type_expect ?in_function env sexp ty_expected =
 
 and type_expect_ ?in_function env sexp ty_expected =
   let loc = sexp.pexp_loc in
-  (* Record this expression type before unifying it with the expected type *)
+  (* Record the expression type before unifying it with the expected type *)
   let rue exp =
     unify_exp env (re exp) (instance env ty_expected);
     exp
@@ -1965,7 +1964,7 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_env = env }
         (* end part 4 *)
      end else begin
-        (* ARTHUR: code below will currently fail to report appropriate errors on code that involves GADTs *)
+        (* Note: code below will currently fail to report appropriate errors on code that involves GADTs *)
         let funct = { funct with exp_type = ty } in
         wrap_trace_gadt_instances env (lower_args env []) ty;
         let save_arg_type (l,arg) =
@@ -2012,7 +2011,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                 if List.length provided_ltys > List.length expected_ltys then begin
                   Format.fprintf ppf "@[The function%a is applied to too many arguments.@]" show_func_name ();
                 end else begin
-                  Format.fprintf ppf "@[The function%a is applied to arguments not of the expected types.@]" show_func_name ();
+                  Format.fprintf ppf "@[The function%a is applied to arguments with inappropriate types.@]" show_func_name ();
                 end;
                 Format.fprintf ppf "@.@.%s" (message_for_application_error_easytype (strings_of_type_list expected_ltys) (strings_of_type_list provided_ltys));
                 (* Note: classic inline version
@@ -3855,8 +3854,8 @@ and type_statement_easytype env sexp report =
     (fun ppf (m1,m2,m3,m4) -> report ppf (m1,m2,m3,
       fun ppf () -> match msg_add with 
         | Some m -> 
-            Format.fprintf ppf "@\n%s" m; 
-            Printtyp.swap_position_of_error_messages := true
+            (* Note: maybe we also print m4 here? *)
+            Format.fprintf ppf "@\n%s" m 
         | None -> m4 ppf ()))
 
 (* note: should call type_expect_easify with a ty_expected
@@ -4508,30 +4507,7 @@ let rec report_error env ppf = function
       let ms = get_unification_error_easytype env trace in
       report ppf ms
   | Apply_error_easytype (explain, loc, Expr_type_clash trace) ->
-      let (m1,m2,m3,m4) = get_unification_error_easytype env trace in
-      explain ppf;
-      let (m4a_call,m4b) = 
-        if !Printtyp.swap_position_of_error_messages 
-          then ((fun () -> fprintf ppf "%a@." m4 ()), format_string "")
-          else ((fun () -> ()), m4)
-        in
-      m4a_call();
-      (* Note: activate the code below to include the old type error 
-         in addition to the new one *)
-      if false then begin 
-        Format.fprintf ppf "----@.";
-        Location.print_error ppf loc;
-        let msg1 = "This expression has type" in
-        let msg2 = "but an expression was expected of type" in
-        Format.fprintf ppf
-          "@[<v>\
-             @[%s@;<1 2>%a@ \
-             %s@;<1 2>%a.\
-            @]%a \
-            %a \
-           @]"
-         msg1 m1 () msg2 m2 () m3 () m4b ()
-      end
+      explain ppf
   | Apply_error_easytype (explain, loc, Apply_non_function typ) ->
       explain ppf;
       (* Note: some copy-paste from code further below *)
@@ -4566,4 +4542,3 @@ let () =
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check
-

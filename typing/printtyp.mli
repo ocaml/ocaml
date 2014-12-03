@@ -89,6 +89,3 @@ val report_ambiguous_type_error:
 (* for toploop *)
 val hide_rec_items: signature_item list -> unit
 
-val swap_position_of_error_messages : bool ref
-
-
