@@ -678,13 +678,6 @@ str_sig_item:
         | Str l -> mkstr(Pstr_class (List.rev l))
         | Sig l -> mkstr(Psig_class (List.rev l))
       }
-  | item_extension post_item_attributes
-      { mkstr(Pstr_extension ($1, $2)) }
-  | floating_attribute
-      { mkstr(Pstr_attribute $1) }
-;
-structure_item:
-    str_sig_item { $1 }
   | LET ext_attributes rec_flag let_bindings
       {
         match $4 with
@@ -700,6 +693,13 @@ structure_item:
             | None -> str
             | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
+  | item_extension post_item_attributes
+      { mkstr(Pstr_extension ($1, $2)) }
+  | floating_attribute
+      { mkstr(Pstr_attribute $1) }
+;
+structure_item:
+    str_sig_item { $1 }
   | INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
 ;
