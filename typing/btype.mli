@@ -177,7 +177,9 @@ val extract_label :
 val uncons_as_option: 'a list -> 'a option * 'a list
 val extract_label_and_expr :
     label -> (label * 'a) list -> Typedtree.expression list ->
-    label * 'a * Typedtree.expression option * (label * 'a) list * Typedtree.expression list * (label * 'a) list * Typedtree.expression list
+      label * 'a * Typedtree.expression option 
+    * (label * 'a) list * Typedtree.expression list 
+    * (label * 'a) list * Typedtree.expression list
 (* end easytype *)
 
 (**** Utilities for backtracking ****)

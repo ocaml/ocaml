@@ -99,7 +99,8 @@ let () =
       | _ -> None
     )
 
-exception Subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
+exception Subtype of 
+        (type_expr * type_expr) list * (type_expr * type_expr) list
 
 exception Cannot_expand
 

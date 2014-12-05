@@ -2,7 +2,7 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
+#                 Arthur Chargueraud, INRIA                             #
 #                                                                       #
 #   Copyright 2010 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -13,4 +13,4 @@
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.okbad
 include $(BASEDIR)/makefiles/Makefile.common
-COMPFLAGS = -strict-sequence
+# COMPFLAGS = -new-type-errors

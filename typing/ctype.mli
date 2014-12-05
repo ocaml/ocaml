@@ -19,7 +19,8 @@ val use_new_type_errors : bool ref
 
 exception Unify of (type_expr * type_expr) list
 exception Tags of label * label
-exception Subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
+exception Subtype of 
+        (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev

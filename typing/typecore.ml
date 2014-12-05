@@ -181,8 +181,7 @@ let format_labelled_type ppf (l,ty) =
   if l = "" then 
     format_type ppf ty 
   else 
-    let lab = (if is_optional l then "" else "~") ^ l ^ " : " in
-    Format.fprintf ppf "@[%s%a@]" lab Printtyp.type_expr ty
+    Format.fprintf ppf "@[%s%s : %a@]" (if is_optional l then "" else "~") l Printtyp.type_expr ty
 
 (* Helper function for decomposing an arrow type; this function returns a pair,
    made of the list of types of the arguments, and the return type. *)
@@ -193,28 +192,6 @@ let decompose_function_type env ty =
     | _ -> (List.rev acc, ty)
     in
   aux [] ty
-
-(* Helper function to break a string into multiple lines of 
-   fixed width, and indent lines after the first one. 
-   The function returns a list of strings. *)
-let string_break_into_lines col_width col_indent str = 
-  assert (col_width - col_indent > 0);
-  let len = String.length str in
-  let tab = String.make col_indent ' ' in
-  let rec aux acc n =
-    if n >= len then List.rev acc else begin
-      let first = (acc = []) in 
-      let w = if first then col_width else col_width - col_indent in
-      let s =
-        if n + w >= len 
-          then String.sub str n (len-n)
-          else String.sub str n w
-        in
-      let s = if first then s else tab ^ s in
-      aux (s::acc) (n+w)
-      end
-    in
-  aux [] 0
 
 (* Helper function for reporting application errors *)
 let message_for_application_error_easytype expected provided =
@@ -249,8 +226,8 @@ let message_for_application_error_easytype expected provided =
     let s0f = string_of_int (row + 1) in
     let s1str = if row < nb1 then List.nth expected row else "___" in
     let s2str = if row < nb2 then List.nth provided row else "___" in
-    let s1s = string_break_into_lines coli_width col_indent s1str in
-    let s2s = string_break_into_lines coli_width col_indent s2str in
+    let s1s = Printtyp.string_break_into_lines coli_width col_indent s1str in
+    let s2s = Printtyp.string_break_into_lines coli_width col_indent s2str in
     let n1 = List.length s1s in
     let n2 = List.length s2s in
     let n = max n1 n2 in
@@ -2218,7 +2195,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         l [{pc_lhs=spat; pc_guard=None; pc_rhs=sexp}]
   | Pexp_function caselist ->
       type_function ?in_function
-        loc sexp.pexp_attributes env ty_expected "" caselist 
+        loc sexp.pexp_attributes env ty_expected "" caselist
   | Pexp_apply(sfunct, sargs) ->
       (* part 1 *)
       if sargs = [] then
@@ -2246,7 +2223,6 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = ty_res;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-
   | Pexp_match(sarg, caselist) ->
       begin_def ();
       let arg = type_exp env sarg in
@@ -3988,6 +3964,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             end
             else if contains_gadt env pc_lhs then correct_levels ty_res
             else ty_res in
+            (* The comment below is leftover from someone else; please fix it. *)
   (*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
             Printtyp.raw_type_expr ty_res'; *)
           let guard =
@@ -4046,7 +4023,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   in
   if !Clflags.principal || has_gadts then begin
     let ty_res' = instance env ty_res in
-    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases 
+    List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
   let partial =
     if partial_flag then
@@ -4104,7 +4081,6 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let (pat_list, new_env, force, unpacks, pv) =
     type_pattern_list env spatl scope nvs allow in
   let is_recursive = (rec_flag = Recursive) in
-
   (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
     List.iter2
