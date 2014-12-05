@@ -316,6 +316,39 @@ let map_ext fn exts rem =
   | [] -> rem
   | d1 :: dl -> fn Text_first d1 :: map_end (fn Text_next) dl rem
 
+
+(* Helper for module aliases.
+   Note:  we should drop Pmty_alias from the Parsetree and treat
+   aliases directly as Pstr_module items in signatures. *)
+
+let pmd_of_pmb env
+    {pmb_name; pmb_expr = {
+         pmod_desc = desc;
+         pmod_loc;
+         pmod_attributes;
+       };
+     pmb_attributes; pmb_loc} =
+  match desc with
+  | Pmod_ident lid ->
+      {
+        pmd_name = pmb_name;
+        pmd_type = {
+          pmty_desc = Pmty_alias lid;
+          pmty_loc = pmod_loc;
+          pmty_attributes = pmod_attributes;
+        };
+        pmd_attributes = pmb_attributes;
+        pmd_loc = pmb_loc;
+      }
+  | _ ->
+      raise (Error (pmb_loc, env, Invalid_item_in_signature))
+
+let norm_sig_item env = function
+  | {pstr_desc = Pstr_module pmb} as item ->
+      {item with pstr_desc = Psig_module (pmd_of_pmb env pmb)}
+  | item ->
+      item
+
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
    type AST.  Retain only module, type, and module type
@@ -357,6 +390,7 @@ and approx_sig env ssg =
   match ssg with
     [] -> []
   | item :: srem ->
+      let item = norm_sig_item env item in
       match item.pstr_desc with
       | Pstr_type (rec_flag, sdecls) ->
           let decls = Typedecl.approx_type_decl env sdecls in
@@ -573,6 +607,7 @@ and transl_signature env sg =
     match sg with
       [] -> [], [], env
     | item :: srem ->
+        let item = norm_sig_item env item in
         let loc = item.pstr_loc in
         match item.pstr_desc with
         | Pstr_primitive sdesc ->
