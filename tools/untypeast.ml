@@ -370,13 +370,13 @@ and untype_signature_item item =
   let desc =
     match item.sig_desc with
       Tsig_value v ->
-        Psig_value (untype_value_description v)
+        Pstr_primitive (untype_value_description v)
     | Tsig_type list ->
-        Psig_type (List.map untype_type_declaration list)
+        Pstr_type (List.map untype_type_declaration list)
     | Tsig_typext tyext ->
-        Psig_typext (untype_type_extension tyext)
+        Pstr_typext (untype_type_extension tyext)
     | Tsig_exception ext ->
-        Psig_exception (untype_extension_constructor ext)
+        Pstr_exception (untype_extension_constructor ext)
     | Tsig_module md ->
         Psig_module {pmd_name = md.md_name;
                      pmd_type = untype_module_type md.md_type;
@@ -387,11 +387,11 @@ and untype_signature_item item =
               {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
                pmd_attributes = md.md_attributes; pmd_loc = md.md_loc}) list)
     | Tsig_modtype mtd ->
-        Psig_modtype {pmtd_name=mtd.mtd_name;
+        Pstr_modtype {pmtd_name=mtd.mtd_name;
                       pmtd_type=option untype_module_type mtd.mtd_type;
                       pmtd_attributes=mtd.mtd_attributes; pmtd_loc=mtd.mtd_loc}
     | Tsig_open od ->
-        Psig_open {popen_lid = od.open_txt;
+        Pstr_open {popen_lid = od.open_txt;
                    popen_override = od.open_override;
                    popen_attributes = od.open_attributes;
                    popen_loc = od.open_loc;
@@ -404,12 +404,12 @@ and untype_signature_item item =
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->
-        Psig_class_type (List.map untype_class_type_declaration list)
+        Pstr_class_type (List.map untype_class_type_declaration list)
     | Tsig_attribute x ->
-        Psig_attribute x
+        Pstr_attribute x
   in
-  { psig_desc = desc;
-    psig_loc = item.sig_loc;
+  { pstr_desc = desc;
+    pstr_loc = item.sig_loc;
   }
 
 and untype_class_declaration cd =

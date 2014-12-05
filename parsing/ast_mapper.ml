@@ -235,27 +235,6 @@ module MT = struct
     | Pwith_typesubst d -> Pwith_typesubst (sub.type_declaration sub d)
     | Pwith_modsubst (s, lid) ->
         Pwith_modsubst (map_loc sub s, map_loc sub lid)
-
-  let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
-    let open Sig in
-    let loc = sub.location sub loc in
-    match desc with
-    | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
-    | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
-    | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
-    | Psig_recmodule l ->
-        rec_module ~loc (List.map (sub.module_declaration sub) l)
-    | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
-    | Psig_open x -> open_ ~loc (sub.open_description sub x)
-    | Psig_include x -> include_ ~loc (sub.include_description sub x)
-    | Psig_class l -> class_ ~loc (List.map (sub.class_description sub) l)
-    | Psig_class_type l ->
-        class_type ~loc (List.map (sub.class_type_declaration sub) l)
-    | Psig_extension (x, attrs) ->
-        extension ~loc (sub.extension sub x) ~attrs:(sub.attributes sub attrs)
-    | Psig_attribute x -> attribute ~loc (sub.attribute sub x)
 end
 
 
@@ -303,6 +282,11 @@ module M = struct
     | Pstr_extension (x, attrs) ->
         extension ~loc (sub.extension sub x) ~attrs:(sub.attributes sub attrs)
     | Pstr_attribute x -> attribute ~loc (sub.attribute sub x)
+    | Psig_module x -> Sig.module_ ~loc (sub.module_declaration sub x)
+    | Psig_recmodule l ->
+        Sig.rec_module ~loc (List.map (sub.module_declaration sub) l)
+    | Psig_include x -> Sig.include_ ~loc (sub.include_description sub x)
+    | Psig_class l -> Sig.class_ ~loc (List.map (sub.class_description sub) l)
 end
 
 module E = struct
@@ -480,7 +464,7 @@ let default_mapper =
     structure_item = M.map_structure_item;
     module_expr = M.map;
     signature = (fun this l -> List.map (this.signature_item this) l);
-    signature_item = MT.map_signature_item;
+    signature_item = M.map_structure_item;
     module_type = MT.map;
     with_constraint = MT.map_with_constraint;
     class_declaration =
@@ -804,7 +788,7 @@ let apply_lazy ~source ~target mapper =
   let ast = input_value ic in
   close_in ic;
 
-  let implem ast =
+  let implem str ast =
     try
       let fields, ast =
         match ast with
@@ -814,7 +798,10 @@ let apply_lazy ~source ~target mapper =
       in
       PpxContext.restore fields;
       let mapper = mapper () in
-      let ast = mapper.structure mapper ast in
+      let ast =
+        if str then mapper.structure mapper ast
+        else mapper.signature mapper ast
+      in
       let fields = PpxContext.update_cookies fields in
       Str.attribute (PpxContext.mk fields) :: ast
     with exn ->
@@ -824,30 +811,8 @@ let apply_lazy ~source ~target mapper =
             pstr_loc  = Location.none}]
       | None -> raise exn
   in
-  let iface ast =
-    try
-      let fields, ast =
-        match ast with
-        | {psig_desc = Psig_attribute ({txt = "ocaml.ppx.context"}, x)} :: l ->
-            PpxContext.get_fields x, l
-        | _ -> [], ast
-      in
-      PpxContext.restore fields;
-      let mapper = mapper () in
-      let ast = mapper.signature mapper ast in
-      let fields = PpxContext.update_cookies fields in
-      Sig.attribute (PpxContext.mk fields) :: ast
-    with exn ->
-      match error_of_exn exn with
-      | Some error ->
-          [{psig_desc = Psig_extension (extension_of_error error, []);
-            psig_loc  = Location.none}]
-      | None -> raise exn
-  in
   let ast =
-    if magic = Config.ast_impl_magic_number
-    then Obj.magic (implem (Obj.magic ast))
-    else Obj.magic (iface (Obj.magic ast))
+    Obj.magic (implem (magic = Config.ast_impl_magic_number) (Obj.magic ast))
   in
   let oc = open_out_bin target in
   output_string oc magic;
@@ -863,20 +828,8 @@ let drop_ppx_context_str ~restore = function
       items
   | items -> items
 
-let drop_ppx_context_sig ~restore = function
-  | {psig_desc = Psig_attribute({Location.txt = "ocaml.ppx.context"}, a)}
-    :: items ->
-      if restore then
-        PpxContext.restore (PpxContext.get_fields a);
-      items
-  | items -> items
-
 let add_ppx_context_str ~tool_name ast =
   Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast
-
-let add_ppx_context_sig ~tool_name ast =
-  Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
-
 
 let apply ~source ~target mapper =
   apply_lazy ~source ~target (fun () -> mapper)

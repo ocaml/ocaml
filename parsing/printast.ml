@@ -631,8 +631,9 @@ and module_type i ppf x =
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg
 
-and signature i ppf x = list i signature_item ppf x
+and signature i ppf x = structure i ppf x
 
+(*
 and signature_item i ppf x =
   line i ppf "signature_item %a\n" fmt_location x.psig_loc;
   let i = i+1 in
@@ -682,6 +683,7 @@ and signature_item i ppf x =
   | Psig_attribute (s, arg) ->
       line i ppf "Psig_attribute \"%s\"\n" s.txt;
       payload i ppf arg
+*)
 
 and modtype_declaration i ppf = function
   | None -> line i ppf "#abstract"
@@ -789,6 +791,20 @@ and structure_item i ppf x =
   | Pstr_attribute (s, arg) ->
       line i ppf "Pstr_attribute \"%s\"\n" s.txt;
       payload i ppf arg
+  | Psig_module pmd ->
+      line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
+      attributes i ppf pmd.pmd_attributes;
+      module_type i ppf pmd.pmd_type
+  | Psig_recmodule decls ->
+      line i ppf "Psig_recmodule\n";
+      list i module_declaration ppf decls;
+  | Psig_include incl ->
+      line i ppf "Psig_include\n";
+      module_type i ppf incl.pincl_mod;
+      attributes i ppf incl.pincl_attributes
+  | Psig_class (l) ->
+      line i ppf "Psig_class\n";
+      list i class_description ppf l;
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;
@@ -884,8 +900,8 @@ and directive_argument i ppf x =
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
 ;;
 
-let interface ppf x = list 0 signature_item ppf x;;
+let interface ppf x = signature 0 ppf x;;
 
-let implementation ppf x = list 0 structure_item ppf x;;
+let implementation ppf x = structure 0 ppf x;;
 
 let top_phrase ppf x = toplevel_phrase 0 ppf x;;

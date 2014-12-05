@@ -66,6 +66,8 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Recursive_module_require_explicit_type
   | Apply_generative
+  | Invalid_item_in_signature
+  | Invalid_item_in_structure
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

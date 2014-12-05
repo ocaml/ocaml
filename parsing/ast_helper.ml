@@ -154,21 +154,21 @@ let mk ?(loc = !default_loc) ?(attrs = []) d =
 end
 
 module Sig = struct
-  let mk ?(loc = !default_loc) d = {psig_desc = d; psig_loc = loc}
+  let mk ?(loc = !default_loc) d = {pstr_desc = d; pstr_loc = loc}
 
-  let value ?loc a = mk ?loc (Psig_value a)
-  let type_ ?loc a = mk ?loc (Psig_type a)
-  let type_extension ?loc a = mk ?loc (Psig_typext a)
-  let exception_ ?loc a = mk ?loc (Psig_exception a)
+  let value ?loc a = mk ?loc (Pstr_primitive a)
+  let type_ ?loc a = mk ?loc (Pstr_type a)
+  let type_extension ?loc a = mk ?loc (Pstr_typext a)
+  let exception_ ?loc a = mk ?loc (Pstr_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
-  let modtype ?loc a = mk ?loc (Psig_modtype a)
-  let open_ ?loc a = mk ?loc (Psig_open a)
+  let modtype ?loc a = mk ?loc (Pstr_modtype a)
+  let open_ ?loc a = mk ?loc (Pstr_open a)
   let include_ ?loc a = mk ?loc (Psig_include a)
   let class_ ?loc a = mk ?loc (Psig_class a)
-  let class_type ?loc a = mk ?loc (Psig_class_type a)
-  let extension ?loc ?(attrs = []) a = mk ?loc (Psig_extension (a, attrs))
-  let attribute ?loc a = mk ?loc (Psig_attribute a)
+  let class_type ?loc a = mk ?loc (Pstr_class_type a)
+  let extension ?loc ?(attrs = []) a = mk ?loc (Pstr_extension (a, attrs))
+  let attribute ?loc a = mk ?loc (Pstr_attribute a)
 end
 
 module Str = struct

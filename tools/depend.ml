@@ -237,45 +237,7 @@ and add_modtype bv mty =
   | Pmty_typeof m -> add_module bv m
   | Pmty_extension _ -> ()
 
-and add_signature bv = function
-    [] -> ()
-  | item :: rem -> add_signature (add_sig_item bv item) rem
-
-and add_sig_item bv item =
-  match item.psig_desc with
-    Psig_value vd ->
-      add_type bv vd.pval_type; bv
-  | Psig_type dcls ->
-      List.iter (add_type_declaration bv) dcls; bv
-  | Psig_typext te ->
-      add_type_extension bv te; bv
-  | Psig_exception pext ->
-      add_extension_constructor bv pext; bv
-  | Psig_module pmd ->
-      add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
-  | Psig_recmodule decls ->
-      let bv' =
-        List.fold_right StringSet.add
-                        (List.map (fun pmd -> pmd.pmd_name.txt) decls) bv
-      in
-      List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
-      bv'
-  | Psig_modtype x ->
-      begin match x.pmtd_type with
-        None -> ()
-      | Some mty -> add_modtype bv mty
-      end;
-      bv
-  | Psig_open od ->
-      open_module bv od.popen_lid.txt; bv
-  | Psig_include incl ->
-      add_modtype bv incl.pincl_mod; bv
-  | Psig_class cdl ->
-      List.iter (add_class_description bv) cdl; bv
-  | Psig_class_type cdtl ->
-      List.iter (add_class_type_declaration bv) cdtl; bv
-  | Psig_attribute _ | Psig_extension _ ->
-      bv
+and add_signature bv l = ignore (add_structure bv l)
 
 and add_module bv modl =
   match modl.pmod_desc with
@@ -337,6 +299,19 @@ and add_struct_item bv item =
       add_module bv incl.pincl_mod; bv
   | Pstr_attribute _ | Pstr_extension _ ->
       bv
+  | Psig_module pmd ->
+      add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
+  | Psig_recmodule decls ->
+      let bv' =
+        List.fold_right StringSet.add
+                        (List.map (fun pmd -> pmd.pmd_name.txt) decls) bv
+      in
+      List.iter (fun pmd -> add_modtype bv' pmd.pmd_type) decls;
+      bv'
+  | Psig_include incl ->
+      add_modtype bv incl.pincl_mod; bv
+  | Psig_class cdl ->
+      List.iter (add_class_description bv) cdl; bv
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

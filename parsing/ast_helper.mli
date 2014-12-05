@@ -206,7 +206,7 @@ module Mod:
 (** Signature items *)
 module Sig:
   sig
-    val mk: ?loc:loc -> signature_item_desc -> signature_item
+    val mk: ?loc:loc -> structure_item_desc -> signature_item
 
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> type_declaration list -> signature_item
