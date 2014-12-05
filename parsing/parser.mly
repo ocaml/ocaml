@@ -772,15 +772,15 @@ str_sig_item:
   | floating_attribute
       { mark_symbol_docs ();
         mkstr(Pstr_attribute $1) }
+  | type_extension
+      { mkstr(Pstr_typext $1) }
+  | exception_declaration
+      { mkstr(Pstr_exception $1) }
 ;
 structure_item:
     str_sig_item { $1 }
   | let_bindings
       { val_of_let_bindings $1 }
-  | str_type_extension
-      { mkstr(Pstr_typext $1) }
-  | str_exception_declaration
-      { mkstr(Pstr_exception $1) }
   | module_binding
       { mkstr(Pstr_module $1) }
   | rec_module_bindings
@@ -863,10 +863,6 @@ signature:
 ;
 signature_item:
     str_sig_item { $1 }
-  | sig_type_extension
-      { mksig(Pstr_typext $1) }
-  | sig_exception_declaration
-      { mksig(Pstr_exception $1) }
   | module_declaration
       { mksig(Psig_module $1) }
   | module_alias
@@ -1848,19 +1844,16 @@ bar_constructor_declaration:
          ~loc:(symbol_rloc()) ~info:(symbol_info ())
       }
 ;
-str_exception_declaration:
-  | sig_exception_declaration                    { $1 }
-  | EXCEPTION constr_ident EQUAL constr_longident attributes
-    post_item_attributes
-      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~attrs:($5 @ $6)
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
-;
-sig_exception_declaration:
+exception_declaration:
   | EXCEPTION constr_ident generalized_constructor_arguments attributes
     post_item_attributes
       { let args, res = $3 in
           Te.decl (mkrhs $2 2) ~args ?res ~attrs:($4 @ $5)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
+  | EXCEPTION constr_ident EQUAL constr_longident attributes
+    post_item_attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~attrs:($5 @ $6)
+          ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
@@ -1902,16 +1895,9 @@ label_declaration_semi:
 
 /* Type Extensions */
 
-str_type_extension:
+type_extension:
   TYPE nonrec_flag optional_type_parameters type_longident
   PLUSEQ private_flag str_extension_constructors post_item_attributes
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
-          ~attrs:$8 ~docs:(symbol_docs ()) }
-;
-sig_type_extension:
-  TYPE nonrec_flag optional_type_parameters type_longident
-  PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
         Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6
           ~attrs:$8 ~docs:(symbol_docs ()) }
@@ -1924,12 +1910,6 @@ str_extension_constructors:
   | str_extension_constructors bar_extension_constructor_declaration
       { $2 :: $1 }
   | str_extension_constructors bar_extension_constructor_rebind
-      { $2 :: $1 }
-;
-sig_extension_constructors:
-    extension_constructor_declaration                     { [$1] }
-  | bar_extension_constructor_declaration                 { [$1] }
-  | sig_extension_constructors bar_extension_constructor_declaration
       { $2 :: $1 }
 ;
 extension_constructor_declaration:

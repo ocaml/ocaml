@@ -87,6 +87,7 @@ type error =
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
+  | Rebinding_in_signature
 
 exception Error of Location.t * error
 
