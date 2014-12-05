@@ -811,9 +811,7 @@ let apply_lazy ~source ~target mapper =
             pstr_loc  = Location.none}]
       | None -> raise exn
   in
-  let ast =
-    Obj.magic (implem (magic = Config.ast_impl_magic_number) (Obj.magic ast))
-  in
+  let ast = implem (magic = Config.ast_impl_magic_number) ast in
   let oc = open_out_bin target in
   output_string oc magic;
   output_value oc !Location.input_name;
