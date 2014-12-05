@@ -755,15 +755,28 @@ structure_tail:
   | SEMISEMI structure   { (text_str 1) @ $2 }
   | structure_item structure_tail { (text_str 1) @ $1 :: $2 }
 ;
-structure_item:
-    let_bindings
-      { val_of_let_bindings $1 }
+str_sig_item:
   | primitive_declaration
       { mkstr (Pstr_primitive $1) }
   | value_description
       { mkstr (Pstr_primitive $1) }
   | type_declarations
       { let (nr, l) = $1 in mkstr(Pstr_type (nr, List.rev l)) }
+  | module_type_declaration
+      { mkstr(Pstr_modtype $1) }
+  | open_statement { mkstr(Pstr_open $1) }
+  | class_type_declarations
+      { mkstr(Pstr_class_type (List.rev $1)) }
+  | item_extension post_item_attributes
+      { mkstr(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
+  | floating_attribute
+      { mark_symbol_docs ();
+        mkstr(Pstr_attribute $1) }
+;
+structure_item:
+    str_sig_item { $1 }
+  | let_bindings
+      { val_of_let_bindings $1 }
   | str_type_extension
       { mkstr(Pstr_typext $1) }
   | str_exception_declaration
@@ -772,20 +785,10 @@ structure_item:
       { mkstr(Pstr_module $1) }
   | rec_module_bindings
       { mkstr(Pstr_recmodule(List.rev $1)) }
-  | module_type_declaration
-      { mkstr(Pstr_modtype $1) }
-  | open_statement { mkstr(Pstr_open $1) }
   | class_declarations
       { mkstr(Pstr_class (List.rev $1)) }
-  | class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $1)) }
   | str_include_statement
       { mkstr(Pstr_include $1) }
-  | item_extension post_item_attributes
-      { mkstr(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
-  | floating_attribute
-      { mark_symbol_docs ();
-        mkstr(Pstr_attribute $1) }
 ;
 str_include_statement:
     INCLUDE module_expr post_item_attributes
@@ -859,12 +862,7 @@ signature:
   | signature_item signature { (text_sig 1) @ $1 :: $2 }
 ;
 signature_item:
-    value_description
-      { mksig(Pstr_primitive $1) }
-  | primitive_declaration
-      { mksig(Pstr_primitive $1) }
-  | type_declarations
-      { let (nr, l) = $1 in mksig(Pstr_type (nr, List.rev l)) }
+    str_sig_item { $1 }
   | sig_type_extension
       { mksig(Pstr_typext $1) }
   | sig_exception_declaration
@@ -875,21 +873,10 @@ signature_item:
       { mksig(Psig_module $1) }
   | rec_module_declarations
       { mksig(Psig_recmodule (List.rev $1)) }
-  | module_type_declaration
-      { mksig(Pstr_modtype $1) }
-  | open_statement
-      { mksig(Pstr_open $1) }
   | sig_include_statement
       { mksig(Psig_include $1) }
   | class_descriptions
       { mksig(Psig_class (List.rev $1)) }
-  | class_type_declarations
-      { mksig(Pstr_class_type (List.rev $1)) }
-  | item_extension post_item_attributes
-      { mksig(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
-  | floating_attribute
-      { mark_symbol_docs ();
-        mksig(Pstr_attribute $1) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
