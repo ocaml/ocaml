@@ -45,6 +45,7 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
+  | Rebinding_in_signature
 
 open Typedtree
 
@@ -1126,6 +1127,8 @@ let transl_extension_constructor env type_path type_params
             sargs sret_type
         in
           args, ret_type, Text_decl(targs, tret_type)
+    | Pext_rebind lid when Env.is_in_signature env ->
+        raise (Error (lid.loc, Rebinding_in_signature))
     | Pext_rebind lid ->
         let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
         let usage =
@@ -1699,6 +1702,8 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
         "cannot be checked"
+  | Rebinding_in_signature ->
+      fprintf ppf "Rebinding is not allowed in signatures"
 
 let () =
   Location.register_error_of_exn

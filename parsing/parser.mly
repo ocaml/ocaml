@@ -642,6 +642,10 @@ str_sig_item:
       { mkstr(Pstr_attribute $1) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
+  | EXCEPTION str_exception_declaration
+      { mkstr(Pstr_exception $2) }
+  | TYPE str_type_extension
+      { mkstr(Pstr_typext $2) }
 ;
 structure_item:
     str_sig_item { $1 }
@@ -660,10 +664,6 @@ structure_item:
             | None -> str
             | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
-  | TYPE str_type_extension
-      { mkstr(Pstr_typext $2) }
-  | EXCEPTION str_exception_declaration
-      { mkstr(Pstr_exception $2) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -728,10 +728,6 @@ signature_item:
   | VAL val_ident COLON core_type post_item_attributes
       { mksig(Pstr_primitive
                 (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | TYPE sig_type_extension
-      { mksig(Pstr_typext $2) }
-  | EXCEPTION sig_exception_declaration
-      { mksig(Pstr_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2)
                              $3 ~attrs:$4 ~loc:(symbol_rloc()))) }
@@ -1636,13 +1632,6 @@ str_exception_declaration:
         {ext with pext_attributes = ext.pext_attributes @ $2}
       }
 ;
-sig_exception_declaration:
-  | extension_constructor_declaration post_item_attributes
-      {
-        let ext = $1 in
-        {ext with pext_attributes = ext.pext_attributes @ $2}
-      }
-;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
@@ -1675,23 +1664,12 @@ str_type_extension:
       { Te.mk (mkrhs $2 2) (List.rev $6)
           ~params:$1 ~priv:$4 ~attrs:$7 }
 ;
-sig_type_extension:
-  optional_type_parameters type_longident
-  PLUSEQ private_flag opt_bar sig_extension_constructors post_item_attributes
-      { Te.mk (mkrhs $2 2) (List.rev $6)
-          ~params:$1 ~priv:$4 ~attrs:$7 }
-;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
   | extension_constructor_rebind                          { [$1] }
   | str_extension_constructors BAR extension_constructor_declaration
       { $3 :: $1 }
   | str_extension_constructors BAR extension_constructor_rebind
-      { $3 :: $1 }
-;
-sig_extension_constructors:
-    extension_constructor_declaration                     { [$1] }
-  | sig_extension_constructors BAR extension_constructor_declaration
       { $3 :: $1 }
 ;
 extension_constructor_declaration:
