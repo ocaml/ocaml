@@ -699,7 +699,7 @@ clean::
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-.ml.cmo: 
+.ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
 
 .mli.cmi:

@@ -17,13 +17,13 @@ open Types
 
 val use_new_type_errors : bool ref
 
-exception Unify of expr_pairs
+exception Unify of (type_expr * type_expr) list
 exception Tags of label * label
-exception Subtype of expr_pairs * expr_pairs
+exception Subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
-exception Unification_recursive_abbrev of expr_pairs
+exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -187,11 +187,11 @@ val matches: Env.t -> type_expr -> type_expr -> bool
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * expr_pairs
+  | CM_Type_parameter_mismatch of Env.t * (type_expr * type_expr) list
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * expr_pairs
-  | CM_Val_type_mismatch of string * Env.t * expr_pairs
-  | CM_Meth_type_mismatch of string * Env.t * expr_pairs
+  | CM_Parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Val_type_mismatch of string * Env.t * (type_expr * type_expr) list
+  | CM_Meth_type_mismatch of string * Env.t * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string

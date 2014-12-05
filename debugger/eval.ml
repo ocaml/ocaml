@@ -164,7 +164,7 @@ open Format
 
 let report_error ppf = function
   | Unbound_identifier id ->
-      fprintf ppf "@[Unknown identifier %s@]@." (Ident.name id)
+      fprintf ppf "@[Unbound identifier %s@]@." (Ident.name id)
   | Not_initialized_yet path ->
       fprintf ppf
         "@[The module path %a is not yet initialized.@ \
@@ -172,9 +172,9 @@ let report_error ppf = function
            until its initialization code is executed.@]@."
       Printtyp.path path
   | Unbound_long_identifier lid ->
-      fprintf ppf "@[Unknown identifier %a@]@." Printtyp.longident lid
+      fprintf ppf "@[Unbound identifier %a@]@." Printtyp.longident lid
   | Unknown_name n ->
-      fprintf ppf "@[Unknown value name $%i@]@." n
+      fprintf ppf "@[Unbound value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf

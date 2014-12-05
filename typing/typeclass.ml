@@ -19,8 +19,8 @@ open Typetexp
 open Format
 
 type error =
-    Unconsistent_constraint of expr_pairs
-  | Field_type_mismatch of string * string * expr_pairs
+    Unconsistent_constraint of (type_expr * type_expr) list
+  | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of label
@@ -29,10 +29,10 @@ type error =
   | Unbound_class_2 of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
-  | Constructor_type_mismatch of string * expr_pairs
+  | Constructor_type_mismatch of string * (type_expr * type_expr) list
   | Virtual_class of bool * bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
-  | Parameter_mismatch of expr_pairs
+  | Parameter_mismatch of (type_expr * type_expr) list
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
@@ -41,8 +41,8 @@ type error =
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
-      Ident.t * Types.class_declaration * expr_pairs
-  | Final_self_clash of expr_pairs
+      Ident.t * Types.class_declaration * (type_expr * type_expr) list
+  | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
@@ -1771,7 +1771,7 @@ let report_error env ppf = function
   | Class_match_failure error ->
       Includeclass.report_error ppf error
   | Unbound_val lab ->
-      fprintf ppf "Unknown instance variable %s" lab
+      fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
