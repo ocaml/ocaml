@@ -809,12 +809,12 @@ str_sig_item:
         | Str l -> mkstr(Pstr_class(List.rev l))
         | Sig l -> mkstr(Psig_class(List.rev l))
       }
+  | let_bindings
+      { val_of_let_bindings $1 }
 
 ;
 structure_item:
     str_sig_item { $1 }
-  | let_bindings
-      { val_of_let_bindings $1 }
   | str_include_statement
       { mkstr(Pstr_include $1) }
 ;
