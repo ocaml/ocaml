@@ -621,8 +621,31 @@ structure_tail:
   | SEMISEMI structure   { $2 }
   | structure_item structure_tail { $1 :: $2 }
 ;
+str_sig_item:
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+    post_item_attributes
+      { mkstr
+          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
+                             ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
+  | TYPE type_declarations
+      { mksig(Pstr_type (List.rev $2)) }
+  | MODULE TYPE ident post_item_attributes
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
+                              ~attrs:$4 ~loc:(symbol_rloc()))) }
+  | MODULE TYPE ident EQUAL module_type post_item_attributes
+      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
+                              ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
+  | open_statement { mkstr(Pstr_open $1) }
+  | item_extension post_item_attributes
+      { mkstr(Pstr_extension ($1, $2)) }
+  | floating_attribute
+      { mkstr(Pstr_attribute $1) }
+  | CLASS TYPE class_type_declarations
+      { mkstr(Pstr_class_type (List.rev $3)) }
+;
 structure_item:
-    LET ext_attributes rec_flag let_bindings
+    str_sig_item { $1 }
+  | LET ext_attributes rec_flag let_bindings
       {
         match $4 with
           [ {pvb_pat = { ppat_desc = Ppat_any; ppat_loc = _ };
@@ -637,13 +660,6 @@ structure_item:
             | None -> str
             | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-    post_item_attributes
-      { mkstr
-          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
-                             ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
-  | TYPE type_declarations
-      { mkstr(Pstr_type (List.rev $2) ) }
   | TYPE str_type_extension
       { mkstr(Pstr_typext $2) }
   | EXCEPTION str_exception_declaration
@@ -652,23 +668,10 @@ structure_item:
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
       { mkstr(Pstr_recmodule(List.rev $3)) }
-  | MODULE TYPE ident post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
-                              ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
-                              ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
-  | open_statement { mkstr(Pstr_open $1) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
-  | item_extension post_item_attributes
-      { mkstr(Pstr_extension ($1, $2)) }
-  | floating_attribute
-      { mkstr(Pstr_attribute $1) }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -721,16 +724,10 @@ signature:
   | signature_item signature { $1 :: $2 }
 ;
 signature_item:
-    VAL val_ident COLON core_type post_item_attributes
+    str_sig_item { $1 }
+  | VAL val_ident COLON core_type post_item_attributes
       { mksig(Pstr_primitive
                 (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-    post_item_attributes
-      { mksig(Pstr_primitive
-                (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
-                   ~loc:(symbol_rloc()))) }
-  | TYPE type_declarations
-      { mksig(Pstr_type (List.rev $2)) }
   | TYPE sig_type_extension
       { mksig(Pstr_typext $2) }
   | EXCEPTION sig_exception_declaration
@@ -746,25 +743,10 @@ signature_item:
                           )) }
   | MODULE REC module_rec_declarations
       { mksig(Psig_recmodule (List.rev $3)) }
-  | MODULE TYPE ident post_item_attributes
-      { mksig(Pstr_modtype (Mtd.mk (mkrhs $3 3)
-                              ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Pstr_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5
-                              ~loc:(symbol_rloc())
-                              ~attrs:$6)) }
-  | open_statement
-      { mksig(Pstr_open $1) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
       { mksig(Psig_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mksig(Pstr_class_type (List.rev $3)) }
-  | item_extension post_item_attributes
-      { mksig(Pstr_extension ($1, $2)) }
-  | floating_attribute
-      { mksig(Pstr_attribute $1) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
