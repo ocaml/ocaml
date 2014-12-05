@@ -23,6 +23,17 @@ type ('a, 'b) sig_str =
   | Sig of 'a
   | Str of 'b
 
+let cons_sig_str m l =
+  match m, l with
+  | Str m, Str l -> Str (m :: l)
+  | Sig m, Sig l -> Sig (m :: l)
+  | Str _, Sig _ | Sig _, Str _ ->
+      raise Syntaxerr.(Error(Mixed_definition_declaration (symbol_rloc())))
+
+let lift_sig_str = function
+  | Str x -> Str [x]
+  | Sig x -> Sig [x]
+
 let mktyp d = Typ.mk ~loc:(symbol_rloc()) d
 let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
 let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
@@ -661,6 +672,12 @@ str_sig_item:
         | Str l -> mkstr(Pstr_recmodule(List.rev l))
         | Sig l -> mkstr(Psig_recmodule(List.rev l))
       }
+  | CLASS class_declarations
+      {
+        match $2 with
+        | Str l -> mkstr(Pstr_class (List.rev l))
+        | Sig l -> mkstr(Psig_class (List.rev l))
+      }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
   | floating_attribute
@@ -683,8 +700,6 @@ structure_item:
             | None -> str
             | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
-  | CLASS class_declarations
-      { mkstr(Pstr_class (List.rev $2)) }
   | INCLUDE module_expr post_item_attributes
       { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
 ;
@@ -704,20 +719,8 @@ module_binding_body:
       }
 ;
 module_bindings:
-    module_binding
-      {
-        match $1 with
-        | Str m -> Str [m]
-        | Sig m -> Sig [m]
-      }
-  | module_bindings AND module_binding
-    {
-      match $3, $1 with
-      | Str m, Str l -> Str (m :: l)
-      | Sig m, Sig l -> Sig (m :: l)
-      | Str _, Sig _ | Sig _, Str _ ->
-          raise Syntaxerr.(Error(Mixed_definition_declaration (symbol_rloc())))
-    }
+    module_binding                      { lift_sig_str $1 }
+  | module_bindings AND module_binding  { cons_sig_str $3 $1 }
 ;
 module_binding:
     UIDENT module_binding_body post_item_attributes
@@ -765,8 +768,6 @@ signature_item:
     str_sig_item { $1 }
   | INCLUDE module_type post_item_attributes %prec below_WITH
       { mksig(Psig_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
-  | CLASS class_descriptions
-      { mksig(Psig_class (List.rev $2)) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
@@ -776,25 +777,36 @@ open_statement:
 /* Class expressions */
 
 class_declarations:
-    class_declarations AND class_declaration    { $3 :: $1 }
-  | class_declaration                           { [$1] }
+    class_declarations AND class_declaration    { cons_sig_str $3 $1 }
+  | class_declaration                           { lift_sig_str $1 }
 ;
 class_declaration:
     virtual_flag class_type_parameters LIDENT class_fun_binding
     post_item_attributes
       {
-       Ci.mk (mkrhs $3 3) $4
-         ~virt:$1 ~params:$2
-         ~attrs:$5 ~loc:(symbol_rloc ())
+        match $4 with
+        | Str x ->
+            Str (Ci.mk (mkrhs $3 3) x ~virt:$1 ~params:$2
+                   ~attrs:$5 ~loc:(symbol_rloc ()))
+        | Sig x ->
+            Sig (Ci.mk (mkrhs $3 3) x ~virt:$1 ~params:$2
+                   ~attrs:$5 ~loc:(symbol_rloc ()))
       }
 ;
 class_fun_binding:
     EQUAL class_expr
-      { $2 }
+      { Str $2 }
   | COLON class_type EQUAL class_expr
-      { mkclass(Pcl_constraint($4, $2)) }
+      { Str (mkclass(Pcl_constraint($4, $2))) }
   | labeled_simple_pattern class_fun_binding
-      { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
+      {
+        match $2 with
+        | Str x -> let (l,o,p) = $1 in Str (mkclass(Pcl_fun(l, o, p, x)))
+        | Sig x -> assert false (* TODO *)
+      }
+  | COLON class_type
+      { Sig $2  (* This rule causes conflicts on SHARP.
+                   Need to figure it out. *) }
 ;
 class_type_parameters:
     /*empty*/                                   { [] }
@@ -988,19 +1000,6 @@ constrain:
 constrain_field:
         core_type EQUAL core_type          { $1, $3 }
 ;
-class_descriptions:
-    class_descriptions AND class_description    { $3 :: $1 }
-  | class_description                           { [$1] }
-;
-class_description:
-    virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
-      {
-       Ci.mk (mkrhs $3 3) $5
-         ~virt:$1 ~params:$2
-         ~attrs:$6 ~loc:(symbol_rloc ())
-      }
-;
 class_type_declarations:
     class_type_declarations AND class_type_declaration  { $3 :: $1 }
   | class_type_declaration                              { [$1] }
@@ -1071,7 +1070,7 @@ expr:
   | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
-      { 
+      {
         match $5 with
         | Str m -> mkexp_attrs (Pexp_letmodule(mkrhs $4 4, m, $7)) $3
         | Sig m -> assert false (* TODO *)
