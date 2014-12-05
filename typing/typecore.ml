@@ -3553,7 +3553,7 @@ and type_application_easytype env funct sargs (targs:expression list) =
             warned := true;
             Location.prerr_warning loc w
           end
-        in 
+        in
         let name = label_name l
         and optional = if is_optional l then Optional else Required in 
         let sargs, (targs : expression list), more_sargs, (more_targs : expression list), arg =
