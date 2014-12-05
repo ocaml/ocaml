@@ -636,16 +636,19 @@ str_sig_item:
       { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
                               ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
   | open_statement { mkstr(Pstr_open $1) }
-  | item_extension post_item_attributes
-      { mkstr(Pstr_extension ($1, $2)) }
-  | floating_attribute
-      { mkstr(Pstr_attribute $1) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
   | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
   | TYPE str_type_extension
       { mkstr(Pstr_typext $2) }
+  | VAL val_ident COLON core_type post_item_attributes
+      { mksig(Pstr_primitive
+                (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
+  | item_extension post_item_attributes
+      { mkstr(Pstr_extension ($1, $2)) }
+  | floating_attribute
+      { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
     str_sig_item { $1 }
@@ -725,9 +728,6 @@ signature:
 ;
 signature_item:
     str_sig_item { $1 }
-  | VAL val_ident COLON core_type post_item_attributes
-      { mksig(Pstr_primitive
-                (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2)
                              $3 ~attrs:$4 ~loc:(symbol_rloc()))) }

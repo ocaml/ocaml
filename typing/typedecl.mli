@@ -83,6 +83,7 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Rebinding_in_signature
+  | Val_in_structure
 
 
 exception Error of Location.t * error

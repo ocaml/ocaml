@@ -46,6 +46,7 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Rebinding_in_signature
+  | Val_in_structure
 
 open Typedtree
 
@@ -1349,9 +1350,11 @@ let transl_value_decl env loc valdecl =
   let ty = cty.ctyp_type in
   let v =
   match valdecl.pval_prim with
-    [] ->
+    [] when Env.is_in_signature env ->
       { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
+  | [] ->
+      raise (Error(valdecl.pval_loc, Val_in_structure))
   | decl ->
       let arity = Ctype.arity ty in
       let prim = Primitive.parse_declaration arity decl in
@@ -1704,6 +1707,8 @@ let report_error ppf = function
         "cannot be checked"
   | Rebinding_in_signature ->
       fprintf ppf "Rebinding is not allowed in signatures"
+  | Val_in_structure ->
+      fprintf ppf "Value declarations are only allowed in signatures"
 
 let () =
   Location.register_error_of_exn
