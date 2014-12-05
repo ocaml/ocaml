@@ -19,6 +19,10 @@ open Longident
 open Parsetree
 open Ast_helper
 
+type ('a, 'b) sig_str =
+  | Sig of 'a
+  | Str of 'b
+
 let mktyp d = Typ.mk ~loc:(symbol_rloc()) d
 let mkpat d = Pat.mk ~loc:(symbol_rloc()) d
 let mkexp d = Exp.mk ~loc:(symbol_rloc()) d
@@ -645,6 +649,18 @@ str_sig_item:
   | VAL val_ident COLON core_type post_item_attributes
       { mksig(Pstr_primitive
                 (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
+  | MODULE module_binding
+      {
+        match $2 with
+        | Str m -> mkstr (Pstr_module m)
+        | Sig m -> mkstr (Psig_module m)
+      }
+  | MODULE REC module_bindings
+      {
+        match $3 with
+        | Str l -> mkstr(Pstr_recmodule(List.rev l))
+        | Sig l -> mkstr(Psig_recmodule(List.rev l))
+      }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
   | floating_attribute
@@ -667,10 +683,6 @@ structure_item:
             | None -> str
             | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
-  | MODULE module_binding
-      { mkstr(Pstr_module $2) }
-  | MODULE REC module_bindings
-      { mkstr(Pstr_recmodule(List.rev $3)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | INCLUDE module_expr post_item_attributes
@@ -678,19 +690,42 @@ structure_item:
 ;
 module_binding_body:
     EQUAL module_expr
-      { $2 }
+      { Str $2 }
   | COLON module_type EQUAL module_expr
-      { mkmod(Pmod_constraint($4, $2)) }
+      { Str (mkmod(Pmod_constraint($4, $2))) }
+  | COLON module_type
+      { Sig $2 }
   | functor_arg module_binding_body
-      { mkmod(Pmod_functor(fst $1, snd $1, $2)) }
+      {
+        match $2 with
+        | Str m -> Str (mkmod(Pmod_functor(fst $1, snd $1, m)))
+        | Sig mt -> Sig (mkmty(Pmty_functor(fst $1, snd $1, mt)))
+                      (* TODO: reject _ as functor_arg name? *)
+      }
 ;
 module_bindings:
-    module_binding                        { [$1] }
-  | module_bindings AND module_binding    { $3 :: $1 }
+    module_binding
+      {
+        match $1 with
+        | Str m -> Str [m]
+        | Sig m -> Sig [m]
+      }
+  | module_bindings AND module_binding
+    {
+      match $3, $1 with
+      | Str m, Str l -> Str (m :: l)
+      | Sig m, Sig l -> Sig (m :: l)
+      | Str _, Sig _ | Sig _, Str _ ->
+          raise Syntaxerr.(Error(Mixed_definition_declaration (symbol_rloc())))
+    }
 ;
 module_binding:
     UIDENT module_binding_body post_item_attributes
-    { Mb.mk (mkrhs $1 1) $2 ~attrs:$3 ~loc:(symbol_rloc ()) }
+    {
+      match $2 with
+      | Str m -> Str (Mb.mk (mkrhs $1 1) m ~attrs:$3 ~loc:(symbol_rloc ()))
+      | Sig mt -> Sig (Md.mk (mkrhs $1 1) mt ~attrs:$3 ~loc:(symbol_rloc()))
+    }
 ;
 
 /* Module types */
@@ -728,17 +763,6 @@ signature:
 ;
 signature_item:
     str_sig_item { $1 }
-  | MODULE UIDENT module_declaration post_item_attributes
-      { mksig(Psig_module (Md.mk (mkrhs $2 2)
-                             $3 ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE UIDENT EQUAL mod_longident post_item_attributes
-      { mksig(Psig_module (Md.mk (mkrhs $2 2)
-                             (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4))
-                             ~attrs:$5
-                             ~loc:(symbol_rloc())
-                          )) }
-  | MODULE REC module_rec_declarations
-      { mksig(Psig_recmodule (List.rev $3)) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
       { mksig(Psig_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
   | CLASS class_descriptions
@@ -747,22 +771,6 @@ signature_item:
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
       { Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4 ~loc:(symbol_rloc()) }
-;
-module_declaration:
-    COLON module_type
-      { $2 }
-  | LPAREN UIDENT COLON module_type RPAREN module_declaration
-      { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
-  | LPAREN RPAREN module_declaration
-      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
-;
-module_rec_declarations:
-    module_rec_declaration                              { [$1] }
-  | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
-;
-module_rec_declaration:
-    UIDENT COLON module_type post_item_attributes
-    { Md.mk (mkrhs $1 1) $3 ~attrs:$4 ~loc:(symbol_rloc()) }
 ;
 
 /* Class expressions */
@@ -1063,7 +1071,11 @@ expr:
   | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
       { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
-      { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
+      { 
+        match $5 with
+        | Str m -> mkexp_attrs (Pexp_letmodule(mkrhs $4 4, m, $7)) $3
+        | Sig m -> assert false (* TODO *)
+      }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
