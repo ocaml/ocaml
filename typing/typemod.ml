@@ -1794,9 +1794,9 @@ let report_error ppf = function
   | Apply_generative ->
       fprintf ppf "This is a generative functor. It can only be applied to ()"
   | Invalid_item_in_signature ->
-      fprintf ppf "This kind of item cannot is not valid in signatures"
+      fprintf ppf "This kind of item is not valid in signatures"
   | Invalid_item_in_structure ->
-      fprintf ppf "This kind of item cannot is not valid in structures"
+      fprintf ppf "This kind of item is not valid in structures"
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)
