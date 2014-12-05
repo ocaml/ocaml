@@ -860,15 +860,15 @@ signature:
 ;
 signature_item:
     value_description
-      { mksig(Psig_value $1) }
+      { mksig(Pstr_primitive $1) }
   | primitive_declaration
-      { mksig(Psig_value $1) }
+      { mksig(Pstr_primitive $1) }
   | type_declarations
-      { let (nr, l) = $1 in mksig(Psig_type (nr, List.rev l)) }
+      { let (nr, l) = $1 in mksig(Pstr_type (nr, List.rev l)) }
   | sig_type_extension
-      { mksig(Psig_typext $1) }
+      { mksig(Pstr_typext $1) }
   | sig_exception_declaration
-      { mksig(Psig_exception $1) }
+      { mksig(Pstr_exception $1) }
   | module_declaration
       { mksig(Psig_module $1) }
   | module_alias
@@ -876,20 +876,20 @@ signature_item:
   | rec_module_declarations
       { mksig(Psig_recmodule (List.rev $1)) }
   | module_type_declaration
-      { mksig(Psig_modtype $1) }
+      { mksig(Pstr_modtype $1) }
   | open_statement
-      { mksig(Psig_open $1) }
+      { mksig(Pstr_open $1) }
   | sig_include_statement
       { mksig(Psig_include $1) }
   | class_descriptions
       { mksig(Psig_class (List.rev $1)) }
   | class_type_declarations
-      { mksig(Psig_class_type (List.rev $1)) }
+      { mksig(Pstr_class_type (List.rev $1)) }
   | item_extension post_item_attributes
-      { mksig(Psig_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
+      { mksig(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
       { mark_symbol_docs ();
-        mksig(Psig_attribute $1) }
+        mksig(Pstr_attribute $1) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes

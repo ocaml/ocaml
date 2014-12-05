@@ -206,6 +206,7 @@ let iter_expression f e =
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
+    | Psig_module _ | Psig_recmodule _ | Psig_include _ | Psig_class _ -> ()
 
   and class_expr ce =
     match ce.pcl_desc with

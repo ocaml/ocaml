@@ -108,12 +108,13 @@ let apply_rewriters_str ?(restore = true) ~tool_name ast =
       Ast_mapper.drop_ppx_context_str ~restore ast
 
 let apply_rewriters_sig ?(restore = true) ~tool_name ast =
+  (* TODO: merge with apply_rewriters_str *)
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      let ast = Ast_mapper.add_ppx_context_sig ~tool_name ast in
+      let ast = Ast_mapper.add_ppx_context_str ~tool_name ast in
       let ast = rewrite Config.ast_intf_magic_number ast ppxs in
-      Ast_mapper.drop_ppx_context_sig ~restore ast
+      Ast_mapper.drop_ppx_context_str ~restore ast
 
 let apply_rewriters ?restore ~tool_name magic ast =
   if magic = Config.ast_impl_magic_number then
