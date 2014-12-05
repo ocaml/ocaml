@@ -174,7 +174,7 @@ let report_error ppf = function
   | Unbound_long_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@." Printtyp.longident lid
   | Unknown_name n ->
-      fprintf ppf "@[Unbound value name $%i@]@." n
+      fprintf ppf "@[Unknown value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf
