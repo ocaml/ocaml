@@ -803,14 +803,18 @@ str_sig_item:
         | Str l -> mkstr(Pstr_recmodule(List.rev l))
         | Sig l -> mkstr(Psig_recmodule(List.rev l))
       }
+  | class_declarations
+      {
+        match $1 with
+        | Str l -> mkstr(Pstr_class(List.rev l))
+        | Sig l -> mkstr(Psig_class(List.rev l))
+      }
 
 ;
 structure_item:
     str_sig_item { $1 }
   | let_bindings
       { val_of_let_bindings $1 }
-  | class_declarations
-      { mkstr(Pstr_class (List.rev $1)) }
   | str_include_statement
       { mkstr(Pstr_include $1) }
 ;
@@ -911,8 +915,6 @@ signature_item:
     str_sig_item { $1 }
   | sig_include_statement
       { mksig(Psig_include $1) }
-  | class_descriptions
-      { mksig(Psig_class (List.rev $1)) }
 ;
 open_statement:
   | OPEN override_flag mod_longident post_item_attributes
@@ -936,21 +938,32 @@ module_type_declaration:
 /* Class expressions */
 
 class_declarations:
-    class_declaration                           { [$1] }
-  | class_declarations and_class_declaration    { $2 :: $1 }
+    class_declarations and_class_declaration    { cons_sig_str $2 $1 }
+  | class_declaration                           { lift_sig_str $1 }
 ;
 class_declaration:
-    CLASS virtual_flag class_type_parameters LIDENT class_fun_binding
+    CLASS virtual_flag class_type_parameters LIDENT class_declaration_body
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3 ~attrs:$6
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
+      { let f c = Ci.mk (mkrhs $4 4) c ~virt:$2 ~params:$3 ~attrs:$6
+          ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
+        in match $5 with
+        | Str c -> Str (f c)
+        | Sig ct -> Sig (f ct)
+      }
 ;
 and_class_declaration:
-    AND virtual_flag class_type_parameters LIDENT class_fun_binding
+    AND virtual_flag class_type_parameters LIDENT class_declaration_body
     post_item_attributes
-      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3
-         ~attrs:$6 ~loc:(symbol_rloc ())
-         ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
+      { let f c = Ci.mk (mkrhs $4 4) c ~virt:$2 ~params:$3 ~attrs:$6
+          ~loc:(symbol_rloc ()) ~text:(symbol_text ()) ~docs:(symbol_docs ())
+        in match $5 with
+        | Str c -> Str (f c)
+        | Sig ct -> Sig (f ct)
+      }
+;
+class_declaration_body:
+    class_fun_binding { Str $1 }
+  | COLON class_type  { Sig $2 }
 ;
 class_fun_binding:
     EQUAL class_expr
@@ -1153,23 +1166,6 @@ constrain:
 ;
 constrain_field:
         core_type EQUAL core_type          { $1, $3 }
-;
-class_descriptions:
-    class_description                           { [$1] }
-  | class_descriptions and_class_description    { $2 :: $1 }
-;
-class_description:
-    CLASS virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3 ~attrs:$7
-              ~loc:(symbol_rloc ()) ~docs:(symbol_docs ()) }
-;
-and_class_description:
-    AND virtual_flag class_type_parameters LIDENT COLON class_type
-    post_item_attributes
-      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
-              ~attrs:$7 ~loc:(symbol_rloc ())
-              ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
 ;
 class_type_declarations:
     class_type_declaration                              { [$1] }
