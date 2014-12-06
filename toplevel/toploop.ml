@@ -96,7 +96,13 @@ let outval_of_value env obj ty =
 let print_value env obj ppf ty =
   !print_out_value ppf (outval_of_value env obj ty)
 
+type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 let install_printer = Printer.install_printer
+let install_generic_printer = Printer.install_generic_printer
+let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
