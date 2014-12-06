@@ -144,6 +144,17 @@ val edit_distance : string -> string -> int -> int option
     other. The particular algorithm may change in the future.
 *)
 
+val spellcheck : string list -> string -> string list
+(** [spellcheck env name] takes a list of names [env] that exist in
+    the current environment and an erroneous [name], and returns a
+    list of suggestions taken from [env], that are close enough to
+    [name] that it may be a typo for one of them. *)
+
+val did_you_mean : Format.formatter -> (unit -> string list) -> unit
+(** [did_you_mean ppf get_choices] hints that the user may have meant
+    one of the option returned by forcing [get_choices]. It does nothing
+    if the returned list is empty. *)
+
 val split : string -> char -> string list
 (** [String.split string char] splits the string [string] at every char
     [char], and returns the list of sub-strings between the chars.
