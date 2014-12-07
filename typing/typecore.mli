@@ -80,8 +80,8 @@ type error =
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
-  | Undefined_method of type_expr * string
-  | Undefined_inherited_method of string
+  | Undefined_method of type_expr * string * string list option
+  | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr

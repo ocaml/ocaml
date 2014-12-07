@@ -38,8 +38,8 @@ type error =
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
-  | Undefined_method of type_expr * string
-  | Undefined_inherited_method of string
+  | Undefined_method of type_expr * string * string list option
+  | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
@@ -2361,10 +2361,12 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
+      let obj_meths = ref None in
       begin try
         let (meth, exp, typ) =
           match obj.exp_desc with
             Texp_ident(path, _, {val_kind = Val_self (meths, _, _, privty)}) ->
+              obj_meths := Some meths;
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
@@ -2375,7 +2377,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           | Texp_ident(path, lid, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
                 begin try List.assoc met methods with Not_found ->
-                  raise(Error(e.pexp_loc, env, Undefined_inherited_method met))
+                  let valid_methods = List.map fst methods in
+                  raise(Error(e.pexp_loc, env,
+                              Undefined_inherited_method (met, valid_methods)))
                 end
               in
               begin match
@@ -2384,6 +2388,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
               with
                 (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
                 (path, _) ->
+                  obj_meths := Some meths;
                   let (_, typ) =
                     filter_self_method env met Private meths privty
                   in
@@ -2451,7 +2456,21 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       with Unify _ ->
-        raise(Error(e.pexp_loc, env, Undefined_method (obj.exp_type, met)))
+        let valid_methods =
+          match !obj_meths with
+          | Some meths ->
+             Some (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
+          | None ->
+             match (expand_head env obj.exp_type).desc with
+             | Tobject (fields, _) ->
+                let (fields, _) = Ctype.flatten_fields fields in
+                let collect_fields li (meth, meth_kind, _meth_ty) =
+                  if meth_kind = Fpresent then meth::li else li in
+                Some (List.fold_left collect_fields [] fields)
+             | _ -> None
+        in
+        raise(Error(e.pexp_loc, env,
+                    Undefined_method (obj.exp_type, met, valid_methods)))
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
@@ -3919,13 +3938,18 @@ let report_error env ppf = function
              name kind)
   | Invalid_format msg ->
       fprintf ppf "%s" msg
-  | Undefined_method (ty, me) ->
+  | Undefined_method (ty, me, valid_methods) ->
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[This expression has type@;<1 2>%a@]@,\
-         It has no method %s@]" type_expr ty me
-  | Undefined_inherited_method me ->
-      fprintf ppf "This expression has no method %s" me
+         It has no method %s@]" type_expr ty me;
+      begin match valid_methods with
+        | None -> ()
+        | Some valid_methods -> spellcheck ppf me valid_methods
+      end
+  | Undefined_inherited_method (me, valid_methods) ->
+      fprintf ppf "This expression has no method %s" me;
+      spellcheck ppf me valid_methods;
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
