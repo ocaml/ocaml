@@ -515,6 +515,18 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
   }
 }
 
+/* GS: this patch is designed to be minimally invasive and defines
+   foo_field() (for foo in caml_{initialize,modify}) in terms of
+   foo(); it might be better on the long-term to define foo_field() as
+   the primitive and offer foo() as a convenience function, but then
+   users that override the definition of caml_initialize and
+   caml_modify at linktime (they are weak symbols for this purpose)
+   would have to change their code as well. */
+CAMLexport void caml_initialize_field (value src, intnat idx, value val)
+{
+    return caml_initialize(&Field(src, idx), val);
+}
+
 /* You must use [caml_modify] to change a field of an existing shared block,
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
@@ -567,6 +579,16 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
       *caml_ref_table.ptr++ = fp;
     }
   }
+}
+
+/* GS: is intnat the correct type here? Most variables passed to the
+   Field(..) function in this position actually have the type
+   mlsize_t, but mlsize_t is unsigned, and I'm wary of conversion
+   issues when called with integers that are not known to be
+   positive -- eg. caml_array_unsafe_set_addr */
+CAMLexport CAMLweakdef void caml_modify_field (value src, intnat idx, value val)
+{
+    return caml_modify(&Field(src, idx), val);
 }
 
 CAMLexport void * caml_stat_alloc (asize_t sz)
