@@ -598,6 +598,8 @@ let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
+let label_of_kind kind =
+  if kind = "record" then "field" else "constructor"
 
 module NameChoice(Name : sig
   type t
@@ -669,10 +671,10 @@ end) = struct
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
-          let kind = if type_kind = "record" then "field" else "constructor" in
+          let label = label_of_kind type_kind in
           warn lid.loc
             (Warnings.Not_principal
-               ("this type-based " ^ kind ^ " disambiguation"))
+               ("this type-based " ^ label ^ " disambiguation"))
         in
         try
           let lbl, use = disambiguate_by_type env tpath scope in
@@ -3899,12 +3901,12 @@ let report_error env ppf = function
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
       fprintf ppf "The %s %s does not belong to type %a@]"
-        (if kind = "record" then "field" else "constructor")
+        (label_of_kind kind)
         name (*kind*) path p;
        end;
       spellcheck ppf name valid_names;
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let name = if kind = "record" then "field" else "constructor" in
+      let name = label_of_kind kind in
       report_ambiguous_type_error ppf env tp tpl
         (function ppf ->
            fprintf ppf "The %s %a@ belongs to the %s type"
