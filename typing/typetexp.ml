@@ -883,6 +883,9 @@ let fold_cltypes = fold_simple Env.fold_cltypes
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
+     (* we don't use "spellcheck" here: the function that raises this
+        error seems not to be called anywhere, so it's unclear how it
+        should be handled *)
     fprintf ppf "Unbound type parameter %s@." name
   | Unbound_type_constructor lid ->
     fprintf ppf "Unbound type constructor %a" longident lid;
