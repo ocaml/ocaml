@@ -43,7 +43,7 @@ type error =
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
-  | Unbound_instance_variable of string
+  | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
@@ -2507,7 +2507,12 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             raise(Error(loc, env, Instance_variable_not_mutable(false,lab.txt)))
       with
         Not_found ->
-          raise(Error(loc, env, Unbound_instance_variable lab.txt))
+          let collect_vars name _path val_desc li =
+            match val_desc.val_kind with
+            | Val_ivar (Mutable, _) -> name::li
+            | _ -> li in
+          let valid_vars = Env.fold_values collect_vars None env [] in
+          raise(Error(loc, env, Unbound_instance_variable (lab.txt, valid_vars)))
       end
   | Pexp_override lst ->
       let _ =
@@ -2534,7 +2539,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
               (Path.Pident id, lab, type_expect env snewval (instance env ty))
             with
               Not_found ->
-                raise(Error(loc, env, Unbound_instance_variable lab.txt))
+                let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
+                raise(Error(loc, env, Unbound_instance_variable (lab.txt, vars)))
             end
           in
           let modifs = List.map type_override lst in
@@ -3953,8 +3959,9 @@ let report_error env ppf = function
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
-  | Unbound_instance_variable v ->
-      fprintf ppf "Unbound instance variable %s" v
+  | Unbound_instance_variable (var, valid_vars) ->
+      fprintf ppf "Unbound instance variable %s" var;
+      spellcheck ppf var valid_vars;
   | Instance_variable_not_mutable (b, v) ->
       if b then
         fprintf ppf "The instance variable %s is not mutable" v
