@@ -269,6 +269,16 @@ let type_option ty =
 let mkexp exp_desc exp_type exp_loc exp_env =
   { exp_desc; exp_type; exp_loc; exp_env; exp_extra = []; exp_attributes = [] }
 
+let make_source_location env pos =
+  let mk_k k = mkexp (Texp_constant k) (type_constant k) Location.none env in
+  let pos_f = Const_string (pos.Lexing.pos_fname, None) in
+  let pos_l = Const_int pos.Lexing.pos_lnum in
+  let pos_c = Const_int (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) in
+  mkexp
+    (Texp_tuple [mk_k pos_f; mk_k pos_l; mk_k pos_c])
+    (instance_def Predef.type_source_location)
+    Location.none env
+
 let option_none ty loc =
   let lid = Longident.Lident "None"
   and env = Env.initial_safe_string in
@@ -285,6 +295,14 @@ let extract_option_type env ty =
   match expand_head env ty with {desc = Tconstr(path, [ty], _)}
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
+
+let scrape env ty =
+  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
+
+let is_source_location env ty =
+  match scrape env (extract_option_type env ty) with
+  | Tconstr(p, _, _) -> Path.same p Predef.path_source_location
+  | _ -> false
 
 let extract_concrete_record env ty =
   match extract_concrete_typedecl env ty with
@@ -3316,7 +3334,13 @@ and type_application env funct sargs =
               may_warn funct.exp_loc
                 (Warnings.Without_principality "eliminated optional argument");
               ignored := (l,ty,lv) :: !ignored;
-              Some (fun () -> option_none (instance env ty) Location.none)
+              Some (fun () ->
+                  let ty = instance env ty in
+                  if is_source_location env ty then
+                    let pos = funct.exp_loc.Location.loc_start in
+                    option_some (make_source_location env pos)
+                  else
+                    option_none (instance env ty) Location.none)
             end else begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "commuted an argument");
