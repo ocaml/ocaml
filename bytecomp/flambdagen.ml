@@ -135,7 +135,7 @@ let to_flambda
               List.map
                 (fun (id, def) ->
                    let var = find_var env id in
-                   (var, close_named var env def))
+                   (var, close_named ~rec_ident:id var env def))
                 defs in
             Fletrec(fdefs, close env body, nid ~name:"letrec" ())
         | Some function_declarations ->
@@ -353,11 +353,11 @@ let to_flambda
 
   and close_list sb l = List.map (close sb) l
 
-  and close_named let_bound_var env = function
+  and close_named ?(rec_ident=Ident.create "dummy") let_bound_var env = function
     | Lfunction(kind, params, body) ->
         let closure_bound_var = rename_var let_bound_var in
         let decl =
-          { rec_ident = Ident.create "dummy"; closure_bound_var;
+          { rec_ident; closure_bound_var;
             kind; params; body } in
         Ffunction(
           { fu_closure = close_functions env [decl];
