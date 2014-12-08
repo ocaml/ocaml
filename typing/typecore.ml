@@ -154,23 +154,14 @@ let find_value_easytype env loc txt =
     let loc = desc.val_loc in
     raise (Typetexp.Error (loc', env', Typetexp.Unbound_value_missing_rec_easytype (lid', loc)))
 
-(* Helper function for printing list of values *)
-let format_fprintf_list ppf sep print_item items =
-  let rec aux = function
-    | [] -> ()
-    | [x] -> print_item ppf x
-    | x::ls -> print_item ppf x; sep ppf; aux ls
-    in
-  aux items
-
 (* Helper function for printing plural forms, testing whether its argument
    is a list of length more than one. *)
 let format_plural ls =
   if List.length ls > 1 then "s" else ""
 
 (* Helper function for printing a constant string *)
-let format_string (s:string) pff () =
-  Format.fprintf pff "%s" s
+let format_string (s:string) ppf () =
+  Format.fprintf ppf "%s" s 
 
 (* Helper function for printing a type *)
 let format_type ppf ty =
@@ -184,14 +175,23 @@ let format_labelled_type ppf (l,ty) =
     Format.fprintf ppf "@[%s%s : %a@]" (if is_optional l then "" else "~") l Printtyp.type_expr ty
 
 (* Helper function for decomposing an arrow type; this function returns a pair,
-   made of the list of types of the arguments, and the return type. *)
-let decompose_function_type env ty =
-  let rec aux acc ty =
-    match (expand_head env ty).desc with
-    | Tarrow (l, ty_arg, ty_fun, com) -> aux ((l,ty_arg)::acc) ty_fun
-    | _ -> (List.rev acc, ty)
+   made of the list of types of the arguments, and the return type.
+   Note: this function generalizes "list_labels", so this code could
+   be later used to implement "list_labels" (provided there are no
+   performance issues here). *)
+
+let decompose_function_type env ty_fun =
+  let rec aux visited lty_args ty =
+    let ty = expand_head env ty in
+    if List.memq ty visited then
+      List.rev lty_args, ty, false
+    else match ty.desc with
+    | Tarrow (l, ty_arg, ty_res, _) ->
+        aux (ty::visited) ((l,ty_arg)::lty_args) ty_res
+    | _ ->
+        List.rev lty_args, ty, is_Tvar ty
     in
-  aux [] ty
+  wrap_trace_gadt_instances env (aux [] []) ty_fun
 
 (* Helper function for reporting application errors *)
 let message_for_application_error_easytype expected provided =
@@ -226,8 +226,8 @@ let message_for_application_error_easytype expected provided =
     let s0f = string_of_int (row + 1) in
     let s1str = if row < nb1 then List.nth expected row else "___" in
     let s2str = if row < nb2 then List.nth provided row else "___" in
-    let s1s = Printtyp.string_break_into_lines coli_width col_indent s1str in
-    let s2s = Printtyp.string_break_into_lines coli_width col_indent s2str in
+    let s1s = Misc.string_break_into_lines coli_width col_indent s1str in
+    let s2s = Misc.string_break_into_lines coli_width col_indent s2str in
     let n1 = List.length s1s in
     let n2 = List.length s2s in
     let n = max n1 n2 in
@@ -1906,7 +1906,7 @@ and type_expect_ ?in_function env sexp ty_expected =
   in
   match sexp.pexp_desc with
   (* begin easytype *)
-  | Pexp_apply(sfunct, sargs) when !use_new_type_errors -> 
+  | Pexp_apply(sfunct, sargs) when !use_easy_type_errors -> 
       (* part 1 *)
       if sargs = [] then
         Syntaxerr.ill_formed_ast loc "Function application with no argument.";
@@ -1923,7 +1923,7 @@ and type_expect_ ?in_function env sexp ty_expected =
       let funct_sch = funct.exp_type in
       generalize funct_sch;
       let ty = instance env funct_sch in 
-      let expected_ltys, return_ty = decompose_function_type env funct_sch in
+      let expected_ltys, return_ty, _ = decompose_function_type env funct_sch in
       let has_format_arg = List.exists (fun (lab,ty_arg) -> is_format env loc ty_arg) expected_ltys in
       if has_format_arg then begin
         (* If formats are involved, we revert to using the old algorithm *)
@@ -1964,12 +1964,12 @@ and type_expect_ ?in_function env sexp ty_expected =
                 match sfunct.pexp_desc with
                 | Pexp_ident lid -> 
                     Format.fprintf ppf " `";
-                    format_fprintf_list ppf (fun ppf -> Format.fprintf ppf ".") (fun pff s -> Format.fprintf ppf "%s" s) (Longident.flatten lid.txt);
+                    Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ".") (fun ppf s -> Format.fprintf ppf "%s" s) ppf (Longident.flatten lid.txt);
                     Format.fprintf ppf "'";
                 | _ -> ()
                 in
               let show_type_list ltys =
-                format_fprintf_list ppf (fun ppf -> Format.fprintf ppf "@, and ") format_labelled_type ltys in
+                Format.pp_print_list ~pp_sep: (fun ppf () -> Format.fprintf ppf "@, and ") format_labelled_type ppf ltys in
               let string_of_type lty =
                 let b = Buffer.create 32 in
                 let sppf = Format.formatter_of_buffer b in
@@ -2012,7 +2012,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         unify_exp_easytype env (re exp) (instance env ty_expected) 
           (easytype_report_but_string "The result of the function application is required by the context to have type")
       end
-  | Pexp_ifthenelse(scond, sifso, sifnot) when !use_new_type_errors ->
+  | Pexp_ifthenelse(scond, sifso, sifnot) when !use_easy_type_errors ->
       let cond = type_expect_easify env scond Predef.type_bool 
          (easytype_report_so_but_string "This expression is the condition of a if-statement") in
       begin match sifnot with
@@ -2060,7 +2060,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                  *)
             in
           let _ = unify_exp_easytype env ifso ty_expected  
-            (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "The branches of the conditional are required by the context to have type") (format_string "but they have type")) in
+            (easytype_report ~swap:true (fun ppf () -> Format.fprintf ppf "The branches of the conditional are required by the context to have type") (format_string "but they have type")) in
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = loc; exp_extra = [];
@@ -3759,10 +3759,10 @@ and easytype_report ?(swap=false) msg1 msg2 : easytype_reporter =
 (* Derived helper functions for building error messages *)
 
 and easytype_report_but msg : easytype_reporter = 
-  easytype_report ~swap:true msg (fun pff () -> Format.fprintf pff "but it has type")
+  easytype_report ~swap:true msg (fun ppf () -> Format.fprintf ppf "but it has type")
 
 and easytype_report_so_but msg : easytype_reporter = 
-  easytype_report_but (fun pff () -> Format.fprintf pff "%a, so it should have type" msg ())
+  easytype_report_but (fun ppf () -> Format.fprintf ppf "%a, so it should have type" msg ())
 
 and easytype_report_so_but_string s : easytype_reporter = 
   easytype_report_so_but (format_string s)
@@ -3770,31 +3770,31 @@ and easytype_report_so_but_string s : easytype_reporter =
 and easytype_report_but_string s : easytype_reporter = 
   easytype_report_but (format_string s)
 
-(* Typing functions that do the switch based on the "new_type_errors" flag,
+(* Typing functions that do the switch based on the "easy_type_errors" flag,
    and the "strict_sequence" flag. *)
 
 and find_value_easify env loc txt =
-  if !use_new_type_errors 
+  if !use_easy_type_errors 
     then find_value_easytype env loc txt
     else Typetexp.find_value env loc txt
 
 and type_statement_easify_strict_sequence env sexp report =
-  if !use_new_type_errors && !Clflags.strict_sequence
+  if !use_easy_type_errors && !Clflags.strict_sequence
     then type_statement_easytype env sexp report
     else type_statement env sexp
 
 and type_statement_easify env sexp report =
-  if !use_new_type_errors
+  if !use_easy_type_errors
     then type_statement_easytype env sexp report
     else type_statement env sexp
 
 and type_cases_easify ?in_function env ty_arg ty_res partial_flag loc caselist =
-  (* Note: the dispatch on "!use_new_type_errors" occurs inside the function "type_cases" *)
-  if !use_new_type_errors then begin
+  (* Note: the dispatch on "!use_easy_type_errors" occurs inside the function "type_cases" *)
+  if !use_easy_type_errors then begin
     let ty = newvar() in
     let cases, partial = type_cases ?in_function env ty ty_res partial_flag loc caselist in
     unify_exp_types_easytype loc env ty ty_arg
-        (easytype_report ~swap:true (fun pff () -> Format.fprintf pff "The argument of the pattern matching has type") (format_string "but the patterns have type"));
+        (easytype_report ~swap:true (fun ppf () -> Format.fprintf ppf "The argument of the pattern matching has type") (format_string "but the patterns have type"));
     (cases, partial)   
   end else begin
     type_cases ?in_function env ty_arg ty_res partial_flag loc caselist
@@ -3813,7 +3813,7 @@ and type_statement_easytype env sexp report =
       | _ -> false
       in
     let exp_ty = expand_head env exp.exp_type in
-    let (ltys,ret_ty) = decompose_function_type env exp_ty in 
+    let ltys, ret_ty, _ = decompose_function_type env exp_ty in 
     if not (is_type_unit ret_ty) then None else begin
       match ltys with
       | [] -> None (* was not a function *)
@@ -3829,8 +3829,7 @@ and type_statement_easytype env sexp report =
   unify_exp_easytype env exp expected_ty 
     (fun ppf (m1,m2,m3,m4) -> report ppf (m1,m2,m3,
       fun ppf () -> match msg_add with 
-        | Some m -> 
-            (* Note: maybe we also print m4 here? *)
+        | Some m -> (* m4 is dropped intentionnaly *)
             Format.fprintf ppf "@\n%s" m 
         | None -> m4 ppf ()))
 
@@ -3838,7 +3837,7 @@ and type_statement_easytype env sexp report =
    that is a predefined type only if it is not polymorphic *)
 
 and type_expect_easify ?in_function env sexp ty_expected (report:easytype_reporter) =
-  if !use_new_type_errors
+  if !use_easy_type_errors
     then type_expect_predef_easytype env sexp ty_expected report
     else type_expect ?in_function env sexp ty_expected 
 
@@ -3950,7 +3949,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
-    if not !use_new_type_errors then begin
+    if not !use_easy_type_errors then begin
       (* Warning: some of the lines below are duplicated in the else branch. *)
       List.map2
         (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
@@ -4115,7 +4114,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   List.iter (fun f -> f()) force;
   let exp_env =
     if is_recursive then new_env
-    else if !use_new_type_errors && not is_recursive then 
+    else if !use_easy_type_errors && not is_recursive then 
       (* add ghost binding to help detect missing "rec" keywords *)
       add_pattern_variables_ghost_easytype loc env pv 
     else env in

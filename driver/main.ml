@@ -85,7 +85,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _custom = set custom_runtime
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
-  let _new_type_errors () = new_type_errors := true; strict_sequence := true
+  let _easy_type_errors () = easy_type_errors := true; strict_sequence := true
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true

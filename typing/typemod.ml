@@ -45,12 +45,14 @@ exception Error_forward of Location.error
 
 (* begin easytype *)
 (* Wrapper for typechecking a core expression, and, in case of an error,
-   typechecking it again after setting "use_new_type_errors := true". *)
-let if_fail_then_use_new_type_errors fct =
+   typechecking it again after setting "use_easy_type_errors := true". *)
+let if_fail_then_use_easy_type_errors fct =
   try fct()
-  with (Typecore.Error _ | Typetexp.Error _) when !Clflags.new_type_errors ->
-    Ctype.use_new_type_errors := true;
-    fct()
+  with ((Typecore.Error _ | Typetexp.Error _) as err) when !Clflags.easy_type_errors ->
+    Ctype.use_easy_type_errors := true;
+    let _exp = fct() in (* normally, this call would also raise a type error *)
+    raise err 
+
 (* end easytype *)
 
 open Typedtree
@@ -1176,7 +1178,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
 
   | Pmod_unpack sexp ->
       if !Clflags.principal then Ctype.begin_def ();
-      let exp = if_fail_then_use_new_type_errors (fun () -> 
+      let exp = if_fail_then_use_easy_type_errors (fun () -> 
                   Typecore.type_exp env sexp) in
       if !Clflags.principal then begin
         Ctype.end_def ();
@@ -1218,7 +1220,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
-        let expr = if_fail_then_use_new_type_errors (fun () -> 
+        let expr = if_fail_then_use_easy_type_errors (fun () -> 
                       Typecore.type_expression env sexpr) in
         Tstr_eval (expr, attrs), [], env
     | Pstr_value(rec_flag, sdefs) ->
@@ -1236,7 +1238,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
               Some (Annot.Idef {scope with Location.loc_start = start})
         in
         let (defs, newenv) =
-          if_fail_then_use_new_type_errors (fun () -> 
+          if_fail_then_use_easy_type_errors (fun () -> 
             Typecore.type_binding env rec_flag sdefs scope) in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)

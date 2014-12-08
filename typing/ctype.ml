@@ -80,7 +80,7 @@ open Btype
 
 (**** Errors ****)
 
-let use_new_type_errors = ref false 
+let use_easy_type_errors = ref false 
 
 exception Unify of (type_expr * type_expr) list
 

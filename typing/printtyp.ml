@@ -1306,18 +1306,18 @@ let print_tags ppf fields =
 
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-  (* special case handled specially by new_type_errors *)
+  (* special case handled specially by easy_type_errors *)
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when (* note: below, could generalize "ty1.desc" into "(expand_head env ty1).desc" *) 
-       (* !use_new_type_errors && *) (* Note: activated by default *)
+     when (* question: below, should we generalize "ty1.desc" into "(expand_head env ty1).desc"? *) 
+       (* !use_easy_type_errors && *) (* Note: activated by default *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false)
      -> true
-  (* special case handled specially by new_type_errors *)
+  (* special case handled specially by easy_type_errors *)
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
      (* note: we could restrict the application of this pattern to the case 
         where ty1 and ty2 can be unified; however, this would need to be tested
         without actually performing any side-effects on the two types. *)
-     when (* !use_new_type_errors && *) (* Note: activated by default *)
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) 
      -> true
@@ -1341,12 +1341,12 @@ let rec mismatch unif = function
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   | (Tarrow (_, ty1, _, _), ty2 | ty2, Tarrow (_, ty1, _, _)) 
-     when (* !use_new_type_errors && *) (* Note: activated by default *)
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
        (match ty1.desc with Tconstr (p,_,_) when Path.same p Predef.path_unit -> true | _ -> false) ->
       fprintf ppf
         "@,@[You probably forgot to provide `()' as argument somewhere.@]"
   | (Tconstr (p, [ty1], _), ty2 | ty2, Tconstr (p, [ty1], _)) 
-     when (* !use_new_type_errors && *) (* Note: activated by default *)
+     when (* !use_easy_type_errors && *) (* Note: activated by default *)
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
@@ -1455,7 +1455,7 @@ let unification_error unif tr txt1 ppf txt2 =
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
       let show = 
-        if not !use_new_type_errors then 
+        if not !use_easy_type_errors then 
             Format.fprintf ppf "@[<v>\
             @[%t@;<1 2>%a@ \
               %t@;<1 2>%a.\
@@ -1504,10 +1504,10 @@ let get_unification_error_easytype env ?(unif=true) tr =
         and t2, t2' = may_prepare_expansion (tr = []) t2 in
         print_labels := not !Clflags.classic;
         let tr = List.map prepare_expansion tr in
-        let m1 = fun ppf () -> fprintf ppf "%a" (type_expansion t1) t1' in
-        let m2 = fun ppf () -> fprintf ppf "%a" (type_expansion t2) t2' in
+        let m1 = fun ppf () -> type_expansion t1 ppf t1' in
+        let m2 = fun ppf () -> type_expansion t2 ppf t2' in
         let m3 = fun ppf () -> ((trace false "is not compatible with type") ppf tr) in
-        let m4 = fun ppf () -> fprintf ppf "%t" ((explanation unif mis)) in
+        let m4 = fun ppf () -> fprintf ppf "%t" (explanation unif mis) in
         print_labels := true;
         (m1,m2,m3,m4)
       with exn ->
@@ -1564,31 +1564,5 @@ let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
            @]"
           txt2 type_path_list tpl
           txt3 (type_path_expansion tp0) tp0')
-
-
-(* begin easytype *)
-(* Note: this function, which processes a string and returns a list
-   of strings, could perhaps be re-implemented with the help of Format,
-   redirecting its output to a string, and then splitting the string
-   according to the newline characters. *)
-let string_break_into_lines col_width col_indent str = 
-  assert (col_width - col_indent > 0);
-  let len = String.length str in
-  let tab = String.make col_indent ' ' in
-  let rec aux acc n =
-    if n >= len then List.rev acc else begin
-      let first = (acc = []) in 
-      let w = if first then col_width else col_width - col_indent in
-      let s =
-        if n + w >= len 
-          then String.sub str n (len-n)
-          else String.sub str n w
-        in
-      let s = if first then s else tab ^ s in
-      aux (s::acc) (n+w)
-      end
-    in
-  aux [] 0
-(* end easytype *)
 
 

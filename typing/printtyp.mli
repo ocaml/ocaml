@@ -89,12 +89,3 @@ val report_ambiguous_type_error:
 
 (* for toploop *)
 val hide_rec_items: signature_item list -> unit
-
-(* begin easytype *)
-(* Helper function to break a string that represents a type into 
-   multiple lines of fixed width, indenting lines after the first one. 
-   The function returns a list of strings. 
-   This code is used to report type errors related to applications
-   in the form of a table. *)
-val string_break_into_lines : int -> int -> string -> string list
-(* end easytype *)

@@ -175,6 +175,16 @@ val extract_label :
 
 (* begin easytype *)
 val uncons_as_option: 'a list -> 'a option * 'a list
+
+(* [extract_label_and_expr] returns a tuple of the form  
+   (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2).
+   Note: the argument [tys] may be either empty, or it
+   should have the same length as [ls]. In the first case,
+   [targ0_opt] will be None, and [targs1] and [targs2] will
+   be the empty list. In the second case, if [tys] is not empty,
+   then [targ0_opt] will carry the typed expression associated 
+   with [sarg0], and similarly [targs1] and [targs2] will be 
+   typed expressions associated [sargs1] and [sargs2]. *)
 val extract_label_and_expr :
     label -> (label * 'a) list -> Typedtree.expression list ->
       label * 'a * Typedtree.expression option 

@@ -325,3 +325,30 @@ let split s c =
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
+
+
+(* begin easytype *)
+(* Note: this function, which processes a string and returns a list
+   of strings, could perhaps be re-implemented with the help of Format,
+   redirecting its output to a string, and then splitting the string
+   according to the newline characters. *)
+let string_break_into_lines col_width col_indent str = 
+  assert (col_width - col_indent > 0);
+  let len = String.length str in
+  let tab = String.make col_indent ' ' in
+  let rec aux acc n =
+    if n >= len then List.rev acc else begin
+      let first = (acc = []) in 
+      let w = if first then col_width else col_width - col_indent in
+      let s =
+        if n + w >= len 
+          then String.sub str n (len-n)
+          else String.sub str n w
+        in
+      let s = if first then s else tab ^ s in
+      aux (s::acc) (n+w)
+      end
+    in
+  aux [] 0
+(* end easytype *)
+
