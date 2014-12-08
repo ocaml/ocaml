@@ -612,6 +612,8 @@ let no_effects_prim = function
   | Pbigstring_load_16 false | Pbigstring_load_32 false
   | Pbigstring_load_64 false
 
+  | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
+  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
     -> false
   | _ -> true
 
