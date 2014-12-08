@@ -39,8 +39,7 @@ type type_descriptions =
 (* For short-paths *)
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
-    t -> (Path.t * (unit -> unit)) list
-val run_iter_env: (unit -> unit) list -> (Path.t * (unit -> unit)) list
+    t -> unit
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list

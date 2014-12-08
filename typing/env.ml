@@ -185,7 +185,7 @@ type t = {
 }
 
 and module_components =
-  (t * t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t
+  (t * Subst.t * Path.t * Types.module_type, module_components_repr) EnvLazy.t
 
 and module_components_repr =
     Structure_comps of structure_components
@@ -267,8 +267,8 @@ let components_of_module' =
   ref ((fun env sub path mty -> assert false) :
           t -> Subst.t -> Path.t -> module_type -> module_components)
 let components_of_module_maker' =
-  ref ((fun (env, cenv, sub, path, mty) -> assert false) :
-          t * t * Subst.t * Path.t * module_type -> module_components_repr)
+  ref ((fun (env, sub, path, mty) -> assert false) :
+          t * Subst.t * Path.t * module_type -> module_components_repr)
 let components_of_functor_appl' =
   ref ((fun f p1 p2 -> assert false) :
           functor_components -> Path.t -> Path.t -> module_components)
@@ -927,25 +927,20 @@ let lookup_cltype lid env =
 (* Iter on an environment (ignoring the body of functors and
    not yet evaluated structures) *)
 
-let iter_env_cont = ref []
-
 let iter_env proj1 proj2 f env =
-  iter_env_cont := [];
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
     (* if EnvLazy.is_val mcomps then *)
-    let cont () =
-      match EnvLazy.force !components_of_module_maker' mcomps with
-        Structure_comps comps ->
-          Tbl.iter
-            (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
-            (proj2 comps);
-          Tbl.iter
-            (fun s (c, n) ->
-              iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
-            comps.comp_components
-      | Functor_comps _ -> ()
-    in iter_env_cont := (path, cont) :: !iter_env_cont
+    match EnvLazy.force !components_of_module_maker' mcomps with
+      Structure_comps comps ->
+        Tbl.iter
+          (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
+          (proj2 comps);
+        Tbl.iter
+          (fun s (c, n) ->
+            iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
+          comps.comp_components
+    | Functor_comps _ -> ()
   in
   Hashtbl.iter
     (fun s pso ->
@@ -956,15 +951,7 @@ let iter_env proj1 proj2 f env =
     persistent_structures;
   Ident.iter
     (fun id ((path, comps), _) -> iter_components (Pident id) path comps)
-    env.components;
-  List.rev !iter_env_cont
-
-let run_iter_env l =
-  iter_env_cont := [];
-  List.iter (fun c -> c ()) l;
-  let cont = List.rev !iter_env_cont in
-  iter_env_cont := [];
-  cont
+    env.components
 
 let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
 
@@ -1195,16 +1182,11 @@ let add_to_tbl id decl tbl =
     try Tbl.find id tbl with Not_found -> [] in
   Tbl.add id (decl :: decls) tbl
 
-let rec components_of_module env cenv sub path mty =
-  EnvLazy.create (env, cenv, sub, path, mty)
+let rec components_of_module env sub path mty =
+  EnvLazy.create (env, sub, path, mty)
 
-and components_of_module_maker (env, cenv, sub, path, mty) =
-  try match mty with
-    Mty_alias path' (*when Ident.persistent (Path.head path')*) ->
-      EnvLazy.force components_of_module_maker (find_module_descr path' cenv)
-  | _ -> raise Not_found
-  with Not_found ->
-  match scrape_alias env mty with
+and components_of_module_maker (env, sub, path, mty) =
+  (match scrape_alias env mty with
     Mty_signature sg ->
       let c =
         { comp_values = Tbl.empty;
@@ -1215,7 +1197,6 @@ and components_of_module_maker (env, cenv, sub, path, mty) =
           comp_cltypes = Tbl.empty } in
       let pl, sub, _ = prefix_idents_and_subst path sub sg in
       let env = ref env in
-      let cenv = ref cenv in
       let pos = ref 0 in
       List.iter2 (fun item path ->
         match item with
@@ -1256,14 +1237,10 @@ and components_of_module_maker (env, cenv, sub, path, mty) =
             let mty' = EnvLazy.create (sub, mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
-            let comps = components_of_module !env !cenv sub path mty in
+            let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_module None id (Pident id) md !env !env;
-            cenv := { !cenv with components =
-                      EnvTbl.add "module" None id
-                        (Pdot (path, Ident.name id, !pos), comps)
-                        !cenv.components !cenv.components };
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
@@ -1302,7 +1279,7 @@ and components_of_module_maker (env, cenv, sub, path, mty) =
           comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
-          comp_cltypes = Tbl.empty }
+          comp_cltypes = Tbl.empty })
 
 (* Insertion of bindings by identifier + path *)
 
@@ -1414,7 +1391,7 @@ and store_module slot id path md env renv =
     modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
     components =
       EnvTbl.add "module" slot id
-                 (path, components_of_module env env Subst.identity path md.md_type)
+                 (path, components_of_module env Subst.identity path md.md_type)
                    env.components renv.components;
     summary = Env_module(env.summary, id, md) }
 
@@ -1436,8 +1413,6 @@ and store_cltype slot id path desc env renv =
     summary = Env_cltype(env.summary, id, desc) }
 
 (* Compute the components of a functor application in a path. *)
-
-let components_of_module env = components_of_module env env
 
 let components_of_functor_appl f p1 p2 =
   try
