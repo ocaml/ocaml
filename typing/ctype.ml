@@ -2052,8 +2052,11 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
-            let decl = Env.find_type p env in
-            if non_aliasable p decl then raise (Unify [])
+            begin try
+              let decl = Env.find_type p env in
+              if non_aliasable p decl then raise (Unify [])
+            with Not_found -> ()
+            end
         (*
         | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
