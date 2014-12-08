@@ -52,6 +52,7 @@ OCaml 4.02.2:
   (Leo White, review by Gabriel Scherer)
 - ocamlbuild on cygwin cannot find ocamlfind
   (user 'algoriddle')
+- PR#6680: Missing parentheses when printing polymorphic variant value in warning
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
            type variable in place of a local abstract type
 
