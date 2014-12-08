@@ -110,6 +110,7 @@ ASMCOMP=\
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
+  asmcomp/flambdasimplify.cmo \
   asmcomp/flambdasym.cmo \
   asmcomp/clambdagen.cmo \
   asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \

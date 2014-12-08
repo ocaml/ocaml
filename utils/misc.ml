@@ -114,6 +114,11 @@ let may_fold f a b =
   | None -> b
   | Some a -> f a b
 
+let may_default f a b =
+  match a with
+  | None -> b
+  | Some a -> f a
+
 (* File functions *)
 
 let find_in_path path name =

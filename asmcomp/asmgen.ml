@@ -127,6 +127,10 @@ let flambda ppf (size, lam) =
       ~symbol_for_global':Compilenv.symbol_for_global'
       lam in
   dump_and_check "flambdagen" flam;
+  let flam = Flambdasimplify.lift_lets flam in
+  let flam = Flambdasimplify.simplify flam in
+  let flam = Flambdasimplify.eliminate_ref flam in
+  dump_and_check "flambdasimplify" flam;
   let fl_sym =
     Flambdasym.convert ~compilation_unit:current_compilation_unit flam in
   let fl,const,export = fl_sym in
