@@ -116,11 +116,13 @@ let rp node =
 
 (* begin easytype *)
 
-(* Add a dummy prefix to a name in order to help track missing "rec" keywords *)
+(* Add a dummy prefix to a name in order to help track missing  
+   "rec" keywords *)
 let ghost_name_easytype s =
   "***" ^ s
 
-(* Add a dummy prefix to an ident in order to help track missing "rec" keywords *)
+(* Add a dummy prefix to an ident in order to help track missing 
+   "rec" keywords *)
 let ghost_ident_easytype id =
   { id with Ident.name = ghost_name_easytype (Ident.name id) }
 
@@ -152,7 +154,8 @@ let find_value_easytype env loc txt =
        with Typetexp.Error (_, _, Typetexp.Unbound_value _) -> raise error 
        in
     let loc = desc.val_loc in
-    raise (Typetexp.Error (loc', env', Typetexp.Unbound_value_missing_rec_easytype (lid', loc)))
+    raise (Typetexp.Error 
+      (loc', env', Typetexp.Unbound_value_missing_rec_easytype (lid', loc)))
 
 (* Helper function for printing plural forms, testing whether its argument
    is a list of length more than one. *)
@@ -172,7 +175,8 @@ let format_labelled_type ppf (l,ty) =
   if l = "" then 
     format_type ppf ty 
   else 
-    Format.fprintf ppf "@[%s%s : %a@]" (if is_optional l then "" else "~") l Printtyp.type_expr ty
+    Format.fprintf ppf "@[%s%s : %a@]" (if is_optional l then "" else "~") 
+      l Printtyp.type_expr ty
 
 (* Helper function for decomposing an arrow type; this function returns a pair,
    made of the list of types of the arguments, and the return type.
@@ -1924,7 +1928,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       generalize funct_sch;
       let ty = instance env funct_sch in 
       let expected_ltys, return_ty, _ = decompose_function_type env funct_sch in
-      let has_format_arg = List.exists (fun (lab,ty_arg) -> is_format env loc ty_arg) expected_ltys in
+      let has_format_arg = 
+         List.exists (fun (lab,ty_arg) -> is_format env loc ty_arg) expected_ltys in
       if has_format_arg then begin
         (* If formats are involved, we revert to using the old algorithm *)
         (* part 4 *)
@@ -1941,7 +1946,8 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_env = env }
         (* end part 4 *)
      end else begin
-        (* Note: code below will currently fail to report appropriate errors on code that involves GADTs *)
+        (* Note: code below will currently fail to report appropriate 
+           errors on code that involves GADTs *)
         let funct = { funct with exp_type = ty } in
         wrap_trace_gadt_instances env (lower_args env []) ty;
         let save_arg_type (l,arg) =
@@ -2150,7 +2156,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         type_let env ~loc:loc rec_flag spat_sexp_list scp true in
       let body =
         type_expect_easify new_env (wrap_unpacks sbody unpacks) ty_expected
-          (easytype_report_but_string "The body of this let-expression is required by the context to have type") in
+          (easytype_report_but_string 
+            "The body of this let-expression is required by the context to have type") in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = loc; exp_extra = [];
@@ -2187,7 +2194,8 @@ and type_expect_ ?in_function env sexp ty_expected =
              [Vb.mk spat smatch] sexp)
       in
       type_expect_easify ?in_function env sfun ty_expected
-        (easytype_report_but_string "The body of this function is required by the context to have type")
+        (easytype_report_but_string 
+          "The body of this function is required by the context to have type")
 
         (* TODO: keep attributes, call type_function directly *)
   | Pexp_fun (l, None, spat, sexp) ->
@@ -2835,7 +2843,9 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_assert (e) ->
-      let cond = type_expect_easify env e Predef.type_bool (easytype_report_so_but_string "This expression is the condition of an assertion") in
+      let cond = type_expect_easify env e Predef.type_bool 
+        (easytype_report_so_but_string 
+         "This expression is the condition of an assertion") in
       let exp_type =
         match cond.exp_desc with
         | Texp_construct(_, {cstr_name="false"}, _) ->
@@ -3575,9 +3585,10 @@ and type_application_easytype env funct sargs (targs:expression list) =
                 assert false
           end else 
             try
-            let (l', sarg0, targ0_opt, sargs, (targs:expression list), more_sargs, (more_targs:expression list)) =
+            let (l', sarg0, targ0_opt, sargs, targs, more_sargs, more_targs) =
               try
-                let (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2) = extract_label_and_expr name sargs targs in
+                let (l', sarg0, targ0_opt, sargs1, targs1, sargs2, targs2) = 
+                  extract_label_and_expr name sargs targs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
                     (Warnings.Not_principal "commuting this argument");
@@ -3794,7 +3805,9 @@ and type_cases_easify ?in_function env ty_arg ty_res partial_flag loc caselist =
     let ty = newvar() in
     let cases, partial = type_cases ?in_function env ty ty_res partial_flag loc caselist in
     unify_exp_types_easytype loc env ty ty_arg
-        (easytype_report ~swap:true (fun ppf () -> Format.fprintf ppf "The argument of the pattern matching has type") (format_string "but the patterns have type"));
+        (easytype_report ~swap:true 
+          (fun ppf () -> Format.fprintf ppf "The argument of the pattern matching has type") 
+          (format_string "but the patterns have type"));
     (cases, partial)   
   end else begin
     type_cases ?in_function env ty_arg ty_res partial_flag loc caselist
@@ -3836,7 +3849,7 @@ and type_statement_easytype env sexp report =
 (* note: should call type_expect_easify with a ty_expected
    that is a predefined type only if it is not polymorphic *)
 
-and type_expect_easify ?in_function env sexp ty_expected (report:easytype_reporter) =
+and type_expect_easify ?in_function env sexp ty_expected report =
   if !use_easy_type_errors
     then type_expect_predef_easytype env sexp ty_expected report
     else type_expect ?in_function env sexp ty_expected 
@@ -4011,10 +4024,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           let first_branch = (List.hd cases).c_rhs in
           List.iter (fun c ->
             ignore (unify_exp_easytype env c.c_rhs first_branch.exp_type  
-              (easytype_report ~swap:true (format_string "The previous branches produce values of type") (format_string "but this branch has type")))
+              (easytype_report ~swap:true 
+                (format_string "The previous branches produce values of type") 
+                (format_string "but this branch has type")))
             ) cases;
           ignore (unify_exp_easytype env first_branch ty_res  
-            (easytype_report ~swap:true (format_string "The branches of the matching are required by the context to produce values of type") (format_string "but they have type")))
+            (easytype_report ~swap:true 
+              (format_string "The branches of the matching are required by the context to produce values of type")
+              (format_string "but they have type")))
         end;
         cases
         (* end easytype *)

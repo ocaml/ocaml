@@ -53,11 +53,11 @@ module Options = Main_args.Make_optcomp_options (struct
   let _ccopt s = option_with_arg "-ccopt" s
   let _compact = option "-compact"
   let _config = option "-config"
+  let _easy_type_errors = option "-easy-type-errors"
   let _for_pack s = option_with_arg "-for-pack" s
   let _g = option "-g"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
-  let _easy_type_errors = option "-easy-type-errors"
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _inline n = option_with_int "-inline" n
   let _intf s = with_intf := true; option_with_arg "-intf" s
