@@ -135,42 +135,46 @@ static void start_cycle (void)
 #endif
 }
 
+/* We may stop the slice inside values, in order to avoid large latencies
+   on large arrays. In this case, [current_value] is the partially-marked
+   value and [current_index] is the index of the next field to be marked.
+*/
+static value current_value = 0;
+static mlsize_t current_index = 0;
+
 static void mark_slice (intnat work)
 {
-  value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
+  value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
   value v, child;
-  header_t hd;
-  mlsize_t size, i;
+  header_t hd, chd;
+  mlsize_t size, i, start, end; /* [start] is a local copy of [current_index] */
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   int marking_closure = 0;
-#endif
-#ifdef CAML_TIMER
-  int timing = 0;
-  CAML_TIMER_DECLARE (tmr);
 #endif
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
+  v = current_value;
+  start = current_index;
+  if (v == 0 && gray_vals_ptr > gray_vals){
+    CAMLassert (start == 0);
+    v = *--gray_vals_ptr;
+    CAMLassert (Is_gray_val (v));
+  }
   while (work > 0){
-    if (gray_vals_ptr > gray_vals){
-      v = *--gray_vals_ptr;
+    if (v != 0){
       hd = Hd_val(v);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
       marking_closure =
         (Tag_hd (hd) == Closure_tag || Tag_hd (hd) == Infix_tag);
 #endif
       Assert (Is_gray_hd (hd));
-      Hd_val (v) = Blackhd_hd (hd);
       size = Wosize_hd (hd);
-#ifdef CAML_TIMER
-      if (size > work && size > 1000){
-        timing = 1;
-        CAML_TIMER_START(tmr, "");
-      }
-#endif
       if (Tag_hd (hd) < No_scan_tag){
-        for (i = 0; i < size; i++){
+        end = (size - start < work) ? size : (start + work);
+        CAMLassert (end > start);
+        for (i = start; i < end; i++){
           child = Field (v, i);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
           if (Is_block (child)
@@ -184,8 +188,8 @@ static void mark_slice (intnat work)
 #else
           if (Is_block (child) && Is_in_heap (child)) {
 #endif
-            hd = Hd_val (child);
-            if (Tag_hd (hd) == Forward_tag){
+            chd = Hd_val (child);
+            if (Tag_hd (chd) == Forward_tag){
               value f = Forward_val (child);
               if (Is_block (f)
                   && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
@@ -194,13 +198,12 @@ static void mark_slice (intnat work)
               }else{
                 Field (v, i) = f;
               }
-            }
-            else if (Tag_hd(hd) == Infix_tag) {
+            }else if (Tag_hd(chd) == Infix_tag) {
               child -= Infix_offset_val(child);
-              hd = Hd_val(child);
+              chd = Hd_val(child);
             }
-            if (Is_white_hd (hd)){
-              Hd_val (child) = Grayhd_hd (hd);
+            if (Is_white_hd (chd)){
+              Hd_val (child) = Grayhd_hd (chd);
               *gray_vals_ptr++ = child;
               if (gray_vals_ptr >= gray_vals_end) {
                 gray_vals_cur = gray_vals_ptr;
@@ -210,11 +213,34 @@ static void mark_slice (intnat work)
             }
           }
         }
+        if (end < size){
+          start = end;
+          work = 0;
+          /* [v] doesn't change. */
+          CAMLassert (Is_gray_val (v));
+        }else{
+          CAMLassert (end == size);
+          Hd_val (v) = Blackhd_hd (hd);
+          work -= Whsize_wosize(end - start);
+          start = 0;
+          if (gray_vals_ptr > gray_vals){
+            v = *--gray_vals_ptr;
+            CAMLassert (Is_gray_val (v));
+          }else{
+            v = 0;
+          }
+        }
+      }else{
+        /* The block doesn't contain any pointers. */
+        CAMLassert (start == 0);
+        Hd_val (v) = Blackhd_hd (hd);
+        work -= Whsize_wosize(size);
+        if (gray_vals_ptr > gray_vals){
+          v = *--gray_vals_ptr;
+        }else{
+          v = 0;
+        }
       }
-#ifdef CAML_TIMER
-      if (timing) CAML_TIMER_TIME(tmr, "mark_large_array");
-#endif
-      work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
         chunk = Chunk_next (chunk);
@@ -227,7 +253,8 @@ static void mark_slice (intnat work)
       }else{
         if (Is_gray_val (Val_hp (markhp))){
           Assert (gray_vals_ptr == gray_vals);
-          *gray_vals_ptr++ = Val_hp (markhp);
+          CAMLassert (v == 0 && start == 0);
+          v = Val_hp (markhp);
         }
         markhp += Bhsize_hp (markhp);
       }
@@ -295,6 +322,10 @@ static void mark_slice (intnat work)
           gray_vals_cur = gray_vals_ptr;
           caml_final_update ();
           gray_vals_ptr = gray_vals_cur;
+          if (gray_vals_ptr > gray_vals){
+            v = *--gray_vals_ptr;
+            CAMLassert (start == 0);
+          }
           caml_gc_subphase = Subphase_weak2;
           weak_prev = &caml_weak_list_head;
         }
@@ -322,7 +353,6 @@ static void mark_slice (intnat work)
         break;
       case Subphase_final: {
         /* Initialise the sweep phase. */
-        gray_vals_cur = gray_vals_ptr;
         caml_gc_sweep_hp = caml_heap_start;
         caml_fl_init_merge ();
         caml_gc_phase = Phase_sweep;
@@ -338,6 +368,8 @@ static void mark_slice (intnat work)
     }
   }
   gray_vals_cur = gray_vals_ptr;
+  current_value = v;
+  current_index = start;
 }
 
 static void sweep_slice (intnat work)
