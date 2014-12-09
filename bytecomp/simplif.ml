@@ -584,6 +584,14 @@ and list_emit_tail_infos_fun f is_tail =
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)
 
+(* Mark a function as stub.
+   To be removed when the possibility to annotate functions is added *)
+let stubify body =
+  let stub_prim =
+    Primitive.{prim_name = "*stub*"; prim_arity = 1; prim_alloc = false;
+               prim_native_name = "*stub*"; prim_native_float = false} in
+  Lprim(Pccall stub_prim, [body])
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 

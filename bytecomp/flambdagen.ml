@@ -290,9 +290,16 @@ let to_flambda
         List.fold_right
           (fun id env -> add_var id (create_var id) env)
           params closure_env_without_parameters in
+      (* If the function is a wrapper function: force inline *)
+      let stub, body =
+        match body with
+        | Lprim(Pccall { Primitive.prim_name = "*stub*" }, [body]) ->
+            true, body
+        | _ -> false, body
+      in
       let params = List.map (find_var closure_env) params in
       let fun_decl =
-        { stub = false; params; dbg;
+        { stub; params; dbg;
           free_variables =
             IdentSet.fold
               (fun id set -> VarSet.add (find_var closure_env id) set)
