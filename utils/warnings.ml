@@ -443,7 +443,7 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Proprocessor warning.";
+   22, "Preprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
