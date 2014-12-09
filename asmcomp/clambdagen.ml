@@ -72,8 +72,7 @@ let structured_constant_label expected_symbol ~shared cst =
       Compilenv.new_structured_constant cst ~shared
   | Some sym ->
       let lbl = string_of_linkage_name sym.sym_label in
-      Compilenv.add_structured_constant lbl cst ~shared;
-      lbl
+      Compilenv.add_structured_constant lbl cst ~shared
 
 module type Param1 = sig
   type t
@@ -279,9 +278,10 @@ module Conv(P:Param2) = struct
         end
 
     | Fsymbol (sym,_) ->
+        let lbl = Compilenv.cannonical_symbol (string_of_linkage_name sym.sym_label) in
         Uconst (Uconst_ref
                   (* Should delay the conversion a bit more *)
-                  (string_of_linkage_name sym.sym_label, None))
+                  (lbl, None))
 
     | Fconst (cst,_) ->
         Uconst (conv_const expected_symbol cst)
@@ -602,7 +602,7 @@ module Conv(P:Param2) = struct
       | None -> assert false
       | Some fv_const ->
           let cst = Uconst_closure (ufunct, closure_lbl, fv_const) in
-          Compilenv.add_structured_constant closure_lbl cst ~shared:true;
+          let closure_lbl = Compilenv.add_structured_constant closure_lbl cst ~shared:true in
           Uconst(Uconst_ref (closure_lbl, Some cst))
     else
       Uclosure (ufunct, List.map snd fv_ulam)
@@ -654,8 +654,9 @@ module Conv(P:Param2) = struct
 
   let structured_constant_for_symbol sym = function
     | Uconst(Uconst_ref (lbl', Some cst)) ->
-        let lbl = string_of_linkage_name sym.sym_label in
-        assert(lbl = lbl'); cst
+        let lbl = Compilenv.cannonical_symbol (string_of_linkage_name sym.sym_label) in
+        assert(lbl = Compilenv.cannonical_symbol lbl');
+        cst
     (* | Uconst(Uconst_ref(None, Some cst)) -> cst *)
     | _ -> assert false
 

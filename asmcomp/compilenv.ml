@@ -47,6 +47,7 @@ module CstMap =
 type structured_constants =
   {
     strcst_shared: string CstMap.t;
+    strcst_original: string StringMap.t;
     strcst_alias: string list StringMap.t;
     strcst_all: (string * Clambda.ustructured_constant) list;
   }
@@ -54,6 +55,7 @@ type structured_constants =
 let structured_constants_empty  =
   {
     strcst_shared = CstMap.empty;
+    strcst_original = StringMap.empty;
     strcst_alias = StringMap.empty;
     strcst_all = [];
   }
@@ -337,8 +339,8 @@ let snapshot () = !structured_constants
 let backtrack s = structured_constants := s
 
 let add_structured_constant lbl cst ~shared =
-  let {strcst_shared; strcst_alias; strcst_all} = !structured_constants in
-  let res =
+  let {strcst_shared; strcst_original; strcst_alias; strcst_all} = !structured_constants in
+  let res, name =
     if shared then
       if CstMap.mem cst strcst_shared
       then
@@ -350,33 +352,43 @@ let add_structured_constant lbl cst ~shared =
         {
           strcst_shared;
           strcst_all;
+          strcst_original = StringMap.add lbl name strcst_original;
           strcst_alias = StringMap.add name (lbl::aliases) strcst_alias;
-        }
+        }, name
       else
         {
           strcst_shared = CstMap.add cst lbl strcst_shared;
+          strcst_original;
           strcst_all = (lbl, cst) :: strcst_all;
           strcst_alias;
-        }
+        }, lbl
     else
       {
         strcst_shared;
+        strcst_original;
         strcst_all = (lbl, cst) :: strcst_all;
         strcst_alias;
-      }
+      }, lbl
   in
-  structured_constants := res
+  structured_constants := res;
+  name
+
+let cannonical_symbol lbl =
+  try StringMap.find lbl (!structured_constants).strcst_original
+  with Not_found -> lbl
 
 let new_structured_constant cst ~shared =
-  let {strcst_shared; strcst_alias; strcst_all} = !structured_constants in
+  let {strcst_shared; strcst_original; strcst_alias; strcst_all} = !structured_constants in
   if shared then
     try
-      CstMap.find cst strcst_shared
+      let l = CstMap.find cst strcst_shared in
+      l
     with Not_found ->
       let lbl = new_const_symbol() in
       structured_constants :=
         {
           strcst_shared = CstMap.add cst lbl strcst_shared;
+          strcst_original;
           strcst_all = (lbl, cst) :: strcst_all;
           strcst_alias;
         };
@@ -386,6 +398,7 @@ let new_structured_constant cst ~shared =
     structured_constants :=
       {
         strcst_shared;
+        strcst_original;
         strcst_all = (lbl, cst) :: strcst_all;
         strcst_alias;
       };
