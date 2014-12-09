@@ -226,9 +226,11 @@ void caml_oldify_mopup (void)
 void caml_empty_minor_heap (void)
 {
   value **r;
+  uintnat prev_alloc_words;
 
   if (caml_young_ptr != caml_young_end){
     CAML_TIMER_SETUP (t, "minor");
+    prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
@@ -259,6 +261,8 @@ void caml_empty_minor_heap (void)
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
     CAML_TIMER_TIME (t, "minor/finalized");
+    caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+    ++ caml_stat_minor_collections;
   }
 #ifdef DEBUG
   {
@@ -277,15 +281,12 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_minor_collection (void)
 {
-  intnat prev_alloc_words = caml_allocated_words;
   CAML_TIMER_SETUP(t, "coll");
   CAML_TIMER_TIME (t, "overhead");
 
   caml_empty_minor_heap ();
   CAML_TIMER_TIME (t, "coll/minor");
 
-  caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-  ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
   CAML_TIMER_TIME (t, "coll/major");
   caml_force_major_slice = 0;
