@@ -221,9 +221,10 @@ val finalise : ('a -> unit) -> 'a -> unit
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
    as expected:
-   - [ let v = ... in Gc.finalise (fun x -> ...) v ]
+   - [ let v = ... in Gc.finalise (fun x -> ... v ...) v ]
 
-   Instead you should write:
+   Instead you should make sure that [v] is not in the closure of
+   the finalisation function by writing:
    - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
 
 
