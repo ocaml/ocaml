@@ -226,8 +226,13 @@ let empty = {
   functor_args = Ident.empty;
  }
 
-let in_signature env =
-  {env with flags = env.flags lor in_signature_flag}
+let in_signature b env =
+  let flags =
+    if b then env.flags lor in_signature_flag
+    else env.flags land (lnot in_signature_flag)
+  in
+  {env with flags}
+
 let implicit_coercion env =
   {env with flags = env.flags lor implicit_coercion_flag}
 

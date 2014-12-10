@@ -642,6 +642,10 @@ structure_item:
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
+  | VAL val_ident COLON core_type post_item_attributes
+      { mkstr
+          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
+                             ~attrs:$5 ~loc:(symbol_rloc()))) }
   | TYPE type_declarations
       { mkstr(Pstr_type (List.rev $2) ) }
   | TYPE str_type_extension

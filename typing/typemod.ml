@@ -555,6 +555,7 @@ let rec transl_modtype env smty =
         (Mtype.freshen (Mty_signature final_sg)) env loc
         smty.pmty_attributes
   | Pmty_typeof smod ->
+      let env = Env.in_signature false env in
       let tmty, mty = !type_module_type_of_fwd env smod in
       mkmty (Tmty_typeof tmty) mty env loc smty.pmty_attributes
   | Pmty_extension ext ->
@@ -721,7 +722,7 @@ and transl_signature env sg =
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
   Typetexp.warning_enter_scope ();
-  let (trem, rem, final_env) = transl_sig (Env.in_signature env) sg in
+  let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
   let rem = simplify_signature rem in
   let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
   Typetexp.warning_leave_scope ();

@@ -280,7 +280,7 @@ and try_modtypes2 env cxt mty1 mty2 =
 and signatures env cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
-    Env.add_signature sig1 (Env.in_signature env) in
+    Env.add_signature sig1 (Env.in_signature true env) in
   (* Keep ids for module aliases *)
   let (id_pos_list,_) =
     List.fold_left

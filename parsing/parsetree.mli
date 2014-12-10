@@ -342,8 +342,6 @@ and value_description =
 (*
   val x: T                            (prim = [])
   external x: T = "s1" ... "sn"       (prim = ["s1";..."sn"])
-
-  Note: when used under Pstr_primitive, prim cannot be empty
 *)
 
 (* Type declarations *)

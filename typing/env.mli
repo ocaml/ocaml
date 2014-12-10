@@ -209,8 +209,10 @@ val mark_constructor:
 val mark_extension_used:
     constructor_usage -> t -> extension_constructor -> string -> unit
 
-val in_signature: t -> t
+val in_signature: bool -> t -> t
 val implicit_coercion: t -> t
+
+val is_in_signature: t -> bool
 
 val set_value_used_callback:
     string -> value_description -> (unit -> unit) -> unit

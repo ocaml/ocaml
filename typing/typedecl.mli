@@ -82,6 +82,7 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
+  | Val_in_structure
 
 exception Error of Location.t * error
 
