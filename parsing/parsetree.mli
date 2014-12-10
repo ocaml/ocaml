@@ -774,7 +774,8 @@ and structure_item_desc =
            let rec P1 = E1 and ... and Pn = EN   (flag = Recursive)
          *)
   | Pstr_primitive of value_description
-        (* external x: T = "s1" ... "sn" *)
+        (*  val x: T
+            external x: T = "s1" ... "sn" *)
   | Pstr_type of type_declaration list
         (* type t1 = ... and ... and tn = ... *)
   | Pstr_typext of type_extension
