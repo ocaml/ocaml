@@ -18,6 +18,7 @@
 #include "unixsupport.h"
 
 static double initial_time = 0; /* 0 means uninitialized */
+/* Windows' epoch as a Unix timestamp in hundreds of ns */
 static const uint64_t epoch_ft = 116444736000000000llu;
 static DWORD initial_tickcount;
 
