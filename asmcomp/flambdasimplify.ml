@@ -16,8 +16,6 @@ open Abstract_identifiers
 open Flambda
 open Flambdaapprox
 
-let fvar id = Fvar(id,ExprId.create ())
-
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
 
@@ -247,10 +245,10 @@ let init_r () =
     tmp_escape_variables = [];
     not_kept_param = VarSet.empty }
 
-let make_const_int r n eid =
-  Fconst(Fconst_base(Asttypes.Const_int n),eid), ret r (value_int n)
-let make_const_ptr r n eid = Fconst(Fconst_pointer n,eid), ret r (value_constptr n)
-let make_const_bool r b eid = make_const_ptr r (if b then 1 else 0) eid
+let make_const_int n eid =
+  Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
+let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
+let make_const_bool b eid = make_const_ptr (if b then 1 else 0) eid
 
 let find id env =
   try VarMap.find id env.env_approx
@@ -521,14 +519,17 @@ let rec no_effects = function
   | Fevent _ -> assert false
 
 let check_constant_result r lam approx =
-  match approx.descr with
-    Value_int n when no_effects lam ->
-      make_const_int r n (data_at_toplevel_node lam)
-  | Value_constptr n when no_effects lam ->
-      make_const_ptr r n (data_at_toplevel_node lam)
-  | Value_symbol sym when no_effects lam ->
-      Fsymbol(sym, data_at_toplevel_node lam), ret r approx
-  | _ -> (lam, ret r approx)
+  let lam, approx =
+    match approx.descr with
+      Value_int n when no_effects lam ->
+        make_const_int n (data_at_toplevel_node lam)
+    | Value_constptr n when no_effects lam ->
+        make_const_ptr n (data_at_toplevel_node lam)
+    | Value_symbol sym when no_effects lam ->
+        Fsymbol(sym, data_at_toplevel_node lam), approx
+    | _ -> lam, approx
+  in
+  lam, ret r approx
 
 let check_var_and_constant_result env r lam approx =
   let res = match approx.var with
@@ -560,51 +561,51 @@ let get_field i = function
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
 
-let make_const_int' expr r n eid =
+let const_int_expr expr n eid =
   if no_effects expr
-  then make_const_int r n eid
-  else expr, ret r (value_int n)
-let make_const_ptr' expr r n eid =
+  then make_const_int n eid
+  else expr, value_int n
+let const_ptr_expr expr n eid =
   if no_effects expr
-  then make_const_ptr r n eid
-  else expr, ret r (value_constptr n)
-let make_const_bool' expr r b eid =
-  make_const_ptr' expr r (if b then 1 else 0) eid
+  then make_const_ptr n eid
+  else expr, value_constptr n
+let const_bool_expr expr b eid =
+  const_ptr_expr expr (if b then 1 else 0) eid
 
-let simplif_prim r p (args, approxs) expr dbg : 'a flambda * ret =
+let simplif_prim p (args, approxs) expr : 'a flambda * approx =
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
-      expr, ret r (value_block(tag, Array.of_list approxs))
+      expr, value_block(tag, Array.of_list approxs)
   | _ ->
       let eid = data_at_toplevel_node expr in
       match descrs approxs with
         [Value_int x] ->
           begin match p with
-            Pidentity -> make_const_int' expr r x eid
-          | Pnegint -> make_const_int' expr r (-x) eid
+            Pidentity -> const_int_expr expr x eid
+          | Pnegint -> const_int_expr expr (-x) eid
           | Pbswap16 ->
-              make_const_int' expr r (((x land 0xff) lsl 8) lor
-                                      ((x land 0xff00) lsr 8)) eid
-          | Poffsetint y -> make_const_int' expr r (x + y) eid
+              const_int_expr expr (((x land 0xff) lsl 8) lor
+                                    ((x land 0xff00) lsr 8)) eid
+          | Poffsetint y -> const_int_expr expr (x + y) eid
           | _ ->
-              expr, ret r value_unknown
+              expr, value_unknown
           end
       | [Value_int x; Value_int y]
       | [Value_constptr x; Value_int y]
       | [Value_int x; Value_constptr y]
       | [Value_constptr x; Value_constptr y] ->
           begin match p with
-            Paddint -> make_const_int' expr r (x + y) eid
-          | Psubint -> make_const_int' expr r (x - y) eid
-          | Pmulint -> make_const_int' expr r (x * y) eid
-          | Pdivint when y <> 0 -> make_const_int' expr r (x / y) eid
-          | Pmodint when y <> 0 -> make_const_int' expr r (x mod y) eid
-          | Pandint -> make_const_int' expr r (x land y) eid
-          | Porint -> make_const_int' expr r (x lor y) eid
-          | Pxorint -> make_const_int' expr r (x lxor y) eid
-          | Plslint -> make_const_int' expr r (x lsl y) eid
-          | Plsrint -> make_const_int' expr r (x lsr y) eid
-          | Pasrint -> make_const_int' expr r (x asr y) eid
+            Paddint -> const_int_expr expr (x + y) eid
+          | Psubint -> const_int_expr expr (x - y) eid
+          | Pmulint -> const_int_expr expr (x * y) eid
+          | Pdivint when y <> 0 -> const_int_expr expr (x / y) eid
+          | Pmodint when y <> 0 -> const_int_expr expr (x mod y) eid
+          | Pandint -> const_int_expr expr (x land y) eid
+          | Porint -> const_int_expr expr (x lor y) eid
+          | Pxorint -> const_int_expr expr (x lxor y) eid
+          | Plslint -> const_int_expr expr (x lsl y) eid
+          | Plsrint -> const_int_expr expr (x lsr y) eid
+          | Pasrint -> const_int_expr expr (x asr y) eid
           | Pintcomp cmp ->
               let result = match cmp with
                   Ceq -> x = y
@@ -613,42 +614,41 @@ let simplif_prim r p (args, approxs) expr dbg : 'a flambda * ret =
                 | Cgt -> x > y
                 | Cle -> x <= y
                 | Cge -> x >= y in
-              make_const_bool' expr r result eid
+              const_bool_expr expr result eid
           | Pisout ->
-              make_const_bool' expr r (y > x || y < 0) eid
-          | Psequand -> make_const_bool' expr r (x <> 0 && y <> 0) eid
-          | Psequor  -> make_const_bool' expr r (x <> 0 || y <> 0) eid
+              const_bool_expr expr (y > x || y < 0) eid
+          | Psequand -> const_bool_expr expr (x <> 0 && y <> 0) eid
+          | Psequor  -> const_bool_expr expr (x <> 0 || y <> 0) eid
           | _ ->
-              expr, ret r value_unknown
+              expr, value_unknown
           end
       | [Value_constptr x] ->
           begin match p with
-            Pidentity -> make_const_ptr' expr r x eid
-          | Pnot -> make_const_bool' expr r (x = 0) eid
-          | Pisint -> make_const_bool' expr r true eid
+            Pidentity -> const_ptr_expr expr x eid
+          | Pnot -> const_bool_expr expr (x = 0) eid
+          | Pisint -> const_bool_expr expr true eid
           | Pctconst c ->
               begin
                 match c with
-                | Big_endian -> make_const_bool' expr r Arch.big_endian eid
-                | Word_size -> make_const_int' expr r (8*Arch.size_int) eid
-                | Int_size -> make_const_int' expr r (8*Arch.size_int - 1) eid
-                | Max_wosize -> make_const_int' expr r ((1 lsl ((8*Arch.size_int) - 10)) - 1 ) eid
-                | Ostype_unix -> make_const_bool' expr r (Sys.os_type = "Unix") eid
-                | Ostype_win32 -> make_const_bool' expr r (Sys.os_type = "Win32") eid
-                | Ostype_cygwin -> make_const_bool' expr r (Sys.os_type = "Cygwin") eid
+                | Big_endian -> const_bool_expr expr Arch.big_endian eid
+                | Word_size -> const_int_expr expr (8*Arch.size_int) eid
+                | Int_size -> const_int_expr expr (8*Arch.size_int - 1) eid
+                | Max_wosize -> const_int_expr expr ((1 lsl ((8*Arch.size_int) - 10)) - 1 ) eid
+                | Ostype_unix -> const_bool_expr expr (Sys.os_type = "Unix") eid
+                | Ostype_win32 -> const_bool_expr expr (Sys.os_type = "Win32") eid
+                | Ostype_cygwin -> const_bool_expr expr (Sys.os_type = "Cygwin") eid
               end
           | _ ->
-              expr, ret r value_unknown
+              expr, value_unknown
           end
       | [Value_block _] ->
           begin match p with
-          | Pisint -> make_const_bool' expr r false eid
+          | Pisint -> const_bool_expr expr false eid
           | _ ->
-              expr, ret r value_unknown
+              expr, value_unknown
           end
       | _ ->
-          expr, ret r value_unknown
-
+          expr, value_unknown
 
 let sequence l1 l2 annot =
   if no_effects l1
@@ -831,7 +831,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fprim(p, args, dbg, annot) as expr ->
       let (args', approxs, r) = loop_list env r args in
       let expr = if args' == args then expr else Fprim(p, args', dbg, annot) in
-      simplif_prim r p (args, approxs) expr dbg
+      let expr, approx = simplif_prim p (args, approxs) expr in
+      expr, ret r approx
   | Fstaticraise(i, args, annot) ->
       let i = sb_exn i env in
       let args, _, r = loop_list env r args in
@@ -1217,10 +1218,10 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let param_sb = List.map (fun id -> rename_var id) func.params in
   let applied_args, remaining_args = Misc.map2_head
     (fun arg id' -> id', arg) args param_sb in
-  let call_args = List.map (fun id' -> fvar id') param_sb in
+  let call_args = List.map (fun id' -> Fvar(id', ExprId.create ())) param_sb in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
-  let expr = Fapply ({ ap_function = fvar funct_id;
+  let expr = Fapply ({ ap_function = Fvar(funct_id, ExprId.create ());
                        ap_arg = call_args;
                        ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
   let fclosure = make_function new_fun_id expr remaining_args in
