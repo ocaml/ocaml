@@ -132,7 +132,7 @@ let flambda ppf (size, lam) =
     else
       let flam = Flambdasimplify.lift_lets flam in
       let flam = Flambdasimplify.simplify flam in
-      let flam = Flambdasimplify.eliminate_ref flam in
+      let flam = Flambda_ref_to_variables.eliminate_ref flam in
       loop (rounds - 1) flam in
   let flam = loop !Clflags.simplify_rounds flam in
   dump_and_check "flambdasimplify" flam;
