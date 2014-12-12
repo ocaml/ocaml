@@ -38,7 +38,7 @@ type pack_member =
 
 let read_member_info pack_path file = (
   let name =
-    String.capitalize(Filename.basename(chop_extensions file)) in
+    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmx" then begin
       let (info, crc) = Compilenv.read_unit_info file in
@@ -171,7 +171,7 @@ let package_files ppf initial_env files targetcmx =
   let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
   let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
-  let targetname = String.capitalize(Filename.basename prefix) in
+  let targetname = String.capitalize_ascii(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
