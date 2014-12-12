@@ -193,7 +193,7 @@ let print_raw_dependencies source_file deps =
   Depend.StringSet.iter
     (fun dep ->
       if (String.length dep > 0)
-          && (match dep.[0] with 'A'..'Z' -> true | _ -> false) then begin
+          && (match dep.[0] with 'A'..'Z' | '\128'..'\255' -> true | _ -> false) then begin
             print_char ' ';
             print_string dep
           end)
