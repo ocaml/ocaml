@@ -261,9 +261,9 @@ let add_approx id approx env =
   let approx =
     match approx.var with
     | Some var when present var env ->
-      approx
+        approx
     | _ ->
-      { approx with var = Some id }
+        { approx with var = Some id }
   in
   { env with env_approx = VarMap.add id approx env.env_approx }
 
@@ -534,11 +534,11 @@ let check_constant_result r lam approx =
 let check_var_and_constant_result env r lam approx =
   let res = match approx.var with
     | None ->
-      lam
+        lam
     | Some var ->
-      if present var env
-      then Fvar(var, data_at_toplevel_node lam)
-      else lam
+        if present var env
+        then Fvar(var, data_at_toplevel_node lam)
+        else lam
   in
   let expr, r = check_constant_result r res approx in
   let r = match expr with
@@ -554,9 +554,9 @@ let check_var_and_constant_result env r lam approx =
 
 let get_field i = function
   | [{descr = Value_block (tag, fields)}] ->
-    if i >= 0 && i < Array.length fields
-    then fields.(i)
-    else value_unknown
+      if i >= 0 && i < Array.length fields
+      then fields.(i)
+      else value_unknown
   | _ -> value_unknown
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
@@ -585,7 +585,7 @@ let simplif_prim p (args, approxs) expr : 'a flambda * approx =
           | Pnegint -> const_int_expr expr (-x) eid
           | Pbswap16 ->
               const_int_expr expr (((x land 0xff) lsl 8) lor
-                                    ((x land 0xff00) lsr 8)) eid
+                                   ((x land 0xff00) lsr 8)) eid
           | Poffsetint y -> const_int_expr expr (x + y) eid
           | _ ->
               expr, value_unknown
@@ -1060,68 +1060,69 @@ and closure env r cl annot =
           (value_closure { fun_id = (Closure_function.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
-  let funs, kept_params, used_params, r = VarMap.fold (fun fid ffun
-                                           (funs,kept_params_map,used_params,r) ->
-      let closure_env = VarMap.fold
-          (fun id (_,desc) env ->
-             if VarSet.mem id ffun.free_variables
-             then begin
-               add_approx id desc env
-             end
-             else env) fv closure_env in
-      let closure_env = List.fold_left (fun env id ->
-          let approx = try VarMap.find id approxs
-            with Not_found -> value_unknown in
-          add_approx id approx env) closure_env ffun.params in
+  let funs, kept_params, used_params, r = VarMap.fold
+      (fun fid ffun
+        (funs,kept_params_map,used_params,r) ->
+        let closure_env = VarMap.fold
+            (fun id (_,desc) env ->
+               if VarSet.mem id ffun.free_variables
+               then begin
+                 add_approx id desc env
+               end
+               else env) fv closure_env in
+        let closure_env = List.fold_left (fun env id ->
+            let approx = try VarMap.find id approxs
+              with Not_found -> value_unknown in
+            add_approx id approx env) closure_env ffun.params in
 
-      (***** TODO: find something better
-             Warning if multiply recursive function ******)
-      (* Format.printf "body:@ %a@." Printflambda.flambda ffun.body; *)
-      let body = Flambdaiter.map_toplevel (function
-          | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
-              Fvar(SymbolMap.find sym prev_closure_symbols,ExprId.create ())
-          | e -> e) ffun.body in
-      (* We replace recursive calls using the function symbol
-         This is done before substitution because we could have something like:
-           List.iter (List.iter some_fun) l
-         And we need to distinguish the inner iter from the outer one
-      *)
+        (***** TODO: find something better
+               Warning if multiply recursive function ******)
+        (* Format.printf "body:@ %a@." Printflambda.flambda ffun.body; *)
+        let body = Flambdaiter.map_toplevel (function
+            | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
+                Fvar(SymbolMap.find sym prev_closure_symbols,ExprId.create ())
+            | e -> e) ffun.body in
+        (* We replace recursive calls using the function symbol
+           This is done before substitution because we could have something like:
+             List.iter (List.iter some_fun) l
+           And we need to distinguish the inner iter from the outer one
+        *)
 
-      let closure_env =
-        if ffun.stub
-        then { closure_env with inline_threshold = -10000 }
-        else closure_env in
+        let closure_env =
+          if ffun.stub
+          then { closure_env with inline_threshold = -10000 }
+          else closure_env in
 
-      let body, r = loop closure_env r body in
-      let used_params = List.fold_left (fun acc id ->
-          if VarSet.mem id r.used_variables
-          then VarSet.add id acc
-          else acc) used_params ffun.params in
+        let body, r = loop closure_env r body in
+        let used_params = List.fold_left (fun acc id ->
+            if VarSet.mem id r.used_variables
+            then VarSet.add id acc
+            else acc) used_params ffun.params in
 
-      let kept_params =
-        if (VarMap.cardinal ffuns.funs = 1) &&
-           (* multiply recursive functions are not handled yet *)
-           VarSet.mem fid recursive_funs &&
-           not (VarSet.mem fid r.escape_variables)
-        then begin
-          let kept_params = List.filter
-              (fun id ->
-                 VarSet.mem id r.used_variables &&
-                 not (VarSet.mem id r.not_kept_param))
-              ffun.params in
-          VarSet.of_list kept_params
-        end
-        else VarSet.empty in
+        let kept_params =
+          if (VarMap.cardinal ffuns.funs = 1) &&
+             (* multiply recursive functions are not handled yet *)
+             VarSet.mem fid recursive_funs &&
+             not (VarSet.mem fid r.escape_variables)
+          then begin
+            let kept_params = List.filter
+                (fun id ->
+                   VarSet.mem id r.used_variables &&
+                   not (VarSet.mem id r.not_kept_param))
+                ffun.params in
+            VarSet.of_list kept_params
+          end
+          else VarSet.empty in
 
-      let kept_params_map =
-        ClosureFunctionMap.add
-          (Closure_function.wrap fid) kept_params kept_params_map in
+        let kept_params_map =
+          ClosureFunctionMap.add
+            (Closure_function.wrap fid) kept_params kept_params_map in
 
-      let r = VarSet.fold (fun id r -> exit_scope r id)
-          ffun.free_variables r in
-      let free_variables = Flambdaiter.free_variables body in
-      VarMap.add fid { ffun with body; free_variables } funs,
-      kept_params_map, used_params, r)
+        let r = VarSet.fold (fun id r -> exit_scope r id)
+            ffun.free_variables r in
+        let free_variables = Flambdaiter.free_variables body in
+        VarMap.add fid { ffun with body; free_variables } funs,
+        kept_params_map, used_params, r)
       ffuns.funs (VarMap.empty, ClosureFunctionMap.empty, VarSet.empty, r) in
 
   let spec_args = VarMap.filter
@@ -1168,7 +1169,7 @@ and offset r flam off rel annot =
    direct apply of parial apply
    local: if local is true, the application is of the shape: apply (offset (closure ...)).
           i.e. it should not duplicate the function
- *)
+*)
 and apply env r ~local tmp_escape (funct,fapprox) (args,approxs) dbg eid =
   match fapprox.descr with
   | Value_closure { fun_id; closure } ->
@@ -1217,7 +1218,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
   assert(remaining_args > 0);
   let param_sb = List.map (fun id -> rename_var id) func.params in
   let applied_args, remaining_args = Misc.map2_head
-    (fun arg id' -> id', arg) args param_sb in
+      (fun arg id' -> id', arg) args param_sb in
   let call_args = List.map (fun id' -> Fvar(id', ExprId.create ())) param_sb in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
@@ -1277,40 +1278,40 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
                        ap_kind = Direct fun_id; ap_dbg}, eid),
              ret r value_unknown
              (* do not use approximation: there can be renamed offsets.
-             A better solution would be to use the generic approximation
+                A better solution would be to use the generic approximation
                 of the function *)
       else
         let kept_params = closure.kept_params in
-      if
-        recursive && not (FunSet.mem clos.ident env.current_functions)
-        && not (VarSet.is_empty kept_params)
-        && ClosureVariableMap.is_empty closure.bound_var (* closed *)
-        && env.inlining_level <= max_level
+        if
+          recursive && not (FunSet.mem clos.ident env.current_functions)
+          && not (VarSet.is_empty kept_params)
+          && ClosureVariableMap.is_empty closure.bound_var (* closed *)
+          && env.inlining_level <= max_level
 
-      then begin
-        let f id approx acc =
-          match approx.descr with
-          | Value_unknown
-          | Value_bottom -> acc
-          | _ ->
-              if VarSet.mem id kept_params
-              then VarMap.add id approx acc
-              else acc in
-        let worth = List.fold_right2 f func.params approxs VarMap.empty in
+        then begin
+          let f id approx acc =
+            match approx.descr with
+            | Value_unknown
+            | Value_bottom -> acc
+            | _ ->
+                if VarSet.mem id kept_params
+                then VarMap.add id approx acc
+                else acc in
+          let worth = List.fold_right2 f func.params approxs VarMap.empty in
 
-        if not (VarMap.is_empty worth) && not local
-        then
-          duplicate_apply env r funct clos fun_id func fapprox closure
-            (args,approxs) kept_params ap_dbg
+          if not (VarMap.is_empty worth) && not local
+          then
+            duplicate_apply env r funct clos fun_id func fapprox closure
+              (args,approxs) kept_params ap_dbg
+          else
+            Fapply ({ap_function = funct; ap_arg = args;
+                     ap_kind = Direct fun_id; ap_dbg}, eid),
+            ret r value_unknown
+        end
         else
           Fapply ({ap_function = funct; ap_arg = args;
                    ap_kind = Direct fun_id; ap_dbg}, eid),
           ret r value_unknown
-      end
-      else
-        Fapply ({ap_function = funct; ap_arg = args;
-                 ap_kind = Direct fun_id; ap_dbg}, eid),
-        ret r value_unknown
 
 (* Inlining for recursive functions: duplicates the function
    declaration and specialise it *)
