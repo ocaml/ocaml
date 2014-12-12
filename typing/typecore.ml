@@ -27,23 +27,23 @@ type error =
   | Pattern_type_clash of (type_expr * type_expr) list
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
-  | Orpat_vars of Ident.t
+  | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expr * string * Path.t * Longident.t
+  | Wrong_name of string * type_expr * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
-  | Undefined_method of type_expr * string
-  | Undefined_inherited_method of string
+  | Undefined_method of type_expr * string * string list option
+  | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
-  | Unbound_instance_variable of string
+  | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
@@ -449,7 +449,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   let p1_vs = sort_pattern_variables p1_vs
   and p2_vs = sort_pattern_variables p2_vs in
 
-  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
+  let rec unify_vars p1_vs p2_vs =
+    let vars vs = List.map (fun (x,_t,_,_l,_a) -> x) vs in
+    match p1_vs, p2_vs with
       | (x1,t1,_,l1,a1)::rem1, (x2,t2,_,l2,a2)::rem2 when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
@@ -463,13 +465,14 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars x))
-      | [],(x,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars x))
+      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
+      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
       | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
-          let min_var =
-            if Ident.name x < Ident.name y then x
-            else y in
-          raise (Error (loc, env, Orpat_vars min_var)) in
+          let err =
+            if Ident.name x < Ident.name y
+            then Orpat_vars (x, vars p2_vs)
+            else Orpat_vars (y, vars p1_vs) in
+          raise (Error (loc, env, err)) in
   unify_vars p1_vs p2_vs
 
 let rec build_as_type env p =
@@ -595,6 +598,8 @@ let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
+let label_of_kind kind =
+  if kind = "record" then "field" else "constructor"
 
 module NameChoice(Name : sig
   type t
@@ -602,7 +607,6 @@ module NameChoice(Name : sig
   val get_name: t -> string
   val get_type: t -> type_expr
   val get_descrs: Env.type_descriptions -> t list
-  val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
   val unbound_name_error: Env.t -> Longident.t loc -> 'a
   val in_env: t -> bool
 end) = struct
@@ -613,12 +617,6 @@ end) = struct
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 
-  let spellcheck ppf env p lid =
-    Typetexp.spellcheck_simple ppf fold
-      (fun d ->
-        if compare_type_path env p (get_type_path env d)
-        then get_name d else "") env lid
-
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
     Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
@@ -627,8 +625,9 @@ end) = struct
         try
           List.find (fun nd -> get_name nd = s) descrs
         with Not_found ->
+          let names = List.map get_name descrs in
           raise (Error (lid.loc, env,
-                        Wrong_name ("", newvar (), type_kind, tpath, lid.txt)))
+                        Wrong_name ("", newvar (), type_kind, tpath, s, names)))
       end
     | _ -> raise Not_found
 
@@ -672,10 +671,10 @@ end) = struct
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
-          let kind = if type_kind = "record" then "field" else "constructor" in
+          let label = label_of_kind type_kind in
           warn lid.loc
             (Warnings.Not_principal
-               ("this type-based " ^ kind ^ " disambiguation"))
+               ("this type-based " ^ label ^ " disambiguation"))
         in
         try
           let lbl, use = disambiguate_by_type env tpath scope in
@@ -731,8 +730,8 @@ end) = struct
 end
 
 let wrap_disambiguate kind ty f x =
-  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,lid)) ->
-    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,lid)))
+  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,name,valid_names)) ->
+    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,name,valid_names)))
 
 module Label = NameChoice (struct
   type t = label_description
@@ -740,7 +739,6 @@ module Label = NameChoice (struct
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
   let get_descrs = snd
-  let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
   let in_env lbl =
     match lbl.lbl_repres with
@@ -896,7 +894,6 @@ module Constructor = NameChoice (struct
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let get_descrs = fst
-  let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
   let in_env _ = true
 end)
@@ -2364,10 +2361,12 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
+      let obj_meths = ref None in
       begin try
         let (meth, exp, typ) =
           match obj.exp_desc with
             Texp_ident(path, _, {val_kind = Val_self (meths, _, _, privty)}) ->
+              obj_meths := Some meths;
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
@@ -2378,7 +2377,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           | Texp_ident(path, lid, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
                 begin try List.assoc met methods with Not_found ->
-                  raise(Error(e.pexp_loc, env, Undefined_inherited_method met))
+                  let valid_methods = List.map fst methods in
+                  raise(Error(e.pexp_loc, env,
+                              Undefined_inherited_method (met, valid_methods)))
                 end
               in
               begin match
@@ -2387,6 +2388,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
               with
                 (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
                 (path, _) ->
+                  obj_meths := Some meths;
                   let (_, typ) =
                     filter_self_method env met Private meths privty
                   in
@@ -2454,7 +2456,21 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       with Unify _ ->
-        raise(Error(e.pexp_loc, env, Undefined_method (obj.exp_type, met)))
+        let valid_methods =
+          match !obj_meths with
+          | Some meths ->
+             Some (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
+          | None ->
+             match (expand_head env obj.exp_type).desc with
+             | Tobject (fields, _) ->
+                let (fields, _) = Ctype.flatten_fields fields in
+                let collect_fields li (meth, meth_kind, _meth_ty) =
+                  if meth_kind = Fpresent then meth::li else li in
+                Some (List.fold_left collect_fields [] fields)
+             | _ -> None
+        in
+        raise(Error(e.pexp_loc, env,
+                    Undefined_method (obj.exp_type, met, valid_methods)))
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
@@ -2491,7 +2507,12 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             raise(Error(loc, env, Instance_variable_not_mutable(false,lab.txt)))
       with
         Not_found ->
-          raise(Error(loc, env, Unbound_instance_variable lab.txt))
+          let collect_vars name _path val_desc li =
+            match val_desc.val_kind with
+            | Val_ivar (Mutable, _) -> name::li
+            | _ -> li in
+          let valid_vars = Env.fold_values collect_vars None env [] in
+          raise(Error(loc, env, Unbound_instance_variable (lab.txt, valid_vars)))
       end
   | Pexp_override lst ->
       let _ =
@@ -2518,7 +2539,8 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
               (Path.Pident id, lab, type_expect env snewval (instance env ty))
             with
               Not_found ->
-                raise(Error(loc, env, Unbound_instance_variable lab.txt))
+                let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
+                raise(Error(loc, env, Unbound_instance_variable (lab.txt, vars)))
             end
           in
           let modifs = List.map type_override lst in
@@ -3809,6 +3831,14 @@ let type_expression env sexp =
 
 (* Error report *)
 
+let spellcheck ppf unbound_name valid_names =
+  Misc.did_you_mean ppf (fun () ->
+    Misc.spellcheck valid_names unbound_name
+  )
+
+let spellcheck_idents ppf unbound valid_idents =
+  spellcheck ppf (Ident.name unbound) (List.map Ident.name valid_idents)
+
 open Format
 open Printtyp
 
@@ -3842,9 +3872,10 @@ let report_error env ppf = function
           fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
-  | Orpat_vars id ->
+  | Orpat_vars (id, valid_idents) ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
-        (Ident.name id)
+        (Ident.name id);
+      spellcheck_idents ppf id valid_idents
   | Expr_type_clash trace ->
       report_unification_error ppf env trace
         (function ppf ->
@@ -3884,24 +3915,23 @@ let report_error env ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty, kind, p, lid) ->
+  | Wrong_name (eorp, ty, kind, p, name, valid_names) ->
       reset_and_mark_loops ty;
       if Path.is_constructor_typath p then begin
-        fprintf ppf "@[The field %a is not part of the record \
+        fprintf ppf "@[The field %s is not part of the record \
                      argument for the %a constructor@]"
-          longident lid
+          name
           path p;
       end else begin
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
-      fprintf ppf "The %s %a does not belong to type %a@]"
-        (if kind = "record" then "field" else "constructor")
-        longident lid (*kind*) path p;
-      if kind = "record" then Label.spellcheck ppf env p lid
-                         else Constructor.spellcheck ppf env p lid
-      end
+      fprintf ppf "The %s %s does not belong to type %a@]"
+        (label_of_kind kind)
+        name (*kind*) path p;
+       end;
+      spellcheck ppf name valid_names;
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let name = if kind = "record" then "field" else "constructor" in
+      let name = label_of_kind kind in
       report_ambiguous_type_error ppf env tp tpl
         (function ppf ->
            fprintf ppf "The %s %a@ belongs to the %s type"
@@ -3914,18 +3944,24 @@ let report_error env ppf = function
              name kind)
   | Invalid_format msg ->
       fprintf ppf "%s" msg
-  | Undefined_method (ty, me) ->
+  | Undefined_method (ty, me, valid_methods) ->
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[This expression has type@;<1 2>%a@]@,\
-         It has no method %s@]" type_expr ty me
-  | Undefined_inherited_method me ->
-      fprintf ppf "This expression has no method %s" me
+         It has no method %s@]" type_expr ty me;
+      begin match valid_methods with
+        | None -> ()
+        | Some valid_methods -> spellcheck ppf me valid_methods
+      end
+  | Undefined_inherited_method (me, valid_methods) ->
+      fprintf ppf "This expression has no method %s" me;
+      spellcheck ppf me valid_methods;
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
-  | Unbound_instance_variable v ->
-      fprintf ppf "Unbound instance variable %s" v
+  | Unbound_instance_variable (var, valid_vars) ->
+      fprintf ppf "Unbound instance variable %s" var;
+      spellcheck ppf var valid_vars;
   | Instance_variable_not_mutable (b, v) ->
       if b then
         fprintf ppf "The instance variable %s is not mutable" v
