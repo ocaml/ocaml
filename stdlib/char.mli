@@ -43,6 +43,9 @@ val compare: t -> t -> int
 
 (**/**)
 
+val lowercase_ascii : char -> char
+val uppercase_ascii : char -> char
+
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_chr : int -> char = "%identity"

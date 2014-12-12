@@ -121,6 +121,15 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
+let uppercase_ascii s =
+  B.uppercase_ascii (bos s) |> bts
+let lowercase_ascii s =
+  B.lowercase_ascii (bos s) |> bts
+let capitalize_ascii s =
+  B.capitalize_ascii (bos s) |> bts
+let uncapitalize_ascii s =
+  B.uncapitalize_ascii (bos s) |> bts
+
 type t = string
 
 let compare (x: t) (y: t) = Pervasives.compare x y
