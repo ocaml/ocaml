@@ -143,6 +143,7 @@ static void readfloat(double * dest, unsigned int code)
 #endif
 }
 
+/* [len] is a number of floats */
 static void readfloats(double * dest, mlsize_t len, unsigned int code)
 {
   mlsize_t i;
@@ -679,6 +680,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   return obj;
 }
 
+/* [len] is a number of bytes */
 CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
   uint32_t magic;
@@ -698,6 +700,9 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   return obj;
 }
 
+/* [ofs] is a [value] that represents a number of bytes
+   result is a [value] that represents a number of bytes
+*/
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
   uint32_t magic;

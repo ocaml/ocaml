@@ -48,7 +48,7 @@ extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
 
-#define Next(hp) ((hp) + Bhsize_hp (hp))
+#define Next(hp) ((hp) + Whsize_hp (hp))
 
 #ifdef DEBUG
 
@@ -77,7 +77,7 @@ static void check_head (value v)
   }
 }
 
-static void check_block (char *hp)
+static void check_block (header_t *hp)
 {
   mlsize_t i;
   value v = Val_hp (hp);
@@ -127,9 +127,9 @@ static value heap_stats (int returnstats)
          free_words = 0, free_blocks = 0, largest_free = 0,
          fragments = 0, heap_chunks = 0;
   char *chunk = caml_heap_start, *chunk_end;
-  char *cur_hp;
+  header_t *cur_hp;
 #ifdef DEBUG
-  char *prev_hp;
+  header_t *prev_hp;
 #endif
   header_t cur_hd;
 
@@ -143,19 +143,19 @@ static value heap_stats (int returnstats)
 #ifdef DEBUG
     prev_hp = NULL;
 #endif
-    cur_hp = chunk;
-    while (cur_hp < chunk_end){
+    cur_hp = (header_t *) chunk;
+    while (cur_hp < (header_t *) chunk_end){
       cur_hd = Hd_hp (cur_hp);
-                                           Assert (Next (cur_hp) <= chunk_end);
+                                           Assert (Next (cur_hp) <= (header_t *) chunk_end);
       switch (Color_hd (cur_hd)){
       case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
           ++ fragments;
           Assert (prev_hp == NULL
                   || Color_hp (prev_hp) != Caml_blue
-                  || cur_hp == caml_gc_sweep_hp);
+                  || cur_hp == (header_t *) caml_gc_sweep_hp);
         }else{
-          if (caml_gc_phase == Phase_sweep && cur_hp >= caml_gc_sweep_hp){
+          if (caml_gc_phase == Phase_sweep && cur_hp >= (header_t *) caml_gc_sweep_hp){
             ++ free_blocks;
             free_words += Whsize_hd (cur_hd);
             if (Whsize_hd (cur_hd) > largest_free){
@@ -202,6 +202,7 @@ static value heap_stats (int returnstats)
 #endif
       cur_hp = Next (cur_hp);
     }                                          Assert (cur_hp == chunk_end);
+                                               Assert (cur_hp == (header_t *) chunk_end);
     chunk = Chunk_next (chunk);
   }
 
@@ -214,7 +215,7 @@ static value heap_stats (int returnstats)
 
     /* get a copy of these before allocating anything... */
     double minwords = caml_stat_minor_words
-                      + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                      + (double) (caml_young_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
@@ -266,7 +267,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -303,7 +304,7 @@ CAMLprim value caml_gc_counters(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
@@ -320,7 +321,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLlocal1 (res);
 
   res = caml_alloc_tuple (7);
-  Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
+  Store_field (res, 0, Val_long (caml_minor_heap_wsz));                 /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
   Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
@@ -357,7 +358,7 @@ CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
-  asize_t newminsize;
+  asize_t newminwsz;
   uintnat oldpolicy;
 
   caml_verb_gc = Long_val (Field (v, 3));
@@ -398,11 +399,11 @@ CAMLprim value caml_gc_set(value v)
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminsize = Bsize_wsize (norm_minsize (Long_val (Field (v, 0))));
-  if (newminsize != caml_minor_heap_size){
-    caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
-                     newminsize/1024);
-    caml_set_minor_heap_size (newminsize);
+  newminwsz = norm_minsize (Long_val (Field (v, 0)));
+  if (newminwsz != caml_minor_heap_wsz){
+    caml_gc_message (0x20, "New minor heap size: %luk words\n",
+                     newminwsz / 1024);
+    caml_set_minor_heap_size (Bsize_wsize (newminwsz));
   }
   return Val_unit;
 }
@@ -480,6 +481,8 @@ uintnat caml_normalize_heap_increment (uintnat i)
   return ((i + Page_size - 1) >> Page_log) << Page_log;
 }
 
+/* [minor_size] and [major_size] are numbers of words
+   [major_incr] is either a percentage or a number of words */
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
@@ -495,8 +498,8 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
-  caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-                   caml_minor_heap_size / 1024);
+  caml_gc_message (0x20, "Initial minor heap size: %luk words\n",
+                   caml_minor_heap_wsz / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
                    major_heap_size / 1024);
   caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);

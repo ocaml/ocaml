@@ -68,6 +68,7 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
   exit(2);
 }
 
+/* [size] and [modulo] are numbers of bytes */
 char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;

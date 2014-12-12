@@ -33,10 +33,10 @@ extern "C" {
 #endif
 
 
-CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
+CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
-CAMLextern void caml_alloc_dependent_memory (mlsize_t);
-CAMLextern void caml_free_dependent_memory (mlsize_t);
+CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
+CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);
@@ -104,13 +104,13 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_young_ptr -= Bhsize_wosize (wosize);                                 \
+  caml_young_ptr -= Whsize_wosize (wosize);                                 \
   if (caml_young_ptr < caml_young_start){                                   \
-    caml_young_ptr += Bhsize_wosize (wosize);                               \
+    caml_young_ptr += Whsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
     caml_minor_collection ();                                               \
     Restore_after_gc;                                                       \
-    caml_young_ptr -= Bhsize_wosize (wosize);                               \
+    caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \
   Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
   (result) = Val_hp (caml_young_ptr);                                       \

@@ -489,8 +489,8 @@ static void extern_rec(value v)
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * wsize_32,
-                        uintnat * wsize_64)
+      void (*serialize)(value v, uintnat * bsize_32,
+                        uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");

@@ -26,6 +26,7 @@ value caml_weak_list_head = 0;
 static value weak_dummy = 0;
 value caml_weak_none = (value) &weak_dummy;
 
+/* [len] is a value that represents a number of words (fields) */
 CAMLprim value caml_weak_create (value len)
 {
   mlsize_t size, i;

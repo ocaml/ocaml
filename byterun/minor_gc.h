@@ -17,9 +17,9 @@
 
 #include "misc.h"
 
-CAMLextern char *caml_young_start, *caml_young_ptr;
-CAMLextern char *caml_young_end, *caml_young_limit;
-extern asize_t caml_minor_heap_size;
+CAMLextern value *caml_young_start, *caml_young_ptr;
+CAMLextern value *caml_young_end, *caml_young_limit;
+extern asize_t caml_minor_heap_wsz;
 extern int caml_in_minor_collection;
 
 struct caml_ref_table {

@@ -182,11 +182,11 @@ static intnat int32_hash(value v)
   return Int32_val(v);
 }
 
-static void int32_serialize(value v, uintnat * wsize_32,
-                            uintnat * wsize_64)
+static void int32_serialize(value v, uintnat * bsize_32,
+                            uintnat * bsize_64)
 {
   caml_serialize_int_4(Int32_val(v));
-  *wsize_32 = *wsize_64 = 4;
+  *bsize_32 = *bsize_64 = 4;
 }
 
 static uintnat int32_deserialize(void * dst)
@@ -353,11 +353,11 @@ static intnat int64_hash(value v)
   return hi ^ lo;
 }
 
-static void int64_serialize(value v, uintnat * wsize_32,
-                            uintnat * wsize_64)
+static void int64_serialize(value v, uintnat * bsize_32,
+                            uintnat * bsize_64)
 {
   caml_serialize_int_8(Int64_val(v));
-  *wsize_32 = *wsize_64 = 8;
+  *bsize_32 = *bsize_64 = 8;
 }
 
 static uintnat int64_deserialize(void * dst)
@@ -599,8 +599,8 @@ static intnat nativeint_hash(value v)
 #endif
 }
 
-static void nativeint_serialize(value v, uintnat * wsize_32,
-                                uintnat * wsize_64)
+static void nativeint_serialize(value v, uintnat * bsize_32,
+                                uintnat * bsize_64)
 {
   intnat l = Nativeint_val(v);
 #ifdef ARCH_SIXTYFOUR
@@ -615,8 +615,8 @@ static void nativeint_serialize(value v, uintnat * wsize_32,
   caml_serialize_int_1(1);
   caml_serialize_int_4(l);
 #endif
-  *wsize_32 = 4;
-  *wsize_64 = 8;
+  *bsize_32 = 4;
+  *bsize_64 = 8;
 }
 
 static uintnat nativeint_deserialize(void * dst)

@@ -97,7 +97,7 @@ CAMLprim value caml_sys_exit(value retcode)
   if ((caml_verb_gc & 0x400) != 0) {
     /* cf caml_gc_counters */
     double minwords = caml_stat_minor_words
-      + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+      + (double) (caml_young_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     double allocated_words =
@@ -412,16 +412,19 @@ CAMLprim value caml_sys_const_big_endian(value unit)
 #endif
 }
 
+/* returns a value that represents a number of bits */
 CAMLprim value caml_sys_const_word_size(value unit)
 {
   return Val_long(8 * sizeof(value));
 }
 
+/* returns a value that represents a number of bits */
 CAMLprim value caml_sys_const_int_size(value unit)
 {
   return Val_long(8 * sizeof(value) - 1) ;
 }
 
+/* returns a value that represents a number of words */
 CAMLprim value caml_sys_const_max_wosize(value unit)
 {
   return Val_long(Max_wosize) ;

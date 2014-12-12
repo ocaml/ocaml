@@ -19,6 +19,7 @@
 #include "memory.h"
 #include "mlvalues.h"
 
+/* [size] is a number of bytes */
 CAMLexport value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size,
                                    mlsize_t mem,

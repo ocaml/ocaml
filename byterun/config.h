@@ -115,14 +115,14 @@ typedef uint64_t uintnat;
 #endif
 
 
-/* Do not change this definition. */
-#define Page_size (1 << Page_log)
-
 /* Memory model parameters */
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
-   It must be a multiple of [sizeof (value)] and >= 8 and <= 20. */
+   [Page_size] must be a multiple of [sizeof (value)].
+   [Page_log] must be be >= 8 and <= 20.
+   Do not change the definition of [Page_size]. */
 #define Page_log 12             /* A page is 4 kilobytes. */
+#define Page_size (1 << Page_log)
 
 /* Initial size of stack (bytes). */
 #define Stack_size (4096 * sizeof(value))

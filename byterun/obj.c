@@ -25,6 +25,7 @@
 #include "mlvalues.h"
 #include "prims.h"
 
+/* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)
 {
   return (value) caml_stat_alloc((asize_t) Long_val(size));
@@ -80,6 +81,7 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
   return Val_unit;
 }
 
+/* [size] is a value encoding a number of blocks */
 CAMLprim value caml_obj_block(value tag, value size)
 {
   value res;
@@ -127,6 +129,8 @@ CAMLprim value caml_obj_dup(value arg)
    Change the length field of the header.  Make up a white object
    with the leftover part of the object: this is needed in the major
    heap and harmless in the minor heap.
+
+   [newsize] is a value encoding a number of words.
 */
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {

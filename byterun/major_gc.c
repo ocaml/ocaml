@@ -483,6 +483,7 @@ void caml_finish_major_cycle (void)
 
 /* Make sure the request is at least Heap_chunk_min and round it up
    to a multiple of the page size.
+   The argument and result are both numbers of bytes.
 */
 static asize_t clip_heap_chunk_size (asize_t request)
 {
@@ -494,6 +495,7 @@ static asize_t clip_heap_chunk_size (asize_t request)
 
 /* Compute the heap increment, make sure the request is at least that big,
    then call clip_heap_chunk_size, then make sure the result is >= request.
+   The argument and result are both numbers of bytes.
 */
 asize_t caml_round_heap_chunk_size (asize_t request)
 {
@@ -519,6 +521,7 @@ asize_t caml_round_heap_chunk_size (asize_t request)
   return result;
 }
 
+/* [heap_size] is a number of bytes */
 void caml_init_major_heap (asize_t heap_size)
 {
   caml_stat_heap_size = clip_heap_chunk_size (heap_size);

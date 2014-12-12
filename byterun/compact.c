@@ -122,8 +122,8 @@ static void init_compact_allocate (void)
   compact_fl = caml_heap_start;
 }
 
+/* [size] is a number of bytes and includes the header size */
 static char *compact_allocate (mlsize_t size)
-                                      /* in bytes, including header */
 {
   char *chunk, *adr;
 
@@ -460,9 +460,9 @@ void caml_compact_heap (void)
 
 void caml_compact_heap_maybe (void)
 {
-  /* Estimated free words in the heap:
-         FW = fl_size_at_change + 3 * (caml_fl_cur_size
-                                       - caml_fl_size_at_phase_change)
+  /* Estimated free+garbage words in the heap:
+         FW = fl_size_at_phase_change + 3 * (caml_fl_cur_size
+                                             - caml_fl_size_at_phase_change)
          FW = 3 * caml_fl_cur_size - 2 * caml_fl_size_at_phase_change
      Estimated live words:      LW = caml_stat_heap_size - FW
      Estimated free percentage: FP = 100 * FW / LW

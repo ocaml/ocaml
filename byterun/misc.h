@@ -100,7 +100,7 @@ void caml_gc_message (int, char *, uintnat);
 
 /* Memory routines */
 
-char *caml_aligned_malloc (asize_t, int, void **);
+char *caml_aligned_malloc (asize_t bsize, int, void **);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR

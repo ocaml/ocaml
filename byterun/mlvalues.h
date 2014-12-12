@@ -101,7 +101,7 @@ bits  63    10 9     8 7   0
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
 #define Hd_bp(bp) (Hd_val (bp))                        /* Also an l-value. */
 #define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
-#define Hp_val(val) ((char *) (((header_t *) (val)) - 1))
+#define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
 #define Hp_bp(bp) (Hp_val (bp))
 #define Val_op(op) ((value) (op))

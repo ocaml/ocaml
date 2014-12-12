@@ -62,11 +62,13 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   return result;
 }
 
+/* [n] is a number of words (fields) */
 CAMLexport value caml_alloc_tuple(mlsize_t n)
 {
   return caml_alloc(n, 0);
 }
 
+/* [len] is a number of bytes (chars) */
 CAMLexport value caml_alloc_string (mlsize_t len)
 {
   value result;
@@ -85,6 +87,9 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   return result;
 }
 
+/* [len] is a number of words.
+   [mem] and [max] are relative (without unit).
+*/
 CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
                                    mlsize_t mem, mlsize_t max)
 {
@@ -145,6 +150,7 @@ CAMLexport int caml_convert_flag_list(value list, int *flags)
 
 /* For compiling let rec over values */
 
+/* [size] is a [value] representing number of words (fields) */
 CAMLprim value caml_alloc_dummy(value size)
 {
   mlsize_t wosize = Int_val(size);
@@ -153,12 +159,14 @@ CAMLprim value caml_alloc_dummy(value size)
   return caml_alloc (wosize, 0);
 }
 
+/* [size] is a [value] representing number of words (fields) */
 CAMLprim value caml_alloc_dummy_function(value size,value arity)
 {
   /* the arity argument is used by the js_of_ocaml runtime */
   return caml_alloc_dummy(size);
 }
 
+/* [size] is a [value] representing number of floats. */
 CAMLprim value caml_alloc_dummy_float (value size)
 {
   mlsize_t wosize = Int_val(size) * Double_wosize;

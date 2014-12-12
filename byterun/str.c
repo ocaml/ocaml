@@ -25,6 +25,7 @@
 #include <locale.h>
 #endif
 
+/* returns a number of bytes (chars) */
 CAMLexport mlsize_t caml_string_length(value s)
 {
   mlsize_t temp;
@@ -33,6 +34,7 @@ CAMLexport mlsize_t caml_string_length(value s)
   return temp - Byte (s, temp);
 }
 
+/* returns a value that represents a number of bytes (chars) */
 CAMLprim value caml_ml_string_length(value s)
 {
   mlsize_t temp;
@@ -41,6 +43,7 @@ CAMLprim value caml_ml_string_length(value s)
   return Val_long(temp - Byte (s, temp));
 }
 
+/* [len] is a value that represents a number of bytes (chars) */
 CAMLprim value caml_create_string(value len)
 {
   mlsize_t size = Long_val(len);

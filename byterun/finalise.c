@@ -41,6 +41,7 @@ struct to_do {
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
 
+/* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
 {
   struct to_do *result = malloc (sizeof (struct to_do)
