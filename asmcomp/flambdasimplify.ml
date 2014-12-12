@@ -37,10 +37,6 @@ type sb = { sb_var : Variable.t VarMap.t;
 type env =
   { env_approx : approx VarMap.t;
     global : (int, approx) Hashtbl.t;
-    escaping : bool;
-    (* Wether the current expression is in a position to escape:
-       i.e. if the current expression is a Fvar, will the variable
-       will be considered as escaping. *)
     current_functions : FunSet.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -61,7 +57,6 @@ let empty_sb = { sb_var = VarMap.empty;
 let empty_env () =
   { env_approx = VarMap.empty;
     global = Hashtbl.create 10;
-    escaping = true;
     current_functions = FunSet.empty;
     inlining_level = 0;
     sb = empty_sb;
@@ -78,11 +73,6 @@ type ret =
   { approx : approx;
     used_variables : VarSet.t;
     used_staticfail : StaticExceptionSet.t;
-    escape_variables : VarSet.t;
-    tmp_escape_variables : VarSet.t list;
-    not_kept_param : VarSet.t
-    (* Variables used for a recursive call with a different argument
-       than the one used to enter the function. *)
   }
 
 (* Utility functions *)
@@ -197,36 +187,12 @@ let new_subst_fun_off id env off_sb =
 
 let ret (acc:ret) approx = { acc with approx }
 
-let escaping ?(b=true) env = { env with escaping = b }
-
-let escape_var acc var =
-  { acc with escape_variables = VarSet.add var acc.escape_variables }
-
-let tmp_escape_var acc var =
-  match acc.tmp_escape_variables with
-  | [] -> assert false
-  | set :: q ->
-      { acc with
-        tmp_escape_variables = VarSet.add var set :: q }
-
-let start_escape_region acc =
-  { acc with tmp_escape_variables = VarSet.empty :: acc.tmp_escape_variables }
-
-let end_escape_region acc =
-  match acc.tmp_escape_variables with
-  | [] -> assert false
-  | set :: q -> set, { acc with tmp_escape_variables = q }
-
-let merge_escape set acc =
-  { acc with escape_variables = VarSet.union acc.escape_variables set }
-
 let use_var acc var =
   { acc with used_variables = VarSet.add var acc.used_variables }
 
 let exit_scope acc var =
   { acc with
-    used_variables = VarSet.remove var acc.used_variables;
-    escape_variables = VarSet.remove var acc.escape_variables }
+    used_variables = VarSet.remove var acc.used_variables }
 
 let use_staticfail acc i =
   { acc with used_staticfail = StaticExceptionSet.add i acc.used_staticfail }
@@ -234,16 +200,10 @@ let use_staticfail acc i =
 let exit_scope_catch acc i =
   { acc with used_staticfail = StaticExceptionSet.remove i acc.used_staticfail }
 
-let not_kept_param id acc =
-  { acc with not_kept_param = VarSet.add id acc.not_kept_param }
-
 let init_r () =
   { approx = value_unknown;
     used_variables = VarSet.empty;
-    used_staticfail = StaticExceptionSet.empty;
-    escape_variables = VarSet.empty;
-    tmp_escape_variables = [];
-    not_kept_param = VarSet.empty }
+    used_staticfail = StaticExceptionSet.empty }
 
 let make_const_int n eid =
   Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
@@ -542,12 +502,7 @@ let check_var_and_constant_result env r lam approx =
   in
   let expr, r = check_constant_result r res approx in
   let r = match expr with
-    | Fvar(var,_) ->
-        let r =
-          if env.escaping
-          then escape_var r var
-          else tmp_escape_var r var in
-        use_var r var
+    | Fvar(var,_) -> use_var r var
     | _ -> r
   in
   expr, r
@@ -673,14 +628,11 @@ let split_list n l =
    propagating up an approximation of the value *)
 
 let rec loop env r tree =
-  loop_no_escape (escaping env) r tree
+  let f, r = loop_direct env r tree in
+  f, ret r (really_import_approx r.approx)
 
 and loop_substitute env r tree =
   loop { env with substitute = true } r tree
-
-and loop_no_escape env r tree =
-  let f, r = loop_direct env r tree in
-  f, ret r (really_import_approx r.approx)
 
 and loop_direct (env:env) r tree : 'a flambda * ret =
   match tree with
@@ -702,11 +654,9 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
 
   | Fapply ({ ap_function = funct; ap_arg = args;
               ap_kind = direc; ap_dbg = dbg }, annot) ->
-      let r = start_escape_region r in
-      let funct, ({ approx = fapprox } as r) = loop_no_escape (escaping ~b:false env) r funct in
-      let tmp_escape, r = end_escape_region r in
+      let funct, ({ approx = fapprox } as r) = loop env r funct in
       let args, approxs, r = loop_list env r args in
-      apply ~local:false env r tmp_escape (funct,fapprox) (args,approxs) dbg annot
+      apply ~local:false env r (funct,fapprox) (args,approxs) dbg annot
 
   | Fclosure (cl, annot) ->
       closure env r cl annot
@@ -1045,8 +995,6 @@ and closure env r cl annot =
   let env = { env with current_functions = FunSet.add ffuns.ident env.current_functions } in
   (* we use the previous closure for evaluating the functions *)
 
-  let recursive_funs = recursive_functions ffuns in
-
   let internal_closure =
     { ffunctions = ffuns;
       bound_var = VarMap.fold (fun id (_,desc) map ->
@@ -1060,9 +1008,8 @@ and closure env r cl annot =
           (value_closure { fun_id = (Closure_function.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
-  let funs, kept_params, used_params, r = VarMap.fold
-      (fun fid ffun
-        (funs,kept_params_map,used_params,r) ->
+  let funs, used_params, r =
+    VarMap.fold (fun fid ffun (funs,used_params,r) ->
         let closure_env = VarMap.fold
             (fun id (_,desc) env ->
                if VarSet.mem id ffun.free_variables
@@ -1099,41 +1046,22 @@ and closure env r cl annot =
             then VarSet.add id acc
             else acc) used_params ffun.params in
 
-        let kept_params =
-          if (VarMap.cardinal ffuns.funs = 1) &&
-             (* multiply recursive functions are not handled yet *)
-             VarSet.mem fid recursive_funs &&
-             not (VarSet.mem fid r.escape_variables)
-          then begin
-            let kept_params = List.filter
-                (fun id ->
-                   VarSet.mem id r.used_variables &&
-                   not (VarSet.mem id r.not_kept_param))
-                ffun.params in
-            VarSet.of_list kept_params
-          end
-          else VarSet.empty in
-
-        let kept_params_map =
-          ClosureFunctionMap.add
-            (Closure_function.wrap fid) kept_params kept_params_map in
-
         let r = VarSet.fold (fun id r -> exit_scope r id)
             ffun.free_variables r in
         let free_variables = Flambdaiter.free_variables body in
         VarMap.add fid { ffun with body; free_variables } funs,
-        kept_params_map, used_params, r)
-      ffuns.funs (VarMap.empty, ClosureFunctionMap.empty, VarSet.empty, r) in
+        used_params, r)
+      ffuns.funs (VarMap.empty, VarSet.empty, r) in
 
   let spec_args = VarMap.filter
       (fun id _ -> VarSet.mem id used_params)
       spec_args in
 
-  let kept_params =
-    ClosureFunctionMap.fold (fun _ -> VarSet.union) kept_params VarSet.empty in
-
   let r = VarMap.fold (fun id' v acc -> use_var acc v) spec_args r in
   let ffuns = { ffuns with funs } in
+
+  let kept_params = Flambdaiter.arguments_kept_in_recursion ffuns in
+
   let closure = { internal_closure with ffunctions = ffuns; kept_params } in
   let r = VarMap.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
   Fclosure ({cl_fun = ffuns; cl_free_var = VarMap.map fst fv;
@@ -1170,7 +1098,7 @@ and offset r flam off rel annot =
    local: if local is true, the application is of the shape: apply (offset (closure ...)).
           i.e. it should not duplicate the function
 *)
-and apply env r ~local tmp_escape (funct,fapprox) (args,approxs) dbg eid =
+and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
   match fapprox.descr with
   | Value_closure { fun_id; closure } ->
       let clos = closure.ffunctions in
@@ -1194,20 +1122,17 @@ and apply env r ~local tmp_escape (funct,fapprox) (args,approxs) dbg eid =
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
                              ap_kind = Indirect; ap_dbg = dbg}, eid))
       else
-        let r = merge_escape tmp_escape r in
+      if nargs > 0 && nargs < arity
+      then
+        let partial_fun = partial_apply funct fun_id func args dbg eid in
+        loop env r partial_fun
+      else
 
-        if nargs > 0 && nargs < arity
-        then
-          let partial_fun = partial_apply funct fun_id func args dbg eid in
-          loop env r partial_fun
-        else
-
-          Fapply({ ap_function = funct; ap_arg = args;
-                   ap_kind = Indirect; ap_dbg = dbg}, eid),
-          ret r value_unknown
+        Fapply({ ap_function = funct; ap_arg = args;
+                 ap_kind = Indirect; ap_dbg = dbg}, eid),
+        ret r value_unknown
 
   | _ ->
-      let r = merge_escape tmp_escape r in
       Fapply ({ap_function = funct; ap_arg = args;
                ap_kind = Indirect; ap_dbg = dbg}, eid),
       ret r value_unknown
@@ -1241,12 +1166,6 @@ and functor_like env clos approxs =
   VarSet.is_empty (recursive_functions clos)
 
 and direct_apply env r ~local clos funct fun_id func fapprox closure (args,approxs) ap_dbg eid =
-  let r =
-    List.fold_left2 (fun r approx id ->
-        match approx.var with
-        | Some id' when Variable.equal id id' -> r
-        | _ -> not_kept_param id r) r approxs func.params
-  in
   let max_level = 3 in
   let fun_size =
     if func.stub || functor_like env clos approxs
