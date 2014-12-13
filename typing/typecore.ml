@@ -27,7 +27,7 @@ type error =
   | Pattern_type_clash of (type_expr * type_expr) list
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
-  | Orpat_vars of Ident.t
+  | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
@@ -449,7 +449,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   let p1_vs = sort_pattern_variables p1_vs
   and p2_vs = sort_pattern_variables p2_vs in
 
-  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
+  let rec unify_vars p1_vs p2_vs =
+    let vars vs = List.map (fun (x,_t,_,_l,_a) -> x) vs in
+    match p1_vs, p2_vs with
       | (x1,t1,_,l1,a1)::rem1, (x2,t2,_,l2,a2)::rem2 when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
@@ -463,13 +465,14 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars x))
-      | [],(x,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars x))
+      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
+      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
       | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
-          let min_var =
-            if Ident.name x < Ident.name y then x
-            else y in
-          raise (Error (loc, env, Orpat_vars min_var)) in
+          let err =
+            if Ident.name x < Ident.name y
+            then Orpat_vars (x, vars p2_vs)
+            else Orpat_vars (y, vars p1_vs) in
+          raise (Error (loc, env, err)) in
   unify_vars p1_vs p2_vs
 
 let rec build_as_type env p =
@@ -3819,6 +3822,11 @@ let type_expression env sexp =
 
 (* Error report *)
 
+let spellcheck_idents ppf unbound valid_idents =
+  Misc.did_you_mean ppf (fun () ->
+    Misc.spellcheck (List.map Ident.name valid_idents) (Ident.name unbound)
+  )
+
 open Format
 open Printtyp
 
@@ -3852,9 +3860,10 @@ let report_error env ppf = function
           fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
-  | Orpat_vars id ->
+  | Orpat_vars (id, valid_idents) ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
-        (Ident.name id)
+        (Ident.name id);
+      spellcheck_idents ppf id valid_idents
   | Expr_type_clash trace ->
       report_unification_error ppf env trace
         (function ppf ->
