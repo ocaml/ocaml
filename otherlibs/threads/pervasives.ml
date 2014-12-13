@@ -53,6 +53,8 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 
+external source_location : source_location -> string * int * int = "%identity"
+
 (* Comparisons *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
