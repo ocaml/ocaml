@@ -51,9 +51,13 @@ OCamlbuild:
   (Peter Zotov)
 
 Bug fixes:
+- PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
+  (Gabriel Scherer)
 - PR#6648: show_module should indicate its elision
 - PR#6650: Cty_constr not handled correctly by Subst
 - PR#6651: Failing component lookup
+- allow android build with pthreads support (since SDK r10c)
+  (Peter Zotov)
 
 OCaml 4.02.2:
 -------------
