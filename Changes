@@ -1,11 +1,21 @@
 OCaml 4.03.0:
 -------------
 
+(Changes that can break existing programs are marked with a "*")
+
 Language features:
 - PR#6374: allow "_ t" as a short-hand for "(_, _, ..) t" for n-ary type
   constructors (Alain Frisch)
 - allow field punning in object copying expressions: {< x; >} for {< x = x; >}
   (Jeremy Yallop)
+* Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
+  (user 'Octachron')
+  The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this
+  should allow user to define their own notations by overriding.
+  The bigarray notations ( .{} ), ( .{,} ) etc. are defined in the Bigarray
+  module, which means that the foo.{bar,baz} syntactic sugar is only available
+  when the Bigarray module is opened; this can break existing programs,
+  which should be fixed by opening the Bigarray module.
 
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
