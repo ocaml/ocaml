@@ -3125,7 +3125,13 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       let rec make_args args ty_fun =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
-            let ty = option_none (instance env ty_arg) sarg.pexp_loc in
+            let ty =
+              if is_source_location env ty_arg then
+                let pos = sarg.pexp_loc.Location.loc_start in
+                option_some (make_source_location env pos)
+              else
+                option_none (instance env ty_arg) sarg.pexp_loc
+            in
             make_args ((l, Some ty, Optional) :: args) ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
             List.rev args, ty_fun, no_labels ty_res'
