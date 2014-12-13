@@ -149,8 +149,10 @@ let mkexp_constraint e (t1, t2) =
   | _, Some t -> ghexp(Pexp_coerce(e, t1, t))
   | None, None -> assert false
 
-let array_function str name =
-  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+
+let array_function par assign=
+  let op = if assign then par^"<-" else par in
+  ghloc ( Lident op )
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -1171,10 +1173,10 @@ expr:
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" true)),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" true)),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
@@ -1220,12 +1222,12 @@ simple_expr:
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" false)),
                          ["",$1; "",$4])) }
   | simple_expr DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "get")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" false)),
                          ["",$1; "",$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
