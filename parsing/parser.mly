@@ -152,6 +152,8 @@ let mkexp_constraint e (t1, t2) =
 let array_function str name =
   ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
 
+let safe_string_flag = not !Clflags.unsafe_string
+
 let syntax_error () =
   raise Syntaxerr.Escape_error
 
@@ -1174,7 +1176,9 @@ expr:
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
+      { mkexp(Pexp_apply(ghexp(Pexp_ident
+                                (array_function (if safe_string_flag then 
+                                                 "Bytes" else "String") "set")),
                          ["",$1; "",$4; "",$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
