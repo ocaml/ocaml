@@ -34,7 +34,7 @@ type error =
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expr * string * Path.t * Longident.t
+  | Wrong_name of string * type_expr * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
@@ -605,7 +605,6 @@ module NameChoice(Name : sig
   val get_name: t -> string
   val get_type: t -> type_expr
   val get_descrs: Env.type_descriptions -> t list
-  val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
   val unbound_name_error: Env.t -> Longident.t loc -> 'a
   val in_env: t -> bool
 end) = struct
@@ -616,22 +615,6 @@ end) = struct
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 
-  let spellcheck ppf env p lid =
-    let choices ~path name =
-      let valid_names =
-	fold (fun d acc ->
-	  (* only consider the constructors/fields that are
-             in the expected type [p] *)
-	  if compare_type_path env p (get_type_path env d)
-	  then get_name d :: acc else acc) path env [] in
-      Misc.spellcheck valid_names name in
-    match lid with
-    | Longident.Lapply _ -> ()
-    | Longident.Lident s ->
-       Misc.did_you_mean ppf (fun () -> choices ~path:None s)
-    | Longident.Ldot (r, s) ->
-       Misc.did_you_mean ppf (fun () -> choices ~path:(Some r) s)
-
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
     Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
@@ -640,8 +623,9 @@ end) = struct
         try
           List.find (fun nd -> get_name nd = s) descrs
         with Not_found ->
+          let names = List.map get_name descrs in
           raise (Error (lid.loc, env,
-                        Wrong_name ("", newvar (), type_kind, tpath, lid.txt)))
+                        Wrong_name ("", newvar (), type_kind, tpath, s, names)))
       end
     | _ -> raise Not_found
 
@@ -744,8 +728,8 @@ end) = struct
 end
 
 let wrap_disambiguate kind ty f x =
-  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,lid)) ->
-    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,lid)))
+  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,name,valid_names)) ->
+    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,name,valid_names)))
 
 module Label = NameChoice (struct
   type t = label_description
@@ -753,7 +737,6 @@ module Label = NameChoice (struct
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
   let get_descrs = snd
-  let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
   let in_env lbl =
     match lbl.lbl_repres with
@@ -909,7 +892,6 @@ module Constructor = NameChoice (struct
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let get_descrs = fst
-  let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
   let in_env _ = true
 end)
@@ -3822,10 +3804,13 @@ let type_expression env sexp =
 
 (* Error report *)
 
-let spellcheck_idents ppf unbound valid_idents =
+let spellcheck ppf unbound_name valid_names =
   Misc.did_you_mean ppf (fun () ->
-    Misc.spellcheck (List.map Ident.name valid_idents) (Ident.name unbound)
+    Misc.spellcheck valid_names unbound_name
   )
+
+let spellcheck_idents ppf unbound valid_idents =
+  spellcheck ppf (Ident.name unbound) (List.map Ident.name valid_idents)
 
 open Format
 open Printtyp
@@ -3903,22 +3888,21 @@ let report_error env ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty, kind, p, lid) ->
+  | Wrong_name (eorp, ty, kind, p, name, valid_names) ->
       reset_and_mark_loops ty;
       if Path.is_constructor_typath p then begin
-        fprintf ppf "@[The field %a is not part of the record \
+        fprintf ppf "@[The field %s is not part of the record \
                      argument for the %a constructor@]"
-          longident lid
+          name
           path p;
       end else begin
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
-      fprintf ppf "The %s %a does not belong to type %a@]"
+      fprintf ppf "The %s %s does not belong to type %a@]"
         (if kind = "record" then "field" else "constructor")
-        longident lid (*kind*) path p;
-      if kind = "record" then Label.spellcheck ppf env p lid
-                         else Constructor.spellcheck ppf env p lid
-      end
+        name (*kind*) path p;
+       end;
+      spellcheck ppf name valid_names;
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let name = if kind = "record" then "field" else "constructor" in
       report_ambiguous_type_error ppf env tp tpl
