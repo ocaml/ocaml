@@ -149,7 +149,6 @@ let mkexp_constraint e (t1, t2) =
   | _, Some t -> ghexp(Pexp_coerce(e, t1, t))
   | None, None -> assert false
 
-
 let array_function par assign=
   let op = if assign then par^"<-" else par in
   ghloc ( Lident op )
@@ -167,43 +166,51 @@ let expecting pos nonterm =
 let not_expecting pos nonterm =
     raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
 
-let bigarray_function str name =
-  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
+let bigarray_function order assign =
+  let op =
+    match order with
+      | 1 -> ".{}"
+      | 2 -> ".{,}"
+      | 3 -> ".{,,}"
+      | _ -> ".{,..,}"
+  in
+  let op= if assign then op^"<-" else op in
+  ghloc ( Lident op )
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
 let bigarray_get arr arg =
-  let get = if !Clflags.fast then "unsafe_get" else "get" in
+  let get order = bigarray_function order false in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 1)),
                        ["", arr; "", c1]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 2)),
                        ["", arr; "", c1; "", c2]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 3)),
                        ["", arr; "", c1; "", c2; "", c3]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 0)),
                        ["", arr; "", ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set = if !Clflags.fast then "unsafe_set" else "set" in
+  let set order = bigarray_function order true in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 1)),
                        ["", arr; "", c1; "", newval]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
                        ["", arr; "", c1; "", c2; "", newval]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
                        ["", arr; "", c1; "", c2; "", c3; "", newval]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
                        ["", arr;
                         "", ghexp(Pexp_array coords);
                         "", newval]))
@@ -2002,6 +2009,7 @@ index_operator_core:
   | LBRACE COMMA COMMA RBRACE                   { ".{,,}" }
   | LBRACE COMMA DOTDOT COMMA RBRACE            { ".{,..,}"}
 ;
+
 opt_assign_arrow:
 	                                        { "" }
   | LESSMINUS                                   { "<-" }
