@@ -614,10 +614,20 @@ end) = struct
     | _ -> assert false
 
   let spellcheck ppf env p lid =
-    Typetexp.spellcheck_simple ppf fold
-      (fun d ->
-        if compare_type_path env p (get_type_path env d)
-        then get_name d else "") env lid
+    let choices ~path name =
+      let valid_names =
+	fold (fun d acc ->
+	  (* only consider the constructors/fields that are
+             in the expected type [p] *)
+	  if compare_type_path env p (get_type_path env d)
+	  then get_name d :: acc else acc) path env [] in
+      Misc.spellcheck valid_names name in
+    match lid with
+    | Longident.Lapply _ -> ()
+    | Longident.Lident s ->
+       Misc.did_you_mean ppf (fun () -> choices ~path:None s)
+    | Longident.Ldot (r, s) ->
+       Misc.did_you_mean ppf (fun () -> choices ~path:(Some r) s)
 
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
