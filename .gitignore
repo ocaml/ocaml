@@ -2161,6 +2161,31 @@
 /testsuite/tests/tool-debugger/find-artifacts/compiler-libs
 /testsuite/tests/tool-debugger/find-artifacts/out
 
+# /testsuite/tests/tool-debugger/no_debug_event/
+/testsuite/tests/tool-debugger/no_debug_event/*.o
+/testsuite/tests/tool-debugger/no_debug_event/*.a
+/testsuite/tests/tool-debugger/no_debug_event/*.so
+/testsuite/tests/tool-debugger/no_debug_event/*.obj
+/testsuite/tests/tool-debugger/no_debug_event/*.lib
+/testsuite/tests/tool-debugger/no_debug_event/*.dll
+/testsuite/tests/tool-debugger/no_debug_event/*.cm[ioxat]
+/testsuite/tests/tool-debugger/no_debug_event/*.cmx[as]
+/testsuite/tests/tool-debugger/no_debug_event/*.cmti
+/testsuite/tests/tool-debugger/no_debug_event/*.annot
+/testsuite/tests/tool-debugger/no_debug_event/*.result
+/testsuite/tests/tool-debugger/no_debug_event/*.byte
+/testsuite/tests/tool-debugger/no_debug_event/*.native
+/testsuite/tests/tool-debugger/no_debug_event/program
+/testsuite/tests/tool-debugger/no_debug_event/*.exe
+/testsuite/tests/tool-debugger/no_debug_event/*.exe.manifest
+/testsuite/tests/tool-debugger/no_debug_event/.depend
+/testsuite/tests/tool-debugger/no_debug_event/.depend.nt
+/testsuite/tests/tool-debugger/no_debug_event/.DS_Store
+/testsuite/tests/tool-debugger/no_debug_event/compiler-libs
+/testsuite/tests/tool-debugger/no_debug_event/out
+/testsuite/tests/tool-debugger/no_debug_event/c
+/testsuite/tests/tool-debugger/no_debug_event/c.exe
+
 # /testsuite/tests/tool-lexyacc/
 /testsuite/tests/tool-lexyacc/*.o
 /testsuite/tests/tool-lexyacc/*.a
