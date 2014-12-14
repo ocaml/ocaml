@@ -56,7 +56,12 @@ static int parse_digit(char c)
     return -1;
 }
 
-static intnat parse_intnat(value s, int nbits)
+#define INT_ERRMSG "int_of_string"
+#define INT32_ERRMSG "Int32.of_string"
+#define INT64_ERRMSG "Int64.of_string"
+#define INTNAT_ERRMSG "Nativeint.of_string"
+
+static intnat parse_intnat(value s, int nbits, const char *errmsg)
 {
   char * p;
   uintnat res, threshold;
@@ -65,33 +70,33 @@ static intnat parse_intnat(value s, int nbits)
   p = parse_sign_and_base(String_val(s), &base, &sign);
   threshold = ((uintnat) -1) / base;
   d = parse_digit(*p);
-  if (d < 0 || d >= base) caml_failwith("int_of_string");
+  if (d < 0 || d >= base) caml_failwith(errmsg);
   for (p++, res = d; /*nothing*/; p++) {
     char c = *p;
     if (c == '_') continue;
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
-    if (res > threshold) caml_failwith("int_of_string");
+    if (res > threshold) caml_failwith(errmsg);
     res = base * res + d;
     /* Detect overflow in addition (base * res) + d */
-    if (res < (uintnat) d) caml_failwith("int_of_string");
+    if (res < (uintnat) d) caml_failwith(errmsg);
   }
   if (p != String_val(s) + caml_string_length(s)){
-    caml_failwith("int_of_string");
+    caml_failwith(errmsg);
   }
   if (base == 10) {
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     if (sign >= 0) {
-      if (res >= (uintnat)1 << (nbits - 1)) caml_failwith("int_of_string");
+      if (res >= (uintnat)1 << (nbits - 1)) caml_failwith(errmsg);
     } else {
-      if (res >  (uintnat)1 << (nbits - 1)) caml_failwith("int_of_string");
+      if (res >  (uintnat)1 << (nbits - 1)) caml_failwith(errmsg);
     }
   } else {
     /* Unsigned representation expected, allow 0 to 2^nbits - 1
        and tolerate -(2^nbits - 1) to 0 */
     if (nbits < sizeof(uintnat) * 8 && res >= (uintnat)1 << nbits)
-      caml_failwith("int_of_string");
+      caml_failwith(errmsg);
   }
   return sign < 0 ? -((intnat) res) : (intnat) res;
 }
@@ -119,7 +124,7 @@ CAMLprim value caml_int_compare(value v1, value v2)
 
 CAMLprim value caml_int_of_string(value s)
 {
-  return Val_long(parse_intnat(s, 8 * sizeof(value) - 1));
+    return Val_long(parse_intnat(s, 8 * sizeof(value) - 1, INT_ERRMSG));
 }
 
 #define FORMAT_BUFFER_SIZE 32
@@ -308,7 +313,7 @@ CAMLprim value caml_int32_format(value fmt, value arg)
 
 CAMLprim value caml_int32_of_string(value s)
 {
-  return caml_copy_int32(parse_intnat(s, 32));
+  return caml_copy_int32(parse_intnat(s, 32, INT32_ERRMSG));
 }
 
 CAMLprim value caml_int32_bits_of_float(value vd)
@@ -530,7 +535,7 @@ CAMLprim value caml_int64_of_string(value s)
   p = parse_sign_and_base(String_val(s), &base, &sign);
   threshold = ((uint64_t) -1) / base;
   d = parse_digit(*p);
-  if (d < 0 || d >= base) caml_failwith("int_of_string");
+  if (d < 0 || d >= base) caml_failwith(INT64_ERRMSG);
   res = d;
   for (p++; /*nothing*/; p++) {
     char c = *p;
@@ -538,20 +543,20 @@ CAMLprim value caml_int64_of_string(value s)
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
-    if (res > threshold) caml_failwith("int_of_string");
+    if (res > threshold) caml_failwith(INT64_ERRMSG);
     res = base * res + d;
     /* Detect overflow in addition (base * res) + d */
-    if (res < (uint64_t) d) caml_failwith("int_of_string");
+    if (res < (uint64_t) d) caml_failwith(INT64_ERRMSG);
   }
   if (p != String_val(s) + caml_string_length(s)){
-    caml_failwith("int_of_string");
+    caml_failwith(INT64_ERRMSG);
   }
   if (base == 10) {
     /* Signed representation expected, allow -2^63 to 2^63 - 1 only */
     if (sign >= 0) {
-      if (res >= (uint64_t)1 << 63) caml_failwith("int_of_string");
+      if (res >= (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
     } else {
-      if (res >  (uint64_t)1 << 63) caml_failwith("int_of_string");
+      if (res >  (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
     }
   }
   if (sign < 0) res = - res;
@@ -765,5 +770,5 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 
 CAMLprim value caml_nativeint_of_string(value s)
 {
-  return caml_copy_nativeint(parse_intnat(s, 8 * sizeof(value)));
+  return caml_copy_nativeint(parse_intnat(s, 8 * sizeof(value), INTNAT_ERRMSG));
 }
