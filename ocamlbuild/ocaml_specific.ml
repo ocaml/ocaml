@@ -560,6 +560,14 @@ let () =
     flag ["ocaml"; "link"; "program"] & A"-linkpkg";
     flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
 
+    (* "program" will make sure that -linkpkg is passed when compiling
+       whole-programs (.byte and .native); but it is occasionally
+       useful to pass -linkpkg when building archives for example
+       (.cma and .cmxa); the "linkpkg" flag allows user to request it
+       explicitly. *)
+    flag ["ocaml"; "link"; "linkpkg"] & A"-linkpkg";
+    pflag ["ocaml"; "link"] "dontlink" (fun pkg -> S[A"-dontlink"; A pkg]);
+
     let all_tags = [
       ["ocaml"; "byte"; "compile"];
       ["ocaml"; "native"; "compile"];

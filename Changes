@@ -49,6 +49,8 @@ Toplevel and debugger:
 OCamlbuild:
 - PR#6712: Ignore common VCS directories
   (Peter Zotov)
+- explicit "linkpkg" and "dontlink(foo)" flags
+  (Peter Zotov, Gabriel Scherer)
 
 Bug fixes:
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
