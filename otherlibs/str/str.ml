@@ -11,6 +11,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* In this module, [@ocaml.warnerror "-3"] is used in several places
+   that use deprecated functions to preserve legacy behavior.
+   It overrides -w @3 given on the command line. *)
+
 (** String utilities *)
 
 let string_before s n = String.sub s 0 n
@@ -88,9 +92,9 @@ module Charset =
       r
 
     let fold_case s =
-      let r = make_empty() in
-      iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
-      r
+      (let r = make_empty() in
+       iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
+       r)[@ocaml.warnerror "-3"]
 
   end
 
@@ -211,9 +215,9 @@ let charclass_of_regexp fold_case re =
 (* The case fold table: maps characters to their lowercase equivalent *)
 
 let fold_case_table =
-  let t = Bytes.create 256 in
-  for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
-  Bytes.to_string t
+  (let t = Bytes.create 256 in
+   for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
+   Bytes.to_string t)[@ocaml.warnerror "-3"]
 
 module StringMap =
   Map.Make(struct type t = string let compare (x:t) y = compare x y end)
@@ -269,7 +273,7 @@ let compile fold_case re =
   let rec emit_code = function
     Char c ->
       if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
+        emit_instr op_CHARNORM (Char.code (Char.lowercase c))[@ocaml.warnerror "-3"]
       else
         emit_instr op_CHAR (Char.code c)
   | String s ->
@@ -277,7 +281,7 @@ let compile fold_case re =
         0 -> ()
       | 1 ->
         if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
+          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))[@ocaml.warnerror "-3"]
         else
           emit_instr op_CHAR (Char.code s.[0])
       | _ ->
@@ -290,7 +294,7 @@ let compile fold_case re =
           emit_code (String (string_after s (i+1)))
         with Not_found ->
           if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
+            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))[@ocaml.warnerror "-3"]
           else
             emit_instr op_STRING (cpool_index s)
       end
