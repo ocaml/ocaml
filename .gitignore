@@ -2161,6 +2161,31 @@
 /testsuite/tests/tool-debugger/find-artifacts/compiler-libs
 /testsuite/tests/tool-debugger/find-artifacts/out
 
+# /testsuite/tests/tool-debugger/no_debug_event/
+/testsuite/tests/tool-debugger/no_debug_event/*.o
+/testsuite/tests/tool-debugger/no_debug_event/*.a
+/testsuite/tests/tool-debugger/no_debug_event/*.so
+/testsuite/tests/tool-debugger/no_debug_event/*.obj
+/testsuite/tests/tool-debugger/no_debug_event/*.lib
+/testsuite/tests/tool-debugger/no_debug_event/*.dll
+/testsuite/tests/tool-debugger/no_debug_event/*.cm[ioxat]
+/testsuite/tests/tool-debugger/no_debug_event/*.cmx[as]
+/testsuite/tests/tool-debugger/no_debug_event/*.cmti
+/testsuite/tests/tool-debugger/no_debug_event/*.annot
+/testsuite/tests/tool-debugger/no_debug_event/*.result
+/testsuite/tests/tool-debugger/no_debug_event/*.byte
+/testsuite/tests/tool-debugger/no_debug_event/*.native
+/testsuite/tests/tool-debugger/no_debug_event/program
+/testsuite/tests/tool-debugger/no_debug_event/*.exe
+/testsuite/tests/tool-debugger/no_debug_event/*.exe.manifest
+/testsuite/tests/tool-debugger/no_debug_event/.depend
+/testsuite/tests/tool-debugger/no_debug_event/.depend.nt
+/testsuite/tests/tool-debugger/no_debug_event/.DS_Store
+/testsuite/tests/tool-debugger/no_debug_event/compiler-libs
+/testsuite/tests/tool-debugger/no_debug_event/out
+/testsuite/tests/tool-debugger/no_debug_event/c
+/testsuite/tests/tool-debugger/no_debug_event/c.exe
+
 # /testsuite/tests/tool-lexyacc/
 /testsuite/tests/tool-lexyacc/*.o
 /testsuite/tests/tool-lexyacc/*.a
@@ -2238,6 +2263,27 @@
 /testsuite/tests/tool-toplevel/.depend
 /testsuite/tests/tool-toplevel/.depend.nt
 /testsuite/tests/tool-toplevel/.DS_Store
+
+# /testsuite/tests/translprim/
+/testsuite/tests/translprim/*.o
+/testsuite/tests/translprim/*.a
+/testsuite/tests/translprim/*.so
+/testsuite/tests/translprim/*.obj
+/testsuite/tests/translprim/*.lib
+/testsuite/tests/translprim/*.dll
+/testsuite/tests/translprim/*.cm[ioxat]
+/testsuite/tests/translprim/*.cmx[as]
+/testsuite/tests/translprim/*.cmti
+/testsuite/tests/translprim/*.annot
+/testsuite/tests/translprim/*.result
+/testsuite/tests/translprim/*.byte
+/testsuite/tests/translprim/*.native
+/testsuite/tests/translprim/program
+/testsuite/tests/translprim/*.exe
+/testsuite/tests/translprim/*.exe.manifest
+/testsuite/tests/translprim/.depend
+/testsuite/tests/translprim/.depend.nt
+/testsuite/tests/translprim/.DS_Store
 
 # /testsuite/tests/typing-extensions/
 /testsuite/tests/typing-extensions/*.o
@@ -2503,6 +2549,27 @@
 /testsuite/tests/typing-recmod/program
 /testsuite/tests/typing-recmod/*.cm*
 /testsuite/tests/typing-recmod/*.o
+
+# /testsuite/tests/typing-recordarg/
+/testsuite/tests/typing-recordarg/*.o
+/testsuite/tests/typing-recordarg/*.a
+/testsuite/tests/typing-recordarg/*.so
+/testsuite/tests/typing-recordarg/*.obj
+/testsuite/tests/typing-recordarg/*.lib
+/testsuite/tests/typing-recordarg/*.dll
+/testsuite/tests/typing-recordarg/*.cm[ioxat]
+/testsuite/tests/typing-recordarg/*.cmx[as]
+/testsuite/tests/typing-recordarg/*.cmti
+/testsuite/tests/typing-recordarg/*.annot
+/testsuite/tests/typing-recordarg/*.result
+/testsuite/tests/typing-recordarg/*.byte
+/testsuite/tests/typing-recordarg/*.native
+/testsuite/tests/typing-recordarg/program
+/testsuite/tests/typing-recordarg/*.exe
+/testsuite/tests/typing-recordarg/*.exe.manifest
+/testsuite/tests/typing-recordarg/.depend
+/testsuite/tests/typing-recordarg/.depend.nt
+/testsuite/tests/typing-recordarg/.DS_Store
 
 # /testsuite/tests/typing-short-paths/
 /testsuite/tests/typing-short-paths/*.o
