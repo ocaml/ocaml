@@ -701,6 +701,8 @@ class printer  ()= object(self:'self)
     pp f "@[<2>[@@@@@@%s@ %a]@]" s.txt self#payload e
 
   method value_description f x =
+    (* note: value_description has an attribute field,
+       but they're already printed by the callers this method *)
     pp f "@[<hov2>%a%a@]" self#core_type x.pval_type
       (fun f x ->
         if x.pval_prim<>[] then begin
@@ -1051,6 +1053,7 @@ class printer  ()= object(self:'self)
 
   (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
   method binding f {pvb_pat=p; pvb_expr=x; _} =
+    (* .pvb_attributes have already been printed by the caller, #bindings *)
     let rec pp_print_pexp_function f x =
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with
@@ -1249,6 +1252,8 @@ class printer  ()= object(self:'self)
       (self#list type_record_field ~sep:";@\n" )  lbls
 
   method type_declaration f x =
+    (* type_declaration has an attribute field,
+       but it's been printed by the caller of this method *)
     let priv f =
       match x.ptype_private with
         Public -> ()
