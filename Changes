@@ -60,6 +60,8 @@ Bug fixes:
 - PR#6648: show_module should indicate its elision
 - PR#6650: Cty_constr not handled correctly by Subst
 - PR#6651: Failing component lookup
+- PR#6717: Pprintast does not print let-pattern attributes
+  (Gabriel Scherer, report by Peter Zotov)
 - allow android build with pthreads support (since SDK r10c)
   (Peter Zotov)
 

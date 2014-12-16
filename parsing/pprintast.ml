@@ -363,7 +363,8 @@ class printer  ()= object(self:'self)
           | None -> pp f "%a@;"self#longident_loc li )
     | _ -> self#simple_pattern f x
   method simple_pattern (f:Format.formatter) (x:pattern) :unit =
-    match x.ppat_desc with
+    if x.ppat_attributes <> [] then self#pattern f x
+    else match x.ppat_desc with
     | Ppat_construct (({txt=Lident ("()"|"[]" as x);_}), _) -> pp f  "%s" x
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) -> protect_ident f txt
