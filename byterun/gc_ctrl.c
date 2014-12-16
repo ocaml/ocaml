@@ -201,8 +201,7 @@ static value heap_stats (int returnstats)
       prev_hp = cur_hp;
 #endif
       cur_hp = Next (cur_hp);
-    }                                          Assert (cur_hp == chunk_end);
-                                               Assert (cur_hp == (header_t *) chunk_end);
+    }                             Assert (cur_hp == (header_t *) chunk_end);
     chunk = Chunk_next (chunk);
   }
 

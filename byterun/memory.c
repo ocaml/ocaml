@@ -321,7 +321,7 @@ static value *expand_heap (mlsize_t request)
   while (Wosize_bhsize (remain) > Max_wosize){
     Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
 #ifdef DEBUG
-    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+    caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
     hp += Bhsize_wosize (Max_wosize);
     remain -= Bhsize_wosize (Max_wosize);
@@ -331,7 +331,7 @@ static value *expand_heap (mlsize_t request)
   if (remain > 1){
     Hd_hp (hp) = Make_header (Wosize_bhsize (remain), 0, Caml_blue);
 #ifdef DEBUG
-    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+    caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
     Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
     Field (Op_hp (hp), 0) = (value) NULL;

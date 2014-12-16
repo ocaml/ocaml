@@ -135,7 +135,10 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 
 #define Debug_uninit_stat    0xD7
 
-extern void caml_set_fields (char *, unsigned long, unsigned long);
+/* Note: the first argument is in fact a [value] but we don't have this
+   type available yet because we can't include [mlvalues.h] in this file.
+*/
+extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 #endif /* DEBUG */
 
 

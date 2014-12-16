@@ -76,7 +76,7 @@ static void fl_check (void)
 
   prev = Fl_head;
   cur = Next (prev);
-  while (cur != NULL){
+  while (cur != Val_NULL){
     size_found += Whsize_bp (cur);
     Assert (Is_in_heap (cur));
     if (cur == fl_prev) prev_found = 1;
@@ -86,7 +86,7 @@ static void fl_check (void)
         Assert (Next (flp[flp_found]) == cur);
         ++ flp_found;
       }else{
-        Assert (beyond == NULL || cur >= Next (beyond));
+        Assert (beyond == Val_NULL || cur >= Next (beyond));
       }
     }
     if (cur == caml_fl_merge) merge_found = 1;
@@ -161,7 +161,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
                                   Assert (wo_sz >= 1);
   switch (policy){
   case Policy_next_fit:
-                                  Assert (fl_prev != NULL);
+                                  Assert (fl_prev != Val_NULL);
     /* Search from [fl_prev] to the end of the list. */
     prev = fl_prev;
     cur = Next (prev);
@@ -433,7 +433,7 @@ header_t *caml_fl_merge_block (value bp)
       adj = (header_t *) &Field (bp, Wosize_hd (hd));
 #ifdef DEBUG
       fl_last = Val_NULL;
-      Next (cur) = (char *) Debug_free_major;
+      Next (cur) = (value) Debug_free_major;
       Hd_val (cur) = Debug_free_major;
 #endif
       cur = next_cur;

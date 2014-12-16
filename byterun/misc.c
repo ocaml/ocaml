@@ -28,11 +28,11 @@ int caml_failed_assert (char * expr, char * file, int line)
   exit (100);
 }
 
-void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
+void caml_set_fields (value v, unsigned long start, unsigned long filler)
 {
   mlsize_t i;
-  for (i = start; i < Wosize_bp (bp); i++){
-    Field (Val_bp (bp), i) = (value) filler;
+  for (i = start; i < Wosize_val (v); i++){
+    Field (v, i) = (value) filler;
   }
 }
 
