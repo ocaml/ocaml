@@ -35,6 +35,7 @@ let free_vars ?(param=false) ty =
             | Tvar _ when param -> ret := TypeSet.add ty !ret
             | _ -> loop row.row_more
           end
+      (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
     end
