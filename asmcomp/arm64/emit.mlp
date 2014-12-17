@@ -27,6 +27,9 @@ open Mach
 open Linear
 open Emitaux
 
+let is_macosx =
+  Config.system = "macosx"
+
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -42,13 +45,30 @@ let reg_x15 = phys_reg 15
 
 (* Output a label *)
 
+let label_prefix =
+  if is_macosx then "L" else ".L"
+
 let emit_label lbl =
-  emit_string ".L"; emit_int lbl
+  emit_string label_prefix; emit_int lbl
 
 (* Symbols *)
 
 let emit_symbol s =
+  if is_macosx then emit_string "_";
   Emitaux.emit_symbol '$' s
+
+(* Object types *)
+
+let emit_symbol_type emit_lbl_or_sym lbl_or_sym ty =
+  if not is_macosx then begin
+    `	.type	{emit_lbl_or_sym lbl_or_sym}, %{emit_string ty}\n`
+  end
+
+
+let emit_symbol_size sym =
+  if not is_macosx then begin
+    `	.size	{emit_symbol sym}, .-{emit_symbol sym}\n`
+  end
 
 (* Output a pseudo-register *)
 
@@ -320,6 +340,8 @@ let float_literal f =
 (* Emit all pending literals *)
 let emit_literals() =
   if !float_literals <> [] then begin
+    if is_macosx then
+      `	.section	__TEXT,__literal8,8byte_literals\n`;
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
@@ -331,7 +353,10 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if not !Clflags.dlcode then begin
+  if is_macosx then begin
+    `	adrp	{emit_reg dst}, {emit_symbol s}@GOTPAGE\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg dst}, {emit_symbol s}@GOTPAGEOFF]\n`
+  end else if not !Clflags.dlcode then begin
     `	adrp	{emit_reg dst}, {emit_symbol s}\n`;
     `	add	{emit_reg dst}, {emit_reg dst}, #:lo12:{emit_symbol s}\n`
   end else begin
@@ -577,6 +602,17 @@ let emit_named_text_section func_name =
   else
     `	.text\n`
 
+(* Emit code to load an emitted literal *)
+
+let emit_load_literal dst lbl =
+  if is_macosx then begin
+    `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}@PAGE\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, {emit_label lbl}@PAGEOFF]\n`
+  end else begin
+    `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
+    `	ldr	{emit_reg dst}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
+  end
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
@@ -629,8 +665,7 @@ let emit_instr i =
           `	fmov	{emit_reg i.res.(0)}, #{emit_printf "%.7f" (Int64.float_of_bits f)}\n`
         else begin
           let lbl = float_literal f in
-          `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
-          `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
+          emit_load_literal i.res.(0) lbl
         end
     | Lop(Iconst_symbol s) ->
         emit_load_symbol_addr i.res.(0) s
@@ -950,7 +985,7 @@ let fundecl fundecl =
   emit_named_text_section !function_name;
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
+  emit_symbol_type emit_symbol fundecl.fun_name "function";
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
@@ -968,8 +1003,8 @@ let fundecl fundecl =
   assert (List.length !call_gc_sites = num_call_gc);
   assert (List.length !bound_error_sites = num_check_bound);
   cfi_endproc();
-  `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
-  `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`;
+  emit_symbol_type emit_symbol fundecl.fun_name "function";
+  emit_symbol_size fundecl.fun_name;
   emit_literals()
 
 (* Emission of data *)
@@ -1032,10 +1067,10 @@ let end_assembly () =
   `{emit_symbol lbl}:\n`;
   emit_frames
     { efa_code_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %function\n`;
+                       emit_symbol_type emit_label lbl "function";
                        `	.quad	{emit_label lbl}\n`);
       efa_data_label = (fun lbl ->
-                       `	.type	{emit_label lbl}, %object\n`;
+                       emit_symbol_type emit_label lbl "object";
                        `	.quad	{emit_label lbl}\n`);
       efa_8 = (fun n -> `	.byte	{emit_int n}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
@@ -1046,8 +1081,8 @@ let end_assembly () =
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun lbl -> `{emit_label lbl}:\n`);
       efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
-  `	.type	{emit_symbol lbl}, %object\n`;
-  `	.size	{emit_symbol lbl}, .-{emit_symbol lbl}\n`;
+  emit_symbol_type emit_symbol lbl "object";
+  emit_symbol_size lbl;
   begin match Config.system with
   | "linux" ->
       (* Mark stack as non-executable *)
