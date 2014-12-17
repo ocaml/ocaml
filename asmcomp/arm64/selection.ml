@@ -91,9 +91,7 @@ class selector = object(self)
 inherit Selectgen.selector_generic as super
 
 method is_immediate n =
-  let mn = -n in
   n land 0xFFF = n || n land 0xFFF_000 = n
-  || mn land 0xFFF = mn || mn land 0xFFF_000 = mn
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
@@ -124,8 +122,9 @@ method! select_operation op args =
       begin match args with
       (* Add immediate *)
       | [arg; Cconst_int n] | [Cconst_int n; arg] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
-           [arg])
+          (Iintop_imm(Iadd, n), [arg])
+      | [arg; Cconst_int n] | [Cconst_int n; arg] when self#is_immediate(-n) ->
+          (Iintop_imm(Isub, -n), [arg])
       (* Shift-add *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg1; arg2])
@@ -153,8 +152,9 @@ method! select_operation op args =
       begin match args with
       (* Sub immediate *)
       | [arg; Cconst_int n] when self#is_immediate n ->
-          ((if n >= 0 then Iintop_imm(Isub, n) else Iintop_imm(Iadd, -n)),
-           [arg])
+          (Iintop_imm(Isub, n), [arg])
+      | [arg; Cconst_int n] when self#is_immediate n ->
+          (Iintop_imm(Iadd, -n), [arg])
       (* Shift-sub *)
       | [arg1; Cop(Clsl, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])
