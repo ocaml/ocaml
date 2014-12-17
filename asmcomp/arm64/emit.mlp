@@ -840,12 +840,12 @@ let emit_instr i =
         `{emit_label lblnext}:\n`
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
-        `	str	{emit_reg reg_trap_ptr}, [sp, -16]!\n`;
+        `	str	{emit_reg reg_trap_ptr}, [sp, #-16]!\n`;
         `	str	{emit_reg reg_tmp1}, [sp, #8]\n`;
         cfi_adjust_cfa_offset 16;
         `	mov	{emit_reg reg_trap_ptr}, sp\n`
     | Lpoptrap ->
-        `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
+        `	ldr	{emit_reg reg_trap_ptr}, [sp], #16\n`;
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
@@ -856,7 +856,7 @@ let emit_instr i =
         | Cmm.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
-          `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
+          `	ldr	{emit_reg reg_trap_ptr}, [sp], #16\n`;
           `	br	{emit_reg reg_tmp1}\n`
         end
 
