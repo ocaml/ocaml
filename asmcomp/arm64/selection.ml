@@ -21,6 +21,9 @@ open Arch
 open Cmm
 open Mach
 
+let macosx =
+  Config.system = "macosx"
+
 let is_offset chunk n =
    (n >= -256 && n <= 255)               (* 9 bits signed unscaled *)
 || (n >= 0 &&
@@ -81,7 +84,8 @@ let inline_ops =
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
 let use_direct_addressing symb =
-  (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit symb
+  ((not !Clflags.dlcode) || Compilenv.symbol_in_current_unit symb) &&
+    not macosx
 
 (* Instruction selection *)
 
