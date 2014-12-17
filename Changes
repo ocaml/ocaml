@@ -51,6 +51,8 @@ OCamlbuild:
   (Peter Zotov, Gabriel Scherer)
 - PR#6712: Ignore common VCS directories
   (Peter Zotov)
+- PR#6720: pass -g to C compilers when tag 'debug' is set
+  (Peter Zotov, Gabriel Scherer)
 
 Bug fixes:
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
