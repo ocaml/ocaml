@@ -16,6 +16,8 @@ open Abstract_identifiers
 open Flambda
 open Flambdaapprox
 
+module IntMap = Ext_types.IntMap
+
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
 
@@ -71,6 +73,7 @@ let local_env env =
 
 type ret =
   { approx : approx;
+    globals : approx IntMap.t;
     used_variables : VarSet.t;
     used_staticfail : StaticExceptionSet.t;
   }
@@ -202,6 +205,7 @@ let exit_scope_catch acc i =
 
 let init_r () =
   { approx = value_unknown;
+    globals = IntMap.empty;
     used_variables = VarSet.empty;
     used_staticfail = StaticExceptionSet.empty }
 
@@ -229,11 +233,13 @@ let add_approx id approx env =
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
-let add_global i approx env =
-  Hashtbl.add env.global i approx
-let find_global i env =
-  try Hashtbl.find env.global i with
-  | Not_found -> value_unknown
+let add_global i approx r =
+  { r with globals = IntMap.add i approx r.globals }
+let find_global i r =
+  try IntMap.find i r.globals with
+  | Not_found ->
+      Misc.fatal_error
+        (Format.asprintf "couldn't find global %i@." i)
 
 (* Utility function to duplicate an expression and makes a function from it *)
 
@@ -751,14 +757,14 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fprim(Pgetglobalfield(id,i), [], dbg, annot) as expr ->
       let approx =
         if id = Compilenv.current_unit_id ()
-        then find_global i env
+        then find_global i r
         else get_field i [really_import_approx (Import.import_global id)] in
       check_constant_result r expr approx
   | Fprim(Psetglobalfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
       let expr = if arg == arg' then expr
         else Fprim(Psetglobalfield i, [arg'], dbg, annot) in
-      add_global i r.approx env; (* TODO: add global to r, not to env *)
+      let r = add_global i r.approx r in
       expr, ret r value_unknown
   | Fprim(Pfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
