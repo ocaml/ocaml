@@ -194,11 +194,49 @@ module Make (I : INPUT) = struct
     let dependencies_of x =
       try SMap.find x !*dependencies with Not_found -> Resources.empty in
 
+    let refine_cycle files starting_file =
+      (* We are looking for a cycle starting from [fn], included in
+         [files]; we'll simply use a DFS which builds a path until it
+         finds a circularity.
+
+         Note that if there is at least one cycle going through [fn],
+         calling [dfs path fn] will return it no matter what [path] is
+         (it may just not be the shortest possible cycle). This means
+         that if [dfs path fn] returns [None], [fn] is a dead-end that
+         should never be explored again.
+       *)
+      let dead_ends = ref Resources.empty in
+      let rec dfs path fn =
+        let through_dep f = function
+          | Some _ as cycle -> cycle
+          | None ->
+             if List.mem f path
+             then (* we have found a cycle *)
+               Some (List.rev path)
+             else if not (List.mem f files)
+             then
+               (* the neighbor is not in the set of paths known to have a cycle *)
+               None
+             else
+               (* look for cycles going through this neighbor *)
+               dfs (f :: path) f
+        in
+        if Resources.mem fn !dead_ends then None
+        else match Resources.fold through_dep (dependencies_of fn) None with
+          | Some _ as cycle -> cycle
+          | None -> dead_ends := Resources.add fn !dead_ends; None
+      in
+      match dfs [] starting_file with
+        | None -> files
+        | Some cycle -> cycle
+    in
+
     let needed = ref [] in
     let seen = ref [] in
     let rec aux fn =
       if sys_file_exists fn && not (List.mem fn !needed) then begin
-        if List.mem fn !seen then raise (Circular_dependencies (!seen, fn));
+        if List.mem fn !seen then
+          raise (Circular_dependencies (refine_cycle !seen fn, fn));
         seen := fn :: !seen;
         Resources.iter begin fun f ->
           if sys_file_exists f then
@@ -216,5 +254,6 @@ module Make (I : INPUT) = struct
     List.iter aux fns;
     mydprintf "caml_transitive_closure:@ %a ->@ %a" pp_l fns pp_l !needed;
     List.rev !needed
+
 
 end

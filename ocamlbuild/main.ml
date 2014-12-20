@@ -265,10 +265,10 @@ let proceed () =
     else
       ()
   with
-  | Ocaml_dependencies.Circular_dependencies(seen, p) ->
+  | Ocaml_dependencies.Circular_dependencies(cycle, p) ->
       raise
         (Exit_build_error
-          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l seen))
+          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l cycle))
 ;;
 
 open Exit_codes;;
