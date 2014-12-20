@@ -213,7 +213,7 @@ module Make (I : INPUT) = struct
              if List.mem f path
              then (* we have found a cycle *)
                Some (List.rev path)
-             else if not (List.mem f files)
+             else if not (Resources.mem f files)
              then
                (* the neighbor is not in the set of paths known to have a cycle *)
                None
@@ -227,17 +227,18 @@ module Make (I : INPUT) = struct
           | None -> dead_ends := Resources.add fn !dead_ends; None
       in
       match dfs [] starting_file with
-        | None -> files
+        | None -> Resources.elements files
         | Some cycle -> cycle
     in
 
-    let needed = ref [] in
-    let seen = ref [] in
+    let needed_in_order = ref [] in
+    let needed = ref Resources.empty in
+    let seen = ref Resources.empty in
     let rec aux fn =
-      if sys_file_exists fn && not (List.mem fn !needed) then begin
-        if List.mem fn !seen then
+      if sys_file_exists fn && not (Resources.mem fn !needed) then begin
+        if Resources.mem fn !seen then
           raise (Circular_dependencies (refine_cycle !seen fn, fn));
-        seen := fn :: !seen;
+        seen := Resources.add fn !seen;
         Resources.iter begin fun f ->
           if sys_file_exists f then
             if Filename.check_suffix f ".cmi" then
@@ -248,12 +249,14 @@ module Make (I : INPUT) = struct
               else ()
             else aux f
         end (dependencies_of fn);
-        needed := fn :: !needed
+        needed := Resources.add fn !needed;
+        needed_in_order := fn :: !needed_in_order
       end
     in
     List.iter aux fns;
-    mydprintf "caml_transitive_closure:@ %a ->@ %a" pp_l fns pp_l !needed;
-    List.rev !needed
+    mydprintf "caml_transitive_closure:@ %a ->@ %a"
+      pp_l fns pp_l !needed_in_order;
+    List.rev !needed_in_order
 
 
 end
