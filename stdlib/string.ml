@@ -110,6 +110,14 @@ let contains_from s i c =
   B.contains_from (bos s) i c
 let rcontains_from s i c =
   B.rcontains_from (bos s) i c
+
+type t = string
+
+let compare (x: t) (y: t) = Pervasives.compare x y
+external equal : string -> string -> bool = "caml_string_equal"
+
+(* Deprecated functions implemented via other deprecated functions *)
+(* XXX KC: [@@@ocaml.warning "-3"] *)
 let uppercase s =
   B.uppercase (bos s) |> bts
 let lowercase s =
@@ -118,7 +126,3 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
-
-type t = string
-
-let compare (x: t) (y: t) = Pervasives.compare x y

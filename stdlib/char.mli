@@ -29,10 +29,24 @@ val escaped : char -> string
     escaped, as well as backslash, double-quote, and single-quote. *)
 
 val lowercase : char -> char
-(** Convert the given character to its equivalent lowercase character. *)
+  [@@ocaml.deprecated "Use Char.lowercase_ascii instead."]
+(** Convert the given character to its equivalent lowercase character,
+   using the ISO Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uppercase : char -> char
-(** Convert the given character to its equivalent uppercase character. *)
+  [@@ocaml.deprecated "Use Char.uppercase_ascii instead."]
+(** Convert the given character to its equivalent uppercase character,
+   using the ISO Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val lowercase_ascii : char -> char
+(** Convert the given character to its equivalent lowercase character,
+   using the US-ASCII character set. *)
+
+val uppercase_ascii : char -> char
+(** Convert the given character to its equivalent uppercase character,
+   using the US-ASCII character set. *)
 
 type t = char
 (** An alias for the type of characters. *)
