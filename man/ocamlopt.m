@@ -260,9 +260,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename
