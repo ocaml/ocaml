@@ -44,7 +44,7 @@ let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   for i = (if negate then 4 else 3) to Array.length Sys.argv - 1 do
-    to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
+    to_keep := StringSet.add (String.capitalize_ascii Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   Bytesections.read_toc ic;

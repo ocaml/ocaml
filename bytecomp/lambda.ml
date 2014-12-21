@@ -542,7 +542,7 @@ let lam_of_loc kind loc =
   | Loc_MODULE ->
     let filename = Filename.basename file in
     let module_name =
-      try String.capitalize (Filename.chop_extension filename)
+      try String.capitalize_ascii (Filename.chop_extension filename)
       with Invalid_argument _ -> "//"^filename^"//"
     in Lconst (Const_immstring module_name)
   | Loc_LOC ->

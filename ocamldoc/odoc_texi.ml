@@ -311,7 +311,7 @@ class text =
     method texi_of_custom_text s t = ""
 
     method texi_of_Target ~target ~code =
-      if String.lowercase target = "texi" then code else ""
+      if String.lowercase_ascii target = "texi" then code else ""
 
     method texi_of_Verbatim s = s
     method texi_of_Raw s = self#escape s
