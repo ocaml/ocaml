@@ -40,11 +40,13 @@ val uppercase : char -> char
 
 val lowercase_ascii : char -> char
 (** Convert the given character to its equivalent lowercase character,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val uppercase_ascii : char -> char
 (** Convert the given character to its equivalent uppercase character,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = char
 (** An alias for the type of characters. *)

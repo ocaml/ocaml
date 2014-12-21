@@ -256,19 +256,23 @@ val uncapitalize : bytes -> bytes
 
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, using the US-ASCII character set. *)
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, using the US-ASCII character set. *)
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
