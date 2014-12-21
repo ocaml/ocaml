@@ -34,6 +34,8 @@ Standard library:
 - PR#6585: fix memory leak in win32unix/createprocess.c
 - expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
   (Hugo Heuzard)
+* Filename: Optional ?perms argument to open_temp_file
+  (Daniel Bünzli, review by Jacques-Pascal Deplaix)
 
 Type system:
 * PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
