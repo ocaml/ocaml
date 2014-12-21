@@ -209,52 +209,62 @@ let extract_target_parameters ty =
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
-let match_printer_type ppf desc typename =
+let printer_type ppf typename =
   let (printer_type, _) =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
-  Ctype.init_def(Ident.current_time());
+  printer_type
 
+let match_simple_printer_type ppf desc printer_type =
+  Ctype.begin_def();
+  let ty_arg = Ctype.newvar() in
+  Ctype.unify !toplevel_env
+    (Ctype.newconstr printer_type [ty_arg])
+    (Ctype.instance_def desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_arg;
+  (ty_arg, None)
+
+let match_generic_printer_type ppf desc path args printer_type =
+  Ctype.begin_def();
+  let args = List.map (fun _ -> Ctype.newvar ()) args in
+  let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
+  let ty_args =
+    List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
+  let ty_expected =
+    List.fold_right
+      (fun ty_arg ty -> Ctype.newty (Tarrow ("", ty_arg, ty, Cunknown)))
+      ty_args (Ctype.newconstr printer_type [ty_target]) in
+  Ctype.unify !toplevel_env
+    ty_expected
+    (Ctype.instance_def desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_expected;
+  if not (Ctype.all_distinct_vars !toplevel_env args) then
+    raise (Ctype.Unify []);
+  (ty_expected, Some (path, ty_args))
+
+let match_printer_type ppf desc =
+  let printer_type_new = printer_type ppf "printer_type_new" in
+  let printer_type_old = printer_type ppf "printer_type_old" in
+  Ctype.init_def(Ident.current_time());
   match extract_target_parameters desc.val_type with
   | None ->
-      Ctype.begin_def();
-      let ty_arg = Ctype.newvar() in
-      Ctype.unify !toplevel_env
-        (Ctype.newconstr printer_type [ty_arg])
-        (Ctype.instance_def desc.val_type);
-      Ctype.end_def();
-      Ctype.generalize ty_arg;
-      (ty_arg, None)
+     (try
+        (match_simple_printer_type ppf desc printer_type_new, false)
+      with Ctype.Unify _ ->
+        (match_simple_printer_type ppf desc printer_type_old, true))
   | Some (path, args) ->
-      Ctype.begin_def();
-      let args = List.map (fun _ -> Ctype.newvar ()) args in
-      let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
-      let ty_args =
-        List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
-      let ty_expected =
-        List.fold_right
-          (fun ty_arg ty -> Ctype.newty (Tarrow ("", ty_arg, ty, Cunknown)))
-          ty_args (Ctype.newconstr printer_type [ty_target]) in
-      Ctype.unify !toplevel_env
-        ty_expected
-        (Ctype.instance_def desc.val_type);
-      Ctype.end_def();
-      Ctype.generalize ty_expected;
-      if not (Ctype.all_distinct_vars !toplevel_env args) then
-        raise (Ctype.Unify []);
-      (ty_expected, Some (path, ty_args))
+     (* only 'new' style is available for generic printers *)
+     match_generic_printer_type ppf desc path args printer_type_new, false
 
 let find_printer_type ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type ppf desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type ppf desc "printer_type_old", true) in
+    let (ty_arg, is_old_style) = match_printer_type ppf desc in
     (ty_arg, path, is_old_style)
   with
   | Not_found ->
