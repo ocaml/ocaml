@@ -107,7 +107,7 @@ module Win32 = struct
    String.length name >= String.length suff &&
    (let s = String.sub name (String.length name - String.length suff)
                             (String.length suff) in
-    String.lowercase s = String.lowercase suff)
+    String.lowercase_ascii s = String.lowercase_ascii suff)
   let temp_dir_name =
     try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
