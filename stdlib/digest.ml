@@ -16,6 +16,7 @@
 type t = string
 
 let compare = String.compare
+let equal = String.equal
 
 external unsafe_string: string -> int -> int -> t = "caml_md5_string"
 external channel: in_channel -> int -> t = "caml_md5_chan"

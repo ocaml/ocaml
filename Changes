@@ -29,6 +29,9 @@ Runtime system:
   (Xavier Leroy)
 
 Standard library:
+* PR#6494: Add equal function in modules
+  Big_int, Bytes, Char, Digest, Int32, Int64, Nativeint, Num and String
+  (Romain Calascibetta)
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c

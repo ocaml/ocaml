@@ -86,6 +86,8 @@ val compare_big_int : big_int -> big_int -> int
         (** [compare_big_int a b] returns [0] if [a] and [b] are equal,
            [1] if [a] is greater than [b], and [-1] if [a] is smaller
            than [b]. *)
+val equal : big_int -> big_int -> bool
+        (** The equal function for big ints. @since 4.03.0 *)
 val eq_big_int : big_int -> big_int -> bool
 val le_big_int : big_int -> big_int -> bool
 val ge_big_int : big_int -> big_int -> bool
