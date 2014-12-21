@@ -74,7 +74,7 @@ let proceed () =
     (* If we are in the first run before launching the plugin, we
        should skip the user-visible operations (hygiene) that may need
        information from the plugin to run as the user expects it.
-       
+
        Note that we don't need to disable the [Hooks] call as they are
        no-ops anyway, before any plugin has registered hooks. *)
     Plugin.we_need_a_plugin () && not !Options.just_plugin in
@@ -91,6 +91,7 @@ let proceed () =
      <**/*.cmo>: ocaml, byte\n\
      <**/*.cmi>: ocaml, byte, native\n\
      <**/*.cmx>: ocaml, native\n\
+     <**/*.mly>: infer\n\
     ";
 
   List.iter
