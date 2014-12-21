@@ -98,7 +98,7 @@ val open_temp_file :
    It can contain one or several of [Open_append], [Open_binary],
    and [Open_text].  The default is [[Open_text]] (open in text mode). The
    file is created with permissions [perms] (defaults to readable and
-   writable only by the file owner).
+   writable only by the file owner, [0o600]).
 
    @raise Sys_error if the file could not be opened.
    @before 4.03.0 no ?perms optional argument
