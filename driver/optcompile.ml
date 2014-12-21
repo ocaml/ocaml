@@ -100,4 +100,5 @@ let implementation ppf sourcefile outputprefix =
     raise x
 
 let c_file name =
-  if Ccomp.compile_file ~output_name:!Clflags.output_name name <> 0 then exit 2
+  let output_name = !Clflags.output_name in
+  if Ccomp.compile_file ~output_name name <> 0 then exit 2
