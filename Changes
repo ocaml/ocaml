@@ -30,7 +30,7 @@ Runtime system:
 
 Standard library:
 * PR#6494: Add equal function in modules
-  Big_int, Bytes, Char, Digest, Int32, Int64, Nativeint, Num and String
+  Bytes, Char, Digest, Int32, Int64, Nativeint, and String
   (Romain Calascibetta)
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
