@@ -77,7 +77,7 @@ let mk_virtual_solvers =
   List.iter begin fun cmd ->
     let solver () =
       A (find_tool cmd)
-    in Command.setup_virtual_command_solver (String.uppercase cmd) solver
+    in Command.setup_virtual_command_solver (String.uppercase_ascii cmd) solver
   end
 
 let () =
@@ -355,7 +355,7 @@ let init () =
   dir_reorder my_include_dirs include_dirs;
   dir_reorder my_exclude_dirs exclude_dirs;
 
-  ignore_list := List.map String.capitalize !ignore_list
+  ignore_list := List.map String.capitalize_ascii !ignore_list
 ;;
 
 (* The current heuristic: we know we are in an ocamlbuild project if

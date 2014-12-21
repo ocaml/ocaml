@@ -1709,7 +1709,7 @@ let package_units initial_env objfiles cmifile modulename =
     List.map
       (fun f ->
          let pref = chop_extensions f in
-         let modname = String.capitalize(Filename.basename pref) in
+         let modname = String.capitalize_ascii(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
             not(Mtype.no_code_needed_sig Env.initial_safe_string sg)

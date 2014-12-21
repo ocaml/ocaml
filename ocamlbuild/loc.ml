@@ -20,7 +20,7 @@ let print_loc ppf (source, start, end_) =
     if one_or_two then fprintf ppf " %d" start_num
     else fprintf ppf "s %d-%d" start_num end_num in
   fprintf ppf "%s %S, line%a, character%a:@."
-    (String.capitalize source)
+    (String.capitalize_ascii source)
     (file start)
     (print (line start = line end_))
       (line start, line end_)

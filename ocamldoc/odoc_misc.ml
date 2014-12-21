@@ -454,7 +454,7 @@ let create_index_lists elements string_of_ele =
         match s with
           "" -> f current acc0 acc1 (acc2 @ [ele]) q
         | _ ->
-            let first = Char.uppercase s.[0] in
+            let first = Char.uppercase_ascii s.[0] in
             match first with
               'A' .. 'Z' ->
                 if current = first then

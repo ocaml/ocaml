@@ -293,7 +293,7 @@ class text =
     method latex_of_custom_text fmt s t = ()
 
     method latex_of_Target fmt ~target ~code =
-      if String.lowercase target = "latex" then
+      if String.lowercase_ascii target = "latex" then
         self#latex_of_Latex fmt code
       else
         ()
