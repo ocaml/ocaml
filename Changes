@@ -71,19 +71,21 @@ OCamlbuild:
 Bug fixes:
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
+- PR#6616: allow meaningful use of -use-runtime without -custom.
+  (Peter Zotov)
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
-- ocamlbuild on cygwin cannot find ocamlfind
-  (user 'algoriddle')
 - PR#6680: Missing parentheses when printing polymorphic variant value in warning
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
            type variable in place of a local abstract type
 - PR#6717: Pprintast does not print let-pattern attributes
   (Gabriel Scherer, report by Peter Zotov)
+- ocamlbuild on cygwin cannot find ocamlfind
+  (user 'algoriddle')
 - allow android build with pthreads support (since SDK r10c)
   (Peter Zotov)
 
