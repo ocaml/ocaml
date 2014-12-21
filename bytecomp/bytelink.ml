@@ -309,7 +309,7 @@ let link_bytecode ppf tolink exec_name standalone =
     Bytesections.init_record outchan;
     (* The path to the bytecode interpreter (in use_runtime mode) *)
     if String.length !Clflags.use_runtime > 0 then begin
-      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_string outchan ("#!" ^ (make_absolute !Clflags.use_runtime));
       output_char outchan '\n';
       Bytesections.record outchan "RNTM"
     end;
