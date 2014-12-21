@@ -159,15 +159,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
 
-    let install_generic_printer path ty_path fn =
-      printers := (path, Generic (ty_path, fn))  :: !printers
+    let install_generic_printer function_path constr_path fn =
+      printers := (function_path, Generic (constr_path, fn))  :: !printers
 
-    let install_generic_printer' path ty_path fn =
+    let install_generic_printer' function_path ty_path fn =
       let rec build gp depth =
         match gp with
         | Zero fn ->
             let out_printer obj =
-              let printer ppf = try fn ppf obj with _ -> exn_printer ppf path in
+              let printer ppf =
+                try fn ppf obj with _ -> exn_printer ppf function_path in
               Oval_printer printer in
             Zero out_printer
         | Succ fn ->
@@ -176,7 +177,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 !Oprint.out_value ppf (fn_arg (depth+1) o) in
               build (fn print_arg) depth in
             Succ print_val in
-      printers := (path, Generic (ty_path, build fn)) :: !printers
+      printers := (function_path, Generic (ty_path, build fn)) :: !printers
 
     let remove_printer path =
       let rec remove = function
