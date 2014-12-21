@@ -92,6 +92,7 @@ let proceed () =
      <**/*.cmi>: ocaml, byte, native\n\
      <**/*.cmx>: ocaml, native\n\
      <**/*.mly>: infer\n\
+     <**/.svn>|\".bzr\"|\".hg\"|\".git\"|\"_darcs\": -traverse\n\
     ";
 
   List.iter

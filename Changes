@@ -8,6 +8,8 @@ Toplevel and debugger:
 OCamlbuild:
 - PR#6237: explicit "infer" tag to control or disable menhir --infer
   (Hugo Heuzard)
+- PR#6712: Ignore common VCS directories
+  (Peter Zotov)
 
 Bug fixes:
 - PR#6628: Configure script rejects legitimate arguments
