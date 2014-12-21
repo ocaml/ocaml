@@ -1,6 +1,15 @@
 OCaml 4.02.2:
 -------------
 
+Toplevel and debugger:
+- PR#5958: generalized polymorphic #install_printer
+  (Pierre Chambart and Grégoire Henry)
+
+OCamlbuild:
+- PR#6237: explicit "infer" tag to control or disable menhir --infer
+  (Hugo Heuzard)
+
+Bug fixes:
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
