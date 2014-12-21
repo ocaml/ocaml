@@ -559,6 +559,7 @@ let () =
     (* Ocamlfind will link the archives for us. *)
     flag ["ocaml"; "link"; "program"] & A"-linkpkg";
     flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
+    flag ["ocaml"; "link"; "output_obj"] & A"-linkpkg";
 
     (* "program" will make sure that -linkpkg is passed when compiling
        whole-programs (.byte and .native); but it is occasionally

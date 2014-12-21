@@ -59,6 +59,8 @@ Toplevel and debugger:
 OCamlbuild:
 - PR#6237: explicit "infer" tag to control or disable menhir --infer
   (Hugo Heuzard)
+- PR#6625: pass -linkpkg to files built with -output-obj.
+  (Peter Zotov)
 - PR#6702: explicit "linkpkg" and "dontlink(foo)" flags
   (Peter Zotov, Gabriel Scherer)
 - PR#6712: Ignore common VCS directories
