@@ -390,6 +390,11 @@ let s = Bytes.of_string "hello"
 
 (**/**)
 
+val lowercase_ascii : bytes -> bytes
+val uppercase_ascii : bytes -> bytes
+val capitalize_ascii : bytes -> bytes
+val uncapitalize_ascii : bytes -> bytes
+
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : bytes -> int -> char = "%string_unsafe_get"

@@ -245,6 +245,11 @@ val equal: t -> t -> bool
 
 (**/**)
 
+val lowercase_ascii : string -> string
+val uppercase_ascii : string -> string
+val capitalize_ascii : string -> string
+val uncapitalize_ascii : string -> string
+
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
