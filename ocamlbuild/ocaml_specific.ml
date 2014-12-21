@@ -675,6 +675,8 @@ flag ["ocaml"; "debug"; "pack"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "compile"; "native"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
+flag ["c";     "debug"; "compile"] (A "-g");
+flag ["c";     "debug"; "link"] (A "-g");
 flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
