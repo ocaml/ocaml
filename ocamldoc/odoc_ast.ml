@@ -1910,7 +1910,7 @@ module Analyser =
        in
        prepare_file complete_source_file input_file;
        (* We create the t_module for this file. *)
-       let mod_name = String.capitalize (Filename.basename (Filename.chop_extension source_file)) in
+       let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
        let (len,info_opt) = My_ir.first_special !file_name !file in
 
        (* we must complete the included modules *)

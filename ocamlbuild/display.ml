@@ -297,10 +297,10 @@ let update_tagline_from_tags ds =
         done
     | (tag, c) :: rest ->
         if Tags.mem tag tags then
-          Bytes.set tagline i (Char.uppercase c)
+          Bytes.set tagline i (Char.uppercase_ascii c)
         else
           if Tags.mem tag ds.ds_seen_tags then
-            Bytes.set tagline i (Char.lowercase c)
+            Bytes.set tagline i (Char.lowercase_ascii c)
           else
             Bytes.set tagline i '-';
         loop (i + 1) rest

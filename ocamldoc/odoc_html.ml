@@ -307,7 +307,7 @@ class virtual text =
     method html_of_custom_text b s t = ()
 
     method html_of_Target b ~target ~code =
-      if String.lowercase target = "html" then bs b code else ()
+      if String.lowercase_ascii target = "html" then bs b code else ()
 
     method html_of_Raw b s = bs b (self#escape s)
 
@@ -2306,7 +2306,7 @@ class html =
             [] -> ()
           | e :: _ ->
               let s =
-                match (Char.uppercase (Name.simple (name e)).[0]) with
+                match (Char.uppercase_ascii (Name.simple (name e)).[0]) with
                   'A'..'Z' as c -> String.make 1 c
                 | _ -> ""
               in

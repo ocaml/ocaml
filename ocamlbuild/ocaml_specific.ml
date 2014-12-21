@@ -761,17 +761,17 @@ flag ["ocaml"; "ocamllex"; "quiet"] (A"-q");;
 
 let ocaml_warn_flag c =
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase c)]
-    (S[A"-w"; A (sprintf "%c" (Char.uppercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.uppercase_ascii c)]
+    (S[A"-w"; A (sprintf "%c" (Char.uppercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase c)]
-    (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.uppercase_ascii c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.uppercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase c)]
-    (S[A"-w"; A (sprintf "%c" (Char.lowercase c))]);
+    ["ocaml"; "compile"; sprintf "warn_%c" (Char.lowercase_ascii c)]
+    (S[A"-w"; A (sprintf "%c" (Char.lowercase_ascii c))]);
   flag ~deprecated:true
-    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
-    (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
+    ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase_ascii c)]
+    (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase_ascii c))]);;
 
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'K'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'X'; 'Y'; 'Z'];;
 
