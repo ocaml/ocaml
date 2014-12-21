@@ -35,6 +35,9 @@ Standard library:
 - PR#6577: improve performance of %L, %l, %n, %S, %C format specifiers
   (Alain Frisch)
 - PR#6585: fix memory leak in win32unix/createprocess.c
+- PR#6694, PR#6695: deprecate functions using ISO-8859-1 character set
+  in Char, Bytes, String and provide alternatives using US-ASCII.
+  (Peter Zotov)
 - expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
   (Hugo Heuzard)
 * Filename: Optional ?perms argument to open_temp_file
