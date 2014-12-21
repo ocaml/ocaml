@@ -230,13 +230,13 @@ let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
-let open_temp_file ?(mode = [Open_text]) ?(temp_dir = !current_temp_dir_name)
-                   prefix suffix =
+let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
+                   ?(temp_dir = !current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       (name,
-       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
+       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) perms name)
     with Sys_error _ as e ->
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
