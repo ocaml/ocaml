@@ -299,17 +299,40 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Oval_array []
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
-             if not (Lazy.is_val (O.obj obj)) then Oval_stuff "<lazy>"
+             let obj_tag = O.tag obj in
+             (* Lazy values are represented in three possible ways:
+
+                1. a lazy thunk that is not yet forced has tag
+                   Obj.lazy_tag
+
+                2. a lazy thunk that has just been forced has tag
+                   Obj.forward_tag; its first field is the forced
+                   result, which we can print
+
+                3. when the GC moves a forced trunk with forward_tag,
+                   or when a thunk is directly created from a value,
+                   we get a third representation where the value is
+                   directly exposed, without the Obj.forward_tag
+                   (if its own tag is not ambiguous, that is neither
+                   lazy_tag nor forward_tag)
+
+                Note that using Lazy.is_val and Lazy.force would be
+                unsafe, because they use the Obj.* functions rather
+                than the O.* functions of the functor argument, and
+                would thus crash if called from the toplevel
+                (debugger/printval instantiates Genprintval.Make with
+                an Obj module talking over a socket).
+              *)
+             if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
              else begin
                  let forced_obj =
-                   (* we know that (Lazy.is_val (O.obj obj)),
-                      forcing will not block *)
-                   Lazy.force (O.obj obj) in
+                   if obj_tag = Obj.forward_tag then O.field obj 0 else obj
+                 in
                  (* calling oneself recursively on forced_obj risks
-                    having a false positive for cycle detection; indeed,
-                    if the value has been created with Lazy.from_val,
-                    it may be stored as-is instead of being wrapped in a
-                    forward pointer. It means that, for (lazy "foo"), we have
+                    having a false positive for cycle detection;
+                    indeed, in case (3) above, the value is stored
+                    as-is instead of being wrapped in a forward
+                    pointer. It means that, for (lazy "foo"), we have
                       forced_obj == obj
                     and it is easy to wrongly print (lazy <cycle>) in such
                     a case (PR#6669).
@@ -321,12 +344,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     itself. For this reason, we still "nest"
                     (detect head cycles) on forward tags.
                   *)
-                 let maybe_nest tree_of_val =
-                   if O.tag obj = Obj.forward_tag
-                   then nest tree_of_val
-                   else tree_of_val in
-                 let v = maybe_nest tree_of_val depth forced_obj ty_arg in
-                  Oval_constr (Oide_ident "lazy", [v])
+                 let v =
+                   if obj_tag = Obj.forward_tag
+                   then nest tree_of_val depth forced_obj ty_arg
+                   else      tree_of_val depth forced_obj ty_arg
+                 in
+                 Oval_constr (Oide_ident "lazy", [v])
                end
           | Tconstr(path, ty_list, _) -> begin
               try
