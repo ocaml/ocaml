@@ -10,6 +10,8 @@ OCamlbuild:
   (Hugo Heuzard)
 - PR#6712: Ignore common VCS directories
   (Peter Zotov)
+- explicit "linkpkg" and "dontlink(foo)" flags
+  (Peter Zotov, Gabriel Scherer)
 
 Bug fixes:
 - PR#6628: Configure script rejects legitimate arguments
