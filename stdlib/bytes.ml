@@ -200,8 +200,8 @@ let mapi f s =
     r
   end
 
-let uppercase s = map Char.uppercase s
-let lowercase s = map Char.lowercase s
+let uppercase_ascii s = map Char.uppercase_ascii s
+let lowercase_ascii s = map Char.lowercase_ascii s
 
 let apply1 f s =
   if length s = 0 then s else begin
@@ -210,8 +210,8 @@ let apply1 f s =
     r
   end
 
-let capitalize s = apply1 Char.uppercase s
-let uncapitalize s = apply1 Char.lowercase s
+let capitalize_ascii s = apply1 Char.uppercase_ascii s
+let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
 let rec index_rec s lim i c =
   if i >= lim then raise Not_found else
@@ -257,3 +257,13 @@ let rcontains_from s i c =
 type t = bytes
 
 let compare (x: t) (y: t) = Pervasives.compare x y
+
+external equal : t -> t -> bool = "caml_string_equal"
+
+(* Deprecated functions implemented via other deprecated functions *)
+(* XXX KC: [@@@ocaml.warning "-3"] *)
+let uppercase s = map Char.uppercase s
+let lowercase s = map Char.lowercase s
+
+let capitalize s = apply1 Char.uppercase s
+let uncapitalize s = apply1 Char.lowercase s
