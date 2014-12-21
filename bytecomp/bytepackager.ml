@@ -96,7 +96,7 @@ type pack_member =
 
 let read_member_info file = (
   let name =
-    String.capitalize(Filename.basename(chop_extensions file)) in
+    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
@@ -261,7 +261,7 @@ let package_files ppf initial_env files targetfile =
         files in
     let prefix = chop_extensions targetfile in
     let targetcmi = prefix ^ ".cmi" in
-    let targetname = String.capitalize(Filename.basename prefix) in
+    let targetname = String.capitalize_ascii(Filename.basename prefix) in
     try
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in

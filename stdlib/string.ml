@@ -112,6 +112,22 @@ let contains_from s i c =
   B.contains_from (bos s) i c
 let rcontains_from s i c =
   B.rcontains_from (bos s) i c
+
+let uppercase_ascii s =
+  B.uppercase_ascii (bos s) |> bts
+let lowercase_ascii s =
+  B.lowercase_ascii (bos s) |> bts
+let capitalize_ascii s =
+  B.capitalize_ascii (bos s) |> bts
+let uncapitalize_ascii s =
+  B.uncapitalize_ascii (bos s) |> bts
+
+type t = string
+
+let compare (x: t) (y: t) = Pervasives.compare x y
+
+(* Deprecated functions implemented via other deprecated functions *)
+[@@@ocaml.warning "-3"]
 let uppercase s =
   B.uppercase (bos s) |> bts
 let lowercase s =
@@ -120,7 +136,3 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
-
-type t = string
-
-let compare (x: t) (y: t) = Pervasives.compare x y
