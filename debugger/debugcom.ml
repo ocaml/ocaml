@@ -213,14 +213,16 @@ module Remote_value =
     | Local obj -> Obj.is_block obj
     | Remote v -> Obj.is_block (Array.unsafe_get (Obj.magic v : Obj.t array) 0)
 
-    let tag = function
-    | Local obj -> Obj.tag obj
-    | Remote v ->
-        output_char !conn.io_out 'H';
-        output_remote_value !conn.io_out v;
-        flush !conn.io_out;
-        let header = input_binary_int !conn.io_in in
-        header land 0xFF
+    let tag obj =
+      if not (is_block obj) then Obj.int_tag
+      else match obj with
+      | Local obj -> Obj.tag obj
+      | Remote v ->
+          output_char !conn.io_out 'H';
+          output_remote_value !conn.io_out v;
+          flush !conn.io_out;
+          let header = input_binary_int !conn.io_in in
+          header land 0xFF
 
     let size = function
     | Local obj -> Obj.size obj
