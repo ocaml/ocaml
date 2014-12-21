@@ -20,6 +20,8 @@ Language features:
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
+- PR#6475: accept -o in ocamlc when compiling C files
+  (Vincent Laporte, Peter Zotov)
 - improve type-specialization of unapplied primitives
   (Frédéric Bour, review by Gabriel Scherer)
 

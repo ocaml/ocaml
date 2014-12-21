@@ -48,16 +48,17 @@ let quote_optfile = function
   | None -> ""
   | Some f -> Filename.quote f
 
-let compile_file name =
+let compile_file ~output_name name =
   command
     (Printf.sprintf
-       "%s -c %s %s %s %s"
+       "%s%s -c %s %s %s %s"
        (match !Clflags.c_compiler with
         | Some cc -> cc
         | None ->
             if !Clflags.native_code
             then Config.native_c_compiler
             else Config.bytecomp_c_compiler)
+       (match output_name with Some n -> " -o " ^ Filename.quote n | None -> "")
        (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")

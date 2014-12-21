@@ -314,4 +314,11 @@ let () = test "OpenDependencies"
   ~matching:[M.f "b.byte"]
   ~targets:("b.byte",[]) ();;
 
+let () = test "OCamlcC"
+  ~options:[`no_ocamlfind]
+  ~description:"Build a C file using ocamlc (PR#6475)"
+  ~tree:[T.d "nested" [T.f "foo.c" ~content:"void f(){}"]]
+  ~matching:[_build [M.d "nested" [M.f "foo.o"]]]
+  ~targets:("nested/foo.o",[]) ();;
+
 run ~root:"_test_internal";;
