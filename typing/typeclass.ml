@@ -23,7 +23,7 @@ type error =
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
-  | Apply_wrong_label of label
+  | Apply_wrong_label of arg_label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t
@@ -352,7 +352,7 @@ let type_constraint val_env sty sty' loc =
 let make_method loc cl_num expr =
   let open Ast_helper in
   let mkid s = mkloc s loc in
-  Exp.fun_ ~loc:expr.pexp_loc "" None
+  Exp.fun_ ~loc:expr.pexp_loc Nolabel None
     (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
     expr
 
@@ -673,7 +673,7 @@ let rec class_field self_loc cl_num self_type meths vars
       let field =
         lazy begin
           let meth_type =
-            Btype.newgenty (Tarrow("", self_type, ty, Cok)) in
+            Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
@@ -698,7 +698,7 @@ let rec class_field self_loc cl_num self_type meths vars
           Ctype.raise_nongen_level ();
           let meth_type =
             Ctype.newty
-              (Tarrow ("", self_type,
+              (Tarrow (Nolabel, self_type,
                        Ctype.instance_def Predef.type_unit, Cok)) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
@@ -988,8 +988,8 @@ and class_expr cl_num val_env met_env scl =
         !Clflags.classic ||
         let labels = nonopt_labels [] cl.cl_type in
         List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs &&
-        List.exists (fun l -> l <> "") labels &&
+        List.for_all (fun (l,_) -> l = Nolabel) sargs &&
+        List.exists (fun l -> l <> Nolabel) labels &&
         begin
           Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
           true
@@ -1008,7 +1008,7 @@ and class_expr cl_num val_env met_env scl =
                   (l', sarg0)::_, _ ->
                     raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l'))
                 | _, (l', sarg0)::more_sargs ->
-                    if l <> l' && l' <> "" then
+                    if l <> l' && l' <> Nolabel then
                       raise(Error(sarg0.pexp_loc, val_env,
                                   Apply_wrong_label l'))
                     else ([], more_sargs,
@@ -1028,7 +1028,7 @@ and class_expr cl_num val_env met_env scl =
                 in
                 if optional = Required && Btype.is_optional l' then
                   Location.prerr_warning sarg0.pexp_loc
-                    (Warnings.Nonoptional_label l);
+                    (Warnings.Nonoptional_label (Printtyp.string_of_label l));
                 sargs, more_sargs,
                 if optional = Required || Btype.is_optional l' then
                   Some (type_argument val_env sarg0 ty ty0)
@@ -1040,7 +1040,7 @@ and class_expr cl_num val_env met_env scl =
               with Not_found ->
                 sargs, more_sargs,
                 if Btype.is_optional l &&
-                  (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+                  (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
                 then
                   Some (option_none ty0 Location.none)
                 else None
@@ -1704,8 +1704,8 @@ let report_error env ppf = function
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
       let mark_label = function
-        | "" -> "out label"
-        |  l -> sprintf " label ~%s" l in
+        | Nolabel -> "out label"
+        |  l -> sprintf " label %s" (Btype.prefixed_label_name l) in
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)

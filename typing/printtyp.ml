@@ -122,6 +122,11 @@ let print_name ppf = function
     None -> fprintf ppf "None"
   | Some name -> fprintf ppf "\"%s\"" name
 
+let string_of_label = function
+    Nolabel -> ""
+  | Labelled s -> s
+  | Optional s -> "?"^s
+
 let visited = ref []
 let rec raw_type ppf ty =
   let ty = safe_repr [] ty in
@@ -134,8 +139,8 @@ and raw_type_list tl = raw_list raw_type tl
 and raw_type_desc ppf = function
     Tvar name -> fprintf ppf "Tvar %a" print_name name
   | Tarrow(l,t1,t2,c) ->
-      fprintf ppf "@[<hov1>Tarrow(%s,@,%a,@,%a,@,%s)@]"
-        l raw_type t1 raw_type t2
+      fprintf ppf "@[<hov1>Tarrow(\"%s\",@,%a,@,%a,@,%s)@]"
+        (string_of_label l) raw_type t1 raw_type t2
         (safe_commu_repr [] c)
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
@@ -525,7 +530,7 @@ let reset_and_mark_loops_list tyl =
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 let print_label ppf l =
-  if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
+  if !print_labels && l <> Nolabel || is_optional l then fprintf ppf "%s:" (string_of_label l)
 
 let rec tree_of_typexp sch ty =
   let ty = repr ty in
@@ -541,7 +546,7 @@ let rec tree_of_typexp sch ty =
     | Tarrow(l, ty1, ty2, _) ->
         let pr_arrow l ty1 ty2 =
           let lab =
-            if !print_labels && l <> "" || is_optional l then l else ""
+            if !print_labels || is_optional l then string_of_label l else ""
           in
           let t1 =
             if is_optional l then
@@ -1040,7 +1045,7 @@ let rec tree_of_class_type sch params =
       in
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
-      let lab = if !print_labels && l <> "" || is_optional l then l else "" in
+      let lab = if !print_labels || is_optional l then string_of_label l else "" in
       let ty =
        if is_optional l then
          match (repr ty).desc with

@@ -130,6 +130,11 @@ let string i ppf s = line i ppf "\"%s\"\n" s;;
 let string_loc i ppf s = line i ppf "%a\n" fmt_string_loc s;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
+let arg_label i ppf = function
+  | Nolabel -> line i ppf "Nolabel\n"
+  | Optional s -> line i ppf "Optional \"%s\"\n" s
+  | Labelled s -> line i ppf "Labelled \"%s\"\n" s
+;;
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
@@ -140,7 +145,7 @@ let rec core_type i ppf x =
   | Ptyp_var (s) -> line i ppf "Ptyp_var %s\n" s;
   | Ptyp_arrow (l, ct1, ct2) ->
       line i ppf "Ptyp_arrow\n";
-      string i ppf l;
+      arg_label i ppf l;
       core_type i ppf ct1;
       core_type i ppf ct2;
   | Ptyp_tuple l ->
@@ -250,7 +255,8 @@ and expression i ppf x =
       line i ppf "Pexp_function\n";
       list i case ppf l;
   | Pexp_fun (l, eo, p, e) ->
-      line i ppf "Pexp_fun \"%s\"\n" l;
+      line i ppf "Pexp_fun\n";
+      arg_label i ppf l;
       option i expression ppf eo;
       pattern i ppf p;
       expression i ppf e;
@@ -457,7 +463,8 @@ and class_type i ppf x =
       line i ppf "Pcty_signature\n";
       class_signature i ppf cs;
   | Pcty_arrow (l, co, cl) ->
-      line i ppf "Pcty_arrow \"%s\"\n" l;
+      line i ppf "Pcty_arrow\n";
+      arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
   | Pcty_extension (s, arg) ->
@@ -531,7 +538,7 @@ and class_expr i ppf x =
       class_structure i ppf cs;
   | Pcl_fun (l, eo, p, e) ->
       line i ppf "Pcl_fun\n";
-      label i ppf l;
+      arg_label i ppf l;
       option i expression ppf eo;
       pattern i ppf p;
       class_expr i ppf e;
@@ -852,7 +859,8 @@ and longident_x_expression i ppf (li, e) =
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l,e) =
-  line i ppf "<label> \"%s\"\n" l;
+  line i ppf "<arg>\n";
+  arg_label i ppf l;
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =

@@ -135,6 +135,11 @@ let string i ppf s = line i ppf "\"%s\"\n" s;;
 let string_loc i ppf s = line i ppf "\"%s\"\n" s.txt;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
+let arg_label i ppf = function
+  | Nolabel -> line i ppf "Nolabel\n"
+  | Optional s -> line i ppf "Optional \"%s\"\n" s
+  | Labelled s -> line i ppf "Labelled \"%s\"\n" s
+;;
 
 let attributes i ppf l =
   let i = i + 1 in
@@ -154,7 +159,7 @@ let rec core_type i ppf x =
   | Ttyp_var (s) -> line i ppf "Ttyp_var %s\n" s;
   | Ttyp_arrow (l, ct1, ct2) ->
       line i ppf "Ttyp_arrow\n";
-      string i ppf l;
+      arg_label i ppf l;
       core_type i ppf ct1;
       core_type i ppf ct2;
   | Ttyp_tuple l ->
@@ -282,8 +287,8 @@ and expression i ppf x =
       list i value_binding ppf l;
       expression i ppf e;
   | Texp_function (p, l, _partial) ->
-      line i ppf "Texp_function \"%s\"\n" p;
-(*      option i expression ppf eo; *)
+      line i ppf "Texp_function\n";
+      arg_label i ppf p;
       list i case ppf l;
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
@@ -449,7 +454,8 @@ and class_type i ppf x =
       line i ppf "Tcty_signature\n";
       class_signature i ppf cs;
   | Tcty_arrow (l, co, cl) ->
-      line i ppf "Tcty_arrow \"%s\"\n" l;
+      line i ppf "Tcty_arrow\n";
+      arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
 
@@ -515,7 +521,7 @@ and class_expr i ppf x =
       class_structure i ppf cs;
   | Tcl_fun (l, p, _, ce, _) ->
       line i ppf "Tcl_fun\n";
-      label i ppf l;
+      arg_label i ppf l;
       pattern i ppf p;
       class_expr i ppf ce
   | Tcl_apply (ce, l) ->
@@ -821,7 +827,8 @@ and longident_x_expression i ppf (li, _, e) =
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l, e, _) =
-  line i ppf "<label> \"%s\"\n" l;
+  line i ppf "<arg>\n";
+  arg_label (i+1) ppf l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)
 
 and ident_x_loc_x_expression_def i ppf (l,_, e) =

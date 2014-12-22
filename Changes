@@ -59,6 +59,9 @@ Bug fixes:
 - PR#6650: Cty_constr not handled correctly by Subst
 - PR#6651: Failing component lookup
 
+Features wishes:
+- PR#6367: introduce Asttypes.arg_label to encode labelled arguments
+
 OCaml 4.02.2:
 -------------
 

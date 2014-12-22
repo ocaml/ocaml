@@ -220,15 +220,15 @@ class printer  ()= object(self:'self)
 
   method type_with_label f (label,({ptyp_desc;_}as c) ) =
     match label with
-    | "" ->  self#core_type1 f c (* otherwise parenthesize *)
-    | s  ->
-        if s.[0]='?' then
-          match ptyp_desc with
-          | Ptyp_constr ({txt;_}, l) ->
-              assert (is_predef_option txt);
-              pp f "%s:%a" s (self#list self#core_type1) l
-          | _ -> failwith "invalid input in print_type_with_label"
-        else pp f "%s:%a" s self#core_type1 c
+    | Nolabel ->  self#core_type1 f c (* otherwise parenthesize *)
+    | Labelled s -> pp f "%s:%a" s self#core_type1 c
+    | Optional s  ->
+        begin match ptyp_desc with
+        | Ptyp_constr ({txt;_}, l) ->
+            assert (is_predef_option txt);
+            pp f "?%s:%a" s (self#list self#core_type1) l
+        | _ -> failwith "invalid input in print_type_with_label"
+        end
   method core_type f x =
     if x.ptyp_attributes <> [] then begin
       pp f "((%a)%a)" self#core_type {x with ptyp_attributes=[]}
@@ -401,13 +401,11 @@ class printer  ()= object(self:'self)
     | _ -> self#paren true self#pattern f x
 
   method label_exp f (l,opt,p) =
-    if l = "" then
+    match l with
+    | Nolabel ->
       pp f "%a@ " self#simple_pattern p (*single case pattern parens needed here *)
-    else
-      if l.[0] = '?' then
-        let len = String.length l - 1 in
-        let rest = String.sub l 1 len in begin
-          match p.ppat_desc with
+    | Optional rest ->
+        begin match p.ppat_desc with
           | Ppat_var {txt;_} when txt = rest ->
               (match opt with
                | Some o -> pp f "?(%s=@;%a)@;" rest  self#expression o
@@ -415,10 +413,10 @@ class printer  ()= object(self:'self)
           | _ ->
               (match opt with
                | Some o ->
-                   pp f "%s:(%a=@;%a)@;" l self#pattern1 p self#expression o
-               | None -> pp f "%s:%a@;" l self#simple_pattern p)
+                   pp f "?%s:(%a=@;%a)@;" rest self#pattern1 p self#expression o
+               | None -> pp f "?%s:%a@;" rest self#simple_pattern p)
         end
-      else
+    | Labelled l ->
         (match p.ppat_desc with
         | Ppat_var {txt;_} when txt = l ->
             pp f "~%s@;" l
@@ -1058,7 +1056,7 @@ class printer  ()= object(self:'self)
       if x.pexp_attributes <> [] then pp f "=@;%a" self#expression x
       else match x.pexp_desc with
       | Pexp_fun (label, eo, p, e) ->
-          if label="" then
+          if label=Nolabel then
             pp f "%a@ %a" self#simple_pattern p pp_print_pexp_function e
           else
             pp f "%a@ %a" self#label_exp (label,eo,p) pp_print_pexp_function e
@@ -1353,19 +1351,17 @@ class printer  ()= object(self:'self)
         self#pattern pc_lhs (self#option self#expression ~first:"@;when@;") pc_guard self#under_pipe#expression pc_rhs in
     self#list aux f l ~sep:""
   method label_x_expression_param f (l,e) =
-    match l with
-    | ""  -> self#expression2 f e ; (* level 2*)
-    | lbl ->
-        let simple_name = match e.pexp_desc with
-        | Pexp_ident {txt=Lident l;_} -> Some l
-        | _ -> None in
-        if  lbl.[0] = '?' then
-          let str = String.sub lbl 1 (String.length lbl-1) in
+    let simple_name = match e.pexp_desc with
+    | Pexp_ident {txt=Lident l;_} -> Some l
+    | _ -> None
+    in match l with
+    | Nolabel  -> self#expression2 f e ; (* level 2*)
+    | Optional str ->
           if Some str = simple_name then
-            pp f "%s" lbl
+            pp f "?%s" str
           else
-            pp f "%s:%a" lbl self#simple_expr e
-        else
+            pp f "?%s:%a" str self#simple_expr e
+    | Labelled lbl ->
           if Some lbl = simple_name then
             pp f "~%s" lbl
           else

@@ -2848,7 +2848,7 @@ let filter_arrow env t l =
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
-    when l = l' || !Clflags.classic && l = "" && not (is_optional l') ->
+    when l = l' || !Clflags.classic && l = Nolabel && not (is_optional l') ->
       (t1, t2)
   | _ ->
       raise (Unify [])
@@ -3656,7 +3656,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
         let clty_params =
-          List.fold_right (fun ty cty -> Cty_arrow ("*",ty,cty)) in
+          List.fold_right (fun ty cty -> Cty_arrow (Labelled "*",ty,cty)) in
         match_class_types ~trace:false env
           (clty_params patt_params patt_type)
           (clty_params subj_params subj_type)

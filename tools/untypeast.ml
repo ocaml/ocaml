@@ -270,7 +270,7 @@ and untype_expression exp =
           untype_expression exp)
     | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
         Pexp_fun (label, None, untype_pattern p, untype_expression e)
-    | Texp_function ("", cases, _) ->
+    | Texp_function (Nolabel, cases, _) ->
         Pexp_function (untype_cases cases)
     | Texp_function _ ->
         assert false
@@ -623,14 +623,16 @@ and untype_class_field cf =
         Pcf_method (lab, priv, Cfk_virtual (untype_core_type cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
         let remove_fun_self = function
-          | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | { exp_desc = Texp_function(Nolabel, [case], _) }
+            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e
         in
         let exp = remove_fun_self exp in
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
     | Tcf_initializer exp -> 
         let remove_fun_self = function
-          | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
+          | { exp_desc = Texp_function(Nolabel, [case], _) }
+            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e
         in
         let exp = remove_fun_self exp in
