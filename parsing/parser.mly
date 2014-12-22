@@ -32,9 +32,6 @@ let mkctf d = Ctf.mk ~loc:(symbol_rloc()) d
 let mkcf d = Cf.mk ~loc:(symbol_rloc()) d
 
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
-let mkoption d =
-  let loc = {d.ptyp_loc with loc_ghost = true} in
-  Typ.mk ~loc (Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]))
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
@@ -948,9 +945,9 @@ class_type:
       { $1 }
   | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
     class_type
-      { mkcty(Pcty_arrow(Optional $2 , mkoption $4, $6)) }
+      { mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
   | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_arrow(Optional $1, mkoption $2, $4)) }
+      { mkcty(Pcty_arrow(Optional $1, $2, $4)) }
   | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
       { mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
@@ -1794,9 +1791,9 @@ core_type2:
     simple_core_type_or_tuple
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $2 , mkoption $4, $6)) }
+      { mktyp(Ptyp_arrow(Optional $2 , $4, $6)) }
   | OPTLABEL core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow(Optional $1 , mkoption $2, $4)) }
+      { mktyp(Ptyp_arrow(Optional $1 , $2, $4)) }
   | LIDENT COLON core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow(Labelled $1, $3, $5)) }
   | core_type2 MINUSGREATER core_type2

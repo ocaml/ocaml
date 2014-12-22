@@ -498,6 +498,10 @@ and class_type env scty =
   | Pcty_arrow (l, sty, scty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
+      let ty =
+        if Btype.is_optional l
+        then Ctype.newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+        else ty in
       let clty = class_type env scty in
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ

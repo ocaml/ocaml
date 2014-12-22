@@ -421,7 +421,12 @@ let rec transl_type env policy styp =
   | Ptyp_arrow(l, st1, st2) ->
     let cty1 = transl_type env policy st1 in
     let cty2 = transl_type env policy st2 in
-    let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
+    let ty1 = cty1.ctyp_type in
+    let ty1 =
+      if Btype.is_optional l
+      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
+      else ty1 in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     if List.length stl < 2 then
