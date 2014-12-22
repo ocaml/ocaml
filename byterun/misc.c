@@ -159,3 +159,23 @@ CAMLexport char * caml_strconcat(int n, ...)
   *p = 0;
   return res;
 }
+
+/* Timers for GC latency profiling (experimental, Linux-only) */
+
+struct ___timer_block *___timer_log = NULL;
+
+void ___timer_atexit (void)
+{
+  int i;
+  struct ___timer_block *p;
+
+  for (p = ___timer_log; p != NULL; p = p->next){
+    for (i = 0; i < p->index; i++){
+      fprintf (stderr, "@TIMERS@ %9ld %s\n",
+               p->ts[i+1].tv_nsec - p->ts[i].tv_nsec
+               + 1000000000 * (p->ts[i+1].tv_sec - p->ts[i].tv_sec),
+               p->tag[i+1]);
+    }
+  }
+  fflush (stderr);
+}

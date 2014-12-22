@@ -413,7 +413,11 @@ intnat caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
+  TIMER_SETUP;
+
   if (caml_gc_phase == Phase_idle) start_cycle ();
+
+  TIMER_TIME ("major-roots");
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
       / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2.0;
@@ -447,14 +451,18 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
     mark_slice (howmuch);
+    TIMER_TIME ("mark-slice");
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
     sweep_slice (howmuch);
+    TIMER_TIME ("sweep-slice");
     caml_gc_message (0x02, "$", 0);
   }
 
-  if (caml_gc_phase == Phase_idle) caml_compact_heap_maybe ();
+  if (caml_gc_phase == Phase_idle){
+    caml_compact_heap_maybe ();
+  }
 
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
@@ -549,4 +557,6 @@ void caml_init_major_heap (asize_t heap_size)
   heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
+
+  atexit (&___timer_atexit);
 }

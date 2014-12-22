@@ -1,0 +1,76 @@
+#!/bin/awk -f
+
+#########################################################################
+#                                                                       #
+#                                 OCaml                                 #
+#                                                                       #
+#                Damien Doligez, Jane Street Capital                    #
+#                                                                       #
+#   Copyright 2014 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
+function store(value,tag) {
+    if (value < 1){
+        ++ bin[tag, 1];
+    }else if (value < 10){
+        ++ bin[tag, int(value)];
+    }else if (value < 100){
+        ++ bin[tag, 10 + int(value/10)];
+    }else if (value < 1000){
+        ++ bin[tag, 20 + int(value/100)];
+    }else if (value < 10000){
+        ++ bin[tag, 30 + int(value/1000)];
+    }else if (value < 100000){
+        ++ bin[tag, 40 + int(value/10000)];
+    }else if (value < 1000000){
+        ++ bin[tag, 50 + int(value/100000)];
+    }else if (value < 10000000){
+        ++ bin[tag, 60 + int(value/1000000)];
+    }else{
+        ++ bin[tag, 99];
+    }
+    ++ total[tag];
+}
+
+$1 == "@TIMERS@" {
+    store($2, $3);
+}
+
+function to_string(n) {
+    if (n == 0){
+        return ".";
+    }else{
+        return sprintf ("%d", n);
+    }
+}
+
+END {
+    scale[0] = "1ns";
+    scale[1] = "10ns";
+    scale[2] = "100ns";
+    scale[3] = "1us";
+    scale[4] = "10us";
+    scale[5] = "100us";
+    scale[6] = "1ms";
+    scale[7] = "10ms";
+    scale[8] = "100ms";
+    scale[9] = "1s";
+
+    for (t in total){
+        printf ("%s:\n", t);
+        printf ("      | %1d %5d %5d %5d %5d %5d %5d %5d %5d\n",
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        printf ("-------------------------------------------------------------\n");
+        for (i = 0; i < 7; i++){
+            printf ("%5s |", scale[i]);
+            for (j = 1; j < 10; j++){
+                printf (" %5s", to_string(bin[t, 10*i+j]));
+            }
+            printf ("\n");
+        }
+        printf ("%5s+| %5s\n\n", scale[7], to_string(bin[t, 99]));
+    }
+}

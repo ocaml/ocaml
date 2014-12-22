@@ -398,7 +398,9 @@ void caml_compact_heap (void)
 {
   uintnat target_words, target_size, live;
 
+  TIMER_SETUP;
   do_compaction ();
+  TIMER_TIME ("compact");
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
      is at the beginning of the heap, everything gets moved to
@@ -455,6 +457,7 @@ void caml_compact_heap (void)
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
     Assert (caml_stat_heap_size == Chunk_size (chunk));
+    TIMER_TIME ("recompact");
   }
 }
 

@@ -273,16 +273,22 @@ CAMLexport void caml_minor_collection (void)
 {
   intnat prev_alloc_words = caml_allocated_words;
 
+  TIMER_SETUP;
+
   caml_empty_minor_heap ();
+  TIMER_TIME ("minor-gc-main");
 
   caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
   ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
+  TIMER_TIME ("major-slice");
   caml_force_major_slice = 0;
 
   caml_final_do_calls ();
+  TIMER_TIME ("finalizers");
 
   caml_empty_minor_heap ();
+  TIMER_TIME ("minor-gc-aux");
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)

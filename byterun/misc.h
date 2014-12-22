@@ -150,6 +150,37 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
+/* Timers for GC latency profiling (experimental, Linux-only) */
+
+#include <time.h>
+#include <stdio.h>
+
+struct ___timer_block {
+  struct timespec ts[10];
+  char *tag[10];
+  int index;
+  struct ___timer_block *next;
+};
+
+extern struct ___timer_block *___timer_log;
+
+#define TIMER_SETUP \
+  struct ___timer_block *___timer_x = malloc (sizeof (struct ___timer_block)); \
+  ___timer_x->index = 0;                                                \
+  ___timer_x->next = ___timer_log;                                      \
+  ___timer_log = ___timer_x;                                            \
+  clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(___timer_x->ts[0]))
+
+#define TIMER_TIME(msg) \
+  do{ \
+    ++ ___timer_x->index; \
+    ___timer_x->tag[___timer_x->index] = (msg);                         \
+    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, \
+                   &(___timer_x->ts[___timer_x->index]));   \
+  }while(0)
+
+extern void ___timer_atexit (void);
+
 /* </private> */
 
 #endif /* CAML_MISC_H */
