@@ -43,6 +43,7 @@
 #include "debugger.h"
 #include "fail.h"
 #include "instruct.h"
+#include "misc.h"
 #include "mlvalues.h"
 #include "osdeps.h"
 #include "signals.h"
@@ -96,6 +97,7 @@ CAMLprim value caml_sys_exit(value retcode)
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
 #endif
+  ___timer_atexit ();
   exit(Int_val(retcode));
   return Val_unit;
 }

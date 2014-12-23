@@ -164,19 +164,25 @@ struct ___timer_block {
 
 extern struct ___timer_block *___timer_log;
 
-#define TIMER_SETUP \
-  struct ___timer_block *___timer_x = malloc (sizeof (struct ___timer_block)); \
-  ___timer_x->index = 0;                                                \
-  ___timer_x->next = ___timer_log;                                      \
-  ___timer_log = ___timer_x;                                            \
-  clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(___timer_x->ts[0]))
+#define TIMER_DECLARE(t) struct ___timer_block *t = NULL;
 
-#define TIMER_TIME(msg) \
+#define TIMER_START(t, name)                        \
+  t = malloc (sizeof (struct ___timer_block)); \
+  t->index = 0;                                                \
+  t->tag[0] = name; \
+  t->next = ___timer_log;                                      \
+  ___timer_log = t;                                            \
+  clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]))
+
+#define TIMER_SETUP(t, name) \
+  TIMER_DECLARE(t); \
+  TIMER_START(t, name)
+
+#define TIMER_TIME(t, msg)                       \
   do{ \
-    ++ ___timer_x->index; \
-    ___timer_x->tag[___timer_x->index] = (msg);                         \
-    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, \
-                   &(___timer_x->ts[___timer_x->index]));   \
+    ++ t->index; \
+    t->tag[t->index] = (msg);                         \
+    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index]));   \
   }while(0)
 
 extern void ___timer_atexit (void);

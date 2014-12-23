@@ -164,18 +164,40 @@ CAMLexport char * caml_strconcat(int n, ...)
 
 struct ___timer_block *___timer_log = NULL;
 
+#define Get_time(p,i,j)                  \
+  p->ts[j].tv_nsec - p->ts[i].tv_nsec \
+  + 1000000000 * (p->ts[j].tv_sec - p->ts[i].tv_sec)
+
 void ___timer_atexit (void)
 {
   int i;
   struct ___timer_block *p;
+  FILE *f = NULL;
+  char *fname;
 
-  for (p = ___timer_log; p != NULL; p = p->next){
-    for (i = 0; i < p->index; i++){
-      fprintf (stderr, "@TIMERS@ %9ld %s\n",
-               p->ts[i+1].tv_nsec - p->ts[i].tv_nsec
-               + 1000000000 * (p->ts[i+1].tv_sec - p->ts[i].tv_sec),
-               p->tag[i+1]);
+  fname = getenv ("OCAML_TIMERS_FILE");
+  if (fname != NULL){
+    if (fname[0] == '+'){
+      f = fopen (fname+1, "a");
+    }else if (fname [0] == '>'){
+      f = fopen (fname+1, "w");
+    }else{
+      f = fopen (fname, "w");
     }
+  }else{
+    f = stderr;
   }
-  fflush (stderr);
+
+  if (f != NULL){
+    fprintf (f, "================ LATENCY TIMERS v3\n");
+    for (p = ___timer_log; p != NULL; p = p->next){
+      for (i = 0; i < p->index; i++){
+        fprintf (f, "@TIMERS@ %9ld %s\n", Get_time(p, i, i+1), p->tag[i+1]);
+      }
+      if (p->tag[0][0] != '\000'){
+        fprintf (f, "@TIMERS@ %9ld %s\n", Get_time(p, 0, p->index), p->tag[0]);
+      }
+    }
+    fflush (f);
+  }
 }

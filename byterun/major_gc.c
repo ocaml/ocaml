@@ -144,6 +144,8 @@ static void mark_slice (intnat work)
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   int marking_closure = 0;
 #endif
+  int timing = 0;
+  TIMER_DECLARE (t);
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
@@ -159,6 +161,10 @@ static void mark_slice (intnat work)
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
       size = Wosize_hd (hd);
+      if (size > work && size > 1000){
+        timing = 1;
+        TIMER_START(t, "");
+      }
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
@@ -201,6 +207,7 @@ static void mark_slice (intnat work)
           }
         }
       }
+      if (timing) TIMER_TIME(t, "mark_large_array");
       work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
@@ -413,11 +420,12 @@ intnat caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
-  TIMER_SETUP;
+  TIMER_SETUP (t, "major");
 
-  if (caml_gc_phase == Phase_idle) start_cycle ();
-
-  TIMER_TIME ("major-roots");
+  if (caml_gc_phase == Phase_idle){
+    start_cycle ();
+    TIMER_TIME (t, "major/roots");
+  }
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
       / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2.0;
@@ -451,12 +459,12 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
     mark_slice (howmuch);
-    TIMER_TIME ("mark-slice");
+    TIMER_TIME (t, "major/mark");
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
     sweep_slice (howmuch);
-    TIMER_TIME ("sweep-slice");
+    TIMER_TIME (t, "major/sweep");
     caml_gc_message (0x02, "$", 0);
   }
 
@@ -557,6 +565,4 @@ void caml_init_major_heap (asize_t heap_size)
   heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
-
-  atexit (&___timer_atexit);
 }
