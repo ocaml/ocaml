@@ -187,7 +187,7 @@ void ___timer_atexit (void)
   }
 
   if (f != NULL){
-    fprintf (f, "================ LATENCY TIMERS v3\n");
+    fprintf (f, "================ LATENCY TIMERS v5\n");
     for (p = ___timer_log; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@TIMERS@ %9ld %s\n", Get_time(p, i, i+1), p->tag[i+1]);
