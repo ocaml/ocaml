@@ -264,7 +264,7 @@ int caml_add_to_heap (char *m)
 #endif /* debug */
 
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
-                   (caml_stat_heap_size + Chunk_size (m)) / 1024);
+                   (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
   if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
@@ -285,9 +285,9 @@ int caml_add_to_heap (char *m)
     ++ caml_stat_heap_chunks;
   }
 
-  caml_stat_heap_size += Chunk_size (m);
-  if (caml_stat_heap_size > caml_stat_top_heap_size){
-    caml_stat_top_heap_size = caml_stat_heap_size;
+  caml_stat_heap_wsz += Wsize_bsize (Chunk_size (m));
+  if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
+    caml_stat_top_heap_wsz = caml_stat_heap_wsz;
   }
   return 0;
 }
@@ -304,13 +304,14 @@ int caml_add_to_heap (char *m)
 */
 static value *expand_heap (mlsize_t request)
 {
-  char *mem, *hp, *prev;
+  /* these point to headers, but we do arithmetic on them, hence [value *]. */
+  value *mem, *hp, *prev;
   asize_t over_request, malloc_request, remain;
 
   Assert (request <= Max_wosize);
-  over_request = request + request / 100 * caml_percent_free;
-  malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (over_request));
-  mem = caml_alloc_for_heap (malloc_request);
+  over_request = Whsize_wosize (request + request / 100 * caml_percent_free);
+  malloc_request = caml_round_heap_chunk_wsz (over_request);
+  mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
@@ -318,30 +319,30 @@ static value *expand_heap (mlsize_t request)
   remain = malloc_request;
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
-  while (Wosize_bhsize (remain) > Max_wosize){
+  while (Wosize_whsize (remain) > Max_wosize){
     Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
 #ifdef DEBUG
     caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
-    hp += Bhsize_wosize (Max_wosize);
-    remain -= Bhsize_wosize (Max_wosize);
-    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
+    hp += Whsize_wosize (Max_wosize);
+    remain -= Whsize_wosize (Max_wosize);
+    Field (Val_hp (mem), 1) = Field (Val_hp (prev), 0) = Val_hp (hp);
     prev = hp;
   }
   if (remain > 1){
-    Hd_hp (hp) = Make_header (Wosize_bhsize (remain), 0, Caml_blue);
+    Hd_hp (hp) = Make_header (Wosize_whsize (remain), 0, Caml_blue);
 #ifdef DEBUG
     caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
-    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
-    Field (Op_hp (hp), 0) = (value) NULL;
+    Field (Val_hp (mem), 1) = Field (Val_hp (prev), 0) = Val_hp (hp);
+    Field (Val_hp (hp), 0) = (value) NULL;
   }else{
-    Field (Op_hp (prev), 0) = (value) NULL;
+    Field (Val_hp (prev), 0) = (value) NULL;
     if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
   }
   Assert (Wosize_hp (mem) >= request);
-  if (caml_add_to_heap (mem) != 0){
-    caml_free_for_heap (mem);
+  if (caml_add_to_heap ((char *) mem) != 0){
+    caml_free_for_heap ((char *) mem);
     return NULL;
   }
   return Op_hp (mem);
@@ -363,9 +364,9 @@ void caml_shrink_heap (char *chunk)
   */
   if (chunk == caml_heap_start) return;
 
-  caml_stat_heap_size -= Chunk_size (chunk);
-  caml_gc_message (0x04, "Shrinking heap to %luk bytes\n",
-                   (unsigned long) caml_stat_heap_size / 1024);
+  caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
+  caml_gc_message (0x04, "Shrinking heap to %luk words\n",
+                   (unsigned long) caml_stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -493,7 +494,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
   if (caml_extra_heap_resources
            > (double) caml_minor_heap_wsz / 2.0
-             / (double) Wsize_bsize (caml_stat_heap_size)) {
+             / (double) caml_stat_heap_wsz) {
     caml_urge_major_slice ();
   }
 }

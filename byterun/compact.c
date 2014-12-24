@@ -396,7 +396,7 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
 void caml_compact_heap (void)
 {
-  uintnat target_words, target_size, live;
+  uintnat target_wsz, live;
 
   do_compaction ();
   /* Compaction may fail to shrink the heap to a reasonable size
@@ -413,28 +413,28 @@ void caml_compact_heap (void)
      See PR#5389
   */
   /* We compute:
-     freewords = caml_fl_cur_size                  (exact)
+     freewords = caml_fl_cur_wsz                   (exact)
      heapwords = Wsize_bsize (caml_heap_size)      (exact)
      live = heapwords - freewords
      wanted = caml_percent_free * (live / 100 + 1) (same as in do_compaction)
-     target_words = live + wanted
+     target_wsz = live + wanted
      We add one page to make sure a small difference in counting sizes
      won't make [do_compaction] keep the second block (and break all sorts
      of invariants).
 
-     We recompact if target_size < heap_size / 2
+     We recompact if target_wsz < heap_size / 2
   */
-  live = Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size;
-  target_words = live + caml_percent_free * (live / 100 + 1)
+  live = caml_stat_heap_wsz - caml_fl_cur_wsz;
+  target_wsz = live + caml_percent_free * (live / 100 + 1)
                  + Wsize_bsize (Page_size);
-  target_size = caml_round_heap_chunk_size (Bsize_wsize (target_words));
-  if (target_size < caml_stat_heap_size / 2){
+  target_wsz = caml_round_heap_chunk_wsz (target_wsz);
+  if (target_wsz < caml_stat_heap_wsz / 2){
     char *chunk;
 
-    caml_gc_message (0x10, "Recompacting heap (target=%luk)\n",
-                     target_size / 1024);
+    caml_gc_message (0x10, "Recompacting heap (target=%luk words)\n",
+                     target_wsz / 1024);
 
-    chunk = caml_alloc_for_heap (target_size);
+    chunk = caml_alloc_for_heap (Bsize_wsize (target_wsz));
     if (chunk == NULL) return;
     /* PR#5757: we need to make the new blocks blue, or they won't be
        recognized as free by the recompaction. */
@@ -447,24 +447,24 @@ void caml_compact_heap (void)
     Chunk_next (chunk) = caml_heap_start;
     caml_heap_start = chunk;
     ++ caml_stat_heap_chunks;
-    caml_stat_heap_size += Chunk_size (chunk);
-    if (caml_stat_heap_size > caml_stat_top_heap_size){
-      caml_stat_top_heap_size = caml_stat_heap_size;
+    caml_stat_heap_wsz += Wsize_bsize (Chunk_size (chunk));
+    if (caml_stat_heap_wsz > caml_stat_top_heap_wsz){
+      caml_stat_top_heap_wsz = caml_stat_heap_wsz;
     }
     do_compaction ();
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
-    Assert (caml_stat_heap_size == Chunk_size (chunk));
+    Assert (caml_stat_heap_wsz == Wsize_bsize (Chunk_size (chunk)));
   }
 }
 
 void caml_compact_heap_maybe (void)
 {
   /* Estimated free+garbage words in the heap:
-         FW = fl_size_at_phase_change + 3 * (caml_fl_cur_size
-                                             - caml_fl_size_at_phase_change)
-         FW = 3 * caml_fl_cur_size - 2 * caml_fl_size_at_phase_change
-     Estimated live words:      LW = caml_stat_heap_size - FW
+         FW = fl_size_at_phase_change + 3 * (caml_fl_cur_wsz
+                                             - caml_fl_wsz_at_phase_change)
+         FW = 3 * caml_fl_cur_wsz - 2 * caml_fl_wsz_at_phase_change
+     Estimated live words:      LW = caml_stat_heap_wsz - FW
      Estimated free percentage: FP = 100 * FW / LW
      We compact the heap if FP > caml_percent_max
   */
@@ -473,18 +473,18 @@ void caml_compact_heap_maybe (void)
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
 
-  fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
-  if (fw < 0) fw = caml_fl_cur_size;
+  fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;
+  if (fw < 0) fw = caml_fl_cur_wsz;
 
-  if (fw >= Wsize_bsize (caml_stat_heap_size)){
+  if (fw >= caml_stat_heap_wsz){
     fp = 1000000.0;
   }else{
-    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
+    fp = 100.0 * fw / (caml_stat_heap_wsz - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
   caml_gc_message (0x200, "FL size at phase change = %"
-                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   (uintnat) caml_fl_size_at_phase_change);
+                          ARCH_INTNAT_PRINTF_FORMAT "u words\n",
+                   (uintnat) caml_fl_wsz_at_phase_change);
   caml_gc_message (0x200, "Estimated overhead = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
@@ -493,8 +493,8 @@ void caml_compact_heap_maybe (void)
     caml_finish_major_cycle ();
 
     /* We just did a complete GC, so we can measure the overhead exactly. */
-    fw = caml_fl_cur_size;
-    fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
+    fw = caml_fl_cur_wsz;
+    fp = 100.0 * fw / (caml_stat_heap_wsz - fw);
     caml_gc_message (0x200, "Measured overhead: %"
                             ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                      (uintnat) fp);

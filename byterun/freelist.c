@@ -51,7 +51,7 @@ static value fl_last = Val_NULL; /* Last block in the list.  Only valid
                                   just after [caml_fl_allocate] returns NULL. */
 value caml_fl_merge = Fl_head;   /* Current insertion pointer.  Managed
                                     jointly with [sweep_slice]. */
-asize_t caml_fl_cur_size = 0;    /* Number of words in the free list,
+asize_t caml_fl_cur_wsz = 0;     /* Number of words in the free list,
                                     including headers but not fragments. */
 
 #define FLP_MAX 1000
@@ -96,7 +96,7 @@ static void fl_check (void)
   if (policy == Policy_next_fit) Assert (prev_found || fl_prev == Fl_head);
   if (policy == Policy_first_fit) Assert (flp_found == flp_size);
   Assert (merge_found || caml_fl_merge == Fl_head);
-  Assert (size_found == caml_fl_cur_size);
+  Assert (size_found == caml_fl_cur_wsz);
 }
 
 #endif
@@ -120,7 +120,7 @@ static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev, value cur
   header_t h = Hd_bp (cur);
                                              Assert (Whsize_hd (h) >= wh_sz);
   if (Wosize_hd (h) < wh_sz + 1){                        /* Cases 0 and 1. */
-    caml_fl_cur_size -= Whsize_hd (h);
+    caml_fl_cur_wsz -= Whsize_hd (h);
     Next (prev) = Next (cur);
                   Assert (Is_in_heap (Next (prev)) || Next (prev) == Val_NULL);
     if (caml_fl_merge == cur) caml_fl_merge = prev;
@@ -140,7 +140,7 @@ static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev, value cur
       }
     }
   }else{                                                        /* Case 2. */
-    caml_fl_cur_size -= wh_sz;
+    caml_fl_cur_wsz -= wh_sz;
     Hd_op (cur) = Make_header (Wosize_hd (h) - wh_sz, 0, Caml_blue);
   }
   if (policy == Policy_next_fit) fl_prev = prev;
@@ -380,7 +380,7 @@ void caml_fl_reset (void)
     Assert (0);
     break;
   }
-  caml_fl_cur_size = 0;
+  caml_fl_cur_wsz = 0;
   caml_fl_init_merge ();
 }
 
@@ -393,7 +393,7 @@ header_t *caml_fl_merge_block (value bp)
   header_t hd = Hd_val (bp);
   mlsize_t prev_wosz;
 
-  caml_fl_cur_size += Whsize_hd (hd);
+  caml_fl_cur_wsz += Whsize_hd (hd);
 
 #ifdef DEBUG
   caml_set_fields (bp, 0, Debug_free_major);
@@ -414,7 +414,7 @@ header_t *caml_fl_merge_block (value bp)
       hd = Make_header (bp_whsz, 0, Caml_white);
       bp = (value) last_fragment;
       Hd_val (bp) = hd;
-      caml_fl_cur_size += Whsize_wosize (0);
+      caml_fl_cur_wsz += Whsize_wosize (0);
     }
   }
 
@@ -458,7 +458,7 @@ header_t *caml_fl_merge_block (value bp)
     /* This is a fragment.  Leave it in white but remember it for eventual
        merging with the next block. */
     last_fragment = (header_t *) bp;
-    caml_fl_cur_size -= Whsize_wosize (0);
+    caml_fl_cur_wsz -= Whsize_wosize (0);
   }
   return adj;
 }
@@ -478,7 +478,7 @@ void caml_fl_add_blocks (value bp)
 {
                                                    Assert (fl_last != Val_NULL);
                                             Assert (Next (fl_last) == Val_NULL);
-  caml_fl_cur_size += Whsize_bp (bp);
+  caml_fl_cur_wsz += Whsize_bp (bp);
 
   if (bp > fl_last){
     Next (fl_last) = bp;

@@ -38,8 +38,8 @@ double caml_stat_minor_words = 0.0,
 
 intnat caml_stat_minor_collections = 0,
        caml_stat_major_collections = 0,
-       caml_stat_heap_size = 0,              /* bytes */
-       caml_stat_top_heap_size = 0,          /* bytes */
+       caml_stat_heap_wsz = 0,
+       caml_stat_top_heap_wsz = 0,
        caml_stat_compactions = 0,
        caml_stat_heap_chunks = 0;
 
@@ -206,8 +206,7 @@ static value heap_stats (int returnstats)
   }
 
   Assert (heap_chunks == caml_stat_heap_chunks);
-  Assert (live_words + free_words + fragments
-          == Wsize_bsize (caml_stat_heap_size));
+  Assert (live_words + free_words + fragments == caml_stat_heap_wsz);
 
   if (returnstats){
     CAMLlocal1 (res);
@@ -219,9 +218,9 @@ static value heap_stats (int returnstats)
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
     intnat majcoll = caml_stat_major_collections;
-    intnat heap_words = Wsize_bsize (caml_stat_heap_size);
+    intnat heap_words = caml_stat_heap_wsz;
     intnat cpct = caml_stat_compactions;
-    intnat top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
+    intnat top_heap_words = caml_stat_top_heap_wsz;
 
     res = caml_alloc_tuple (16);
     Store_field (res, 0, caml_copy_double (minwords));
@@ -271,8 +270,8 @@ CAMLprim value caml_gc_quick_stat(value v)
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
   intnat majcoll = caml_stat_major_collections;
-  intnat heap_words = caml_stat_heap_size / sizeof (value);
-  intnat top_heap_words = caml_stat_top_heap_size / sizeof (value);
+  intnat heap_words = caml_stat_heap_wsz;
+  intnat top_heap_words = caml_stat_top_heap_wsz;
   intnat cpct = caml_stat_compactions;
   intnat heap_chunks = caml_stat_heap_chunks;
 
@@ -417,8 +416,7 @@ static void test_and_compact (void)
 {
   float fp;
 
-  fp = 100.0 * caml_fl_cur_size
-       / (Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size);
+  fp = 100.0 * caml_fl_cur_wsz / (caml_stat_heap_wsz - caml_fl_cur_wsz);
   if (fp > 999999.0) fp = 999999.0;
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",

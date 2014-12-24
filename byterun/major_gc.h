@@ -35,7 +35,7 @@ extern int caml_gc_subphase;
 extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
-extern uintnat caml_fl_size_at_phase_change;
+extern uintnat caml_fl_wsz_at_phase_change;
 
 #define Phase_mark 0
 #define Phase_sweep 1
@@ -50,7 +50,7 @@ extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
 
 void caml_init_major_heap (asize_t);           /* size in bytes */
-asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */
+asize_t caml_round_heap_chunk_wsz (asize_t);
 void caml_darken (value, value *);
 intnat caml_major_collection_slice (intnat);
 void major_collection (void);

@@ -20,7 +20,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern asize_t caml_fl_cur_size;     /* size in words */
+extern asize_t caml_fl_cur_wsz;
 
 header_t *caml_fl_allocate (mlsize_t wo_sz);
 void caml_fl_init_merge (void);
