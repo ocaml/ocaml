@@ -12,64 +12,90 @@
 #                                                                       #
 #########################################################################
 
+function add(limit, name){
+    lim[nscales] = limit;
+    scale[nscales] = name;
+    ++ nscales;
+}
+
+BEGIN {
+    nscales=0;
+    add(100, "100ns");
+    add(220, "220ns");
+    add(470, "470ns");
+    add(1000, "1.0us");
+    add(2200, "2.2us");
+    add(4700, "4.7us");
+    add(10000, "10us");
+    add(22000, "22us");
+    add(47000, "47us");
+    add(100000, "100us");
+    add(220000, "220us");
+    add(470000, "470us");
+    add(1000000, "1.0ms");
+    add(2200000, "2.2ms");
+    add(4700000, "4.7ms");
+    add(10000000, "10ms");
+    add(22000000, "22ms");
+    add(47000000, "47ms");
+    add(100000000, "100ms");
+    add(220000000, "220ms");
+    add(470000000, "470ms");
+    add(1000000000, "1.0s");
+    add(2200000000, "2.2s");
+    add(4700000000, "4.7s");
+    scales[nscales] = "inf";
+}
+
 function store(value,tag) {
-    if (value < 100){
-        ++ bin[tag, 0];
-    }else if (value < 1000){
-        ++ bin[tag, 20 + int(value/100)];
-    }else if (value < 10000){
-        ++ bin[tag, 30 + int(value/1000)];
-    }else if (value < 100000){
-        ++ bin[tag, 40 + int(value/10000)];
-    }else if (value < 1000000){
-        ++ bin[tag, 50 + int(value/100000)];
-    }else if (value < 10000000){
-        ++ bin[tag, 60 + int(value/1000000)];
-    }else{
-        ++ bin[tag, 99];
-    }
     ++ total[tag];
+    for (i = 0; i < nscales; i++){
+        if (value <= lim[i]){
+            ++ bin[tag, lim[i]];
+            return;
+        }
+    }
+    ++ bin[tag, "off-scale"];
 }
 
 $1 == "@TIMERS@" {
     store($2, $3);
 }
 
-function to_string(n) {
-    if (n == 0){
-        return ".";
+function display(n,   i) {
+    if (n > 0){
+        for (i = 0; i < log (n); i++){
+            printf("#");
+        }
+        printf(" %-6d ", n);
+        for (i = i; i < 25; i++){
+            printf(" ");
+        }
     }else{
-        return sprintf ("%d", n);
+        printf("                                 ");
     }
 }
 
 END {
-    scale[0] = "1ns";
-    scale[1] = "10ns";
-    scale[2] = "100ns";
-    scale[3] = "1us";
-    scale[4] = "10us";
-    scale[5] = "100us";
-    scale[6] = "1ms";
-    scale[7] = "10ms";
-    scale[8] = "100ms";
-    scale[9] = "1s";
-
-    n = asorti(total);
-    for (k = 1; k <= n; k++){
-        t = total[k];
-        printf ("      | %1d %5d %5d %5d %5d %5d %5d %5d %5d\n",
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        printf ("_____________________________________________________________ %s\n",
-                t);
-        printf ("< 100ns: %-5d\n", bin[t,0]);
-        for (i = 2; i < 7; i++){
-            printf ("%5s |", scale[i]);
-            for (j = 1; j < 10; j++){
-                printf (" %5s", to_string(bin[t, 10*i+j]));
+    n = asorti(total,tags);
+    for (i = 1; i <= n; i++){
+        t = tags[i];
+        printf ("==== %s: %d\n", t, total[t]);
+        found = 0;
+        for (j = 0; j < nscales; j++){
+            found += bin [t, lim[j]];
+            if (found > 0){
+                printf ("%5s..%-5s: ", scale[j], scale[j+1]);
+                display(bin[t, lim[j]]);
+                printf ("%6.2f%%\n", found * 100 / total[t]);
+                if (found == total[t]) break;
             }
+        }
+        if (bin[t, "off-scale"] != 0){
+            printf ("  off scale : ");
+            display(bin[t, "off-scale"]);
             printf ("\n");
         }
-        printf (">=%5s: %-5d\n\n", scale[7], to_string(bin[t, 99]));
+        printf ("====\n");
     }
 }
