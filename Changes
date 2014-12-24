@@ -91,6 +91,8 @@ Bug fixes:
   (Michael Grünewald, Damien Doligez)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
+- PR#6665: Failure of tests/asmcomp on sparc
+  (Stéphane Glondu)
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
 - PR#6680: Missing parentheses when printing polymorphic variant value in warning
