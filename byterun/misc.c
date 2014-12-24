@@ -182,10 +182,8 @@ void ___timer_atexit (void)
     }else if (fname [0] == '>'){
       f = fopen (fname+1, "w");
     }else{
-      f = fopen (fname, "w");
+      f = fopen (fname, "a");
     }
-  }else{
-    f = stderr;
   }
 
   if (f != NULL){
