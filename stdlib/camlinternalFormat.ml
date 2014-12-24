@@ -1332,15 +1332,16 @@ let format_of_iconvn = function
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
-  let prec = abs prec in
-  let symb = if fconv = Float_F then 'g' else char_of_fconv fconv in
-  let buf = buffer_create 16 in
-  buffer_add_char buf '%';
-  bprint_fconv_flag buf fconv;
-  buffer_add_char buf '.';
-  buffer_add_string buf (string_of_int prec);
-  buffer_add_char buf symb;
-  buffer_contents buf
+  if fconv = Float_F then "%.12g" else
+    let prec = abs prec in
+    let symb = char_of_fconv fconv in
+    let buf = buffer_create 16 in
+    buffer_add_char buf '%';
+    bprint_fconv_flag buf fconv;
+    buffer_add_char buf '.';
+    buffer_add_string buf (string_of_int prec);
+    buffer_add_char buf symb;
+    buffer_contents buf
 
 (* Convert an integer to a string according to a conversion. *)
 let convert_int iconv n = format_int (format_of_iconv iconv) n

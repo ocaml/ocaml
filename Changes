@@ -100,6 +100,8 @@ Bug fixes:
            type variable in place of a local abstract type
 - PR#6717: Pprintast does not print let-pattern attributes
   (Gabriel Scherer, report by Peter Zotov)
+- PR#6727: Printf.sprintf "%F" misbehavior
+  (Benoît Vaugon, report by Vassili Karpov)
 - ocamlbuild on cygwin cannot find ocamlfind
   (user 'algoriddle')
 - allow android build with pthreads support (since SDK r10c)
@@ -126,7 +128,7 @@ Standard library:
   (Xavier Leroy, Alain Frisch, relase-worthy report by Jacques-Pascal Deplaix)
 - PR#6530: Add stack overflow handling for native code (OpenBSD i386 and amd64)
   (Cristopher Zimmermann)
-- PR#6533: broken semantics of %(%) when substitued by a box
+- PR#6533: broken semantics of %(%) when substituted by a box
   (Benoît Vaugon, report by Boris Yakobowski)
 - PR#6534: legacy support for %.10s
   (Benoît Vaugon, Gabriel Scherer, report by Nick Chapman)
