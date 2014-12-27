@@ -14,7 +14,7 @@
 /* Interface with the byte-code debugger */
 
 #ifdef _WIN32
-#include <caml/io.h>
+#include <io.h>
 #endif /* _WIN32 */
 
 #include <string.h>
