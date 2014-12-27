@@ -82,6 +82,10 @@ OCamlbuild:
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
 
+Tools:
+- PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
+  (Peter Zotov)
+
 Bug fixes:
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
