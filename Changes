@@ -1,6 +1,10 @@
 OCaml 4.02.2:
 -------------
 
+Compilers:
+- PR#6475: accept -o in ocamlc when compiling C files
+  (Vincent Laporte, Peter Zotov)
+
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
   (Pierre Chambart and Grégoire Henry)

@@ -472,9 +472,7 @@ rule "ocaml C stubs: c -> o"
     let c = env "%.c" in
     let o = env x_o in
     let comp = if Tags.mem "native" (tags_of_pathname c) then !Options.ocamlopt else !Options.ocamlc in
-    let cc = Cmd(S[comp; T(tags_of_pathname c++"c"++"compile"); A"-c"; Px c]) in
-    if Pathname.dirname o = Pathname.current_dir_name then cc
-    else Seq[cc; mv (Pathname.basename o) o]
+    Cmd(S[comp; T(tags_of_pathname c++"c"++"compile"); A"-c"; A"-o"; P o; Px c])
   end;;
 
 rule "ocaml: ml & ml.depends & *cmi -> .inferred.mli"
