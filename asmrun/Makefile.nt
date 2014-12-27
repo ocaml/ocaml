@@ -68,10 +68,8 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 win32.$(O): ../byterun/win32.c
 	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(IFLEXDIR) ../byterun/win32.c
 
-.SUFFIXES: .c .$(O)
-
-.c.$(O):
-	$(CC) $(CFLAGS) -c $<
+%.c: %.$(O)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean::
 	rm -f $(LINKEDFILES)
