@@ -33,14 +33,11 @@ libcamlrun.$(A): $(OBJS)
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,libcamlrund.$(A),$(DOBJS))
 
-.SUFFIXES: .$(O) .$(DBGO)
+%.c: %.$(O)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c -o $@ $<
 
-.c.$(O):
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
-
-.c.$(DBGO):
-	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c $<
-	mv $*.$(O) $*.$(DBGO)
+%.c: %.$(DBGO)
+	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c -o $@ $<
 
 .depend.nt: .depend
 	rm -f .depend.win32
