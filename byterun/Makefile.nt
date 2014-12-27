@@ -33,10 +33,10 @@ libcamlrun.$(A): $(OBJS)
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,libcamlrund.$(A),$(DOBJS))
 
-%.c: %.$(O)
+%.$(O): %.c
 	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c -o $@ $<
 
-%.c: %.$(DBGO)
+%.$(DBGO): %.c
 	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c -o $@ $<
 
 .depend.nt: .depend
