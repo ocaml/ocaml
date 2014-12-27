@@ -8,6 +8,9 @@ Language features:
   constructors (Alain Frisch)
 - allow field punning in object copying expressions: {< x; >} for {< x = x; >}
   (Jeremy Yallop)
+- PR#6714: allow [@@ocaml.warning] on most structure and signature items (values, modules,
+  module types)
+  (Peter Zotov)
 * Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
   (user 'Octachron')
   The syntax "foo.(bar) <- baz" now desugars into "( .()<- ) foo bar baz"; this

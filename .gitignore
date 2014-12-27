@@ -1936,6 +1936,27 @@
 /testsuite/tests/misc-unsafe/.depend.nt
 /testsuite/tests/misc-unsafe/.DS_Store
 
+# /testsuite/tests/ppx-attributes/
+/testsuite/tests/ppx-attributes/*.o
+/testsuite/tests/ppx-attributes/*.a
+/testsuite/tests/ppx-attributes/*.so
+/testsuite/tests/ppx-attributes/*.obj
+/testsuite/tests/ppx-attributes/*.lib
+/testsuite/tests/ppx-attributes/*.dll
+/testsuite/tests/ppx-attributes/*.cm[ioxat]
+/testsuite/tests/ppx-attributes/*.cmx[as]
+/testsuite/tests/ppx-attributes/*.cmti
+/testsuite/tests/ppx-attributes/*.annot
+/testsuite/tests/ppx-attributes/*.result
+/testsuite/tests/ppx-attributes/*.byte
+/testsuite/tests/ppx-attributes/*.native
+/testsuite/tests/ppx-attributes/program
+/testsuite/tests/ppx-attributes/*.exe
+/testsuite/tests/ppx-attributes/*.exe.manifest
+/testsuite/tests/ppx-attributes/.depend
+/testsuite/tests/ppx-attributes/.depend.nt
+/testsuite/tests/ppx-attributes/.DS_Store
+
 # /testsuite/tests/prim-bigstring/
 /testsuite/tests/prim-bigstring/*.o
 /testsuite/tests/prim-bigstring/*.a

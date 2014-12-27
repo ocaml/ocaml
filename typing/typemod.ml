@@ -572,7 +572,9 @@ and transl_signature env sg =
         match item.psig_desc with
         | Psig_value sdesc ->
             let (tdesc, newenv) =
-              Typedecl.transl_value_decl env item.psig_loc sdesc in
+              Typetexp.with_warning_attribute sdesc.pval_attributes (fun () ->
+                Typedecl.transl_value_decl env item.psig_loc sdesc)
+            in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value tdesc) env loc :: trem,
             Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
@@ -609,7 +611,10 @@ and transl_signature env sg =
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
-            let tmty = transl_modtype env pmd.pmd_type in
+            let tmty =
+              Typetexp.with_warning_attribute pmd.pmd_attributes (fun () ->
+                transl_modtype env pmd.pmd_type)
+            in
             let md = {
               md_type=tmty.mty_type;
               md_attributes=pmd.pmd_attributes;
@@ -643,7 +648,8 @@ and transl_signature env sg =
             final_env
         | Psig_modtype pmtd ->
             let newenv, mtd, sg =
-              transl_modtype_decl names env item.psig_loc pmtd
+              Typetexp.with_warning_attribute pmtd.pmtd_attributes (fun () ->
+                transl_modtype_decl names env item.psig_loc pmtd)
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
@@ -656,7 +662,10 @@ and transl_signature env sg =
             rem, final_env
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
-            let tmty = transl_modtype env smty in
+            let tmty =
+              Typetexp.with_warning_attribute sincl.pincl_attributes (fun () ->
+                transl_modtype env smty)
+            in
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
@@ -669,7 +678,7 @@ and transl_signature env sg =
                 incl_loc = sincl.pincl_loc;
               }
             in
-            let (trem, rem, final_env) = transl_sig newenv srem in
+            let (trem, rem, final_env) = transl_sig newenv srem  in
             mksig (Tsig_include incl) env loc :: trem,
             sg @ rem,
             final_env
@@ -765,7 +774,11 @@ and transl_recmodule_modtypes loc env sdecls =
   let transition env_c curr =
     List.map2
       (fun pmd (id, id_loc, mty) ->
-        (id, id_loc, transl_modtype env_c pmd.pmd_type))
+        let tmty =
+          Typetexp.with_warning_attribute pmd.pmd_attributes (fun () ->
+            transl_modtype env_c pmd.pmd_type)
+        in
+        (id, id_loc, tmty))
       sdecls curr in
   let ids = List.map (fun x -> Ident.create x.pmd_name.txt) sdecls in
   let approx_env =
@@ -1180,7 +1193,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
-        let expr = Typecore.type_expression env sexpr in
+        let expr =
+          Typetexp.with_warning_attribute attrs (fun () ->
+            Typecore.type_expression env sexpr)
+        in
         Tstr_eval (expr, attrs), [], env
     | Pstr_value(rec_flag, sdefs) ->
         let scope =
@@ -1239,8 +1255,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                   } ->
         check_name check_module names name;
         let modl =
-          type_module ~alias:true true funct_body
-            (anchor_submodule name.txt anchor) env smodl in
+          Typetexp.with_warning_attribute attrs (fun () ->
+            type_module ~alias:true true funct_body
+              (anchor_submodule name.txt anchor) env smodl)
+        in
         let md =
           { md_type = enrich_module_type anchor name.txt modl.mod_type env;
             md_attributes = attrs;
@@ -1286,8 +1304,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           List.map2
             (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
-                 type_module true funct_body (anchor_recmodule id anchor) newenv
-                   smodl in
+                 Typetexp.with_warning_attribute attrs (fun () ->
+                   type_module true funct_body (anchor_recmodule id anchor) newenv smodl)
+               in
                let mty' =
                  enrich_module_type anchor (Ident.name id) modl.mod_type newenv
                in
@@ -1321,7 +1340,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
         let newenv, mtd, sg =
-          transl_modtype_decl names env loc pmtd
+          Typetexp.with_warning_attribute pmtd.pmtd_attributes (fun () ->
+            transl_modtype_decl names env loc pmtd)
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
@@ -1377,7 +1397,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         new_env
     | Pstr_include sincl ->
         let smodl = sincl.pincl_mod in
-        let modl = type_module true funct_body None env smodl in
+        let modl =
+          Typetexp.with_warning_attribute sincl.pincl_attributes (fun () ->
+            type_module true funct_body None env smodl)
+        in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
             (extract_sig_open env smodl.pmod_loc modl.mod_type) in

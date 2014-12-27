@@ -112,6 +112,7 @@ val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
 val warning_enter_scope: unit -> unit
 val warning_leave_scope: unit -> unit
 val warning_attribute: Parsetree.attributes -> unit
+val with_warning_attribute: Parsetree.attributes -> (unit -> 'a) -> 'a
 
 val error_of_extension: Parsetree.extension -> Location.error
 

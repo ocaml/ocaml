@@ -3749,7 +3749,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   in
   let exp_list =
     List.map2
-      (fun {pvb_expr=sexp; _} (pat, slot) ->
+      (fun {pvb_expr=sexp; pvb_attributes; _} (pat, slot) ->
         let sexp =
           if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
         if is_recursive then current_slot := slot;
@@ -3762,11 +3762,16 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               end_def ();
               generalize_structure ty'
             end;
-            let exp = type_expect exp_env sexp ty' in
+            let exp =
+              Typetexp.with_warning_attribute pvb_attributes (fun () ->
+                type_expect exp_env sexp ty')
+            in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
-        | _ -> type_expect exp_env sexp pat.pat_type)
+        | _ ->
+            Typetexp.with_warning_attribute pvb_attributes (fun () ->
+              type_expect exp_env sexp pat.pat_type))
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed
