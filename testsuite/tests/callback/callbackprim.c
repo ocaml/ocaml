@@ -10,9 +10,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "mlvalues.h"
-#include "memory.h"
-#include "callback.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/callback.h"
 
 value mycallback1(value fun, value arg)
 {

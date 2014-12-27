@@ -15,17 +15,17 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/signals.h"
 #include "stack.h"
-#include "roots.h"
-#include "callback.h"
+#include "caml/roots.h"
+#include "caml/callback.h"
 
 /* The globals holding predefined exceptions */
 

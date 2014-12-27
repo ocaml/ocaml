@@ -253,7 +253,7 @@ dumpobj: $(DUMPOBJ)
 clean::
 	rm -f dumpobj
 
-opnames.ml: ../byterun/instruct.h
+opnames.ml: ../byterun/caml/instruct.h
 	unset LC_ALL || : ; \
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
@@ -263,7 +263,7 @@ opnames.ml: ../byterun/instruct.h
 	    -e 's/.*};$$/ |]/' \
 	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
 	    -e 's/,/;/g' \
-	../byterun/instruct.h > opnames.ml
+	../byterun/caml/instruct.h > opnames.ml
 
 clean::
 	rm -f opnames.ml

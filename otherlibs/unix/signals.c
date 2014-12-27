@@ -14,11 +14,11 @@
 #include <errno.h>
 #include <signal.h>
 
-#include <alloc.h>
-#include <fail.h>
-#include <memory.h>
-#include <mlvalues.h>
-#include <signals.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 #ifndef NSIG

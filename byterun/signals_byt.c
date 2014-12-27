@@ -15,11 +15,11 @@
 
 #include <signal.h>
 #include <errno.h>
-#include "config.h"
-#include "memory.h"
-#include "osdeps.h"
-#include "signals.h"
-#include "signals_machdep.h"
+#include "caml/config.h"
+#include "caml/memory.h"
+#include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/signals_machdep.h"
 
 #ifndef NSIG
 #define NSIG 64

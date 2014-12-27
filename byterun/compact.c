@@ -13,16 +13,16 @@
 
 #include <string.h>
 
-#include "config.h"
-#include "finalise.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "weak.h"
+#include "caml/config.h"
+#include "caml/finalise.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/weak.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */

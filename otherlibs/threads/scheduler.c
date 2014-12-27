@@ -17,20 +17,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "config.h"
-#include "fail.h"
-#include "io.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "roots.h"
-#include "signals.h"
-#include "stacks.h"
-#include "sys.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/stacks.h"
+#include "caml/sys.h"
 
 #if ! (defined(HAS_SELECT) && \
        defined(HAS_SETITIMER) && \

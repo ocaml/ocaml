@@ -17,10 +17,10 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "alloc.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "misc.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
 #ifdef HAS_LOCALE
 #include <locale.h>
 #endif

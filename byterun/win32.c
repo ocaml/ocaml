@@ -25,12 +25,12 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
-#include "signals.h"
-#include "sys.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/sys.h"
 
 #include <flexdll.h>
 

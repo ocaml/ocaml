@@ -14,9 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "config.h"
-#include "misc.h"
-#include "memory.h"
+#include "caml/config.h"
+#include "caml/misc.h"
+#include "caml/memory.h"
 
 #ifdef DEBUG
 

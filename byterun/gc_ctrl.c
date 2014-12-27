@@ -11,21 +11,21 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "alloc.h"
-#include "compact.h"
-#include "custom.h"
-#include "finalise.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/compact.h"
+#include "caml/custom.h"
+#include "caml/finalise.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
-#include "stacks.h"
+#include "caml/stacks.h"
 #endif
 
 #ifndef NATIVE_CODE

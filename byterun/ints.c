@@ -13,13 +13,13 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "intext.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/intext.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
 static char * parse_sign_and_base(char * p,
                                   /*out*/ int * base,

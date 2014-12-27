@@ -12,19 +12,19 @@
 /***********************************************************************/
 
 #include <string.h>
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
-#include "weak.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/weak.h"
 
 asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;

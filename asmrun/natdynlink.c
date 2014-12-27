@@ -11,15 +11,15 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "misc.h"
-#include "mlvalues.h"
-#include "memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
 #include "stack.h"
-#include "callback.h"
-#include "alloc.h"
-#include "intext.h"
-#include "osdeps.h"
-#include "fail.h"
+#include "caml/callback.h"
+#include "caml/alloc.h"
+#include "caml/intext.h"
+#include "caml/osdeps.h"
+#include "caml/fail.h"
 
 #include <stdio.h>
 #include <string.h>

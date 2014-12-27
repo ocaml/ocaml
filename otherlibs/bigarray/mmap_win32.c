@@ -15,11 +15,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "bigarray.h"
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "sys.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/sys.h"
 #include "unixsupport.h"
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */

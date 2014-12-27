@@ -11,24 +11,24 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "custom.h"
-#include "fail.h"
-#include "io.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "roots.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
-#include "stacks.h"
+#include "caml/stacks.h"
 #endif
-#include "sys.h"
+#include "caml/sys.h"
 #include "threads.h"
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */

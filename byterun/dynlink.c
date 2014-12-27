@@ -18,18 +18,18 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include "alloc.h"
-#include "dynlink.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
-#include "prims.h"
+#include "caml/alloc.h"
+#include "caml/dynlink.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
+#include "caml/prims.h"
 
 #ifndef NATIVE_CODE
 
