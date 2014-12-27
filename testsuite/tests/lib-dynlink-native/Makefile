@@ -104,7 +104,7 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 
 factorial.$(O): factorial.c
 	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I \
-	             -ccopt $(TOPDIR)/byterun/caml \
+	             -ccopt $(CTOPDIR)/byterun/caml \
 	             factorial.c
 
 .PHONY: promote

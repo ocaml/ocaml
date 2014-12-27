@@ -19,8 +19,8 @@ default:
 
 .PHONY: compile
 compile:
-	@$(OCAMLC) -ccopt -I -ccopt $(TOPDIR)/byterun/caml cmstub.c
-	@$(OCAMLC) -ccopt -I -ccopt $(TOPDIR)/byterun/caml cmmain.c
+	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun/caml cmstub.c
+	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun/caml cmmain.c
 	@$(OCAMLC) -c cmcaml.ml
 	@$(OCAMLC) -custom -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
 
