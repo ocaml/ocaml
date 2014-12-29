@@ -78,7 +78,7 @@ let int_const n =
 let rec add_const c n =
   if n = 0 then c
   else match c with
-    Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+  | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
   | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x])) when no_overflow_add n x ->
       let d = n + x in
       if d == 0 then c else Cop(Caddi, [c; Cconst_int d])
@@ -93,7 +93,7 @@ let decr_int c = add_const c (-1)
 
 let rec add_int c1 c2 =
   match (c1, c2) with
-    (Cconst_int n, c) | (c, Cconst_int n) ->
+  | (Cconst_int n, c) | (c, Cconst_int n) ->
       add_const c n
   | (Cop(Caddi, [c1; Cconst_int n1]), c2) -> 
       add_const (add_int c1 c2) n1
@@ -104,7 +104,7 @@ let rec add_int c1 c2 =
 
 let rec sub_int c1 c2 =
   match (c1, c2) with
-    (c1, Cconst_int n2) when n2 <> min_int ->
+  | (c1, Cconst_int n2) when n2 <> min_int ->
       add_const c1 (-n2)
   | (c1, Cop(Caddi, [c2; Cconst_int n2])) when n2 <> min_int ->
       add_const (sub_int c1 c2) (-n2)
@@ -115,7 +115,7 @@ let rec sub_int c1 c2 =
 
 let rec lsl_int c1 c2 =
   match (c1, c2) with
-    (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
+  | (Cop(Clsl, [c; Cconst_int n1]), Cconst_int n2)
     when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
       Cop(Clsl, [c; Cconst_int (n1 + n2)])
   | (Cop(Caddi, [c1; Cconst_int n1]), Cconst_int n2) 
@@ -126,7 +126,7 @@ let rec lsl_int c1 c2 =
 
 let rec mul_int c1 c2 =
   match (c1, c2) with
-    (c, Cconst_int 0) | (Cconst_int 0, c) ->
+  | (c, Cconst_int 0) | (Cconst_int 0, c) ->
       Cconst_int 0
   | (c, Cconst_int 1) | (Cconst_int 1, c) ->
       c
