@@ -1965,6 +1965,13 @@ and type_expect_ ?in_function env sexp ty_expected =
           begin try 
             type_application_easytype env funct sargs targs
           with (Error(loc', env', err')) ->
+            let m4 = 
+              begin match err' with
+              | Expr_type_clash trace ->
+                let (_,_,_,m4) = Printtyp.get_unification_error_easytype env trace in
+                m4
+              | _ -> (fun ppf () -> ())
+              end in
             let explain ppf = 
               let show_func_name ppf () = 
                 match sfunct.pexp_desc with
@@ -2004,6 +2011,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                   show_type_list provided_ltys;
                   Format.fprintf ppf ".@]@."; *)
               end;
+              Format.fprintf ppf "%a\n" m4 ();
               in
             raise (Error ((*loc*) funct.exp_loc, env, Apply_error_easytype (explain, loc', err')))
           end in

@@ -1,2 +1,1 @@
-let _ =
-  ignore (Array.make 0.0 20)
+let _ = Array.make 0.0 20
