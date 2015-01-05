@@ -160,18 +160,19 @@ CAMLexport char * caml_strconcat(int n, ...)
   return res;
 }
 
+#ifdef CAML_TIMER
 /* Timers for GC latency profiling (experimental, Linux-only) */
 
-struct ___timer_block *___timer_log = NULL;
+struct CAML_TIMER_BLOCK *CAML_TIMER_LOG = NULL;
 
-#define Get_time(p,i,j)                  \
+#define GET_TIME(p,i,j)               \
   p->ts[j].tv_nsec - p->ts[i].tv_nsec \
   + 1000000000 * (p->ts[j].tv_sec - p->ts[i].tv_sec)
 
-void ___timer_atexit (void)
+void CAML_TIMER_ATEXIT (void)
 {
   int i;
-  struct ___timer_block *p;
+  struct CAML_TIMER_BLOCK *p;
   FILE *f = NULL;
   char *fname;
 
@@ -187,15 +188,16 @@ void ___timer_atexit (void)
   }
 
   if (f != NULL){
-    fprintf (f, "================ LATENCY TIMERS v5\n");
-    for (p = ___timer_log; p != NULL; p = p->next){
+    fprintf (f, "================ OCAML LATENCY TIMERS (v6)\n");
+    for (p = CAML_TIMER_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
-        fprintf (f, "@TIMERS@ %9ld %s\n", Get_time(p, i, i+1), p->tag[i+1]);
+        fprintf (f, "@@OCAML_TIMERS %9ld %s\n", GET_TIME(p, i, i+1), p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
-        fprintf (f, "@TIMERS@ %9ld %s\n", Get_time(p, 0, p->index), p->tag[0]);
+        fprintf (f, "@@OCAML_TIMERS %9ld %s\n", GET_TIME(p, 0, p->index), p->tag[0]);
       }
     }
     fflush (f);
   }
 }
+#endif /* CAML_TIMER */

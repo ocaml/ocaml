@@ -62,7 +62,7 @@ function store(value,tag) {
     val[tag, "off-scale"] = value;
 }
 
-$1 == "@TIMERS@" {
+$1 == "@@OCAML_TIMERS" {
     store($2, $3);
 }
 

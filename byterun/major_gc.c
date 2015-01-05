@@ -144,8 +144,10 @@ static void mark_slice (intnat work)
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   int marking_closure = 0;
 #endif
+#ifdef CAML_TIMER
   int timing = 0;
-  TIMER_DECLARE (t);
+  CAML_TIMER_DECLARE (t);
+#endif
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
@@ -161,10 +163,12 @@ static void mark_slice (intnat work)
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
       size = Wosize_hd (hd);
+#ifdef CAML_TIMER
       if (size > work && size > 1000){
         timing = 1;
-        TIMER_START(t, "");
+        CAML_TIMER_START(t, "");
       }
+#endif
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
@@ -207,7 +211,9 @@ static void mark_slice (intnat work)
           }
         }
       }
-      if (timing) TIMER_TIME(t, "mark_large_array");
+#ifdef CAML_TIMER
+      if (timing) CAML_TIMER_TIME(t, "mark_large_array");
+#endif
       work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
@@ -420,11 +426,11 @@ intnat caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
-  TIMER_SETUP (t, "major");
+  CAML_TIMER_SETUP (t, "major");
 
   if (caml_gc_phase == Phase_idle){
     start_cycle ();
-    TIMER_TIME (t, "major/roots");
+    CAML_TIMER_TIME (t, "major/roots");
   }
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -459,12 +465,12 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
     mark_slice (howmuch);
-    TIMER_TIME (t, "major/mark");
+    CAML_TIMER_TIME (t, "major/mark");
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
     sweep_slice (howmuch);
-    TIMER_TIME (t, "major/sweep");
+    CAML_TIMER_TIME (t, "major/sweep");
     caml_gc_message (0x02, "$", 0);
   }
 

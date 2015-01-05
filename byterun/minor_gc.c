@@ -228,17 +228,17 @@ void caml_empty_minor_heap (void)
   value **r;
 
   if (caml_young_ptr != caml_young_end){
-    TIMER_SETUP (t, "minor");
+    CAML_TIMER_SETUP (t, "minor");
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
-    TIMER_TIME (t, "minor/local_roots");
+    CAML_TIMER_TIME (t, "minor/local_roots");
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       caml_oldify_one (**r, *r);
     }
-    TIMER_TIME (t, "minor/ref_table");
+    CAML_TIMER_TIME (t, "minor/ref_table");
     caml_oldify_mopup ();
-    TIMER_TIME (t, "minor/copy");
+    CAML_TIMER_TIME (t, "minor/copy");
     for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
       if (Is_block (**r) && Is_young (**r)){
         if (Hd_val (**r) == 0){
@@ -248,7 +248,7 @@ void caml_empty_minor_heap (void)
         }
       }
     }
-    TIMER_TIME (t, "minor/update_weak");
+    CAML_TIMER_TIME (t, "minor/update_weak");
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
     caml_young_ptr = caml_young_end;
@@ -258,7 +258,7 @@ void caml_empty_minor_heap (void)
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
-    TIMER_TIME (t, "minor/finalized");
+    CAML_TIMER_TIME (t, "minor/finalized");
   }
 #ifdef DEBUG
   {
@@ -278,24 +278,24 @@ void caml_empty_minor_heap (void)
 CAMLexport void caml_minor_collection (void)
 {
   intnat prev_alloc_words = caml_allocated_words;
-  TIMER_SETUP(t, "coll");
-  TIMER_TIME (t, "overhead");
+  CAML_TIMER_SETUP(t, "coll");
+  CAML_TIMER_TIME (t, "overhead");
 
   caml_empty_minor_heap ();
-  TIMER_TIME (t, "coll/minor");
+  CAML_TIMER_TIME (t, "coll/minor");
 
   caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
   ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
-  TIMER_TIME (t, "coll/major");
+  CAML_TIMER_TIME (t, "coll/major");
   caml_force_major_slice = 0;
 
   caml_final_do_calls ();
 
   if (caml_young_ptr != caml_young_end){
-    TIMER_TIME (t, "coll/finalizers");
+    CAML_TIMER_TIME (t, "coll/finalizers");
     caml_empty_minor_heap ();
-    TIMER_TIME (t, "coll/minor_2");
+    CAML_TIMER_TIME (t, "coll/minor_2");
   }
 }
 

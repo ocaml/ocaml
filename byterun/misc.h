@@ -150,42 +150,52 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-/* Timers for GC latency profiling (experimental, Linux-only) */
+#ifdef CAML_TIMER
+/* Timers for GC latency profiling (Linux-only) */
 
 #include <time.h>
 #include <stdio.h>
 
-struct ___timer_block {
+struct CAML_TIMER_BLOCK {
   struct timespec ts[10];
   char *tag[10];
   int index;
-  struct ___timer_block *next;
+  struct CAML_TIMER_BLOCK *next;
 };
 
-extern struct ___timer_block *___timer_log;
+extern struct CAML_TIMER_BLOCK *CAML_TIMER_LOG;
 
-#define TIMER_DECLARE(t) struct ___timer_block *t = NULL;
+#define CAML_TIMER_DECLARE(t) struct CAML_TIMER_BLOCK *t = NULL
 
-#define TIMER_START(t, name)                        \
-  t = malloc (sizeof (struct ___timer_block)); \
-  t->index = 0;                                                \
-  t->tag[0] = name; \
-  t->next = ___timer_log;                                      \
-  ___timer_log = t;                                            \
+#define CAML_TIMER_START(t, name)                                \
+  t = malloc (sizeof (struct CAML_TIMER_BLOCK));                 \
+  t->index = 0;                                                  \
+  t->tag[0] = name;                                              \
+  t->next = CAML_TIMER_LOG;                                      \
+  CAML_TIMER_LOG = t;                                            \
   clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]))
 
-#define TIMER_SETUP(t, name) \
-  TIMER_DECLARE(t); \
-  TIMER_START(t, name)
+#define CAML_TIMER_SETUP(t, name) \
+  CAML_TIMER_DECLARE(t);          \
+  CAML_TIMER_START(t, name)
 
-#define TIMER_TIME(t, msg)                       \
-  do{ \
-    ++ t->index; \
-    t->tag[t->index] = (msg);                         \
+#define CAML_TIMER_TIME(t, msg)                                     \
+  do{                                                               \
+    ++ t->index;                                                    \
+    t->tag[t->index] = (msg);                                       \
     clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index]));   \
   }while(0)
 
-extern void ___timer_atexit (void);
+extern void CAML_TIMER_ATEXIT (void);
+
+#else /* CAML_TIMER */
+
+#define CAML_TIMER_DECLARE(t) /**/
+#define CAML_TIMER_START(t, name) /**/
+#define CAML_TIMER_SETUP(t, name) /**/
+#define CAML_TIMER_TIME(t, msg) /**/
+
+#endif /* CAML_TIMER */
 
 /* </private> */
 

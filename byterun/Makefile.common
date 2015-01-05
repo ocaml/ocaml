@@ -45,6 +45,10 @@ all-noruntimed:
 all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
 .PHONY: all-runtimed
 
+ifeq "$(RUNTIMET)" "true"
+all:: ocamlrunt$(EXE) libcamlrunt.$(A)
+endif
+
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > ld.conf
 	echo "$(LIBDIR)" >> ld.conf
@@ -76,6 +80,12 @@ install-runtimed:
 	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
 	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
 .PHONY: install-runtimed
+
+ifeq "$(RUNTIMET)" "true"
+install::
+	cp ocamlrunt$(EXE) $(INSTALL_BINDIR)/ocamlrunt$(EXE)
+	cp libcamlrunt.$(A) $(INSTALL_LIBDIR)/libcamlrunt.$(A)
+endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like

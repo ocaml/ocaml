@@ -18,6 +18,7 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
       -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR)
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
+TFLAGS=$(CFLAGS) -DCAML_TIMER
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
@@ -31,9 +32,14 @@ ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
+TOBJS=$(COBJS:.o=.t.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
+ifeq "$(RUNTIMET)" "true"
+all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) libasmrunt.a
+else
 all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
+endif
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -51,6 +57,11 @@ libasmrund.a: $(DOBJS)
 	ar rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
 
+libasmrunt.a: $(TOBJS)
+	rm -f $@
+	ar rc $@ $^
+	$(RANLIB) $@
+
 all-noprof:
 
 all-prof: libasmrunp.a
@@ -62,7 +73,11 @@ libasmrunp.a: $(POBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
+ifeq "$(RUNTIMET)" "true"
+install: install-default install-$(RUNTIMED) install-$(PROFILING) install-runtimet
+else
 install: install-default install-$(RUNTIMED) install-$(PROFILING)
+endif
 
 install-default:
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
@@ -75,6 +90,11 @@ install-runtimed:
 	cp libasmrund.a $(INSTALL_LIBDIR)/libasmrund.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrund.a
 .PHONY: install-runtimed
+
+install-runtimet:
+	cp libasmrunt.a $(INSTALL_LIBDIR)/libasmrunt.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunt.a
+.PHONY: install-runtimet
 
 install-noprof:
 	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
@@ -190,6 +210,9 @@ clean::
 	$(CC) -c $(DFLAGS) $*.d.c
 	rm -f $*.d.c
 
+%.t.o : %.c
+	$(CC) -c $(TFLAGS) -o $@ $^
+
 .c.p.o:
 	ln -s -f $*.c $*.p.c
 	$(CC) -c $(PFLAGS) $*.p.c
@@ -208,5 +231,6 @@ depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
+	gcc -MM $(FLAGS) -DOCAML_TIMER *.c | sed -e 's/\.o/.t.o/' >> .depend
 
 include .depend
