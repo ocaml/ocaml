@@ -105,24 +105,6 @@ static void caml_execute_signal(int signal_number)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
-/* Arrange for a garbage collection to be performed as soon as possible */
-
-int volatile caml_force_major_slice = 0;
-
-void caml_urge_major_slice (void)
-{
-  caml_force_major_slice = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_end;
-  /* This is only moderately effective on ports that cache [caml_young_limit]
-     in a register, since [caml_modify_field] is called directly, not through
-     [caml_c_call], so it may take a while before the register is reloaded
-     from [caml_young_limit]. */
-#endif
-}
-
 /* OS-independent numbering of signals */
 
 #ifndef SIGABRT

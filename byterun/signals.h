@@ -28,7 +28,6 @@ extern "C" {
 CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
-extern int volatile caml_force_major_slice;
 void caml_init_signal_handling(void);
 /* </private> */
 
@@ -36,7 +35,6 @@ CAMLextern void caml_enter_blocking_section (void);
 CAMLextern void caml_leave_blocking_section (void);
 
 /* <private> */
-void caml_urge_major_slice (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
 void caml_record_signal(int signal_number);

@@ -34,6 +34,9 @@ void caml_handle_gc_interrupt(int required_words);
 
 void caml_trigger_stw_gc(void);
 
+void caml_urge_major_slice (void);
+
+
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);
 

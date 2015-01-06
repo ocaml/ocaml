@@ -223,6 +223,7 @@ static __thread uintnat stat_live_bytes = 0;
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(caml_domain_self()->shared_heap, wosize, tag, 0 /* not promotion */);
+  caml_allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
   }
@@ -243,6 +244,7 @@ static void caml_oldify_one (value v, value *p)
   if (Is_block (v) && Is_young (v)){
     Assert (Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
+    stat_live_bytes += Bhsize_hd(hd);
     if (Is_promoted_hd (hd)) {
       *p = caml_addrmap_lookup(&caml_remembered_set.promotion, v);
     } else if (hd == 0){         /* If already forwarded */
@@ -253,7 +255,6 @@ static void caml_oldify_one (value v, value *p)
         value field0;
 
         sz = Wosize_hd (hd);
-        stat_live_bytes += Bhsize_wosize(sz);
         result = alloc_shared (sz, tag);
         *p = result;
         if (tag == Stack_tag) {
@@ -395,13 +396,14 @@ void caml_empty_minor_heap (void)
 
   caml_save_stack_gc();
 
+  stat_live_bytes = 0;
+
   /* We must process the fiber_ref_table even if the minor heap
      is empty. */
   clean_stacks();
 
   if (minor_allocated_bytes != 0){
     caml_gc_log ("Minor collection starting");
-    stat_live_bytes = 0;
     caml_do_local_roots(&caml_oldify_one, caml_domain_self());
 
     for (r = caml_remembered_set.ref.base; r < caml_remembered_set.ref.ptr; r++){
@@ -476,7 +478,6 @@ CAMLexport void caml_minor_collection (void)
   /* !! caml_stat_promoted_words += caml_allocated_words - prev_alloc_words; */
   ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
-  caml_force_major_slice = 0;
   
   /* !! caml_final_do_calls (); */
 
@@ -486,7 +487,7 @@ CAMLexport void caml_minor_collection (void)
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
-  if (caml_force_major_slice) caml_minor_collection();
+  caml_handle_gc_interrupt(0);
   CAMLreturn (extra_root);
 }
 
@@ -504,7 +505,6 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
-                                             Assert (caml_force_major_slice);
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * sizeof (struct caml_ref_entry);
