@@ -10,7 +10,13 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Abstract syntax tree after typing *)
+(** Abstract syntax tree after typing *)
+
+
+(** By comparison with {!Parsetree}:
+    - Every {!Longindent.t} is accompanied by a resolved {!Path.t}.
+
+*)
 
 open Asttypes
 open Types
@@ -19,8 +25,12 @@ open Types
 
 type partial = Partial | Total
 
+(** {2 Extension points} *)
+
 type attribute = Parsetree.attribute
 type attributes = attribute list
+
+(** {2 Core language} *)
 
 type pattern =
   { pat_desc: pattern_desc;
@@ -33,24 +43,64 @@ type pattern =
 
 and pat_extra =
   | Tpat_constraint of core_type
+        (** P : T          { pat_desc = P
+                           ; pat_extra = (Tpat_constraint T, _, _) :: ... }
+         *)
   | Tpat_type of Path.t * Longident.t loc
+        (** #tconst        { pat_desc = disjunction
+                           ; pat_extra = (Tpat_type (P, "tconst"), _, _) :: ... }
+
+                           where [disjunction] is a [Tpat_or _] representing the
+                           branches of [tconst].
+         *)
   | Tpat_unpack
+        (** (module P)     { pat_desc  = Tpat_var "P"
+                           ; pat_extra = (Tpat_unpack, _, _) :: ... }
+         *)
 
 and pattern_desc =
     Tpat_any
+        (** _ *)
   | Tpat_var of Ident.t * string loc
+        (** x *)
   | Tpat_alias of pattern * Ident.t * string loc
+        (** P as a *)
   | Tpat_constant of constant
+        (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Tpat_tuple of pattern list
+        (** (P1, ..., Pn)
+
+            Invariant: n >= 2
+         *)
   | Tpat_construct of
       Longident.t loc * constructor_description * pattern list
+        (** C                []
+            C P              [P]
+            C (P1, ..., Pn)  [P1; ...; Pn]
+          *)
   | Tpat_variant of label * pattern option * row_desc ref
+        (** `A             (None)
+            `A P           (Some P)
+
+            See {!Types.row_desc} for an explanation of the last parameter.
+         *)
   | Tpat_record of
       (Longident.t loc * label_description * pattern) list *
         closed_flag
+        (** { l1=P1; ...; ln=Pn }     (flag = Closed)
+            { l1=P1; ...; ln=Pn; _}   (flag = Open)
+
+            Invariant: n > 0
+         *)
   | Tpat_array of pattern list
+        (** [| P1; ...; Pn |] *)
   | Tpat_or of pattern * pattern * row_desc option
+        (** P1 | P2
+
+            [row_desc = Some _] when translating [Ppat_type _], [None] otherwise.
+         *)
   | Tpat_lazy of pattern
+        (** lazy P *)
 
 and expression =
   { exp_desc: expression_desc;
@@ -63,22 +113,73 @@ and expression =
 
 and exp_extra =
   | Texp_constraint of core_type
+        (** E : T *)
   | Texp_coerce of core_type option * core_type
+        (** E :> T           [Texp_coerce (None, T)]
+            E : T0 :> T      [Texp_coerce (Some T0, T)]
+         *)
   | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
+        (** let open[!] M in     [Texp_open (!, P, M, env)]
+                                 where [env] is the environment after opening [P]
+         *)
   | Texp_poly of core_type option
+        (** Used for method bodies. *)
   | Texp_newtype of string
+        (** fun (type t) ->  *)
 
 and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
+        (** x
+            M.x
+         *)
   | Texp_constant of constant
+        (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Texp_let of rec_flag * value_binding list * expression
+        (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
+            let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
+         *)
   | Texp_function of arg_label * case list * partial
+        (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
+            See {!Parsetree} for more details.
+
+            partial =
+              [Partial] if the pattern match is partial
+              [Total] otherwise.
+         *)
   | Texp_apply of expression * (arg_label * expression option) list
+        (** E0 ~l1:E1 ... ~ln:En
+
+            The expression can be None if the expression is abstracted over
+            this argument. It currently appears when a label is applied.
+
+            For example:
+            let f x ~y = x + y in
+            f ~y:3
+
+            The resulting typedtree for the application is:
+            Texp_apply (Texp_ident "f/1037",
+                        [(Nolabel, None);
+                         (Labelled "y", Some (Texp_constant Const_int 3))
+                        ])
+         *)
   | Texp_match of expression * case list * case list * partial
+        (** match E0 with
+            | P1 -> E1
+            | P2 -> E2
+            | exception P3 -> E3
+
+            [Texp_match (E0, [(P1, E1); (P2, E2)], [(P3, E3)], _)]
+         *)
   | Texp_try of expression * case list
+        (** try E with P1 -> E1 | ... | PN -> EN *)
   | Texp_tuple of expression list
+        (** (E1, ..., EN) *)
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
+        (** C                []
+            C E              [E]
+            C (E1, ..., En)  [E1;...;En]
+         *)
   | Texp_variant of label * expression option
   | Texp_record of
       (Longident.t loc * label_description * expression) list *
@@ -180,9 +281,12 @@ and module_expr =
     mod_attributes: attributes;
    }
 
+(** Annotations for [Tmod_constraint]. *)
 and module_type_constraint =
-    Tmodtype_implicit
+  | Tmodtype_implicit
+  (** The module type constraint has been synthesized during typecheking. *)
   | Tmodtype_explicit of module_type
+  (** The module type was in the source file. *)
 
 and module_expr_desc =
     Tmod_ident of Path.t * Longident.t loc
@@ -191,6 +295,9 @@ and module_expr_desc =
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
+    (** ME          (constraint = Tmodtype_implicit)
+        (ME : MT)   (constraint = Tmodtype_explicit MT)
+     *)
   | Tmod_unpack of expression * Types.module_type
 
 and structure = {
@@ -341,9 +448,10 @@ and with_constraint =
   | Twith_modsubst of Path.t * Longident.t loc
 
 and core_type =
-(* mutable because of [Typeclass.declare_method] *)
   { mutable ctyp_desc : core_type_desc;
+      (** mutable because of [Typeclass.declare_method] *)
     mutable ctyp_type : type_expr;
+      (** mutable because of [Typeclass.declare_method] *)
     ctyp_env : Env.t; (* BINANNOT ADDED *)
     ctyp_loc : Location.t;
     ctyp_attributes: attributes;
@@ -519,7 +627,7 @@ val rev_let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_with_loc:
     value_binding list -> (Ident.t * string loc) list
 
-(* Alpha conversion of patterns *)
+(** Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
 
 val mknoloc: 'a -> 'a Asttypes.loc
