@@ -467,6 +467,7 @@ major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (caml_startup_params.heap_size_init));
 
   caml_max_stack_size = caml_startup_params.max_stack_init;
+  caml_percent_free = norm_pfree (caml_startup_params.percent_free_init);
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
 

@@ -156,8 +156,6 @@ static void domain_filter_live() {
 }
 
 
-static void poll_interrupts();
-
 static value domain_run(value v) {
   CAMLparam1 (v);
   caml_delete_root(domain_self->initial_data);
@@ -227,14 +225,9 @@ CAMLprim value caml_ml_domain_id(value unit)
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
 __thread atomic_uintnat caml_young_limit = {0};
 __thread uintnat desired_caml_young_limit = 0;
+static __thread int volatile caml_force_major_slice = 0;
 
 static atomic_uintnat stw_requested;
-
-static void poll_interrupts() {
-  if (Caml_check_gc_interrupt(desired_caml_young_limit)) {
-    caml_handle_gc_interrupt(0);
-  }
-}
 
 /* update caml_young_limit, being careful not to lose interrupts */
 void caml_update_young_limit(uintnat new_val) {
@@ -269,6 +262,15 @@ void caml_trigger_stw_gc() {
   request_stw();
 }
 
+/* Arrange for a garbage collection to be performed on the current domain
+   as soon as possible */
+void caml_urge_major_slice (void)
+{
+  caml_force_major_slice = 1;
+  interrupt_domain(domain_self);
+}
+
+
 static void stw_phase(void);
 static void check_rpc(void);
 
@@ -284,8 +286,11 @@ void caml_handle_gc_interrupt(int required_words) {
     }
   }
 
-  if ((uintnat)caml_young_ptr - Bhsize_wosize(required_words) < desired_caml_young_limit) {
-    /* out of minor heap */
+  if (((uintnat)caml_young_ptr - Bhsize_wosize(required_words) <
+       desired_caml_young_limit) ||
+      caml_force_major_slice) {
+    /* out of minor heap or collection forced */
+    caml_force_major_slice = 0;
     caml_minor_collection();
   }
 }

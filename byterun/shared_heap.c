@@ -73,6 +73,8 @@ struct caml_heap_state {
   sizeclass next_to_sweep;
 
   struct domain* owner;
+
+  uintnat pools_allocated, large_bytes_allocated;
 };
 
 struct caml_heap_state* caml_init_shared_heap() {
@@ -95,6 +97,8 @@ struct caml_heap_state* caml_init_shared_heap() {
   heap->swept_large = 0;
   heap->unswept_large = 0;
   heap->owner = caml_domain_self();
+  heap->pools_allocated = 0;
+  heap->large_bytes_allocated = 0;
   return heap;
 }
 
@@ -130,6 +134,7 @@ static pool* pool_acquire(struct caml_heap_state* local) {
     if (r)
       pool_freelist.free = r->next;
     caml_plat_unlock(&pool_freelist.lock);
+    local->pools_allocated++;
   }
   return r;
 }
@@ -144,13 +149,14 @@ static void pool_release(struct caml_heap_state* local, pool* pool) {
     pool->next = pool_freelist.free;
     pool_freelist.free = pool;
     caml_plat_unlock(&pool_freelist.lock);
+    local->pools_allocated--;
   }
 }
 
 
 /* Allocating an object from a pool */
 
-static int pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
+static intnat pool_sweep(struct caml_heap_state* local, pool**, sizeclass sz);
 static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   pool* r;
 
@@ -214,6 +220,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   a->owner = local->owner;
   a->next = local->swept_large;
   local->swept_large = a;
+  local->large_bytes_allocated += sz;
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
@@ -263,7 +270,7 @@ void caml_shared_unpin(value v) {
 
 /* Sweeping */
 
-static int pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass sz) {
+static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass sz) {
   pool* a = *plist;
   if (!a) return 0;
   *plist = a->next;
@@ -300,28 +307,29 @@ static int pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass sz)
     *list = a;
   }
 
-  return 1;
+  return POOL_WSIZE;
 }
 
-static void large_alloc_sweep(struct caml_heap_state* local) {
+static intnat large_alloc_sweep(struct caml_heap_state* local) {
   large_alloc* a = local->unswept_large;
-  if (a) {
-    local->unswept_large = a->next;
-    header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
-    if (Has_status_hd(hd, global.GARBAGE)) {
-      free(a);
-    } else {
-      a->next = local->swept_large;
-      local->swept_large = a;
-    }
+  if (!a) return 0;
+  local->unswept_large = a->next;
+  header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+  if (Has_status_hd(hd, global.GARBAGE)) {
+    local->large_bytes_allocated -= Bhsize_hd(hd);
+    free(a);
+  } else {
+    a->next = local->swept_large;
+    local->swept_large = a;
   }
+  return Whsize_hd(hd);
 }
 
-int caml_sweep(struct caml_heap_state* local, int work) {
+intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep local pools */
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
     sizeclass sz = local->next_to_sweep;
-    int sweep_work = 
+    intnat sweep_work =
       pool_sweep(local, &local->unswept_avail_pools[sz], sz) +
       pool_sweep(local, &local->unswept_full_pools[sz], sz);
     if (sweep_work) {
@@ -333,12 +341,16 @@ int caml_sweep(struct caml_heap_state* local, int work) {
 
   /* Sweep global pools */
   while (work > 0 && local->unswept_large) {
-    large_alloc_sweep(local);
-    work--;
+    work -= large_alloc_sweep(local);
   }
   return work;
 }
 
+uintnat caml_heap_size(struct caml_heap_state* local) {
+  return
+    local->pools_allocated * Bsize_wsize(POOL_WSIZE) +
+    local->large_bytes_allocated;
+}
 
 
 
@@ -465,8 +477,13 @@ static void verify_heap() {
   caml_restore_stack_gc();
 }
 
+struct mem_stats {
+  uintnat alloced;
+  uintnat free;
+  uintnat overhead;
+};
 
-static void verify_pool(pool* a, sizeclass sz) {
+static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   value* v;
   for (v = a->next_obj; v; v = (value*)v[1]) {
     Assert(*v == 0);
@@ -479,12 +496,29 @@ static void verify_pool(pool* a, sizeclass sz) {
   while (p + wh <= end) {
     header_t hd = (header_t)*p;
     Assert(hd == 0 || !Has_status_hd(hd, global.GARBAGE));
+    if (hd) {
+      s->overhead += wh - Whsize_hd(hd);
+    } else {
+      s->free += wh;
+    }
     p += wh;
+  }
+  s->overhead += end - p;
+  s->alloced += POOL_WSIZE;
+}
+
+static void verify_large(large_alloc* a, struct mem_stats* s) {
+  for (; a; a = a->next) {
+    header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+    Assert (!Has_status_hd(hd, global.GARBAGE));
+    s->alloced += Wsize_bsize(LARGE_ALLOC_HEADER_SZ) + Whsize_hd(hd);
+    s->overhead += Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
   }
 }
 
 static void verify_freelists (struct caml_heap_state* local) {
   int i;
+  struct mem_stats pool_stats = {}, large_stats = {};
   /* sweeping should be done by this point */
   Assert(local->next_to_sweep == NUM_SIZECLASSES);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
@@ -492,18 +526,26 @@ static void verify_freelists (struct caml_heap_state* local) {
            local->unswept_full_pools[i] == 0);
     pool* p;
     for (p = local->avail_pools[i]; p; p = p->next)
-      verify_pool(p, i);
+      verify_pool(p, i, &pool_stats);
     for (p = local->full_pools[i]; p; p = p->next) {
       Assert(p->next_obj == 0);
-      verify_pool(p, i);
+      verify_pool(p, i, &pool_stats);
     }
   }
+  caml_gc_log("Pooled memory: %lu alloced, %lu free, %lu fragmentation",
+              pool_stats.alloced, pool_stats.free, pool_stats.overhead);
+
+  Assert(local->unswept_large == 0);
+  verify_large(local->swept_large, &large_stats);
+
+  caml_gc_log("Large memory: %lu alloced, %lu free, %lu fragmentation",
+              large_stats.alloced, large_stats.free, large_stats.overhead);
 }
 
 void caml_cycle_heap_stw() {
   struct global_heap_state oldg = global;
   struct global_heap_state newg;
-  verify_heap();
+  //verify_heap();
   newg.UNMARKED     = oldg.MARKED;
   newg.GARBAGE      = oldg.UNMARKED;
   newg.MARKED       = oldg.GARBAGE; /* should be empty because garbage was swept */
@@ -520,6 +562,9 @@ void caml_cycle_heap(struct caml_heap_state* local) {
     local->full_pools[i] = 0;
   }
   local->next_to_sweep = 0;
+
+  local->unswept_large = local->swept_large;
+  local->swept_large = 0;
 }
 
 
