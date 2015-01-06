@@ -1882,7 +1882,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_fun (l, Some default, spat, sexp) ->
+  | Pexp_fun (l, Some default, spat, sbody) ->
       assert(is_optional l); (* default allowed only with optional argument *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
@@ -1904,18 +1904,16 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
-      let sfun =
-        Exp.fun_ ~loc
-          l None
-          (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
-             [Vb.mk spat smatch] sexp)
+      let pat = Pat.var ~loc (mknoloc "*opt*") in
+      let body =
+        Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+          [Vb.mk spat smatch] sbody
       in
-      type_expect ?in_function env sfun ty_expected
-        (* TODO: keep attributes, call type_function directly *)
+      type_function ?in_function loc sexp.pexp_attributes env ty_expected
+        l [Exp.case pat body]
   | Pexp_fun (l, None, spat, sbody) ->
       type_function ?in_function loc sexp.pexp_attributes env ty_expected
-        l [{pc_lhs=spat; pc_guard=None; pc_rhs=sbody}]
+        l [Ast_helper.Exp.case spat sbody]
   | Pexp_function caselist ->
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected Nolabel caselist
