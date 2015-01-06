@@ -184,7 +184,7 @@ static void do_compaction (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots (invert_root);
+    caml_do_roots (invert_root, 1);
     caml_final_do_weak_roots (invert_root);
 
     ch = caml_heap_start;

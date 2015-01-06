@@ -125,9 +125,9 @@ static void start_cycle (void)
   Assert (caml_gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
   caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
-  caml_darken_all_roots();
+  caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
-  caml_gc_subphase = Subphase_main;
+  caml_gc_subphase = Subphase_roots;
   markhp = NULL;
 #ifdef DEBUG
   ++ major_gc_counter;
@@ -238,6 +238,17 @@ static void mark_slice (intnat work)
       limit = chunk + Chunk_size (chunk);
     }else{
       switch (caml_gc_subphase){
+      case Subphase_roots: {
+        intnat work_done;
+        gray_vals_cur = gray_vals_ptr;
+        work_done = caml_darken_all_roots_slice (work);
+        gray_vals_ptr = gray_vals_cur;
+        if (work_done < work){
+          caml_gc_subphase = Subphase_main;
+        }
+        work -= work_done;
+      }
+        break;
       case Subphase_main: {
         /* The main marking phase is over.  Start removing weak pointers to
            dead values. */
@@ -403,6 +414,7 @@ intnat caml_major_collection_slice (intnat howmuch)
                  P  = max (PH, PE)
      Amount of marking work for the GC cycle:
                  MW = caml_stat_heap_size * 100 / (100 + caml_percent_free)
+                      + caml_incremental_roots_count
      Amount of sweeping work for the GC cycle:
                  SW = caml_stat_heap_size
 
@@ -418,7 +430,8 @@ intnat caml_major_collection_slice (intnat howmuch)
 
      Amount of marking work for a marking slice:
                  MS = P * MW / (40/100)
-                 MS = P * caml_stat_heap_size * 250 / (100 + caml_percent_free)
+                 MS = P * (caml_stat_heap_size * 250 / (100 + caml_percent_free)
+                           + 2.5 * caml_incremental_roots_count)
      Amount of sweeping work for a sweeping slice:
                  SS = P * SW / (60/100)
                  SS = P * caml_stat_heap_size * 5 / 3
@@ -455,8 +468,9 @@ intnat caml_major_collection_slice (intnat howmuch)
                    (uintnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_mark){
-    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 250
-                              / (100 + caml_percent_free));
+    computed_work = (intnat) (p * (Wsize_bsize (caml_stat_heap_size) * 250
+                                   / (100 + caml_percent_free)
+                                   + caml_incremental_roots_count));
   }else{
     computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 5 / 3);
   }

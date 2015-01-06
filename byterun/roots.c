@@ -60,12 +60,21 @@ void caml_oldify_local_roots (void)
 
 /* Call [caml_darken] on all roots */
 
-void caml_darken_all_roots (void)
+void caml_darken_all_roots_start (void)
 {
-  caml_do_roots (caml_darken);
+  caml_do_roots (caml_darken, 1);
 }
 
-void caml_do_roots (scanning_action f)
+uintnat caml_number_of_incremental_roots = 1;
+
+intnat caml_darken_all_roots_slice (intnat work)
+{
+  return 0;
+}
+
+/* Note, in byte-code there is only one global root, so [do_globals] is
+   ignored and [caml_darken_all_roots_slice] does nothing. */
+void caml_do_roots (scanning_action f, int do_globals)
 {
   CAML_TIMER_SETUP (t, "major_roots");
   /* Global variables */
