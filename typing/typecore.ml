@@ -1913,9 +1913,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       in
       type_expect ?in_function env sfun ty_expected
         (* TODO: keep attributes, call type_function directly *)
-  | Pexp_fun (l, None, spat, sexp) ->
+  | Pexp_fun (l, None, spat, sbody) ->
       type_function ?in_function loc sexp.pexp_attributes env ty_expected
-        l [{pc_lhs=spat; pc_guard=None; pc_rhs=sexp}]
+        l [{pc_lhs=spat; pc_guard=None; pc_rhs=sbody}]
   | Pexp_function caselist ->
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected Nolabel caselist

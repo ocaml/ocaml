@@ -25,6 +25,7 @@ Compilers:
   (Xavier Leroy, report by Antoine Miné).
 - improve type-specialization of unapplied primitives
   (Frédéric Bour, review by Gabriel Scherer)
+- PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
