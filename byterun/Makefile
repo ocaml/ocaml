@@ -68,7 +68,7 @@ clean::
 	rm $*.d.c
 
 %.t.o: %.c
-	$(CC) -c $(TFLAGS) -o $@ $^
+	$(CC) -c $(TFLAGS) -o $@ $<
 
 .c.pic.o:
 	ln -s -f $*.c $*.pic.c

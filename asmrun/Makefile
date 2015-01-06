@@ -211,7 +211,7 @@ clean::
 	rm -f $*.d.c
 
 %.t.o : %.c
-	$(CC) -c $(TFLAGS) -o $@ $^
+	$(CC) -c $(TFLAGS) -o $@ $<
 
 .c.p.o:
 	ln -s -f $*.c $*.p.c
