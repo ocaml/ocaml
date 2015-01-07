@@ -444,6 +444,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (caml_gc_phase == Phase_idle){
     start_cycle ();
     CAML_TIMER_TIME (t, "major/roots");
+    return 0;
   }
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
