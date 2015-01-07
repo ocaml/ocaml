@@ -1,8 +1,5 @@
-caml/jumptbl.h
 primitives
 prims.c
-caml/opnames.h
-caml/version.h
 ocamlrun
 ocamlrun.exe
 ocamlrund
