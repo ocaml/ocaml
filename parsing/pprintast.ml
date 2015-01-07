@@ -1289,11 +1289,11 @@ class printer  ()= object(self:'self)
       | Ptype_open -> pp f "%t@;.." intro
     in
     let constraints f =
-      self#list ~first:"@ "
-        (fun f (ct1,ct2,_) ->
-           pp f "@[<hov2>constraint@ %a@ =@ %a@]"
+      List.iter
+        (fun (ct1,ct2,_) ->
+           pp f "@[<hov2>@ constraint@ %a@ =@ %a@]"
               self#core_type ct1 self#core_type ct2)
-        f x.ptype_cstrs
+        x.ptype_cstrs
     in
       pp f "%t%t%t%t" priv manifest repr constraints
 

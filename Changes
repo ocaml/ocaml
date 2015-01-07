@@ -26,6 +26,7 @@ Compilers:
 - improve type-specialization of unapplied primitives
   (Frédéric Bour, review by Gabriel Scherer)
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
+- PR#6679: fix pprintast printing of constraints in type declarations
 
 Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
