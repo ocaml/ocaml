@@ -194,6 +194,7 @@ extern void CAML_TIMER_ATEXIT (void);
 #define CAML_TIMER_START(t, name) /**/
 #define CAML_TIMER_SETUP(t, name) /**/
 #define CAML_TIMER_TIME(t, msg) /**/
+#define CAML_TIMER_ATEXIT() /**/
 
 #endif /* CAML_TIMER */
 
