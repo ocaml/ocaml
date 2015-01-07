@@ -259,5 +259,6 @@ let import_for_pack ~pack_units ~pack exp =
       ex_constants = SymbolSet.map import_sym exp.ex_constants;
       ex_constant_closures = exp.ex_constant_closures;
       ex_kept_arguments = exp.ex_kept_arguments } in
-  EidTbl.clear rename_id_state;
   res
+
+let clear_import_state () = EidTbl.clear rename_id_state

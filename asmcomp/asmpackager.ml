@@ -141,6 +141,7 @@ let build_package_cmx members cmxfile =
       (Flambdaexport.import_for_pack ~pack_units
          ~pack:(Compilenv.current_unit ()) ui.ui_export_info)
       units in
+  Flambdaexport.clear_import_state ();
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;

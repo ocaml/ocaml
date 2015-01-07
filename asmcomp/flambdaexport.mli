@@ -84,6 +84,9 @@ val import_for_pack :
     It mainly change symbols of units [pack_units] to refer to
     [pack] instead. *)
 
+val clear_import_state : unit -> unit
+(** Drops the state after importing several units in the same pack. *)
+
 (**/**)
 (* debug printing functions *)
 
