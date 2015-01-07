@@ -61,8 +61,6 @@ typedef char * addr;
 
 /* Assertions */
 
-/* <private> */
-
 #ifdef DEBUG
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
@@ -70,6 +68,8 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
+
+/* <private> */
 
 CAMLextern void caml_fatal_error (char *msg) Noreturn;
 CAMLextern void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;

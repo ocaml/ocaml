@@ -272,14 +272,14 @@ CAMLextern __thread struct caml__roots_block *caml_local_roots;  /* defined in r
 
 
 #define CAMLreturn0 do{ \
-  Assert(caml_local_roots->mutexes == 0); \
+  CAMLassert(caml_local_roots->mutexes == 0);     \
   caml_local_roots = caml__frame; \
   return; \
 }while (0)
 
 #define CAMLreturnT(type, result) do{ \
   type caml__temp_result = (result); \
-  Assert(caml_local_roots->mutexes == 0); \
+  CAMLassert(caml_local_roots->mutexes == 0); \
   caml_local_roots = caml__frame; \
   return (caml__temp_result); \
 }while(0)
