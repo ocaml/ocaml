@@ -472,6 +472,7 @@ void caml_compact_heap_maybe (void)
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
+  if (caml_stat_heap_wsz <= 2 * caml_round_heap_chunk_wsz (0)) return;
 
   fw = 3.0 * caml_fl_cur_wsz - 2.0 * caml_fl_wsz_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_wsz;
