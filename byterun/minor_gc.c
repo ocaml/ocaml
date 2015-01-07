@@ -295,9 +295,9 @@ CAMLexport void caml_minor_collection (void)
   caml_force_major_slice = 0;
 
   caml_final_do_calls ();
+  CAML_TIMER_TIME (tmr, "coll/finalizers");
 
   if (caml_young_ptr != caml_young_end){
-    CAML_TIMER_TIME (tmr, "coll/finalizers");
     caml_empty_minor_heap ();
     CAML_TIMER_TIME (tmr, "coll/minor_2");
   }
