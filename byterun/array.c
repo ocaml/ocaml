@@ -184,6 +184,7 @@ CAMLprim value caml_make_vect(value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
+      CAML_TIMER_SETUP (tmr, "force_minor/make_vect");
       caml_minor_collection();
       res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
