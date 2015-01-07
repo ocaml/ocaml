@@ -443,8 +443,10 @@ intnat caml_major_collection_slice (intnat howmuch)
 
   if (caml_gc_phase == Phase_idle){
     start_cycle ();
+    /*caml_darken_all_roots_slice (INT_MAX);*/
     CAML_TIMER_TIME (tmr, "major/roots");
-    return 0;
+    computed_work = 0;
+    goto finished;
   }
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -494,6 +496,7 @@ intnat caml_major_collection_slice (intnat howmuch)
     CAML_TIMER_TIME (tmr, "major/check_and_compact");
   }
 
+ finished:
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;
