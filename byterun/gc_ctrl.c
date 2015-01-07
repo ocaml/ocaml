@@ -255,8 +255,12 @@ void caml_heap_check (void)
 
 CAMLprim value caml_gc_stat(value v)
 {
+  value result;
+  CAML_TIMER_SETUP (tmr, "");
   Assert (v == Val_unit);
-  return heap_stats (1);
+  result = heap_stats (1);
+  CAML_TIMER_TIME (tmr, "gc_stat");
+  return result;
 }
 
 CAMLprim value caml_gc_quick_stat(value v)
