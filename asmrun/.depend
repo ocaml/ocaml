@@ -245,11 +245,6 @@ unix.o: unix.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
  ../byterun/misc.h ../byterun/osdeps.h
-unix.d.o: unix.d.c ../byterun/config.h ../byterun/../config/m.h \
- ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
- ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
- ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/osdeps.h
 weak.o: weak.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/major_gc.h ../byterun/freelist.h \
@@ -498,11 +493,6 @@ terminfo.d.o: terminfo.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/config.h ../byterun/mlvalues.h ../byterun/fail.h \
  ../byterun/io.h ../byterun/mlvalues.h
 unix.d.o: unix.c ../byterun/config.h ../byterun/../config/m.h \
- ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
- ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
- ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/osdeps.h
-unix.d.d.o: unix.d.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
  ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
@@ -759,11 +749,6 @@ unix.p.o: unix.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
  ../byterun/misc.h ../byterun/osdeps.h
-unix.d.p.o: unix.d.c ../byterun/config.h ../byterun/../config/m.h \
- ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
- ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
- ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/osdeps.h
 weak.p.o: weak.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/major_gc.h ../byterun/freelist.h \
@@ -1012,11 +997,6 @@ terminfo.t.o: terminfo.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/config.h ../byterun/mlvalues.h ../byterun/fail.h \
  ../byterun/io.h ../byterun/mlvalues.h
 unix.t.o: unix.c ../byterun/config.h ../byterun/../config/m.h \
- ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
- ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
- ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/osdeps.h
-unix.d.t.o: unix.d.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/memory.h ../byterun/config.h \
  ../byterun/gc.h ../byterun/mlvalues.h ../byterun/misc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
