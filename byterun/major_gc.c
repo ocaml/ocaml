@@ -443,7 +443,6 @@ intnat caml_major_collection_slice (intnat howmuch)
 
   if (caml_gc_phase == Phase_idle){
     start_cycle ();
-    /*caml_darken_all_roots_slice (INT_MAX);*/
     CAML_TIMER_TIME (tmr, "major/roots");
     computed_work = 0;
     goto finished;
