@@ -51,10 +51,6 @@ let view_fixity_of_exp = function
 
 let is_infix  = function  | `Infix _ -> true | _  -> false
 
-let is_predef_option = function
-  | (Ldot (Lident "*predef*","option")) -> true
-  | _ -> false
-
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
   is_infix (fixity_of_string txt)
@@ -222,13 +218,7 @@ class printer  ()= object(self:'self)
     match label with
     | Nolabel ->  self#core_type1 f c (* otherwise parenthesize *)
     | Labelled s -> pp f "%s:%a" s self#core_type1 c
-    | Optional s  ->
-        begin match ptyp_desc with
-        | Ptyp_constr ({txt;_}, l) ->
-            assert (is_predef_option txt);
-            pp f "?%s:%a" s (self#list self#core_type1) l
-        | _ -> failwith "invalid input in print_type_with_label"
-        end
+    | Optional s -> pp f "?%s:%a" s self#core_type1 c
   method core_type f x =
     if x.ptyp_attributes <> [] then begin
       pp f "((%a)%a)" self#core_type {x with ptyp_attributes=[]}
