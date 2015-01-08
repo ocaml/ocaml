@@ -417,6 +417,26 @@ static void sweep_slice (intnat work)
   }
 }
 
+#ifdef CAML_TIMER
+static char *mark_slice_name[] = {
+  /* 0 */ NULL,
+  /* 1 */ NULL,
+  /* 2 */ NULL,
+  /* 3 */ NULL,
+  /* 4 */ NULL,
+  /* 5 */ NULL,
+  /* 6 */ NULL,
+  /* 7 */ NULL,
+  /* 8 */ NULL,
+  /* 9 */ NULL,
+  /* 10 */ "major/mark_roots",
+  /* 11 */ "major/mark_main",
+  /* 12 */ "major/mark_weak1",
+  /* 13 */ "major/mark_weak2",
+  /* 14 */ "major/mark_final",
+};
+#endif
+
 /* The main entry point for the GC.  Called after each minor GC.
    [howmuch] is the amount of work to do, 0 to let the GC compute it.
    Return the computed amount of work to do.
@@ -513,7 +533,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
     mark_slice (howmuch);
-    CAML_TIMER_TIME (tmr, "major/mark");
+    CAML_TIMER_TIME (tmr, mark_slice_name[caml_gc_subphase]);
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
@@ -527,7 +547,6 @@ intnat caml_major_collection_slice (intnat howmuch)
     CAML_TIMER_TIME (tmr, "major/check_and_compact");
   }
 
- finished:
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;

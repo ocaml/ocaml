@@ -28,12 +28,19 @@ external unsafe_blit :
 external make_float: int -> float array = "caml_make_float_vect"
 
 let init l f =
-  if l = 0 then [||] else
-   let res = create l (f 0) in
-   for i = 1 to pred l do
-     unsafe_set res i (f i)
-   done;
-   res
+  if l = 0 then [||] else begin
+    let f0 = f 0 in
+    let res =
+      if Obj.tag (Obj.repr f0) = Obj.double_tag
+      then create l f0
+      else create l (Obj.magic ())
+    in
+    unsafe_set res 0 f0;
+    for i = 1 to pred l do
+      unsafe_set res i (f i)
+    done;
+    res
+  end
 
 let make_matrix sx sy init =
   let res = create sx [||] in
