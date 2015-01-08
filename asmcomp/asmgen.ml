@@ -131,6 +131,7 @@ let flambda ppf (size, lam) =
     if rounds <= 0 then flam
     else
       let flam = Flambdasimplify.lift_lets flam in
+      let flam = Flambdasimplify.remove_unused_closure_variables flam in
       let flam = Flambdasimplify.simplify flam in
       let flam = Flambda_ref_to_variables.eliminate_ref flam in
       loop (rounds - 1) flam in

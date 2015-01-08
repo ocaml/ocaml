@@ -1354,6 +1354,39 @@ let lift_lets tree =
     | e -> e in
   Flambdaiter.map aux tree
 
+
+(** An variable in a closure can either be used by the closure itself
+    or by an inlined version of the function. *)
+let remove_unused_closure_variables tree =
+  let used_variable_withing_closure =
+    let used = ref ClosureVariableSet.empty in
+    let aux expr = match expr with
+      | Fvariable_in_closure({ vc_var },_) ->
+         used := ClosureVariableSet.add vc_var !used
+      | e -> ()
+    in
+    Flambdaiter.iter aux tree;
+    !used
+  in
+  let aux = function
+    | Fclosure ({ cl_fun; cl_free_var } as closure, eid) ->
+       let all_free_var =
+         VarMap.fold
+           (fun _ { free_variables } acc -> VarSet.union free_variables acc)
+           cl_fun.funs
+           VarSet.empty in
+       let cl_free_var =
+         VarMap.filter
+           (fun id _ -> VarSet.mem id all_free_var
+                        || ClosureVariableSet.mem (Closure_variable.wrap id)
+                                                  used_variable_withing_closure)
+           cl_free_var in
+       Fclosure ({ closure with cl_free_var }, eid)
+    | e -> e in
+  Flambdaiter.map aux tree
+
+
+
 (* open Flambdapasses *)
 
 (* let lift_let_pass = *)
