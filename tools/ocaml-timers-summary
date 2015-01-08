@@ -52,7 +52,7 @@ BEGIN {
 function store(value,tag) {
     ++ total[tag];
     for (i = 0; i < nscales; i++){
-        if (value < lim[i]){
+        if (value <= lim[i]){
             ++ bin[tag, lim[i]];
             val[tag, lim[i]] = value;
             return;
@@ -88,15 +88,22 @@ END {
     for (i = 1; i <= n; i++){
         t = tags[i];
         printf ("==== %s: %d\n", t, total[t]);
-        found = 0;
+        num = bin[t,0];
+        if (num == total[t]){
+            /* nothing */
+        }else if (num > 0){
+            printf ("           0: ");
+            display(bin[t,0], val[t, 0]);
+        }
+        found = num;
         for (j = 1; j < nscales; j++){
+            if (found == total[t]) break;
             num = bin [t, lim[j]];
             found += num;
             if (found > 0){
                 printf ("%5s..%-5s: ", scale[j-1], scale[j]);
                 display(num, val[t, lim[j]]);
                 printf ("%6.2f%%\n", found * 100 / total[t]);
-                if (found == total[t]) break;
             }
         }
         num = bin[t, "off-scale"];
