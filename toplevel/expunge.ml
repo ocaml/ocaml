@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* "Expunge" a toplevel by removing compiler modules from the global List.map.
+(* "Expunge" a toplevel by removing compiler modules from the global map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
 open Misc
