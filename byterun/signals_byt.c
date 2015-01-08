@@ -38,8 +38,7 @@ void caml_process_event(void)
 {
   void (*async_action)(void);
 
-  if (caml_force_major_slice) caml_minor_collection ();
-                             /* FIXME should be [caml_check_urgent_gc] */
+  caml_check_urgent_gc (Val_unit);
   caml_process_pending_signals();
   async_action = caml_async_action_hook;
   if (async_action != NULL) {
