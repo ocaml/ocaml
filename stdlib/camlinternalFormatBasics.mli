@@ -29,6 +29,11 @@ type ('a, 'b) precision =
 
 type prec_option = int option
 
+type ('a, 'b, 'c, 'd) custom_arity =
+  | Custom_zero : ('a, 'b, 'a, 'b) custom_arity
+  | Custom_succ : ('a, 'b, 'c, 'd) custom_arity ->
+    ('a, 'b, 'x -> 'c, 'x -> 'd) custom_arity
+
 type block_type = Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
 
 type formatting_lit =
@@ -121,6 +126,11 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+| Any_ty :                                                  (* Used for custom formats *)
+    ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+    ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'x -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 
 (* Scanf specific constructor. *)
 | Reader_ty :                                               (* %r  *)
@@ -206,6 +216,9 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
 | Theta :                                                  (* %t *)
     ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+| Custom :
+    ('c, 'a, 'x, 'y) custom_arity * ('b -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+    ('y, 'b, 'c, 'd, 'e, 'f) fmt
 
 (* Format specific constructor: *)
 | Formatting_lit :                                         (* @_ *)

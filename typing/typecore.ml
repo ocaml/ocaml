@@ -2920,6 +2920,7 @@ and type_format loc str env =
         | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
         | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
         | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
+        | Any_ty rest       -> mk_constr "Any_ty"       [ mk_fmtty rest ]
         | Reader_ty rest    -> mk_constr "Reader_ty"    [ mk_fmtty rest ]
         | Ignored_reader_ty rest ->
           mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
@@ -3039,6 +3040,10 @@ and type_format loc str env =
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
           mk_constr "End_of_format" []
+        | Custom _ ->
+          (* Custom formatters have no syntax so they will never appear
+             in formats parsed from strings. *)
+          assert false
       in
       let legacy_behavior = not !Clflags.strict_formats in
       let Fmt_EBB fmt = fmt_ebb_of_string ~legacy_behavior str in
