@@ -259,6 +259,7 @@ opnames.ml: ../byterun/instruct.h
 	unset LC_COLLATE LANG || : ; \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
+	    -e '/END_OF_INSTRUCTIONS/d' \
 	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
 	    -e 's/};$$/ |]/' \
 	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
