@@ -42,7 +42,7 @@ void caml_disasm_instr(code_t pc)
   char* c = buf;
   int instr = *pc;
   c += sprintf(c, "%6ld  %s", (long) (pc - caml_start_code),
-         instr < 0 || instr > STOP ? "???" : names_of_instructions[instr]);
+         instr < 0 || instr >= NUM_INSTRUCTIONS ? "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {
     /* Instructions with one integer operand */
