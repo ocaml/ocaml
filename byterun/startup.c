@@ -30,6 +30,7 @@
 #include "custom.h"
 #include "debugger.h"
 #include "dynlink.h"
+#include "eventlog.h"
 #include "exec.h"
 #include "fail.h"
 #include "fix_code.h"
@@ -308,6 +309,7 @@ static void parse_camlrunparam(void)
       case 't': caml_startup_params.trace_flag = 1; break;
 #endif
       case 'v': scanmult (opt, &caml_startup_params.verb_gc); break;
+      case 'e': caml_startup_params.eventlog_enabled = 1; break;
       }
     }
   }
@@ -391,6 +393,7 @@ CAMLexport void caml_main(char **argv)
   /* Initialize the abstract machine */
   caml_init_gc ();
   if (caml_startup_params.backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_startup_params.eventlog_enabled) caml_setup_eventlog();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

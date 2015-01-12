@@ -25,6 +25,7 @@ extern struct caml_startup_params {
   uintnat verb_gc;
   int parser_trace;
   int trace_flag;
+  int eventlog_enabled;
 
   uintnat percent_free_init;
   uintnat max_percent_free_init;
