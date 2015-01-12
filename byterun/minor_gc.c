@@ -30,6 +30,7 @@
 #include "shared_heap.h"
 #include "addrmap.h"
 #include "fiber.h"
+#include "eventlog.h"
 
 asize_t __thread caml_minor_heap_size;
 CAMLexport __thread char *caml_young_ptr = NULL;
@@ -473,6 +474,8 @@ CAMLexport void caml_minor_collection (void)
 {
   /* !! intnat prev_alloc_words = caml_allocated_words; */
 
+  caml_log_event(EVENT_GC_START);
+
   caml_empty_minor_heap ();
 
   /* !! caml_stat_promoted_words += caml_allocated_words - prev_alloc_words; */
@@ -482,6 +485,7 @@ CAMLexport void caml_minor_collection (void)
   /* !! caml_final_do_calls (); */
 
   caml_empty_minor_heap ();
+  caml_log_event(EVENT_GC_END);
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
