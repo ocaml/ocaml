@@ -33,9 +33,12 @@ let init l f =
     let res =
       if Obj.tag (Obj.repr f0) = Obj.double_tag
       then create l f0
-      else create l (Obj.magic ())
+      else begin
+        let res = create l (Obj.magic None) in
+        unsafe_set res 0 f0;
+        res
+      end
     in
-    unsafe_set res 0 f0;
     for i = 1 to pred l do
       unsafe_set res i (f i)
     done;
