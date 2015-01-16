@@ -28,6 +28,8 @@ external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+external compare_and_swap_field : t -> int -> t -> t -> bool
+  = "caml_obj_compare_and_swap"
 val double_field : t -> int -> float  (* @since 3.11.2 *)
 val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
