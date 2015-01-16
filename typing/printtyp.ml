@@ -221,6 +221,8 @@ let apply_subst s1 tyl =
 type best_path = Paths of Path.t list | Best of Path.t
 
 let printing_env = ref Env.empty
+let printing_depth = ref 0
+let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
 let printing_pers = ref Concr.empty
 module Path2 = struct
@@ -237,7 +239,7 @@ module Path2 = struct
     | _ -> Pervasives.compare p1 p2
 end
 module PathMap = Map.Make(Path2)
-let printing_map = ref (Lazy.from_val PathMap.empty)
+let printing_map = ref PathMap.empty
 
 let same_type t t' = repr t == repr t'
 
@@ -292,24 +294,24 @@ let set_printing_env env =
     (* printf "Reset printing_map@."; *)
     printing_old := env;
     printing_pers := Env.used_persistent ();
-    printing_map := lazy begin
-      (* printf "Recompute printing_map.@."; *)
-      let map = ref PathMap.empty in
+    printing_map := PathMap.empty;
+    printing_depth := 0;
+    (* printf "Recompute printing_map.@."; *)
+    let cont =
       Env.iter_types
         (fun p (p', decl) ->
           let (p1, s1) = normalize_type_path env p' ~cache:true in
           (* Format.eprintf "%a -> %a = %a@." path p path p' path p1 *)
           if s1 = Id then
           try
-            let r = PathMap.find p1 !map in
+            let r = PathMap.find p1 !printing_map in
             match !r with
               Paths l -> r := Paths (p :: l)
-            | Best _  -> assert false
+            | Best p' -> r := Paths [p; p'] (* assert false *)
           with Not_found ->
-            map := PathMap.add p1 (ref (Paths [p])) !map)
-        env;
-      !map
-    end
+            printing_map := PathMap.add p1 (ref (Paths [p])) !printing_map)
+        env in
+    printing_cont := [cont];
   end
 
 let wrap_printing_env env f =
@@ -352,10 +354,14 @@ let best_type_path p =
   then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
-    let p'' =
-      try get_best_path (PathMap.find  p' (Lazy.force !printing_map))
-      with Not_found -> p'
-    in
+    let get_path () = get_best_path (PathMap.find  p' !printing_map) in
+    while !printing_cont <> [] &&
+      try ignore (get_path ()); false with Not_found -> true
+    do
+      printing_cont := List.map snd (Env.run_iter_cont !printing_cont);
+      incr printing_depth;
+    done;
+    let p'' = try get_path () with Not_found -> p' in
     (* Format.eprintf "%a = %a -> %a@." path p path p' path p''; *)
     (p'', s)
 

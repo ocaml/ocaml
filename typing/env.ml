@@ -974,20 +974,25 @@ let lookup_cltype lid env =
 (* Iter on an environment (ignoring the body of functors and
    not yet evaluated structures) *)
 
-let iter_env proj1 proj2 f env =
+type iter_cont = unit -> unit
+let iter_env_cont = ref []
+
+let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
     (* if EnvLazy.is_val mcomps then *)
-    match EnvLazy.force !components_of_module_maker' mcomps with
-      Structure_comps comps ->
-        Tbl.iter
-          (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
-          (proj2 comps);
-        Tbl.iter
-          (fun s (c, n) ->
-            iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
-          comps.comp_components
-    | Functor_comps _ -> ()
+    let cont () =
+      match EnvLazy.force !components_of_module_maker' mcomps with
+        Structure_comps comps ->
+          Tbl.iter
+            (fun s (d, n) -> f (Pdot (path, s, n)) (Pdot (path', s, n), d))
+            (proj2 comps);
+          Tbl.iter
+            (fun s (c, n) ->
+              iter_components (Pdot (path, s, n)) (Pdot (path', s, n)) c)
+            comps.comp_components
+      | Functor_comps _ -> ()
+    in iter_env_cont := (path, cont) :: !iter_env_cont
   in
   Hashtbl.iter
     (fun s pso ->
@@ -999,6 +1004,13 @@ let iter_env proj1 proj2 f env =
   Ident.iter
     (fun id ((path, comps), _) -> iter_components (Pident id) path comps)
     env.components
+
+let run_iter_cont l =
+  iter_env_cont := [];
+  List.iter (fun c -> c ()) l;
+  let cont = List.rev !iter_env_cont in
+  iter_env_cont := [];
+  cont
 
 let iter_types f = iter_env (fun env -> env.types) (fun sc -> sc.comp_types) f
 

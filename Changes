@@ -74,6 +74,8 @@ OCaml 4.02.2:
 Compilers:
 - PR#6475: accept -o in ocamlc when compiling C files
   (Vincent Laporte, Peter Zotov)
+- PR#6600: make -short-paths faster by building the printing map
+  incrementally (Jacques Garrigue)
 
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
