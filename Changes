@@ -8,8 +8,8 @@ Language features:
   constructors (Alain Frisch)
 - allow field punning in object copying expressions: {< x; >} for {< x = x; >}
   (Jeremy Yallop)
-- PR#6714: allow [@@ocaml.warning] on most structure and signature items (values, modules,
-  module types)
+- PR#6714: allow [@@ocaml.warning] on most structure and signature items
+    (values, modules, module types)
   (Peter Zotov)
 * Custom index operators: ( .() ), ( .[] ), ( .{} ) etc.
   (user 'Octachron')
@@ -56,7 +56,10 @@ Type system:
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
 Bug fixes:
-- PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header name clashes
+- PR#4539: change exception string raised when comparing functional values
+  (Nicolas Braud-Santoni, report by Eric Cooper)
+- PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
+    name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
 - PR#6560: Wrong failure message for {Int32,Int64,NativeInt}.of_string
   (Maxime Dénès and Gabriel Scherer)
