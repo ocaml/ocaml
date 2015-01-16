@@ -116,6 +116,11 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
   return v + (unsigned long) Int32_val (offset);
 }
 
+CAMLprim value caml_obj_compare_and_swap (value v, value f, value oldv, value newv)
+{
+  return Val_int(caml_atomic_cas_field(v, Int_val(f), oldv, newv));
+}
+
 /* The following functions are used in stdlib/lazy.ml.
    They are not written in OCaml because they must be atomic with respect
    to the GC.
