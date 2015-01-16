@@ -226,7 +226,8 @@ and string = parse
   | eof
     { raise(Lexical_error("unterminated string", "", 0, 0)) }
   | '\013'* '\010' as s
-    { warning lexbuf (Printf.sprintf "unescaped newline in string") ;
+    { if !comment_depth = 0 then
+        warning lexbuf (Printf.sprintf "unescaped newline in string") ;
       store_string_chars s;
       incr_loc lexbuf 0;
       string lexbuf }
