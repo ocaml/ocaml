@@ -91,9 +91,9 @@ module Typedtree_search =
             ident_type_decl_list
       | Typedtree.Tstr_class info_list ->
           List.iter
-            (fun (ci, m, s) ->
+            (fun (ci, s) ->
               Hashtbl.add table (C (Name.from_ident ci.ci_id_class))
-                (Typedtree.Tstr_class [ci, m, s]))
+                (Typedtree.Tstr_class [ci, s]))
             info_list
       | Typedtree.Tstr_class_type info_list ->
           List.iter
@@ -150,7 +150,7 @@ module Typedtree_search =
 
     let search_class_exp table name =
       match Hashtbl.find table (C name) with
-      | (Typedtree.Tstr_class [(ci, _, _ )]) ->
+      | (Typedtree.Tstr_class [(ci, _ )]) ->
           let ce = ci.ci_expr in
           (
            try
