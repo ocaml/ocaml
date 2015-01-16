@@ -751,7 +751,7 @@ and structure_item i ppf x =
       attributes i ppf od.open_attributes
   | Tstr_class (l) ->
       line i ppf "Tstr_class\n";
-      list i class_declaration ppf (List.map (fun (cl, _,_) -> cl) l);
+      list i class_declaration ppf (List.map (fun (cl, _) -> cl) l);
   | Tstr_class_type (l) ->
       line i ppf "Tstr_class_type\n";
       list i class_type_declaration ppf (List.map (fun (_, _, cl) -> cl) l);

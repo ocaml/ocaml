@@ -67,6 +67,7 @@ Bug fixes:
 Features wishes:
 - PR#6367: introduce Asttypes.arg_label to encode labelled arguments
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
+- PR#6742: remove duplicate virtual_flag information from Tstr_class
 
 OCaml 4.02.2:
 -------------

@@ -134,8 +134,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_class list ->
           let list =
             List.map
-              (fun (ci, string_list, virtual_flag) ->
-                 map_class_declaration ci, string_list, virtual_flag)
+              (fun (ci, string_list) ->
+                 map_class_declaration ci, string_list)
               list
           in
             Tstr_class list

@@ -141,7 +141,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
         | Tstr_open _ -> ()
         | Tstr_class list ->
-            List.iter (fun (ci, _, _) -> iter_class_declaration ci) list
+            List.iter (fun (ci, _) -> iter_class_declaration ci) list
         | Tstr_class_type list ->
             List.iter
               (fun (id, _, ct) -> iter_class_type_declaration ct)

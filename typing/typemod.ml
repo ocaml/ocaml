@@ -1353,10 +1353,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         Tstr_class
-          (List.map (fun (i, _, d, _,_,_,_,_,_, s, m, c) ->
-               let vf = if d.cty_new = None then Virtual else Concrete in
-               (* (i, s, m, c, vf) *) (c, m, vf))
-              classes),
+          (List.map (fun (_,_,_,_,_,_,_,_,_,_, m, c) -> (c, m)) classes),
 (* TODO: check with Jacques why this is here
       Tstr_class_type
           (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::

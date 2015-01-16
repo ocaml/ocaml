@@ -217,7 +217,7 @@ and structure_item_desc =
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
   | Tstr_open of open_description
-  | Tstr_class of (class_declaration * string list * virtual_flag) list
+  | Tstr_class of (class_declaration * string list) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of include_declaration
   | Tstr_attribute of attribute
@@ -441,9 +441,9 @@ and extension_constructor =
   {
     ext_id: Ident.t;
     ext_name: string loc;
-    ext_type : Types.extension_constructor;
-    ext_kind : extension_constructor_kind;
-    ext_loc : Location.t;
+    ext_type: Types.extension_constructor;
+    ext_kind: extension_constructor_kind;
+    ext_loc: Location.t;
     ext_attributes: attribute list;
   }
 
@@ -466,9 +466,9 @@ and class_type_desc =
   | Tcty_arrow of arg_label * core_type * class_type
 
 and class_signature = {
-    csig_self : core_type;
-    csig_fields : class_type_field list;
-    csig_type : Types.class_signature;
+    csig_self: core_type;
+    csig_fields: class_type_field list;
+    csig_type: Types.class_signature;
   }
 
 and class_type_field = {
@@ -496,14 +496,14 @@ and class_type_declaration =
 and 'a class_infos =
   { ci_virt: virtual_flag;
     ci_params: (core_type * variance) list;
-    ci_id_name : string loc;
+    ci_id_name: string loc;
     ci_id_class: Ident.t;
-    ci_id_class_type : Ident.t;
-    ci_id_object : Ident.t;
-    ci_id_typesharp : Ident.t;
+    ci_id_class_type: Ident.t;
+    ci_id_object: Ident.t;
+    ci_id_typesharp: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
-    ci_type_decl : Types.class_type_declaration;
+    ci_type_decl: Types.class_type_declaration;
     ci_loc: Location.t;
     ci_attributes: attribute list;
    }

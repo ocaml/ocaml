@@ -76,7 +76,7 @@ and untype_structure_item item =
     | Tstr_class list ->
         Pstr_class
           (List.map
-             (fun (ci, _, _) -> untype_class_declaration ci)
+             (fun (ci, _) -> untype_class_declaration ci)
              list)
     | Tstr_class_type list ->
         Pstr_class_type
