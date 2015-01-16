@@ -13,12 +13,12 @@
 open Compenv
 
 (* Initialize the search path.
-   The current directory is always searched first,
+   [dir] is always searched first (default: the current directory),
    then the directories specified with the -I option (in command-line order),
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path native =
+let init_path ?(dir="") native =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else if !Clflags.use_vmthreads && not native then
@@ -30,7 +30,7 @@ let init_path native =
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
-  Config.load_path := "" ::
+  Config.load_path := dir ::
       List.rev_append exp_dirs (Clflags.std_include_dir ());
   Env.reset_cache ()
 
