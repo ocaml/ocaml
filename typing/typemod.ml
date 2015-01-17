@@ -358,10 +358,9 @@ and approx_sig env ssg =
           let rem = approx_sig env srem in
           map_rec' (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
       | Psig_module pmd ->
+          let id = Ident.create pmd.pmd_name.txt in
           let md = approx_module_declaration env pmd in
-          let (id, newenv) =
-            Env.enter_module_declaration pmd.pmd_name.txt md env
-          in
+          let newenv = Env.enter_module_declaration id md env in
           Sig_module(id, md, Trec_not) :: approx_sig newenv srem
       | Psig_recmodule sdecls ->
           let decls =
@@ -611,6 +610,7 @@ and transl_signature env sg =
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
+            let id = Ident.create pmd.pmd_name.txt in
             let tmty =
               Typetexp.with_warning_attribute pmd.pmd_attributes (fun () ->
                 transl_modtype env pmd.pmd_type)
@@ -621,8 +621,7 @@ and transl_signature env sg =
               md_loc=pmd.pmd_loc;
             }
             in
-            let (id, newenv) =
-              Env.enter_module_declaration pmd.pmd_name.txt md env in
+            let newenv = Env.enter_module_declaration id md env in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_type=tmty;
                                 md_loc=pmd.pmd_loc;
@@ -1254,6 +1253,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    pmb_loc;
                   } ->
         check_name check_module names name;
+        let id = Ident.create name.txt in (* create early for PR#6752 *)
         let modl =
           Typetexp.with_warning_attribute attrs (fun () ->
             type_module ~alias:true true funct_body
@@ -1265,7 +1265,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             md_loc = pmb_loc;
           }
         in
-        let (id, newenv) = Env.enter_module_declaration name.txt md env in
+        let newenv = Env.enter_module_declaration id md env in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_attributes=attrs;  mb_loc=pmb_loc;
                     },

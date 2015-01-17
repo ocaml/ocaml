@@ -1528,9 +1528,8 @@ let enter store_fun name data env =
 let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
-and enter_module_declaration ?arg name md env =
-  let id = Ident.create name in
-  (id, add_module_declaration ?arg id md env)
+and enter_module_declaration ?arg id md env =
+  add_module_declaration ?arg id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
@@ -1538,7 +1537,8 @@ and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
 let enter_module ?arg s mty env =
-  enter_module_declaration ?arg s (md mty) env
+  let id = Ident.create s in
+  (id, enter_module_declaration ?arg id (md mty) env)
 
 (* Insertion of all components of a signature *)
 

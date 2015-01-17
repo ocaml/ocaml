@@ -72,6 +72,7 @@ Bug fixes:
 - PR#6650: Cty_constr not handled correctly by Subst
 - PR#6651: Failing component lookup
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
+- PR#6752: Extensible variant types and scope escaping
 
 Features wishes:
 - PR#6367: introduce Asttypes.arg_label to encode labelled arguments
