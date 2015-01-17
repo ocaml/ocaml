@@ -2321,6 +2321,18 @@ let unify_eq env t1 t2 =
       try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
       with Not_found -> false
 
+let unify1_var env t1 t2 =
+  assert (is_Tvar t1);
+  occur env t1 t2;
+  occur_univar env t2;
+  let d1 = t1.desc in
+  link_type t1 t2;
+  try
+    update_level env t1.level t2
+  with Unify _ as e ->
+    t1.desc <- d1;
+    raise e
+
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
@@ -2337,15 +2349,9 @@ let rec unify (env:Env.t ref) t1 t2 =
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar _, _) ->
-        occur !env t1 t2;
-        occur_univar !env t2;
-        link_type t1 t2;
-        update_level !env t1.level t2
+        unify1_var !env t1 t2
     | (_, Tvar _) ->
-        occur !env t2 t1;
-        occur_univar !env t1;
-        link_type t2 t1;
-        update_level !env t2.level t1
+        unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;

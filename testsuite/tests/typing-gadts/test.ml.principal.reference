@@ -51,7 +51,7 @@ module Nonexhaustive :
       let eval (D x) = x
                        ^
 Error: This expression has type a#2 t but an expression was expected of type
-         a#2 t
+         'a
        The type constructor a#2 would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
@@ -83,21 +83,21 @@ Error: This pattern matches values of type b
     function Int -> ky (1 : a) 1  (* fails *)
                     ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #         Characters 70-82:
     let r = match x with Int -> ky (1 : a) 1  (* fails *)
                                 ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       Characters 69-81:
     let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                 ^^^^^^^^^^^^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       val test : 'a t -> int = <fun>
@@ -121,7 +121,7 @@ Error: This expression has type int option
     match v with Int -> let y = either 1 x in y
                                               ^
 Error: This expression has type a = int
-       but an expression was expected of type a = int
+       but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #             val f : 'a t -> 'a -> 'a = <fun>
@@ -299,7 +299,7 @@ Error: This expression has type t = < foo : int; .. >
 #         Characters 98-99:
     (x:<foo:int;bar:int;..>)
      ^
-Error: This expression has type < bar : int; foo : int; .. > as 'a
+Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
        The type constructor ex#22 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>

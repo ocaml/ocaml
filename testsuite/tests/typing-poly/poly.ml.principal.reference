@@ -663,4 +663,9 @@ Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
                                                  ^^^^^^^^^^^^^^^^^^^^^
 Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
        which is less general than 'x. 'a -> 'x
-#   
+#         Characters 95-98:
+    if b then x else M.A;;
+                     ^^^
+Error: This expression has type M.t but an expression was expected of type 'x
+       The type constructor M.t would escape its scope
+# 

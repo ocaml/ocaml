@@ -683,3 +683,7 @@ let (n : < m : 'a. [< `Foo of int] -> 'a >) =
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 
+(* PR#6171 *)
+let f b (x: 'x) = 
+  let module M = struct type t = A end in
+  if b then x else M.A;;

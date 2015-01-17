@@ -621,4 +621,9 @@ Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
        The universal variable 'x would escape its scope
-#   
+#         Characters 95-98:
+    if b then x else M.A;;
+                     ^^^
+Error: This expression has type M.t but an expression was expected of type 'x
+       The type constructor M.t would escape its scope
+# 
