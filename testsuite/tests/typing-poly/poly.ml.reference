@@ -605,4 +605,20 @@ Error: In the definition of t, type 'y t should be 'x t
 #                   val using_match : bool -> int * ('a -> 'a) = <fun>
 #   - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 # - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
-# 
+#           val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
+#     val n : < m : 'x. [< `Foo of 'x ] -> 'x > = <obj>
+#     Characters 60-130:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
+       but an expression was expected of type
+         < m : 'a. [< `Foo of int ] -> 'a >
+       The universal variable 'x would escape its scope
+#     Characters 83-153:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
+       but an expression was expected of type
+         < m : 'a. [< `Foo of int ] -> 'a >
+       The universal variable 'x would escape its scope
+#   

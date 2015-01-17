@@ -2744,6 +2744,19 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
       let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      (* PR#6744 *)
+      let split_univars =
+        List.partition
+          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
+      let (tl1',tlu1) = split_univars tl1'
+      and (tl2',tlu2) = split_univars tl2' in
+      begin match tlu1, tlu2 with
+        [], [] -> ()
+      | (tu1::tlu1), (tu2::_) ->
+          (* Attempt to merge all the types containing univars *)
+          List.iter (unify env tu1) (tlu1@tlu2)
+      | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
+      end;
       (* Is this handling of levels really principal? *)
       List.iter (update_level !env (repr more).level) (tl1' @ tl2');
       let e = ref None in

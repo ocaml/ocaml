@@ -647,4 +647,20 @@ Error: In the definition of t, type 'y t should be 'x t
 #                   val using_match : bool -> int * ('a -> 'a) = <fun>
 #   - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
 # - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)
-# 
+#           val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
+#     Characters 90-111:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+                                                 ^^^^^^^^^^^^^^^^^^^^^
+Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
+       which is less general than 'x. 'a -> 'x
+#     Characters 105-126:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+                                                 ^^^^^^^^^^^^^^^^^^^^^
+Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
+       which is less general than 'x. 'a -> 'x
+#     Characters 128-149:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+                                                 ^^^^^^^^^^^^^^^^^^^^^
+Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
+       which is less general than 'x. 'a -> 'x
+#   
