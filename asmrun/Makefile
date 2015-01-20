@@ -199,8 +199,8 @@ clean::
 	rm -f *.o *.a *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
-	-gcc -MM $(FLAGS) *.c > .depend
-	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
+	$(CC) -MM $(FLAGS) *.c > .depend
+	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	$(CC) -MM $(FLAGS) *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend

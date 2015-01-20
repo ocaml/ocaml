@@ -75,6 +75,7 @@ Bug fixes:
 - PR#6752: Extensible variant types and scope escaping
 
 Features wishes:
+- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#6367: introduce Asttypes.arg_label to encode labelled arguments
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
