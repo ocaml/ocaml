@@ -620,7 +620,34 @@ let really_import_approx approx =
   { approx with descr = Import.really_import approx.descr }
 
 (* The main functions: iterate on the expression rewriting it and
-   propagating up an approximation of the value *)
+   propagating up an approximation of the value.
+
+   The naming conventions is:
+   * [env] is the top down environment
+   * [r] is the bottom up informations (used variables, expression
+     approximation, ...)
+
+   In general the pattern is to do a subset of these steps:
+   * recursive call of loop on the arguments with the original
+     environment:
+       [let new_arg, r = loop env r arg]
+   * generate fresh new identifiers (if env.substitute is true) and
+     add the substitution to the environment:
+       [let new_id, env = new_subst_id id env]
+   * associate in the environment the approximation of values to
+     identifiers:
+       [let env = add_approx id r.approx env]
+   * recursive call of loop on the body of the expression, using
+     the new environment
+   * mark used variables:
+       [let r = use_var r id]
+   * remove variable related bottom up informations:
+       [let r = exit_scope r id in]
+   * rebuild the expression according to the informations about
+     its content.
+   * associate its description to the returned value:
+       [ret r approx]
+ *)
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
