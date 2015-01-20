@@ -256,7 +256,7 @@ let subst_toplevel sb lam =
   in
   Flambdaiter.map_toplevel f lam
 
-let make_function id lam params =
+let make_closure_declaration id lam params =
   let free_variables = Flambdaiter.free_variables lam in
   let param_set = VarSet.of_list params in
 
@@ -625,9 +625,6 @@ let really_import_approx approx =
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
-
-and loop_substitute env r tree =
-  loop { env with substitute = true } r tree
 
 and loop_direct (env:env) r tree : 'a flambda * ret =
   match tree with
@@ -1145,7 +1142,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let expr = Fapply ({ ap_function = Fvar(funct_id, ExprId.create ());
                        ap_arg = call_args;
                        ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
-  let fclosure = make_function new_fun_id expr remaining_args in
+  let fclosure = make_closure_declaration new_fun_id expr remaining_args in
   let offset = Ffunction ({fu_closure = fclosure;
                            fu_fun = Closure_function.wrap new_fun_id;
                            fu_relative_to = None}, ExprId.create ()) in
@@ -1287,7 +1284,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
       expr args in
   let expr = Flet(Not_assigned, clos_id, funct, expr, ExprId.create ()) in
   let r = List.fold_left (fun r (id,_) -> exit_scope r id) r args in
-  loop_substitute env r expr
+  loop { env with substitute = true } r expr
 
 (* Duplicates the body of the called function *)
 and inline env r clos lfunc fun_id func args dbg eid =
@@ -1320,7 +1317,8 @@ and inline env r clos lfunc fun_id func args dbg eid =
              body, ExprId.create ()))
       clos.funs
   in
-  loop_substitute env r (Flet(Not_assigned, clos_id, lfunc, body, ExprId.create ()))
+  loop { env with substitute = true } r
+       (Flet(Not_assigned, clos_id, lfunc, body, ExprId.create ()))
 
 let simplify tree =
   let env = empty_env () in
