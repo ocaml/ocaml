@@ -737,24 +737,38 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       check_var_and_constant_result env r expr approx
 
   | Flet(str, id, lam, body, annot) ->
+      (* The different cases for rewriting Flet are, if the original code
+         corresponds to [let id = lam in body]
+         * [body] with id substituted by lam when possible (unused or constant)
+         * [lam; body] when id is not used but lam is effectfull
+         * [let id = lam in body] otherwise
+       *)
       let init_used_var = r.used_variables in
       let lam, r = loop env r lam in
       let id, env = new_subst_id id env in
       let def_used_var = r.used_variables in
       let body_env = match str with
-        | Assigned -> { env with env_approx = VarMap.add id value_unknown env.env_approx }
-        | _ -> add_approx id r.approx env in
+        | Assigned ->
+           (* if the variable is mutable, we don't propagate anything about it *)
+           { env with env_approx = VarMap.add id value_unknown env.env_approx }
+        | Not_assigned ->
+           add_approx id r.approx env in
+      (* To distinguish variables used by the body and the declaration,
+         body is rewritten without the set of used variables from
+         the declaration. *)
       let r_body = { r with used_variables = init_used_var } in
       let body, r = loop body_env r_body body in
       let expr, r =
         if VarSet.mem id r.used_variables
         then
           Flet (str, id, lam, body, annot),
+          (* if lam is kept, adds its used variables *)
           { r with used_variables =
                      VarSet.union def_used_var r.used_variables }
         else if no_effects lam
         then body, r
         else Fsequence(lam, body, annot),
+             (* if lam is kept, adds its used variables *)
              { r with used_variables =
                         VarSet.union def_used_var r.used_variables } in
       expr, exit_scope r id
