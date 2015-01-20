@@ -656,11 +656,11 @@ let rec loop env r tree =
 and loop_direct (env:env) r tree : 'a flambda * ret =
   match tree with
   | Fsymbol (sym,annot) ->
-      let id' = try Some (SymbolMap.find sym env.sb.sb_sym) with Not_found -> None in
-      begin match id' with
-      | Some id' -> loop_direct env r (Fvar(id',annot))
-      | None -> check_constant_result r tree (Import.import_symbol sym)
-      end
+     begin
+       match SymbolMap.find sym env.sb.sb_sym with
+       | id' -> loop_direct env r (Fvar(id',annot))
+       | exception Not_found -> check_constant_result r tree (Import.import_symbol sym)
+     end
   | Fvar (id,annot) ->
       let id, tree =
         try
