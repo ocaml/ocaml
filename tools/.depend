@@ -59,10 +59,10 @@ ocamldep.cmx : ../driver/pparse.cmx ../parsing/parsetree.cmi \
     ../parsing/parse.cmx ../utils/misc.cmx ../parsing/longident.cmx \
     ../parsing/location.cmx depend.cmx ../utils/config.cmx \
     ../driver/compenv.cmx ../utils/clflags.cmx
-ocamlmklib.cmo : ocamlmklibconfig.cmo
-ocamlmklib.cmx : ocamlmklibconfig.cmx
 ocamlmklibconfig.cmo :
 ocamlmklibconfig.cmx :
+ocamlmklib.cmo : ocamlmklibconfig.cmo
+ocamlmklib.cmx : ocamlmklibconfig.cmx
 ocamlmktop.cmo : ../utils/ccomp.cmi
 ocamlmktop.cmx : ../utils/ccomp.cmx
 ocamloptp.cmo : ../driver/main_args.cmi

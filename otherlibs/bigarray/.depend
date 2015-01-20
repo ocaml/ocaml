@@ -1,21 +1,21 @@
 bigarray_stubs.o: bigarray_stubs.c ../../byterun/alloc.h \
-  ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/mlvalues.h bigarray.h \
-  ../../byterun/config.h ../../byterun/mlvalues.h ../../byterun/custom.h \
-  ../../byterun/fail.h ../../byterun/intext.h ../../byterun/io.h \
-  ../../byterun/hash.h ../../byterun/memory.h ../../byterun/gc.h \
-  ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
+ ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
+ ../../byterun/../config/s.h ../../byterun/mlvalues.h bigarray.h \
+ ../../byterun/config.h ../../byterun/mlvalues.h ../../byterun/custom.h \
+ ../../byterun/fail.h ../../byterun/intext.h ../../byterun/io.h \
+ ../../byterun/hash.h ../../byterun/memory.h ../../byterun/gc.h \
+ ../../byterun/major_gc.h ../../byterun/freelist.h \
+ ../../byterun/minor_gc.h
 mmap_unix.o: mmap_unix.c bigarray.h ../../byterun/config.h \
-  ../../byterun/../config/m.h ../../byterun/../config/s.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../byterun/misc.h \
-  ../../byterun/custom.h ../../byterun/mlvalues.h ../../byterun/fail.h \
-  ../../byterun/io.h ../../byterun/sys.h ../../byterun/signals.h
+ ../../byterun/../config/m.h ../../byterun/../config/s.h \
+ ../../byterun/mlvalues.h ../../byterun/config.h ../../byterun/misc.h \
+ ../../byterun/custom.h ../../byterun/mlvalues.h ../../byterun/fail.h \
+ ../../byterun/io.h ../../byterun/sys.h ../../byterun/signals.h
 mmap_win32.o: mmap_win32.c bigarray.h ../../byterun/config.h \
-  ../../byterun/../config/m.h ../../byterun/../config/s.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../byterun/misc.h \
-  ../../byterun/alloc.h ../../byterun/mlvalues.h ../../byterun/custom.h \
-  ../../byterun/fail.h ../../byterun/sys.h ../unix/unixsupport.h
+ ../../byterun/../config/m.h ../../byterun/../config/s.h \
+ ../../byterun/mlvalues.h ../../byterun/config.h ../../byterun/misc.h \
+ ../../byterun/alloc.h ../../byterun/mlvalues.h ../../byterun/custom.h \
+ ../../byterun/fail.h ../../byterun/sys.h ../unix/unixsupport.h
 bigarray.cmi :
 bigarray.cmo : bigarray.cmi
 bigarray.cmx : bigarray.cmi
