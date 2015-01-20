@@ -647,6 +647,9 @@ let really_import_approx approx =
      its content.
    * associate its description to the returned value:
        [ret r approx]
+   * replace the returned expression by a contant or a direct variable
+     acces (when possible):
+       [check_var_and_constant_result env r expr approx]
  *)
 
 let rec loop env r tree =
@@ -686,6 +689,13 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       ffunction r flam fu_fun rel annot
 
   | Fvariable_in_closure (fenv_field, annot) as expr ->
+      (* If the function from which those variables are extracted
+         has been modified, we must rename the field access accordingly.
+         The renaming information comes from the approximation of the
+         argument. This means that we must have the informations about
+         the closure (fenv_field.vc_closure) otherwise we could miss
+         some renamings and generate wrong code. *)
+
       let fun_off_id off closure =
         try ClosureFunctionMap.find off closure.fun_subst_renaming
         with Not_found -> off in
@@ -697,6 +707,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let closure, approx_fun_id = match r.approx.descr with
         | Value_closure { closure; fun_id } -> closure, fun_id
         | Value_unknown ->
+            (* We must have the correct approximation of the value
+               to avoid missing a substitution. *)
             Format.printf "Value unknown: %a@.%a@.%a@."
               Printflambda.flambda expr
               Printflambda.flambda arg
