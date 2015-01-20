@@ -87,6 +87,17 @@ let rec some_if_all_elements_are_some = function
         | None -> None
         | Some h' -> Some (h' :: t')
 
+let split_at n l =
+  let rec aux n acc l =
+    if n = 0
+    then List.rev acc, l
+    else
+      match l with
+      | [] -> raise (Invalid_argument "split_at")
+      | t::q ->
+          aux (n-1) (t::acc) q in
+  aux n [] l
+
 let uniq_sort compare l =
   let l = List.sort compare l in
   let rec aux = function

@@ -619,17 +619,6 @@ let sequence l1 l2 annot =
 let really_import_approx approx =
   { approx with descr = Import.really_import approx.descr }
 
-let split_list n l =
-  let rec aux n acc l =
-    if n = 0
-    then List.rev acc, l
-    else
-      match l with
-      | [] -> assert false
-      | t::q ->
-          aux (n-1) (t::acc) q in
-  aux n [] l
-
 (* The main functions: iterate on the expression rewriting it and
    propagating up an approximation of the value *)
 
@@ -1121,8 +1110,8 @@ and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
       else
       if nargs > arity
       then
-        let h_args, q_args = split_list arity args in
-        let h_approxs, q_approxs = split_list arity approxs in
+        let h_args, q_args = Misc.split_at arity args in
+        let h_approxs, q_approxs = Misc.split_at arity approxs in
         let expr, r = direct_apply env r ~local clos funct fun_id func fapprox closure (h_args,h_approxs)
             dbg (ExprId.create ()) in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
