@@ -149,12 +149,12 @@ let subst_var env id =
   try VarMap.find id env.sb.sb_var with
   | Not_found -> id
 
-type offset_subst =
-  { os_fv : variable_within_closure ClosureVariableMap.t;
-    os_fun : function_within_closure ClosureFunctionMap.t }
+type ffunction_subst =
+  { ffs_fv : variable_within_closure ClosureVariableMap.t;
+    ffs_fun : function_within_closure ClosureFunctionMap.t }
 
-let empty_offset_subst =
-  { os_fv = ClosureVariableMap.empty; os_fun = ClosureFunctionMap.empty }
+let empty_ffunction_subst =
+  { ffs_fv = ClosureVariableMap.empty; ffs_fun = ClosureFunctionMap.empty }
 
 let new_subst_off id env off_sb =
   if env.substitute
@@ -178,13 +178,13 @@ let new_subst_off' id env off_sb =
     id', env, off_sb
   else id, env, off_sb
 
-let new_subst_fv_off id env off_sb =
-  let id, env, os_fv = new_subst_off id env off_sb.os_fv in
-  id, env, { off_sb with os_fv }
+let new_subst_fv id env ffunction_sb =
+  let id, env, ffs_fv = new_subst_off id env ffunction_sb.ffs_fv in
+  id, env, { ffunction_sb with ffs_fv }
 
-let new_subst_fun_off id env off_sb =
-  let id, env, os_fun = new_subst_off' id env off_sb.os_fun in
-  id, env, { off_sb with os_fun }
+let new_subst_fun id env ffunction_sb =
+  let id, env, ffs_fun = new_subst_off' id env ffunction_sb.ffs_fun in
+  id, env, { ffunction_sb with ffs_fun }
 
 (* approximation utility functions *)
 
@@ -680,10 +680,10 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fclosure (cl, annot) ->
       closure env r cl annot
   | Ffunction ({fu_closure = flam;
-                fu_fun = off;
+                fu_fun;
                 fu_relative_to = rel}, annot) ->
       let flam, r = loop env r flam in
-      offset r flam off rel annot
+      ffunction r flam fu_fun rel annot
 
   | Fvariable_in_closure (fenv_field, annot) as expr ->
       let fun_off_id off closure =
@@ -941,9 +941,9 @@ and loop_list env r l = match l with
 
 and subst_free_vars fv env =
   VarMap.fold (fun id lam (fv, env, off_sb) ->
-      let id, env, off_sb = new_subst_fv_off id env off_sb in
+      let id, env, off_sb = new_subst_fv id env off_sb in
       VarMap.add id lam fv, env, off_sb)
-    fv (VarMap.empty, env, empty_offset_subst)
+    fv (VarMap.empty, env, empty_ffunction_subst)
 
 and ffuns_subst env ffuns off_sb =
   if env.substitute
@@ -968,7 +968,7 @@ and ffuns_subst env ffuns off_sb =
     in
     let env, off_sb =
       VarMap.fold (fun orig_id ffun (env, off_sb) ->
-          let _id, env, off_sb = new_subst_fun_off orig_id env off_sb in
+          let _id, env, off_sb = new_subst_fun orig_id env off_sb in
           env, off_sb)
         ffuns.funs (env,off_sb) in
     let funs, env =
@@ -1004,8 +1004,8 @@ and closure env r cl annot =
       let sym = Compilenv.closure_symbol cf in
       SymbolMap.add sym id map) ffuns.funs SymbolMap.empty in
 
-  let fv, env, off_sb = subst_free_vars fv env in
-  let ffuns, env, off_sb = ffuns_subst env ffuns off_sb in
+  let fv, env, ffunction_sb = subst_free_vars fv env in
+  let ffuns, env, ffunction_sb = ffuns_subst env ffuns ffunction_sb in
 
   let spec_args = VarMap.map_keys (subst_var env) spec_args in
   let approxs = VarMap.map_keys (subst_var env) approxs in
@@ -1020,8 +1020,8 @@ and closure env r cl annot =
           ClosureVariableMap.add (Closure_variable.wrap id) desc map)
           fv ClosureVariableMap.empty;
       kept_params = VarSet.empty;
-      fv_subst_renaming = off_sb.os_fv;
-      fun_subst_renaming = off_sb.os_fun } in
+      fv_subst_renaming = ffunction_sb.ffs_fv;
+      fun_subst_renaming = ffunction_sb.ffs_fun } in
   let closure_env = VarMap.fold
       (fun id _ env -> add_approx id
           (value_closure { fun_id = (Closure_function.wrap id);
@@ -1087,7 +1087,7 @@ and closure env r cl annot =
              cl_specialised_arg = spec_args}, annot),
   ret r (value_unoffseted_closure closure)
 
-and offset r flam off rel annot =
+and ffunction r flam off rel annot =
   let off_id closure off =
     try ClosureFunctionMap.find off closure.fun_subst_renaming
     with Not_found -> off in
