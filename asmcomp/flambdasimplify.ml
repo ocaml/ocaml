@@ -149,6 +149,23 @@ let subst_var env id =
   try VarMap.find id env.sb.sb_var with
   | Not_found -> id
 
+(* Tables used for identifiers substitution in
+   Ffunction and Fvariable_in_closure constructions.
+   Those informations are propagated bottom up. This is
+   populated when inlining a function containing a closure
+   declaration.
+
+   For instance,
+     [let f x =
+        let g y = ... x ... in
+        ... g.x ...           (Fvariable_in_closure x)
+        ... g 1 ...           (FApply (Ffunction g ...))
+        ]
+   if f is inlined g is renamed. The approximation of g will
+   cary this table such that later the access to the field x
+   of g and selection of g in the closure can be substituted.
+ *)
+
 type ffunction_subst =
   { ffs_fv : variable_within_closure ClosureVariableMap.t;
     ffs_fun : function_within_closure ClosureFunctionMap.t }
@@ -185,6 +202,62 @@ let new_subst_fv id env ffunction_sb =
 let new_subst_fun id env ffunction_sb =
   let id, env, ffs_fun = new_subst_off' id env ffunction_sb.ffs_fun in
   id, env, { ffunction_sb with ffs_fun }
+
+(** Returns :
+    * The map of new_identifiers -> expression
+    * The new environment with added substitution
+    * a fresh ffunction_subst with only the substitution of free variables
+ *)
+let subst_free_vars fv env =
+  VarMap.fold (fun id lam (fv, env, off_sb) ->
+      let id, env, off_sb = new_subst_fv id env off_sb in
+      VarMap.add id lam fv, env, off_sb)
+    fv (VarMap.empty, env, empty_ffunction_subst)
+
+(** Returns :
+    * The function_declaration with renamed function identifiers
+    * The new environment with added substitution
+    * The ffunction_subst completed with function substitution
+
+    subst_free_vars must have been used to build off_sb
+ *)
+let ffuns_subst env ffuns off_sb =
+  if env.substitute
+  then
+    let subst_ffunction fun_id ffun env =
+
+      let params, env = new_subst_ids' ffun.params env in
+
+      let free_variables =
+        VarSet.fold (fun id set -> VarSet.add (find_subst' id env) set)
+          ffun.free_variables VarSet.empty in
+
+      (* It is not a problem to share the substitution of parameter
+         names between function: There should be no clash *)
+      { ffun with
+        free_variables;
+        params;
+        (* keep code in sync with the closure *)
+        body = Flambdaiter.toplevel_substitution env.sb.sb_var ffun.body;
+      }, env
+    in
+    let env, off_sb =
+      VarMap.fold (fun orig_id ffun (env, off_sb) ->
+          let _id, env, off_sb = new_subst_fun orig_id env off_sb in
+          env, off_sb)
+        ffuns.funs (env,off_sb) in
+    let funs, env =
+      VarMap.fold (fun orig_id ffun (funs, env) ->
+          let ffun, env = subst_ffunction orig_id ffun env in
+          let id = find_subst' orig_id env in
+          let funs = VarMap.add id ffun funs in
+          funs, env)
+        ffuns.funs (VarMap.empty,env) in
+    { ident = FunId.create (Compilenv.current_unit ());
+      compilation_unit = Compilenv.current_unit ();
+      funs }, env, off_sb
+
+  else ffuns, env,off_sb
 
 (* approximation utility functions *)
 
@@ -987,51 +1060,6 @@ and loop_list env r l = match l with
       if t' == t && h' == h
       then l, approxs, r
       else h' :: t', approxs, r
-
-and subst_free_vars fv env =
-  VarMap.fold (fun id lam (fv, env, off_sb) ->
-      let id, env, off_sb = new_subst_fv id env off_sb in
-      VarMap.add id lam fv, env, off_sb)
-    fv (VarMap.empty, env, empty_ffunction_subst)
-
-and ffuns_subst env ffuns off_sb =
-  if env.substitute
-  then
-    (* only the structure of ffunction, the body is substituted later *)
-    let subst_ffunction fun_id ffun env =
-
-      let params, env = new_subst_ids' ffun.params env in
-
-      let free_variables =
-        VarSet.fold (fun id set -> VarSet.add (find_subst' id env) set)
-          ffun.free_variables VarSet.empty in
-
-      (* It is not a problem to share the substitution of parameter
-         names between function: There should be no clash *)
-      { ffun with
-        free_variables;
-        params;
-        (* keep code in sync with the closure *)
-        body = Flambdaiter.toplevel_substitution env.sb.sb_var ffun.body;
-      }, env
-    in
-    let env, off_sb =
-      VarMap.fold (fun orig_id ffun (env, off_sb) ->
-          let _id, env, off_sb = new_subst_fun orig_id env off_sb in
-          env, off_sb)
-        ffuns.funs (env,off_sb) in
-    let funs, env =
-      VarMap.fold (fun orig_id ffun (funs, env) ->
-          let ffun, env = subst_ffunction orig_id ffun env in
-          let id = find_subst' orig_id env in
-          let funs = VarMap.add id ffun funs in
-          funs, env)
-        ffuns.funs (VarMap.empty,env) in
-    { ident = FunId.create (Compilenv.current_unit ());
-      compilation_unit = Compilenv.current_unit ();
-      funs }, env, off_sb
-
-  else ffuns, env,off_sb
 
 and closure env r cl annot =
   let ffuns = cl.cl_fun in
