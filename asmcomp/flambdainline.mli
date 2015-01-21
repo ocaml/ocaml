@@ -13,15 +13,14 @@
 open Flambda
 open Abstract_identifiers
 
-(** Lift [let] bindings to attempt to increase the length of scopes, as an
-    aid to further optimizations.  For example:
-      let c = let b = <expr> in b, b in fst c
-    would be transformed to:
-      let b = <expr> in let c = b, b in fst c
-    which is then clearly just:
-      <expr>
-*)
-val lift_lets : Expr_id.t flambda -> Expr_id.t flambda
+val inline : Expr_id.t flambda -> Expr_id.t flambda
+(** The primary purpose of this function is to perform inlining, including
+    the duplication of recursive functions for specialization.
 
-(** Eliminate variables bound by a given closure that are not required. *)
-val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
+    Along the way, some other optimizations and analyses are performed:
+    - direct calls are identified
+    - explicit closures are built for partial direct applications
+    - unused static catch handlers are eliminated
+    - some constants are propagated
+    - some dead code is eliminated.
+*)
