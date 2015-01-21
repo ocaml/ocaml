@@ -115,6 +115,7 @@ ASMCOMP=\
   asmcomp/flambdaapprox.cmo \
   asmcomp/flambdacost.cmo \
   asmcomp/flambdasimplify.cmo \
+  asmcomp/flambdasubst.cmo \
   asmcomp/flambdainline.cmo \
   asmcomp/flambda_ref_to_variables.cmo \
   asmcomp/flambdasym.cmo \

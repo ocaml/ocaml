@@ -26,42 +26,26 @@ let new_var name =
    - propagating following approximatively the evaluation order ~ bottom-up:
      in the ret type *)
 
-type sb = { sb_var : Variable.t Variable.Map.t;
-            sb_sym : Variable.t SymbolMap.t;
-            sb_exn : Static_exception.t Static_exception.Map.t;
-            back_var : Variable.t list Variable.Map.t;
-            back_sym : Symbol.t list Variable.Map.t;
-            (* Used to handle substitution sequence: we cannot call
-               the substitution recursively because there can be name
-               clash *)
-          }
-
-type env =
-  { env_approx : approx Variable.Map.t;
-    global : (int, approx) Hashtbl.t;
-    current_functions : Set_of_closures_id.Set.t;
-    (* The functions currently being declared: used to avoid inlining
-       recursively *)
-    inlining_level : int;
-    (* Number of times "inline" has been called recursively *)
-    sb : sb;
-    substitute : bool;
-    inline_threshold : int;
-    closure_depth : int;
-  }
-
-let empty_sb = { sb_var = Variable.Map.empty;
-                 sb_sym = SymbolMap.empty;
-                 sb_exn = Static_exception.Map.empty;
-                 back_var = Variable.Map.empty;
-                 back_sym = Variable.Map.empty }
+type env = {
+  env_approx : approx Variable.Map.t;
+  global : (int, approx) Hashtbl.t;
+  current_functions : Set_of_closures_id.Set.t;
+  (* The functions currently being declared: used to avoid inlining
+     recursively *)
+  inlining_level : int;
+  (* Number of times "inline" has been called recursively *)
+  sb : Flambdasubst.t;
+  substitute : bool;
+  inline_threshold : int;
+  closure_depth : int;
+}
 
 let empty_env () =
   { env_approx = Variable.Map.empty;
     global = Hashtbl.create 10;
     current_functions = Set_of_closures_id.Set.empty;
     inlining_level = 0;
-    sb = empty_sb;
+    sb = Flambdasubst.empty;
     substitute = false;
     inline_threshold = min !Clflags.inline_threshold 100;
     closure_depth = 0}
@@ -69,7 +53,7 @@ let empty_env () =
 let local_env env =
   { env with
     env_approx = Variable.Map.empty;
-    sb = empty_sb }
+    sb = Flambdasubst.empty }
 
 type ret =
   { approx : approx;
@@ -78,189 +62,15 @@ type ret =
     used_staticfail : Static_exception.Set.t;
   }
 
-(* Utility functions *)
+(* Substitution utility functions *)
 
-(* substitution utility functions *)
-
-let add_sb_sym' sym id' sb =
-  let back_sym =
-    let l = try Variable.Map.find id' sb.back_sym with Not_found -> [] in
-    Variable.Map.add id' (sym :: l) sb.back_sym in
-  { sb with sb_sym = SymbolMap.add sym id' sb.sb_sym;
-            back_sym }
-
-let rec add_sb_var' id id' sb =
-  let sb = { sb with sb_var = Variable.Map.add id id' sb.sb_var } in
-  let sb =
-    try let pre_vars = Variable.Map.find id sb.back_var in
-      List.fold_left (fun sb pre_id -> add_sb_var' pre_id id' sb) sb pre_vars
-    with Not_found -> sb in
-  let sb =
-    try let pre_sym = Variable.Map.find id sb.back_sym in
-      List.fold_left (fun sb pre_sym -> add_sb_sym' pre_sym id' sb) sb pre_sym
-    with Not_found -> sb in
-  let back_var =
-    let l = try Variable.Map.find id' sb.back_var with Not_found -> [] in
-    Variable.Map.add id' (id :: l) sb.back_var in
-  { sb with back_var }
-
-
-let add_sb_var id id' env = { env with sb = add_sb_var' id id' env.sb }
-let add_sb_sym sym id' env = {env with sb = add_sb_sym' sym id' env.sb }
+let add_sb_var id id' env =
+  { env with sb = Flambdasubst.add_sb_var env.sb id id' }
+let add_sb_sym sym id' env =
+  { env with sb = Flambdasubst.add_sb_sym env.sb sym id' }
 let add_sb_exn i i' env =
-  { env with
-    sb = { env.sb with sb_exn = Static_exception.Map.add i i' env.sb.sb_exn } }
-
-let sb_exn i env =
-  try Static_exception.Map.find i env.sb.sb_exn with Not_found -> i
-
-let new_subst_exn i env =
-  if env.substitute
-  then
-    let i' = Static_exception.create () in
-    let env = add_sb_exn i i' env in
-    i', env
-  else i, env
-
-let rename_var var =
-  Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var
-
-let new_subst_id id env =
-  if env.substitute
-  then
-    let id' = rename_var id in
-    let env = add_sb_var id id' env in
-    id', env
-  else id, env
-
-let new_subst_ids defs env =
-  List.fold_right (fun (id,lam) (defs, env) ->
-      let id', env = new_subst_id id env in
-      (id',lam) :: defs, env) defs ([],env)
-
-let new_subst_ids' ids env =
-  List.fold_right (fun id (ids,env) ->
-      let id', env = new_subst_id id env in
-      id' :: ids, env) ids ([],env)
-
-let find_subst' id env =
-  try Variable.Map.find id env.sb.sb_var with
-  | Not_found ->
-      Misc.fatal_error (Format.asprintf "find_subst': can't find %a@." Variable.print id)
-
-let subst_var env id =
-  try Variable.Map.find id env.sb.sb_var with
-  | Not_found -> id
-
-(* Tables used for identifiers substitution in
-   Fclosure and Fvariable_in_closure constructions.
-   Those informations are propagated bottom up. This is
-   populated when inlining a function containing a closure
-   declaration.
-
-   For instance,
-     [let f x =
-        let g y = ... x ... in
-        ... g.x ...           (Fvariable_in_closure x)
-        ... g 1 ...           (FApply (Fclosure g ...))
-        ]
-   if f is inlined g is renamed. The approximation of g will
-   cary this table such that later the access to the field x
-   of g and selection of g in the closure can be substituted.
- *)
-
-type ffunction_subst =
-  { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
-    ffs_fun : Closure_id.t Closure_id.Map.t }
-
-let empty_ffunction_subst =
-  { ffs_fv = Var_within_closure.Map.empty; ffs_fun = Closure_id.Map.empty }
-
-let new_subst_off id env off_sb =
-  if env.substitute
-  then
-    let id' = rename_var id in
-    let env = add_sb_var id id' env in
-    let off = Var_within_closure.wrap id in
-    let off' = Var_within_closure.wrap id' in
-    let off_sb = Var_within_closure.Map.add off off' off_sb in
-    id', env, off_sb
-  else id, env, off_sb
-
-let new_subst_off' id env off_sb =
-  if env.substitute
-  then
-    let id' = rename_var id in
-    let env = add_sb_var id id' env in
-    let off = Closure_id.wrap id in
-    let off' = Closure_id.wrap id' in
-    let off_sb = Closure_id.Map.add off off' off_sb in
-    id', env, off_sb
-  else id, env, off_sb
-
-let new_subst_fv id env ffunction_sb =
-  let id, env, ffs_fv = new_subst_off id env ffunction_sb.ffs_fv in
-  id, env, { ffunction_sb with ffs_fv }
-
-let new_subst_fun id env ffunction_sb =
-  let id, env, ffs_fun = new_subst_off' id env ffunction_sb.ffs_fun in
-  id, env, { ffunction_sb with ffs_fun }
-
-(** Returns :
-    * The map of new_identifiers -> expression
-    * The new environment with added substitution
-    * a fresh ffunction_subst with only the substitution of free variables
- *)
-let subst_free_vars fv env =
-  Variable.Map.fold (fun id lam (fv, env, off_sb) ->
-      let id, env, off_sb = new_subst_fv id env off_sb in
-      Variable.Map.add id lam fv, env, off_sb)
-    fv (Variable.Map.empty, env, empty_ffunction_subst)
-
-(** Returns :
-    * The function_declaration with renamed function identifiers
-    * The new environment with added substitution
-    * The ffunction_subst completed with function substitution
-
-    subst_free_vars must have been used to build off_sb
- *)
-let ffuns_subst env ffuns off_sb =
-  if env.substitute
-  then
-    let subst_ffunction fun_id ffun env =
-
-      let params, env = new_subst_ids' ffun.params env in
-
-      let free_variables =
-        Variable.Set.fold (fun id set -> Variable.Set.add (find_subst' id env) set)
-          ffun.free_variables Variable.Set.empty in
-
-      (* It is not a problem to share the substitution of parameter
-         names between function: There should be no clash *)
-      { ffun with
-        free_variables;
-        params;
-        (* keep code in sync with the closure *)
-        body = Flambdaiter.toplevel_substitution env.sb.sb_var ffun.body;
-      }, env
-    in
-    let env, off_sb =
-      Variable.Map.fold (fun orig_id ffun (env, off_sb) ->
-          let _id, env, off_sb = new_subst_fun orig_id env off_sb in
-          env, off_sb)
-        ffuns.funs (env,off_sb) in
-    let funs, env =
-      Variable.Map.fold (fun orig_id ffun (funs, env) ->
-          let ffun, env = subst_ffunction orig_id ffun env in
-          let id = find_subst' orig_id env in
-          let funs = Variable.Map.add id ffun funs in
-          funs, env)
-        ffuns.funs (Variable.Map.empty,env) in
-    { ident = Set_of_closures_id.create (Compilenv.current_unit ());
-      compilation_unit = Compilenv.current_unit ();
-      funs }, env, off_sb
-
-  else ffuns, env,off_sb
+  { env with sb = Flambdasubst.add_sb_exn env.sb i i' }
+let sb_exn i env = Flambdasubst.sb_exn env.sb i
 
 (* approximation utility functions *)
 
@@ -1080,7 +890,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
       expr args in
   let expr = Flet(Not_assigned, clos_id, funct, expr, Expr_id.create ()) in
   let r = List.fold_left (fun r (id,_) -> exit_scope r id) r args in
-  loop { env with substitute = true } r expr
+  loop { env with sb = Flambdasubst.activate env.sb } r expr
 
 (* Duplicates the body of the called function *)
 and inline env r clos lfunc fun_id func args dbg eid =
@@ -1113,7 +923,7 @@ and inline env r clos lfunc fun_id func args dbg eid =
              body, Expr_id.create ()))
       clos.funs
   in
-  loop { env with substitute = true } r
+  loop { env with sb = Flambdasubst.activate env.sb } r
        (Flet(Not_assigned, clos_id, lfunc, body, Expr_id.create ()))
 
 let inline tree =
