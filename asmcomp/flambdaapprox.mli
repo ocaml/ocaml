@@ -83,6 +83,25 @@ val const_approx : Flambda.const -> approx
 
 val print_approx : Format.formatter -> approx -> unit
 
+val make_const_int : int -> 'a -> 'a Flambda.flambda * approx
+val make_const_ptr : int -> 'a -> 'a Flambda.flambda * approx
+val make_const_bool : bool -> 'a -> 'a Flambda.flambda * approx
+
+val check_constant_result
+   : Expr_id.t Flambda.flambda
+  -> approx
+  -> Expr_id.t Flambda.flambda * approx
+
+val check_var_and_constant_result
+   : is_present_in_env:(Variable.t -> bool)
+  -> Expr_id.t Flambda.flambda
+  -> approx
+  -> Expr_id.t Flambda.flambda * approx
+
+val get_field : int -> approx list -> approx
+
+val descrs : approx list -> descr list
+
 module Import : sig
   val really_import : descr -> descr
   val import_global : Ident.t -> approx

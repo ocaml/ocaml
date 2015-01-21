@@ -25,3 +25,11 @@ val lift_lets : Expr_id.t flambda -> Expr_id.t flambda
 
 (** Eliminate variables bound by a given closure that are not required. *)
 val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
+
+(** Simplifies an application of a primitive based on approximation
+    information. *)
+val primitive
+   : Lambda.primitive
+  -> (Expr_id.t flambda list * (Flambdaapprox.approx list))
+  -> 'a flambda
+  -> 'a flambda * Flambdaapprox.approx

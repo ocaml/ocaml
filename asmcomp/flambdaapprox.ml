@@ -76,6 +76,11 @@ let value_extern ex = approx (Value_extern ex)
 let value_symbol sym = approx (Value_symbol sym)
 let value_bottom = approx Value_bottom
 
+let make_const_int n eid =
+  Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
+let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
+let make_const_bool b eid = make_const_ptr (if b then 1 else 0) eid
+
 let const_approx = function
   | Fconst_base const ->
       let open Asttypes in
@@ -91,6 +96,39 @@ let const_approx = function
   | Fconst_pointer i -> value_constptr i
   | Fconst_float_array _ -> value_unknown
   | Fconst_immstring _ -> value_unknown
+
+let check_constant_result lam approx =
+  let lam, approx =
+    match approx.descr with
+      Value_int n when Flambdaeffects.no_effects lam ->
+        make_const_int n (data_at_toplevel_node lam)
+    | Value_constptr n when Flambdaeffects.no_effects lam ->
+        make_const_ptr n (data_at_toplevel_node lam)
+    | Value_symbol sym when Flambdaeffects.no_effects lam ->
+        Fsymbol(sym, data_at_toplevel_node lam), approx
+    | _ -> lam, approx
+  in
+  lam, approx
+
+let check_var_and_constant_result ~is_present_in_env lam approx =
+  let res = match approx.var with
+    | None ->
+        lam
+    | Some var ->
+        if is_present_in_env var
+        then Fvar(var, data_at_toplevel_node lam)
+        else lam
+  in
+  check_constant_result res approx
+
+let get_field i = function
+  | [{descr = Value_block (tag, fields)}] ->
+      if i >= 0 && i < Array.length fields
+      then fields.(i)
+      else value_unknown
+  | _ -> value_unknown
+
+let descrs approxs = List.map (fun v -> v.descr) approxs
 
 (** Import external approx *)
 

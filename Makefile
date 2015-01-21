@@ -111,10 +111,11 @@ ASMCOMP=\
   asmcomp/flambdagen.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
+  asmcomp/flambdaeffects.cmo \
   asmcomp/flambdaapprox.cmo \
   asmcomp/flambdacost.cmo \
-  asmcomp/flambdainline.cmo \
   asmcomp/flambdasimplify.cmo \
+  asmcomp/flambdainline.cmo \
   asmcomp/flambda_ref_to_variables.cmo \
   asmcomp/flambdasym.cmo \
   asmcomp/clambdagen.cmo \

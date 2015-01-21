@@ -285,11 +285,6 @@ let init_r () =
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty }
 
-let make_const_int n eid =
-  Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
-let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
-let make_const_bool b eid = make_const_ptr (if b then 1 else 0) eid
-
 let find id env =
   try Variable.Map.find id env.env_approx
   with Not_found ->
@@ -367,216 +362,22 @@ let make_closure_declaration id lam params =
     { cl_fun = function_declarations;
       cl_free_var = fv';
       cl_specialised_arg = Variable.Map.empty } in
-
   Fset_of_closures(closure, Expr_id.create ())
 
-(* Simple effectful test, should be replaced by call to Purity module *)
-
-let no_effects_prim = function
-    Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-    Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-    Parraysetu _ | Parraysets _ | Pbigarrayset _
-
-  | Psetglobalfield _
-
-  | Pstringrefs | Parrayrefs _ | Pbigarrayref (false,_,_,_)
-
-  | Pstring_load_16 false | Pstring_load_32 false | Pstring_load_64 false
-
-  | Pbigstring_load_16 false | Pbigstring_load_32 false
-  | Pbigstring_load_64 false
-
-  | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
-  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
-    -> false
-  | _ -> true
-
-let rec no_effects = function
-  | Fvar _
-  | Fsymbol _
-  | Fconst _
-    -> true
-  | Flet (_,_,def,body,_) ->
-      no_effects def && no_effects body
-  | Fletrec (defs,body,_) ->
-      no_effects body &&
-      List.for_all (fun (_,def) -> no_effects def) defs
-  | Fprim(p, args, _, _) ->
-      no_effects_prim p &&
-      List.for_all no_effects args
-  | Fset_of_closures ({ cl_free_var }, _) ->
-      Variable.Map.for_all (fun id def -> no_effects def) cl_free_var
-  | Fclosure({ fu_closure = lam }, _) ->
-      no_effects lam
-  | Fvariable_in_closure({ vc_closure }, _) ->
-      no_effects vc_closure
-
-  | Fifthenelse (cond, ifso, ifnot, _) ->
-      no_effects cond &&
-      no_effects ifso &&
-      no_effects ifnot
-
-  | Fswitch(lam,sw,_) ->
-      let aux (_,lam) = no_effects lam in
-      no_effects lam &&
-      List.for_all aux sw.fs_blocks &&
-      List.for_all aux sw.fs_consts &&
-      Misc.may_default no_effects sw.fs_failaction true
-
-  | Fstringswitch(lam,sw,def,_) ->
-      no_effects lam &&
-      List.for_all (fun (_,lam) -> no_effects lam) sw &&
-      Misc.may_default no_effects def true
-
-  | Fstaticcatch (_,_,body,_,_)
-  | Ftrywith (body, _, _, _) ->
-      (* the raise is effectful, no need to test the handler *)
-      no_effects body
-
-  | Fsequence (l1,l2,_) ->
-      no_effects l1 && no_effects l2
-
-  | Fwhile _
-  | Ffor _
-  | Fapply _
-  | Fsend _
-  | Fassign _
-  | Fstaticraise _
-    -> false
-
-  | Funreachable _ -> true
-
-  | Fevent _ -> assert false
-
 let check_constant_result r lam approx =
-  let lam, approx =
-    match approx.descr with
-      Value_int n when no_effects lam ->
-        make_const_int n (data_at_toplevel_node lam)
-    | Value_constptr n when no_effects lam ->
-        make_const_ptr n (data_at_toplevel_node lam)
-    | Value_symbol sym when no_effects lam ->
-        Fsymbol(sym, data_at_toplevel_node lam), approx
-    | _ -> lam, approx
-  in
+  let lam, approx = Flambdaapprox.check_constant_result lam approx in
   lam, ret r approx
 
 let check_var_and_constant_result env r lam approx =
-  let res = match approx.var with
-    | None ->
-        lam
-    | Some var ->
-        if present var env
-        then Fvar(var, data_at_toplevel_node lam)
-        else lam
-  in
-  let expr, r = check_constant_result r res approx in
-  let r = match expr with
+  let lam, r = check_constant_result r lam approx in
+  let r = match lam with
     | Fvar(var,_) -> use_var r var
     | _ -> r
   in
-  expr, r
-
-let get_field i = function
-  | [{descr = Value_block (tag, fields)}] ->
-      if i >= 0 && i < Array.length fields
-      then fields.(i)
-      else value_unknown
-  | _ -> value_unknown
-
-let descrs approxs = List.map (fun v -> v.descr) approxs
-
-let const_int_expr expr n eid =
-  if no_effects expr
-  then make_const_int n eid
-  else expr, value_int n
-let const_ptr_expr expr n eid =
-  if no_effects expr
-  then make_const_ptr n eid
-  else expr, value_constptr n
-let const_bool_expr expr b eid =
-  const_ptr_expr expr (if b then 1 else 0) eid
-
-let simplif_prim p (args, approxs) expr : 'a flambda * approx =
-  match p with
-  | Pmakeblock(tag, Asttypes.Immutable) ->
-      expr, value_block(tag, Array.of_list approxs)
-  | _ ->
-      let eid = data_at_toplevel_node expr in
-      match descrs approxs with
-        [Value_int x] ->
-          begin match p with
-            Pidentity -> const_int_expr expr x eid
-          | Pnegint -> const_int_expr expr (-x) eid
-          | Pbswap16 ->
-              const_int_expr expr (((x land 0xff) lsl 8) lor
-                                   ((x land 0xff00) lsr 8)) eid
-          | Poffsetint y -> const_int_expr expr (x + y) eid
-          | _ ->
-              expr, value_unknown
-          end
-      | [Value_int x; Value_int y]
-      | [Value_constptr x; Value_int y]
-      | [Value_int x; Value_constptr y]
-      | [Value_constptr x; Value_constptr y] ->
-          begin match p with
-            Paddint -> const_int_expr expr (x + y) eid
-          | Psubint -> const_int_expr expr (x - y) eid
-          | Pmulint -> const_int_expr expr (x * y) eid
-          | Pdivint when y <> 0 -> const_int_expr expr (x / y) eid
-          | Pmodint when y <> 0 -> const_int_expr expr (x mod y) eid
-          | Pandint -> const_int_expr expr (x land y) eid
-          | Porint -> const_int_expr expr (x lor y) eid
-          | Pxorint -> const_int_expr expr (x lxor y) eid
-          | Plslint -> const_int_expr expr (x lsl y) eid
-          | Plsrint -> const_int_expr expr (x lsr y) eid
-          | Pasrint -> const_int_expr expr (x asr y) eid
-          | Pintcomp cmp ->
-              let result = match cmp with
-                  Ceq -> x = y
-                | Cneq -> x <> y
-                | Clt -> x < y
-                | Cgt -> x > y
-                | Cle -> x <= y
-                | Cge -> x >= y in
-              const_bool_expr expr result eid
-          | Pisout ->
-              const_bool_expr expr (y > x || y < 0) eid
-          | Psequand -> const_bool_expr expr (x <> 0 && y <> 0) eid
-          | Psequor  -> const_bool_expr expr (x <> 0 || y <> 0) eid
-          | _ ->
-              expr, value_unknown
-          end
-      | [Value_constptr x] ->
-          begin match p with
-            Pidentity -> const_ptr_expr expr x eid
-          | Pnot -> const_bool_expr expr (x = 0) eid
-          | Pisint -> const_bool_expr expr true eid
-          | Pctconst c ->
-              begin
-                match c with
-                | Big_endian -> const_bool_expr expr Arch.big_endian eid
-                | Word_size -> const_int_expr expr (8*Arch.size_int) eid
-                | Int_size -> const_int_expr expr (8*Arch.size_int - 1) eid
-                | Max_wosize -> const_int_expr expr ((1 lsl ((8*Arch.size_int) - 10)) - 1 ) eid
-                | Ostype_unix -> const_bool_expr expr (Sys.os_type = "Unix") eid
-                | Ostype_win32 -> const_bool_expr expr (Sys.os_type = "Win32") eid
-                | Ostype_cygwin -> const_bool_expr expr (Sys.os_type = "Cygwin") eid
-              end
-          | _ ->
-              expr, value_unknown
-          end
-      | [Value_block _] ->
-          begin match p with
-          | Pisint -> const_bool_expr expr false eid
-          | _ ->
-              expr, value_unknown
-          end
-      | _ ->
-          expr, value_unknown
+  lam, r
 
 let sequence l1 l2 annot =
-  if no_effects l1
+  if Flambdaeffects.no_effects l1
   then l2
   else Fsequence(l1,l2,annot)
 
@@ -729,7 +530,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
           (* if lam is kept, adds its used variables *)
           { r with used_variables =
                      Variable.Set.union def_used_var r.used_variables }
-        else if no_effects lam
+        else if Flambdaeffects.no_effects lam
         then body, r
         else Fsequence(lam, body, annot),
              (* if lam is kept, adds its used variables *)
@@ -790,7 +591,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fprim(p, args, dbg, annot) as expr ->
       let (args', approxs, r) = loop_list env r args in
       let expr = if args' == args then expr else Fprim(p, args', dbg, annot) in
-      let expr, approx = simplif_prim p (args, approxs) expr in
+      let expr, approx = Flambdasimplify.primitive p (args, approxs) expr in
       expr, ret r approx
   | Fstaticraise(i, args, annot) ->
       let i = sb_exn i env in
