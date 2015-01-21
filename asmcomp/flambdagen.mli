@@ -35,4 +35,4 @@ val intro:
   current_unit_id:Ident.t ->
   symbol_for_global':(Ident.t -> Symbol.t) ->
   Lambda.lambda ->
-  Ident.t VarMap.t * ExprId.t Flambda.flambda
+  Ident.t Variable.Map.t * ExprId.t Flambda.flambda

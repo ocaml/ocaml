@@ -58,7 +58,7 @@ let rec print_descr ppf = function
     Format.fprintf ppf "(fun:@ %a)" Closure_id.print fun_id
   | Value_set_of_closures { ffunctions = { funs } } ->
     Format.fprintf ppf "(unoffseted:@ %a)"
-      (fun ppf -> VarMap.iter (fun id _ -> Variable.print ppf id)) funs
+      (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
 
 and print_approx ppf { descr } = print_descr ppf descr
 

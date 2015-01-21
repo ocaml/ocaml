@@ -137,13 +137,13 @@ and 'a fapply = {
 
 and 'a fset_of_closures = {
   cl_fun : 'a function_declarations;
-  cl_free_var : 'a flambda VarMap.t;
-  cl_specialised_arg : Variable.t VarMap.t;
+  cl_free_var : 'a flambda Variable.Map.t;
+  cl_specialised_arg : Variable.t Variable.Map.t;
 }
 
 and 'a function_declarations = {
   ident : FunId.t;
-  funs : 'a function_declaration VarMap.t;
+  funs : 'a function_declaration Variable.Map.t;
   compilation_unit : compilation_unit;
 }
 

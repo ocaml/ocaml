@@ -217,7 +217,7 @@ let import_code_for_pack units pack expr =
 
 let import_ffunctions_for_pack units pack ffuns =
   { ffuns with
-    funs = VarMap.map (fun ffun ->
+    funs = Variable.Map.map (fun ffun ->
         {ffun with body = import_code_for_pack units pack ffun.body})
         ffuns.funs }
 
@@ -225,7 +225,7 @@ let ex_functions_off ex_functions =
   let aux_fun ffunctions function_id _ map =
     ClosureIdMap.add
       (Closure_id.wrap function_id) ffunctions map in
-  let aux _ f map = VarMap.fold (aux_fun f) f.funs map in
+  let aux _ f map = Variable.Map.fold (aux_fun f) f.funs map in
   FunMap.fold aux ex_functions ClosureIdMap.empty
 
 let import_eidmap_for_pack units pack f map =

@@ -43,8 +43,8 @@ let apply_on_subexpressions f = function
   | Fapply ({ap_function;ap_arg},_) ->
     List.iter f (ap_function::ap_arg)
   | Fset_of_closures ({cl_fun;cl_free_var},_) ->
-    VarMap.iter (fun _ v -> f v) cl_free_var;
-    VarMap.iter (fun _ ffun -> f ffun.body) cl_fun.funs
+    Variable.Map.iter (fun _ v -> f v) cl_free_var;
+    Variable.Map.iter (fun _ ffun -> f ffun.body) cl_fun.funs
   | Fletrec (defs, body,_) ->
     List.iter (fun (_,l) -> f l) defs;
     f body
@@ -90,8 +90,8 @@ let subexpressions = function
       (ap_function::ap_arg)
 
   | Fset_of_closures ({cl_fun;cl_free_var},_) ->
-      let l = VarMap.fold (fun _ v l -> v :: l) cl_free_var [] in
-      VarMap.fold (fun _ f l -> f.body :: l) cl_fun.funs l
+      let l = Variable.Map.fold (fun _ v l -> v :: l) cl_free_var [] in
+      Variable.Map.fold (fun _ f l -> f.body :: l) cl_fun.funs l
 
   | Fletrec (defs, body,_) ->
       body :: (List.map snd defs)
@@ -142,9 +142,9 @@ let iter_general ~toplevel f t =
       iter_list (f1::fl)
 
     | Fset_of_closures ({cl_fun = funcs; cl_free_var = fv},_) ->
-      VarMap.iter (fun _ v -> aux v) fv;
+      Variable.Map.iter (fun _ v -> aux v) fv;
       if not toplevel
-      then VarMap.iter (fun _ ffun -> aux ffun.body) funcs.funs
+      then Variable.Map.iter (fun _ ffun -> aux ffun.body) funcs.funs
 
     | Fletrec (defs, body,_) ->
       List.iter (fun (_,l) -> aux l) defs;
@@ -200,11 +200,11 @@ let map_general ~toplevel f tree =
             then cl_fun
             else
               { cl_fun with
-                funs = VarMap.map
+                funs = Variable.Map.map
                     (fun ffun -> { ffun with body = aux ffun.body })
                     cl_fun.funs } in
           Fset_of_closures ({ cl_fun;
-                      cl_free_var = VarMap.map aux cl_free_var;
+                      cl_free_var = Variable.Map.map aux cl_free_var;
                       cl_specialised_arg }, annot)
       | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
           Fclosure ({ fu_closure = aux fu_closure;
@@ -289,8 +289,8 @@ let expression_free_variables = function
   | Fvar (id,_) -> VarSet.singleton id
   | Fassign (id,_,_) -> VarSet.singleton id
   | Fset_of_closures ({cl_free_var; cl_specialised_arg},_) ->
-      let set = VarMap.keys (VarMap.revert cl_specialised_arg) in
-      VarMap.fold (fun _ expr set ->
+      let set = Variable.Map.keys (Variable.Map.revert cl_specialised_arg) in
+      Variable.Map.fold (fun _ expr set ->
           (* HACK:
              This is not needed, but it avoids moving lets inside free_vars *)
           match expr with
@@ -341,17 +341,17 @@ let fold_subexpressions f acc = function
 
   | Fset_of_closures ({ cl_fun; cl_free_var } as closure, d) ->
       let acc, funs =
-        VarMap.fold (fun v fun_decl (acc, funs) ->
+        Variable.Map.fold (fun v fun_decl (acc, funs) ->
             let acc, body = f acc fun_decl.free_variables fun_decl.body in
-            acc, VarMap.add v { fun_decl with body } funs)
-          cl_fun.funs (acc, VarMap.empty)
+            acc, Variable.Map.add v { fun_decl with body } funs)
+          cl_fun.funs (acc, Variable.Map.empty)
       in
       let cl_fun = { cl_fun with funs } in
       let acc, cl_free_var =
-        VarMap.fold (fun v flam (acc, free_vars) ->
+        Variable.Map.fold (fun v flam (acc, free_vars) ->
             let acc, flam = f acc VarSet.empty flam in
-            acc, VarMap.add v flam free_vars)
-          cl_free_var (acc, VarMap.empty)
+            acc, Variable.Map.add v flam free_vars)
+          cl_free_var (acc, Variable.Map.empty)
       in
       acc, Fset_of_closures({ closure with cl_fun; cl_free_var }, d)
 
@@ -477,11 +477,11 @@ let subexpression_bound_variables = function
   | Fset_of_closures ({ cl_fun; cl_free_var },_) ->
       let free_vars =
         List.map (fun (_, def) -> VarSet.empty, def)
-          (VarMap.bindings cl_free_var) in
+          (Variable.Map.bindings cl_free_var) in
       let funs =
         List.map (fun (_, fun_def) ->
             fun_def.free_variables, fun_def.body)
-          (VarMap.bindings cl_fun.funs)in
+          (Variable.Map.bindings cl_fun.funs)in
       funs @ free_vars
   | e ->
       List.map (fun s -> VarSet.empty, s) (subexpressions e)
@@ -495,7 +495,7 @@ let free_variables tree =
     | Fvar (id,_) -> add id
     | Fassign (id,_,_) -> add id
     | Fset_of_closures ({cl_specialised_arg},_) ->
-        VarMap.iter (fun _ id -> add id) cl_specialised_arg
+        Variable.Map.iter (fun _ id -> add id) cl_specialised_arg
     | Ftrywith(_,id,_,_)
     | Ffor(id, _, _, _, _, _)
     | Flet ( _, id, _, _,_) ->
@@ -527,11 +527,11 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
                   cl_specialised_arg }, v) ->
         let cl_fun =
           { cl_fun with
-            funs = VarMap.map
+            funs = Variable.Map.map
                 (fun ffun -> { ffun with body = mapper ffun.body })
                 cl_fun.funs } in
         Fset_of_closures ({ cl_fun;
-                    cl_free_var = VarMap.map mapper cl_free_var;
+                    cl_free_var = Variable.Map.map mapper cl_free_var;
                     cl_specialised_arg }, f v)
     | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, v) ->
         Fclosure ({ fu_closure = mapper fu_closure;
@@ -574,14 +574,14 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
   mapper tree
 
 let toplevel_substitution sb tree =
-  let sb v = try VarMap.find v sb with Not_found -> v in
+  let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux = function
     | Fvar (id,e) -> Fvar (sb id,e)
     | Fassign (id,e,d) -> Fassign (sb id,e,d)
     | Fset_of_closures (cl,d) ->
         Fset_of_closures ({cl with
                    cl_specialised_arg =
-                     VarMap.map sb cl.cl_specialised_arg},
+                     Variable.Map.map sb cl.cl_specialised_arg},
                   d)
     | e -> e
   in
@@ -645,9 +645,9 @@ let arguments_kept_in_recursion' decl fun_var =
   kept_parameters, !function_escape
 
 let arguments_kept_in_recursion decls =
-  if VarMap.cardinal decls.funs = 1
+  if Variable.Map.cardinal decls.funs = 1
   then
-    let fun_var, decl = VarMap.choose decls.funs in
+    let fun_var, decl = Variable.Map.choose decls.funs in
     let kept_parameters, function_escape =
       arguments_kept_in_recursion' decl fun_var in
     if function_escape

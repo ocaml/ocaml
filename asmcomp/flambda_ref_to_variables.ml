@@ -40,11 +40,11 @@ let directly_used_variables tree =
   !set
 
 let variables_containing_ref lam =
-  let map = ref VarMap.empty in
+  let map = ref Variable.Map.empty in
   let aux = function
     | Flet(Not_assigned, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
-        map := VarMap.add v (List.length l) !map
+        map := Variable.Map.add v (List.length l) !map
     | _ -> ()
   in
   Flambdaiter.iter aux lam;
@@ -58,17 +58,17 @@ let rec interval x y =
 let eliminate_ref lam =
   let directly_used_variables = directly_used_variables lam in
   let convertible_variables =
-    VarMap.filter
+    Variable.Map.filter
       (fun v _ -> not (VarSet.mem v directly_used_variables))
       (variables_containing_ref lam)
   in
   let convertible_variables =
-    VarMap.mapi (fun v size -> Array.init size (fun i -> rename_var v))
+    Variable.Map.mapi (fun v size -> Array.init size (fun i -> rename_var v))
       convertible_variables in
-  let convertible_variable v = VarMap.mem v convertible_variables in
+  let convertible_variable v = Variable.Map.mem v convertible_variables in
 
   let get_variable v field =
-    let arr = try VarMap.find v convertible_variables
+    let arr = try Variable.Map.find v convertible_variables
       with Not_found -> assert false in
     if Array.length arr <= field
     then None (* This case could apply when inlining code containing GADTS *)

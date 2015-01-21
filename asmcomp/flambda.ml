@@ -18,16 +18,16 @@ include Flambdatypes
 (* access functions *)
 
 let find_declaration cf { funs } =
-  VarMap.find (Closure_id.unwrap cf) funs
+  Variable.Map.find (Closure_id.unwrap cf) funs
 
 let find_declaration_variable cf { funs } =
   let var = Closure_id.unwrap cf in
-  if not (VarMap.mem var funs)
+  if not (Variable.Map.mem var funs)
   then raise Not_found
   else var
 
 let find_free_variable cv { cl_free_var } =
-  VarMap.find (Var_within_closure.unwrap cv) cl_free_var
+  Variable.Map.find (Var_within_closure.unwrap cv) cl_free_var
 
 (* utility functions *)
 
@@ -36,7 +36,7 @@ let function_arity f = List.length f.params
 let variables_bound_by_the_closure cf decls =
   let func = find_declaration cf decls in
   let params = VarSet.of_list func.params in
-  let functions = VarMap.keys decls.funs in
+  let functions = Variable.Map.keys decls.funs in
   VarSet.diff
     (VarSet.diff func.free_variables params)
     functions
@@ -95,9 +95,9 @@ let description_of_toplevel_node = function
   | Funreachable _ -> "unreachable"
 
 let recursive_functions { funs } =
-  let function_variables = VarMap.keys funs in
+  let function_variables = Variable.Map.keys funs in
   let directed_graph =
-    VarMap.map
+    Variable.Map.map
       (fun ffun -> VarSet.inter ffun.free_variables function_variables)
       funs in
   let connected_components =
@@ -138,9 +138,9 @@ let rec same l1 l2 =
       samelist same a1.ap_arg a2.ap_arg
   | Fapply _, _ | _, Fapply _ -> false
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
-      VarMap.equal sameclosure c1.cl_fun.funs c2.cl_fun.funs &&
-      VarMap.equal same c1.cl_free_var c2.cl_free_var &&
-      VarMap.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
+      Variable.Map.equal sameclosure c1.cl_fun.funs c2.cl_fun.funs &&
+      Variable.Map.equal same c1.cl_free_var c2.cl_free_var &&
+      Variable.Map.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
       same f1.fu_closure f2.fu_closure &&

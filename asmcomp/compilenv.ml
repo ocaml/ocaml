@@ -458,7 +458,7 @@ let imported_closure =
   let import_closure clos =
 
     let orig_var_map clos =
-      VarMap.fold
+      Variable.Map.fold
         (fun id _ acc ->
            let fun_id = Closure_id.wrap id in
            let sym = closure_symbol fun_id in
@@ -475,7 +475,7 @@ let imported_closure =
 
     { clos with
       funs =
-        VarMap.map
+        Variable.Map.map
           (fun ff ->
              let body = Flambdaiter.map_toplevel f ff.body in
              let body = Flambdaiter.map_data(fun () -> ExprId.create ()) body in

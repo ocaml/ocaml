@@ -30,7 +30,7 @@ let list_closures expr constants =
           ClosureIdMap.add
             (Closure_id.wrap off_id)
             functs map in
-        closures := VarMap.fold add functs.funs !closures;
+        closures := Variable.Map.fold add functs.funs !closures;
     | e -> ()
   in
   Flambdaiter.iter aux expr;
@@ -104,8 +104,8 @@ module Offsets(P:Param1) = struct
 
   and iter_closure functs fv =
 
-    let funct = VarMap.bindings functs.funs in
-    let fv = VarMap.bindings fv in
+    let funct = Variable.Map.bindings functs.funs in
+    let fv = Variable.Map.bindings fv in
 
     (* build the table mapping the function to the offset of its code
        pointer inside the closure value *)
@@ -244,22 +244,22 @@ module Conv(P:Param2) = struct
                        FunId.print fid)
 
   type env =
-    { subst : ulambda VarMap.t;
-      var : Ident.t VarMap.t }
+    { subst : ulambda Variable.Map.t;
+      var : Ident.t Variable.Map.t }
 
   let empty_env =
-    { subst = VarMap.empty;
-      var = VarMap.empty }
+    { subst = Variable.Map.empty;
+      var = Variable.Map.empty }
 
   let add_sb id subst env =
-    { env with subst = VarMap.add id subst env.subst }
+    { env with subst = Variable.Map.add id subst env.subst }
 
-  let find_sb id env = VarMap.find id env.subst
-  let find_var id env = VarMap.find id env.var
+  let find_sb id env = Variable.Map.find id env.subst
+  let find_var id env = Variable.Map.find id env.var
 
   let add_unique_ident var env =
     let id = Variable.unique_ident var in
-    id, { env with var = VarMap.add var id env.var }
+    id, { env with var = Variable.Map.add var id env.var }
 
   let rec conv ?(expected_symbol:Symbol.t option) (env : env) = function
     | Fvar (var,_) ->
@@ -526,8 +526,8 @@ module Conv(P:Param2) = struct
        body, so constant closure still contains their free
        variables. *)
 
-    let funct = VarMap.bindings functs.funs in
-    let fv = VarMap.bindings fv in
+    let funct = Variable.Map.bindings functs.funs in
+    let fv = Variable.Map.bindings fv in
     let closed = is_closure_constant functs.ident in
 
     (* the environment variable used for non constant closures *)

@@ -55,11 +55,11 @@ let to_flambda
     ~symbol_for_global'
     lam =
 
-  let debugger_map = ref VarMap.empty in
+  let debugger_map = ref Variable.Map.empty in
 
   let create_var id =
     let var = Variable.create ~current_compilation_unit (Ident.name id) in
-    debugger_map := VarMap.add var id !debugger_map;
+    debugger_map := Variable.Map.add var id !debugger_map;
     var
   in
 
@@ -67,8 +67,8 @@ let to_flambda
     let new_var = Variable.rename ~current_compilation_unit var in
     begin
       try
-        let id = VarMap.find var !debugger_map in
-        debugger_map := VarMap.add new_var id !debugger_map;
+        let id = Variable.Map.find var !debugger_map in
+        debugger_map := Variable.Map.add new_var id !debugger_map;
       with Not_found -> ()
     end;
     new_var in
@@ -254,15 +254,15 @@ let to_flambda
     let used_idents_per_function =
       List.fold_right
         (fun {closure_bound_var; body; params} map ->
-           VarMap.add closure_bound_var (Lambda.free_variables body) map)
-        function_declarations VarMap.empty in
+           Variable.Map.add closure_bound_var (Lambda.free_variables body) map)
+        function_declarations Variable.Map.empty in
 
     let all_free_idents =
       let rec_idents = List.map (fun d -> d.rec_ident) function_declarations in
       let all_params =
         List.concat (List.map (fun d -> d.params) function_declarations) in
       (* all used idents *)
-      VarMap.fold
+      Variable.Map.fold
         (fun _ -> IdentSet.union)
         used_idents_per_function IdentSet.empty
       (* remove function parameters *)
@@ -303,24 +303,24 @@ let to_flambda
           free_variables =
             IdentSet.fold
               (fun id set -> VarSet.add (find_var closure_env id) set)
-              (VarMap.find closure_bound_var used_idents_per_function)
+              (Variable.Map.find closure_bound_var used_idents_per_function)
               VarSet.empty;
           body = close closure_env body } in
       match kind with
       | Curried ->
-          VarMap.add closure_bound_var fun_decl map
+          Variable.Map.add closure_bound_var fun_decl map
       | Tupled ->
           let tuplified_version = rename_var closure_bound_var in
           let generic_function_stub =
             tupled_function_call_stub
               closure_bound_var params tuplified_version in
-          let map = VarMap.add closure_bound_var generic_function_stub map in
-          VarMap.add tuplified_version fun_decl map
+          let map = Variable.Map.add closure_bound_var generic_function_stub map in
+          Variable.Map.add tuplified_version fun_decl map
     in
     let fun_decls =
       { ident = FunId.create current_compilation_unit;
         funs =
-          List.fold_left close_one_function VarMap.empty function_declarations;
+          List.fold_left close_one_function Variable.Map.empty function_declarations;
         compilation_unit = current_compilation_unit } in
     let closure =
       { cl_fun = fun_decls;
@@ -329,9 +329,9 @@ let to_flambda
             (fun id map ->
                let internal_var = find_var closure_env_without_parameters id in
                let external_var = find_var external_env id in
-               VarMap.add internal_var (Fvar(external_var, nid ())) map)
-            all_free_idents VarMap.empty;
-        cl_specialised_arg = VarMap.empty } in
+               Variable.Map.add internal_var (Fvar(external_var, nid ())) map)
+            all_free_idents Variable.Map.empty;
+        cl_specialised_arg = Variable.Map.empty } in
 
     Fset_of_closures (closure, nid ())
 

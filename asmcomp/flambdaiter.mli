@@ -45,7 +45,7 @@ val subexpression_bound_variables : 'a flambda -> (VarSet.t*'a flambda) list
 
 val map_data : ('a -> 'b) -> 'a flambda -> 'b flambda
 
-val toplevel_substitution : Variable.t VarMap.t ->
+val toplevel_substitution : Variable.t Variable.Map.t ->
   'a flambda -> 'a flambda
 
 val arguments_kept_in_recursion : 'a function_declarations ->

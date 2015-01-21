@@ -30,7 +30,7 @@ let every_used_identifier_is_bound flam =
     | Fassign(id,_,_)
     | Fvar(id,_) -> test id env
     | Fset_of_closures({cl_specialised_arg},_) ->
-        VarMap.iter (fun _ id -> test id env) cl_specialised_arg
+        Variable.Map.iter (fun _ id -> test id env) cl_specialised_arg
 
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _ | Flet _ | Fletrec _
@@ -50,8 +50,8 @@ let every_used_identifier_is_bound flam =
         loop env body
     | Fset_of_closures ({cl_fun;cl_free_var},_) as exp ->
         check env exp;
-        VarMap.iter (fun _ v -> loop env v) cl_free_var;
-        VarMap.iter (fun _ { free_variables; body } -> loop free_variables body)
+        Variable.Map.iter (fun _ v -> loop env v) cl_free_var;
+        Variable.Map.iter (fun _ { free_variables; body } -> loop free_variables body)
           cl_fun.funs
     | Ffor (id, lo, hi, _, body, _) ->
         loop env lo; loop env hi;
@@ -85,11 +85,11 @@ exception Counter_example_varset of VarSet.t
 
 let function_free_variables_are_bound_in_the_closure_and_parameters flam =
   let f {cl_fun;cl_free_var} _ =
-    let variables_in_closure = VarMap.keys cl_free_var in
+    let variables_in_closure = Variable.Map.keys cl_free_var in
     let functions_in_closure =
-      VarMap.fold (fun id _ env -> VarSet.add id env)
+      Variable.Map.fold (fun id _ env -> VarSet.add id env)
         cl_fun.funs VarSet.empty in
-    VarMap.iter (fun _ { params; free_variables } ->
+    Variable.Map.iter (fun _ { params; free_variables } ->
         let acceptable_free_variables =
           VarSet.union
             (VarSet.union variables_in_closure functions_in_closure)
@@ -119,8 +119,8 @@ let no_identifier_bound_multiple_times flam =
     | Fletrec(defs,_,_) ->
         List.iter (fun (id,_) -> add_and_check id) defs
     | Fset_of_closures ({cl_fun;cl_free_var},_) ->
-        VarMap.iter (fun id _ -> add_and_check id) cl_free_var;
-        VarMap.iter (fun _ { params } -> List.iter add_and_check params)
+        Variable.Map.iter (fun id _ -> add_and_check id) cl_free_var;
+        Variable.Map.iter (fun _ { params } -> List.iter add_and_check params)
           cl_fun.funs
     | Ffor (id,_,_,_,_,_) ->
         add_and_check id
@@ -155,8 +155,8 @@ let every_bound_variable_is_from_current_compilation_unit
     | Fletrec(defs,_,_) ->
         List.iter (fun (id,_) -> check id) defs
     | Fset_of_closures ({cl_fun;cl_free_var},_) ->
-        VarMap.iter (fun id _ -> check id) cl_free_var;
-        VarMap.iter (fun _ { params } -> List.iter check params)
+        Variable.Map.iter (fun id _ -> check id) cl_free_var;
+        Variable.Map.iter (fun _ { params } -> List.iter check params)
           cl_fun.funs
     | Ffor (id,_,_,_,_,_) ->
         check id
@@ -192,9 +192,9 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
         loop env def;
         loop (VarSet.add id env) body
     | Fset_of_closures ({cl_fun;cl_free_var},_) ->
-        VarMap.iter (fun _ v -> loop env v) cl_free_var;
+        Variable.Map.iter (fun _ v -> loop env v) cl_free_var;
         let env = VarSet.empty in
-        VarMap.iter (fun _ { body } -> loop env body) cl_fun.funs
+        Variable.Map.iter (fun _ { body } -> loop env body) cl_fun.funs
 
     | Flet (Not_assigned, _, _, _, _)
     | Fassign _ | Fvar _
@@ -223,7 +223,7 @@ let declared_var_within_closure flam =
     bound := Var_within_closure.Set.add var !bound
   in
   let f {cl_fun;cl_free_var} _ =
-    VarMap.iter (fun id _ ->
+    Variable.Map.iter (fun id _ ->
         let var = Var_within_closure.wrap id in
         add_and_check var) cl_free_var
   in
@@ -259,7 +259,7 @@ let declared_closure_id flam =
   in
   let f = function
     | Fset_of_closures ({cl_fun},_) ->
-        VarMap.iter (fun id _ ->
+        Variable.Map.iter (fun id _ ->
             let var = Closure_id.wrap id in
             add_and_check var) cl_fun.funs
     | _ -> ()

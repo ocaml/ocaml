@@ -26,18 +26,18 @@ let new_var name =
    - propagating following approximatively the evaluation order ~ bottom-up:
      in the ret type *)
 
-type sb = { sb_var : Variable.t VarMap.t;
+type sb = { sb_var : Variable.t Variable.Map.t;
             sb_sym : Variable.t SymbolMap.t;
             sb_exn : static_exception StaticExceptionMap.t;
-            back_var : Variable.t list VarMap.t;
-            back_sym : Symbol.t list VarMap.t;
+            back_var : Variable.t list Variable.Map.t;
+            back_sym : Symbol.t list Variable.Map.t;
             (* Used to handle substitution sequence: we cannot call
                the substitution recursively because there can be name
                clash *)
           }
 
 type env =
-  { env_approx : approx VarMap.t;
+  { env_approx : approx Variable.Map.t;
     global : (int, approx) Hashtbl.t;
     current_functions : FunSet.t;
     (* The functions currently being declared: used to avoid inlining
@@ -50,14 +50,14 @@ type env =
     closure_depth : int;
   }
 
-let empty_sb = { sb_var = VarMap.empty;
+let empty_sb = { sb_var = Variable.Map.empty;
                  sb_sym = SymbolMap.empty;
                  sb_exn = StaticExceptionMap.empty;
-                 back_var = VarMap.empty;
-                 back_sym = VarMap.empty }
+                 back_var = Variable.Map.empty;
+                 back_sym = Variable.Map.empty }
 
 let empty_env () =
-  { env_approx = VarMap.empty;
+  { env_approx = Variable.Map.empty;
     global = Hashtbl.create 10;
     current_functions = FunSet.empty;
     inlining_level = 0;
@@ -68,7 +68,7 @@ let empty_env () =
 
 let local_env env =
   { env with
-    env_approx = VarMap.empty;
+    env_approx = Variable.Map.empty;
     sb = empty_sb }
 
 type ret =
@@ -84,24 +84,24 @@ type ret =
 
 let add_sb_sym' sym id' sb =
   let back_sym =
-    let l = try VarMap.find id' sb.back_sym with Not_found -> [] in
-    VarMap.add id' (sym :: l) sb.back_sym in
+    let l = try Variable.Map.find id' sb.back_sym with Not_found -> [] in
+    Variable.Map.add id' (sym :: l) sb.back_sym in
   { sb with sb_sym = SymbolMap.add sym id' sb.sb_sym;
             back_sym }
 
 let rec add_sb_var' id id' sb =
-  let sb = { sb with sb_var = VarMap.add id id' sb.sb_var } in
+  let sb = { sb with sb_var = Variable.Map.add id id' sb.sb_var } in
   let sb =
-    try let pre_vars = VarMap.find id sb.back_var in
+    try let pre_vars = Variable.Map.find id sb.back_var in
       List.fold_left (fun sb pre_id -> add_sb_var' pre_id id' sb) sb pre_vars
     with Not_found -> sb in
   let sb =
-    try let pre_sym = VarMap.find id sb.back_sym in
+    try let pre_sym = Variable.Map.find id sb.back_sym in
       List.fold_left (fun sb pre_sym -> add_sb_sym' pre_sym id' sb) sb pre_sym
     with Not_found -> sb in
   let back_var =
-    let l = try VarMap.find id' sb.back_var with Not_found -> [] in
-    VarMap.add id' (id :: l) sb.back_var in
+    let l = try Variable.Map.find id' sb.back_var with Not_found -> [] in
+    Variable.Map.add id' (id :: l) sb.back_var in
   { sb with back_var }
 
 
@@ -141,12 +141,12 @@ let new_subst_ids' ids env =
       id' :: ids, env) ids ([],env)
 
 let find_subst' id env =
-  try VarMap.find id env.sb.sb_var with
+  try Variable.Map.find id env.sb.sb_var with
   | Not_found ->
       Misc.fatal_error (Format.asprintf "find_subst': can't find %a@." Variable.print id)
 
 let subst_var env id =
-  try VarMap.find id env.sb.sb_var with
+  try Variable.Map.find id env.sb.sb_var with
   | Not_found -> id
 
 (* Tables used for identifiers substitution in
@@ -209,10 +209,10 @@ let new_subst_fun id env ffunction_sb =
     * a fresh ffunction_subst with only the substitution of free variables
  *)
 let subst_free_vars fv env =
-  VarMap.fold (fun id lam (fv, env, off_sb) ->
+  Variable.Map.fold (fun id lam (fv, env, off_sb) ->
       let id, env, off_sb = new_subst_fv id env off_sb in
-      VarMap.add id lam fv, env, off_sb)
-    fv (VarMap.empty, env, empty_ffunction_subst)
+      Variable.Map.add id lam fv, env, off_sb)
+    fv (Variable.Map.empty, env, empty_ffunction_subst)
 
 (** Returns :
     * The function_declaration with renamed function identifiers
@@ -242,17 +242,17 @@ let ffuns_subst env ffuns off_sb =
       }, env
     in
     let env, off_sb =
-      VarMap.fold (fun orig_id ffun (env, off_sb) ->
+      Variable.Map.fold (fun orig_id ffun (env, off_sb) ->
           let _id, env, off_sb = new_subst_fun orig_id env off_sb in
           env, off_sb)
         ffuns.funs (env,off_sb) in
     let funs, env =
-      VarMap.fold (fun orig_id ffun (funs, env) ->
+      Variable.Map.fold (fun orig_id ffun (funs, env) ->
           let ffun, env = subst_ffunction orig_id ffun env in
           let id = find_subst' orig_id env in
-          let funs = VarMap.add id ffun funs in
+          let funs = Variable.Map.add id ffun funs in
           funs, env)
-        ffuns.funs (VarMap.empty,env) in
+        ffuns.funs (Variable.Map.empty,env) in
     { ident = FunId.create (Compilenv.current_unit ());
       compilation_unit = Compilenv.current_unit ();
       funs }, env, off_sb
@@ -288,12 +288,12 @@ let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
 let make_const_bool b eid = make_const_ptr (if b then 1 else 0) eid
 
 let find id env =
-  try VarMap.find id env.env_approx
+  try Variable.Map.find id env.env_approx
   with Not_found ->
     Misc.fatal_error
       (Format.asprintf "unbound variable %a@." Variable.print id)
 
-let present id env = VarMap.mem id env.env_approx
+let present id env = Variable.Map.mem id env.env_approx
 let add_approx id approx env =
   let approx =
     match approx.var with
@@ -302,7 +302,7 @@ let add_approx id approx env =
     | _ ->
         { approx with var = Some id }
   in
-  { env with env_approx = VarMap.add id approx env.env_approx }
+  { env with env_approx = Variable.Map.add id approx env.env_approx }
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
@@ -317,13 +317,13 @@ let find_global i r =
 (* Utility function to duplicate an expression and makes a function from it *)
 
 let subst_toplevel sb lam =
-  let subst id = try VarMap.find id sb with Not_found -> id in
+  let subst id = try Variable.Map.find id sb with Not_found -> id in
   let f = function
     | Fvar (id,_) -> Fvar (subst id,ExprId.create ())
     | Fset_of_closures (cl,d) ->
         Fset_of_closures (
           { cl with
-            cl_specialised_arg = VarMap.map subst cl.cl_specialised_arg },
+            cl_specialised_arg = Variable.Map.map subst cl.cl_specialised_arg },
           ExprId.create ())
     | e -> e
   in
@@ -335,11 +335,11 @@ let make_closure_declaration id lam params =
 
   let sb =
     VarSet.fold
-      (fun id sb -> VarMap.add id (rename_var id) sb)
-      free_variables VarMap.empty in
+      (fun id sb -> Variable.Map.add id (rename_var id) sb)
+      free_variables Variable.Map.empty in
   let body = subst_toplevel sb lam in
 
-  let subst id = VarMap.find id sb in
+  let subst id = Variable.Map.find id sb in
 
   let function_declaration =
     { stub = false;
@@ -349,21 +349,21 @@ let make_closure_declaration id lam params =
       dbg = Debuginfo.none } in
 
   let fv' =
-    VarMap.fold (fun id id' fv' ->
-        VarMap.add id' (Fvar(id,ExprId.create ())) fv')
-      (VarMap.filter (fun id _ -> not (VarSet.mem id param_set)) sb)
-      VarMap.empty in
+    Variable.Map.fold (fun id id' fv' ->
+        Variable.Map.add id' (Fvar(id,ExprId.create ())) fv')
+      (Variable.Map.filter (fun id _ -> not (VarSet.mem id param_set)) sb)
+      Variable.Map.empty in
 
   let function_declarations =
     { ident = FunId.create (Compilenv.current_unit ());
-      funs = VarMap.singleton id function_declaration;
+      funs = Variable.Map.singleton id function_declaration;
       compilation_unit = Compilenv.current_unit () }
   in
 
   let closure =
     { cl_fun = function_declarations;
       cl_free_var = fv';
-      cl_specialised_arg = VarMap.empty } in
+      cl_specialised_arg = Variable.Map.empty } in
 
   Fset_of_closures(closure, ExprId.create ())
 
@@ -420,8 +420,8 @@ let lambda_smaller' lam threshold =
         let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
         size := !size + call_cost; lambda_size fn; lambda_list_size args
     | Fset_of_closures({ cl_fun = ffuns; cl_free_var = fv }, _) ->
-        VarMap.iter (fun _ -> lambda_size) fv;
-        VarMap.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
+        Variable.Map.iter (fun _ -> lambda_size) fv;
+        Variable.Map.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
     | Fclosure({ fu_closure = lam }, _) ->
         incr size; lambda_size lam
     | Fvariable_in_closure({ vc_closure }, _) ->
@@ -514,7 +514,7 @@ let rec no_effects = function
       no_effects_prim p &&
       List.for_all no_effects args
   | Fset_of_closures ({ cl_free_var }, _) ->
-      VarMap.for_all (fun id def -> no_effects def) cl_free_var
+      Variable.Map.for_all (fun id def -> no_effects def) cl_free_var
   | Fclosure({ fu_closure = lam }, _) ->
       no_effects lam
   | Fvariable_in_closure({ vc_closure }, _) ->
@@ -740,7 +740,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fvar (id,annot) ->
       let id, tree =
         try
-          let id' = VarMap.find id env.sb.sb_var in
+          let id' = Variable.Map.find id env.sb.sb_var in
           id', Fvar(id',annot) with
         | Not_found -> id, tree
       in
@@ -823,7 +823,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let body_env = match str with
         | Assigned ->
            (* if the variable is mutable, we don't propagate anything about it *)
-           { env with env_approx = VarMap.add id value_unknown env.env_approx }
+           { env with env_approx = Variable.Map.add id value_unknown env.env_approx }
         | Not_assigned ->
            add_approx id r.approx env in
       (* To distinguish variables used by the body and the declaration,
@@ -979,7 +979,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       ret r value_unknown
   | Fassign(id, lam, annot) ->
       let lam, r = loop env r lam in
-      let id = try VarMap.find id env.sb.sb_var with
+      let id = try Variable.Map.find id env.sb.sb_var with
         | Not_found -> id in
       let r = use_var r id in
       Fassign(id, lam, annot),
@@ -1067,16 +1067,16 @@ and closure env r cl annot =
   let spec_args = cl.cl_specialised_arg in
 
   let env = { env with closure_depth = env.closure_depth + 1 } in
-  let spec_args = VarMap.map (subst_var env) spec_args in
-  let approxs = VarMap.map (fun id -> find id env) spec_args in
+  let spec_args = Variable.Map.map (subst_var env) spec_args in
+  let approxs = Variable.Map.map (fun id -> find id env) spec_args in
 
-  let fv, r = VarMap.fold (fun id lam (fv,r) ->
+  let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
       let lam, r = loop env r lam in
-      VarMap.add id (lam, r.approx) fv, r) fv (VarMap.empty, r) in
+      Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r) in
 
   let env = local_env env in
 
-  let prev_closure_symbols = VarMap.fold (fun id _ map ->
+  let prev_closure_symbols = Variable.Map.fold (fun id _ map ->
       let cf = Closure_id.wrap id in
       let sym = Compilenv.closure_symbol cf in
       SymbolMap.add sym id map) ffuns.funs SymbolMap.empty in
@@ -1084,8 +1084,8 @@ and closure env r cl annot =
   let fv, env, ffunction_sb = subst_free_vars fv env in
   let ffuns, env, ffunction_sb = ffuns_subst env ffuns ffunction_sb in
 
-  let spec_args = VarMap.map_keys (subst_var env) spec_args in
-  let approxs = VarMap.map_keys (subst_var env) approxs in
+  let spec_args = Variable.Map.map_keys (subst_var env) spec_args in
+  let approxs = Variable.Map.map_keys (subst_var env) approxs in
   let prev_closure_symbols = SymbolMap.map (subst_var env) prev_closure_symbols in
 
   let env = { env with current_functions = FunSet.add ffuns.ident env.current_functions } in
@@ -1093,20 +1093,20 @@ and closure env r cl annot =
 
   let internal_closure =
     { ffunctions = ffuns;
-      bound_var = VarMap.fold (fun id (_,desc) map ->
+      bound_var = Variable.Map.fold (fun id (_,desc) map ->
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
       kept_params = VarSet.empty;
       fv_subst_renaming = ffunction_sb.ffs_fv;
       fun_subst_renaming = ffunction_sb.ffs_fun } in
-  let closure_env = VarMap.fold
+  let closure_env = Variable.Map.fold
       (fun id _ env -> add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
   let funs, used_params, r =
-    VarMap.fold (fun fid ffun (funs,used_params,r) ->
-        let closure_env = VarMap.fold
+    Variable.Map.fold (fun fid ffun (funs,used_params,r) ->
+        let closure_env = Variable.Map.fold
             (fun id (_,desc) env ->
                if VarSet.mem id ffun.free_variables
                then begin
@@ -1114,7 +1114,7 @@ and closure env r cl annot =
                end
                else env) fv closure_env in
         let closure_env = List.fold_left (fun env id ->
-            let approx = try VarMap.find id approxs
+            let approx = try Variable.Map.find id approxs
               with Not_found -> value_unknown in
             add_approx id approx env) closure_env ffun.params in
 
@@ -1145,22 +1145,22 @@ and closure env r cl annot =
         let r = VarSet.fold (fun id r -> exit_scope r id)
             ffun.free_variables r in
         let free_variables = Flambdaiter.free_variables body in
-        VarMap.add fid { ffun with body; free_variables } funs,
+        Variable.Map.add fid { ffun with body; free_variables } funs,
         used_params, r)
-      ffuns.funs (VarMap.empty, VarSet.empty, r) in
+      ffuns.funs (Variable.Map.empty, VarSet.empty, r) in
 
-  let spec_args = VarMap.filter
+  let spec_args = Variable.Map.filter
       (fun id _ -> VarSet.mem id used_params)
       spec_args in
 
-  let r = VarMap.fold (fun id' v acc -> use_var acc v) spec_args r in
+  let r = Variable.Map.fold (fun id' v acc -> use_var acc v) spec_args r in
   let ffuns = { ffuns with funs } in
 
   let kept_params = Flambdaiter.arguments_kept_in_recursion ffuns in
 
   let closure = { internal_closure with ffunctions = ffuns; kept_params } in
-  let r = VarMap.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
-  Fset_of_closures ({cl_fun = ffuns; cl_free_var = VarMap.map fst fv;
+  let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
+  Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
              cl_specialised_arg = spec_args}, annot),
   ret r (value_unoffseted_closure closure)
 
@@ -1310,11 +1310,11 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
             | Value_bottom -> acc
             | _ ->
                 if VarSet.mem id kept_params
-                then VarMap.add id approx acc
+                then Variable.Map.add id approx acc
                 else acc in
-          let worth = List.fold_right2 f func.params approxs VarMap.empty in
+          let worth = List.fold_right2 f func.params approxs Variable.Map.empty in
 
-          if not (VarMap.is_empty worth) && not local
+          if not (Variable.Map.is_empty worth) && not local
           then
             duplicate_apply env r funct clos fun_id func fapprox closure
               (args,approxs) kept_params ap_dbg
@@ -1335,7 +1335,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
   let env = inlining_level_up env in
   let clos_id = new_var "dup_closure" in
   let make_fv var fv =
-    VarMap.add var
+    Variable.Map.add var
       (Fvariable_in_closure
          ({ vc_closure = Fvar(clos_id, ExprId.create ());
             vc_fun = fun_id;
@@ -1346,7 +1346,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
   let variables_in_closure =
     variables_bound_by_the_closure fun_id clos in
 
-  let fv = VarSet.fold make_fv variables_in_closure VarMap.empty in
+  let fv = VarSet.fold make_fv variables_in_closure Variable.Map.empty in
 
   let env = add_approx clos_id fapprox env in
 
@@ -1363,12 +1363,12 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
         | Value_bottom -> spec_args
         | _ ->
             if VarSet.mem id kept_params
-            then VarMap.add id new_id spec_args
+            then Variable.Map.add id new_id spec_args
             else spec_args in
       spec_args, args, env_func
     in
     let params = List.combine func.params args in
-    List.fold_right2 f params approxs (VarMap.empty,[],env) in
+    List.fold_right2 f params approxs (Variable.Map.empty,[],env) in
 
   let args_exprs = List.map (fun (id,_) -> Fvar(id,ExprId.create ())) args in
 
@@ -1412,7 +1412,7 @@ and inline env r clos lfunc fun_id func args dbg eid =
                 ExprId.create ()),
              body, ExprId.create ()))
       variables_in_closure
-    |> VarMap.fold (fun id _ body ->
+    |> Variable.Map.fold (fun id _ body ->
         Flet(Not_assigned, id,
              Fclosure ({ fu_closure = Fvar(clos_id, ExprId.create ());
                           fu_fun = Closure_id.wrap id;
@@ -1462,12 +1462,12 @@ let remove_unused_closure_variables tree =
   let aux = function
     | Fset_of_closures ({ cl_fun; cl_free_var } as closure, eid) ->
        let all_free_var =
-         VarMap.fold
+         Variable.Map.fold
            (fun _ { free_variables } acc -> VarSet.union free_variables acc)
            cl_fun.funs
            VarSet.empty in
        let cl_free_var =
-         VarMap.filter
+         Variable.Map.filter
            (fun id _ -> VarSet.mem id all_free_var
                         || Var_within_closure.Set.mem (Var_within_closure.wrap id)
                                                   used_variable_withing_closure)

@@ -41,17 +41,17 @@ let rec lam ppf = function
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in
       let funs ppf =
-        VarMap.iter (fun var f ->
+        Variable.Map.iter (fun var f ->
             fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
               Variable.print var idents f.params lam f.body) in
       let lams ppf =
-        VarMap.iter (fun id v -> fprintf ppf "@ %a = %a"
+        Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
                         Variable.print id lam v) in
       let spec ppf spec_args =
-        if not (VarMap.is_empty spec_args)
+        if not (Variable.Map.is_empty spec_args)
         then begin
           fprintf ppf "@ with";
-          VarMap.iter (fun id id' -> fprintf ppf "@ %a <- %a"
+          Variable.Map.iter (fun id id' -> fprintf ppf "@ %a <- %a"
                           Variable.print id Variable.print id')
             spec_args
         end
@@ -202,7 +202,7 @@ let function_declarations ppf fd =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
   let funs ppf =
-    VarMap.iter (fun var f ->
+    Variable.Map.iter (fun var f ->
         fprintf ppf "@ (fun@ %a@[<2>%a@]@ @[<2>%a@])"
           Variable.print var idents f.params lam f.body) in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
