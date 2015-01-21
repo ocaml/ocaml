@@ -10,11 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Lambda
 open Symbol
 open Abstract_identifiers
 open Flambda
-open Flambdaapprox
 
 type t = {
   (* Claim: the substitution is empty if [active] is [false]. *)
@@ -52,11 +50,11 @@ let rec add_sb_var sb id id' =
   let sb = { sb with sb_var = Variable.Map.add id id' sb.sb_var } in
   let sb =
     try let pre_vars = Variable.Map.find id sb.back_var in
-      List.fold_left (fun sb pre_id -> add_sb_var' pre_id id' sb) sb pre_vars
+      List.fold_left (fun sb pre_id -> add_sb_var sb pre_id id') sb pre_vars
     with Not_found -> sb in
   let sb =
     try let pre_sym = Variable.Map.find id sb.back_sym in
-      List.fold_left (fun sb pre_sym -> add_sb_sym' pre_sym id' sb) sb pre_sym
+      List.fold_left (fun sb pre_sym -> add_sb_sym sb pre_sym id') sb pre_sym
     with Not_found -> sb in
   let back_var =
     let l = try Variable.Map.find id' sb.back_var with Not_found -> [] in
@@ -133,7 +131,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     { ffs_fv = Var_within_closure.Map.empty; ffs_fun = Closure_id.Map.empty }
 
   let new_subst_fv t id subst =
-    if subst.activated
+    if subst.active
     then
       let id' = rename_var id in
       let subst = add_sb_var subst id id' in
@@ -144,7 +142,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     else id, subst, t
 
   let new_subst_fun t id subst =
-    if subst.activated
+    if subst.active
     then
       let id' = rename_var id in
       let subst = add_sb_var subst id id' in
@@ -176,10 +174,10 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     if subst.active
     then
       let subst_ffunction fun_id ffun subst =
-        let params, subst = new_subst_ids subst ffun.params in
+        let params, subst = new_subst_ids' subst ffun.params in
         let free_variables =
           Variable.Set.fold (fun id set ->
-              Variable.Set.add (find_subst' id subst) set)
+              Variable.Set.add (find_subst' subst id) set)
             ffun.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
@@ -187,7 +185,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
           free_variables;
           params;
           (* keep code in sync with the closure *)
-          body = Flambdaiter.toplevel_substitution subst.sb.sb_var ffun.body;
+          body = Flambdaiter.toplevel_substitution subst.sb_var ffun.body;
         }, subst
       in
       let subst, t =
