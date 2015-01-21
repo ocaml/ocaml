@@ -21,11 +21,11 @@ include module type of Flambdatypes
 (** Access functions *)
 
 val find_declaration :
-  closure_id -> 'a function_declarations -> 'a function_declaration
+  Closure_id.t -> 'a function_declarations -> 'a function_declaration
 (** [find_declaration f decl] raises [Not_found] if [f] is not in [decl]. *)
 
 val find_declaration_variable :
-  closure_id -> 'a function_declarations -> Variable.t
+  Closure_id.t -> 'a function_declarations -> Variable.t
 (** [find_declaration_variable f decl] raises [Not_found] if [f] is not in
     [decl]. *)
 
@@ -38,7 +38,7 @@ val find_free_variable :
 val function_arity : 'a function_declaration -> int
 
 val variables_bound_by_the_closure :
-  closure_id -> 'a function_declarations -> VarSet.t
+  Closure_id.t -> 'a function_declarations -> VarSet.t
 (** Variables "bound by a closure" are those variables free in the
     corresponding function's body that are neither:
     - bound as parameters of that function; nor

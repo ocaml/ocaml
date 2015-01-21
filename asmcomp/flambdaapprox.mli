@@ -29,7 +29,7 @@ type descr =
   | Value_symbol of Symbol.t
 
 and value_offset = {
-  fun_id : closure_id;
+  fun_id : Closure_id.t;
   closure : value_closure;
 }
 
@@ -38,7 +38,7 @@ and value_closure = {
   bound_var : approx Var_within_closure.Map.t;
   kept_params : VarSet.t;
   fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
-  fun_subst_renaming : closure_id ClosureIdMap.t;
+  fun_subst_renaming : Closure_id.t ClosureIdMap.t;
 }
 
 and approx = {

@@ -85,7 +85,7 @@ type let_kind =
 
 type call_kind =
   | Indirect
-  | Direct of closure_id
+  | Direct of Closure_id.t
 
 type const =
   (* Note: no structured constants *)
@@ -111,9 +111,9 @@ type 'a flambda =
   (* Restrictions on [Lambda.Lstringswitch] also apply here *)
   | Fstringswitch of 'a flambda * (string * 'a flambda) list *
                      'a flambda option * 'a
-  | Fstaticraise of static_exception * 'a flambda list * 'a
+  | Fstaticraise of Static_exception.t * 'a flambda list * 'a
   | Fstaticcatch of
-      static_exception * Variable.t list * 'a flambda * 'a flambda * 'a
+      Static_exception.t * Variable.t list * 'a flambda * 'a flambda * 'a
   | Ftrywith of 'a flambda * Variable.t * 'a flambda * 'a
   | Fifthenelse of 'a flambda * 'a flambda * 'a flambda * 'a
   | Fsequence of 'a flambda * 'a flambda * 'a
@@ -164,8 +164,8 @@ and 'a function_declaration = {
 
 and 'a ffunction = {
   fu_closure : 'a flambda;
-  fu_fun : closure_id;
-  fu_relative_to : closure_id option;
+  fu_fun : Closure_id.t;
+  fu_relative_to : Closure_id.t option;
   (** For use when applying [Fclosure] to an existing (that is to say,
       [Fclosure]) closure value rather than a set of closures. *)
 }
@@ -173,7 +173,7 @@ and 'a ffunction = {
 and 'a fvariable_in_closure = {
   (** [vc_closure] must yield a closure rather than a set of closures. *)
   vc_closure : 'a flambda;
-  vc_fun : closure_id;
+  vc_fun : Closure_id.t;
   vc_var : Var_within_closure.t;
 }
 

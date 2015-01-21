@@ -44,7 +44,7 @@ val no_var_within_closure_is_bound_multiple_times :
   'a flambda -> Var_within_closure.t counter_example
 
 val no_closure_id_is_bound_multiple_times :
-  'a flambda -> closure_id counter_example
+  'a flambda -> Closure_id.t counter_example
 
 val every_declared_closure_is_from_current_compilation_unit :
   current_compilation_unit:compilation_unit -> 'a flambda ->

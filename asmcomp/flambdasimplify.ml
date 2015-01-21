@@ -168,7 +168,7 @@ let subst_var env id =
 
 type ffunction_subst =
   { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
-    ffs_fun : closure_id ClosureIdMap.t }
+    ffs_fun : Closure_id.t ClosureIdMap.t }
 
 let empty_ffunction_subst =
   { ffs_fv = Var_within_closure.Map.empty; ffs_fun = ClosureIdMap.empty }

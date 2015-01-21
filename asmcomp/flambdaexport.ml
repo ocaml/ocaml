@@ -31,7 +31,7 @@ type descr =
   | Value_set_of_closures of value_closure
 
 and value_offset =
-  { fun_id : closure_id;
+  { fun_id : Closure_id.t;
     closure : value_closure }
 
 and value_closure =
