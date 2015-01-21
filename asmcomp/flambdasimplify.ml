@@ -370,119 +370,7 @@ let make_closure_declaration id lam params =
 
   Fset_of_closures(closure, Expr_id.create ())
 
-(* Determine whether the estimated size of a flambda term is below
-   some threshold *)
-
-let prim_size prim args =
-  match prim with
-    Pidentity -> 0
-  | Pgetglobal id -> 1
-  | Psetglobal id -> 1
-  | Pmakeblock(tag, mut) -> 5 + List.length args
-  | Pfield f -> 1
-  | Psetfield(f, isptr) -> if isptr then 4 else 1
-  | Pfloatfield f -> 1
-  | Psetfloatfield f -> 1
-  | Pduprecord _ -> 10 + List.length args
-  | Pccall p -> (if p.Primitive.prim_alloc then 10 else 4) + List.length args
-  | Praise _ -> 4
-  | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
-  | Pmakearray kind -> 5 + List.length args
-  | Parraylength kind -> if kind = Pgenarray then 6 else 2
-  | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
-  | Parraysetu kind -> if kind = Pgenarray then 16 else 4
-  | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
-  | Parraysets kind -> if kind = Pgenarray then 22 else 10
-  | Pbittest -> 3
-  | Pbigarrayref(_, ndims, _, _) -> 4 + ndims * 6
-  | Pbigarrayset(_, ndims, _, _) -> 4 + ndims * 6
-  | Pgetglobalfield _ -> 2
-  | Psetglobalfield _ -> 2
-  | _ -> 2 (* arithmetic and comparisons *)
-
-(* Very raw approximation of switch cost *)
-
-let lambda_smaller' lam threshold =
-  let open Asttypes in
-  let size = ref 0 in
-  let rec lambda_size lam =
-    if !size > threshold then raise Exit;
-    match lam with
-      Fvar _ -> ()
-    | Fsymbol _ -> ()
-    | Fconst(
-        (Fconst_base(Const_int _ | Const_char _ | Const_float _ |
-                     Const_int32 _ | Const_int64 _ | Const_nativeint _) |
-         Fconst_pointer _), _) -> incr size
-    | Fconst(
-        (Fconst_base( Const_string _ )
-        | Fconst_float_array _ | Fconst_immstring _ ) , _) ->
-        raise Exit (* Do not duplicate: should be moved out by a previous pass *)
-    | Fapply ({ ap_function = fn; ap_arg = args; ap_kind = direct }, _) ->
-        let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
-        size := !size + call_cost; lambda_size fn; lambda_list_size args
-    | Fset_of_closures({ cl_fun = ffuns; cl_free_var = fv }, _) ->
-        Variable.Map.iter (fun _ -> lambda_size) fv;
-        Variable.Map.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
-    | Fclosure({ fu_closure = lam }, _) ->
-        incr size; lambda_size lam
-    | Fvariable_in_closure({ vc_closure }, _) ->
-        incr size; lambda_size vc_closure
-    | Flet(id, _, lam, body, _) ->
-        lambda_size lam; lambda_size body
-    | Fletrec(bindings, body, _) ->
-        List.iter (fun (_,lam) -> lambda_size lam) bindings;
-        lambda_size body
-    | Fprim(prim, args, _, _) ->
-        size := !size + prim_size prim args;
-        lambda_list_size args
-    | Fswitch(lam, sw, _) ->
-        let aux = function _::_::_ -> size := !size + 5 | _ -> () in
-        aux sw.fs_consts; aux sw.fs_blocks;
-        lambda_size lam;
-        List.iter (fun (_,lam) -> lambda_size lam) sw.fs_consts;
-        List.iter (fun (_,lam) -> lambda_size lam) sw.fs_blocks
-    | Fstringswitch(lam,sw,def,_) ->
-        lambda_size lam;
-        List.iter (fun (_,lam) ->
-            size := !size + 2;
-            lambda_size lam)
-          sw;
-        Misc.may lambda_size def
-    | Fstaticraise (_,args,_) -> lambda_list_size args
-    | Fstaticcatch(_, _, body, handler, _) ->
-        incr size; lambda_size body; lambda_size handler
-    | Ftrywith(body, id, handler, _) ->
-        size := !size + 8; lambda_size body; lambda_size handler
-    | Fifthenelse(cond, ifso, ifnot, _) ->
-        size := !size + 2;
-        lambda_size cond; lambda_size ifso; lambda_size ifnot
-    | Fsequence(lam1, lam2, _) ->
-        lambda_size lam1; lambda_size lam2
-    | Fwhile(cond, body, _) ->
-        size := !size + 2; lambda_size cond; lambda_size body
-    | Ffor(id, low, high, dir, body, _) ->
-        size := !size + 4; lambda_size low; lambda_size high; lambda_size body
-    | Fassign(id, lam, _) ->
-        incr size;  lambda_size lam
-    | Fsend(_, met, obj, args, _, _) ->
-        size := !size + 8;
-        lambda_size met; lambda_size obj; lambda_list_size args
-    | Funreachable _ -> ()
-    | Fevent _ -> assert false
-  and lambda_list_size l = List.iter lambda_size l in
-  try
-    lambda_size lam;
-    if !size <= threshold then Some !size
-    else None
-  with Exit ->
-    None
-
-let lambda_smaller lam threshold =
-  lambda_smaller' lam threshold <> None
-
-(* Simple effectfull test, should be replace by call to Purity module *)
+(* Simple effectful test, should be replaced by call to Purity module *)
 
 let no_effects_prim = function
     Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
@@ -504,7 +392,7 @@ let no_effects_prim = function
   | _ -> true
 
 let rec no_effects = function
-  | Fvar _ (* notice: var acces is not pure, but has no effect *)
+  | Fvar _
   | Fsymbol _
   | Fconst _
     -> true
@@ -1269,8 +1157,8 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
   let fun_size =
     if func.stub || functor_like env clos approxs
     then Some 0
-    else lambda_smaller' func.body
-        ((env.inline_threshold + List.length func.params) * 2) in
+    else Flambdacost.lambda_smaller' func.body
+        ~than:((env.inline_threshold + List.length func.params) * 2) in
   match fun_size with
   | None ->
       Fapply ({ap_function = funct; ap_arg = args;
@@ -1287,8 +1175,8 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
         (* try inlining if the function is not too far above the threshold *)
         let body, r_inline = inline env r clos funct fun_id func args ap_dbg eid in
         if func.stub || functor_like env clos approxs ||
-           (lambda_smaller body
-              (inline_threshold + List.length func.params))
+           (Flambdacost.lambda_smaller body
+              ~than:(inline_threshold + List.length func.params))
         then
           (* if the definitive size is small enought: keep it *)
           body, r_inline
