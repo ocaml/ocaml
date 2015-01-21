@@ -118,7 +118,7 @@ type 'a flambda =
   | Fvar of Variable.t * 'a
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
-  | Fset_of_closures of 'a fclosure * 'a
+  | Fset_of_closures of 'a fset_of_closures * 'a
   | Fclosure of 'a ffunction * 'a
   | Fvariable_in_closure of 'a fvariable_in_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
@@ -153,7 +153,7 @@ and 'a fapply =
     ap_kind: call_kind;
     ap_dbg: Debuginfo.t }
 
-and 'a fclosure =
+and 'a fset_of_closures =
   { cl_fun : 'a function_declarations;
     cl_free_var : 'a flambda VarMap.t;
     cl_specialised_arg : Variable.t VarMap.t }
@@ -215,7 +215,7 @@ val find_declaration_variable :
 (** [find_declaration_variable f decl] raises Not_found if [f] is not in [decl] *)
 
 val find_free_variable :
-  variable_within_closure -> 'a fclosure -> 'a flambda
+  variable_within_closure -> 'a fset_of_closures -> 'a flambda
 (** [find_free_variable v clos] raises Not_found if [c] is not in [clos] *)
 
 

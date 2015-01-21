@@ -25,7 +25,7 @@ val iter_toplevel : ('a flambda -> unit) -> 'a flambda -> unit
     i.e. does not apply it on functions body *)
 
 val iter_on_closures :
-  ('a fclosure -> 'a -> unit) -> 'a flambda -> unit
+  ('a fset_of_closures -> 'a -> unit) -> 'a flambda -> unit
 
 val map : ('a flambda -> 'a flambda) ->
   'a flambda -> 'a flambda

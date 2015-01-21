@@ -28,7 +28,7 @@ type 'a flambda =
   | Fvar of Variable.t * 'a
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
-  | Fclosure of 'a fclosure * 'a
+  | Fclosure of 'a fset_of_closures * 'a
   | Ffunction of 'a ffunction * 'a
   | Fvariable_in_closure of 'a fvariable_in_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
@@ -65,7 +65,7 @@ and 'a fapply =
     ap_kind: call_kind;
     ap_dbg: Debuginfo.t }
 
-and 'a fclosure =
+and 'a fset_of_closures =
   { cl_fun : 'a function_declarations;
     cl_free_var : 'a flambda VarMap.t;
     cl_specialised_arg : Variable.t VarMap.t }

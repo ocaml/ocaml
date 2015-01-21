@@ -1246,8 +1246,8 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let expr = Fapply ({ ap_function = Fvar(funct_id, ExprId.create ());
                        ap_arg = call_args;
                        ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
-  let fclosure = make_closure_declaration new_fun_id expr remaining_args in
-  let offset = Ffunction ({fu_closure = fclosure;
+  let fset_of_closures = make_closure_declaration new_fun_id expr remaining_args in
+  let offset = Ffunction ({fu_closure = fset_of_closures;
                            fu_fun = Closure_function.wrap new_fun_id;
                            fu_relative_to = None}, ExprId.create ()) in
   let with_args = List.fold_right (fun (id', arg) expr ->
