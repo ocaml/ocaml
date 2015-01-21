@@ -33,15 +33,15 @@ val map : ('a flambda -> 'a flambda) ->
 val map_toplevel : ('a flambda -> 'a flambda) ->
   'a flambda -> 'a flambda
 
-val free_variables : 'a flambda -> VarSet.t
+val free_variables : 'a flambda -> Variable.Set.t
 
 val fold_subexpressions :
-  ('acc -> VarSet.t -> 'a flambda -> 'acc * 'a flambda) -> 'acc -> 'a flambda ->
+  ('acc -> Variable.Set.t -> 'a flambda -> 'acc * 'a flambda) -> 'acc -> 'a flambda ->
   'acc * 'a flambda
 
-val expression_free_variables : 'a flambda -> VarSet.t
+val expression_free_variables : 'a flambda -> Variable.Set.t
 
-val subexpression_bound_variables : 'a flambda -> (VarSet.t*'a flambda) list
+val subexpression_bound_variables : 'a flambda -> (Variable.Set.t*'a flambda) list
 
 val map_data : ('a -> 'b) -> 'a flambda -> 'b flambda
 
@@ -49,4 +49,4 @@ val toplevel_substitution : Variable.t Variable.Map.t ->
   'a flambda -> 'a flambda
 
 val arguments_kept_in_recursion : 'a function_declarations ->
-  VarSet.t
+  Variable.Set.t

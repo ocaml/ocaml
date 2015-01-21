@@ -14,9 +14,9 @@ open Ext_types
 
 module type S = sig
 
-  module Id : PrintableHashOrdered
+  module Id : Identifiable
 
-  type directed_graph = ExtSet(Id).t ExtMap(Id).t
+  type directed_graph = Id.Set.t Id.Map.t
   (** if (a -> set) belongs to the map, it means that there are edges
       from a to every elements of set. It is assumed that no edge
       points to a vertex not represented in the map *)
@@ -33,5 +33,4 @@ module type S = sig
 
 end
 
-
-module Make(Id:PrintableHashOrdered) : S with module Id := Id
+module Make(Id:Identifiable) : S with module Id := Id

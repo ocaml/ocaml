@@ -14,7 +14,7 @@ open Symbol
 open Abstract_identifiers
 
 type constant_result = {
-  not_constant_id : VarSet.t;
+  not_constant_id : Variable.Set.t;
   not_constant_closure : FunSet.t;
 }
 

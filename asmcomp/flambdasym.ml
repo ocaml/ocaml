@@ -171,7 +171,7 @@ module Conv(P:Param1) = struct
         FunSet.mem ident (ex_constant_closures ())
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
-                       FunId.print fid)
+                       Set_of_closures_id.print fid)
 
   let function_arity fun_id =
     let arity clos off = function_arity (find_declaration fun_id clos) in
@@ -183,7 +183,7 @@ module Conv(P:Param1) = struct
                            Closure_id.print fun_id)
 
   let not_constants = P.not_constants
-  let is_constant id = not (VarSet.mem id not_constants.Flambdaconstants.not_constant_id)
+  let is_constant id = not (Variable.Set.mem id not_constants.Flambdaconstants.not_constant_id)
 
   type env =
     { sb : unit flambda Variable.Map.t; (* substitution *)
@@ -716,7 +716,7 @@ module Conv(P:Param1) = struct
       in
       let body, approx = conv_approx env func.body in
       { func with
-        free_variables = VarSet.filter kept_fv func.free_variables;
+        free_variables = Variable.Set.filter kept_fv func.free_variables;
         body }, approx
     in
 

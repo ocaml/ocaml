@@ -11,7 +11,6 @@
 (***********************************************************************)
 
 open Ext_types
-open Symbol
 open Abstract_identifiers
 
 (** Intermediate language used to perform closure conversion and inlining.
@@ -97,7 +96,7 @@ type const =
 (* The value of type ['a] may be used for annotation of an flambda expression
    by some optimization pass. *)
 type 'a flambda =
-    Fsymbol of Symbol.t * 'a
+  | Fsymbol of Symbol.t * 'a
   | Fvar of Variable.t * 'a
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
@@ -142,15 +141,15 @@ and 'a fset_of_closures = {
 }
 
 and 'a function_declarations = {
-  ident : FunId.t;
+  ident : Set_of_closures_id.t;
   funs : 'a function_declaration Variable.Map.t;
-  compilation_unit : compilation_unit;
+  compilation_unit : Symbol.Compilation_unit.t;
 }
 
 and 'a function_declaration = {
   params : Variable.t list;
   body : 'a flambda;
-  free_variables : VarSet.t;
+  free_variables : Variable.Set.t;
   (** All variables free in the *body* of the function.  For example, a
       variable that is bound as one of the function's parameters will still
       be included in this set.  This field is present as an optimization. *)

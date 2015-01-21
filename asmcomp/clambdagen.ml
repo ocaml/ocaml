@@ -241,7 +241,7 @@ module Conv(P:Param2) = struct
         FunSet.mem ident ex_constant_closures
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
-                       FunId.print fid)
+                       Set_of_closures_id.print fid)
 
   type env =
     { subst : ulambda Variable.Map.t;

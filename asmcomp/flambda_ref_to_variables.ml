@@ -20,10 +20,10 @@ let rename_var var =
   Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var
 
 let directly_used_variables tree =
-  let set = ref VarSet.empty in
+  let set = ref Variable.Set.empty in
   let rec loop = function
     | Fvar (v, _) ->
-        set := VarSet.add v !set
+        set := Variable.Set.add v !set
     | Fprim(Pfield _, [Fvar _], _, _)
     | Fprim(Poffsetref _, [Fvar _], _, _) ->
         ()
@@ -59,7 +59,7 @@ let eliminate_ref lam =
   let directly_used_variables = directly_used_variables lam in
   let convertible_variables =
     Variable.Map.filter
-      (fun v _ -> not (VarSet.mem v directly_used_variables))
+      (fun v _ -> not (Variable.Set.mem v directly_used_variables))
       (variables_containing_ref lam)
   in
   let convertible_variables =

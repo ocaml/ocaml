@@ -35,7 +35,7 @@ and value_offset =
     closure : value_closure; }
 
 and value_closure =
-  { closure_id : FunId.t;
+  { closure_id : Set_of_closures_id.t;
     bound_var : approx Var_within_closure.Map.t;
     results : approx ClosureIdMap.t }
 
@@ -67,7 +67,7 @@ type exported = {
   (** Symbols that are effectively constants (the top-level module is
       not always a constant for instance) *)
   ex_constant_closures : FunSet.t;
-  ex_kept_arguments : VarSet.t FunMap.t;
+  ex_kept_arguments : Variable.Set.t FunMap.t;
 }
 
 val empty_export : exported

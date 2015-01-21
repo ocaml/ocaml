@@ -35,7 +35,7 @@ and value_offset =
     closure : value_closure }
 
 and value_closure =
-  { closure_id : FunId.t;
+  { closure_id : Set_of_closures_id.t;
     bound_var : approx Var_within_closure.Map.t;
     results : approx ClosureIdMap.t }
 
@@ -55,7 +55,7 @@ type exported = {
   ex_offset_fv : int Var_within_closure.Map.t;
   ex_constants : SymbolSet.t;
   ex_constant_closures : FunSet.t;
-  ex_kept_arguments : VarSet.t FunMap.t;
+  ex_kept_arguments : Variable.Set.t FunMap.t;
 }
 
 let empty_export = {
@@ -105,11 +105,11 @@ let print_approx ppf export =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_closure ppf { closure_id; bound_var } =
     if FunSet.mem closure_id !printed_closure
-    then fprintf ppf "%a" FunId.print closure_id
+    then fprintf ppf "%a" Set_of_closures_id.print closure_id
     else begin
       printed_closure := FunSet.add closure_id !printed_closure;
       fprintf ppf "{%a: %a}"
-        FunId.print closure_id
+        Set_of_closures_id.print closure_id
         print_binding bound_var
     end
   and print_binding ppf bound_var =

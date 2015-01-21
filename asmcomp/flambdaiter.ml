@@ -286,38 +286,38 @@ let map f tree = map_general ~toplevel:false f tree
 let map_toplevel f tree = map_general ~toplevel:true f tree
 
 let expression_free_variables = function
-  | Fvar (id,_) -> VarSet.singleton id
-  | Fassign (id,_,_) -> VarSet.singleton id
+  | Fvar (id,_) -> Variable.Set.singleton id
+  | Fassign (id,_,_) -> Variable.Set.singleton id
   | Fset_of_closures ({cl_free_var; cl_specialised_arg},_) ->
       let set = Variable.Map.keys (Variable.Map.revert cl_specialised_arg) in
       Variable.Map.fold (fun _ expr set ->
           (* HACK:
              This is not needed, but it avoids moving lets inside free_vars *)
           match expr with
-          | Fvar(var, _) -> VarSet.add var set
+          | Fvar(var, _) -> Variable.Set.add var set
           | _ -> set)
         cl_free_var set
-  | _ -> VarSet.empty
+  | _ -> Variable.Set.empty
 
 let fold_subexpressions f acc = function
   | Ftrywith(body,id,handler,d) ->
-      let acc, body = f acc VarSet.empty body in
-      let acc, handler = f acc (VarSet.singleton id) handler in
+      let acc, body = f acc Variable.Set.empty body in
+      let acc, handler = f acc (Variable.Set.singleton id) handler in
       acc, Ftrywith(body,id,handler,d)
 
   | Ffor(id, lo, hi, dir, body, d) ->
-      let acc, lo = f acc VarSet.empty lo in
-      let acc, hi = f acc VarSet.empty hi in
-      let acc, body = f acc (VarSet.singleton id) body in
+      let acc, lo = f acc Variable.Set.empty lo in
+      let acc, hi = f acc Variable.Set.empty hi in
+      let acc, body = f acc (Variable.Set.singleton id) body in
       acc, Ffor(id, lo, hi, dir, body, d)
 
   | Flet (kind, id, def, body, d) ->
-      let acc, def = f acc VarSet.empty def in
-      let acc, body = f acc (VarSet.singleton id) body in
+      let acc, def = f acc Variable.Set.empty def in
+      let acc, body = f acc (Variable.Set.singleton id) body in
       acc, Flet (kind, id, def, body, d)
 
   | Fletrec (defs, body, d) ->
-      let vars = VarSet.of_list (List.map fst defs) in
+      let vars = Variable.Set.of_list (List.map fst defs) in
       let acc, defs =
         List.fold_right (fun (var,def) (acc, defs) ->
             let acc, def = f acc vars def in
@@ -327,15 +327,15 @@ let fold_subexpressions f acc = function
       acc, Fletrec (defs, body, d)
 
   | Fstaticcatch (exn,ids,body,handler,d) ->
-      let acc, body = f acc VarSet.empty body in
-      let acc, handler = f acc (VarSet.of_list ids) handler in
+      let acc, body = f acc Variable.Set.empty body in
+      let acc, handler = f acc (Variable.Set.of_list ids) handler in
       acc, Fstaticcatch (exn,ids,body,handler,d)
 
   | Fstaticraise (exn, args, d) ->
       let acc, args =
         List.fold_right
           (fun arg (acc, l) ->
-             let acc, arg = f acc VarSet.empty arg in
+             let acc, arg = f acc Variable.Set.empty arg in
              acc, arg :: l) args (acc,[]) in
       acc, Fstaticraise (exn, args, d)
 
@@ -349,7 +349,7 @@ let fold_subexpressions f acc = function
       let cl_fun = { cl_fun with funs } in
       let acc, cl_free_var =
         Variable.Map.fold (fun v flam (acc, free_vars) ->
-            let acc, flam = f acc VarSet.empty flam in
+            let acc, flam = f acc Variable.Set.empty flam in
             acc, Variable.Map.add v flam free_vars)
           cl_free_var (acc, Variable.Map.empty)
       in
@@ -358,9 +358,9 @@ let fold_subexpressions f acc = function
   | Fswitch (arg,
              { fs_numconsts; fs_consts; fs_numblocks;
                fs_blocks; fs_failaction }, d) ->
-      let acc, arg = f acc VarSet.empty arg in
+      let acc, arg = f acc Variable.Set.empty arg in
       let aux (i,flam) (acc, l) =
-        let acc, flam = f acc VarSet.empty flam in
+        let acc, flam = f acc Variable.Set.empty flam in
         acc, (i,flam) :: l
       in
       let acc, fs_consts = List.fold_right aux fs_consts (acc,[]) in
@@ -369,7 +369,7 @@ let fold_subexpressions f acc = function
         match fs_failaction with
         | None -> acc, None
         | Some flam ->
-            let acc, flam = f acc VarSet.empty flam in
+            let acc, flam = f acc Variable.Set.empty flam in
             acc, Some flam in
       acc,
       Fswitch (arg,
@@ -377,9 +377,9 @@ let fold_subexpressions f acc = function
                  fs_blocks; fs_failaction }, d)
 
   | Fstringswitch (arg, sw, def, d) ->
-      let acc, arg = f acc VarSet.empty arg in
+      let acc, arg = f acc Variable.Set.empty arg in
       let aux (i,flam) (acc, l) =
-        let acc, flam = f acc VarSet.empty flam in
+        let acc, flam = f acc Variable.Set.empty flam in
         acc, (i,flam) :: l
       in
       let acc, sw = List.fold_right aux sw (acc,[]) in
@@ -387,16 +387,16 @@ let fold_subexpressions f acc = function
         match def with
         | None -> acc, None
         | Some def ->
-            let acc, def = f acc VarSet.empty def in
+            let acc, def = f acc Variable.Set.empty def in
             acc, Some def in
       acc, Fstringswitch (arg, sw, def, d)
 
   | Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, d) ->
-      let acc, ap_function = f acc VarSet.empty ap_function in
+      let acc, ap_function = f acc Variable.Set.empty ap_function in
       let acc, ap_arg =
         List.fold_right
           (fun arg (acc, l) ->
-             let acc, arg = f acc VarSet.empty arg in
+             let acc, arg = f acc Variable.Set.empty arg in
              acc, arg :: l) ap_arg (acc,[]) in
       acc, Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, d)
 
@@ -404,50 +404,50 @@ let fold_subexpressions f acc = function
       let acc, args =
         List.fold_right
           (fun arg (acc, l) ->
-             let acc, arg = f acc VarSet.empty arg in
+             let acc, arg = f acc Variable.Set.empty arg in
              acc, arg :: l) args (acc,[]) in
-      let acc, e1 = f acc VarSet.empty e1 in
-      let acc, e2 = f acc VarSet.empty e2 in
+      let acc, e1 = f acc Variable.Set.empty e1 in
+      let acc, e2 = f acc Variable.Set.empty e2 in
       acc, Fsend (kind, e1, e2, args, dbg, d)
 
   | Fsequence(e1, e2, d) ->
-      let acc, e1 = f acc VarSet.empty e1 in
-      let acc, e2 = f acc VarSet.empty e2 in
+      let acc, e1 = f acc Variable.Set.empty e1 in
+      let acc, e2 = f acc Variable.Set.empty e2 in
       acc, Fsequence(e1, e2, d)
 
   | Fwhile(cond, body, d) ->
-      let acc, cond = f acc VarSet.empty cond in
-      let acc, body = f acc VarSet.empty body in
+      let acc, cond = f acc Variable.Set.empty cond in
+      let acc, body = f acc Variable.Set.empty body in
       acc, Fwhile(cond, body, d)
 
   | Fifthenelse(cond,ifso,ifnot,d) ->
-      let acc, cond = f acc VarSet.empty cond in
-      let acc, ifso = f acc VarSet.empty ifso in
-      let acc, ifnot = f acc VarSet.empty ifnot in
+      let acc, cond = f acc Variable.Set.empty cond in
+      let acc, ifso = f acc Variable.Set.empty ifso in
+      let acc, ifnot = f acc Variable.Set.empty ifnot in
       acc, Fifthenelse(cond,ifso,ifnot,d)
 
   | Fprim (p,args,dbg,d) ->
       let acc, args =
         List.fold_right
           (fun arg (acc, l) ->
-             let acc, arg = f acc VarSet.empty arg in
+             let acc, arg = f acc Variable.Set.empty arg in
              acc, arg :: l) args (acc,[]) in
       acc, Fprim (p,args,dbg,d)
 
   | Fassign (v,flam,d) ->
-      let acc, flam = f acc VarSet.empty flam in
+      let acc, flam = f acc Variable.Set.empty flam in
       acc, Fassign (v,flam,d)
 
   | Fclosure(clos,d) ->
-      let acc, fu_closure = f acc VarSet.empty clos.fu_closure in
+      let acc, fu_closure = f acc Variable.Set.empty clos.fu_closure in
       acc, Fclosure({clos with fu_closure},d)
 
   | Fvariable_in_closure(clos,d) ->
-      let acc, vc_closure = f acc VarSet.empty clos.vc_closure in
+      let acc, vc_closure = f acc Variable.Set.empty clos.vc_closure in
       acc, Fvariable_in_closure({clos with vc_closure},d)
 
   | Fevent (flam,e,d) ->
-      let acc, flam = f acc VarSet.empty flam in
+      let acc, flam = f acc Variable.Set.empty flam in
       acc, Fevent (flam,e,d)
 
   | ( Fsymbol _
@@ -458,25 +458,25 @@ let fold_subexpressions f acc = function
 
 let subexpression_bound_variables = function
   | Ftrywith(body,id,handler,_) ->
-      [VarSet.singleton id, handler;
-       VarSet.empty, body]
+      [Variable.Set.singleton id, handler;
+       Variable.Set.empty, body]
   | Ffor(id, lo, hi, _, body, _) ->
-      [VarSet.empty, lo;
-       VarSet.empty, hi;
-       VarSet.singleton id, body]
+      [Variable.Set.empty, lo;
+       Variable.Set.empty, hi;
+       Variable.Set.singleton id, body]
   | Flet ( _, id, def, body,_) ->
-      [VarSet.empty, def;
-       VarSet.singleton id, body]
+      [Variable.Set.empty, def;
+       Variable.Set.singleton id, body]
   | Fletrec (defs, body,_) ->
-      let vars = VarSet.of_list (List.map fst defs) in
+      let vars = Variable.Set.of_list (List.map fst defs) in
       let defs = List.map (fun (_,def) -> vars, def) defs in
       (vars, body) :: defs
   | Fstaticcatch (_,ids,body,handler,_) ->
-      [VarSet.empty, body;
-       VarSet.of_list ids, handler]
+      [Variable.Set.empty, body;
+       Variable.Set.of_list ids, handler]
   | Fset_of_closures ({ cl_fun; cl_free_var },_) ->
       let free_vars =
-        List.map (fun (_, def) -> VarSet.empty, def)
+        List.map (fun (_, def) -> Variable.Set.empty, def)
           (Variable.Map.bindings cl_free_var) in
       let funs =
         List.map (fun (_, fun_def) ->
@@ -484,13 +484,13 @@ let subexpression_bound_variables = function
           (Variable.Map.bindings cl_fun.funs)in
       funs @ free_vars
   | e ->
-      List.map (fun s -> VarSet.empty, s) (subexpressions e)
+      List.map (fun s -> Variable.Set.empty, s) (subexpressions e)
 
 let free_variables tree =
-  let free = ref VarSet.empty in
-  let bound = ref VarSet.empty in
+  let free = ref Variable.Set.empty in
+  let bound = ref Variable.Set.empty in
   let add id =
-    if not (VarSet.mem id !free) then free := VarSet.add id !free in
+    if not (Variable.Set.mem id !free) then free := Variable.Set.add id !free in
   let aux = function
     | Fvar (id,_) -> add id
     | Fassign (id,_,_) -> add id
@@ -499,15 +499,15 @@ let free_variables tree =
     | Ftrywith(_,id,_,_)
     | Ffor(id, _, _, _, _, _)
     | Flet ( _, id, _, _,_) ->
-        bound := VarSet.add id !bound
+        bound := Variable.Set.add id !bound
     | Fletrec (l, _,_) ->
-        List.iter (fun (id,_) -> bound := VarSet.add id !bound) l
+        List.iter (fun (id,_) -> bound := Variable.Set.add id !bound) l
     | Fstaticcatch (_,ids,_,_,_) ->
-        List.iter (fun id -> bound := VarSet.add id !bound) ids
+        List.iter (fun id -> bound := Variable.Set.add id !bound) ids
     | _ -> ()
   in
   iter_toplevel aux tree;
-  VarSet.diff !free !bound
+  Variable.Set.diff !free !bound
 
 let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
   let rec mapper : t1 flambda -> t2 flambda = function
@@ -639,9 +639,9 @@ let arguments_kept_in_recursion' decl fun_var =
        let set =
          if Ext_types.IntSet.mem pos !not_kept
          then set
-         else VarSet.add var set in
+         else Variable.Set.add var set in
        pos + 1, set)
-      (0,VarSet.empty) decl.params in
+      (0,Variable.Set.empty) decl.params in
   kept_parameters, !function_escape
 
 let arguments_kept_in_recursion decls =
@@ -651,6 +651,6 @@ let arguments_kept_in_recursion decls =
     let kept_parameters, function_escape =
       arguments_kept_in_recursion' decl fun_var in
     if function_escape
-    then VarSet.empty
+    then Variable.Set.empty
     else kept_parameters
-  else VarSet.empty
+  else Variable.Set.empty

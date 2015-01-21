@@ -35,10 +35,10 @@ let function_arity f = List.length f.params
 
 let variables_bound_by_the_closure cf decls =
   let func = find_declaration cf decls in
-  let params = VarSet.of_list func.params in
+  let params = Variable.Set.of_list func.params in
   let functions = Variable.Map.keys decls.funs in
-  VarSet.diff
-    (VarSet.diff func.free_variables params)
+  Variable.Set.diff
+    (Variable.Set.diff func.free_variables params)
     functions
 
 let data_at_toplevel_node = function
@@ -98,7 +98,7 @@ let recursive_functions { funs } =
   let function_variables = Variable.Map.keys funs in
   let directed_graph =
     Variable.Map.map
-      (fun ffun -> VarSet.inter ffun.free_variables function_variables)
+      (fun ffun -> Variable.Set.inter ffun.free_variables function_variables)
       funs in
   let connected_components =
     Variable_connected_components.connected_components_sorted_from_roots_to_leaf
@@ -107,8 +107,8 @@ let recursive_functions { funs } =
       | Variable_connected_components.No_loop _ ->
           rec_fun
       | Variable_connected_components.Has_loop elts ->
-          List.fold_right VarSet.add elts rec_fun)
-    VarSet.empty connected_components
+          List.fold_right Variable.Set.add elts rec_fun)
+    Variable.Set.empty connected_components
 
 let rec same l1 l2 =
   l1 == l2 || (* it is ok for string case: if they are physicaly the same,

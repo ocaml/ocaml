@@ -74,7 +74,7 @@ let local_env env =
 type ret =
   { approx : approx;
     globals : approx IntMap.t;
-    used_variables : VarSet.t;
+    used_variables : Variable.Set.t;
     used_staticfail : StaticExceptionSet.t;
   }
 
@@ -229,8 +229,8 @@ let ffuns_subst env ffuns off_sb =
       let params, env = new_subst_ids' ffun.params env in
 
       let free_variables =
-        VarSet.fold (fun id set -> VarSet.add (find_subst' id env) set)
-          ffun.free_variables VarSet.empty in
+        Variable.Set.fold (fun id set -> Variable.Set.add (find_subst' id env) set)
+          ffun.free_variables Variable.Set.empty in
 
       (* It is not a problem to share the substitution of parameter
          names between function: There should be no clash *)
@@ -253,7 +253,7 @@ let ffuns_subst env ffuns off_sb =
           let funs = Variable.Map.add id ffun funs in
           funs, env)
         ffuns.funs (Variable.Map.empty,env) in
-    { ident = FunId.create (Compilenv.current_unit ());
+    { ident = Set_of_closures_id.create (Compilenv.current_unit ());
       compilation_unit = Compilenv.current_unit ();
       funs }, env, off_sb
 
@@ -264,11 +264,11 @@ let ffuns_subst env ffuns off_sb =
 let ret (acc:ret) approx = { acc with approx }
 
 let use_var acc var =
-  { acc with used_variables = VarSet.add var acc.used_variables }
+  { acc with used_variables = Variable.Set.add var acc.used_variables }
 
 let exit_scope acc var =
   { acc with
-    used_variables = VarSet.remove var acc.used_variables }
+    used_variables = Variable.Set.remove var acc.used_variables }
 
 let use_staticfail acc i =
   { acc with used_staticfail = StaticExceptionSet.add i acc.used_staticfail }
@@ -279,7 +279,7 @@ let exit_scope_catch acc i =
 let init_r () =
   { approx = value_unknown;
     globals = IntMap.empty;
-    used_variables = VarSet.empty;
+    used_variables = Variable.Set.empty;
     used_staticfail = StaticExceptionSet.empty }
 
 let make_const_int n eid =
@@ -331,10 +331,10 @@ let subst_toplevel sb lam =
 
 let make_closure_declaration id lam params =
   let free_variables = Flambdaiter.free_variables lam in
-  let param_set = VarSet.of_list params in
+  let param_set = Variable.Set.of_list params in
 
   let sb =
-    VarSet.fold
+    Variable.Set.fold
       (fun id sb -> Variable.Map.add id (rename_var id) sb)
       free_variables Variable.Map.empty in
   let body = subst_toplevel sb lam in
@@ -344,18 +344,18 @@ let make_closure_declaration id lam params =
   let function_declaration =
     { stub = false;
       params = List.map subst params;
-      free_variables = VarSet.map subst free_variables;
+      free_variables = Variable.Set.map subst free_variables;
       body;
       dbg = Debuginfo.none } in
 
   let fv' =
     Variable.Map.fold (fun id id' fv' ->
         Variable.Map.add id' (Fvar(id,ExprId.create ())) fv')
-      (Variable.Map.filter (fun id _ -> not (VarSet.mem id param_set)) sb)
+      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
 
   let function_declarations =
-    { ident = FunId.create (Compilenv.current_unit ());
+    { ident = Set_of_closures_id.create (Compilenv.current_unit ());
       funs = Variable.Map.singleton id function_declaration;
       compilation_unit = Compilenv.current_unit () }
   in
@@ -832,18 +832,18 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let r_body = { r with used_variables = init_used_var } in
       let body, r = loop body_env r_body body in
       let expr, r =
-        if VarSet.mem id r.used_variables
+        if Variable.Set.mem id r.used_variables
         then
           Flet (str, id, lam, body, annot),
           (* if lam is kept, adds its used variables *)
           { r with used_variables =
-                     VarSet.union def_used_var r.used_variables }
+                     Variable.Set.union def_used_var r.used_variables }
         else if no_effects lam
         then body, r
         else Fsequence(lam, body, annot),
              (* if lam is kept, adds its used variables *)
              { r with used_variables =
-                        VarSet.union def_used_var r.used_variables } in
+                        Variable.Set.union def_used_var r.used_variables } in
       expr, exit_scope r id
   | Fletrec(defs, body, annot) ->
       let defs, env = new_subst_ids defs env in
@@ -1096,7 +1096,7 @@ and closure env r cl annot =
       bound_var = Variable.Map.fold (fun id (_,desc) map ->
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
-      kept_params = VarSet.empty;
+      kept_params = Variable.Set.empty;
       fv_subst_renaming = ffunction_sb.ffs_fv;
       fun_subst_renaming = ffunction_sb.ffs_fun } in
   let closure_env = Variable.Map.fold
@@ -1108,7 +1108,7 @@ and closure env r cl annot =
     Variable.Map.fold (fun fid ffun (funs,used_params,r) ->
         let closure_env = Variable.Map.fold
             (fun id (_,desc) env ->
-               if VarSet.mem id ffun.free_variables
+               if Variable.Set.mem id ffun.free_variables
                then begin
                  add_approx id desc env
                end
@@ -1138,19 +1138,19 @@ and closure env r cl annot =
 
         let body, r = loop closure_env r body in
         let used_params = List.fold_left (fun acc id ->
-            if VarSet.mem id r.used_variables
-            then VarSet.add id acc
+            if Variable.Set.mem id r.used_variables
+            then Variable.Set.add id acc
             else acc) used_params ffun.params in
 
-        let r = VarSet.fold (fun id r -> exit_scope r id)
+        let r = Variable.Set.fold (fun id r -> exit_scope r id)
             ffun.free_variables r in
         let free_variables = Flambdaiter.free_variables body in
         Variable.Map.add fid { ffun with body; free_variables } funs,
         used_params, r)
-      ffuns.funs (Variable.Map.empty, VarSet.empty, r) in
+      ffuns.funs (Variable.Map.empty, Variable.Set.empty, r) in
 
   let spec_args = Variable.Map.filter
-      (fun id _ -> VarSet.mem id used_params)
+      (fun id _ -> Variable.Set.mem id used_params)
       spec_args in
 
   let r = Variable.Map.fold (fun id' v acc -> use_var acc v) spec_args r in
@@ -1259,7 +1259,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
 and functor_like env clos approxs =
   env.closure_depth = 0 &&
   List.for_all (function { descr = Value_unknown } -> false | _ -> true) approxs &&
-  VarSet.is_empty (recursive_functions clos)
+  Variable.Set.is_empty (recursive_functions clos)
 
 and direct_apply env r ~local clos funct fun_id func fapprox closure (args,approxs) ap_dbg eid =
   let max_level = 3 in
@@ -1275,7 +1275,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
       ret r value_unknown
   | Some fun_size ->
       let fun_var = find_declaration_variable fun_id clos in
-      let recursive = VarSet.mem fun_var (recursive_functions clos) in
+      let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
       let inline_threshold = env.inline_threshold in
       let env = { env with inline_threshold = env.inline_threshold - fun_size } in
       if func.stub || functor_like env clos approxs ||
@@ -1299,7 +1299,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
         let kept_params = closure.kept_params in
         if
           recursive && not (FunSet.mem clos.ident env.current_functions)
-          && not (VarSet.is_empty kept_params)
+          && not (Variable.Set.is_empty kept_params)
           && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
           && env.inlining_level <= max_level
 
@@ -1309,7 +1309,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
             | Value_unknown
             | Value_bottom -> acc
             | _ ->
-                if VarSet.mem id kept_params
+                if Variable.Set.mem id kept_params
                 then Variable.Map.add id approx acc
                 else acc in
           let worth = List.fold_right2 f func.params approxs Variable.Map.empty in
@@ -1346,7 +1346,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
   let variables_in_closure =
     variables_bound_by_the_closure fun_id clos in
 
-  let fv = VarSet.fold make_fv variables_in_closure Variable.Map.empty in
+  let fv = Variable.Set.fold make_fv variables_in_closure Variable.Map.empty in
 
   let env = add_approx clos_id fapprox env in
 
@@ -1362,7 +1362,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
         | Value_unknown
         | Value_bottom -> spec_args
         | _ ->
-            if VarSet.mem id kept_params
+            if Variable.Set.mem id kept_params
             then Variable.Map.add id new_id spec_args
             else spec_args in
       spec_args, args, env_func
@@ -1403,7 +1403,7 @@ and inline env r clos lfunc fun_id func args dbg eid =
     |> List.fold_right2 (fun id arg body ->
         Flet(Not_assigned, id, arg, body, ExprId.create ~name:"inline arg" ()))
       func.params args
-    |> VarSet.fold (fun id body ->
+    |> Variable.Set.fold (fun id body ->
         Flet(Not_assigned, id,
              Fvariable_in_closure
                ({ vc_closure = Fvar(clos_id, ExprId.create ());
@@ -1427,13 +1427,13 @@ and inline env r clos lfunc fun_id func args dbg eid =
 let simplify tree =
   let env = empty_env () in
   let result, r = loop env (init_r ()) tree in
-  if not (VarSet.is_empty r.used_variables)
+  if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
-      VarSet.print r.used_variables
+      Variable.Set.print r.used_variables
       Printflambda.flambda result
   end;
-  assert(VarSet.is_empty r.used_variables);
+  assert(Variable.Set.is_empty r.used_variables);
   assert(StaticExceptionSet.is_empty r.used_staticfail);
   result
 
@@ -1463,12 +1463,12 @@ let remove_unused_closure_variables tree =
     | Fset_of_closures ({ cl_fun; cl_free_var } as closure, eid) ->
        let all_free_var =
          Variable.Map.fold
-           (fun _ { free_variables } acc -> VarSet.union free_variables acc)
+           (fun _ { free_variables } acc -> Variable.Set.union free_variables acc)
            cl_fun.funs
-           VarSet.empty in
+           Variable.Set.empty in
        let cl_free_var =
          Variable.Map.filter
-           (fun id _ -> VarSet.mem id all_free_var
+           (fun id _ -> Variable.Set.mem id all_free_var
                         || Var_within_closure.Set.mem (Var_within_closure.wrap id)
                                                   used_variable_withing_closure)
            cl_free_var in

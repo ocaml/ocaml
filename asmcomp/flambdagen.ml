@@ -302,9 +302,9 @@ let to_flambda
         { stub; params; dbg;
           free_variables =
             IdentSet.fold
-              (fun id set -> VarSet.add (find_var closure_env id) set)
+              (fun id set -> Variable.Set.add (find_var closure_env id) set)
               (Variable.Map.find closure_bound_var used_idents_per_function)
-              VarSet.empty;
+              Variable.Set.empty;
           body = close closure_env body } in
       match kind with
       | Curried ->
@@ -318,7 +318,7 @@ let to_flambda
           Variable.Map.add tuplified_version fun_decl map
     in
     let fun_decls =
-      { ident = FunId.create current_compilation_unit;
+      { ident = Set_of_closures_id.create current_compilation_unit;
         funs =
           List.fold_left close_one_function Variable.Map.empty function_declarations;
         compilation_unit = current_compilation_unit } in
@@ -354,7 +354,7 @@ let to_flambda
         (0,call) params in
     { stub = true;
       params = [tuple_param];
-      free_variables = VarSet.of_list [tuple_param;tuplified_version];
+      free_variables = Variable.Set.of_list [tuple_param;tuplified_version];
       body;
       dbg = Debuginfo.none }
 

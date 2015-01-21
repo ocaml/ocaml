@@ -54,7 +54,7 @@ open Abstract_identifiers
 open Flambda
 
 type constant_result = {
-  not_constant_id : VarSet.t;
+  not_constant_id : Variable.Set.t;
   not_constant_closure : FunSet.t;
 }
 
@@ -72,12 +72,12 @@ module NotConstants(P:Param) = struct
   let compilation_unit = P.compilation_unit
 
   type dep =
-    | Closure of FunId.t
+    | Closure of Set_of_closures_id.t
     | Var of Variable.t
     | Global of int (* position of the global *)
 
   (* Sets representing NC *)
-  let variables = ref VarSet.empty
+  let variables = ref Variable.Set.empty
   let closures = ref FunSet.empty
   let globals = ref IntSet.empty
 
@@ -109,8 +109,8 @@ module NotConstants(P:Param) = struct
   let mark_curr curr =
     List.iter (function
       | Var id ->
-        if not (VarSet.mem id !variables)
-        then variables := VarSet.add id !variables
+        if not (Variable.Set.mem id !variables)
+        then variables := Variable.Set.add id !variables
       | Closure cl ->
         if not (FunSet.mem cl !closures)
         then closures := FunSet.add cl !closures
@@ -315,7 +315,7 @@ module NotConstants(P:Param) = struct
   let propagate () =
     (* Set of variables/closures added to NC but not their dependencies *)
     let q = Queue.create () in
-    VarSet.iter (fun v -> Queue.push (Var v) q) !variables;
+    Variable.Set.iter (fun v -> Queue.push (Var v) q) !variables;
     FunSet.iter (fun v -> Queue.push (Closure v) q) !closures;
     while not (Queue.is_empty q) do
       let deps = try match Queue.take q with
@@ -325,8 +325,8 @@ module NotConstants(P:Param) = struct
       with Not_found -> [] in
       List.iter (function
         | Var id as e ->
-          if not (VarSet.mem id !variables)
-          then (variables := VarSet.add id !variables;
+          if not (Variable.Set.mem id !variables)
+          then (variables := Variable.Set.add id !variables;
             Queue.push e q)
         | Closure cl as e ->
           if not (FunSet.mem cl !closures)

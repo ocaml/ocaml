@@ -38,7 +38,7 @@ val find_free_variable :
 val function_arity : 'a function_declaration -> int
 
 val variables_bound_by_the_closure :
-  Closure_id.t -> 'a function_declarations -> VarSet.t
+  Closure_id.t -> 'a function_declarations -> Variable.Set.t
 (** Variables "bound by a closure" are those variables free in the
     corresponding function's body that are neither:
     - bound as parameters of that function; nor
@@ -56,7 +56,7 @@ val data_at_toplevel_node : 'a flambda -> 'a
 
 val description_of_toplevel_node : 'a flambda -> string
 
-val recursive_functions : 'a function_declarations -> VarSet.t
+val recursive_functions : 'a function_declarations -> Variable.Set.t
 
 (** Sharing key *)
 type sharing_key

@@ -28,7 +28,7 @@ val every_used_identifier_is_bound :
   'a flambda -> Variable.t counter_example
 
 val function_free_variables_are_bound_in_the_closure_and_parameters :
-  'a flambda -> VarSet.t counter_example
+  'a flambda -> Variable.Set.t counter_example
 
 val no_identifier_bound_multiple_times :
   'a flambda -> Variable.t counter_example

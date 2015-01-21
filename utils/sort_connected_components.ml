@@ -7,7 +7,6 @@ module Kosaraju : sig
 
   val component_graph : int list array -> component_graph
 end = struct
-
   let transpose graph =
     let size = Array.length graph in
     let transposed = Array.make size [] in
@@ -93,8 +92,8 @@ end = struct
 end
 
 module type S = sig
-  module Id : PrintableHashOrdered
-  type directed_graph = ExtSet(Id).t ExtMap(Id).t
+  module Id : Identifiable
+  type directed_graph = Id.Set.t Id.Map.t
   type component =
     | Has_loop of Id.t list
     | No_loop of Id.t
@@ -107,20 +106,17 @@ module type S = sig
 
 end
 
-module Make(Id:PrintableHashOrdered) = struct
-  module IdSet = ExtSet(Id)
-  module IdMap = ExtMap(Id)
-
-  type directed_graph = ExtSet(Id).t ExtMap(Id).t
+module Make(Id : Identifiable) = struct
+  type directed_graph = Id.Set.t Id.Map.t
   type component =
     | Has_loop of Id.t list
     | No_loop of Id.t
 
   (* ensure that the dependency graph does not have external dependencies *)
   let check dependencies =
-    IdMap.iter (fun id set ->
-        IdSet.iter (fun v ->
-            if not (IdMap.mem v dependencies)
+    Id.Map.iter (fun id set ->
+        Id.Set.iter (fun v ->
+            if not (Id.Map.mem v dependencies)
             then
               Misc.fatal_error
                 (Format.asprintf "Flambdasort.check: the graph has external \
@@ -130,23 +126,23 @@ module Make(Id:PrintableHashOrdered) = struct
       dependencies
 
   type numbering =
-    { back : int IdMap.t;
+    { back : int Id.Map.t;
       forth : Id.t array }
 
   let number graph =
-    let size = IdMap.cardinal graph in
-    let bindings = IdMap.bindings graph in
+    let size = Id.Map.cardinal graph in
+    let bindings = Id.Map.bindings graph in
     let a = Array.of_list bindings in
     let forth = Array.map fst a in
     let back =
-      let back = ref IdMap.empty in
+      let back = ref Id.Map.empty in
       for i = 0 to size - 1 do
-        back := IdMap.add forth.(i) i !back;
+        back := Id.Map.add forth.(i) i !back;
       done;
       !back in
     let integer_graph = Array.init size (fun i ->
         let _, dests = a.(i) in
-        IdSet.fold (fun dest acc -> (IdMap.find dest back) :: acc) dests []) in
+        Id.Set.fold (fun dest acc -> (Id.Map.find dest back) :: acc) dests []) in
     { back; forth }, integer_graph
 
   let component_graph graph =
@@ -168,5 +164,4 @@ module Make(Id:PrintableHashOrdered) = struct
 
   let connected_components_sorted_from_roots_to_leaf graph =
     Array.map fst (component_graph graph)
-
 end
