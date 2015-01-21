@@ -13,6 +13,8 @@
 open Abstract_identifiers
 open Flambda
 
+(** Value approximation used during inlining. *)
+
 type tag = int
 
 type descr =
@@ -26,23 +28,44 @@ type descr =
   | Value_extern of Flambdaexport.ExportId.t
   | Value_symbol of Symbol.t
 
-(* TODO: rename *)
 and value_offset =
   { fun_id : function_within_closure;
-    closure : value_closure }
+    closure : value_closure;
+  }
 
-and value_closure =
-  { ffunctions : ExprId.t function_declarations;
-    bound_var : approx ClosureVariableMap.t;
-    kept_params : VarSet.t;
-    fv_subst_renaming : variable_within_closure ClosureVariableMap.t;
-    fun_subst_renaming : function_within_closure ClosureFunctionMap.t }
+and value_closure = {
+  ffunctions : ExprId.t function_declarations;
+  bound_var : approx ClosureVariableMap.t;
+  kept_params : VarSet.t;
+  fv_subst_renaming : variable_within_closure ClosureVariableMap.t;
+  fun_subst_renaming : function_within_closure ClosureFunctionMap.t;
+}
 
-and approx =
-  { descr : descr;
-    var : Variable.t option;
-    (* Highest bound variable containing *)
-    symbol : Symbol.t option }
+and approx = {
+  descr : descr;
+  var : Variable.t option;
+  symbol : Symbol.t option;
+}
+(** A value of type [approx] corresponds to an approximation of a value.
+    Such approximations are deduced at particular points in an expression
+    tree, but may subsequently be propagated to other locations.
+
+    At the point at which an approximation is built for some value [v], we can
+    construct a set of variables (call the set [S]) that are known to alias the
+    same value [v].  Each member of [S] will have the same or a more precise
+    [descr] field in its approximation relative to the approximation for [v].
+    (An increase in precision may currently be introduced for pattern
+    matches.)  If [S] is non-empty then it is guaranteed that there is a
+    unique member of [S] that was declared in a scope further out ("earlier")
+    than all other members of [S].  If such a member exists then it is
+    recorded in the [var] field.  Otherwise [var] is [None].
+
+    Analogous to the construction of the set [S], we can construct a set [T]
+    consisting of all symbols that are known to alias the value whose
+    approximation is being constructed.  If [T] is non-empty then the
+    [symbol] field is set to some member of [T]; it does not matter which
+    one.  (There is no notion of scope for symbols.)
+*)
 
 (** Smart constructors *)
 
