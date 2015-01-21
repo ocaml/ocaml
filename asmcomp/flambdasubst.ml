@@ -74,12 +74,12 @@ let new_subst_exn t i =
     i', t
   else i, t
 
-let rename_var var =
+let freshen_var var =
   Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var
 
 let new_subst_id t id =
   if t.active then 
-    let id' = rename_var id in
+    let id' = freshen_var id in
     let t = add_sb_var t id id' in
     id', t
   else id, t
@@ -94,11 +94,17 @@ let new_subst_ids' t ids =
       let id', t = new_subst_id t id in
       id' :: ids, t) ids ([], t)
 
-let find_subst' t id =
+let find_var t id =
   try Variable.Map.find id t.sb_var with
   | Not_found ->
-    Misc.fatal_error (Format.asprintf "find_subst': can't find %a@."
+    Misc.fatal_error (Format.asprintf "find_var: can't find %a@."
         Variable.print id)
+
+let find_var_exn t var =
+  Variable.Map.find var t.sb_var
+
+let find_symbol_exn t sym =
+  SymbolMap.find sym t.sb_sym
 
 let subst_var t id =
   try Variable.Map.find id t.sb_var with
@@ -133,7 +139,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
   let new_subst_fv t id subst =
     if subst.active
     then
-      let id' = rename_var id in
+      let id' = freshen_var id in
       let subst = add_sb_var subst id id' in
       let off = Var_within_closure.wrap id in
       let off' = Var_within_closure.wrap id' in
@@ -144,7 +150,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
   let new_subst_fun t id subst =
     if subst.active
     then
-      let id' = rename_var id in
+      let id' = freshen_var id in
       let subst = add_sb_var subst id id' in
       let off = Closure_id.wrap id in
       let off' = Closure_id.wrap id' in
@@ -177,7 +183,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
         let params, subst = new_subst_ids' subst ffun.params in
         let free_variables =
           Variable.Set.fold (fun id set ->
-              Variable.Set.add (find_subst' subst id) set)
+              Variable.Set.add (find_var subst id) set)
             ffun.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
@@ -196,7 +202,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
       let funs, subst =
         Variable.Map.fold (fun orig_id ffun (funs, subst) ->
             let ffun, subst = subst_ffunction orig_id ffun subst in
-            let id = find_subst' subst orig_id in
+            let id = find_var subst orig_id in
             let funs = Variable.Map.add id ffun funs in
             funs, subst)
           ffuns.funs (Variable.Map.empty, subst) in
@@ -204,4 +210,12 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
         compilation_unit = Compilenv.current_unit ();
         funs }, subst, t
     else ffuns, subst, t
+
+  let fun_off_id t off =
+    try Closure_id.Map.find off t.ffs_fun
+    with Not_found -> off
+
+  let fv_off_id t off =
+    try Var_within_closure.Map.find off t.ffs_fv
+    with Not_found -> off
 end

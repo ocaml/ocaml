@@ -37,8 +37,8 @@ and value_closure = {
   ffunctions : Expr_id.t function_declarations;
   bound_var : approx Var_within_closure.Map.t;
   kept_params : Variable.Set.t;
-  fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
-  fun_subst_renaming : Closure_id.t Closure_id.Map.t;
+  ffunction_sb :
+    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
 }
 
 and approx = {

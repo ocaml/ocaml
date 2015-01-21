@@ -35,7 +35,6 @@ type env = {
   inlining_level : int;
   (* Number of times "inline" has been called recursively *)
   sb : Flambdasubst.t;
-  substitute : bool;
   inline_threshold : int;
   closure_depth : int;
 }
@@ -46,7 +45,6 @@ let empty_env () =
     current_functions = Set_of_closures_id.Set.empty;
     inlining_level = 0;
     sb = Flambdasubst.empty;
-    substitute = false;
     inline_threshold = min !Clflags.inline_threshold 100;
     closure_depth = 0}
 
@@ -61,16 +59,6 @@ type ret =
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
   }
-
-(* Substitution utility functions *)
-
-let add_sb_var id id' env =
-  { env with sb = Flambdasubst.add_sb_var env.sb id id' }
-let add_sb_sym sym id' env =
-  { env with sb = Flambdasubst.add_sb_sym env.sb sym id' }
-let add_sb_exn i i' env =
-  { env with sb = Flambdasubst.add_sb_exn env.sb i i' }
-let sb_exn i env = Flambdasubst.sb_exn env.sb i
 
 (* approximation utility functions *)
 
@@ -143,7 +131,7 @@ let make_closure_declaration id lam params =
 
   let sb =
     Variable.Set.fold
-      (fun id sb -> Variable.Map.add id (rename_var id) sb)
+      (fun id sb -> Variable.Map.add id (Flambdasubst.freshen_var id) sb)
       free_variables Variable.Map.empty in
   let body = subst_toplevel sb lam in
 
@@ -206,7 +194,7 @@ let really_import_approx approx =
    * recursive call of loop on the arguments with the original
      environment:
        [let new_arg, r = loop env r arg]
-   * generate fresh new identifiers (if env.substitute is true) and
+   * generate fresh new identifiers (if subst.active is true) and
      add the substitution to the environment:
        [let new_id, env = new_subst_id id env]
    * associate in the environment the approximation of values to
@@ -235,16 +223,15 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   match tree with
   | Fsymbol (sym,annot) ->
      begin
-       match SymbolMap.find sym env.sb.sb_sym with
+       match Flambdasubst.find_symbol_exn env.sb sym with
        | id' -> loop_direct env r (Fvar(id',annot))
        | exception Not_found -> check_constant_result r tree (Import.import_symbol sym)
      end
   | Fvar (id,annot) ->
       let id, tree =
-        try
-          let id' = Variable.Map.find id env.sb.sb_var in
-          id', Fvar(id',annot) with
-        | Not_found -> id, tree
+        match Flambdasubst.find_var_exn env.sb id with
+        | id' -> id', Fvar(id',annot)
+        | exception Not_found -> id, tree
       in
       check_var_and_constant_result env r tree (find id env)
   | Fconst (cst,_) -> tree, ret r (const_approx cst)
@@ -270,14 +257,6 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
          argument. This means that we must have the informations about
          the closure (fenv_field.vc_closure) otherwise we could miss
          some renamings and generate wrong code. *)
-
-      let fun_off_id off closure =
-        try Closure_id.Map.find off closure.fun_subst_renaming
-        with Not_found -> off in
-      let fv_off_id off closure =
-        try Var_within_closure.Map.find off closure.fv_subst_renaming
-        with Not_found -> off in
-
       let arg, r = loop env r fenv_field.vc_closure in
       let closure, approx_fun_id = match r.approx.descr with
         | Value_closure { closure; fun_id } -> closure, fun_id
@@ -290,8 +269,11 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
               Printflambda.flambda fenv_field.vc_closure;
             assert false
         | _ -> assert false in
-      let env_var = fv_off_id fenv_field.vc_var closure in
-      let env_fun_id = fun_off_id fenv_field.vc_fun closure in
+      let module AR =
+        Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+      in
+      let env_var = AR.fv_off_id closure.ffunction_sb fenv_field.vc_var in
+      let env_fun_id = AR.fun_off_id closure.ffunction_sb fenv_field.vc_fun in
 
       assert(Closure_id.equal env_fun_id approx_fun_id);
 
@@ -320,7 +302,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
        *)
       let init_used_var = r.used_variables in
       let lam, r = loop env r lam in
-      let id, env = new_subst_id id env in
+      let id, sb = Flambdasubst.new_subst_id env.sb id in
+      let env = { env with sb; } in
       let def_used_var = r.used_variables in
       let body_env = match str with
         | Assigned ->
@@ -348,7 +331,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
                         Variable.Set.union def_used_var r.used_variables } in
       expr, exit_scope r id
   | Fletrec(defs, body, annot) ->
-      let defs, env = new_subst_ids defs env in
+      let defs, sb = Flambdasubst.new_subst_ids env.sb defs in
+      let env = { env with sb; } in
       let def_env = List.fold_left (fun env_acc (id,lam) ->
           add_approx id value_unknown env_acc)
           env defs
@@ -404,22 +388,23 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let expr, approx = Flambdasimplify.primitive p (args, approxs) expr in
       expr, ret r approx
   | Fstaticraise(i, args, annot) ->
-      let i = sb_exn i env in
+      let i = Flambdasubst.sb_exn env.sb i in
       let args, _, r = loop_list env r args in
       let r = use_staticfail r i in
       Fstaticraise (i, args, annot),
       ret r value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
-      let i, env = new_subst_exn i env in
+      let i, sb = Flambdasubst.new_subst_exn env.sb i in
+      let env = { env with sb; } in
       let body, r = loop env r body in
       if not (Static_exception.Set.mem i r.used_staticfail)
       then
         (* If the static exception is not used, we can drop the declaration *)
         body, r
       else
-        let vars, env = new_subst_ids' vars env in
+        let vars, sb = Flambdasubst.new_subst_ids' env.sb vars in
         let env = List.fold_left (fun env id -> add_approx id value_unknown env)
-            env vars in
+            { env with sb; } vars in
         let handler, r = loop env r handler in
         let r = List.fold_left exit_scope r vars in
         let r = exit_scope_catch r i in
@@ -427,8 +412,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
         ret r value_unknown
   | Ftrywith(body, id, handler, annot) ->
       let body, r = loop env r body in
-      let id, env = new_subst_id id env in
-      let env = add_approx id value_unknown env in
+      let id, sb = Flambdasubst.new_subst_id env.sb id in
+      let env = add_approx id value_unknown { env with sb; } in
       let handler, r = loop env r handler in
       let r = exit_scope r id in
       Ftrywith(body, id, handler, annot),
@@ -473,15 +458,15 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Ffor(id, lo, hi, dir, body, annot) ->
       let lo, r = loop env r lo in
       let hi, r = loop env r hi in
-      let id, env = new_subst_id id env in
-      let env = add_approx id value_unknown env in
+      let id, sb = Flambdasubst.new_subst_id env.sb id in
+      let env = add_approx id value_unknown { env with sb; } in
       let body, r = loop env r body in
       let r = exit_scope r id in
       Ffor(id, lo, hi, dir, body, annot),
       ret r value_unknown
   | Fassign(id, lam, annot) ->
       let lam, r = loop env r lam in
-      let id = try Variable.Map.find id env.sb.sb_var with
+      let id = try Flambdasubst.find_var_exn env.sb id with
         | Not_found -> id in
       let r = use_var r id in
       Fassign(id, lam, annot),
@@ -569,7 +554,7 @@ and closure env r cl annot =
   let spec_args = cl.cl_specialised_arg in
 
   let env = { env with closure_depth = env.closure_depth + 1 } in
-  let spec_args = Variable.Map.map (subst_var env) spec_args in
+  let spec_args = Variable.Map.map (Flambdasubst.subst_var env.sb) spec_args in
   let approxs = Variable.Map.map (fun id -> find id env) spec_args in
 
   let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
@@ -583,14 +568,29 @@ and closure env r cl annot =
       let sym = Compilenv.closure_symbol cf in
       SymbolMap.add sym id map) ffuns.funs SymbolMap.empty in
 
-  let fv, env, ffunction_sb = subst_free_vars fv env in
-  let ffuns, env, ffunction_sb = ffuns_subst env ffuns ffunction_sb in
+  let module AR =
+    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+  in
+  let fv, sb, ffunction_sb = AR.subst_free_vars fv env.sb in
+  let ffuns, sb, ffunction_sb = AR.ffuns_subst ffunction_sb sb ffuns in
+  let env = { env with sb; } in
 
-  let spec_args = Variable.Map.map_keys (subst_var env) spec_args in
-  let approxs = Variable.Map.map_keys (subst_var env) approxs in
-  let prev_closure_symbols = SymbolMap.map (subst_var env) prev_closure_symbols in
+  let spec_args =
+    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) spec_args
+  in
+  let approxs =
+    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) approxs
+  in
+  let prev_closure_symbols =
+    SymbolMap.map (Flambdasubst.subst_var env.sb) prev_closure_symbols
+  in
 
-  let env = { env with current_functions = Set_of_closures_id.Set.add ffuns.ident env.current_functions } in
+  let env =
+    { env with
+      current_functions =
+        Set_of_closures_id.Set.add ffuns.ident env.current_functions;
+    }
+  in
   (* we use the previous closure for evaluating the functions *)
 
   let internal_closure =
@@ -599,8 +599,9 @@ and closure env r cl annot =
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
       kept_params = Variable.Set.empty;
-      fv_subst_renaming = ffunction_sb.ffs_fv;
-      fun_subst_renaming = ffunction_sb.ffs_fun } in
+      ffunction_sb;
+    }
+  in
   let closure_env = Variable.Map.fold
       (fun id _ env -> add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);
@@ -667,11 +668,11 @@ and closure env r cl annot =
   ret r (value_unoffseted_closure closure)
 
 and ffunction r flam off rel annot =
+  let module AR =
+    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+  in
   let off_id closure off =
-    try Closure_id.Map.find off closure.fun_subst_renaming
-    with Not_found -> off in
-  let off_id closure off =
-    let off = off_id closure off in
+    let off = AR.fun_off_id closure.ffunction_sb off in
     (try ignore (find_declaration off closure.ffunctions)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
@@ -739,7 +740,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let arity = function_arity func in
   let remaining_args = arity - (List.length args) in
   assert(remaining_args > 0);
-  let param_sb = List.map (fun id -> rename_var id) func.params in
+  let param_sb = List.map (fun id -> Flambdasubst.freshen_var id) func.params in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
   let call_args = List.map (fun id' -> Fvar(id', Expr_id.create ())) param_sb in
@@ -856,7 +857,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
 
   let (spec_args, args, env_func) =
     let f (id,arg) approx (spec_args,args,env_func) =
-      let new_id = rename_var id in
+      let new_id = Flambdasubst.freshen_var id in
       let args = (new_id, arg) :: args in
       let env_func = add_approx new_id approx env_func in
       let spec_args =
