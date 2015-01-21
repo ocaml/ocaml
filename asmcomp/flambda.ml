@@ -28,7 +28,7 @@ type 'a flambda =
   | Fvar of Variable.t * 'a
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
-  | Fclosure of 'a fset_of_closures * 'a
+  | Fset_of_closures of 'a fset_of_closures * 'a
   | Ffunction of 'a ffunction * 'a
   | Fvariable_in_closure of 'a fvariable_in_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
@@ -135,7 +135,7 @@ let data_at_toplevel_node = function
   | Fconst (_,data)
   | Flet(_,_,_,_,data)
   | Fletrec(_,_,data)
-  | Fclosure(_,data)
+  | Fset_of_closures(_,data)
   | Ffunction(_,data)
   | Fvariable_in_closure(_,data)
   | Fapply(_,data)
@@ -163,7 +163,7 @@ let description_of_toplevel_node = function
   | Flet(str, id, lam, body,data) ->
       Format.asprintf "let %a" Variable.print id
   | Fletrec(defs, body,data) -> "letrec"
-  | Fclosure(_,data) -> "closure"
+  | Fset_of_closures(_,data) -> "closure"
   | Ffunction(_,data) -> "function"
   | Fvariable_in_closure(_,data) -> "variable_in_closure"
   | Fapply(_,data) -> "apply"
@@ -225,11 +225,11 @@ let rec same l1 l2 =
       same a1.ap_function a2.ap_function &&
       samelist same a1.ap_arg a2.ap_arg
   | Fapply _, _ | _, Fapply _ -> false
-  | Fclosure (c1, _), Fclosure (c2, _) ->
+  | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
       VarMap.equal sameclosure c1.cl_fun.funs c2.cl_fun.funs &&
       VarMap.equal same c1.cl_free_var c2.cl_free_var &&
       VarMap.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
-  | Fclosure _, _ | _, Fclosure _ -> false
+  | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Ffunction (f1, _), Ffunction (f2, _) ->
       same f1.fu_closure f2.fu_closure &&
       Closure_function.equal f1.fu_fun f1.fu_fun &&

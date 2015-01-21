@@ -408,7 +408,7 @@ module Conv(P:Param1) = struct
          | _ -> Fletrec(not_consts, body, ())),
         approx
 
-    | Fclosure ({ cl_fun = funct;
+    | Fset_of_closures ({ cl_fun = funct;
                   cl_free_var = fv;
                   cl_specialised_arg = spec_arg }, _) ->
         let args_approx = VarMap.map (fun id -> get_approx id env) spec_arg in
@@ -459,7 +459,7 @@ module Conv(P:Param1) = struct
         approx
 
     | Fapply({ap_function =
-                Ffunction ({fu_closure = Fclosure ({ cl_fun = ffuns;
+                Ffunction ({fu_closure = Fset_of_closures ({ cl_fun = ffuns;
                                                      cl_free_var = fv;
                                                      cl_specialised_arg }, _);
                             fu_fun = off;
@@ -733,7 +733,7 @@ module Conv(P:Param1) = struct
 
     let expr =
       let expr =
-        Fclosure ({ cl_fun = ufunct;
+        Fset_of_closures ({ cl_fun = ufunct;
                     cl_free_var = used_fv;
                     cl_specialised_arg = spec_arg }, ()) in
       if FunSet.mem ufunct.ident P.constant_closures
@@ -759,7 +759,7 @@ module Conv(P:Param1) = struct
         Lbl sym
     | Fconst(_, ()) ->
         No_lbl
-    | Fclosure ({ cl_fun }, _) ->
+    | Fset_of_closures ({ cl_fun }, _) ->
         if FunSet.mem cl_fun.ident P.constant_closures
         then Const_closure
         else Not_const

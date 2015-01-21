@@ -42,7 +42,7 @@ let apply_on_subexpressions f = function
 
   | Fapply ({ap_function;ap_arg},_) ->
     List.iter f (ap_function::ap_arg)
-  | Fclosure ({cl_fun;cl_free_var},_) ->
+  | Fset_of_closures ({cl_fun;cl_free_var},_) ->
     VarMap.iter (fun _ v -> f v) cl_free_var;
     VarMap.iter (fun _ ffun -> f ffun.body) cl_fun.funs
   | Fletrec (defs, body,_) ->
@@ -89,7 +89,7 @@ let subexpressions = function
   | Fapply ({ap_function;ap_arg},_) ->
       (ap_function::ap_arg)
 
-  | Fclosure ({cl_fun;cl_free_var},_) ->
+  | Fset_of_closures ({cl_fun;cl_free_var},_) ->
       let l = VarMap.fold (fun _ v l -> v :: l) cl_free_var [] in
       VarMap.fold (fun _ f l -> f.body :: l) cl_fun.funs l
 
@@ -141,7 +141,7 @@ let iter_general ~toplevel f t =
     | Fapply ({ap_function = f1; ap_arg = fl},_) ->
       iter_list (f1::fl)
 
-    | Fclosure ({cl_fun = funcs; cl_free_var = fv},_) ->
+    | Fset_of_closures ({cl_fun = funcs; cl_free_var = fv},_) ->
       VarMap.iter (fun _ v -> aux v) fv;
       if not toplevel
       then VarMap.iter (fun _ ffun -> aux ffun.body) funcs.funs
@@ -171,7 +171,7 @@ let iter_toplevel f t = iter_general ~toplevel:true f t
 
 let iter_on_closures f t =
   let aux = function
-    | Fclosure (clos,data) ->
+    | Fset_of_closures (clos,data) ->
         f clos data
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
@@ -193,7 +193,7 @@ let map_general ~toplevel f tree =
           Fapply ({ ap_function = aux ap_function;
                     ap_arg = List.map aux ap_arg;
                     ap_kind; ap_dbg }, annot)
-      | Fclosure ({ cl_fun; cl_free_var;
+      | Fset_of_closures ({ cl_fun; cl_free_var;
                     cl_specialised_arg },annot) ->
           let cl_fun =
             if toplevel
@@ -203,7 +203,7 @@ let map_general ~toplevel f tree =
                 funs = VarMap.map
                     (fun ffun -> { ffun with body = aux ffun.body })
                     cl_fun.funs } in
-          Fclosure ({ cl_fun;
+          Fset_of_closures ({ cl_fun;
                       cl_free_var = VarMap.map aux cl_free_var;
                       cl_specialised_arg }, annot)
       | Ffunction ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
@@ -288,7 +288,7 @@ let map_toplevel f tree = map_general ~toplevel:true f tree
 let expression_free_variables = function
   | Fvar (id,_) -> VarSet.singleton id
   | Fassign (id,_,_) -> VarSet.singleton id
-  | Fclosure ({cl_free_var; cl_specialised_arg},_) ->
+  | Fset_of_closures ({cl_free_var; cl_specialised_arg},_) ->
       let set = VarMap.keys (VarMap.revert cl_specialised_arg) in
       VarMap.fold (fun _ expr set ->
           (* HACK:
@@ -339,7 +339,7 @@ let fold_subexpressions f acc = function
              acc, arg :: l) args (acc,[]) in
       acc, Fstaticraise (exn, args, d)
 
-  | Fclosure ({ cl_fun; cl_free_var } as closure, d) ->
+  | Fset_of_closures ({ cl_fun; cl_free_var } as closure, d) ->
       let acc, funs =
         VarMap.fold (fun v fun_decl (acc, funs) ->
             let acc, body = f acc fun_decl.free_variables fun_decl.body in
@@ -353,7 +353,7 @@ let fold_subexpressions f acc = function
             acc, VarMap.add v flam free_vars)
           cl_free_var (acc, VarMap.empty)
       in
-      acc, Fclosure({ closure with cl_fun; cl_free_var }, d)
+      acc, Fset_of_closures({ closure with cl_fun; cl_free_var }, d)
 
   | Fswitch (arg,
              { fs_numconsts; fs_consts; fs_numblocks;
@@ -474,7 +474,7 @@ let subexpression_bound_variables = function
   | Fstaticcatch (_,ids,body,handler,_) ->
       [VarSet.empty, body;
        VarSet.of_list ids, handler]
-  | Fclosure ({ cl_fun; cl_free_var },_) ->
+  | Fset_of_closures ({ cl_fun; cl_free_var },_) ->
       let free_vars =
         List.map (fun (_, def) -> VarSet.empty, def)
           (VarMap.bindings cl_free_var) in
@@ -494,7 +494,7 @@ let free_variables tree =
   let aux = function
     | Fvar (id,_) -> add id
     | Fassign (id,_,_) -> add id
-    | Fclosure ({cl_specialised_arg},_) ->
+    | Fset_of_closures ({cl_specialised_arg},_) ->
         VarMap.iter (fun _ id -> add id) cl_specialised_arg
     | Ftrywith(_,id,_,_)
     | Ffor(id, _, _, _, _, _)
@@ -523,14 +523,14 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
         Fapply ({ ap_function = mapper ap_function;
                   ap_arg = list_mapper ap_arg;
                   ap_kind; ap_dbg }, f v)
-    | Fclosure ({ cl_fun; cl_free_var;
+    | Fset_of_closures ({ cl_fun; cl_free_var;
                   cl_specialised_arg }, v) ->
         let cl_fun =
           { cl_fun with
             funs = VarMap.map
                 (fun ffun -> { ffun with body = mapper ffun.body })
                 cl_fun.funs } in
-        Fclosure ({ cl_fun;
+        Fset_of_closures ({ cl_fun;
                     cl_free_var = VarMap.map mapper cl_free_var;
                     cl_specialised_arg }, f v)
     | Ffunction ({ fu_closure; fu_fun; fu_relative_to}, v) ->
@@ -578,8 +578,8 @@ let toplevel_substitution sb tree =
   let aux = function
     | Fvar (id,e) -> Fvar (sb id,e)
     | Fassign (id,e,d) -> Fassign (sb id,e,d)
-    | Fclosure (cl,d) ->
-        Fclosure ({cl with
+    | Fset_of_closures (cl,d) ->
+        Fset_of_closures ({cl with
                    cl_specialised_arg =
                      VarMap.map sb cl.cl_specialised_arg},
                   d)

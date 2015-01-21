@@ -25,7 +25,7 @@ type ('a,'b) declaration_position =
 let list_closures expr constants =
   let closures = ref ClosureFunctionMap.empty in
   let aux expr = match expr with
-    | Fclosure({ cl_fun = functs; cl_free_var = fv }, data) ->
+    | Fset_of_closures({ cl_fun = functs; cl_free_var = fv }, data) ->
         let add off_id _ map =
           ClosureFunctionMap.add
             (Closure_function.wrap off_id)
@@ -98,7 +98,7 @@ module Offsets(P:Param1) = struct
   let fv_offset_table = ref ClosureVariableMap.empty
 
   let rec iter = function
-    | Fclosure({cl_fun = funct; cl_free_var = fv}, _) ->
+    | Fset_of_closures({cl_fun = funct; cl_free_var = fv}, _) ->
         iter_closure funct fv
     | _ -> ()
 
@@ -297,7 +297,7 @@ module Conv(P:Param2) = struct
         let udefs = List.map (fun (id,def) -> id, conv env def) defs in
         Uletrec(udefs, conv env body)
 
-    | Fclosure({ cl_fun = funct; cl_free_var = fv }, _) ->
+    | Fset_of_closures({ cl_fun = funct; cl_free_var = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
     | Ffunction({ fu_closure = lam; fu_fun = id; fu_relative_to = rel }, _) ->

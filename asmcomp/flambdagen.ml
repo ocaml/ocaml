@@ -333,7 +333,7 @@ let to_flambda
             all_free_idents VarMap.empty;
         cl_specialised_arg = VarMap.empty } in
 
-    Fclosure (closure, nid ())
+    Fset_of_closures (closure, nid ())
 
   and tupled_function_call_stub id original_params tuplified_version =
     let tuple_param =

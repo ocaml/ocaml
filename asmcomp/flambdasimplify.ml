@@ -320,8 +320,8 @@ let subst_toplevel sb lam =
   let subst id = try VarMap.find id sb with Not_found -> id in
   let f = function
     | Fvar (id,_) -> Fvar (subst id,ExprId.create ())
-    | Fclosure (cl,d) ->
-        Fclosure (
+    | Fset_of_closures (cl,d) ->
+        Fset_of_closures (
           { cl with
             cl_specialised_arg = VarMap.map subst cl.cl_specialised_arg },
           ExprId.create ())
@@ -365,7 +365,7 @@ let make_closure_declaration id lam params =
       cl_free_var = fv';
       cl_specialised_arg = VarMap.empty } in
 
-  Fclosure(closure, ExprId.create ())
+  Fset_of_closures(closure, ExprId.create ())
 
 (* Determine whether the estimated size of a flambda term is below
    some threshold *)
@@ -419,7 +419,7 @@ let lambda_smaller' lam threshold =
     | Fapply ({ ap_function = fn; ap_arg = args; ap_kind = direct }, _) ->
         let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
         size := !size + call_cost; lambda_size fn; lambda_list_size args
-    | Fclosure({ cl_fun = ffuns; cl_free_var = fv }, _) ->
+    | Fset_of_closures({ cl_fun = ffuns; cl_free_var = fv }, _) ->
         VarMap.iter (fun _ -> lambda_size) fv;
         VarMap.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
     | Ffunction({ fu_closure = lam }, _) ->
@@ -513,7 +513,7 @@ let rec no_effects = function
   | Fprim(p, args, _, _) ->
       no_effects_prim p &&
       List.for_all no_effects args
-  | Fclosure ({ cl_free_var }, _) ->
+  | Fset_of_closures ({ cl_free_var }, _) ->
       VarMap.for_all (fun id def -> no_effects def) cl_free_var
   | Ffunction({ fu_closure = lam }, _) ->
       no_effects lam
@@ -753,7 +753,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let args, approxs, r = loop_list env r args in
       apply ~local:false env r (funct,fapprox) (args,approxs) dbg annot
 
-  | Fclosure (cl, annot) ->
+  | Fset_of_closures (cl, annot) ->
       closure env r cl annot
   | Ffunction ({fu_closure = flam;
                 fu_fun;
@@ -1160,7 +1160,7 @@ and closure env r cl annot =
 
   let closure = { internal_closure with ffunctions = ffuns; kept_params } in
   let r = VarMap.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
-  Fclosure ({cl_fun = ffuns; cl_free_var = VarMap.map fst fv;
+  Fset_of_closures ({cl_fun = ffuns; cl_free_var = VarMap.map fst fv;
              cl_specialised_arg = spec_args}, annot),
   ret r (value_unoffseted_closure closure)
 
@@ -1372,7 +1372,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
 
   let args_exprs = List.map (fun (id,_) -> Fvar(id,ExprId.create ())) args in
 
-  let clos_expr = (Fclosure({ cl_fun = clos;
+  let clos_expr = (Fset_of_closures({ cl_fun = clos;
                               cl_free_var = fv;
                               cl_specialised_arg = spec_args}, ExprId.create ())) in
 
@@ -1460,7 +1460,7 @@ let remove_unused_closure_variables tree =
     !used
   in
   let aux = function
-    | Fclosure ({ cl_fun; cl_free_var } as closure, eid) ->
+    | Fset_of_closures ({ cl_fun; cl_free_var } as closure, eid) ->
        let all_free_var =
          VarMap.fold
            (fun _ { free_variables } acc -> VarSet.union free_variables acc)
@@ -1472,7 +1472,7 @@ let remove_unused_closure_variables tree =
                         || ClosureVariableSet.mem (Closure_variable.wrap id)
                                                   used_variable_withing_closure)
            cl_free_var in
-       Fclosure ({ closure with cl_free_var }, eid)
+       Fset_of_closures ({ closure with cl_free_var }, eid)
     | e -> e in
   Flambdaiter.map aux tree
 

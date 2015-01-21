@@ -56,7 +56,7 @@ open Abstract_identifiers
   *)
 
   (** There are 2 kind of closures: specified and unspecified ones.
-      A closure is first build as unspecified using the Fclosure constructor.
+      A closure is first build as unspecified using the Fset_of_closures constructor.
       It represents a block containing code pointers and values (the free
       variables).
 
@@ -76,7 +76,7 @@ open Abstract_identifiers
 
       is to represent it as:
 
-      {[Flet( closure, Fclosure { id_f -> ...; id_g -> ... },
+      {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
               Flet( f, Ffunction { fu_closure = closure; fu_fun = id_f },
               Flet( g, Ffunction { fu_closure = closure; fu_fun = id_g }, ...)))]}
 

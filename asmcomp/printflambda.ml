@@ -37,7 +37,7 @@ let rec lam ppf = function
   | Fvariable_in_closure({vc_closure;vc_fun;vc_var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Closure_variable.print vc_var Closure_function.print vc_fun lam vc_closure
-  | Fclosure({cl_fun;cl_free_var;cl_specialised_arg},_) ->
+  | Fset_of_closures({cl_fun;cl_free_var;cl_specialised_arg},_) ->
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in
       let funs ppf =

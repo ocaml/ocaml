@@ -29,7 +29,7 @@ let directly_used_variables tree =
         ()
     | Fprim(Psetfield(_, _), [Fvar _; e], _, _) ->
         loop e
-    | Fclosure _ | Flet _ | Fassign _
+    | Fset_of_closures _ | Flet _ | Fassign _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
@@ -108,7 +108,7 @@ let eliminate_ref lam =
         (match get_variable v field with
          | None -> Funreachable d1
          | Some (var,_) -> Fassign(var, e, d2))
-    | Fclosure _ | Flet _
+    | Fset_of_closures _ | Flet _
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
     | Fvariable_in_closure _ | Fletrec _
