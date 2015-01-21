@@ -62,7 +62,7 @@ open Abstract_identifiers
 
       Since a closure can contain multiple functions, an unspecified
       closure can't be directly used, we first need to select (specify)
-      which function the closure represents using Ffunction. The 2
+      which function the closure represents using Fclosure. The 2
       constructors that can be applied on specified closures are
 
       - Fapply: call the selected function
@@ -77,8 +77,8 @@ open Abstract_identifiers
       is to represent it as:
 
       {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet( f, Ffunction { fu_closure = closure; fu_fun = id_f },
-              Flet( g, Ffunction { fu_closure = closure; fu_fun = id_g }, ...)))]}
+              Flet( f, Fclosure { fu_closure = closure; fu_fun = id_f },
+              Flet( g, Fclosure { fu_closure = closure; fu_fun = id_g }, ...)))]}
 
       Accessing a variable from a closure is done
 
@@ -92,7 +92,7 @@ open Abstract_identifiers
       the same closure: For instance, if f from the previous example
       access g and is inlined, calling g will use the closure:
 
-      {[ Ffunction { fu_closure = f; fu_fun = id_g; fu_relative_to = Some id_f } ]}
+      {[ Fclosure { fu_closure = f; fu_fun = id_g; fu_relative_to = Some id_f } ]}
 
   *)
 

@@ -102,7 +102,7 @@ let to_flambda
         let decl =
           { rec_ident = Ident.create "dummy"; closure_bound_var;
             kind; params; body } in
-        Ffunction(
+        Fclosure(
           { fu_closure = close_functions env [decl];
             fu_fun = Closure_function.wrap closure_bound_var;
             fu_relative_to = None },
@@ -148,7 +148,7 @@ let to_flambda
                 (fun body decl ->
                    let let_bound_var = find_var env decl.rec_ident in
                    Flet(Not_assigned, let_bound_var,
-                        Ffunction(
+                        Fclosure(
                           { fu_closure = Fvar (clos_var, nid ());
                             fu_fun = Closure_function.wrap decl.closure_bound_var;
                             fu_relative_to = None },
@@ -366,7 +366,7 @@ let to_flambda
         let decl =
           { rec_ident; closure_bound_var;
             kind; params; body } in
-        Ffunction(
+        Fclosure(
           { fu_closure = close_functions env [decl];
             fu_fun = Closure_function.wrap closure_bound_var;
             fu_relative_to = None },

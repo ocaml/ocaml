@@ -20,7 +20,7 @@ let apply_on_subexpressions f = function
   | Funreachable _ -> ()
 
   | Fassign (_,f1,_)
-  | Ffunction({fu_closure = f1},_)
+  | Fclosure({fu_closure = f1},_)
   | Fvariable_in_closure({vc_closure = f1},_)
   | Fevent (f1,_,_) ->
     f f1
@@ -67,7 +67,7 @@ let subexpressions = function
   | Funreachable _ -> []
 
   | Fassign (_,f1,_)
-  | Ffunction({fu_closure = f1},_)
+  | Fclosure({fu_closure = f1},_)
   | Fvariable_in_closure({vc_closure = f1},_)
   | Fevent (f1,_,_) ->
       [f1]
@@ -118,7 +118,7 @@ let iter_general ~toplevel f t =
     | Fconst _ -> ()
 
     | Fassign (_,f1,_)
-    | Ffunction({fu_closure = f1},_)
+    | Fclosure({fu_closure = f1},_)
     | Fvariable_in_closure({vc_closure = f1},_)
     | Fevent (f1,_,_)  ->
       aux f1
@@ -174,7 +174,7 @@ let iter_on_closures f t =
     | Fset_of_closures (clos,data) ->
         f clos data
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fstringswitch _
@@ -206,8 +206,8 @@ let map_general ~toplevel f tree =
           Fset_of_closures ({ cl_fun;
                       cl_free_var = VarMap.map aux cl_free_var;
                       cl_specialised_arg }, annot)
-      | Ffunction ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
-          Ffunction ({ fu_closure = aux fu_closure;
+      | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
+          Fclosure ({ fu_closure = aux fu_closure;
                        fu_fun; fu_relative_to}, annot)
       | Fvariable_in_closure (vc, annot) ->
           Fvariable_in_closure ({ vc with vc_closure = aux vc.vc_closure }, annot)
@@ -438,9 +438,9 @@ let fold_subexpressions f acc = function
       let acc, flam = f acc VarSet.empty flam in
       acc, Fassign (v,flam,d)
 
-  | Ffunction(clos,d) ->
+  | Fclosure(clos,d) ->
       let acc, fu_closure = f acc VarSet.empty clos.fu_closure in
-      acc, Ffunction({clos with fu_closure},d)
+      acc, Fclosure({clos with fu_closure},d)
 
   | Fvariable_in_closure(clos,d) ->
       let acc, vc_closure = f acc VarSet.empty clos.vc_closure in
@@ -533,8 +533,8 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
         Fset_of_closures ({ cl_fun;
                     cl_free_var = VarMap.map mapper cl_free_var;
                     cl_specialised_arg }, f v)
-    | Ffunction ({ fu_closure; fu_fun; fu_relative_to}, v) ->
-        Ffunction ({ fu_closure = mapper fu_closure;
+    | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, v) ->
+        Fclosure ({ fu_closure = mapper fu_closure;
                      fu_fun; fu_relative_to}, f v)
     | Fvariable_in_closure (vc, v) ->
         Fvariable_in_closure ({ vc with vc_closure = mapper vc.vc_closure }, f v)

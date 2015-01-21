@@ -150,7 +150,7 @@ let subst_var env id =
   | Not_found -> id
 
 (* Tables used for identifiers substitution in
-   Ffunction and Fvariable_in_closure constructions.
+   Fclosure and Fvariable_in_closure constructions.
    Those informations are propagated bottom up. This is
    populated when inlining a function containing a closure
    declaration.
@@ -159,7 +159,7 @@ let subst_var env id =
      [let f x =
         let g y = ... x ... in
         ... g.x ...           (Fvariable_in_closure x)
-        ... g 1 ...           (FApply (Ffunction g ...))
+        ... g 1 ...           (FApply (Fclosure g ...))
         ]
    if f is inlined g is renamed. The approximation of g will
    cary this table such that later the access to the field x
@@ -422,7 +422,7 @@ let lambda_smaller' lam threshold =
     | Fset_of_closures({ cl_fun = ffuns; cl_free_var = fv }, _) ->
         VarMap.iter (fun _ -> lambda_size) fv;
         VarMap.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
-    | Ffunction({ fu_closure = lam }, _) ->
+    | Fclosure({ fu_closure = lam }, _) ->
         incr size; lambda_size lam
     | Fvariable_in_closure({ vc_closure }, _) ->
         incr size; lambda_size vc_closure
@@ -515,7 +515,7 @@ let rec no_effects = function
       List.for_all no_effects args
   | Fset_of_closures ({ cl_free_var }, _) ->
       VarMap.for_all (fun id def -> no_effects def) cl_free_var
-  | Ffunction({ fu_closure = lam }, _) ->
+  | Fclosure({ fu_closure = lam }, _) ->
       no_effects lam
   | Fvariable_in_closure({ vc_closure }, _) ->
       no_effects vc_closure
@@ -755,7 +755,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
 
   | Fset_of_closures (cl, annot) ->
       closure env r cl annot
-  | Ffunction ({fu_closure = flam;
+  | Fclosure ({fu_closure = flam;
                 fu_fun;
                 fu_relative_to = rel}, annot) ->
       let flam, r = loop env r flam in
@@ -1186,7 +1186,7 @@ and ffunction r flam off rel annot =
   let rel = Misc.may_map (off_id closure) rel in
   let ret_approx = value_closure { fun_id = off; closure } in
 
-  Ffunction ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
+  Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
   ret r ret_approx
 
 (* Apply a function to its parameters: if the function is known, we will go to the special cases:
@@ -1247,7 +1247,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
                        ap_arg = call_args;
                        ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
   let fset_of_closures = make_closure_declaration new_fun_id expr remaining_args in
-  let offset = Ffunction ({fu_closure = fset_of_closures;
+  let offset = Fclosure ({fu_closure = fset_of_closures;
                            fu_fun = Closure_function.wrap new_fun_id;
                            fu_relative_to = None}, ExprId.create ()) in
   let with_args = List.fold_right (fun (id', arg) expr ->
@@ -1377,7 +1377,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
                               cl_specialised_arg = spec_args}, ExprId.create ())) in
 
   let r = exit_scope r clos_id in
-  let expr = Ffunction({fu_closure = clos_expr; fu_fun = fun_id;
+  let expr = Fclosure({fu_closure = clos_expr; fu_fun = fun_id;
                         fu_relative_to = None}, ExprId.create ()) in
   let expr = Fapply ({ ap_function = expr; ap_arg = args_exprs;
                        ap_kind = Direct fun_id; ap_dbg },
@@ -1414,7 +1414,7 @@ and inline env r clos lfunc fun_id func args dbg eid =
       variables_in_closure
     |> VarMap.fold (fun id _ body ->
         Flet(Not_assigned, id,
-             Ffunction ({ fu_closure = Fvar(clos_id, ExprId.create ());
+             Fclosure ({ fu_closure = Fvar(clos_id, ExprId.create ());
                           fu_fun = Closure_function.wrap id;
                           fu_relative_to = Some fun_id },
                         ExprId.create ()),

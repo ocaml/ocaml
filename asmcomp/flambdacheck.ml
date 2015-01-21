@@ -32,7 +32,7 @@ let every_used_identifier_is_bound flam =
     | Fset_of_closures({cl_specialised_arg},_) ->
         VarMap.iter (fun _ id -> test id env) cl_specialised_arg
 
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
@@ -65,7 +65,7 @@ let every_used_identifier_is_bound flam =
         loop (VarSet.add id env) handler
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -130,7 +130,7 @@ let no_identifier_bound_multiple_times flam =
         add_and_check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -166,7 +166,7 @@ let every_bound_variable_is_from_current_compilation_unit
         check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -198,7 +198,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
 
     | Flet (Not_assigned, _, _, _, _)
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Ffunction _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvariable_in_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
@@ -275,7 +275,7 @@ let no_function_within_closure_is_bound_multiple_times flam =
 let used_function_within_closure flam =
   let used = ref ClosureFunctionSet.empty in
   let f = function
-    | Ffunction ({fu_fun;fu_relative_to},_) ->
+    | Fclosure ({fu_fun;fu_relative_to},_) ->
         used := ClosureFunctionSet.add fu_fun !used;
         (match fu_relative_to with
          | None -> ()

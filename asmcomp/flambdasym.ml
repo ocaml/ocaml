@@ -414,7 +414,7 @@ module Conv(P:Param1) = struct
         let args_approx = VarMap.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
-    | Ffunction({ fu_closure = lam; fu_fun = id; fu_relative_to = rel }, _) as expr ->
+    | Fclosure({ fu_closure = lam; fu_fun = id; fu_relative_to = rel }, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         if is_local_function_constant id
         then
@@ -436,7 +436,7 @@ module Conv(P:Param1) = struct
                   Printflambda.flambda expr;
                 assert false
           in
-          Ffunction({ fu_closure = ulam; fu_fun = id; fu_relative_to = rel },()),
+          Fclosure({ fu_closure = ulam; fu_fun = id; fu_relative_to = rel },()),
           approx
 
     | Fvariable_in_closure({vc_closure = lam;vc_var = env_var;vc_fun = env_fun_id}, _) as expr ->
@@ -459,7 +459,7 @@ module Conv(P:Param1) = struct
         approx
 
     | Fapply({ap_function =
-                Ffunction ({fu_closure = Fset_of_closures ({ cl_fun = ffuns;
+                Fclosure ({fu_closure = Fset_of_closures ({ cl_fun = ffuns;
                                                      cl_free_var = fv;
                                                      cl_specialised_arg }, _);
                             fu_fun = off;
@@ -484,7 +484,7 @@ module Conv(P:Param1) = struct
         in
 
         Fapply({ap_function =
-                  Ffunction ({fu_closure = uffuns;
+                  Fclosure ({fu_closure = uffuns;
                               fu_fun = off;
                               fu_relative_to = rel}, ());
                 ap_arg = uargs;
