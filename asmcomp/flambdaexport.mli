@@ -28,16 +28,16 @@ type descr =
   | Value_int of int
   | Value_constptr of int
   | Value_closure of value_offset
-  | Value_unoffseted_closure of value_closure
+  | Value_set_of_closures of value_closure
 
 and value_offset =
-  { fun_id : function_within_closure;
+  { fun_id : closure_id;
     closure : value_closure; }
 
 and value_closure =
   { closure_id : FunId.t;
-    bound_var : approx ClosureVariableMap.t;
-    results : approx ClosureFunctionMap.t }
+    bound_var : approx Var_within_closure.Map.t;
+    results : approx ClosureIdMap.t }
 
 and approx =
     Value_unknown
@@ -47,7 +47,7 @@ and approx =
 type exported = {
   ex_functions : unit Flambda.function_declarations FunMap.t;
   (** Code of exported functions indexed by function identifier *)
-  ex_functions_off : unit Flambda.function_declarations ClosureFunctionMap.t;
+  ex_functions_off : unit Flambda.function_declarations ClosureIdMap.t;
   (** Code of exported functions indexed by offset identifier *)
   ex_values : descr EidMap.t;
   (** Structure of exported values  *)
@@ -59,9 +59,9 @@ type exported = {
   ex_symbol_id : ExportId.t SymbolMap.t;
   (** Associates symbols and values *)
 
-  ex_offset_fun : int ClosureFunctionMap.t;
+  ex_offset_fun : int ClosureIdMap.t;
   (** Positions of function pointers in their closures *)
-  ex_offset_fv : int ClosureVariableMap.t;
+  ex_offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures *)
   ex_constants : SymbolSet.t;
   (** Symbols that are effectively constants (the top-level module is

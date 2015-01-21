@@ -20,7 +20,7 @@ type descr =
   | Value_block of tag * approx array
   | Value_int of int
   | Value_constptr of int
-  | Value_unoffseted_closure of value_closure
+  | Value_set_of_closures of value_closure
   | Value_closure of value_offset
   | Value_unknown
   | Value_bottom
@@ -28,15 +28,15 @@ type descr =
   | Value_symbol of Symbol.t
 
 and value_offset =
-  { fun_id : function_within_closure;
+  { fun_id : closure_id;
     closure : value_closure }
 
 and value_closure =
   { ffunctions : ExprId.t function_declarations;
-    bound_var : approx ClosureVariableMap.t;
+    bound_var : approx Var_within_closure.Map.t;
     kept_params : VarSet.t;
-    fv_subst_renaming : variable_within_closure ClosureVariableMap.t;
-    fun_subst_renaming : function_within_closure ClosureFunctionMap.t }
+    fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
+    fun_subst_renaming : closure_id ClosureIdMap.t }
 
 and approx =
   { descr : descr;
@@ -55,8 +55,8 @@ let rec print_descr ppf = function
   | Value_extern id -> Format.fprintf ppf "_%a_" Flambdaexport.ExportId.print id
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
   | Value_closure { fun_id } ->
-    Format.fprintf ppf "(fun:@ %a)" Closure_function.print fun_id
-  | Value_unoffseted_closure { ffunctions = { funs } } ->
+    Format.fprintf ppf "(fun:@ %a)" Closure_id.print fun_id
+  | Value_set_of_closures { ffunctions = { funs } } ->
     Format.fprintf ppf "(unoffseted:@ %a)"
       (fun ppf -> VarMap.iter (fun id _ -> Variable.print ppf id)) funs
 
@@ -70,7 +70,7 @@ let value_unknown = approx Value_unknown
 let value_int i = approx (Value_int i)
 let value_constptr i = approx (Value_constptr i)
 let value_closure c = approx (Value_closure c)
-let value_unoffseted_closure c = approx (Value_unoffseted_closure c)
+let value_unoffseted_closure c = approx (Value_set_of_closures c)
 let value_block (t,b) = approx (Value_block (t,b))
 let value_extern ex = approx (Value_extern ex)
 let value_symbol sym = approx (Value_symbol sym)
@@ -107,7 +107,7 @@ module Import = struct
       | Value_block (tag, fields) ->
           value_block (tag, Array.map import_approx fields)
       | Value_closure { fun_id; closure = { closure_id; bound_var } } ->
-        let bound_var = ClosureVariableMap.map import_approx bound_var in
+        let bound_var = Var_within_closure.Map.map import_approx bound_var in
         let kept_params =
           try FunMap.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
@@ -118,10 +118,10 @@ module Import = struct
               { ffunctions = Compilenv.imported_closure closure_id;
                 bound_var;
                 kept_params = kept_params;
-                fv_subst_renaming = ClosureVariableMap.empty;
-                fun_subst_renaming = ClosureFunctionMap.empty } }
-      | Value_unoffseted_closure { closure_id; bound_var } ->
-        let bound_var = ClosureVariableMap.map import_approx bound_var in
+                fv_subst_renaming = Var_within_closure.Map.empty;
+                fun_subst_renaming = ClosureIdMap.empty } }
+      | Value_set_of_closures { closure_id; bound_var } ->
+        let bound_var = Var_within_closure.Map.map import_approx bound_var in
         let kept_params =
           try FunMap.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
@@ -130,8 +130,8 @@ module Import = struct
           { ffunctions = Compilenv.imported_closure closure_id;
             bound_var;
             kept_params = kept_params;
-            fv_subst_renaming = ClosureVariableMap.empty;
-            fun_subst_renaming = ClosureFunctionMap.empty }
+            fv_subst_renaming = Var_within_closure.Map.empty;
+            fun_subst_renaming = ClosureIdMap.empty }
       | _ ->
           value_unknown
     with Not_found ->

@@ -30,13 +30,13 @@ let rec lam ppf = function
       let direct = match ap_kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam ap_function lams ap_arg
   | Fclosure({fu_closure;fu_fun;fu_relative_to = None},_) ->
-      fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_function.print fu_fun lam fu_closure
+      fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_id.print fu_fun lam fu_closure
   | Fclosure({fu_closure;fu_fun;fu_relative_to = Some rel},_) ->
       fprintf ppf "@[<2>(function_relative@ %a - %a@ %a)@]"
-        Closure_function.print fu_fun Closure_function.print rel lam fu_closure
+        Closure_id.print fu_fun Closure_id.print rel lam fu_closure
   | Fvariable_in_closure({vc_closure;vc_fun;vc_var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
-        Closure_variable.print vc_var Closure_function.print vc_fun lam vc_closure
+        Var_within_closure.print vc_var Closure_id.print vc_fun lam vc_closure
   | Fset_of_closures({cl_fun;cl_free_var;cl_specialised_arg},_) ->
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in

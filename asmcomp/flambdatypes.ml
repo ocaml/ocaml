@@ -85,7 +85,7 @@ type let_kind =
 
 type call_kind =
   | Indirect
-  | Direct of function_within_closure
+  | Direct of closure_id
 
 type const =
   (* Note: no structured constants *)
@@ -164,8 +164,8 @@ and 'a function_declaration = {
 
 and 'a ffunction = {
   fu_closure : 'a flambda;
-  fu_fun : function_within_closure;
-  fu_relative_to : function_within_closure option;
+  fu_fun : closure_id;
+  fu_relative_to : closure_id option;
   (** For use when applying [Fclosure] to an existing (that is to say,
       [Fclosure]) closure value rather than a set of closures. *)
 }
@@ -173,8 +173,8 @@ and 'a ffunction = {
 and 'a fvariable_in_closure = {
   (** [vc_closure] must yield a closure rather than a set of closures. *)
   vc_closure : 'a flambda;
-  vc_fun : function_within_closure;
-  vc_var : variable_within_closure;
+  vc_fun : closure_id;
+  vc_var : Var_within_closure.t;
 }
 
 and 'a fswitch = {  (** Equivalent to the similar type in [Lambda]. *)

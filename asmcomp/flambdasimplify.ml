@@ -167,20 +167,20 @@ let subst_var env id =
  *)
 
 type ffunction_subst =
-  { ffs_fv : variable_within_closure ClosureVariableMap.t;
-    ffs_fun : function_within_closure ClosureFunctionMap.t }
+  { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
+    ffs_fun : closure_id ClosureIdMap.t }
 
 let empty_ffunction_subst =
-  { ffs_fv = ClosureVariableMap.empty; ffs_fun = ClosureFunctionMap.empty }
+  { ffs_fv = Var_within_closure.Map.empty; ffs_fun = ClosureIdMap.empty }
 
 let new_subst_off id env off_sb =
   if env.substitute
   then
     let id' = rename_var id in
     let env = add_sb_var id id' env in
-    let off = Closure_variable.wrap id in
-    let off' = Closure_variable.wrap id' in
-    let off_sb = ClosureVariableMap.add off off' off_sb in
+    let off = Var_within_closure.wrap id in
+    let off' = Var_within_closure.wrap id' in
+    let off_sb = Var_within_closure.Map.add off off' off_sb in
     id', env, off_sb
   else id, env, off_sb
 
@@ -189,9 +189,9 @@ let new_subst_off' id env off_sb =
   then
     let id' = rename_var id in
     let env = add_sb_var id id' env in
-    let off = Closure_function.wrap id in
-    let off' = Closure_function.wrap id' in
-    let off_sb = ClosureFunctionMap.add off off' off_sb in
+    let off = Closure_id.wrap id in
+    let off' = Closure_id.wrap id' in
+    let off_sb = ClosureIdMap.add off off' off_sb in
     id', env, off_sb
   else id, env, off_sb
 
@@ -770,10 +770,10 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
          some renamings and generate wrong code. *)
 
       let fun_off_id off closure =
-        try ClosureFunctionMap.find off closure.fun_subst_renaming
+        try ClosureIdMap.find off closure.fun_subst_renaming
         with Not_found -> off in
       let fv_off_id off closure =
-        try ClosureVariableMap.find off closure.fv_subst_renaming
+        try Var_within_closure.Map.find off closure.fv_subst_renaming
         with Not_found -> off in
 
       let arg, r = loop env r fenv_field.vc_closure in
@@ -791,14 +791,14 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let env_var = fv_off_id fenv_field.vc_var closure in
       let env_fun_id = fun_off_id fenv_field.vc_fun closure in
 
-      assert(Closure_function.equal env_fun_id approx_fun_id);
+      assert(Closure_id.equal env_fun_id approx_fun_id);
 
       let approx =
-        try ClosureVariableMap.find env_var closure.bound_var with
+        try Var_within_closure.Map.find env_var closure.bound_var with
         | Not_found ->
             Format.printf "no field %a in closure %a@ %a@."
-              Closure_variable.print env_var
-              Closure_function.print env_fun_id
+              Var_within_closure.print env_var
+              Closure_id.print env_fun_id
               Printflambda.flambda arg;
             assert false in
 
@@ -1077,7 +1077,7 @@ and closure env r cl annot =
   let env = local_env env in
 
   let prev_closure_symbols = VarMap.fold (fun id _ map ->
-      let cf = Closure_function.wrap id in
+      let cf = Closure_id.wrap id in
       let sym = Compilenv.closure_symbol cf in
       SymbolMap.add sym id map) ffuns.funs SymbolMap.empty in
 
@@ -1094,14 +1094,14 @@ and closure env r cl annot =
   let internal_closure =
     { ffunctions = ffuns;
       bound_var = VarMap.fold (fun id (_,desc) map ->
-          ClosureVariableMap.add (Closure_variable.wrap id) desc map)
-          fv ClosureVariableMap.empty;
+          Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
+          fv Var_within_closure.Map.empty;
       kept_params = VarSet.empty;
       fv_subst_renaming = ffunction_sb.ffs_fv;
       fun_subst_renaming = ffunction_sb.ffs_fun } in
   let closure_env = VarMap.fold
       (fun id _ env -> add_approx id
-          (value_closure { fun_id = (Closure_function.wrap id);
+          (value_closure { fun_id = (Closure_id.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
   let funs, used_params, r =
@@ -1166,21 +1166,21 @@ and closure env r cl annot =
 
 and ffunction r flam off rel annot =
   let off_id closure off =
-    try ClosureFunctionMap.find off closure.fun_subst_renaming
+    try ClosureIdMap.find off closure.fun_subst_renaming
     with Not_found -> off in
   let off_id closure off =
     let off = off_id closure off in
     (try ignore (find_declaration off closure.ffunctions)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
-                           Closure_function.print off Printflambda.flambda flam));
+                           Closure_id.print off Printflambda.flambda flam));
     off
   in
   let closure = match r.approx.descr with
-    | Value_unoffseted_closure closure -> closure
+    | Value_set_of_closures closure -> closure
     | Value_closure { closure } -> closure
     | _ ->
-        Format.printf "%a@.%a@." Closure_function.print off Printflambda.flambda flam;
+        Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda flam;
         assert false in
   let off = off_id closure off in
   let rel = Misc.may_map (off_id closure) rel in
@@ -1201,7 +1201,7 @@ and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
       let func =
         try find_declaration fun_id clos with
         | Not_found ->
-            Format.printf "missing %a@." Closure_function.print fun_id;
+            Format.printf "missing %a@." Closure_id.print fun_id;
             assert false
       in
       let nargs = List.length args in
@@ -1248,7 +1248,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
                        ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
   let fset_of_closures = make_closure_declaration new_fun_id expr remaining_args in
   let offset = Fclosure ({fu_closure = fset_of_closures;
-                           fu_fun = Closure_function.wrap new_fun_id;
+                           fu_fun = Closure_id.wrap new_fun_id;
                            fu_relative_to = None}, ExprId.create ()) in
   let with_args = List.fold_right (fun (id', arg) expr ->
       Flet(Not_assigned, id', arg, expr, ExprId.create ()))
@@ -1300,7 +1300,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
         if
           recursive && not (FunSet.mem clos.ident env.current_functions)
           && not (VarSet.is_empty kept_params)
-          && ClosureVariableMap.is_empty closure.bound_var (* closed *)
+          && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
           && env.inlining_level <= max_level
 
         then begin
@@ -1339,7 +1339,7 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
       (Fvariable_in_closure
          ({ vc_closure = Fvar(clos_id, ExprId.create ());
             vc_fun = fun_id;
-            vc_var = Closure_variable.wrap var },
+            vc_var = Var_within_closure.wrap var },
           ExprId.create ())) fv
   in
 
@@ -1408,14 +1408,14 @@ and inline env r clos lfunc fun_id func args dbg eid =
              Fvariable_in_closure
                ({ vc_closure = Fvar(clos_id, ExprId.create ());
                   vc_fun = fun_id;
-                  vc_var = Closure_variable.wrap id },
+                  vc_var = Var_within_closure.wrap id },
                 ExprId.create ()),
              body, ExprId.create ()))
       variables_in_closure
     |> VarMap.fold (fun id _ body ->
         Flet(Not_assigned, id,
              Fclosure ({ fu_closure = Fvar(clos_id, ExprId.create ());
-                          fu_fun = Closure_function.wrap id;
+                          fu_fun = Closure_id.wrap id;
                           fu_relative_to = Some fun_id },
                         ExprId.create ()),
              body, ExprId.create ()))
@@ -1450,10 +1450,10 @@ let lift_lets tree =
     or by an inlined version of the function. *)
 let remove_unused_closure_variables tree =
   let used_variable_withing_closure =
-    let used = ref ClosureVariableSet.empty in
+    let used = ref Var_within_closure.Set.empty in
     let aux expr = match expr with
       | Fvariable_in_closure({ vc_var },_) ->
-         used := ClosureVariableSet.add vc_var !used
+         used := Var_within_closure.Set.add vc_var !used
       | e -> ()
     in
     Flambdaiter.iter aux tree;
@@ -1469,7 +1469,7 @@ let remove_unused_closure_variables tree =
        let cl_free_var =
          VarMap.filter
            (fun id _ -> VarSet.mem id all_free_var
-                        || ClosureVariableSet.mem (Closure_variable.wrap id)
+                        || Var_within_closure.Set.mem (Var_within_closure.wrap id)
                                                   used_variable_withing_closure)
            cl_free_var in
        Fset_of_closures ({ closure with cl_free_var }, eid)

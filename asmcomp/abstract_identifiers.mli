@@ -11,148 +11,104 @@
 (***********************************************************************)
 
 open Ext_types
-open Symbol
 
-(** Various "abstract" identifiers to be used in [Flambda].
+(** Various abstract identifiers used in [Flambda] passes. *)
 
-    * [Variable.t] is the equivalent of of non-persistent [Ident.t] in
-      the [Flambda] tree. It wraps an [Ident.t] together with its
-      source [compilation_unit].
+module Variable : sig
+  (** [Variable.t] is the equivalent of a non-persistent [Ident.t] in
+      the [Flambda] tree.  It wraps an [Ident.t] together with its source
+      [compilation_unit].  As such, it is unique within a whole program,
+      not just one compilation unit.
 
       Introducing a new type helps tracing the source of identifier
       when debugging the inliner; and, avoids ident renaming when
       importing cmx files.
-
-    * [ExprId.t] is used to identify nodes in the Flambda tree.
-
-    * [FunId.t] is used to identify a set of recursive functions in
-      the Flambda tree.
-
-    The remaining types are abstracted aliases, introduced to avoid
-    misconfusion between different usages.
-
-    * [Closure_function.t] and [Closure_variable.t] are abstract aliases
-      of [Variable.t] (see [Flambda] for more details).
-
-    * [Static_exception.t] is an abstract alias for [int].
-
-*)
-
-module Variable : sig
+  *)
 
   type t
+  include Identifiable with type t := t
 
-  val create : current_compilation_unit:compilation_unit -> string ->  t
+  val create : current_compilation_unit:Symbol.compilation_unit -> string -> t
 
   val unwrap : t -> Ident.t (* For bytecode debugger only *)
   val unique_ident : t -> Ident.t (* For clambdagen only *)
     (* Should we propagate Variable.t into clambda ??? *)
 
-  val rename : current_compilation_unit:compilation_unit ->
+  val rename : current_compilation_unit:Symbol.compilation_unit ->
     ?append:string -> t -> t
 
-  val in_compilation_unit : compilation_unit -> t -> bool
-
-  include PrintableHashOrdered with type t := t
+  val in_compilation_unit : Symbol.compilation_unit -> t -> bool
 
   val unique_name : t -> string
-
 end
 
-module VarSet : ExtSet with module M := Variable
-module VarMap : ExtMap with module M := Variable
-module VarTbl : ExtHashtbl with module M := Variable
-
-module IdentMap : ExtMap with module M := Ident
-
-
-(***********************************************************************)
-
-module Closure_function : sig
+module Set_of_closures_id : sig
+  (** An identifier, unique across the whole program, that identifies a set
+      of a closures (viz. [Fset_of_closures]). *)
 
   type t
+  include Identifiable with type t := t
+end
+
+module Closure_id : sig
+  (** An identifier, unique across the whole program (not just one compilation
+      unit), that identifies a closure within a particular set of closures
+      (viz. [Fclosure]). *)
+
+  type t
+  include Identifiable with type t := t
 
   val wrap : Variable.t -> t
   val unwrap : t -> Variable.t
 
-  val in_compilation_unit : compilation_unit -> t -> bool
-  val get_compilation_unit : t -> compilation_unit
-
-  include PrintableHashOrdered with type t := t
+  val in_compilation_unit : Symbol.compilation_unit -> t -> bool
+  val get_compilation_unit : t -> Symbol.compilation_unit
 
   val unique_name : t -> string
-
 end
 
-type function_within_closure = Closure_function.t
-
-module ClosureFunctionSet : ExtSet with module M := Closure_function
-module ClosureFunctionMap : ExtMap with module M := Closure_function
-module ClosureFunctionTbl : ExtHashtbl with module M := Closure_function
-
-
-(***********************************************************************)
-
-module Closure_variable : sig
+module Var_within_closure : sig
+  (** An identifier, unique across the whole program, that identifies a
+      particular variable within a particular closure.  Only
+      [Fvar_within_closure], and not [Fvar], nodes are tagged with these
+      identifiers. *)
 
   type t
+  include Identifiable with type t := t
 
   val wrap : Variable.t -> t
   val unwrap : t -> Variable.t
 
-  val in_compilation_unit : compilation_unit -> t -> bool
-
-  include PrintableHashOrdered with type t := t
+  val in_compilation_unit : Symbol.compilation_unit -> t -> bool
 
   val unique_name : t -> string
-
 end
 
-type variable_within_closure = Closure_variable.t
+module Expr_id : sig
+  (** An identifier, unique within compilation units, that is used to tag nodes
+      in an [flambda] expression tree. *)
 
-
-module ClosureVariableSet : ExtSet with module M := Closure_variable
-module ClosureVariableMap : ExtMap with module M := Closure_variable
-module ClosureVariableTbl : ExtHashtbl with module M := Closure_variable
-
-
-(***********************************************************************)
-
-module ExprId : Id
-module FunId : UnitId with module Compilation_unit := Compilation_unit
-
-module ExprSet : ExtSet with module M := ExprId
-module ExprMap : ExtMap with module M := ExprId
-module ExprTbl : ExtHashtbl with module M := ExprId
-
-module FunSet : ExtSet with module M := FunId
-module FunMap : ExtMap with module M := FunId
-module FunTbl : ExtHashtbl with module M := FunId
-
-
-(***********************************************************************)
+  type t
+  include Identifiable with type t := t
+end
 
 module Static_exception : sig
+  (** An identifier that is used to label static exceptions.  Its
+      uniqueness properties are unspecified. *)
 
   type t
+  include Identifiable with type t := t
 
   val create : unit -> t
 
   val of_int : int -> t
   val to_int : t -> int
-
-  include PrintableHashOrdered with type t := t
-
 end
 
-type static_exception = Static_exception.t
-
-module StaticExceptionSet : ExtSet with module M := Static_exception
-module StaticExceptionMap : ExtMap with module M := Static_exception
-module StaticExceptionTbl : ExtHashtbl with module M := Static_exception
-
-
-(***********************************************************************)
+module Ident : sig
+  include module type of Ident with type t = Ident.t
+  module Map : ExtMap with module M := Ident
+end
 
 module Variable_connected_components :
   Sort_connected_components.S with module Id := Variable

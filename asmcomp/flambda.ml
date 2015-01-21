@@ -18,16 +18,16 @@ include Flambdatypes
 (* access functions *)
 
 let find_declaration cf { funs } =
-  VarMap.find (Closure_function.unwrap cf) funs
+  VarMap.find (Closure_id.unwrap cf) funs
 
 let find_declaration_variable cf { funs } =
-  let var = Closure_function.unwrap cf in
+  let var = Closure_id.unwrap cf in
   if not (VarMap.mem var funs)
   then raise Not_found
   else var
 
 let find_free_variable cv { cl_free_var } =
-  VarMap.find (Closure_variable.unwrap cv) cl_free_var
+  VarMap.find (Var_within_closure.unwrap cv) cl_free_var
 
 (* utility functions *)
 
@@ -144,13 +144,13 @@ let rec same l1 l2 =
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
       same f1.fu_closure f2.fu_closure &&
-      Closure_function.equal f1.fu_fun f1.fu_fun &&
-      sameoption Closure_function.equal f1.fu_relative_to f1.fu_relative_to
+      Closure_id.equal f1.fu_fun f1.fu_fun &&
+      sameoption Closure_id.equal f1.fu_relative_to f1.fu_relative_to
   | Fclosure _, _ | _, Fclosure _ -> false
   | Fvariable_in_closure (v1, _), Fvariable_in_closure (v2, _) ->
       same v1.vc_closure v2.vc_closure &&
-      Closure_function.equal v1.vc_fun v2.vc_fun &&
-      Closure_variable.equal v1.vc_var v2.vc_var
+      Closure_id.equal v1.vc_fun v2.vc_fun &&
+      Var_within_closure.equal v1.vc_var v2.vc_var
   | Fvariable_in_closure _, _ | _, Fvariable_in_closure _ -> false
   | Flet (k1, v1, a1, b1, _), Flet (k2, v2, a2, b2, _) ->
       k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2

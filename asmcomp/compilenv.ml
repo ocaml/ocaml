@@ -434,7 +434,7 @@ let concat_symbol unitname id =
   unitname ^ "__" ^ id
 
 let closure_symbol fv =
-  let compilation_unit = Closure_function.get_compilation_unit fv in
+  let compilation_unit = Closure_id.get_compilation_unit fv in
   let unitname =
     Symbol.string_of_linkage_name
       (Compilation_unit.get_linkage_name compilation_unit) in
@@ -442,15 +442,15 @@ let closure_symbol fv =
     sym_label =
       linkage_name
         (concat_symbol unitname
-           ((Closure_function.unique_name fv) ^ "_closure")) }
+           ((Closure_id.unique_name fv) ^ "_closure")) }
 
 let function_label fv =
   let open Symbol in
-  let compilation_unit = Closure_function.get_compilation_unit fv in
+  let compilation_unit = Closure_id.get_compilation_unit fv in
   let unitname =
     string_of_linkage_name
       (Compilation_unit.get_linkage_name compilation_unit) in
-  (concat_symbol unitname (Closure_function.unique_name fv))
+  (concat_symbol unitname (Closure_id.unique_name fv))
 
 let imported_closure =
   let open Symbol in
@@ -460,7 +460,7 @@ let imported_closure =
     let orig_var_map clos =
       VarMap.fold
         (fun id _ acc ->
-           let fun_id = Closure_function.wrap id in
+           let fun_id = Closure_id.wrap id in
            let sym = closure_symbol fun_id in
            SymbolMap.add sym id acc)
         clos.funs SymbolMap.empty in

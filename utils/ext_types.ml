@@ -250,3 +250,23 @@ module IntTbl = ExtHashtbl(Int)
 module StringSet = ExtSet(String_M)
 module StringMap = ExtMap(String_M)
 module StringTbl = ExtHashtbl(String_M)
+
+module type Identifiable = sig
+  type t
+  module M : PrintableHashOrdered with type t = t
+  include PrintableHashOrdered with type t := M.t
+  module Set : ExtSet with module M := M
+  module Map : ExtMap with module M := M
+  module Tbl : ExtHashtbl with module M := M
+end
+
+module Identifiable = struct
+  module Make (M : PrintableHashOrdered) = struct
+    module M = M
+    include M
+
+    module Set = ExtSet(M)
+    module Map = ExtMap(M)
+    module Tbl = ExtHashtbl(M)
+  end
+end

@@ -79,10 +79,10 @@ val need_send_fun: int -> unit
 
 val new_const_symbol : unit -> string
 val new_const_symbol' : unit -> Symbol.t
-val closure_symbol : function_within_closure -> Symbol.t
+val closure_symbol : closure_id -> Symbol.t
         (* Symbol of a function if the function is
            closed (statically allocated) *)
-val function_label : function_within_closure -> string
+val function_label : closure_id -> string
         (* linkage name of the code of a function *)
 
 val new_const_label : unit -> int

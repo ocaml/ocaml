@@ -214,24 +214,24 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
   with Counter_example_id var ->
     Counter_example var
 
-let declared_variable_within_closure flam =
-  let bound = ref ClosureVariableSet.empty in
+let declared_var_within_closure flam =
+  let bound = ref Var_within_closure.Set.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
-    if ClosureVariableSet.mem var !bound
+    if Var_within_closure.Set.mem var !bound
     then bound_multiple_times := Some var;
-    bound := ClosureVariableSet.add var !bound
+    bound := Var_within_closure.Set.add var !bound
   in
   let f {cl_fun;cl_free_var} _ =
     VarMap.iter (fun id _ ->
-        let var = Closure_variable.wrap id in
+        let var = Var_within_closure.wrap id in
         add_and_check var) cl_free_var
   in
   Flambdaiter.iter_on_closures f flam;
   !bound, !bound_multiple_times
 
-let no_variable_within_closure_is_bound_multiple_times flam =
-  match declared_variable_within_closure flam with
+let no_var_within_closure_is_bound_multiple_times flam =
+  match declared_var_within_closure flam with
   | _, Some var -> Counter_example var
   | _, None -> No_counter_example
 
@@ -249,40 +249,40 @@ let every_declared_closure_is_from_current_compilation_unit
   with Counter_example_cu cu ->
     Counter_example cu
 
-let declared_function_within_closure flam =
-  let bound = ref ClosureFunctionSet.empty in
+let declared_closure_id flam =
+  let bound = ref ClosureIdSet.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
-    if ClosureFunctionSet.mem var !bound
+    if ClosureIdSet.mem var !bound
     then bound_multiple_times := Some var;
-    bound := ClosureFunctionSet.add var !bound
+    bound := ClosureIdSet.add var !bound
   in
   let f = function
     | Fset_of_closures ({cl_fun},_) ->
         VarMap.iter (fun id _ ->
-            let var = Closure_function.wrap id in
+            let var = Closure_id.wrap id in
             add_and_check var) cl_fun.funs
     | _ -> ()
   in
   Flambdaiter.iter f flam;
   !bound, !bound_multiple_times
 
-let no_function_within_closure_is_bound_multiple_times flam =
-  match declared_function_within_closure flam with
+let no_closure_id_is_bound_multiple_times flam =
+  match declared_closure_id flam with
   | _, Some var -> Counter_example var
   | _, None -> No_counter_example
 
-let used_function_within_closure flam =
-  let used = ref ClosureFunctionSet.empty in
+let used_closure_id flam =
+  let used = ref ClosureIdSet.empty in
   let f = function
     | Fclosure ({fu_fun;fu_relative_to},_) ->
-        used := ClosureFunctionSet.add fu_fun !used;
+        used := ClosureIdSet.add fu_fun !used;
         (match fu_relative_to with
          | None -> ()
          | Some rel ->
-             used := ClosureFunctionSet.add fu_fun !used)
+             used := ClosureIdSet.add fu_fun !used)
     | Fvariable_in_closure ({vc_fun},_) ->
-        used := ClosureFunctionSet.add vc_fun !used
+        used := ClosureIdSet.add vc_fun !used
 
     | Fassign _ | Fvar _ | Fset_of_closures _
     | Fsymbol _ | Fconst _ | Fapply _
@@ -295,11 +295,11 @@ let used_function_within_closure flam =
   Flambdaiter.iter f flam;
   !used
 
-let used_variable_within_closure flam =
-  let used = ref ClosureVariableSet.empty in
+let used_var_within_closure flam =
+  let used = ref Var_within_closure.Set.empty in
   let f = function
     | Fvariable_in_closure ({vc_var},_) ->
-        used := ClosureVariableSet.add vc_var !used
+        used := Var_within_closure.Set.add vc_var !used
     | _ -> ()
   in
   Flambdaiter.iter f flam;
@@ -307,29 +307,29 @@ let used_variable_within_closure flam =
 
 let every_used_function_from_current_compilation_unit_is_declared
     ~current_compilation_unit flam =
-  let declared, _ = declared_function_within_closure flam in
-  let used = used_function_within_closure flam in
+  let declared, _ = declared_closure_id flam in
+  let used = used_closure_id flam in
   let used_from_current_unit =
-    ClosureFunctionSet.filter
-      (Closure_function.in_compilation_unit current_compilation_unit)
+    ClosureIdSet.filter
+      (Closure_id.in_compilation_unit current_compilation_unit)
       used in
   let counter_examples =
-    ClosureFunctionSet.diff used_from_current_unit declared in
-  if ClosureFunctionSet.is_empty counter_examples
+    ClosureIdSet.diff used_from_current_unit declared in
+  if ClosureIdSet.is_empty counter_examples
   then No_counter_example
   else Counter_example counter_examples
 
 let every_used_variable_in_closure_from_current_compilation_unit_is_declared
     ~current_compilation_unit flam =
-  let declared, _ = declared_variable_within_closure flam in
-  let used = used_variable_within_closure flam in
+  let declared, _ = declared_var_within_closure flam in
+  let used = used_var_within_closure flam in
   let used_from_current_unit =
-    ClosureVariableSet.filter
-      (Closure_variable.in_compilation_unit current_compilation_unit)
+    Var_within_closure.Set.filter
+      (Var_within_closure.in_compilation_unit current_compilation_unit)
       used in
   let counter_examples =
-    ClosureVariableSet.diff used_from_current_unit declared in
-  if ClosureVariableSet.is_empty counter_examples
+    Var_within_closure.Set.diff used_from_current_unit declared in
+  if Var_within_closure.Set.is_empty counter_examples
   then No_counter_example
   else Counter_example counter_examples
 
@@ -418,13 +418,13 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
   test (no_assign_on_variable_of_kind_Not_assigned flam)
     "variable %a of kind Not_assigned is assigned" Variable.print;
 
-  test (no_variable_within_closure_is_bound_multiple_times flam)
+  test (no_var_within_closure_is_bound_multiple_times flam)
     "variable within closure %a bound multiple times"
-    Closure_variable.print;
+    Var_within_closure.print;
 
-  test (no_function_within_closure_is_bound_multiple_times flam)
+  test (no_closure_id_is_bound_multiple_times flam)
     "function within closure %a bound multiple times"
-    Closure_function.print;
+    Closure_id.print;
 
   test (every_declared_closure_is_from_current_compilation_unit
           ~current_compilation_unit flam)
@@ -437,7 +437,7 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
             ~current_compilation_unit flam)
       "functions %a from the current compilation unit are used but \
        not declared"
-      ClosureFunctionSet.print;
+      ClosureIdSet.print;
 
   if not flambdasym
   then
@@ -445,7 +445,7 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
             ~current_compilation_unit flam)
       "variables %a from the current compilation unit are used but \
        not declared"
-      ClosureVariableSet.print;
+      Var_within_closure.Set.print;
 
   if cmxfile
   then

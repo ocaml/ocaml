@@ -124,3 +124,17 @@ module String_M : PrintableHashOrdered with type t = string
 module StringSet : ExtSet with module M := String_M
 module StringMap : ExtMap with module M := String_M
 module StringTbl : ExtHashtbl with module M := String_M
+
+module type Identifiable = sig
+  type t
+  module M : PrintableHashOrdered with type t = t
+  include PrintableHashOrdered with type t := M.t
+  module Set : ExtSet with module M := M
+  module Map : ExtMap with module M := M
+  module Tbl : ExtHashtbl with module M := M
+end
+
+module Identifiable : sig
+  module Make (P : PrintableHashOrdered) : Identifiable
+    with type t := P.t
+end

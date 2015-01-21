@@ -42,12 +42,12 @@ let constant_closures constant_result expr =
     (constant_result.Flambdaconstants.not_constant_closure)
 
 let functions not_constants expr =
-  let cf_map = ref ClosureFunctionMap.empty in
+  let cf_map = ref ClosureIdMap.empty in
   let fun_id_map = ref FunMap.empty in
   let argument_kept = ref FunMap.empty in
   let aux ({ cl_fun } as cl) _ =
     let add var _ map =
-      ClosureFunctionMap.add (Closure_function.wrap var) cl_fun map in
+      ClosureIdMap.add (Closure_id.wrap var) cl_fun map in
     cf_map := VarMap.fold add cl_fun.funs !cf_map;
     fun_id_map := FunMap.add cl.cl_fun.ident cl.cl_fun !fun_id_map;
     argument_kept :=
@@ -58,10 +58,10 @@ let functions not_constants expr =
   !fun_id_map, !cf_map, !argument_kept
 
 let list_used_variable_withing_closure expr =
-  let used = ref ClosureVariableSet.empty in
+  let used = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
     | Fvariable_in_closure({ vc_var },_) ->
-        used := ClosureVariableSet.add vc_var !used
+        used := Var_within_closure.Set.add vc_var !used
     | e -> ()
   in
   Flambdaiter.iter aux expr;
@@ -131,9 +131,9 @@ module Conv(P:Param1) = struct
     | Not_declared
 
   let function_declaration_position cf =
-    try Local (ClosureFunctionMap.find cf closures) with
+    try Local (ClosureIdMap.find cf closures) with
     | Not_found ->
-        try External (ClosureFunctionMap.find cf (ex_closures ())) with
+        try External (ClosureIdMap.find cf (ex_closures ())) with
         | Not_found ->
             Not_declared
 
@@ -152,7 +152,7 @@ module Conv(P:Param1) = struct
         FunSet.mem ident (ex_constant_closures ())
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
-                       Closure_function.print cf)
+                       Closure_id.print cf)
 
   let is_local_function_constant cf =
     match function_declaration_position cf with
@@ -161,7 +161,7 @@ module Conv(P:Param1) = struct
     | External _ -> false
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
-                       Closure_function.print cf)
+                       Closure_id.print cf)
 
   let is_closure_constant fid =
     match functions_declaration_position fid with
@@ -175,12 +175,12 @@ module Conv(P:Param1) = struct
 
   let function_arity fun_id =
     let arity clos off = function_arity (find_declaration fun_id clos) in
-    try arity (ClosureFunctionMap.find fun_id closures) fun_id with
+    try arity (ClosureIdMap.find fun_id closures) fun_id with
     | Not_found ->
-        try arity (ClosureFunctionMap.find fun_id (ex_closures ())) fun_id with
+        try arity (ClosureIdMap.find fun_id (ex_closures ())) fun_id with
         | Not_found ->
             fatal_error (Format.asprintf "missing closure %a"
-                           Closure_function.print fun_id)
+                           Closure_id.print fun_id)
 
   let not_constants = P.not_constants
   let is_constant id = not (VarSet.mem id not_constants.Flambdaconstants.not_constant_id)
@@ -426,7 +426,7 @@ module Conv(P:Param1) = struct
           Value_symbol sym
         else
           let approx = match get_descr fun_approx with
-            | Some (Value_unoffseted_closure closure)
+            | Some (Value_set_of_closures closure)
             | Some (Value_closure { closure }) ->
                 let ex = new_descr (Value_closure { fun_id = id; closure }) in
                 Value_id ex
@@ -443,7 +443,7 @@ module Conv(P:Param1) = struct
         let ulam, fun_approx = conv_approx env lam in
         let approx = match get_descr fun_approx with
           | Some (Value_closure { closure = { bound_var } }) ->
-              (try ClosureVariableMap.find env_var bound_var with
+              (try Var_within_closure.Map.find env_var bound_var with
                | Not_found ->
                    Format.printf "Wrong closure in env_field %a@.%a@."
                      Printflambda.flambda expr
@@ -467,7 +467,7 @@ module Conv(P:Param1) = struct
               ap_arg = args;
               ap_kind = Direct direc;
               ap_dbg = dbg}, _) ->
-        assert (Closure_function.equal off direc);
+        assert (Closure_id.equal off direc);
         let uargs, args_approx = conv_list_approx env args in
         let func =
           try find_declaration off ffuns
@@ -479,7 +479,7 @@ module Conv(P:Param1) = struct
         let uffuns, fun_approx = conv_closure env ffuns args_approx cl_specialised_arg fv in
         let approx = match get_descr fun_approx with
           | Some(Value_closure { fun_id; closure = { results } }) ->
-              ClosureFunctionMap.find fun_id results
+              ClosureIdMap.find fun_id results
           | _ -> Value_unknown
         in
 
@@ -506,7 +506,7 @@ module Conv(P:Param1) = struct
         in
         let approx = match get_descr fun_approx with
           | Some(Value_closure { fun_id; closure = { results } }) ->
-              ClosureFunctionMap.find fun_id results
+              ClosureIdMap.find fun_id results
           | _ -> Value_unknown
         in
         Fapply({ap_function = ufunct; ap_arg = conv_list env args;
@@ -632,26 +632,26 @@ module Conv(P:Param1) = struct
     let fv_ulam = VarMap.map (fun (lam,approx) -> lam) fv_ulam_approx in
 
     let kept_fv id =
-      let cv = Closure_variable.wrap id in
+      let cv = Var_within_closure.wrap id in
       not (is_constant id)
-      || (ClosureVariableSet.mem cv used_variable_withing_closure) in
+      || (Var_within_closure.Set.mem cv used_variable_withing_closure) in
 
     let used_fv_approx = VarMap.filter (fun id _ -> kept_fv id) fv_ulam_approx in
     let used_fv = VarMap.map (fun (lam,approx) -> lam) used_fv_approx in
 
     let varmap_to_closfun_map map =
       VarMap.fold (fun var v acc ->
-          let cf = Closure_function.wrap var in
-          ClosureFunctionMap.add cf v acc)
-        map ClosureFunctionMap.empty in
+          let cf = Closure_id.wrap var in
+          ClosureIdMap.add cf v acc)
+        map ClosureIdMap.empty in
 
     let value_closure' =
       { closure_id = functs.ident;
         bound_var =
           VarMap.fold (fun off_id (_,approx) map ->
-              let cv = Closure_variable.wrap off_id in
-              ClosureVariableMap.add cv approx map)
-            used_fv_approx ClosureVariableMap.empty;
+              let cv = Var_within_closure.wrap off_id in
+              Var_within_closure.Map.add cv approx map)
+            used_fv_approx Var_within_closure.Map.empty;
         results =
           varmap_to_closfun_map
             (VarMap.map (fun _ -> Value_unknown) functs.funs) } in
@@ -677,7 +677,7 @@ module Conv(P:Param1) = struct
          allow direct call *)
       let env =
         VarMap.fold (fun id _ env ->
-            let fun_id = Closure_function.wrap id in
+            let fun_id = Closure_id.wrap id in
             let desc = Value_closure { fun_id; closure = value_closure' } in
             let ex = new_descr desc in
             if closed then add_symbol (Compilenv.closure_symbol fun_id) ex;
@@ -710,7 +710,7 @@ module Conv(P:Param1) = struct
         then
           (* if the function is closed, recursive call access those constants *)
           VarMap.fold (fun id _ env ->
-              let fun_id = Closure_function.wrap id in
+              let fun_id = Closure_id.wrap id in
               add_cm id (Compilenv.closure_symbol fun_id) env) functs.funs env
         else env
       in
@@ -728,7 +728,7 @@ module Conv(P:Param1) = struct
       { value_closure' with
         results = varmap_to_closfun_map (VarMap.map snd funs_approx) } in
 
-    let closure_ex_id = new_descr (Value_unoffseted_closure value_closure') in
+    let closure_ex_id = new_descr (Value_set_of_closures value_closure') in
     let value_closure = Value_id closure_ex_id in
 
     let expr =
@@ -823,13 +823,13 @@ module Prepare(P:Param2) = struct
     | Value_constptr _ as v -> v
     | Value_closure offset ->
         Value_closure { offset with closure = (aux_closure offset.closure) }
-    | Value_unoffseted_closure clos ->
-        Value_unoffseted_closure (aux_closure clos)
+    | Value_set_of_closures clos ->
+        Value_set_of_closures (aux_closure clos)
 
   and aux_closure clos =
     { closure_id = clos.closure_id;
-      bound_var = ClosureVariableMap.map canonical_approx clos.bound_var;
-      results = ClosureFunctionMap.map canonical_approx clos.results }
+      bound_var = Var_within_closure.Map.map canonical_approx clos.bound_var;
+      results = ClosureIdMap.map canonical_approx clos.results }
 
   let new_descr descr = new_descr descr infos
 
@@ -869,10 +869,10 @@ module Prepare(P:Param2) = struct
 
   let ex_functions_off =
     let aux_fun ffunctions off_id _ map =
-      let fun_id = Closure_function.wrap off_id in
-      ClosureFunctionMap.add fun_id ffunctions map in
+      let fun_id = Closure_id.wrap off_id in
+      ClosureIdMap.add fun_id ffunctions map in
     let aux _ f map = VarMap.fold (aux_fun f) f.funs map in
-    FunMap.fold aux ex_functions ClosureFunctionMap.empty
+    FunMap.fold aux ex_functions ClosureIdMap.empty
 
 end
 

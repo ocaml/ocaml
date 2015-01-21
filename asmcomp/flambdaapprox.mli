@@ -21,24 +21,24 @@ type descr =
   | Value_block of tag * approx array
   | Value_int of int
   | Value_constptr of int
-  | Value_unoffseted_closure of value_closure
+  | Value_set_of_closures of value_closure
   | Value_closure of value_offset
   | Value_unknown
   | Value_bottom
   | Value_extern of Flambdaexport.ExportId.t
   | Value_symbol of Symbol.t
 
-and value_offset =
-  { fun_id : function_within_closure;
-    closure : value_closure;
-  }
+and value_offset = {
+  fun_id : closure_id;
+  closure : value_closure;
+}
 
 and value_closure = {
   ffunctions : ExprId.t function_declarations;
-  bound_var : approx ClosureVariableMap.t;
+  bound_var : approx Var_within_closure.Map.t;
   kept_params : VarSet.t;
-  fv_subst_renaming : variable_within_closure ClosureVariableMap.t;
-  fun_subst_renaming : function_within_closure ClosureFunctionMap.t;
+  fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
+  fun_subst_renaming : closure_id ClosureIdMap.t;
 }
 
 and approx = {

@@ -23,12 +23,12 @@ type ('a,'b) declaration_position =
   | Not_declared
 
 let list_closures expr constants =
-  let closures = ref ClosureFunctionMap.empty in
+  let closures = ref ClosureIdMap.empty in
   let aux expr = match expr with
     | Fset_of_closures({ cl_fun = functs; cl_free_var = fv }, data) ->
         let add off_id _ map =
-          ClosureFunctionMap.add
-            (Closure_function.wrap off_id)
+          ClosureIdMap.add
+            (Closure_id.wrap off_id)
             functs map in
         closures := VarMap.fold add functs.funs !closures;
     | e -> ()
@@ -38,32 +38,32 @@ let list_closures expr constants =
   !closures
 
 let reexported_offset extern_fun_offset_table extern_fv_offset_table expr =
-  let set_fun = ref ClosureFunctionSet.empty in
-  let set_fv = ref ClosureVariableSet.empty in
+  let set_fun = ref ClosureIdSet.empty in
+  let set_fv = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
     | Fvariable_in_closure({vc_var = env_var; vc_fun = env_fun_id}, _) ->
-        set_fun := ClosureFunctionSet.add env_fun_id !set_fun;
-        set_fv := ClosureVariableSet.add env_var !set_fv;
+        set_fun := ClosureIdSet.add env_fun_id !set_fun;
+        set_fv := Var_within_closure.Set.add env_var !set_fv;
     | Fclosure({fu_fun = id; fu_relative_to = rel}, _) ->
         let set = match rel with
           | None -> !set_fun
-          | Some rel -> ClosureFunctionSet.add rel !set_fun in
-        set_fun := ClosureFunctionSet.add id set;
+          | Some rel -> ClosureIdSet.add rel !set_fun in
+        set_fun := ClosureIdSet.add id set;
     | e -> ()
   in
   Flambdaiter.iter aux expr;
   let f extern_map offset new_map =
     try
-      ClosureFunctionMap.add offset (ClosureFunctionMap.find offset extern_map) new_map
+      ClosureIdMap.add offset (ClosureIdMap.find offset extern_map) new_map
     with Not_found -> new_map (* local function *)
   in
   let f' extern_map offset new_map =
     try
-      ClosureVariableMap.add offset (ClosureVariableMap.find offset extern_map) new_map
+      Var_within_closure.Map.add offset (Var_within_closure.Map.find offset extern_map) new_map
     with Not_found -> new_map (* local function *)
   in
-  let fun_map = ClosureFunctionSet.fold (f extern_fun_offset_table) !set_fun in
-  let fv_map = ClosureVariableSet.fold (f' extern_fv_offset_table) !set_fv in
+  let fun_map = ClosureIdSet.fold (f extern_fun_offset_table) !set_fun in
+  let fv_map = Var_within_closure.Set.fold (f' extern_fv_offset_table) !set_fv in
   fun_map, fv_map
 
 let structured_constant_label expected_symbol ~shared cst =
@@ -92,10 +92,10 @@ module Offsets(P:Param1) = struct
 
   (* The offset table associate a function label to its offset
      inside a closure *)
-  let fun_offset_table = ref ClosureFunctionMap.empty
+  let fun_offset_table = ref ClosureIdMap.empty
   (* The offset table associate a free variable to its offset inside a
      closure *)
-  let fv_offset_table = ref ClosureVariableMap.empty
+  let fv_offset_table = ref Var_within_closure.Map.empty
 
   let rec iter = function
     | Fset_of_closures({cl_fun = funct; cl_free_var = fv}, _) ->
@@ -114,7 +114,7 @@ module Offsets(P:Param1) = struct
       let arity = Flambda.function_arity func in
       let env_pos = env_pos + 1 +
                     (if arity <> 1 then 3 else 2) in
-      let map = ClosureFunctionMap.add (Closure_function.wrap id) pos map in
+      let map = ClosureIdMap.add (Closure_id.wrap id) pos map in
       (map,env_pos)
     in
     let fun_offset, fv_pos =
@@ -125,9 +125,9 @@ module Offsets(P:Param1) = struct
        substituted here. But if the function is inlined, it is
        possible that the closure is accessed from outside its body. *)
     let aux_fv_offset (map,pos) (id, _) =
-      let off = Closure_variable.wrap id in
-      assert(not (ClosureVariableMap.mem off map));
-      let map = ClosureVariableMap.add off pos map in
+      let off = Var_within_closure.wrap id in
+      assert(not (Var_within_closure.Map.mem off map));
+      let map = Var_within_closure.Map.add off pos map in
       (map,pos + 1)
     in
     let fv_offset, _ = List.fold_left aux_fv_offset
@@ -148,9 +148,9 @@ end
 
 module type Param2 = sig
   include Param1
-  val fun_offset_table : int ClosureFunctionMap.t
-  val fv_offset_table : int ClosureVariableMap.t
-  val closures : t Flambda.function_declarations ClosureFunctionMap.t
+  val fun_offset_table : int ClosureIdMap.t
+  val fv_offset_table : int Var_within_closure.Map.t
+  val closures : t Flambda.function_declarations ClosureIdMap.t
   val constant_closures : FunSet.t
   val functions : unit Flambda.function_declarations FunMap.t
 end
@@ -194,25 +194,25 @@ module Conv(P:Param2) = struct
 
   let get_fun_offset off =
     try
-      if Closure_function.in_compilation_unit (Compilenv.current_unit ()) off
-      then ClosureFunctionMap.find off fun_offset_table
-      else ClosureFunctionMap.find off extern_fun_offset_table
+      if Closure_id.in_compilation_unit (Compilenv.current_unit ()) off
+      then ClosureIdMap.find off fun_offset_table
+      else ClosureIdMap.find off extern_fun_offset_table
     with Not_found ->
-      fatal_error (Format.asprintf "missing offset %a" Closure_function.print off)
+      fatal_error (Format.asprintf "missing offset %a" Closure_id.print off)
 
   let get_fv_offset off =
-    if Closure_variable.in_compilation_unit (Compilenv.current_unit ()) off
+    if Var_within_closure.in_compilation_unit (Compilenv.current_unit ()) off
     then
-      if not (ClosureVariableMap.mem off fv_offset_table)
+      if not (Var_within_closure.Map.mem off fv_offset_table)
       then fatal_error (Format.asprintf "env field offset not found: %a\n%!"
-                          Closure_variable.print off)
-      else ClosureVariableMap.find off fv_offset_table
-    else ClosureVariableMap.find off extern_fv_offset_table
+                          Var_within_closure.print off)
+      else Var_within_closure.Map.find off fv_offset_table
+    else Var_within_closure.Map.find off extern_fv_offset_table
 
   let function_declaration_position cf =
-    try Local (ClosureFunctionMap.find cf P.closures) with
+    try Local (ClosureIdMap.find cf P.closures) with
     | Not_found ->
-        try External (ClosureFunctionMap.find cf ex_closures) with
+        try External (ClosureIdMap.find cf ex_closures) with
         | Not_found ->
             Not_declared
 
@@ -231,7 +231,7 @@ module Conv(P:Param2) = struct
         FunSet.mem ident ex_constant_closures
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
-                       Closure_function.print cf)
+                       Closure_id.print cf)
 
   let is_closure_constant fid =
     match functions_declaration_position fid with
@@ -545,9 +545,9 @@ module Conv(P:Param2) = struct
     let fv_ulam = List.map (fun (id,lam) -> id,conv env lam) fv in
 
     let conv_function (id,func) =
-      let cf = Closure_function.wrap id in
+      let cf = Closure_id.wrap id in
       (* adds variables from the closure to the substitution environment *)
-      let fun_offset = ClosureFunctionMap.find cf fun_offset_table in
+      let fun_offset = ClosureIdMap.find cf fun_offset_table in
 
       (* inside the body of the function, we cannot access variables
          declared outside, so take a clean substitution table. *)
@@ -560,8 +560,8 @@ module Conv(P:Param2) = struct
           match constant_label lam with
           | Not_const ->
               assert(not closed);
-              let var_offset = ClosureVariableMap.find
-                  (Closure_variable.wrap id) fv_offset_table in
+              let var_offset = Var_within_closure.Map.find
+                  (Var_within_closure.wrap id) fv_offset_table in
               let pos = var_offset - fun_offset in
               add_sb id (Uprim(Pfield pos, [Uvar env_var], Debuginfo.none)) env
           | No_lbl
@@ -577,7 +577,7 @@ module Conv(P:Param2) = struct
         then env
         else
           let add_offset_subst pos env (id,_) =
-            let offset = ClosureFunctionMap.find (Closure_function.wrap id) fun_offset_table in
+            let offset = ClosureIdMap.find (Closure_id.wrap id) fun_offset_table in
             let exp = Uoffset(Uvar env_var, offset - pos) in
             add_sb id exp env in
           List.fold_left (add_offset_subst fun_offset) env funct

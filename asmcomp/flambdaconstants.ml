@@ -201,7 +201,7 @@ module NotConstants(P:Param) = struct
       List.iter (mark_loop curr) args
 
     | Fclosure ({fu_closure; fu_fun; _}, _) ->
-      if Closure_function.in_compilation_unit compilation_unit fu_fun
+      if Closure_id.in_compilation_unit compilation_unit fu_fun
       then mark_loop curr fu_closure
       else mark_curr curr
 

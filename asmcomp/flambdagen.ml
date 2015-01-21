@@ -104,7 +104,7 @@ let to_flambda
             kind; params; body } in
         Fclosure(
           { fu_closure = close_functions env [decl];
-            fu_fun = Closure_function.wrap closure_bound_var;
+            fu_fun = Closure_id.wrap closure_bound_var;
             fu_relative_to = None },
           nid ~name:"function" ())
     | Lapply(funct, args, loc) ->
@@ -150,7 +150,7 @@ let to_flambda
                    Flet(Not_assigned, let_bound_var,
                         Fclosure(
                           { fu_closure = Fvar (clos_var, nid ());
-                            fu_fun = Closure_function.wrap decl.closure_bound_var;
+                            fu_fun = Closure_id.wrap decl.closure_bound_var;
                             fu_relative_to = None },
                           nid ()),
                         body, nid ()))
@@ -342,7 +342,7 @@ let to_flambda
     let call = Fapply(
         { ap_function = Fvar(tuplified_version,nid ());
           ap_arg = List.map (fun p' -> Fvar(p',nid ())) params;
-          ap_kind = Direct (Closure_function.wrap tuplified_version);
+          ap_kind = Direct (Closure_id.wrap tuplified_version);
           ap_dbg = Debuginfo.none },
         nid ()) in
     let _, body =
@@ -368,7 +368,7 @@ let to_flambda
             kind; params; body } in
         Fclosure(
           { fu_closure = close_functions env [decl];
-            fu_fun = Closure_function.wrap closure_bound_var;
+            fu_fun = Closure_id.wrap closure_bound_var;
             fu_relative_to = None },
           nid ~name:"function" ())
     | lam ->

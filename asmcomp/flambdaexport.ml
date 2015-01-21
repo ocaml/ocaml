@@ -28,16 +28,16 @@ type descr =
   | Value_int of int
   | Value_constptr of int
   | Value_closure of value_offset
-  | Value_unoffseted_closure of value_closure
+  | Value_set_of_closures of value_closure
 
 and value_offset =
-  { fun_id : function_within_closure;
+  { fun_id : closure_id;
     closure : value_closure }
 
 and value_closure =
   { closure_id : FunId.t;
-    bound_var : approx ClosureVariableMap.t;
-    results : approx ClosureFunctionMap.t }
+    bound_var : approx Var_within_closure.Map.t;
+    results : approx ClosureIdMap.t }
 
 and approx =
   | Value_unknown
@@ -46,13 +46,13 @@ and approx =
 
 type exported = {
   ex_functions : unit function_declarations FunMap.t;
-  ex_functions_off : unit function_declarations ClosureFunctionMap.t;
+  ex_functions_off : unit function_declarations ClosureIdMap.t;
   ex_values : descr EidMap.t;
   ex_globals : approx IdentMap.t;
   ex_id_symbol : Symbol.t EidMap.t;
   ex_symbol_id : ExportId.t SymbolMap.t;
-  ex_offset_fun : int ClosureFunctionMap.t;
-  ex_offset_fv : int ClosureVariableMap.t;
+  ex_offset_fun : int ClosureIdMap.t;
+  ex_offset_fv : int Var_within_closure.Map.t;
   ex_constants : SymbolSet.t;
   ex_constant_closures : FunSet.t;
   ex_kept_arguments : VarSet.t FunMap.t;
@@ -60,13 +60,13 @@ type exported = {
 
 let empty_export = {
   ex_functions = FunMap.empty;
-  ex_functions_off = ClosureFunctionMap.empty;
+  ex_functions_off = ClosureIdMap.empty;
   ex_values = EidMap.empty;
   ex_globals = IdentMap.empty;
   ex_id_symbol = EidMap.empty;
   ex_symbol_id = SymbolMap.empty;
-  ex_offset_fun = ClosureFunctionMap.empty;
-  ex_offset_fv = ClosureVariableMap.empty;
+  ex_offset_fun = ClosureIdMap.empty;
+  ex_offset_fv = Var_within_closure.Map.empty;
   ex_constants = SymbolSet.empty;
   ex_constant_closures = FunSet.empty;
   ex_kept_arguments = FunMap.empty;
@@ -98,8 +98,8 @@ let print_approx ppf export =
     | Value_constptr i -> fprintf ppf "%ip" i
     | Value_block (tag, fields) -> fprintf ppf "[%i:%a]" tag print_fields fields
     | Value_closure {fun_id; closure} ->
-      fprintf ppf "(function %a, %a)" Closure_function.print fun_id print_closure closure
-    | Value_unoffseted_closure closure ->
+      fprintf ppf "(function %a, %a)" Closure_id.print fun_id print_closure closure
+    | Value_set_of_closures closure ->
       fprintf ppf "(ufunction %a)" print_closure closure
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
@@ -113,9 +113,9 @@ let print_approx ppf export =
         print_binding bound_var
     end
   and print_binding ppf bound_var =
-    ClosureVariableMap.iter (fun clos_id approx ->
+    Var_within_closure.Map.iter (fun clos_id approx ->
         fprintf ppf "%a -> %a,@ "
-          Closure_variable.print clos_id
+          Var_within_closure.print clos_id
           print_approx approx) bound_var
   in
   let print_approxs id approx =
@@ -150,12 +150,12 @@ let merge e1 e2 =
     ex_globals = IdentMap.disjoint_union e1.ex_globals e2.ex_globals;
     ex_functions = FunMap.disjoint_union e1.ex_functions e2.ex_functions;
     ex_functions_off =
-      ClosureFunctionMap.disjoint_union e1.ex_functions_off e2.ex_functions_off;
+      ClosureIdMap.disjoint_union e1.ex_functions_off e2.ex_functions_off;
     ex_id_symbol = EidMap.disjoint_union e1.ex_id_symbol e2.ex_id_symbol;
     ex_symbol_id = SymbolMap.disjoint_union e1.ex_symbol_id e2.ex_symbol_id;
-    ex_offset_fun = ClosureFunctionMap.disjoint_union
+    ex_offset_fun = ClosureIdMap.disjoint_union
         ~eq:int_eq e1.ex_offset_fun e2.ex_offset_fun;
-    ex_offset_fv = ClosureVariableMap.disjoint_union
+    ex_offset_fv = Var_within_closure.Map.disjoint_union
         ~eq:int_eq e1.ex_offset_fv e2.ex_offset_fv;
     ex_constants = SymbolSet.union e1.ex_constants e2.ex_constants;
     ex_constant_closures =
@@ -194,9 +194,9 @@ let import_approx_for_pack units pack = function
 let import_closure units pack closure =
   { closure_id = closure.closure_id;
     bound_var =
-      ClosureVariableMap.map (import_approx_for_pack units pack) closure.bound_var;
+      Var_within_closure.Map.map (import_approx_for_pack units pack) closure.bound_var;
     results =
-      ClosureFunctionMap.map (import_approx_for_pack units pack) closure.results }
+      ClosureIdMap.map (import_approx_for_pack units pack) closure.results }
 
 let import_descr_for_pack units pack = function
   | Value_int _
@@ -205,8 +205,8 @@ let import_descr_for_pack units pack = function
     Value_block (tag, Array.map (import_approx_for_pack units pack) fields)
   | Value_closure {fun_id; closure} ->
     Value_closure {fun_id; closure = import_closure units pack closure}
-  | Value_unoffseted_closure closure ->
-    Value_unoffseted_closure (import_closure units pack closure)
+  | Value_set_of_closures closure ->
+    Value_set_of_closures (import_closure units pack closure)
 
 let import_code_for_pack units pack expr =
   Flambdaiter.map (function
@@ -223,10 +223,10 @@ let import_ffunctions_for_pack units pack ffuns =
 
 let ex_functions_off ex_functions =
   let aux_fun ffunctions function_id _ map =
-    ClosureFunctionMap.add
-      (Closure_function.wrap function_id) ffunctions map in
+    ClosureIdMap.add
+      (Closure_id.wrap function_id) ffunctions map in
   let aux _ f map = VarMap.fold (aux_fun f) f.funs map in
-  FunMap.fold aux ex_functions ClosureFunctionMap.empty
+  FunMap.fold aux ex_functions ClosureIdMap.empty
 
 let import_eidmap_for_pack units pack f map =
   EidMap.map_keys
