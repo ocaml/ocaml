@@ -838,7 +838,9 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let i, env = new_subst_exn i env in
       let body, r = loop env r body in
       if not (StaticExceptionSet.mem i r.used_staticfail)
-      then body, r
+      then
+        (* If the static exception is not used, we can drop the declaration *)
+        body, r
       else
         let vars, env = new_subst_ids' vars env in
         let env = List.fold_left (fun env id -> add_approx id value_unknown env)
@@ -857,13 +859,18 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       Ftrywith(body, id, handler, annot),
       ret r value_unknown
   | Fifthenelse(arg, ifso, ifnot, annot) ->
+      (* When arg is the constant false or true (or something considered
+         as true), we can drop the if and replace it by a sequence.
+         if arg is not effectful we can also drop it. *)
       let arg, r = loop env r arg in
       begin match r.approx.descr with
       | Value_constptr 0 ->
+          (* constant false, keep ifnot *)
           let ifnot, r = loop env r ifnot in
           sequence arg ifnot annot, r
       | Value_constptr _
       | Value_block _ ->
+          (* constant true, keep ifso *)
           let ifso, r = loop env r ifso in
           sequence arg ifso annot, r
       | _ ->
@@ -905,8 +912,24 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       Fassign(id, lam, annot),
       ret r value_unknown
   | Fswitch(arg, sw, annot) ->
+      (* When arg is known to be a block with a fixed tag or a fixed integer,
+         we can drop the switch and replace it by a sequence.
+         if arg is not effectful we can also drop it. *)
       let arg, r = loop env r arg in
-      let get_failaction () = match sw.fs_failaction with
+      let get_failaction () =
+        (* If the switch is applied to a staticaly known value that is
+           outside of each match case:
+           * if there is a default action take that case
+           * otherwise this is something that is guaranteed not to
+             be reachable by the type checker: for instance
+             [type 'a t = Int : int -> int t | Float : float -> float t
+              match Int 1 with
+              | Int _ -> ...
+              | Float f as v ->
+                  match v with       This match is unreachable
+                  | Float f -> ...]
+         *)
+        match sw.fs_failaction with
         | None -> Funreachable (ExprId.create ())
         | Some f -> f in
       begin match r.approx.descr with
