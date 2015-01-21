@@ -11,97 +11,9 @@
 (***********************************************************************)
 
 open Misc
-open Ext_types
-open Symbol
 open Abstract_identifiers
 
-type let_kind =
-  | Not_assigned
-  | Assigned
-
-type call_kind =
-  | Indirect
-  | Direct of function_within_closure
-
-type 'a flambda =
-    Fsymbol of Symbol.t * 'a
-  | Fvar of Variable.t * 'a
-  | Fconst of const * 'a
-  | Fapply of 'a fapply * 'a
-  | Fset_of_closures of 'a fset_of_closures * 'a
-  | Fclosure of 'a ffunction * 'a
-  | Fvariable_in_closure of 'a fvariable_in_closure * 'a
-  | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
-  | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
-  | Fprim of Lambda.primitive * 'a flambda list * Debuginfo.t * 'a
-  | Fswitch of 'a flambda * 'a fswitch * 'a
-  (* Restrictions on Lambda.Lstringswitch also apply here *)
-  | Fstringswitch of 'a flambda * (string * 'a flambda) list *
-                     'a flambda option * 'a
-  | Fstaticraise of static_exception * 'a flambda list * 'a
-  | Fstaticcatch of
-      static_exception * Variable.t list * 'a flambda * 'a flambda * 'a
-  | Ftrywith of 'a flambda * Variable.t * 'a flambda * 'a
-  | Fifthenelse of 'a flambda * 'a flambda * 'a flambda * 'a
-  | Fsequence of 'a flambda * 'a flambda * 'a
-  | Fwhile of 'a flambda * 'a flambda * 'a
-  | Ffor of Variable.t * 'a flambda * 'a flambda * Asttypes.direction_flag *
-            'a flambda * 'a
-  | Fassign of Variable.t * 'a flambda * 'a
-  | Fsend of Lambda.meth_kind * 'a flambda * 'a flambda * 'a flambda list *
-             Debuginfo.t * 'a
-  | Fevent of 'a flambda * Lambda.lambda_event * 'a
-  | Funreachable of 'a
-
-and const =
-  | Fconst_base of Asttypes.constant
-  | Fconst_pointer of int
-  | Fconst_float_array of string list
-  | Fconst_immstring of string
-
-and 'a fapply =
-  { ap_function: 'a flambda;
-    ap_arg: 'a flambda list;
-    ap_kind: call_kind;
-    ap_dbg: Debuginfo.t }
-
-and 'a fset_of_closures =
-  { cl_fun : 'a function_declarations;
-    cl_free_var : 'a flambda VarMap.t;
-    cl_specialised_arg : Variable.t VarMap.t }
-
-and 'a function_declarations = {
-  ident : FunId.t;
-  funs : 'a function_declaration VarMap.t;
-  compilation_unit : compilation_unit;
-}
-
-and 'a function_declaration = {
-  stub : bool;
-  params : Variable.t list;
-  free_variables : VarSet.t;
-  body : 'a flambda;
-  dbg : Debuginfo.t;
-}
-
-and 'a ffunction = {
-  fu_closure: 'a flambda;
-  fu_fun: function_within_closure;
-  fu_relative_to: function_within_closure option;
-}
-
-and 'a fvariable_in_closure = {
-  vc_closure : 'a flambda;
-  vc_fun : function_within_closure;
-  vc_var : variable_within_closure;
-}
-
-and 'a fswitch =
-  { fs_numconsts: IntSet.t;
-    fs_consts: (int * 'a flambda) list;
-    fs_numblocks: IntSet.t;
-    fs_blocks: (int * 'a flambda) list;
-    fs_failaction : 'a flambda option }
+include Flambdatypes
 
 (* access functions *)
 

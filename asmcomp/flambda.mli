@@ -10,225 +10,47 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Ext_types
-open Symbol
 open Abstract_identifiers
 
 (** Intermediate language used to perform closure conversion and inlining.
+    See flambdatypes.ml for documentation.
+*)
 
-    Closure conversion starts with [Lambda] code.  The conversion transforms
-    function declarations into "sets of closures" ([Fset_of_closures]
-    constructor) in the [Flambda] language.
-
-    The usual case of a function declared on its own will produce a
-    [Fset_of_closures] containing a single closure.  The closure itself may
-    be accessed using [Fclosure] and specifies which variables (by name, not
-    by any numeric offset) are free in the corresponding function definition.
-    Occurrences of these free variables in the body appear as the usual
-    [Fvar] expressions.
-
-    For the case of multiple functions defined together, possibly mutually
-    recursive, a [Fset_of_closures] value will be generated containing
-    one closure per function.  Each closure may be accessed again using
-    [Fclosure], specifying which function's closure is desired.
-
-    After closure conversion an inlining pass is performed.  This may
-    introduce [Fvariable_in_closure] expressions to represent accesses (from
-    the body of inlined functions) to variables bound by closures.  Some of
-    these [Fvariable_in_closure] expressions may survive in the tree after
-    inlining has finished.
-
-    Other features of this intermediate language are:
-
-    - Access to constants across modules are performed with respect to
-      named symbols in the object file (of type [Symbol.t]).
-
-    - Direct calls are distinguished from indirect calls (as in [Clambda])
-      using values of type [call_kind].
-
-    - Nodes making up an expression in the language may be annotated with
-      arbitrary values (the ['a] in [type 'a flambda]).
-
-    - "Structured constants" built from the constructors in type [const]
-      are not explicitly represented.  Instead, they are converted into
-      expressions such as: [Fprim (Pmakeblock(...), ...)].
-
-  *)
-
-  (** There are 2 kind of closures: specified and unspecified ones.
-      A closure is first build as unspecified using the Fset_of_closures constructor.
-      It represents a block containing code pointers and values (the free
-      variables).
-
-      Since a closure can contain multiple functions, an unspecified
-      closure can't be directly used, we first need to select (specify)
-      which function the closure represents using Fclosure. The 2
-      constructors that can be applied on specified closures are
-
-      - Fapply: call the selected function
-
-      - Fvariable_in_closure: access the free variables
-
-      Typical usage when compiling
-
-      {[let rec f x = ...
-        and g x = ... ]}
-
-      is to represent it as:
-
-      {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet( f, Fclosure { fu_closure = closure; fu_fun = id_f },
-              Flet( g, Fclosure { fu_closure = closure; fu_fun = id_g }, ...)))]}
-
-      Accessing a variable from a closure is done
-
-      - with [Fvar] inside a function declared in the closure
-
-      - with [Fvariable_in_closure] from outside. This kind of access
-        is generated when inlining a function.
-
-      It is possible to specify an already specified closure. This can
-      happen when inlining a function that access other functions from
-      the same closure: For instance, if f from the previous example
-      access g and is inlined, calling g will use the closure:
-
-      {[ Fclosure { fu_closure = f; fu_fun = id_g; fu_relative_to = Some id_f } ]}
-
-  *)
-
-type let_kind =
-  | Not_assigned
-  | Assigned
-
-type call_kind =
-  | Indirect
-  | Direct of function_within_closure
-
-type const =
-  (* no structured constant *)
-  | Fconst_base of Asttypes.constant
-  | Fconst_pointer of int
-  | Fconst_float_array of string list
-  | Fconst_immstring of string
-
-(* A data is attached to each node. It is often used to uniquely
-   identify an expression *)
-type 'a flambda =
-    Fsymbol of Symbol.t * 'a
-  | Fvar of Variable.t * 'a
-  | Fconst of const * 'a
-  | Fapply of 'a fapply * 'a
-  | Fset_of_closures of 'a fset_of_closures * 'a
-  | Fclosure of 'a ffunction * 'a
-  | Fvariable_in_closure of 'a fvariable_in_closure * 'a
-  | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
-  | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
-  | Fprim of Lambda.primitive * 'a flambda list * Debuginfo.t * 'a
-  | Fswitch of 'a flambda * 'a fswitch * 'a
-  (* Restrictions on Lambda.Lstringswitch also apply here *)
-  | Fstringswitch of 'a flambda * (string * 'a flambda) list *
-                     'a flambda option * 'a
-  | Fstaticraise of static_exception * 'a flambda list * 'a
-  | Fstaticcatch of
-      static_exception * Variable.t list * 'a flambda * 'a flambda * 'a
-  | Ftrywith of 'a flambda * Variable.t * 'a flambda * 'a
-  | Fifthenelse of 'a flambda * 'a flambda * 'a flambda * 'a
-  | Fsequence of 'a flambda * 'a flambda * 'a
-  | Fwhile of 'a flambda * 'a flambda * 'a
-  | Ffor of Variable.t * 'a flambda * 'a flambda * Asttypes.direction_flag *
-            'a flambda * 'a
-  | Fassign of Variable.t * 'a flambda * 'a
-  | Fsend of Lambda.meth_kind * 'a flambda * 'a flambda * 'a flambda list *
-             Debuginfo.t * 'a
-
-  | Fevent of 'a flambda * Lambda.lambda_event * 'a
-      (** Only with -g in bytecode. *)
-
-  | Funreachable of 'a
-      (** Represent a code that has been proved to be unreachable. *)
-
-and 'a fapply =
-  { ap_function: 'a flambda;
-    ap_arg: 'a flambda list;
-    ap_kind: call_kind;
-    ap_dbg: Debuginfo.t }
-
-and 'a fset_of_closures =
-  { cl_fun : 'a function_declarations;
-    cl_free_var : 'a flambda VarMap.t;
-    cl_specialised_arg : Variable.t VarMap.t }
-
-and 'a function_declarations = {
-  ident : FunId.t;
-  funs : 'a function_declaration VarMap.t;
-  (** The ident key correspond to off_id of offset type *)
-  compilation_unit : compilation_unit;
-}
-
-and 'a function_declaration = {
-  stub : bool;
-  (** A stub function is a generated function used to prepare
-      arguments or return value to allow indirect calls to function
-      with a special call convention. For instance indirect calls to
-      tuplified function must go through a stub. Stubs will be
-      unconditionnaly inlined. *)
-  params : Variable.t list;
-  free_variables : VarSet.t;
-  (** All free variables used in body, including function parameters,
-      functions and variables declared in the closure.
-      It is present for efficiency reasons. *)
-  body : 'a flambda;
-  dbg : Debuginfo.t;
-}
-
-and 'a ffunction = {
-  fu_closure: 'a flambda;
-  fu_fun: function_within_closure;
-  fu_relative_to: function_within_closure option;
-  (** Keeps track of the original function When specifying an already
-      specified function. *)
-}
-
-and 'a fvariable_in_closure = {
-  vc_closure : 'a flambda; (** A selected closure *)
-  vc_fun : function_within_closure;
-  vc_var : variable_within_closure;
-}
-
-and 'a fswitch =
-  { fs_numconsts: IntSet.t; (** integer cases *)
-    fs_consts: (int * 'a flambda) list; (** Integer cases *)
-    fs_numblocks: IntSet.t; (** Number of tag block cases *)
-    fs_blocks: (int * 'a flambda) list; (** Tag block cases *)
-    fs_failaction: 'a flambda option } (** Action to take if none matched *)
-
-
+include module type of Flambdatypes
 
 (** Access functions *)
 
 val find_declaration :
   function_within_closure -> 'a function_declarations -> 'a function_declaration
-(** [find_declaration f decl] raises Not_found if [f] is not in [decl] *)
+(** [find_declaration f decl] raises [Not_found] if [f] is not in [decl]. *)
 
 val find_declaration_variable :
   function_within_closure -> 'a function_declarations -> Variable.t
-(** [find_declaration_variable f decl] raises Not_found if [f] is not in [decl] *)
+(** [find_declaration_variable f decl] raises [Not_found] if [f] is not in
+    [decl]. *)
 
 val find_free_variable :
   variable_within_closure -> 'a fset_of_closures -> 'a flambda
-(** [find_free_variable v clos] raises Not_found if [c] is not in [clos] *)
+(** [find_free_variable v clos] raises [Not_found] if [c] is not in [clos]. *)
 
-
-(* utility functions *)
+(** Utility functions *)
 
 val function_arity : 'a function_declaration -> int
 
 val variables_bound_by_the_closure :
   function_within_closure -> 'a function_declarations -> VarSet.t
+(** Variables "bound by a closure" are those variables free in the
+    corresponding function's body that are neither:
+    - bound as parameters of that function; nor
+    - bound by the [let] binding that introduces the function declaration(s).
+    In particular, if [f], [g] and [h] are being introduced by a
+    simultaneous, possibly mutually-recursive [let] binding then none of
+    [f], [g] or [h] are bound in any of the closures for [f], [g] and [h].
+*)
 
 val can_be_merged : 'a flambda -> 'a flambda -> bool
-(** If [can_be_merged f1 f2] is true, it is safe to merge switch
-    branches containing [f1] and [f2] *)
+(** If [can_be_merged f1 f2] is [true], it is safe to merge switch
+    branches containing [f1] and [f2]. *)
 
 val data_at_toplevel_node : 'a flambda -> 'a
 
@@ -236,6 +58,6 @@ val description_of_toplevel_node : 'a flambda -> string
 
 val recursive_functions : 'a function_declarations -> VarSet.t
 
-(* Sharing key *)
+(** Sharing key *)
 type sharing_key
 val make_key : 'a flambda -> sharing_key option
