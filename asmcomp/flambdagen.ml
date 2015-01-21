@@ -31,7 +31,7 @@ let rec add_debug_info ev f =
     end
   | _ -> f
 
-let nid = ExprId.create
+let nid = Expr_id.create
 
 type function_declaration =
   { rec_ident : Ident.t;

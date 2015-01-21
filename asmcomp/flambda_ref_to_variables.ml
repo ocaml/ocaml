@@ -85,7 +85,7 @@ let eliminate_ref lam =
               | None -> assert false
               | Some (var, _) ->
                   field+1,
-                  Flet(Assigned, var, init, body, ExprId.create ()))
+                  Flet(Assigned, var, init, body, Expr_id.create ()))
             (0,body) inits in
         expr
     | Fprim(Pfield field, [Fvar (v,d)], _, _)
@@ -101,7 +101,7 @@ let eliminate_ref lam =
             if size = 1
             then
               Fassign(var, Fprim(Poffsetint delta, [Fvar (var,d1)], dbg, d2),
-                      ExprId.create ())
+                      Expr_id.create ())
             else Funreachable d1)
     | Fprim(Psetfield(field, _), [Fvar (v,d1); e], dbg, d2)
       when convertible_variable v ->

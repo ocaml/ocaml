@@ -43,15 +43,15 @@ let constant_closures constant_result expr =
 
 let functions not_constants expr =
   let cf_map = ref Closure_id.Map.empty in
-  let fun_id_map = ref FunMap.empty in
-  let argument_kept = ref FunMap.empty in
+  let fun_id_map = ref Set_of_closures_id.Map.empty in
+  let argument_kept = ref Set_of_closures_id.Map.empty in
   let aux ({ cl_fun } as cl) _ =
     let add var _ map =
       Closure_id.Map.add (Closure_id.wrap var) cl_fun map in
     cf_map := Variable.Map.fold add cl_fun.funs !cf_map;
-    fun_id_map := FunMap.add cl.cl_fun.ident cl.cl_fun !fun_id_map;
+    fun_id_map := Set_of_closures_id.Map.add cl.cl_fun.ident cl.cl_fun !fun_id_map;
     argument_kept :=
-      FunMap.add cl.cl_fun.ident
+      Set_of_closures_id.Map.add cl.cl_fun.ident
                  (Flambdaiter.arguments_kept_in_recursion cl_fun) !argument_kept
   in
   Flambdaiter.iter_on_closures aux expr;
@@ -138,9 +138,9 @@ module Conv(P:Param1) = struct
             Not_declared
 
   let functions_declaration_position fid =
-    try Local (FunMap.find fid functions) with
+    try Local (Set_of_closures_id.Map.find fid functions) with
     | Not_found ->
-        try External (FunMap.find fid (ex_functions ())) with
+        try External (Set_of_closures_id.Map.find fid (ex_functions ())) with
         | Not_found ->
             Not_declared
 
@@ -800,9 +800,9 @@ module Prepare(P:Param2) = struct
     SymbolTbl.fold aux infos.constants SymbolMap.empty
 
   let ex_functions =
-    let ex_functions = ref FunMap.empty in
+    let ex_functions = ref Set_of_closures_id.Map.empty in
     let aux { cl_fun } _ =
-      ex_functions := FunMap.add cl_fun.ident cl_fun !ex_functions
+      ex_functions := Set_of_closures_id.Map.add cl_fun.ident cl_fun !ex_functions
     in
     Flambdaiter.iter_on_closures aux expr;
     SymbolMap.iter (fun _ -> Flambdaiter.iter_on_closures aux) constants;
@@ -872,7 +872,7 @@ module Prepare(P:Param2) = struct
       let fun_id = Closure_id.wrap off_id in
       Closure_id.Map.add fun_id ffunctions map in
     let aux _ f map = Variable.Map.fold (aux_fun f) f.funs map in
-    FunMap.fold aux ex_functions Closure_id.Map.empty
+    Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
 
 end
 
@@ -896,7 +896,7 @@ let convert (type a) ~compilation_unit (expr:a Flambda.flambda) =
   let export = let open Flambdaexport in
     { empty_export with
       ex_values = C2.ex_values;
-      ex_globals = IdentMap.singleton
+      ex_globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;
       ex_symbol_id = C2.ex_symbol_id;
       ex_id_symbol = C2.ex_id_symbol;

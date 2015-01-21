@@ -48,6 +48,8 @@ module Set_of_closures_id : sig
 
   type t
   include Identifiable with type t := t
+
+  val create : ?name:string -> Symbol.compilation_unit -> t
 end
 
 module Closure_id : sig
@@ -90,6 +92,8 @@ module Expr_id : sig
 
   type t
   include Identifiable with type t := t
+
+  val create : ?name:string -> unit -> t
 end
 
 module Static_exception : sig

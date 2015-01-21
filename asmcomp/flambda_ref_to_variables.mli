@@ -12,5 +12,5 @@
 open Abstract_identifiers
 open Flambda
 
-val eliminate_ref : ExprId.t flambda -> ExprId.t flambda
+val eliminate_ref : Expr_id.t flambda -> Expr_id.t flambda
 (* Transform let-bound mutable records into variables *)

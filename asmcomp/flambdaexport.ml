@@ -45,31 +45,31 @@ and approx =
   | Value_symbol of Symbol.t
 
 type exported = {
-  ex_functions : unit function_declarations FunMap.t;
+  ex_functions : unit function_declarations Set_of_closures_id.Map.t;
   ex_functions_off : unit function_declarations Closure_id.Map.t;
   ex_values : descr EidMap.t;
-  ex_globals : approx IdentMap.t;
+  ex_globals : approx Ident.Map.t;
   ex_id_symbol : Symbol.t EidMap.t;
   ex_symbol_id : ExportId.t SymbolMap.t;
   ex_offset_fun : int Closure_id.Map.t;
   ex_offset_fv : int Var_within_closure.Map.t;
   ex_constants : SymbolSet.t;
   ex_constant_closures : Set_of_closures_id.Set.t;
-  ex_kept_arguments : Variable.Set.t FunMap.t;
+  ex_kept_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 let empty_export = {
-  ex_functions = FunMap.empty;
+  ex_functions = Set_of_closures_id.Map.empty;
   ex_functions_off = Closure_id.Map.empty;
   ex_values = EidMap.empty;
-  ex_globals = IdentMap.empty;
+  ex_globals = Ident.Map.empty;
   ex_id_symbol = EidMap.empty;
   ex_symbol_id = SymbolMap.empty;
   ex_offset_fun = Closure_id.Map.empty;
   ex_offset_fv = Var_within_closure.Map.empty;
   ex_constants = SymbolSet.empty;
   ex_constant_closures = Set_of_closures_id.Set.empty;
-  ex_kept_arguments = FunMap.empty;
+  ex_kept_arguments = Set_of_closures_id.Map.empty;
 }
 
 let print_approx ppf export =
@@ -121,7 +121,7 @@ let print_approx ppf export =
   let print_approxs id approx =
     fprintf ppf "%a -> %a;@ " Ident.print id print_approx approx
   in
-  IdentMap.iter print_approxs export.ex_globals
+  Ident.Map.iter print_approxs export.ex_globals
 
 let print_symbols ppf export =
   let open Format in
@@ -141,14 +141,14 @@ let print_all ppf export =
   fprintf ppf "constants@ %a@.@."
     SymbolSet.print export.ex_constants;
   fprintf ppf "functions@ %a@.@."
-    (FunMap.print Printflambda.function_declarations) export.ex_functions
+    (Set_of_closures_id.Map.print Printflambda.function_declarations) export.ex_functions
 
 
 let merge e1 e2 =
   let int_eq (i:int) j = i = j in
   { ex_values = EidMap.disjoint_union e1.ex_values e2.ex_values;
-    ex_globals = IdentMap.disjoint_union e1.ex_globals e2.ex_globals;
-    ex_functions = FunMap.disjoint_union e1.ex_functions e2.ex_functions;
+    ex_globals = Ident.Map.disjoint_union e1.ex_globals e2.ex_globals;
+    ex_functions = Set_of_closures_id.Map.disjoint_union e1.ex_functions e2.ex_functions;
     ex_functions_off =
       Closure_id.Map.disjoint_union e1.ex_functions_off e2.ex_functions_off;
     ex_id_symbol = EidMap.disjoint_union e1.ex_id_symbol e2.ex_id_symbol;
@@ -161,7 +161,7 @@ let merge e1 e2 =
     ex_constant_closures =
       Set_of_closures_id.Set.union e1.ex_constant_closures e2.ex_constant_closures;
     ex_kept_arguments =
-      FunMap.disjoint_union e1.ex_kept_arguments e2.ex_kept_arguments }
+      Set_of_closures_id.Map.disjoint_union e1.ex_kept_arguments e2.ex_kept_arguments }
 
 (* importing informations to build a pack: the global identifying the
    compilation unit of symbols is changed to be the pack one *)
@@ -226,7 +226,7 @@ let ex_functions_off ex_functions =
     Closure_id.Map.add
       (Closure_id.wrap function_id) ffunctions map in
   let aux _ f map = Variable.Map.fold (aux_fun f) f.funs map in
-  FunMap.fold aux ex_functions Closure_id.Map.empty
+  Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
 
 let import_eidmap_for_pack units pack f map =
   EidMap.map_keys
@@ -240,16 +240,16 @@ let import_for_pack ~pack_units ~pack exp =
   let import_eid = import_eid_for_pack pack_units pack in
   let import_eidmap f map = import_eidmap_for_pack pack_units pack f map in
   let ex_functions =
-    FunMap.map (import_ffunctions_for_pack pack_units pack)
+    Set_of_closures_id.Map.map (import_ffunctions_for_pack pack_units pack)
       exp.ex_functions in
   (* The only reachable global identifier of a pack is the pack itself *)
-  let globals = IdentMap.filter (fun unit _ ->
+  let globals = Ident.Map.filter (fun unit _ ->
       Ident.same (Compilation_unit.get_persistent_ident pack) unit)
       exp.ex_globals in
   let res =
     { ex_functions;
       ex_functions_off = ex_functions_off ex_functions;
-      ex_globals = IdentMap.map import_approx globals;
+      ex_globals = Ident.Map.map import_approx globals;
       ex_offset_fun = exp.ex_offset_fun;
       ex_offset_fv = exp.ex_offset_fv;
       ex_values = import_eidmap import_desr exp.ex_values;

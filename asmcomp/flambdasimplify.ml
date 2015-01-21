@@ -28,7 +28,7 @@ let new_var name =
 
 type sb = { sb_var : Variable.t Variable.Map.t;
             sb_sym : Variable.t SymbolMap.t;
-            sb_exn : static_exception StaticExceptionMap.t;
+            sb_exn : Static_exception.t Static_exception.Map.t;
             back_var : Variable.t list Variable.Map.t;
             back_sym : Symbol.t list Variable.Map.t;
             (* Used to handle substitution sequence: we cannot call
@@ -52,7 +52,7 @@ type env =
 
 let empty_sb = { sb_var = Variable.Map.empty;
                  sb_sym = SymbolMap.empty;
-                 sb_exn = StaticExceptionMap.empty;
+                 sb_exn = Static_exception.Map.empty;
                  back_var = Variable.Map.empty;
                  back_sym = Variable.Map.empty }
 
@@ -75,7 +75,7 @@ type ret =
   { approx : approx;
     globals : approx IntMap.t;
     used_variables : Variable.Set.t;
-    used_staticfail : StaticExceptionSet.t;
+    used_staticfail : Static_exception.Set.t;
   }
 
 (* Utility functions *)
@@ -107,9 +107,12 @@ let rec add_sb_var' id id' sb =
 
 let add_sb_var id id' env = { env with sb = add_sb_var' id id' env.sb }
 let add_sb_sym sym id' env = {env with sb = add_sb_sym' sym id' env.sb }
-let add_sb_exn i i' env = { env with sb = { env.sb with sb_exn = StaticExceptionMap.add i i' env.sb.sb_exn } }
+let add_sb_exn i i' env =
+  { env with
+    sb = { env.sb with sb_exn = Static_exception.Map.add i i' env.sb.sb_exn } }
 
-let sb_exn i env = try StaticExceptionMap.find i env.sb.sb_exn with Not_found -> i
+let sb_exn i env =
+  try Static_exception.Map.find i env.sb.sb_exn with Not_found -> i
 
 let new_subst_exn i env =
   if env.substitute
@@ -271,16 +274,16 @@ let exit_scope acc var =
     used_variables = Variable.Set.remove var acc.used_variables }
 
 let use_staticfail acc i =
-  { acc with used_staticfail = StaticExceptionSet.add i acc.used_staticfail }
+  { acc with used_staticfail = Static_exception.Set.add i acc.used_staticfail }
 
 let exit_scope_catch acc i =
-  { acc with used_staticfail = StaticExceptionSet.remove i acc.used_staticfail }
+  { acc with used_staticfail = Static_exception.Set.remove i acc.used_staticfail }
 
 let init_r () =
   { approx = value_unknown;
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
-    used_staticfail = StaticExceptionSet.empty }
+    used_staticfail = Static_exception.Set.empty }
 
 let make_const_int n eid =
   Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
@@ -319,12 +322,12 @@ let find_global i r =
 let subst_toplevel sb lam =
   let subst id = try Variable.Map.find id sb with Not_found -> id in
   let f = function
-    | Fvar (id,_) -> Fvar (subst id,ExprId.create ())
+    | Fvar (id,_) -> Fvar (subst id,Expr_id.create ())
     | Fset_of_closures (cl,d) ->
         Fset_of_closures (
           { cl with
             cl_specialised_arg = Variable.Map.map subst cl.cl_specialised_arg },
-          ExprId.create ())
+          Expr_id.create ())
     | e -> e
   in
   Flambdaiter.map_toplevel f lam
@@ -350,7 +353,7 @@ let make_closure_declaration id lam params =
 
   let fv' =
     Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' (Fvar(id,ExprId.create ())) fv')
+        Variable.Map.add id' (Fvar(id,Expr_id.create ())) fv')
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
 
@@ -365,7 +368,7 @@ let make_closure_declaration id lam params =
       cl_free_var = fv';
       cl_specialised_arg = Variable.Map.empty } in
 
-  Fset_of_closures(closure, ExprId.create ())
+  Fset_of_closures(closure, Expr_id.create ())
 
 (* Determine whether the estimated size of a flambda term is below
    some threshold *)
@@ -910,7 +913,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
   | Fstaticcatch (i, vars, body, handler, annot) ->
       let i, env = new_subst_exn i env in
       let body, r = loop env r body in
-      if not (StaticExceptionSet.mem i r.used_staticfail)
+      if not (Static_exception.Set.mem i r.used_staticfail)
       then
         (* If the static exception is not used, we can drop the declaration *)
         body, r
@@ -1003,7 +1006,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
                   | Float f -> ...]
          *)
         match sw.fs_failaction with
-        | None -> Funreachable (ExprId.create ())
+        | None -> Funreachable (Expr_id.create ())
         | Some f -> f in
       begin match r.approx.descr with
       | Value_int i
@@ -1123,7 +1126,7 @@ and closure env r cl annot =
         (* Format.printf "body:@ %a@." Printflambda.flambda ffun.body; *)
         let body = Flambdaiter.map_toplevel (function
             | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
-                Fvar(SymbolMap.find sym prev_closure_symbols,ExprId.create ())
+                Fvar(SymbolMap.find sym prev_closure_symbols,Expr_id.create ())
             | e -> e) ffun.body in
         (* We replace recursive calls using the function symbol
            This is done before substitution because we could have something like:
@@ -1214,7 +1217,7 @@ and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, q_approxs = Misc.split_at arity approxs in
         let expr, r = direct_apply env r ~local clos funct fun_id func fapprox closure (h_args,h_approxs)
-            dbg (ExprId.create ()) in
+            dbg (Expr_id.create ()) in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
                              ap_kind = Indirect; ap_dbg = dbg}, eid))
       else
@@ -1240,20 +1243,20 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let param_sb = List.map (fun id -> rename_var id) func.params in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
-  let call_args = List.map (fun id' -> Fvar(id', ExprId.create ())) param_sb in
+  let call_args = List.map (fun id' -> Fvar(id', Expr_id.create ())) param_sb in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
-  let expr = Fapply ({ ap_function = Fvar(funct_id, ExprId.create ());
+  let expr = Fapply ({ ap_function = Fvar(funct_id, Expr_id.create ());
                        ap_arg = call_args;
-                       ap_kind = Direct fun_id; ap_dbg }, ExprId.create ()) in
+                       ap_kind = Direct fun_id; ap_dbg }, Expr_id.create ()) in
   let fset_of_closures = make_closure_declaration new_fun_id expr remaining_args in
   let offset = Fclosure ({fu_closure = fset_of_closures;
                            fu_fun = Closure_id.wrap new_fun_id;
-                           fu_relative_to = None}, ExprId.create ()) in
+                           fu_relative_to = None}, Expr_id.create ()) in
   let with_args = List.fold_right (fun (id', arg) expr ->
-      Flet(Not_assigned, id', arg, expr, ExprId.create ()))
+      Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
       applied_args offset in
-  Flet(Not_assigned, funct_id, funct, with_args, ExprId.create ())
+  Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
 
 
 and functor_like env clos approxs =
@@ -1337,10 +1340,10 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
   let make_fv var fv =
     Variable.Map.add var
       (Fvariable_in_closure
-         ({ vc_closure = Fvar(clos_id, ExprId.create ());
+         ({ vc_closure = Fvar(clos_id, Expr_id.create ());
             vc_fun = fun_id;
             vc_var = Var_within_closure.wrap var },
-          ExprId.create ())) fv
+          Expr_id.create ())) fv
   in
 
   let variables_in_closure =
@@ -1370,23 +1373,23 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
     let params = List.combine func.params args in
     List.fold_right2 f params approxs (Variable.Map.empty,[],env) in
 
-  let args_exprs = List.map (fun (id,_) -> Fvar(id,ExprId.create ())) args in
+  let args_exprs = List.map (fun (id,_) -> Fvar(id,Expr_id.create ())) args in
 
   let clos_expr = (Fset_of_closures({ cl_fun = clos;
                               cl_free_var = fv;
-                              cl_specialised_arg = spec_args}, ExprId.create ())) in
+                              cl_specialised_arg = spec_args}, Expr_id.create ())) in
 
   let r = exit_scope r clos_id in
   let expr = Fclosure({fu_closure = clos_expr; fu_fun = fun_id;
-                        fu_relative_to = None}, ExprId.create ()) in
+                        fu_relative_to = None}, Expr_id.create ()) in
   let expr = Fapply ({ ap_function = expr; ap_arg = args_exprs;
                        ap_kind = Direct fun_id; ap_dbg },
-                     ExprId.create ()) in
+                     Expr_id.create ()) in
   let expr = List.fold_left
       (fun expr (id,arg) ->
-         Flet(Not_assigned, id, arg, expr, ExprId.create ()))
+         Flet(Not_assigned, id, arg, expr, Expr_id.create ()))
       expr args in
-  let expr = Flet(Not_assigned, clos_id, funct, expr, ExprId.create ()) in
+  let expr = Flet(Not_assigned, clos_id, funct, expr, Expr_id.create ()) in
   let r = List.fold_left (fun r (id,_) -> exit_scope r id) r args in
   loop { env with substitute = true } r expr
 
@@ -1401,28 +1404,28 @@ and inline env r clos lfunc fun_id func args dbg eid =
   let body =
     func.body
     |> List.fold_right2 (fun id arg body ->
-        Flet(Not_assigned, id, arg, body, ExprId.create ~name:"inline arg" ()))
+        Flet(Not_assigned, id, arg, body, Expr_id.create ~name:"inline arg" ()))
       func.params args
     |> Variable.Set.fold (fun id body ->
         Flet(Not_assigned, id,
              Fvariable_in_closure
-               ({ vc_closure = Fvar(clos_id, ExprId.create ());
+               ({ vc_closure = Fvar(clos_id, Expr_id.create ());
                   vc_fun = fun_id;
                   vc_var = Var_within_closure.wrap id },
-                ExprId.create ()),
-             body, ExprId.create ()))
+                Expr_id.create ()),
+             body, Expr_id.create ()))
       variables_in_closure
     |> Variable.Map.fold (fun id _ body ->
         Flet(Not_assigned, id,
-             Fclosure ({ fu_closure = Fvar(clos_id, ExprId.create ());
+             Fclosure ({ fu_closure = Fvar(clos_id, Expr_id.create ());
                           fu_fun = Closure_id.wrap id;
                           fu_relative_to = Some fun_id },
-                        ExprId.create ()),
-             body, ExprId.create ()))
+                        Expr_id.create ()),
+             body, Expr_id.create ()))
       clos.funs
   in
   loop { env with substitute = true } r
-       (Flet(Not_assigned, clos_id, lfunc, body, ExprId.create ()))
+       (Flet(Not_assigned, clos_id, lfunc, body, Expr_id.create ()))
 
 let simplify tree =
   let env = empty_env () in
@@ -1434,7 +1437,7 @@ let simplify tree =
       Printflambda.flambda result
   end;
   assert(Variable.Set.is_empty r.used_variables);
-  assert(StaticExceptionSet.is_empty r.used_staticfail);
+  assert(Static_exception.Set.is_empty r.used_staticfail);
   result
 
 let lift_lets tree =

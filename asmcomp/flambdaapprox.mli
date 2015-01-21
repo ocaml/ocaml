@@ -34,7 +34,7 @@ and value_offset = {
 }
 
 and value_closure = {
-  ffunctions : ExprId.t function_declarations;
+  ffunctions : Expr_id.t function_declarations;
   bound_var : approx Var_within_closure.Map.t;
   kept_params : Variable.Set.t;
   fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;

@@ -152,7 +152,7 @@ module type Param2 = sig
   val fv_offset_table : int Var_within_closure.Map.t
   val closures : t Flambda.function_declarations Closure_id.Map.t
   val constant_closures : Set_of_closures_id.Set.t
-  val functions : unit Flambda.function_declarations FunMap.t
+  val functions : unit Flambda.function_declarations Set_of_closures_id.Map.t
 end
 
 type const_lbl =
@@ -217,9 +217,9 @@ module Conv(P:Param2) = struct
             Not_declared
 
   let functions_declaration_position fid =
-    try Local (FunMap.find fid P.functions) with
+    try Local (Set_of_closures_id.Map.find fid P.functions) with
     | Not_found ->
-        try External (FunMap.find fid ex_functions) with
+        try External (Set_of_closures_id.Map.find fid ex_functions) with
         | Not_found ->
             Not_declared
 

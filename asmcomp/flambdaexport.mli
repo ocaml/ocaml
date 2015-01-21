@@ -45,13 +45,13 @@ and approx =
   | Value_symbol of Symbol.t
 
 type exported = {
-  ex_functions : unit Flambda.function_declarations FunMap.t;
+  ex_functions : unit Flambda.function_declarations Set_of_closures_id.Map.t;
   (** Code of exported functions indexed by function identifier *)
   ex_functions_off : unit Flambda.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by offset identifier *)
   ex_values : descr EidMap.t;
   (** Structure of exported values  *)
-  ex_globals : approx IdentMap.t;
+  ex_globals : approx Ident.Map.t;
   (** Global variables provided by the unit: usualy only the top-level
       module identifier, but packs contains multiple ones. *)
 
@@ -67,7 +67,7 @@ type exported = {
   (** Symbols that are effectively constants (the top-level module is
       not always a constant for instance) *)
   ex_constant_closures : Set_of_closures_id.Set.t;
-  ex_kept_arguments : Variable.Set.t FunMap.t;
+  ex_kept_arguments : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 val empty_export : exported

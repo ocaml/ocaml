@@ -20,9 +20,9 @@
 open Flambda
 open Abstract_identifiers
 
-val simplify : ExprId.t flambda -> ExprId.t flambda
+val simplify : Expr_id.t flambda -> Expr_id.t flambda
 
-val lift_lets : ExprId.t flambda -> ExprId.t flambda
+val lift_lets : Expr_id.t flambda -> Expr_id.t flambda
 
-val remove_unused_closure_variables : ExprId.t flambda -> ExprId.t flambda
+val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
 (* val passes : Flambdapasses.pass list *)

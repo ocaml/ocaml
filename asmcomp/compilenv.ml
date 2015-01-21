@@ -34,7 +34,7 @@ let export_infos_table =
 
 let imported_closure_table =
   (Set_of_closures_id.Tbl.create 10
-   : ExprId.t Flambda.function_declarations Set_of_closures_id.Tbl.t)
+   : Expr_id.t Flambda.function_declarations Set_of_closures_id.Tbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -478,13 +478,13 @@ let imported_closure =
         Variable.Map.map
           (fun ff ->
              let body = Flambdaiter.map_toplevel f ff.body in
-             let body = Flambdaiter.map_data(fun () -> ExprId.create ()) body in
+             let body = Flambdaiter.map_data(fun () -> Expr_id.create ()) body in
              let free_variables = Flambdaiter.free_variables body in
              { ff with body; free_variables })
           clos.funs } in
   let aux fun_id =
     let ex_info = approx_env () in
-    let closure = FunMap.find fun_id ex_info.Flambdaexport.ex_functions in
+    let closure = Set_of_closures_id.Map.find fun_id ex_info.Flambdaexport.ex_functions in
     let cl = import_closure closure in
     cl
   in

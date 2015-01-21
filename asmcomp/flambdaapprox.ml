@@ -32,7 +32,7 @@ and value_offset =
     closure : value_closure }
 
 and value_closure =
-  { ffunctions : ExprId.t function_declarations;
+  { ffunctions : Expr_id.t function_declarations;
     bound_var : approx Var_within_closure.Map.t;
     kept_params : Variable.Set.t;
     fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
@@ -109,7 +109,7 @@ module Import = struct
       | Value_closure { fun_id; closure = { closure_id; bound_var } } ->
         let bound_var = Var_within_closure.Map.map import_approx bound_var in
         let kept_params =
-          try FunMap.find closure_id ex_info.ex_kept_arguments with
+          try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
         in
         value_closure
@@ -123,7 +123,7 @@ module Import = struct
       | Value_set_of_closures { closure_id; bound_var } ->
         let bound_var = Var_within_closure.Map.map import_approx bound_var in
         let kept_params =
-          try FunMap.find closure_id ex_info.ex_kept_arguments with
+          try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
         in
         value_unoffseted_closure
@@ -167,6 +167,6 @@ module Import = struct
   let import_global id =
     let unit = Compilenv.unit_for_global id in
     import_approx
-      (IdentMap.find id (Compilenv.approx_for_global unit).ex_globals)
+      (Ident.Map.find id (Compilenv.approx_for_global unit).ex_globals)
 
 end
