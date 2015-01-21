@@ -36,7 +36,7 @@ and value_closure =
     bound_var : approx Var_within_closure.Map.t;
     kept_params : Variable.Set.t;
     fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
-    fun_subst_renaming : Closure_id.t ClosureIdMap.t }
+    fun_subst_renaming : Closure_id.t Closure_id.Map.t }
 
 and approx =
   { descr : descr;
@@ -119,7 +119,7 @@ module Import = struct
                 bound_var;
                 kept_params = kept_params;
                 fv_subst_renaming = Var_within_closure.Map.empty;
-                fun_subst_renaming = ClosureIdMap.empty } }
+                fun_subst_renaming = Closure_id.Map.empty } }
       | Value_set_of_closures { closure_id; bound_var } ->
         let bound_var = Var_within_closure.Map.map import_approx bound_var in
         let kept_params =
@@ -131,7 +131,7 @@ module Import = struct
             bound_var;
             kept_params = kept_params;
             fv_subst_renaming = Var_within_closure.Map.empty;
-            fun_subst_renaming = ClosureIdMap.empty }
+            fun_subst_renaming = Closure_id.Map.empty }
       | _ ->
           value_unknown
     with Not_found ->

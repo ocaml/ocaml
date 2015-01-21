@@ -37,7 +37,7 @@ and value_offset =
 and value_closure =
   { closure_id : Set_of_closures_id.t;
     bound_var : approx Var_within_closure.Map.t;
-    results : approx ClosureIdMap.t }
+    results : approx Closure_id.Map.t }
 
 and approx =
     Value_unknown
@@ -47,7 +47,7 @@ and approx =
 type exported = {
   ex_functions : unit Flambda.function_declarations FunMap.t;
   (** Code of exported functions indexed by function identifier *)
-  ex_functions_off : unit Flambda.function_declarations ClosureIdMap.t;
+  ex_functions_off : unit Flambda.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by offset identifier *)
   ex_values : descr EidMap.t;
   (** Structure of exported values  *)
@@ -59,14 +59,14 @@ type exported = {
   ex_symbol_id : ExportId.t SymbolMap.t;
   (** Associates symbols and values *)
 
-  ex_offset_fun : int ClosureIdMap.t;
+  ex_offset_fun : int Closure_id.Map.t;
   (** Positions of function pointers in their closures *)
   ex_offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures *)
   ex_constants : SymbolSet.t;
   (** Symbols that are effectively constants (the top-level module is
       not always a constant for instance) *)
-  ex_constant_closures : FunSet.t;
+  ex_constant_closures : Set_of_closures_id.Set.t;
   ex_kept_arguments : Variable.Set.t FunMap.t;
 }
 

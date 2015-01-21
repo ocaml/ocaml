@@ -38,7 +38,7 @@ and value_closure = {
   bound_var : approx Var_within_closure.Map.t;
   kept_params : Variable.Set.t;
   fv_subst_renaming : Var_within_closure.t Var_within_closure.Map.t;
-  fun_subst_renaming : Closure_id.t ClosureIdMap.t;
+  fun_subst_renaming : Closure_id.t Closure_id.Map.t;
 }
 
 and approx = {

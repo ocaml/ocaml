@@ -55,7 +55,7 @@ open Flambda
 
 type constant_result = {
   not_constant_id : Variable.Set.t;
-  not_constant_closure : FunSet.t;
+  not_constant_closure : Set_of_closures_id.Set.t;
 }
 
 module type Param = sig
@@ -78,13 +78,13 @@ module NotConstants(P:Param) = struct
 
   (* Sets representing NC *)
   let variables = ref Variable.Set.empty
-  let closures = ref FunSet.empty
+  let closures = ref Set_of_closures_id.Set.empty
   let globals = ref IntSet.empty
 
   (* if the table associates [v1;v2;...;vn] to v, it represents
      v in NC => v1 in NC /\ v2 in NC ... /\ vn in NC *)
-  let id_dep_table : dep list VarTbl.t = VarTbl.create 100
-  let fun_dep_table : dep list FunTbl.t = FunTbl.create 100
+  let id_dep_table : dep list Variable.Tbl.t = Variable.Tbl.create 100
+  let fun_dep_table : dep list Set_of_closures_id.Tbl.t = Set_of_closures_id.Tbl.create 100
   let glob_dep_table : dep list IntTbl.t = IntTbl.create 100
 
   (* adds in the tables 'dep in NC => curr in NC' *)
@@ -92,13 +92,13 @@ module NotConstants(P:Param) = struct
     List.iter (fun curr ->
       match dep with
       | Var id ->
-        let t = try VarTbl.find id_dep_table id
+        let t = try Variable.Tbl.find id_dep_table id
         with Not_found -> [] in
-        VarTbl.replace id_dep_table id (curr :: t)
+        Variable.Tbl.replace id_dep_table id (curr :: t)
       | Closure cl ->
-        let t = try FunTbl.find fun_dep_table cl
+        let t = try Set_of_closures_id.Tbl.find fun_dep_table cl
         with Not_found -> [] in
-        FunTbl.replace fun_dep_table cl (curr :: t)
+        Set_of_closures_id.Tbl.replace fun_dep_table cl (curr :: t)
       | Global i ->
         let t = try IntTbl.find glob_dep_table i
         with Not_found -> [] in
@@ -112,8 +112,8 @@ module NotConstants(P:Param) = struct
         if not (Variable.Set.mem id !variables)
         then variables := Variable.Set.add id !variables
       | Closure cl ->
-        if not (FunSet.mem cl !closures)
-        then closures := FunSet.add cl !closures
+        if not (Set_of_closures_id.Set.mem cl !closures)
+        then closures := Set_of_closures_id.Set.add cl !closures
       | Global i ->
         if not (IntSet.mem i !globals)
         then globals := IntSet.add i !globals)
@@ -316,11 +316,11 @@ module NotConstants(P:Param) = struct
     (* Set of variables/closures added to NC but not their dependencies *)
     let q = Queue.create () in
     Variable.Set.iter (fun v -> Queue.push (Var v) q) !variables;
-    FunSet.iter (fun v -> Queue.push (Closure v) q) !closures;
+    Set_of_closures_id.Set.iter (fun v -> Queue.push (Closure v) q) !closures;
     while not (Queue.is_empty q) do
       let deps = try match Queue.take q with
-        | Var e -> VarTbl.find id_dep_table e
-        | Closure cl -> FunTbl.find fun_dep_table cl
+        | Var e -> Variable.Tbl.find id_dep_table e
+        | Closure cl -> Set_of_closures_id.Tbl.find fun_dep_table cl
         | Global i -> IntTbl.find glob_dep_table i
       with Not_found -> [] in
       List.iter (function
@@ -329,8 +329,8 @@ module NotConstants(P:Param) = struct
           then (variables := Variable.Set.add id !variables;
             Queue.push e q)
         | Closure cl as e ->
-          if not (FunSet.mem cl !closures)
-          then (closures := FunSet.add cl !closures;
+          if not (Set_of_closures_id.Set.mem cl !closures)
+          then (closures := Set_of_closures_id.Set.add cl !closures;
             Queue.push e q)
         | Global i as e ->
           if not (IntSet.mem i !globals)

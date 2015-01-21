@@ -39,7 +39,7 @@ type sb = { sb_var : Variable.t Variable.Map.t;
 type env =
   { env_approx : approx Variable.Map.t;
     global : (int, approx) Hashtbl.t;
-    current_functions : FunSet.t;
+    current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
     inlining_level : int;
@@ -59,7 +59,7 @@ let empty_sb = { sb_var = Variable.Map.empty;
 let empty_env () =
   { env_approx = Variable.Map.empty;
     global = Hashtbl.create 10;
-    current_functions = FunSet.empty;
+    current_functions = Set_of_closures_id.Set.empty;
     inlining_level = 0;
     sb = empty_sb;
     substitute = false;
@@ -168,10 +168,10 @@ let subst_var env id =
 
 type ffunction_subst =
   { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
-    ffs_fun : Closure_id.t ClosureIdMap.t }
+    ffs_fun : Closure_id.t Closure_id.Map.t }
 
 let empty_ffunction_subst =
-  { ffs_fv = Var_within_closure.Map.empty; ffs_fun = ClosureIdMap.empty }
+  { ffs_fv = Var_within_closure.Map.empty; ffs_fun = Closure_id.Map.empty }
 
 let new_subst_off id env off_sb =
   if env.substitute
@@ -191,7 +191,7 @@ let new_subst_off' id env off_sb =
     let env = add_sb_var id id' env in
     let off = Closure_id.wrap id in
     let off' = Closure_id.wrap id' in
-    let off_sb = ClosureIdMap.add off off' off_sb in
+    let off_sb = Closure_id.Map.add off off' off_sb in
     id', env, off_sb
   else id, env, off_sb
 
@@ -770,7 +770,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
          some renamings and generate wrong code. *)
 
       let fun_off_id off closure =
-        try ClosureIdMap.find off closure.fun_subst_renaming
+        try Closure_id.Map.find off closure.fun_subst_renaming
         with Not_found -> off in
       let fv_off_id off closure =
         try Var_within_closure.Map.find off closure.fv_subst_renaming
@@ -1088,7 +1088,7 @@ and closure env r cl annot =
   let approxs = Variable.Map.map_keys (subst_var env) approxs in
   let prev_closure_symbols = SymbolMap.map (subst_var env) prev_closure_symbols in
 
-  let env = { env with current_functions = FunSet.add ffuns.ident env.current_functions } in
+  let env = { env with current_functions = Set_of_closures_id.Set.add ffuns.ident env.current_functions } in
   (* we use the previous closure for evaluating the functions *)
 
   let internal_closure =
@@ -1166,7 +1166,7 @@ and closure env r cl annot =
 
 and ffunction r flam off rel annot =
   let off_id closure off =
-    try ClosureIdMap.find off closure.fun_subst_renaming
+    try Closure_id.Map.find off closure.fun_subst_renaming
     with Not_found -> off in
   let off_id closure off =
     let off = off_id closure off in
@@ -1298,7 +1298,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
       else
         let kept_params = closure.kept_params in
         if
-          recursive && not (FunSet.mem clos.ident env.current_functions)
+          recursive && not (Set_of_closures_id.Set.mem clos.ident env.current_functions)
           && not (Variable.Set.is_empty kept_params)
           && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
           && env.inlining_level <= max_level

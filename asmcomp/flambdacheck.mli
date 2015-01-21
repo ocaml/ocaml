@@ -53,7 +53,7 @@ val every_declared_closure_is_from_current_compilation_unit :
 
 val every_used_function_from_current_compilation_unit_is_declared :
   current_compilation_unit:compilation_unit -> 'a flambda ->
-  ClosureIdSet.t counter_example
+  Closure_id.Set.t counter_example
 (* Test only run when flambdasym is false *)
 
 val every_used_variable_in_closure_from_current_compilation_unit_is_declared :
@@ -61,10 +61,10 @@ val every_used_variable_in_closure_from_current_compilation_unit_is_declared :
   Var_within_closure.Set.t counter_example
 
 val every_static_exception_is_caught :
-  'a flambda -> static_exception counter_example
+  'a flambda -> Static_exception.t counter_example
 
 val every_static_exception_is_caught_at_a_single_position :
-  'a flambda -> static_exception counter_example
+  'a flambda -> Static_exception.t counter_example
 
 val no_access_to_global_module_identifiers :
   'a flambda -> Lambda.primitive counter_example

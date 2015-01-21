@@ -33,8 +33,8 @@ let export_infos_table =
   (Hashtbl.create 10 : (string, Flambdaexport.exported) Hashtbl.t)
 
 let imported_closure_table =
-  (FunTbl.create 10
-   : ExprId.t Flambda.function_declarations FunTbl.t)
+  (Set_of_closures_id.Tbl.create 10
+   : ExprId.t Flambda.function_declarations Set_of_closures_id.Tbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -99,7 +99,7 @@ let unit_id_from_name name = Ident.create_persistent name
 
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
-  FunTbl.clear imported_closure_table;
+  Set_of_closures_id.Tbl.clear imported_closure_table;
   let symbol = symbolname_for_pack packname name in
   current_unit_id := unit_id_from_name name;
   current_unit.ui_name <- name;
@@ -488,7 +488,7 @@ let imported_closure =
     let cl = import_closure closure in
     cl
   in
-  FunTbl.memoize imported_closure_table aux
+  Set_of_closures_id.Tbl.memoize imported_closure_table aux
 
 (* Error report *)
 

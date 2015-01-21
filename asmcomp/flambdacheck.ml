@@ -250,12 +250,12 @@ let every_declared_closure_is_from_current_compilation_unit
     Counter_example cu
 
 let declared_closure_id flam =
-  let bound = ref ClosureIdSet.empty in
+  let bound = ref Closure_id.Set.empty in
   let bound_multiple_times = ref None in
   let add_and_check var =
-    if ClosureIdSet.mem var !bound
+    if Closure_id.Set.mem var !bound
     then bound_multiple_times := Some var;
-    bound := ClosureIdSet.add var !bound
+    bound := Closure_id.Set.add var !bound
   in
   let f = function
     | Fset_of_closures ({cl_fun},_) ->
@@ -273,16 +273,16 @@ let no_closure_id_is_bound_multiple_times flam =
   | _, None -> No_counter_example
 
 let used_closure_id flam =
-  let used = ref ClosureIdSet.empty in
+  let used = ref Closure_id.Set.empty in
   let f = function
     | Fclosure ({fu_fun;fu_relative_to},_) ->
-        used := ClosureIdSet.add fu_fun !used;
+        used := Closure_id.Set.add fu_fun !used;
         (match fu_relative_to with
          | None -> ()
          | Some rel ->
-             used := ClosureIdSet.add fu_fun !used)
+             used := Closure_id.Set.add fu_fun !used)
     | Fvariable_in_closure ({vc_fun},_) ->
-        used := ClosureIdSet.add vc_fun !used
+        used := Closure_id.Set.add vc_fun !used
 
     | Fassign _ | Fvar _ | Fset_of_closures _
     | Fsymbol _ | Fconst _ | Fapply _
@@ -310,12 +310,12 @@ let every_used_function_from_current_compilation_unit_is_declared
   let declared, _ = declared_closure_id flam in
   let used = used_closure_id flam in
   let used_from_current_unit =
-    ClosureIdSet.filter
+    Closure_id.Set.filter
       (Closure_id.in_compilation_unit current_compilation_unit)
       used in
   let counter_examples =
-    ClosureIdSet.diff used_from_current_unit declared in
-  if ClosureIdSet.is_empty counter_examples
+    Closure_id.Set.diff used_from_current_unit declared in
+  if Closure_id.Set.is_empty counter_examples
   then No_counter_example
   else Counter_example counter_examples
 
@@ -333,25 +333,25 @@ let every_used_variable_in_closure_from_current_compilation_unit_is_declared
   then No_counter_example
   else Counter_example counter_examples
 
-exception Counter_example_se of static_exception
+exception Counter_example_se of Static_exception.t
 
 let every_static_exception_is_caught flam =
   let check env = function
     | Fstaticraise(exn,_,_) ->
-        if not (StaticExceptionSet.mem exn env)
+        if not (Static_exception.Set.mem exn env)
         then raise (Counter_example_se exn)
     | _ -> ()
   in
   let rec loop env = function
     | Fstaticcatch (i, _, body, handler,_) ->
-        let env = StaticExceptionSet.add i env in
+        let env = Static_exception.Set.add i env in
         loop env handler;
         loop env body
     | exp ->
         check env exp;
         Flambdaiter.apply_on_subexpressions (loop env) exp
   in
-  let env = StaticExceptionSet.empty in
+  let env = Static_exception.Set.empty in
   try
     loop env flam;
     No_counter_example
@@ -359,12 +359,12 @@ let every_static_exception_is_caught flam =
     Counter_example var
 
 let every_static_exception_is_caught_at_a_single_position flam =
-  let caught = ref StaticExceptionSet.empty in
+  let caught = ref Static_exception.Set.empty in
   let f = function
     | Fstaticcatch (i, _, body, handler,_) ->
-        if StaticExceptionSet.mem i !caught
+        if Static_exception.Set.mem i !caught
         then raise (Counter_example_se i);
-        caught := StaticExceptionSet.add i !caught
+        caught := Static_exception.Set.add i !caught
     | _ -> ()
   in
   try
@@ -437,7 +437,7 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
             ~current_compilation_unit flam)
       "functions %a from the current compilation unit are used but \
        not declared"
-      ClosureIdSet.print;
+      Closure_id.Set.print;
 
   if not flambdasym
   then
