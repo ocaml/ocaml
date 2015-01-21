@@ -14,23 +14,44 @@ open Ext_types
 open Symbol
 open Abstract_identifiers
 
-(** A variant of lambda code with explicit closures, where every
-    dependency is explicit.
+(** Intermediate language used to perform closure conversion and inlining.
 
-    The particularities are:
+    Closure conversion starts with [Lambda] code.  The conversion transforms
+    function declarations into "sets of closures" ([Fset_of_closures]
+    constructor) in the [Flambda] language.
 
-    * Symbolic closures: fields are referenced by unique identifiers
-      (types [Closure_function.t] and [Closure_variable.t], see
-      [Abstract_identifiers]);
+    The usual case of a function declared on its own will produce a
+    [Fset_of_closures] containing a single closure.  The closure itself may
+    be accessed using [Fclosure] and specifies which variables (by name, not
+    by any numeric offset) are free in the corresponding function definition.
+    Occurrences of these free variables in the body appear as the usual
+    [Fvar] expressions.
 
-    * Explicit external constants access (type [Symbol.t]);
+    For the case of multiple functions defined together, possibly mutually
+    recursive, a [Fset_of_closures] value will be generated containing
+    one closure per function.  Each closure may be accessed again using
+    [Fclosure], specifying which function's closure is desired.
 
-    * Direct calls are explicit;
+    After closure conversion an inlining pass is performed.  This may
+    introduce [Fvariable_in_closure] expressions to represent accesses (from
+    the body of inlined functions) to variables bound by closures.  Some of
+    these [Fvariable_in_closure] expressions may survive in the tree after
+    inlining has finished.
 
-    * Each node carry a value that can be used for term identifiers;
+    Other features of this intermediate language are:
 
-    * No structured constants: they are converted into
-      [Fprim (Pmakeblock(...), ...)].
+    - Access to constants across modules are performed with respect to
+      named symbols in the object file (of type [Symbol.t]).
+
+    - Direct calls are distinguished from indirect calls (as in [Clambda])
+      using values of type [call_kind].
+
+    - Nodes making up an expression in the language may be annotated with
+      arbitrary values (the ['a] in [type 'a flambda]).
+
+    - "Structured constants" built from the constructors in type [const]
+      are not explicitly represented.  Instead, they are converted into
+      expressions such as: [Fprim (Pmakeblock(...), ...)].
 
   *)
 
@@ -97,8 +118,8 @@ type 'a flambda =
   | Fvar of Variable.t * 'a
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
-  | Fclosure of 'a fclosure * 'a
-  | Ffunction of 'a ffunction * 'a
+  | Fset_of_closures of 'a fclosure * 'a
+  | Fclosure of 'a ffunction * 'a
   | Fvariable_in_closure of 'a fvariable_in_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
   | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
