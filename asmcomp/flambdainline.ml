@@ -228,12 +228,9 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
        | exception Not_found -> check_constant_result r tree (Import.import_symbol sym)
      end
   | Fvar (id,annot) ->
-      let id, tree =
-        match Flambdasubst.find_var_exn env.sb id with
-        | id' -> id', Fvar(id',annot)
-        | exception Not_found -> id, tree
-      in
-      check_var_and_constant_result env r tree (find id env)
+     let id = Flambdasubst.subst_var env.sb id in
+     let tree = Fvar(id,annot) in
+     check_var_and_constant_result env r tree (find id env)
   | Fconst (cst,_) -> tree, ret r (const_approx cst)
 
   | Fapply ({ ap_function = funct; ap_arg = args;
@@ -466,8 +463,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       ret r value_unknown
   | Fassign(id, lam, annot) ->
       let lam, r = loop env r lam in
-      let id = try Flambdasubst.find_var_exn env.sb id with
-        | Not_found -> id in
+      let id = Flambdasubst.subst_var env.sb id in
       let r = use_var r id in
       Fassign(id, lam, annot),
       ret r value_unknown
@@ -561,6 +557,9 @@ and closure env r cl annot =
       let lam, r = loop env r lam in
       Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r) in
 
+  (* Remove every variable binding from the environment.
+     This isn't necessary, but allows to catch bugs
+     concerning variable escaping their scope. *)
   let env = local_env env in
 
   let prev_closure_symbols = Variable.Map.fold (fun id _ map ->
@@ -571,8 +570,8 @@ and closure env r cl annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  let fv, sb, ffunction_sb = AR.subst_free_vars fv env.sb in
-  let ffuns, sb, ffunction_sb = AR.ffuns_subst ffunction_sb sb ffuns in
+  let fv, ffuns, sb, ffunction_sb =
+    AR.subst_function_declarations_and_free_variables env.sb fv ffuns in
   let env = { env with sb; } in
 
   let spec_args =
