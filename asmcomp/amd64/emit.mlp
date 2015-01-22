@@ -100,35 +100,27 @@ let symbols_used = ref StringSet.empty
 let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
 let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
 
-let windows =
-  match system with
-  | S_mingw64 | S_cygwin | S_win64 -> true
-  | _ -> false
-
-let mem__imp s =
-  let imps = "__flimp_" ^ s in
-  add_used_symbol imps;
-  mem64_rip QWORD (emit_symbol imps)
-
 let rel_plt s =
-  if windows && !Clflags.dlcode then
-    mem__imp s
-  else
-    let use_plt =
-      match system with
-      | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
-      | _ -> !Clflags.dlcode
-    in
-    sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
+  let use_plt =
+    match system with
+    | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
+    | _ -> !Clflags.dlcode
+  in
+  sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
 let emit_call s = I.call (rel_plt s)
 
 let emit_jump s = I.jmp (rel_plt s)
 
+let windows =
+  match system with
+  | S_mingw64 | S_cygwin | S_win64 -> true
+  | _ -> false
+
 let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
     I.mov (mem64_rip QWORD (emit_symbol s ^ "@GOTPCREL")) arg
-  else if !pic_code && not (windows && !Clflags.dlcode) then
+  else if !pic_code then
     I.lea (mem64_rip NONE (emit_symbol s)) arg
   else
     I.mov (sym (emit_symbol s)) arg
@@ -537,7 +529,7 @@ let emit_instr fallthrough i =
         let lbl_redo = new_label() in
         def_label lbl_redo;
         I.sub (int n) r15;
-        if !Clflags.dlcode then begin
+        if !Clflags.dlcode && system <> S_win64 then begin
           load_symbol_addr "caml_young_limit" rax;
           I.cmp (mem64 QWORD 0 RAX) r15;
         end else
@@ -848,6 +840,8 @@ let begin_assembly() =
     D.extrn "caml_young_ptr" QWORD;
     D.extrn "caml_young_limit" QWORD;
     D.extrn "caml_exception_pointer" QWORD;
+    D.extrn "caml_absf_mask" QWORD;
+    D.extrn "caml_negf_mask" QWORD;
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_c_call" NEAR;
     D.extrn "caml_allocN" NEAR;
@@ -860,12 +854,11 @@ let begin_assembly() =
   end;
 
 
-  if !Clflags.dlcode then begin
+  if !Clflags.dlcode && system <> S_win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     begin match system with
     | S_macosx -> D.section ["__TEXT";"__literal16"] None ["16byte_literals"]
     | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-    | S_win64 -> D.data ();
     | _ -> D.section [".rodata.cst8"] (Some "a") ["@progbits"]
     end;
     D.align 16;
