@@ -54,6 +54,8 @@ _caml_system__code_begin:
 
         .globl  _caml_call_gc
 _caml_call_gc:
+    /* adjust allocation pointer back to a valid value */
+        add     r31, r31, r11
     /* Set up stack frame */
 #define FRAMESIZE (32*WORD + 32*8 + 32)
         stwu    r1, -FRAMESIZE(r1)
@@ -71,7 +73,7 @@ _caml_call_gc:
     /* Record pointer to register array */
         addi    r0, r1, 8*32 + 32
         Storeglobal r0, _caml_gc_regs, r11
-    /* Save current allocation pointer for debugging purposes */
+    /* Save current allocation pointer (the GC needs it) */
         Storeglobal r31, _caml_young_ptr, r11
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal r29, _caml_exception_pointer, r11

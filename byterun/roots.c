@@ -27,7 +27,7 @@ CAMLexport struct caml__roots_block *caml_local_roots = NULL;
 
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
-/* FIXME should rename to [caml_oldify_young_roots] and synchronise with
+/* FIXME should rename to [caml_oldify_minor_roots] and synchronise with
    asmrun/roots.c */
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
@@ -89,6 +89,22 @@ void caml_do_roots (scanning_action f, int do_globals)
   /* Finalised values */
   caml_final_do_strong_roots (f);
   CAML_TIMER_TIME (tmr, "major_roots/finalised");
+  /* Objects in the minor heap are roots for the major GC. */
+  {
+    value *hp;
+    asize_t sz, i;
+    for (hp = caml_young_ptr;
+         hp < caml_young_alloc_end;
+         hp += Whsize_wosize (sz)){
+      sz = Wosize_hp (hp);
+      if (Tag_hp (hp) < No_scan_tag){
+        for (i = 0; i < sz; i++){
+          f(Field(Val_hp(hp), i), &Field(Val_hp(hp), i));
+        }
+      }
+    }
+  }
+  CAML_TIMER_TIME (tmr, "major_roots/minor_heap");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
   CAML_TIMER_TIME (tmr, "major_roots/hook");

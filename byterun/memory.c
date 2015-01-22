@@ -435,7 +435,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
     CAML_TIMER_SETUP (tmr, "urge_major/alloc_shr");
-    caml_urge_major_slice ();
+    caml_request_major_slice ();
   }
 #ifdef DEBUG
   {
@@ -488,13 +488,13 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (caml_extra_heap_resources > 1.0){
     CAML_TIMER_SETUP (tmr, "urge_major/adjust_gc_speed_1");
     caml_extra_heap_resources = 1.0;
-    caml_urge_major_slice ();
+    caml_request_major_slice ();
   }
   if (caml_extra_heap_resources
            > (double) Wsize_bsize (caml_minor_heap_size) / 2.0
              / (double) Wsize_bsize (caml_stat_heap_size)) {
     CAML_TIMER_SETUP (tmr, "urge_major/adjust_gc_speed_2");
-    caml_urge_major_slice ();
+    caml_request_major_slice ();
   }
 }
 

@@ -214,7 +214,7 @@ static value heap_stats (int returnstats)
 
     /* get a copy of these before allocating anything... */
     double minwords = caml_stat_minor_words
-                      + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                      + (double) (caml_young_alloc_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
     intnat mincoll = caml_stat_minor_collections;
@@ -270,7 +270,7 @@ CAMLprim value caml_gc_quick_stat(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
   intnat mincoll = caml_stat_minor_collections;
@@ -307,7 +307,7 @@ CAMLprim value caml_gc_counters(value v)
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_stat_minor_words
-                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+                    + (double) (caml_young_alloc_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
 

@@ -104,14 +104,14 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_young_ptr -= Bhsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_start){                                   \
-    caml_young_ptr += Bhsize_wosize (wosize);                               \
+  caml_young_ptr -= Whsize_wosize (wosize);                                 \
+  if (caml_young_ptr < caml_young_trigger){                                 \
+    caml_young_ptr += Whsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
     { CAML_TIMER_SETUP (tmr, "force_minor/alloc_small"); }                  \
     caml_minor_collection ();                                               \
     Restore_after_gc;                                                       \
-    caml_young_ptr -= Bhsize_wosize (wosize);                               \
+    caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \
   Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
   (result) = Val_hp (caml_young_ptr);                                       \

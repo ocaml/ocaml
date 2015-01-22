@@ -38,7 +38,7 @@ void caml_process_event(void)
 {
   void (*async_action)(void);
 
-  if (caml_force_major_slice){
+  if (caml_requested_major_slice || caml_requested_minor_gc){
     CAML_TIMER_SETUP (tmr, "force_minor/process_event");
     caml_minor_collection ();
   }
