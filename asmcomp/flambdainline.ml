@@ -89,11 +89,11 @@ let find id env =
     Misc.fatal_error
       (Format.asprintf "unbound variable %a@." Variable.print id)
 
-let present id env = Variable.Map.mem id env.env_approx
+let present env var = Variable.Map.mem var env.env_approx
 let add_approx id approx env =
   let approx =
     match approx.var with
-    | Some var when present var env ->
+    | Some var when present env var ->
         approx
     | _ ->
         { approx with var = Some id }
@@ -167,7 +167,10 @@ let check_constant_result r lam approx =
   lam, ret r approx
 
 let check_var_and_constant_result env r lam approx =
-  let lam, r = check_constant_result r lam approx in
+  let lam, approx =
+    check_var_and_constant_result
+      ~is_present_in_env:(present env) lam approx in
+  let r = ret r approx in
   let r = match lam with
     | Fvar(var,_) -> use_var r var
     | _ -> r
