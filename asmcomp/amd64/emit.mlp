@@ -106,7 +106,7 @@ let windows =
   | _ -> false
 
 let mem__imp s =
-  let imps = "__imp_" ^ s in
+  let imps = "__flimp_" ^ s in
   add_used_symbol imps;
   mem64_rip QWORD (emit_symbol imps)
 
