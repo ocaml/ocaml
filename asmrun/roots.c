@@ -255,14 +255,14 @@ void caml_do_roots (scanning_action f)
   int i, j;
   value glob;
   link *lnk;
-  CAML_TIMER_SETUP (t, "major_roots");
+  CAML_TIMER_SETUP (tmr, "major_roots");
   /* The global roots */
   for (i = 0; caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
       f (Field (glob, j), &Field (glob, j));
   }
-  CAML_TIMER_TIME (t, "major_roots/global");
+  CAML_TIMER_TIME (tmr, "major_roots/global");
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     glob = (value) lnk->data;
@@ -270,21 +270,21 @@ void caml_do_roots (scanning_action f)
       f (Field (glob, j), &Field (glob, j));
     }
   }
-  CAML_TIMER_TIME (t, "major_roots/dynamic_global");
+  CAML_TIMER_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
-  CAML_TIMER_TIME (t, "major_roots/local");
+  CAML_TIMER_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
-  CAML_TIMER_TIME (t, "major_roots/C");
+  CAML_TIMER_TIME (tmr, "major_roots/C");
   /* Finalised values */
   caml_final_do_strong_roots (f);
-  CAML_TIMER_TIME (t, "major_roots/finalised");
+  CAML_TIMER_TIME (tmr, "major_roots/finalised");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
-  CAML_TIMER_TIME (t, "major_roots/hook");
+  CAML_TIMER_TIME (tmr, "major_roots/hook");
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
