@@ -22,6 +22,7 @@
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "signals.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #else
@@ -417,7 +418,9 @@ CAMLprim value caml_gc_minor(value v)
 {
   CAML_TIMER_SETUP (tmr, "");
   Assert (v == Val_unit);
-  caml_minor_collection ();
+  caml_request_major_slice ();  /* FIXME do we want to do this ? */
+  caml_request_minor_gc ();
+  caml_gc_dispatch ();
   CAML_TIMER_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }

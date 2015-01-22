@@ -40,7 +40,7 @@ void caml_process_event(void)
 
   if (caml_requested_major_slice || caml_requested_minor_gc){
     CAML_TIMER_SETUP (tmr, "force_minor/process_event");
-    caml_minor_collection ();
+    caml_gc_dispatch ();
   }
                              /* FIXME should be [caml_check_urgent_gc] */
   caml_process_pending_signals();

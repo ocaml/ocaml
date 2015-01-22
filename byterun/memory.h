@@ -109,7 +109,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
     caml_young_ptr += Whsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
     { CAML_TIMER_SETUP (tmr, "force_minor/alloc_small"); }                  \
-    caml_minor_collection ();                                               \
+    caml_gc_dispatch ();                                                    \
     Restore_after_gc;                                                       \
     caml_young_ptr -= Whsize_wosize (wosize);                               \
   }                                                                         \
