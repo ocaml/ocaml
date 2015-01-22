@@ -75,6 +75,7 @@ type system =
 
 val system: system
 val masm: bool
+val windows: bool
 
 
 (** Support for plumbing a binary code emitter *)

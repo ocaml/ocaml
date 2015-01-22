@@ -25,7 +25,7 @@ let opt_displ b displ =
   else bprintf b "%d" displ
 
 let arg_mem b {arch; typ=_; idx; scale; base; sym; displ} =
-  let string_of_register = 
+  let string_of_register =
     match arch with
     | X86 -> string_of_reg32
     | X64 -> string_of_reg64
@@ -181,6 +181,8 @@ let print_instr b = function
   | LEAVE -> i0 b "leave"
   | MOV ((Imm n as arg1), (Reg64 _ as arg2))
     when not (n <= 0x7FFF_FFFFL && n >= -0x8000_0000L) ->
+      i2 b "movabsq" arg1 arg2
+  | MOV ((Sym _ as arg1), (Reg64 _ as arg2)) when windows ->
       i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
