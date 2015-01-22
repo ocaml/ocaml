@@ -104,10 +104,10 @@ let i2_ss b s x y = bprintf b "\t%s%s%s\t%a, %a" s (suf x) (suf y) arg x arg y
 
 let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
-  | Mem64_RIP _
   | Mem {arch=X86; idx=_;   scale=0; base=None; sym=Some _; _} as x ->
       i1 b s x
-  | Reg32 _ | Reg64 _ | Mem _ as x -> bprintf b "\t%s\t*%a" s arg x
+  | Reg32 _ | Reg64 _ | Mem _ | Mem64_RIP _ as x ->
+      bprintf b "\t%s\t*%a" s arg x
   | Sym x -> bprintf b "\t%s\t%s" s x
   | _ -> assert false
 
