@@ -16,6 +16,7 @@ type t
 type subst = t
 
 val empty : t
+val new_substitution : t -> t
 val activate : t -> t
 val add_sb_sym : t -> Symbol.SymbolMap.key -> Variable.t -> t
 val add_sb_var : t -> Variable.t -> Variable.t -> t

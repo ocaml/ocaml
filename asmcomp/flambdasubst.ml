@@ -37,6 +37,8 @@ let empty = {
   back_sym = Variable.Map.empty;
 }
 
+let new_substitution t = { empty with active = t.active }
+
 let activate t = { t with active = true; }
 
 let add_sb_sym sb sym id' =

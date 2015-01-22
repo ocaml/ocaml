@@ -51,7 +51,7 @@ let empty_env () =
 let local_env env =
   { env with
     env_approx = Variable.Map.empty;
-    sb = Flambdasubst.empty }
+    sb = Flambdasubst.new_substitution env.sb }
 
 type ret =
   { approx : approx;
