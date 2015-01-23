@@ -314,6 +314,8 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_gc_dispatch (void)
 {
+  value *new_trigger = caml_young_trigger;
+
   CAML_TIMER_SETUP(tmr, "dispatch");
   CAML_TIMER_TIME (tmr, "overhead");
 
@@ -321,8 +323,7 @@ CAMLexport void caml_gc_dispatch (void)
     /* The minor heap is full, we must do a minor collection. */
     caml_empty_minor_heap ();
     caml_requested_minor_gc = 0;
-    caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
-    caml_young_limit = caml_young_trigger;
+    new_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
     CAML_TIMER_TIME (tmr, "dispatch/minor");
   }
   if (caml_young_trigger != caml_young_alloc_start
@@ -331,8 +332,7 @@ CAMLexport void caml_gc_dispatch (void)
     caml_major_collection_slice (0);
     caml_requested_major_slice = 0;
     /* Set [trigger] and [limit] before calling the finalizers. */
-    caml_young_trigger = caml_young_alloc_start;
-    caml_young_limit = caml_young_trigger;
+    new_trigger = caml_young_alloc_start;
     CAML_TIMER_TIME (tmr, "dispatch/major");
 
     caml_final_do_calls ();
@@ -343,11 +343,12 @@ CAMLexport void caml_gc_dispatch (void)
          a minor collection. */
       caml_empty_minor_heap ();
       caml_requested_minor_gc = 0;
-      caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
-      caml_young_limit = caml_young_trigger;
+      new_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
       CAML_TIMER_TIME (tmr, "dispatch/finalizers_minor");
     }
   }
+  caml_young_trigger = new_trigger;
+  caml_young_limit = caml_young_trigger;
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)
