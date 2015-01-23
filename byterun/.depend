@@ -91,7 +91,8 @@ minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h \
  compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
- misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
+ misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h \
+ version.h
 obj.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
  memory.h minor_gc.h prims.h
@@ -232,7 +233,8 @@ minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h \
  compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.d.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
- misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
+ misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h \
+ version.h
 obj.d.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
  memory.h minor_gc.h prims.h
@@ -371,7 +373,8 @@ minor_gc.t.o: minor_gc.c config.h ../config/m.h ../config/s.h \
  compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.t.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
- misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
+ misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h \
+ version.h
 obj.t.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
  memory.h minor_gc.h prims.h
@@ -510,7 +513,8 @@ minor_gc.pic.o: minor_gc.c config.h ../config/m.h ../config/s.h \
  compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.pic.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
- misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
+ misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h \
+ version.h
 obj.pic.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
  memory.h minor_gc.h prims.h

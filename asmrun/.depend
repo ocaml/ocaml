@@ -170,7 +170,7 @@ misc.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/version.h
 natdynlink.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
@@ -422,7 +422,7 @@ misc.d.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/version.h
 natdynlink.d.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
@@ -674,7 +674,7 @@ misc.p.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/version.h
 natdynlink.p.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
@@ -926,7 +926,7 @@ misc.t.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/memory.h ../byterun/gc.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h
+ ../byterun/minor_gc.h ../byterun/version.h
 natdynlink.t.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \

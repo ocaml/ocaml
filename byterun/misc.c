@@ -17,6 +17,7 @@
 #include "config.h"
 #include "misc.h"
 #include "memory.h"
+#include "version.h"
 
 #ifdef DEBUG
 
@@ -186,7 +187,8 @@ void CAML_TIMER_ATEXIT (void)
   }
 
   if (f != NULL){
-    fprintf (f, "================ OCAML LATENCY TIMERS (v7)\n");
+    fprintf (f, "================ OCAML LATENCY TIMERS %s\n",
+             OCAML_VERSION_STRING);
     end_p = CAML_TIMER_LOG;
     for (p = CAML_TIMER_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){

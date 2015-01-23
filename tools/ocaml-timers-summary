@@ -89,13 +89,14 @@ END {
         t = tags[i];
         printf ("==== %s: %d\n", t, total[t]);
         num = bin[t,0];
+        found = num;
         if (num == total[t]){
             /* nothing */
         }else if (num > 0){
             printf ("           0: ");
             display(bin[t,0], val[t, 0]);
+            printf ("%6.2f%%\n", found * 100 / total[t]);
         }
-        found = num;
         for (j = 1; j < nscales; j++){
             if (found == total[t]) break;
             num = bin [t, lim[j]];
