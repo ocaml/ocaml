@@ -138,6 +138,43 @@ and 'a fset_of_closures = {
   cl_fun : 'a function_declarations;
   cl_free_var : 'a flambda Variable.Map.t;
   cl_specialised_arg : Variable.t Variable.Map.t;
+  (** Parameters known to always alias some variable in the scope of the set
+      of closures declaration. For instance, supposing all call sites of f
+      are represented in this example,
+        [let x = ... in
+         let f a b c = ... in
+         let y = ... in
+         f x y 1;
+         f x y 1]
+      the specialised arguments of f can (but does not necessarily) contain
+      the assotiation [a] -> [x], but cannot contain [b] -> [y] because [f]
+      is not in the scope of [y]. If f where the recursive function,
+      [let rec f a b c = f a 1 2 in], [a] -> [x] whould still be a valid
+      specialised argument because all recursive calls maintain the invariant.
+
+      This information is used for optimisation purpose, if such a binding is
+      known, it is possible to specialise the body of the function according
+      to its parameter. This is usualy introduced when specialising a recusive
+      function, for instance.
+        [let rec map f = function
+           | [] -> []
+           | h :: t -> f h :: map f t
+         let map_succ l =
+           let succ x = x + 1 in
+           map succ l]
+      [map] can be duplicated in [map_succ] to be specialised for the argument
+      [f]. This will result in
+        [let map_succ l =
+           let succ x = x + 1 in
+           let rec map f = function
+             | [] -> []
+             | h :: t -> f h :: map f t in
+           map succ l]
+      with map having [f] -> [succ] in his [cl_specialised_arg] field.
+
+      Note that it is usualy not correct to erase this information if the
+      argument is used.
+  *)
 }
 
 and 'a function_declarations = {

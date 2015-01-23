@@ -24,7 +24,9 @@ type tbl = {
      the substitution recursively because there can be name
      clash *)
 }
-type t = tbl option
+type t =
+  | Inactive
+  | Active of tbl
 type subst = t
 
 let empty_tbl = {
@@ -35,15 +37,15 @@ let empty_tbl = {
   back_sym = Variable.Map.empty;
 }
 
-let empty = None
+let empty = Inactive
 
 let new_substitution = function
-  | None -> None
-  | Some t -> Some empty_tbl
+  | Inactive -> Inactive
+  | Active t -> Active empty_tbl
 
 let activate = function
-  | None -> Some empty_tbl
-  | Some _ as t -> t
+  | Inactive -> Active empty_tbl
+  | Active _ as t -> t
 
 let add_sb_sym sb sym id' =
   let back_sym =
@@ -69,18 +71,18 @@ let rec add_sb_var sb id id' =
 
 let sb_exn t i =
   match t with
-  | None ->
+  | Inactive ->
      i
-  | Some t ->
+  | Active t ->
      try Static_exception.Map.find i t.sb_exn with Not_found -> i
 
 let new_subst_exn t i =
   match t with
-  | None -> i, t
-  | Some t ->
+  | Inactive -> i, t
+  | Active t ->
      let i' = Static_exception.create () in
      let sb_exn = Static_exception.Map.add i i' t.sb_exn in
-     i', Some { t with sb_exn; }
+     i', Active { t with sb_exn; }
 
 let freshen_var var =
   Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var
@@ -92,10 +94,10 @@ let active_new_subst_id t id =
 
 let new_subst_id t id =
   match t with
-  | None -> id, t
-  | Some t ->
+  | Inactive -> id, t
+  | Active t ->
      let id', t = active_new_subst_id t id in
-     id', Some t
+     id', Active t
 
 let active_new_subst_ids' t ids =
   List.fold_right (fun id (ids, t) ->
@@ -120,15 +122,15 @@ let active_find_var_exn t id =
 
 let subst_var t var =
   match t with
-  | None -> var
-  | Some t ->
+  | Inactive -> var
+  | Active t ->
      try Variable.Map.find var t.sb_var with
      | Not_found -> var
 
 let find_symbol_exn t sym =
   match t with
-  | None -> raise Not_found
-  | Some t ->
+  | Inactive -> raise Not_found
+  | Active t ->
      SymbolMap.find sym t.sb_sym
 
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
@@ -142,14 +144,14 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
 
   let new_subst_fv t id subst =
     match subst with
-    | None -> id, subst, t
-    | Some subst ->
+    | Inactive -> id, subst, t
+    | Active subst ->
         let id' = freshen_var id in
         let subst = add_sb_var subst id id' in
         let off = Var_within_closure.wrap id in
         let off' = Var_within_closure.wrap id' in
         let off_sb = Var_within_closure.Map.add off off' t.ffs_fv in
-        id', Some subst, { t with ffs_fv = off_sb; }
+        id', Active subst, { t with ffs_fv = off_sb; }
 
   let new_subst_fun t id subst =
     let id' = freshen_var id in
@@ -179,8 +181,8 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
    *)
   let ffuns_subst t subst ffuns =
     match subst with
-    | None -> ffuns, subst, t
-    | Some subst ->
+    | Inactive -> ffuns, subst, t
+    | Active subst ->
       let subst_ffunction fun_id ffun subst =
         let params, subst = active_new_subst_ids' subst ffun.params in
         let free_variables =
@@ -210,7 +212,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
           ffuns.funs (Variable.Map.empty, subst) in
       { ident = Set_of_closures_id.create (Compilenv.current_unit ());
         compilation_unit = Compilenv.current_unit ();
-        funs }, Some subst, t
+        funs }, Active subst, t
 
   let subst_function_declarations_and_free_variables subst fv ffuns =
     let fv, subst, t = subst_free_vars fv subst in

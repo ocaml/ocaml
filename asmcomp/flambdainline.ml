@@ -35,7 +35,7 @@ type env = {
   inlining_level : int;
   (* Number of times "inline" has been called recursively *)
   sb : Flambdasubst.t;
-  inline_threshold : int;
+  inline_threshold : Flambdacost.inline_threshold ;
   closure_depth : int;
 }
 
@@ -45,13 +45,21 @@ let empty_env () =
     current_functions = Set_of_closures_id.Set.empty;
     inlining_level = 0;
     sb = Flambdasubst.empty;
-    inline_threshold = min !Clflags.inline_threshold 100;
+    inline_threshold =
+      Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
     closure_depth = 0}
 
 let local_env env =
   { env with
     env_approx = Variable.Map.empty;
     sb = Flambdasubst.new_substitution env.sb }
+
+let decrease_inline_threshold env dec =
+  assert(dec >= 0);
+  let open Flambdacost in
+  match env.inline_threshold with
+  | No_inline -> env
+  | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
 
 type ret =
   { approx : approx;
@@ -110,7 +118,6 @@ let find_global i r =
       Misc.fatal_error
         (Format.asprintf "couldn't find global %i@." i)
 
-(* Utility function to duplicate an expression and makes a function from it *)
 
 let subst_toplevel sb lam =
   let subst id = try Variable.Map.find id sb with Not_found -> id in
@@ -124,6 +131,8 @@ let subst_toplevel sb lam =
     | e -> e
   in
   Flambdaiter.map_toplevel f lam
+
+(* Utility function to duplicate an expression and makes a function from it *)
 
 let make_closure_declaration id lam params =
   let free_variables = Flambdaiter.free_variables lam in
@@ -217,6 +226,28 @@ let really_import_approx approx =
      acces (when possible):
        [check_var_and_constant_result env r expr approx]
  *)
+
+let populate_closure_approximations
+      ~(function_declaration : _ function_declaration)
+      ~(free_var_info : (_ * approx) Variable.Map.t)
+      ~(parameter_approximations : approx Variable.Map.t)
+      env =
+  (* Add approximations of used free variables *)
+  let env =
+    Variable.Map.fold
+      (fun id (_,desc) env ->
+       if Variable.Set.mem id function_declaration.free_variables
+       then add_approx id desc env
+       else env) free_var_info env in
+  (* Add known approximations of function parameters *)
+  let env =
+    List.fold_left
+      (fun env id ->
+       let approx = try Variable.Map.find id parameter_approximations
+                    with Not_found -> value_unknown in
+       add_approx id approx env)
+      env function_declaration.params in
+  env
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
@@ -550,11 +581,15 @@ and loop_list env r l = match l with
 and closure env r cl annot =
   let ffuns = cl.cl_fun in
   let fv = cl.cl_free_var in
-  let spec_args = cl.cl_specialised_arg in
 
   let env = { env with closure_depth = env.closure_depth + 1 } in
-  let spec_args = Variable.Map.map (Flambdasubst.subst_var env.sb) spec_args in
-  let approxs = Variable.Map.map (fun id -> find id env) spec_args in
+  let cl_specialised_arg =
+    Variable.Map.map
+      (Flambdasubst.subst_var env.sb)
+      cl.cl_specialised_arg
+  in
+  (* Find the approximation of arguments that are known to be always the same *)
+  let parameter_approximations = Variable.Map.map (fun id -> find id env) cl_specialised_arg in
 
   let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
       let lam, r = loop env r lam in
@@ -577,11 +612,11 @@ and closure env r cl annot =
     AR.subst_function_declarations_and_free_variables env.sb fv ffuns in
   let env = { env with sb; } in
 
-  let spec_args =
-    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) spec_args
+  let cl_specialised_arg =
+    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) cl_specialised_arg
   in
-  let approxs =
-    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) approxs
+  let parameter_approximations =
+    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) parameter_approximations
   in
   let prev_closure_symbols =
     SymbolMap.map (Flambdasubst.subst_var env.sb) prev_closure_symbols
@@ -604,61 +639,75 @@ and closure env r cl annot =
       ffunction_sb;
     }
   in
-  let closure_env = Variable.Map.fold
+
+  (* Populate the environment with the approximations of each closure.
+     This part of the environment is shared between the different closures *)
+  let set_of_closures_env = Variable.Map.fold
       (fun id _ env -> add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
+
+  (* rewrite the function *)
+  let rewrite_function fid ffun (funs,used_params,r) =
+
+    let closure_env =
+      populate_closure_approximations
+        ~function_declaration:ffun
+        ~free_var_info:fv
+        ~parameter_approximations
+        set_of_closures_env in
+
+    (***** TODO: find something better
+           Warning if multiply recursive function ******)
+    let body =
+      Flambdaiter.map_toplevel
+        (function
+          | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
+             Fvar(SymbolMap.find sym prev_closure_symbols,Expr_id.create ())
+          | e -> e) ffun.body in
+    (* We replace recursive calls using the function symbol
+       This is done before substitution because we could have something like:
+       List.iter (List.iter some_fun) l
+       And we need to distinguish the inner iter from the outer one
+     *)
+
+    (* We do not inline inside stubs: a stub is always inlined, allowing to
+       inline inside a stub could result to forcing more code than expected
+       to be inlined. *)
+    let closure_env =
+      if ffun.stub
+      then { closure_env with inline_threshold = Flambdacost.No_inline }
+      else closure_env in
+
+    let body, r = loop closure_env r body in
+    let used_params =
+      List.fold_left
+        (fun acc id ->
+         if Variable.Set.mem id r.used_variables
+         then Variable.Set.add id acc
+         else acc) used_params ffun.params in
+
+    let r =
+      Variable.Set.fold
+        (fun id r -> exit_scope r id)
+        ffun.free_variables r in
+    let free_variables = Flambdaiter.free_variables body in
+    Variable.Map.add fid { ffun with body; free_variables } funs,
+    used_params, r in
+
+
   let funs, used_params, r =
-    Variable.Map.fold (fun fid ffun (funs,used_params,r) ->
-        let closure_env = Variable.Map.fold
-            (fun id (_,desc) env ->
-               if Variable.Set.mem id ffun.free_variables
-               then begin
-                 add_approx id desc env
-               end
-               else env) fv closure_env in
-        let closure_env = List.fold_left (fun env id ->
-            let approx = try Variable.Map.find id approxs
-              with Not_found -> value_unknown in
-            add_approx id approx env) closure_env ffun.params in
-
-        (***** TODO: find something better
-               Warning if multiply recursive function ******)
-        (* Format.printf "body:@ %a@." Printflambda.flambda ffun.body; *)
-        let body = Flambdaiter.map_toplevel (function
-            | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
-                Fvar(SymbolMap.find sym prev_closure_symbols,Expr_id.create ())
-            | e -> e) ffun.body in
-        (* We replace recursive calls using the function symbol
-           This is done before substitution because we could have something like:
-             List.iter (List.iter some_fun) l
-           And we need to distinguish the inner iter from the outer one
-        *)
-
-        let closure_env =
-          if ffun.stub
-          then { closure_env with inline_threshold = -10000 }
-          else closure_env in
-
-        let body, r = loop closure_env r body in
-        let used_params = List.fold_left (fun acc id ->
-            if Variable.Set.mem id r.used_variables
-            then Variable.Set.add id acc
-            else acc) used_params ffun.params in
-
-        let r = Variable.Set.fold (fun id r -> exit_scope r id)
-            ffun.free_variables r in
-        let free_variables = Flambdaiter.free_variables body in
-        Variable.Map.add fid { ffun with body; free_variables } funs,
-        used_params, r)
+    Variable.Map.fold rewrite_function
       ffuns.funs (Variable.Map.empty, Variable.Set.empty, r) in
 
-  let spec_args = Variable.Map.filter
+  (* Removing from [cl_specialised_arg] the parameters that are not used.
+     This is safe since the function cannot rely on this information. *)
+  let cl_specialised_arg = Variable.Map.filter
       (fun id _ -> Variable.Set.mem id used_params)
-      spec_args in
+      cl_specialised_arg in
 
-  let r = Variable.Map.fold (fun id' v acc -> use_var acc v) spec_args r in
+  let r = Variable.Map.fold (fun id' v acc -> use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
   let kept_params = Flambdaiter.arguments_kept_in_recursion ffuns in
@@ -666,7 +715,7 @@ and closure env r cl annot =
   let closure = { internal_closure with ffunctions = ffuns; kept_params } in
   let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
   Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
-             cl_specialised_arg = spec_args}, annot),
+             cl_specialised_arg}, annot),
   ret r (value_unoffseted_closure closure)
 
 and ffunction r flam off rel annot =
@@ -768,29 +817,37 @@ and functor_like env clos approxs =
 
 and direct_apply env r ~local clos funct fun_id func fapprox closure (args,approxs) ap_dbg eid =
   let max_level = 3 in
-  let fun_size =
+  let fun_cost =
     if func.stub || functor_like env clos approxs
-    then Some 0
-    else Flambdacost.lambda_smaller' func.body
-        ~than:((env.inline_threshold + List.length func.params) * 2) in
-  match fun_size with
-  | None ->
+    then
+      (* inlining a stub or a functor does not restrict what can be inlined inside *)
+      env.inline_threshold
+    else
+      Flambdacost.can_try_inlining
+        func.body
+        env.inline_threshold
+        ~bonus:(List.length func.params)
+  in
+  match fun_cost with
+  | Flambdacost.No_inline ->
       Fapply ({ap_function = funct; ap_arg = args;
                ap_kind = Direct fun_id; ap_dbg}, eid),
       ret r value_unknown
-  | Some fun_size ->
+  | (Flambdacost.Can_inline _) as threshold ->
       let fun_var = find_declaration_variable fun_id clos in
       let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
       let inline_threshold = env.inline_threshold in
-      let env = { env with inline_threshold = env.inline_threshold - fun_size } in
+      let env = { env with inline_threshold = threshold } in
       if func.stub || functor_like env clos approxs ||
          (not recursive && env.inlining_level <= max_level)
       then
         (* try inlining if the function is not too far above the threshold *)
         let body, r_inline = inline env r clos funct fun_id func args ap_dbg eid in
         if func.stub || functor_like env clos approxs ||
-           (Flambdacost.lambda_smaller body
-              ~than:(inline_threshold + List.length func.params))
+           (Flambdacost.can_inline
+              func.body
+              inline_threshold
+              ~bonus:(List.length func.params))
         then
           (* if the definitive size is small enought: keep it *)
           body, r_inline

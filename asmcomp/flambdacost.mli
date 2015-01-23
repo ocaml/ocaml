@@ -12,5 +12,9 @@
 
 (** Measurement of the cost (including cost in space) of flambda terms. *)
 
-val lambda_smaller' : _ Flambda.flambda -> than:int -> int option
-val lambda_smaller : _ Flambda.flambda -> than:int -> bool
+type inline_threshold =
+  | No_inline
+  | Can_inline of int
+
+val can_inline : _ Flambda.flambda -> inline_threshold -> bonus:int -> bool
+val can_try_inlining : _ Flambda.flambda -> inline_threshold -> bonus:int -> inline_threshold
