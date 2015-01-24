@@ -80,6 +80,8 @@ Features wishes:
   (Gabor Pali)
 - PR#6367: introduce Asttypes.arg_label to encode labelled arguments
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
+- PR#6691: install .cmt[i] files for stdlib and compiler-libs
+  (David Sheets, request by Gabriel Radanne)
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 
 OCaml 4.02.2:
