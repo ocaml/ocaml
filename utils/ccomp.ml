@@ -51,7 +51,7 @@ let quote_optfile = function
 let compile_file ~output_name name =
   command
     (Printf.sprintf
-       "%s%s -c %s %s %s %s"
+       "%s%s -c %s %s %s %s %s"
        (match !Clflags.c_compiler with
         | Some cc -> cc
         | None ->
@@ -61,6 +61,7 @@ let compile_file ~output_name name =
        (match output_name with
           | Some n -> " -o " ^ Filename.quote n
           | None -> "")
+       (if !Clflags.debug then "-g" else "")
        (String.concat " " (List.rev !Clflags.all_ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")
