@@ -120,7 +120,7 @@ let windows =
 let load_symbol_addr s arg =
   if !Clflags.dlcode && not windows then
     I.mov (mem64_rip QWORD (emit_symbol s ^ "@GOTPCREL")) arg
-  else if !pic_code then
+  else if !Clflags.pic_code then
     I.lea (mem64_rip NONE (emit_symbol s)) arg
   else
     I.mov (sym (emit_symbol s)) arg
@@ -605,7 +605,7 @@ let emit_instr fallthrough i =
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
       I.mov (nat n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
-      assert (not !pic_code && not !Clflags.dlcode);
+      assert (not !Clflags.pic_code && not !Clflags.dlcode);
       add_used_symbol s;
       load_symbol_addr s (addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->

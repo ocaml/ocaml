@@ -265,6 +265,10 @@ let read_OCAMLPARAM ppf position =
             first_objfiles := v :: !first_objfiles
         end
 
+      | "pic" ->
+        if !native_code then
+          set "pic" [ pic_code ] v
+
       | "can-discard" ->
         can_discard := v ::!can_discard
 
