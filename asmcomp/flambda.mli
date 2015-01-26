@@ -56,6 +56,7 @@ val data_at_toplevel_node : 'a flambda -> 'a
 
 val description_of_toplevel_node : 'a flambda -> string
 
+(* CR mshinwell for pchambart: comment! *)
 val recursive_functions : 'a function_declarations -> Variable.Set.t
 
 (** Sharing key *)

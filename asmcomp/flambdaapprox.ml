@@ -122,6 +122,13 @@ let check_var_and_constant_result ~is_present_in_env lam approx =
   in
   check_constant_result res approx
 
+let known t =
+  match t.descr with
+  | Value_unknown -> false
+  | Value_bottom | Value_block _ | Value_int _ | Value_constptr _
+  | Value_set_of_closures _ | Value_closure _ | Value_extern _
+  | Value_symbol _ -> true
+
 let useful t =
   match t.descr with
   | Value_unknown | Value_bottom -> false

@@ -88,6 +88,9 @@ val make_const_int : int -> 'a -> 'a Flambda.flambda * approx
 val make_const_ptr : int -> 'a -> 'a Flambda.flambda * approx
 val make_const_bool : bool -> 'a -> 'a Flambda.flambda * approx
 
+(* An approximation is "known" iff it is not [Value_unknown]. *)
+val known : approx -> bool
+
 (* An approximation is "useful" iff it is neither unknown nor bottom. *)
 val useful : approx -> bool
 

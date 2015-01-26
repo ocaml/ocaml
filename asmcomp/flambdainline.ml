@@ -285,6 +285,11 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       f ~acc ~var ~expr)
     (variables_bound_by_the_closure fun_id clos) init
 
+let functor_like env clos approxs =
+  env.closure_depth = 0 &&
+    List.for_all Flambdaapprox.known approxs &&
+    Variable.Set.is_empty (recursive_functions clos)
+
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
@@ -779,49 +784,58 @@ and ffunction r flam off rel annot =
   Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
   ret r ret_approx
 
-(* Apply a function to its parameters: if the function is known, we will go to the special cases:
-   direct apply of parial apply
-   local: if local is true, the application is of the shape: apply (offset (closure ...)).
-          i.e. it should not duplicate the function
+(* Transform an flambda function application based on information provided
+   by an approximation of the function being applied.
+
+   If the approximation does not identify which closure is being applied, the
+   application remains as-is.
+
+   Otherwise, we determine whether the application is actually a full or
+   partial application (note that previously it may have appeared as partial,
+   but now we may know from the approximation that it is full).  The
+   interesting case is that of a full application: we then consider whether
+   the function can be inlined.  (See [direct_apply], below.)
+*)
+(* CR mshinwell for mshinwell: Is [local] unused?  Remove if so.
+   local: if local is true, the application is of the shape:
+   apply (offset (closure ...)).  i.e. it should not duplicate the function
 *)
 and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
+  let no_transformation () =
+    Fapply ({ap_function = funct; ap_arg = args;
+             ap_kind = Indirect; ap_dbg = dbg}, eid),
+      ret r value_unknown
+  in
   match fapprox.descr with
   | Value_closure { fun_id; closure } ->
       let clos = closure.ffunctions in
       let func =
         try find_declaration fun_id clos with
         | Not_found ->
-            Format.printf "missing %a@." Closure_id.print fun_id;
+            Format.printf "approximation references non-existent closure %a@."
+                Closure_id.print fun_id;
             assert false
       in
       let nargs = List.length args in
       let arity = function_arity func in
-      if nargs = arity
-      then direct_apply env r ~local clos funct fun_id func fapprox closure (args,approxs) dbg eid
-      else
-      if nargs > arity
-      then
+      if nargs = arity then
+        direct_apply env r ~local clos funct fun_id func fapprox closure
+          (args, approxs) dbg eid
+      else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, q_approxs = Misc.split_at arity approxs in
-        let expr, r = direct_apply env r ~local clos funct fun_id func fapprox closure (h_args,h_approxs)
-            dbg (Expr_id.create ()) in
+        let expr, r =
+          direct_apply env r ~local clos funct fun_id func fapprox closure
+              (h_args,h_approxs) dbg (Expr_id.create ())
+        in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
                              ap_kind = Indirect; ap_dbg = dbg}, eid))
-      else
-      if nargs > 0 && nargs < arity
-      then
+      else if nargs > 0 && nargs < arity then
         let partial_fun = partial_apply funct fun_id func args dbg eid in
         loop env r partial_fun
       else
-
-        Fapply({ ap_function = funct; ap_arg = args;
-                 ap_kind = Indirect; ap_dbg = dbg}, eid),
-        ret r value_unknown
-
-  | _ ->
-      Fapply ({ap_function = funct; ap_arg = args;
-               ap_kind = Indirect; ap_dbg = dbg}, eid),
-      ret r value_unknown
+        no_transformation ()
+  | _ -> no_transformation ()
 
 and partial_apply funct fun_id func args ap_dbg eid =
   let arity = function_arity func in
@@ -844,12 +858,6 @@ and partial_apply funct fun_id func args ap_dbg eid =
       Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
       applied_args offset in
   Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
-
-
-and functor_like env clos approxs =
-  env.closure_depth = 0 &&
-  List.for_all (function { descr = Value_unknown } -> false | _ -> true) approxs &&
-  Variable.Set.is_empty (recursive_functions clos)
 
 and direct_apply env r ~local clos funct fun_id func fapprox closure (args,approxs) ap_dbg eid =
   let max_level = 3 in
@@ -960,7 +968,7 @@ and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
      introduced by the whole set of closures. *)
   let expr =
     Variable.Map.fold (fun id _ expr ->
-        Flet(Not_assigned, id,
+        Flet (Not_assigned, id,
           Fclosure (
             { fu_closure = Fvar (clos_id, Expr_id.create ());
               fu_fun = Closure_id.wrap id;
