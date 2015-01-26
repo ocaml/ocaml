@@ -930,36 +930,51 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
           ret r value_unknown
 
 (* Inlining of a non-recursive function just yields a copy of the function's
-   body.  The declaration itself is not duplicated. *)
+   body.  The declaration itself is not duplicated.
+   We handle below, one by one, the three kinds of identifiers that may
+   occur in the body:
+   1. the function's parameters;
+   2. variables "bound by the closure" (see flambda.mli for definition);
+   3. any other function identifiers bound by the declaration where this
+      function was defined (for the case of simultaneous definition of
+      functions).
+*)
 and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
   let env = inlining_level_up env in
   let clos_id = new_var "inline_non_recursive_function" in
-  let bindings_for_args =
+  (* 1. First, around the function's body, bind the parameters to the arguments
+     that we saw at the call site. *)
+  let bindings_for_params_around_body =
     List.fold_right2 (fun id arg body ->
         Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
       func.params args func.body
   in
-  let bindings_for_vars_bound_by_closure_and_args =
+  (* 2. Now add bindings for variables bound by the closure. *)
+  let bindings_for_vars_bound_by_closure_and_params_around_body =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init:bindings_for_args ~f:(fun ~acc:body ~var ~expr ->
+      ~init:bindings_for_params_around_body ~f:(fun ~acc:body ~var ~expr ->
         Flet (Not_assigned, var, expr, body, Expr_id.create ()))
   in
-  let body =
-    Variable.Map.fold (fun id _ body ->
+  (* 3. Finally add bindings for the function declaration identifiers being
+     introduced by the whole set of closures. *)
+  let expr =
+    Variable.Map.fold (fun id _ expr ->
         Flet(Not_assigned, id,
-             Fclosure ({ fu_closure = Fvar(clos_id, Expr_id.create ());
-                          fu_fun = Closure_id.wrap id;
-                          fu_relative_to = Some fun_id },
-                        Expr_id.create ()),
-             body, Expr_id.create ()))
-      clos.funs bindings_for_vars_bound_by_closure_and_args
+          Fclosure (
+            { fu_closure = Fvar (clos_id, Expr_id.create ());
+              fu_fun = Closure_id.wrap id;
+              fu_relative_to = Some fun_id;
+            }, Expr_id.create ()),
+          expr, Expr_id.create ()))
+      clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
   in
   loop (activate_substitution env) r
-       (Flet(Not_assigned, clos_id, lfunc, body, Expr_id.create ()))
+       (Flet(Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
 
 (* CR mshinwell for pchambart: clarify what happens for the case of
-   simultaneously-defined functions that are not in fact recursive *)
+   simultaneously-defined functions that are not in fact recursive.
+   Presumably this uses [inline_non_recursive_function] *)
 (* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
    a direct application of the new body. *)
@@ -977,8 +992,9 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
     which_function_parameters_can_we_specialize ~params:func.params
       ~args ~approximations_of_args:approxs ~kept_params ~env
   in
-  (* A copy of the function application, including the function declaration(s),
-     but with variables (not yet bound) in place of the arguments. *)
+  (* First we generate a copy of the function application, including the
+     function declaration(s), but with variables (not yet bound) in place of
+     the arguments. *)
   let duplicated_application =
     Fapply (
       { ap_function =
@@ -996,17 +1012,18 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
         ap_dbg;
       }, Expr_id.create ())
   in
-  (* Now bind the variables that will hold the arguments from the original
+  (* Now we bind the variables that will hold the arguments from the original
      application, together with the set-of-closures identifier. *)
   let expr =
     Flet (Not_assigned, clos_id, funct,
       List.fold_left (fun expr (id, arg) ->
-         Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
+          Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
         duplicated_application args,
       Expr_id.create ())
   in
   let r =
-    List.fold_left (fun r (id,_) -> exit_scope r id) (exit_scope r clos_id) args
+    List.fold_left (fun r (id,_) -> exit_scope r id) (exit_scope r clos_id)
+        args
   in
   loop (activate_substitution env) r expr
 
