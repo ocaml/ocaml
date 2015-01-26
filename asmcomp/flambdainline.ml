@@ -674,6 +674,8 @@ and loop_list env r l = match l with
       then l, approxs, r
       else h' :: t', approxs, r
 
+(* CR mshinwell for pchambart: Could you write some more explanation as to
+   how this function works?  We can probably refactor it some after that. *)
 and transform_set_of_closures_expression env r cl annot =
   let ffuns = cl.cl_fun in
   let fv = cl.cl_free_var in
