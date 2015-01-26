@@ -667,12 +667,13 @@ and closure env r cl annot =
       cl.cl_specialised_arg
   in
   (* Find the approximation of arguments that are known to be always the same *)
-  let parameter_approximations = Variable.Map.map (fun id -> find id env) cl_specialised_arg in
-
+  let parameter_approximations =
+    Variable.Map.map (fun id -> find id env) cl_specialised_arg
+  in
   let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
       let lam, r = loop env r lam in
-      Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r) in
-
+      Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r)
+  in
   (* Remove every variable binding from the environment.
      This isn't necessary, but allows to catch bugs
      concerning variable escaping their scope. *)
@@ -779,8 +780,8 @@ and closure env r cl annot =
     Variable.Map.fold rewrite_function
       ffuns.funs (Variable.Map.empty, Variable.Set.empty, r) in
 
-  (* Removing from [cl_specialised_arg] the parameters that are not used.
-     This is safe since the function cannot rely on this information. *)
+  (* Parameters that are not used by the function may have any corresponding
+     specialized arguments removed from [cl_specialised_arg]. *)
   let cl_specialised_arg = Variable.Map.filter
       (fun id _ -> Variable.Set.mem id used_params)
       cl_specialised_arg in
