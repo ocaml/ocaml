@@ -127,23 +127,23 @@ let lambda_smaller lam ~than =
   lambda_smaller' lam ~than <> None
 
 type inline_threshold =
-  | No_inline
+  | Never_inline
   | Can_inline of int
 
 let can_try_inlining lam inline_threshold ~bonus =
   match inline_threshold with
-  | No_inline -> No_inline
+  | Never_inline -> Never_inline
   | Can_inline inline_threshold ->
      match lambda_smaller'
              lam
              ~than:((inline_threshold + bonus) * 2)
      with
-     | None -> No_inline
+     | None -> Never_inline
      | Some size -> Can_inline (inline_threshold - size)
 
 let can_inline lam inline_threshold ~bonus =
   match inline_threshold with
-  | No_inline -> false
+  | Never_inline -> false
   | Can_inline inline_threshold ->
      lambda_smaller
        lam

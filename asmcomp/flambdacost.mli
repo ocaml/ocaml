@@ -13,7 +13,7 @@
 (** Measurement of the cost (including cost in space) of flambda terms. *)
 
 type inline_threshold =
-  | No_inline
+  | Never_inline
   | Can_inline of int
 
 val can_inline : _ Flambda.flambda -> inline_threshold -> bonus:int -> bool

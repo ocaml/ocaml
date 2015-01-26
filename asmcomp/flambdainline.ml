@@ -58,7 +58,7 @@ let decrease_inline_threshold env dec =
   assert(dec >= 0);
   let open Flambdacost in
   match env.inline_threshold with
-  | No_inline -> env
+  | Never_inline -> env
   | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
 
 type ret =
@@ -718,7 +718,7 @@ and closure env r cl annot =
        to be inlined. *)
     let closure_env =
       if ffun.stub
-      then { closure_env with inline_threshold = Flambdacost.No_inline }
+      then { closure_env with inline_threshold = Flambdacost.Never_inline }
       else closure_env in
 
     let body, r = loop closure_env r body in
@@ -873,7 +873,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
         ~bonus:(List.length func.params)
   in
   match fun_cost with
-  | Flambdacost.No_inline ->
+  | Flambdacost.Never_inline ->
       Fapply ({ap_function = funct; ap_arg = args;
                ap_kind = Direct fun_id; ap_dbg}, eid),
       ret r value_unknown
