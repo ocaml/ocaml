@@ -59,5 +59,6 @@ val description_of_toplevel_node : 'a flambda -> string
 val recursive_functions : 'a function_declarations -> Variable.Set.t
 
 (** Sharing key *)
+(* CR mshinwell for pchambart: this needs a proper comment as discussed *)
 type sharing_key
 val make_key : 'a flambda -> sharing_key option

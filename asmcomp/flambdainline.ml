@@ -98,6 +98,10 @@ let find id env =
       (Format.asprintf "unbound variable %a@." Variable.print id)
 
 let present env var = Variable.Map.mem var env.env_approx
+
+let activate_substitution env =
+  { env with sb = Flambdasubst.activate env.sb }
+
 let add_approx id approx env =
   let approx =
     match approx.var with
@@ -280,7 +284,6 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       in
       f ~acc ~var ~expr)
     (variables_bound_by_the_closure fun_id clos) init
-;;
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
@@ -875,7 +878,10 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
          (not recursive && env.inlining_level <= max_level)
       then
         (* try inlining if the function is not too far above the threshold *)
-        let body, r_inline = inline env r clos funct fun_id func args ap_dbg eid in
+        let body, r_inline =
+          inline_non_recursive_function env r clos funct fun_id func args
+              ap_dbg eid
+        in
         if func.stub || functor_like env clos approxs ||
            (Flambdacost.can_inline
               func.body
@@ -911,7 +917,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
 
           if not (Variable.Map.is_empty worth) && not local
           then
-            duplicate_apply env r funct clos fun_id func fapprox closure
+            inline_recursive_functions env r funct clos fun_id func fapprox closure
               (args,approxs) kept_params ap_dbg
           else
             Fapply ({ap_function = funct; ap_arg = args;
@@ -923,59 +929,20 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure (args,appro
                    ap_kind = Direct fun_id; ap_dbg}, eid),
           ret r value_unknown
 
-(* Inlining for recursive functions: duplicates the function
-   declaration and specialise it *)
-and duplicate_apply env r funct clos fun_id func fapprox closure_approx
-    (args,approxs) kept_params ap_dbg =
+(* Inlining of a non-recursive function just yields a copy of the function's
+   body.  The declaration itself is not duplicated. *)
+and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
   let env = inlining_level_up env in
-  let clos_id = new_var "dup_closure" in
-  let fv =
+  let clos_id = new_var "inline_non_recursive_function" in
+  let bindings_for_args =
+    List.fold_right2 (fun id arg body ->
+        Flet (Not_assigned, id, arg, body,
+          Expr_id.create ~name:"inline arg" ()))
+      func.params args func.body
+  in
+  let bindings_for_vars_bound_by_closure_and_args =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init:Variable.Map.empty
-      ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
-  in
-
-  let env = add_approx clos_id fapprox env in
-
-  let spec_args, args, env_func =
-    which_function_parameters_can_we_specialize ~params:func.params
-      ~args ~approximations_of_args:approxs ~kept_params ~env
-  in
-
-  let args_exprs = List.map (fun (id,_) -> Fvar(id,Expr_id.create ())) args in
-
-  let clos_expr = (Fset_of_closures({ cl_fun = clos;
-                              cl_free_var = fv;
-                              cl_specialised_arg = spec_args}, Expr_id.create ())) in
-
-  let r = exit_scope r clos_id in
-  let expr = Fclosure({fu_closure = clos_expr; fu_fun = fun_id;
-                        fu_relative_to = None}, Expr_id.create ()) in
-  let expr = Fapply ({ ap_function = expr; ap_arg = args_exprs;
-                       ap_kind = Direct fun_id; ap_dbg },
-                     Expr_id.create ()) in
-  let expr = List.fold_left
-      (fun expr (id,arg) ->
-         Flet(Not_assigned, id, arg, expr, Expr_id.create ()))
-      expr args in
-  let expr = Flet(Not_assigned, clos_id, funct, expr, Expr_id.create ()) in
-  let r = List.fold_left (fun r (id,_) -> exit_scope r id) r args in
-  loop { env with sb = Flambdasubst.activate env.sb } r expr
-
-(* Duplicates the body of the called function *)
-and inline env r clos lfunc fun_id func args dbg eid =
-  let env = inlining_level_up env in
-  let clos_id = new_var "inlined_closure" in
-
-  let body =
-    func.body
-    |> List.fold_right2 (fun id arg body ->
-        Flet(Not_assigned, id, arg, body, Expr_id.create ~name:"inline arg" ()))
-      func.params args
-  in
-  let body =
-    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init:body ~f:(fun ~acc:body ~var ~expr ->
+      ~init:bindings_for_args ~f:(fun ~acc:body ~var ~expr ->
         Flet (Not_assigned, var, expr, body, Expr_id.create ()))
   in
   let body =
@@ -986,20 +953,71 @@ and inline env r clos lfunc fun_id func args dbg eid =
                           fu_relative_to = Some fun_id },
                         Expr_id.create ()),
              body, Expr_id.create ()))
-      clos.funs body
+      clos.funs bindings_for_vars_bound_by_closure_and_args
   in
-  loop { env with sb = Flambdasubst.activate env.sb } r
+  loop (activate_substitution env) r
        (Flet(Not_assigned, clos_id, lfunc, body, Expr_id.create ()))
 
+(* CR mshinwell for pchambart: clarify what happens for the case of
+   simultaneously-defined functions that are not in fact recursive *)
+(* Inlining of recursive function(s) yields a copy of the functions'
+   definitions (not just their bodies, unlike the non-recursive case) and
+   a direct application of the new body. *)
+and inline_recursive_functions env r funct clos fun_id func fapprox
+      closure_approx (args, approxs) kept_params ap_dbg =
+  let env = inlining_level_up env in
+  let clos_id = new_var "inline_recursive_functions" in
+  let fv =
+    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
+      ~init:Variable.Map.empty
+      ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
+  in
+  let env = add_approx clos_id fapprox env in
+  let spec_args, args, env_func =
+    which_function_parameters_can_we_specialize ~params:func.params
+      ~args ~approximations_of_args:approxs ~kept_params ~env
+  in
+  (* A copy of the function application, including the function declaration(s),
+     but with variables (not yet bound) in place of the arguments. *)
+  let duplicated_application =
+    Fapply (
+      { ap_function =
+          Fclosure (
+            { fu_closure = Fset_of_closures (
+                { cl_fun = clos;
+                  cl_free_var = fv;
+                  cl_specialised_arg = spec_args;
+                }, Expr_id.create ());
+              fu_fun = fun_id;
+              fu_relative_to = None;
+            }, Expr_id.create ());
+        ap_arg = List.map (fun (id, _) -> Fvar (id, Expr_id.create ())) args;
+        ap_kind = Direct fun_id;
+        ap_dbg;
+      }, Expr_id.create ())
+  in
+  (* Now bind the variables that will hold the arguments from the original
+     application, together with the set-of-closures identifier. *)
+  let expr =
+    Flet (Not_assigned, clos_id, funct,
+      List.fold_left (fun expr (id, arg) ->
+         Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
+        duplicated_application args,
+      Expr_id.create ())
+  in
+  let r =
+    List.fold_left (fun r (id,_) -> exit_scope r id) (exit_scope r clos_id) args
+  in
+  loop (activate_substitution env) r expr
+
 let inline tree =
-  let env = empty_env () in
-  let result, r = loop env (init_r ()) tree in
+  let result, r = loop (empty_env ()) (init_r ()) tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
       Variable.Set.print r.used_variables
       Printflambda.flambda result
   end;
-  assert(Variable.Set.is_empty r.used_variables);
-  assert(Static_exception.Set.is_empty r.used_staticfail);
+  assert (Variable.Set.is_empty r.used_variables);
+  assert (Static_exception.Set.is_empty r.used_staticfail);
   result
