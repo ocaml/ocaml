@@ -352,7 +352,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       apply ~local:false env r (funct,fapprox) (args,approxs) dbg annot
 
   | Fset_of_closures (cl, annot) ->
-      closure env r cl annot
+      transform_set_of_closures_expression env r cl annot
   | Fclosure ({fu_closure = flam;
                 fu_fun;
                 fu_relative_to = rel}, annot) ->
@@ -656,7 +656,7 @@ and loop_list env r l = match l with
       then l, approxs, r
       else h' :: t', approxs, r
 
-and closure env r cl annot =
+and transform_set_of_closures_expression env r cl annot =
   let ffuns = cl.cl_fun in
   let fv = cl.cl_free_var in
 
