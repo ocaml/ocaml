@@ -102,6 +102,8 @@ type 'a flambda =
   | Fapply of 'a fapply * 'a
   | Fset_of_closures of 'a fset_of_closures * 'a
   | Fclosure of 'a ffunction * 'a
+  (* CR mshinwell for pchambart: rename to [Fvar_within_closure] to match
+     [Var_within_closure]? *)
   | Fvariable_in_closure of 'a fvariable_in_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
   | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a

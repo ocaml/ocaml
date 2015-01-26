@@ -249,6 +249,24 @@ let populate_closure_approximations
       env function_declaration.params in
   env
 
+let which_function_parameters_can_we_specialize ~params ~args
+      ~approximations_of_args ~kept_params ~env =
+  assert (List.length params = List.length args);
+  assert (List.length args = List.length approximations_of_args);
+  List.fold_right2 (fun (id, arg) approx (spec_args, args, env_func) ->
+      let new_id = Flambdasubst.freshen_var id in
+      let args = (new_id, arg) :: args in
+      let env_func = add_approx new_id approx env_func in
+      let spec_args =
+        if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
+          Variable.Map.add id new_id spec_args
+        else
+          spec_args
+      in
+      spec_args, args, env_func)
+    (List.combine params args) approximations_of_args
+    (Variable.Map.empty, [], env)
+
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
@@ -912,25 +930,10 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
 
   let env = add_approx clos_id fapprox env in
 
-  (* TODO: remove specialisation from here and factorise with the other case *)
-
-  let (spec_args, args, env_func) =
-    let f (id,arg) approx (spec_args,args,env_func) =
-      let new_id = Flambdasubst.freshen_var id in
-      let args = (new_id, arg) :: args in
-      let env_func = add_approx new_id approx env_func in
-      let spec_args =
-        match approx.descr with
-        | Value_unknown
-        | Value_bottom -> spec_args
-        | _ ->
-            if Variable.Set.mem id kept_params
-            then Variable.Map.add id new_id spec_args
-            else spec_args in
-      spec_args, args, env_func
-    in
-    let params = List.combine func.params args in
-    List.fold_right2 f params approxs (Variable.Map.empty,[],env) in
+  let spec_args, args, env_func =
+    which_function_parameters_can_we_specialize ~params:func.params
+      ~args ~approximations_of_args:approxs ~kept_params ~env
+  in
 
   let args_exprs = List.map (fun (id,_) -> Fvar(id,Expr_id.create ())) args in
 

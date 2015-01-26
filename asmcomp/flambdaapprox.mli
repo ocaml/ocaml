@@ -41,6 +41,7 @@ and value_closure = {
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
 }
 
+(* CR mshinwell for pchambart: call this type [t] *)
 and approx = {
   descr : descr;
   var : Variable.t option;
@@ -86,6 +87,9 @@ val print_approx : Format.formatter -> approx -> unit
 val make_const_int : int -> 'a -> 'a Flambda.flambda * approx
 val make_const_ptr : int -> 'a -> 'a Flambda.flambda * approx
 val make_const_bool : bool -> 'a -> 'a Flambda.flambda * approx
+
+(* An approximation is "useful" iff it is neither unknown nor bottom. *)
+val useful : approx -> bool
 
 val check_constant_result
    : Expr_id.t Flambda.flambda

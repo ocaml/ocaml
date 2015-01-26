@@ -122,6 +122,12 @@ let check_var_and_constant_result ~is_present_in_env lam approx =
   in
   check_constant_result res approx
 
+let useful t =
+  match t.descr with
+  | Value_unknown | Value_bottom -> false
+  | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
+  | Value_closure _ | Value_extern _ | Value_symbol _ -> true
+
 let get_field i = function
   | [{descr = Value_block (tag, fields)}] ->
       if i >= 0 && i < Array.length fields
