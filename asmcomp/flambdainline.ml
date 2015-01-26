@@ -344,13 +344,12 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
      let tree = Fvar(id,annot) in
      check_var_and_constant_result env r tree (find id env)
   | Fconst (cst,_) -> tree, ret r (const_approx cst)
-
   | Fapply ({ ap_function = funct; ap_arg = args;
               ap_kind = direc; ap_dbg = dbg }, annot) ->
       let funct, ({ approx = fapprox } as r) = loop env r funct in
       let args, approxs, r = loop_list env r args in
-      apply ~local:false env r (funct,fapprox) (args,approxs) dbg annot
-
+      transform_application_expression ~local:false env r (funct, fapprox)
+          (args, approxs) dbg annot
   | Fset_of_closures (cl, annot) ->
       transform_set_of_closures_expression env r cl annot
   | Fclosure ({fu_closure = flam;
@@ -358,7 +357,6 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
                 fu_relative_to = rel}, annot) ->
       let flam, r = loop env r flam in
       transform_closure_expression r flam fu_fun rel annot
-
   | Fvariable_in_closure (fenv_field, annot) as expr ->
       (* If the function from which those variables are extracted
          has been modified, we must rename the field access accordingly.
@@ -403,11 +401,12 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       check_var_and_constant_result env r expr approx
 
   | Flet(str, id, lam, body, annot) ->
-      (* The different cases for rewriting Flet are, if the original code
-         corresponds to [let id = lam in body]
-         * [body] with id substituted by lam when possible (unused or constant)
-         * [lam; body] when id is not used but lam is effectfull
-         * [let id = lam in body] otherwise
+      (* The different cases for rewriting [Flet] are, if the original code
+         corresponds to [let id = lam in body],
+         * [body] with [id] substituted by [lam] when possible (unused or
+           constant);
+         * [lam; body] when id is not used but [lam] has a side effect;
+         * [let id = lam in body] otherwise.
        *)
       let init_used_var = r.used_variables in
       let lam, r = loop env r lam in
@@ -421,7 +420,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
         | Not_assigned ->
            add_approx id r.approx env in
       (* To distinguish variables used by the body and the declaration,
-         body is rewritten without the set of used variables from
+         [body] is rewritten without the set of used variables from
          the declaration. *)
       let r_body = { r with used_variables = init_used_var } in
       let body, r = loop body_env r_body body in
@@ -429,13 +428,13 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
         if Variable.Set.mem id r.used_variables
         then
           Flet (str, id, lam, body, annot),
-          (* if lam is kept, adds its used variables *)
+          (* if [lam] is kept, add its used variables *)
           { r with used_variables =
                      Variable.Set.union def_used_var r.used_variables }
         else if Flambdaeffects.no_effects lam
         then body, r
         else Fsequence(lam, body, annot),
-             (* if lam is kept, adds its used variables *)
+             (* if [lam] is kept, add its used variables *)
              { r with used_variables =
                         Variable.Set.union def_used_var r.used_variables } in
       expr, exit_scope r id
@@ -813,7 +812,8 @@ and transform_set_of_closures_expression env r cl annot =
    local: if local is true, the application is of the shape:
    apply (offset (closure ...)).  i.e. it should not duplicate the function
 *)
-and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
+and transform_application_expression env r ~local (funct, fapprox)
+      (args, approxs) dbg eid =
   let no_transformation () =
     Fapply ({ap_function = funct; ap_arg = args;
              ap_kind = Indirect; ap_dbg = dbg}, eid),
