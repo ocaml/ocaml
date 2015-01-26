@@ -355,8 +355,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
               ap_kind = direc; ap_dbg = dbg }, annot) ->
       let funct, ({ approx = fapprox } as r) = loop env r funct in
       let args, approxs, r = loop_list env r args in
-      transform_application_expression ~local:false env r (funct, fapprox)
-          (args, approxs) dbg annot
+      transform_application_expression env r (funct, fapprox) (args, approxs)
+          dbg annot
   | Fset_of_closures (set_of_closures, annot) ->
       transform_set_of_closures_expression env r set_of_closures annot
   | Fclosure (closure, annot) ->
@@ -714,7 +714,6 @@ and transform_set_of_closures_expression env r cl annot =
     Variable.Map.map_keys apply_substitution
       (Variable.Map.map (fun id -> find id env) cl_specialised_arg)
   in
-  in
   let prev_closure_symbols =
     SymbolMap.map apply_substitution prev_closure_symbols
   in
@@ -828,11 +827,7 @@ and transform_set_of_closures_expression env r cl annot =
    interesting case is that of a full application: we then consider whether
    the function can be inlined.  (See [direct_apply], below.)
 *)
-(* CR mshinwell for mshinwell: Is [local] unused?  Remove if so.
-   local: if local is true, the application is of the shape:
-   apply (offset (closure ...)).  i.e. it should not duplicate the function
-*)
-and transform_application_expression env r ~local (funct, fapprox)
+and transform_application_expression env r (funct, fapprox)
       (args, approxs) dbg eid =
   let no_transformation () =
     Fapply ({ap_function = funct; ap_arg = args;
@@ -852,13 +847,13 @@ and transform_application_expression env r ~local (funct, fapprox)
       let nargs = List.length args in
       let arity = function_arity func in
       if nargs = arity then
-        direct_apply env r ~local clos funct fun_id func fapprox closure
+        direct_apply env r clos funct fun_id func fapprox closure
           (args, approxs) dbg eid
       else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, q_approxs = Misc.split_at arity approxs in
         let expr, r =
-          direct_apply env r ~local clos funct fun_id func fapprox closure
+          direct_apply env r clos funct fun_id func fapprox closure
               (h_args,h_approxs) dbg (Expr_id.create ())
         in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
@@ -872,7 +867,7 @@ and transform_application_expression env r ~local (funct, fapprox)
 
 (* Examine a full application of a known closure to determine whether to
    inline. *)
-and direct_apply env r ~local clos funct fun_id func fapprox closure
+and direct_apply env r clos funct fun_id func fapprox closure
       (args, approxs) ap_dbg eid =
   let no_transformation () =
     Fapply ({ap_function = funct; ap_arg = args;
@@ -929,7 +924,7 @@ and direct_apply env r ~local clos funct fun_id func fapprox closure
              of the function *)
           no_transformation ()
       else if
-        recursive && not local
+        recursive
           && should_inline_function_known_to_be_recursive ~func ~clos ~env
                  ~closure ~approxs ~kept_params ~max_level
       then
