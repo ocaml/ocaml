@@ -684,10 +684,6 @@ and transform_set_of_closures_expression env r cl annot =
       (Flambdasubst.subst_var env.sb)
       cl.cl_specialised_arg
   in
-  (* Find the approximation of arguments that are known to be always the same *)
-  let parameter_approximations =
-    Variable.Map.map (fun id -> find id env) cl_specialised_arg
-  in
   let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
       let lam, r = loop env r lam in
       Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r)
@@ -709,14 +705,18 @@ and transform_set_of_closures_expression env r cl annot =
     AR.subst_function_declarations_and_free_variables env.sb fv ffuns in
   let env = { env with sb; } in
 
+  let apply_substitution = Flambdasubst.subst_var env.sb in
   let cl_specialised_arg =
-    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) cl_specialised_arg
+    Variable.Map.map_keys apply_substitution cl_specialised_arg
   in
   let parameter_approximations =
-    Variable.Map.map_keys (Flambdasubst.subst_var env.sb) parameter_approximations
+    (* The approximation of arguments that are known to be always the same *)
+    Variable.Map.map_keys apply_substitution
+      (Variable.Map.map (fun id -> find id env) cl_specialised_arg)
+  in
   in
   let prev_closure_symbols =
-    SymbolMap.map (Flambdasubst.subst_var env.sb) prev_closure_symbols
+    SymbolMap.map apply_substitution prev_closure_symbols
   in
 
   let env =
@@ -737,8 +737,9 @@ and transform_set_of_closures_expression env r cl annot =
     }
   in
 
-  (* Populate the environment with the approximations of each closure.
-     This part of the environment is shared between the different closures *)
+  (* Populate the environment with the approximation of each closure.
+     This part of the environment is shared between all of the closures in
+     the set of closures. *)
   let set_of_closures_env = Variable.Map.fold
       (fun id _ env -> add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);

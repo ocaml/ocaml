@@ -74,6 +74,7 @@ val value_unknown : approx
 val value_int : int -> approx
 val value_constptr : int -> approx
 val value_closure : value_offset -> approx
+(* CR mshinwell for pchambart: update name of [value_unoffseted_closure] *)
 val value_unoffseted_closure : value_closure -> approx
 val value_block : tag * approx array -> approx
 val value_extern : Flambdaexport.ExportId.t -> approx
