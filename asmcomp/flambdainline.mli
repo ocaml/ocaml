@@ -14,8 +14,8 @@ open Flambda
 open Abstract_identifiers
 
 val inline : Expr_id.t flambda -> Expr_id.t flambda
-(** The primary purpose of this function is to perform inlining, including
-    the duplication of recursive functions for specialization.
+(** The primary purpose of this function is to perform inlining of both
+    non-recursive and recursive functions.
 
     Along the way, some other optimizations and analyses are performed:
     - direct calls are identified

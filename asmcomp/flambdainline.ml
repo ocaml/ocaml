@@ -285,6 +285,18 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       f ~acc ~var ~expr)
     (variables_bound_by_the_closure fun_id clos) init
 
+(* CR mshinwell for pchambart: throughout, [kept_params] needs a better name *)
+let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
+      ~approxs ~kept_params ~max_level =
+  assert (List.length func.params = List.length approxs);
+  not (Set_of_closures_id.Set.mem clos.ident env.current_functions)
+    && not (Variable.Set.is_empty closure.kept_params)
+    && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
+    && env.inlining_level <= max_level
+    && List.exists2 (fun id approx ->
+          Flambdaapprox.useful approx && Variable.Set.mem id kept_params)
+        func.params approxs
+
 let functor_like env clos approxs =
   env.closure_depth = 0 &&
     List.for_all Flambdaapprox.known approxs &&
@@ -837,6 +849,74 @@ and apply env r ~local (funct,fapprox) (args,approxs) dbg eid =
         no_transformation ()
   | _ -> no_transformation ()
 
+(* Examine a full application of a known closure to determine whether to
+   inline. *)
+and direct_apply env r ~local clos funct fun_id func fapprox closure
+      (args, approxs) ap_dbg eid =
+  let no_transformation () =
+    Fapply ({ap_function = funct; ap_arg = args;
+             ap_kind = Direct fun_id; ap_dbg}, eid),
+    ret r value_unknown
+  in
+  let max_level = 3 in
+  let unconditionally_inline = func.stub || functor_like env clos approxs in
+  let num_params = List.length func.params in
+  let fun_cost =
+    if unconditionally_inline then
+      (* CR mshinwell for mshinwell: this comment needs clarification *)
+      (* inlining a stub or a functor does not restrict what can be inlined inside *)
+      env.inline_threshold
+    else
+      Flambdacost.can_try_inlining func.body env.inline_threshold
+        ~bonus:num_params
+  in
+  match fun_cost with
+  | Flambdacost.Never_inline -> no_transformation ()
+  | (Flambdacost.Can_inline _) as threshold ->
+      let fun_var = find_declaration_variable fun_id clos in
+      let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
+      assert ((not unconditionally_inline) || (not recursive));
+      (* CR mshinwell for pchambart: two variables called [threshold] and
+         [inline_threshold] is confusing *)
+      let inline_threshold = env.inline_threshold in
+      let env = { env with inline_threshold = threshold } in
+      let kept_params = closure.kept_params in
+      (* Try inlining if the function is non-recursive and not too far above
+         the threshold (or if the function is to be unconditionally inlined,
+         which as per the assertion above also implies that it is not
+         recursive). *)
+      if unconditionally_inline
+        || (not recursive && env.inlining_level <= max_level)
+      then
+        let body, r_inlined =
+          inline_non_recursive_function env r clos funct fun_id func args
+              ap_dbg eid
+        in
+        (* Now we know how large the inlined version actually is, determine
+           whether or not to keep it. *)
+        (* CR mshinwell for pchambart: Shouldn't this say "body", not
+           "func.body"? (!) *)
+        if unconditionally_inline
+          || Flambdacost.can_inline func.body inline_threshold
+               ~bonus:num_params
+        then
+          body, r_inlined
+        else
+          (* CR mshinwell for pchambart: please clarify this comment *)
+          (* do not use approximation: there can be renamed offsets.
+             A better solution would be to use the generic approximation
+             of the function *)
+          no_transformation ()
+      else if
+        recursive && not local
+          && should_inline_function_known_to_be_recursive ~func ~clos ~env
+                 ~closure ~approxs ~kept_params ~max_level
+      then
+        inline_recursive_functions env r funct clos fun_id func fapprox closure
+          (args,approxs) kept_params ap_dbg
+      else
+        no_transformation ()
+
 and partial_apply funct fun_id func args ap_dbg eid =
   let arity = function_arity func in
   let remaining_args = arity - (List.length args) in
@@ -858,80 +938,6 @@ and partial_apply funct fun_id func args ap_dbg eid =
       Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
       applied_args offset in
   Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
-
-(* Examine a full application of a known closure to determine whether to
-   inline. *)
-and direct_apply env r ~local clos funct fun_id func fapprox closure
-      (args, approxs) ap_dbg eid =
-  let no_transformation () =
-    Fapply ({ap_function = funct; ap_arg = args;
-             ap_kind = Direct fun_id; ap_dbg}, eid),
-    ret r value_unknown
-  in
-  let max_level = 3 in
-  let fun_cost =
-    if func.stub || functor_like env clos approxs
-    then
-      (* inlining a stub or a functor does not restrict what can be inlined inside *)
-      env.inline_threshold
-    else
-      Flambdacost.can_try_inlining func.body env.inline_threshold
-        ~bonus:(List.length func.params)
-  in
-  match fun_cost with
-  | Flambdacost.Never_inline -> no_transformation ()
-  | (Flambdacost.Can_inline _) as threshold ->
-      let fun_var = find_declaration_variable fun_id clos in
-      let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
-      let inline_threshold = env.inline_threshold in
-      let env = { env with inline_threshold = threshold } in
-      let functor_like = functor_like env clos approxs in
-      if func.stub || functor_like ||
-         (not recursive && env.inlining_level <= max_level)
-      then
-        (* try inlining if the function is not too far above the threshold *)
-        let body, r_inline =
-          inline_non_recursive_function env r clos funct fun_id func args
-              ap_dbg eid
-        in
-        if func.stub || functor_like ||
-           (Flambdacost.can_inline func.body inline_threshold
-              ~bonus:(List.length func.params))
-        then
-          (* if the definitive size is small enought: keep it *)
-          body, r_inline
-        else
-         (* do not use approximation: there can be renamed offsets.
-            A better solution would be to use the generic approximation
-            of the function *)
-          no_transformation ()
-      else
-        let kept_params = closure.kept_params in
-        if
-          recursive && not (Set_of_closures_id.Set.mem clos.ident env.current_functions)
-          && not (Variable.Set.is_empty kept_params)
-          && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
-          && env.inlining_level <= max_level
-        then begin
-          let f id approx acc =
-            if Flambdaapprox.useful approx && Variable.Set.mem id kept_params
-            then
-              Variable.Map.add id approx acc
-            else
-              acc
-          in
-          let worth =
-            List.fold_right2 f func.params approxs Variable.Map.empty
-          in
-          if not (Variable.Map.is_empty worth) && not local
-          then
-            inline_recursive_functions env r funct clos fun_id func fapprox closure
-              (args,approxs) kept_params ap_dbg
-          else
-            no_transformation ()
-        end
-        else
-          no_transformation ()
 
 (* Inlining of a non-recursive function just yields a copy of the function's
    body.  The declaration itself is not duplicated.
@@ -976,12 +982,12 @@ and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
   loop (activate_substitution env) r
        (Flet(Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
 
-(* CR mshinwell for pchambart: clarify what happens for the case of
-   simultaneously-defined functions that are not in fact recursive.
-   Presumably this uses [inline_non_recursive_function] *)
 (* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
-   a direct application of the new body. *)
+   a direct application of the new body.
+   Note: the function really does need to be recursive to end up in here;
+   a simultaneous binding [that is non-recursive] is not sufficient.
+*)
 and inline_recursive_functions env r funct clos fun_id func fapprox
       closure_approx (args, approxs) kept_params ap_dbg =
   let env = inlining_level_up env in
