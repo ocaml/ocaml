@@ -203,39 +203,6 @@ let sequence l1 l2 annot =
 let really_import_approx approx =
   { approx with descr = Import.really_import approx.descr }
 
-(* The main functions: iterate on the expression rewriting it and
-   propagating up an approximation of the value.
-
-   The naming conventions is:
-   * [env] is the top down environment
-   * [r] is the bottom up informations (used variables, expression
-     approximation, ...)
-
-   In general the pattern is to do a subset of these steps:
-   * recursive call of loop on the arguments with the original
-     environment:
-       [let new_arg, r = loop env r arg]
-   * generate fresh new identifiers (if subst.active is true) and
-     add the substitution to the environment:
-       [let new_id, env = new_subst_id id env]
-   * associate in the environment the approximation of values to
-     identifiers:
-       [let env = add_approx id r.approx env]
-   * recursive call of loop on the body of the expression, using
-     the new environment
-   * mark used variables:
-       [let r = use_var r id]
-   * remove variable related bottom up informations:
-       [let r = exit_scope r id in]
-   * rebuild the expression according to the informations about
-     its content.
-   * associate its description to the returned value:
-       [ret r approx]
-   * replace the returned expression by a contant or a direct variable
-     acces (when possible):
-       [check_var_and_constant_result env r expr approx]
- *)
-
 let populate_closure_approximations
       ~(function_declaration : _ function_declaration)
       ~(free_var_info : (_ * approx) Variable.Map.t)
@@ -333,6 +300,39 @@ let transform_closure_expression r flam off rel annot =
   let ret_approx = value_closure { fun_id = off; closure } in
   Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
   ret r ret_approx
+
+(* The main functions: iterate on the expression rewriting it and
+   propagating up an approximation of the value.
+
+   The naming conventions is:
+   * [env] is the top down environment
+   * [r] is the bottom up informations (used variables, expression
+     approximation, ...)
+
+   In general the pattern is to do a subset of these steps:
+   * recursive call of loop on the arguments with the original
+     environment:
+       [let new_arg, r = loop env r arg]
+   * generate fresh new identifiers (if subst.active is true) and
+     add the substitution to the environment:
+       [let new_id, env = new_subst_id id env]
+   * associate in the environment the approximation of values to
+     identifiers:
+       [let env = add_approx id r.approx env]
+   * recursive call of loop on the body of the expression, using
+     the new environment
+   * mark used variables:
+       [let r = use_var r id]
+   * remove variable related bottom up informations:
+       [let r = exit_scope r id in]
+   * rebuild the expression according to the informations about
+     its content.
+   * associate its description to the returned value:
+       [ret r approx]
+   * replace the returned expression by a contant or a direct variable
+     acces (when possible):
+       [check_var_and_constant_result env r expr approx]
+ *)
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
