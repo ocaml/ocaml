@@ -267,6 +267,21 @@ let which_function_parameters_can_we_specialize ~params ~args
     (List.combine params args) approximations_of_args
     (Variable.Map.empty, [], env)
 
+let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
+      ~init ~f =
+  Variable.Set.fold (fun var acc ->
+      let expr =
+        Fvariable_in_closure
+          ({ vc_closure = Fvar (clos_id, Expr_id.create ());
+             vc_fun = fun_id;
+             vc_var = Var_within_closure.wrap var;
+           },
+           Expr_id.create ())
+      in
+      f ~acc ~var ~expr)
+    (variables_bound_by_the_closure fun_id clos) init
+;;
+
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
@@ -914,19 +929,11 @@ and duplicate_apply env r funct clos fun_id func fapprox closure_approx
     (args,approxs) kept_params ap_dbg =
   let env = inlining_level_up env in
   let clos_id = new_var "dup_closure" in
-  let make_fv var fv =
-    Variable.Map.add var
-      (Fvariable_in_closure
-         ({ vc_closure = Fvar(clos_id, Expr_id.create ());
-            vc_fun = fun_id;
-            vc_var = Var_within_closure.wrap var },
-          Expr_id.create ())) fv
+  let fv =
+    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
+      ~init:Variable.Map.empty
+      ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
-
-  let variables_in_closure =
-    variables_bound_by_the_closure fun_id clos in
-
-  let fv = Variable.Set.fold make_fv variables_in_closure Variable.Map.empty in
 
   let env = add_approx clos_id fapprox env in
 
@@ -960,31 +967,26 @@ and inline env r clos lfunc fun_id func args dbg eid =
   let env = inlining_level_up env in
   let clos_id = new_var "inlined_closure" in
 
-  let variables_in_closure =
-    variables_bound_by_the_closure fun_id clos in
-
   let body =
     func.body
     |> List.fold_right2 (fun id arg body ->
         Flet(Not_assigned, id, arg, body, Expr_id.create ~name:"inline arg" ()))
       func.params args
-    |> Variable.Set.fold (fun id body ->
-        Flet(Not_assigned, id,
-             Fvariable_in_closure
-               ({ vc_closure = Fvar(clos_id, Expr_id.create ());
-                  vc_fun = fun_id;
-                  vc_var = Var_within_closure.wrap id },
-                Expr_id.create ()),
-             body, Expr_id.create ()))
-      variables_in_closure
-    |> Variable.Map.fold (fun id _ body ->
+  in
+  let body =
+    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
+      ~init:body ~f:(fun ~acc:body ~var ~expr ->
+        Flet (Not_assigned, var, expr, body, Expr_id.create ()))
+  in
+  let body =
+    Variable.Map.fold (fun id _ body ->
         Flet(Not_assigned, id,
              Fclosure ({ fu_closure = Fvar(clos_id, Expr_id.create ());
                           fu_fun = Closure_id.wrap id;
                           fu_relative_to = Some fun_id },
                         Expr_id.create ()),
              body, Expr_id.create ()))
-      clos.funs
+      clos.funs body
   in
   loop { env with sb = Flambdasubst.activate env.sb } r
        (Flet(Not_assigned, clos_id, lfunc, body, Expr_id.create ()))
