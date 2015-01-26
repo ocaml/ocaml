@@ -302,6 +302,31 @@ let functor_like env clos approxs =
     List.for_all Flambdaapprox.known approxs &&
     Variable.Set.is_empty (recursive_functions clos)
 
+let transform_closure_expression r flam off rel annot =
+  let module AR =
+    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+  in
+  (* CR mshinwell for pchambart: we should rename [off_id] now *)
+  let off_id closure off =
+    let off = AR.fun_off_id closure.ffunction_sb off in
+    (try ignore (find_declaration off closure.ffunctions)
+     with Not_found ->
+       Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
+                           Closure_id.print off Printflambda.flambda flam));
+    off
+  in
+  let closure = match r.approx.descr with
+    | Value_set_of_closures closure -> closure
+    | Value_closure { closure } -> closure
+    | _ ->
+        Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda flam;
+        assert false in
+  let off = off_id closure off in
+  let rel = Misc.may_map (off_id closure) rel in
+  let ret_approx = value_closure { fun_id = off; closure } in
+  Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
+  ret r ret_approx
+
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
@@ -332,7 +357,7 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
                 fu_fun;
                 fu_relative_to = rel}, annot) ->
       let flam, r = loop env r flam in
-      ffunction r flam fu_fun rel annot
+      transform_closure_expression r flam fu_fun rel annot
 
   | Fvariable_in_closure (fenv_field, annot) as expr ->
       (* If the function from which those variables are extracted
@@ -770,31 +795,6 @@ and closure env r cl annot =
   Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
              cl_specialised_arg}, annot),
   ret r (value_unoffseted_closure closure)
-
-and ffunction r flam off rel annot =
-  let module AR =
-    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
-  in
-  let off_id closure off =
-    let off = AR.fun_off_id closure.ffunction_sb off in
-    (try ignore (find_declaration off closure.ffunctions)
-     with Not_found ->
-       Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
-                           Closure_id.print off Printflambda.flambda flam));
-    off
-  in
-  let closure = match r.approx.descr with
-    | Value_set_of_closures closure -> closure
-    | Value_closure { closure } -> closure
-    | _ ->
-        Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda flam;
-        assert false in
-  let off = off_id closure off in
-  let rel = Misc.may_map (off_id closure) rel in
-  let ret_approx = value_closure { fun_id = off; closure } in
-
-  Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
-  ret r ret_approx
 
 (* Transform an flambda function application based on information provided
    by an approximation of the function being applied.
