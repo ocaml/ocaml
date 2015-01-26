@@ -350,32 +350,38 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       let args, approxs, r = loop_list env r args in
       transform_application_expression ~local:false env r (funct, fapprox)
           (args, approxs) dbg annot
-  | Fset_of_closures (cl, annot) ->
-      transform_set_of_closures_expression env r cl annot
-  | Fclosure ({fu_closure = flam;
-                fu_fun;
-                fu_relative_to = rel}, annot) ->
-      let flam, r = loop env r flam in
-      transform_closure_expression r flam fu_fun rel annot
+  | Fset_of_closures (set_of_closures, annot) ->
+      transform_set_of_closures_expression env r set_of_closures annot
+  | Fclosure (closure, annot) ->
+      let flam, r = loop env r closure.fu_closure in
+      transform_closure_expression r flam closure.fu_fun
+          closure.fu_relative_to annot
   | Fvariable_in_closure (fenv_field, annot) as expr ->
-      (* If the function from which those variables are extracted
-         has been modified, we must rename the field access accordingly.
-         The renaming information comes from the approximation of the
-         argument. This means that we must have the informations about
-         the closure (fenv_field.vc_closure) otherwise we could miss
-         some renamings and generate wrong code. *)
+      (* CR mshinwell for pchambart: I think we need a small example here.
+         I also rewrote the comment, please check it is correct.  Also, I
+         think we need to explain thoroughly why it is the case that a
+         [Value_closure] approximation is always present here. *)
+      (* This kind of expression denotes an access to a variable bound in
+         a closure.  Variables in the closure ([fenv_field.vc_closure]) may
+         have been alpha-renamed since [expr] was constructed; as such, we
+         must ensure the same happens to [expr].  The renaming information is
+         contained within the approximation deduced from [vc_closure] (as
+         such, that approximation *must* identify which closure it is). *)
       let arg, r = loop env r fenv_field.vc_closure in
-      let closure, approx_fun_id = match r.approx.descr with
+      let closure, approx_fun_id =
+        match r.approx.descr with
         | Value_closure { closure; fun_id } -> closure, fun_id
         | Value_unknown ->
-            (* We must have the correct approximation of the value
-               to avoid missing a substitution. *)
-            Format.printf "Value unknown: %a@.%a@.%a@."
+            (* We must have the correct approximation of the value to ensure
+               we take account of all alpha-renamings. *)
+            Format.printf "[Fvariable_in_closure] without suitable \
+              approximation : %a@.%a@.%a@."
               Printflambda.flambda expr
               Printflambda.flambda arg
               Printflambda.flambda fenv_field.vc_closure;
             assert false
-        | _ -> assert false in
+        | _ -> assert false
+      in
       let module AR =
         Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
       in
