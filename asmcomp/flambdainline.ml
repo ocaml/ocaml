@@ -26,6 +26,10 @@ let new_var name =
    - propagating following approximatively the evaluation order ~ bottom-up:
      in the ret type *)
 
+(* CR mshinwell for pchambart: What about adding module [Env] as a sub-module
+   of this source file, and giving it a signature?  Then we could nicely
+   collect together all of the environment-related stuff.
+*)
 type env = {
   env_approx : approx Variable.Map.t;
   global : (int, approx) Hashtbl.t;
@@ -137,7 +141,8 @@ let subst_toplevel sb lam =
   Flambdaiter.map_toplevel f lam
 
 (* Utility function to duplicate an expression and makes a function from it *)
-
+(* CR mshinwell for pchambart: can we kick this function out of this source
+   file?  It seems generic, and maybe useful elsewhere in due course. *)
 let make_closure_declaration id lam params =
   let free_variables = Flambdaiter.free_variables lam in
   let param_set = Variable.Set.of_list params in
@@ -297,6 +302,8 @@ let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
           Flambdaapprox.useful approx && Variable.Set.mem id kept_params)
         func.params approxs
 
+(* Make an informed guess at whether [clos], with approximations [approxs],
+   looks to be a functor. *)
 let functor_like env clos approxs =
   env.closure_depth = 0 &&
     List.for_all Flambdaapprox.known approxs &&
@@ -367,6 +374,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
          must ensure the same happens to [expr].  The renaming information is
          contained within the approximation deduced from [vc_closure] (as
          such, that approximation *must* identify which closure it is). *)
+      (* CR mshinwell: this may be a stupid question, but why is "arg" called
+         "arg"? *)
       let arg, r = loop env r fenv_field.vc_closure in
       let closure, approx_fun_id =
         match r.approx.descr with
@@ -437,6 +446,8 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
           (* if [lam] is kept, add its used variables *)
           { r with used_variables =
                      Variable.Set.union def_used_var r.used_variables }
+        (* CR mshinwell for pchambart: This looks like a copy of
+           the function called [sequence], above *)
         else if Flambdaeffects.no_effects lam
         then body, r
         else Fsequence(lam, body, annot),
@@ -490,10 +501,12 @@ and loop_direct (env:env) r tree : 'a flambda * ret =
       begin match r.approx.descr with
       | Value_unknown
       | Value_bottom -> ()
-      | Value_block _ ->
-          Misc.fatal_error "setfield on an non mutable block"
-      | _ ->
-          Misc.fatal_error "setfield on something strange"
+      (* CR mshinwell for pchambart: This is slightly mysterious---I think
+         we need a comment explaining what the approximation for a
+         mutable block looks like.
+         Also, this match should be explicitly exhaustive; same elsewhere. *)
+      | Value_block _ -> Misc.fatal_error "[Psetfield] on non-mutable block"
+      | _ -> Misc.fatal_error "[Psetfield] on an inappropriate value"
       end;
       Fprim(p, [arg], dbg, annot), ret r value_unknown
   | Fprim(p, args, dbg, annot) as expr ->
