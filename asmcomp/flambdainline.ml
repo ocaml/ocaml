@@ -289,8 +289,8 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
 let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
       ~approxs ~kept_params ~max_level =
   assert (List.length func.params = List.length approxs);
-  not (Set_of_closures_id.Set.mem clos.ident env.current_functions)
-    && not (Variable.Set.is_empty closure.kept_params)
+  (not (Set_of_closures_id.Set.mem clos.ident env.current_functions))
+    && (not (Variable.Set.is_empty closure.kept_params))
     && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
     && env.inlining_level <= max_level
     && List.exists2 (fun id approx ->
