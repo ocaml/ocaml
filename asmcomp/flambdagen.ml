@@ -19,7 +19,7 @@ type t = {
   current_compilation_unit : Symbol.compilation_unit;
   current_unit_id : Ident.t;
   symbol_for_global' : (Ident.t -> Symbol.t);
-  mutable debugger_map : unit;
+  mutable debugger_map : Ident.t Variable.Map.t;
 }
 
 let rec add_debug_info ev f =
@@ -52,7 +52,7 @@ let rename_var t var =
   begin
     try
       let id = Variable.Map.find var t.debugger_map in
-      t.debugger_map := Variable.Map.add new_var id debugger_map;
+      t.debugger_map <- Variable.Map.add new_var id t.debugger_map
     with Not_found -> ()
   end;
   new_var
@@ -71,7 +71,7 @@ let find_var env id =
    that come to mind: "function identifier" or something (the [f] in
    [let f x = ...], "closure bound var", etc *)
 
-module Function_declaration : sig
+module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
      function during closure conversion. *)
   type t
@@ -85,6 +85,15 @@ module Function_declaration : sig
     -> t
 
   val rec_ident : t -> Ident.t
+  val closure_bound_var : t -> Variable.t
+  val kind : t -> function_kind
+  val params : t -> Ident.t list
+  val body : t -> lambda
+
+  (* [primitive_wrapper t] is [None] iff [t] is not an eta-expansion wrapper
+     for a primitive.  Otherwise it is [Some body], where [body] is the body of
+     the wrapper. *)
+  val primitive_wrapper : t -> lambda option
 
   (* CR mshinwell for pchambart: Please check these comments *)
   (* CR mshinwell for pchambart: Should improve the name of this function. *)
@@ -101,8 +110,11 @@ module Function_declaration : sig
      are neither bound as a parameter nor function identifier.
 
      This function creates new [Variable.t] values for everything except the
-     function identifiers. *)
-  val closure_env_without_parameters : t list -> Variable.t Ident.tbl
+     function identifiers by using the supplied [create_var] function. *)
+  val closure_env_without_parameters
+     : t list
+    -> create_var:(Ident.t -> Variable.t)
+    -> Variable.t Ident.tbl
 end = struct
   type t = {
     (* CR mshinwell for pchambart: maybe the name [rec_ident] is misleading.
@@ -132,6 +144,16 @@ end = struct
     }
 
   let rec_ident t = t.rec_ident
+  let closure_bound_var t = t.closure_bound_var
+  let kind t = t.kind
+  let params t = t.params
+  let body t = t.body
+
+  (* CR-someday mshinwell: eliminate "*stub*" *)
+  let primitive_wrapper t =
+    match t.body with
+    | Lprim (Pccall { Primitive.prim_name = "*stub*" }, [body]) -> Some body
+    | _ -> None
 
   (* All identifiers of simultaneously-defined functions in [ts]. *)
   let rec_idents ts =
@@ -157,12 +179,12 @@ end = struct
   let all_free_idents ts =
     set_diff (set_diff (all_used_idents ts) (all_params ts)) (rec_idents ts)
 
-  let closure_env_without_parameters ts =
+  let closure_env_without_parameters ts ~create_var =
     Ident.empty
     (* add recursive functions *)
     |> List.fold_right
-      (fun d env -> add_var d.rec_ident d.closure_bound_var env)
-      (function_declarations ts)
+      (fun t env -> add_var t.rec_ident t.closure_bound_var env)
+      ts
     (* add free variables *)
     |> IdentSet.fold
       (fun id env -> add_var id (create_var id) env)
@@ -189,24 +211,28 @@ let rec close t env = function
         | Variable -> Assigned
         | _ -> Not_assigned in
       let var = create_var t id in
-      Flet(str, var, close_named var env lam,
-           close (add_var id var env) body, nid ~name:"let" ())
+      Flet(str, var, close_named t var env lam,
+           close t (add_var id var env) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
       let closure_bound_var =
-        Variable.create ~current_compilation_unit "fun" in
+        (* CR-someday mshinwell: Identifiers should have proper names.  If
+           the function is anonymous, the location can be used. *)
+        Variable.create ~current_compilation_unit:t.current_compilation_unit
+          "fun"
+      in
       let decl =
-        Function_declaration.create ~rec_ident:None ~closure_bound_var ~kind
+        Function_decl.create ~rec_ident:None ~closure_bound_var ~kind
           ~params ~body
       in
       Fclosure(
-        { fu_closure = close_functions env [decl];
+        { fu_closure = close_functions t env [decl];
           fu_fun = Closure_id.wrap closure_bound_var;
           fu_relative_to = None },
         nid ~name:"function" ())
   | Lapply(funct, args, loc) ->
       Fapply(
-        { ap_function = close env funct;
-          ap_arg = close_list env args;
+        { ap_function = close t env funct;
+          ap_arg = close_list t env args;
           ap_kind = Indirect;
           ap_dbg = Debuginfo.none },
         nid ~name:"apply" ())
@@ -221,7 +247,7 @@ let rec close t env = function
             | (rec_ident, Lfunction(kind, params, body)) ->
                 let closure_bound_var = create_var t rec_ident in
                 let function_declaration =
-                  Function_declaration.create ~rec_ident:(Some rec_ident)
+                  Function_decl.create ~rec_ident:(Some rec_ident)
                     ~closure_bound_var ~kind ~params ~body
                 in
                 Some function_declaration
@@ -234,61 +260,67 @@ let rec close t env = function
             List.map
               (fun (id, def) ->
                  let var = find_var env id in
-                 (var, close_named ~rec_ident:id var env def))
+                 (var, close_named t ~rec_ident:id var env def))
               defs in
-          Fletrec(fdefs, close env body, nid ~name:"letrec" ())
+          Fletrec(fdefs, close t env body, nid ~name:"letrec" ())
       | Some function_declarations ->
           (* When all the binding are functions, we build a single closure
              for all the functions *)
-          let clos = close_functions env function_declarations in
-          let clos_var = Variable.create ~current_compilation_unit "clos" in
+          let clos = close_functions t env function_declarations in
+          let clos_var =
+            Variable.create "clos"
+              ~current_compilation_unit:t.current_compilation_unit
+          in
           let body =
-            List.fold_left
-              (fun body decl ->
-                 let rec_ident = Function_declaration.rec_ident decl in
-                 let let_bound_var = find_var env rec_ident in
-                 Flet(Not_assigned, let_bound_var,
-                      Fclosure(
-                        { fu_closure = Fvar (clos_var, nid ());
-                          fu_fun = Closure_id.wrap decl.closure_bound_var;
-                          fu_relative_to = None },
-                        nid ()),
-                      body, nid ()))
-              (close env body) function_declarations in
+            List.fold_left (fun body decl ->
+                let rec_ident = Function_decl.rec_ident decl in
+                let closure_bound_var = Function_decl.closure_bound_var decl in
+                let let_bound_var = find_var env rec_ident in
+                Flet(Not_assigned, let_bound_var,
+                     Fclosure(
+                       { fu_closure = Fvar (clos_var, nid ());
+                         fu_fun = Closure_id.wrap closure_bound_var;
+                         fu_relative_to = None },
+                       nid ()),
+                     body, nid ()))
+              (close t env body) function_declarations in
           Flet(Not_assigned, clos_var, clos,
                body, nid ~name:"closure_letrec" ())
       end
   | Lsend(kind, met, obj, args, _) ->
-      Fsend(kind, close env met, close env obj,
-            close_list env args, Debuginfo.none, nid ())
+      Fsend(kind, close t env met, close t env obj,
+            close_list t env args, Debuginfo.none, nid ())
   | Lprim(Pdirapply loc,[funct;arg])
   | Lprim(Prevapply loc,[arg;funct]) ->
-      close env (Lapply(funct, [arg], loc))
+      close t env (Lapply(funct, [arg], loc))
   | Lprim(Praise kind, [Levent(arg, ev)]) ->
-      let arg = close env arg in
+      let arg = close t env arg in
       Fprim(Praise kind, [arg], Debuginfo.from_raise ev, nid ())
   | Lprim(Pfield i, [Lprim(Pgetglobal id, [])])
-    when Ident.same id current_unit_id ->
+    when Ident.same id t.current_unit_id ->
       Fprim(Pgetglobalfield(id,i), [], Debuginfo.none,
             nid ~name:"getglobalfield" ())
   | Lprim(Psetfield(i,_), [Lprim(Pgetglobal id, []); lam]) ->
-      assert(Ident.same id current_unit_id);
-      Fprim(Psetglobalfield i, [close env lam], Debuginfo.none,
+      assert(Ident.same id t.current_unit_id);
+      Fprim(Psetglobalfield i, [close t env lam], Debuginfo.none,
             nid ~name:"setglobalfield" ())
   | Lprim(Pgetglobal id, [])
     when not (Ident.is_predef_exn id) ->
-      assert(not (Ident.same id current_unit_id));
-      let symbol = symbol_for_global' id in
+      assert(not (Ident.same id t.current_unit_id));
+      let symbol = t.symbol_for_global' id in
       Fsymbol (symbol,nid ~name:"external_global" ())
   | Lprim(Pmakeblock _ as p, args) ->
       (* Lift the contents of the block to variables. This allows to
          eliminate the allocation if the block does not escape.
          A more general solution would be to convert completely to ANF *)
       let (block,lets) = List.fold_right (fun lam (block,lets) ->
-          match close env lam with
+          match close t env lam with
           | Fvar(v,_) as e -> (e::block,lets)
           | expr ->
-              let v = Variable.create ~current_compilation_unit "block_field" in
+              let v =
+                Variable.create "block_field"
+                  ~current_compilation_unit:t.current_compilation_unit
+              in
               Fvar(v,nid ()) :: block, (v,expr)::lets)
           args ([],[]) in
       let block = Fprim(p, block, Debuginfo.none, nid ~name:"block" ()) in
@@ -296,98 +328,111 @@ let rec close t env = function
           Flet(Not_assigned, v, expr, body, nid ()))
         block lets
   | Lprim(p, args) ->
-      Fprim(p, close_list env args, Debuginfo.none,
+      Fprim(p, close_list t env args, Debuginfo.none,
             nid ~name:"prim" ())
   | Lswitch(arg, sw) ->
-      let aux (i,lam) = i, close env lam in
+      let aux (i,lam) = i, close t env lam in
       let rec set n = (* set of integers {0, 1, ... n} *)
         if n < 0 then Ext_types.IntSet.empty
         else Ext_types.IntSet.add n (set (n-1)) in
-      Fswitch(close env arg,
+      Fswitch(close t env arg,
               { fs_numconsts = set (sw.sw_numconsts - 1);
                 fs_consts = List.map aux sw.sw_consts;
                 fs_numblocks = set (sw.sw_numblocks - 1);
                 fs_blocks = List.map aux sw.sw_blocks;
-                fs_failaction = Misc.may_map (close env) sw.sw_failaction },
+                fs_failaction = Misc.may_map (close t env) sw.sw_failaction },
               nid ~name:"switch" ())
   | Lstringswitch(arg, sw, def) ->
       Fstringswitch(
-        close env arg,
-        List.map (fun (s, e) -> s, close env e) sw,
-        Misc.may_map (close env) def,
+        close t env arg,
+        List.map (fun (s, e) -> s, close t env e) sw,
+        Misc.may_map (close t env) def,
         nid ~name:"stringswitch" ())
   | Lstaticraise (i, args) ->
-      Fstaticraise (Static_exception.of_int i, close_list env args, nid ())
+      Fstaticraise (Static_exception.of_int i, close_list t env args, nid ())
   | Lstaticcatch(body, (i, ids), handler) ->
-      let vars = List.map create_var t ids in
+      let vars = List.map (create_var t) ids in
       Fstaticcatch (Static_exception.of_int i, vars,
-                    close env body, close (add_vars ids vars env) handler,
+                    close t env body, close t (add_vars ids vars env) handler,
                     nid ())
   | Ltrywith(body, id, handler) ->
       let var = create_var t id in
-      Ftrywith(close env body, var, close (add_var id var env) handler, nid ())
+      Ftrywith(close t env body, var, close t (add_var id var env) handler,
+        nid ())
   | Lifthenelse(arg, ifso, ifnot) ->
-      Fifthenelse(close env arg, close env ifso, close env ifnot,
+      Fifthenelse(close t env arg, close t env ifso, close t env ifnot,
                   nid ~name:"if" ())
   | Lsequence(lam1, lam2) ->
-      Fsequence(close env lam1, close env lam2,
+      Fsequence(close t env lam1, close t env lam2,
                 nid ~name:"seq" ())
   | Lwhile(cond, body) ->
-      Fwhile(close env cond, close env body, nid ())
+      Fwhile(close t env cond, close t env body, nid ())
   | Lfor(id, lo, hi, dir, body) ->
       let var = create_var t id in
-      Ffor(var, close env lo, close env hi, dir,
-           close (add_var id var env) body,
+      Ffor(var, close t env lo, close t env hi, dir,
+           close t (add_var id var env) body,
            nid ())
   | Lassign(id, lam) ->
-      Fassign(find_var env id, close env lam, nid ())
+      Fassign(find_var env id, close t env lam, nid ())
   | Levent(lam, ev) ->
-      add_debug_info ev (close env lam)
+      add_debug_info ev (close t env lam)
   | Lifused _ ->
       assert false
 
-and close_functions external_env function_declarations =
-  let close_one_function map { closure_bound_var; kind; params; body } =
+and close_functions t external_env function_declarations =
+  let closure_env_without_parameters =
+    Function_decl.closure_env_without_parameters function_declarations
+      ~create_var:(create_var t)
+  in
+  let used_idents_by_function =
+    Function_decl.used_idents_by_function function_declarations
+  in
+  let close_one_function map decl =
+    let body = Function_decl.body decl in
     let dbg = match body with
       | Levent (_,({lev_kind=Lev_function} as ev)) ->
           Debuginfo.from_call ev
       | _ -> Debuginfo.none in
+    let params = Function_decl.params decl in
     let closure_env =
       List.fold_right
         (fun id env -> add_var id (create_var t id) env)
-        params closure_env_without_parameters in
+        params closure_env_without_parameters
+    in
     (* If the function is a wrapper function: force inline *)
     let stub, body =
-      match body with
-      | Lprim(Pccall { Primitive.prim_name = "*stub*" }, [body]) ->
-          true, body
-      | _ -> false, body
+      match Function_decl.primitive_wrapper decl with
+      | None -> false, body
+      | Some wrapper_body -> true, wrapper_body
     in
     let params = List.map (find_var closure_env) params in
+    let closure_bound_var = Function_decl.closure_bound_var decl in
     let fun_decl =
       { stub; params; dbg;
+        (* CR mshinwell: try to move this into [Function_decl] *)
         free_variables =
           IdentSet.fold
             (fun id set -> Variable.Set.add (find_var closure_env id) set)
-            (Variable.Map.find closure_bound_var used_idents_per_function)
+            (Variable.Map.find closure_bound_var used_idents_by_function)
             Variable.Set.empty;
-        body = close closure_env body } in
-    match kind with
+        body = close t closure_env body } in
+    match Function_decl.kind decl with
     | Curried ->
         Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
         let tuplified_version = rename_var t closure_bound_var in
         let generic_function_stub =
-          tupled_function_call_stub
-            closure_bound_var params tuplified_version in
-        let map = Variable.Map.add closure_bound_var generic_function_stub map in
-        Variable.Map.add tuplified_version fun_decl map
+          tupled_function_call_stub t closure_bound_var params tuplified_version
+        in
+        Variable.Map.add tuplified_version fun_decl
+          (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let fun_decls =
-    { ident = Set_of_closures_id.create current_compilation_unit;
+    { ident = Set_of_closures_id.create t.current_compilation_unit;
       funs =
-        List.fold_left close_one_function Variable.Map.empty function_declarations;
-      compilation_unit = current_compilation_unit } in
+        List.fold_left close_one_function Variable.Map.empty
+          function_declarations;
+      compilation_unit = t.current_compilation_unit } in
   let closure =
     { cl_fun = fun_decls;
       cl_free_var =
@@ -396,14 +441,21 @@ and close_functions external_env function_declarations =
              let internal_var = find_var closure_env_without_parameters id in
              let external_var = find_var external_env id in
              Variable.Map.add internal_var (Fvar(external_var, nid ())) map)
-          all_free_idents Variable.Map.empty;
+          (Function_decl.all_free_idents function_declarations)
+          Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty } in
 
   Fset_of_closures (closure, nid ())
 
-and tupled_function_call_stub id original_params tuplified_version =
+and tupled_function_call_stub t id original_params tuplified_version =
   let tuple_param =
-    Variable.create ~current_compilation_unit "tupled_stub_param" in
+    (* CR mshinwell for pchambart: This should carry the name of the original
+       variable (for debugging information output). *)
+    (* CR mshinwell for mshinwell: consider introducing [create_variable]
+       which takes [t] not [current_compilation_unit] *)
+    Variable.create "tupled_stub_param"
+      ~current_compilation_unit:t.current_compilation_unit
+  in
   let params = List.map (fun p -> rename_var t p) original_params in
   let call = Fapply(
       { ap_function = Fvar(tuplified_version,nid ());
@@ -424,23 +476,23 @@ and tupled_function_call_stub id original_params tuplified_version =
     body;
     dbg = Debuginfo.none }
 
-and close_list sb l = List.map (close sb) l
+and close_list t sb l = List.map (close t sb) l
 
-and close_named ?rec_ident let_bound_var env = function
+and close_named t ?rec_ident let_bound_var env = function
   | Lfunction(kind, params, body) ->
       let closure_bound_var = rename_var t let_bound_var in
       let decl =
-        Function_declaration.create ~rec_ident
+        Function_decl.create ~rec_ident
           ~closure_bound_var:(rename_var t let_bound_var)
           ~kind ~params ~body
       in
       Fclosure(
-        { fu_closure = close_functions env [decl];
+        { fu_closure = close_functions t env [decl];
           fu_fun = Closure_id.wrap closure_bound_var;
           fu_relative_to = None },
         nid ~name:"function" ())
   | lam ->
-      close env lam
+      close t env lam
 
 let lambda_to_flambda ~current_compilation_unit ~current_unit_id
     ~symbol_for_global' lam =
@@ -448,7 +500,7 @@ let lambda_to_flambda ~current_compilation_unit ~current_unit_id
     { current_compilation_unit;
       current_unit_id;
       symbol_for_global';
-      debugger_map = ref Variable.Map.empty;
+      debugger_map = Variable.Map.empty;
     }
   in
   (* Strings are the only expressions that can't be duplicated without
