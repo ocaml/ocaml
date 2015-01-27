@@ -195,6 +195,30 @@ end = struct
       (all_free_idents ts)
 end
 
+let tupled_function_call_stub t id original_params tuplified_version =
+  (* CR mshinwell for pchambart: This should carry the name of the original
+     variable (for debugging information output). *)
+  let tuple_param = fresh_variable t "tupled_stub_param" in
+  let params = List.map (fun p -> rename_var t p) original_params in
+  let call = Fapply(
+      { ap_function = Fvar(tuplified_version,nid ());
+        ap_arg = List.map (fun p' -> Fvar(p',nid ())) params;
+        ap_kind = Direct (Closure_id.wrap tuplified_version);
+        ap_dbg = Debuginfo.none },
+      nid ()) in
+  let _, body =
+    List.fold_left (fun (pos,body) param ->
+        let lam = Fprim(Pfield pos, [Fvar(tuple_param, nid ())],
+                        Debuginfo.none, nid ()) in
+        pos+1,
+        Flet(Not_assigned,param,lam,body,nid ()))
+      (0,call) params in
+  { stub = true;
+    params = [tuple_param];
+    free_variables = Variable.Set.of_list [tuple_param;tuplified_version];
+    body;
+    dbg = Debuginfo.none }
+
 let rec close_const = function
   | Const_base c -> Fconst(Fconst_base c, nid ~name:"cst" ())
   | Const_pointer c -> Fconst(Fconst_pointer c, nid ~name:"cstptr" ())
@@ -424,30 +448,6 @@ and close_functions t external_env function_declarations =
           all_free_idents Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty } in
   Fset_of_closures (closure, nid ())
-
-and tupled_function_call_stub t id original_params tuplified_version =
-  (* CR mshinwell for pchambart: This should carry the name of the original
-     variable (for debugging information output). *)
-  let tuple_param = fresh_variable t "tupled_stub_param" in
-  let params = List.map (fun p -> rename_var t p) original_params in
-  let call = Fapply(
-      { ap_function = Fvar(tuplified_version,nid ());
-        ap_arg = List.map (fun p' -> Fvar(p',nid ())) params;
-        ap_kind = Direct (Closure_id.wrap tuplified_version);
-        ap_dbg = Debuginfo.none },
-      nid ()) in
-  let _, body =
-    List.fold_left (fun (pos,body) param ->
-        let lam = Fprim(Pfield pos, [Fvar(tuple_param, nid ())],
-                        Debuginfo.none, nid ()) in
-        pos+1,
-        Flet(Not_assigned,param,lam,body,nid ()))
-      (0,call) params in
-  { stub = true;
-    params = [tuple_param];
-    free_variables = Variable.Set.of_list [tuple_param;tuplified_version];
-    body;
-    dbg = Debuginfo.none }
 
 and close_list t sb l = List.map (close t sb) l
 
