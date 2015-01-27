@@ -56,8 +56,16 @@ val data_at_toplevel_node : 'a flambda -> 'a
 
 val description_of_toplevel_node : 'a flambda -> string
 
-(* CR mshinwell for pchambart: comment! *)
 val recursive_functions : 'a function_declarations -> Variable.Set.t
+(** Recursive functions are the one that can call themselves or call
+    a function that can.
+
+    for instance in this simultaneous definition of [f] [g] and [h],
+    [f] and [g] are recursives, but not [h]
+      [let rec f x = g x
+       and g x = f x
+       and h x = g x]
+*)
 
 (** Sharing key *)
 (* CR mshinwell for pchambart: this needs a proper comment as discussed *)
