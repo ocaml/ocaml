@@ -879,6 +879,24 @@ and direct_apply env r clos funct fun_id func fapprox closure
     ret r value_unknown
   in
   let max_level = 3 in
+  (* If [unconditionally_inline] is [true], then the function will always be
+     inlined, and the strategy used will be that for non-recursive functions.
+
+     The cases where this happens are:
+     1. Stub functions for handling tuplified functions (generated during closure
+        conversion).
+     2. Stub functions for handling default optional arguments (generated in
+        bytecomp/simplify.ml).
+     3. Functor-like functions, viz. [functor_like].
+
+     In the third case, we know from the definition of the [functor_like]
+     predicate that the function is non-recursive.  In the other two cases, the
+     functions may actually be recursive, but not "directly recursive" (where we
+     say a function [f] is "directly recursive" if [f] is free in the body of
+     [f]).  It would in general be wrong to mark directly recursive functions as
+     stubs, even if specific cases work correctly.
+  *)
+  (* CR mshinwell for mshinwell: finish the comment *)
   let unconditionally_inline = func.stub || functor_like env clos approxs in
   let num_params = List.length func.params in
   let fun_cost =
@@ -902,9 +920,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
       let env = { env with inline_threshold = threshold } in
       let kept_params = closure.kept_params in
       (* Try inlining if the function is non-recursive and not too far above
-         the threshold (or if the function is to be unconditionally inlined,
-         which as per the assertion above also implies that it is not
-         recursive). *)
+         the threshold (or if the function is to be unconditionally inlined). *)
       if unconditionally_inline
         || (not recursive && env.inlining_level <= max_level)
       then
@@ -1005,8 +1021,9 @@ and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
 (* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
    a direct application of the new body.
-   Note: the function really does need to be recursive to end up in here;
-   a simultaneous binding [that is non-recursive] is not sufficient.
+   Note: the function really does need to be recursive (but possibly only via
+   some mutual recursion) to end up in here; a simultaneous binding [that is
+   non-recursive] is not sufficient.
 *)
 and inline_recursive_functions env r funct clos fun_id func fapprox
       closure_approx (args, approxs) kept_params ap_dbg =

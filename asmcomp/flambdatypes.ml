@@ -78,6 +78,8 @@ open Abstract_identifiers
       expressions such as: [Fprim (Pmakeblock(...), ...)].
 *)
 
+(* CR mshinwell: These constructors aren't very descriptive.  We should try
+   to improve the names. *)
 type let_kind =
   | Not_assigned
   | Assigned
