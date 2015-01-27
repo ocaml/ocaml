@@ -74,6 +74,8 @@ let find_var env id =
 module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
      function during closure conversion. *)
+  (* CR mshinwell: Maybe this isn't quite the right abstraction.  The "t list"
+     business seems slightly dubious. *)
   type t
 
   val create
