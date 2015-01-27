@@ -10,29 +10,46 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Introduction of closures *)
+(* Generation of [Flambda] intermediate language code from [Lambda] code.
 
-(* This pass bind free variables of functions in a explicitely created
-   closure.
+   The main transformation performed in this pass is closure conversion.
+   Function declarations (which may bind one or more variables identifying
+   functions, possibly with mutual recursion) are transformed to
+   [Fset_of_closures] expressions.  [Fclosure] expressions are then used to
+   select a closure for a particular function from a [Fset_of_closures]
+   expression.  The [Fset_of_closures] expressions say nothing about the
+   actual runtime layout of the closures; this is handled when [Flambda] code
+   is translated to [Clambda] code.
 
-   Also done here:
-   * constant blocks are converted to applications of the makeblock
-     primitive
-   * Levent nodes are removed and their informations is moved to
-     raise, function and method calls
-   * field(getglobal self) and set_field(getglobal self) are converted
-     to the Pgetglobalfield and Psetglobalfield primitives
-   * tupled function converted to a stub and a curried function
-   * apply and revapply primitives are removed
- *)
+   This pass also performs the following transformations.
+   - Constant blocks are converted to applications of the [Pmakeblock]
+     primitive.
+   - [Levent] debugging event nodes are removed and the information within
+     them attached to function, method and [raise] calls.
+   - Access to global fields of the current compilation unit (of the form
+     [Lprim (Pfield _ | Psetfield _, [Lprim (Pgetglobal _, []); ...])])
+     are converted to [Pgetglobalfield] and [Psetglobalfield] primitives.
+   - Tuplified functions are converted to curried functions and a stub
+     function emitted to call the curried version.  For example:
+       let rec f (x, y) = f (x + 1, y + 1)
+     is transformed to:
+       let rec internal_f x y = f (x + 1,y + 1)
+       and f (x, y) = internal_f x y  (* [f] is marked as a stub function *)
+   - The [Pdirapply] and [Prevapply] application primitives are removed and
+     converted to normal [Flambda] application nodes.
+   - String constants are lifted to the toplevel to avoid special cases later
+     (duplicating them may change the semantics of the program).
+*)
 
-open Symbol
 open Abstract_identifiers
 
-val intro:
-  ?for_bytecode:bool ->
-  current_compilation_unit:compilation_unit ->
-  current_unit_id:Ident.t ->
-  symbol_for_global':(Ident.t -> Symbol.t) ->
-  Lambda.lambda ->
-  Ident.t Variable.Map.t * Expr_id.t Flambda.flambda
+(* CR mshinwell for pchambart: Why is the [current_unit_id] not inside
+   the type [compilation_unit]?
+*)
+val lambda_to_flambda
+   : current_compilation_unit:Symbol.compilation_unit
+  -> current_unit_id:Ident.t
+  (* CR mshinwell for pchambart: Can we remove the ' on this label name? *)
+  -> symbol_for_global':(Ident.t -> Symbol.t)
+  -> Lambda.lambda
+  -> Ident.t Variable.Map.t * Expr_id.t Flambda.flambda

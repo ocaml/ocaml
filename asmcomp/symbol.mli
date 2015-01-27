@@ -12,6 +12,10 @@
 
 open Ext_types
 
+(* CR mshinwell for pchambart: I think maybe this module should only provide
+   the [Symbol] stuff, and we should move the other things elsewhere.
+   In particular, [Symbol.compilation_unit] doesn't make much sense. *)
+
 (** A symbol is an identifier of a constant provided by another
     compilation unit or of top level module.
 
@@ -24,12 +28,15 @@ open Ext_types
 
 (***********************************************************************)
 
+(* CR mshinwell for pchambart: [module Linkage_name] *)
 type linkage_name
 val linkage_name : string -> linkage_name
 val string_of_linkage_name : linkage_name -> string
 
 
 (***********************************************************************)
+
+(* CR mshinwell for pchambart: Convert to use [Identifiable] *)
 
 module Compilation_unit : sig
 

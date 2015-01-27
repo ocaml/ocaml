@@ -895,30 +895,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
   | (Flambdacost.Can_inline _) as threshold ->
       let fun_var = find_declaration_variable fun_id clos in
       let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
-      (* CR mshinwell: I tried to say
-           unconditionally inline ==> not recursive
-         but this assertion fails (e.g. ocamlbuild/glob.ml).
-
-         I was trying to protect against calling [inline_non_recursive_function]
-         on a function that was actually recursive.  Is that a reasonable thing
-         to do?
-
-         I presume the assertion failure was because [functor_like] is sometimes
-         saying "yes" for a recursive function?  If so then I wonder if we should
-         rename [unconditionally_inline] to
-         [unconditionally_inline_if_not_recursive] and change the condition below
-         from:
-
-           unconditionally_inline
-             || (not recursive && env.inlining_level <= max_level)
-
-         to:
-
-           not_recursive
-             && (unconditionally_inline_if_not_recursive
-                   || env.inlining_level <= max_level)
-      *)
-(*      assert ((not unconditionally_inline) || (not recursive)); *)
+      (* CR mshinwell for mshinwell: add comment about stub functions *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing *)
       let inline_threshold = env.inline_threshold in

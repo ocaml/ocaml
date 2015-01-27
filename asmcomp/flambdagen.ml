@@ -33,12 +33,13 @@ let rec add_debug_info ev f =
 
 let nid = Expr_id.create
 
-type function_declaration =
-  { rec_ident : Ident.t;
-    closure_bound_var : Variable.t;
-    kind : function_kind;
-    params : Ident.t list;
-    body : lambda }
+type function_declaration = {
+  rec_ident : Ident.t;
+  closure_bound_var : Variable.t;
+  kind : function_kind;
+  params : Ident.t list;
+  body : lambda;
+}
 
 let rec close_const = function
   | Const_base c -> Fconst(Fconst_base c, nid ~name:"cst" ())
@@ -50,7 +51,6 @@ let rec close_const = function
             List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
 
 let to_flambda
-    ~for_bytecode
     ~current_compilation_unit ~current_unit_id
     ~symbol_for_global'
     lam =
@@ -166,7 +166,6 @@ let to_flambda
         close env (Lapply(funct, [arg], loc))
     | Lprim(Praise kind, [Levent(arg, ev)]) ->
         let arg = close env arg in
-        let arg = if for_bytecode then Fevent (arg, ev, nid ()) else arg in
         Fprim(Praise kind, [arg], Debuginfo.from_raise ev, nid ())
     | Lprim(Pfield i, [Lprim(Pgetglobal id, [])])
       when Ident.same id current_unit_id ->
@@ -177,8 +176,7 @@ let to_flambda
         Fprim(Psetglobalfield i, [close env lam], Debuginfo.none,
               nid ~name:"setglobalfield" ())
     | Lprim(Pgetglobal id, [])
-      when not (Ident.is_predef_exn id) &&
-           not for_bytecode ->
+      when not (Ident.is_predef_exn id) ->
         assert(not (Ident.same id current_unit_id));
         let symbol = symbol_for_global' id in
         Fsymbol (symbol,nid ~name:"external_global" ())
@@ -244,8 +242,7 @@ let to_flambda
     | Lassign(id, lam) ->
         Fassign(find_var env id, close env lam, nid ())
     | Levent(lam, ev) ->
-        let lam = add_debug_info ev (close env lam) in
-        if for_bytecode then Fevent(lam, ev, nid ()) else lam
+        add_debug_info ev (close env lam)
     | Lifused _ ->
         assert false
 
@@ -497,13 +494,12 @@ let lift_strings_to_toplevel lam =
            lam))
     lam bindings
 
-let intro ?(for_bytecode = false) ~current_compilation_unit ~current_unit_id
+let lambda_to_flambda ~current_compilation_unit ~current_unit_id
     ~symbol_for_global' lam =
   (* Strings are the only expressions that can't be duplicated without
      changing the semantics. So we lift them to toplevel to avoid
      having to handle special cases later.
      There is no runtime cost to this transformation: strings are
      constants, they will not appear in the closures *)
-  let lam = if for_bytecode then lam else lift_strings_to_toplevel lam in
-  to_flambda ~for_bytecode ~current_compilation_unit ~current_unit_id
-    ~symbol_for_global' lam
+  to_flambda ~current_compilation_unit ~current_unit_id
+    ~symbol_for_global' (lift_strings_to_toplevel lam)
