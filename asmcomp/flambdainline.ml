@@ -60,61 +60,61 @@ module Env : sig
 
 end = struct
 
-type t = {
-  env_approx : approx Variable.Map.t;
-  global : (int, approx) Hashtbl.t;
-  current_functions : Set_of_closures_id.Set.t;
-  (* The functions currently being declared: used to avoid inlining
-     recursively *)
-  inlining_level : int;
-  (* Number of times "inline" has been called recursively *)
-  sb : Flambdasubst.t;
-  inline_threshold : Flambdacost.inline_threshold ;
-  closure_depth : int;
-}
+  type t = {
+    env_approx : approx Variable.Map.t;
+    global : (int, approx) Hashtbl.t;
+    current_functions : Set_of_closures_id.Set.t;
+    (* The functions currently being declared: used to avoid inlining
+       recursively *)
+    inlining_level : int;
+    (* Number of times "inline" has been called recursively *)
+    sb : Flambdasubst.t;
+    inline_threshold : Flambdacost.inline_threshold ;
+    closure_depth : int;
+  }
 
-let empty_env () =
-  { env_approx = Variable.Map.empty;
-    global = Hashtbl.create 10;
-    current_functions = Set_of_closures_id.Set.empty;
-    inlining_level = 0;
-    sb = Flambdasubst.empty;
-    inline_threshold =
-      Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
-    closure_depth = 0}
+  let empty_env () =
+    { env_approx = Variable.Map.empty;
+      global = Hashtbl.create 10;
+      current_functions = Set_of_closures_id.Set.empty;
+      inlining_level = 0;
+      sb = Flambdasubst.empty;
+      inline_threshold =
+        Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
+      closure_depth = 0}
 
-let local_env env =
-  { env with
-    env_approx = Variable.Map.empty;
-    sb = Flambdasubst.new_substitution env.sb }
+  let local_env env =
+    { env with
+      env_approx = Variable.Map.empty;
+      sb = Flambdasubst.new_substitution env.sb }
 
-let decrease_inline_threshold env dec =
-  assert(dec >= 0);
-  let open Flambdacost in
-  match env.inline_threshold with
-  | Never_inline -> env
-  | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
+  let decrease_inline_threshold env dec =
+    assert(dec >= 0);
+    let open Flambdacost in
+    match env.inline_threshold with
+    | Never_inline -> env
+    | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
 
-let find id env =
-  try Variable.Map.find id env.env_approx
-  with Not_found ->
-    Misc.fatal_error
-      (Format.asprintf "unbound variable %a@." Variable.print id)
+  let find id env =
+    try Variable.Map.find id env.env_approx
+    with Not_found ->
+      Misc.fatal_error
+        (Format.asprintf "unbound variable %a@." Variable.print id)
 
-let present env var = Variable.Map.mem var env.env_approx
+  let present env var = Variable.Map.mem var env.env_approx
 
-let activate_substitution env =
-  { env with sb = Flambdasubst.activate env.sb }
+  let activate_substitution env =
+    { env with sb = Flambdasubst.activate env.sb }
 
-let add_approx id approx env =
-  let approx =
-    match approx.var with
-    | Some var when present env var ->
+  let add_approx id approx env =
+    let approx =
+      match approx.var with
+      | Some var when present env var ->
         approx
-    | _ ->
+      | _ ->
         { approx with var = Some id }
-  in
-  { env with env_approx = Variable.Map.add id approx env.env_approx }
+    in
+    { env with env_approx = Variable.Map.add id approx env.env_approx }
 
 end
 
