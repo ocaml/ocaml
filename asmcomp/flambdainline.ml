@@ -142,7 +142,9 @@ let subst_toplevel sb lam =
 
 (* Utility function to duplicate an expression and makes a function from it *)
 (* CR mshinwell for pchambart: can we kick this function out of this source
-   file?  It seems generic, and maybe useful elsewhere in due course. *)
+   file?  It seems generic, and maybe useful elsewhere in due course.
+   It certainly could.
+ *)
 let make_closure_declaration id lam params =
   let free_variables = Flambdaiter.free_variables lam in
   let param_set = Variable.Set.of_list params in
@@ -168,17 +170,19 @@ let make_closure_declaration id lam params =
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
 
-  let function_declarations =
-    { ident = Set_of_closures_id.create (Compilenv.current_unit ());
-      funs = Variable.Map.singleton id function_declaration;
-      compilation_unit = Compilenv.current_unit () }
-  in
-
-  let closure =
-    { cl_fun = function_declarations;
-      cl_free_var = fv';
-      cl_specialised_arg = Variable.Map.empty } in
-  Fset_of_closures(closure, Expr_id.create ())
+  Fclosure
+    ({ fu_closure =
+         Fset_of_closures
+           ({ cl_fun =
+                { ident = Set_of_closures_id.create (Compilenv.current_unit ());
+                  funs = Variable.Map.singleton id function_declaration;
+                  compilation_unit = Compilenv.current_unit () };
+              cl_free_var = fv';
+              cl_specialised_arg = Variable.Map.empty },
+            Expr_id.create ());
+       fu_fun = Closure_id.wrap id;
+       fu_relative_to = None},
+     Expr_id.create ())
 
 let check_constant_result r lam approx =
   let lam, approx = Flambdaapprox.check_constant_result lam approx in
@@ -980,13 +984,10 @@ and partial_apply funct fun_id func args ap_dbg eid =
   let expr = Fapply ({ ap_function = Fvar(funct_id, Expr_id.create ());
                        ap_arg = call_args;
                        ap_kind = Direct fun_id; ap_dbg }, Expr_id.create ()) in
-  let fset_of_closures = make_closure_declaration new_fun_id expr remaining_args in
-  let offset = Fclosure ({fu_closure = fset_of_closures;
-                           fu_fun = Closure_id.wrap new_fun_id;
-                           fu_relative_to = None}, Expr_id.create ()) in
+  let closures = make_closure_declaration new_fun_id expr remaining_args in
   let with_args = List.fold_right (fun (id', arg) expr ->
       Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
-      applied_args offset in
+      applied_args closures in
   Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
 
 (* Inlining of a non-recursive function just yields a copy of the function's
