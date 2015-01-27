@@ -690,6 +690,7 @@ and transform_set_of_closures_expression env r cl annot =
       let lam, r = loop env r lam in
       Variable.Map.add id (lam, r.approx) fv, r) fv (Variable.Map.empty, r)
   in
+  let environment_before_cleaning = env in
   (* Remove every variable binding from the environment.
      This isn't necessary, but allows to catch bugs
      concerning variable escaping their scope. *)
@@ -714,7 +715,8 @@ and transform_set_of_closures_expression env r cl annot =
   let parameter_approximations =
     (* The approximation of arguments that are known to be always the same *)
     Variable.Map.map_keys apply_substitution
-      (Variable.Map.map (fun id -> find id env) cl_specialised_arg)
+      (Variable.Map.map (fun id -> find id environment_before_cleaning)
+         cl_specialised_arg)
   in
   let prev_closure_symbols =
     SymbolMap.map apply_substitution prev_closure_symbols
