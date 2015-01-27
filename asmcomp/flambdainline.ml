@@ -918,7 +918,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
              && (unconditionally_inline_if_not_recursive
                    || env.inlining_level <= max_level)
       *)
-      assert ((not unconditionally_inline) || (not recursive));
+(*      assert ((not unconditionally_inline) || (not recursive)); *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing *)
       let inline_threshold = env.inline_threshold in
