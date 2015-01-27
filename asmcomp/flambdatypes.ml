@@ -201,6 +201,8 @@ and 'a function_declaration = {
 }
 
 and 'a ffunction = {
+  (* CR mshinwell: The [fu_closure] field is confusing.  Can we get this to
+     have a variant type?  Not sure *)
   fu_closure : 'a flambda;
   fu_fun : Closure_id.t;
   fu_relative_to : Closure_id.t option;

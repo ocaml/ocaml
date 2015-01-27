@@ -243,6 +243,7 @@ let rec close t env = function
           (fun (id,  _) env -> add_var id (create_var t id) env)
           defs env in
       let function_declarations =
+        (* Filter out bindings in the [let rec] that are not functions. *)
         List.map
           (function
             | (rec_ident, Lfunction(kind, params, body)) ->
@@ -257,6 +258,8 @@ let rec close t env = function
       in
       begin match Misc.some_if_all_elements_are_some function_declarations with
       | None ->
+          (* CR mshinwell for pchambart: add comment mirroring the one
+             below *)
           let fdefs =
             List.map
               (fun (id, def) ->
@@ -265,10 +268,10 @@ let rec close t env = function
               defs in
           Fletrec(fdefs, close t env body, nid ~name:"letrec" ())
       | Some function_declarations ->
-          (* When all the bindings are functions, we build a single closure
-             for all the functions *)
-          let clos = close_functions t env function_declarations in
-          let clos_var = fresh_variable t "clos" in
+          (* When all the bindings are functions, we build a single set of
+             closures for all the functions. *)
+          let set_of_closures = close_functions t env function_declarations in
+          let set_of_closures_var = fresh_variable t "set_of_closures" in
           let body =
             List.fold_left (fun body decl ->
                 let rec_ident = Function_decl.rec_ident decl in
@@ -276,13 +279,13 @@ let rec close t env = function
                 let let_bound_var = find_var env rec_ident in
                 Flet(Not_assigned, let_bound_var,
                      Fclosure(
-                       { fu_closure = Fvar (clos_var, nid ());
+                       { fu_closure = Fvar (set_of_closures_var, nid ());
                          fu_fun = Closure_id.wrap closure_bound_var;
                          fu_relative_to = None },
                        nid ()),
                      body, nid ()))
               (close t env body) function_declarations in
-          Flet(Not_assigned, clos_var, clos,
+          Flet(Not_assigned, set_of_closures_var, set_of_closures,
                body, nid ~name:"closure_letrec" ())
       end
   | Lsend(kind, met, obj, args, _) ->
@@ -307,21 +310,8 @@ let rec close t env = function
       assert(not (Ident.same id t.current_unit_id));
       let symbol = t.symbol_for_global' id in
       Fsymbol (symbol,nid ~name:"external_global" ())
-  | Lprim(Pmakeblock _ as p, args) ->
-      (* Lift the contents of the block to variables. This allows to
-         eliminate the allocation if the block does not escape.
-         A more general solution would be to convert completely to ANF *)
-      let (block,lets) = List.fold_right (fun lam (block,lets) ->
-          match close t env lam with
-          | Fvar(v,_) as e -> (e::block,lets)
-          | expr ->
-              let v = fresh_variable t "block_field" in
-              Fvar(v,nid ()) :: block, (v,expr)::lets)
-          args ([],[]) in
-      let block = Fprim(p, block, Debuginfo.none, nid ~name:"block" ()) in
-      List.fold_left (fun body (v,expr) ->
-          Flet(Not_assigned, v, expr, body, nid ()))
-        block lets
+  | Lprim(Pmakeblock _ as primitive, args) ->
+      lift_block_construction_to_variables t ~env ~primitive ~args
   | Lprim(p, args) ->
       Fprim(p, close_list t env args, Debuginfo.none,
             nid ~name:"prim" ())
@@ -482,6 +472,38 @@ and close_named t ?rec_ident let_bound_var env = function
         nid ~name:"function" ())
   | lam ->
       close t env lam
+
+(* Transform a [Pmakeblock] operation, that allocates and fills a new block,
+   to a sequence of [let]s.  The aim is to then eliminate the allocation of
+   the block, so long as it does not escape.  For example,
+
+     Pmakeblock [expr_0; ...; expr_n]
+
+   is transformed to:
+
+     let x_0 = expr_0 in
+     ...
+     let x_n = expr_n in
+     Pmakeblock [x_0; ...; x_n]
+
+   A more general solution would be to convert completely to ANF.
+*)
+and lift_block_construction_to_variables t ~env ~primitive ~args =
+  let block_fields, lets =
+    List.fold_right (fun lam (block, lets) ->
+        match close t env lam with
+        | Fvar (v, _) as e -> e::block, lets
+        | expr ->
+          let v = fresh_variable t "block_field" in
+          Fvar (v, nid ())::block, (v, expr)::lets)
+      args ([],[])
+  in
+  let block =
+    Fprim (primitive, block_fields, Debuginfo.none, nid ~name:"block" ())
+  in
+  List.fold_left (fun body (v, expr) ->
+      Flet(Not_assigned, v, expr, body, nid ()))
+    block lets
 
 let lambda_to_flambda ~current_compilation_unit ~current_unit_id
     ~symbol_for_global' lam =
