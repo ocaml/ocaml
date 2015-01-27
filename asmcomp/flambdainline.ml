@@ -257,7 +257,20 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       f ~acc ~var ~expr)
     (variables_bound_by_the_closure fun_id clos) init
 
-(* CR mshinwell for pchambart: throughout, [kept_params] needs a better name *)
+(* CR mshinwell for pchambart: throughout, [kept_params] needs a better name.
+   Those are the parameters for which it is safe to specialise the function
+   body to one known approximation.
+   We know that recursive calls won't modify them: they are alias of the
+   parameters.
+   For instance x is in kept_params:
+     [let rec f x y = (f x y) + (f x (y+1))]
+   partial application also works
+   [let rec f x l = List.iter (f x) l]
+
+   Maybe naming it for what it is used for instead of what it is may be better ?
+   Does parameter_safe_for_specialisation sound ok ?
+ *)
+
 let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
       ~approxs ~kept_params ~max_level =
   assert (List.length func.params = List.length approxs);
@@ -280,7 +293,8 @@ let transform_closure_expression r flam off rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  (* CR mshinwell for pchambart: we should rename [off_id] now *)
+  (* CR mshinwell for pchambart: we should rename [off_id] now.
+     Clearly. is [closure_id] ok ? *)
   let off_id closure off =
     let off = AR.fun_off_id closure.ffunction_sb off in
     (try ignore (find_declaration off closure.ffunctions)
@@ -936,10 +950,12 @@ and direct_apply env r clos funct fun_id func fapprox closure
         then
           body, r_inlined
         else
-          (* CR mshinwell for pchambart: please clarify this comment *)
-          (* do not use approximation: there can be renamed offsets.
-             A better solution would be to use the generic approximation
-             of the function *)
+          (* r_inlined contains an approximation that may be invalid for the
+             untransformed expression: it may reference functions that only
+             exists if the body of the function is effectively inlined.
+             If the function approximation contained an approximation that
+             does not depends on the effective value of its arguments, it
+             could be returned instead of [value_unknown] *)
           no_transformation ()
       else if
         recursive
