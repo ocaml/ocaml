@@ -387,6 +387,9 @@ and close_functions t external_env function_declarations =
   let used_idents_by_function =
     Function_decl.used_idents_by_function function_declarations
   in
+  let all_free_idents =
+    Function_decl.all_free_idents function_declarations
+  in
   let close_one_function map decl =
     let body = Function_decl.body decl in
     let dbg = match body with
@@ -441,10 +444,8 @@ and close_functions t external_env function_declarations =
              let internal_var = find_var closure_env_without_parameters id in
              let external_var = find_var external_env id in
              Variable.Map.add internal_var (Fvar(external_var, nid ())) map)
-          (Function_decl.all_free_idents function_declarations)
-          Variable.Map.empty;
+          all_free_idents Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty } in
-
   Fset_of_closures (closure, nid ())
 
 and tupled_function_call_stub t id original_params tuplified_version =
@@ -482,9 +483,7 @@ and close_named t ?rec_ident let_bound_var env = function
   | Lfunction(kind, params, body) ->
       let closure_bound_var = rename_var t let_bound_var in
       let decl =
-        Function_decl.create ~rec_ident
-          ~closure_bound_var:(rename_var t let_bound_var)
-          ~kind ~params ~body
+        Function_decl.create ~rec_ident ~closure_bound_var ~kind ~params ~body
       in
       Fclosure(
         { fu_closure = close_functions t env [decl];
