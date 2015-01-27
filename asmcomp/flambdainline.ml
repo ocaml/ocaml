@@ -33,7 +33,6 @@ let new_var name =
 module Env : sig
   type t = {
     env_approx : approx Variable.Map.t;
-    global : (int, approx) Hashtbl.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -44,7 +43,7 @@ module Env : sig
     closure_depth : int;
   }
 
-  val empty_env : unit -> t
+  val empty_env : t
 
   val local_env : t -> t
 
@@ -62,7 +61,6 @@ end = struct
 
   type t = {
     env_approx : approx Variable.Map.t;
-    global : (int, approx) Hashtbl.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -73,9 +71,8 @@ end = struct
     closure_depth : int;
   }
 
-  let empty_env () =
+  let empty_env =
     { env_approx = Variable.Map.empty;
-      global = Hashtbl.create 10;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       sb = Flambdasubst.empty;
@@ -144,7 +141,7 @@ let use_staticfail acc i =
 let exit_scope_catch acc i =
   { acc with used_staticfail = Static_exception.Set.remove i acc.used_staticfail }
 
-let init_r () =
+let init_r =
   { approx = value_unknown;
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
@@ -1124,7 +1121,7 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
   loop (activate_substitution env) r expr
 
 let inline tree =
-  let result, r = loop (empty_env ()) (init_r ()) tree in
+  let result, r = loop empty_env init_r tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
