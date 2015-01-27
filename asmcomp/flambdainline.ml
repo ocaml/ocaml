@@ -930,10 +930,8 @@ and direct_apply env r clos funct fun_id func fapprox closure
         in
         (* Now we know how large the inlined version actually is, determine
            whether or not to keep it. *)
-        (* CR mshinwell for pchambart: Shouldn't this say "body", not
-           "func.body"? (!) *)
         if unconditionally_inline
-          || Flambdacost.can_inline func.body inline_threshold
+          || Flambdacost.can_inline body inline_threshold
                ~bonus:num_params
         then
           body, r_inlined
