@@ -243,7 +243,12 @@ module String_M = struct
   let print = Format.pp_print_string
 end
 
-module IntSet = ExtSet(Int)
+module IntSet = struct
+  include ExtSet(Int)
+
+  let rec zero_to_n n =
+    if n < 0 then empty else add n (zero_to_n (n-1))
+end
 module IntMap = ExtMap(Int)
 module IntTbl = ExtHashtbl(Int)
 

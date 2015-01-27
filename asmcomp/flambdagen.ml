@@ -209,13 +209,14 @@ let rec close t env = function
       let var = find_var env id in
       Fvar (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
   | Lconst cst -> close_const cst
-  | Llet(str, id, lam, body) ->
-      let str =
-        match str with
+  | Llet(let_kind, id, lam, body) ->
+      let let_kind =
+        match let_kind with
         | Variable -> Assigned
-        | _ -> Not_assigned in
+        | Strict | Alias | StrictOpt -> Not_assigned
+      in
       let var = create_var t id in
-      Flet(str, var, close_named t var env lam,
+      Flet(let_kind, var, close_named t var env lam,
            close t (add_var id var env) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
       (* CR-someday mshinwell: Identifiers should have proper names.  If
@@ -243,9 +244,8 @@ let rec close t env = function
           (fun (id,  _) env -> add_var id (create_var t id) env)
           defs env in
       let function_declarations =
-        (* Filter out bindings in the [let rec] that are not functions. *)
-        List.map
-          (function
+        (* Identify any bindings in the [let rec] that are functions. *)
+        List.map (function
             | (rec_ident, Lfunction(kind, params, body)) ->
                 let closure_bound_var = create_var t rec_ident in
                 let function_declaration =
@@ -291,12 +291,10 @@ let rec close t env = function
   | Lsend(kind, met, obj, args, _) ->
       Fsend(kind, close t env met, close t env obj,
             close_list t env args, Debuginfo.none, nid ())
-  | Lprim(Pdirapply loc,[funct;arg])
-  | Lprim(Prevapply loc,[arg;funct]) ->
+  | Lprim(Pdirapply loc, [funct; arg]) | Lprim(Prevapply loc, [arg; funct]) ->
       close t env (Lapply(funct, [arg], loc))
   | Lprim(Praise kind, [Levent(arg, ev)]) ->
-      let arg = close t env arg in
-      Fprim(Praise kind, [arg], Debuginfo.from_raise ev, nid ())
+      Fprim(Praise kind, [close t env arg], Debuginfo.from_raise ev, nid ())
   | Lprim(Pfield i, [Lprim(Pgetglobal id, [])])
     when Ident.same id t.current_unit_id ->
       Fprim(Pgetglobalfield(id,i), [], Debuginfo.none,
@@ -313,17 +311,14 @@ let rec close t env = function
   | Lprim(Pmakeblock _ as primitive, args) ->
       lift_block_construction_to_variables t ~env ~primitive ~args
   | Lprim(p, args) ->
-      Fprim(p, close_list t env args, Debuginfo.none,
-            nid ~name:"prim" ())
+      Fprim(p, close_list t env args, Debuginfo.none, nid ~name:"prim" ())
   | Lswitch(arg, sw) ->
-      let aux (i,lam) = i, close t env lam in
-      let rec set n = (* set of integers {0, 1, ... n} *)
-        if n < 0 then Ext_types.IntSet.empty
-        else Ext_types.IntSet.add n (set (n-1)) in
+      let aux (i, lam) = i, close t env lam in
+      let zero_to_n = Ext_types.IntSet.zero_to_n in
       Fswitch(close t env arg,
-              { fs_numconsts = set (sw.sw_numconsts - 1);
+              { fs_numconsts = zero_to_n (sw.sw_numconsts - 1);
                 fs_consts = List.map aux sw.sw_consts;
-                fs_numblocks = set (sw.sw_numblocks - 1);
+                fs_numblocks = zero_to_n (sw.sw_numblocks - 1);
                 fs_blocks = List.map aux sw.sw_blocks;
                 fs_failaction = Misc.may_map (close t env) sw.sw_failaction },
               nid ~name:"switch" ())
@@ -348,15 +343,13 @@ let rec close t env = function
       Fifthenelse(close t env arg, close t env ifso, close t env ifnot,
                   nid ~name:"if" ())
   | Lsequence(lam1, lam2) ->
-      Fsequence(close t env lam1, close t env lam2,
-                nid ~name:"seq" ())
+      Fsequence(close t env lam1, close t env lam2, nid ~name:"seq" ())
   | Lwhile(cond, body) ->
       Fwhile(close t env cond, close t env body, nid ())
   | Lfor(id, lo, hi, dir, body) ->
       let var = create_var t id in
       Ffor(var, close t env lo, close t env hi, dir,
-           close t (add_var id var env) body,
-           nid ())
+           close t (add_var id var env) body, nid ())
   | Lassign(id, lam) ->
       Fassign(find_var env id, close t env lam, nid ())
   | Levent(lam, ev) ->
@@ -378,8 +371,7 @@ and close_functions t external_env function_declarations =
   let close_one_function map decl =
     let body = Function_decl.body decl in
     let dbg = match body with
-      | Levent (_,({lev_kind=Lev_function} as ev)) ->
-          Debuginfo.from_call ev
+      | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
       | _ -> Debuginfo.none in
     let params = Function_decl.params decl in
     let closure_env =
@@ -459,6 +451,9 @@ and tupled_function_call_stub t id original_params tuplified_version =
 
 and close_list t sb l = List.map (close t sb) l
 
+(* CR mshinwell for pchambart: I know this name was taken from the existing
+   code, but I think we should rename it.  It doesn't adequately express
+   what's going on. *)
 and close_named t ?rec_ident let_bound_var env = function
   | Lfunction(kind, params, body) ->
       let closure_bound_var = rename_var t let_bound_var in

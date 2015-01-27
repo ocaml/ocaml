@@ -113,7 +113,12 @@ module UnitId :
 
 module Int : PrintableHashOrdered with type t = int
 
-module IntSet : ExtSet with module M := Int
+module IntSet : sig
+  include ExtSet with module M := Int
+
+  (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)
+  val zero_to_n : int -> t
+end
 module IntMap : ExtMap with module M := Int
 module IntTbl : ExtHashtbl with module M := Int
 
@@ -125,6 +130,8 @@ module StringSet : ExtSet with module M := String_M
 module StringMap : ExtMap with module M := String_M
 module StringTbl : ExtHashtbl with module M := String_M
 
+(* CR mshinwell: We should use [Identifiable] above so everything is
+   uniform. *)
 module type Identifiable = sig
   type t
   module M : PrintableHashOrdered with type t = t
