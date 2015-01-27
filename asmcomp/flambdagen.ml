@@ -100,10 +100,15 @@ module Function_decl : sig
   val primitive_wrapper : t -> lambda option
 
   (* CR mshinwell for pchambart: Please check these comments *)
-  (* CR mshinwell for pchambart: Should improve the name of this function. *)
+  (* CR mshinwell for pchambart: Should improve the name of this function.
+     How about "free_variables_in_body"?
+  *)
   (* All identifiers free in the bodies of the given function declarations,
      indexed by the identifiers corresponding to the functions themselves. *)
   val used_idents_by_function : t list -> IdentSet.t Variable.Map.t
+
+  (* Like [used_idents_by_function], but for just one function. *)
+  val used_idents : t -> IdentSet.t
 
   (* All identifiers free in the given function declarations after the binding
      of parameters and function identifiers has been performed. *)
@@ -111,7 +116,7 @@ module Function_decl : sig
 
   (* A map from identifiers to their corresponding [Variable.t]s whose domain
      is the set of all identifiers free in the bodies of the declarations that
-     are neither bound as a parameter nor function identifier.
+     are not bound as parameters.
 
      This function creates new [Variable.t] values for everything except the
      function identifiers by using the supplied [create_var] function. *)
@@ -169,13 +174,16 @@ end = struct
 
   let used_idents_by_function ts =
     List.fold_right
-      (fun {closure_bound_var; body; params} map ->
+      (fun { closure_bound_var; body; } map ->
          Variable.Map.add closure_bound_var (Lambda.free_variables body) map)
       ts Variable.Map.empty
 
   let all_used_idents ts =
     Variable.Map.fold (fun _ -> IdentSet.union)
       (used_idents_by_function ts) IdentSet.empty
+
+  let used_idents t =
+    Lambda.free_variables t.body
 
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
@@ -386,9 +394,6 @@ and close_functions t external_env function_declarations =
     Function_decl.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
   in
-  let used_idents_by_function =
-    Function_decl.used_idents_by_function function_declarations
-  in
   let all_free_idents =
     Function_decl.all_free_idents function_declarations
   in
@@ -398,12 +403,22 @@ and close_functions t external_env function_declarations =
       | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
       | _ -> Debuginfo.none in
     let params = Function_decl.params decl in
+    (* Create fresh variables for the elements of the closure (i.e. the
+       free variables of the body, minus the parameters).  This induces a
+       renaming on [Function_decl.used_idents]; the results of that renaming
+       are stored in [free_variables]. *)
     let closure_env =
-      List.fold_right
-        (fun id env -> add_var id (create_var t id) env)
+      List.fold_right (fun id env -> add_var id (create_var t id) env)
         params closure_env_without_parameters
     in
-    (* If the function is a wrapper function: force inline *)
+    let free_variables =
+      IdentSet.fold
+        (fun id set -> Variable.Set.add (find_var closure_env id) set)
+        (Function_decl.used_idents decl)
+        Variable.Set.empty
+    in
+    (* If the function is an eta-expansion wrapper for a primitive, make
+       sure it always gets inlined. *)
     let stub, body =
       match Function_decl.primitive_wrapper decl with
       | None -> false, body
@@ -411,15 +426,8 @@ and close_functions t external_env function_declarations =
     in
     let params = List.map (find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
-    let fun_decl =
-      { stub; params; dbg;
-        (* CR mshinwell: try to move this into [Function_decl] *)
-        free_variables =
-          IdentSet.fold
-            (fun id set -> Variable.Set.add (find_var closure_env id) set)
-            (Variable.Map.find closure_bound_var used_idents_by_function)
-            Variable.Set.empty;
-        body = close t closure_env body } in
+    let body = close t closure_env body in
+    let fun_decl = { stub; params; dbg; free_variables; body; } in
     match Function_decl.kind decl with
     | Curried ->
         Variable.Map.add closure_bound_var fun_decl map
