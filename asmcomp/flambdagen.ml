@@ -40,9 +40,11 @@ let rec add_debug_info ev f =
 
 let nid = Expr_id.create
 
+let fresh_variable t name =
+  Variable.create name ~current_compilation_unit:t.current_compilation_unit
+
 let create_var t id =
-  let current_compilation_unit = t.current_compilation_unit in
-  let var = Variable.create ~current_compilation_unit (Ident.name id) in
+  let var = fresh_variable t (Ident.name id) in
   t.debugger_map <- Variable.Map.add var id t.debugger_map;
   var
 
@@ -216,12 +218,9 @@ let rec close t env = function
       Flet(str, var, close_named t var env lam,
            close t (add_var id var env) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
-      let closure_bound_var =
-        (* CR-someday mshinwell: Identifiers should have proper names.  If
-           the function is anonymous, the location can be used. *)
-        Variable.create ~current_compilation_unit:t.current_compilation_unit
-          "fun"
-      in
+      (* CR-someday mshinwell: Identifiers should have proper names.  If
+         the function is anonymous, the location can be used. *)
+      let closure_bound_var = fresh_variable t "fun" in
       let decl =
         Function_decl.create ~rec_ident:None ~closure_bound_var ~kind
           ~params ~body
@@ -266,13 +265,10 @@ let rec close t env = function
               defs in
           Fletrec(fdefs, close t env body, nid ~name:"letrec" ())
       | Some function_declarations ->
-          (* When all the binding are functions, we build a single closure
+          (* When all the bindings are functions, we build a single closure
              for all the functions *)
           let clos = close_functions t env function_declarations in
-          let clos_var =
-            Variable.create "clos"
-              ~current_compilation_unit:t.current_compilation_unit
-          in
+          let clos_var = fresh_variable t "clos" in
           let body =
             List.fold_left (fun body decl ->
                 let rec_ident = Function_decl.rec_ident decl in
@@ -319,10 +315,7 @@ let rec close t env = function
           match close t env lam with
           | Fvar(v,_) as e -> (e::block,lets)
           | expr ->
-              let v =
-                Variable.create "block_field"
-                  ~current_compilation_unit:t.current_compilation_unit
-              in
+              let v = fresh_variable t "block_field" in
               Fvar(v,nid ()) :: block, (v,expr)::lets)
           args ([],[]) in
       let block = Fprim(p, block, Debuginfo.none, nid ~name:"block" ()) in
@@ -451,14 +444,9 @@ and close_functions t external_env function_declarations =
   Fset_of_closures (closure, nid ())
 
 and tupled_function_call_stub t id original_params tuplified_version =
-  let tuple_param =
-    (* CR mshinwell for pchambart: This should carry the name of the original
-       variable (for debugging information output). *)
-    (* CR mshinwell for mshinwell: consider introducing [create_variable]
-       which takes [t] not [current_compilation_unit] *)
-    Variable.create "tupled_stub_param"
-      ~current_compilation_unit:t.current_compilation_unit
-  in
+  (* CR mshinwell for pchambart: This should carry the name of the original
+     variable (for debugging information output). *)
+  let tuple_param = fresh_variable t "tupled_stub_param" in
   let params = List.map (fun p -> rename_var t p) original_params in
   let call = Fapply(
       { ap_function = Fvar(tuplified_version,nid ());
