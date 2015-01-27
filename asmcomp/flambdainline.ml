@@ -30,7 +30,37 @@ let new_var name =
    of this source file, and giving it a signature?  Then we could nicely
    collect together all of the environment-related stuff.
 *)
-type env = {
+module Env : sig
+  type t = {
+    env_approx : approx Variable.Map.t;
+    global : (int, approx) Hashtbl.t;
+    current_functions : Set_of_closures_id.Set.t;
+    (* The functions currently being declared: used to avoid inlining
+       recursively *)
+    inlining_level : int;
+    (* Number of times "inline" has been called recursively *)
+    sb : Flambdasubst.t;
+    inline_threshold : Flambdacost.inline_threshold ;
+    closure_depth : int;
+  }
+
+  val empty_env : unit -> t
+
+  val local_env : t -> t
+
+  val decrease_inline_threshold : t -> int -> t
+
+  val find : Variable.t -> t -> approx
+
+  val present : t -> Variable.t -> bool
+
+  val activate_substitution : t -> t
+
+  val add_approx : Variable.t -> approx -> t -> t
+
+end = struct
+
+type t = {
   env_approx : approx Variable.Map.t;
   global : (int, approx) Hashtbl.t;
   current_functions : Set_of_closures_id.Set.t;
@@ -65,6 +95,31 @@ let decrease_inline_threshold env dec =
   | Never_inline -> env
   | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
 
+let find id env =
+  try Variable.Map.find id env.env_approx
+  with Not_found ->
+    Misc.fatal_error
+      (Format.asprintf "unbound variable %a@." Variable.print id)
+
+let present env var = Variable.Map.mem var env.env_approx
+
+let activate_substitution env =
+  { env with sb = Flambdasubst.activate env.sb }
+
+let add_approx id approx env =
+  let approx =
+    match approx.var with
+    | Some var when present env var ->
+        approx
+    | _ ->
+        { approx with var = Some id }
+  in
+  { env with env_approx = Variable.Map.add id approx env.env_approx }
+
+end
+
+open Env
+
 type ret =
   { approx : approx;
     globals : approx IntMap.t;
@@ -94,27 +149,6 @@ let init_r () =
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty }
-
-let find id env =
-  try Variable.Map.find id env.env_approx
-  with Not_found ->
-    Misc.fatal_error
-      (Format.asprintf "unbound variable %a@." Variable.print id)
-
-let present env var = Variable.Map.mem var env.env_approx
-
-let activate_substitution env =
-  { env with sb = Flambdasubst.activate env.sb }
-
-let add_approx id approx env =
-  let approx =
-    match approx.var with
-    | Some var when present env var ->
-        approx
-    | _ ->
-        { approx with var = Some id }
-  in
-  { env with env_approx = Variable.Map.add id approx env.env_approx }
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
@@ -356,7 +390,7 @@ let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (really_import_approx r.approx)
 
-and loop_direct (env:env) r tree : 'a flambda * ret =
+and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   match tree with
   | Fsymbol (sym,annot) ->
      begin
