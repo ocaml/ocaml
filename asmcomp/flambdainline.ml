@@ -43,11 +43,13 @@ module Env : sig
     closure_depth : int;
   }
 
-  val empty_env : t
+  val empty : t
 
-  val local_env : t -> t
+  val local : t -> t
 
   val decrease_inline_threshold : t -> int -> t
+
+  val inlining_level_up : t -> t
 
   val find : Variable.t -> t -> approx
 
@@ -56,6 +58,14 @@ module Env : sig
   val activate_substitution : t -> t
 
   val add_approx : Variable.t -> approx -> t -> t
+
+  val clear_approx : Variable.t -> t -> t
+
+  val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
+
+  val at_toplevel : t -> bool
+  (** Not inside a closure declaration.
+      Toplevel code is the one evaluated when the compilation unit is loaded *)
 
 end = struct
 
@@ -71,7 +81,7 @@ end = struct
     closure_depth : int;
   }
 
-  let empty_env =
+  let empty =
     { env_approx = Variable.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
@@ -80,7 +90,7 @@ end = struct
         Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
       closure_depth = 0}
 
-  let local_env env =
+  let local env =
     { env with
       env_approx = Variable.Map.empty;
       sb = Flambdasubst.new_substitution env.sb }
@@ -91,6 +101,8 @@ end = struct
     match env.inline_threshold with
     | Never_inline -> env
     | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
+
+  let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
   let find id env =
     try Variable.Map.find id env.env_approx
@@ -112,6 +124,15 @@ end = struct
         { approx with var = Some id }
     in
     { env with env_approx = Variable.Map.add id approx env.env_approx }
+
+  let clear_approx id env =
+    { env with env_approx = Variable.Map.add id value_unknown env.env_approx }
+
+  let inside_set_of_closures_declaration closure_id env =
+    Set_of_closures_id.Set.mem closure_id env.current_functions
+
+  let at_toplevel env =
+    env.closure_depth = 0
 
 end
 
@@ -146,8 +167,6 @@ let init_r =
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty }
-
-let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
 let add_global i approx r =
   { r with globals = IntMap.add i approx r.globals }
@@ -222,7 +241,7 @@ let check_constant_result r lam approx =
 let check_var_and_constant_result env r lam approx =
   let lam, approx =
     check_var_and_constant_result
-      ~is_present_in_env:(present env) lam approx in
+      ~is_present_in_env:(Env.present env) lam approx in
   let r = ret r approx in
   let r = match lam with
     | Fvar(var,_) -> use_var r var
@@ -248,7 +267,7 @@ let populate_closure_approximations
     Variable.Map.fold
       (fun id (_,desc) env ->
        if Variable.Set.mem id function_declaration.free_variables
-       then add_approx id desc env
+       then Env.add_approx id desc env
        else env) free_var_info env in
   (* Add known approximations of function parameters *)
   let env =
@@ -256,7 +275,7 @@ let populate_closure_approximations
       (fun env id ->
        let approx = try Variable.Map.find id parameter_approximations
                     with Not_found -> value_unknown in
-       add_approx id approx env)
+       Env.add_approx id approx env)
       env function_declaration.params in
   env
 
@@ -267,7 +286,7 @@ let which_function_parameters_can_we_specialize ~params ~args
   List.fold_right2 (fun (id, arg) approx (spec_args, args, env_func) ->
       let new_id = Flambdasubst.freshen_var id in
       let args = (new_id, arg) :: args in
-      let env_func = add_approx new_id approx env_func in
+      let env_func = Env.add_approx new_id approx env_func in
       let spec_args =
         if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
           Variable.Map.add id new_id spec_args
@@ -309,7 +328,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
 let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
       ~approxs ~kept_params ~max_level =
   assert (List.length func.params = List.length approxs);
-  (not (Set_of_closures_id.Set.mem clos.ident env.current_functions))
+  (not (Env.inside_set_of_closures_declaration clos.ident env))
     && (not (Variable.Set.is_empty closure.kept_params))
     && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
     && env.inlining_level <= max_level
@@ -320,7 +339,7 @@ let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
 (* Make an informed guess at whether [clos], with approximations [approxs],
    looks to be a functor. *)
 let functor_like env clos approxs =
-  env.closure_depth = 0 &&
+  Env.at_toplevel env &&
     List.for_all Flambdaapprox.known approxs &&
     Variable.Set.is_empty (recursive_functions clos)
 
@@ -367,7 +386,7 @@ let transform_closure_expression r flam off rel annot =
        [let new_id, env = new_subst_id id env]
    * associate in the environment the approximation of values to
      identifiers:
-       [let env = add_approx id r.approx env]
+       [let env = Env.add_approx id r.approx env]
    * recursive call of loop on the body of the expression, using
      the new environment
    * mark used variables:
@@ -480,9 +499,9 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let body_env = match str with
         | Assigned ->
            (* if the variable is mutable, we don't propagate anything about it *)
-           { env with env_approx = Variable.Map.add id value_unknown env.env_approx }
+           Env.clear_approx id env
         | Not_assigned ->
-           add_approx id r.approx env in
+           Env.add_approx id r.approx env in
       (* To distinguish variables used by the body and the declaration,
          [body] is rewritten without the set of used variables from
          the declaration. *)
@@ -508,13 +527,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let defs, sb = Flambdasubst.new_subst_ids env.sb defs in
       let env = { env with sb; } in
       let def_env = List.fold_left (fun env_acc (id,lam) ->
-          add_approx id value_unknown env_acc)
+          Env.add_approx id value_unknown env_acc)
           env defs
       in
       let defs, body_env, r = List.fold_right (fun (id,lam) (defs, env_acc, r) ->
           let lam, r = loop def_env r lam in
           let defs = (id,lam) :: defs in
-          let env_acc = add_approx id r.approx env_acc in
+          let env_acc = Env.add_approx id r.approx env_acc in
           defs, env_acc, r) defs ([],env,r) in
       let body, r = loop body_env r body in
       let r = List.fold_left (fun r (id,_) -> exit_scope r id) r defs in
@@ -579,7 +598,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
         body, r
       else
         let vars, sb = Flambdasubst.new_subst_ids' env.sb vars in
-        let env = List.fold_left (fun env id -> add_approx id value_unknown env)
+        let env = List.fold_left (fun env id -> Env.add_approx id value_unknown env)
             { env with sb; } vars in
         let handler, r = loop env r handler in
         let r = List.fold_left exit_scope r vars in
@@ -589,7 +608,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   | Ftrywith(body, id, handler, annot) ->
       let body, r = loop env r body in
       let id, sb = Flambdasubst.new_subst_id env.sb id in
-      let env = add_approx id value_unknown { env with sb; } in
+      let env = Env.add_approx id value_unknown { env with sb; } in
       let handler, r = loop env r handler in
       let r = exit_scope r id in
       Ftrywith(body, id, handler, annot),
@@ -635,7 +654,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let lo, r = loop env r lo in
       let hi, r = loop env r hi in
       let id, sb = Flambdasubst.new_subst_id env.sb id in
-      let env = add_approx id value_unknown { env with sb; } in
+      let env = Env.add_approx id value_unknown { env with sb; } in
       let body, r = loop env r body in
       let r = exit_scope r id in
       Ffor(id, lo, hi, dir, body, annot),
@@ -743,7 +762,7 @@ and transform_set_of_closures_expression env r cl annot =
   (* Remove every variable binding from the environment.
      This isn't necessary, but allows to catch bugs
      concerning variable escaping their scope. *)
-  let env = local_env env in
+  let env = Env.local env in
 
   let prev_closure_symbols = Variable.Map.fold (fun id _ map ->
       let cf = Closure_id.wrap id in
@@ -793,7 +812,7 @@ and transform_set_of_closures_expression env r cl annot =
      This part of the environment is shared between all of the closures in
      the set of closures. *)
   let set_of_closures_env = Variable.Map.fold
-      (fun id _ env -> add_approx id
+      (fun id _ env -> Env.add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);
                            closure = internal_closure }) env)
       ffuns.funs env in
@@ -1080,7 +1099,7 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
       ~init:Variable.Map.empty
       ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
-  let env = add_approx clos_id fapprox env in
+  let env = Env.add_approx clos_id fapprox env in
   let spec_args, args, env_func =
     which_function_parameters_can_we_specialize ~params:func.params
       ~args ~approximations_of_args:approxs ~kept_params ~env
@@ -1121,7 +1140,7 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
   loop (activate_substitution env) r expr
 
 let inline tree =
-  let result, r = loop empty_env init_r tree in
+  let result, r = loop Env.empty init_r tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
