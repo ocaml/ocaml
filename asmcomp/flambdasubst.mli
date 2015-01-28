@@ -51,6 +51,17 @@ val find_symbol_exn : t -> Symbol.t -> Variable.t
 val freshen_var : Variable.t -> Variable.t
 val subst_var : t -> Variable.t -> Variable.t
 
+val rewrite_recursive_calls_with_symbols :
+  t ->
+  Expr_id.t Flambda.function_declarations ->
+  Expr_id.t Flambda.function_declarations
+(** Replace recursive access to the closures in the set through
+    [Fsymbol] by the corresponding [Fvar]. This is used to recover
+    the recursive call when importing code from another compilation unit.
+
+    If the substitution is inactive, this is the identity.
+ *)
+
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
   (* Tables used for identifiers substitution in
      Fclosure ("ids of closures") and Fvariable_in_closure ("bound vars

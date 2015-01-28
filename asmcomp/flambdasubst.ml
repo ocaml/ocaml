@@ -133,6 +133,28 @@ let find_symbol_exn t sym =
   | Active t ->
      SymbolMap.find sym t.sb_sym
 
+let rewrite_recursive_calls_with_symbols subst function_declarations =
+  match subst with
+  | Inactive -> function_declarations
+  | Active _ ->
+    let closure_symbols = Variable.Map.fold (fun id _ map ->
+        let cf = Closure_id.wrap id in
+        let sym = Compilenv.closure_symbol cf in
+        SymbolMap.add sym id map)
+        function_declarations.funs SymbolMap.empty in
+    let funs = Variable.Map.map (fun ffun ->
+        let body =
+          Flambdaiter.map_toplevel
+            (function
+              | Fsymbol (sym,_) when SymbolMap.mem sym closure_symbols ->
+                Fvar(SymbolMap.find sym closure_symbols,Expr_id.create ())
+              | e -> e)
+            ffun.body in
+        { ffun with body })
+        function_declarations.funs
+    in
+    { function_declarations with funs }
+
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
 
   type t =

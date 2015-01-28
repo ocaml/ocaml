@@ -11,7 +11,6 @@
 (***********************************************************************)
 
 open Lambda
-open Symbol
 open Abstract_identifiers
 open Flambda
 open Flambdaapprox
@@ -843,11 +842,11 @@ and loop_list env r l = match l with
    (this occur if the function contains only constants in its closure).
    To handle that case, we first replace those symbols by the original
    variable.
-   CR chambart: This is fragile, the best and simplest way to correct that
-     is to do that rewriting in clambdagen instead of flambdasym.
 *)
 and transform_set_of_closures_expression env r cl annot =
-  let ffuns = cl.cl_fun in
+  let ffuns =
+    Flambdasubst.rewrite_recursive_calls_with_symbols env.sb cl.cl_fun
+  in
   let fv = cl.cl_free_var in
 
   let env = { env with closure_depth = env.closure_depth + 1 } in
@@ -866,15 +865,6 @@ and transform_set_of_closures_expression env r cl annot =
      concerning variable escaping their scope. *)
   let env = Env.local env in
 
-  (* We find the symbols identifying the closures defined in this set
-     of closures and associate them to their local variables. We need
-     them to recover recursive calls in some functions imported from
-     other compilation units. *)
-  let prev_closure_symbols = Variable.Map.fold (fun id _ map ->
-      let cf = Closure_id.wrap id in
-      let sym = Compilenv.closure_symbol cf in
-      SymbolMap.add sym id map) ffuns.funs SymbolMap.empty in
-
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
@@ -891,11 +881,6 @@ and transform_set_of_closures_expression env r cl annot =
     Variable.Map.map_keys apply_substitution
       (Variable.Map.map (fun id -> find id environment_before_cleaning)
          cl_specialised_arg)
-  in
-  (* update the map according to the substitutions added by
-     [subst_function_declarations_and_free_variables] *)
-  let prev_closure_symbols =
-    SymbolMap.map apply_substitution prev_closure_symbols
   in
 
   let env =
@@ -935,20 +920,6 @@ and transform_set_of_closures_expression env r cl annot =
         ~parameter_approximations
         set_of_closures_env in
 
-    (***** TODO: find something better
-           Warning if multiply recursive function ******)
-    let body =
-      Flambdaiter.map_toplevel
-        (function
-          | Fsymbol (sym,_) when SymbolMap.mem sym prev_closure_symbols ->
-             Fvar(SymbolMap.find sym prev_closure_symbols,Expr_id.create ())
-          | e -> e) ffun.body in
-    (* We replace recursive calls using the function symbol
-       This is done before substitution because we could have something like:
-       List.iter (List.iter some_fun) l
-       And we need to distinguish the inner iter from the outer one
-     *)
-
     (* We do not inline inside stubs: a stub is always inlined, allowing to
        inline inside a stub could result to forcing more code than expected
        to be inlined. *)
@@ -957,7 +928,7 @@ and transform_set_of_closures_expression env r cl annot =
       then { closure_env with inline_threshold = Flambdacost.Never_inline }
       else closure_env in
 
-    let body, r = loop closure_env r body in
+    let body, r = loop closure_env r ffun.body in
     let used_params =
       List.fold_left
         (fun acc id ->
