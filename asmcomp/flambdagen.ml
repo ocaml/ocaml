@@ -504,11 +504,12 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
       Flet(Not_assigned, v, expr, body, nid ()))
     block lets
 
-let lambda_to_flambda ~current_compilation_unit ~current_unit_id
+let lambda_to_flambda ~current_compilation_unit
     ~symbol_for_global' lam =
   let t =
     { current_compilation_unit;
-      current_unit_id;
+      current_unit_id =
+        Symbol.Compilation_unit.get_persistent_ident current_compilation_unit;
       symbol_for_global';
     }
   in

@@ -123,7 +123,6 @@ let flambda ppf (size, lam) =
   let flam =
     Flambdagen.lambda_to_flambda
       ~current_compilation_unit
-      ~current_unit_id:(Compilenv.current_unit_id ())
       ~symbol_for_global':Compilenv.symbol_for_global'
       lam in
   dump_and_check "flambdagen" flam;
