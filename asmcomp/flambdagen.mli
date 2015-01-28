@@ -52,4 +52,4 @@ val lambda_to_flambda
   (* CR mshinwell for pchambart: Can we remove the ' on this label name? *)
   -> symbol_for_global':(Ident.t -> Symbol.t)
   -> Lambda.lambda
-  -> Ident.t Variable.Map.t * Expr_id.t Flambda.flambda
+  -> Expr_id.t Flambda.flambda

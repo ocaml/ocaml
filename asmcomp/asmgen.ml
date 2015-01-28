@@ -120,7 +120,7 @@ let flambda ppf (size, lam) =
       Format.fprintf ppf "%a@."
         Printflambda.flambda flam;
       raise e in
-  let _, flam =
+  let flam =
     Flambdagen.lambda_to_flambda
       ~current_compilation_unit
       ~current_unit_id:(Compilenv.current_unit_id ())

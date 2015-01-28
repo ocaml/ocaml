@@ -18,8 +18,7 @@ open Flambda
 type t = {
   current_compilation_unit : Symbol.compilation_unit;
   current_unit_id : Ident.t;
-  symbol_for_global' : (Ident.t -> Symbol.t);
-  mutable debugger_map : Ident.t Variable.Map.t;
+  symbol_for_global' : (Ident.t -> Symbol.t)
 }
 
 let rec add_debug_info ev f =
@@ -45,18 +44,11 @@ let fresh_variable t name =
 
 let create_var t id =
   let var = fresh_variable t (Ident.name id) in
-  t.debugger_map <- Variable.Map.add var id t.debugger_map;
   var
 
 let rename_var t var =
   let current_compilation_unit = t.current_compilation_unit in
   let new_var = Variable.rename ~current_compilation_unit var in
-  begin
-    try
-      let id = Variable.Map.find var t.debugger_map in
-      t.debugger_map <- Variable.Map.add new_var id t.debugger_map
-    with Not_found -> ()
-  end;
   new_var
 
 let add_var id var (env : Variable.t Ident.tbl) = Ident.add id var env
@@ -419,8 +411,10 @@ and close_functions t external_env function_declarations =
         (Function_decl.used_idents decl)
         Variable.Set.empty
     in
-    (* If the function is an eta-expansion wrapper for a primitive, make
-       sure it always gets inlined. *)
+    (* If the function is the wrapper for a function with optionnal
+       argument with a default value, make sure it always gets inlined
+       CR-someday pchambart: eta-expansion wrapper for a primitive are
+       not marked as stub but certainly should *)
     let stub, body =
       match Function_decl.primitive_wrapper decl with
       | None -> false, body
@@ -516,7 +510,6 @@ let lambda_to_flambda ~current_compilation_unit ~current_unit_id
     { current_compilation_unit;
       current_unit_id;
       symbol_for_global';
-      debugger_map = Variable.Map.empty;
     }
   in
   (* Strings are the only expressions that can't be duplicated without
@@ -526,4 +519,4 @@ let lambda_to_flambda ~current_compilation_unit ~current_unit_id
      constants, they will not appear in the closures *)
   let lam = Lift_strings.lift_strings_to_toplevel lam in
   let flam = close t Ident.empty lam in
-  t.debugger_map, flam
+  flam
