@@ -323,6 +323,8 @@ let rec close t env = function
   | Lsend(kind, met, obj, args, _) ->
       Fsend(kind, close t env met, close t env obj,
             close_list t env args, Debuginfo.none, nid ())
+  | Lprim(Pidentity, [arg]) ->
+      close t env arg
   | Lprim(Pdirapply loc, [funct; arg]) | Lprim(Prevapply loc, [arg; funct]) ->
       close t env (Lapply(funct, [arg], loc))
   | Lprim(Praise kind, [Levent(arg, ev)]) ->

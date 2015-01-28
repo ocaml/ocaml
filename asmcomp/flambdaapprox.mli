@@ -95,6 +95,11 @@ val known : approx -> bool
 (* An approximation is "useful" iff it is neither unknown nor bottom. *)
 val useful : approx -> bool
 
+(* A value is certainly immutable if its approximation is known and not bottom.
+   It should have been resolved (it cannot be [Value_extern] and
+   [Value_symbol] *)
+val is_certainly_immutable : approx -> bool
+
 val check_constant_result
    : Expr_id.t Flambda.flambda
   -> approx

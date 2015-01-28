@@ -135,6 +135,13 @@ let useful t =
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
   | Value_closure _ | Value_extern _ | Value_symbol _ -> true
 
+let is_certainly_immutable t =
+  match t.descr with
+  | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
+  | Value_closure _ -> true
+  | Value_unknown | Value_bottom -> false
+  | Value_extern _ | Value_symbol _ -> assert false
+
 let get_field i = function
   | [{descr = Value_block (tag, fields)}] ->
       if i >= 0 && i < Array.length fields

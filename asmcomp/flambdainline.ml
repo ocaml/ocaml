@@ -47,8 +47,6 @@ module Env : sig
 
   val local : t -> t
 
-  val decrease_inline_threshold : t -> int -> t
-
   val inlining_level_up : t -> t
 
   val find : Variable.t -> t -> approx
@@ -94,13 +92,6 @@ end = struct
     { env with
       env_approx = Variable.Map.empty;
       sb = Flambdasubst.new_substitution env.sb }
-
-  let decrease_inline_threshold env dec =
-    assert(dec >= 0);
-    let open Flambdacost in
-    match env.inline_threshold with
-    | Never_inline -> env
-    | Can_inline t -> { env with inline_threshold = Can_inline (t - dec) }
 
   let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
@@ -574,19 +565,57 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
         else Fprim(Pfield i, [arg'], dbg, annot) in
       let approx = get_field i [r.approx] in
       check_var_and_constant_result env r expr approx
-  | Fprim(Psetfield _ as p, [arg], dbg, annot) ->
-      let arg, r = loop env r arg in
-      begin match r.approx.descr with
-      | Value_unknown
-      | Value_bottom -> ()
-      (* CR mshinwell for pchambart: This is slightly mysterious---I think
+  | Fprim((Psetfield _ | Parraysetu _ | Parraysets _) as p, block :: args, dbg, annot) ->
+      let block, r = loop env r block in
+      if Flambdaapprox.is_certainly_immutable r.approx
+      then Misc.fatal_error "Assignement on non-mutable value";
+      (* CXR mshinwell for pchambart: This is slightly mysterious---I think
          we need a comment explaining what the approximation for a
          mutable block looks like.
-         Also, this match should be explicitly exhaustive; same elsewhere. *)
-      | Value_block _ -> Misc.fatal_error "[Psetfield] on non-mutable block"
-      | _ -> Misc.fatal_error "[Psetfield] on an inappropriate value"
-      end;
-      Fprim(p, [arg], dbg, annot), ret r value_unknown
+         Also, this match should be explicitly exhaustive; same elsewhere.
+         pchambart:
+           This was completely wrong and never triggered.
+           done commenting.
+      *)
+      (* Mutable blocks are always represented by [Value_unknown] or
+         [Value_bottom]. If something else is propagated here, then
+         whe know that some miscompilation could happen.
+         This is probably an user using [Obj.magic] or [Obj.set_field] in
+         an inappropriate situation.
+         Such a situation could be
+         [let x = (1,1) in
+          Obj.set_field (Obj.repr x) 0 (Obj.repr 2);
+          assert(fst x = 2)]
+         The user would probably expect the assertion to be true, but the
+         compiler could propagate the value of [x].
+         This certainly won't always prevent this kind of errors, but may
+         prevent most of them.
+
+         This may not be completely correct as some correct unreachable
+         code branch could also trigger it. But the likelyness seems small
+         enouth to prefer to catch those errors.
+
+         example of such a problematic pattern could be
+         [type a = { a : int }
+          type b = { mutable b : int }
+          type _ t =
+            | A : a t
+            | B : b t
+          let f (type x) (v:x t) (r:x) =
+            match v with
+            | A -> r.a
+            | B -> r.b <- 2; 3
+
+         let v =
+         let r =
+           ref A in
+           r := A; (* Some pattern that the compiler can't understand *)
+           f !r { a = 1 }]
+         when inlining [f], the B branch is unreachable, yet the compiler
+         can't prove it and needs to keep it.
+      *)
+      let args, _, r = loop_list env r args in
+      Fprim(p, block :: args, dbg, annot), ret r value_unknown
   | Fprim(p, args, dbg, annot) as expr ->
       let (args', approxs, r) = loop_list env r args in
       let expr = if args' == args then expr else Fprim(p, args', dbg, annot) in
@@ -754,6 +783,69 @@ and loop_list env r l = match l with
 
 (* CR mshinwell for pchambart: Could you write some more explanation as to
    how this function works?  We can probably refactor it some after that. *)
+(* Transforms closure definitions by applying [loop] on the code of every
+   one of the set and on the expressions of the free variables.
+   If the substitution is activated, alpha renaming also occur on everything
+   defined by the set of closures:
+   * Variables bound by a closure of the set
+   * closure identifiers
+   * parameters
+
+   The rewriting occur in a clean environment without any of the variables
+   defined outside reachable. This prevents the simplification of variable
+   access [check_var_and_constant_result] to occur on unsound cases.
+
+   The rewriting occurs in an environment filled with:
+   * The approximation of the free variables
+   * An explicitely unknown approximation for function parameters,
+     except for those where it is known to be safe: those present in the
+     [cl_specialised_arg] set.
+   * An approximation for the closures in the set. It contains the code of
+     the functions before rewriting.
+
+   The approximation of the currently defined closures is available to
+   allow marking recursives calls as direct and in some cases, allow
+   inlining of one closure from the set inside another one. For this to
+   be correct an alpha renaming is first applied on the expressions by
+   [subst_function_declarations_and_free_variables].
+
+   For instance when rewriting the declaration
+
+     [let rec f_1 x_1 =
+        let y_1 = x_1 + 1 in
+        g_1 y_1
+      and g_1 z_1 = f_1 (f_1 z_1)]
+
+   When rewriting this function, the first substitution will contain
+   some mapping:
+   { f_1 -> f_2;
+     g_1 -> g_2;
+     x_1 -> x_2;
+     z_1 -> z_2 }
+
+   And the approximation for the closure will contain
+
+   { f_2:
+       fun x_2 ->
+         let y_1 = x_2 + 1 in
+         g_2 y_1
+     g_2:
+       fun z_2 -> f_2 (f_2 z_2) }
+
+   Note that no substitution is applied to the let-bound variable [y_1].
+   If [f_2] where to be inlined inside [g_2], we known that a new substitution
+   will be introduced in the current scope for [y_1] each time.
+
+
+   If the function where a recursive one comming from another compilation
+   unit, the code already went through [Flambdasym] that could have
+   replaced the function variable by the symbol identifying the function
+   (this occur if the function contains only constants in its closure).
+   To handle that case, we first replace those symbols by the original
+   variable.
+   CR chambart: This is fragile, the best and simplest way to correct that
+     is to do that rewriting in clambdagen instead of flambdasym.
+*)
 and transform_set_of_closures_expression env r cl annot =
   let ffuns = cl.cl_fun in
   let fv = cl.cl_free_var in
@@ -774,6 +866,10 @@ and transform_set_of_closures_expression env r cl annot =
      concerning variable escaping their scope. *)
   let env = Env.local env in
 
+  (* We find the symbols identifying the closures defined in this set
+     of closures and associate them to their local variables. We need
+     them to recover recursive calls in some functions imported from
+     other compilation units. *)
   let prev_closure_symbols = Variable.Map.fold (fun id _ map ->
       let cf = Closure_id.wrap id in
       let sym = Compilenv.closure_symbol cf in
@@ -796,6 +892,8 @@ and transform_set_of_closures_expression env r cl annot =
       (Variable.Map.map (fun id -> find id environment_before_cleaning)
          cl_specialised_arg)
   in
+  (* update the map according to the substitutions added by
+     [subst_function_declarations_and_free_variables] *)
   let prev_closure_symbols =
     SymbolMap.map apply_substitution prev_closure_symbols
   in
@@ -979,8 +1077,39 @@ and direct_apply env r clos funct fun_id func fapprox closure
   let num_params = List.length func.params in
   let fun_cost =
     if unconditionally_inline then
-      (* CR mshinwell for mshinwell: this comment needs clarification *)
-      (* inlining a stub or a functor does not restrict what can be inlined inside *)
+      (* CXR mshinwell for mshinwell: this comment needs clarification *)
+      (* A function is considered for inlining if it does not increase the code
+         size too much. This size is verified after effectively duplicating
+         and specialising the code in the current context. In that context,
+         some local calls can have new opportunity for inlining, for instance.
+         [let f g x = g x + 1
+          let h x = ...
+          let v = f h 1]
+         When inlining [f], [g] becomes known and so [h] can be inlined too.
+         Inlining only [f] will usualy fit the size constraint and will be
+         beneficial. But depending on [h] it can or cannot be beneficial to
+         inline it: If [h] is too big, it may be possible to inline it in [f],
+         but that may prevent [f] from being inlinable after verification.
+         To prevent that, the maximal size increase allowed to [h] is reduced
+         by what is consumed by [f].
+         In the case of stub functions, we know that the function is small
+         enouth and has a high probability of reducing the size of the
+         code around it, hence we know that trying to inline it won't prevent
+         the surrounding function from being inlined.
+
+         CR pchambart: The case of functors should not be always treated as
+           stub functions. It won't often decrease the function size hence
+           will probably prevent a function from being inlined, loosing the
+           benefit of the potential inlining.
+           It may be reasonnable to consider that reavealing an opportunity
+           for inlining a functor as sufficient for forced inlining.
+         CR pchambart: The heuristic is half broken as the potential local
+           inlines are not accumulated. For instance, in the previous example
+           if f was [let f g x = g (g x)], if g was just bellow the quota,
+           it could considered the two times.
+           To correct that, the threshold should be propagated through [r]
+           rather than [env]
+      *)
       env.inline_threshold
     else
       Flambdacost.can_try_inlining func.body env.inline_threshold
@@ -995,7 +1124,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing *)
       let inline_threshold = env.inline_threshold in
-      let env = { env with inline_threshold = threshold } in
+      let env = { env with inline_threshold = remaining_inline_threshold } in
       let kept_params = closure.kept_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally inlined). *)
