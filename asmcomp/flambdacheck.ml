@@ -235,7 +235,7 @@ let no_var_within_closure_is_bound_multiple_times flam =
   | _, Some var -> Counter_example var
   | _, None -> No_counter_example
 
-exception Counter_example_cu of compilation_unit
+exception Counter_example_cu of Compilation_unit.t
 
 let every_declared_closure_is_from_current_compilation_unit
     ~current_compilation_unit flam =

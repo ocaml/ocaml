@@ -77,7 +77,7 @@ val merge : exported -> exported -> exported
     clash. *)
 
 val import_for_pack :
-  pack_units:CompilationUnitSet.t -> pack:compilation_unit -> exported -> exported
+  pack_units:Compilation_unit.Set.t -> pack:Compilation_unit.t -> exported -> exported
 (** Transform the informations from [exported] to be suitable to
     be reexported as the informations for a pack named [pack]
     containing units [pack_units].

@@ -32,7 +32,7 @@ val current_unit_linkage_name: unit -> linkage_name
 val current_unit_id: unit -> Ident.t
         (* Return the id of the unit being compiled *)
 
-val current_unit: unit -> compilation_unit
+val current_unit: unit -> Compilation_unit.t
 
 val current_unit_symbol: unit -> Symbol.t
 
@@ -49,7 +49,7 @@ val symbol_in_current_unit: string -> bool
 
 val is_predefined_exception: Symbol.t -> bool
 
-val unit_for_global: Ident.t -> compilation_unit
+val unit_for_global: Ident.t -> Compilation_unit.t
 
 val symbol_for_global: Ident.t -> string
         (* Return the asm symbol that refers to the given global identifier *)
@@ -66,7 +66,7 @@ val set_export_info: Flambdaexport.exported -> unit
         (* Record the informations of the unit being compiled *)
 val approx_env: unit -> Flambdaexport.exported
         (* Returns all the information loaded from extenal compilation units *)
-val approx_for_global: compilation_unit -> Flambdaexport.exported
+val approx_for_global: Compilation_unit.t -> Flambdaexport.exported
         (* Loads the exported information declaring the compilation_unit *)
 
 val imported_closure: Set_of_closures_id.t -> Expr_id.t Flambda.function_declarations

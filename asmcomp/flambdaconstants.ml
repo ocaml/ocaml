@@ -62,7 +62,7 @@ module type Param = sig
   type t
   val expr : t Flambda.flambda
   val for_clambda : bool
-  val compilation_unit : compilation_unit
+  val compilation_unit : Compilation_unit.t
 end
 
 module NotConstants(P:Param) = struct

@@ -36,31 +36,24 @@ val string_of_linkage_name : linkage_name -> string
 
 (***********************************************************************)
 
-(* CR mshinwell for pchambart: Convert to use [Identifiable] *)
+(* CXR mshinwell for pchambart: Convert to use [Identifiable]
+   pchambart: done *)
 
 module Compilation_unit : sig
 
   type t
+  include Identifiable with type t := t
 
   val create : string -> linkage_name -> t
 
   val get_persistent_ident : t -> Ident.t
   val get_linkage_name : t -> linkage_name
 
-  include PrintableHashOrdered with type t := t
-
 end
-
-type compilation_unit = Compilation_unit.t
-
-module CompilationUnitSet : ExtSet with module M := Compilation_unit
-module CompilationUnitMap : ExtMap with module M := Compilation_unit
-module CompilationUnitTbl : ExtHashtbl with module M := Compilation_unit
-
 
 (***********************************************************************)
 
-type t = { sym_unit : compilation_unit; sym_label : linkage_name }
+type t = { sym_unit : Compilation_unit.t; sym_label : linkage_name }
 
 module Printers : PrintableHashOrdered with type t = t
 

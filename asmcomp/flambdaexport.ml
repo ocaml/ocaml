@@ -173,7 +173,7 @@ let import_eid_for_pack units pack id =
   with Not_found ->
     let unit_id = ExportId.unit id in
     let id' =
-      if CompilationUnitSet.mem unit_id units
+      if Compilation_unit.Set.mem unit_id units
       then
         ExportId.create ?name:(ExportId.name id) pack
       else id in
@@ -182,7 +182,7 @@ let import_eid_for_pack units pack id =
 
 let import_symbol_for_pack units pack symbol =
   let unit = symbol.sym_unit in
-  if CompilationUnitSet.mem unit units
+  if Compilation_unit.Set.mem unit units
   then { symbol with sym_unit = pack }
   else symbol
 

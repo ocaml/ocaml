@@ -17,7 +17,7 @@
 open Flambda
 
 val convert :
-  compilation_unit:Symbol.compilation_unit ->
+  compilation_unit:Symbol.Compilation_unit.t ->
   'a flambda ->
   unit flambda *
   unit flambda Symbol.SymbolMap.t *

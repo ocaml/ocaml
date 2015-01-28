@@ -19,7 +19,7 @@ type constant_result = {
 }
 
 val not_constants :
-  for_clambda:bool -> compilation_unit:compilation_unit ->
+  for_clambda:bool -> compilation_unit:Compilation_unit.t ->
   'a Flambda.flambda -> constant_result
 (** [not_constant ~for_clambda expr]
     If for_clambda is true, are marked constant only expressions that can

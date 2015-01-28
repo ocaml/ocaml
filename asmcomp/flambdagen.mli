@@ -49,7 +49,7 @@ open Abstract_identifiers
      was a dummy argument.
 *)
 val lambda_to_flambda
-   : current_compilation_unit:Symbol.compilation_unit
+   : current_compilation_unit:Symbol.Compilation_unit.t
   (* CR mshinwell for pchambart: Can we remove the ' on this label name?
      pchambart: this reflects the name of the Compilenv.symbol_for_global'
        function. Compilenv.symbol_for_global is the same function
