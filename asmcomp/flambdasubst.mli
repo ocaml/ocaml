@@ -46,8 +46,6 @@ val subst_var : t -> Variable.t -> Variable.t
 (** [subst_var subst var] apply the substitution [subst] to [var].
     If no substitution is registered for [var] it is returned unchanged. *)
 
-val find_symbol_exn : t -> Symbol.t -> Variable.t
-
 val freshen_var : Variable.t -> Variable.t
 val subst_var : t -> Variable.t -> Variable.t
 

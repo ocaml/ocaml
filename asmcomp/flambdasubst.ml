@@ -16,10 +16,8 @@ open Flambda
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
-  sb_sym : Variable.t SymbolMap.t;
   sb_exn : Static_exception.t Static_exception.Map.t;
   back_var : Variable.t list Variable.Map.t;
-  back_sym : Symbol.t list Variable.Map.t;
   (* Used to handle substitution sequence: we cannot call
      the substitution recursively because there can be name
      clash *)
@@ -31,10 +29,8 @@ type subst = t
 
 let empty_tbl = {
   sb_var = Variable.Map.empty;
-  sb_sym = SymbolMap.empty;
   sb_exn = Static_exception.Map.empty;
   back_var = Variable.Map.empty;
-  back_sym = Variable.Map.empty;
 }
 
 let empty = Inactive
@@ -47,22 +43,11 @@ let activate = function
   | Inactive -> Active empty_tbl
   | Active _ as t -> t
 
-let add_sb_sym sb sym id' =
-  let back_sym =
-    let l = try Variable.Map.find id' sb.back_sym with Not_found -> [] in
-    Variable.Map.add id' (sym :: l) sb.back_sym in
-  { sb with sb_sym = SymbolMap.add sym id' sb.sb_sym;
-            back_sym }
-
 let rec add_sb_var sb id id' =
   let sb = { sb with sb_var = Variable.Map.add id id' sb.sb_var } in
   let sb =
     try let pre_vars = Variable.Map.find id sb.back_var in
       List.fold_left (fun sb pre_id -> add_sb_var sb pre_id id') sb pre_vars
-    with Not_found -> sb in
-  let sb =
-    try let pre_sym = Variable.Map.find id sb.back_sym in
-      List.fold_left (fun sb pre_sym -> add_sb_sym sb pre_sym id') sb pre_sym
     with Not_found -> sb in
   let back_var =
     let l = try Variable.Map.find id' sb.back_var with Not_found -> [] in
@@ -126,12 +111,6 @@ let subst_var t var =
   | Active t ->
      try Variable.Map.find var t.sb_var with
      | Not_found -> var
-
-let find_symbol_exn t sym =
-  match t with
-  | Inactive -> raise Not_found
-  | Active t ->
-     SymbolMap.find sym t.sb_sym
 
 let rewrite_recursive_calls_with_symbols subst function_declarations =
   match subst with

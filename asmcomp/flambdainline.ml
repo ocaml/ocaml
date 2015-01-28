@@ -399,11 +399,7 @@ let rec loop env r tree =
 and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   match tree with
   | Fsymbol (sym,annot) ->
-     begin
-       match Flambdasubst.find_symbol_exn env.sb sym with
-       | id' -> loop_direct env r (Fvar(id',annot))
-       | exception Not_found -> check_constant_result r tree (Import.import_symbol sym)
-     end
+    check_constant_result r tree (Import.import_symbol sym)
   | Fvar (id,annot) ->
      let id = Flambdasubst.subst_var env.sb id in
      let tree = Fvar(id,annot) in
