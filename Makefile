@@ -121,7 +121,7 @@ ASMCOMP=\
   asmcomp/flambda_ref_to_variables.cmo \
   asmcomp/flambdasym.cmo \
   asmcomp/clambdagen.cmo \
-  asmcomp/closure.cmo asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
+  asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
   asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
   asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
