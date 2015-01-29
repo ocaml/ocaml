@@ -21,19 +21,20 @@ type descr =
   | Value_block of tag * t array
   | Value_int of int
   | Value_constptr of int
-  | Value_set_of_closures of value_closure
+  | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_offset
   | Value_unknown
   | Value_bottom
   | Value_extern of Flambdaexport.ExportId.t
   | Value_symbol of Symbol.t
+  | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
 and value_offset = {
   fun_id : Closure_id.t;
-  closure : value_closure;
+  set_of_closures : value_set_of_closures;
 }
 
-and value_closure = {
+and value_set_of_closures = {
   ffunctions : Expr_id.t function_declarations;
   bound_var : t Var_within_closure.Map.t;
   kept_params : Variable.Set.t;
@@ -75,12 +76,14 @@ val value_unknown : t
 val value_int : int -> t
 val value_constptr : int -> t
 val value_closure : value_offset -> t
-(* CR mshinwell for pchambart: update name of [value_unoffseted_closure] *)
-val value_unoffseted_closure : value_closure -> t
+(* CXR mshinwell for pchambart: update name of [value_unoffseted_closure]
+   pchambart: done *)
+val value_set_of_closures : value_set_of_closures -> t
 val value_block : tag * t array -> t
 val value_extern : Flambdaexport.ExportId.t -> t
 val value_symbol : Symbol.t -> t
 val value_bottom : t
+val value_unresolved : Symbol.t -> t
 
 val const_approx : Flambda.const -> t
 

@@ -20,18 +20,19 @@ type descr =
   | Value_block of tag * t array
   | Value_int of int
   | Value_constptr of int
-  | Value_set_of_closures of value_closure
+  | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_offset
   | Value_unknown
   | Value_bottom
   | Value_extern of Flambdaexport.ExportId.t
   | Value_symbol of Symbol.t
+  | Value_unresolved of Symbol.t
 
 and value_offset =
   { fun_id : Closure_id.t;
-    closure : value_closure }
+    set_of_closures : value_set_of_closures }
 
-and value_closure =
+and value_set_of_closures =
   { ffunctions : Expr_id.t function_declarations;
     bound_var : t Var_within_closure.Map.t;
     kept_params : Variable.Set.t;
@@ -58,8 +59,10 @@ let rec print_descr ppf = function
   | Value_closure { fun_id } ->
     Format.fprintf ppf "(fun:@ %a)" Closure_id.print fun_id
   | Value_set_of_closures { ffunctions = { funs } } ->
-    Format.fprintf ppf "(unoffseted:@ %a)"
+    Format.fprintf ppf "(set_of_closures:@ %a)"
       (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
+  | Value_unresolved sym ->
+    Format.fprintf ppf "(unresolved %a)" Symbol.print sym
 
 and print_approx ppf { descr } = print_descr ppf descr
 
@@ -71,11 +74,12 @@ let value_unknown = approx Value_unknown
 let value_int i = approx (Value_int i)
 let value_constptr i = approx (Value_constptr i)
 let value_closure c = approx (Value_closure c)
-let value_unoffseted_closure c = approx (Value_set_of_closures c)
+let value_set_of_closures c = approx (Value_set_of_closures c)
 let value_block (t,b) = approx (Value_block (t,b))
 let value_extern ex = approx (Value_extern ex)
 let value_symbol sym = approx (Value_symbol sym)
 let value_bottom = approx Value_bottom
+let value_unresolved sym = approx (Value_unresolved sym)
 
 let make_const_int n eid =
   Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
@@ -99,17 +103,19 @@ let const_approx = function
   | Fconst_immstring _ -> value_unknown
 
 let check_constant_result lam approx =
-  let lam, approx =
+  if Flambdaeffects.no_effects lam then
     match approx.descr with
-      Value_int n when Flambdaeffects.no_effects lam ->
-        make_const_int n (data_at_toplevel_node lam)
-    | Value_constptr n when Flambdaeffects.no_effects lam ->
-        make_const_ptr n (data_at_toplevel_node lam)
-    | Value_symbol sym when Flambdaeffects.no_effects lam ->
-        Fsymbol(sym, data_at_toplevel_node lam), approx
-    | _ -> lam, approx
-  in
-  lam, approx
+    | Value_int n ->
+      make_const_int n (data_at_toplevel_node lam)
+    | Value_constptr n ->
+      make_const_ptr n (data_at_toplevel_node lam)
+    | Value_symbol sym ->
+      Fsymbol(sym, data_at_toplevel_node lam), approx
+    | Value_block _ | Value_set_of_closures _ | Value_closure _
+    | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
+      lam, approx
+  else
+    lam, approx
 
 let check_var_and_constant_result ~is_present_in_env lam approx =
   let res = match approx.var with
@@ -124,6 +130,7 @@ let check_var_and_constant_result ~is_present_in_env lam approx =
 
 let known t =
   match t.descr with
+  | Value_unresolved _
   | Value_unknown -> false
   | Value_bottom | Value_block _ | Value_int _ | Value_constptr _
   | Value_set_of_closures _ | Value_closure _ | Value_extern _
@@ -131,7 +138,7 @@ let known t =
 
 let useful t =
   match t.descr with
-  | Value_unknown | Value_bottom -> false
+  | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
   | Value_closure _ | Value_extern _ | Value_symbol _ -> true
 
@@ -139,15 +146,24 @@ let is_certainly_immutable t =
   match t.descr with
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
   | Value_closure _ -> true
-  | Value_unknown | Value_bottom -> false
+  | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
 let get_field i = function
-  | [{descr = Value_block (tag, fields)}] ->
+  | [] | _ :: _ :: _ -> assert false
+  | [{descr}] ->
+    match descr with
+    | Value_block (tag, fields) ->
       if i >= 0 && i < Array.length fields
       then fields.(i)
       else value_unknown
-  | _ -> value_unknown
+    | Value_int _ |Value_constptr _
+    | Value_set_of_closures _ | Value_closure _
+    | Value_unknown | Value_bottom
+    | Value_symbol _ | Value_extern _ ->
+      value_unknown
+    | Value_unresolved sym ->
+      value_unresolved sym
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
 
@@ -172,7 +188,7 @@ module Import = struct
         in
         value_closure
           { fun_id;
-            closure =
+            set_of_closures =
               { ffunctions = Compilenv.imported_closure closure_id;
                 bound_var;
                 kept_params = kept_params;
@@ -186,7 +202,7 @@ module Import = struct
           try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
         in
-        value_unoffseted_closure
+        value_set_of_closures
           { ffunctions = Compilenv.imported_closure closure_id;
             bound_var;
             kept_params = kept_params;
@@ -212,7 +228,10 @@ module Import = struct
         (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
       try import_ex (SymbolMap.find sym symbol_id_map) with
       | Not_found ->
-        value_unknown
+        Format.eprintf "Warning, couldn't find informations associated \
+                        to the symbol %a. Did you forger a -I arguments"
+          Symbol.print sym;
+        value_unresolved sym
 
   let rec really_import = function
     | Value_extern ex -> really_import_ex ex

@@ -333,7 +333,7 @@ let functor_like env clos approxs =
     List.for_all Flambdaapprox.known approxs &&
     Variable.Set.is_empty (recursive_functions clos)
 
-let transform_closure_expression r flam off rel annot =
+let transform_closure_expression r fu_closure off rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
@@ -344,20 +344,27 @@ let transform_closure_expression r flam off rel annot =
     (try ignore (find_declaration off closure.ffunctions)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
-                           Closure_id.print off Printflambda.flambda flam));
+                           Closure_id.print off Printflambda.flambda fu_closure));
     off
   in
-  let closure = match r.approx.descr with
-    | Value_set_of_closures closure -> closure
-    | Value_closure { closure } -> closure
-    | _ ->
-        Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda flam;
-        assert false in
-  let off = off_id closure off in
-  let rel = Misc.may_map (off_id closure) rel in
-  let ret_approx = value_closure { fun_id = off; closure } in
-  Fclosure ({fu_closure = flam; fu_fun = off; fu_relative_to = rel}, annot),
-  ret r ret_approx
+  match r.approx.descr with
+  | Value_set_of_closures set_of_closures
+  | Value_closure { set_of_closures } ->
+    let off = off_id set_of_closures off in
+    let rel = Misc.may_map (off_id set_of_closures) rel in
+    let ret_approx = value_closure { fun_id = off; set_of_closures } in
+    Fclosure ({fu_closure; fu_fun = off; fu_relative_to = rel}, annot),
+    ret r ret_approx
+  | Value_unresolved sym ->
+    (* If the set_of_closure comes from a symbol that can't be recovered,
+       we know that it comes from another compilation unit, hence it cannot
+       have been transformed during this rewriting. So it is safe to keep
+       this expression unchanged. *)
+    Fclosure ({fu_closure; fu_fun = off; fu_relative_to = rel}, annot),
+    ret r (value_unresolved sym)
+  | _ ->
+    Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda fu_closure;
+    assert false
 
 (* The main functions: iterate on the expression rewriting it and
    propagating up an approximation of the value.
@@ -436,7 +443,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let arg, r = loop env r fenv_field.vc_closure in
       let closure, approx_fun_id =
         match r.approx.descr with
-        | Value_closure { closure; fun_id } -> closure, fun_id
+        | Value_closure { set_of_closures; fun_id } -> set_of_closures, fun_id
         | Value_unknown ->
             (* We must have the correct approximation of the value to ensure
                we take account of all alpha-renamings. *)
@@ -903,7 +910,7 @@ and transform_set_of_closures_expression env r cl annot =
   let set_of_closures_env = Variable.Map.fold
       (fun id _ env -> Env.add_approx id
           (value_closure { fun_id = (Closure_id.wrap id);
-                           closure = internal_closure }) env)
+                           set_of_closures = internal_closure }) env)
       ffuns.funs env in
 
   (* rewrite the function *)
@@ -960,7 +967,7 @@ and transform_set_of_closures_expression env r cl annot =
   let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
   Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
              cl_specialised_arg}, annot),
-  ret r (value_unoffseted_closure closure)
+  ret r (value_set_of_closures closure)
 
 (* Transform an flambda function application based on information provided
    by an approximation of the function being applied.
@@ -982,8 +989,8 @@ and transform_application_expression env r (funct, fapprox)
       ret r value_unknown
   in
   match fapprox.descr with
-  | Value_closure { fun_id; closure } ->
-      let clos = closure.ffunctions in
+  | Value_closure { fun_id; set_of_closures } ->
+      let clos = set_of_closures.ffunctions in
       let func =
         try find_declaration fun_id clos with
         | Not_found ->
@@ -994,13 +1001,13 @@ and transform_application_expression env r (funct, fapprox)
       let nargs = List.length args in
       let arity = function_arity func in
       if nargs = arity then
-        direct_apply env r clos funct fun_id func fapprox closure
+        direct_apply env r clos funct fun_id func fapprox set_of_closures
           (args, approxs) dbg eid
       else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, q_approxs = Misc.split_at arity approxs in
         let expr, r =
-          direct_apply env r clos funct fun_id func fapprox closure
+          direct_apply env r clos funct fun_id func fapprox set_of_closures
               (h_args,h_approxs) dbg (Expr_id.create ())
         in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
