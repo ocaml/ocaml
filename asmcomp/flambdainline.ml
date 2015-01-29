@@ -441,44 +441,43 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
          construction. This is clearly a bad name. I will rename to "vc_closure".
       *)
       let arg, r = loop env r fenv_field.vc_closure in
-      let closure, approx_fun_id =
-        match r.approx.descr with
-        | Value_closure { set_of_closures; fun_id } -> set_of_closures, fun_id
-        | Value_unknown ->
-            (* We must have the correct approximation of the value to ensure
-               we take account of all alpha-renamings. *)
-            Format.printf "[Fvariable_in_closure] without suitable \
-              approximation : %a@.%a@.%a@."
-              Printflambda.flambda expr
-              Printflambda.flambda arg
-              Printflambda.flambda fenv_field.vc_closure;
-            assert false
-        | _ -> assert false
-      in
-      let module AR =
-        Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
-      in
-      let env_var = AR.fv_off_id closure.ffunction_sb fenv_field.vc_var in
-      let env_fun_id = AR.fun_off_id closure.ffunction_sb fenv_field.vc_fun in
+      begin match r.approx.descr with
+      | Value_closure { set_of_closures; fun_id } ->
+        let module AR =
+          Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+        in
+        let env_var = AR.fv_off_id set_of_closures.ffunction_sb fenv_field.vc_var in
+        let env_fun_id = AR.fun_off_id set_of_closures.ffunction_sb fenv_field.vc_fun in
 
-      assert(Closure_id.equal env_fun_id approx_fun_id);
+        assert(Closure_id.equal env_fun_id fun_id);
 
-      let approx =
-        try Var_within_closure.Map.find env_var closure.bound_var with
-        | Not_found ->
+        let approx =
+          try Var_within_closure.Map.find env_var set_of_closures.bound_var with
+          | Not_found ->
             Format.printf "no field %a in closure %a@ %a@."
               Var_within_closure.print env_var
               Closure_id.print env_fun_id
               Printflambda.flambda arg;
             assert false in
 
-      let expr =
-        if arg == fenv_field.vc_closure
-        then expr (* if the argument didn't change, the names didn't also *)
-        else Fvariable_in_closure ({ vc_closure = arg; vc_fun = env_fun_id;
-                                     vc_var = env_var }, annot) in
-      check_var_and_constant_result env r expr approx
+        let expr =
+          if arg == fenv_field.vc_closure
+          then expr (* if the argument didn't change, the names didn't also *)
+          else Fvariable_in_closure ({ vc_closure = arg; vc_fun = env_fun_id;
+                                       vc_var = env_var }, annot) in
+        check_var_and_constant_result env r expr approx
 
+      | Value_unknown ->
+        (* We must have the correct approximation of the value to ensure
+           we take account of all alpha-renamings. *)
+        Format.printf "[Fvariable_in_closure] without suitable \
+                       approximation : %a@.%a@.%a@."
+          Printflambda.flambda expr
+          Printflambda.flambda arg
+          Printflambda.flambda fenv_field.vc_closure;
+        assert false
+      | _ -> assert false
+      end
   | Flet(str, id, lam, body, annot) ->
       (* The different cases for rewriting [Flet] are, if the original code
          corresponds to [let id = lam in body],
