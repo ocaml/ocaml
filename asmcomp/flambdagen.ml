@@ -73,14 +73,14 @@ module Function_decl : sig
   type t
 
   val create
-     : rec_ident:Ident.t option
+     : let_rec_ident:Ident.t option
     -> closure_bound_var:Variable.t
     -> kind:function_kind
     -> params:Ident.t list
     -> body:lambda
     -> t
 
-  val rec_ident : t -> Ident.t
+  val let_rec_ident : t -> Ident.t
   val closure_bound_var : t -> Variable.t
   val kind : t -> function_kind
   val params : t -> Ident.t list
@@ -91,9 +91,12 @@ module Function_decl : sig
      the wrapper. *)
   val primitive_wrapper : t -> lambda option
 
-  (* CR mshinwell for pchambart: Please check these comments *)
+  (* CXR mshinwell for pchambart: Please check these comments
+     pchambart: checked and ok *)
   (* CR mshinwell for pchambart: Should improve the name of this function.
      How about "free_variables_in_body"?
+     pchambart: "free_variables_in_body" would suggest that we look at a
+     single function. maybe "free_variables_in_bodies" ?
   *)
   (* All identifiers free in the bodies of the given function declarations,
      indexed by the identifiers corresponding to the functions themselves. *)
@@ -118,33 +121,35 @@ module Function_decl : sig
     -> Variable.t Ident.tbl
 end = struct
   type t = {
-    (* CR mshinwell for pchambart: maybe the name [rec_ident] is misleading.
+    (* CXR mshinwell for pchambart: maybe the name [rec_ident] is misleading.
        What about if it is a simultaneous binding but not recursive?
-       Maybe it should be called "let_rec_ident". *)
-    rec_ident : Ident.t;
+       Maybe it should be called "let_rec_ident".
+       pchambart: it's a better name, approved and applied *)
+    let_rec_ident : Ident.t;
     closure_bound_var : Variable.t;
     kind : function_kind;
     params : Ident.t list;
     body : lambda;
   }
 
-  let create ~rec_ident ~closure_bound_var ~kind ~params ~body =
-    let rec_ident =
-      match rec_ident with
+  let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body =
+    let let_rec_ident =
+      match let_rec_ident with
       | None ->
-        (* CR mshinwell for pchambart: Can this be called something other than
-           "dummy"? *)
-        Ident.create "dummy"
-      | Some rec_ident -> rec_ident
+        (* CXR mshinwell for pchambart: Can this be called something other than
+           "dummy"?
+           pchambart: it is now "unnamed_function" *)
+        Ident.create "unnamed_function"
+      | Some let_rec_ident -> let_rec_ident
     in
-    { rec_ident;
+    { let_rec_ident;
       closure_bound_var;
       kind;
       params;
       body;
     }
 
-  let rec_ident t = t.rec_ident
+  let let_rec_ident t = t.let_rec_ident
   let closure_bound_var t = t.closure_bound_var
   let kind t = t.kind
   let params t = t.params
@@ -157,8 +162,8 @@ end = struct
     | _ -> None
 
   (* All identifiers of simultaneously-defined functions in [ts]. *)
-  let rec_idents ts =
-    List.map (fun t -> t.rec_ident) ts
+  let let_rec_idents ts =
+    List.map (fun t -> t.let_rec_ident) ts
 
   (* All parameters of functions in [ts]. *)
   let all_params ts =
@@ -181,13 +186,13 @@ end = struct
     List.fold_right IdentSet.remove idents from
 
   let all_free_idents ts =
-    set_diff (set_diff (all_used_idents ts) (all_params ts)) (rec_idents ts)
+    set_diff (set_diff (all_used_idents ts) (all_params ts)) (let_rec_idents ts)
 
   let closure_env_without_parameters ts ~create_var =
     Ident.empty
     (* add recursive functions *)
     |> List.fold_right
-      (fun t env -> add_var t.rec_ident t.closure_bound_var env)
+      (fun t env -> add_var t.let_rec_ident t.closure_bound_var env)
       ts
     (* add free variables *)
     |> IdentSet.fold
@@ -247,7 +252,7 @@ let rec close t env = function
          the function is anonymous, the location can be used. *)
       let closure_bound_var = fresh_variable t "fun" in
       let decl =
-        Function_decl.create ~rec_ident:None ~closure_bound_var ~kind
+        Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
           ~params ~body
       in
       Fclosure(
@@ -270,10 +275,10 @@ let rec close t env = function
       let function_declarations =
         (* Identify any bindings in the [let rec] that are functions. *)
         List.map (function
-            | (rec_ident, Lfunction(kind, params, body)) ->
-                let closure_bound_var = create_var t rec_ident in
+            | (let_rec_ident, Lfunction(kind, params, body)) ->
+                let closure_bound_var = create_var t let_rec_ident in
                 let function_declaration =
-                  Function_decl.create ~rec_ident:(Some rec_ident)
+                  Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                     ~closure_bound_var ~kind ~params ~body
                 in
                 Some function_declaration
@@ -288,7 +293,7 @@ let rec close t env = function
             List.map
               (fun (id, def) ->
                  let var = find_var env id in
-                 (var, close_named t ~rec_ident:id var env def))
+                 (var, close_named t ~let_rec_ident:id var env def))
               defs in
           Fletrec(fdefs, close t env body, nid ~name:"letrec" ())
       | Some function_declarations ->
@@ -298,9 +303,9 @@ let rec close t env = function
           let set_of_closures_var = fresh_variable t "set_of_closures" in
           let body =
             List.fold_left (fun body decl ->
-                let rec_ident = Function_decl.rec_ident decl in
+                let let_rec_ident = Function_decl.let_rec_ident decl in
                 let closure_bound_var = Function_decl.closure_bound_var decl in
-                let let_bound_var = find_var env rec_ident in
+                let let_bound_var = find_var env let_rec_ident in
                 Flet(Not_assigned, let_bound_var,
                      Fclosure(
                        { fu_closure = Fvar (set_of_closures_var, nid ());
@@ -458,11 +463,11 @@ and close_list t sb l = List.map (close t sb) l
 (* CR mshinwell for pchambart: I know this name was taken from the existing
    code, but I think we should rename it.  It doesn't adequately express
    what's going on. *)
-and close_named t ?rec_ident let_bound_var env = function
+and close_named t ?let_rec_ident let_bound_var env = function
   | Lfunction(kind, params, body) ->
       let closure_bound_var = rename_var t let_bound_var in
       let decl =
-        Function_decl.create ~rec_ident ~closure_bound_var ~kind ~params ~body
+        Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params ~body
       in
       Fclosure(
         { fu_closure = close_functions t env [decl];

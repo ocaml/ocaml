@@ -1084,12 +1084,13 @@ and direct_apply env r clos funct fun_id func fapprox closure
   in
   match fun_cost with
   | Flambdacost.Never_inline -> no_transformation ()
-  | (Flambdacost.Can_inline _) as threshold ->
+  | (Flambdacost.Can_inline _) as remaining_inline_threshold ->
       let fun_var = find_declaration_variable fun_id clos in
       let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
       (* CR mshinwell for mshinwell: add comment about stub functions *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
-         [inline_threshold] is confusing *)
+         [inline_threshold] is confusing.
+         pchambart: is [remaining_inline_threshold] better ? *)
       let inline_threshold = env.inline_threshold in
       let env = { env with inline_threshold = remaining_inline_threshold } in
       let kept_params = closure.kept_params in
