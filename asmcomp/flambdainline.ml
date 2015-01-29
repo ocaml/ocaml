@@ -428,19 +428,65 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       (* CR mshinwell for pchambart: I think we need a small example here.
          I also rewrote the comment, please check it is correct.  Also, I
          think we need to explain thoroughly why it is the case that a
-         [Value_closure] approximation is always present here. *)
+         [Value_closure] approximation is always present here.
+         pchambart: I tried to write an example, but ocaml syntax is
+           too high level to explain that, and the concrete syntax is too
+           heavy (and there is no syntax for maps...)
+      *)
       (* This kind of expression denotes an access to a variable bound in
          a closure.  Variables in the closure ([fenv_field.vc_closure]) may
          have been alpha-renamed since [expr] was constructed; as such, we
          must ensure the same happens to [expr].  The renaming information is
          contained within the approximation deduced from [vc_closure] (as
-         such, that approximation *must* identify which closure it is). *)
-      (* CR mshinwell: this may be a stupid question, but why is "arg" called
+         such, that approximation *must* identify which closure it is).
+
+         For instance in some imaginary syntax for flambda:
+
+           [let f x =
+              let g y ~closure:{a} = a + y in
+              let closure = { a = x } in
+                g 12 ~closure]
+
+         when [f] is traversed, [g] can be inlined, resulting in the
+         expression
+
+           [let f z =
+              let g y ~closure:{a} = a + y in
+              let closure = { a = x } in
+                closure.a + 12]
+
+         [closure.a] being a notation for:
+
+           [Fvariable_in_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
+
+         If [f] is inlined later, the resulting code will be
+
+           [let x = ... in
+            let g' y' ~closure':{a'} = a' + y' in
+            let closure' = { a' = x } in
+              closure'.a' + 12]
+
+         in particular the field [a] of the closure has been alpha renamed to [a'].
+         This information must be carried from the declaration to the use.
+
+         If the function is declared outside of the alpha renamed part, there is
+         no need for renaming in the [Ffunction] and [Fvariable_in_closure].
+         This is not usualy the case, except when the closure declaration is a
+         symbol.
+
+         What ensures that This information is available at [Fvariable_in_closure]
+         point is that those constructions can only be introduced by inlining,
+         which requires those same informations. For this to still be valid,
+         other transformation must avoid transforming the information flow in
+         a way that the inline function can't propagate it.
+      *)
+      (* CXR mshinwell: this may be a stupid question, but why is "arg" called
          "arg"?
            pchambart: it is some kind of argument for the Fvariable_in_closure
          construction. This is clearly a bad name. I will rename to "vc_closure".
+           done
       *)
-      let arg, r = loop env r fenv_field.vc_closure in
+      let vc_closure, r = loop env r fenv_field.vc_closure in
       begin match r.approx.descr with
       | Value_closure { set_of_closures; fun_id } ->
         let module AR =
@@ -457,23 +503,29 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
             Format.printf "no field %a in closure %a@ %a@."
               Var_within_closure.print env_var
               Closure_id.print env_fun_id
-              Printflambda.flambda arg;
+              Printflambda.flambda vc_closure;
             assert false in
 
         let expr =
-          if arg == fenv_field.vc_closure
+          if vc_closure == fenv_field.vc_closure
           then expr (* if the argument didn't change, the names didn't also *)
-          else Fvariable_in_closure ({ vc_closure = arg; vc_fun = env_fun_id;
+          else Fvariable_in_closure ({ vc_closure; vc_fun = env_fun_id;
                                        vc_var = env_var }, annot) in
         check_var_and_constant_result env r expr approx
 
+      | Value_unresolved sym ->
+        (* This value comes from a symbol for which we couldn't find any
+           information. This tells us that this function couldn't have been
+           renamed. So we can keep it unchanged *)
+        Fvariable_in_closure ({ fenv_field with vc_closure }, annot),
+        ret r (value_unresolved sym)
       | Value_unknown ->
         (* We must have the correct approximation of the value to ensure
            we take account of all alpha-renamings. *)
         Format.printf "[Fvariable_in_closure] without suitable \
                        approximation : %a@.%a@.%a@."
           Printflambda.flambda expr
-          Printflambda.flambda arg
+          Printflambda.flambda vc_closure
           Printflambda.flambda fenv_field.vc_closure;
         assert false
       | _ -> assert false
