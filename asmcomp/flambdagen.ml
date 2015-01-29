@@ -21,21 +21,21 @@ type t = {
   symbol_for_global' : (Ident.t -> Symbol.t)
 }
 
-let rec add_debug_info ev f =
+let rec add_debug_info ev flam =
   match ev.lev_kind with
   | Lev_after _ ->
-    begin match f with
+    begin match flam with
       | Fapply(ap,v) ->
         Fapply({ ap with ap_dbg = Debuginfo.from_call ev}, v)
       | Fprim(p, args, dinfo, v) ->
         Fprim(p, args, Debuginfo.from_call ev, v)
-      | Fsend(kind, f1, f2, args, dinfo, v) ->
-        Fsend(kind, f1, f2, args, Debuginfo.from_call ev, v)
-      | Fsequence(f1, f2, v) ->
-        Fsequence(f1, add_debug_info ev f2, v)
-      | _ -> f
+      | Fsend(kind, flam1, flam2, args, dinfo, v) ->
+        Fsend(kind, flam1, flam2, args, Debuginfo.from_call ev, v)
+      | Fsequence(flam1, flam2, v) ->
+        Fsequence(flam1, add_debug_info ev flam2, v)
+      | _ -> flam
     end
-  | _ -> f
+  | _ -> flam
 
 let nid = Expr_id.create
 
@@ -46,9 +46,9 @@ let create_var t id =
   let var = fresh_variable t (Ident.name id) in
   var
 
-let rename_var t var =
+let rename_var t ?append var =
   let current_compilation_unit = t.current_compilation_unit in
-  let new_var = Variable.rename ~current_compilation_unit var in
+  let new_var = Variable.rename ~current_compilation_unit ?append var in
   new_var
 
 let add_var id var (env : Variable.t Ident.tbl) = Ident.add id var env
@@ -63,7 +63,14 @@ let find_var env id =
 (* CR mshinwell for pchambart: We should establish conventions for various
    kinds of identifier and make sure that we stick to them everywhere.  Some
    that come to mind: "function identifier" or something (the [f] in
-   [let f x = ...], "closure bound var", etc *)
+   [let f x = ...], "closure bound var", etc
+
+   pchambart: There is already a minimal convention of ident/var
+     all names containing "ident" refer to content of type [Ident.t], hence
+       comming from the Lambda
+     all names containing "var" refer to content of type [Variable.t], hence
+       already converted in Flambda.
+ *)
 
 module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
@@ -86,17 +93,20 @@ module Function_decl : sig
   val params : t -> Ident.t list
   val body : t -> lambda
 
-  (* [primitive_wrapper t] is [None] iff [t] is not an eta-expansion wrapper
-     for a primitive.  Otherwise it is [Some body], where [body] is the body of
-     the wrapper. *)
+  (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
+     with default optionnal arguments. Otherwise it is [Some body], where
+     [body] is the body of the wrapper. *)
   val primitive_wrapper : t -> lambda option
 
   (* CXR mshinwell for pchambart: Please check these comments
      pchambart: checked and ok *)
   (* CR mshinwell for pchambart: Should improve the name of this function.
      How about "free_variables_in_body"?
-     pchambart: "free_variables_in_body" would suggest that we look at a
-     single function. maybe "free_variables_in_bodies" ?
+     pchambart: I wanted to avoid mixing 'ident' and 'var' names. This one
+       returns sets of idents. I'm not sure but maybe "free_idents_in_body"
+       isn't too strange.
+       Also "free_variables_in_body" would suggest that we look at a
+       single function. maybe a plural ?
   *)
   (* All identifiers free in the bodies of the given function declarations,
      indexed by the identifiers corresponding to the functions themselves. *)
@@ -201,9 +211,10 @@ end = struct
 end
 
 let tupled_function_call_stub t id original_params tuplified_version =
-  (* CR mshinwell for pchambart: This should carry the name of the original
-     variable (for debugging information output). *)
-  let tuple_param = fresh_variable t "tupled_stub_param" in
+  (* CXR mshinwell for pchambart: This should carry the name of the original
+     variable (for debugging information output).
+     pchambart: it now carries the name of the function. *)
+  let tuple_param = rename_var t ~append:"tupled_stub_param" tuplified_version in
   let params = List.map (fun p -> rename_var t p) original_params in
   let call = Fapply(
       { ap_function = Fvar(tuplified_version,nid ());
@@ -245,12 +256,19 @@ let rec close t env = function
         | Strict | Alias | StrictOpt -> Not_assigned
       in
       let var = create_var t id in
-      Flet(let_kind, var, close_named t var env lam,
+      Flet(let_kind, var, close_let_bound_expression t var env lam,
            close t (add_var id var env) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
-      (* CR-someday mshinwell: Identifiers should have proper names.  If
-         the function is anonymous, the location can be used. *)
-      let closure_bound_var = fresh_variable t "fun" in
+      (* CXR-someday mshinwell: Identifiers should have proper names.  If
+         the function is anonymous, the location can be used.
+         pchambart: done *)
+      let closure_bound_var =
+        let name = match body with
+          | Levent(_,{ lev_loc }) ->
+            Format.asprintf "anonymous_function %a" Location.print lev_loc
+          | _ -> "anonymous_function" in
+        fresh_variable t name
+      in
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
           ~params ~body
@@ -288,14 +306,20 @@ let rec close t env = function
       begin match Misc.some_if_all_elements_are_some function_declarations with
       | None ->
           (* CR mshinwell for pchambart: add comment mirroring the one
-             below *)
-          let fdefs =
+             below.
+             pchambart: I'm not sure there is much more to say for that case. *)
+          (* If a branch is not a function we build a letrec expression
+             where every function has its own closure. *)
+          let flambda_defs =
             List.map
               (fun (id, def) ->
                  let var = find_var env id in
-                 (var, close_named t ~let_rec_ident:id var env def))
+                 let expr =
+                   close_let_bound_expression t ~let_rec_ident:id var env def
+                 in
+                 (var, expr))
               defs in
-          Fletrec(fdefs, close t env body, nid ~name:"letrec" ())
+          Fletrec(flambda_defs, close t env body, nid ~name:"letrec" ())
       | Some function_declarations ->
           (* When all the bindings are functions, we build a single set of
              closures for all the functions. *)
@@ -462,8 +486,15 @@ and close_list t sb l = List.map (close t sb) l
 
 (* CR mshinwell for pchambart: I know this name was taken from the existing
    code, but I think we should rename it.  It doesn't adequately express
-   what's going on. *)
-and close_named t ?let_rec_ident let_bound_var env = function
+   what's going on.
+   pchambart: I can't find a name that describe what it does, I just could find one
+   that describe when to use it. *)
+(* A special case for let bound functions to provide. In that case we have a
+   meaningfull name to give them.
+   If it is was let rec, we have another information: the [let_rec_ident] that
+   allows to find recursive calls. Otherwise, the [let_rec_ident] would have
+   appeared in the variables bound by the closure. *)
+and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
   | Lfunction(kind, params, body) ->
       let closure_bound_var = rename_var t let_bound_var in
       let decl =
