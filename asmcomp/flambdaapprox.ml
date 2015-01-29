@@ -17,7 +17,7 @@ open Flambda
 type tag = int
 
 type descr =
-  | Value_block of tag * approx array
+  | Value_block of tag * t array
   | Value_int of int
   | Value_constptr of int
   | Value_set_of_closures of value_closure
@@ -33,13 +33,13 @@ and value_offset =
 
 and value_closure =
   { ffunctions : Expr_id.t function_declarations;
-    bound_var : approx Var_within_closure.Map.t;
+    bound_var : t Var_within_closure.Map.t;
     kept_params : Variable.Set.t;
     ffunction_sb :
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
   }
 
-and approx =
+and t =
   { descr : descr;
     var : Variable.t option;
     symbol : Symbol.t option }
@@ -154,7 +154,6 @@ let descrs approxs = List.map (fun v -> v.descr) approxs
 (** Import external approx *)
 
 module Import = struct
-  type t = approx
   open Flambdaexport
   let rec import_ex ex : t =
 

@@ -18,7 +18,7 @@ open Flambda
 type tag = int
 
 type descr =
-  | Value_block of tag * approx array
+  | Value_block of tag * t array
   | Value_int of int
   | Value_constptr of int
   | Value_set_of_closures of value_closure
@@ -35,19 +35,20 @@ and value_offset = {
 
 and value_closure = {
   ffunctions : Expr_id.t function_declarations;
-  bound_var : approx Var_within_closure.Map.t;
+  bound_var : t Var_within_closure.Map.t;
   kept_params : Variable.Set.t;
   ffunction_sb :
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
 }
 
-(* CR mshinwell for pchambart: call this type [t] *)
-and approx = {
+(* CXR mshinwell for pchambart: call this type [t]
+   pchambart: done *)
+and t = {
   descr : descr;
   var : Variable.t option;
   symbol : Symbol.t option;
 }
-(** A value of type [approx] corresponds to an approximation of a value.
+(** A value of type [t] corresponds to an approximation of a value.
     Such approximations are deduced at particular points in an expression
     tree, but may subsequently be propagated to other locations.
 
@@ -70,53 +71,53 @@ and approx = {
 
 (** Smart constructors *)
 
-val value_unknown : approx
-val value_int : int -> approx
-val value_constptr : int -> approx
-val value_closure : value_offset -> approx
+val value_unknown : t
+val value_int : int -> t
+val value_constptr : int -> t
+val value_closure : value_offset -> t
 (* CR mshinwell for pchambart: update name of [value_unoffseted_closure] *)
-val value_unoffseted_closure : value_closure -> approx
-val value_block : tag * approx array -> approx
-val value_extern : Flambdaexport.ExportId.t -> approx
-val value_symbol : Symbol.t -> approx
-val value_bottom : approx
+val value_unoffseted_closure : value_closure -> t
+val value_block : tag * t array -> t
+val value_extern : Flambdaexport.ExportId.t -> t
+val value_symbol : Symbol.t -> t
+val value_bottom : t
 
-val const_approx : Flambda.const -> approx
+val const_approx : Flambda.const -> t
 
-val print_approx : Format.formatter -> approx -> unit
+val print_approx : Format.formatter -> t -> unit
 
-val make_const_int : int -> 'a -> 'a Flambda.flambda * approx
-val make_const_ptr : int -> 'a -> 'a Flambda.flambda * approx
-val make_const_bool : bool -> 'a -> 'a Flambda.flambda * approx
+val make_const_int : int -> 'a -> 'a Flambda.flambda * t
+val make_const_ptr : int -> 'a -> 'a Flambda.flambda * t
+val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
-val known : approx -> bool
+val known : t -> bool
 
 (* An approximation is "useful" iff it is neither unknown nor bottom. *)
-val useful : approx -> bool
+val useful : t -> bool
 
 (* A value is certainly immutable if its approximation is known and not bottom.
    It should have been resolved (it cannot be [Value_extern] and
    [Value_symbol] *)
-val is_certainly_immutable : approx -> bool
+val is_certainly_immutable : t -> bool
 
 val check_constant_result
    : Expr_id.t Flambda.flambda
-  -> approx
-  -> Expr_id.t Flambda.flambda * approx
+  -> t
+  -> Expr_id.t Flambda.flambda * t
 
 val check_var_and_constant_result
    : is_present_in_env:(Variable.t -> bool)
   -> Expr_id.t Flambda.flambda
-  -> approx
-  -> Expr_id.t Flambda.flambda * approx
+  -> t
+  -> Expr_id.t Flambda.flambda * t
 
-val get_field : int -> approx list -> approx
+val get_field : int -> t list -> t
 
-val descrs : approx list -> descr list
+val descrs : t list -> descr list
 
 module Import : sig
   val really_import : descr -> descr
-  val import_global : Ident.t -> approx
-  val import_symbol : Symbol.t -> approx
+  val import_global : Ident.t -> t
+  val import_symbol : Symbol.t -> t
 end

@@ -31,7 +31,7 @@ let new_var name =
 *)
 module Env : sig
   type t = {
-    env_approx : approx Variable.Map.t;
+    env_approx : Flambdaapprox.t Variable.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -48,13 +48,13 @@ module Env : sig
 
   val inlining_level_up : t -> t
 
-  val find : Variable.t -> t -> approx
+  val find : Variable.t -> t -> Flambdaapprox.t
 
   val present : t -> Variable.t -> bool
 
   val activate_substitution : t -> t
 
-  val add_approx : Variable.t -> approx -> t -> t
+  val add_approx : Variable.t -> Flambdaapprox.t -> t -> t
 
   val clear_approx : Variable.t -> t -> t
 
@@ -67,7 +67,7 @@ module Env : sig
 end = struct
 
   type t = {
-    env_approx : approx Variable.Map.t;
+    env_approx : Flambdaapprox.t Variable.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
        recursively *)
@@ -129,8 +129,8 @@ end
 open Env
 
 type ret =
-  { approx : approx;
-    globals : approx IntMap.t;
+  { approx : Flambdaapprox.t;
+    globals : Flambdaapprox.t IntMap.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
   }
@@ -249,8 +249,8 @@ let really_import_approx approx =
 
 let populate_closure_approximations
       ~(function_declaration : _ function_declaration)
-      ~(free_var_info : (_ * approx) Variable.Map.t)
-      ~(parameter_approximations : approx Variable.Map.t)
+      ~(free_var_info : (_ * Flambdaapprox.t) Variable.Map.t)
+      ~(parameter_approximations : Flambdaapprox.t Variable.Map.t)
       env =
   (* Add approximations of used free variables *)
   let env =

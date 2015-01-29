@@ -63,7 +63,7 @@ let const_ptr_expr expr n eid =
 let const_bool_expr expr b eid =
   const_ptr_expr expr (if b then 1 else 0) eid
 
-let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.approx =
+let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
   let open Lambda in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->

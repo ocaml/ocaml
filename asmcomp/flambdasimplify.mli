@@ -30,6 +30,6 @@ val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
     information. *)
 val primitive
    : Lambda.primitive
-  -> (Expr_id.t flambda list * (Flambdaapprox.approx list))
+  -> (Expr_id.t flambda list * (Flambdaapprox.t list))
   -> 'a flambda
-  -> 'a flambda * Flambdaapprox.approx
+  -> 'a flambda * Flambdaapprox.t
