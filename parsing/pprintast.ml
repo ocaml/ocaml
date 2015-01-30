@@ -1235,7 +1235,12 @@ class printer  ()= object(self:'self)
 
   method record_declaration f lbls =
     let type_record_field f pld =
-      pp f "@[<2>%a%s:@;%a@]" self#mutable_flag pld.pld_mutable pld.pld_name.txt self#core_type pld.pld_type in
+      pp f "@[<2>%a%s%a:@;%a@]"
+        self#mutable_flag pld.pld_mutable
+        pld.pld_name.txt
+        self#attributes pld.pld_attributes
+        self#core_type pld.pld_type
+    in
     pp f "{@\n%a}"
       (self#list type_record_field ~sep:";@\n" )  lbls
 
@@ -1256,13 +1261,6 @@ class printer  ()= object(self:'self)
       pp f "|@;";
       self#constructor_declaration f (pcd.pcd_name.txt, pcd.pcd_args, pcd.pcd_res, pcd.pcd_attributes)
     in
-    let label_declaration f pld =
-      pp f "@[<2>%a%s%a:@;%a;@]"
-         self#mutable_flag pld.pld_mutable
-         pld.pld_name.txt
-         self#attributes pld.pld_attributes
-         self#core_type pld.pld_type
-    in
     let repr f =
       let intro f =
         if x.ptype_manifest = None then ()
@@ -1274,8 +1272,7 @@ class printer  ()= object(self:'self)
              (self#list ~sep:"@\n" constructor_declaration) xs
       | Ptype_abstract -> ()
       | Ptype_record l ->
-          pp f "%t@;{@\n%a}" intro
-             (self#list ~sep:"@\n" label_declaration)  l ;
+          pp f "%t@;%a" intro self#record_declaration l
       | Ptype_open -> pp f "%t@;.." intro
     in
     let constraints f =
