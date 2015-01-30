@@ -14,6 +14,7 @@
 
 type error =
     Unclosed of Location.t * string * Location.t * string
+  | Undocumented of Location.t
   | Expecting of Location.t * string
   | Not_expecting of Location.t * string
   | Applicative_path of Location.t
@@ -36,7 +37,8 @@ let prepare_error = function
                            the highlighted '%s' might be unmatched"
              closing opening)
         "Error: Syntax error: '%s' expected" closing
-
+  | Undocumented loc ->
+      Location.errorf ~loc "Error: Documentation error: no documentation, add a ';@' line."
   | Expecting (loc, nonterm) ->
       Location.errorf ~loc "Error: Syntax error: %s expected." nonterm
   | Not_expecting (loc, nonterm) ->
@@ -68,6 +70,7 @@ let report_error ppf err =
 
 let location_of_error = function
   | Unclosed(l,_,_,_)
+  | Undocumented l
   | Applicative_path l
   | Variable_in_scope(l,_)
   | Other l

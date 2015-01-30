@@ -16,6 +16,7 @@ open Format
 
 type error =
     Unclosed of Location.t * string * Location.t * string
+  | Undocumented of Location.t
   | Expecting of Location.t * string
   | Not_expecting of Location.t * string
   | Applicative_path of Location.t
