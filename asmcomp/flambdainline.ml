@@ -376,37 +376,39 @@ let functor_like env clos approxs =
     List.for_all Flambdaapprox.known approxs &&
     Variable.Set.is_empty (recursive_functions clos)
 
-let transform_closure_expression r fu_closure off rel annot =
+let transform_closure_expression r fu_closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  (* CR mshinwell for pchambart: we should rename [off_id] now.
-        pchambart: Clearly. is [closure_id] ok ? *)
-  let off_id closure off =
-    let off = AR.fun_off_id closure.ffunction_sb off in
-    (try ignore (find_declaration off closure.ffunctions)
+  (* CXR mshinwell for pchambart: we should rename [off_id] now.
+        pchambart: done *)
+  let subst_closure_id closure closure_id =
+    let closure_id = AR.subst_closure_id closure.ffunction_sb closure_id in
+    (try ignore (find_declaration closure_id closure.ffunctions)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
-                           Closure_id.print off Printflambda.flambda fu_closure));
-    off
+                           Closure_id.print closure_id
+                           Printflambda.flambda fu_closure));
+    closure_id
   in
   match r.approx.descr with
   | Value_set_of_closures set_of_closures
   | Value_closure { set_of_closures } ->
-    let off = off_id set_of_closures off in
-    let rel = Misc.may_map (off_id set_of_closures) rel in
-    let ret_approx = value_closure { fun_id = off; set_of_closures } in
-    Fclosure ({fu_closure; fu_fun = off; fu_relative_to = rel}, annot),
+    let closure_id = subst_closure_id set_of_closures closure_id in
+    let rel = Misc.may_map (subst_closure_id set_of_closures) rel in
+    let ret_approx = value_closure { fun_id = closure_id; set_of_closures } in
+    Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
     ret r ret_approx
   | Value_unresolved sym ->
     (* If the set_of_closure comes from a symbol that can't be recovered,
        we know that it comes from another compilation unit, hence it cannot
        have been transformed during this rewriting. So it is safe to keep
        this expression unchanged. *)
-    Fclosure ({fu_closure; fu_fun = off; fu_relative_to = rel}, annot),
+    Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
     ret r (value_unresolved sym)
   | _ ->
-    Format.printf "%a@.%a@." Closure_id.print off Printflambda.flambda fu_closure;
+    Format.printf "%a@.%a@." Closure_id.print closure_id
+      Printflambda.flambda fu_closure;
     assert false
 
 (* The main functions: iterate on the expression rewriting it and
@@ -535,8 +537,16 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
         let module AR =
           Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
         in
-        let env_var = AR.fv_off_id set_of_closures.ffunction_sb fenv_field.vc_var in
-        let env_fun_id = AR.fun_off_id set_of_closures.ffunction_sb fenv_field.vc_fun in
+        let env_var =
+          AR.subst_variable_in_closure
+            set_of_closures.ffunction_sb
+            fenv_field.vc_var
+        in
+        let env_fun_id =
+          AR.subst_closure_id
+            set_of_closures.ffunction_sb
+            fenv_field.vc_fun
+        in
 
         assert(Closure_id.equal env_fun_id fun_id);
 

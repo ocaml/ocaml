@@ -88,6 +88,9 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
     'b Flambda.function_declarations ->
     'a Variable.Map.t * 'b Flambda.function_declarations * subst * t
 
-  val fun_off_id : t -> Closure_id.t -> Closure_id.t
-  val fv_off_id : t -> Var_within_closure.t -> Var_within_closure.t
+  val subst_closure_id : t -> Closure_id.t -> Closure_id.t
+  val subst_variable_in_closure :
+    t ->
+    Var_within_closure.t ->
+    Var_within_closure.t
 end

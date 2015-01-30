@@ -220,11 +220,11 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     let ffuns, subst, t = ffuns_subst t subst ffuns in
     fv, ffuns, subst, t
 
-  let fun_off_id t off =
-    try Closure_id.Map.find off t.ffs_fun
-    with Not_found -> off
+  let subst_closure_id t closure_id =
+    try Closure_id.Map.find closure_id t.ffs_fun
+    with Not_found -> closure_id
 
-  let fv_off_id t off =
-    try Var_within_closure.Map.find off t.ffs_fv
-    with Not_found -> off
+  let subst_variable_in_closure t var_in_closure =
+    try Var_within_closure.Map.find var_in_closure t.ffs_fv
+    with Not_found -> var_in_closure
 end
