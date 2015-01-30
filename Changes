@@ -135,6 +135,7 @@ Bug fixes:
   (Gabriel Scherer, report by Peter Zotov)
 - PR#6727: Printf.sprintf "%F" misbehavior
   (Benoît Vaugon, report by Vassili Karpov)
+- PR#6763: #show with -short-paths doesn't select shortest type paths
 - ocamlbuild on cygwin cannot find ocamlfind
   (user 'algoriddle')
 - allow android build with pthreads support (since SDK r10c)
