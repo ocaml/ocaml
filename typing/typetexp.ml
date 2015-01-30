@@ -214,6 +214,7 @@ let find_component lookup make_error env loc lid =
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
+
 let find_type env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
@@ -239,10 +240,29 @@ let find_class env loc lid =
   check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
+(* With the simplification of index operators, the expression a.{..} are no longer resolved to Bigarray.Array[n].[g|s]et.
+To ease the transition period, we catch the case where the index operators .{}/.{,}.. are not bound in the current scope and reintroduce the
+binding with a deprecation warning. *)
+let lookup_value_with_deprecated_indexop loc lid env   =
+let lookup_deprecated lid env =
+ match lid with
+  | Longident.Lident s ->  ( match s with
+    | ".{}" | ".{}<-" | ".{,}" | ".{,}<-" |  ".{,,}" | ".{,,}<-" |  ".{,..,}" | ".{,..,}<-"  ->
+     let lid' =  Longident.( Ldot( Lident "Bigarray" , s ) ) in
+     let r = Env.lookup_value lid' env in
+     Location.prerr_warning loc (Warnings.Deprecated (
+Printf.sprintf "possible use of ( %s ) as Bigarray.( %s ). To avoid this warning, open the Bigarray module. If you did not intend to use the bigarray index operator, this warning implies that the ( %s ) operator was unbound " s s s ));
+    r
+    | _ -> raise Not_found
+  )
+  | _ -> raise Not_found in
+  try Env.lookup_value lid env with
+    | Not_found -> lookup_deprecated lid env
+[@@ocaml.deprecated "Temporary hack to ease the introduction of the new index operators .{}/.{,}... "]
+
 let find_value env loc lid =
   let (path, decl) as r =
-    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
-  in
+  find_component (lookup_value_with_deprecated_indexop loc) (fun lid -> Unbound_value lid) env loc lid in
   check_deprecated loc decl.val_attributes (Path.name path);
   r
 
