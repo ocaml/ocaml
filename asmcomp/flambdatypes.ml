@@ -79,7 +79,10 @@ open Abstract_identifiers
 *)
 
 (* CR mshinwell: These constructors aren't very descriptive.  We should try
-   to improve the names. *)
+   to improve the names.
+   pchambart: we want to say that it can be assigned. Maybe Assignable, or
+     Mutable/Immutable
+ *)
 type let_kind =
   | Not_assigned
   | Assigned

@@ -30,7 +30,11 @@ let new_var name =
    collect together all of the environment-related stuff.
 *)
 module Env : sig
-  type t = {
+
+  (* CR pchambart for mshinwell: abstracting this type would require redefining
+     all the substitutions functions in this env module.
+     Whould this be more readable ? *)
+  type t = private {
     env_approx : Flambdaapprox.t Variable.Map.t;
     current_functions : Set_of_closures_id.Set.t;
     (* The functions currently being declared: used to avoid inlining
@@ -47,22 +51,41 @@ module Env : sig
   val local : t -> t
 
   val inlining_level_up : t -> t
+  (* This environment is used to rewrite code for inlining. This is
+     used by the inlining heuristics to decide wether to continue.
+     Unconditionnaly inlined does not take this into account. *)
 
   val find : Variable.t -> t -> Flambdaapprox.t
+  (* Recover informations about the potential values of a variable.
+     Fails if no information was present in the environment *)
 
   val present : t -> Variable.t -> bool
 
   val activate_substitution : t -> t
+  (* Every variables declaration in the code rewriten using this environment
+     will be alpha renamed *)
 
   val add_approx : Variable.t -> Flambdaapprox.t -> t -> t
 
   val clear_approx : Variable.t -> t -> t
+  (* Explicitely record the fact that this variable does not carry any
+     informations. Used for mutable variables *)
+
+  val enter_set_of_closures_declaration : Set_of_closures_id.t -> t -> t
 
   val inside_set_of_closures_declaration : Set_of_closures_id.t -> t -> bool
 
   val at_toplevel : t -> bool
   (** Not inside a closure declaration.
       Toplevel code is the one evaluated when the compilation unit is loaded *)
+
+  val set_sb : Flambdasubst.t -> t -> t
+
+  val increase_closure_depth : t -> t
+
+  val never_inline : t -> t
+
+  val set_inline_threshold : Flambdacost.inline_threshold -> t -> t
 
 end = struct
 
@@ -118,12 +141,28 @@ end = struct
   let clear_approx id env =
     { env with env_approx = Variable.Map.add id value_unknown env.env_approx }
 
+  let enter_set_of_closures_declaration ident env =
+    { env with
+      current_functions =
+        Set_of_closures_id.Set.add ident env.current_functions; }
+
   let inside_set_of_closures_declaration closure_id env =
     Set_of_closures_id.Set.mem closure_id env.current_functions
 
   let at_toplevel env =
     env.closure_depth = 0
 
+  let set_sb sb env =
+    { env with sb; }
+
+  let increase_closure_depth env =
+    { env with closure_depth = env.closure_depth + 1; }
+
+  let never_inline env =
+    { env with inline_threshold = Flambdacost.Never_inline }
+
+  let set_inline_threshold inline_threshold env =
+    { env with inline_threshold }
 end
 
 open Env
@@ -252,6 +291,10 @@ let populate_closure_approximations
       ~(free_var_info : (_ * Flambdaapprox.t) Variable.Map.t)
       ~(parameter_approximations : Flambdaapprox.t Variable.Map.t)
       env =
+  (* This adds only the minimal set of approximations to the closures.
+     This is not stricly needed to restrict it like that, but it helps
+     catching potential substitution bugs. *)
+
   (* Add approximations of used free variables *)
   let env =
     Variable.Map.fold
@@ -541,7 +584,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let init_used_var = r.used_variables in
       let lam, r = loop env r lam in
       let id, sb = Flambdasubst.new_subst_id env.sb id in
-      let env = { env with sb; } in
+      let env = Env.set_sb sb env in
       let def_used_var = r.used_variables in
       let body_env = match str with
         | Assigned ->
@@ -579,7 +622,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       expr, exit_scope r id
   | Fletrec(defs, body, annot) ->
       let defs, sb = Flambdasubst.new_subst_ids env.sb defs in
-      let env = { env with sb; } in
+      let env = Env.set_sb sb env in
       let def_env = List.fold_left (fun env_acc (id,lam) ->
           Env.add_approx id value_unknown env_acc)
           env defs
@@ -682,7 +725,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       ret r value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
       let i, sb = Flambdasubst.new_subst_exn env.sb i in
-      let env = { env with sb; } in
+      let env = Env.set_sb sb env in
       let body, r = loop env r body in
       if not (Static_exception.Set.mem i r.used_staticfail)
       then
@@ -691,7 +734,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       else
         let vars, sb = Flambdasubst.new_subst_ids' env.sb vars in
         let env = List.fold_left (fun env id -> Env.add_approx id value_unknown env)
-            { env with sb; } vars in
+            (Env.set_sb sb env) vars in
         let handler, r = loop env r handler in
         let r = List.fold_left exit_scope r vars in
         let r = exit_scope_catch r i in
@@ -700,7 +743,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   | Ftrywith(body, id, handler, annot) ->
       let body, r = loop env r body in
       let id, sb = Flambdasubst.new_subst_id env.sb id in
-      let env = Env.add_approx id value_unknown { env with sb; } in
+      let env = Env.add_approx id value_unknown (Env.set_sb sb env) in
       let handler, r = loop env r handler in
       let r = exit_scope r id in
       Ftrywith(body, id, handler, annot),
@@ -746,7 +789,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let lo, r = loop env r lo in
       let hi, r = loop env r hi in
       let id, sb = Flambdasubst.new_subst_id env.sb id in
-      let env = Env.add_approx id value_unknown { env with sb; } in
+      let env = Env.add_approx id value_unknown (Env.set_sb sb env) in
       let body, r = loop env r body in
       let r = exit_scope r id in
       Ffor(id, lo, hi, dir, body, annot),
@@ -903,7 +946,7 @@ and transform_set_of_closures_expression env r cl annot =
   in
   let fv = cl.cl_free_var in
 
-  let env = { env with closure_depth = env.closure_depth + 1 } in
+  let env = Env.increase_closure_depth env in
   let cl_specialised_arg =
     Variable.Map.map
       (Flambdasubst.subst_var env.sb)
@@ -924,7 +967,7 @@ and transform_set_of_closures_expression env r cl annot =
   in
   let fv, ffuns, sb, ffunction_sb =
     AR.subst_function_declarations_and_free_variables env.sb fv ffuns in
-  let env = { env with sb; } in
+  let env = Env.set_sb sb env in
 
   let apply_substitution = Flambdasubst.subst_var env.sb in
   let cl_specialised_arg =
@@ -937,14 +980,9 @@ and transform_set_of_closures_expression env r cl annot =
          cl_specialised_arg)
   in
 
-  let env =
-    { env with
-      current_functions =
-        Set_of_closures_id.Set.add ffuns.ident env.current_functions;
-    }
-  in
-  (* we use the previous closure for evaluating the functions *)
+  let env = Env.enter_set_of_closures_declaration ffuns.ident env in
 
+  (* we use the previous closure for evaluating the functions *)
   let internal_closure =
     { ffunctions = ffuns;
       bound_var = Variable.Map.fold (fun id (_,desc) map ->
@@ -979,7 +1017,7 @@ and transform_set_of_closures_expression env r cl annot =
        to be inlined. *)
     let closure_env =
       if ffun.stub
-      then { closure_env with inline_threshold = Flambdacost.Never_inline }
+      then Env.never_inline closure_env
       else closure_env in
 
     let body, r = loop closure_env r ffun.body in
@@ -1150,7 +1188,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
          [inline_threshold] is confusing.
          pchambart: is [remaining_inline_threshold] better ? *)
       let inline_threshold = env.inline_threshold in
-      let env = { env with inline_threshold = remaining_inline_threshold } in
+      let env = Env.set_inline_threshold remaining_inline_threshold env in
       let kept_params = closure.kept_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally inlined). *)

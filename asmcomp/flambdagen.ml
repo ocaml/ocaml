@@ -71,6 +71,21 @@ let find_var env id =
      all names containing "var" refer to content of type [Variable.t], hence
        already converted in Flambda.
  *)
+(* Naming conventions:
+   All variable names containing "id" or "ident" are of type [Ident.t] or are
+     collections of [Ident.t]. Those refer to identifiers for the type
+     [Lambda.lamba], i.e. before closure conversion.
+   All variable names containing "var" are of type [Variable.t] or are
+     collections of [Variable.t]. Those refer to identifiers for the
+     type [Flambda.flambda], i.e. after closure conversion.
+
+  There is an exception to the [Ident.t] refering to variables of [Lambda.t]:
+  the module identifiers appearing in the constructions [Pgetglobal],
+  [Pgetglobalfield] and [Psetglobalfield]. Those constructions also appear in
+  [Flambda.flambda].
+
+*)
+
 
 module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
