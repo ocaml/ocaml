@@ -226,6 +226,8 @@ OCamlbuild:
 - Changed OCamlbuild's license to LGPLv2 with static linking exception.
 - GPR#219: speedup target-already-built builds
   (ygrek)
+- PR#6605, GPR#117: use ocamlfind, if available, to discover camlp4 path
+  (Vincent Laporte)
 
 Bug fixes:
 - PR#3612: memory leak in bigarray read from file
