@@ -191,6 +191,7 @@ and const ppf c = let open Asttypes in match c with
   | Fconst_base(Const_int64 n) -> fprintf ppf "%LiL" n
   | Fconst_base(Const_nativeint n) -> fprintf ppf "%nin" n
   | Fconst_pointer n -> fprintf ppf "%ia" n
+  | Fconst_float f -> fprintf ppf "%f" f
   | Fconst_float_array [] ->
       fprintf ppf "[| |]"
   | Fconst_float_array (f1 :: fl) ->

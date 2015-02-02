@@ -17,10 +17,17 @@ open Flambda
 
 type tag = int
 
+type 'a boxed_int = 'a Flambdaexport.boxed_int =
+  | Int32 : int32 boxed_int
+  | Int64 : int64 boxed_int
+  | Nativeint : nativeint boxed_int
+
 type descr =
   | Value_block of tag * t array
   | Value_int of int
   | Value_constptr of int
+  | Value_float of float
+  | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_offset
   | Value_unknown
@@ -74,6 +81,7 @@ and t = {
 
 val value_unknown : t
 val value_int : int -> t
+val value_float : float -> t
 val value_constptr : int -> t
 val value_closure : value_offset -> t
 (* CXR mshinwell for pchambart: update name of [value_unoffseted_closure]
@@ -92,6 +100,7 @@ val print_approx : Format.formatter -> t -> unit
 val make_const_int : int -> 'a -> 'a Flambda.flambda * t
 val make_const_ptr : int -> 'a -> 'a Flambda.flambda * t
 val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
+val make_const_float : float -> 'a -> 'a Flambda.flambda * t
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool

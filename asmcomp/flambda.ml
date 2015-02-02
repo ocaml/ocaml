@@ -128,6 +128,7 @@ let rec same l1 l2 =
       | Fconst_base (Const_int _ | Const_char _ | Const_float _ |
                      Const_int32 _ | Const_int64 _ | Const_nativeint _), _
       | Fconst_pointer _, _
+      | Fconst_float _, _
       | Fconst_float_array _, _
       | Fconst_immstring _, _ -> c1 = c2
     end

@@ -23,10 +23,17 @@ module EidTbl : ExtHashtbl with module M := ExportId
 
 type tag = int
 
+type _ boxed_int =
+  | Int32 : int32 boxed_int
+  | Int64 : int64 boxed_int
+  | Nativeint : nativeint boxed_int
+
 type descr =
     Value_block of tag * approx array
   | Value_int of int
   | Value_constptr of int
+  | Value_float of float
+  | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_closure of value_offset
   | Value_set_of_closures of value_closure
 

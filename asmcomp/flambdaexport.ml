@@ -23,10 +23,17 @@ module EidTbl = ExtHashtbl(ExportId)
 
 type tag = int
 
+type _ boxed_int =
+  | Int32 : int32 boxed_int
+  | Int64 : int64 boxed_int
+  | Nativeint : nativeint boxed_int
+
 type descr =
   | Value_block of tag * approx array
   | Value_int of int
   | Value_constptr of int
+  | Value_float of float
+  | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_closure of value_offset
   | Value_set_of_closures of value_closure
 
@@ -101,6 +108,12 @@ let print_approx ppf export =
       fprintf ppf "(function %a, %a)" Closure_id.print fun_id print_closure closure
     | Value_set_of_closures closure ->
       fprintf ppf "(ufunction %a)" print_closure closure
+    | Value_float f -> Format.pp_print_float ppf f
+    | Value_boxed_int (t, i) ->
+      match t with
+      | Int32 -> Format.fprintf ppf "%li" i
+      | Int64 -> Format.fprintf ppf "%Li" i
+      | Nativeint -> Format.fprintf ppf "%ni" i
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_closure ppf { closure_id; bound_var } =
@@ -200,7 +213,9 @@ let import_closure units pack closure =
 
 let import_descr_for_pack units pack = function
   | Value_int _
-  | Value_constptr _ as desc -> desc
+  | Value_constptr _
+  | Value_float _
+  | Value_boxed_int _ as desc -> desc
   | Value_block (tag, fields) ->
     Value_block (tag, Array.map (import_approx_for_pack units pack) fields)
   | Value_closure {fun_id; closure} ->

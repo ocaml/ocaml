@@ -619,6 +619,8 @@ module Conv(P:Param2) = struct
     | Fconst_pointer c -> Uconst_ptr c
     | Fconst_base (Const_int c) -> Uconst_int c
     | Fconst_base (Const_char c) -> Uconst_int (Char.code c)
+    | Fconst_float f ->
+        str ~shared:true (Uconst_float f)
     | Fconst_base (Const_float x) ->
         str ~shared:true (Uconst_float (float_of_string x))
     | Fconst_base (Const_int32 x) ->

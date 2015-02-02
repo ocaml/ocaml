@@ -97,6 +97,7 @@ type const =
   | Fconst_pointer of int
   | Fconst_float_array of string list
   | Fconst_immstring of string
+  | Fconst_float of float
 
 (* The value of type ['a] may be used for annotation of an flambda expression
    by some optimization pass. *)

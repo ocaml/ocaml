@@ -309,17 +309,24 @@ module Conv(P:Param1) = struct
           | Const_char c ->
               Fconst(cst, ()),
               Value_id (new_descr (Value_int (Char.code c)))
-          | Const_float _
-          | Const_int32 _
-          | Const_int64 _
-          | Const_nativeint _ ->
+          | Const_float s ->
+              Fconst (cst, ()),
+              Value_id (new_descr (Value_float (float_of_string s)))
+          | Const_int32 i ->
               Fconst(cst, ()),
-              Value_unknown
+              Value_id (new_descr (Value_boxed_int (Int32, i)))
+          | Const_int64 i ->
+              Fconst(cst, ()),
+              Value_id (new_descr (Value_boxed_int (Int64, i)))
+          | Const_nativeint i ->
+              Fconst(cst, ()),
+              Value_id (new_descr (Value_boxed_int (Nativeint, i)))
           | Const_string _ ->
               Fsymbol (add_constant (Fconst (cst,())),()),
               Value_unknown
         end
-
+    | Fconst (Fconst_float f as cst, _) ->
+        Fconst (cst, ()), Value_id (new_descr (Value_float f))
     | Fconst (Fconst_pointer c as cst,_) ->
         Fconst (cst, ()), Value_id (new_descr (Value_constptr c))
     | Fconst (Fconst_float_array c as cst, _) ->
@@ -820,7 +827,9 @@ module Prepare(P:Param2) = struct
     | Value_block (tag, fields) ->
         Value_block (tag, Array.map canonical_approx fields)
     | Value_int _
-    | Value_constptr _ as v -> v
+    | Value_constptr _
+    | Value_float _
+    | Value_boxed_int _ as v -> v
     | Value_closure offset ->
         Value_closure { offset with closure = (aux_closure offset.closure) }
     | Value_set_of_closures clos ->

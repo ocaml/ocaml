@@ -58,7 +58,7 @@ let lambda_smaller' lam ~than:threshold =
     | Fconst(
         (Fconst_base(Const_int _ | Const_char _ | Const_float _ |
                      Const_int32 _ | Const_int64 _ | Const_nativeint _) |
-         Fconst_pointer _), _) -> incr size
+         Fconst_pointer _ | Fconst_float _), _) -> incr size
     | Fconst(
         (Fconst_base( Const_string _ )
         | Fconst_float_array _ | Fconst_immstring _ ) , _) ->
