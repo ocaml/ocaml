@@ -563,7 +563,7 @@ let rec emit_instr i dslot =
         `	addi    {emit_gpr 31}, {emit_gpr 31}, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	{emit_gpr 31}, {emit_gpr 30}\n`;
         `	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, {emit_int size_addr}\n`;
-        `	addi    {emit_gpr 11}, {emit_gpr 31}, {emit_int(n)}\n`;
+        `	li      {emit_gpr 11}, {emit_int(n)}\n`;
         `	bltl	{emit_label !call_gc_label}\n`;
         record_frame i.live Debuginfo.none
     | Lop(Ispecific(Ialloc_far n)) ->
@@ -572,7 +572,7 @@ let rec emit_instr i dslot =
         `	addi    {emit_gpr 31}, {emit_gpr 31}, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	{emit_gpr 31}, {emit_gpr 30}\n`;
         `	bge	{emit_label lbl}\n`;
-        `	addi    {emit_gpr 11}, {emit_gpr 31}, {emit_int(n)}\n`;
+        `	li      {emit_gpr 11}, {emit_int(n)}\n`;
         `	bl	{emit_label !call_gc_label}\n`;
         record_frame i.live Debuginfo.none;
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, {emit_int size_addr}\n`

@@ -185,13 +185,15 @@ let record_frame live dbg =
 
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
+    gc_size: int;                       (* How much to add back to [young_ptr] *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label }                   (* Label of frame descriptor *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:	addq	${emit_int gc.gc_size}, %r15\n`;
+  `	{emit_call "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error.
@@ -480,6 +482,7 @@ let emit_instr fallthrough i =
           `	leaq	8(%r15), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
+              gc_size = n;
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame } :: !call_gc_sites
         end else begin

@@ -286,8 +286,6 @@ void caml_empty_minor_heap (void)
     CAMLassert (caml_young_ptr >= caml_young_alloc_start);
     caml_stat_minor_words += caml_young_alloc_end - caml_young_ptr;
     caml_young_ptr = caml_young_alloc_end;
-    caml_young_trigger = caml_young_alloc_start;
-    caml_young_limit = caml_young_trigger;
     clear_table (&caml_ref_table);
     clear_table (&caml_weak_ref_table);
     caml_gc_message (0x02, ">", 0);
@@ -314,41 +312,49 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_gc_dispatch (void)
 {
-  value *new_trigger = caml_young_trigger;
+  value *trigger = caml_young_trigger; /* save old value of trigger */
 
   CAML_TIMER_SETUP(tmr, "dispatch");
   CAML_TIMER_TIME (tmr, "overhead");
 
-  if (caml_young_trigger == caml_young_alloc_start || caml_requested_minor_gc){
+  if (trigger == caml_young_alloc_start || caml_requested_minor_gc){
     /* The minor heap is full, we must do a minor collection. */
     caml_empty_minor_heap ();
     caml_requested_minor_gc = 0;
-    new_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+    caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+    caml_young_limit = caml_young_trigger;
     CAML_TIMER_TIME (tmr, "dispatch/minor");
-  }
-  if (caml_young_trigger != caml_young_alloc_start
-      || caml_requested_major_slice){
-    /* The minor heap is half-full, do a major GC slice and call finalizers. */
-    caml_major_collection_slice (0);
-    caml_requested_major_slice = 0;
-    /* Set [trigger] and [limit] before calling the finalizers. */
-    new_trigger = caml_young_alloc_start;
-    CAML_TIMER_TIME (tmr, "dispatch/major");
 
     caml_final_do_calls ();
     CAML_TIMER_TIME (tmr, "dispatch/finalizers");
 
     if (caml_young_ptr - caml_young_alloc_start < Max_young_whsize){
       /* The finalizers have filled up the minor heap, we must do
-         a minor collection. */
+         a second minor collection. */
       caml_empty_minor_heap ();
       caml_requested_minor_gc = 0;
-      new_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+      caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+      caml_young_limit = caml_young_trigger;
       CAML_TIMER_TIME (tmr, "dispatch/finalizers_minor");
     }
   }
-  caml_young_trigger = new_trigger;
-  caml_young_limit = caml_young_trigger;
+  if (trigger != caml_young_alloc_start || caml_requested_major_slice){
+    /* The minor heap is half-full, do a major GC slice. */
+    caml_major_collection_slice (0);
+    caml_requested_major_slice = 0;
+    caml_young_trigger = caml_young_alloc_start;
+    caml_young_limit = caml_young_trigger;
+    CAML_TIMER_TIME (tmr, "dispatch/major");
+  }
+}
+
+/* For backward compatibility with Lablgtk: do a minor collection to
+   ensure that the minor heap is empty.
+*/
+CAMLexport void caml_minor_collection (void)
+{
+  caml_requested_minor_gc = 1;
+  caml_gc_dispatch ();
 }
 
 CAMLexport value caml_check_urgent_gc (value extra_root)

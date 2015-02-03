@@ -508,11 +508,11 @@ let emit_instr i =
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:	mov	eax, _caml_young_ptr\n`;
           `	sub	eax, {emit_int n}\n`;
-          `	mov	_caml_young_ptr, eax\n`;
           `	cmp	eax, _caml_young_limit\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;
+          `	mov	_caml_young_ptr, eax\n`;
           `	lea	{emit_reg i.res.(0)}, [eax+4]\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;

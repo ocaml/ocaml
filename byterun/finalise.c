@@ -160,8 +160,8 @@ void caml_final_do_strong_roots (scanning_action f)
   uintnat i;
   struct to_do *todo;
 
-  Assert (old == young);
-  for (i = 0; i < old; i++) Call_action (f, final_table[i].fun);
+  Assert (old <= young);
+  for (i = 0; i < young; i++) Call_action (f, final_table[i].fun);
 
   for (todo = to_do_hd; todo != NULL; todo = todo->next){
     for (i = 0; i < todo->size; i++){

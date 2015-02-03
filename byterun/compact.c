@@ -399,6 +399,9 @@ void caml_compact_heap (void)
   uintnat target_words, target_size, live;
   CAML_TIMER_SETUP(tmr, "compact");
 
+  CAMLassert (caml_young_ptr == caml_young_alloc_end);
+  CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
+  CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.base);
   do_compaction ();
   CAML_TIMER_TIME (tmr, "compact/main");
   /* Compaction may fail to shrink the heap to a reasonable size
@@ -493,9 +496,9 @@ void caml_compact_heap_maybe (void)
                    (uintnat) fp);
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_finish_major_cycle ();
 
-    /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = caml_fl_cur_size;
     fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
     caml_gc_message (0x200, "Measured overhead: %"

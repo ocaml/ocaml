@@ -555,12 +555,9 @@ intnat caml_major_collection_slice (intnat howmuch)
   return computed_work;
 }
 
-/* The minor heap must be empty when this function is called;
-   the minor heap is empty when this function returns.
-*/
-/* This does not call caml_compact_heap_maybe because the estimations of
+/* This does not call [caml_compact_heap_maybe] because the estimations of
    free and live memory are only valid for a cycle done incrementally.
-   Besides, this function is called by caml_compact_heap_maybe.
+   Besides, this function itself is called by [caml_compact_heap_maybe].
 */
 void caml_finish_major_cycle (void)
 {

@@ -8,7 +8,7 @@ array.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h
 backtrace.o: backtrace.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/backtrace.h ../byterun/memory.h \
@@ -87,7 +87,7 @@ gc_ctrl.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/freelist.h ../byterun/gc.h \
  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h stack.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h stack.h
 globroots.o: globroots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
@@ -260,7 +260,7 @@ array.d.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h
 backtrace.d.o: backtrace.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/backtrace.h ../byterun/memory.h \
@@ -339,7 +339,7 @@ gc_ctrl.d.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/freelist.h ../byterun/gc.h \
  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h stack.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h stack.h
 globroots.d.o: globroots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
@@ -512,7 +512,7 @@ array.p.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h
 backtrace.p.o: backtrace.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/backtrace.h ../byterun/memory.h \
@@ -591,7 +591,7 @@ gc_ctrl.p.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/freelist.h ../byterun/gc.h \
  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h stack.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h stack.h
 globroots.p.o: globroots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \
@@ -764,7 +764,7 @@ array.t.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h
 backtrace.t.o: backtrace.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/backtrace.h ../byterun/memory.h \
@@ -843,7 +843,7 @@ gc_ctrl.t.o: gc_ctrl.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
  ../byterun/minor_gc.h ../byterun/freelist.h ../byterun/gc.h \
  ../byterun/gc_ctrl.h ../byterun/major_gc.h ../byterun/minor_gc.h \
- ../byterun/misc.h ../byterun/mlvalues.h stack.h
+ ../byterun/misc.h ../byterun/mlvalues.h ../byterun/signals.h stack.h
 globroots.t.o: globroots.c ../byterun/memory.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/gc.h \
  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/major_gc.h \

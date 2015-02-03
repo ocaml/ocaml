@@ -3,7 +3,7 @@ alloc.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  minor_gc.h stacks.h
 array.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h signals.h
 backtrace.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h instruct.h intext.h \
  exec.h fix_code.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
@@ -49,7 +49,7 @@ freelist.o: freelist.c config.h ../config/m.h ../config/s.h \
 gc_ctrl.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
  ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
  roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \
- stacks.h
+ signals.h stacks.h
 globroots.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  ../config/s.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
  roots.h globroots.h
@@ -143,7 +143,7 @@ alloc.d.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  minor_gc.h stacks.h
 array.d.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h signals.h
 backtrace.d.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h instruct.h intext.h \
  exec.h fix_code.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
@@ -189,7 +189,7 @@ freelist.d.o: freelist.c config.h ../config/m.h ../config/s.h \
 gc_ctrl.d.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
  ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
  roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \
- stacks.h
+ signals.h stacks.h
 globroots.d.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  ../config/s.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
  roots.h globroots.h
@@ -285,7 +285,7 @@ alloc.t.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  minor_gc.h stacks.h
 array.t.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h signals.h
 backtrace.t.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h instruct.h intext.h \
  exec.h fix_code.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
@@ -331,7 +331,7 @@ freelist.t.o: freelist.c config.h ../config/m.h ../config/s.h \
 gc_ctrl.t.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
  ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
  roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \
- stacks.h
+ signals.h stacks.h
 globroots.t.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  ../config/s.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
  roots.h globroots.h
@@ -425,7 +425,7 @@ alloc.pic.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  minor_gc.h stacks.h
 array.pic.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
+ minor_gc.h signals.h
 backtrace.pic.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h instruct.h intext.h \
  exec.h fix_code.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
@@ -471,7 +471,7 @@ freelist.pic.o: freelist.c config.h ../config/m.h ../config/s.h \
 gc_ctrl.pic.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
  ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
  roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \
- stacks.h
+ signals.h stacks.h
 globroots.pic.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  ../config/s.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
  roots.h globroots.h

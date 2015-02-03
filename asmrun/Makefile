@@ -22,7 +22,7 @@ TFLAGS=$(CFLAGS) -DCAML_TIMER
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  freelist.o misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
   compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
@@ -225,7 +225,7 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
 
 clean::
-	rm -f *.o *.a *~
+	rm -f *.o *.a *~ *.[dp].c
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
