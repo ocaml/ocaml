@@ -13,6 +13,11 @@
 open Abstract_identifiers
 open Flambda
 
+external swap16 : int -> int = "%bswap16"
+external swap32 : int32 -> int32 = "%bswap_int32"
+external swap64 : int64 -> int64 = "%bswap_int64"
+external swapnative : nativeint -> nativeint = "%bswap_native"
+
 let lift_lets tree =
   let rec aux = function
     | Flet(str1,v1,Flet(str2,v2,def2,body2,d2),body1,d1) ->
@@ -62,9 +67,30 @@ let const_ptr_expr expr n eid =
   else expr, Flambdaapprox.value_constptr n
 let const_bool_expr expr b eid =
   const_ptr_expr expr (if b then 1 else 0) eid
+let const_float_expr expr f eid =
+  if Flambdaeffects.no_effects expr
+  then Flambdaapprox.make_const_float f eid
+  else expr, Flambdaapprox.value_float f
+let const_boxed_int_expr expr t i eid =
+  if Flambdaeffects.no_effects expr
+  then Flambdaapprox.make_const_boxed_int t i eid
+  else expr, Flambdaapprox.value_boxed_int t i
+
+let const_comparison_expr expr cmp x y eid =
+  let open Lambda in
+  const_bool_expr expr
+    (match cmp with
+     | Ceq -> x = y
+     | Cneq -> x <> y
+     | Clt -> x < y
+     | Cgt -> x > y
+     | Cle -> x <= y
+     | Cge -> x >= y)
+    eid
 
 let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
   let open Lambda in
+  let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
       expr, Flambdaapprox.value_block(tag, Array.of_list approxs)
@@ -72,21 +98,25 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
       let open Flambdaapprox in
       let eid = data_at_toplevel_node expr in
       match descrs approxs with
-        [Value_int x] ->
+      | [Value_int x] ->
           begin match p with
             Pidentity -> const_int_expr expr x eid
+          | Pnot -> const_bool_expr expr (x = 0) eid
           | Pnegint -> const_int_expr expr (-x) eid
-          | Pbswap16 ->
-              const_int_expr expr (((x land 0xff) lsl 8) lor
-                                   ((x land 0xff00) lsr 8)) eid
+          | Pbswap16 -> const_int_expr expr (swap16 x) eid
           | Poffsetint y -> const_int_expr expr (x + y) eid
+          | Pfloatofint when fpc -> const_float_expr expr (float_of_int x) eid
+          | Pbintofint Pnativeint ->
+            const_boxed_int_expr expr Nativeint (Nativeint.of_int x) eid
+          | Pbintofint Pint32 ->
+            const_boxed_int_expr expr Int32 (Int32.of_int x) eid
+          | Pbintofint Pint64 ->
+            const_boxed_int_expr expr Int64 (Int64.of_int x) eid
           | _ ->
               expr, value_unknown
           end
-      | [Value_int x; Value_int y]
-      | [Value_constptr x; Value_int y]
-      | [Value_int x; Value_constptr y]
-      | [Value_constptr x; Value_constptr y] ->
+      | [(Value_int x | Value_constptr x);
+         (Value_int y | Value_constptr y)] ->
           begin match p with
             Paddint -> const_int_expr expr (x + y) eid
           | Psubint -> const_int_expr expr (x - y) eid
@@ -96,18 +126,14 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
           | Pandint -> const_int_expr expr (x land y) eid
           | Porint -> const_int_expr expr (x lor y) eid
           | Pxorint -> const_int_expr expr (x lxor y) eid
-          | Plslint -> const_int_expr expr (x lsl y) eid
-          | Plsrint -> const_int_expr expr (x lsr y) eid
-          | Pasrint -> const_int_expr expr (x asr y) eid
+          | Plslint when 0 <= y && y < 8 * Arch.size_int ->
+              const_int_expr expr (x lsl y) eid
+          | Plsrint when 0 <= y && y < 8 * Arch.size_int ->
+              const_int_expr expr (x lsr y) eid
+          | Pasrint when 0 <= y && y < 8 * Arch.size_int ->
+              const_int_expr expr (x asr y) eid
           | Pintcomp cmp ->
-              let result = match cmp with
-                  Ceq -> x = y
-                | Cneq -> x <> y
-                | Clt -> x < y
-                | Cgt -> x > y
-                | Cle -> x <= y
-                | Cge -> x >= y in
-              const_bool_expr expr result eid
+              const_comparison_expr expr cmp x y eid
           | Pisout ->
               const_bool_expr expr (y > x || y < 0) eid
           | Psequand -> const_bool_expr expr (x <> 0 && y <> 0) eid
@@ -120,6 +146,7 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
             Pidentity -> const_ptr_expr expr x eid
           | Pnot -> const_bool_expr expr (x = 0) eid
           | Pisint -> const_bool_expr expr true eid
+          | Poffsetint y -> const_ptr_expr expr (x + y) eid
           | Pctconst c ->
               begin
                 match c with
@@ -133,6 +160,175 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
               end
           | _ ->
               expr, value_unknown
+          end
+      | [Value_float x] when fpc ->
+          begin match p with
+          | Pintoffloat -> const_int_expr expr (int_of_float x) eid
+          | Pnegfloat -> const_float_expr expr (-. x) eid
+          | Pabsfloat -> const_float_expr expr (abs_float x) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_float n1; Value_float n2] when fpc ->
+          begin match p with
+          | Paddfloat -> const_float_expr expr (n1 +. n2) eid
+          | Psubfloat -> const_float_expr expr (n1 -. n2) eid
+          | Pmulfloat -> const_float_expr expr (n1 *. n2) eid
+          | Pdivfloat -> const_float_expr expr (n1 /. n2) eid
+          | Pfloatcomp c  -> const_comparison_expr expr c n1 n2 eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Nativeint,n)] ->
+          begin match p with
+          | Pintofbint Pnativeint ->
+              const_int_expr expr (Nativeint.to_int n) eid
+          | Pcvtbint(Pnativeint, Pint32) ->
+              const_boxed_int_expr expr Int32 (Nativeint.to_int32 n) eid
+          | Pcvtbint(Pnativeint, Pint64) ->
+              const_boxed_int_expr expr Int64 (Int64.of_nativeint n) eid
+          | Pnegbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.neg n) eid
+          | Pbbswap Pnativeint ->
+              const_boxed_int_expr expr Nativeint (swapnative n) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int32,n)] ->
+          begin match p with
+          | Pintofbint Pint32 ->
+              const_int_expr expr (Int32.to_int n) eid
+          | Pcvtbint(Pint32, Pnativeint) ->
+              const_boxed_int_expr expr Nativeint (Nativeint.of_int32 n) eid
+          | Pcvtbint(Pint32, Pint64) ->
+              const_boxed_int_expr expr Int64 (Int64.of_int32 n) eid
+          | Pnegbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.neg n) eid
+          | Pbbswap Pint32 ->
+              const_boxed_int_expr expr Int32 (swap32 n) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int64,n)] ->
+          begin match p with
+          | Pintofbint Pint64 ->
+              const_int_expr expr (Int64.to_int n) eid
+          | Pcvtbint(Pint64, Pnativeint) ->
+              const_boxed_int_expr expr Nativeint (Int64.to_nativeint n) eid
+          | Pcvtbint(Pint64, Pint32) ->
+              const_boxed_int_expr expr Int32 (Int64.to_int32 n) eid
+          | Pnegbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.neg n) eid
+          | Pbbswap Pint64 ->
+              const_boxed_int_expr expr Int64 (swap64 n) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Nativeint,n1);
+         Value_boxed_int(Nativeint,n2)] ->
+          begin match p with
+          | Paddbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.add n1 n2) eid
+          | Psubbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.sub n1 n2) eid
+          | Pmulbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.mul n1 n2) eid
+          | Pdivbint Pnativeint when n2 <> 0n ->
+              const_boxed_int_expr expr Nativeint (Nativeint.div n1 n2) eid
+          | Pmodbint Pnativeint when n2 <> 0n ->
+              const_boxed_int_expr expr Nativeint (Nativeint.rem n1 n2) eid
+          | Pandbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.logand n1 n2) eid
+          | Porbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.logor n1 n2) eid
+          | Pxorbint Pnativeint ->
+              const_boxed_int_expr expr Nativeint (Nativeint.logxor n1 n2) eid
+          | Pbintcomp(Pnativeint, c) ->
+              const_comparison_expr expr c n1 n2 eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int32,n1);
+         Value_boxed_int(Int32,n2)] ->
+          begin match p with
+          | Paddbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.add n1 n2) eid
+          | Psubbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.sub n1 n2) eid
+          | Pmulbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.mul n1 n2) eid
+          | Pdivbint Pint32 when n2 <> 0l ->
+              const_boxed_int_expr expr Int32 (Int32.div n1 n2) eid
+          | Pmodbint Pint32 when n2 <> 0l ->
+              const_boxed_int_expr expr Int32 (Int32.rem n1 n2) eid
+          | Pandbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.logand n1 n2) eid
+          | Porbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.logor n1 n2) eid
+          | Pxorbint Pint32 ->
+              const_boxed_int_expr expr Int32 (Int32.logxor n1 n2) eid
+          | Pbintcomp(Pint32, c) ->
+              const_comparison_expr expr c n1 n2 eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int64,n1);
+         Value_boxed_int(Int64,n2)] ->
+          begin match p with
+          | Paddbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.add n1 n2) eid
+          | Psubbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.sub n1 n2) eid
+          | Pmulbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.mul n1 n2) eid
+          | Pdivbint Pint64 when n2 <> 0L ->
+              const_boxed_int_expr expr Int64 (Int64.div n1 n2) eid
+          | Pmodbint Pint64 when n2 <> 0L ->
+              const_boxed_int_expr expr Int64 (Int64.rem n1 n2) eid
+          | Pandbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.logand n1 n2) eid
+          | Porbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.logor n1 n2) eid
+          | Pxorbint Pint64 ->
+              const_boxed_int_expr expr Int64 (Int64.logxor n1 n2) eid
+          | Pbintcomp(Pint64, c) ->
+              const_comparison_expr expr c n1 n2 eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Nativeint,n1);
+         Value_int n2] ->
+          begin match p with
+          | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Nativeint
+                (Nativeint.shift_left n1 n2) eid
+          | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Nativeint
+                (Nativeint.shift_right_logical n1 n2) eid
+          | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Nativeint
+                (Nativeint.shift_right n1 n2) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int32,n1);
+         Value_int n2] ->
+          begin match p with
+          | Plslbint Pint32 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int32
+                (Int32.shift_left n1 n2) eid
+          | Plsrbint Pint32 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int32
+                (Int32.shift_right_logical n1 n2) eid
+          | Pasrbint Pint32 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int32
+                (Int32.shift_right n1 n2) eid
+          | _ -> expr, value_unknown
+          end
+      | [Value_boxed_int(Int64,n1);
+         Value_int n2] ->
+          begin match p with
+          | Plslbint Pint64 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int64
+                (Int64.shift_left n1 n2) eid
+          | Plsrbint Pint64 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int64
+                (Int64.shift_right_logical n1 n2) eid
+          | Pasrbint Pint64 when 0 <= n2 && n2 < 8 * Arch.size_int ->
+              const_boxed_int_expr expr Int64
+                (Int64.shift_right n1 n2) eid
+          | _ -> expr, value_unknown
           end
       | [Value_block _] ->
           begin match p with

@@ -82,6 +82,7 @@ and t = {
 val value_unknown : t
 val value_int : int -> t
 val value_float : float -> t
+val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
 val value_closure : value_offset -> t
 (* CXR mshinwell for pchambart: update name of [value_unoffseted_closure]
@@ -101,6 +102,7 @@ val make_const_int : int -> 'a -> 'a Flambda.flambda * t
 val make_const_ptr : int -> 'a -> 'a Flambda.flambda * t
 val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
 val make_const_float : float -> 'a -> 'a Flambda.flambda * t
+val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.flambda * t
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
