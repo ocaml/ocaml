@@ -35,10 +35,10 @@ DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 TOBJS=$(COBJS:.o=.t.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
-ifeq "$(RUNTIMET)" "true"
-all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) libasmrunt.a
-else
 all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
+
+ifeq "$(RUNTIMET)" "true"
+all: libasmrunt.a
 endif
 
 libasmrun.a: $(OBJS)
@@ -73,10 +73,10 @@ libasmrunp.a: $(POBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-ifeq "$(RUNTIMET)" "true"
-install: install-default install-$(RUNTIMED) install-$(PROFILING) install-runtimet
-else
 install: install-default install-$(RUNTIMED) install-$(PROFILING)
+
+ifeq "$(RUNTIMET)" "true"
+install: install-runtimet
 endif
 
 install-default:
@@ -225,7 +225,7 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
 
 clean::
-	rm -f *.o *.a *~ *.[dp].c
+	rm -f *.o *.a *.d.c *.p.c *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
