@@ -18,7 +18,7 @@ CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
 OPTCOMPILER=../ocamlopt
-CAMLOPT=$(RUNTIME) $(OPTCOMPILER) -S
+CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
