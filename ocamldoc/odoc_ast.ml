@@ -77,8 +77,8 @@ module Typedtree_search =
           Hashtbl.add table (MT (Name.from_ident mtd.mtd_id)) tt
       | Typedtree.Tstr_exception decl ->
           Hashtbl.add table (E (Name.from_ident decl.cd_id)) tt
-      | Typedtree.Tstr_exn_rebind (ident, _, _, _, _) ->
-          Hashtbl.add table (ER (Name.from_ident ident)) tt
+      | Typedtree.Tstr_exn_rebind er ->
+          Hashtbl.add table (ER (Name.from_ident er.exrb_id)) tt
       | Typedtree.Tstr_type ident_type_decl_list ->
           List.iter
             (fun td ->
@@ -136,7 +136,7 @@ module Typedtree_search =
 
     let search_exception_rebind table name =
       match Hashtbl.find table (ER name) with
-      | (Typedtree.Tstr_exn_rebind (_, _, p, _, _)) -> p
+      | (Typedtree.Tstr_exn_rebind er) -> er.exrb_path
       | _ -> assert false
 
     let search_type_declaration table name =
@@ -890,10 +890,10 @@ module Analyser =
     let tt_get_included_module_list tt_structure =
       let f acc item =
         match item.str_desc with
-          Typedtree.Tstr_include (mod_expr, _, _) ->
+          Typedtree.Tstr_include incl ->
             acc @ [
                   { (* A VOIR : chercher dans les modules et les module types, avec quel env ? *)
-                    im_name = tt_name_from_module_expr mod_expr ;
+                    im_name = tt_name_from_module_expr incl.incl_mod ;
                     im_module = None ;
                     im_info = None ;
                   }
@@ -1271,7 +1271,7 @@ module Analyser =
           in
           (0, new_env, [ Element_exception new_ex ])
 
-      | Parsetree.Pstr_exn_rebind (name,  _, _) ->
+      | Parsetree.Pstr_exn_rebind {Parsetree.pexrb_name = name} ->
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
           (* we get the exception rebind in the typed tree *)
@@ -1434,7 +1434,7 @@ module Analyser =
           in
           (0, new_env2, [ Element_module_type mt ])
 
-      | Parsetree.Pstr_open (_ovf, longident, _attrs) ->
+      | Parsetree.Pstr_open _ ->
           (* A VOIR : enrichir l'environnement quand open ? *)
           let ele_comments = match comment_opt with
             None -> []
@@ -1544,7 +1544,7 @@ module Analyser =
           in
           (0, new_env, f ~first: true loc.Location.loc_start.Lexing.pos_cnum class_type_decl_list)
 
-      | Parsetree.Pstr_include (module_expr, _attrs) ->
+      | Parsetree.Pstr_include incl ->
           (* we add a dummy included module which will be replaced by a correct
              one at the end of the module analysis,
              to use the Path.t of the included modules in the typdtree. *)

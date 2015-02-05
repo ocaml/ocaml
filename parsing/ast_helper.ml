@@ -161,8 +161,8 @@ module Sig = struct
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
   let modtype ?loc a = mk ?loc (Psig_modtype a)
-  let open_ ?loc ?(attrs = []) a b = mk ?loc (Psig_open (a, b, attrs))
-  let include_ ?loc ?(attrs = []) a = mk ?loc (Psig_include (a, attrs))
+  let open_ ?loc a = mk ?loc (Psig_open a)
+  let include_ ?loc a = mk ?loc (Psig_include a)
   let class_ ?loc a = mk ?loc (Psig_class a)
   let class_type ?loc a = mk ?loc (Psig_class_type a)
   let extension ?loc ?(attrs = []) a = mk ?loc (Psig_extension (a, attrs))
@@ -177,15 +177,14 @@ module Str = struct
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
-  let exn_rebind ?loc ?(attrs = []) a b =
-    mk ?loc (Pstr_exn_rebind (a, b, attrs))
+  let exn_rebind ?loc a = mk ?loc (Pstr_exn_rebind a)
   let module_ ?loc a = mk ?loc (Pstr_module a)
   let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
   let modtype ?loc a = mk ?loc (Pstr_modtype a)
-  let open_ ?loc ?(attrs = []) a b = mk ?loc (Pstr_open (a, b, attrs))
+  let open_ ?loc a = mk ?loc (Pstr_open a)
   let class_ ?loc a = mk ?loc (Pstr_class a)
   let class_type ?loc a = mk ?loc (Pstr_class_type a)
-  let include_ ?loc ?(attrs = []) a = mk ?loc (Pstr_include (a, attrs))
+  let include_ ?loc a = mk ?loc (Pstr_include a)
   let extension ?loc ?(attrs = []) a = mk ?loc (Pstr_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Pstr_attribute a)
 end
@@ -300,6 +299,23 @@ module Mb = struct
     }
 end
 
+module Opn = struct
+  let mk ?(attrs = []) ?(override = Fresh) lid =
+    {
+     popen_lid = lid;
+     popen_override = override;
+     popen_attributes = attrs;
+    }
+end
+
+module Incl = struct
+  let mk ?(attrs = []) mexpr =
+    {
+     pincl_mod = mexpr;
+     pincl_attributes = attrs;
+    }
+end
+
 module Vb = struct
   let mk ?(attrs = []) pat expr =
     {
@@ -373,6 +389,15 @@ module Cstr = struct
     {
      pcstr_self = self;
      pcstr_fields = fields;
+    }
+end
+
+module Exrb = struct
+  let mk ?(attrs = []) name lid =
+    {
+     pexrb_name = name;
+     pexrb_lid = lid;
+     pexrb_attributes = attrs;
     }
 end
 

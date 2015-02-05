@@ -26,8 +26,8 @@ let process id data =
   set_private_data data;
   Mutex.lock output_lock;
   print_int id; print_string " --> "; print_string(get_private_data());
-  Mutex.unlock output_lock;
-  print_newline()
+  print_newline();
+  Mutex.unlock output_lock
 
 let _ =
   let t1 = Thread.create (process 1) "un" in

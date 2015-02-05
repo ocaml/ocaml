@@ -39,10 +39,11 @@ char * caml_instr_string (code_t pc);
 void caml_disasm_instr(code_t pc)
 {
   char buf[256];
-  char* c = buf;
+  char opbuf[128];
   int instr = *pc;
-  c += sprintf(c, "%6ld  %s", (long) (pc - caml_start_code),
-         instr < 0 || instr >= NUM_INSTRUCTIONS ? "???" : names_of_instructions[instr]);
+  snprintf(opbuf, sizeof(opbuf), "%6ld  %s", (long) (pc - caml_start_code),
+           (instr < 0 || instr >= NUM_INSTRUCTIONS) ?
+             "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {
     /* Instructions with one integer operand */
@@ -56,30 +57,31 @@ void caml_disasm_instr(code_t pc)
   case BRANCH: case BRANCHIF: case BRANCHIFNOT: case PUSHTRAP:
   case CONSTINT: case PUSHCONSTINT: case OFFSETINT: case OFFSETREF:
   case OFFSETCLOSURE: case PUSHOFFSETCLOSURE:
-    c += sprintf(c, " %d\n", pc[0]); break;
+    snprintf(buf, sizeof(buf), "%s %d\n", opbuf, pc[0]); break;
     /* Instructions with two operands */
   case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:
   case GETGLOBALFIELD: case MAKEBLOCK:
   case BEQ: case BNEQ: case BLTINT: case BLEINT: case BGTINT: case BGEINT:
   case BULTINT: case BUGEINT:
-    c += sprintf(c, " %d, %d\n", pc[0], pc[1]); break;
+    snprintf(buf, sizeof(buf), "%s %d, %d\n", opbuf, pc[0], pc[1]); break;
     /* Instructions with a C primitive as operand */
   case C_CALLN:
-    c += sprintf(c, " %d,", pc[0]); pc++;
+    snprintf(buf, sizeof(buf), "%s %d,", opbuf, pc[0]); pc++;
     /* fallthrough */
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
-      c += sprintf(c, " unknown primitive %d\n", pc[0]);
+      snprintf(buf, sizeof(buf), "%s unknown primitive %d\n", opbuf, pc[0]);
     else
-      c += sprintf(c, " %s\n", (char *) caml_prim_name_table.contents[pc[0]]);
+      snprintf(buf, sizeof(buf), "%s %s\n", opbuf, (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   case SWITCH:
-    c += sprintf(c, " ntag=%ld nint=%ld\n",
+    snprintf(buf, sizeof(buf), "%s ntag=%ld nint=%ld\n",
+                 opbuf,
                  (unsigned long) pc[0] >> 16,
                  (unsigned long) pc[0] & 0xffff);
     break;
   default:
-    c += sprintf(c, "\n");
+    snprintf(buf, sizeof(buf), "%s\n", opbuf);
   }
   printf("[%02d] %s", caml_domain_self()->id, buf);
   fflush (stdout);

@@ -210,15 +210,14 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
   | Tstr_exception of constructor_declaration
-  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc
-                       * attributes
+  | Tstr_exn_rebind of exception_rebind
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
-  | Tstr_open of override_flag * Path.t * Longident.t loc * attributes
+  | Tstr_open of open_description
   | Tstr_class of (class_declaration * string list * virtual_flag) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
-  | Tstr_include of module_expr * Types.signature * attributes
+  | Tstr_include of include_declaration
   | Tstr_attribute of attribute
 
 and module_binding =
@@ -279,8 +278,8 @@ and signature_item_desc =
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
-  | Tsig_open of override_flag * Path.t * Longident.t loc * attributes
-  | Tsig_include of module_type * Types.signature * attributes
+  | Tsig_open of open_description
+  | Tsig_include of include_description
   | Tsig_class of class_description list
   | Tsig_class_type of class_type_declaration list
   | Tsig_attribute of attribute
@@ -302,6 +301,25 @@ and module_type_declaration =
      mtd_attributes: attributes;
      mtd_loc: Location.t;
     }
+
+and open_description =
+    {
+     open_path: Path.t;
+     open_txt: Longident.t loc;
+     open_override: override_flag;
+     open_attributes: attribute list;
+    }
+
+and 'a include_infos =
+    {
+     incl_mod: 'a;
+     incl_type: Types.signature;
+     incl_attributes: attribute list;
+    }
+
+and include_description = module_type include_infos
+
+and include_declaration = module_expr include_infos
 
 and with_constraint =
     Twith_type of type_declaration
@@ -389,6 +407,16 @@ and constructor_declaration =
      cd_res: core_type option;
      cd_loc: Location.t;
      cd_attributes: attributes;
+    }
+
+and exception_rebind =
+    {
+     exrb_id: Ident.t;
+     exrb_name: string loc;
+     exrb_path: Path.t;
+     exrb_txt: Longident.t loc;
+     exrb_type: Types.exception_declaration;
+     exrb_attributes: attribute list;
     }
 
 and class_type =

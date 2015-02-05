@@ -67,6 +67,7 @@ let ghexp d = Exp.mk ~loc:(symbol_gloc ()) d
 let ghpat d = Pat.mk ~loc:(symbol_gloc ()) d
 let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
 let ghloc d = { txt = d; loc = symbol_gloc () }
+let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 
 let ghunit () =
   ghexp (Pexp_construct (mknoloc (Lident "()"), None))
@@ -354,6 +355,7 @@ let mkexp_attrs d attrs =
 %token LPAREN
 %token LBRACKETAT
 %token LBRACKETATAT
+%token LBRACKETATATAT
 %token MATCH
 %token METHOD
 %token MINUS
@@ -500,8 +502,7 @@ toplevel_phrase:
   | EOF                                  { raise End_of_file }
 ;
 top_structure:
-    str_attribute top_structure   { $1 :: $2 }
-  | seq_expr post_item_attributes { [mkstrexp $1 $2] }
+    seq_expr post_item_attributes { [mkstrexp $1 $2] }
   | top_structure_tail            { $1 }
 ;
 top_structure_tail:
@@ -603,17 +604,13 @@ module_expr:
 ;
 
 structure:
-    str_attribute structure { $1 :: $2 }
-  | seq_expr post_item_attributes structure_tail { mkstrexp $1 $2 :: $3 }
+    seq_expr post_item_attributes structure_tail { mkstrexp $1 $2 :: $3 }
   | structure_tail { $1 }
 ;
 structure_tail:
     /* empty */          { [] }
   | SEMISEMI structure   { $2 }
   | structure_item structure_tail { $1 :: $2 }
-;
-str_attribute:
-    post_item_attribute { mkstr(Pstr_attribute $1) }
 ;
 structure_item:
     LET ext_attributes rec_flag let_bindings
@@ -624,11 +621,12 @@ structure_item:
             let exp = wrap_exp_attrs exp $2 in
             mkstr(Pstr_eval (exp, attrs))
         | l ->
-            begin match $2 with
-            | None, [] -> mkstr(Pstr_value($3, List.rev l))
-            | Some _, _ -> not_expecting 2 "extension"
-            | None, _ :: _ -> not_expecting 2 "attribute"
-            end
+            let str = mkstr(Pstr_value($3, List.rev l)) in
+            let (ext, attrs) = $2 in
+            if attrs <> [] then not_expecting 2 "attribute";
+            match ext with
+            | None -> str
+            | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
       }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
     post_item_attributes
@@ -640,7 +638,8 @@ structure_item:
   | EXCEPTION exception_declaration
       { mkstr(Pstr_exception $2) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr(Pstr_exn_rebind(mkrhs $2 2, mkloc $4 (rhs_loc 4), $5)) }
+      { mkstr (Pstr_exn_rebind (Exrb.mk (mkrhs $2 2)
+                                        (mkloc $4 (rhs_loc 4)) ~attrs:$5)) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -652,15 +651,17 @@ structure_item:
       { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
                               ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
   | OPEN override_flag mod_longident post_item_attributes
-      { mkstr(Pstr_open ($2, mkrhs $3 3, $4)) }
+      { mkstr(Pstr_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr post_item_attributes
-      { mkstr(Pstr_include ($2, $3)) }
+      { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3)) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
+  | floating_attribute
+      { mkstr(Pstr_attribute $1) }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -708,16 +709,9 @@ module_type:
       { Mty.attr $1 $2 }
 ;
 signature:
-    sig_attribute signature { $1 :: $2 }
-  | signature_tail { $1 }
-;
-signature_tail:
     /* empty */          { [] }
   | SEMISEMI signature   { $2 }
-  | signature_item signature_tail { $1 :: $2 }
-;
-sig_attribute:
-    post_item_attribute { mksig(Psig_attribute $1) }
+  | signature_item signature { $1 :: $2 }
 ;
 signature_item:
     VAL val_ident COLON core_type post_item_attributes
@@ -751,15 +745,17 @@ signature_item:
                               ~loc:(symbol_rloc())
                               ~attrs:$6)) }
   | OPEN override_flag mod_longident post_item_attributes
-      { mksig(Psig_open ($2, mkrhs $3 3, $4)) }
+      { mksig(Psig_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
-      { mksig(Psig_include ($2, $3)) }
+      { mksig(Psig_include (Incl.mk $2 ~attrs:$3)) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mksig(Psig_class_type (List.rev $3)) }
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, $2)) }
+  | floating_attribute
+      { mksig(Psig_attribute $1) }
 ;
 
 module_declaration:
@@ -2068,6 +2064,9 @@ attribute:
 ;
 post_item_attribute:
   LBRACKETATAT attr_id payload RBRACKET { ($2, $3) }
+;
+floating_attribute:
+  LBRACKETATATAT attr_id payload RBRACKET { ($2, $3) }
 ;
 post_item_attributes:
     /* empty */  { [] }
