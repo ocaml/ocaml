@@ -41,7 +41,7 @@ try
   test (sprintf "%+d/%+i" (-42) (-43) = "-42/-43");
   test (sprintf "% d/% i" (-42) (-43) = "-42/-43");
   (*test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");*)
-    (* >> '#' is incompatilbe with 'd' *)
+    (* >> '#' is incompatible with 'd' *)
   test (sprintf "%4d/%5i" (-42) (-43) = " -42/  -43");
   test (sprintf "%*d/%*i" 4 (-42) 5 (-43) = " -42/  -43");
   (*test (sprintf "%-0+ #4d/%-0+ #5i" (-42) (-43) = "-42 /-43  ");*)
@@ -60,7 +60,7 @@ try
   test (sprintf "%4u" 42 = "  42");
   test (sprintf "%*u" 4 42 = "  42");
   (*test (sprintf "%-0+ #6d" 42 = "+42   ");*)
-    (* >> '-' is incompatible with '0', '#' is incompatilbe with 'd' *)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'd' *)
 
   printf "\nu negative\n%!";
   begin match Sys.word_size with
@@ -552,7 +552,7 @@ try
 
   printf "\n{...%%}\n%!";
   let f = format_of_string "%4g/%s" in
-  test (sprintf "%{%#0F%S%}" f = "%f%s");
+  test (sprintf "%{%.4F%5S%}" f = "%f%s");
 
   printf "\n(...%%)\n%!";
   let f = format_of_string "%d/foo/%s" in
