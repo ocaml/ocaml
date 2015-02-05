@@ -375,10 +375,15 @@ case "$bytecc,$target" in
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   *gcc*,*-*-cygwin*)
+    case $target in
+      i686-*) flavor=cygwin;;
+      x86_64-*) flavor=cygwin64;;
+      *) err "unknown cygwin variant";;
+    esac
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
+      flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
