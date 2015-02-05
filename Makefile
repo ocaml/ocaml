@@ -149,11 +149,10 @@ world.opt:
 #
 # make coreboot     [old system -- you were in a stable state]
 # <change the source>
-# make core         [cross-compiler]
-# make partialclean [if you get "inconsistent assumptions"]
+# make clean runtime coreall
 # <debug your changes>
-# make core         [cross-compiler]
-# make coreboot     [new system -- now you are in a stable state]
+# make clean runtime coreall
+# make coreboot [new system -- now in a stable state]
 
 # Core bootstrapping cycle
 coreboot:

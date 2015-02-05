@@ -282,8 +282,10 @@ let main () =
           Log.finish ~how:`Quiet ();
           Pervasives.exit rc
       | Solver.Failed backtrace ->
-          Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@\n@[<v2>Backtrace:%a@]@]@."
-            Report.print_backtrace_analyze backtrace Report.print_backtrace backtrace;
+          Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@."
+            Report.print_backtrace_analyze backtrace;
+          Log.raw_dprintf 1 "@[<v2>Backtrace:%a@]@]@."
+            Report.print_backtrace backtrace;
           exit rc_solver_failed
       | Failure s ->
           Log.eprintf "Failure:@ %s." s;

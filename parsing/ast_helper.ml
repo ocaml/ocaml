@@ -72,6 +72,7 @@ module Pat = struct
   let type_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_type a)
   let lazy_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_lazy a)
   let unpack ?loc ?attrs a = mk ?loc ?attrs (Ppat_unpack a)
+  let exception_ ?loc ?attrs a = mk ?loc ?attrs (Ppat_exception a)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Ppat_extension a)
 end
 
@@ -157,6 +158,7 @@ module Sig = struct
 
   let value ?loc a = mk ?loc (Psig_value a)
   let type_ ?loc a = mk ?loc (Psig_type a)
+  let type_extension ?loc a = mk ?loc (Psig_typext a)
   let exception_ ?loc a = mk ?loc (Psig_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
@@ -176,8 +178,8 @@ module Str = struct
   let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
   let type_ ?loc a = mk ?loc (Pstr_type a)
+  let type_extension ?loc a = mk ?loc (Pstr_typext a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
-  let exn_rebind ?loc a = mk ?loc (Pstr_exn_rebind a)
   let module_ ?loc a = mk ?loc (Pstr_module a)
   let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
   let modtype ?loc a = mk ?loc (Pstr_modtype a)
@@ -236,6 +238,7 @@ module Ctf = struct
   let method_ ?loc ?attrs a b c d = mk ?loc ?attrs (Pctf_method (a, b, c, d))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pctf_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pctf_extension a)
+  let attribute ?loc a = mk ?loc (Pctf_attribute a)
 end
 
 module Cf = struct
@@ -253,6 +256,7 @@ module Cf = struct
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcf_constraint (a, b))
   let initializer_ ?loc ?attrs a = mk ?loc ?attrs (Pcf_initializer a)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcf_extension a)
+  let attribute ?loc a = mk ?loc (Pcf_attribute a)
 
   let virtual_ ct = Cfk_virtual ct
   let concrete o e = Cfk_concrete (o, e)
@@ -379,6 +383,43 @@ module Type = struct
     }
 end
 
+(** Type extensions *)
+module Te = struct
+  let mk ?(attrs = []) ?(params = []) ?(priv = Public) path constructors =
+    {
+     ptyext_path = path;
+     ptyext_params = params;
+     ptyext_constructors = constructors;
+     ptyext_private = priv;
+     ptyext_attributes = attrs;
+    }
+
+  let constructor ?(loc = !default_loc) ?(attrs = []) name kind =
+    {
+     pext_name = name;
+     pext_kind = kind;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let decl ?(loc = !default_loc) ?(attrs = []) ?(args = []) ?res name =
+    {
+     pext_name = name;
+     pext_kind = Pext_decl(args, res);
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+
+  let rebind ?(loc = !default_loc) ?(attrs = []) name lid =
+    {
+     pext_name = name;
+     pext_kind = Pext_rebind lid;
+     pext_loc = loc;
+     pext_attributes = attrs;
+    }
+end
+
+
 module Csig = struct
   let mk self fields =
     {
@@ -392,15 +433,5 @@ module Cstr = struct
     {
      pcstr_self = self;
      pcstr_fields = fields;
-    }
-end
-
-module Exrb = struct
-  let mk ?(loc  = !default_loc) ?(attrs = []) name lid =
-    {
-     pexrb_name = name;
-     pexrb_lid = lid;
-     pexrb_attributes = attrs;
-     pexrb_loc = loc;
     }
 end

@@ -115,6 +115,10 @@ let rec live i finally =
       i.live <- !live_at_raise;
       Reg.add_set_array !live_at_raise i.arg
 
+let reset () =
+  live_at_raise := Reg.Set.empty;
+  live_at_exit := []
+
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
   (* Sanity check: only function parameters can be live at entrypoint *)

@@ -401,6 +401,12 @@ let next_raise_count () =
   incr raise_count ;
   !raise_count
 
+let negative_raise_count = ref 0
+
+let next_negative_raise_count () =
+  decr negative_raise_count ;
+  !negative_raise_count
+
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
 
@@ -531,3 +537,7 @@ let lam_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+
+let reset () =
+  raise_count := 0
+

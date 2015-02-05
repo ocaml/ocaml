@@ -13,11 +13,12 @@
 (* Link .cmo files and produce a bytecode executable. *)
 
 val link : Format.formatter -> string list -> string -> unit
+val reset : unit -> unit
 
 val check_consistency:
   Format.formatter -> string -> Cmo_format.compilation_unit -> unit
 
-val extract_crc_interfaces: unit -> (string * Digest.t) list
+val extract_crc_interfaces: unit -> (string * Digest.t option) list
 
 type error =
     File_not_found of string

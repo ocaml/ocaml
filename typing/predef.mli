@@ -53,11 +53,11 @@ val path_undefined_recursive_module : Path.t
 
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing
-   over Env.t, Env.add_type and Env.add_exception. *)
+   over Env.t, Env.add_type and Env.add_extension. *)
 
 val build_initial_env:
   (Ident.t -> type_declaration -> 'a -> 'a) ->
-  (Ident.t -> exception_declaration -> 'a -> 'a) ->
+  (Ident.t -> extension_constructor -> 'a -> 'a) ->
   'a -> 'a * 'a
 
 (* To initialize linker tables *)

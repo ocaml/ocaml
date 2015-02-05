@@ -65,7 +65,7 @@ let main () =
           let global_map = (input_value ic : Symtable.global_map) in
           output_value oc (expunge_map global_map)
       | "CRCS" ->
-          let crcs = (input_value ic : (string * Digest.t) list) in
+          let crcs = (input_value ic : (string * Digest.t option) list) in
           output_value oc (expunge_crcs crcs)
       | _ ->
           copy_file_chunk ic oc len

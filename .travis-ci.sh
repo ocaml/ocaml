@@ -1,16 +1,15 @@
 case $XARCH in
 i386)
-  uname -a
   ./configure
   make world.opt
   sudo make install
   cd testsuite && make all
   git clone git://github.com/ocaml/camlp4
   cd camlp4 && ./configure && make && sudo make install
-  git clone -b 1.1 git://github.com/ocaml/opam
-  cd opam && ./configure && make && sudo make install
-  opam init -y -a
-  opam install utop
+  git clone git://github.com/ocaml/opam
+  cd opam && ./configure && make lib-ext && make && sudo make install
+  opam init -y -a git://github.com/ocaml/opam-repository
+  opam install -y utop
   ;;
 *)
   echo unknown arch

@@ -50,3 +50,5 @@ val read_section_struct: in_channel -> string -> 'a
 
 val pos_first_section: in_channel -> int
    (* Return the position of the beginning of the first section *)
+
+val reset: unit -> unit

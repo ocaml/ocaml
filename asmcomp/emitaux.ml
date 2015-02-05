@@ -232,3 +232,7 @@ let emit_debug_info dbg =
     emit_int file_num; emit_char '\t';
     emit_int line; emit_char '\n'
   end
+
+let reset () =
+  reset_debug_info ();
+  frame_descriptors := []

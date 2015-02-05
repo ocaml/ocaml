@@ -169,7 +169,7 @@ let ctx_matcher p =
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
       begin match cstr.cstr_tag with
-      | Cstr_exception _ -> (* exception matching *)
+      | Cstr_extension _ ->
           let nargs = List.length omegas in
           (fun q rem -> match q.pat_desc with
           | Tpat_construct (_, cstr',args)
@@ -537,9 +537,10 @@ let up_ok_action act1 act2 =
   with
   | Exit -> false
 
-(* Nothing is kown about exception patterns, because of potential rebind *)
+(* Nothing is kown about exception/extension patterns,
+   because of potential rebind *)
 let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_) -> true
+  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
   | Tpat_any|Tpat_constant _|Tpat_var _
   | Tpat_construct (_,_,[])
   | Tpat_variant (_,None,_)
@@ -661,7 +662,7 @@ let rec what_is_cases cases = match cases with
 (* A few operation on default environments *)
 let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-(* For exception matching, record no imformation in matrix *)
+(* For extension matching, record no imformation in matrix *)
 let as_matrix_omega cases =
   get_mins le_pats
     (List.map
@@ -937,9 +938,8 @@ let rec split_or argo cls args def =
 
   do_split [] [] [] cls
 
-(* Ultra-naive spliting, close to semantics,
-   used for exception, as potential rebind prevents any kind of
-   optimisation *)
+(* Ultra-naive spliting, close to semantics, used for extension,
+   as potential rebind prevents any kind of optimisation *)
 
 and split_naive cls args def k =
 
@@ -1004,7 +1004,7 @@ and split_constr cls args def k =
   let ex_pat = what_is_cases cls in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var args cls def k
-  | Tpat_construct (_,{cstr_tag=Cstr_exception _},_) ->
+  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) ->
       split_naive cls args def k
   | _ ->
 
@@ -1114,7 +1114,7 @@ and dont_precompile_var args cls def k =
 and is_exc p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
 | Tpat_alias (p,v,_) -> is_exc p
-| Tpat_construct (_,{cstr_tag = Cstr_exception _},_) -> true
+| Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
 | _ -> false
 
 and precompile_or argo cls ors args def k = match ors with
@@ -1353,7 +1353,7 @@ let make_constr_matching p def ctx = function
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
             make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_exception _ ->
+        | Cstr_extension _ ->
             make_field_args Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
@@ -2361,39 +2361,61 @@ let split_cases tag_lambda_list =
   sort_int_lambda_list const,
   sort_int_lambda_list nonconst
 
+let split_extension_cases tag_lambda_list =
+  let rec split_rec = function
+      [] -> ([], [])
+    | (cstr, act) :: rem ->
+        let (consts, nonconsts) = split_rec rem in
+        match cstr with
+          Cstr_extension(path, true) -> ((path, act) :: consts, nonconsts)
+        | Cstr_extension(path, false) -> (consts, (path, act) :: nonconsts)
+        | _ -> assert false in
+  split_rec tag_lambda_list
+
 
 let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
-    (* Special cases for exceptions *)
+    (* Special cases for extensions *)
     let fail, to_add, local_jumps =
       mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in
     let lambda1 =
-      let default, tests =
+      let consts, nonconsts = split_extension_cases tag_lambda_list in
+      let default, consts, nonconsts =
         match fail with
         | None ->
-            begin match tag_lambda_list with
-            | (_, act)::rem -> act,rem
+            begin match consts, nonconsts with
+            | _, (_, act)::rem -> act, consts, rem
+            | (_, act)::rem, _ -> act, rem, nonconsts
             | _ -> assert false
             end
-        | Some fail -> fail, tag_lambda_list in
-      List.fold_right
-        (fun (ex, act) rem ->
-           assert(ex = cstr.cstr_tag);
-          match ex with
-          | Cstr_exception (path, _) ->
-              let slot =
-                if cstr.cstr_arity = 0 then arg
-                else Lprim(Pfield 0, [arg])
-              in
-              Lifthenelse(Lprim(Pintcomp Ceq,
-                                [slot;
-                                 transl_path ~loc:ex_pat.pat_loc
-                                   ex_pat.pat_env path]),
-                          act, rem)
-          | _ -> assert false)
-        tests default in
+        | Some fail -> fail, consts, nonconsts in
+      let nonconst_lambda =
+        match nonconsts with
+          [] -> default
+        | _ ->
+            let tag = Ident.create "tag" in
+            let tests =
+              List.fold_right
+                (fun (path, act) rem ->
+                   Lifthenelse(Lprim(Pintcomp Ceq,
+                                     [Lvar tag;
+                                      transl_path ex_pat.pat_env path]),
+                               act, rem))
+                nonconsts
+                default
+            in
+              Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
+      in
+        List.fold_right
+          (fun (path, act) rem ->
+             Lifthenelse(Lprim(Pintcomp Ceq,
+                               [arg; transl_path ex_pat.pat_env path]),
+                         act, rem))
+          consts
+          nonconst_lambda
+    in
     lambda1, jumps_union local_jumps total1
   end else begin
     (* Regular concrete type *)

@@ -857,3 +857,7 @@ let is_tail_call nargs =
 
 let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
+
+let reset () =
+  catch_regs := [];
+  current_function_name := ""

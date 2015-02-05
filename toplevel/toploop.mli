@@ -92,6 +92,8 @@ val print_out_class_type :
   (formatter -> Outcometree.out_class_type -> unit) ref
 val print_out_module_type :
   (formatter -> Outcometree.out_module_type -> unit) ref
+val print_out_type_extension :
+  (formatter -> Outcometree.out_type_extension -> unit) ref
 val print_out_sig_item :
   (formatter -> Outcometree.out_sig_item -> unit) ref
 val print_out_signature :

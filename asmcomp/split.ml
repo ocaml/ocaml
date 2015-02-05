@@ -195,8 +195,13 @@ let set_repres i =
 
 (* Entry point *)
 
-let fundecl f =
+let reset () =
   equiv_classes := Reg.Map.empty;
+  exit_subst := []
+
+let fundecl f =
+  reset ();
+
   let new_args = Array.copy f.fun_args in
   let (new_body, sub_body) = rename f.fun_body (Some Reg.Map.empty) in
   repres_regs new_args;

@@ -380,3 +380,5 @@ method schedule_fundecl f =
     f
 
 end
+
+let reset () = clear_code_dag ()

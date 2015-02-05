@@ -36,3 +36,5 @@ val to_packed_file:
              list of instructions to emit
            Result:
              relocation information (reversed) *)
+
+val reset: unit -> unit

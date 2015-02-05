@@ -176,25 +176,31 @@ type file_perm = int
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
 external close : file_descr -> unit = "unix_close"
-external unsafe_read : file_descr -> string -> int -> int -> int
+external unsafe_read : file_descr -> bytes -> int -> int -> int
                      = "unix_read"
-external unsafe_write : file_descr -> string -> int -> int -> int
+external unsafe_write : file_descr -> bytes -> int -> int -> int
                       = "unix_write"
-external unsafe_single_write : file_descr -> string -> int -> int -> int
+external unsafe_single_write : file_descr -> bytes -> int -> int -> int
                       = "unix_single_write"
 
 let read fd buf ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.read"
   else unsafe_read fd buf ofs len
 let write fd buf ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 let single_write fd buf ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.single_write"
   else unsafe_single_write fd buf ofs len
+
+let write_substring fd buf ofs len =
+  write fd (Bytes.unsafe_of_string buf) ofs len
+
+let single_write_substring fd buf ofs len =
+  single_write fd (Bytes.unsafe_of_string buf) ofs len
 
 (* Interfacing with the standard input/output library *)
 
@@ -535,34 +541,40 @@ external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
 
 external unsafe_recv :
-  file_descr -> string -> int -> int -> msg_flag list -> int
+  file_descr -> bytes -> int -> int -> msg_flag list -> int
                                   = "unix_recv"
 external unsafe_recvfrom :
-  file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
+  file_descr -> bytes -> int -> int -> msg_flag list -> int * sockaddr
                                   = "unix_recvfrom"
 external unsafe_send :
-  file_descr -> string -> int -> int -> msg_flag list -> int
+  file_descr -> bytes -> int -> int -> msg_flag list -> int
                                   = "unix_send"
 external unsafe_sendto :
-  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+  file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
                                   = "unix_sendto" "unix_sendto_native"
 
 let recv fd buf ofs len flags =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.recv"
   else unsafe_recv fd buf ofs len flags
 let recvfrom fd buf ofs len flags =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.recvfrom"
   else unsafe_recvfrom fd buf ofs len flags
 let send fd buf ofs len flags =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.send"
   else unsafe_send fd buf ofs len flags
 let sendto fd buf ofs len flags addr =
-  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
+
+let send_substring fd buf ofs len flags =
+  send fd (Bytes.unsafe_of_string buf) ofs len flags
+
+let sendto_substring fd buf ofs len flags addr =
+  sendto fd (Bytes.unsafe_of_string buf) ofs len flags addr
 
 type socket_bool_option =
     SO_DEBUG

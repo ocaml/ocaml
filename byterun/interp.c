@@ -535,10 +535,22 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       int i;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, 1 + nvars, Closure_tag);
+      if (nvars < Max_young_wosize) {
+        /* nvars + 1 <= Max_young_wosize, can allocate in minor heap */
+        Alloc_small(accu, 1 + nvars, Closure_tag);
+        for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
+      } else {
+        /* PR#6385: must allocate in major heap */
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
+        accu = caml_alloc_shr(1 + nvars, Closure_tag);
+        for (i = 0; i < nvars; i++)
+          caml_initialize_field(accu, i + 1, sp[i]);
+      }
+      /* The code pointer is not in the heap, so no need to go through
+         caml_initialize. */
       Init_field(accu, 0, Val_bytecode(pc + *pc));
       pc++;
-      for (i = 0; i < nvars; i++) Init_field(accu, i + 1, sp[i]);
       sp += nvars;
       Next;
     }
@@ -548,12 +560,24 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       int i, field;
       int var_offset = nfuncs * 2 - 1;
+      int blksize = var_offset + nvars;
       if (nvars > 0) *--sp = accu;
-      Alloc_small(accu, var_offset + nvars, Closure_tag);
-      for (i = 0; i < nvars; i++) {
-        Init_field(accu, var_offset + i, sp[i]);
+      if (blksize <= Max_young_wosize) {
+        Alloc_small(accu, blksize, Closure_tag);
+        for (i = 0; i < nvars; i++) {
+          Init_field(accu, var_offset + i, sp[i]);
+        }
+      } else {
+        /* PR#6385: must allocate in major heap */
+        /* caml_alloc_shr and caml_initialize never trigger a GC,
+           so no need to Setup_for_gc */
+        accu = caml_alloc_shr(blksize, Closure_tag);
+        for (i = 0; i < nvars; i++)
+          caml_initialize_field(accu, var_offset + i,sp[i]);
       }
       sp += nvars;
+      /* The code pointers and infix headers are not in the heap,
+         so no need to go through caml_initialize. */
       Init_field(accu, 0, Val_bytecode(pc + pc[0]));
       *--sp = accu;
       field = 1;

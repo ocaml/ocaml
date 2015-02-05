@@ -96,12 +96,14 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _no_alias_deps = set transparent_modules
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
+  let _open s = open_module := s :: !open_module
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
@@ -113,7 +115,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
   let _thread = set use_threads
-  let _trans_mod = set transparent_modules
   let _vmthread = set use_vmthreads
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string

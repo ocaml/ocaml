@@ -92,3 +92,7 @@ let read_section_struct ic name =
 let pos_first_section ic =
   in_channel_length ic - 16 - 8 * List.length !section_table -
   List.fold_left (fun total (name, len) -> total + len) 0 !section_table
+
+let reset () =
+  section_table := [];
+  section_beginning := 0
