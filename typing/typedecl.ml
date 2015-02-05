@@ -523,7 +523,7 @@ let check_well_founded env loc path to_check ty =
         (* Will be detected by check_recursion *)
         Btype.backtrack snap
   in
-  check ty TypeSet.empty ty
+  Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
 
 let check_well_founded_manifest env loc path decl =
   if decl.type_manifest = None then () else
