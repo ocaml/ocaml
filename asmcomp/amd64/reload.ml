@@ -22,7 +22,8 @@ open Mach
    Operation                    Res     Arg1    Arg2
      Imove                      R       S
                              or S       R
-     Iconst_int                 S if 32-bit signed, R otherwise
+     Iconst_int         ]       S if 32-bit signed, R otherwise
+     Iconst_blockheader ]
      Iconst_float               R
      Iconst_symbol (not PIC)    S
      Iconst_symbol (PIC)        R
@@ -87,7 +88,7 @@ method! reload_operation op arg res =
   | Ifloatofint | Iintoffloat ->
       (* Result must be in register, but argument can be on stack *)
       (arg, (if stackp res.(0) then [| self#makereg res.(0) |] else res))
-  | Iconst_int n ->
+  | Iconst_int n | Iconst_blockheader n ->
       if n <= 0x7FFFFFFFn && n >= -0x80000000n
       then (arg, res)
       else super#reload_operation op arg res

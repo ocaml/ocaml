@@ -144,7 +144,7 @@ let build_initial_env add_type add_exception empty_env =
      Type_variant([cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]]);
      type_variance = [Variance.covariant]}
   and decl_format6 =
-    let params = List.map newgenvar [();();();();();()] in
+    let params = List.map (newgenvar ?name:None) [();();();();();()] in
     {decl_abstr with
      type_params = params;
      type_arity = 6;

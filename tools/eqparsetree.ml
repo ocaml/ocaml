@@ -120,7 +120,7 @@ module Asttypes = struct
         (('all_a0 loc) * ('all_a0 loc)) -> 'result =
     fun mf_a ({ txt = a0; loc = a1 }, { txt = b0; loc = b1 }) ->
       (mf_a (a0, b0)) && (Location.eq_t (a1, b1))
-    
+
 end
 
 let rec eq_row_field : (row_field * row_field) -> 'result =
@@ -185,7 +185,7 @@ and eq_core_type : (core_type * core_type) -> 'result =
     ({ ptyp_desc = a0; ptyp_loc = a1 },
      { ptyp_desc = b0; ptyp_loc = b1 })
     -> (eq_core_type_desc (a0, b0)) && (Location.eq_t (a1, b1))
-  
+
 let eq_class_infos :
   'all_a0.
     (('all_a0 * 'all_a0) -> 'result) ->
@@ -221,7 +221,7 @@ let eq_class_infos :
              (eq_bool (a0, b0)) && (eq_bool (a1, b1)))
           (a4, b4)))
       && (Location.eq_t (a5, b5))
-  
+
 let rec eq_pattern_desc : (pattern_desc * pattern_desc) -> 'result =
   function
   | (Ppat_any, Ppat_any) -> true
@@ -259,7 +259,7 @@ and eq_pattern : (pattern * pattern) -> 'result =
     ({ ppat_desc = a0; ppat_loc = a1 },
      { ppat_desc = b0; ppat_loc = b1 })
     -> (eq_pattern_desc (a0, b0)) && (Location.eq_t (a1, b1))
-  
+
 let rec eq_structure_item_desc :
   (structure_item_desc * structure_item_desc) -> 'result =
   function
@@ -760,7 +760,7 @@ and eq_expression : (expression * expression) -> 'result =
     ({ pexp_desc = a0; pexp_loc = a1 },
      { pexp_desc = b0; pexp_loc = b1 })
     -> (eq_expression_desc (a0, b0)) && (Location.eq_t (a1, b1))
-  
+
 let rec eq_directive_argument :
   (directive_argument * directive_argument) -> 'result =
   function

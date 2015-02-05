@@ -35,7 +35,9 @@ type ('arg,'action) entry =
    args : 'arg ;
    clauses : (regular_expression * 'action) list}
 
-type  lexer_definition =
-    { header: location;
-      entrypoints: ((string list, location) entry) list;
-      trailer: location }
+type lexer_definition = {
+  header: location;
+  entrypoints: ((string list, location) entry) list;
+  trailer: location;
+  refill_handler : location option;
+}

@@ -22,5 +22,7 @@ val output_env :
     in_channel -> out_channel -> line_tracker ->
       (Lexgen.ident * Lexgen.ident_info) list -> unit
 val output_args : out_channel -> string list -> unit
+val output_refill_handler :
+  in_channel -> out_channel -> line_tracker -> Syntax.location option -> bool
 
 val quiet_mode : bool ref;;

@@ -35,6 +35,8 @@ let indtailcall16 fn a b c d e f g h i j k l m n o p =
 let _ =
   print_int (tailcall4 10000000 0 0 0); print_newline();
   print_int (tailcall8 10000000 0 0 0 0 0 0 0); print_newline();
-  print_int (tailcall16 10000000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0); print_newline();
+  print_int (tailcall16 10000000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0);
+  print_newline();
   print_int (indtailcall8 tailcall8 10 0 0 0 0 0 0 0); print_newline();
-  print_int (indtailcall16 tailcall16 10 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0); print_newline()
+  print_int (indtailcall16 tailcall16 10 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0);
+  print_newline()

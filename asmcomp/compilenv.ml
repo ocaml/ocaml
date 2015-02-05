@@ -108,7 +108,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in
-  name = prefix || 
+  name = prefix ||
   (let lp = String.length prefix in
    String.length name >= 2 + lp
    && String.sub name 0 lp = prefix

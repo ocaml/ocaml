@@ -335,7 +335,7 @@ let rec transl_type env policy styp =
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
-		    Type_arity_mismatch(lid.txt, decl.type_arity,
+                    Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = instance_list decl.type_params in
@@ -843,8 +843,8 @@ let report_error env ppf = function
       fprintf ppf "The present constructor %s has no type" l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env env (fun ()  ->
-	Printtyp.reset_and_mark_loops_list [ty; ty'];
-	fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
+        Printtyp.reset_and_mark_loops_list [ty; ty'];
+        fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           Printtyp.type_expr ty
           "which should be"
@@ -880,7 +880,7 @@ let report_error env ppf = function
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" longident lid;
       spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
-	env lid;
+        env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" longident lid;
       spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
@@ -908,4 +908,3 @@ let () =
       | _ ->
         None
     )
-

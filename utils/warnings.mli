@@ -60,6 +60,7 @@ type t =
   | Open_shadow_label_constructor of string * string (* 45 *)
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
+  | Eliminated_optional_arguments of string list (* 48 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

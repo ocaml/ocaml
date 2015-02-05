@@ -172,11 +172,13 @@ program_management.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
 question.cmo : primitives.cmi lexer.cmi input_handling.cmi question.cmi
 question.cmx : primitives.cmx lexer.cmx input_handling.cmx question.cmi
 show_information.cmo : symbols.cmi source.cmi show_source.cmi printval.cmi \
-    ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi events.cmi \
-    debugcom.cmi checkpoints.cmi breakpoints.cmi show_information.cmi
+    parameters.cmi ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi \
+    events.cmi debugcom.cmi checkpoints.cmi breakpoints.cmi \
+    show_information.cmi
 show_information.cmx : symbols.cmx source.cmx show_source.cmx printval.cmx \
-    ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx events.cmx \
-    debugcom.cmx checkpoints.cmx breakpoints.cmx show_information.cmi
+    parameters.cmx ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx \
+    events.cmx debugcom.cmx checkpoints.cmx breakpoints.cmx \
+    show_information.cmi
 show_source.cmo : source.cmi primitives.cmi parameters.cmi \
     ../parsing/location.cmi ../bytecomp/instruct.cmi events.cmi \
     debugger_config.cmi show_source.cmi

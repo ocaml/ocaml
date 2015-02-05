@@ -12,12 +12,30 @@
 
 open Cmm
 
+module Raw_name = struct
+  type t =
+    | Anon
+    | R
+    | Ident of Ident.t
+
+  let create_from_ident ident = Ident ident
+
+  let to_string t =
+    match t with
+    | Anon -> None
+    | R -> Some "R"
+    | Ident ident ->
+      let name = Ident.name ident in
+      if String.length name <= 0 then None else Some name
+end
+
 type t =
-  { mutable name: string;
+  { mutable raw_name: Raw_name.t;
     stamp: int;
     typ: Cmm.machtype_component;
     mutable loc: location;
     mutable spill: bool;
+    mutable part: int option;
     mutable interf: t list;
     mutable prefer: (t * int) list;
     mutable degree: int;
@@ -37,16 +55,18 @@ and stack_location =
 type reg = t
 
 let dummy =
-  { name = ""; stamp = 0; typ = Int; loc = Unknown; spill = false;
-    interf = []; prefer = []; degree = 0; spill_cost = 0; visited = false }
+  { raw_name = Raw_name.Anon; stamp = 0; typ = Int; loc = Unknown;
+    spill = false; interf = []; prefer = []; degree = 0; spill_cost = 0;
+    visited = false; part = None;
+  }
 
 let currstamp = ref 0
 let reg_list = ref([] : t list)
 
 let create ty =
-  let r = { name = ""; stamp = !currstamp; typ = ty; loc = Unknown;
-            spill = false; interf = []; prefer = []; degree = 0;
-            spill_cost = 0; visited = false } in
+  let r = { raw_name = Raw_name.Anon; stamp = !currstamp; typ = ty;
+            loc = Unknown; spill = false; interf = []; prefer = []; degree = 0;
+            spill_cost = 0; visited = false; part = None; } in
   reg_list := r :: !reg_list;
   incr currstamp;
   r
@@ -65,15 +85,34 @@ let createv_like rv =
 
 let clone r =
   let nr = create r.typ in
-  nr.name <- r.name;
+  nr.raw_name <- r.raw_name;
   nr
 
 let at_location ty loc =
-  let r = { name = "R"; stamp = !currstamp; typ = ty; loc = loc; spill = false;
-            interf = []; prefer = []; degree = 0; spill_cost = 0;
-            visited = false } in
+  let r = { raw_name = Raw_name.R; stamp = !currstamp; typ = ty; loc;
+            spill = false; interf = []; prefer = []; degree = 0;
+            spill_cost = 0; visited = false; part = None; } in
   incr currstamp;
   r
+
+let anonymous t =
+  match Raw_name.to_string t.raw_name with
+  | None -> true
+  | Some _raw_name -> false
+
+let name t =
+  match Raw_name.to_string t.raw_name with
+  | None -> ""
+  | Some raw_name ->
+    let with_spilled =
+      if t.spill then
+        "spilled-" ^ raw_name
+      else
+        raw_name
+    in
+    match t.part with
+    | None -> with_spilled
+    | Some part -> with_spilled ^ "#" ^ string_of_int part
 
 let first_virtual_reg_stamp = ref (-1)
 

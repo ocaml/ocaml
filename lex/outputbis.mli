@@ -16,5 +16,6 @@ val output_lexdef :
   out_channel ->
   Common.line_tracker ->
   Syntax.location ->
+  Syntax.location option ->
   (string list, Syntax.location) Lexgen.automata_entry list ->
   Lexgen.automata array -> Syntax.location -> unit

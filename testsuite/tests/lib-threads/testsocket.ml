@@ -20,7 +20,9 @@ let engine verbose number address =
   try
     while true do
       let s = input_line ic in
-      if verbose then (print_int number; print_string ">"; print_string s; print_newline())
+      if verbose then begin
+        print_int number; print_string ">"; print_string s; print_newline()
+      end
     done;
   with End_of_file ->
     close_out oc;

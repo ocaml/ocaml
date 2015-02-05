@@ -210,7 +210,8 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of type_declaration list
   | Tstr_exception of constructor_declaration
-  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc * attributes
+  | Tstr_exn_rebind of Ident.t * string loc * Path.t * Longident.t loc
+                       * attributes
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration

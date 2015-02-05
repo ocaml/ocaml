@@ -108,7 +108,7 @@ type ('a, 'b) kind =
   let zero : type a b. (a, b) kind -> a = function
     | Float32 -> 0.0 | Complex32 -> Complex.zero
     | Float64 -> 0.0 | Complex64 -> Complex.zero
-    | Int8_signed -> 0 | Int8_unsigned -> 0 
+    | Int8_signed -> 0 | Int8_unsigned -> 0
     | Int16_signed -> 0 | Int16_unsigned -> 0
     | Int32 -> 0l | Int64 -> 0L
     | Int -> 0 | Nativeint -> 0n

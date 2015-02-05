@@ -34,6 +34,10 @@
 # Built-in exceptions:
 # - Any binary file (i.e. with svn:mime-type = application/octet-stream)
 #   is automatically exempt from all the rules.
+# - Any file whose name matches one of the following patterns is
+#   automatically exempt from all rules
+#     *.reference
+#     */reference
 # - Any file whose name begins with "Makefile" is automatically exempt
 #   from the "tabs" rule.
 # - Any file whose name matches one of the following patterns is
@@ -45,11 +49,6 @@
 #     *.mltop
 #     *.odocl
 #     *.clib
-#     *.reference
-#     */reference
-# - Any file whose name matches one of the following patterns is
-#   automatically exempt from the "long-line" rule.
-#     *.reference
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -138,10 +137,7 @@ IGNORE_DIRS="
     case "$f" in
       */.depend*|*/.ignore) h;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
-      *.reference|*/reference) h;;
-    esac
-    case "$f" in
-      *.reference) rules="long-line,$rules";;
+      *.reference|*/reference) continue;;
     esac
 
     (cat "$f"; echo) \

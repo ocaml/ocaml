@@ -4,12 +4,12 @@ scheduler.o: scheduler.c ../../byterun/alloc.h \
  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
  ../../byterun/backtrace.h ../../byterun/memory.h ../../byterun/gc.h \
  ../../byterun/major_gc.h ../../byterun/minor_gc.h \
- ../../byterun/minor_heap.h ../../byterun/domain.h \
- ../../byterun/callback.h ../../byterun/config.h ../../byterun/fail.h \
- ../../byterun/io.h ../../byterun/platform.h ../../byterun/memory.h \
- ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/printexc.h \
- ../../byterun/roots.h ../../byterun/signals.h ../../byterun/fiber.h \
- ../../byterun/roots.h ../../byterun/sys.h
+ ../../byterun/minor_heap.h ../../byterun/addrmap.h \
+ ../../byterun/domain.h ../../byterun/callback.h ../../byterun/config.h \
+ ../../byterun/fail.h ../../byterun/io.h ../../byterun/platform.h \
+ ../../byterun/memory.h ../../byterun/misc.h ../../byterun/mlvalues.h \
+ ../../byterun/printexc.h ../../byterun/roots.h ../../byterun/signals.h \
+ ../../byterun/fiber.h ../../byterun/roots.h ../../byterun/sys.h
 condition.cmi : mutex.cmi
 event.cmi :
 mutex.cmi :

@@ -12,7 +12,8 @@ dump_img.o: dump_img.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/misc.h image.h ../../byterun/alloc.h \
  ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/gc.h \
  ../../byterun/major_gc.h ../../byterun/minor_gc.h \
- ../../byterun/minor_heap.h ../../byterun/domain.h
+ ../../byterun/minor_heap.h ../../byterun/addrmap.h \
+ ../../byterun/domain.h
 events.o: events.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/compatibility.h ../../byterun/config.h \
  ../../byterun/../config/m.h ../../byterun/../config/s.h \
@@ -24,7 +25,7 @@ fill.o: fill.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/misc.h ../../byterun/memory.h ../../byterun/gc.h \
  ../../byterun/mlvalues.h ../../byterun/major_gc.h \
  ../../byterun/minor_gc.h ../../byterun/minor_heap.h \
- ../../byterun/domain.h
+ ../../byterun/addrmap.h ../../byterun/domain.h
 image.o: image.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/compatibility.h ../../byterun/config.h \
  ../../byterun/../config/m.h ../../byterun/../config/s.h \
@@ -36,15 +37,15 @@ make_img.o: make_img.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/misc.h image.h ../../byterun/memory.h ../../byterun/gc.h \
  ../../byterun/mlvalues.h ../../byterun/major_gc.h \
  ../../byterun/minor_gc.h ../../byterun/minor_heap.h \
- ../../byterun/domain.h
+ ../../byterun/addrmap.h ../../byterun/domain.h
 open.o: open.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/compatibility.h ../../byterun/config.h \
  ../../byterun/../config/m.h ../../byterun/../config/s.h \
  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
  ../../byterun/callback.h ../../byterun/memory.h ../../byterun/gc.h \
  ../../byterun/major_gc.h ../../byterun/minor_gc.h \
- ../../byterun/minor_heap.h ../../byterun/domain.h ../../byterun/fail.h \
- ../../byterun/memory.h
+ ../../byterun/minor_heap.h ../../byterun/addrmap.h \
+ ../../byterun/domain.h ../../byterun/fail.h ../../byterun/memory.h
 point_col.o: point_col.c libgraph.h ../../byterun/mlvalues.h \
  ../../byterun/compatibility.h ../../byterun/config.h \
  ../../byterun/../config/m.h ../../byterun/../config/s.h \

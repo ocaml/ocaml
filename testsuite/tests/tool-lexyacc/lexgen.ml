@@ -55,7 +55,9 @@ let rec print_regexp = function
   | Chars n -> prerr_string "Chars "; prerr_int n
   | Action n -> prerr_string "Action "; prerr_int n
   | Seq(r1,r2) -> print_regexp r1; prerr_string "; "; print_regexp r2
-  | Alt(r1,r2) -> prerr_string "("; print_regexp r1; prerr_string " | "; print_regexp r2; prerr_string ")"
+  | Alt(r1,r2) ->
+      prerr_string "("; print_regexp r1; prerr_string " | "; print_regexp r2;
+      prerr_string ")"
   | Star r -> prerr_string "("; print_regexp r; prerr_string ")*"
 
 ***)
@@ -248,7 +250,10 @@ let make_dfa lexdef =
   let (chars, name_regexp_list, actions) =
     encode_lexdef lexdef in
 (**
-  List.iter (fun (name, regexp) -> prerr_string name; prerr_string " = "; print_regexp regexp; prerr_newline()) name_regexp_list;
+  List.iter (fun (name, regexp) ->
+               prerr_string name; prerr_string " = "; print_regexp regexp;
+               prerr_newline())
+            name_regexp_list;
 **)
   let follow =
     followpos (Array.length chars) name_regexp_list in

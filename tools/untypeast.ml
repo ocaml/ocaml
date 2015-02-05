@@ -62,7 +62,8 @@ and untype_structure_item item =
     | Tstr_recmodule list ->
         Pstr_recmodule (List.map untype_module_binding list)
     | Tstr_modtype mtd ->
-        Pstr_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type;
+        Pstr_modtype {pmtd_name=mtd.mtd_name;
+                      pmtd_type=option untype_module_type mtd.mtd_type;
                       pmtd_loc=mtd.mtd_loc;pmtd_attributes=mtd.mtd_attributes;}
     | Tstr_open (ovf, _path, lid, attrs) -> Pstr_open (ovf, lid, attrs)
     | Tstr_class list ->
@@ -191,7 +192,8 @@ and untype_pattern pat =
     | Tpat_or (p1, p2, _) -> Ppat_or (untype_pattern p1, untype_pattern p2)
     | Tpat_lazy p -> Ppat_lazy (untype_pattern p)
   in
-  Pat.mk ~loc:pat.pat_loc ~attrs:pat.pat_attributes desc (* todo: fix attributes on extras *)
+  Pat.mk ~loc:pat.pat_loc ~attrs:pat.pat_attributes desc
+    (* todo: fix attributes on extras *)
 
 and untype_extra (extra, loc, attrs) sexp =
   let desc =
@@ -331,7 +333,8 @@ and untype_signature_item item =
     | Tsig_exception decl ->
         Psig_exception (untype_constructor_declaration decl)
     | Tsig_module md ->
-        Psig_module {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
+        Psig_module {pmd_name = md.md_name;
+                     pmd_type = untype_module_type md.md_type;
                      pmd_attributes = md.md_attributes; pmd_loc = md.md_loc;
                     }
     | Tsig_recmodule list ->
@@ -339,10 +342,12 @@ and untype_signature_item item =
               {pmd_name = md.md_name; pmd_type = untype_module_type md.md_type;
                pmd_attributes = md.md_attributes; pmd_loc = md.md_loc}) list)
     | Tsig_modtype mtd ->
-        Psig_modtype {pmtd_name=mtd.mtd_name; pmtd_type=option untype_module_type mtd.mtd_type;
+        Psig_modtype {pmtd_name=mtd.mtd_name;
+                      pmtd_type=option untype_module_type mtd.mtd_type;
                       pmtd_attributes=mtd.mtd_attributes; pmtd_loc=mtd.mtd_loc}
     | Tsig_open (ovf, _path, lid, attrs) -> Psig_open (ovf, lid, attrs)
-    | Tsig_include (mty, _, attrs) -> Psig_include (untype_module_type mty, attrs)
+    | Tsig_include (mty, _, attrs) ->
+        Psig_include (untype_module_type mty, attrs)
     | Tsig_class list ->
         Psig_class (List.map untype_class_description list)
     | Tsig_class_type list ->

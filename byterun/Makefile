@@ -46,7 +46,7 @@ libcamlrun_shared.so: $(PICOBJS)
 
 install::
 	if test -f libcamlrun_shared.so; then \
-	  cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so; fi
+	  cp libcamlrun_shared.so $(INSTALL_LIBDIR)/libcamlrun_shared.so; fi
 
 clean::
 	rm -f libcamlrun_shared.so

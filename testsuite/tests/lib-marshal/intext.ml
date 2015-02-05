@@ -230,7 +230,8 @@ let test_string () =
       t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
   let s = Marshal.to_string [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [] in
-  test 122 (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
+  test 122
+       (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
   let s = Marshal.to_string (big 1000) [] in
   let rec check_big n t =
@@ -317,7 +318,8 @@ let test_buffer () =
       t1 == t2 && t3 == t5 && t4 == t1
   | _ -> false);
   marshal_to_buffer s 0 512 [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] [];
-  test 222 (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
+  test 222
+       (Marshal.from_string s 0 = [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|]);
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
   test 223
     (try marshal_to_buffer s 0 512 (big 1000) []; false

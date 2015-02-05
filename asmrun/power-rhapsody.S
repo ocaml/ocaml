@@ -255,9 +255,9 @@ L111:
     /* Branch to handler */
         bctr
 L110:
-	li	r0, 0
-	Storeglobal32 r0, _caml_backtrace_pos, r11
-L114:		
+        li      r0, 0
+        Storeglobal32 r0, _caml_backtrace_pos, r11
+L114:
         mr      r28, r3        /* preserve exn bucket in callee-save */
                                /* arg 1: exception bucket (already in r3) */
         mflr    r4             /* arg 2: PC of raise */
@@ -282,7 +282,7 @@ _caml_reraise_exn:
     /* Branch to handler */
         bctr
 
-	/* Raise an exception from C */
+        /* Raise an exception from C */
 
         .globl  _caml_raise_exception
 _caml_raise_exception:

@@ -318,7 +318,8 @@ let load_store_size = function
 let instr_size = function
     Lend -> 0
   | Lop(Imove | Ispill | Ireload) -> 1
-  | Lop(Iconst_int n) -> if is_native_immediate n then 1 else 2
+  | Lop(Iconst_int n | Iconst_blockheader n) ->
+    if is_native_immediate n then 1 else 2
   | Lop(Iconst_float s) -> 2
   | Lop(Iconst_symbol s) -> 2
   | Lop(Icall_ind) -> 2
@@ -452,7 +453,7 @@ let rec emit_instr i dslot =
             | (_, _) ->
                 fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if is_native_immediate n then
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else if n >= -0x8000_0000n && n <= 0x7FFF_FFFFn then begin

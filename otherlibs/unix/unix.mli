@@ -799,8 +799,8 @@ val setitimer :
    its previous status. The [s] argument is interpreted as follows:
    [s.it_value], if nonzero, is the time to the next timer expiration;
    [s.it_interval], if nonzero, specifies a value to
-   be used in reloading it_value when the timer expires.
-   Setting [s.it_value] to zero disable the timer.
+   be used in reloading [it_value] when the timer expires.
+   Setting [s.it_value] to zero disables the timer.
    Setting [s.it_interval] to zero causes the timer to be disabled
    after its next expiration. *)
 

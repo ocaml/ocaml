@@ -198,7 +198,8 @@ let merge_constraint initial_env loc sg constr =
       when Ident.name id = s ->
         let path = Typetexp.find_module initial_env loc lid.txt in
         let md' = Env.find_module path env in
-        let newmd = Mtype.strengthen_decl env md' path in
+        let md'' = {md' with md_type = Mtype.remove_aliases env md'.md_type} in
+        let newmd = Mtype.strengthen_decl env md'' path in
         ignore(Includemod.modtypes env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid)),
         Sig_module(id, newmd, rs) :: rem
@@ -1483,7 +1484,7 @@ let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open;
+  Typecore.type_open := type_open ?toplevel:None;
   Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 

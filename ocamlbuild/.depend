@@ -27,10 +27,10 @@ ocaml_tools.cmi : tags.cmi rule.cmi pathname.cmi command.cmi
 ocaml_utils.cmi : tags.cmi pathname.cmi command.cmi
 ocamlbuild.cmi :
 ocamlbuild_executor.cmi :
-ocamlbuild_plugin.cmi :
-ocamlbuild_unix_plugin.cmi :
+ocamlbuild_plugin.cmi : ocamlbuild_pack.cmi
+ocamlbuild_unix_plugin.cmi : ocamlbuild_pack.cmi
 ocamlbuild_where.cmi :
-ocamlbuildlight.cmi :
+ocamlbuildlight.cmi : ocamlbuild_pack.cmi
 options.cmi : slurp.cmi signatures.cmi command.cmi
 param_tags.cmi : tags.cmi loc.cmi
 pathname.cmi : signatures.cmi
@@ -141,8 +141,9 @@ ocamlbuild_config.cmo :
 ocamlbuild_config.cmx :
 ocamlbuild_executor.cmo : ocamlbuild_executor.cmi
 ocamlbuild_executor.cmx : ocamlbuild_executor.cmi
-ocamlbuild_plugin.cmo : ocamlbuild_plugin.cmi
-ocamlbuild_plugin.cmx : ocamlbuild_plugin.cmi
+ocamlbuild_pack.cmo : ocamlbuild_pack.cmi
+ocamlbuild_plugin.cmo : ocamlbuild_plugin.cmi ocamlbuild_pack.cmo
+ocamlbuild_plugin.cmx : ocamlbuild_plugin.cmi ocamlbuild_pack.cmx
 ocamlbuild_unix_plugin.cmo : ocamlbuild_executor.cmi my_unix.cmi my_std.cmi \
     exit_codes.cmi ocamlbuild_unix_plugin.cmi
 ocamlbuild_unix_plugin.cmx : ocamlbuild_executor.cmx my_unix.cmx my_std.cmx \

@@ -13,7 +13,7 @@
 BASEDIR=../..
 #MODULES=
 MAIN_MODULE=fstclassmod
-ADD_COMPFLAGS=-w a
+ADD_COMPFLAGS=-w A -warn-error A
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common
