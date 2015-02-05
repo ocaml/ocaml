@@ -34,6 +34,7 @@ type descr =
   | Value_constptr of int
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
+  | Value_string
   | Value_closure of value_offset
   | Value_set_of_closures of value_closure
 
@@ -108,6 +109,7 @@ let print_approx ppf export =
       fprintf ppf "(function %a, %a)" Closure_id.print fun_id print_closure closure
     | Value_set_of_closures closure ->
       fprintf ppf "(ufunction %a)" print_closure closure
+    | Value_string -> Format.pp_print_string ppf "string"
     | Value_float f -> Format.pp_print_float ppf f
     | Value_boxed_int (t, i) ->
       match t with
@@ -214,6 +216,7 @@ let import_closure units pack closure =
 let import_descr_for_pack units pack = function
   | Value_int _
   | Value_constptr _
+  | Value_string
   | Value_float _
   | Value_boxed_int _ as desc -> desc
   | Value_block (tag, fields) ->

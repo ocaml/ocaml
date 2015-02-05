@@ -209,6 +209,7 @@ module Import = struct
       | Value_constptr i -> value_constptr i
       | Value_float f -> value_float f
       | Value_boxed_int (t,i) -> value_boxed_int t i
+      | Value_string -> value_unknown
       | Value_block (tag, fields) ->
           value_block (tag, Array.map import_approx fields)
       | Value_closure { fun_id; closure = { closure_id; bound_var } } ->

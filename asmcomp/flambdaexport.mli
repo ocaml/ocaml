@@ -34,6 +34,7 @@ type descr =
   | Value_constptr of int
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
+  | Value_string
   | Value_closure of value_offset
   | Value_set_of_closures of value_closure
 

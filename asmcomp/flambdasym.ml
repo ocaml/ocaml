@@ -266,9 +266,10 @@ module Conv(P:Param1) = struct
   let symbol_id sym =
     try Some (SymbolMap.find sym !(infos.ex_symbol_id)) with Not_found -> None
 
-  let add_constant lam =
+  let add_constant lam ex_id =
     let sym = Compilenv.new_const_symbol' () in
     SymbolTbl.add infos.constants sym lam;
+    add_symbol sym ex_id;
     sym
 
   let new_descr descr = new_descr descr infos
@@ -322,19 +323,22 @@ module Conv(P:Param1) = struct
               Fconst(cst, ()),
               Value_id (new_descr (Value_boxed_int (Nativeint, i)))
           | Const_string _ ->
-              Fsymbol (add_constant (Fconst (cst,())),()),
-              Value_unknown
+              let ex_id = new_descr (Value_string) in
+              Fsymbol (add_constant (Fconst (cst,())) ex_id,()),
+              Value_id ex_id
         end
     | Fconst (Fconst_float f as cst, _) ->
         Fconst (cst, ()), Value_id (new_descr (Value_float f))
     | Fconst (Fconst_pointer c as cst,_) ->
         Fconst (cst, ()), Value_id (new_descr (Value_constptr c))
     | Fconst (Fconst_float_array c as cst, _) ->
-        Fsymbol(add_constant (Fconst (cst,())),()),
-        Value_unknown
+        let ex_id = new_descr (Value_string) in
+        Fsymbol(add_constant (Fconst (cst,())) ex_id,()),
+        Value_id ex_id
     | Fconst (Fconst_immstring c as cst, _) ->
-        Fsymbol(add_constant (Fconst (cst,())),()),
-        Value_unknown
+        let ex_id = new_descr (Value_string) in
+        Fsymbol(add_constant (Fconst (cst,())) ex_id,()),
+        Value_id ex_id
 
     | Flet(str, id, lam, body, _) ->
         let lam, approx = conv_approx env lam in
@@ -568,8 +572,7 @@ module Conv(P:Param1) = struct
         if not (List.for_all is_simple_constant args)
         then block, Value_id ex
         else
-          let sym = add_constant block in
-          add_symbol sym ex;
+          let sym = add_constant block ex in
           Fsymbol(sym, ()), Value_symbol sym
 
     | Fprim(Lambda.Pfield i, [arg], dbg, _) ->
@@ -745,8 +748,7 @@ module Conv(P:Param1) = struct
                     cl_specialised_arg = spec_arg }, ()) in
       if Set_of_closures_id.Set.mem ufunct.ident P.constant_closures
       then
-        let sym = add_constant expr in
-        add_symbol sym closure_ex_id;
+        let sym = add_constant expr closure_ex_id in
         Fsymbol(sym, ())
       else expr in
     expr, value_closure
@@ -828,6 +830,7 @@ module Prepare(P:Param2) = struct
         Value_block (tag, Array.map canonical_approx fields)
     | Value_int _
     | Value_constptr _
+    | Value_string
     | Value_float _
     | Value_boxed_int _ as v -> v
     | Value_closure offset ->
