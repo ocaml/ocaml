@@ -103,10 +103,14 @@ type type_iterators =
     it_module_type: type_iterators -> module_type -> unit;
     it_class_type: type_iterators -> class_type -> unit;
     it_type_kind: type_iterators -> type_kind -> unit;
+    it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
-val type_iterators : type_iterators
-        (* Iteration on arbitrary type information *)
+val type_iterators: type_iterators
+        (* Iteration on arbitrary type information.
+           [it_type_expr] calls [mark_type_node] to avoid loops. *)
+val unmark_iterators: type_iterators
+        (* Unmark any structure containing types. See [unmark_type] below. *)
 
 val copy_type_desc:
     ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc

@@ -302,7 +302,7 @@ let class_structure sub cs =
 
 let row_field sub rf =
   match rf with
-  | Ttag (_label, _bool, list) -> List.iter (sub # core_type) list
+  | Ttag (_label, _attrs, _bool, list) -> List.iter (sub # core_type) list
   | Tinherit ct -> sub # core_type ct
 
 let class_field sub cf =

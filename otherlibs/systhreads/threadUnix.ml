@@ -26,6 +26,7 @@ let waitpid = Unix.waitpid
 let system = Unix.system
 let read = Unix.read
 let write = Unix.write
+let write_substring = Unix.write_substring
 let select = Unix.select
 
 let timed_read fd buff ofs len timeout =
@@ -37,6 +38,9 @@ let timed_write fd buff ofs len timeout =
   if Thread.wait_timed_write fd timeout
   then Unix.write fd buff ofs len
   else raise (Unix_error(ETIMEDOUT, "timed_write", ""))
+
+let timed_write_substring fd buff ofs len timeout =
+  timed_write fd (Bytes.unsafe_of_string buff) ofs len timeout
 
 let pipe = Unix.pipe
 
@@ -52,6 +56,8 @@ external connect : file_descr -> sockaddr -> unit = "unix_connect"
 let recv = Unix.recv
 let recvfrom = Unix.recvfrom
 let send = Unix.send
+let send_substring = Unix.send_substring
 let sendto = Unix.sendto
+let sendto_substring = Unix.sendto_substring
 
 let open_connection = Unix.open_connection

@@ -40,12 +40,12 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   }else if (wosize <= Max_young_wosize){
     Alloc_small (result, wosize, tag);
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Init_field (result, i, Val_long(0));
+      for (i = 0; i < wosize; i++) Init_field (result, i, Val_unit);
     }
   }else{
     result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_long(0);
+      for (i = 0; i < wosize; i++) Op_val(result)[i] = Val_unit;
     }
     result = caml_check_urgent_gc (result);
   }

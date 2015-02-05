@@ -25,16 +25,18 @@ let last_chars s n = String.sub s (String.length s - n) n
 
 module Charset =
   struct
-    type t = string (* of length 32 *)
+    type t = bytes (* of length 32 *)
 
-    (*let empty = String.make 32 '\000'*)
-    let full = String.make 32 '\255'
+    (*let empty = Bytes.make 32 '\000'*)
+    let full = Bytes.make 32 '\255'
 
-    let make_empty () = String.make 32 '\000'
+    let make_empty () = Bytes.make 32 '\000'
 
     let add s c =
       let i = Char.code c in
-      s.[i lsr 3] <- Char.chr(Char.code s.[i lsr 3] lor (1 lsl (i land 7)))
+      Bytes.set s (i lsr 3)
+                (Char.chr (Char.code (Bytes.get s (i lsr 3))
+                           lor (1 lsl (i land 7))))
 
     let add_range s c1 c2 =
       for i = Char.code c1 to Char.code c2 do add s (Char.chr i) done
@@ -46,23 +48,26 @@ module Charset =
       let s = make_empty () in add_range s c1 c2; s
     *)
     let complement s =
-      let r = String.create 32 in
+      let r = Bytes.create 32 in
       for i = 0 to 31 do
-        r.[i] <- Char.chr(Char.code s.[i] lxor 0xFF)
+        Bytes.set r i (Char.chr(Char.code (Bytes.get s i) lxor 0xFF))
       done;
       r
 
     let union s1 s2 =
-      let r = String.create 32 in
+      let r = Bytes.create 32 in
       for i = 0 to 31 do
-        r.[i] <- Char.chr(Char.code s1.[i] lor Char.code s2.[i])
+        Bytes.set r i (Char.chr(Char.code (Bytes.get s1 i)
+                       lor Char.code (Bytes.get s2 i)))
       done;
       r
 
     let disjoint s1 s2 =
       try
         for i = 0 to 31 do
-          if Char.code s1.[i] land Char.code s2.[i] <> 0 then raise Exit
+          if Char.code (Bytes.get s1 i) land Char.code (Bytes.get s2 i)
+             <> 0
+          then raise Exit
         done;
         true
       with Exit ->
@@ -70,7 +75,7 @@ module Charset =
 
     let iter fn s =
       for i = 0 to 31 do
-        let c = Char.code s.[i] in
+        let c = Char.code (Bytes.get s i) in
         if c <> 0 then
           for j = 0 to 7 do
             if c land (1 lsl j) <> 0 then fn (Char.chr ((i lsl 3) + j))
@@ -78,8 +83,8 @@ module Charset =
       done
 
     let expand s =
-      let r = String.make 256 '\000' in
-      iter (fun c -> r.[Char.code c] <- '\001') s;
+      let r = Bytes.make 256 '\000' in
+      iter (fun c -> Bytes.set r (Char.code c) '\001') s;
       r
 
     let fold_case s =
@@ -201,14 +206,14 @@ let charclass_of_regexp fold_case re =
     | CharClass(cl, compl) -> (cl, compl)
     | _ -> assert false in
   let cl2 = if fold_case then Charset.fold_case cl1 else cl1 in
-  if compl then Charset.complement cl2 else cl2
+  Bytes.to_string (if compl then Charset.complement cl2 else cl2)
 
 (* The case fold table: maps characters to their lowercase equivalent *)
 
 let fold_case_table =
-  let t = String.create 256 in
-  for i = 0 to 255 do t.[i] <- Char.lowercase(Char.chr i) done;
-  t
+  let t = Bytes.create 256 in
+  for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
+  Bytes.to_string t
 
 module StringMap =
   Map.Make(struct type t = string let compare (x:t) y = compare x y end)
@@ -292,7 +297,7 @@ let compile fold_case re =
   | CharClass(cl, compl) ->
       let cl1 = if fold_case then Charset.fold_case cl else cl in
       let cl2 = if compl then Charset.complement cl1 else cl1 in
-      emit_instr op_CHARCLASS (cpool_index cl2)
+      emit_instr op_CHARCLASS (cpool_index (Bytes.to_string cl2))
   | Seq rl ->
       emit_seq_code rl
   | Alt(r1, r2) ->
@@ -412,7 +417,7 @@ let compile fold_case re =
   let start_pos =
     if start = Charset.full
     then -1
-    else cpool_index (Charset.expand start') in
+    else cpool_index (Bytes.to_string (Charset.expand start')) in
   let constantpool = Array.make !cpoolpos "" in
   StringMap.iter (fun str idx -> constantpool.(idx) <- str) !cpool;
   { prog = Array.sub !prog 0 !progpos;
@@ -553,16 +558,19 @@ let regexp_case_fold e = compile true (parse e)
 
 let quote s =
   let len = String.length s in
-  let buf = String.create (2 * len) in
+  let buf = Bytes.create (2 * len) in
   let pos = ref 0 in
   for i = 0 to len - 1 do
     match s.[i] with
       '[' | ']' | '*' | '.' | '\\' | '?' | '+' | '^' | '$' as c ->
-        buf.[!pos] <- '\\'; buf.[!pos + 1] <- c; pos := !pos + 2
+        Bytes.set buf !pos '\\';
+        Bytes.set buf (!pos + 1) c;
+        pos := !pos + 2
     | c ->
-        buf.[!pos] <- c; pos := !pos + 1
+        Bytes.set buf !pos c;
+        pos := !pos + 1
   done;
-  String.sub buf 0 !pos
+  Bytes.sub_string buf 0 !pos
 
 let regexp_string s = compile false (String s)
 

@@ -72,7 +72,7 @@ globroots.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  addrmap.h domain.h roots.h globroots.h callback.h platform.h alloc.h
 hash.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
- minor_heap.h addrmap.h domain.h hash.h fail.h int64_native.h
+ minor_heap.h addrmap.h domain.h hash.h fail.h
 hax.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h minor_heap.h
 instrtrace.o: instrtrace.c
@@ -87,8 +87,7 @@ interp.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  globroots.h startup.h exec.h jumptbl.h
 ints.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
- memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h \
- int64_native.h
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h
 io.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h signals.h sys.h
@@ -156,7 +155,7 @@ startup.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
  instrtrace.h interp.h intext.h io.h platform.h osdeps.h prims.h \
  printexc.h reverse.h signals.h fiber.h roots.h sys.h startup.h version.h
 str.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h int64_native.h
+ ../config/s.h mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
  fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h \
@@ -247,7 +246,7 @@ globroots.d.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  addrmap.h domain.h roots.h globroots.h callback.h platform.h alloc.h
 hash.d.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
- minor_heap.h addrmap.h domain.h hash.h fail.h int64_native.h
+ minor_heap.h addrmap.h domain.h hash.h fail.h
 hax.d.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h minor_heap.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h compatibility.h config.h \
@@ -265,8 +264,7 @@ interp.d.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  globroots.h startup.h exec.h
 ints.d.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
- memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h \
- int64_native.h
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h
 io.d.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h signals.h sys.h
@@ -334,7 +332,7 @@ startup.d.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
  instrtrace.h interp.h intext.h io.h platform.h osdeps.h prims.h \
  printexc.h reverse.h signals.h fiber.h roots.h sys.h startup.h version.h
 str.d.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h int64_native.h
+ ../config/s.h mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
  fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h \
@@ -425,7 +423,7 @@ globroots.pic.o: globroots.c memory.h compatibility.h config.h ../config/m.h \
  addrmap.h domain.h roots.h globroots.h callback.h platform.h alloc.h
 hash.pic.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h custom.h memory.h gc.h major_gc.h minor_gc.h \
- minor_heap.h addrmap.h domain.h hash.h fail.h int64_native.h
+ minor_heap.h addrmap.h domain.h hash.h fail.h
 hax.pic.o: hax.c mlvalues.h compatibility.h config.h ../config/m.h \
  ../config/s.h misc.h minor_heap.h
 instrtrace.pic.o: instrtrace.c
@@ -440,8 +438,7 @@ interp.pic.o: interp.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  globroots.h startup.h exec.h jumptbl.h
 ints.pic.o: ints.c alloc.h compatibility.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h custom.h fail.h intext.h io.h platform.h \
- memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h \
- int64_native.h
+ memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h
 io.pic.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h custom.h fail.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h signals.h sys.h
@@ -509,7 +506,7 @@ startup.pic.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
  instrtrace.h interp.h intext.h io.h platform.h osdeps.h prims.h \
  printexc.h reverse.h signals.h fiber.h roots.h sys.h startup.h version.h
 str.pic.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h int64_native.h
+ ../config/s.h mlvalues.h fail.h
 sys.pic.o: sys.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
  misc.h mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h \
  fiber.h memory.h gc.h major_gc.h minor_gc.h minor_heap.h addrmap.h \

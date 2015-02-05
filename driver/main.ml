@@ -109,12 +109,14 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _principal = set principal
   let _rectypes = set recursive_types
   let _runtime_variant s = runtime_variant := s
+  let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
   let _thread = set use_threads
   let _trans_mod = set transparent_modules
   let _vmthread = set use_vmthreads
   let _unsafe = set fast
+  let _unsafe_string = set unsafe_string
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v () = print_version_and_library "compiler"
@@ -160,7 +162,8 @@ let main () =
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles () in
-      Bytepackager.package_files ppf revd (extracted_output);
+      Bytepackager.package_files ppf (Compmisc.initial_env ())
+        revd (extracted_output);
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin

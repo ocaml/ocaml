@@ -86,6 +86,7 @@ module MakeMap(Map : MapArgument) = struct
       vb_pat = map_pattern vb.vb_pat;
       vb_expr = map_expression vb.vb_expr;
       vb_attributes = vb.vb_attributes;
+      vb_loc = vb.vb_loc;
     }
 
   and map_bindings rec_flag list =
@@ -575,8 +576,8 @@ module MakeMap(Map : MapArgument) = struct
 
   and map_row_field rf =
     match rf with
-        Ttag (label, bool, list) ->
-          Ttag (label, bool, List.map map_core_type list)
+        Ttag (label, attrs, bool, list) ->
+          Ttag (label, attrs, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
 
   and map_class_field cf =

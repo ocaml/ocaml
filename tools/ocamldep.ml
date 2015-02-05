@@ -35,11 +35,7 @@ let files = ref []
 
 let fix_slash s =
   if Sys.os_type = "Unix" then s else begin
-    let r = String.copy s in
-    for i = 0 to String.length r - 1 do
-      if r.[i] = '\\' then r.[i] <- '/'
-    done;
-    r
+    String.map (function '\\' -> '/' | c -> c) s
   end
 
 (* Since we reinitialize load_path after reading OCAMLCOMP,
@@ -160,20 +156,20 @@ let print_filename s =
       else count n (i+1)
     in
     let spaces = count 0 0 in
-    let result = String.create (String.length s + spaces) in
+    let result = Bytes.create (String.length s + spaces) in
     let rec loop i j =
       if i >= String.length s then ()
       else if s.[i] = ' ' then begin
-        result.[j] <- '\\';
-        result.[j+1] <- ' ';
+        Bytes.set result j '\\';
+        Bytes.set result (j+1) ' ';
         loop (i+1) (j+2);
       end else begin
-        result.[j] <- s.[i];
+        Bytes.set result j s.[i];
         loop (i+1) (j+1);
       end
     in
     loop 0 0;
-    print_string result;
+    print_bytes result;
   end
 ;;
 
@@ -324,8 +320,9 @@ let sort_files_by_dependencies files =
 
 (* Init Hashtbl with all defined modules *)
   let files = List.map (fun (file, file_kind, deps) ->
-    let modname = Filename.chop_extension (Filename.basename file) in
-    modname.[0] <- Char.uppercase modname.[0];
+    let modname =
+      String.capitalize (Filename.chop_extension (Filename.basename file))
+    in
     let key = (modname, file_kind) in
     let new_deps = ref [] in
     Hashtbl.add h key (file, new_deps);

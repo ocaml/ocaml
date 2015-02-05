@@ -74,7 +74,7 @@ let get_buffer pos mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
       let inchan = open_in_bin (source_of_module pos mdle) in
-      let content = Misc.input_bytes inchan (in_channel_length inchan) in
+      let content = really_input_string inchan (in_channel_length inchan) in
       let buffer = (content, ref []) in
       buffer_list :=
         (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));

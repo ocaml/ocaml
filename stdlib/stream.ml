@@ -25,7 +25,7 @@ and 'a data =
   | Sbuffio of buffio
 and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
 and buffio =
-  { ic : in_channel; buff : string; mutable len : int; mutable ind : int }
+  { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
 ;;
 exception Failure;;
 exception Error of string;;
@@ -37,7 +37,7 @@ let set_data (s : 'a t) (d : 'a data) =
 ;;
 
 let fill_buff b =
-  b.len <- input b.ic b.buff 0 (String.length b.buff); b.ind <- 0
+  b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
 ;;
 
 let rec get_data count d = match d with
@@ -64,7 +64,7 @@ let rec get_data count d = match d with
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then Sempty else
-       let r = Obj.magic (String.unsafe_get b.buff b.ind) in
+       let r = Obj.magic (Bytes.unsafe_get b.buff b.ind) in
        (* Warning: anyone using g thinks that an item has been read *)
        b.ind <- succ b.ind; Scons(r, d)
  | Slazy f -> get_data count (Lazy.force f)
@@ -87,7 +87,7 @@ let rec peek s =
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then begin set_data s Sempty; None end
-     else Some (Obj.magic (String.unsafe_get b.buff b.ind))
+     else Some (Obj.magic (Bytes.unsafe_get b.buff b.ind))
 ;;
 
 let rec junk s =
@@ -161,7 +161,7 @@ let of_string s =
 
 let of_channel ic =
   {count = 0;
-   data = Sbuffio {ic = ic; buff = String.create 4096; len = 0; ind = 0}}
+   data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
 ;;
 
 (* Stream expressions builders *)

@@ -17,6 +17,7 @@ open Types
 val type_int: type_expr
 val type_char: type_expr
 val type_string: type_expr
+val type_bytes: type_expr
 val type_float: type_expr
 val type_bool: type_expr
 val type_unit: type_expr
@@ -32,6 +33,7 @@ val type_lazy_t: type_expr -> type_expr
 val path_int: Path.t
 val path_char: Path.t
 val path_string: Path.t
+val path_bytes: Path.t
 val path_float: Path.t
 val path_bool: Path.t
 val path_unit: Path.t
@@ -56,7 +58,7 @@ val path_undefined_recursive_module : Path.t
 val build_initial_env:
   (Ident.t -> type_declaration -> 'a -> 'a) ->
   (Ident.t -> exception_declaration -> 'a -> 'a) ->
-  'a -> 'a
+  'a -> 'a * 'a
 
 (* To initialize linker tables *)
 

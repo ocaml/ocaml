@@ -115,7 +115,7 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
        *)
 
 and row_field =
-  | Rtag of label * bool * core_type list
+  | Rtag of label * attributes * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
@@ -125,6 +125,8 @@ and row_field =
             constant (empty) constructor.
           - '&' occurs when several types are used for the same constructor
             (see 4.2 in the manual)
+
+          - TODO: switch to a record representation, and keep location
         *)
   | Rinherit of core_type
         (* [ T ] *)
@@ -297,7 +299,7 @@ and expression_desc =
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
   | Pexp_open of override_flag * Longident.t loc * expression
         (* let open M in E
-           let! open M in E 
+           let! open M in E
         *)
   | Pexp_extension of extension
         (* [%id] *)
@@ -390,6 +392,7 @@ and exception_rebind =
     {
      pexrb_name: string loc;
      pexrb_lid: Longident.t loc;
+     pexrb_loc: Location.t;
      pexrb_attributes: attributes;
     }
 (* exception C = M.X *)
@@ -541,7 +544,7 @@ and class_field_desc =
   | Pcf_initializer of expression
         (* initializer E *)
   | Pcf_extension of extension
-        (* [%id] *)
+        (* [%%id] *)
 
 and class_field_kind =
   | Cfk_virtual of core_type
@@ -638,6 +641,7 @@ and open_description =
     {
      popen_lid: Longident.t loc;
      popen_override: override_flag;
+     popen_loc: Location.t;
      popen_attributes: attributes;
     }
 (* open! X - popen_override = Override (silences the 'used identifier
@@ -648,6 +652,7 @@ and open_description =
 and 'a include_infos =
     {
      pincl_mod: 'a;
+     pincl_loc: Location.t;
      pincl_attributes: attributes;
     }
 
@@ -742,6 +747,7 @@ and value_binding =
     pvb_pat: pattern;
     pvb_expr: expression;
     pvb_attributes: attributes;
+    pvb_loc: Location.t;
   }
 
 and module_binding =

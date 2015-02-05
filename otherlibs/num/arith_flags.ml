@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 let error_when_null_denominator_flag = ref true;;
 
 let normalize_ratio_flag = ref false;;

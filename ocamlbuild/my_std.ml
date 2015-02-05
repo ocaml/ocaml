@@ -180,14 +180,7 @@ module String = struct
     in loop s 0
 
   let tr patt subst text =
-    let len = length text in
-    let text = copy text in
-    let rec loop pos =
-      if pos < len then begin
-        (if text.[pos] = patt then text.[pos] <- subst);
-        loop (pos + 1)
-      end
-    in loop 0; text
+    String.map (fun c -> if c = patt then subst else c) text
 
   (*** is_prefix : is u a prefix of v ? *)
   let is_prefix u v =
@@ -211,23 +204,23 @@ module String = struct
 
   let rev s =
     let sl = String.length s in
-    let s' = String.create sl in
+    let s' = Bytes.create sl in
     for i = 0 to sl - 1 do
-      s'.[i] <- s.[sl - i - 1]
+      Bytes.set s' i s.[sl - i - 1]
     done;
-    s';;
+    Bytes.to_string s';;
 
   let implode l =
     match l with
     | [] -> ""
     | cs ->
-        let r = create (List.length cs) in
+        let r = Bytes.create (List.length cs) in
         let pos = ref 0 in
         List.iter begin fun c ->
-          unsafe_set r !pos c;
+          Bytes.unsafe_set r !pos c;
           incr pos
         end cs;
-        r
+        Bytes.to_string r
 
   let explode s =
     let sl = String.length s in
@@ -307,16 +300,14 @@ let with_output_file ?(bin=false) x f =
 let read_file x =
   with_input_file ~bin:true x begin fun ic ->
     let len = in_channel_length ic in
-    let buf = String.create len in
-    let () = really_input ic buf 0 len in
-    buf
+    really_input_string ic len
   end
 
 let copy_chan ic oc =
   let m = in_channel_length ic in
   let m = (m lsr 12) lsl 12 in
   let m = max 16384 (min Sys.max_string_length m) in
-  let buf = String.create m in
+  let buf = Bytes.create m in
   let rec loop () =
     let len = input ic buf 0 m in
     if len > 0 then begin

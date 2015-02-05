@@ -35,7 +35,7 @@ and inchan = ref stdin
 and outchan = ref stdout
 
 (* To copy source fragments *)
-let copy_buffer = String.create 256
+let copy_buffer = Bytes.create 256
 
 let copy_chars_unix nchars =
   let n = ref nchars in

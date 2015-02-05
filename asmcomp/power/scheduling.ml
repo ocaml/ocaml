@@ -44,7 +44,7 @@ method reload_retaddr_latency = 12
 method oper_issue_cycles = function
     Iconst_float _ | Iconst_symbol _ -> 2
   | Iload(_, Ibased(_, _)) -> 2
-  | Istore(_, Ibased(_, _)) -> 2
+  | Istore(_, Ibased(_, _), _) -> 2
   | Ialloc _ -> 4
   | Iintop(Imod) -> 40 (* assuming full stall *)
   | Iintop(Icomp _) -> 4

@@ -127,13 +127,13 @@ let execute_many ?max_jobs = implem.execute_many ?max_jobs
 
 let run_and_read cmd =
   let bufsiz = 2048 in
-  let buf = String.create bufsiz in
+  let buf = Bytes.create bufsiz in
   let totalbuf = Buffer.create 4096 in
   implem.run_and_open cmd begin fun ic ->
     let rec loop pos =
       let len = input ic buf 0 bufsiz in
       if len > 0 then begin
-        Buffer.add_substring totalbuf buf 0 len;
+        Buffer.add_subbytes totalbuf buf 0 len;
         loop (pos + len)
       end
     in loop 0; Buffer.contents totalbuf

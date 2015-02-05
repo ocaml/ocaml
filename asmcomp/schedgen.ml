@@ -165,7 +165,7 @@ method private instr_in_basic_block instr =
    load or store instructions (e.g. on the I386). *)
 
 method is_store = function
-    Istore(_, _) -> true
+    Istore(_, _, _) -> true
   | _ -> false
 
 method is_load = function

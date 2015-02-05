@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (* Some extra operations on integers *)
 
 val gcd_int: int -> int -> int

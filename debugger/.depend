@@ -164,11 +164,13 @@ program_loading.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
 program_management.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi \
     time_travel.cmi symbols.cmi question.cmi program_loading.cmi \
     primitives.cmi parameters.cmi int64ops.cmi input_handling.cmi history.cmi \
-    debugger_config.cmi breakpoints.cmi program_management.cmi
+    ../typing/envaux.cmi debugger_config.cmi ../utils/config.cmi \
+    breakpoints.cmi program_management.cmi
 program_management.cmx : unix_tools.cmx $(UNIXDIR)/unix.cmx \
     time_travel.cmx symbols.cmx question.cmx program_loading.cmx \
     primitives.cmx parameters.cmx int64ops.cmx input_handling.cmx history.cmx \
-    debugger_config.cmx breakpoints.cmx program_management.cmi
+    ../typing/envaux.cmx debugger_config.cmx ../utils/config.cmx \
+    breakpoints.cmx program_management.cmi
 question.cmo : primitives.cmi lexer.cmi input_handling.cmi question.cmi
 question.cmx : primitives.cmx lexer.cmx input_handling.cmx question.cmi
 show_information.cmo : symbols.cmi source.cmi show_source.cmi printval.cmi \

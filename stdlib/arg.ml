@@ -112,11 +112,11 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
       | Unknown s ->
-          bprintf b "%s: unknown option `%s'.\n" progname s
+          bprintf b "%s: unknown option '%s'.\n" progname s
       | Missing s ->
-          bprintf b "%s: option `%s' needs an argument.\n" progname s
+          bprintf b "%s: option '%s' needs an argument.\n" progname s
       | Wrong (opt, arg, expected) ->
-          bprintf b "%s: wrong argument `%s'; option `%s' expects %s.\n"
+          bprintf b "%s: wrong argument '%s'; option '%s' expects %s.\n"
                   progname arg opt expected
       | Message s ->
           bprintf b "%s: %s.\n" progname s
@@ -129,7 +129,7 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   incr current;
   while !current < l do
     let s = argv.(!current) in
-    if String.length s >= 1 && String.get s 0 = '-' then begin
+    if String.length s >= 1 && s.[0] = '-' then begin
       let action =
         try assoc3 s !speclist
         with Not_found -> stop (Unknown s)

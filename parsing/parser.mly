@@ -257,8 +257,8 @@ let varify_constructors var_names t =
     {t with ptyp_desc = desc}
   and loop_row_field  =
     function
-      | Rtag(label,flag,lst) ->
-          Rtag(label,flag,List.map loop lst)
+      | Rtag(label,attrs,flag,lst) ->
+          Rtag(label,attrs,flag,List.map loop lst)
       | Rinherit t ->
           Rinherit (loop t)
   in
@@ -404,6 +404,8 @@ let mkexp_attrs d attrs =
 %token WITH
 %token <string * Location.t> COMMENT
 
+%token EOL
+
 /* Precedences and associativities.
 
 Tokens and rules have precedences.  A reduce/reduce conflict is resolved
@@ -451,8 +453,6 @@ The precedences must be listed from low to high.
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
-%nonassoc LBRACKETPERCENT
-%nonassoc LBRACKETPERCENTPERCENT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -468,6 +468,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          LBRACKETPERCENT LBRACKETPERCENTPERCENT
 
 
 /* Entry points */
@@ -638,8 +639,9 @@ structure_item:
   | EXCEPTION exception_declaration
       { mkstr(Pstr_exception $2) }
   | EXCEPTION UIDENT EQUAL constr_longident post_item_attributes
-      { mkstr (Pstr_exn_rebind (Exrb.mk (mkrhs $2 2)
-                                        (mkloc $4 (rhs_loc 4)) ~attrs:$5)) }
+      { mkstr (Pstr_exn_rebind
+                 (Exrb.mk (mkrhs $2 2)
+                    (mkloc $4 (rhs_loc 4)) ~attrs:$5 ~loc:(symbol_rloc()))) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -650,14 +652,13 @@ structure_item:
   | MODULE TYPE ident EQUAL module_type post_item_attributes
       { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
                               ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
-  | OPEN override_flag mod_longident post_item_attributes
-      { mkstr(Pstr_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
+  | open_statement { mkstr(Pstr_open $1) }
   | CLASS class_declarations
       { mkstr(Pstr_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr post_item_attributes
-      { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3)) }
+      { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
   | floating_attribute
@@ -744,10 +745,10 @@ signature_item:
       { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5
                               ~loc:(symbol_rloc())
                               ~attrs:$6)) }
-  | OPEN override_flag mod_longident post_item_attributes
-      { mksig(Psig_open (Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4)) }
+  | open_statement
+      { mksig(Psig_open $1) }
   | INCLUDE module_type post_item_attributes %prec below_WITH
-      { mksig(Psig_include (Incl.mk $2 ~attrs:$3)) }
+      { mksig(Psig_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
   | CLASS class_descriptions
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
@@ -757,7 +758,10 @@ signature_item:
   | floating_attribute
       { mksig(Psig_attribute $1) }
 ;
-
+open_statement:
+  | OPEN override_flag mod_longident post_item_attributes
+      { Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4 ~loc:(symbol_rloc()) }
+;
 module_declaration:
     COLON module_type
       { $2 }
@@ -1307,7 +1311,9 @@ lident_list:
   | LIDENT lident_list                { $1 :: $2 }
 ;
 let_binding:
-    let_binding_ post_item_attributes { let (p, e) = $1 in Vb.mk ~attrs:$2 p e }
+    let_binding_ post_item_attributes {
+      let (p, e) = $1 in Vb.mk ~loc:(symbol_rloc()) ~attrs:$2 p e
+    }
 ;
 let_binding_:
     val_ident fun_binding
@@ -1771,10 +1777,10 @@ row_field:
   | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
-    name_tag OF opt_ampersand amper_type_list
-      { Rtag ($1, $3, List.rev $4) }
-  | name_tag
-      { Rtag ($1, true, []) }
+    name_tag attributes OF opt_ampersand amper_type_list
+      { Rtag ($1, $2, $4, List.rev $5) }
+  | name_tag attributes
+      { Rtag ($1, $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -1942,6 +1948,7 @@ toplevel_directive:
   | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
   | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
+  | SHARP ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }
   | SHARP ident TRUE            { Ptop_dir($2, Pdir_bool true) }
 ;
