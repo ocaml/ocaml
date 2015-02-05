@@ -27,10 +27,12 @@ try
   test (sprintf "%04d/%05i" 42 43 = "0042/00043");
   test (sprintf "%+d/%+i" 42 43 = "+42/+43");
   test (sprintf "% d/% i" 42 43 = " 42/ 43");
-  test (sprintf "%#d/%#i" 42 43 = "42/43");
+  (*test (sprintf "%#d/%#i" 42 43 = "42/43");*)
+    (* >> '#' is incompatible with 'd' *)
   test (sprintf "%4d/%5i" 42 43 = "  42/   43");
   test (sprintf "%*d/%*i" 4 42 5 43 = "  42/   43");
-  test (sprintf "%-0+#4d/%-0 #5i" 42 43 = "+42 / 43  ");
+  (*test (sprintf "%-0+#4d/%-0 #5i" 42 43 = "+42 / 43  ");*)
+    (* >> '#' is incompatible with 'd' *)
 
   printf "\nd/i negative\n%!";
   test (sprintf "%d/%i" (-42) (-43) = "-42/-43");
@@ -38,21 +40,27 @@ try
   test (sprintf "%04d/%05i" (-42) (-43) = "-042/-0043");
   test (sprintf "%+d/%+i" (-42) (-43) = "-42/-43");
   test (sprintf "% d/% i" (-42) (-43) = "-42/-43");
-  test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");
+  (*test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");*)
+    (* >> '#' is incompatilbe with 'd' *)
   test (sprintf "%4d/%5i" (-42) (-43) = " -42/  -43");
   test (sprintf "%*d/%*i" 4 (-42) 5 (-43) = " -42/  -43");
-  test (sprintf "%-0+ #4d/%-0+ #5i" (-42) (-43) = "-42 /-43  ");
+  (*test (sprintf "%-0+ #4d/%-0+ #5i" (-42) (-43) = "-42 /-43  ");*)
+    (* >> '0' is incompatible with '-', '#' is incompatible with 'd' *)
 
   printf "\nu positive\n%!";
   test (sprintf "%u" 42 = "42");
   test (sprintf "%-4u" 42 = "42  ");
   test (sprintf "%04u" 42 = "0042");
-  test (sprintf "%+u" 42 = "42");
-  test (sprintf "% u" 42 = "42");
-  test (sprintf "%#u" 42 = "42");
+  (*test (sprintf "%+u" 42 = "42");*)
+    (* >> '+' is incompatible with 'u' *)
+  (*test (sprintf "% u" 42 = "42");*)
+    (* >> ' ' is incompatible with 'u' *)
+  (*test (sprintf "%#u" 42 = "42");*)
+    (* >> '#' is incompatible with 'u' *)
   test (sprintf "%4u" 42 = "  42");
   test (sprintf "%*u" 4 42 = "  42");
-  test (sprintf "%-0+ #6d" 42 = "+42   ");
+  (*test (sprintf "%-0+ #6d" 42 = "+42   ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatilbe with 'd' *)
 
   printf "\nu negative\n%!";
   begin match Sys.word_size with
@@ -67,12 +75,15 @@ try
   test (sprintf "%x" 42 = "2a");
   test (sprintf "%-4x" 42 = "2a  ");
   test (sprintf "%04x" 42 = "002a");
-  test (sprintf "%+x" 42 = "2a");
-  test (sprintf "% x" 42 = "2a");
+  (*test (sprintf "%+x" 42 = "2a");*)
+    (* >> '+' is incompatible with 'x' *)
+  (*test (sprintf "% x" 42 = "2a");*)
+    (* >> ' ' is incompatible with 'x' *)
   test (sprintf "%#x" 42 = "0x2a");
   test (sprintf "%4x" 42 = "  2a");
   test (sprintf "%*x" 5 42 = "   2a");
-  test (sprintf "%-0+ #*x" 5 42 = "0x2a ");
+  (*test (sprintf "%-0+ #*x" 5 42 = "0x2a ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nx negative\n%!";
   begin match Sys.word_size with
@@ -87,12 +98,15 @@ try
   test (sprintf "%X" 42 = "2A");
   test (sprintf "%-4X" 42 = "2A  ");
   test (sprintf "%04X" 42 = "002A");
-  test (sprintf "%+X" 42 = "2A");
-  test (sprintf "% X" 42 = "2A");
+  (*test (sprintf "%+X" 42 = "2A");*)
+    (* >> '+' is incompatible with 'X' *)
+  (*test (sprintf "% X" 42 = "2A");*)
+    (* >> ' ' is incompatible with 'X' *)
   test (sprintf "%#X" 42 = "0X2A");
   test (sprintf "%4X" 42 = "  2A");
   test (sprintf "%*X" 5 42 = "   2A");
-  test (sprintf "%-0+ #*X" 5 42 = "0X2A ");
+  (*test (sprintf "%-0+ #*X" 5 42 = "0X2A ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nx negative\n%!";
   begin match Sys.word_size with
@@ -107,12 +121,15 @@ try
   test (sprintf "%o" 42 = "52");
   test (sprintf "%-4o" 42 = "52  ");
   test (sprintf "%04o" 42 = "0052");
-  test (sprintf "%+o" 42 = "52");
-  test (sprintf "% o" 42 = "52");
+  (*test (sprintf "%+o" 42 = "52");*)
+    (* >> '+' is incompatible with 'o' *)
+  (*test (sprintf "% o" 42 = "52");*)
+    (* >> '+' is incompatible with 'o' *)
   test (sprintf "%#o" 42 = "052");
   test (sprintf "%4o" 42 = "  52");
   test (sprintf "%*o" 5 42 = "   52");
-  test (sprintf "%-0+ #*o" 5 42 = "052  ");
+  (*test (sprintf "%-0+ #*o" 5 42 = "052  ");*)
+    (* >> '-' is incompatible with 'o' *)
 
   printf "\no negative\n%!";
   begin match Sys.word_size with
@@ -126,15 +143,20 @@ try
   printf "\ns\n%!";
   test (sprintf "%s" "foo" = "foo");
   test (sprintf "%-5s" "foo" = "foo  ");
-  test (sprintf "%05s" "foo" = "  foo");
-  test (sprintf "%+s" "foo" = "foo");
-  test (sprintf "% s" "foo" = "foo");
-  test (sprintf "%#s" "foo" = "foo");
+  (*test (sprintf "%05s" "foo" = "  foo");*)
+    (* >> '0' is incompatible with 's' *)
+  (*test (sprintf "%+s" "foo" = "foo");*)
+    (* >> '+' is incompatible with 's' *)
+  (*test (sprintf "% s" "foo" = "foo");*)
+    (* >> ' ' is incompatible with 's' *)
+  (*test (sprintf "%#s" "foo" = "foo");*)
+    (* >> '#' is incompatible with 's' *)
   test (sprintf "%5s" "foo" = "  foo");
   test (sprintf "%1s" "foo" = "foo");
   test (sprintf "%*s" 6 "foo" = "   foo");
   test (sprintf "%*s" 2 "foo" = "foo");
-  test (sprintf "%-0+ #5s" "foo" = "foo  ");
+  (*test (sprintf "%-0+ #5s" "foo" = "foo  ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 's' *)
   test (sprintf "%s@" "foo" = "foo@");
   test (sprintf "%s@inria.fr" "foo" = "foo@inria.fr");
   test (sprintf "%s@%s" "foo" "inria.fr" = "foo@inria.fr");
@@ -143,9 +165,12 @@ try
   test (sprintf "%S" "fo\"o" = "\"fo\\\"o\"");
 (*  test (sprintf "%-5S" "foo" = "\"foo\"  ");   padding not done *)
 (*  test (sprintf "%05S" "foo" = "  \"foo\"");   padding not done *)
-  test (sprintf "%+S" "foo" = "\"foo\"");
-  test (sprintf "% S" "foo" = "\"foo\"");
-  test (sprintf "%#S" "foo" = "\"foo\"");
+  (*test (sprintf "%+S" "foo" = "\"foo\"");*)
+    (* >> '#' is incompatible with 'S' *)
+  (*test (sprintf "% S" "foo" = "\"foo\"");*)
+    (* >> '#' is incompatible with 'S' *)
+  (*test (sprintf "%#S" "foo" = "\"foo\"");*)
+    (* >> '#' is incompatible with 'S' *)
 (*  test (sprintf "%5S" "foo" = "  \"foo\"");    padding not done *)
   test (sprintf "%1S" "foo" = "\"foo\"");
 (*  test (sprintf "%*S" 6 "foo" = "   \"foo\"");  padding not done *)
@@ -159,9 +184,12 @@ try
   test (sprintf "%c" 'c' = "c");
 (*  test (sprintf "%-4c" 'c' = "c   ");    padding not done *)
 (*  test (sprintf "%04c" 'c' = "   c");    padding not done *)
-  test (sprintf "%+c" 'c' = "c");
-  test (sprintf "% c" 'c' = "c");
-  test (sprintf "%#c" 'c' = "c");
+  (*test (sprintf "%+c" 'c' = "c");*)
+    (* >> '#' is incompatible with 'c' *)
+  (*test (sprintf "% c" 'c' = "c");*)
+    (* >> '#' is incompatible with 'c' *)
+  (*test (sprintf "%#c" 'c' = "c");*)
+    (* >> '#' is incompatible with 'c' *)
 (*  test (sprintf "%4c" 'c' = "   c");     padding not done *)
 (*  test (sprintf "%*c" 2 'c' = " c");     padding not done *)
 (*  test (sprintf "%-0+ #4c" 'c' = "c   ");  padding not done *)
@@ -171,12 +199,15 @@ try
   test (sprintf "%C" '\'' = "'\\''");
 (*  test (sprintf "%-4C" 'c' = "c   ");    padding not done *)
 (*  test (sprintf "%04C" 'c' = "   c");    padding not done *)
-  test (sprintf "%+C" 'c' = "'c'");
-  test (sprintf "% C" 'c' = "'c'");
-  test (sprintf "%#C" 'c' = "'c'");
-(*  test (sprintf "%4C" 'c' = " 'c'");     padding not done *)
-(*  test (sprintf "%*C" 2 'c' = "'c'");     padding not done *)
-(*  test (sprintf "%-0+ #4C" 'c' = "'c' ");  padding not done *)
+  (*test (sprintf "%+C" 'c' = "'c'");*)
+    (* >> '+' is incompatible with 'C' *)
+  (*test (sprintf "% C" 'c' = "'c'");*)
+    (* >> ' ' is incompatible with 'C' *)
+  (*test (sprintf "%#C" 'c' = "'c'");*)
+    (* >> '#' is incompatible with 'C' *)
+(*  test (sprintf "%4C" 'c' = "   c");     padding not done *)
+(*  test (sprintf "%*C" 2 'c' = " c");     padding not done *)
+(*  test (sprintf "%-0+ #4C" 'c' = "c   ");  padding not done *)
 
   printf "\nf\n%!";
   test (sprintf "%f" (-42.42) = "-42.420000");
@@ -184,19 +215,23 @@ try
   test (sprintf "%013f" (-42.42) = "-00042.420000");
   test (sprintf "%+f" 42.42 = "+42.420000");
   test (sprintf "% f" 42.42 = " 42.420000");
-  test (sprintf "%#f" 42.42 = "42.420000");
+  (*test (sprintf "%#f" 42.42 = "42.420000");*)
+    (* >> '#' is incompatible with 'f' *)
   test (sprintf "%13f" 42.42 = "    42.420000");
   test (sprintf "%*f" 12 42.42 = "   42.420000");
-  test (sprintf "%-0+ #12f" 42.42 = "+42.420000  ");
+  (*test (sprintf "%-0+ #12f" 42.42 = "+42.420000  ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'f' *)
   test (sprintf "%.3f" (-42.42) = "-42.420");
   test (sprintf "%-13.3f" (-42.42) = "-42.420      ");
   test (sprintf "%013.3f" (-42.42) = "-00000042.420");
   test (sprintf "%+.3f" 42.42 = "+42.420");
   test (sprintf "% .3f" 42.42 = " 42.420");
-  test (sprintf "%#.3f" 42.42 = "42.420");
+  (*test (sprintf "%#.3f" 42.42 = "42.420");*)
+    (* >> '#' is incompatible with 'f' *)
   test (sprintf "%13.3f" 42.42 = "       42.420");
   test (sprintf "%*.*f" 12 3 42.42 = "      42.420");
-  test (sprintf "%-0+ #12.3f" 42.42 = "+42.420     ");
+  (*test (sprintf "%-0+ #12.3f" 42.42 = "+42.420     ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'f' *)
 
   (* Under Windows (mingw and maybe also MSVC), the stdlib uses three
      digits for the exponent instead of the two used by Linux and BSD.
@@ -240,19 +275,23 @@ try
   test (sprintf "%015e" (-42.42) =* "-004.242000e+01");
   test (sprintf "%+e" 42.42 =* "+4.242000e+01");
   test (sprintf "% e" 42.42 =* " 4.242000e+01");
-  test (sprintf "%#e" 42.42 =* "4.242000e+01");
+  (*test (sprintf "%#e" 42.42 =* "4.242000e+01");*)
+    (* >> '#' is incompatible with 'e' *)
   test (sprintf "%15e" 42.42 =* "   4.242000e+01");
   test (sprintf "%*e" 14 42.42 =* "  4.242000e+01");
-  test (sprintf "%-0+ #14e" 42.42 =* "+4.242000e+01 ");
+  (*test (sprintf "%-0+ #14e" 42.42 =* "+4.242000e+01 ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'e' *)
   test (sprintf "%.3e" (-42.42) =* "-4.242e+01");
   test (sprintf "%-15.3e" (-42.42) =* "-4.242e+01     ");
   test (sprintf "%015.3e" (-42.42) =* "-000004.242e+01");
   test (sprintf "%+.3e" 42.42 =* "+4.242e+01");
   test (sprintf "% .3e" 42.42 =* " 4.242e+01");
-  test (sprintf "%#.3e" 42.42 =* "4.242e+01");
+  (*test (sprintf "%#.3e" 42.42 =* "4.242e+01");*)
+    (* >> '#' is incompatible with 'e' *)
   test (sprintf "%15.3e" 42.42 =* "      4.242e+01");
   test (sprintf "%*.*e" 11 3 42.42 =* "  4.242e+01");
-  test (sprintf "%-0+ #14.3e" 42.42 =* "+4.242e+01    ");
+  (*test (sprintf "%-0+ #14.3e" 42.42 =* "+4.242e+01    ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'e' *)
 
   printf "\nE\n%!";
   test (sprintf "%E" (-42.42) =* "-4.242000E+01");
@@ -260,19 +299,23 @@ try
   test (sprintf "%015E" (-42.42) =* "-004.242000E+01");
   test (sprintf "%+E" 42.42 =* "+4.242000E+01");
   test (sprintf "% E" 42.42 =* " 4.242000E+01");
-  test (sprintf "%#E" 42.42 =* "4.242000E+01");
+  (*test (sprintf "%#E" 42.42 =* "4.242000E+01");*)
+    (* >> '#' is incompatible with 'E' *)
   test (sprintf "%15E" 42.42 =* "   4.242000E+01");
   test (sprintf "%*E" 14 42.42 =* "  4.242000E+01");
-  test (sprintf "%-0+ #14E" 42.42 =* "+4.242000E+01 ");
+  (*test (sprintf "%-0+ #14E" 42.42 =* "+4.242000E+01 ");*)
+    (* >> '#' is incompatible with 'E' *)
   test (sprintf "%.3E" (-42.42) =* "-4.242E+01");
   test (sprintf "%-15.3E" (-42.42) =* "-4.242E+01     ");
   test (sprintf "%015.3E" (-42.42) =* "-000004.242E+01");
   test (sprintf "%+.3E" 42.42 =* "+4.242E+01");
   test (sprintf "% .3E" 42.42 =* " 4.242E+01");
-  test (sprintf "%#.3E" 42.42 =* "4.242E+01");
+  (*test (sprintf "%#.3E" 42.42 =* "4.242E+01");*)
+    (* >> '#' is incompatible with 'E' *)
   test (sprintf "%15.3E" 42.42 =* "      4.242E+01");
   test (sprintf "%*.*E" 11 3 42.42 =* "  4.242E+01");
-  test (sprintf "%-0+ #14.3E" 42.42 =* "+4.242E+01    ");
+  (*test (sprintf "%-0+ #14.3E" 42.42 =* "+4.242E+01    ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'E' *)
 
 (* %g gives strange results that correspond to neither %f nor %e
   printf "\ng\n%!";
@@ -302,10 +345,12 @@ try
   test (sprintf "%04ld/%05li" 42l 43l = "0042/00043");
   test (sprintf "%+ld/%+li" 42l 43l = "+42/+43");
   test (sprintf "% ld/% li" 42l 43l = " 42/ 43");
-  test (sprintf "%#ld/%#li" 42l 43l = "42/43");
+  (*test (sprintf "%#ld/%#li" 42l 43l = "42/43");*)
+    (* >> '#' is incompatible with 'ld' *)
   test (sprintf "%4ld/%5li" 42l 43l = "  42/   43");
   test (sprintf "%*ld/%*li" 4 42l 5 43l = "  42/   43");
-  test (sprintf "%-0+#4ld/%-0 #5li" 42l 43l = "+42 / 43  ");
+  (*test (sprintf "%-0+#4ld/%-0 #5li" 42l 43l = "+42 / 43  ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'ld' *)
 
   printf "\nld/li negative\n%!";
   test (sprintf "%ld/%li" (-42l) (-43l) = "-42/-43");
@@ -313,21 +358,27 @@ try
   test (sprintf "%04ld/%05li" (-42l) (-43l) = "-042/-0043");
   test (sprintf "%+ld/%+li" (-42l) (-43l) = "-42/-43");
   test (sprintf "% ld/% li" (-42l) (-43l) = "-42/-43");
-  test (sprintf "%#ld/%#li" (-42l) (-43l) = "-42/-43");
+  (*test (sprintf "%#ld/%#li" (-42l) (-43l) = "-42/-43");*)
+    (* >> '#' is incompatible with 'ld' *)
   test (sprintf "%4ld/%5li" (-42l) (-43l) = " -42/  -43");
   test (sprintf "%*ld/%*li" 4 (-42l) 5 (-43l) = " -42/  -43");
-  test (sprintf "%-0+ #4ld/%-0+ #5li" (-42l) (-43l) = "-42 /-43  ");
+  (*test (sprintf "%-0+ #4ld/%-0+ #5li" (-42l) (-43l) = "-42 /-43  ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'ld' *)
 
   printf "\nlu positive\n%!";
   test (sprintf "%lu" 42l = "42");
   test (sprintf "%-4lu" 42l = "42  ");
   test (sprintf "%04lu" 42l = "0042");
-  test (sprintf "%+lu" 42l = "42");
-  test (sprintf "% lu" 42l = "42");
-  test (sprintf "%#lu" 42l = "42");
+  (*test (sprintf "%+lu" 42l = "42");*)
+    (* >> '+' is incompatible with 'lu' *)
+  (*test (sprintf "% lu" 42l = "42");*)
+    (* >> ' ' is incompatible with 'lu' *)
+  (*test (sprintf "%#lu" 42l = "42");*)
+    (* >> '#' is incompatible with 'lu' *)
   test (sprintf "%4lu" 42l = "  42");
   test (sprintf "%*lu" 4 42l = "  42");
-  test (sprintf "%-0+ #6ld" 42l = "+42   ");
+  (*test (sprintf "%-0+ #6ld" 42l = "+42   ");*)
+    (* >> '-' is incompatible with '0', '#' is incompatible with 'ld' *)
 
   printf "\nlu negative\n%!";
   test (sprintf "%lu" (-1l) = "4294967295");
@@ -336,12 +387,15 @@ try
   test (sprintf "%lx" 42l = "2a");
   test (sprintf "%-4lx" 42l = "2a  ");
   test (sprintf "%04lx" 42l = "002a");
-  test (sprintf "%+lx" 42l = "2a");
-  test (sprintf "% lx" 42l = "2a");
+  (*test (sprintf "%+lx" 42l = "2a");*)
+    (* >> '+' is incompatible with 'lx' *)
+  (*test (sprintf "% lx" 42l = "2a");*)
+    (* >> ' ' is incompatible with 'lx' *)
   test (sprintf "%#lx" 42l = "0x2a");
   test (sprintf "%4lx" 42l = "  2a");
   test (sprintf "%*lx" 5 42l = "   2a");
-  test (sprintf "%-0+ #*lx" 5 42l = "0x2a ");
+  (*test (sprintf "%-0+ #*lx" 5 42l = "0x2a ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nlx negative\n%!";
   test (sprintf "%lx" (-42l) = "ffffffd6");
@@ -350,12 +404,15 @@ try
   test (sprintf "%lX" 42l = "2A");
   test (sprintf "%-4lX" 42l = "2A  ");
   test (sprintf "%04lX" 42l = "002A");
-  test (sprintf "%+lX" 42l = "2A");
-  test (sprintf "% lX" 42l = "2A");
+  (*test (sprintf "%+lX" 42l = "2A");*)
+    (* >> '+' is incompatible with 'lX' *)
+  (*test (sprintf "% lX" 42l = "2A");*)
+    (* >> ' ' is incompatible with 'lX' *)
   test (sprintf "%#lX" 42l = "0X2A");
   test (sprintf "%4lX" 42l = "  2A");
   test (sprintf "%*lX" 5 42l = "   2A");
-  test (sprintf "%-0+ #*lX" 5 42l = "0X2A ");
+  (*test (sprintf "%-0+ #*lX" 5 42l = "0X2A ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nlx negative\n%!";
   test (sprintf "%lX" (-42l) = "FFFFFFD6");
@@ -364,12 +421,15 @@ try
   test (sprintf "%lo" 42l = "52");
   test (sprintf "%-4lo" 42l = "52  ");
   test (sprintf "%04lo" 42l = "0052");
-  test (sprintf "%+lo" 42l = "52");
-  test (sprintf "% lo" 42l = "52");
+  (*test (sprintf "%+lo" 42l = "52");*)
+    (* >> '+' is incompatible with 'lo' *)
+  (*test (sprintf "% lo" 42l = "52");*)
+    (* >> ' ' is incompatible with 'lo' *)
   test (sprintf "%#lo" 42l = "052");
   test (sprintf "%4lo" 42l = "  52");
   test (sprintf "%*lo" 5 42l = "   52");
-  test (sprintf "%-0+ #*lo" 5 42l = "052  ");
+  (*test (sprintf "%-0+ #*lo" 5 42l = "052  ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nlo negative\n%!";
   test (sprintf "%lo" (-42l) = "37777777726");
@@ -381,34 +441,46 @@ try
   test (sprintf "%Ld/%Li" 42L 43L = "42/43");
   test (sprintf "%-4Ld/%-5Li" 42L 43L = "42  /43   ");
   test (sprintf "%04Ld/%05Li" 42L 43L = "0042/00043");
-  test (sprintf "%+Ld/%+Li" 42L 43L = "+42/+43");
-  test (sprintf "% Ld/% Li" 42L 43L = " 42/ 43");
-  test (sprintf "%#Ld/%#Li" 42L 43L = "42/43");
+  (*test (sprintf "%+Ld/%+Li" 42L 43L = "+42/+43");*)
+    (* >> '+' is incompatible with 'Ld' *)
+  (*test (sprintf "% Ld/% Li" 42L 43L = " 42/ 43");*)
+    (* >> ' ' is incompatible with 'Ld' *)
+  (*test (sprintf "%#Ld/%#Li" 42L 43L = "42/43");*)
+    (* >> '#' is incompatible with 'Ld' *)
   test (sprintf "%4Ld/%5Li" 42L 43L = "  42/   43");
   test (sprintf "%*Ld/%*Li" 4 42L 5 43L = "  42/   43");
-  test (sprintf "%-0+#4Ld/%-0 #5Li" 42L 43L = "+42 / 43  ");
+  (*test (sprintf "%-0+#4Ld/%-0 #5Li" 42L 43L = "+42 / 43  ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLd/Li negative\n%!";
   test (sprintf "%Ld/%Li" (-42L) (-43L) = "-42/-43");
   test (sprintf "%-4Ld/%-5Li" (-42L) (-43L) = "-42 /-43  ");
   test (sprintf "%04Ld/%05Li" (-42L) (-43L) = "-042/-0043");
-  test (sprintf "%+Ld/%+Li" (-42L) (-43L) = "-42/-43");
-  test (sprintf "% Ld/% Li" (-42L) (-43L) = "-42/-43");
-  test (sprintf "%#Ld/%#Li" (-42L) (-43L) = "-42/-43");
+  (*test (sprintf "%+Ld/%+Li" (-42L) (-43L) = "-42/-43");*)
+    (* >> '+' is incompatible with 'Ld' *)
+  (*test (sprintf "% Ld/% Li" (-42L) (-43L) = "-42/-43");*)
+    (* >> ' ' is incompatible with 'Ld' *)
+  (*test (sprintf "%#Ld/%#Li" (-42L) (-43L) = "-42/-43");*)
+    (* >> '#' is incompatible with 'Ld' *)
   test (sprintf "%4Ld/%5Li" (-42L) (-43L) = " -42/  -43");
   test (sprintf "%*Ld/%*Li" 4 (-42L) 5 (-43L) = " -42/  -43");
-  test (sprintf "%-0+ #4Ld/%-0+ #5Li" (-42L) (-43L) = "-42 /-43  ");
+  (*test (sprintf "%-0+ #4Ld/%-0+ #5Li" (-42L) (-43L) = "-42 /-43  ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLu positive\n%!";
   test (sprintf "%Lu" 42L = "42");
   test (sprintf "%-4Lu" 42L = "42  ");
   test (sprintf "%04Lu" 42L = "0042");
-  test (sprintf "%+Lu" 42L = "42");
-  test (sprintf "% Lu" 42L = "42");
-  test (sprintf "%#Lu" 42L = "42");
+  (*test (sprintf "%+Lu" 42L = "42");*)
+    (* >> '+' is incompatible with 'Lu' *)
+  (*test (sprintf "% Lu" 42L = "42");*)
+    (* >> ' ' is incompatible with 'Lu' *)
+  (*test (sprintf "%#Lu" 42L = "42");*)
+    (* >> '#' is incompatible with 'Lu' *)
   test (sprintf "%4Lu" 42L = "  42");
   test (sprintf "%*Lu" 4 42L = "  42");
-  test (sprintf "%-0+ #6Ld" 42L = "+42   ");
+  (*test (sprintf "%-0+ #6Ld" 42L = "+42   ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLu negative\n%!";
   test (sprintf "%Lu" (-1L) = "18446744073709551615");
@@ -417,12 +489,15 @@ try
   test (sprintf "%Lx" 42L = "2a");
   test (sprintf "%-4Lx" 42L = "2a  ");
   test (sprintf "%04Lx" 42L = "002a");
-  test (sprintf "%+Lx" 42L = "2a");
-  test (sprintf "% Lx" 42L = "2a");
+  (*test (sprintf "%+Lx" 42L = "2a");*)
+    (* >> '+' is incompatible with 'Lx' *)
+  (*test (sprintf "% Lx" 42L = "2a");*)
+    (* >> ' ' is incompatible with 'Lx' *)
   test (sprintf "%#Lx" 42L = "0x2a");
   test (sprintf "%4Lx" 42L = "  2a");
   test (sprintf "%*Lx" 5 42L = "   2a");
-  test (sprintf "%-0+ #*Lx" 5 42L = "0x2a ");
+  (*test (sprintf "%-0+ #*Lx" 5 42L = "0x2a ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLx negative\n%!";
   test (sprintf "%Lx" (-42L) = "ffffffffffffffd6");
@@ -431,12 +506,15 @@ try
   test (sprintf "%LX" 42L = "2A");
   test (sprintf "%-4LX" 42L = "2A  ");
   test (sprintf "%04LX" 42L = "002A");
-  test (sprintf "%+LX" 42L = "2A");
-  test (sprintf "% LX" 42L = "2A");
+  (*test (sprintf "%+LX" 42L = "2A");*)
+    (* >> '+' is incompatible with 'LX' *)
+  (*test (sprintf "% LX" 42L = "2A");*)
+    (* >> ' ' is incompatible with 'LX' *)
   test (sprintf "%#LX" 42L = "0X2A");
   test (sprintf "%4LX" 42L = "  2A");
   test (sprintf "%*LX" 5 42L = "   2A");
-  test (sprintf "%-0+ #*LX" 5 42L = "0X2A ");
+  (*test (sprintf "%-0+ #*LX" 5 42L = "0X2A ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLx negative\n%!";
   test (sprintf "%LX" (-42L) = "FFFFFFFFFFFFFFD6");
@@ -445,12 +523,15 @@ try
   test (sprintf "%Lo" 42L = "52");
   test (sprintf "%-4Lo" 42L = "52  ");
   test (sprintf "%04Lo" 42L = "0052");
-  test (sprintf "%+Lo" 42L = "52");
-  test (sprintf "% Lo" 42L = "52");
+  (*test (sprintf "%+Lo" 42L = "52");*)
+    (* >> '+' is incompatible with 'Lo' *)
+  (*test (sprintf "% Lo" 42L = "52");*)
+    (* >> ' ' is incompatible with 'Lo' *)
   test (sprintf "%#Lo" 42L = "052");
   test (sprintf "%4Lo" 42L = "  52");
   test (sprintf "%*Lo" 5 42L = "   52");
-  test (sprintf "%-0+ #*Lo" 5 42L = "052  ");
+  (*test (sprintf "%-0+ #*Lo" 5 42L = "052  ");*)
+    (* >> '-' is incompatible with '0' *)
 
   printf "\nLo negative\n%!";
   test (sprintf "%Lo" (-42L) = "1777777777777777777726");
