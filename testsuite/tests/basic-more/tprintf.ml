@@ -61,10 +61,9 @@ test (test2 ());;
 
 (* Testing meta format string printing. *)
 let test3 () =
-(* >> Now works as expected. *)
-(*sprintf "%{toto %s titi.\n%}" "Bonjour %s." = "%s" &&*)
-sprintf "%{toto %s titi.\n%}" "Bonjour %s." = "Bonjour %s." &&
-sprintf "%{%d%s%}" "kk%dkk%s\n" = "kk%dkk%s\n";;
+  sprintf "%{toto %S titi.\n%}" "Bonjour %S." = "%s" &&
+  sprintf "%{Bonjour %S.%}" "toto %S titi.\n" = "%s"
+;;
 test (test3 ());;
 
 (* Testing meta format string arguments. *)

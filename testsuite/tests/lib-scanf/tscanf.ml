@@ -1090,13 +1090,13 @@ let test46, test47 =
      Printf.sprintf "%i %(%s%)."
        1 "spells one, %s" "in english"),
   (fun () ->
-     Printf.sprintf "%i ,%{%s%}, %s."
+     Printf.sprintf "%i %{%s%}, %s."
        1 "spells one %s" "in english")
 ;;
 
 test (test46 () = "1 spells one, in english.")
 ;;
-test (test47 () = "1 ,spells one %s, in english.")
+test (test47 () = "1 %s, in english.")
 ;;
 
 (* Testing scanning of meta formats. *)

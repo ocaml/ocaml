@@ -1091,6 +1091,7 @@ fun k ign fmt -> match ign with
   | Ignored_format_arg _            -> take_format_readers k fmt
   | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
   | Ignored_scan_char_set _         -> take_format_readers k fmt
+  | Ignored_scan_get_counter _      -> take_format_readers k fmt
 
 (******************************************************************************)
                           (* Scanf "%(...%)" tools *)
