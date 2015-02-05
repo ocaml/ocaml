@@ -531,9 +531,7 @@ let up_ok_action act1 act2 =
   try
     let raw1 = tr_raw act1
     and raw2 = tr_raw act2 in
-    match raw1, raw2 with
-    | Lstaticraise (i1,[]), Lstaticraise (i2,[]) -> i1=i2
-    | _,_ -> raw1 = raw2
+    raw1 = raw2
   with
   | Exit -> false
 
