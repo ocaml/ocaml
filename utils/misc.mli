@@ -66,11 +66,6 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
 val string_of_file: in_channel -> string
         (* [string_of_file ic] reads the contents of file [ic] and copies
            them to a string. It stops when encountering EOF on [ic]. *)
-val input_bytes : in_channel -> int -> string;;
-        (* [input_bytes ic n] reads [n] bytes from [ic] and returns them
-           in a new string.  It raises [End_of_file] if EOF is encountered
-           before all the bytes are read. *)
-
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
            if [n] is a power of 2*)
@@ -124,14 +119,14 @@ val for4: 'a * 'b * 'c * 'd -> 'd
 
 module LongString :
   sig
-    type t = string array
+    type t = bytes array
     val create : int -> t
     val length : t -> int
     val get : t -> int -> char
     val set : t -> int -> char -> unit
     val blit : t -> int -> t -> int -> int -> unit
     val output : out_channel -> t -> int -> int -> unit
-    val unsafe_blit_to_string : t -> int -> string -> int -> int -> unit
+    val unsafe_blit_to_bytes : t -> int -> bytes -> int -> int -> unit
     val input_bytes : in_channel -> int -> t
   end
 

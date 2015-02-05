@@ -259,22 +259,30 @@ val openfile : string -> open_flag list -> file_perm -> file_descr
 val close : file_descr -> unit
 (** Close a file descriptor. *)
 
-val read : file_descr -> string -> int -> int -> int
-(** [read fd buff ofs len] reads [len] characters from descriptor
-   [fd], storing them in string [buff], starting at position [ofs]
-   in string [buff]. Return the number of characters actually read. *)
+val read : file_descr -> bytes -> int -> int -> int
+(** [read fd buff ofs len] reads [len] bytes from descriptor [fd],
+    storing them in byte sequence [buff], starting at position [ofs] in
+    [buff]. Return the number of bytes actually read. *)
 
-val write : file_descr -> string -> int -> int -> int
-(** [write fd buff ofs len] writes [len] characters to descriptor
-   [fd], taking them from string [buff], starting at position [ofs]
-   in string [buff]. Return the number of characters actually
-   written.  [write] repeats the writing operation until all characters
-   have been written or an error occurs.  *)
+val write : file_descr -> bytes -> int -> int -> int
+(** [write fd buff ofs len] writes [len] bytes to descriptor [fd],
+    taking them from byte sequence [buff], starting at position [ofs]
+    in [buff]. Return the number of bytes actually written.  [write]
+    repeats the writing operation until all bytes have been written or
+    an error occurs.  *)
 
-val single_write : file_descr -> string -> int -> int -> int
+val single_write : file_descr -> bytes -> int -> int -> int
 (** Same as [write], but attempts to write only once.
    Thus, if an error occurs, [single_write] guarantees that no data
    has been written. *)
+
+val write_substring : file_descr -> string -> int -> int -> int
+(** Same as [write], but take the data from a string instead of a byte
+    sequence. *)
+
+val single_write_substring : file_descr -> string -> int -> int -> int
+(** Same as [single_write], but take the data from a string instead of
+    a byte sequence. *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
@@ -994,20 +1002,28 @@ type msg_flag =
 (** The flags for {!Unix.recv},  {!Unix.recvfrom},
    {!Unix.send} and {!Unix.sendto}. *)
 
-val recv : file_descr -> string -> int -> int -> msg_flag list -> int
+val recv : file_descr -> bytes -> int -> int -> msg_flag list -> int
 (** Receive data from a connected socket. *)
 
 val recvfrom :
-  file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
+  file_descr -> bytes -> int -> int -> msg_flag list -> int * sockaddr
 (** Receive data from an unconnected socket. *)
 
-val send : file_descr -> string -> int -> int -> msg_flag list -> int
+val send : file_descr -> bytes -> int -> int -> msg_flag list -> int
 (** Send data over a connected socket. *)
 
+val send_substring : file_descr -> string -> int -> int -> msg_flag list -> int
+(** Same as [send], but take the data from a string instead of a byte
+    sequence. *)
+
 val sendto :
-  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+  file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
 (** Send data over an unconnected socket. *)
 
+val sendto_substring :
+  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+(** Same as [sendto], but take the data from a string instead of a
+    byte sequence. *)
 
 
 (** {6 Socket options} *)

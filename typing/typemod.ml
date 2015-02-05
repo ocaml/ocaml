@@ -67,11 +67,26 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open ?toplevel ovf env loc lid =
-  let path = Typetexp.find_module env loc lid.txt in
+let type_open_ ?toplevel ovf env loc lid =
+  let path = Typetexp.find_module env lid.loc lid.txt in
   let md = Env.find_module path env in
-  let sg = extract_sig_open env loc md.md_type in
+  let sg = extract_sig_open env lid.loc md.md_type in
   path, Env.open_signature ~loc ?toplevel ovf path sg env
+
+let type_open ?toplevel env sod =
+  let (path, newenv) =
+    type_open_ ?toplevel sod.popen_override env sod.popen_loc sod.popen_lid
+  in
+  let od =
+    {
+      open_override = sod.popen_override;
+      open_path = path;
+      open_txt = sod.popen_lid;
+      open_attributes = sod.popen_attributes;
+      open_loc = sod.popen_loc;
+    }
+  in
+  (path, newenv, od)
 
 (* Record a module type *)
 let rm node =
@@ -362,9 +377,7 @@ and approx_sig env ssg =
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open sod ->
-          let (path, mty) =
-            type_open sod.popen_override env item.psig_loc sod.popen_lid
-          in
+          let (path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
           let smty = sincl.pincl_mod in
@@ -417,6 +430,9 @@ let check cl loc set_ref name =
   if StringSet.mem name !set_ref
   then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
   else set_ref := StringSet.add name !set_ref
+
+let check_name cl set_ref name =
+  check cl name.loc set_ref name.txt
 
 let check_sig_item type_names module_names modtype_names loc = function
     Sig_type(id, _, _) ->
@@ -542,7 +558,7 @@ and transl_signature env sg =
         | Psig_type sdecls ->
             List.iter
               (fun decl ->
-                check "type" item.psig_loc type_names decl.ptype_name.txt)
+                check_name "type" type_names decl.ptype_name)
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -559,7 +575,7 @@ and transl_signature env sg =
              else Sig_exception(id, decl) :: rem),
             final_env
         | Psig_module pmd ->
-            check "module" item.psig_loc module_names pmd.pmd_name.txt;
+            check_name "module" module_names pmd.pmd_name;
             let tmty = transl_modtype env pmd.pmd_type in
             let md = {
               md_type=tmty.mty_type;
@@ -578,8 +594,7 @@ and transl_signature env sg =
             final_env
         | Psig_recmodule sdecls ->
             List.iter
-              (fun pmd ->
-                 check "module" item.psig_loc module_names pmd.pmd_name.txt)
+              (fun pmd -> check_name "module" module_names pmd.pmd_name)
               sdecls;
             let (decls, newenv) =
               transl_recmodule_modtypes item.psig_loc env sdecls in
@@ -602,17 +617,7 @@ and transl_signature env sg =
             sg :: rem,
             final_env
         | Psig_open sod ->
-            let (path, newenv) =
-              type_open sod.popen_override env item.psig_loc sod.popen_lid
-            in
-            let od =
-              {
-               open_override = sod.popen_override;
-               open_path = path;
-               open_txt = sod.popen_lid;
-               open_attributes = sod.popen_attributes;
-              }
-            in
+            let (path, newenv, od) = type_open env sod in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_open od) env loc :: trem,
             rem, final_env
@@ -630,7 +635,9 @@ and transl_signature env sg =
             let incl =
               { incl_mod = tmty;
                 incl_type = sg;
-                incl_attributes = sincl.pincl_attributes }
+                incl_attributes = sincl.pincl_attributes;
+                incl_loc = sincl.pincl_loc;
+              }
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_include incl) env loc :: trem,
@@ -638,8 +645,7 @@ and transl_signature env sg =
             final_env
         | Psig_class cl ->
             List.iter
-              (fun {pci_name = name} ->
-                 check "type" item.psig_loc type_names name.txt )
+              (fun {pci_name = name} -> check_name "type" type_names name)
               cl;
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             let (trem, rem, final_env) = transl_sig newenv srem in
@@ -661,8 +667,7 @@ and transl_signature env sg =
             final_env
         | Psig_class_type cl ->
             List.iter
-              (fun {pci_name = name} ->
-                 check "type" item.psig_loc type_names name.txt)
+              (fun {pci_name = name} -> check_name "type" type_names name)
               cl;
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             let (trem,rem, final_env) = transl_sig newenv srem in
@@ -694,7 +699,7 @@ and transl_signature env sg =
 
 and transl_modtype_decl modtype_names env loc
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
-  check "module type" loc modtype_names pmtd_name.txt;
+  check_name "module type" modtype_names pmtd_name;
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
   let decl =
     {
@@ -1164,7 +1169,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
     | Pstr_type sdecls ->
         List.iter
-          (fun decl -> check "type" loc type_names decl.ptype_name.txt)
+          (fun decl -> check_name "type" type_names decl.ptype_name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         Tstr_type decls,
@@ -1175,14 +1180,14 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (arg, decl, newenv) = Typedecl.transl_exception env sarg in
         Tstr_exception arg, [Sig_exception(arg.cd_id, decl)], newenv
     | Pstr_exn_rebind ser ->
-        let (er, newenv) = Typedecl.transl_exn_rebind env loc ser in
+        let (er, newenv) = Typedecl.transl_exn_rebind env ser in
         Tstr_exn_rebind er,
         [Sig_exception(er.exrb_id, er.exrb_type)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
-        check "module" loc module_names name.txt;
+        check_name "module" module_names name;
         let modl =
           type_module ~alias:true true funct_body
             (anchor_submodule name.txt anchor) env smodl in
@@ -1219,7 +1224,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             sbind
         in
         List.iter
-          (fun (name, _, _, _, _) -> check "module" loc module_names name.txt)
+          (fun (name, _, _, _, _) -> check_name "module" module_names name)
           sbind;
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
@@ -1261,21 +1266,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
-        let (path, newenv) =
-          type_open sod.popen_override ~toplevel env loc sod.popen_lid
-        in
-        let od =
-          {
-           open_override = sod.popen_override;
-           open_path = path;
-           open_txt = sod.popen_lid;
-           open_attributes = sod.popen_attributes;
-          }
-        in
+        let (path, newenv, od) = type_open ~toplevel env sod in
         Tstr_open od, [], newenv
     | Pstr_class cl ->
         List.iter
-          (fun {pci_name = name} -> check "type" loc type_names name.txt)
+          (fun {pci_name = name} -> check_name "type" type_names name)
           cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         Tstr_class
@@ -1302,7 +1297,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         new_env
     | Pstr_class_type cl ->
         List.iter
-          (fun {pci_name = name} -> check "type" loc type_names name.txt)
+          (fun {pci_name = name} -> check_name "type" type_names name)
           cl;
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         Tstr_class_type
@@ -1354,7 +1349,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let incl =
           { incl_mod = modl;
             incl_type = sg;
-            incl_attributes = sincl.pincl_attributes }
+            incl_attributes = sincl.pincl_attributes;
+            incl_loc = sincl.pincl_loc;
+          }
         in
         Tstr_include incl, sg, new_env
     | Pstr_extension ((s, _), _) ->
@@ -1518,7 +1515,7 @@ let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open ?toplevel:None;
+  Typecore.type_open := type_open_ ?toplevel:None;
   Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 
@@ -1547,7 +1544,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           raise(Error(Location.in_file sourcefile, Env.empty,
                       Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
-      let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
+      let coercion =
+        Includemod.compunit initial_env sourcefile sg intf_file dclsig in
       Typecore.force_delayed_checks ();
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
@@ -1559,7 +1557,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       check_nongen_schemes finalenv str.str_items;
       normalize_signature finalenv simple_sg;
       let coercion =
-        Includemod.compunit sourcefile sg
+        Includemod.compunit initial_env sourcefile sg
                             "(inferred signature)" simple_sg in
       Typecore.force_delayed_checks ();
       (* See comment above. Here the target signature contains all
@@ -1604,7 +1602,7 @@ let rec package_signatures subst = function
                  Trec_not) ::
       package_signatures (Subst.add_module oldid (Pident newid) subst) rem
 
-let package_units objfiles cmifile modulename =
+let package_units initial_env objfiles cmifile modulename =
   (* Read the signatures of the units *)
   let units =
     List.map
@@ -1613,7 +1611,7 @@ let package_units objfiles cmifile modulename =
          let modname = String.capitalize(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
-            not(Mtype.no_code_needed_sig Env.initial sg)
+            not(Mtype.no_code_needed_sig Env.initial_safe_string sg)
          then raise(Error(Location.none, Env.empty,
                           Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))
@@ -1631,8 +1629,8 @@ let package_units objfiles cmifile modulename =
     end;
     let dclsig = Env.read_signature modulename cmifile in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
-      (Cmt_format.Packed (sg, objfiles)) None Env.initial None ;
-    Includemod.compunit "(obtained by packing)" sg mlifile dclsig
+      (Cmt_format.Packed (sg, objfiles)) None initial_env  None ;
+    Includemod.compunit initial_env "(obtained by packing)" sg mlifile dclsig
   end else begin
     (* Determine imports *)
     let unit_names = List.map fst units in
@@ -1646,7 +1644,7 @@ let package_units objfiles cmifile modulename =
         Env.save_signature_with_imports sg modulename
           (prefix ^ ".cmi") imports in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (sg, objfiles)) None Env.initial (Some sg)
+        (Cmt_format.Packed (sg, objfiles)) None initial_env (Some sg)
     end;
     Tcoerce_none
   end

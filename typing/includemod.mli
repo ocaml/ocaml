@@ -18,7 +18,8 @@ open Format
 
 val modtypes: Env.t -> module_type -> module_type -> module_coercion
 val signatures: Env.t -> signature -> signature -> module_coercion
-val compunit: string -> signature -> string -> signature -> module_coercion
+val compunit:
+      Env.t -> string -> signature -> string -> signature -> module_coercion
 val type_declarations:
       Env.t -> Ident.t -> type_declaration -> type_declaration -> unit
 
@@ -41,6 +42,7 @@ type symptom =
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
+  | Invalid_module_alias of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t

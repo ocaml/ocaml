@@ -19,7 +19,7 @@ OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 CP        = cp
-COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB)
+COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB) -safe-string
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
 
 PACK_CMO=\

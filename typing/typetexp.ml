@@ -126,7 +126,7 @@ let find_component lookup make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial
+        lookup (Longident.Lident s) Env.initial_safe_string
     | _ -> lookup lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
@@ -333,6 +333,12 @@ let rec transl_type env policy styp =
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
       let (path, decl) = find_type env styp.ptyp_loc lid.txt in
+      let stl =
+        match stl with
+        | [ {ptyp_desc=Ptyp_any} as t ] when decl.type_arity > 1 ->
+            List.map (fun _ -> t) decl.type_params
+        | _ -> stl
+      in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
@@ -392,7 +398,7 @@ let rec transl_type env policy styp =
           let (path, decl) = Env.lookup_type lid2 env in
           (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, env, Unbound_class lid.txt))
+          ignore (find_class env styp.ptyp_loc lid.txt); assert false
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
@@ -502,7 +508,7 @@ let rec transl_type env policy styp =
           Hashtbl.add hfields h (l,f)
       in
       let add_field = function
-          Rtag (l, c, stl) ->
+          Rtag (l, attrs, c, stl) ->
             name := None;
             let tl = List.map (transl_type env policy) stl in
             let f = match present with
@@ -517,7 +523,7 @@ let rec transl_type env policy styp =
                       Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l f;
-              Ttag (l,c,tl)
+              Ttag (l,attrs,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
             let ty = cty.ctyp_type in

@@ -639,7 +639,11 @@ and lookup_module lid env : Path.t =
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-        ignore (find_pers_struct ~check:false s);
+	if !Clflags.transparent_modules then
+	  try ignore (find_in_path_uncap !load_path (s ^ ".cmi"))
+          with Not_found ->
+	    Location.prerr_warning Location.none (Warnings.No_cmi_file s)
+	else ignore (find_pers_struct ~check:false s);
         Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
@@ -1021,8 +1025,7 @@ let rec scrape_alias env ?path mty =
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
         Location.prerr_warning Location.none
-          (Warnings.Deprecated
-             ("module " ^ Path.name path ^ " cannot be accessed"));
+	  (Warnings.No_cmi_file (Path.name path));
         mty
       end
   | mty, Some path ->
@@ -1187,7 +1190,7 @@ and components_of_module_maker (env, sub, path, mty) =
                 c.comp_labels <-
                   add_to_tbl descr.lbl_name (descr, nopos) c.comp_labels)
               labels;
-            env := store_type_infos None id path decl !env !env
+            env := store_type_infos None id (Pident id) decl !env !env
         | Sig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
             let cstr = Datarepr.exception_descr path decl' in
@@ -1203,13 +1206,13 @@ and components_of_module_maker (env, sub, path, mty) =
             let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_module None id path md !env !env;
+            env := store_module None id (Pident id) md !env !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
-            env := store_modtype None id path decl !env !env
+            env := store_modtype None id (Pident id) decl !env !env
         | Sig_class(id, decl, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
@@ -1337,9 +1340,7 @@ and store_exception ~check slot id path decl env renv =
         (fun () ->
           if not env.in_signature && not used.cu_positive then
             Location.prerr_warning loc
-              (Warnings.Unused_exception
-                 (c, used.cu_pattern)
-              )
+              (Warnings.Unused_exception (c, used.cu_pattern))
         )
     end;
   end;
@@ -1700,8 +1701,7 @@ and fold_cltypes f =
 
 
 (* Make the initial environment *)
-
-let initial =
+let (initial_safe_string, initial_unsafe_string) =
   Predef.build_initial_env
     (add_type ~check:false)
     (add_exception ~check:false)

@@ -88,16 +88,10 @@ let emit_bytes_directive directive s =
    done;
    if !pos > 0 then emit_char '\n'
 
-(* PR#4813: assemblers do strange things with float literals indeed,
-   so we convert to IEEE representation ourselves and emit float
-   literals as 32- or 64-bit integers. *)
-
-let emit_float64_directive directive f =
-  let x = Int64.bits_of_float (float_of_string f) in
+let emit_float64_directive directive x =
   emit_printf "\t%s\t0x%Lx\n" directive x
 
-let emit_float64_split_directive directive f =
-  let x = Int64.bits_of_float (float_of_string f) in
+let emit_float64_split_directive directive x =
   let lo = Int64.logand x 0xFFFF_FFFFL
   and hi = Int64.shift_right_logical x 32 in
   emit_printf "\t%s\t0x%Lx, 0x%Lx\n"
@@ -105,8 +99,7 @@ let emit_float64_split_directive directive f =
     (if Arch.big_endian then hi else lo)
     (if Arch.big_endian then lo else hi)
 
-let emit_float32_directive directive f =
-  let x = Int32.bits_of_float (float_of_string f) in
+let emit_float32_directive directive x =
   emit_printf "\t%s\t0x%lx\n" directive x
 
 (* Record live pointers at call points *)

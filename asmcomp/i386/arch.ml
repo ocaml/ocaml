@@ -31,8 +31,8 @@ type addressing_mode =
 
 type specific_operation =
     Ilea of addressing_mode             (* Lea gives scaled adds *)
-  | Istore_int of nativeint * addressing_mode (* Store an integer constant *)
-  | Istore_symbol of string * addressing_mode (* Store a symbol *)
+  | Istore_int of nativeint * addressing_mode * bool (* Store an integer constant *)
+  | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ipush                               (* Push regs on stack *)
   | Ipush_int of nativeint            (* Push an integer constant *)
@@ -105,11 +105,14 @@ let print_addressing printreg addr ppf arg =
 let print_specific_operation printreg op ppf arg =
   match op with
   | Ilea addr -> print_addressing printreg addr ppf arg
-  | Istore_int(n, addr) ->
-      fprintf ppf "[%a] := %s" (print_addressing printreg addr) arg
-                               (Nativeint.to_string n)
-  | Istore_symbol(lbl, addr) ->
-      fprintf ppf "[%a] := \"%s\"" (print_addressing printreg addr) arg lbl
+  | Istore_int(n, addr, is_assign) ->
+      fprintf ppf "[%a] := %nd %s"
+         (print_addressing printreg addr) arg n
+         (if is_assign then "(assign)" else "(init)")
+  | Istore_symbol(lbl, addr, is_assign) ->
+      fprintf ppf "[%a] := \"%s\" %s"
+         (print_addressing printreg addr) arg lbl
+         (if is_assign then "(assign)" else "(init)")
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
   | Ipush ->

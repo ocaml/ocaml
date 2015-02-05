@@ -16,13 +16,13 @@
 open Mach
 
 let live_at_exit = ref []
+
 let find_live_at_exit k =
   try
     List.assoc k !live_at_exit
   with
-  | Not_found -> Misc.fatal_error "Spill.find_live_at_exit"
+  | Not_found -> Misc.fatal_error "Liveness.find_live_at_exit"
 
-let live_at_break = ref Reg.Set.empty
 let live_at_raise = ref Reg.Set.empty
 
 let rec live i finally =
@@ -37,8 +37,30 @@ let rec live i finally =
       i.live <- finally;
       finally
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
-      (* i.live remains empty since no regs are live across *)
+      i.live <- Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array i.arg
+  | Iop op ->
+      let after = live i.next finally in
+      if Proc.op_is_pure op && Reg.disjoint_set_array after i.res then begin
+        (* This operation is dead code.  Ignore its arguments. *)
+        i.live <- after;
+        after
+      end else begin
+        let across_after = Reg.diff_set_array after i.res in
+        let across =
+          match op with
+          | Icall_ind | Icall_imm _ | Iextcall _
+          | Iintop Icheckbound | Iintop_imm(Icheckbound, _) ->
+              (* The function call may raise an exception, branching to the
+                 nearest enclosing try ... with. Similarly for bounds checks.
+                 Hence, everything that must be live at the beginning of
+                 the exception handler must also be live across this instr. *)
+               Reg.Set.union across_after !live_at_raise
+           | _ ->
+               across_after in
+        i.live <- across;
+        Reg.add_set_array across i.arg
+      end
   | Iifthenelse(test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
@@ -90,23 +112,8 @@ let rec live i finally =
       i.live <- before_body;
       before_body
   | Iraise _ ->
-      (* i.live remains empty since no regs are live across *)
+      i.live <- !live_at_raise;
       Reg.add_set_array !live_at_raise i.arg
-  | _ ->
-      let across_after = Reg.diff_set_array (live i.next finally) i.res in
-      let across =
-        match i.desc with
-          Iop Icall_ind | Iop(Icall_imm _) | Iop(Iextcall _)
-        | Iop(Iintop Icheckbound) | Iop(Iintop_imm(Icheckbound, _)) ->
-            (* The function call may raise an exception, branching to the
-               nearest enclosing try ... with. Similarly for bounds checks.
-               Hence, everything that must be live at the beginning of
-               the exception handler must also be live across this instr. *)
-             Reg.Set.union across_after !live_at_raise
-         | _ ->
-             across_after in
-      i.live <- across;
-      Reg.add_set_array across i.arg
 
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in

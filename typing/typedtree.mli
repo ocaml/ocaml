@@ -234,6 +234,7 @@ and value_binding =
     vb_pat: pattern;
     vb_expr: expression;
     vb_attributes: attributes;
+    vb_loc: Location.t;
   }
 
 and module_coercion =
@@ -307,6 +308,7 @@ and open_description =
      open_path: Path.t;
      open_txt: Longident.t loc;
      open_override: override_flag;
+     open_loc: Location.t;
      open_attributes: attribute list;
     }
 
@@ -314,6 +316,7 @@ and 'a include_infos =
     {
      incl_mod: 'a;
      incl_type: Types.signature;
+     incl_loc: Location.t;
      incl_attributes: attribute list;
     }
 
@@ -357,7 +360,7 @@ and package_type = {
 }
 
 and row_field =
-    Ttag of label * bool * core_type list
+    Ttag of label * attributes * bool * core_type list
   | Tinherit of core_type
 
 and value_description =
@@ -416,6 +419,7 @@ and exception_rebind =
      exrb_path: Path.t;
      exrb_txt: Longident.t loc;
      exrb_type: Types.exception_declaration;
+     exrb_loc: Location.t;
      exrb_attributes: attribute list;
     }
 

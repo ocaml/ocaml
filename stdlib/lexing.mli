@@ -46,7 +46,7 @@ val dummy_pos : position;;
 
 type lexbuf =
   { refill_buff : lexbuf -> unit;
-    mutable lex_buffer : string;
+    mutable lex_buffer : bytes;
     mutable lex_buffer_len : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
@@ -84,12 +84,12 @@ val from_string : string -> lexbuf
    the string. An end-of-input condition is generated when the
    end of the string is reached. *)
 
-val from_function : (string -> int -> int) -> lexbuf
+val from_function : (bytes -> int -> int) -> lexbuf
 (** Create a lexer buffer with the given function as its reading method.
    When the scanner needs more characters, it will call the given
-   function, giving it a character string [s] and a character
-   count [n]. The function should put [n] characters or less in [s],
-   starting at character number 0, and return the number of characters
+   function, giving it a byte sequence [s] and a byte
+   count [n]. The function should put [n] bytes or fewer in [s],
+   starting at index 0, and return the number of bytes
    provided. A return value of 0 means end of input. *)
 
 

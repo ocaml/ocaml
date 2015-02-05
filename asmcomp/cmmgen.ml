@@ -1549,6 +1549,8 @@ and transl_prim_1 p arg dbg =
         Cop(Cload Double_u,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
+  | Pint_as_pointer ->
+     Cop(Cadda, [transl arg; Cconst_int (-1)])
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl arg])

@@ -249,7 +249,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    another copy is still in use by the program.
 
 
-   The results of calling {!String.make}, {!String.create},
+   The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
    {!Array.make}, and {!Pervasives.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
 *)

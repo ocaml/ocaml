@@ -318,17 +318,17 @@ module Scanning : SCANNING = struct
 
   let from_ic scan_close_ic iname ic =
     let len = !file_buffer_size in
-    let buf = String.create len in
+    let buf = Bytes.create len in
     let i = ref 0 in
     let lim = ref 0 in
     let eof = ref false in
     let next () =
-      if !i < !lim then begin let c = buf.[!i] in incr i; c end else
+      if !i < !lim then begin let c = Bytes.get buf !i in incr i; c end else
       if !eof then raise End_of_file else begin
         lim := input ic buf 0 len;
         if !lim = 0 then begin eof := true; scan_close_ic ic end else begin
           i := 1;
-          buf.[0]
+          Bytes.get buf 0
         end
       end in
     create iname next
@@ -1061,14 +1061,14 @@ let get_bit_of_byte byte idx = (byte lsr idx) land 1;;
 let set_bit_of_range r c b =
   let idx = c land 0x7 in
   let ydx = c lsr 3 in
-  let byte = r.[ydx] in
-  r.[ydx] <- char_of_int (set_bit_of_byte (int_of_char byte) idx b)
+  let byte = Bytes.get r ydx in
+  Bytes.set r ydx (char_of_int (set_bit_of_byte (int_of_char byte) idx b))
 ;;
 
 let get_bit_of_range r c =
   let idx = c land 0x7 in
   let ydx = c lsr 3 in
-  let byte = r.[ydx] in
+  let byte = Bytes.get r ydx in
   get_bit_of_byte (int_of_char byte) idx
 ;;
 
@@ -1077,7 +1077,7 @@ let get_bit_of_range r c =
 (* Create a full or empty set of chars. *)
 let make_range bit =
   let c = char_of_int (if bit = 0 then 0 else 0xFF) in
-  String.make 32 c
+  Bytes.make 32 c
 ;;
 
 (* Test if a char belongs to a set of chars. *)
@@ -1566,9 +1566,3 @@ let format_from_string s fmt =
 let unescaped s =
   sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
 ;;
-
-(*
- Local Variables:
-  compile-command: "cd ..; make world"
-  End:
-*)

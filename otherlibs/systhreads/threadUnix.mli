@@ -30,23 +30,28 @@ val system : string -> Unix.process_status
 
 (** {6 Basic input/output} *)
 
-val read : Unix.file_descr -> string -> int -> int -> int
-val write : Unix.file_descr -> string -> int -> int -> int
+val read : Unix.file_descr -> bytes -> int -> int -> int
+val write : Unix.file_descr -> bytes -> int -> int -> int
+val write_substring : Unix.file_descr -> string -> int -> int -> int
 
 (** {6 Input/output with timeout} *)
 
 val timed_read :
       Unix.file_descr ->
-      string -> int -> int -> float -> int
+      bytes -> int -> int -> float -> int
 (** See {!ThreadUnix.timed_write}. *)
 
 val timed_write :
       Unix.file_descr ->
-      string -> int -> int -> float -> int
+      bytes -> int -> int -> float -> int
 (** Behave as {!ThreadUnix.read} and {!ThreadUnix.write}, except that
    [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
    available for reading or ready for writing after [d] seconds.
    The delay [d] is given in the fifth argument, in seconds. *)
+
+val timed_write_substring :
+      Unix.file_descr -> string -> int -> int -> float -> int
+(** See {!ThreadUnix.timed_write}. *)
 
 (** {6 Polling} *)
 
@@ -72,12 +77,16 @@ val socket : Unix.socket_domain ->
              Unix.socket_type -> int -> Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
-val recv : Unix.file_descr -> string ->
+val recv : Unix.file_descr -> bytes ->
            int -> int -> Unix.msg_flag list -> int
-val recvfrom : Unix.file_descr -> string -> int -> int ->
+val recvfrom : Unix.file_descr -> bytes -> int -> int ->
                Unix.msg_flag list -> int * Unix.sockaddr
-val send : Unix.file_descr -> string -> int -> int ->
+val send : Unix.file_descr -> bytes -> int -> int ->
            Unix.msg_flag list -> int
-val sendto : Unix.file_descr -> string -> int -> int ->
+val send_substring : Unix.file_descr -> string -> int -> int ->
+           Unix.msg_flag list -> int
+val sendto : Unix.file_descr -> bytes -> int -> int ->
+             Unix.msg_flag list -> Unix.sockaddr -> int
+val sendto_substring : Unix.file_descr -> string -> int -> int ->
              Unix.msg_flag list -> Unix.sockaddr -> int
 val open_connection : Unix.sockaddr -> in_channel * out_channel
