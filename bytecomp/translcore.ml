@@ -901,7 +901,6 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_exn
                 || has_base_type e Predef.path_array
                 || has_base_type e Predef.path_list
-                || has_base_type e Predef.path_format6
                 || has_base_type e Predef.path_option
                 || has_base_type e Predef.path_nativeint
                 || has_base_type e Predef.path_int32

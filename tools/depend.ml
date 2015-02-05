@@ -26,12 +26,12 @@ let rec addmodule bv lid =
     Lident s ->
       if not (StringSet.mem s bv)
       then free_structure_names := StringSet.add s !free_structure_names
-  | Ldot(l, s) -> addmodule bv l
+  | Ldot(l, _s) -> addmodule bv l
   | Lapply(l1, l2) -> addmodule bv l1; addmodule bv l2
 
 let add bv lid =
   match lid.txt with
-    Ldot(l, s) -> addmodule bv l
+    Ldot(l, _s) -> addmodule bv l
   | _ -> ()
 
 let addmodule bv lid = addmodule bv lid.txt
@@ -39,13 +39,13 @@ let addmodule bv lid = addmodule bv lid.txt
 let rec add_type bv ty =
   match ty.ptyp_desc with
     Ptyp_any -> ()
-  | Ptyp_var v -> ()
+  | Ptyp_var _ -> ()
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object (fl, _) -> List.iter (fun (_, _, t) -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_alias(t, s) -> add_type bv t
+  | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter
         (function Rtag(_,_,_,stl) -> List.iter (add_type bv) stl
@@ -179,10 +179,10 @@ let rec add_expr bv exp =
   | Pexp_constraint(e1, ty2) ->
       add_expr bv e1;
       add_type bv ty2
-  | Pexp_send(e, m) -> add_expr bv e
+  | Pexp_send(e, _m) -> add_expr bv e
   | Pexp_new li -> add bv li
-  | Pexp_setinstvar(v, e) -> add_expr bv e
-  | Pexp_override sel -> List.iter (fun (s, e) -> add_expr bv e) sel
+  | Pexp_setinstvar(_v, e) -> add_expr bv e
+  | Pexp_override sel -> List.iter (fun (_s, e) -> add_expr bv e) sel
   | Pexp_letmodule(id, m, e) ->
       add_module bv m; add_expr (StringSet.add id.txt bv) e
   | Pexp_assert (e) -> add_expr bv e
