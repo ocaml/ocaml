@@ -70,18 +70,21 @@ partialclean:
 clean: partialclean
 	rm -f *.dll *.$(A) *.$(O)
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+
 install:
-	cp dllthreads.dll $(STUBLIBDIR)/dllthreads.dll
-	cp libthreads.$(A) $(LIBDIR)/libthreads.$(A)
-	mkdir -p $(LIBDIR)/threads
-	cp $(CMIFILES) threads.cma $(LIBDIR)/threads
-	rm -f $(LIBDIR)/threads/stdlib.cma
-	cp threads.h $(LIBDIR)/caml/threads.h
+	cp dllthreads.dll $(INSTALL_STUBLIBDIR)/dllthreads.dll
+	cp libthreads.$(A) $(INSTALL_LIBDIR)/libthreads.$(A)
+	mkdir -p $(INSTALL_LIBDIR)/threads
+	cp $(CMIFILES) threads.cma $(INSTALL_LIBDIR)/threads
+	rm -f $(INSTALL_LIBDIR)/threads/stdlib.cma
+	cp threads.h $(INSTALL_LIBDIR)/caml/threads.h
 
 installopt:
-	cp libthreadsnat.$(A) $(LIBDIR)/libthreadsnat.$(A)
-	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) $(LIBDIR)/threads
-	cp threads.cmxs $(LIBDIR)/threads
+	cp libthreadsnat.$(A) $(INSTALL_LIBDIR)/libthreadsnat.$(A)
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) $(INSTALL_LIBDIR)/threads
+	cp threads.cmxs $(INSTALL_LIBDIR)/threads
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

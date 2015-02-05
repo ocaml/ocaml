@@ -1,4 +1,4 @@
-type _ nat = 
+type _ nat =
     Zero : [`Zero] nat
   | Succ : 'a nat -> [`Succ of 'a] nat;;
 type 'a pre_nat = [`Zero | `Succ of 'a];;

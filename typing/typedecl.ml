@@ -723,7 +723,7 @@ let compute_variance_gadt env check (required, loc as rloc) decl
       | {desc=Tconstr (path, tyl, _)} ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
           let tyl = List.map Ctype.repr tyl in
-          let fvl = List.map Ctype.free_variables tyl in
+          let fvl = List.map (Ctype.free_variables ?env:None) tyl in
           let _ =
             List.fold_left2
               (fun (fv1,fv2) ty (c,n,i) ->
@@ -1074,9 +1074,9 @@ let transl_value_decl env loc valdecl =
         val_attributes = valdecl.pval_attributes }
   | decl ->
       let arity = Ctype.arity ty in
-      if arity = 0 then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       let prim = Primitive.parse_declaration arity decl in
+      if arity = 0 && prim.prim_name.[0] <> '%' then
+        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""

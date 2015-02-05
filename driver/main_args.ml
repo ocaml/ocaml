@@ -724,6 +724,7 @@ struct
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk_where F._where;
+    mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
     mk_use_prims F._use_prims;
@@ -733,8 +734,6 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
-
-    mk__ F.anonymous;
   ]
 end;;
 
@@ -765,6 +764,7 @@ struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk__ F.anonymous;
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
@@ -772,8 +772,6 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
-
-    mk__ F.anonymous;
   ]
 end;;
 
@@ -832,6 +830,7 @@ struct
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
     mk_where F._where;
+    mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
     mk_dsource F._dsource;
@@ -853,8 +852,6 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
-
-    mk__ F.anonymous;
   ]
 end;;
 
@@ -887,6 +884,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
+    mk__ F.anonymous;
 
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
@@ -906,7 +904,5 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
-
-    mk__ F.anonymous;
   ]
 end;;

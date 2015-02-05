@@ -32,7 +32,7 @@ let test_one (df: int -> int) (mf: int -> int) x =
 let do_test divisor (df: int -> int) (mf: int -> int) =
   d := divisor;
   List.iter (test_one df mf)
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 
+    [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
      100; 1000; 10000; 100000; 1000000; max_int - 1; max_int;
      -1; -2; -3; -4; -5; -6; -7; -8; -9; -10;
      -100; -1000; -10000; -100000; -1000000; min_int + 1; min_int];
@@ -59,7 +59,7 @@ let test_one (df: nativeint -> nativeint) (mf: nativeint -> nativeint) x =
 let do_test divisor (df: nativeint -> nativeint) (mf: nativeint -> nativeint) =
   d := Nativeint.of_int divisor;
   List.iter (test_one df mf)
-    [0n; 1n; 2n; 3n; 4n; 5n; 6n; 7n; 8n; 9n; 10n; 
+    [0n; 1n; 2n; 3n; 4n; 5n; 6n; 7n; 8n; 9n; 10n;
      100n; 1000n; 10000n; 100000n; 1000000n;
      Nativeint.(pred max_int); Nativeint.max_int;
      -1n; -2n; -3n; -4n; -5n; -6n; -7n; -8n; -9n; -10n;

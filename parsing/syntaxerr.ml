@@ -46,7 +46,7 @@ let prepare_error = function
          are not supported when the option -no-app-func is set."
   | Variable_in_scope (loc, var) ->
       Location.errorf ~loc
-        "Error: In this scoped type, variable '%s@ \
+        "Error: In this scoped type, variable '%s \
          is reserved for the local type %s."
         var var
   | Other loc ->

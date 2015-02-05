@@ -156,20 +156,20 @@ void caml_raise_sys_blocked_io(void)
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
 
-static value * caml_array_bound_error_exn = NULL;
-
 void caml_array_bound_error(void)
 {
   value array_bound_error_exn;
   int array_bound_error_found;
 
   array_bound_error_exn =
-    caml_get_named_value("Pervasives.array_bound_error", &array_bound_error_found);
+    caml_get_named_value("Pervasives.array_bound_error",
+                         &array_bound_error_found);
   if (!array_bound_error_found) {
-    fprintf(stderr, "Fatal error: exception Invalid_argument(\"index out of bounds\")\n");
+    fprintf(stderr, "Fatal error: exception "
+                    "Invalid_argument(\"index out of bounds\")\n");
     exit(2);
   }
-  caml_raise(caml_array_bound_error_exn);
+  caml_raise(array_bound_error_exn);
 }
 
 int caml_is_special_exception(value exn) {

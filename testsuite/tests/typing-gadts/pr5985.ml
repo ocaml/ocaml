@@ -29,7 +29,7 @@ end;; (* fail *)
 (* Another (more direct) instance using polymorphic variants *)
 (* PR#6275 *)
 type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
-let magic (x : int) : bool = 
+let magic (x : int) : bool  =
   let A x = A x in
   x;; (* fail *)
 type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)

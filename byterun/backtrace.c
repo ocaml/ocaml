@@ -229,6 +229,7 @@ static value read_debug_info(const char** errmsg)
   for (i = 0; i < num_events; i++) {
     orig = caml_getword(chan);
     evl = caml_input_val(chan);
+    caml_input_val(chan); // Skip the list of absolute directory names
     /* Relocate events in event list */
     for (l = evl; l != Val_int(0); l = Field(l, 1)) {
       value ev = Field(l, 0);

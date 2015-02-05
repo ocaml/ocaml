@@ -275,6 +275,10 @@ let compunit_name = ref ""
 
 let max_stack_used = ref 0
 
+
+(* Sequence of string tests *)
+
+
 (* Translate a primitive to a bytecode instruction (possibly a call to a C
    function) *)
 
@@ -401,6 +405,10 @@ let comp_primitive p args =
 
 let is_immed n = immed_min <= n && n <= immed_max
 
+module Storer =
+  Switch.Store
+    (struct type t = lambda type key = lambda
+      let make_key = Lambda.make_key end)
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
@@ -618,7 +626,7 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-   | Lstaticcatch (body, (i, vars) , handler) ->
+  | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
       let r =
@@ -691,8 +699,9 @@ let rec comp_expr env exp sz cont =
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
+
 (* Build indirection vectors *)
-      let store = mk_store Lambda.same in
+      let store = Storer.mk_store () in
       let act_consts = Array.create sw.sw_numconsts 0
       and act_blocks = Array.create sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
@@ -703,9 +712,19 @@ let rec comp_expr env exp sz cont =
         (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
       List.iter
         (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
-
 (* Compile and label actions *)
       let acts = store.act_get () in
+(*
+      let a = store.act_get_shared () in
+      Array.iter
+        (function
+          | Switch.Shared (Lstaticraise _) -> ()
+          | Switch.Shared act ->
+              Printlambda.lambda Format.str_formatter act ;
+              Printf.eprintf "SHARE BYTE:\n%s\n" (Format.flush_str_formatter ())
+          | _ -> ())
+        a ;
+*)
       let lbls = Array.create (Array.length acts) 0 in
       for i = Array.length acts-1 downto 0 do
         let lbl,c1 = label_code (comp_expr env acts.(i) sz (branch :: !c)) in
@@ -723,6 +742,8 @@ let rec comp_expr env exp sz cont =
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
+  | Lstringswitch (arg,sw,d) ->
+      comp_expr env (Matching.expand_stringswitch arg sw d) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
@@ -826,6 +847,10 @@ and comp_binary_test env cond ifso ifnot sz cont =
             comp_expr env ifso sz (branch_end :: cont2) in
 
   comp_expr env cond sz cont_cond
+
+(* Compile string switch *)
+
+and comp_string_switch env arg cases default sz cont = ()
 
 (**** Compilation of a code block (with tracking of stack usage) ****)
 

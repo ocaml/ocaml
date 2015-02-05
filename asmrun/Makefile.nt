@@ -56,8 +56,10 @@ i386.o: i386.S
 amd64.o: amd64.S
 	$(ASPP) -DSYS_$(SYSTEM) amd64.S
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
 install:
-	cp libasmrun.$(A) $(LIBDIR)
+	cp libasmrun.$(A) $(INSTALL_LIBDIR)
 
 $(LINKEDFILES): %.c: ../byterun/%.c
 	cp ../byterun/$*.c $*.c

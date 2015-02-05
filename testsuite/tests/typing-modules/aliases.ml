@@ -112,7 +112,7 @@ let f (x : t) : T.t = x ;;
 module A = struct
   module B = struct type t let compare x y = 0 end
   module S = Set.Make(B)
-  let empty = S.empty 
+  let empty = S.empty
 end
 module A1 = A;;
 A1.empty = A.empty;;
@@ -192,3 +192,9 @@ module M = struct
   end
 end;;
 module type S = module type of M ;;
+
+(* PR#6365 *)
+module type S = sig module M : sig type t val x : t end end;;
+module H = struct type t = A let x = A end;;
+module H' = H;;
+module type S' = S with module M = H';; (* shouldn't introduce an alias *)

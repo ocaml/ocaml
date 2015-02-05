@@ -11,6 +11,3 @@
 #########################################################################
 
 grep 'Fatal error: exception Sys_error' syserror.bytecode.result >/dev/null
-
-
-

@@ -146,11 +146,20 @@ let () =
 module type S1 = sig end
 module type S2 = S1
 
-let f (x : (module S1)) : (module S2) = x
+let _f (x : (module S1)) : (module S2) = x
 
 module X = struct
   module type S
 end
 module Y = struct include X end
 
-let f (x : (module X.S)) : (module Y.S) = x
+let _f (x : (module X.S)) : (module Y.S) = x
+
+(* PR#6194, main example *)
+module type S3 = sig val x : bool end;;
+let f = function
+  | Some (module M : S3) when M.x ->1
+  | Some _ -> 2
+  | None -> 3
+;;
+print_endline (string_of_int (f (Some (module struct let x = false end))));;

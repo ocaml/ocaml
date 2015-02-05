@@ -333,7 +333,8 @@ let rec report_error ppf ({loc; msg; sub; if_highlight} as err) =
   else begin
     print ppf loc;
     Format.pp_print_string ppf msg;
-    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err) sub
+    List.iter (fun err -> Format.fprintf ppf "@\n@[<2>%a@]" report_error err)
+              sub
   end
 
 let error_of_printer loc print x =

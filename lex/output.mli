@@ -15,6 +15,7 @@
 val output_lexdef:
       string -> in_channel -> out_channel -> Common.line_tracker ->
       Syntax.location ->
+      Syntax.location option ->
       Compact.lex_tables ->
       (string list, Syntax.location) Lexgen.automata_entry list ->
       Syntax.location ->

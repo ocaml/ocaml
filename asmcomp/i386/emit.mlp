@@ -458,7 +458,7 @@ let emit_instr fallthrough i =
           else
               `	movl	{emit_reg src}, {emit_reg dst}\n`
         end
-    | Lop(Iconst_int n) ->
+    | Lop(Iconst_int n | Iconst_blockheader n) ->
         if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`

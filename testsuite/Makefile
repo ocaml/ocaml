@@ -11,7 +11,8 @@
 #########################################################################
 
 BASEDIR := $(shell pwd)
-NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 && echo '--no-print-directory'`
+NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
+	  && echo --no-print-directory`
 
 FIND=find
 include ../config/Makefile
@@ -20,12 +21,12 @@ include ../config/Makefile
 default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
-	@echo "  list FILE=f     launch the tests referenced in file f (one path per line)"
+	@echo "  list FILE=f     launch the tests listed in f (one per line)"
 	@echo "  one DIR=p       launch the tests located in path p"
-	@echo "  promote DIR=p   promote the reference files for the tests located in path p"
+	@echo "  promote DIR=p   promote the reference files for the tests in p"
 	@echo "  lib             build library modules"
 	@echo "  clean           delete generated files"
-	@echo "  report          print the report for the last execution, if any"
+	@echo "  report          print the report for the last execution"
 
 .PHONY: all
 all: lib
