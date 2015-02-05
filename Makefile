@@ -821,9 +821,8 @@ alldepend::
 # Check that the stack limit is reasonable.
 
 checkstack:
-	@if $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	              -o tools/checkstack tools/checkstack.c; \
-	  then tools/checkstack; \
+	@if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi
 	@rm -f tools/checkstack
