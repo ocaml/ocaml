@@ -367,3 +367,13 @@ let report_exception ppf exn =
   match error_of_exn exn with
   | Some err -> fprintf ppf "@[%a@]@." report_error err
   | None -> raise exn
+
+
+exception Error of error
+
+let () =
+  register_error_of_exn
+    (function
+      | Error e -> Some e
+      | _ -> None
+    )

@@ -300,7 +300,7 @@ let init_toplevel () =
     Dll.init_toplevel dllpath;
     (* Recover CRC infos for interfaces *)
     let crcintfs =
-      try (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t) list)
+      try (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
       with Not_found -> [] in
     (* Done *)
     sect.close_reader();
@@ -383,3 +383,8 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  global_table := empty_numtable;
+  literal_table := [];
+  c_prim_table := empty_numtable

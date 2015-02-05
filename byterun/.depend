@@ -10,7 +10,8 @@ array.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
 backtrace.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h instruct.h \
- intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+ intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h \
+ fail.h
 callback.o: callback.c callback.h compatibility.h mlvalues.h config.h \
  ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
  minor_heap.h addrmap.h domain.h fail.h platform.h interp.h instruct.h \
@@ -184,7 +185,8 @@ array.d.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
 backtrace.d.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h instruct.h \
- intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+ intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h \
+ fail.h
 callback.d.o: callback.c callback.h compatibility.h mlvalues.h config.h \
  ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
  minor_heap.h addrmap.h domain.h fail.h platform.h interp.h instruct.h \
@@ -361,7 +363,8 @@ array.pic.o: array.c alloc.h compatibility.h misc.h config.h ../config/m.h \
 backtrace.pic.o: backtrace.c config.h ../config/m.h ../config/s.h \
  compatibility.h mlvalues.h misc.h alloc.h io.h platform.h memory.h gc.h \
  major_gc.h minor_gc.h minor_heap.h addrmap.h domain.h instruct.h \
- intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h
+ intext.h exec.h fix_code.h startup.h fiber.h roots.h sys.h backtrace.h \
+ fail.h
 callback.pic.o: callback.c callback.h compatibility.h mlvalues.h config.h \
  ../config/m.h ../config/s.h misc.h memory.h gc.h major_gc.h minor_gc.h \
  minor_heap.h addrmap.h domain.h fail.h platform.h interp.h instruct.h \

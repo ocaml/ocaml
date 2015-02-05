@@ -40,6 +40,7 @@ type type_kind =
                    (** constructors *)
   | Type_record of record_field list
                    (** fields *)
+  | Type_open
 
 (** Representation of a type. *)
 type t_type = {

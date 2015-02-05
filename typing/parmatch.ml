@@ -621,16 +621,16 @@ let clean_env env =
   loop env
 
 let full_match ignore_generalized closing env =  match env with
-| ({pat_desc = Tpat_construct (_,{cstr_tag=Cstr_exception _},_)},_)::_ ->
-    false
 | ({pat_desc = Tpat_construct(_,c,_);pat_type=typ},_) :: _ ->
-    if ignore_generalized then
-      (* remove generalized constructors;
-         those cases will be handled separately *)
-      let env = clean_env env in
-      List.length env = c.cstr_normal
+    if c.cstr_consts < 0 then false (* extensions *)
     else
-      List.length env = c.cstr_consts + c.cstr_nonconsts
+      if ignore_generalized then
+        (* remove generalized constructors;
+           those cases will be handled separately *)
+        let env = clean_env env in
+        List.length env = c.cstr_normal
+      else
+        List.length env = c.cstr_consts + c.cstr_nonconsts
 
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
@@ -778,16 +778,11 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other ext env =  match env with
-| ({pat_desc =
-    Tpat_construct (lid, ({cstr_tag=Cstr_exception _} as c),_)},_)
-  ::_ ->
-    make_pat
-      (Tpat_construct
-         (lid, {c with
-           cstr_tag=(Cstr_exception
-            (Path.Pident (Ident.create "*exception*"), Location.none))},
-          []))
-      Ctype.none Env.empty
+| ({pat_desc = Tpat_construct (lid,
+      ({cstr_tag=Cstr_extension _} as c),_)},_) :: _ ->
+    let id = Ident.create "*extension*" in
+    let c = {c with cstr_tag = Cstr_extension(Path.Pident id, true)} in
+      make_pat (Tpat_construct(lid, c, [])) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_, _,_)} as p,_) :: _ ->
     begin match ext with
     | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
@@ -1874,7 +1869,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
-| Tpat_construct (_, {cstr_tag=Cstr_exception _}, ps)->
+| Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
     List.fold_left collect_paths_from_pat r ps
 | Tpat_record (lps,_) ->
     List.fold_left

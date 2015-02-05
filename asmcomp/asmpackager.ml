@@ -130,7 +130,7 @@ let build_package_cmx members cmxfile =
           List.flatten (List.map (fun info -> info.ui_defines) units) @
           [ui.ui_symbol];
       ui_imports_cmi =
-          (ui.ui_name, Env.crc_of_unit ui.ui_name) ::
+          (ui.ui_name, Some (Env.crc_of_unit ui.ui_name)) ::
           filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx =
           filter(Asmlink.extract_crc_implementations());

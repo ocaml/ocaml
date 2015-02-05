@@ -42,7 +42,7 @@ void caml_disasm_instr(code_t pc)
   char opbuf[128];
   int instr = *pc;
   snprintf(opbuf, sizeof(opbuf), "%6ld  %s", (long) (pc - caml_start_code),
-           (instr < 0 || instr >= NUM_INSTRUCTIONS) ?
+           (instr < 0 || instr >= FIRST_UNIMPLEMENTED_OP) ?
              "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {

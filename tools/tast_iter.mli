@@ -28,6 +28,7 @@ class iter: object
   method class_type_field: class_type_field -> unit
   method core_type: core_type -> unit
   method expression: expression -> unit
+  method extension_constructor: extension_constructor -> unit
   method module_binding: module_binding -> unit
   method module_expr: module_expr -> unit
   method module_type: module_type -> unit
@@ -39,6 +40,7 @@ class iter: object
   method structure: structure -> unit
   method structure_item: structure_item -> unit
   method type_declaration: type_declaration -> unit
+  method type_extension: type_extension -> unit
   method value_description: value_description -> unit
   method with_constraint: with_constraint -> unit
 end
@@ -63,6 +65,7 @@ val class_type_declaration: iter -> class_type_declaration -> unit
 val class_type_field: iter -> class_type_field -> unit
 val core_type: iter -> core_type -> unit
 val expression: iter -> expression -> unit
+val extension_constructor: iter -> extension_constructor -> unit
 val module_binding: iter -> module_binding -> unit
 val module_expr: iter -> module_expr -> unit
 val module_type: iter -> module_type -> unit
@@ -74,5 +77,6 @@ val signature_item: iter -> signature_item -> unit
 val structure: iter -> structure -> unit
 val structure_item: iter -> structure_item -> unit
 val type_declaration: iter -> type_declaration -> unit
+val type_extension: iter -> type_extension -> unit
 val value_description: iter -> value_description -> unit
 val with_constraint: iter -> with_constraint -> unit

@@ -104,7 +104,10 @@ void caml_raise_with_args(value tag, int nargs, value args[])
 
 void caml_raise_with_string(value tag, char const *msg)
 {
-  caml_raise_with_arg(tag, caml_copy_string(msg));
+  CAMLparam1(tag);
+  value v_msg = caml_copy_string(msg);
+  caml_raise_with_arg(tag, v_msg);
+  CAMLnoreturn;
 }
 
 void caml_failwith (char const *msg)

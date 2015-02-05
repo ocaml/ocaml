@@ -102,12 +102,8 @@ module Existential_escape =
 module Rectype =
   struct
     type (_,_) t = C : ('a,'a) t
-    let _ =
-      fun (type s) ->
-        let a : (s, s * s) t = failwith "foo" in
-        match a with
-          C ->
-            ()
+    let f : type s. (s, s*s) t -> unit =
+      fun C -> () (* here s = s*s! *)
   end
 ;;
 

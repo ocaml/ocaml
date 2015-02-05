@@ -98,10 +98,10 @@ char * caml_instr_base;
 void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
-  int l [NUM_INSTRUCTIONS];
+  int l [FIRST_UNIMPLEMENTED_OP];
   int i;
 
-  for (i = 0; i < NUM_INSTRUCTIONS; i++) {
+  for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
     l [i] = 0;
   }
   /* Instructions with one operand */
@@ -125,9 +125,12 @@ void caml_thread_code (code_t code, asize_t len)
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
-    if (instr < 0 || instr >= NUM_INSTRUCTIONS){
+    if (instr < 0 || instr >= FIRST_UNIMPLEMENTED_OP){
+      /* FIXME -- should Assert(false) ?
       caml_fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
                             (char *)(long)instr);
+      */
+      instr = STOP;
     }
     *p++ = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
     if (instr == SWITCH) {

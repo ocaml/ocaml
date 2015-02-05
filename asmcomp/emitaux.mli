@@ -27,6 +27,7 @@ val emit_float64_directive: string -> int64 -> unit
 val emit_float64_split_directive: string -> int64 -> unit
 val emit_float32_directive: string -> int32 -> unit
 
+val reset : unit -> unit
 val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
 
