@@ -148,3 +148,100 @@ let can_inline lam inline_threshold ~bonus =
      lambda_smaller
        lam
        ~than:(inline_threshold + bonus)
+
+type benefit = {
+  remove_call : int;
+  remove_alloc : int;
+  remove_prim : int;
+  remove_branch : int;
+  (* branch_benefit : benefit list; *)
+}
+
+let no_benefit = {
+  remove_call = 0;
+  remove_alloc = 0;
+  remove_prim = 0;
+  remove_branch = 0;
+}
+
+let benefit_union b1 b2 = {
+  remove_call = b1.remove_call + b2.remove_call;
+  remove_alloc = b1.remove_alloc + b2.remove_alloc;
+  remove_prim = b1.remove_prim + b2.remove_prim;
+  remove_branch = b1.remove_branch + b2.remove_branch;
+}
+
+let remove_call b = { b with remove_call = b.remove_call + 1; }
+let remove_alloc b = { b with remove_alloc = b.remove_alloc + 1; }
+let remove_prim b = { b with remove_prim = b.remove_prim + 1; }
+let remove_branch b = { b with remove_branch = b.remove_branch + 1; }
+
+let remove_code lam b =
+  let b = ref b in
+  let f = function
+    | Fset_of_closures _
+    | Fprim ((Pmakearray _ | Pmakeblock _ | Pduprecord _),_,_,_) ->
+        b := remove_alloc !b
+
+    | Fprim _
+    | Fclosure _
+    | Fvariable_in_closure _
+    | Fassign _ ->
+        b := remove_prim !b
+
+    | Fswitch _
+    | Fstringswitch _
+    | Fstaticraise _
+    | Ftrywith _
+    | Fifthenelse _
+    | Fwhile _
+    | Ffor _ ->
+        b := remove_branch !b
+
+    | Fapply _
+    | Fsend _
+      -> b := remove_call !b
+
+    | Fevent _
+    | Flet _
+    | Fletrec _
+    | Funreachable _
+    | Fsequence _
+    | Fsymbol _
+    | Fvar _
+    | Fconst _
+    | Fstaticcatch _ -> ()
+  in
+  Flambdaiter.iter_toplevel f lam;
+  !b
+
+(* let add_branch_benefit  *)
+
+(* Arbitrarily chosen bonus for different improvements *)
+let remove_call_bonus = 5
+let remove_alloc_bonus = 10
+let remove_prim_bonus = 3
+let remove_branch_bonus = 10
+
+let evaluate_benefit b =
+  b.remove_call * remove_call_bonus
+  + b.remove_alloc * remove_alloc_bonus
+  + b.remove_prim * remove_prim_bonus
+  + b.remove_branch * remove_branch_bonus
+
+let sufficient_benefit_for_inline lam benefit inline_threshold =
+  match inline_threshold with
+  | Never_inline -> false
+  | Can_inline threshold ->
+      match lambda_smaller' lam ~than:max_int with
+      | None -> false
+      | Some size ->
+          size - evaluate_benefit benefit <= threshold
+
+let print_benefit ppf b =
+  Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
+                      remove_prim: %i@ remove_branc: %i@]"
+    b.remove_call
+    b.remove_alloc
+    b.remove_prim
+    b.remove_branch

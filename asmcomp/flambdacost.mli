@@ -18,3 +18,19 @@ type inline_threshold =
 
 val can_inline : _ Flambda.flambda -> inline_threshold -> bonus:int -> bool
 val can_try_inlining : _ Flambda.flambda -> inline_threshold -> bonus:int -> inline_threshold
+
+type benefit
+
+val no_benefit : benefit
+val benefit_union : benefit -> benefit -> benefit
+
+val remove_call : benefit -> benefit
+val remove_alloc : benefit -> benefit
+val remove_prim : benefit -> benefit
+val remove_branch : benefit -> benefit
+
+val remove_code : _ Flambda.flambda -> benefit -> benefit
+
+val sufficient_benefit_for_inline : _ Flambda.flambda -> benefit -> inline_threshold -> bool
+
+val print_benefit : Format.formatter -> benefit -> unit

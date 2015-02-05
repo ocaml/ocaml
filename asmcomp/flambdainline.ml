@@ -172,6 +172,7 @@ type ret =
     globals : Flambdaapprox.t IntMap.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
+    benefit : Flambdacost.benefit;
   }
 
 (* approximation utility functions *)
@@ -191,11 +192,18 @@ let use_staticfail acc i =
 let exit_scope_catch acc i =
   { acc with used_staticfail = Static_exception.Set.remove i acc.used_staticfail }
 
+let benefit r f =
+  { r with benefit = f r.benefit }
+
+let clear_benefit r =
+  { r with benefit = Flambdacost.no_benefit }
+
 let init_r =
   { approx = value_unknown;
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
-    used_staticfail = Static_exception.Set.empty }
+    used_staticfail = Static_exception.Set.empty;
+    benefit = Flambdacost.no_benefit }
 
 let add_global i approx r =
   { r with globals = IntMap.add i approx r.globals }
@@ -267,13 +275,17 @@ let check_constant_result r lam approx =
   let lam, approx = Flambdaapprox.check_constant_result lam approx in
   lam, ret r approx
 
-let check_var_and_constant_result env r lam approx =
+let check_var_and_constant_result env r original_lam approx =
   let lam, approx =
     check_var_and_constant_result
-      ~is_present_in_env:(Env.present env) lam approx in
+      ~is_present_in_env:(Env.present env) original_lam approx in
   let r = ret r approx in
   let r = match lam with
-    | Fvar(var,_) -> use_var r var
+    | Fvar(var,_) ->
+        benefit (use_var r var)
+          (Flambdacost.remove_code original_lam)
+    | Fconst _ ->
+        benefit r (Flambdacost.remove_code original_lam)
     | _ -> r
   in
   lam, r
@@ -624,7 +636,9 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
            I should find a nice pattern to allow to do that elsewhere
            without too much syntactic noise. *)
         else if Flambdaeffects.no_effects lam
-        then body, r
+        then
+          let r = benefit r (Flambdacost.remove_code lam) in
+          body, r
         else Fsequence(lam, body, annot),
              (* if [lam] is kept, add its used variables *)
              { r with used_variables =
@@ -767,11 +781,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       | Value_constptr 0 ->
           (* constant false, keep ifnot *)
           let ifnot, r = loop env r ifnot in
+          let r = benefit r Flambdacost.remove_branch in
           sequence arg ifnot annot, r
       | Value_constptr _
       | Value_block _ ->
           (* constant true, keep ifso *)
           let ifso, r = loop env r ifso in
+          let r = benefit r Flambdacost.remove_branch in
           sequence arg ifso annot, r
       | _ ->
           let ifso, r = loop env r ifso in
@@ -837,11 +853,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
           let lam = try List.assoc i sw.fs_consts with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
+          let r = benefit r Flambdacost.remove_branch in
           sequence arg lam annot, r
       | Value_block(tag,_) ->
           let lam = try List.assoc tag sw.fs_blocks with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
+          let r = benefit r Flambdacost.remove_branch in
           sequence arg lam annot, r
       | _ ->
           let f (i,v) (acc, r) =
@@ -1206,15 +1224,20 @@ and direct_apply env r clos funct fun_id func fapprox closure
         || (not recursive && env.inlining_level <= max_level)
       then
         let body, r_inlined =
-          inline_non_recursive_function env r clos funct fun_id func args
-              ap_dbg eid
+          inline_non_recursive_function env (clear_benefit r) clos funct
+            fun_id func args ap_dbg eid
         in
         (* Now we know how large the inlined version actually is, determine
            whether or not to keep it. *)
         if unconditionally_inline
-          || Flambdacost.can_inline body inline_threshold
-               ~bonus:num_params
+        || Flambdacost.sufficient_benefit_for_inline
+             body
+             r_inlined.benefit
+             inline_threshold
         then
+          let r_inlined =
+            benefit r_inlined (Flambdacost.benefit_union r.benefit)
+          in
           body, r_inlined
         else
           (* r_inlined contains an approximation that may be invalid for the
@@ -1264,6 +1287,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
       functions).
 *)
 and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
+  let r = benefit r Flambdacost.remove_call in
   let env = inlining_level_up env in
   let clos_id = new_var "inline_non_recursive_function" in
   (* 1. First, around the function's body, bind the parameters to the arguments
