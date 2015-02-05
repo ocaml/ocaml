@@ -16,6 +16,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <io.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -43,8 +44,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   int n;
 
   if (path == NULL) return NULL;
-  p = caml_stat_alloc(strlen(path) + 1);
-  strcpy(p, path);
+  p = caml_strdup(path);
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
@@ -59,7 +59,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
 
 char * caml_search_in_path(struct ext_table * path, char * name)
 {
-  char * p, * fullname;
+  char * p, * dir, * fullname;
   int i;
   struct stat st;
 
@@ -67,56 +67,55 @@ char * caml_search_in_path(struct ext_table * path, char * name)
     if (*p == '/' || *p == '\\') goto not_found;
   }
   for (i = 0; i < path->size; i++) {
-    fullname = caml_stat_alloc(strlen((char *)(path->contents[i])) +
-                               strlen(name) + 2);
-    strcpy(fullname, (char *)(path->contents[i]));
-    strcat(fullname, "\\");
-    strcat(fullname, name);
+    dir = path->contents[i];
+    if (dir[0] == 0) continue;
+         /* not sure what empty path components mean under Windows */
+    fullname = caml_strconcat(3, dir, "\\", name);
     caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
+      return fullname;
     caml_stat_free(fullname);
   }
  not_found:
   caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
-  fullname = caml_stat_alloc(strlen(name) + 1);
-  strcpy(fullname, name);
-  return fullname;
+  return caml_strdup(name);
 }
 
 CAMLexport char * caml_search_exe_in_path(char * name)
 {
   char * fullname, * filepart;
-  DWORD pathlen, retcode;
+  size_t fullnamelen;
+  DWORD retcode;
 
-  pathlen = strlen(name) + 1;
-  if (pathlen < 256) pathlen = 256;
+  fullnamelen = strlen(name) + 1;
+  if (fullnamelen < 256) fullnamelen = 256;
   while (1) {
-    fullname = caml_stat_alloc(pathlen);
+    fullname = caml_stat_alloc(fullnamelen);
     retcode = SearchPath(NULL,              /* use system search path */
                          name,
                          ".exe",            /* add .exe extension if needed */
-                         pathlen,
+                         fullnamelen,
                          fullname,
                          &filepart);
     if (retcode == 0) {
       caml_gc_message(0x100, "%s not found in search path\n",
                       (uintnat) name);
-      strcpy(fullname, name);
-      break;
+      caml_stat_free(fullname);
+      return caml_strdup(name);
     }
-    if (retcode < pathlen) break;
+    if (retcode < fullnamelen) 
+      return fullname;
     caml_stat_free(fullname);
-    pathlen = retcode + 1;
+    fullnamelen = retcode + 1;
   }
-  return fullname;
 }
 
 char * caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname = caml_stat_alloc(strlen(name) + 5);
+  char * dllname;
   char * res;
-  strcpy(dllname, name);
-  strcat(dllname, ".dll");
+
+  dllname = caml_strconcat(2, name, ".dll");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -235,27 +234,27 @@ static void expand_argument(char * arg)
 
 static void expand_pattern(char * pat)
 {
+  char * prefix, * p, * name;
   int handle;
   struct _finddata_t ffblk;
-  int preflen;
+  size_t i;
 
   handle = _findfirst(pat, &ffblk);
   if (handle == -1) {
     store_argument(pat); /* a la Bourne shell */
     return;
   }
-  for (preflen = strlen(pat); preflen > 0; preflen--) {
-    char c = pat[preflen - 1];
-    if (c == '\\' || c == '/' || c == ':') break;
+  prefix = caml_strdup(pat);
+  for (i = strlen(prefix); i > 0; i--) {
+    char c = prefix[i - 1];
+    if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
   do {
-    char * name = malloc(preflen + strlen(ffblk.name) + 1);
-    if (name == NULL) out_of_memory();
-    memcpy(name, pat, preflen);
-    strcpy(name + preflen, ffblk.name);
+    name = caml_strconcat(2, prefix, ffblk.name);
     store_argument(name);
   } while (_findnext(handle, &ffblk) != -1);
   _findclose(handle);
+  caml_stat_free(prefix);
 }
 
 
@@ -278,7 +277,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
-  int dirnamelen;
+  size_t dirnamelen;
   char * template;
 #if _MSC_VER <= 1200
   int h;
@@ -286,28 +285,27 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   intptr_t h;
 #endif
   struct _finddata_t fileinfo;
-  char * p;
 
   dirnamelen = strlen(dirname);
-  template = caml_stat_alloc(dirnamelen + 5);
-  strcpy(template, dirname);
-  switch (dirname[dirnamelen - 1]) {
-  case '/': case '\\': case ':':
-    strcat(template, "*.*"); break;
-  default:
-    strcat(template, "\\*.*");
-  }
+  if (dirnamelen > 0 &&
+      (dirname[dirnamelen - 1] == '/'
+       || dirname[dirnamelen - 1] == '\\'
+       || dirname[dirnamelen - 1] == ':'))
+    template = caml_strconcat(2, dirname, "*.*");
+  else
+    template = caml_strconcat(2, dirname, "\\*.*");
   h = _findfirst(template, &fileinfo);
-  caml_stat_free(template);
-  if (h == -1) return errno == ENOENT ? 0 : -1;
+  if (h == -1) {
+    caml_strbuf_free(&template);
+    return errno == ENOENT ? 0 : -1;
+  }
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      p = caml_stat_alloc(strlen(fileinfo.name) + 1);
-      strcpy(p, fileinfo.name);
-      caml_ext_table_add(contents, p);
+      caml_ext_table_add(contents, caml_strdup(fileinfo.name));
     }
   } while (_findnext(h, &fileinfo) == 0);
   _findclose(h);
+  caml_stat_free(template);
   return 0;
 }
 
@@ -513,4 +511,31 @@ int caml_executable_name(char * name, int name_len)
   int ret = GetModuleFileName(NULL, name, name_len);
   if (0 == ret || ret >= name_len) return -1;
   return 0;
+}
+
+/* snprintf emulation */
+
+int caml_snprintf(char * buf, size_t size, const char * format, ...)
+{
+  int len;
+  va_list args;
+
+  if (size > 0) {
+    va_start(args, format);
+    len = _vsnprintf(buf, size, format, args);
+    va_end(args);
+    if (len >= 0 && len < size) {
+      /* [len] characters were stored in [buf],
+         a null-terminator was appended. */
+      return len;
+    }
+    /* [size] characters were stored in [buf], without null termination.
+       Put a null terminator, truncating the output. */
+    buf[size - 1] = 0;
+  }
+  /* Compute the actual length of output, excluding null terminator */
+  va_start(args, format);
+  len = _vscprintf(format, args);
+  va_end(args);
+  return len;
 }

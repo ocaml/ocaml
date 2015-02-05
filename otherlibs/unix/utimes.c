@@ -38,7 +38,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     t = &times;
   else
     t = (struct utimbuf *) NULL;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = utime(p, t);
   caml_leave_blocking_section();
@@ -70,7 +70,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     t = tv;
   else
     t = (struct timeval *) NULL;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = utimes(p, t);
   caml_leave_blocking_section();

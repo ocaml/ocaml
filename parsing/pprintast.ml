@@ -911,11 +911,13 @@ class printer  ()= object(self:'self)
         pp f "@[<hov>module@ %s@ :@ %a@]"
           pmd.pmd_name.txt
           self#module_type  pmd.pmd_type
-    | Psig_open (ovf, li, _attrs) ->
-        pp f "@[<hov2>open%s@ %a@]" (override ovf) self#longident_loc li
-    | Psig_include (mt, _attrs) ->
+    | Psig_open od ->
+        pp f "@[<hov2>open%s@ %a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid
+    | Psig_include incl ->
         pp f "@[<hov2>include@ %a@]"
-          self#module_type  mt
+          self#module_type incl.pincl_mod
     | Psig_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1058,8 +1060,10 @@ class printer  ()= object(self:'self)
             | _ ->
                 pp f " =@ %a"  self#module_expr  me
             )) x.pmb_expr
-    | Pstr_open (ovf, li, _attrs) ->
-        pp f "@[<2>open%s@;%a@]" (override ovf) self#longident_loc li;
+    | Pstr_open od ->
+        pp f "@[<2>open%s@;%a@]"
+           (override od.popen_override)
+           self#longident_loc od.popen_lid;
     | Pstr_modtype {pmtd_name=s; pmtd_type=md} ->
         pp f "@[<hov2>module@ type@ %s%a@]"
           s.txt
@@ -1107,10 +1111,12 @@ class printer  ()= object(self:'self)
     | Pstr_primitive vd ->
         pp f "@[<hov2>external@ %a@ :@ %a@]" protect_ident vd.pval_name.txt
           self#value_description  vd
-    | Pstr_include (me, _attrs) ->
-        pp f "@[<hov2>include@ %a@]"  self#module_expr  me
-    | Pstr_exn_rebind (s, li, _attrs) ->        (* todo: check this *)
-        pp f "@[<hov2>exception@ %s@ =@ %a@]" s.txt self#longident_loc li
+    | Pstr_include incl ->
+        pp f "@[<hov2>include@ %a@]"  self#module_expr  incl.pincl_mod
+    | Pstr_exn_rebind er ->        (* todo: check this *)
+        pp f "@[<hov2>exception@ %s@ =@ %a@]"
+           er.pexrb_name.txt
+           self#longident_loc er.pexrb_lid
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function
           | {pmb_name = s; pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} ->

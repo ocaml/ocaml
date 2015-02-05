@@ -76,6 +76,13 @@ CAMLextern void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;
 CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2) Noreturn;
 
+/* Safe string operations */
+
+CAMLextern char * caml_strdup(const char * s);
+CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
+
+/* <private> */
+
 /* Data structures */
 
 struct ext_table {
@@ -134,6 +141,13 @@ void caml_gc_log (char *, ...)
 
 #ifndef CAML_AVOID_CONFLICTS
 #define Assert CAMLassert
+#endif
+
+/* snprintf emulation for Win32 */
+
+#ifdef _WIN32
+extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+#define snprintf caml_snprintf
 #endif
 
 /* </private> */

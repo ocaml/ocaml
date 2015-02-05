@@ -45,7 +45,6 @@ CAMLextern void caml_initialize_field (value, int, value);
 CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
-CAMLextern char * caml_stat_alloc_string (value);
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */

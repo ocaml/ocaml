@@ -26,7 +26,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
   CAMLparam2(path, mode);
   char * p;
   int ret;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = mkfifo(p, Int_val(mode));
   caml_leave_blocking_section();
@@ -48,7 +48,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
   CAMLparam2(path, mode);
   char * p;
   int ret;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = mknod(p, (Int_val(mode) & 07777) | S_IFIFO, 0);
   caml_leave_blocking_section();

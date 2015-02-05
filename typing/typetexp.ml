@@ -58,7 +58,7 @@ exception Error of Location.t * Env.t * error
 let check_deprecated loc attrs s =
   if
     List.exists
-      (function ({txt = "deprecated"; _}, _) -> true | _ ->  false)
+      (function ({txt = "ocaml.deprecated"; _}, _) -> true | _ ->  false)
       attrs
   then
     Location.prerr_warning loc (Warnings.Deprecated s)
@@ -67,7 +67,7 @@ let warning_attribute attrs =
   let prev_warnings = ref None in
   List.iter
     (function
-      | ({txt = "warning"; loc}, payload) ->
+      | ({txt = "ocaml.warning"; loc}, payload) ->
           begin match payload with
           | PStr [{pstr_desc=Pstr_eval
                      ({pexp_desc=Pexp_constant(Const_string(s, _))}, _)}] ->
@@ -77,13 +77,13 @@ let warning_attribute attrs =
               with Arg.Bad _ ->
                 Location.prerr_warning loc
                   (Warnings.Attribute_payload
-                     ("warning",
+                     ("ocaml.warning",
                       "Ill-formed list of warnings"))
               end
           | _ ->
               Location.prerr_warning loc
                 (Warnings.Attribute_payload
-                   ("warning",
+                   ("ocaml.warning",
                     "A single string literal is expected"))
           end
       | _ ->

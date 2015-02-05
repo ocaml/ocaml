@@ -582,14 +582,6 @@ CAMLexport void * caml_stat_alloc (asize_t sz)
   return (void*)Val_hp(result);
 }
 
-CAMLexport char * caml_stat_alloc_string(value str)
-{
-  mlsize_t sz = caml_string_length(str) + 1;
-  char * p = caml_stat_alloc(sz);
-  memcpy(p, String_val(str), sz);
-  return p;
-}
-
 CAMLexport void caml_stat_free (void * p)
 {
   if (p == NULL) return;
