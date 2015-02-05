@@ -1166,8 +1166,14 @@ and direct_apply env r clos funct fun_id func fapprox closure
   (* CR mshinwell for mshinwell: finish the comment *)
   let unconditionally_inline = func.stub || functor_like env clos approxs in
   let num_params = List.length func.params in
+  (* CR pchambart to pchambart: find a better name
+     This is true if the function is directly an argument of the
+     apply construction. *)
+  let direct_apply = match funct with
+    | Fclosure ({ fu_closure = Fset_of_closures _ }, _) -> true
+    | _ -> false in
   let fun_cost =
-    if unconditionally_inline then
+    if unconditionally_inline || direct_apply then
       (* CXR mshinwell for mshinwell: this comment needs clarification *)
       (* A function is considered for inlining if it does not increase the code
          size too much. This size is verified after effectively duplicating
@@ -1230,6 +1236,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
         (* Now we know how large the inlined version actually is, determine
            whether or not to keep it. *)
         if unconditionally_inline
+        || direct_apply
         || Flambdacost.sufficient_benefit_for_inline
              body
              r_inlined.benefit
@@ -1249,6 +1256,11 @@ and direct_apply env r clos funct fun_id func fapprox closure
           no_transformation ()
       else if
         recursive
+          && not direct_apply
+          (* Prevent reduplicating already duplicated function.
+             TODO: In that case the function can be specialised without
+             duplication, inline_recursive_functions should be addapted
+             for that. (just add variables to cl_specialised_arg) *)
           && should_inline_function_known_to_be_recursive ~func ~clos ~env
                  ~closure ~approxs ~kept_params ~max_level
       then
