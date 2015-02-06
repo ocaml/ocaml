@@ -20,10 +20,10 @@ exception Error of error
 
 val preprocess : string -> string
 val remove_preprocessed : string -> unit
-val file : formatter -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
-val apply_rewriters : string -> 'a -> 'a
+val file : formatter -> tool_name:string -> string -> (Lexing.lexbuf -> 'a) -> string -> 'a
+val apply_rewriters : tool_name:string -> string -> 'a -> 'a
 val report_error : formatter -> error -> unit
 
 
-val parse_implementation: formatter -> string -> Parsetree.structure
-val parse_interface: formatter -> string -> Parsetree.signature
+val parse_implementation: formatter -> tool_name:string -> string -> Parsetree.structure
+val parse_interface: formatter -> tool_name:string -> string -> Parsetree.signature

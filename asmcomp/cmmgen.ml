@@ -2410,7 +2410,7 @@ let cache_public_method meths tag cache =
 *)
 
 let apply_function_body arity =
-  let arg = Array.create arity (Ident.create "arg") in
+  let arg = Array.make arity (Ident.create "arg") in
   for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
   let clos = Ident.create "clos" in
   let rec app_fun clos n =

@@ -236,7 +236,7 @@ end;;
 let d = new d () in d#xc, d#xd;;
 
 class virtual ['a] matrix (sz, init : int * 'a) = object
-  val m = Array.create_matrix sz sz init
+  val m = Array.make_matrix sz sz init
   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 end;;
 

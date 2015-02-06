@@ -248,7 +248,7 @@ let case_append c1 c2 =
       let l1,h1,act1 = c1.(Array.length c1-1)
       and l2,h2,act2 = c2.(0) in
       if act1 = act2 then
-        let r = Array.create (len1+len2-1) c1.(0) in
+        let r = Array.make (len1+len2-1) c1.(0) in
         for i = 0 to len1-2 do
           r.(i) <- c1.(i)
         done ;
@@ -277,7 +277,7 @@ let case_append c1 c2 =
         done ;
         r
       else if h1 > l1 then
-        let r = Array.create (len1+len2) c1.(0) in
+        let r = Array.make (len1+len2) c1.(0) in
         for i = 0 to len1-2 do
           r.(i) <- c1.(i)
         done ;
@@ -287,7 +287,7 @@ let case_append c1 c2 =
         done ;
         r
       else if h2 > l2 then
-        let r = Array.create (len1+len2) c1.(0) in
+        let r = Array.make (len1+len2) c1.(0) in
         for i = 0 to len1-1 do
           r.(i) <- c1.(i)
         done ;
@@ -728,8 +728,8 @@ let dense {cases=cases ; actions=actions} i j =
 
 let comp_clusters ({cases=cases ; actions=actions} as s) =
   let len = Array.length cases in
-  let min_clusters = Array.create len max_int
-  and k = Array.create len 0 in
+  let min_clusters = Array.make len max_int
+  and k = Array.make len 0 in
   let get_min i = if i < 0 then 0 else min_clusters.(i) in
 
   for i = 0 to len-1 do
@@ -749,7 +749,7 @@ let comp_clusters ({cases=cases ; actions=actions} as s) =
 let make_switch  {cases=cases ; actions=actions} i j =
   let ll,_,_ = cases.(i)
   and _,hh,_ = cases.(j) in
-  let tbl = Array.create (hh-ll+1) 0
+  let tbl = Array.make (hh-ll+1) 0
   and t = Hashtbl.create 17
   and index = ref 0 in
   let get_index act =
@@ -769,7 +769,7 @@ let make_switch  {cases=cases ; actions=actions} i j =
       tbl.(kk) <- index
     done
   done ;
-  let acts = Array.create !index actions.(0) in
+  let acts = Array.make !index actions.(0) in
   Hashtbl.iter
     (fun act i -> acts.(i) <- actions.(act))
     t ;
@@ -784,7 +784,7 @@ let make_switch  {cases=cases ; actions=actions} i j =
 
 let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
   let len = Array.length cases in
-  let r = Array.create n_clusters (0,0,0)
+  let r = Array.make n_clusters (0,0,0)
   and t = Hashtbl.create 17
   and index = ref 0
   and bidon = ref (Array.length actions) in
@@ -820,7 +820,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
     if i > 0 then zyva (i-1) (ir-1) in
 
   zyva (len-1) (n_clusters-1) ;
-  let acts = Array.create !index (fun _ -> assert false) in
+  let acts = Array.make !index (fun _ -> assert false) in
   Hashtbl.iter (fun _ (i,act) -> acts.(i) <- act) t ;
   {cases = r ; actions = acts}
 ;;

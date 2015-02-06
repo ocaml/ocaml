@@ -85,6 +85,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _custom = set custom_runtime
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
+  let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true
   let _I s = include_dirs := s :: !include_dirs
@@ -103,7 +104,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
-  let _open s = open_module := s :: !open_module
+  let _open s = open_modules := s :: !open_modules
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
@@ -114,6 +115,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
+  let _strict_formats = set strict_formats
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
   let _unsafe = set fast

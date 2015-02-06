@@ -46,6 +46,12 @@ val make : int -> char -> string
 
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
+val init : int -> f:(int -> char) -> string
+(** [init n f] returns a string of length [n],
+    with character [i] initialized to the result of [f i].
+
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
 val copy : string -> string
 (** Return a copy of the given string. *)
 
@@ -97,6 +103,12 @@ val map : f:(char -> char) -> string -> string
    the characters of [s] and stores the results in a new string that
    is returned.
    @since 4.00.0 *)
+
+val mapi : f:(int -> char -> char) -> string -> string
+(** [String.mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the results in a new
+    string that is returned.
+    @since 4.02.0 *)
 
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing

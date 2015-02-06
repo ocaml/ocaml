@@ -293,7 +293,7 @@ value caml_ba_get_N(value vb, value * vind, int nind)
     { double * p = ((double *) b->data) + offset * 2;
       return copy_two_doubles(p[0], p[1]); }
   case CAML_BA_CHAR:
-    return Val_int(((char *) b->data)[offset]);
+    return Val_int(((unsigned char *) b->data)[offset]);
   }
 }
 
@@ -750,7 +750,7 @@ static int caml_ba_compare(value v1, value v2)
   case CAML_BA_FLOAT64:
     DO_FLOAT_COMPARISON(double);
   case CAML_BA_CHAR:
-    DO_INTEGER_COMPARISON(char);
+    DO_INTEGER_COMPARISON(uint8);
   case CAML_BA_SINT8:
     DO_INTEGER_COMPARISON(int8);
   case CAML_BA_UINT8:
@@ -1169,7 +1169,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
     int init = Int_val(vinit);
-    char * p;
+    unsigned char * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }

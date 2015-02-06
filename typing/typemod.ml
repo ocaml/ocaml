@@ -448,6 +448,11 @@ let rec remove_duplicates val_ids ext_ids = function
   | Sig_value (id, _) :: rem
     when List.exists (Ident.equal id) val_ids ->
       remove_duplicates val_ids ext_ids rem
+  | Sig_typext (id, _, Text_first) :: Sig_typext (id2, ext2, Text_next) :: rem
+    when List.exists (Ident.equal id) ext_ids ->
+      (* #6510 *)
+      remove_duplicates val_ids ext_ids
+        (Sig_typext (id2, ext2, Text_first) :: rem)
   | Sig_typext (id, _, _) :: rem
     when List.exists (Ident.equal id) ext_ids ->
       remove_duplicates val_ids ext_ids rem
@@ -510,6 +515,7 @@ let rec transl_modtype env smty =
       let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
       let (id, newenv) =
         Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
+      Ctype.init_def(Ident.current_time()); (* PR#6513 *)
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
       (Mty_functor(id, ty_arg, res.mty_type)) env loc
@@ -806,22 +812,31 @@ and transl_recmodule_modtypes loc env sdecls =
    keep only the last (rightmost) one. *)
 
 let simplify_signature sg =
-  let rec simplif val_names ext_names res = function
-    [] -> res
-  | (Sig_value(id, descr) as component) :: sg ->
-      let name = Ident.name id in
-      simplif (StringSet.add name val_names) ext_names
-              (if StringSet.mem name val_names then res else component :: res)
-              sg
-  | (Sig_typext(id, ext, es) as component) :: sg ->
-      let name = Ident.name id in
-      simplif val_names (StringSet.add name ext_names)
-              (if StringSet.mem name ext_names then res else component :: res)
-              sg
-  | component :: sg ->
-      simplif val_names ext_names (component :: res) sg
+  let rec aux = function
+    | [] -> [], StringSet.empty, StringSet.empty
+    | (Sig_value(id, descr) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name val_names then k
+        else (component :: sg, StringSet.add name val_names, ext_names)
+    | (Sig_typext(id, ext, es) as component) :: sg ->
+        let (sg, val_names, ext_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name ext_names then
+          (* #6510 *)
+          match es, sg with
+          | Text_first, Sig_typext(id2, ext2, Text_next) :: rest ->
+              (Sig_typext(id2, ext2, Text_first) :: rest,
+               val_names, ext_names)
+          | _ -> k
+        else
+          (component :: sg, val_names, StringSet.add name ext_names)
+    | component :: sg ->
+        let (sg, val_names, ext_names) = aux sg in
+        (component :: sg, val_names, ext_names)
   in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+  let (sg, _, _) = aux sg in
+  sg
 
 (* Try to convert a module expression to a module path. *)
 
@@ -1303,7 +1318,16 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             decls sbind in
         let newenv = (* allow aliasing recursive modules from outside *)
           List.fold_left
-            (fun env md -> Env.add_module md.md_id md.md_type.mty_type env)
+            (fun env md ->
+               let mdecl =
+                 {
+                   md_type = md.md_type.mty_type;
+                   md_attributes = md.md_attributes;
+                   md_loc = md.md_loc;
+                 }
+               in
+               Env.add_module_declaration md.md_id mdecl env
+            )
             env decls
         in
         let bindings2 =

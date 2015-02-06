@@ -76,8 +76,8 @@ let protect_ident ppf txt =
 let protect_longident ppf print_longident longprefix txt =
   let format : (_, _, _) format =
     if not (needs_parens txt) then "%a.%s"
-    else if needs_spaces txt then  "(@;%a.%s@;)"
-    else "(%a.%s)" in
+    else if needs_spaces txt then  "%a.(@;%s@;)"
+    else "%a.(%s)" in
   fprintf ppf format print_longident longprefix txt
 
 type space_formatter = (unit, Format.formatter, unit) format

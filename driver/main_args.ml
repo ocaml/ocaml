@@ -73,9 +73,10 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
-let mk_for_pack_byt () =
-  "-for-pack", Arg.String ignore,
-  "<ident>  Ignored (for compatibility with ocamlopt)"
+let mk_for_pack_byt f =
+  "-for-pack", Arg.String f,
+  "<ident>  Generate code that can later be `packed' with\n\
+  \     ocamlc -pack -o <ident>.cmo"
 ;;
 
 let mk_for_pack_opt f =
@@ -446,6 +447,21 @@ let mk_dstartup f =
   "-dstartup", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_opaque f =
+  "-opaque", Arg.Unit f,
+  " Does not generate cross-module optimization information\n\
+  \     (reduces necessary recompilation on module change)"
+;;
+
+let mk_strict_formats f =
+  "-strict-formats", Arg.Unit f,
+  " Reject invalid formats accepted by legacy implementations\n\
+  \     (Warning: Invalid formats may behave differently from\n\
+  \      previous OCaml versions, and will become always-rejected\n\
+  \      in future OCaml versions. You should use this flag\n\
+  \      to detect and fix invalid formats.)"
+;;
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -467,6 +483,7 @@ module type Common_options = sig
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _strict_formats : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -493,6 +510,7 @@ module type Compiler_options =  sig
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
+  val _for_pack : string -> unit
   val _g : unit -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -514,7 +532,6 @@ module type Compiler_options =  sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _where : unit -> unit
-
   val _nopervasives : unit -> unit
 end
 ;;
@@ -571,13 +588,13 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
-  val _for_pack : string -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -612,7 +629,7 @@ struct
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
-    mk_for_pack_byt ();
+    mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
     mk_i F._i;
     mk_I F._I;
@@ -644,6 +661,7 @@ struct
     mk_safe_string F._safe_string;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -694,6 +712,7 @@ struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
@@ -760,6 +779,7 @@ struct
     mk_shared F._shared;
     mk_short_paths F._short_paths;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
@@ -794,6 +814,7 @@ struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+    mk_opaque F._opaque;
   ]
 end;;
 
@@ -822,6 +843,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_short_paths F._short_paths;
     mk_stdin F._stdin;
     mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;

@@ -290,6 +290,8 @@ let flush_all () =
 
 external unsafe_output : out_channel -> bytes -> int -> int -> unit
                        = "caml_ml_output"
+external unsafe_output_string : out_channel -> string -> int -> int -> unit
+                              = "caml_ml_output"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
 
@@ -297,7 +299,7 @@ let output_bytes oc s =
   unsafe_output oc s 0 (bytes_length s)
 
 let output_string oc s =
-  unsafe_output oc (bytes_unsafe_of_string s) 0 (string_length s)
+  unsafe_output_string oc s 0 (string_length s)
 
 let output oc s ofs len =
   if ofs < 0 || len < 0 || ofs > bytes_length s - len
@@ -305,7 +307,9 @@ let output oc s ofs len =
   else unsafe_output oc s ofs len
 
 let output_substring oc s ofs len =
-  output oc (bytes_unsafe_of_string s) ofs len
+  if ofs < 0 || len < 0 || ofs > string_length s - len
+  then invalid_arg "output_substring"
+  else unsafe_output_string oc s ofs len
 
 external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
 external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"

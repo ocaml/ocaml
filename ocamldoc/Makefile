@@ -172,14 +172,20 @@ debug:
 	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
+	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
+	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
+	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
+	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo $(LIBCMOFILES)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	            $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
 html_doc: stdlib_html/Pervasives.html
@@ -244,7 +250,7 @@ install: dummy
 	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
 
 installopt:
-	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
+	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
 installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi

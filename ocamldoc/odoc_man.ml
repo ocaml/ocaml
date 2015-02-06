@@ -1290,7 +1290,7 @@ class man =
 
     (** Generate all the man pages from a module list. *)
     method generate module_list =
-      let sorted_module_list = Sort.list (fun m1 -> fun m2 -> m1.m_name < m2.m_name) module_list in
+      let sorted_module_list = List.sort (fun m1 m2 -> compare m1.m_name m2.m_name) module_list in
       let groups = self#create_groups !man_mini sorted_module_list in
       let f group =
         match group with

@@ -15,8 +15,10 @@
 {
 exception Error of (string * Loc.location)
 
-let error lexbuf fmt =
-  Printf.ksprintf (fun s -> raise (Error (s, Loc.of_lexbuf lexbuf))) fmt
+let error source lexbuf fmt =
+  Printf.ksprintf (fun s ->
+    raise (Error (s, Loc.of_lexbuf source lexbuf))
+  ) fmt
 
 open Glob_ast
 
@@ -28,13 +30,16 @@ type conf = (Glob.globber * conf_values) list
 
 let empty = { plus_tags = []; minus_tags = [] }
 
-let locate lexbuf txt =
-  (txt, Loc.of_lexbuf lexbuf)
+let locate source lexbuf txt =
+  (txt, Loc.of_lexbuf source lexbuf)
+
+let sublex lexer s = lexer (Lexing.from_string s)
 }
 
 let newline = ('\n' | '\r' | "\r\n")
 let space = [' ' '\t' '\012']
 let space_or_esc_nl = (space | '\\' newline)
+let sp = space_or_esc_nl
 let blank = newline | space
 let not_blank = [^' ' '\t' '\012' '\n' '\r']
 let not_space_nor_comma = [^' ' '\t' '\012' ',']
@@ -46,118 +51,122 @@ let tag = normal+ | ( normal+ ':' normal+ ) | normal+ '(' [^ ')' ]* ')'
 let variable = [ 'a'-'z' 'A'-'Z' '_' '-' '0'-'9' ]*
 let pattern = ([^ '(' ')' '\\' ] | '\\' [ '(' ')' ])*
 
-rule ocamldep_output = parse
-  | ([^ ':' '\n' '\r' ]+ as k) ':' { let x = (k, space_sep_strings_nl lexbuf) in x :: ocamldep_output lexbuf }
+rule ocamldep_output source = parse
+  | ([^ ':' '\n' '\r' ]+ as k) ':' { let x = (k, space_sep_strings_nl source lexbuf) in x :: ocamldep_output source lexbuf }
   | eof { [] }
-  | _ { error lexbuf "Expecting colon followed by space-separated module name list" }
+  | _ { error source lexbuf "Expecting colon followed by space-separated module name list" }
 
-and space_sep_strings_nl = parse
-  | space* (not_blank+ as word) { word :: space_sep_strings_nl lexbuf }
+and space_sep_strings_nl source = parse
+  | space* (not_blank+ as word) { word :: space_sep_strings_nl source lexbuf }
   | space* newline { Lexing.new_line lexbuf; [] }
-  | _ { error lexbuf "Expecting space-separated strings terminated with newline" }
+  | _ { error source lexbuf "Expecting space-separated strings terminated with newline" }
 
-and space_sep_strings = parse
-  | space* (not_blank+ as word) { word :: space_sep_strings lexbuf }
+and space_sep_strings source = parse
+  | space* (not_blank+ as word) { word :: space_sep_strings source lexbuf }
   | space* newline? eof { [] }
-  | _ { error lexbuf "Expecting space-separated strings" }
+  | _ { error source lexbuf "Expecting space-separated strings" }
 
-and blank_sep_strings = parse
-  | blank* '#' not_newline* newline { blank_sep_strings lexbuf }
+and blank_sep_strings source = parse
+  | blank* '#' not_newline* newline { blank_sep_strings source lexbuf }
   | blank* '#' not_newline* eof { [] }
-  | blank* (not_blank+ as word) { word :: blank_sep_strings lexbuf }
+  | blank* (not_blank+ as word) { word :: blank_sep_strings source lexbuf }
   | blank* eof { [] }
-  | _ { error lexbuf "Expecting blank-separated strings" }
+  | _ { error source lexbuf "Expecting blank-separated strings" }
 
-and comma_sep_strings = parse
+and comma_sep_strings source = parse
   | space* (not_space_nor_comma+ as word) space* eof { [word] }
-  | space* (not_space_nor_comma+ as word) { word :: comma_sep_strings_aux lexbuf }
+  | space* (not_space_nor_comma+ as word) { word :: comma_sep_strings_aux source lexbuf }
   | space* eof { [] }
-  | _ { error lexbuf "Expecting comma-separated strings (1)" }
-and comma_sep_strings_aux = parse
-  | space* ',' space* (not_space_nor_comma+ as word) { word :: comma_sep_strings_aux lexbuf }
+  | _ { error source lexbuf "Expecting comma-separated strings (1)" }
+and comma_sep_strings_aux source = parse
+  | space* ',' space* (not_space_nor_comma+ as word) { word :: comma_sep_strings_aux source lexbuf }
   | space* eof { [] }
-  | _ { error lexbuf "Expecting comma-separated strings (2)" }
+  | _ { error source lexbuf "Expecting comma-separated strings (2)" }
 
-and comma_or_blank_sep_strings = parse
+and comma_or_blank_sep_strings source = parse
   | space* (not_space_nor_comma+ as word) space* eof { [word] }
-  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
+  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux source lexbuf }
   | space* eof { [] }
-  | _ { error lexbuf "Expecting (comma|blank)-separated strings (1)" }
-and comma_or_blank_sep_strings_aux = parse
-  | space* ',' space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
-  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
+  | _ { error source lexbuf "Expecting (comma|blank)-separated strings (1)" }
+and comma_or_blank_sep_strings_aux source = parse
+  | space* ',' space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux source lexbuf }
+  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux source lexbuf }
   | space* eof { [] }
-  | _ { error lexbuf "Expecting (comma|blank)-separated strings (2)" }
+  | _ { error source lexbuf "Expecting (comma|blank)-separated strings (2)" }
 
-and parse_environment_path_w = parse
-  | ([^ ';']* as word) { word :: parse_environment_path_aux_w lexbuf }
-  | ';' ([^ ';']* as word) { "" :: word :: parse_environment_path_aux_w lexbuf }
+and parse_environment_path_w source = parse
+  | ([^ ';']* as word) { word :: parse_environment_path_aux_w source lexbuf }
+  | ';' ([^ ';']* as word) { "" :: word :: parse_environment_path_aux_w source lexbuf }
   | eof { [] }
-and parse_environment_path_aux_w = parse
-  | ';' ([^ ';']* as word) { word :: parse_environment_path_aux_w lexbuf }
+and parse_environment_path_aux_w source = parse
+  | ';' ([^ ';']* as word) { word :: parse_environment_path_aux_w source lexbuf }
   | eof { [] }
-  | _ { error lexbuf "Impossible: expecting colon-separated strings" }
+  | _ { error source lexbuf "Impossible: expecting colon-separated strings" }
 
-and parse_environment_path = parse
-  | ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
-  | ':' ([^ ':']* as word) { "" :: word :: parse_environment_path_aux lexbuf }
+and parse_environment_path source = parse
+  | ([^ ':']* as word) { word :: parse_environment_path_aux source lexbuf }
+  | ':' ([^ ':']* as word) { "" :: word :: parse_environment_path_aux source lexbuf }
   | eof { [] }
-and parse_environment_path_aux = parse
-  | ':' ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
+and parse_environment_path_aux source = parse
+  | ':' ([^ ':']* as word) { word :: parse_environment_path_aux source lexbuf }
   | eof { [] }
-  | _ { error lexbuf "Impossible: expecting colon-separated strings" }
+  | _ { error source lexbuf "Impossible: expecting colon-separated strings" }
 
-and conf_lines dir = parse
-  | space* '#' not_newline* newline { Lexing.new_line lexbuf; conf_lines dir lexbuf }
+and conf_lines dir source = parse
+  | space* '#' not_newline* newline { Lexing.new_line lexbuf; conf_lines dir source lexbuf }
   | space* '#' not_newline* eof { [] }
-  | space* newline { Lexing.new_line lexbuf; conf_lines dir lexbuf }
+  | space* newline { Lexing.new_line lexbuf; conf_lines dir source lexbuf }
   | space* eof { [] }
-  | space* (not_newline_nor_colon+ as k) space* ':' space*
+  | space* (not_newline_nor_colon+ as k) (sp* as s1) ':' (sp* as s2)
       {
         let bexpr =
           try Glob.parse ?dir k
-          with exn -> error lexbuf "Invalid globbing pattern %S" k (Printexc.to_string exn)
+          with exn -> error source lexbuf "Invalid globbing pattern %S" k (Printexc.to_string exn)
         in
-        let v1 = conf_value empty lexbuf in
-        let v2 = conf_values v1 lexbuf in
-        Lexing.new_line lexbuf; (* FIXME values may have escaped newlines *)
-        let rest = conf_lines dir lexbuf in (bexpr,v2) :: rest
+        sublex (count_lines lexbuf) s1; sublex (count_lines lexbuf) s2;
+        let v1 = conf_value empty source lexbuf in
+        let v2 = conf_values v1 source lexbuf in
+        let rest = conf_lines dir source lexbuf in (bexpr,v2) :: rest
       }
-  | _ { error lexbuf "Invalid line syntax" }
+  | _ { error source lexbuf "Invalid line syntax" }
 
-and conf_value x = parse
-  | '-'  (tag as tag) { { (x) with minus_tags = locate lexbuf tag :: x.minus_tags } }
-  | '+'? (tag as tag) { { (x) with plus_tags = locate lexbuf tag :: x.plus_tags } }
-  | (_ | eof) { error lexbuf "Invalid tag modifier only '+ or '-' are allowed as prefix for tag" }
+and conf_value x source = parse
+  | '-'  (tag as tag) { { (x) with minus_tags = locate source lexbuf tag :: x.minus_tags } }
+  | '+'? (tag as tag) { { (x) with plus_tags = locate source lexbuf tag :: x.plus_tags } }
+  | (_ | eof) { error source lexbuf "Invalid tag modifier only '+ or '-' are allowed as prefix for tag" }
 
-and conf_values x = parse
-  | space_or_esc_nl* ',' space_or_esc_nl* { conf_values (conf_value x lexbuf) lexbuf }
-  | (newline | eof) { x }
-  | (_ | eof) { error lexbuf "Only ',' separated tags are alllowed" }
+and conf_values x source = parse
+  | (sp* as s1) ',' (sp* as s2) {
+      sublex (count_lines lexbuf) s1; sublex (count_lines lexbuf) s2;
+      conf_values (conf_value x source lexbuf) source lexbuf
+    }
+  | newline { Lexing.new_line lexbuf; x }
+  | eof { x }
+  | _ { error source lexbuf "Only ',' separated tags are alllowed" }
 
-and path_scheme patt_allowed = parse
+and path_scheme patt_allowed source = parse
   | ([^ '%' ]+ as prefix)
-      { `Word prefix :: path_scheme patt_allowed lexbuf }
+      { `Word prefix :: path_scheme patt_allowed source lexbuf }
   | "%(" (variable as var) ')'
-      { `Var (var, Bool.True) :: path_scheme patt_allowed lexbuf }
+      { `Var (var, Bool.True) :: path_scheme patt_allowed source lexbuf }
   | "%(" (variable as var) ':' (pattern as patt) ')'
       { if patt_allowed then
           let patt = My_std.String.implode (unescape (Lexing.from_string patt)) in
-          `Var (var, Glob.parse patt) :: path_scheme patt_allowed lexbuf
+          `Var (var, Glob.parse patt) :: path_scheme patt_allowed source lexbuf
         else
-          error lexbuf "Patterns are not allowed in this pathname (%%(%s:%s) only in ~prod)" var patt }
+          error source lexbuf "Patterns are not allowed in this pathname (%%(%s:%s) only in ~prod)" var patt }
   | '%'
-      { `Var ("", Bool.True) :: path_scheme patt_allowed lexbuf }
+      { `Var ("", Bool.True) :: path_scheme patt_allowed source lexbuf }
   | eof
       { [] }
-  | _ { error lexbuf "Bad pathanme scheme" }
+  | _ { error source lexbuf "Bad pathanme scheme" }
 
 and unescape = parse
   | '\\' (['(' ')'] as c)        { c :: unescape lexbuf }
   | _ as c                       { c :: unescape lexbuf }
   | eof                          { [] }
 
-and ocamlfind_query = parse
+and ocamlfind_query source = parse
   | newline*
     "package:" space* (not_newline* as n) newline+
     "description:" space* (not_newline* as d) newline+
@@ -166,11 +175,17 @@ and ocamlfind_query = parse
     "linkopts:" space* (not_newline* as lo) newline+
     "location:" space* (not_newline* as l) newline+
     { n, d, v, a, lo, l }
-  | _ { error lexbuf "Bad ocamlfind query" }
+  | _ { error source lexbuf "Bad ocamlfind query" }
 
-and trim_blanks = parse
+and trim_blanks source = parse
   | blank* (not_blank* as word) blank* { word }
-  | _ { error lexbuf "Bad input for trim_blanks" }
+  | _ { error source lexbuf "Bad input for trim_blanks" }
 
-and tag_gen = parse
+and tag_gen source = parse
   | (normal+ as name) ('(' ([^')']* as param) ')')? { name, param }
+  | _ { error source lexbuf "Not a valid parametrized tag" }
+
+and count_lines lb = parse
+  | space* { count_lines lb lexbuf }
+  | '\\' newline { Lexing.new_line lb; count_lines lb lexbuf }
+  | eof { () }

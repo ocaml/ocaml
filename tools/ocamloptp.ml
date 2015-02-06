@@ -86,6 +86,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _safe_string = option "-safe-string"
   let _short_paths = option "-short-paths"
   let _strict_sequence = option "-strict-sequence"
+  let _strict_formats = option "-strict-formats"
   let _shared = option "-shared"
   let _thread = option "-thread"
   let _unsafe = option "-unsafe"
@@ -120,6 +121,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = option "-dscheduling"
   let _dlinear = option "-dlinear"
   let _dstartup = option "-dstartup"
+  let _opaque = option "-opaque"
 
   let anonymous = process_file
 end);;

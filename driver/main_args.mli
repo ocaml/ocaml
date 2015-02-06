@@ -26,6 +26,7 @@ module type Common_options = sig
   val _safe_string : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
+  val _strict_formats : unit -> unit
   val _unsafe : unit -> unit
   val _unsafe_string : unit -> unit
   val _version : unit -> unit
@@ -52,6 +53,7 @@ module type Compiler_options =  sig
   val _cclib : string -> unit
   val _ccopt : string -> unit
   val _config : unit -> unit
+  val _for_pack : string -> unit
   val _g : unit -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -130,13 +132,13 @@ module type Optcomp_options = sig
   include Common_options
   include Compiler_options
   include Optcommon_options
-  val _for_pack : string -> unit
   val _no_float_const_prop : unit -> unit
   val _nodynlink : unit -> unit
   val _p : unit -> unit
   val _pp : string -> unit
   val _S : unit -> unit
   val _shared : unit -> unit
+  val _opaque :  unit -> unit
 end;;
 
 module type Opttop_options = sig

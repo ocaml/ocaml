@@ -22,7 +22,7 @@ if a tag of the form [name(param)] is [acknowledge]d.
 A given tag may be declared several times with different actions. All actions
 will be executed, in the order they were declared. *)
 
-val acknowledge: Loc.location option -> string -> unit
+val acknowledge: Loc.source -> Loc.location option -> string -> unit
   (** Acknowledge a tag.
 
 If the tag is of the form [X(Y)], and have been declared using [declare],
@@ -37,7 +37,7 @@ This will make effective all instantiations [foo(bar)] such that the
 parametrized tag [foo] has been [declare]d and [foo(bar)] has been
 [acknowledge]d after the last [init] call. *)
 
-val partial_init: ?quiet:bool -> Tags.t -> unit
+val partial_init: ?quiet:bool -> Loc.source -> Tags.t -> unit
 (** Initialize a list of tags
 
 This will make effective the instances [foo(bar)] appearing

@@ -519,7 +519,7 @@ let dump_exe ic =
   primitives := read_primitive_table ic prim_size;
   ignore(Bytesections.seek_section ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
-  globals := Array.create (Array.length init_data) Empty;
+  globals := Array.make (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))
   done;

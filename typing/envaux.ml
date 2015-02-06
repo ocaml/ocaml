@@ -28,7 +28,7 @@ let reset_cache () =
   Env.reset_cache()
 
 let extract_sig env mty =
-  match Mtype.scrape env mty with
+  match Env.scrape_alias env mty with
     Mty_signature sg -> sg
   | _ -> fatal_error "Envaux.extract_sig"
 

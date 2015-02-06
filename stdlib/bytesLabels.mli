@@ -40,6 +40,12 @@ val make : int -> char -> bytes
 
     Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
+val init : int -> f:(int -> char) -> bytes
+(** [init n f] returns a fresh byte sequence of length [n],
+    with character [i] initialized to the result of [f i].
+
+    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+
 val empty : bytes
 (** A byte sequence of size 0. *)
 
@@ -105,6 +111,11 @@ val map : f:(char -> char) -> bytes -> bytes
 (** [map f s] applies function [f] in turn to all the bytes of [s] and
     stores the resulting bytes in a new sequence that is returned as
     the result. *)
+
+val mapi : f:(int -> char -> char) -> bytes -> bytes
+(** [mapi f s] calls [f] with each character of [s] and its
+    index (in increasing index order) and stores the resulting bytes
+    in a new sequence that is returned as the result. *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
@@ -198,5 +209,5 @@ external unsafe_blit :
     unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
   bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+val unsafe_to_string : bytes -> string
+val unsafe_of_string : string -> bytes

@@ -311,18 +311,15 @@ let clear_imports () =
   Consistbl.clear crc_units;
   imported_units := []
 
-let add_imports ps =
-  List.iter
-    (fun (name, _) -> imported_units := name :: !imported_units)
-    ps.ps_crcs
-
 let check_consistency ps =
   try
     List.iter
       (fun (name, crco) ->
          match crco with
             None -> ()
-          | Some crc -> Consistbl.check crc_units name crc ps.ps_filename)
+          | Some crc ->
+              imported_units := name :: !imported_units;
+              Consistbl.check crc_units name crc ps.ps_filename)
       ps.ps_crcs
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
@@ -348,8 +345,7 @@ let read_pers_struct modname filename =
              ps_flags = flags } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
-  add_imports ps;
-  check_consistency ps;
+  imported_units := name :: !imported_units;
   List.iter
     (function Rectypes ->
       if not !Clflags.recursive_types then
@@ -358,23 +354,27 @@ let read_pers_struct modname filename =
   Hashtbl.add persistent_structures modname (Some ps);
   ps
 
-let find_pers_struct name =
+let find_pers_struct ?(check=true) name =
   if name = "*predef*" then raise Not_found;
   let r =
     try Some (Hashtbl.find persistent_structures name)
     with Not_found -> None
   in
-  match r with
-  | Some None -> raise Not_found
-  | Some (Some sg) -> sg
-  | None ->
-      let filename =
-        try find_in_path_uncap !load_path (name ^ ".cmi")
-        with Not_found ->
-          Hashtbl.add persistent_structures name None;
-          raise Not_found
-      in
-      read_pers_struct name filename
+  let ps =
+    match r with
+    | Some None -> raise Not_found
+    | Some (Some sg) -> sg
+    | None ->
+        let filename =
+          try find_in_path_uncap !load_path (name ^ ".cmi")
+          with Not_found ->
+            Hashtbl.add persistent_structures name None;
+            raise Not_found
+        in
+        read_pers_struct name filename
+  in
+  if check then check_consistency ps;
+  ps
 
 let reset_cache () =
   current_unit := "";
@@ -654,11 +654,11 @@ and lookup_module ~load lid env : Path.t =
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
-	if !Clflags.transparent_modules && not load then
-	  try ignore (find_in_path_uncap !load_path (s ^ ".cmi"))
+        if !Clflags.transparent_modules && not load then
+          try ignore (find_pers_struct ~check:false s)
           with Not_found ->
 	    Location.prerr_warning Location.none (Warnings.No_cmi_file s)
-	else ignore (find_pers_struct s);
+        else ignore (find_pers_struct s);
         Pident(Ident.create_persistent s)
       end
   | Ldot(l, s) ->
@@ -1577,6 +1577,7 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
 
 let read_signature modname filename =
   let ps = read_pers_struct modname filename in
+  check_consistency ps;
   ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
