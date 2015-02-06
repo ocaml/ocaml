@@ -10,6 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* ATTENTION ! When you add or modify a parsing or typing option, do not forget
+  to update ocamldoc options too, in odoc_args.ml. *)
+
 module type Common_options = sig
   val _absname : unit -> unit
   val _I : string -> unit
@@ -152,6 +155,22 @@ module type Opttop_options = sig
   val _stdin : unit -> unit
 end;;
 
+module type Ocamldoc_options =  sig
+  include Common_options
+  val _impl : string -> unit
+  val _intf : string -> unit
+  val _intf_suffix : string -> unit
+  val _pp : string -> unit
+  val _principal : unit -> unit
+  val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
+  val _short_paths : unit -> unit
+  val _thread : unit -> unit
+  val _v : unit -> unit
+  val _verbose : unit -> unit
+  val _vmthread : unit -> unit
+end
+
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list
 end;;
@@ -160,3 +179,4 @@ module Make_bytecomp_options (F : Bytecomp_options) : Arg_list;;
 module Make_bytetop_options (F : Bytetop_options) : Arg_list;;
 module Make_optcomp_options (F : Optcomp_options) : Arg_list;;
 module Make_opttop_options (F : Opttop_options) : Arg_list;;
+module Make_ocamldoc_options (F : Ocamldoc_options) : Arg_list;;

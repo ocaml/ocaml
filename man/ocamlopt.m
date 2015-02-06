@@ -457,8 +457,9 @@ errors, the intermediate file is deleted afterwards.
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
-The format of the input and output of the preprocessor
-are not yet documented.
+The module
+.BR Ast_mapper (3)
+implements the external interface of a preprocessor.
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all

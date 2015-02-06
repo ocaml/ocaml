@@ -48,6 +48,8 @@ let select_shiftop = function
 exception Use_default
 
 let r1 = phys_reg 1
+let r6 = phys_reg 6
+let r7 = phys_reg 7
 let r12 = phys_reg 8
 
 let pseudoregs_for_operation op arg res =
@@ -58,10 +60,12 @@ let pseudoregs_for_operation op arg res =
     Iintop Imul | Ispecific Imuladd when !arch < ARMv6 ->
       (arg, [| res.(0); arg.(0) |])
   (* For smull rdlo,rdhi,rn,rm (pre-ARMv6) the registers rdlo, rdhi and rn
-     must be different. We deal with this by  pretending that rn is also a
-     result of the smull operation. *)
+     must be different.  Also, rdlo (whose contents we discard) is always
+     forced to be r12 in proc.ml, which means that neither rdhi and rn can
+     be r12.  To keep things simple, we force both of those two to specific
+     hard regs: rdhi in r6 and rn in r7. *)
   | Iintop Imulh when !arch < ARMv6 ->
-      (arg, [| res.(0); arg.(0) |])
+      ([| r7; arg.(1) |], [| r6 |])
   (* Soft-float Iabsf and Inegf: arg.(0) and res.(0) must be the same *)
   | Iabsf | Inegf when !fpu = Soft ->
       ([|res.(0); arg.(1)|], res)

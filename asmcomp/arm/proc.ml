@@ -219,6 +219,7 @@ let safe_register_pressure = function
     Iextcall(_, _) -> if abi = EABI then 0 else 4
   | Ialloc _ -> if abi = EABI then 0 else 7
   | Iconst_symbol _ when !pic_code -> 7
+  | Iintop Imulh when !arch < ARMv6 -> 8
   | _ -> 9
 
 let max_register_pressure = function
@@ -227,6 +228,7 @@ let max_register_pressure = function
   | Iconst_symbol _ when !pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
+  | Iintop Imulh when !arch < ARMv6 -> [| 8; 16; 32 |]
   | _ -> [| 9; 16; 32 |]
 
 (* Pure operations (without any side effect besides updating their result

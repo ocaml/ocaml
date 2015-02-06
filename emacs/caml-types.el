@@ -113,9 +113,9 @@ type call ident"
 (make-variable-buffer-local 'caml-types-annotation-date)
 
 (defvar caml-types-buffer-name "*caml-types*"
-  "Name of buffer for diplaying caml types")
+  "Name of buffer for displaying caml types")
 (defvar caml-types-buffer nil
-  "buffer for diplaying caml types")
+  "buffer for displaying caml types")
 
 (defun caml-types-show-type (arg)
   "Show the type of expression or pattern at point.
