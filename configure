@@ -768,6 +768,7 @@ if test $with_sharedlibs = "yes"; then
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
+    arm*-*-freebsd*)              natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
   esac
 fi
@@ -818,6 +819,7 @@ case "$target" in
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
   armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
   armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
+  armv6*-*-freebsd*)            arch=arm; model=armv6; system=freebsd;;
   armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
   armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
   arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
@@ -893,6 +895,8 @@ case "$arch,$system" in
                     *gcc*) aspp="${TOOLPREF}gcc -c";;
                     *) aspp="${TOOLPREF}as -P";;
                   esac;;
+  arm,freebsd)    as="${TOOLPREF}cc -c"
+                  aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
   amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)

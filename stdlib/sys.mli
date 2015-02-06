@@ -11,7 +11,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** System interface. *)
+(** System interface.
+
+  Every function in this module raises [Sys_error] with an
+  informative message when the underlying system call signal
+  an error.
+*)
 
 val argv : string array
 (** The command line arguments given to the process.

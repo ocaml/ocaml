@@ -37,7 +37,7 @@ MSG msg;
 
 static char *szOcamlWindowClass = "OcamlWindowClass";
 static BOOL gr_initialized = 0;
-CAMLprim value caml_gr_clear_graph(void);
+CAMLprim value caml_gr_clear_graph(value unit);
 HANDLE hInst;
 
 HFONT CreationFont(char *name)
@@ -268,7 +268,7 @@ CAMLprim value caml_gr_open_graph(value arg)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_close_graph(void)
+CAMLprim value caml_gr_close_graph(value unit)
 {
         if (gr_initialized) {
                 PostMessage(grwindow.hwnd, WM_CLOSE, 0, 0);
@@ -277,7 +277,7 @@ CAMLprim value caml_gr_close_graph(void)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_clear_graph(void)
+CAMLprim value caml_gr_clear_graph(value unit)
 {
         gr_check_open();
         if(grremember_mode) {
@@ -291,13 +291,13 @@ CAMLprim value caml_gr_clear_graph(void)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_size_x(void)
+CAMLprim value caml_gr_size_x(value unit)
 {
         gr_check_open();
         return Val_int(grwindow.width);
 }
 
-CAMLprim value caml_gr_size_y(void)
+CAMLprim value caml_gr_size_y(value unit)
 {
         gr_check_open();
         return Val_int(grwindow.height);
@@ -312,7 +312,7 @@ CAMLprim value caml_gr_resize_window (value vx, value vy)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_synchronize(void)
+CAMLprim value caml_gr_synchronize(value unit)
 {
         gr_check_open();
         BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
@@ -337,7 +337,7 @@ CAMLprim value caml_gr_sigio_signal(value unit)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_sigio_handler(void)
+CAMLprim value caml_gr_sigio_handler(value unit)
 {
         return Val_unit;
 }

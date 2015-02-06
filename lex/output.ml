@@ -77,7 +77,7 @@ let output_entry sourcefile ic oc has_refill oci e =
     output_args  e.auto_args
     (fun oc x ->
       if x > 0 then
-        fprintf oc "lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; " x)
+        fprintf oc "lexbuf.Lexing.lex_mem <- Array.make %d (-1) ; " x)
     e.auto_mem_size
     (output_memory_actions "  ") init_moves
     e.auto_name

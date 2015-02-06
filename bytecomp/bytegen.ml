@@ -717,8 +717,8 @@ let rec comp_expr env exp sz cont =
 
 (* Build indirection vectors *)
       let store = Storer.mk_store () in
-      let act_consts = Array.create sw.sw_numconsts 0
-      and act_blocks = Array.create sw.sw_numblocks 0 in
+      let act_consts = Array.make sw.sw_numconsts 0
+      and act_blocks = Array.make sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
       | Some fail -> ignore (store.act_store fail)
       | None      -> ()
@@ -740,7 +740,7 @@ let rec comp_expr env exp sz cont =
           | _ -> ())
         a ;
 *)
-      let lbls = Array.create (Array.length acts) 0 in
+      let lbls = Array.make (Array.length acts) 0 in
       for i = Array.length acts-1 downto 0 do
         let lbl,c1 = label_code (comp_expr env acts.(i) sz (branch :: !c)) in
         lbls.(i) <- lbl ;
@@ -748,11 +748,11 @@ let rec comp_expr env exp sz cont =
       done ;
 
 (* Build label vectors *)
-      let lbl_blocks = Array.create sw.sw_numblocks 0 in
+      let lbl_blocks = Array.make sw.sw_numblocks 0 in
       for i = sw.sw_numblocks - 1 downto 0 do
         lbl_blocks.(i) <- lbls.(act_blocks.(i))
       done;
-      let lbl_consts = Array.create sw.sw_numconsts 0 in
+      let lbl_consts = Array.make sw.sw_numconsts 0 in
       for i = sw.sw_numconsts - 1 downto 0 do
         lbl_consts.(i) <- lbls.(act_consts.(i))
       done;

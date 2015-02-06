@@ -32,6 +32,12 @@ let to_buffer buff ofs len v flags =
   then invalid_arg "Marshal.to_buffer: substring out of bounds"
   else to_buffer_unsafe buff ofs len v flags
 
+(* The functions below use byte sequences as input, never using any
+   mutation. It makes sense to use non-mutated [bytes] rather than
+   [string], because we really work with sequences of bytes, not
+   a text representation.
+*)
+
 external from_channel: in_channel -> 'a = "caml_input_value"
 external from_bytes_unsafe: bytes -> int -> 'a
                            = "caml_input_value_from_string"
@@ -54,4 +60,7 @@ let from_bytes buff ofs =
     else from_bytes_unsafe buff ofs
   end
 
-let from_string buff ofs = from_bytes (Bytes.unsafe_of_string buff) ofs
+let from_string buff ofs =
+  (* Bytes.unsafe_of_string is safe here, as the produced byte
+     sequence is never mutated *)
+  from_bytes (Bytes.unsafe_of_string buff) ofs

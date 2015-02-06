@@ -46,6 +46,9 @@ val of_list : 'a list -> 'a t
 val of_string : string -> char t
 (** Return the stream of the characters of the string parameter. *)
 
+val of_bytes : bytes -> char t
+(** Return the stream of the characters of the bytes parameter. *)
+
 val of_channel : in_channel -> char t
 (** Return the stream of the characters read from the input channel. *)
 

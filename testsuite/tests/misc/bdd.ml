@@ -31,14 +31,14 @@ let getId bdd =
 let initSize_1 = 8*1024 - 1
 let nodeC      = ref 1
 let sz_1       = ref initSize_1
-let htab       = ref(Array.create (!sz_1+1) [])
+let htab       = ref(Array.make (!sz_1+1) [])
 let n_items    = ref 0
 let hashVal x y v = x lsl 1 + y + v lsl 2
 
 let resize newSize =
       let arr     = !htab in
       let newSz_1 = newSize-1 in
-      let newArr  = Array.create newSize [] in
+      let newArr  = Array.make newSize [] in
       let rec copyBucket bucket =
                 match bucket with
                   []     -> ()
@@ -71,7 +71,7 @@ let rec insert idl idh v ind bucket newNode =
 
 let resetUnique () = (
       sz_1    := initSize_1;
-      htab    := Array.create (!sz_1+1) [];
+      htab    := Array.make (!sz_1+1) [];
       n_items := 0;
       nodeC   := 1
       )
@@ -111,14 +111,14 @@ let mkVar x   = mkNode zero x one
 
 
 let cacheSize = 1999
-let andslot1  = Array.create cacheSize 0
-let andslot2  = Array.create cacheSize 0
-let andslot3  = Array.create cacheSize zero
-let xorslot1  = Array.create cacheSize 0
-let xorslot2  = Array.create cacheSize 0
-let xorslot3  = Array.create cacheSize zero
-let notslot1  = Array.create cacheSize 0
-let notslot2  = Array.create cacheSize one
+let andslot1  = Array.make cacheSize 0
+let andslot2  = Array.make cacheSize 0
+let andslot3  = Array.make cacheSize zero
+let xorslot1  = Array.make cacheSize 0
+let xorslot2  = Array.make cacheSize 0
+let xorslot3  = Array.make cacheSize zero
+let notslot1  = Array.make cacheSize 0
+let notslot2  = Array.make cacheSize one
 let hash x y  = ((x lsl 1)+y) mod cacheSize
 
 let rec not n =
@@ -196,7 +196,7 @@ let random() =
   seed := !seed * 25173 + 17431; !seed land 1 > 0
 
 let random_vars n =
-  let vars = Array.create n false in
+  let vars = Array.make n false in
   for i = 0 to n - 1 do vars.(i) <- random() done;
   vars
 

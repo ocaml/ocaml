@@ -32,4 +32,11 @@ let () = test "PredicateFlag"
   ~matching:[_build [M.f "test.ml.depends"]]
   ~targets:("test.ml.depends", []) ();;
 
+let () = test "ToolsFlagsConflict"
+  ~description:"PR#6300: conflicts between -ocamlc and -use-ocamlfind options"
+  ~options:[`use_ocamlfind; `ocamlc "\"ocamlc -annot\""]
+  ~tree:[T.f "test.ml" ~content:"let x = 1"]
+  ~matching:[_build [M.f "test.annot"; M.f "test.byte"]]
+  ~targets:("test.byte", []) ();;
+
 run ~root:"_test_findlibonly";;

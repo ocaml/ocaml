@@ -2975,7 +2975,8 @@ and type_format loc str env =
         | End_of_format ->
           mk_constr "End_of_format" []
       in
-      let Fmt_EBB fmt = fmt_ebb_of_string str in
+      let legacy_behavior = not !Clflags.strict_formats in
+      let Fmt_EBB fmt = fmt_ebb_of_string ~legacy_behavior str in
       mk_constr "Format" [ mk_fmt fmt; mk_string str ]
     ))
   with Failure msg ->

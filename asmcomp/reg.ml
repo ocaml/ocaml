@@ -73,13 +73,13 @@ let create ty =
 
 let createv tyv =
   let n = Array.length tyv in
-  let rv = Array.create n dummy in
+  let rv = Array.make n dummy in
   for i = 0 to n-1 do rv.(i) <- create tyv.(i) done;
   rv
 
 let createv_like rv =
   let n = Array.length rv in
-  let rv' = Array.create n dummy in
+  let rv' = Array.make n dummy in
   for i = 0 to n-1 do rv'.(i) <- create rv.(i).typ done;
   rv'
 

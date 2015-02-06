@@ -18,7 +18,7 @@ type op_class =
   | Op_checkbound     (* checkbound-style: no result, can raise an exn *)
   | Op_load           (* memory load *)
   | Op_store of bool  (* memory store, false = init, true = assign *)
-  | Op_other          (* anything else that does not store in memory *)
+  | Op_other   (* anything else that does not allocate nor store in memory *)
 
 class cse_generic : object
   (* The following methods can be overriden to handle processor-specific

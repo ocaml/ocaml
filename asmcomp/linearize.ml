@@ -224,7 +224,7 @@ let rec linear i n =
             (linear ifso (add_branch lbl_end nelse))
       end
   | Iswitch(index, cases) ->
-      let lbl_cases = Array.create (Array.length cases) 0 in
+      let lbl_cases = Array.make (Array.length cases) 0 in
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let n2 = ref (discard_dead_code n1) in
       for i = Array.length cases - 1 downto 0 do

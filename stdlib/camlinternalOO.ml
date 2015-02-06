@@ -128,7 +128,7 @@ let rec fit_size n =
 let new_table pub_labels =
   incr table_count;
   let len = Array.length pub_labels in
-  let methods = Array.create (len*2+2) dummy_met in
+  let methods = Array.make (len*2+2) dummy_met in
   methods.(0) <- magic len;
   methods.(1) <- magic (fit_size len * Sys.word_size / 8 - 1);
   for i = 0 to len - 1 do methods.(i*2+3) <- magic pub_labels.(i) done;
@@ -144,7 +144,7 @@ let new_table pub_labels =
 let resize array new_size =
   let old_size = Array.length array.methods in
   if new_size > old_size then begin
-    let new_buck = Array.create new_size dummy_met in
+    let new_buck = Array.make new_size dummy_met in
     Array.blit array.methods 0 new_buck 0 old_size;
     array.methods <- new_buck
  end
@@ -267,7 +267,7 @@ let to_array arr =
 let new_methods_variables table meths vals =
   let meths = to_array meths in
   let nmeths = Array.length meths and nvals = Array.length vals in
-  let res = Array.create (nmeths + nvals) 0 in
+  let res = Array.make (nmeths + nvals) 0 in
   for i = 0 to nmeths - 1 do
     res.(i) <- get_method_label table meths.(i)
   done;

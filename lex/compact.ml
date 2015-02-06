@@ -92,13 +92,13 @@ type t_compact =
   mutable c_last_used : int ; }
 
 let create_compact () =
-  { c_trans = Array.create 1024 0 ;
-    c_check = Array.create 1024 (-1) ;
+  { c_trans = Array.make 1024 0 ;
+    c_check = Array.make 1024 (-1) ;
     c_last_used = 0 ; }
 
 let reset_compact c =
-  c.c_trans <- Array.create 1024 0 ;
-  c.c_check <- Array.create 1024 (-1) ;
+  c.c_trans <- Array.make 1024 0 ;
+  c.c_check <- Array.make 1024 (-1) ;
   c.c_last_used <- 0
 
 (* One compacted table for transitions, one other for memory actions *)
@@ -110,9 +110,9 @@ let grow_compact c =
   let old_trans = c.c_trans
   and old_check = c.c_check in
   let n = Array.length old_trans in
-  c.c_trans <- Array.create (2*n) 0;
+  c.c_trans <- Array.make (2*n) 0;
   Array.blit old_trans 0 c.c_trans 0 c.c_last_used;
-  c.c_check <- Array.create (2*n) (-1);
+  c.c_check <- Array.make (2*n) (-1);
   Array.blit old_check 0 c.c_check 0 c.c_last_used
 
 let do_pack state_num orig compact =
@@ -142,8 +142,8 @@ let do_pack state_num orig compact =
   (base, default)
 
 let pack_moves state_num move_t =
-  let move_v = Array.create 257 0
-  and move_m = Array.create 257 0 in
+  let move_v = Array.make 257 0
+  and move_m = Array.make 257 0 in
   for i = 0 to 256 do
     let act,c = move_t.(i) in
     move_v.(i) <- (match act with Backtrack -> -1 | Goto n -> n) ;
@@ -175,12 +175,12 @@ type lex_tables =
 
 let compact_tables state_v =
   let n = Array.length state_v in
-  let base = Array.create n 0
-  and backtrk = Array.create n (-1)
-  and default = Array.create n 0
-  and base_code = Array.create n 0
-  and backtrk_code = Array.create n 0
-  and default_code = Array.create n 0 in
+  let base = Array.make n 0
+  and backtrk = Array.make n (-1)
+  and default = Array.make n 0
+  and base_code = Array.make n 0
+  and backtrk_code = Array.make n 0
+  and default_code = Array.make n 0 in
   for i = 0 to n - 1 do
     match state_v.(i) with
     | Perform (n,c) ->

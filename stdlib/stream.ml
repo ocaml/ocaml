@@ -159,6 +159,15 @@ let of_string s =
     else None)
 ;;
 
+let of_bytes s =
+  let count = ref 0 in
+  from (fun _ ->
+    let c = !count in
+    if c < Bytes.length s
+    then (incr count; Some (Bytes.get s c))
+    else None)
+;;
+
 let of_channel ic =
   {count = 0;
    data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}

@@ -102,7 +102,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
-  let _open s = open_module := s :: !open_module
+  let _open s = open_modules := s :: !open_modules
   let _output_obj = set output_c_object
   let _p = set gprofile
   let _pack = set make_package
@@ -114,6 +114,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _safe_string = clear unsafe_string
   let _short_paths = clear real_paths
   let _strict_sequence = set strict_sequence
+  let _strict_formats = set strict_formats
   let _shared () = shared := true; dlcode := true
   let _S = set keep_asm_file
   let _thread = set use_threads
@@ -149,6 +150,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _opaque = set opaque
 
   let anonymous = anonymous
 end);;

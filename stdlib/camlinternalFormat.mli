@@ -25,8 +25,10 @@ type ('b, 'c) acc_formatting_gen =
 and ('b, 'c) acc =
   | Acc_formatting_lit of ('b, 'c) acc * formatting_lit
   | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen
-  | Acc_string         of ('b, 'c) acc * string
-  | Acc_char           of ('b, 'c) acc * char
+  | Acc_string_literal of ('b, 'c) acc * string
+  | Acc_char_literal   of ('b, 'c) acc * char
+  | Acc_data_string    of ('b, 'c) acc * string
+  | Acc_data_char      of ('b, 'c) acc * char
   | Acc_delay          of ('b, 'c) acc * ('b -> 'c)
   | Acc_flush          of ('b, 'c) acc
   | Acc_invalid_arg    of ('b, 'c) acc * string
@@ -53,7 +55,11 @@ val type_format :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty ->
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
 
-val fmt_ebb_of_string : string -> ('b, 'c, 'e, 'f) fmt_ebb
+val fmt_ebb_of_string : ?legacy_behavior:bool -> string -> ('b, 'c, 'e, 'f) fmt_ebb
+(* warning: the optional flag legacy_behavior is EXPERIMENTAL and will
+   be removed in the next version. You must not set it explicitly. It
+   is only used by the type-checker implementation.
+*)
 
 val format_of_string_fmtty :
   string ->
