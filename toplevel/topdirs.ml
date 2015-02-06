@@ -271,6 +271,8 @@ let dir_trace ppf lid =
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
+            with {desc=Tarrow _} -> true | _ -> false)
         then begin
         match is_traced clos with
         | Some opath ->

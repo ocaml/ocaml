@@ -411,4 +411,9 @@ Error: Signature mismatch:
          sig module N = M.N module P = M.P end
        In module Q.N:
        Modules do not match: sig  end is not included in (module M.N)
+#           module M : sig val f : 'a -> 'a end
+module rec R : sig module M : sig val f : 'a -> 'a end end
+# - : int = 3
+# module rec R : sig module M = M end
+# - : int = 3
 # 

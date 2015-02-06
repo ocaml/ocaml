@@ -364,14 +364,12 @@ let () =
 
 
 let rec report_exception_rec n ppf exn =
-  match error_of_exn exn with
+  try match error_of_exn exn with
   | Some err ->
-      begin try
-        fprintf ppf "@[%a@]@." report_error err
-      with exn when n > 0 ->
-        report_exception_rec (n-1) ppf exn
-      end
+      fprintf ppf "@[%a@]@." report_error err
   | None -> raise exn
+  with exn when n > 0 ->
+    report_exception_rec (n-1) ppf exn
 
 let report_exception ppf exn = report_exception_rec 5 ppf exn
 

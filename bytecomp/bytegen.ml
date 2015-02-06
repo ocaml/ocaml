@@ -441,7 +441,6 @@ let rec comp_expr env exp sz cont =
         let ofs = Ident.find_same id env.ce_rec in
         Koffsetclosure(ofs) :: cont
       with Not_found ->
-        Format.eprintf "%a@." Ident.print id;
         fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
       end
   | Lconst cst ->
