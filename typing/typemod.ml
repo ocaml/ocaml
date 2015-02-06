@@ -800,6 +800,29 @@ and transl_recmodule_modtypes loc env sdecls =
   in
   (dcl2, env2)
 
+(* Simplify multiple specifications of a value or an extension in a signature.
+   (Other signature components, e.g. types, modules, etc, are checked for
+   name uniqueness.)  If multiple specifications with the same name,
+   keep only the last (rightmost) one. *)
+
+let simplify_signature sg =
+  let rec simplif val_names ext_names res = function
+    [] -> res
+  | (Sig_value(id, descr) as component) :: sg ->
+      let name = Ident.name id in
+      simplif (StringSet.add name val_names) ext_names
+              (if StringSet.mem name val_names then res else component :: res)
+              sg
+  | (Sig_typext(id, ext, es) as component) :: sg ->
+      let name = Ident.name id in
+      simplif val_names (StringSet.add name ext_names)
+              (if StringSet.mem name ext_names then res else component :: res)
+              sg
+  | component :: sg ->
+      simplif val_names ext_names (component :: res) sg
+  in
+    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+
 (* Try to convert a module expression to a module path. *)
 
 exception Not_a_path
@@ -1052,11 +1075,16 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
   | Pmod_structure sstr ->
       let (str, sg, finalenv) =
         type_structure funct_body anchor env sstr smod.pmod_loc in
-      rm { mod_desc = Tmod_structure str;
-           mod_type = Mty_signature sg;
-           mod_env = env;
-           mod_attributes = smod.pmod_attributes;
-           mod_loc = smod.pmod_loc }
+      let md =
+        rm { mod_desc = Tmod_structure str;
+             mod_type = Mty_signature sg;
+             mod_env = env;
+             mod_attributes = smod.pmod_attributes;
+             mod_loc = smod.pmod_loc }
+      in
+      let sg' = simplify_signature sg in
+      if List.length sg' = List.length sg then md else
+      wrap_constraint env md (Mty_signature sg') Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
       let ty_arg = may_map (fun m -> m.mty_type) mty in
@@ -1436,39 +1464,6 @@ and normalize_signature_item env = function
   | Sig_module(id, md, _) -> normalize_modtype env md.md_type
   | _ -> ()
 
-(* Simplify multiple specifications of a value or an extension in a signature.
-   (Other signature components, e.g. types, modules, etc, are checked for
-   name uniqueness.)  If multiple specifications with the same name,
-   keep only the last (rightmost) one. *)
-
-let rec simplify_modtype mty =
-  match mty with
-    Mty_ident path -> mty
-  | Mty_alias path -> mty
-  | Mty_functor(id, arg, res) -> Mty_functor(id, arg, simplify_modtype res)
-  | Mty_signature sg -> Mty_signature(simplify_signature sg)
-
-and simplify_signature sg =
-  let rec simplif val_names ext_names res = function
-    [] -> res
-  | (Sig_value(id, descr) as component) :: sg ->
-      let name = Ident.name id in
-      simplif (StringSet.add name val_names) ext_names
-              (if StringSet.mem name val_names then res else component :: res)
-              sg
-  | (Sig_typext(id, ext, es) as component) :: sg ->
-      let name = Ident.name id in
-      simplif val_names (StringSet.add name ext_names)
-              (if StringSet.mem name ext_names then res else component :: res)
-              sg
-  | Sig_module(id, md, rs) :: sg ->
-      let md = {md with md_type = simplify_modtype md.md_type} in
-      simplif val_names ext_names (Sig_module(id, md, rs) :: res) sg
-  | component :: sg ->
-      simplif val_names ext_names (component :: res) sg
-  in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
-
 (* Extract the module type of a module expression *)
 
 let type_module_type_of env smod =
@@ -1485,8 +1480,6 @@ let type_module_type_of env smod =
   let mty = tmty.mod_type in
   (* PR#6307: expand aliases at root and submodules *)
   let mty = Mtype.remove_aliases env mty in
-  (* PR#5037: clean up inferred signature to remove duplicate specs *)
-  let mty = simplify_modtype mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));

@@ -157,6 +157,39 @@ let is_runtime_component = function
   | Sig_module(_,_,_)
   | Sig_class(_, _,_) -> true
 
+(* Print a coercion *)
+
+let rec print_list pr ppf = function
+    [] -> ()
+  | [a] -> pr ppf a
+  | a :: l -> pr ppf a; Format.fprintf ppf ";@ "; print_list pr ppf l
+let print_list pr ppf l =
+  Format.fprintf ppf "[@[%a@]]" (print_list pr) l
+
+let rec print_coercion ppf c =
+  let pr fmt = Format.fprintf ppf fmt in
+  match c with
+    Tcoerce_none -> pr "id"
+  | Tcoerce_structure (fl, nl) ->
+      pr "@[<2>struct@ %a@ %a@]"
+        (print_list print_coercion2) fl
+        (print_list print_coercion3) nl
+  | Tcoerce_functor (inp, out) ->
+      pr "@[<2>functor@ (%a)@ (%a)@]"
+        print_coercion inp
+        print_coercion out
+  | Tcoerce_primitive pd ->
+      pr "prim %s" pd.Primitive.prim_name
+  | Tcoerce_alias (p, c) ->
+      pr "@[<2>alias %a@ (%a)@]"
+        Printtyp.path p
+        print_coercion c
+and print_coercion2 ppf (n, c) =
+  Format.fprintf ppf "@[%d,@ %a@]" n print_coercion c
+and print_coercion3 ppf (i, n, c) =
+  Format.fprintf ppf "@[%s, %d,@ %a@]"
+    (Ident.unique_name i) n print_coercion c
+
 (* Simplify a structure coercion *)
 
 let simplify_structure_coercion cc id_pos_list =
@@ -414,6 +447,15 @@ let modtypes env mty1 mty2 = modtypes env [] Subst.identity mty1 mty2
 let signatures env sig1 sig2 = signatures env [] Subst.identity sig1 sig2
 let type_declarations env id decl1 decl2 =
   type_declarations env [] Subst.identity id decl1 decl2
+
+(*
+let modtypes env m1 m2 =
+  let c = modtypes env m1 m2 in
+  Format.eprintf "@[<2>modtypes@ %a@ %a =@ %a@]@."
+    Printtyp.modtype m1 Printtyp.modtype m2
+    print_coercion c;
+  c
+*)
 
 (* Error report *)
 
