@@ -412,6 +412,3 @@ let reset () =
   cmx_required := [];
   interfaces := [];
   implementations := []
-
-
-

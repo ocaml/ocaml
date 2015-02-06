@@ -608,7 +608,7 @@ end) = struct
 
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
-    Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+    Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
         try
@@ -991,6 +991,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
+      if List.length spl < 2 then
+        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
       let ty = newty (Ttuple(List.map snd spl_ann)) in
       unify_pat_types loc !env ty expected_ty;
@@ -1083,6 +1085,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
+      if lid_sp_list = [] then
+        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
       let opath, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
@@ -1785,9 +1789,11 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
-    let fmt6_path = get_camlinternalFormat_path env "format6" in
-    let is_format = match ty_exp.desc, fmt6_path with
-      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 ->
+    let fmt6_path =
+      Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
+                  "format6", 0)) in
+    let is_format = match ty_exp.desc with
+      | Tconstr(path, _, _) when Path.same path fmt6_path ->
         if !Clflags.principal && ty_exp.level <> generic_level then
           Location.prerr_warning loc
             (Warnings.Not_principal "this coercion to format6");
@@ -1796,7 +1802,7 @@ and type_expect_ ?in_function env sexp ty_expected =
     in
     if is_format then
       let format_parsetree =
-        { sexp with pexp_desc = type_format loc str env }  in
+        { (type_format loc str env) with pexp_loc = sexp.pexp_loc }  in
       type_expect ?in_function env format_parsetree ty_expected
     else
       rue {
@@ -1876,6 +1882,8 @@ and type_expect_ ?in_function env sexp ty_expected =
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected "" caselist
   | Pexp_apply(sfunct, sargs) ->
+      if sargs = [] then
+        Syntaxerr.ill_formed_ast loc "Function application with no argument.";
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
@@ -1945,6 +1953,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_tuple sexpl ->
+      if List.length sexpl < 2 then
+        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
       let to_unify = newgenty (Ttuple subtypes) in
       unify_exp_types loc env to_unify ty_expected;
@@ -1995,6 +2005,8 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
+      if lid_sexp_list = [] then
+        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
       let opt_exp =
         match opt_sexp with
           None -> None
@@ -2739,32 +2751,20 @@ and type_label_access env loc srecord lid =
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
-and camlinternalFormatBasics_lident =
-  Longident.Ldot (Longident.Lident "Pervasives", "CamlinternalFormatBasics")
-
-and get_camlinternalFormat_path env tyname =
-  try
-    let cfb_path = Env.lookup_module ~load:true camlinternalFormatBasics_lident env in
-    Some (Path.Pdot (cfb_path, tyname, 0))
-  with Not_found -> None
-
 and type_format loc str env =
+  let loc = {loc with Location.loc_ghost = true} in
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
       let mk_exp_loc pexp_desc = {
         pexp_desc = pexp_desc;
-        pexp_loc = Location.none;
+        pexp_loc = loc;
         pexp_attributes = [];
       } and mk_lid_loc lid = {
         txt = lid;
-        loc = Location.none;
-      } and mk_typ_loc ptyp_desc = {
-        ptyp_desc = ptyp_desc;
-        ptyp_loc = Location.none;
-        ptyp_attributes = [];
+        loc = loc;
       } in
       let mk_constr name args =
-        let lid = Longident.Ldot (camlinternalFormatBasics_lident, name) in
+        let lid = Longident.(Ldot(Lident "CamlinternalFormatBasics", name)) in
         let arg = match args with
           | []          -> None
           | [ e ]       -> Some e
@@ -2974,17 +2974,8 @@ and type_format loc str env =
           mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
         | End_of_format ->
           mk_constr "End_of_format" [] in
-      let mk_format fmt str =
-        mk_constr "Format" [ mk_fmt fmt; mk_string str ] in
       let Fmt_EBB fmt = fmt_ebb_of_string str in
-      let exp = { (mk_format fmt str) with pexp_loc = loc } in
-      let pervasives_format6_ty =
-        let lid = Longident.Ldot (Longident.Lident "Pervasives", "format6") in
-        let rec gen_params n = match n with
-          | 0 -> []
-          | _ -> mk_typ_loc Ptyp_any :: gen_params (n - 1) in
-        mk_typ_loc (Ptyp_constr (mk_lid_loc lid, gen_params 6)) in
-      Pexp_constraint (exp, pervasives_format6_ty)
+      mk_constr "Format" [ mk_fmt fmt; mk_string str ]
     ))
   with Failure msg ->
     raise (Error (loc, env, Invalid_format msg))
@@ -3661,7 +3652,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                       slot := (name, vd) :: !slot; rec_needed := true
                   | None ->
                       List.iter
-                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (fun (name, vd) -> Env.mark_value_used env name vd)
                         (get_ref slot);
                       used := true;
                       some_used := true

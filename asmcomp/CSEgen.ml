@@ -219,7 +219,7 @@ method private cse n i =
                      does not destroy any regs *)
                   insert_move res i.res (self#cse n3 i.next)
               | _ ->
-                  let n3 = set_known_regs n2 i.res vres in            
+                  let n3 = set_known_regs n2 i.res vres in
                   {i with next = self#cse n3 i.next}
               end
           | None ->
@@ -240,7 +240,7 @@ method private cse n i =
          let n2 = set_unknown_regs n1 i.res in
          let n3 = self#kill_loads n2 in
          {i with next = self#cse n3 i.next}
-      end        
+      end
   (* For control structures, we set the numbering to empty at every
      join point, but propagate the current numbering across fork points. *)
   | Iifthenelse(test, ifso, ifnot) ->
@@ -255,16 +255,15 @@ method private cse n i =
       {i with desc = Iloop(self#cse empty_numbering body);
               next = self#cse empty_numbering i.next}
   | Icatch(nfail, body, handler) ->
-      {i with desc = Icatch(nfail, self#cse n body, self#cse empty_numbering handler);
+      {i with desc = Icatch(nfail, self#cse n body,
+                            self#cse empty_numbering handler);
               next = self#cse empty_numbering i.next}
   | Itrywith(body, handler) ->
-      {i with desc = Itrywith(self#cse n body, self#cse empty_numbering handler);
+      {i with desc = Itrywith(self#cse n body,
+                              self#cse empty_numbering handler);
               next = self#cse empty_numbering i.next}
 
 method fundecl f =
   {f with fun_body = self#cse empty_numbering f.fun_body}
 
 end
-
-
-

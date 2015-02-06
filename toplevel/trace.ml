@@ -96,14 +96,18 @@ let rec instrument_result env name ppf clos_typ =
 
 (* Same as instrument_result, but for a toplevel closure (modified in place) *)
 
+exception Dummy
+let _ = Dummy
+
 let instrument_closure env name ppf clos_typ =
   match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
   | Tarrow(l, t1, t2, _) ->
       let trace_res = instrument_result env name ppf t2 in
       (fun actual_code closure arg ->
         if not !may_trace then begin
-          let res = invoke_traced_function actual_code closure arg
-          in res (* do not remove let, prevents tail-call to invoke_traced_ *)
+          try invoke_traced_function actual_code closure arg
+          with Dummy -> assert false
+          (* do not remove handler, prevents tail-call to invoke_traced_ *)
         end else begin
           may_trace := false;
           try

@@ -138,6 +138,8 @@ let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
 
 class virtual scheduler_generic = object (self)
 
+val mutable trywith_nesting = 0
+
 (* Determine whether an operation ends a basic block or not.
    Can be overridden for some processors to signal specific instructions
    that terminate a basic block. *)
@@ -154,9 +156,16 @@ method oper_in_basic_block = function
 
 (* Determine whether an instruction ends a basic block or not *)
 
-method private instr_in_basic_block instr =
+(* PR#2719: it is generally incorrect to schedule checkbound instructions
+   within a try ... with Invalid_argument _ -> ...
+   Hence, a checkbound instruction within a try...with block ends the
+   current basic block. *)
+
+method private instr_in_basic_block instr try_nesting =
   match instr.desc with
-    Lop op -> self#oper_in_basic_block op
+    Lop op ->
+      self#oper_in_basic_block op &&
+      not (try_nesting > 0 && self#is_checkbound op)
   | Lreloadretaddr -> true
   | _ -> false
 
@@ -345,19 +354,21 @@ method private reschedule ready_queue date cont =
 
 method schedule_fundecl f =
 
-  let rec schedule i =
+  let rec schedule i try_nesting =
     match i.desc with
-      Lend -> i
+    | Lend -> i
+    | Lpushtrap -> { i with next = schedule i.next (try_nesting + 1) }
+    | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
     | _ ->
-        if self#instr_in_basic_block i then begin
+        if self#instr_in_basic_block i try_nesting then begin
           clear_code_dag();
-          schedule_block [] i
+          schedule_block [] i try_nesting
         end else
-          { i with next = schedule i.next }
+          { i with next = schedule i.next try_nesting }
 
-  and schedule_block ready_queue i =
-    if self#instr_in_basic_block i then
-      schedule_block (self#add_instruction ready_queue i) i.next
+  and schedule_block ready_queue i try_nesting =
+    if self#instr_in_basic_block i try_nesting then
+      schedule_block (self#add_instruction ready_queue i) i.next try_nesting
     else begin
       let critical_outputs =
         match i.desc with
@@ -366,11 +377,11 @@ method schedule_fundecl f =
         | Lreturn -> [||]
         | _ -> i.arg in
       List.iter (fun x -> ignore (longest_path critical_outputs x)) ready_queue;
-      self#reschedule ready_queue 0 (schedule i)
+      self#reschedule ready_queue 0 (schedule i try_nesting)
     end in
 
   if f.fun_fast then begin
-    let new_body = schedule f.fun_body in
+    let new_body = schedule f.fun_body 0 in
     clear_code_dag();
     { fun_name = f.fun_name;
       fun_body = new_body;

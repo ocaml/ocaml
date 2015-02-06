@@ -33,25 +33,29 @@ double F, G;
 #define INTTEST(arg,res) \
   { intnat result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: result %"FMT"d, expected %"FMT"d\n", \
+      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: " \
+             "result %"FMT"d, expected %"FMT"d\n",                    \
              #arg, #res, X, Y, arg, result); \
   }
 #define INTFLOATTEST(arg,res) \
   { intnat result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %"FMT"d, expected %"FMT"d\n", \
+      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: "\
+             "result %"FMT"d, expected %"FMT"d\n",               \
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
-      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: result %.15g, expected %.15g\n", \
+      printf("Failed test \"%s == %s\" for F=%.15g and G=%.15g: "\
+             "result %.15g, expected %.15g\n",                   \
              #arg, #res, F, G, arg, result); \
   }
 #define FLOATINTTEST(arg,res) \
   { double result = (res); \
     if (arg < result || arg > result) \
-      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: result %.15g, expected %.15g\n", \
+      printf("Failed test \"%s == %s\" for X=%"FMT"d and Y=%"FMT"d: "\
+             "result %.15g, expected %.15g\n",                       \
              #arg, #res, X, Y, arg, result); \
   }
 
