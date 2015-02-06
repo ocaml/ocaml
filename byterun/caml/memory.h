@@ -154,7 +154,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.  If your function returns void, use [CAMLreturn0].
+   keyword.  If your function returns void, use [CAMLreturn0]. If you
+   un-register the local roots (i.e. undo the effects of the [CAMLparam*]
+   and [CAMLlocal] macros) without returning immediately, use [CAMLdrop].
 
    All the identifiers beginning with "caml__" are reserved by OCaml.
    Do not use them for anything (local or global variables, struct or
@@ -294,15 +296,17 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLxparamN (x, (size))
 
 
+#define CAMLdrop caml_local_roots = caml__frame
+  
 #define CAMLreturn0 do{ \
-  caml_local_roots = caml__frame; \
+  CAMLdrop; \
   return; \
 }while (0)
 
 #define CAMLreturnT(type, result) do{ \
   type caml__temp_result = (result); \
-  caml_local_roots = caml__frame; \
-  return (caml__temp_result); \
+  CAMLdrop; \
+  return caml__temp_result; \
 }while(0)
 
 #define CAMLreturn(result) CAMLreturnT(value, result)

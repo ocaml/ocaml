@@ -83,6 +83,7 @@ Features wishes:
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
+- GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
 
 OCaml 4.02.2:
 -------------
