@@ -669,7 +669,7 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})} as fn,
+  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})},
                oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
@@ -695,12 +695,6 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        if p.prim_name = "%sequand" && Path.last path = "&" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (&); you should use (&&) instead");
-        if p.prim_name = "%sequor" && Path.last path = "or" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (or); you should use (||) instead");
         let prim = transl_prim e.exp_loc p args in
         match (prim, args) with
           (Praise k, [arg1]) ->

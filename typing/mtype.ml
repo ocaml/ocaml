@@ -350,7 +350,9 @@ let rec remove_aliases env excl mty =
     Mty_signature sg ->
       Mty_signature (remove_aliases_sig env excl sg)
   | Mty_alias _ ->
-      remove_aliases env excl (Env.scrape_alias env mty)
+      let mty' = Env.scrape_alias env mty in
+      if mty' = mty then mty else
+      remove_aliases env excl mty'
   | mty ->
       mty
 

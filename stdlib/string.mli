@@ -57,7 +57,7 @@ external get : string -> int -> char = "%string_safe_get"
 
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "Use Bytes.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
@@ -66,7 +66,8 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
 
    @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
 
-external create : int -> bytes = "caml_create_string" [@@ocaml.deprecated]
+external create : int -> bytes = "caml_create_string"
+  [@@ocaml.deprecated "Use Bytes.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
 
@@ -104,7 +105,8 @@ val sub : string -> int -> int -> string
    Raise [Invalid_argument] if [start] and [len] do not
    designate a valid substring of [s]. *)
 
-val fill : bytes -> int -> int -> char -> unit [@@ocaml.deprecated]
+val fill : bytes -> int -> int -> char -> unit
+  [@@ocaml.deprecated "Use Bytes.fill instead."]
 (** [String.fill s start len c] modifies byte sequence [s] in place,
    replacing [len] bytes with [c], starting at [start].
 
