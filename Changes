@@ -61,9 +61,12 @@ Bug fixes:
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
-* PR#6081: ocaml should add script's directory to search path, not current directory
+* PR#6081: ocaml should add script's directory to search path, not current
+    directory
   (Thomas Leonard and Damien Doligez)
 - PR#6171: Error message confusing when a type escapes its scope.
+- PR#6340: Incorrect handling of \r when processing "Windows" source files
+  (Damien Doligez, report by David Allsopp)
 - PR#6526: ocamllex warning: unescaped newline in comment string
   (Damien Doligez, report by user 'dhekir')
 - PR#6560: Wrong failure message for {Int32,Int64,NativeInt}.of_string
