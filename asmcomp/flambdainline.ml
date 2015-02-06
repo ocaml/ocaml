@@ -329,8 +329,17 @@ let which_function_parameters_can_we_specialize ~params ~args
   assert (List.length params = List.length args);
   assert (List.length args = List.length approximations_of_args);
   List.fold_right2 (fun (id, arg) approx (spec_args, args, env_func) ->
-      let new_id = Flambdasubst.freshen_var id in
-      let args = (new_id, arg) :: args in
+      let new_id, args =
+        (* If the argument expression is not a variable, we declare a new one.
+           This is needed for adding arguments to cl_specialised_arg which
+           requires a variable *)
+        match arg with
+        | Fvar (var,_) ->
+            var, args
+        | _ ->
+            let new_id = Flambdasubst.freshen_var id in
+            let args = (new_id, arg) :: args in
+            new_id, args in
       let env_func = Env.add_approx new_id approx env_func in
       let spec_args =
         if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
