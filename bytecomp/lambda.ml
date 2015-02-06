@@ -537,9 +537,12 @@ let lam_of_loc kind loc =
           Const_base (Const_int enum);
         ]))
   | Loc_FILE -> Lconst (Const_immstring file)
-  | Loc_MODULE -> Lconst (Const_immstring
-                      (String.capitalize
-                         (Filename.chop_extension (Filename.basename file))))
+  | Loc_MODULE ->
+    let filename = Filename.basename file in
+    let module_name =
+      try String.capitalize (Filename.chop_extension filename)
+      with Invalid_argument _ -> "//"^filename^"//"
+    in Lconst (Const_immstring module_name)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in

@@ -296,6 +296,7 @@ type pers_struct =
     ps_sig: signature;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t option) list;
+    mutable ps_crcs_checked: bool;
     ps_filename: string;
     ps_flags: pers_flags list }
 
@@ -305,22 +306,31 @@ let persistent_structures =
 (* Consistency between persistent structures *)
 
 let crc_units = Consistbl.create()
-let imported_units = ref ([] : string list)
+
+module StringSet =
+  Set.Make(struct type t = string let compare = String.compare end)
+
+let imported_units = ref StringSet.empty
+
+let add_import s =
+  imported_units := StringSet.add s !imported_units
 
 let clear_imports () =
   Consistbl.clear crc_units;
-  imported_units := []
+  imported_units := StringSet.empty
 
 let check_consistency ps =
+  if not ps.ps_crcs_checked then
   try
     List.iter
       (fun (name, crco) ->
          match crco with
             None -> ()
           | Some crc ->
-              imported_units := name :: !imported_units;
+              add_import name;
               Consistbl.check crc_units name crc ps.ps_filename)
-      ps.ps_crcs
+      ps.ps_crcs;
+    ps.ps_crcs_checked <- true;
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
@@ -342,10 +352,12 @@ let read_pers_struct modname filename =
              ps_comps = comps;
              ps_crcs = crcs;
              ps_filename = filename;
-             ps_flags = flags } in
+             ps_flags = flags;
+             ps_crcs_checked = false;
+           } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
-  imported_units := name :: !imported_units;
+  add_import name;
   List.iter
     (function Rectypes ->
       if not !Clflags.recursive_types then
@@ -1597,7 +1609,7 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imports() =
-  Consistbl.extract !imported_units crc_units
+  Consistbl.extract (StringSet.elements !imported_units) crc_units
 
 (* Save a signature to a file *)
 
@@ -1628,10 +1640,12 @@ let save_signature_with_imports sg modname filename imports =
         ps_comps = comps;
         ps_crcs = (cmi.cmi_name, Some crc) :: imports;
         ps_filename = filename;
-        ps_flags = cmi.cmi_flags } in
+        ps_flags = cmi.cmi_flags;
+        ps_crcs_checked = false;
+      } in
     Hashtbl.add persistent_structures modname (Some ps);
     Consistbl.set crc_units modname crc filename;
-    imported_units := modname :: !imported_units;
+    add_import modname;
     sg
   with exn ->
     close_out oc;

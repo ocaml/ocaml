@@ -429,7 +429,7 @@ let _ =
   Compmisc.init_path false;
   List.iter
     (fun (name, crco) ->
-      Env.imported_units := name :: !Env.imported_units;
+      Env.add_import name;
       match crco with
         None -> ()
       | Some crc->
