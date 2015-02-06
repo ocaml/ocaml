@@ -331,27 +331,27 @@ let which_function_parameters_can_we_specialize ~params ~args
       ~approximations_of_args ~kept_params =
   assert (List.length params = List.length args);
   assert (List.length args = List.length approximations_of_args);
-  List.fold_right2 (fun (id, arg) approx (spec_args, args) ->
-      let new_id, args =
+  List.fold_right2 (fun (id, arg) approx (spec_args, args, args_decl) ->
+      let new_id, args_decl =
         (* If the argument expression is not a variable, we declare a new one.
            This is needed for adding arguments to cl_specialised_arg which
            requires a variable *)
         match arg with
         | Fvar (var,_) ->
-            var, args
+            var, args_decl
         | _ ->
             let new_id = Flambdasubst.freshen_var id in
-            let args = (new_id, arg) :: args in
-            new_id, args in
+            let args_decl = (new_id, arg) :: args_decl in
+            new_id, args_decl in
       let spec_args =
         if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
           Variable.Map.add id new_id spec_args
         else
           spec_args
       in
-      spec_args, args)
+      spec_args, new_id :: args, args_decl)
     (List.combine params args) approximations_of_args
-    (Variable.Map.empty, [])
+    (Variable.Map.empty, [], [])
 
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
@@ -1361,7 +1361,7 @@ and inline_recursive_functions env r funct clos fun_id func
       ~init:Variable.Map.empty
       ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
-  let spec_args, args =
+  let spec_args, args, args_decl =
     which_function_parameters_can_we_specialize ~params:func.params
       ~args ~approximations_of_args:approxs ~kept_params
   in
@@ -1380,7 +1380,7 @@ and inline_recursive_functions env r funct clos fun_id func
               fu_fun = fun_id;
               fu_relative_to = None;
             }, Expr_id.create ());
-        ap_arg = List.map (fun (id, _) -> Fvar (id, Expr_id.create ())) args;
+        ap_arg = List.map (fun id -> Fvar (id, Expr_id.create ())) args;
         ap_kind = Direct fun_id;
         ap_dbg;
       }, Expr_id.create ())
@@ -1391,14 +1391,14 @@ and inline_recursive_functions env r funct clos fun_id func
     Flet (Not_assigned, clos_id, funct,
       List.fold_left (fun expr (id, arg) ->
           Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
-        duplicated_application args,
+        duplicated_application args_decl,
       Expr_id.create ())
   in
   loop (activate_substitution env) r expr
 
 and specialise_without_duplicating_recursive_functions env r clos fun_id
     func (args, approxs) set_of_closures kept_params ap_dbg default =
-  let spec_args, args =
+  let spec_args, args, args_decl =
     which_function_parameters_can_we_specialize ~params:func.params
       ~args ~approximations_of_args:approxs ~kept_params
   in
@@ -1421,14 +1421,14 @@ and specialise_without_duplicating_recursive_functions env r clos fun_id
                 fu_fun = fun_id;
                 fu_relative_to = None;
               }, Expr_id.create ());
-          ap_arg = List.map (fun (id, _) -> Fvar (id, Expr_id.create ())) args;
+          ap_arg = List.map (fun id -> Fvar (id, Expr_id.create ())) args;
           ap_kind = Direct fun_id;
           ap_dbg;
         }, Expr_id.create ()) in
     let expr =
       List.fold_left (fun expr (id, arg) ->
           Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
-        application args
+        application args_decl
     in
     loop (disactivate_substitution env) r expr
 
