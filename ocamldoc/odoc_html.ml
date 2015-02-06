@@ -104,6 +104,10 @@ module Naming =
     let recfield_target t f = target mark_type_elt
       (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.rf_name)
 
+    (** Return the link target for the given object field. *)
+    let objfield_target t f = target mark_type_elt
+      (Printf.sprintf "%s.%s" (Name.simple t.ty_name) f.of_name)
+
     (** Return the complete link target for the given type. *)
     let complete_type_target t = complete_target mark_type t.ty_name
 
@@ -1569,6 +1573,24 @@ class html =
     method html_of_type b t =
       Odoc_info.reset_type_names ();
       let father = Name.father t.ty_name in
+      let print_field_prefix () =
+        bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>&nbsp;&nbsp;</code>";
+        bs b "</td>\n<td align=\"left\" valign=\"top\" >\n";
+        bs b "<code>";
+      in
+      let print_field_comment = function
+        | None -> ()
+        | Some t ->
+            bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+            bs b "<code>";
+            bs b "(*";
+            bs b "</code></td>";
+            bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
+            self#html_of_info b (Some t);
+            bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
+            bs b "<code>*)</code></td>"
+      in
       bs b
         (match t.ty_manifest, t.ty_kind with
           None, Type_abstract
@@ -1590,7 +1612,25 @@ class html =
       (
        match t.ty_manifest with
          None -> ()
-       | Some typ ->
+       | Some (Object_type fields) ->
+           bs b "= ";
+           if priv then bs b "private ";
+           bs b "&lt;</pre>";
+           bs b "<table class=\"typetable\">\n" ;
+           let print_one f =
+             print_field_prefix () ;
+             bp b "<span id=\"%s\">%s</span>&nbsp;: "
+               (Naming.objfield_target t f)
+               f.of_name;
+             self#html_of_type_expr b father f.of_type;
+             bs b ";</code></td>\n";
+             print_field_comment f.of_text ;
+             bs b "\n</tr>"
+           in
+           print_concat b "\n" print_one fields;
+           bs b "</table>\n>\n";
+           bs b " "
+       | Some (Other typ) ->
            bs b "= ";
            if priv then bs b "private ";
            self#html_of_type_expr b father typ;

@@ -424,6 +424,8 @@ let rec transl_type env policy styp =
     let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
+    if List.length stl < 2 then
+      Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
     let ctys = List.map (transl_type env policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty

@@ -38,7 +38,8 @@ let bind_nonvar name arg fn =
   | Cconst_blockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
-let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8  (* cf. byterun/gc.h *)
+let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
+    (* cf. byterun/gc.h *)
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 

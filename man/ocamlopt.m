@@ -682,17 +682,13 @@ Disable Thumb/Thumb-2 code generation
 .P
 The default values for target architecture, floating-point hardware
 and thumb usage were selected at configure-time when building
-.BR ocamlopt 
-itself. This configuration can be inspected using 
-.BR ocamlopt
-.BR \-config .
+.B ocamlopt
+itself. This configuration can be inspected using
+.BR ocamlopt\ \-config .
 Target architecture depends on the "model" setting, while
 floating-point hardware and thumb support are determined from the ABI
 setting in "system" (
-.BR linux_eabi
-or
-.BR linux_eabihf
-).
+.BR linux_eabi or linux_eabihf ).
 
 .SH SEE ALSO
 .BR ocamlc (1).

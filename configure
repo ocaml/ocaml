@@ -1300,6 +1300,11 @@ if test $nargs != "none"; then
   echo "#define HAS_GETHOSTBYADDR_R $nargs" >> s.h
 fi
 
+if sh ./hasgot mkstemp; then
+  inf "mkstemp() found"
+  echo "#define HAS_MKSTEMP" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then

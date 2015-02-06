@@ -60,7 +60,10 @@ and core_type_desc =
            ?l:T1 -> T2    (label = "?l")
          *)
   | Ptyp_tuple of core_type list
-        (* T1 * ... * Tn   (n >= 2) *)
+        (* T1 * ... * Tn
+
+           Invariant: n >= 2
+        *)
   | Ptyp_constr of Longident.t loc * core_type list
         (* tconstr
            T tconstr
@@ -155,7 +158,10 @@ and pattern_desc =
            Other forms of interval are recognized by the parser
            but rejected by the type-checker. *)
   | Ppat_tuple of pattern list
-        (* (P1, ..., Pn)   (n >= 2) *)
+        (* (P1, ..., Pn)
+
+           Invariant: n >= 2
+        *)
   | Ppat_construct of Longident.t loc * pattern option
         (* C                None
            C P              Some P
@@ -168,6 +174,8 @@ and pattern_desc =
   | Ppat_record of (Longident.t loc * pattern) list * closed_flag
         (* { l1=P1; ...; ln=Pn }     (flag = Closed)
            { l1=P1; ...; ln=Pn; _}   (flag = Open)
+
+           Invariant: n > 0
          *)
   | Ppat_array of pattern list
         (* [| P1; ...; Pn |] *)
@@ -226,13 +234,18 @@ and expression_desc =
         (* E0 ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
+
+           Invariant: n > 0
          *)
   | Pexp_match of expression * case list
         (* match E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_try of expression * case list
         (* try E0 with P1 -> E1 | ... | Pn -> En *)
   | Pexp_tuple of expression list
-        (* (E1, ..., En)   (n >= 2) *)
+        (* (E1, ..., En)
+
+           Invariant: n >= 2
+        *)
   | Pexp_construct of Longident.t loc * expression option
         (* C                None
            C E              Some E
@@ -245,6 +258,8 @@ and expression_desc =
   | Pexp_record of (Longident.t loc * expression) list * expression option
         (* { l1=P1; ...; ln=Pn }     (None)
            { E0 with l1=P1; ...; ln=Pn }   (Some E0)
+
+           Invariant: n > 0
          *)
   | Pexp_field of expression * Longident.t loc
         (* E.l *)
@@ -360,7 +375,9 @@ and type_declaration =
 and type_kind =
   | Ptype_abstract
   | Ptype_variant of constructor_declaration list
+        (* Invariant: non-empty list *)
   | Ptype_record of label_declaration list
+        (* Invariant: non-empty list *)
   | Ptype_open
 
 and label_declaration =
@@ -375,7 +392,7 @@ and label_declaration =
 (*  { ...; l: T; ... }            (mutable=Immutable)
     { ...; mutable l: T; ... }    (mutable=Mutable)
 
-    Note: T can be a Pexp_poly.
+    Note: T can be a Ptyp_poly.
 *)
 
 and constructor_declaration =
@@ -473,7 +490,7 @@ and class_type_field_desc =
   | Pctf_method  of (string * private_flag * virtual_flag * core_type)
         (* method x: T
 
-           Note: T can be a Pexp_poly.
+           Note: T can be a Ptyp_poly.
          *)
   | Pctf_constraint  of (core_type * core_type)
         (* constraint T1 = T2 *)
@@ -527,6 +544,8 @@ and class_expr_desc =
         (* CE ~l1:E1 ... ~ln:En
            li can be empty (non labeled argument) or start with '?'
            (optional argument).
+
+           Invariant: n > 0
          *)
   | Pcl_let of rec_flag * value_binding list * class_expr
         (* let P1 = E1 and ... and Pn = EN in CE      (flag = Nonrecursive)

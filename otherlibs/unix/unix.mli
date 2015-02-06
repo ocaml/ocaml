@@ -11,7 +11,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Interface to the Unix system *)
+(** Interface to the Unix system.
+
+    Note: all the functions of this module (except [error_message] and
+    [handle_unix_error]) are liable to raise the [Unix_error]
+    exception whenever the underlying system call signals an error. *)
 
 
 (** {6 Error report} *)

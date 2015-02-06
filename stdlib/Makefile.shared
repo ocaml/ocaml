@@ -21,7 +21,7 @@ OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=pervasives.cmo $(OTHERS)
+OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
@@ -88,7 +88,7 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
-$(OBJS) std_exit.cmo: pervasives.cmi
+$(OTHERS) std_exit.cmo: pervasives.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi

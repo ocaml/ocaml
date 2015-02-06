@@ -649,6 +649,12 @@ class texi =
     (** Return Texinfo code for a type. *)
     method texi_of_type ty =
       Odoc_info.reset_type_names () ;
+      let entry_doc = function
+        | None -> [ Newline ]
+        | Some t ->
+          (Raw (indent 5 "\n(*\n") :: (self#soft_fix_linebreaks 8 (self#text_of_info (Some t))))
+          @ [ Raw " *)" ; Newline ]
+      in
       let t =
         [ self#fixedblock (
           [ Newline ; minus ; Raw "type " ;
@@ -657,10 +663,24 @@ class texi =
           let priv = ty.ty_private = Asttypes.Private in
           ( match ty.ty_manifest with
           | None -> []
-          | Some typ ->
+          | Some (Other typ) ->
               (Raw " = ") ::
               (Raw (if priv then "private " else "")) ::
-              (self#text_of_short_type_expr (Name.father ty.ty_name) typ) ) @
+              (self#text_of_short_type_expr (Name.father ty.ty_name) typ)
+          | Some (Object_type l) ->
+               (Raw (" = "^(if priv then "private " else "")^"{\n")) ::
+               (List.flatten
+                  (List.map
+                     (fun r ->
+                       [ Raw ("  " ^ r.of_name ^ " : ") ] @
+                       (self#text_of_short_type_expr
+                          (Name.father r.of_name)
+                          r.of_type) @
+                       [ Raw " ;" ] @
+                       (entry_doc r.of_text))
+                     l ) )
+               @  [ Raw " }" ]
+          ) @
           (
            match ty.ty_kind with
            | Type_abstract -> [ Newline ]
@@ -672,13 +692,8 @@ class texi =
                        (Raw ("  | " ^ constr.vc_name)) ::
                        (Raw (self#string_of_type_args
                                constr.vc_args constr.vc_ret)) ::
-                       (match constr.vc_text with
-                       | None -> [ Newline ]
-                       | Some t ->
-                           (Raw (indent 5 "\n(*\n ") ::
-                            self#soft_fix_linebreaks 8 (self#text_of_info (Some t))) @
-                           [ Raw " *)" ; Newline ]
-                       ) ) l ) )
+                         (entry_doc constr.vc_text)
+                         ) l ) )
            | Type_record l ->
                (Raw (" = "^(if priv then "private " else "")^"{\n")) ::
                (List.flatten
@@ -689,12 +704,8 @@ class texi =
                           (Name.father r.rf_name)
                           r.rf_type) @
                        [ Raw " ;" ] @
-                       (match r.rf_text with
-                       | None -> [ Newline ]
-                       | Some t ->
-                           ((Raw (indent 5 "\n(*\n ")) ::
-                           (self#soft_fix_linebreaks 8 (self#text_of_info (Some t)))) @
-                           [ Raw " *)" ; Newline ] ) )
+                        (entry_doc r.rf_text)
+                        )
                      l ) )
                @  [ Raw " }" ]
            | Type_open -> [ Raw " = .." ; Newline ]

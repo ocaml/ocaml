@@ -30,9 +30,9 @@ let global_infos_table =
 module CstMap =
   Map.Make(struct
     type t = Clambda.ustructured_constant
-    let compare = Pervasives.compare
-        (* could use a better version, comparing on the
-           first arg of Uconst_ref *)
+    let compare = Clambda.compare_structured_constants
+    (* PR#6442: it is incorrect to use Pervasives.compare on values of type t
+       because it compares "0.0" and "-0.0" equal. *)
   end)
 
 type structured_constants =

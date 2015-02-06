@@ -104,22 +104,33 @@ module Exp:
     val tuple: ?loc:loc -> ?attrs:attrs -> expression list -> expression
     val construct: ?loc:loc -> ?attrs:attrs -> lid -> expression option
                    -> expression
-    val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option -> expression
-    val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list -> expression option -> expression
+    val variant: ?loc:loc -> ?attrs:attrs -> label -> expression option
+                 -> expression
+    val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list
+                -> expression option -> expression
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
-    val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression -> expression
+    val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
+                  -> expression
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression
-    val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression option -> expression
-    val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
-    val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression -> expression
-    val for_: ?loc:loc -> ?attrs:attrs -> pattern -> expression -> expression -> direction_flag -> expression -> expression
-    val coerce: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> core_type -> expression
-    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type -> expression
+    val ifthenelse: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                    -> expression option -> expression
+    val sequence: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                  -> expression
+    val while_: ?loc:loc -> ?attrs:attrs -> expression -> expression
+                -> expression
+    val for_: ?loc:loc -> ?attrs:attrs -> pattern -> expression -> expression
+              -> direction_flag -> expression -> expression
+    val coerce: ?loc:loc -> ?attrs:attrs -> expression -> core_type option
+                -> core_type -> expression
+    val constraint_: ?loc:loc -> ?attrs:attrs -> expression -> core_type
+                     -> expression
     val send: ?loc:loc -> ?attrs:attrs -> expression -> string -> expression
     val new_: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val setinstvar: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
-    val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list -> expression
-    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression -> expression
+    val override: ?loc:loc -> ?attrs:attrs -> (str * expression) list
+                  -> expression
+    val letmodule: ?loc:loc -> ?attrs:attrs -> str -> module_expr -> expression
+                   -> expression
     val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val poly: ?loc:loc -> ?attrs:attrs -> expression -> core_type option -> expression

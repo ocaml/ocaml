@@ -38,11 +38,11 @@
 #   automatically exempt from all rules
 #     *.reference
 #     */reference
+#     */.depend*
 # - Any file whose name begins with "Makefile" is automatically exempt
 #   from the "tabs" rule.
 # - Any file whose name matches one of the following patterns is
 #   automatically exempt from the "missing-header" rule.
-#     */.depend*
 #     */.ignore
 #     *.mlpack
 #     *.mllib
@@ -135,9 +135,9 @@ IGNORE_DIRS="
     esac
     h(){ rules="missing-header,$rules"; }
     case "$f" in
-      */.depend*|*/.ignore) h;;
+      */.ignore) h;;
       *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) h;;
-      *.reference|*/reference) continue;;
+      *.reference|*/reference|*/.depend*) continue;;
     esac
 
     (cat "$f"; echo) \
