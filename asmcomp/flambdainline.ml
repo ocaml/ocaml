@@ -218,7 +218,7 @@ let subst_toplevel sb lam =
   let subst id = try Variable.Map.find id sb with Not_found -> id in
   let f = function
     | Fvar (id,_) -> Fvar (subst id,Expr_id.create ())
-    | Fset_of_closures (cl,d) ->
+    | Fset_of_closures (cl,_) ->
         Fset_of_closures (
           { cl with
             cl_specialised_arg = Variable.Map.map subst cl.cl_specialised_arg },
@@ -470,19 +470,19 @@ let rec loop env r tree =
 
 and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   match tree with
-  | Fsymbol (sym,annot) ->
-    check_constant_result r tree (Import.import_symbol sym)
+  | Fsymbol (sym,_annot) ->
+      check_constant_result r tree (Import.import_symbol sym)
   | Fvar (id,annot) ->
-     let id = Flambdasubst.subst_var env.sb id in
-     let tree = Fvar(id,annot) in
-     check_var_and_constant_result env r tree (find id env)
+      let id = Flambdasubst.subst_var env.sb id in
+      let tree = Fvar(id,annot) in
+      check_var_and_constant_result env r tree (find id env)
   | Fconst (cst,_) -> tree, ret r (const_approx cst)
   | Fapply ({ ap_function = funct; ap_arg = args;
-              ap_kind = direc; ap_dbg = dbg }, annot) ->
+              ap_kind = _; ap_dbg = dbg }, annot) ->
       let funct, ({ approx = fapprox } as r) = loop env r funct in
       let args, approxs, r = loop_list env r args in
       transform_application_expression env r (funct, fapprox) (args, approxs)
-          dbg annot
+        dbg annot
   | Fset_of_closures (set_of_closures, annot) ->
       transform_set_of_closures_expression env r set_of_closures annot
   | Fclosure (closure, annot) ->
@@ -655,7 +655,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   | Fletrec(defs, body, annot) ->
       let defs, sb = Flambdasubst.new_subst_ids env.sb defs in
       let env = Env.set_sb sb env in
-      let def_env = List.fold_left (fun env_acc (id,lam) ->
+      let def_env = List.fold_left (fun env_acc (id,_lam) ->
           Env.add_approx id value_unknown env_acc)
           env defs
       in
@@ -668,13 +668,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       let r = List.fold_left (fun r (id,_) -> exit_scope r id) r defs in
       Fletrec (defs, body, annot),
       r
-  | Fprim(Pgetglobal id, [], dbg, annot) as expr ->
+  | Fprim(Pgetglobal id, [], _dbg, _annot) as expr ->
       let approx =
         if Ident.is_predef_exn id
         then value_unknown
         else Import.import_global id in
       expr, ret r approx
-  | Fprim(Pgetglobalfield(id,i), [], dbg, annot) as expr ->
+  | Fprim(Pgetglobalfield(id,i), [], _dbg, _annot) as expr ->
       let approx =
         if id = Compilenv.current_unit_id ()
         then find_global i r
@@ -1083,7 +1083,7 @@ and transform_set_of_closures_expression env r cl annot =
       (fun id _ -> Variable.Set.mem id used_params)
       cl_specialised_arg in
 
-  let r = Variable.Map.fold (fun id' v acc -> use_var acc v) cl_specialised_arg r in
+  let r = Variable.Map.fold (fun _id' v acc -> use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
   let kept_params = Flambdaiter.arguments_kept_in_recursion ffuns in
@@ -1130,7 +1130,7 @@ and transform_application_expression env r (funct, fapprox)
           (args, approxs) dbg eid
       else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
-        let h_approxs, q_approxs = Misc.split_at arity approxs in
+        let h_approxs, _q_approxs = Misc.split_at arity approxs in
         let expr, r =
           direct_apply env r clos funct fun_id func fapprox set_of_closures
               (h_args,h_approxs) dbg (Expr_id.create ())
