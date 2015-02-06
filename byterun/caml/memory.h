@@ -154,7 +154,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.  If your function returns void, use [CAMLreturn0].
+   keyword.  If your function returns void, use [CAMLreturn0]. The
+   [CAMLdrop] macro is the dual of [CAMLparam0]: it cleans up the
+   local roots.
 
    All the identifiers beginning with "caml__" are reserved by OCaml.
    Do not use them for anything (local or global variables, struct or
@@ -309,6 +311,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLnoreturn ((void) caml__frame)
 
+#define CAMLdrop do{ \
+    caml_local_roots = caml__frame; \
+  } while(0)
 
 /* convenience macro */
 #define Store_field(block, offset, val) do{ \
