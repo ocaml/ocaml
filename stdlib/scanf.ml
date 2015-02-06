@@ -1035,7 +1035,7 @@ fun k fmt -> match fmt with
 
   | Formatting_lit (_, rest)         -> take_format_readers k rest
   | Formatting_gen (Open_tag (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
-
+  | Formatting_gen (Open_box (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
 
   | Format_arg (_, _, rest)          -> take_format_readers k rest
   | Format_subst (_, fmtty, rest)    ->
@@ -1230,8 +1230,11 @@ fun ib fmt readers -> match fmt with
     String.iter (check_char ib) (string_of_formatting_lit formatting_lit);
     make_scanf ib rest readers
   | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
-    check_char ib '@'; check_char ib '{'; check_char ib '<';
-    make_scanf ib (concat_fmt fmt' (Char_literal ('<', rest))) readers
+    check_char ib '@'; check_char ib '{';
+    make_scanf ib (concat_fmt fmt' rest) readers
+  | Formatting_gen (Open_box (Format (fmt', _)), rest) ->
+    check_char ib '@'; check_char ib '[';
+    make_scanf ib (concat_fmt fmt' rest) readers
 
   | Ignored_param (ign, rest) ->
     let Param_format_EBB fmt' = param_format_of_ignored_format ign rest in
