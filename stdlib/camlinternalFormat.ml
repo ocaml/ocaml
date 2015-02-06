@@ -1815,26 +1815,39 @@ let fmt_ebb_of_string ?legacy_behavior str =
   in
 
   (* Raise a Failure with a friendly error message. *)
+  let invalid_format_message str_ind msg =
+    failwith_message
+      "invalid format %S: at character number %d, %s"
+      str str_ind msg;
+  in
+
   (* Used when the end of the format (or the current sub-format) was encoutered
       unexpectedly. *)
   let unexpected_end_of_format end_ind =
-    failwith_message
-      "invalid format %S: at character number %d, unexpected end of format"
-      str end_ind;
+    invalid_format_message end_ind
+      "unexpected end of format"
+  in
 
+  (* Used for %0c: no other widths are accepted *)
+  let invalid_nonnull_char_width str_ind =
+    invalid_format_message str_ind
+      "non-zero widths are invalid for %c conversions"
+  in
   (* Raise Failure with a friendly error message about an option dependencie
      problem. *)
-  and invalid_format_without str_ind c s =
+  let invalid_format_without str_ind c s =
     failwith_message
       "invalid format %S: at character number %d, '%c' without %s"
       str str_ind c s
+  in
 
   (* Raise Failure with a friendly error message about an unexpected
      character. *)
-  and expected_character str_ind expected read =
+  let expected_character str_ind expected read =
     failwith_message
      "invalid format %S: at character number %d, %s expected, read %C"
-      str str_ind expected read in
+      str str_ind expected read
+  in
 
   (* Parse the string from beg_ind (included) to end_ind (excluded). *)
   let rec parse : type e f . int -> int -> (_, _, e, f) fmt_ebb =
@@ -1915,14 +1928,18 @@ let fmt_ebb_of_string ?legacy_behavior str =
       parse_after_padding pct_ind (str_ind + 1) end_ind plus sharp space ign
         (Arg_padding padty)
     | _ ->
-      if legacy_behavior then
+      begin match padty with
+      | Left  ->
+        if not legacy_behavior then
+          invalid_format_without (str_ind - 1) '-' "padding";
         parse_after_padding pct_ind str_ind end_ind plus sharp space ign
           No_padding
-      else begin match padty with
-      | Left  ->
-        invalid_format_without (str_ind - 1) '-' "padding"
       | Zeros ->
-        invalid_format_without (str_ind - 1) '0' "padding"
+         (* a '0' padding indication not followed by anything should
+           be interpreted as a Right padding of width 0. This is used
+           by scanning conversions %0s and %0c *)
+        parse_after_padding pct_ind str_ind end_ind plus sharp space ign
+          (Lit_padding (Right, 0))
       | Right ->
         parse_after_padding pct_ind str_ind end_ind plus sharp space ign
           No_padding
@@ -2044,8 +2061,17 @@ let fmt_ebb_of_string ?legacy_behavior str =
       parse str_ind end_ind
     | 'c' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
-      if get_ign () then Fmt_EBB (Ignored_param (Ignored_char, fmt_rest))
-      else Fmt_EBB (Char fmt_rest)
+      begin match get_pad_opt 'c' with
+        | None ->
+           if get_ign ()
+           then Fmt_EBB (Ignored_param (Ignored_char, fmt_rest))
+           else Fmt_EBB (Char fmt_rest)
+        | Some 0 ->
+           if get_ign ()
+           then Fmt_EBB (Ignored_param (Ignored_scan_next_char, fmt_rest))
+           else Fmt_EBB (Scan_next_char fmt_rest)
+        | Some _n -> invalid_nonnull_char_width str_ind
+      end
     | 'C' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       if get_ign () then Fmt_EBB (Ignored_param (Ignored_caml_char,fmt_rest))
