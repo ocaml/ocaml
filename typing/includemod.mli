@@ -22,6 +22,7 @@ val compunit:
       Env.t -> string -> signature -> string -> signature -> module_coercion
 val type_declarations:
       Env.t -> Ident.t -> type_declaration -> type_declaration -> unit
+val print_coercion: formatter -> module_coercion -> unit
 
 type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
