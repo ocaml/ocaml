@@ -1069,10 +1069,9 @@ open CamlinternalFormatBasics
 open CamlinternalFormat
 
 (* Interpret a formatting entity on a formatter. *)
-let output_formatting ppf fmting = match fmting with
+let output_formatting_lit ppf fmting_lit = match fmting_lit with
   | Open_box (_, bty, indent) -> pp_open_box_gen ppf indent bty
   | Close_box                 -> pp_close_box ppf ()
-  | Open_tag (_, name)        -> pp_open_tag ppf name
   | Close_tag                 -> pp_close_tag ppf ()
   | Break (_, width, offset)  -> pp_print_break ppf width offset
   | FFlush                    -> pp_print_flush ppf ()
@@ -1088,13 +1087,22 @@ let output_formatting ppf fmting = match fmting with
 (* Differ from Printf.output_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec output_acc ppf acc = match acc with
-  | Acc_string (Acc_formatting (p, Magic_size (_, size)), s) ->
+  | Acc_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     output_acc ppf p;
     pp_print_as_size ppf (size_of_int size) s;
-  | Acc_char (Acc_formatting (p, Magic_size (_, size)), c) ->
+  | Acc_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     output_acc ppf p;
     pp_print_as_size ppf (size_of_int size) (String.make 1 c);
-  | Acc_formatting (p, f)    -> output_acc ppf p; output_formatting ppf f;
+  | Acc_formatting_lit (p, f) ->
+    output_acc ppf p;
+    output_formatting_lit ppf f;
+  | Acc_formatting_gen (p, Acc_open_tag acc') ->
+    output_acc ppf p;
+    let buf' = Buffer.create 16 in
+    let ppf' = formatter_of_buffer buf' in
+    output_acc ppf' acc';
+    pp_print_flush ppf' ();
+    pp_open_tag ppf (Buffer.contents buf');
   | Acc_string (p, s)        -> output_acc ppf p; pp_print_string ppf s;
   | Acc_char (p, c)          -> output_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> output_acc ppf p; f ppf;
@@ -1107,16 +1115,25 @@ let rec output_acc ppf acc = match acc with
 (* Differ from Printf.bufput_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec strput_acc ppf acc = match acc with
-  | Acc_string (Acc_formatting (p, Magic_size (_, size)), s) ->
+  | Acc_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     strput_acc ppf p;
     pp_print_as_size ppf (size_of_int size) s;
-  | Acc_char (Acc_formatting (p, Magic_size (_, size)), c) ->
+  | Acc_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     strput_acc ppf p;
     pp_print_as_size ppf (size_of_int size) (String.make 1 c);
-  | Acc_delay (Acc_formatting (p, Magic_size (_, size)), f) ->
+  | Acc_delay (Acc_formatting_lit (p, Magic_size (_, size)), f) ->
     strput_acc ppf p;
     pp_print_as_size ppf (size_of_int size) (f ());
-  | Acc_formatting (p, f)    -> strput_acc ppf p; output_formatting ppf f;
+  | Acc_formatting_lit (p, f) ->
+    strput_acc ppf p;
+    output_formatting_lit ppf f;
+  | Acc_formatting_gen (p, Acc_open_tag acc') ->
+    strput_acc ppf p;
+    let buf' = Buffer.create 16 in
+    let ppf' = formatter_of_buffer buf' in
+    strput_acc ppf' acc';
+    pp_print_flush ppf' ();
+    pp_open_tag ppf (Buffer.contents buf');
   | Acc_string (p, s)        -> strput_acc ppf p; pp_print_string ppf s;
   | Acc_char (p, c)          -> strput_acc ppf p; pp_print_char ppf c;
   | Acc_delay (p, f)         -> strput_acc ppf p; pp_print_string ppf (f ());
