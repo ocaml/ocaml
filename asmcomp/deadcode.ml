@@ -24,8 +24,11 @@ let rec deadcode i =
       (i, Reg.add_set_array i.live i.arg)
   | Iop op ->
       let (s, before) = deadcode i.next in
-      if Proc.op_is_pure op
-      && Reg.disjoint_set_array before i.res then begin
+      if Proc.op_is_pure op                     (* no side effects *)
+      && Reg.disjoint_set_array before i.res    (* results are not used after *)
+      && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
+      && not (Proc.regs_are_volatile i.res)    (*            is involved *)
+      then begin
         assert (Array.length i.res > 0);  (* sanity check *)
         (s, before)
       end else begin

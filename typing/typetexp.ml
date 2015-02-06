@@ -107,6 +107,14 @@ let check_deprecated loc attrs s =
     attrs
 
 let emit_external_warnings =
+  (* Note: this is run as a preliminary pass when type-checking an
+     interface or implementation.  This allows to cover all kinds of
+     attributes, but the drawback is that it doesn't take local
+     configuration of warnings (with '@@warning'/'@@warnerror'
+     attributes) into account.  We should rather check for
+     'ppwarning' attributes during the actual type-checking, making
+     sure to cover all contexts (easier and more ugly alternative:
+     duplicate here the logic which control warnings locally). *)
   let open Ast_mapper in
   {
     default_mapper with
@@ -127,21 +135,18 @@ let emit_external_warnings =
 let warning_scope = ref []
 
 let warning_enter_scope () =
-  warning_scope := ref None :: !warning_scope
+  warning_scope := (Warnings.backup ()) :: !warning_scope
 let warning_leave_scope () =
   match !warning_scope with
   | [] -> assert false
   | hd :: tl ->
-      may Warnings.restore !hd;
+      Warnings.restore hd;
       warning_scope := tl
 
 let warning_attribute attrs =
-  let prev_warnings = List.hd !warning_scope in
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
-        if !prev_warnings = None then
-          prev_warnings := Some (Warnings.backup ());
         begin try Warnings.parse_options errflag s
         with Arg.Bad _ ->
           Location.prerr_warning loc

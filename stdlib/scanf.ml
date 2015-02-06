@@ -1261,7 +1261,8 @@ fun ib fmt readers -> match fmt with
         type_format fmt fmtty, type_format fmt fmtty'
       with Failure msg -> bad_input msg
     in
-    Cons ((fmt', s), make_scanf ib (concat_fmt fmt rest) readers)
+    Cons (Format (fmt', s),
+          make_scanf ib (concat_fmt fmt rest) readers)
 
   | Scan_char_set (width_opt, char_set, Formatting (fmting, rest)) ->
     let stp, str = stopper_of_formatting fmting in
@@ -1333,7 +1334,7 @@ fun ib fmt readers pad prec scan token -> match pad, prec with
 
 type 'a kscanf_result = Args of 'a | Exc of exn
 
-let kscanf ib ef (fmt, str) =
+let kscanf ib ef (Format (fmt, str)) =
   let rec apply : type a b . a -> (a, b) heter_list -> b =
     fun f args -> match args with
     | Cons (x, r) -> apply (f x) r

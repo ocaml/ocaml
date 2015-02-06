@@ -1346,11 +1346,17 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
 
 let delayed_checks = ref []
 let reset_delayed_checks () = delayed_checks := []
-let add_delayed_check f = delayed_checks := f :: !delayed_checks
+let add_delayed_check f =
+  delayed_checks := (f, Warnings.backup ()) :: !delayed_checks
+
 let force_delayed_checks () =
   (* checks may change type levels *)
   let snap = Btype.snapshot () in
-  List.iter (fun f -> f ()) (List.rev !delayed_checks);
+  let w_old = Warnings.backup () in
+  List.iter
+    (fun (f, w) -> Warnings.restore w; f ())
+    (List.rev !delayed_checks);
+  Warnings.restore w_old;
   reset_delayed_checks ();
   Btype.backtrack snap
 
@@ -1778,21 +1784,19 @@ and type_expect_ ?in_function env sexp ty_expected =
       end
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
-    let expected_ty = (repr (expand_head env ty_expected)).desc
-    and fmt6_path = get_camlinternalFormat_path env "format6"
-    and fmt_path = get_camlinternalFormat_path env "fmt" in
-    let is_format = match expected_ty, fmt6_path, fmt_path with
-      | Tconstr(path, _, _), Some pf6, _ when Path.same path pf6 -> true
-      | Ttuple [ fmt_ty; str_ty ], _, Some pf ->
-        ignore (unify env str_ty Predef.type_string);
-        begin match (repr (expand_head env fmt_ty)).desc with
-          | Tconstr (path, _, _) when Path.same path pf -> true
-          | _ -> false
-        end
+    let ty_exp = expand_head env ty_expected in
+    let fmt6_path = get_camlinternalFormat_path env "format6" in
+    let is_format = match ty_exp.desc, fmt6_path with
+      | Tconstr(path, _, _), Some pf6 when Path.same path pf6 ->
+        if !Clflags.principal && ty_exp.level <> generic_level then
+          Location.prerr_warning loc
+            (Warnings.Not_principal "this coercion to format6");
+        true
       | _ -> false
     in
     if is_format then
-      let format_parsetree = { sexp with pexp_desc = type_format loc str env }  in
+      let format_parsetree =
+        { sexp with pexp_desc = type_format loc str env }  in
       type_expect ?in_function env format_parsetree ty_expected
     else
       rue {
@@ -2979,7 +2983,7 @@ and type_format loc str env =
         | End_of_format ->
           mk_constr "End_of_format" [] in
       let mk_format fmt str =
-        mk_exp_loc (Pexp_tuple [ mk_fmt fmt; mk_string str ]) in
+        mk_constr "Format" [ mk_fmt fmt; mk_string str ] in
       let Fmt_EBB fmt = fmt_ebb_of_string str in
       let exp = { (mk_format fmt str) with pexp_loc = loc } in
       let pervasives_format6_ty =
@@ -3819,7 +3823,7 @@ let report_error env ppf = function
       let print_label ppf = function
         | "" -> fprintf ppf "without label"
         | l ->
-            fprintf ppf "with label %s%s" (if is_optional l then "" else "~") l
+            fprintf ppf "with label %s" (prefixed_label_name l)
       in
       reset_and_mark_loops ty;
       fprintf ppf
@@ -3908,7 +3912,8 @@ let report_error env ppf = function
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | "" -> "but its first argument is not labelled"
-        |  l -> sprintf "but its first argument is labelled ~%s" l in
+        |  l -> sprintf "but its first argument is labelled %s"
+          (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)

@@ -92,6 +92,16 @@ val sub : bytes -> int -> int -> bytes
 val sub_string : bytes -> int -> int -> string
 (** Same as [sub] but return a string instead of a byte sequence. *)
 
+val extend : bytes -> int -> int -> bytes
+(** [extend s left right] returns a new byte sequence that contains
+    the bytes of [s], with [left] uninitialized bytes prepended and
+    [right] uninitialized bytes appended to it. If [left] or [right]
+    is negative, then bytes are removed (instead of appended) from
+    the corresponding side of [s].
+
+    Raise [Invalid_argument] if the result length is negative or
+    longer than {!Sys.max_string_length} bytes. *)
+
 val fill : bytes -> int -> int -> char -> unit
 (** [fill s start len c] modifies [s] in place, replacing [len]
     characters with [c], starting at [start].
@@ -110,10 +120,29 @@ val blit : bytes -> int -> bytes -> int -> int -> unit
     designate a valid range of [src], or if [dstoff] and [len]
     do not designate a valid range of [dst]. *)
 
+val blit_string : string -> int -> bytes -> int -> int -> unit
+(** [blit src srcoff dst dstoff len] copies [len] bytes from string
+    [src], starting at index [srcoff], to byte sequence [dst],
+    starting at index [dstoff].
+
+    Raise [Invalid_argument] if [srcoff] and [len] do not
+    designate a valid range of [src], or if [dstoff] and [len]
+    do not designate a valid range of [dst]. *)
+
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
-    returns the result as a new byte sequence. *)
+    returns the result as a new byte sequence.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes. *)
+
+val cat : bytes -> bytes -> bytes
+(** [cat s1 s2] concatenates [s1] and [s2] and returns the result
+     as new byte sequence.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val iter : (char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -137,7 +166,10 @@ val trim : bytes -> bytes
 
 val escaped : bytes -> bytes
 (** Return a copy of the argument, with special characters represented
-    by escape sequences, following the lexical conventions of OCaml. *)
+    by escape sequences, following the lexical conventions of OCaml.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val index : bytes -> char -> int
 (** [index s c] returns the index of the first occurrence of byte [c]

@@ -1181,7 +1181,8 @@ module CamlinternalFormatBasics : sig
     | Ignored_scan_get_counter :
         counter -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
 
-  and ('a, 'b, 'c, 'd, 'e, 'f) format6 = ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
+  and ('a, 'b, 'c, 'd, 'e, 'f) format6 =
+    Format of ('a, 'b, 'c, 'd, 'e, 'f) fmt * string
 
   val concat_fmtty :
       ('a, 'b, 'c, 'd, 'e, 'f) fmtty ->
