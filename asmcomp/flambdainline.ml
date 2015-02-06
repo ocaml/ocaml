@@ -64,6 +64,7 @@ module Env : sig
   val activate_substitution : t -> t
   (* Every variables declaration in the code rewriten using this environment
      will be alpha renamed *)
+  val disactivate_substitution : t -> t
 
   val add_approx : Variable.t -> Flambdaapprox.t -> t -> t
 
@@ -127,6 +128,8 @@ end = struct
 
   let activate_substitution env =
     { env with sb = Flambdasubst.activate env.sb }
+  let disactivate_substitution env =
+    { env with sb = Flambdasubst.empty }
 
   let add_approx id approx env =
     let approx =
@@ -1126,19 +1129,19 @@ and transform_application_expression env r (funct, fapprox)
       let nargs = List.length args in
       let arity = function_arity func in
       if nargs = arity then
-        direct_apply env r clos funct fun_id func fapprox set_of_closures
+        direct_apply env r clos funct fun_id func set_of_closures
           (args, approxs) dbg eid
       else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, _q_approxs = Misc.split_at arity approxs in
         let expr, r =
-          direct_apply env r clos funct fun_id func fapprox set_of_closures
-              (h_args,h_approxs) dbg (Expr_id.create ())
+          direct_apply env r clos funct fun_id func set_of_closures
+            (h_args,h_approxs) dbg (Expr_id.create ())
         in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
                              ap_kind = Indirect; ap_dbg = dbg}, eid))
       else if nargs > 0 && nargs < arity then
-        let partial_fun = partial_apply funct fun_id func args dbg eid in
+        let partial_fun = partial_apply funct fun_id func args dbg in
         loop env r partial_fun
       else
         no_transformation ()
@@ -1146,8 +1149,8 @@ and transform_application_expression env r (funct, fapprox)
 
 (* Examine a full application of a known closure to determine whether to
    inline. *)
-and direct_apply env r clos funct fun_id func fapprox closure
-      (args, approxs) ap_dbg eid =
+and direct_apply env r clos funct fun_id func closure
+    (args, approxs) ap_dbg eid =
   let no_transformation () =
     Fapply ({ap_function = funct; ap_arg = args;
              ap_kind = Direct fun_id; ap_dbg}, eid),
@@ -1239,7 +1242,7 @@ and direct_apply env r clos funct fun_id func fapprox closure
       then
         let body, r_inlined =
           inline_non_recursive_function env (clear_benefit r) clos funct
-            fun_id func args ap_dbg eid
+            fun_id func args
         in
         (* Now we know how large the inlined version actually is, determine
            whether or not to keep it. *)
@@ -1262,22 +1265,24 @@ and direct_apply env r clos funct fun_id func fapprox closure
              does not depends on the effective value of its arguments, it
              could be returned instead of [value_unknown] *)
           no_transformation ()
-      else if
-        recursive
-          && not direct_apply
-          (* Prevent reduplicating already duplicated function.
-             TODO: In that case the function can be specialised without
-             duplication, inline_recursive_functions should be addapted
-             for that. (just add variables to cl_specialised_arg) *)
-          && should_inline_function_known_to_be_recursive ~func ~clos ~env
-                 ~closure ~approxs ~kept_params ~max_level
-      then
-        inline_recursive_functions env r funct clos fun_id func fapprox closure
-          (args,approxs) kept_params ap_dbg
+      else if recursive then
+        match funct with
+        | Fclosure ({ fu_closure = Fset_of_closures (set_of_closures, _)}, _) ->
+            specialise_without_duplicating_recursive_functions env r clos
+              fun_id func (args,approxs) set_of_closures kept_params ap_dbg
+              (no_transformation ())
+        | _ ->
+            if should_inline_function_known_to_be_recursive ~func ~clos ~env
+                ~closure ~approxs ~kept_params ~max_level
+            then
+              inline_recursive_functions env r funct clos fun_id func
+                (args,approxs) kept_params ap_dbg
+            else
+              no_transformation ()
       else
         no_transformation ()
 
-and partial_apply funct fun_id func args ap_dbg eid =
+and partial_apply funct fun_id func args ap_dbg =
   let arity = function_arity func in
   let remaining_args = arity - (List.length args) in
   assert(remaining_args > 0);
@@ -1306,7 +1311,7 @@ and partial_apply funct fun_id func args ap_dbg eid =
       function was defined (for the case of simultaneous definition of
       functions).
 *)
-and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
+and inline_non_recursive_function env r clos lfunc fun_id func args =
   let r = benefit r Flambdacost.remove_call in
   let env = inlining_level_up env in
   let clos_id = new_var "inline_non_recursive_function" in
@@ -1347,8 +1352,8 @@ and inline_non_recursive_function env r clos lfunc fun_id func args dbg eid =
    some mutual recursion) to end up in here; a simultaneous binding [that is
    non-recursive] is not sufficient.
 *)
-and inline_recursive_functions env r funct clos fun_id func fapprox
-      closure_approx (args, approxs) kept_params ap_dbg =
+and inline_recursive_functions env r funct clos fun_id func
+    (args, approxs) kept_params ap_dbg =
   let env = inlining_level_up env in
   let clos_id = new_var "inline_recursive_functions" in
   let fv =
@@ -1389,11 +1394,43 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
         duplicated_application args,
       Expr_id.create ())
   in
-  let r =
-    List.fold_left (fun r (id,_) -> exit_scope r id) (exit_scope r clos_id)
-        args
-  in
   loop (activate_substitution env) r expr
+
+and specialise_without_duplicating_recursive_functions env r clos fun_id
+    func (args, approxs) set_of_closures kept_params ap_dbg default =
+  let spec_args, args =
+    which_function_parameters_can_we_specialize ~params:func.params
+      ~args ~approximations_of_args:approxs ~kept_params
+  in
+  if Variable.Set.equal
+      (Variable.Map.keys set_of_closures.cl_specialised_arg)
+      (Variable.Map.keys spec_args)
+      (* if the function already has the right set of specialised arguments,
+         then there is nothing to do to improve it here. *)
+  then default
+  else
+    let application =
+      Fapply (
+        { ap_function =
+            Fclosure (
+              { fu_closure = Fset_of_closures (
+                   { cl_fun = clos;
+                     cl_free_var = set_of_closures.cl_free_var;
+                     cl_specialised_arg = spec_args;
+                   }, Expr_id.create ());
+                fu_fun = fun_id;
+                fu_relative_to = None;
+              }, Expr_id.create ());
+          ap_arg = List.map (fun (id, _) -> Fvar (id, Expr_id.create ())) args;
+          ap_kind = Direct fun_id;
+          ap_dbg;
+        }, Expr_id.create ()) in
+    let expr =
+      List.fold_left (fun expr (id, arg) ->
+          Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
+        application args
+    in
+    loop (disactivate_substitution env) r expr
 
 let inline tree =
   let result, r = loop (Env.empty ()) init_r tree in
@@ -1405,4 +1442,6 @@ let inline tree =
   end;
   assert (Variable.Set.is_empty r.used_variables);
   assert (Static_exception.Set.is_empty r.used_staticfail);
+  Format.printf "benefit:@ %a@."
+    Flambdacost.print_benefit r.benefit;
   result
