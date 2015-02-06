@@ -1036,8 +1036,11 @@ let convert_float fconv prec x =
         | _ -> is_valid (i + 1)
     in
     match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero when not (is_valid 0) -> str ^ "."
-    | FP_infinite | FP_nan | FP_normal | FP_subnormal | FP_zero -> str
+    | FP_normal | FP_subnormal | FP_zero ->
+      if is_valid 0 then str else str ^ "."
+    | FP_infinite ->
+      if x < 0.0 then "neg_infinity" else "infinity"
+    | FP_nan -> "nan"
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
@@ -1116,7 +1119,7 @@ fun k o acc fmt -> match fmt with
       make_printf k o (Acc_string (acc, ty)) rest)
   | Format_subst (_, _, fmtty, rest) ->
     (* Call to type_format can't fail (raise Type_mismatch). *)
-    fun (fmt, _) -> make_printf k o acc
+    fun (Format (fmt, _)) -> make_printf k o acc
       (concat_fmt (type_format fmt fmtty) rest)
 
   | Scan_char_set (_, _, rest) ->
@@ -1356,8 +1359,7 @@ let rec strput_acc b acc = match acc with
                           (* Error managment *)
 
 (* Raise a Failure with a pretty-printed error message. *)
-let failwith_message
-    ((fmt, _) : ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6) =
+let failwith_message (Format (fmt, _)) =
   let buf = Buffer.create 256 in
   let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
   make_printf k () End_of_acc fmt
@@ -1903,6 +1905,7 @@ let fmt_ebb_of_string str =
           done;
           let box_ty = match String.sub str str_ind_1 (!i - str_ind_1) with
             | ""    -> Pp_box
+            | "b"   -> Pp_box
             | "h"   -> Pp_hbox
             | "v"   -> Pp_vbox
             | "hv"  -> Pp_hvbox
@@ -2265,15 +2268,17 @@ let fmt_ebb_of_string str =
 (* Raise a Failure with an error message in case of type mismatch. *)
 let format_of_string_fmtty str fmtty =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
-  try (type_format fmt fmtty, str) with Type_mismatch ->
+  try Format (type_format fmt fmtty, str)
+  with Type_mismatch ->
     failwith_message
       "bad input: format type mismatch between %S and %S"
       str (string_of_fmtty fmtty)
 
 (* Convert a string to a format compatible with an other format. *)
 (* Raise a Failure with an error message in case of type mismatch. *)
-let format_of_string_format str (fmt', str') =
+let format_of_string_format str (Format (fmt', str')) =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
-  try (type_format fmt (fmtty_of_fmt fmt'), str) with Type_mismatch ->
+  try Format (type_format fmt (fmtty_of_fmt fmt'), str)
+  with Type_mismatch ->
     failwith_message
       "bad input: format type mismatch between %S and %S" str str'

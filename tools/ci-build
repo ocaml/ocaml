@@ -74,7 +74,7 @@ done
 make=make
 instdir="$HOME/ocaml-tmp-install"
 workdir=.
-checkout=false
+docheckout=false
 nt=
 
 case "$arch" in

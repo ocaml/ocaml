@@ -14,5 +14,7 @@ MAIN_MODULE=tformat
 ADD_COMPFLAGS=-I $(OTOPDIR)/testsuite/lib
 ADD_MODULES=testing
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+BASEDIR=../..
+
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common

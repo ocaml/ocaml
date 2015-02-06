@@ -81,7 +81,10 @@ val make : int -> char -> string
    Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val copy : string -> string
-(** Return a copy of the given string. *)
+(** Return a copy of the given string.
+
+    @deprecated Because strings are immutable, it doesn't make much
+    sense to make identical copies of them. *)
 
 val sub : string -> int -> int -> string
 (** [String.sub s start len] returns a fresh string of length [len],
@@ -101,17 +104,14 @@ val fill : bytes -> int -> int -> char -> unit [@@ocaml.deprecated]
    @deprecated This is a deprecated alias of {!Bytes.fill}.[ ] *)
 
 val blit : string -> int -> bytes -> int -> int -> unit
-(** [String.blit src srcoff dst dstoff len] copies [len] characters
-   (bytes) from the string [src], starting at index [srcoff], to byte
-   sequence [dst], starting at index [dstoff].
-
-   Raise [Invalid_argument] if [srcoff] and [len] do not
-   designate a valid substring of [src], or if [dstoff] and [len]
-   do not designate a valid range of [dst]. *)
+(** Same as {!Bytes.blit_string}. *)
 
 val concat : string -> string list -> string
 (** [String.concat sep sl] concatenates the list of strings [sl],
-   inserting the separator string [sep] between each. *)
+    inserting the separator string [sep] between each.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes. *)
 
 val iter : (char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
@@ -143,7 +143,10 @@ val escaped : string -> string
    represented by escape sequences, following the lexical
    conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
-   not a copy. Its inverse function is Scanf.unescaped. *)
+   not a copy. Its inverse function is Scanf.unescaped.
+
+   Raise [Invalid_argument] if the result is longer than
+   {!Sys.max_string_length} bytes. *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the index of the first

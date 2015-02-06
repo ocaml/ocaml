@@ -267,9 +267,11 @@
      sigact.sa_flags = 0
 
   typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->sc_frame.srr0)
   #define CONTEXT_EXCEPTION_POINTER (context->sc_frame.fixreg[29])
   #define CONTEXT_YOUNG_LIMIT (context->sc_frame.fixreg[30])
   #define CONTEXT_YOUNG_PTR (context->sc_frame.fixreg[31])
+  #define CONTEXT_SP (context->sc_frame.fixreg[1])
 
 /****************** SPARC, Solaris */
 

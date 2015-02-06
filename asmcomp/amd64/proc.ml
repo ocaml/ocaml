@@ -239,6 +239,10 @@ let loc_external_arguments =
 
 let loc_exn_bucket = rax
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =

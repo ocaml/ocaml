@@ -202,42 +202,54 @@ method private cse n i =
       | Op_pure | Op_checkbound | Op_load ->
           assert (Array.length i.res <= 1);
           let (n1, varg) = valnum_regs n i.arg in
+          let n2 = set_unknown_regs n1 (Proc.destroyed_at_oper i.desc) in
           begin match find_equation n1 (op, varg) with
           | Some vres ->
               (* This operation was computed earlier. *)
-              let n2 = set_known_regs n1 i.res vres in            
+              (* Is there a register that holds the result computed earlier? *)
               begin match find_regs_containing n1 vres with
-              | Some res when not (self#is_cheap_operation op) ->
-                  (* We can replace res <- op args with r <- move res.
+              | Some res when (not (self#is_cheap_operation op))
+                           && (not (Proc.regs_are_volatile res)) ->
+                  (* We can replace res <- op args with r <- move res,
+                     provided res are stable (non-volatile) registers.
                      If the operation is very cheap to compute, e.g.
                      an integer constant, don't bother. *)
-                  insert_move res i.res (self#cse n2 i.next)                
+                  let n3 = set_known_regs n1 i.res vres in
+                  (* This is n1 above and not n2 because the move
+                     does not destroy any regs *)
+                  insert_move res i.res (self#cse n3 i.next)
               | _ ->
-                  {i with next = self#cse n2 i.next}
+                  let n3 = set_known_regs n2 i.res vres in            
+                  {i with next = self#cse n3 i.next}
               end
           | None ->
               (* This operation produces a result we haven't seen earlier. *)
-              let n2 = set_fresh_regs n1 i.res (op, varg) in
-              {i with next = self#cse n2 i.next}
+              let n3 = set_fresh_regs n2 i.res (op, varg) in
+              {i with next = self#cse n3 i.next}
           end
       | Op_store false | Op_other ->
           (* An initializing store or an "other" operation do not invalidate
              any equations, but we do not know anything about the results. *)
-          let n1 = set_unknown_regs n i.res in
-          {i with next = self#cse n1 i.next}
+         let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+         let n2 = set_unknown_regs n1 i.res in
+         {i with next = self#cse n2 i.next}
       | Op_store true ->
           (* A non-initializing store: it can invalidate
              anything we know about prior loads. *)
-          let n1 = set_unknown_regs (self#kill_loads n) i.res in
-          {i with next = self#cse n1 i.next}
+         let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+         let n2 = set_unknown_regs n1 i.res in
+         let n3 = self#kill_loads n2 in
+         {i with next = self#cse n3 i.next}
       end        
   (* For control structures, we set the numbering to empty at every
      join point, but propagate the current numbering across fork points. *)
   | Iifthenelse(test, ifso, ifnot) ->
-      {i with desc = Iifthenelse(test, self#cse n ifso, self#cse n ifnot);
+     let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+      {i with desc = Iifthenelse(test, self#cse n1 ifso, self#cse n1 ifnot);
               next = self#cse empty_numbering i.next}
   | Iswitch(index, cases) ->
-      {i with desc = Iswitch(index, Array.map (self#cse n) cases);
+     let n1 = set_unknown_regs n (Proc.destroyed_at_oper i.desc) in
+      {i with desc = Iswitch(index, Array.map (self#cse n1) cases);
               next = self#cse empty_numbering i.next}
   | Iloop(body) ->
       {i with desc = Iloop(self#cse empty_numbering body);

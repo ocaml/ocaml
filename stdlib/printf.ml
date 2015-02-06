@@ -11,13 +11,14 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open CamlinternalFormatBasics
 open CamlinternalFormat
 
-let kfprintf k o (fmt, _) =
+let kfprintf k o (Format (fmt, _)) =
   make_printf (fun o acc -> output_acc o acc; k o) o End_of_acc fmt
-let kbprintf k b (fmt, _) =
+let kbprintf k b (Format (fmt, _)) =
   make_printf (fun b acc -> bufput_acc b acc; k b) b End_of_acc fmt
-let ikfprintf k oc (fmt, _) =
+let ikfprintf k oc (Format (fmt, _)) =
   make_printf (fun oc _ -> k oc) oc End_of_acc fmt
 
 let fprintf oc fmt = kfprintf ignore oc fmt
@@ -26,7 +27,7 @@ let ifprintf oc fmt = ikfprintf ignore oc fmt
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
-let ksprintf k (fmt, _) =
+let ksprintf k (Format (fmt, _)) =
   let k' () acc =
     let buf = Buffer.create 64 in
     strput_acc buf acc;

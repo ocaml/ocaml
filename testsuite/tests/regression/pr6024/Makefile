@@ -12,5 +12,6 @@
 
 MAIN_MODULE=pr6024
 
-include ../../../makefiles/Makefile.one
-include ../../../makefiles/Makefile.common
+BASEDIR=../../..
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common
