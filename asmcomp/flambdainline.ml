@@ -325,10 +325,10 @@ let populate_closure_approximations
   env
 
 let which_function_parameters_can_we_specialize ~params ~args
-      ~approximations_of_args ~kept_params ~env =
+      ~approximations_of_args ~kept_params =
   assert (List.length params = List.length args);
   assert (List.length args = List.length approximations_of_args);
-  List.fold_right2 (fun (id, arg) approx (spec_args, args, env_func) ->
+  List.fold_right2 (fun (id, arg) approx (spec_args, args) ->
       let new_id, args =
         (* If the argument expression is not a variable, we declare a new one.
            This is needed for adding arguments to cl_specialised_arg which
@@ -340,16 +340,15 @@ let which_function_parameters_can_we_specialize ~params ~args
             let new_id = Flambdasubst.freshen_var id in
             let args = (new_id, arg) :: args in
             new_id, args in
-      let env_func = Env.add_approx new_id approx env_func in
       let spec_args =
         if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
           Variable.Map.add id new_id spec_args
         else
           spec_args
       in
-      spec_args, args, env_func)
+      spec_args, args)
     (List.combine params args) approximations_of_args
-    (Variable.Map.empty, [], env)
+    (Variable.Map.empty, [])
 
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
@@ -1357,10 +1356,9 @@ and inline_recursive_functions env r funct clos fun_id func fapprox
       ~init:Variable.Map.empty
       ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
-  let env = Env.add_approx clos_id fapprox env in
-  let spec_args, args, env_func =
+  let spec_args, args =
     which_function_parameters_can_we_specialize ~params:func.params
-      ~args ~approximations_of_args:approxs ~kept_params ~env
+      ~args ~approximations_of_args:approxs ~kept_params
   in
   (* First we generate a copy of the function application, including the
      function declaration(s), but with variables (not yet bound) in place of
