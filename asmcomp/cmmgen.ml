@@ -203,11 +203,6 @@ let untag_int = function
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
 
-let mul_int_tagged c1 c2 =
-  match (c1, c2) with
-  | (Cconst_int n1, c2) -> incr_int (mul_int (untag_int c1) (decr_int c2))
-  | (_, _) -> incr_int (mul_int (decr_int c1) (untag_int c2))
-
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
    those target platforms that support this optimization. *)
@@ -1685,7 +1680,17 @@ and transl_prim_2 p arg1 arg2 dbg =
   | Psubint ->
       incr_int(sub_int (transl arg1) (transl arg2))
   | Pmulint ->
-      mul_int_tagged (transl arg1) (transl arg2)
+     begin
+       (* decrementing the non-constant part helps when the multiplication is followed by an addition;
+          for example, using this trick compiles (100 * a + 7) into
+            (+ ( * a 100) -85)
+          rather than
+            (+ ( * 200 (>>s a 1)) 15)
+        *)
+       match transl arg1, transl arg2 with
+         | Cconst_int _ as c1, c2 -> incr_int (mul_int (untag_int c1) (decr_int c2))
+         | c1, c2 -> incr_int (mul_int (decr_int c1) (untag_int c2))
+     end
   | Pdivint ->
       tag_int(div_int (untag_int(transl arg1)) (untag_int(transl arg2)) dbg)
   | Pmodint ->
