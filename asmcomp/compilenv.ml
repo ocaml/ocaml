@@ -290,6 +290,7 @@ let need_curry_fun n =
     current_unit.ui_curry_fun <- n :: current_unit.ui_curry_fun
 
 let need_apply_fun n =
+  assert(n > 0);
   if not (List.mem n current_unit.ui_apply_fun) then
     current_unit.ui_apply_fun <- n :: current_unit.ui_apply_fun
 
