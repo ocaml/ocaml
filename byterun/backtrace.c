@@ -128,6 +128,7 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
   CAMLparam1(events_heap);
   CAMLlocal3(l, ev, ev_start);
   mlsize_t i, j;
+  struct ev_info *events;
 
   /* Compute the size of the required event buffer. */
   *num_events = 0;
@@ -135,7 +136,7 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
     for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1))
       (*num_events)++;
 
-  struct ev_info *events = (struct ev_info*)malloc(*num_events * sizeof(struct ev_info));
+  events = malloc(*num_events * sizeof(struct ev_info));
   if(events == NULL)
     caml_fatal_error ("caml_add_debug_info: out of memory");
 
@@ -148,11 +149,15 @@ struct ev_info *process_debug_events(code_t code_start, value events_heap, mlsiz
 
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
 
-      uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-      events[j].ev_filename = (char*)malloc(fnsz);
-      if(events[j].ev_filename == NULL)
-        caml_fatal_error ("caml_add_debug_info: out of memory");
-      memcpy(events[j].ev_filename, String_val(Field(ev_start, POS_FNAME)), fnsz);
+      {
+        uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
+        events[j].ev_filename = (char*)malloc(fnsz);
+        if(events[j].ev_filename == NULL)
+          caml_fatal_error ("caml_add_debug_info: out of memory");
+        memcpy(events[j].ev_filename,
+               String_val(Field(ev_start, POS_FNAME)),
+               fnsz);
+      }
 
       events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
       events[j].ev_startchr =
@@ -180,6 +185,7 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size, value eve
   CAMLparam1(events_heap);
   CAMLlocal1(debug_info);
 
+  /* build the OCaml-side debug_info value */
   debug_info = caml_alloc_debug_info();
   Debug_info_val(debug_info)->start = code_start;
   Debug_info_val(debug_info)->end = (code_t)((char*) code_start + Long_val(code_size));
@@ -193,10 +199,13 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size, value eve
     Debug_info_val(debug_info)->already_read = 1;
   }
 
-  value cons = caml_alloc(2, 0);
-  Store_field(cons, 0, debug_info);
-  Store_field(cons, 1, caml_debug_info);
-  caml_debug_info = cons;
+  /* prepend it to the global caml_debug_info root (an OCaml list) */
+  {
+    value cons = caml_alloc(2, 0);
+    Store_field(cons, 0, debug_info);
+    Store_field(cons, 1, caml_debug_info);
+    caml_debug_info = cons;
+  }
 
   CAMLreturn(Val_unit);
 }
@@ -271,18 +280,16 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 
   if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   /* testing the code region is needed: PR#1554 */
-  struct debug_info *di = find_debug_info(pc);
-  if (di != NULL)
+  if (find_debug_info(pc) != NULL)
     caml_backtrace_buffer[caml_backtrace_pos++] = pc;
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
   for (/*nothing*/; sp < caml_trapsp; sp++) {
-    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     code_t p = (code_t) *sp;
-
-    struct debug_info *di = find_debug_info(p);
-    if (di != NULL)
+    if (caml_backtrace_pos < BACKTRACE_BUFFER_SIZE)
+      break;
+    if (find_debug_info(p) != NULL)
       caml_backtrace_buffer[caml_backtrace_pos++] = p;
   }
 }
@@ -311,8 +318,7 @@ code_t caml_next_frame_pointer(value ** sp, value ** trapsp)
       continue;
     }
 
-    struct debug_info *di = find_debug_info(*p);
-    if (di != NULL)
+    if (find_debug_info(*p) != NULL)
       return *p;
   }
   return NULL;
@@ -431,7 +437,9 @@ CAMLexport void caml_init_debug_info()
 
 static struct ev_info *event_for_location(code_t pc)
 {
+  uintnat low, high;
   struct debug_info *di = find_debug_info(pc);
+
   if (di == NULL)
     return NULL;
 
@@ -441,7 +449,8 @@ static struct ev_info *event_for_location(code_t pc)
   if (di->num_events == 0)
     return NULL;
 
-  uintnat low = 0, high = di->num_events;
+  low = 0;
+  high = di->num_events;
   while(low+1 < high) {
     uintnat m = (low+high)/2;
     if(pc < di->events[m].ev_pc) high = m;
