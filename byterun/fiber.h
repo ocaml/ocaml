@@ -6,7 +6,8 @@
 #include "memory.h"
 #include "roots.h"
 
-CAMLextern __thread value * caml_stack_low;
+
+CAMLextern __thread value caml_current_stack;
 CAMLextern __thread value * caml_stack_high;
 CAMLextern __thread value * caml_stack_threshold;
 CAMLextern __thread value * caml_extern_sp;
@@ -16,16 +17,18 @@ CAMLextern __thread intnat caml_extra_args;
 CAMLextern __thread int caml_c_call_args;
 CAMLextern __thread code_t caml_saved_pc;
 
-struct caml_runqueue;
-CAMLextern __thread value caml_current_fiber;
+value caml_swap_stack(value);
 
-void caml_do_fiber_roots(scanning_action, struct caml_runqueue*);
+struct caml_runqueue;
+
 void caml_scan_dirty_stack(scanning_action, value stack);
 void caml_scan_stack(scanning_action, value stack);
 void caml_save_stack_gc();
 void caml_restore_stack_gc();
-/* The table of global identifiers */
+void caml_clean_stack(value stack);
 
+
+/* The table of global identifiers */
 extern caml_root caml_global_data;
 
 #define Trap_pc(tp) ((tp)[0])
@@ -33,7 +36,6 @@ extern caml_root caml_global_data;
 
 
 
-void caml_init_stack ();
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 int caml_on_current_stack(value*);

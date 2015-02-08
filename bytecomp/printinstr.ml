@@ -96,6 +96,7 @@ let instruction ppf = function
   | Kgetmethod -> fprintf ppf "\tgetmethod"
   | Kgetpubmet n -> fprintf ppf "\tgetpubmet %i" n
   | Kgetdynmet -> fprintf ppf "\tgetdynmet"
+  | Kswapstack -> fprintf ppf "\tswapstack"
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
                          ev.ev_loc.Location.loc_start.Lexing.pos_fname

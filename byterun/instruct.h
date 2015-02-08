@@ -56,6 +56,7 @@ enum instructions {
   STOP,
   EVENT, BREAK,
   RERAISE, RAISE_NOTRACE,
+  SWAPSTACK,
 FIRST_UNIMPLEMENTED_OP};
 
 #endif /* CAML_INSTRUCT_H */

@@ -381,7 +381,7 @@ static void clean_stacks()
 
   for (r = caml_remembered_set.fiber_ref.base; r < caml_remembered_set.fiber_ref.ptr; r++) {
     caml_scan_dirty_stack(&caml_oldify_one, r->obj);
-    /* caml_clean_stack(); */
+    caml_clean_stack(r->obj);
   }
   clear_table (&caml_remembered_set.fiber_ref);
 }

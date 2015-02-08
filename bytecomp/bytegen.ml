@@ -281,6 +281,8 @@ let compunit_name = ref ""
 
 let max_stack_used = ref 0
 
+let check_stack sz =
+  if sz > !max_stack_used then max_stack_used := sz
 
 (* Sequence of string tests *)
 
@@ -295,7 +297,8 @@ let comp_bint_primitive bi suff args =
                 | Pint64 -> "caml_int64_" in
   Kccall(pref ^ suff, List.length args)
 
-let comp_primitive p args =
+let comp_primitive p sz args =
+  check_stack sz;
   match p with
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
@@ -307,6 +310,9 @@ let comp_primitive p args =
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
+  | Pswapstack ->
+     check_stack (sz + 3);
+     Kswapstack
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint
@@ -426,7 +432,7 @@ module Storer =
    Result = list of instructions that evaluate exp, then perform cont. *)
 
 let rec comp_expr env exp sz cont =
-  if sz > !max_stack_used then max_stack_used := sz;
+  check_stack sz;
   match exp with
     Lvar id ->
       begin try
@@ -629,9 +635,11 @@ let rec comp_expr env exp sz cont =
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
-      comp_args env args sz (comp_primitive p args :: cont)
+      let nargs = List.length args - 1 in
+      comp_args env args sz (comp_primitive p (sz + nargs - 1) args :: cont)
   | Lprim(p, args) ->
-      comp_args env args sz (comp_primitive p args :: cont)
+      let nargs = List.length args - 1 in
+      comp_args env args sz (comp_primitive p (sz + nargs - 1) args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
