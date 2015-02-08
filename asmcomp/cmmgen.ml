@@ -347,9 +347,9 @@ let mod_int c1 c2 dbg =
     (c1, Cconst_int 0) ->
       Csequence(c1, Cop(Craise (Raise_regular, dbg),
                         [Cconst_symbol "caml_exn_Division_by_zero"]))
-  | (c1, Cconst_int 1) ->
-      c1
-  | (Cconst_int(0 | 1) as c1, c2) ->
+  | (c1, Cconst_int (1 | (-1))) ->
+      Csequence(c1, Cconst_int 0)
+  | (Cconst_int(0 | 1 | (-1)) as c1, c2) ->
       Csequence(c2, c1)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)

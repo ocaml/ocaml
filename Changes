@@ -141,6 +141,8 @@ Bug fixes:
   (Gabriel Scherer, report by Peter Zotov)
 - PR#6727: Printf.sprintf "%F" misbehavior
   (Benoît Vaugon, report by Vassili Karpov)
+- PR#6749: ocamlopt returns n for (n mod 1) instead of 0
+  (Mark Shinwell and Jeremie Dimino)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
 - ocamlbuild on cygwin cannot find ocamlfind
