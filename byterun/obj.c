@@ -37,21 +37,6 @@ CAMLprim value caml_static_free(value blk)
   return Val_unit;
 }
 
-/* signal to the interpreter machinery that a bytecode is no more
-   needed (before freeing it) - this might be useful for a JIT
-   implementation */
-
-CAMLprim value caml_static_release_bytecode(value blk, value size)
-{
-#ifndef NATIVE_CODE
-  caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
-#else
-  caml_failwith("Meta.static_release_bytecode impossible with native code");
-#endif
-  return Val_unit;
-}
-
-
 CAMLprim value caml_static_resize(value blk, value new_size)
 {
   return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));

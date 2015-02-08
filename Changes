@@ -34,6 +34,8 @@ Runtime system:
 - PR#6517: use ISO C99 types {,u}int{32,64}_t in preference to our homegrown
   types {,u}int{32,64}.
   (Xavier Leroy)
+- PR#6760: closures evaluated in the toplevel can now be marshalled
+  (Peter Zotov, review by Jacques-Henri Jourdan)
 
 Standard library:
 * PR#6494: Add equal function in modules

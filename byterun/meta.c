@@ -47,6 +47,12 @@ CAMLprim value caml_get_section_table(value unit)
 
 CAMLprim value caml_reify_bytecode(value prog, value len)
 {
+  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+  cf->code_start = (char *) prog;
+  cf->code_end = (char *) prog + Long_val(len);
+  cf->digest_computed = 0;
+  caml_ext_table_add(&caml_code_fragments_table, cf);
+
   value clos;
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
@@ -58,6 +64,38 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
   clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
   return clos;
+}
+
+/* signal to the interpreter machinery that a bytecode is no more
+   needed (before freeing it) - this might be useful for a JIT
+   implementation */
+
+CAMLprim value caml_static_release_bytecode(value prog, value len)
+{
+  struct code_fragment * cf = NULL, * cfi;
+  int i;
+  for (i = 0; i < caml_code_fragments_table.size; i++) {
+    cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
+    if (cfi->code_start == (char *) prog &&
+        cfi->code_end == (char *) prog + Long_val(len)) {
+      cf = cfi;
+      break;
+    }
+  }
+
+  if (!cf) {
+      /* [cf] Not matched with a caml_reify_bytecode call; impossible. */
+      Assert (0);
+  } else {
+      caml_ext_table_remove(&caml_code_fragments_table, cf);
+  }
+
+#ifndef NATIVE_CODE
+  caml_release_bytecode((code_t) prog, (asize_t) Long_val(len));
+#else
+  caml_failwith("Meta.static_release_bytecode impossible with native code");
+#endif
+  return Val_unit;
 }
 
 CAMLprim value caml_register_code_fragment(value prog, value len, value digest)

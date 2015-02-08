@@ -91,6 +91,7 @@ struct ext_table {
 
 extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
 extern int caml_ext_table_add(struct ext_table * tbl, void * data);
+extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 
 /* GC flags and messages */
