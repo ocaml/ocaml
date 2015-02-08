@@ -48,12 +48,13 @@ CAMLprim value caml_get_section_table(value unit)
 CAMLprim value caml_reify_bytecode(value prog, value len)
 {
   struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+  value clos;
+
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + Long_val(len);
   cf->digest_computed = 0;
   caml_ext_table_add(&caml_code_fragments_table, cf);
 
-  value clos;
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
 #endif
