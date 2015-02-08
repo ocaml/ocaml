@@ -202,6 +202,17 @@ let search_substring pat str start =
     else search (i+1) 0
   in search start 0
 
+let replace_substring ~before ~after str =
+  let rec search acc curr =
+    match search_substring before str curr with
+      | next ->
+         let prefix = String.sub str curr (next - curr) in
+         search (prefix :: acc) (next + String.length before)
+      | exception Not_found ->
+        let suffix = String.sub str curr (String.length str - curr) in
+        List.rev (suffix :: acc)
+  in String.concat after (search [] 0)
+
 let rev_split_words s =
   let rec split1 res i =
     if i >= String.length s then res else begin

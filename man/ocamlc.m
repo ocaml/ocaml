@@ -191,8 +191,12 @@ linking with this library automatically adds back the
 options as if they had been provided on the
 command line, unless the
 .B -noautolink
-option is given.
-.TP
+option is given. Additionally, a substring
+.B $CAMLORIGIN
+inside a
+.BR \ \-ccopt
+options will be replaced by the full path to the .cma library,
+excluding the filename.
 .B \-absname
 Show absolute filenames in error messages.
 .TP
