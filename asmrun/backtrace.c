@@ -366,6 +366,16 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLreturn(res);
 }
 
+CAMLprim value caml_add_debug_info(code_t start, value size, value events)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_remove_debug_info(code_t start)
+{
+  return Val_unit;
+}
+
 /* the function below is deprecated: we previously returned directly
    the OCaml-usable representation, instead of the raw backtrace as an
    abstract type, but this has a large performance overhead if you

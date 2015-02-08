@@ -142,6 +142,12 @@ let toplevel_startup_hook = ref (fun () -> ())
 let may_trace = ref false (* Global lock on tracing *)
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
+let backtrace = ref None
+
+let record_backtrace () =
+  if Printexc.backtrace_status ()
+  then backtrace := Some (Printexc.get_backtrace ())
+
 let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
@@ -151,7 +157,8 @@ let load_lambda ppf lam =
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
-  let (code, code_size, reloc) = Emitcode.to_memory init_code fun_code in
+  let (code, code_size, reloc, events) = Emitcode.to_memory init_code fun_code in
+  Meta.add_debug_info code code_size [| events |];
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
@@ -163,13 +170,16 @@ let load_lambda ppf lam =
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
     Result retval
   with x ->
     may_trace := false;
+    record_backtrace ();
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
@@ -200,7 +210,14 @@ let print_out_exception ppf exn outv =
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv
+  print_out_exception ppf exn outv;
+  if Printexc.backtrace_status ()
+  then
+    match !backtrace with
+      | None -> ()
+      | Some b ->
+          print_string b;
+          backtrace := None
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
@@ -246,6 +263,15 @@ let execute_phrase print_outcome ppf phr =
               Ophr_exception (exn, outv)
         in
         !print_out_phrase ppf out_phr;
+        if Printexc.backtrace_status ()
+        then begin
+          match !backtrace with
+            | None -> ()
+            | Some b ->
+                pp_print_string ppf b;
+                pp_print_flush ppf ();
+                backtrace := None;
+        end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
         | Ophr_exception _ -> false
@@ -397,6 +423,7 @@ let refill_lexbuf buffer len =
    can call directives from Topdirs. *)
 
 let _ =
+  Clflags.debug := true;
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;

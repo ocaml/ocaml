@@ -65,6 +65,7 @@ val mod_use_file : formatter -> string -> bool
            [mod_use_file] wrap the file contents into a module. *)
 val eval_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
+val record_backtrace : unit -> unit
 
 (* Printing of values *)
 

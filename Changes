@@ -59,6 +59,11 @@ Type system:
   type through inference, but no breakage known on published code.
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
 
+Toplevel and debugger:
+- PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
+  (Peter Zotov and Jake Donham,
+   review by Gabriel Scherer and Jacques-Henri Jourdan)
+
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
