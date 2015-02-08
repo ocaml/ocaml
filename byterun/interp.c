@@ -69,12 +69,10 @@ sp is a local copy of the global variable caml_extern_sp. */
   { sp -= 2; sp[0] = accu; sp[1] = env; caml_extern_sp = sp; }
 #define Restore_after_gc \
   { sp = caml_extern_sp; accu = sp[0]; env = sp[1]; sp += 2; }
-#define Setup_for_c_call(n)                                             \
-  { caml_saved_pc = pc; caml_extra_args = extra_args; *--sp = env;      \
-    caml_extern_sp = sp; caml_c_call_args = (n); }
+#define Setup_for_c_call \
+  { saved_pc = pc; *--sp = env; caml_extern_sp = sp; }
 #define Restore_after_c_call \
-  { sp = caml_extern_sp; env = *sp++; sp += caml_c_call_args; pc = caml_saved_pc; \
-    caml_saved_pc = NULL; extra_args = caml_extra_args; }
+  { sp = caml_extern_sp; env = *sp++; saved_pc = NULL; }
 
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
 #define Setup_for_event \
@@ -213,6 +211,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat extra_args;
   struct caml_exception_context * initial_external_raise;
   int initial_sp_offset;
+  volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
   struct caml_exception_context exception_ctx = { &raise_buf, caml_local_roots };
 #ifndef THREADED_CODE
@@ -242,13 +241,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
   initial_sp_offset = (char *) caml_stack_high - (char *) caml_extern_sp;
   initial_external_raise = caml_external_raise;
   caml_callback_depth++;
-  caml_saved_pc = NULL;
+  saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
     /* no local variables read here */
     sp = caml_extern_sp;
     accu = caml_exn_bucket;
-    pc = caml_saved_pc; caml_saved_pc = NULL;
+    pc = saved_pc; saved_pc = NULL;
     if (pc != NULL) pc += 2;
         /* +2 adjustement for the sole purpose of backtraces */
     goto raise_exception;
@@ -907,48 +906,48 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 /* Calling C functions */
 
-    Instruct(C_CALL1): {
-      int prim = *pc++;
-      Setup_for_c_call(0);
-      accu = Primitive(prim)(accu);
+    Instruct(C_CALL1):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(accu);
       Restore_after_c_call;
+      pc++;
       Next;
-    }
-    Instruct(C_CALL2): {
-      int prim = *pc++;
-      Setup_for_c_call(1);
-      accu = Primitive(prim)(accu, sp[1]);
+    Instruct(C_CALL2):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(accu, sp[1]);
       Restore_after_c_call;
+      sp += 1;
+      pc++;
       Next;
-    }
-    Instruct(C_CALL3): {
-      int prim = *pc++;
-      Setup_for_c_call(2);
-      accu = Primitive(prim)(accu, sp[1], sp[2]);
+    Instruct(C_CALL3):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(accu, sp[1], sp[2]);
       Restore_after_c_call;
+      sp += 2;
+      pc++;
       Next;
-    }
-    Instruct(C_CALL4): {
-      int prim = *pc++;
-      Setup_for_c_call(3);
-      accu = Primitive(prim)(accu, sp[1], sp[2], sp[3]);
+    Instruct(C_CALL4):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3]);
       Restore_after_c_call;
+      sp += 3;
+      pc++;
       Next;
-    }
-    Instruct(C_CALL5): {
-      int prim = *pc++;
-      Setup_for_c_call(4);
-      accu = Primitive(prim)(accu, sp[1], sp[2], sp[3], sp[4]);
+    Instruct(C_CALL5):
+      Setup_for_c_call;
+      accu = Primitive(*pc)(accu, sp[1], sp[2], sp[3], sp[4]);
       Restore_after_c_call;
+      sp += 4;
+      pc++;
       Next;
-    }
     Instruct(C_CALLN): {
       int nargs = *pc++;
-      int prim = *pc++;
       *--sp = accu;
-      Setup_for_c_call(nargs);
-      accu = Primitive(prim)(sp + 1, nargs);
+      Setup_for_c_call;
+      accu = Primitive(*pc)(sp + 1, nargs);
       Restore_after_c_call;
+      sp += nargs;
+      pc++;
       Next;
     }
 
@@ -993,13 +992,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(DIVINT): {
       intnat divisor = Long_val(*sp++);
-      if (divisor == 0) { Setup_for_c_call(0); caml_raise_zero_divide(); }
+      if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
       accu = Val_long(Long_val(accu) / divisor);
       Next;
     }
     Instruct(MODINT): {
       intnat divisor = Long_val(*sp++);
-      if (divisor == 0) { Setup_for_c_call(0); caml_raise_zero_divide(); }
+      if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
       accu = Val_long(Long_val(accu) % divisor);
       Next;
     }
@@ -1136,17 +1135,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Debugging and machine control */
 
     Instruct(STOP):
-      if (caml_running_main_fiber()) {
-        caml_external_raise = initial_external_raise;
-        caml_extern_sp = sp;
-        caml_callback_depth--;
-        return accu;
-      } else {
-        Setup_for_c_call(0);
-        accu = caml_fiber_death();
-        Restore_after_c_call;
-        Next;
-      }
+      caml_external_raise = initial_external_raise;
+      caml_extern_sp = sp;
+      caml_callback_depth--;
+      return accu;
 
     Instruct(EVENT):
       if (--caml_event_count == 0) {
@@ -1161,6 +1153,47 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_debugger(BREAKPOINT);
       Restore_after_debugger;
       Restart_curr_instr;
+
+/* Context switching */
+
+    Instruct(SWAPSTACK): {
+      value fn, target, cont;
+
+      /* allocate a continuation record */
+      Alloc_small(cont, 2, 0);
+
+      fn = sp[0];
+      target = accu;
+      if (Field(target, 1) != Val_int(0)) {
+        Setup_for_c_call;
+        caml_failwith("wat");
+      }
+
+      /* push most of a function-call frame to the stack, and the trapsp */
+      sp -= 3;
+      sp[0] = Val_long(caml_trap_sp_off);
+      sp[1] = Val_pc(pc);
+      sp[2] = env;
+      sp[3] = Val_long(extra_args);
+
+      /* swap stacks and create continuation */
+      caml_extern_sp = sp;
+      Init_field(cont, 0, caml_swap_stack(Field(target, 0)));
+      Init_field(cont, 1, Val_int(0));
+      sp = caml_extern_sp;
+
+      /* mark old continuation as used */
+      caml_modify_field(target, 1, Val_int(1));
+
+      /* pop new trapsp, push continuation completing function frame */
+      caml_trap_sp_off = Long_val(sp[0]);
+      sp[0] = cont;
+
+      pc = Code_val(fn);
+      env = fn;
+      extra_args = 0;
+      goto check_stacks;
+    }
 
 #ifndef THREADED_CODE
     default:

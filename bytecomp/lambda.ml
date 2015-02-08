@@ -46,6 +46,8 @@ type primitive =
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
+  (* Context switch *)
+  | Pswapstack
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)

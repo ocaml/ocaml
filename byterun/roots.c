@@ -34,7 +34,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   int i, j;
   value* sp;
 
-  caml_do_fiber_roots(f, domain->runqueue);
+  f(caml_current_stack, &caml_current_stack);
   for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
