@@ -90,7 +90,7 @@ let rec add_const c n =
   | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
   | Cop(Caddi, ([Cconst_int x; c] | [c; Cconst_int x])) when no_overflow_add n x ->
       let d = n + x in
-      if d == 0 then c else Cop(Caddi, [c; Cconst_int d])
+      if d = 0 then c else Cop(Caddi, [c; Cconst_int d])
   | Cop(Csubi, [Cconst_int x; c]) when no_overflow_add n x ->
       Cop(Csubi, [Cconst_int (n + x); c])
   | Cop(Csubi, [c; Cconst_int x]) when no_overflow_sub n x ->
