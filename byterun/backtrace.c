@@ -287,8 +287,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
      into the backtrace buffer. */
   for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
-    if (caml_backtrace_pos < BACKTRACE_BUFFER_SIZE)
-      break;
+    if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
     if (find_debug_info(p) != NULL)
       caml_backtrace_buffer[caml_backtrace_pos++] = p;
   }
