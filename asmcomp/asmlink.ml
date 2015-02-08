@@ -91,10 +91,11 @@ let extract_crc_implementations () =
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
 
-let add_ccobjs l =
+let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    lib_ccopts := l.lib_ccopts @ !lib_ccopts
+    let replace_origin = Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin in
+    lib_ccopts := List.map replace_origin l.lib_ccopts @ !lib_ccopts
   end
 
 let runtime_lib () =
@@ -179,7 +180,7 @@ let scan_file obj_name tolink = match read_file obj_name with
   | Library (file_name,infos) ->
       (* This is an archive file. Each unit contained in it will be linked
          in only if needed. *)
-      add_ccobjs infos;
+      add_ccobjs (Filename.dirname file_name) infos;
       List.fold_right
         (fun (info, crc) reqd ->
            if info.ui_force_link

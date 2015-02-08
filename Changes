@@ -98,6 +98,8 @@ Compilers:
   (Vincent Laporte, Peter Zotov)
 - PR#6600: make -short-paths faster by building the printing map
   incrementally (Jacques Garrigue)
+- PR#6642: replace $CAMLORIGIN in -ccopt with the path to cma or cmxa
+  (Peter Zotov, Gabriel Scherer, review by Damien Doligez)
 
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
