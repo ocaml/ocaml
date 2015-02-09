@@ -110,20 +110,20 @@ let fun_decls lst fv =
         let decl = fun_decl params (fv@functs) body in
         Variable.Map.add var decl map)
       Variable.Map.empty lst in
-  { ident = FunId.create compilation_unit;
+  { ident = Set_of_closures_id.create compilation_unit;
     funs;
     compilation_unit }
 
 let fclosure lst fv =
   let fv_var = List.map fst fv in
-  Fclosure
+  Fset_of_closures
     ({ cl_fun = fun_decls lst fv_var;
        cl_free_var = Variable.Map.of_list fv;
        cl_specialised_arg = Variable.Map.empty },
      nid ())
 
 let ffunction fu_closure fu_fun =
-  Ffunction({ fu_closure; fu_fun; fu_relative_to = None }, nid ())
+  Fclosure({ fu_closure; fu_fun; fu_relative_to = None }, nid ())
 
 let afunction fu_closure fu_fun =
   ffunction (fvar fu_closure) fu_fun
@@ -131,19 +131,19 @@ let afunction fu_closure fu_fun =
 let ffun_fclos ?(fv=[]) f args body =
   ffunction
     (fclosure [f, args, body] fv)
-    (Closure_function.wrap f)
+    (Closure_id.wrap f)
 
 let ffun_fclos' ?(fv=[]) args body =
   let f = new_var "f" in
   ffunction
     (fclosure [f, args, body] fv)
-    (Closure_function.wrap f)
+    (Closure_id.wrap f)
 
 let afun_fclos' ?(fv=[]) args body =
   let f = new_var "f" in
   let clos = new_var "clos" in
   flet clos (fclosure [f, args, body] fv)
-    (afunction clos (Closure_function.wrap f))
+    (afunction clos (Closure_id.wrap f))
 
 let fun_decl' params body =
   { stub = false; params; body;
@@ -156,7 +156,7 @@ let fun_decls' lst =
         let decl = fun_decl' params body in
         Variable.Map.add var decl map)
       Variable.Map.empty lst in
-  { ident = FunId.create compilation_unit;
+  { ident = Set_of_closures_id.create compilation_unit;
     funs;
     compilation_unit }
 
@@ -232,7 +232,7 @@ let rec equal env t1 t2 = match t1, t2 with
       df1 = df2 &&
       equal (add_var v1 v2 env) c1 c2
 
-  | Fclosure (c1, _), Fclosure (c2, _) ->
+  | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
       (* could be more general: assumes variables are the same:
          substitution breaks it ! *)
       let env = add_same_var_set env (Variable.Map.keys c1.cl_fun.funs) in
@@ -251,15 +251,15 @@ let rec equal env t1 t2 = match t1, t2 with
       Variable.Map.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg &&
       Variable.Map.equal same_function c1.cl_fun.funs c2.cl_fun.funs
 
-  | Ffunction (fu1, _), Ffunction (fu2, _) ->
+  | Fclosure (fu1, _), Fclosure (fu2, _) ->
       (* assumes same function name, could be more general *)
       equal env fu1.fu_closure fu2.fu_closure &&
-      Closure_function.equal fu1.fu_fun fu2.fu_fun &&
+      Closure_id.equal fu1.fu_fun fu2.fu_fun &&
       (match fu1.fu_relative_to, fu2.fu_relative_to with
        | None, None -> true
        | Some _, None | None, Some _ -> false
        | Some re1, Some re2 ->
-           Closure_function.equal re1 re2)
+           Closure_id.equal re1 re2)
 
   | Fapply(a1, _), Fapply(a2, _) ->
       a1.ap_kind = a2.ap_kind &&
@@ -267,10 +267,11 @@ let rec equal env t1 t2 = match t1, t2 with
       equal_list env a1.ap_arg a2.ap_arg
 
   | (Fvar _| Fsymbol _| Fconst _| Flet _ | Fprim _ | Fifthenelse _ | Fwhile _
-    | Ffor _ | Fclosure _ | Ffunction _ | Fapply _), _ ->
+    | Ffor _ | Fset_of_closures _ | Fclosure _ | Fapply _), _ ->
       false
 
   | (Fassign _ | Fletrec _ | Fvariable_in_closure _
+    | Fstringswitch _
     | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fsequence _
     | Fsend _ | Funreachable _), _ ->
@@ -292,19 +293,19 @@ let equal t1 t2 =
 
 let v = new_var "v"
 let f = new_var "f"
-let f_func = Closure_function.wrap f
+let f_func = Closure_id.wrap f
 let f' = new_var "f'"
 let g = new_var "g"
-let g_func = Closure_function.wrap g
+let g_func = Closure_id.wrap g
 let g' = new_var "g'"
 let h = new_var "h"
-let h_func = Closure_function.wrap h
+let h_func = Closure_id.wrap h
 let h' = new_var "h'"
 let fi = new_var "fi"
-let fi_func = Closure_function.wrap fi
+let fi_func = Closure_id.wrap fi
 let fi' = new_var "fi'"
 let fj = new_var "fj"
-let fj_func = Closure_function.wrap fj
+let fj_func = Closure_id.wrap fj
 let fj' = new_var "fj'"
 let x = new_var "x"
 let y = new_var "y"
@@ -314,7 +315,7 @@ let b = new_var "b"
 
 let fibo = new_var "fibo"
 let x_fibo = new_var "x"
-let fibo_fun = Closure_function.wrap fibo
+let fibo_fun = Closure_id.wrap fibo
 
 let fibonacci =
   let fibo_closure =

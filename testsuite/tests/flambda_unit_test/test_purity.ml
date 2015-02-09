@@ -107,7 +107,7 @@ let test_functions () =
   let s = Flambdapurity.pure_functions test' in
   let l =
     ClosureFunctionSet.of_list
-      (List.map Closure_function.wrap
+      (List.map Closure_id.wrap
          [ f; g; fj ])
   in
   if not (ClosureFunctionSet.equal l s)
