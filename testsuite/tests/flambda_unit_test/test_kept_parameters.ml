@@ -59,7 +59,7 @@ let func_rec_6 =
 
 let run () =
   let test f l =
-    VarSet.equal (Flambdaiter.arguments_kept_in_recursion f) (VarSet.of_list l) in
+    Variable.Set.equal (Flambdaiter.arguments_kept_in_recursion f) (Variable.Set.of_list l) in
   assert( test func_non_rec_1 [x] );
   assert( test func_rec_1 [x] );
   assert( test func_rec_2 [] );

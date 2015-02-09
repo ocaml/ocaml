@@ -47,15 +47,15 @@ let check_every_used_identifier_is_bound () =
 let fail4 =
   Fclosure
     ({ cl_fun = fun_decls [f,[x],fvar v] [x;v];
-       cl_free_var = VarMap.empty;
-       cl_specialised_arg = VarMap.empty },
+       cl_free_var = Variable.Map.empty;
+       cl_specialised_arg = Variable.Map.empty },
      nid ())
 
 let fail5 =
   Fclosure
     ({ cl_fun = fun_decls [f,[],fvar v] [x;v];
-       cl_free_var = VarMap.singleton v (int 1);
-       cl_specialised_arg = VarMap.empty },
+       cl_free_var = Variable.Map.singleton v (int 1);
+       cl_specialised_arg = Variable.Map.empty },
      nid ())
 
 (* passing function_free_variables_are_bound_in_the_closure_and_parameters *)
@@ -63,8 +63,8 @@ let fail5 =
 let pass4 =
   Fclosure
     ({ cl_fun = fun_decls [f,[x],fvar v] [x;v];
-       cl_free_var = VarMap.singleton v (int 1);
-       cl_specialised_arg = VarMap.empty },
+       cl_free_var = Variable.Map.singleton v (int 1);
+       cl_specialised_arg = Variable.Map.empty },
      nid ())
 
 let check_function_free_variables_are_bound_in_the_closure_and_parameters () =
