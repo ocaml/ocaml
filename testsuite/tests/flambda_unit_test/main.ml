@@ -1,7 +1,7 @@
 
 (* let () = Test_connected_components.run () *)
 
-(* let () = Test_flambdacheck.run () *)
+let () = Test_flambdacheck.run ()
 
 (* let () = Test_flambdagen.run () *)
 

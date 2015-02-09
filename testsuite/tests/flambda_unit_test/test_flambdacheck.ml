@@ -199,7 +199,7 @@ let check_no_assign_on_variable_of_kind_Not_assigned () =
     check_success no_assign_on_variable_of_kind_Not_assigned pass17;
   with e -> raise e
 
-(* failing no_variable_within_closure_is_bound_multiple_times *)
+(* failing no_var_within_closure_is_bound_multiple_times *)
 
 let fail21 =
   fseq [
@@ -207,12 +207,12 @@ let fail21 =
     fclosure [g,[v],fvar y] [y, int 1]
   ]
 
-let check_no_variable_within_closure_is_bound_multiple_times () =
+let check_no_var_within_closure_is_bound_multiple_times () =
   try
-    check_error no_variable_within_closure_is_bound_multiple_times fail21;
+    check_error no_var_within_closure_is_bound_multiple_times fail21;
   with e -> raise e
 
-(* failing no_function_within_closure_is_bound_multiple_times *)
+(* failing no_closure_id_is_bound_multiple_times *)
 
 let fail22 =
   fseq [
@@ -220,9 +220,9 @@ let fail22 =
     fclosure [f,[v],fvar v] []
   ]
 
-let check_no_function_within_closure_is_bound_multiple_times () =
+let check_no_closure_id_is_bound_multiple_times () =
   try
-    check_error no_function_within_closure_is_bound_multiple_times fail22;
+    check_error no_closure_id_is_bound_multiple_times fail22;
   with e -> raise e
 
 let run () =
@@ -231,5 +231,5 @@ let run () =
   check_no_identifier_bound_multiple_times ();
   check_every_bound_variable_is_from_current_compilation_unit ();
   check_no_assign_on_variable_of_kind_Not_assigned ();
-  check_no_variable_within_closure_is_bound_multiple_times ();
-  check_no_function_within_closure_is_bound_multiple_times ()
+  check_no_var_within_closure_is_bound_multiple_times ();
+  check_no_closure_id_is_bound_multiple_times ()
