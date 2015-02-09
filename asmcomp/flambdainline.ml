@@ -1397,6 +1397,10 @@ and inline_recursive_functions env r funct clos fun_id func
   in
   loop (activate_substitution env) r expr
 
+let debug_benefit =
+  try ignore (Sys.getenv "BENEFIT"); true
+  with _ -> false
+
 let inline tree =
   let result, r = loop (Env.empty ()) init_r tree in
   if not (Variable.Set.is_empty r.used_variables)
@@ -1407,6 +1411,7 @@ let inline tree =
   end;
   assert (Variable.Set.is_empty r.used_variables);
   assert (Static_exception.Set.is_empty r.used_staticfail);
-  Format.printf "benefit:@ %a@."
-    Flambdacost.print_benefit r.benefit;
+  if debug_benefit then
+    Format.printf "benefit:@ %a@."
+      Flambdacost.print_benefit r.benefit;
   result
