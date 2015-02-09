@@ -3,7 +3,7 @@
 
 let () = Test_flambdacheck.run ()
 
-(* let () = Test_flambdagen.run () *)
+let () = Test_flambdagen.run ()
 
 (* let () = Test_recursives.run () *)
 

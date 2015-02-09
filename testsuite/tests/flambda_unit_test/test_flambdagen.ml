@@ -6,10 +6,9 @@ let lx = Ident.create "x"
 let fx = new_var "x"
 
 let test_equal l f =
-  let _, fl =
-    Flambdagen.intro
+  let fl =
+    Flambdagen.lambda_to_flambda
       ~current_compilation_unit:compilation_unit
-      ~current_unit_id:(Ident.create_persistent compilation_unit_id)
       ~symbol_for_global':(fun _ -> assert false) l in
   equal f fl
 
