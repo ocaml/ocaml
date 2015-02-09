@@ -22,7 +22,7 @@ let print_scc scc =
 
 let scc graph =
   SCC.connected_components_sorted_from_roots_to_leaf
-    (IntMap.map IntSet.of_list (IntMap.of_list graph))
+    (Int.Map.map Int.Set.of_list (Int.Map.of_list graph))
 
 let run () =
   print_scc (scc empty);

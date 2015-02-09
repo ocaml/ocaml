@@ -26,8 +26,9 @@ OTHEROBJS=\
 OBJS= \
 	test_utils.cmo \
 	test_flambdacheck.cmo \
-	test_flambdagen.cmo
-	# test_connected_components.cmo test_kept_parameters.cmo \
+	test_flambdagen.cmo \
+	test_connected_components.cmo \
+	test_kept_parameters.cmo
 	# test_recursives.cmo test_movelets.cmo test_flambdaifstaticraise.cmo \
 	# test_purity.cmo test_flambdareach.cmo
 
