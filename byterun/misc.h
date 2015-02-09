@@ -167,16 +167,19 @@ extern struct CAML_TIMER_BLOCK *CAML_TIMER_LOG;
 
 #define CAML_TIMER_DECLARE(t) struct CAML_TIMER_BLOCK *t = NULL
 
-#define CAML_TIMER_START(t, name)                                \
+#define CAML_TIMER_ALLOC(t, name)                                \
   t = malloc (sizeof (struct CAML_TIMER_BLOCK));                 \
   t->index = 0;                                                  \
   t->tag[0] = name;                                              \
   t->next = CAML_TIMER_LOG;                                      \
   CAML_TIMER_LOG = t;                                            \
+
+#define CAML_TIMER_START(t, name)                                \
+  CAML_TIMER_ALLOC (t, name);                                    \
   clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]))
 
-#define CAML_TIMER_SETUP(t, name) \
-  CAML_TIMER_DECLARE(t);          \
+#define CAML_TIMER_SETUP(t, name)                                \
+  CAML_TIMER_DECLARE(t);                                         \
   CAML_TIMER_START(t, name)
 
 #define CAML_TIMER_TIME(t, msg)                                     \
@@ -184,6 +187,17 @@ extern struct CAML_TIMER_BLOCK *CAML_TIMER_LOG;
     ++ t->index;                                                    \
     t->tag[t->index] = (msg);                                       \
     clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index]));   \
+  }while(0)
+
+#define CAML_TIMER_COUNT(msg, c)                                    \
+  do{                                                               \
+    CAML_TIMER_DECLARE (tmp);                                       \
+    CAML_TIMER_ALLOC (tmp, "");                                     \
+    tmp->ts[0].tv_sec = tmp->ts[0].tv_nsec = 0;                     \
+    tmp->index = 1;                                                 \
+    tmp->tag[1] = msg;                                              \
+    tmp->ts[1].tv_sec = 0;                                          \
+    tmp->ts[1].tv_nsec = (c);                                       \
   }while(0)
 
 extern void CAML_TIMER_ATEXIT (void);
@@ -195,6 +209,7 @@ extern void CAML_TIMER_ATEXIT (void);
 #define CAML_TIMER_SETUP(t, name) /**/
 #define CAML_TIMER_TIME(t, msg) /**/
 #define CAML_TIMER_ATEXIT() /**/
+#define CAML_TIMER_COUNT(msg, c) /**/
 
 #endif /* CAML_TIMER */
 

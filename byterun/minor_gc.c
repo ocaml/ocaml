@@ -265,6 +265,8 @@ void caml_empty_minor_heap (void)
     caml_final_empty_young ();
     CAML_TIMER_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+    CAML_TIMER_COUNT ("minor/promoted#",
+                      caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
   }
 #ifdef DEBUG
