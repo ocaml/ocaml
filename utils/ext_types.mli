@@ -110,18 +110,6 @@ module UnitId :
   functor (Compilation_unit : PrintableHashOrdered) ->
     UnitId with module Compilation_unit := Compilation_unit
 
-
-module Int : PrintableHashOrdered with type t = int
-
-module IntSet : sig
-  include ExtSet with module M := Int
-
-  (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)
-  val zero_to_n : int -> t
-end
-module IntMap : ExtMap with module M := Int
-module IntTbl : ExtHashtbl with module M := Int
-
 module String_M : PrintableHashOrdered with type t = string
 (** The module is named Stirng_M to avoid name clash with stdlib
     String if Ext_types is openend *)
@@ -145,3 +133,14 @@ module Identifiable : sig
   module Make (P : PrintableHashOrdered) : Identifiable
     with type t := P.t
 end
+
+module Int : Identifiable with type t = int
+
+module IntSet : sig
+  include ExtSet with module M := Int
+
+  (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)
+  val zero_to_n : int -> t
+end
+module IntMap : ExtMap with module M := Int
+module IntTbl : ExtHashtbl with module M := Int

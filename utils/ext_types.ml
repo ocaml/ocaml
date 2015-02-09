@@ -225,15 +225,6 @@ module UnitId(Innerid:Id)(Compilation_unit:PrintableHashOrdered) :
   let unit x = x.unit
 end
 
-module Int = struct
-  type t = int
-  let compare x y = x - y
-  let output oc x = Printf.fprintf oc "%i" x
-  let hash i = i
-  let equal (i:int) j = i = j
-  let print = Format.pp_print_int
-end
-
 module String_M = struct
   type t = string
   let compare = String.compare
@@ -242,15 +233,6 @@ module String_M = struct
   let equal (s1:string) s2 = s1 = s2
   let print = Format.pp_print_string
 end
-
-module IntSet = struct
-  include ExtSet(Int)
-
-  let rec zero_to_n n =
-    if n < 0 then empty else add n (zero_to_n (n-1))
-end
-module IntMap = ExtMap(Int)
-module IntTbl = ExtHashtbl(Int)
 
 module StringSet = ExtSet(String_M)
 module StringMap = ExtMap(String_M)
@@ -275,3 +257,21 @@ module Identifiable = struct
     module Tbl = ExtHashtbl(M)
   end
 end
+
+module Int = Identifiable.Make(struct
+    type t = int
+    let compare x y = x - y
+    let output oc x = Printf.fprintf oc "%i" x
+    let hash i = i
+    let equal (i:int) j = i = j
+    let print = Format.pp_print_int
+  end)
+
+module IntSet = struct
+  include ExtSet(Int)
+
+  let rec zero_to_n n =
+    if n < 0 then empty else add n (zero_to_n (n-1))
+end
+module IntMap = ExtMap(Int)
+module IntTbl = ExtHashtbl(Int)
