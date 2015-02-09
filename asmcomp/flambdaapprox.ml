@@ -43,6 +43,7 @@ and value_set_of_closures =
   { ffunctions : Expr_id.t function_declarations;
     bound_var : t Var_within_closure.Map.t;
     kept_params : Variable.Set.t;
+    specialised_args : Variable.Set.t;
     ffunction_sb :
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
   }
@@ -224,6 +225,7 @@ module Import = struct
               { ffunctions = Compilenv.imported_closure closure_id;
                 bound_var;
                 kept_params = kept_params;
+                specialised_args = Variable.Set.empty;
                 ffunction_sb =
                   Flambdasubst.
                   Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty;
@@ -238,6 +240,7 @@ module Import = struct
           { ffunctions = Compilenv.imported_closure closure_id;
             bound_var;
             kept_params = kept_params;
+            specialised_args = Variable.Set.empty;
             ffunction_sb =
               Flambdasubst.
               Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty; }

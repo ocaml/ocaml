@@ -1028,6 +1028,7 @@ and transform_set_of_closures_expression env r cl annot =
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
       kept_params = Variable.Set.empty;
+      specialised_args = Variable.Map.keys cl_specialised_arg;
       ffunction_sb;
     }
   in
@@ -1265,20 +1266,13 @@ and direct_apply env r clos funct fun_id func closure
              does not depends on the effective value of its arguments, it
              could be returned instead of [value_unknown] *)
           no_transformation ()
-      else if recursive then
-        match funct with
-        | Fclosure ({ fu_closure = Fset_of_closures (set_of_closures, _)}, _) ->
-            specialise_without_duplicating_recursive_functions env r clos
-              fun_id func (args,approxs) set_of_closures kept_params ap_dbg
-              (no_transformation ())
-        | _ ->
-            if should_inline_function_known_to_be_recursive ~func ~clos ~env
+      else if recursive
+           && should_inline_function_known_to_be_recursive ~func ~clos ~env
                 ~closure ~approxs ~kept_params ~max_level
-            then
-              inline_recursive_functions env r funct clos fun_id func
-                (args,approxs) kept_params ap_dbg
-            else
-              no_transformation ()
+      then
+        inline_recursive_functions env r funct clos fun_id func
+          (args,approxs) kept_params closure.specialised_args ap_dbg
+          no_transformation
       else
         no_transformation ()
 
@@ -1353,7 +1347,7 @@ and inline_non_recursive_function env r clos lfunc fun_id func args =
    non-recursive] is not sufficient.
 *)
 and inline_recursive_functions env r funct clos fun_id func
-    (args, approxs) kept_params ap_dbg =
+    (args, approxs) kept_params specialised_args ap_dbg no_transformation =
   let env = inlining_level_up env in
   let clos_id = new_var "inline_recursive_functions" in
   let fv =
@@ -1365,6 +1359,13 @@ and inline_recursive_functions env r funct clos fun_id func
     which_function_parameters_can_we_specialize ~params:func.params
       ~args ~approximations_of_args:approxs ~kept_params
   in
+  if Variable.Set.equal specialised_args (Variable.Map.keys spec_args)
+  then
+    (* If the function already has the right set of specialised arguments,
+       then there is nothing to do to improve it here. *)
+    no_transformation ()
+  else
+
   (* First we generate a copy of the function application, including the
      function declaration(s), but with variables (not yet bound) in place of
      the arguments. *)
@@ -1395,42 +1396,6 @@ and inline_recursive_functions env r funct clos fun_id func
       Expr_id.create ())
   in
   loop (activate_substitution env) r expr
-
-and specialise_without_duplicating_recursive_functions env r clos fun_id
-    func (args, approxs) set_of_closures kept_params ap_dbg default =
-  let spec_args, args, args_decl =
-    which_function_parameters_can_we_specialize ~params:func.params
-      ~args ~approximations_of_args:approxs ~kept_params
-  in
-  if Variable.Set.equal
-      (Variable.Map.keys set_of_closures.cl_specialised_arg)
-      (Variable.Map.keys spec_args)
-      (* if the function already has the right set of specialised arguments,
-         then there is nothing to do to improve it here. *)
-  then default
-  else
-    let application =
-      Fapply (
-        { ap_function =
-            Fclosure (
-              { fu_closure = Fset_of_closures (
-                   { cl_fun = clos;
-                     cl_free_var = set_of_closures.cl_free_var;
-                     cl_specialised_arg = spec_args;
-                   }, Expr_id.create ());
-                fu_fun = fun_id;
-                fu_relative_to = None;
-              }, Expr_id.create ());
-          ap_arg = List.map (fun id -> Fvar (id, Expr_id.create ())) args;
-          ap_kind = Direct fun_id;
-          ap_dbg;
-        }, Expr_id.create ()) in
-    let expr =
-      List.fold_left (fun expr (id, arg) ->
-          Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
-        application args_decl
-    in
-    loop (disactivate_substitution env) r expr
 
 let inline tree =
   let result, r = loop (Env.empty ()) init_r tree in
