@@ -35,6 +35,7 @@
    [caml_young_alloc_start]...[caml_young_alloc_end]
        The allocation arena: newly-allocated blocks are carved from
        this interval.
+   [caml_young_alloc_mid] is the mid-point of this interval.
    [caml_young_ptr], [caml_young_trigger], [caml_young_limit]
        These pointers are all inside the allocation arena.
        - [caml_young_ptr] is where the next allocation will take place.
@@ -50,7 +51,9 @@
 asize_t caml_minor_heap_size;
 static void *caml_young_base = NULL;
 CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
-CAMLexport value *caml_young_alloc_start = NULL, *caml_young_alloc_end = NULL;
+CAMLexport value *caml_young_alloc_start = NULL,
+                 *caml_young_alloc_mid = NULL,
+                 *caml_young_alloc_end = NULL;
 CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
 CAMLexport value *caml_young_trigger = NULL;
 
@@ -107,7 +110,7 @@ void caml_set_minor_heap_size (asize_t size)
     CAML_TIMER_SETUP (tmr, "force_minor/set_minor_heap_size");
     caml_empty_minor_heap ();
     caml_requested_minor_gc = 0;
-    caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+    caml_young_trigger = caml_young_alloc_mid;
     caml_young_limit = caml_young_trigger;
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
@@ -122,8 +125,9 @@ void caml_set_minor_heap_size (asize_t size)
   }
   caml_young_base = new_heap_base;
   caml_young_start = new_heap;
-  caml_young_end = new_heap + Wsize_bsize (size);
+  caml_young_end = caml_young_start + Wsize_bsize (size);
   caml_young_alloc_start = caml_young_start;
+  caml_young_alloc_mid = caml_young_alloc_start + Wsize_bsize (size) / 2;
   caml_young_alloc_end = caml_young_end;
   caml_young_trigger = caml_young_alloc_start;
   caml_young_limit = caml_young_trigger;
@@ -321,7 +325,7 @@ CAMLexport void caml_gc_dispatch (void)
     /* The minor heap is full, we must do a minor collection. */
     caml_empty_minor_heap ();
     caml_requested_minor_gc = 0;
-    caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+    caml_young_trigger = caml_young_alloc_mid;
     caml_young_limit = caml_young_trigger;
     CAML_TIMER_TIME (tmr, "dispatch/minor");
 
@@ -333,7 +337,7 @@ CAMLexport void caml_gc_dispatch (void)
          a second minor collection. */
       caml_empty_minor_heap ();
       caml_requested_minor_gc = 0;
-      caml_young_trigger = caml_young_alloc_start + caml_minor_heap_size / 2;
+      caml_young_trigger = caml_young_alloc_mid;
       caml_young_limit = caml_young_trigger;
       CAML_TIMER_TIME (tmr, "dispatch/finalizers_minor");
     }

@@ -35,6 +35,15 @@ struct caml_ref_table {
 };
 CAMLextern struct caml_ref_table caml_ref_table, caml_weak_ref_table;
 
+#define Add_to_ref_table(tbl, p)                  \
+  do {                                            \
+    if ((tbl).ptr >= (tbl).limit){                \
+      Assert ((tbl).ptr == (tbl).limit);          \
+      caml_realloc_ref_table (&(tbl));            \
+    }                                             \
+    *(tbl).ptr++ = (p);                           \
+  } while(0)
+
 #define Is_young(val) \
   (Assert (Is_block (val)), \
    (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)

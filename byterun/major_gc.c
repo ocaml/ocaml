@@ -157,12 +157,12 @@ static void mark_slice (intnat work)
   gray_vals_ptr = gray_vals_cur;
   v = current_value;
   start = current_index;
-  if (v == 0 && gray_vals_ptr > gray_vals){
-    CAMLassert (start == 0);
-    v = *--gray_vals_ptr;
-    CAMLassert (Is_gray_val (v));
-  }
   while (work > 0){
+    if (v == 0 && gray_vals_ptr > gray_vals){
+      CAMLassert (start == 0);
+      v = *--gray_vals_ptr;
+      CAMLassert (Is_gray_val (v));
+    }
     if (v != 0){
       hd = Hd_val(v);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -197,6 +197,8 @@ static void mark_slice (intnat work)
                 /* Do not short-circuit the pointer. */
               }else{
                 Field (v, i) = f;
+                if (Is_block (f) && Is_young (f) && !Is_young (child))
+                  Add_to_ref_table (caml_ref_table, &Field (v, i));
               }
             }else if (Tag_hd(chd) == Infix_tag) {
               child -= Infix_offset_val(child);
@@ -223,23 +225,14 @@ static void mark_slice (intnat work)
           Hd_val (v) = Blackhd_hd (hd);
           work -= Whsize_wosize(end - start);
           start = 0;
-          if (gray_vals_ptr > gray_vals){
-            v = *--gray_vals_ptr;
-            CAMLassert (Is_gray_val (v));
-          }else{
-            v = 0;
-          }
+          v = 0;
         }
       }else{
         /* The block doesn't contain any pointers. */
         CAMLassert (start == 0);
         Hd_val (v) = Blackhd_hd (hd);
         work -= Whsize_wosize(size);
-        if (gray_vals_ptr > gray_vals){
-          v = *--gray_vals_ptr;
-        }else{
-          v = 0;
-        }
+        v = 0;
       }
     }else if (markhp != NULL){
       if (markhp == limit){
@@ -296,7 +289,7 @@ static void mark_slice (intnat work)
             curfield = Field (cur, i);
           weak_again:
             if (curfield != caml_weak_none
-                && Is_block (curfield) && Is_in_heap (curfield)){
+                && Is_block (curfield) && Is_in_heap_or_young (curfield)){
               if (Tag_val (curfield) == Forward_tag){
                 value f = Forward_val (curfield);
                 if (Is_block (f)) {
@@ -305,11 +298,13 @@ static void mark_slice (intnat work)
                     /* Do not short-circuit the pointer. */
                   }else{
                     Field (cur, i) = curfield = f;
+                    if (Is_block (f) && Is_young (f))
+                      Add_to_ref_table (caml_weak_ref_table, &Field (cur, i));
                     goto weak_again;
                   }
                 }
               }
-              if (Is_white_val (curfield)){
+              if (Is_white_val (curfield) && !Is_young (curfield)){
                 Field (cur, i) = caml_weak_none;
               }
             }
