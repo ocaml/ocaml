@@ -99,7 +99,6 @@ module Var_within_closure = Closure_element
 
 module Static_exception = struct
   include Int
-  include Identifiable.Make(Int)
 
   let create () = Lambda.next_raise_count ()
 

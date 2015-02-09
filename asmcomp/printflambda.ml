@@ -103,8 +103,8 @@ let rec lam ppf = function
       fprintf ppf
         "@[<1>(%s(%i,%i) %a@ @[<v 0>%a@])@]"
         (match sw.fs_failaction with None -> "switch*" | _ -> "switch")
-        (IntSet.cardinal sw.fs_numconsts)
-        (IntSet.cardinal sw.fs_numblocks)
+        (Int.Set.cardinal sw.fs_numconsts)
+        (Int.Set.cardinal sw.fs_numblocks)
         lam larg switch sw
   | Fstringswitch(arg, cases, default, _) ->
       let switch ppf cases =

@@ -137,10 +137,6 @@ end
 module Int : Identifiable with type t = int
 
 module IntSet : sig
-  include ExtSet with module M := Int
-
   (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)
-  val zero_to_n : int -> t
+  val zero_to_n : int -> Int.Set.t
 end
-module IntMap : ExtMap with module M := Int
-module IntTbl : ExtHashtbl with module M := Int

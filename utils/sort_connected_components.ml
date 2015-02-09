@@ -75,10 +75,10 @@ end = struct
   let component_graph graph =
     let ncomponents, components = kosaraju graph in
     let id_scc = Array.make ncomponents [] in
-    let component_graph = Array.make ncomponents IntSet.empty in
+    let component_graph = Array.make ncomponents Int.Set.empty in
     let add_component_dep node set =
       let node_deps = graph.(node) in
-      List.fold_left (fun set dep -> IntSet.add components.(dep) set)
+      List.fold_left (fun set dep -> Int.Set.add components.(dep) set)
         set node_deps
     in
     Array.iteri (fun node component ->
@@ -87,7 +87,7 @@ end = struct
           add_component_dep node (component_graph.(component)))
       components;
     { sorted_connected_components = id_scc;
-      component_edges = Array.map IntSet.elements component_graph }
+      component_edges = Array.map Int.Set.elements component_graph }
 
 end
 

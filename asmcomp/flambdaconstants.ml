@@ -79,13 +79,13 @@ module NotConstants(P:Param) = struct
   (* Sets representing NC *)
   let variables = ref Variable.Set.empty
   let closures = ref Set_of_closures_id.Set.empty
-  let globals = ref IntSet.empty
+  let globals = ref Int.Set.empty
 
   (* if the table associates [v1;v2;...;vn] to v, it represents
      v in NC => v1 in NC /\ v2 in NC ... /\ vn in NC *)
   let id_dep_table : dep list Variable.Tbl.t = Variable.Tbl.create 100
   let fun_dep_table : dep list Set_of_closures_id.Tbl.t = Set_of_closures_id.Tbl.create 100
-  let glob_dep_table : dep list IntTbl.t = IntTbl.create 100
+  let glob_dep_table : dep list Int.Tbl.t = Int.Tbl.create 100
 
   (* adds in the tables 'dep in NC => curr in NC' *)
   let register_implication ~in_nc:dep ~implies_in_nc:curr =
@@ -100,9 +100,9 @@ module NotConstants(P:Param) = struct
         with Not_found -> [] in
         Set_of_closures_id.Tbl.replace fun_dep_table cl (curr :: t)
       | Global i ->
-        let t = try IntTbl.find glob_dep_table i
+        let t = try Int.Tbl.find glob_dep_table i
         with Not_found -> [] in
-        IntTbl.replace glob_dep_table i (curr :: t))
+        Int.Tbl.replace glob_dep_table i (curr :: t))
       curr
 
   (* adds 'curr in NC' *)
@@ -115,8 +115,8 @@ module NotConstants(P:Param) = struct
         if not (Set_of_closures_id.Set.mem cl !closures)
         then closures := Set_of_closures_id.Set.add cl !closures
       | Global i ->
-        if not (IntSet.mem i !globals)
-        then globals := IntSet.add i !globals)
+        if not (Int.Set.mem i !globals)
+        then globals := Int.Set.add i !globals)
       curr
 
   (* First loop: iterates on the tree to mark dependencies.
@@ -321,7 +321,7 @@ module NotConstants(P:Param) = struct
       let deps = try match Queue.take q with
         | Var e -> Variable.Tbl.find id_dep_table e
         | Closure cl -> Set_of_closures_id.Tbl.find fun_dep_table cl
-        | Global i -> IntTbl.find glob_dep_table i
+        | Global i -> Int.Tbl.find glob_dep_table i
       with Not_found -> [] in
       List.iter (function
         | Var id as e ->
@@ -333,8 +333,8 @@ module NotConstants(P:Param) = struct
           then (closures := Set_of_closures_id.Set.add cl !closures;
             Queue.push e q)
         | Global i as e ->
-          if not (IntSet.mem i !globals)
-          then (globals := IntSet.add i !globals;
+          if not (Int.Set.mem i !globals)
+          then (globals := Int.Set.add i !globals;
             Queue.push e q))
         deps
     done

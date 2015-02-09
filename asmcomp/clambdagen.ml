@@ -437,9 +437,9 @@ module Conv(P:Param2) = struct
 
   and conv_switch env cases num_keys default =
     let num_keys =
-      if Ext_types.IntSet.cardinal num_keys = 0
+      if Ext_types.Int.Set.cardinal num_keys = 0
       then 0
-      else Ext_types.IntSet.max_elt num_keys + 1 in
+      else Ext_types.Int.Set.max_elt num_keys + 1 in
     let index = Array.make num_keys 0
     and store = Storer.mk_store () in
 

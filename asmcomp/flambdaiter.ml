@@ -589,15 +589,15 @@ let toplevel_substitution sb tree =
 
 let arguments_kept_in_recursion' decl fun_var =
   let function_escape = ref false in
-  let not_kept = ref Ext_types.IntSet.empty in
-  let mark pos = not_kept := Ext_types.IntSet.add pos !not_kept in
+  let not_kept = ref Ext_types.Int.Set.empty in
+  let mark pos = not_kept := Ext_types.Int.Set.add pos !not_kept in
   let arity = function_arity decl in
   let _, variable_at_position =
     List.fold_left
       (fun (pos,map) var ->
        pos + 1,
-       Ext_types.IntMap.add pos var map)
-      (0,Ext_types.IntMap.empty) decl.params in
+       Ext_types.Int.Map.add pos var map)
+      (0,Ext_types.Int.Map.empty) decl.params in
   let check_argument pos arg =
     if pos < arity
     (* ignore overapplied parameters: they are applied to another function *)
@@ -605,7 +605,7 @@ let arguments_kept_in_recursion' decl fun_var =
       match arg with
       | Fvar(var,_) ->
          let expected_var =
-           try Ext_types.IntMap.find pos variable_at_position
+           try Ext_types.Int.Map.find pos variable_at_position
            with Not_found -> assert false in
          if not (Variable.equal var expected_var)
          then mark pos
@@ -637,7 +637,7 @@ let arguments_kept_in_recursion' decl fun_var =
     List.fold_left
       (fun (pos,set) var ->
        let set =
-         if Ext_types.IntSet.mem pos !not_kept
+         if Ext_types.Int.Set.mem pos !not_kept
          then set
          else Variable.Set.add var set in
        pos + 1, set)

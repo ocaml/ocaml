@@ -15,7 +15,7 @@ open Abstract_identifiers
 open Flambda
 open Flambdaapprox
 
-module IntMap = Ext_types.IntMap
+module IntMap = Ext_types.Int.Map
 
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
