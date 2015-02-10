@@ -194,6 +194,7 @@ unix_getsockopt_aux(char * name,
 
   switch (ty) {
   case TYPE_BOOL:
+    return Val_bool(optval.i);
   case TYPE_INT:
     return Val_int(optval.i);
   case TYPE_LINGER:
