@@ -1223,6 +1223,9 @@ simple_expr:
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
+  | mod_longident DOT LPAREN RPAREN
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, 
+			mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1257,6 +1260,8 @@ simple_expr:
       { mkexp (Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+  | mod_longident DOT LBRACKETBAR BARRBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array []))) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 3 "|]" 6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
@@ -1266,6 +1271,9 @@ simple_expr:
   | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
+  | mod_longident DOT LBRACKET RBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
@@ -1282,6 +1290,8 @@ simple_expr:
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+  | mod_longident DOT LBRACELESS GREATERRBRACE
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
   | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
