@@ -463,6 +463,8 @@ intnat caml_major_collection_slice (intnat howmuch)
   }
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
+  CAML_TIMER_COUNT ("major/work/extra#",
+                    (uintnat) (caml_extra_heap_resources * 1000000));
 
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -484,11 +486,13 @@ intnat caml_major_collection_slice (intnat howmuch)
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
+    CAML_TIMER_COUNT ("major/work/mark#", howmuch);
     mark_slice (howmuch);
     CAML_TIMER_TIME (tmr, mark_slice_name[caml_gc_subphase]);
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
+    CAML_TIMER_COUNT ("major/work/sweep#", howmuch);
     sweep_slice (howmuch);
     CAML_TIMER_TIME (tmr, "major/sweep");
     caml_gc_message (0x02, "$", 0);
