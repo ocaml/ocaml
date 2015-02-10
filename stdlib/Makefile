@@ -45,10 +45,11 @@ installopt-prof:
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
-camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
+camlheader camlheaderd camlheaderi camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
 	  echo '#!$(BINDIR)/ocamlrun' > camlheader && \
 	  echo '#!$(BINDIR)/ocamlrund' > camlheaderd && \
+	  echo '#!$(BINDIR)/ocamlruni' > camlheaderi && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
@@ -62,6 +63,11 @@ camlheader camlheaderd camlheader_ur: header.c ../config/Makefile
 	            header.c -o tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheaderd; \
+	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	            -DRUNTIME_NAME='"$(BINDIR)/ocamlruni"' \
+	            header.c -o tmpheader$(EXE) && \
+	  strip tmpheader$(EXE) && \
+	  mv tmpheader$(EXE) camlheaderi; \
 	fi
 
 .PHONY: all allopt allopt-noprof allopt-prof install installopt

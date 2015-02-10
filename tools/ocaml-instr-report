@@ -12,6 +12,10 @@
 #                                                                       #
 #########################################################################
 
+# usage:
+#   ocaml-instr-report { file ... }
+#   generate a report from the data files (or stdin if no file is given)
+
 function short(n, kind,    i, r){
     for (i = 0; i < 5; i++){
         if (n < 1000) break;
@@ -73,7 +77,7 @@ function store(value,tag) {
     val[tag, "off-scale"] = value;
 }
 
-$1 == "@@OCAML_TIMERS" {
+$1 == "@@" {
     store($2, $3);
 }
 
@@ -82,12 +86,11 @@ function display(n, val, kind,    i) {
         for (i = 0; i < log (n); i++){
             printf("#");
         }
-        printf(" %-6d", n);
         if (n == 1){
-            printf ("%-7s", sprintf("(%s)", short(val, kind)));
-            for (i = i; i < 18; i++) printf(" ");
+            printf(" %-6d", n);
+            printf ("%-*s", 25-i, sprintf("(%s)", short(val, kind)));
         }else{
-            for (i = i; i < 25; i++) printf(" ");
+            printf(" %-*d", 31-i, n);
         }
     }else{
         printf("                                ");

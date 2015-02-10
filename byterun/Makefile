@@ -19,7 +19,7 @@ TFLAGS=$(CFLAGS) -DCAML_TIMER
 
 OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
-TOBJS=$(OBJS:.o=.t.o)
+IOBJS=$(OBJS:.o=.i.o)
 PICOBJS=$(OBJS:.o=.pic.o)
 
 SHARED_LIBS_TMP=$(SUPPORTS_SHARED_LIBRARIES:%false=)
@@ -35,7 +35,7 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
 		  prims.o libcamlrund.a $(BYTECCLIBS)
 
-ocamlrunt$(EXE): prims.o libcamlrunt.a
+ocamlruni$(EXE): prims.o libcamlruni.a
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
 libcamlrun.a: $(OBJS)
@@ -46,7 +46,7 @@ libcamlrund.a: $(DOBJS)
 	ar rc libcamlrund.a $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
-libcamlrunt.a: $(TOBJS)
+libcamlruni.a: $(IOBJS)
 	ar rc $@ $^
 	$(RANLIB) $@
 
@@ -60,14 +60,14 @@ install::
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.o .t.o .pic.o
+.SUFFIXES: .d.o .i.o .pic.o
 
 .c.d.o:
 	ln -s -f $*.c $*.d.c
 	$(CC) -c $(DFLAGS) $*.d.c
 	rm $*.d.c
 
-%.t.o: %.c
+%.i.o: %.c
 	$(CC) -c $(TFLAGS) -o $@ $<
 
 .c.pic.o:
@@ -81,7 +81,7 @@ clean::
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	-gcc -MM $(BYTECCCOMPOPTS) -DCAML_TIMER *.c | sed -e 's/\.o/.t.o/' >> .depend
+	-gcc -MM $(BYTECCCOMPOPTS) -DCAML_TIMER *.c | sed -e 's/\.o/.i.o/' >> .depend
 	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 

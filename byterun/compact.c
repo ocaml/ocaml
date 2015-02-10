@@ -397,10 +397,10 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 void caml_compact_heap (void)
 {
   uintnat target_words, target_size, live;
-  CAML_TIMER_SETUP(tmr, "compact");
+  CAML_INSTR_SETUP(tmr, "compact");
 
   do_compaction ();
-  CAML_TIMER_TIME (tmr, "compact/main");
+  CAML_INSTR_TIME (tmr, "compact/main");
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
      is at the beginning of the heap, everything gets moved to
@@ -457,7 +457,7 @@ void caml_compact_heap (void)
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
     Assert (caml_stat_heap_size == Chunk_size (chunk));
-    CAML_TIMER_TIME (tmr, "compact/recompact");
+    CAML_INSTR_TIME (tmr, "compact/recompact");
   }
 }
 
