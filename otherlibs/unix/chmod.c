@@ -17,6 +17,9 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
+#ifdef UTF16
+#include "u8tou16.h"
+#endif
 
 CAMLprim value unix_chmod(value path, value perm)
 {
@@ -29,6 +32,16 @@ CAMLprim value unix_chmod(value path, value perm)
   ret = chmod(p, Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
+#ifdef UTF16_TODO
+	char * temp=String_val(path);
+	WCHAR * wtemp;
+	if(is_valid_utf8(temp))
+		wtemp = utf8_to_utf16(temp);
+	else
+		wtemp = ansi_to_utf16(temp);
+	ret = _wchmod(wtemp, Int_val(perm));
+	free(wtemp);
+#endif
   if (ret == -1) uerror("chmod", path);
   CAMLreturn(Val_unit);
 }

@@ -53,6 +53,13 @@
 #include "caml/gc_ctrl.h"
 #include "caml/io.h"
 
+#ifndef _WIN32
+extern int errno;
+#endif
+#ifdef UTF16
+#include "u8tou16.h"
+#endif
+
 static char * error_message(void)
 {
   return strerror(errno);
@@ -199,6 +206,18 @@ CAMLprim value caml_sys_file_exists(value name)
   caml_stat_free(p);
 
   return Val_bool(ret == 0);
+#ifdef UTF16_TODO
+  char * temp=String_val(name);
+  WCHAR * wtemp;
+  int retcode;
+  if(is_valid_utf8(temp))
+    wtemp = utf8_to_utf16(temp);
+  else
+    wtemp = ansi_to_utf16(temp);
+  retcode=_wstat(wtemp, &st);
+  free(wtemp);
+  return Val_bool((retcode==0));
+#endif
 }
 
 CAMLprim value caml_sys_is_directory(value name)
@@ -224,6 +243,17 @@ CAMLprim value caml_sys_is_directory(value name)
   caml_stat_free(p);
 
   if (ret == -1) caml_sys_error(name);
+#ifdef UTF16_TODO
+  char * temp=String_val(name);
+  WCHAR * wtemp;
+  int retcode;
+  if(is_valid_utf8(temp))
+    wtemp = utf8_to_utf16(temp);
+  else
+    wtemp = ansi_to_utf16(temp);
+  retcode=_wstat(wtemp, &st);
+  free(wtemp);
+#endif /* UTF16 */
 #ifdef S_ISDIR
   CAMLreturn(Val_bool(S_ISDIR(st.st_mode)));
 #else
@@ -242,6 +272,16 @@ CAMLprim value caml_sys_remove(value name)
   ret = unlink(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
+#ifdef UTF16_TODO
+  char * temp=String_val(name);
+  WCHAR * wtemp;
+  if(is_valid_utf8(temp))
+    wtemp = utf8_to_utf16(temp);
+  else
+    wtemp = ansi_to_utf16(temp);
+  ret = _wunlink(wtemp);
+  free(wtemp);
+#endif
   if (ret != 0) caml_sys_error(name);
   CAMLreturn(Val_unit);
 }
@@ -261,7 +301,25 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   caml_stat_free(p_new);
   caml_stat_free(p_old);
   if (ret != 0)
+#ifdef UTF16_TODO
+  char * temp1=String_val(oldname);
+  char * temp2=String_val(newname);
+  WCHAR * wtemp1, * wtemp2;
+  if(is_valid_utf8(temp1))
+    wtemp1 = utf8_to_utf16(temp1);
+  else
+    wtemp1 = ansi_to_utf16(temp1);
+  if(is_valid_utf8(temp2))
+    wtemp2 = utf8_to_utf16(temp2);
+  else
+    wtemp2 = ansi_to_utf16(temp2);
+  if (_wrename(wtemp1, wtemp2) != 0)
+#endif
     caml_sys_error(NO_ARG);
+#ifdef UTF16_TODO
+  free(wtemp1);
+  free(wtemp2);
+#endif
   return Val_unit;
 }
 
@@ -278,10 +336,35 @@ CAMLprim value caml_sys_chdir(value dirname)
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(dirname);
   CAMLreturn(Val_unit);
+#ifdef UTF16_TODO
+  char * temp=String_val(dirname);
+  WCHAR * wtemp;
+  if(is_valid_utf8(temp))
+    wtemp = utf8_to_utf16(temp);
+  else
+    wtemp = ansi_to_utf16(temp);
+  if (_wchdir(wtemp) != 0) caml_sys_error(dirname);
+  free(wtemp);
+#endif
 }
 
 CAMLprim value caml_sys_getcwd(value unit)
 {
+#ifdef UTF16
+  CAMLparam0 ();
+  CAMLlocal1 (v);
+  WCHAR buff[4096*2];
+  unsigned char * temp;
+#ifdef HAS_GETCWD
+  if (_wgetcwd(buff, sizeof(buff)/sizeof(WCHAR)) == 0) caml_sys_error(NO_ARG);
+#else
+  if (getwd(buff) == 0) caml_sys_error(NO_ARG);
+#endif /* HAS_GETCWD */
+  temp=utf16_to_utf8(buff);
+  v=caml_copy_string(temp);
+  free(temp);
+  CAMLreturn (v);
+#else
   char buff[4096];
 #ifdef HAS_GETCWD
   if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
@@ -289,6 +372,7 @@ CAMLprim value caml_sys_getcwd(value unit)
   if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
   return caml_copy_string(buff);
+#endif
 }
 
 CAMLprim value caml_sys_getenv(value var)

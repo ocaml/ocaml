@@ -15,6 +15,9 @@
 #include <caml/alloc.h>
 #include "unixsupport.h"
 #include <fcntl.h>
+#ifdef UTF16
+#include "u8tou16.h"
+#endif
 
 static int open_access_flags[14] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
@@ -38,6 +41,14 @@ CAMLprim value unix_open(value path, value flags, value perm)
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
+#ifdef UTF16
+	char * temp=String_val(path);
+	WCHAR * wtemp;
+	if(is_valid_utf8(temp))
+		wtemp = utf8_to_utf16(temp);
+	else
+		wtemp = ansi_to_utf16(temp);
+#endif
 
   caml_unix_check_path(path, "open");
   fileaccess = convert_flag_list(flags, open_access_flags);
@@ -66,9 +77,16 @@ CAMLprim value unix_open(value path, value flags, value perm)
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = cloexec ? FALSE : TRUE;
 
+#ifdef UTF16
+	h = CreateFileW(wtemp, fileaccess,
+                 FILE_SHARE_READ | FILE_SHARE_WRITE, &attr,
+                 filecreate, fileattrib, NULL);
+	free(wtemp);
+#else
   h = CreateFile(String_val(path), fileaccess,
                  sharemode, &attr,
                  filecreate, fileattrib, NULL);
+#endif
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr(GetLastError());
     uerror("open", path);

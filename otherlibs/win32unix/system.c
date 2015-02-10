@@ -18,6 +18,9 @@
 #include "unixsupport.h"
 #include <process.h>
 #include <stdio.h>
+#ifdef UTF16
+#include "u8tou16.h"
+#endif
 
 CAMLprim value win_system(cmd)
      value cmd;
@@ -26,6 +29,15 @@ CAMLprim value win_system(cmd)
   value st;
   char *buf;
   intnat len;
+#ifdef UTF16
+  char * temp;
+  WCHAR * wtemp;
+  temp=String_val(cmd);
+  if(is_valid_utf8(temp))
+    wtemp = utf8_to_utf16(temp);
+  else
+    wtemp = ansi_to_utf16(temp);
+#endif
 
   caml_unix_check_path(cmd, "system");
   len = caml_string_length (cmd);
@@ -33,7 +45,12 @@ CAMLprim value win_system(cmd)
   memmove (buf, String_val (cmd), len + 1);
   enter_blocking_section();
   _flushall();
+#ifdef UTF16
+  ret = _wsystem(wtemp);;
+  free(wtemp);
+#else
   ret = system(buf);
+#endif
   leave_blocking_section();
   caml_stat_free(buf);
   if (ret == -1) uerror("system", Nothing);
