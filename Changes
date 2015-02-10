@@ -114,6 +114,8 @@ Features wishes:
 - GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
   (Gabriel Radanne)
 - GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
+- GPR#144: support M.[], M.(), M.{< >} and M.[| |]
+  (Jeremy Yallop)
 
 OCaml 4.02.2:
 -------------
