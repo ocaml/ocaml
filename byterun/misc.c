@@ -178,7 +178,7 @@ struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
 void CAML_INSTR_ATEXIT (void)
 {
   int i;
-  struct CAML_INSTR_BLOCK *p, *end_p, *start_p = NULL;
+  struct CAML_INSTR_BLOCK *p;
   FILE *f = NULL;
   char *fname;
 
@@ -195,7 +195,6 @@ void CAML_INSTR_ATEXIT (void)
 
   if (f != NULL){
     fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
-    end_p = CAML_INSTR_LOG;
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %9ld %s\n",
@@ -205,15 +204,8 @@ void CAML_INSTR_ATEXIT (void)
         fprintf (f, "@@ %9ld %s\n",
                  Get_time(p, p->index) - Get_time (p, 0), p->tag[0]);
       }
-      start_p = p;
     }
-    if (start_p != NULL && end_p != NULL){
-      fprintf (f, "==== start time: %18ld\n", Get_time(start_p, 0));
-      fprintf (f, "==== end time  : %18ld\n", Get_time(end_p, 0));
-      fprintf (f, "==== duration: %lds\n",
-               (Get_time(end_p, 0) - Get_time (start_p, 0)) / 1000000000);
-    }
-    fflush (f);
+    fclose (f);
   }
 }
 #endif /* CAML_INSTR */
