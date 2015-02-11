@@ -97,7 +97,7 @@ CAMLprim value caml_sys_exit(value retcode)
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
 #endif
-  CAML_TIMER_ATEXIT ();
+  CAML_INSTR_ATEXIT ();
   exit(Int_val(retcode));
   return Val_unit;
 }

@@ -108,7 +108,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
   if (caml_young_ptr < caml_young_trigger){                                 \
     caml_young_ptr += Whsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
-    { CAML_TIMER_SETUP (tmr, "force_minor/alloc_small"); }                  \
+    CAML_INSTR_EVENT ("force_minor/alloc_small");                           \
     caml_gc_dispatch ();                                                    \
     Restore_after_gc;                                                       \
     caml_young_ptr -= Whsize_wosize (wosize);                               \

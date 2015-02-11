@@ -19,6 +19,13 @@
 #include "memory.h"
 #include "version.h"
 
+caml_timing_hook caml_major_slice_begin_hook = NULL;
+caml_timing_hook caml_major_slice_end_hook = NULL;
+caml_timing_hook caml_minor_gc_begin_hook = NULL;
+caml_timing_hook caml_minor_gc_end_hook = NULL;
+caml_timing_hook caml_finalise_begin_hook = NULL;
+caml_timing_hook caml_finalise_end_hook = NULL;
+
 #ifdef DEBUG
 
 int caml_failed_assert (char * expr, char * file, int line)
@@ -161,21 +168,21 @@ CAMLexport char * caml_strconcat(int n, ...)
   return res;
 }
 
-#ifdef CAML_TIMER
+#ifdef CAML_INSTR
 /* Timers for GC latency profiling (experimental, Linux-only) */
 
-struct CAML_TIMER_BLOCK *CAML_TIMER_LOG = NULL;
+struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
 
-#define GET_TIME(p,i) ((p)->ts[(i)].tv_nsec + 1000000000 * (p)->ts[(i)].tv_sec)
+#define Get_time(p,i) ((p)->ts[(i)].tv_nsec + 1000000000 * (p)->ts[(i)].tv_sec)
 
-void CAML_TIMER_ATEXIT (void)
+void CAML_INSTR_ATEXIT (void)
 {
   int i;
-  struct CAML_TIMER_BLOCK *p, *end_p, *start_p = NULL;
+  struct CAML_INSTR_BLOCK *p;
   FILE *f = NULL;
   char *fname;
 
-  fname = getenv ("OCAML_TIMERS_FILE");
+  fname = getenv ("OCAML_INSTR_FILE");
   if (fname != NULL){
     if (fname[0] == '+'){
       f = fopen (fname+1, "a");
@@ -187,27 +194,18 @@ void CAML_TIMER_ATEXIT (void)
   }
 
   if (f != NULL){
-    fprintf (f, "================ OCAML LATENCY TIMERS %s\n",
-             OCAML_VERSION_STRING);
-    end_p = CAML_TIMER_LOG;
-    for (p = CAML_TIMER_LOG; p != NULL; p = p->next){
+    fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
+    for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
-        fprintf (f, "@@OCAML_TIMERS %9ld %s\n",
-                 GET_TIME(p, i+1) - GET_TIME (p, i), p->tag[i+1]);
+        fprintf (f, "@@ %9ld %s\n",
+                 Get_time(p, i+1) - Get_time (p, i), p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
-        fprintf (f, "@@OCAML_TIMERS %9ld %s\n",
-                 GET_TIME(p, p->index) - GET_TIME (p, 0), p->tag[0]);
+        fprintf (f, "@@ %9ld %s\n",
+                 Get_time(p, p->index) - Get_time (p, 0), p->tag[0]);
       }
-      start_p = p;
     }
-    if (start_p != NULL && end_p != NULL){
-      fprintf (f, "==== start time: %18ld\n", GET_TIME(start_p, 0));
-      fprintf (f, "==== end time  : %18ld\n", GET_TIME(end_p, 0));
-      fprintf (f, "==== duration: %lds\n",
-               (GET_TIME(end_p, 0) - GET_TIME (start_p, 0)) / 1000000000);
-    }
-    fflush (f);
+    fclose (f);
   }
 }
-#endif /* CAML_TIMER */
+#endif /* CAML_INSTR */

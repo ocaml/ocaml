@@ -52,6 +52,13 @@ install-runtimed: camlheaderd
 	cp camlheaderd $(INSTALL_LIBDIR)
 .PHONY: install-runtimed
 
+ifeq "$(RUNTIMEI)" "true"
+install: install-runtimei
+install-runtimei:
+	cp camlheaderi $(INSTALL_LIBDIR)
+.PHONY: install-runtimei
+endif
+
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 

@@ -266,7 +266,8 @@ static intnat compare_val(value v1, value v2, int total)
 
 CAMLprim value caml_compare(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 1);
+  intnat res;
+  res = compare_val(v1, v2, 1);
   /* Free stack if needed */
   if (compare_stack != compare_stack_init) compare_free_stack();
   if (res < 0)
@@ -279,42 +280,48 @@ CAMLprim value caml_compare(value v1, value v2)
 
 CAMLprim value caml_equal(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
 CAMLprim value caml_notequal(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
 CAMLprim value caml_lessthan(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res < 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_lessequal(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res <= 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_greaterthan(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
 CAMLprim value caml_greaterequal(value v1, value v2)
 {
-  intnat res = compare_val(v1, v2, 0);
+  intnat res;
+  res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res >= 0);
 }

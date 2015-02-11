@@ -59,6 +59,13 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+/* GC timing hooks. These can be assigned by the user. The hook functions
+   must not allocate or change the heap in any way. */
+typedef void (*caml_timing_hook) (void);
+extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
+extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
+extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+
 /* Assertions */
 
 #ifdef DEBUG
@@ -150,68 +157,90 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-#ifdef CAML_TIMER
-/* Timers for GC latency profiling (Linux-only) */
+#ifdef CAML_INSTR
+/* Timers and counters for GC latency profiling (Linux-only) */
 
 #include <time.h>
 #include <stdio.h>
 
-struct CAML_TIMER_BLOCK {
+struct CAML_INSTR_BLOCK {
   struct timespec ts[10];
   char *tag[10];
   int index;
-  struct CAML_TIMER_BLOCK *next;
+  struct CAML_INSTR_BLOCK *next;
 };
 
-extern struct CAML_TIMER_BLOCK *CAML_TIMER_LOG;
+extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 
-#define CAML_TIMER_DECLARE(t) struct CAML_TIMER_BLOCK *t = NULL
+/* Declare a timer/counter name. [t] must be a new variable name. */
+#define CAML_INSTR_DECLARE(t)                                       \
+  struct CAML_INSTR_BLOCK *t = NULL
 
-#define CAML_TIMER_ALLOC(t, name)                                \
-  t = malloc (sizeof (struct CAML_TIMER_BLOCK));                 \
-  t->index = 0;                                                  \
-  t->tag[0] = name;                                              \
-  t->next = CAML_TIMER_LOG;                                      \
-  CAML_TIMER_LOG = t;                                            \
+/* Allocate the data block for a given name.
+   [t] must have been declared with [CAML_INSTR_DECLARE]. */
+#define CAML_INSTR_ALLOC(t) do{                                     \
+    t = malloc (sizeof (struct CAML_INSTR_BLOCK));                  \
+    t->index = 0;                                                   \
+    t->tag[0] = "";                                                 \
+    t->next = CAML_INSTR_LOG;                                       \
+    CAML_INSTR_LOG = t;                                             \
+  }while(0)
 
-#define CAML_TIMER_START(t, name)                                \
-  CAML_TIMER_ALLOC (t, name);                                    \
-  clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]))
+/* Allocate the data block and start the timer.
+   [t] must have been declared with [CAML_INSTR_DECLARE]
+   and allocated with [CAML_INSTR_ALLOC]. */
+#define CAML_INSTR_START(t, msg) do{                                \
+    t->tag[0] = msg;                                                \
+    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]));          \
+  }while(0)
 
-#define CAML_TIMER_SETUP(t, name)                                \
-  CAML_TIMER_DECLARE(t);                                         \
-  CAML_TIMER_START(t, name)
+/* Declare a timer, allocate its data, and start it.
+   [t] must be a new variable name. */
+#define CAML_INSTR_SETUP(t, msg)                                    \
+  CAML_INSTR_DECLARE (t);                                           \
+  CAML_INSTR_ALLOC (t);                                             \
+  CAML_INSTR_START (t, msg)
 
-#define CAML_TIMER_TIME(t, msg)                                     \
-  do{                                                               \
+/* Record an intermediate time within a given timer.
+   [t] must have been declared, allocated, and started. */
+#define CAML_INSTR_TIME(t, msg) do{                                 \
     ++ t->index;                                                    \
     t->tag[t->index] = (msg);                                       \
     clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index]));   \
   }while(0)
 
-#define CAML_TIMER_COUNT(msg, c)                                    \
-  do{                                                               \
-    CAML_TIMER_DECLARE (tmp);                                       \
-    CAML_TIMER_ALLOC (tmp, "");                                     \
-    tmp->ts[0].tv_sec = tmp->ts[0].tv_nsec = 0;                     \
-    tmp->index = 1;                                                 \
-    tmp->tag[1] = msg;                                              \
-    tmp->ts[1].tv_sec = 0;                                          \
-    tmp->ts[1].tv_nsec = (c);                                       \
+/* Count an event occurrence. */
+#define CAML_INSTR_EVENT(msg) do{                                   \
+    CAML_INSTR_SETUP (__caml_tmp, msg);                             \
   }while(0)
 
-extern void CAML_TIMER_ATEXIT (void);
+/* Record an integer data point. [msg] must be a string literal. */
+#define CAML_INSTR_INT(msg, data) do{                               \
+    CAML_INSTR_DECLARE (__caml_tmp);                                \
+    CAML_INSTR_ALLOC (__caml_tmp);                                  \
+    __caml_tmp->ts[0].tv_sec = __caml_tmp->ts[0].tv_nsec = 0;       \
+    __caml_tmp->index = 1;                                          \
+    __caml_tmp->tag[1] = msg "#";                                   \
+    __caml_tmp->ts[1].tv_sec = 0;                                   \
+    __caml_tmp->ts[1].tv_nsec = (data);                             \
+  }while(0)
 
-#else /* CAML_TIMER */
+/* This function is automatically called by the runtime to output
+   the collected data to the dump file. */
+extern void CAML_INSTR_ATEXIT (void);
 
-#define CAML_TIMER_DECLARE(t) /**/
-#define CAML_TIMER_START(t, name) /**/
-#define CAML_TIMER_SETUP(t, name) /**/
-#define CAML_TIMER_TIME(t, msg) /**/
-#define CAML_TIMER_ATEXIT() /**/
-#define CAML_TIMER_COUNT(msg, c) /**/
+#else /* CAML_INSTR */
 
-#endif /* CAML_TIMER */
+#define CAML_INSTR_DECLARE(t) /**/
+#define CAML_INSTR_ALLOC(t) /**/
+#define CAML_INSTR_START(t, name) /**/
+#define CAML_INSTR_SETUP(t, name) /**/
+#define CAML_INSTR_TIME(t, msg) /**/
+#define CAML_INSTR_EVENT(msg) /**/
+#define CAML_INSTR_INT(msg, c) /**/
+#define CAML_INSTR_ATEXIT() /**/
+
+#endif /* CAML_INSTR */
 
 /* </private> */
 

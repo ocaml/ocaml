@@ -268,7 +268,7 @@ intnat caml_darken_all_roots_slice (intnat work)
   mlsize_t j = incr_roots_j;
   mlsize_t sz;
   intnat work_done = 0;
-  CAML_TIMER_SETUP (t, "");
+  CAML_INSTR_SETUP (tmr, "");
 
   if (glob == 0) goto finished;
   sz = Wosize_val (glob);
@@ -290,7 +290,7 @@ intnat caml_darken_all_roots_slice (intnat work)
   if (work_done < work){
     caml_incremental_roots_count = roots_count;
   }
-  CAML_TIMER_TIME (t, "major/mark/global_roots_slice");
+  CAML_INSTR_TIME (tmr, "major/mark/global_roots_slice");
   return work_done;
 }
 
@@ -299,7 +299,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   int i, j;
   value glob;
   link *lnk;
-  CAML_TIMER_SETUP (tmr, "major_roots");
+  CAML_INSTR_SETUP (tmr, "major_roots");
   if (do_globals){
     /* The global roots */
     for (i = 0; caml_globals[i] != 0; i++) {
@@ -307,7 +307,7 @@ void caml_do_roots (scanning_action f, int do_globals)
       for (j = 0; j < Wosize_val(glob); j++)
         f (Field (glob, j), &Field (glob, j));
     }
-    CAML_TIMER_TIME (tmr, "major_roots/global");
+    CAML_INSTR_TIME (tmr, "major_roots/global");
   }
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
@@ -316,18 +316,18 @@ void caml_do_roots (scanning_action f, int do_globals)
       f (Field (glob, j), &Field (glob, j));
     }
   }
-  CAML_TIMER_TIME (tmr, "major_roots/dynamic_global");
+  CAML_INSTR_TIME (tmr, "major_roots/dynamic_global");
   /* The stack and local roots */
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
-  CAML_TIMER_TIME (tmr, "major_roots/local");
+  CAML_INSTR_TIME (tmr, "major_roots/local");
   /* Global C roots */
   caml_scan_global_roots(f);
-  CAML_TIMER_TIME (tmr, "major_roots/C");
+  CAML_INSTR_TIME (tmr, "major_roots/C");
   /* Finalised values */
   caml_final_do_strong_roots (f);
-  CAML_TIMER_TIME (tmr, "major_roots/finalised");
+  CAML_INSTR_TIME (tmr, "major_roots/finalised");
   /* Objects in the minor heap are roots for the major GC. */
   {
     value *hp;
@@ -343,10 +343,10 @@ void caml_do_roots (scanning_action f, int do_globals)
       }
     }
   }
-  CAML_TIMER_TIME (tmr, "major_roots/minor_heap");
+  CAML_INSTR_TIME (tmr, "major_roots/minor_heap");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
-  CAML_TIMER_TIME (tmr, "major_roots/hook");
+  CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
