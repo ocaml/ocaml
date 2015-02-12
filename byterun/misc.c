@@ -184,13 +184,22 @@ void CAML_INSTR_ATEXIT (void)
 
   fname = getenv ("OCAML_INSTR_FILE");
   if (fname != NULL){
-    if (fname[0] == '+'){
-      f = fopen (fname+1, "a");
-    }else if (fname [0] == '>'){
-      f = fopen (fname+1, "w");
-    }else{
-      f = fopen (fname, "a");
+    char *mode = "a";
+    char buf [1000];
+    char *name = fname;
+
+    if (name[0] == '@'){
+      snprintf (buf, 1000, "%s.%d", name + 1, getpid ());
+      name = buf;
     }
+    if (name[0] == '+'){
+      mode = "a";
+      name = name + 1;
+    }else if (name [0] == '>'){
+      mode = "w";
+      name = name + 1;
+    }
+    f = fopen (name, mode);
   }
 
   if (f != NULL){
