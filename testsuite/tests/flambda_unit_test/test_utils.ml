@@ -307,6 +307,7 @@ let fi' = new_var "fi'"
 let fj = new_var "fj"
 let fj_func = Closure_id.wrap fj
 let fj' = new_var "fj'"
+let w = new_var "w"
 let x = new_var "x"
 let y = new_var "y"
 let z = new_var "z"

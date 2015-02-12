@@ -587,70 +587,160 @@ let toplevel_substitution sb tree =
   in
   map_toplevel aux tree
 
-let arguments_kept_in_recursion' decl fun_var =
-  let function_escape = ref false in
-  let not_kept = ref Ext_types.Int.Set.empty in
-  let mark pos = not_kept := Ext_types.Int.Set.add pos !not_kept in
-  let arity = function_arity decl in
-  let _, variable_at_position =
-    List.fold_left
-      (fun (pos,map) var ->
-       pos + 1,
-       Ext_types.Int.Map.add pos var map)
-      (0,Ext_types.Int.Map.empty) decl.params in
-  let check_argument pos arg =
-    if pos < arity
-    (* ignore overapplied parameters: they are applied to another function *)
-    then
-      match arg with
-      | Fvar(var,_) ->
-         let expected_var =
-           try Ext_types.Int.Map.find pos variable_at_position
-           with Not_found -> assert false in
-         if not (Variable.equal var expected_var)
-         then mark pos
-      | _ -> mark pos
+module Pair_var_var =
+  Ext_types.Identifiable.Make(Ext_types.Pair(Variable.M)(Variable.M))
+
+type t =
+  | Anything
+  | Arguments of Pair_var_var.Set.t
+
+let fixpoint state =
+  let union s1 s2 =
+    match s1, s2 with
+    | Anything, _ | _, Anything -> Anything
+    | Arguments s1, Arguments s2 -> Arguments (Pair_var_var.Set.union s1 s2)
   in
-  let test_escape var =
-    if Variable.equal fun_var var
-    then function_escape := true
+  let equal s1 s2 =
+    match s1, s2 with
+    | Anything, Arguments _ | Arguments _, Anything -> false
+    | Anything, Anything -> true
+    | Arguments s1, Arguments s2 -> Pair_var_var.Set.equal s1 s2
   in
-  let rec loop = function
-    | Fvar (var,_) -> test_escape var
-    | Fapply ({ ap_function = Fvar(call_fun_var,_); ap_arg }, _) ->
-       if Variable.equal call_fun_var fun_var
-       then begin
-           let num_args = List.length ap_arg in
-           for pos = num_args to arity - 1 do
-             mark pos
-           (* if a function is partially aplied, consider all missing
-              arguments as not kept*)
-           done;
-           List.iteri check_argument ap_arg;
-         end;
-       List.iter loop ap_arg
-    | e ->
-       apply_on_subexpressions loop e
+  let update arg state =
+    let (func, var) = arg in
+    let original_set =
+      try Pair_var_var.Map.find arg state with
+      | Not_found -> Arguments Pair_var_var.Set.empty
+    in
+    match original_set with
+    | Anything -> state
+    | Arguments arguments ->
+        let set =
+          Pair_var_var.Set.fold
+            (fun orig acc->
+               let set =
+                 try Pair_var_var.Map.find orig state with
+                 | Not_found -> Arguments Pair_var_var.Set.empty in
+               union set acc)
+            arguments original_set
+        in
+        let set =
+          match set with
+          | Arguments args ->
+              if Pair_var_var.Set.exists (fun (func', var') ->
+                  Variable.equal func func' && not (Variable.equal var var'))
+                  args
+              then Anything
+              else set
+          | Anything -> Anything in
+        Pair_var_var.Map.add arg set state
   in
-  loop decl.body;
-  let _, kept_parameters =
-    List.fold_left
-      (fun (pos,set) var ->
-       let set =
-         if Ext_types.Int.Set.mem pos !not_kept
-         then set
-         else Variable.Set.add var set in
-       pos + 1, set)
-      (0,Variable.Set.empty) decl.params in
-  kept_parameters, !function_escape
+  let once state =
+    Pair_var_var.Map.fold (fun arg _ state -> update arg state) state state
+  in
+  let rec fp state =
+    let state' = once state in
+    if Pair_var_var.Map.equal equal state state'
+    then state
+    else fp state'
+  in
+  fp state
 
 let arguments_kept_in_recursion decls =
-  if Variable.Map.cardinal decls.funs = 1
-  then
-    let fun_var, decl = Variable.Map.choose decls.funs in
-    let kept_parameters, function_escape =
-      arguments_kept_in_recursion' decl fun_var in
-    if function_escape
-    then Variable.Set.empty
-    else kept_parameters
-  else Variable.Set.empty
+  let escaping_functions = ref Variable.Set.empty in
+  let state = ref Pair_var_var.Map.empty in
+  let variables_at_position =
+    Variable.Map.map (fun decl -> Array.of_list decl.params) decls.funs in
+  let link
+      ~callee ~callee_arg
+      ~caller ~caller_arg =
+    let kind =
+      try Pair_var_var.Map.find (callee,callee_arg) !state with
+      | Not_found -> Arguments Pair_var_var.Set.empty in
+    match kind with
+    | Anything -> ()
+    | Arguments set ->
+        state :=
+          Pair_var_var.Map.add (callee,callee_arg)
+            (Arguments (Pair_var_var.Set.add (caller,caller_arg) set)) !state
+  in
+  let mark ~callee ~callee_arg =
+    state := Pair_var_var.Map.add (callee,callee_arg) Anything !state
+  in
+  let find_callee_arg ~callee ~callee_pos =
+    match Variable.Map.find callee variables_at_position with
+    | exception Not_found -> None (* not a recursive call *)
+    | arr ->
+        if callee_pos < Array.length arr then
+          (* ignore overapplied parameters: they are applied to another function *)
+          Some arr.(callee_pos)
+        else None
+  in
+  let check_argument ~caller ~callee ~callee_pos arg =
+    match find_callee_arg ~callee ~callee_pos with
+    | None -> () (* not a recursive call *)
+    | Some callee_arg ->
+        match arg with
+        | Fvar(caller_arg,_) ->
+            begin
+              match Variable.Map.find caller decls.funs with
+              | exception Not_found ->
+                  mark ~callee ~callee_arg
+              | { params } ->
+                  if List.mem caller_arg params then
+                    link ~caller ~caller_arg ~callee ~callee_arg
+                  else
+                    mark ~callee ~callee_arg
+            end
+        | _ -> mark ~callee ~callee_arg
+  in
+  let test_escape var =
+    if Variable.Map.mem var decls.funs
+    then escaping_functions := Variable.Set.add var !escaping_functions
+  in
+  let arity ~callee =
+    match Variable.Map.find callee decls.funs with
+    | exception Not_found -> 0
+    | func -> function_arity func
+  in
+  let rec loop ~caller = function
+    | Fvar (var,_) -> test_escape var
+    | Fapply ({ ap_function = Fvar(callee,_); ap_arg }, _) ->
+        let num_args = List.length ap_arg in
+        for callee_pos = num_args to (arity callee) - 1 do
+          match find_callee_arg ~callee ~callee_pos with
+          | None -> ()
+          | Some callee_arg -> mark ~callee ~callee_arg
+          (* if a function is partially aplied, consider all missing
+             arguments as not kept*)
+        done;
+        List.iteri (fun callee_pos arg ->
+            check_argument ~caller ~callee ~callee_pos arg)
+          ap_arg;
+        List.iter (loop ~caller) ap_arg
+    | e ->
+        apply_on_subexpressions (loop ~caller) e
+  in
+  Variable.Map.iter (fun caller decl -> loop caller decl.body) decls.funs;
+  let state =
+    Variable.Map.fold (fun func_var { params } state ->
+        if Variable.Set.mem func_var !escaping_functions
+        then
+          List.fold_left (fun state param ->
+              Pair_var_var.Map.add (func_var,param) Anything state)
+            state params
+        else state)
+      decls.funs !state
+  in
+  let result = fixpoint state in
+  let not_kept =
+    Pair_var_var.Map.fold (fun (_,var) set acc ->
+        match set with
+        | Anything -> Variable.Set.add var acc
+        | Arguments _ -> acc)
+      result Variable.Set.empty
+  in
+  let variables = Variable.Map.fold (fun _ { params } set ->
+      Variable.Set.union (Variable.Set.of_list params) set)
+      decls.funs Variable.Set.empty in
+  Variable.Set.diff variables not_kept

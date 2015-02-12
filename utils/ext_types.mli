@@ -140,3 +140,8 @@ module IntSet : sig
   (* [zero_to_n n] is the set of numbers {0, ..., n} (inclusive). *)
   val zero_to_n : int -> Int.Set.t
 end
+
+module Pair :
+  functor (A : PrintableHashOrdered) ->
+  functor(B : PrintableHashOrdered) ->
+    PrintableHashOrdered with type t = A.t * B.t
