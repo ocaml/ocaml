@@ -43,7 +43,9 @@ main: $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -g -o main $(OTHEROBJS) $(OBJS) main.cmo
 
 run: main
-	@$(OCAMLRUN) main \
+	@printf " ... testing 'flambda-unit-tests':"; \
+	$(OCAMLRUN) main > unit_test.result \
+        && $(DIFF) unit_test.result unit_test.reference \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
