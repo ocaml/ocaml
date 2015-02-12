@@ -291,6 +291,11 @@ let instr_kill ppf lexbuf =
     show_no_point()
   end
 
+let instr_pid ppf lexbuf =
+  eol lexbuf;
+  if not !loaded then error "The program is not being run.";
+  fprintf ppf "@[%d@]@." !current_checkpoint.c_pid
+
 let instr_run ppf lexbuf =
   eol lexbuf;
   ensure_loaded ();
@@ -513,6 +518,30 @@ let print_command depth ppf lexbuf =
 let instr_print ppf lexbuf = print_command !max_printer_depth ppf lexbuf
 
 let instr_display ppf lexbuf = print_command 1 ppf lexbuf
+
+let instr_address ppf lexbuf =
+  let exprs = expression_list_eol Lexer.lexeme lexbuf in
+  ensure_loaded ();
+  let env =
+    try
+      env_of_event !selected_event
+    with
+    | Envaux.Error msg ->
+        Envaux.report_error ppf msg;
+        raise Toplevel
+  in
+  let print_addr expr =
+    let (v, _ty) =
+      try Eval.expression !selected_event env expr
+      with Eval.Error msg ->
+        Eval.report_error ppf msg;
+        raise Toplevel
+    in
+    match Remote_value.pointer v with
+    | "" -> fprintf ppf "[not a remote value]@."
+    | s -> fprintf ppf "0x%s@." s
+  in
+  List.iter print_addr exprs
 
 (* Loading of command files *)
 
@@ -987,6 +1016,12 @@ With no argument, reset the search path." };
      { instr_name = "kill"; instr_prio = false;
        instr_action = instr_kill; instr_repeat = true; instr_help =
 "kill the program being debugged." };
+     { instr_name = "pid"; instr_prio = false;
+       instr_action = instr_pid; instr_repeat = true; instr_help =
+"print the process ID of the current active process." };
+     { instr_name = "address"; instr_prio = false;
+       instr_action = instr_address; instr_repeat = true; instr_help =
+"print the raw address of a value." };
      { instr_name = "help"; instr_prio = false;
        instr_action = instr_help; instr_repeat = true; instr_help =
 "print list of commands." };

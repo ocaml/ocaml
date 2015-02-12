@@ -105,4 +105,7 @@ module Remote_value :
     val accu : unit -> t
     val closure_code : t -> int
 
+    (* Returns a hexadecimal representation of the remote address,
+       or [""] if the value is local. *)
+    val pointer : t -> string
   end
