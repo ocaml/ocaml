@@ -510,7 +510,8 @@ let addr_array_length hdr = Cop(Clsr, [hdr; Cconst_int wordsize_shift])
 let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
 
 let lsl_const c n =
-  Cop(Clsl, [c; Cconst_int n])
+  if n = 0 then c
+  else Cop(Clsl, [c; Cconst_int n])
 
 let array_indexing log2size ptr ofs =
   match ofs with
@@ -519,9 +520,13 @@ let array_indexing log2size ptr ofs =
       if i = 0 then ptr else Cop(Cadda, [ptr; Cconst_int(i lsl log2size)])
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) ->
       Cop(Cadda, [ptr; lsl_const c log2size])
+  | Cop(Caddi, [c; Cconst_int n]) when log2size = 0 ->
+      Cop(Cadda, [Cop(Cadda, [ptr; untag_int c]); Cconst_int (n asr 1)])
   | Cop(Caddi, [c; Cconst_int n]) ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const c (log2size - 1)]);
                    Cconst_int((n-1) lsl (log2size - 1))])
+  | _ when log2size = 0 ->
+      Cop(Cadda, [ptr; untag_int ofs])
   | _ ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2size - 1)]);
                    Cconst_int((-1) lsl (log2size - 1))])
@@ -777,16 +782,22 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
-      bind "idx" (untag_int arg)
-        (fun idx ->
-           check_bound (Cop(Cload Word,[field_address b dim_ofs])) idx idx)
+      if unsafe then arg
+      else
+        bind "idx" arg
+          (fun idx ->
+             check_bound (Cop(Cload Word,[field_address b dim_ofs])) (untag_int idx) idx)
   | arg1 :: argl ->
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
-      bind "idx" (untag_int arg1)
-        (fun idx ->
-          bind "bound" (Cop(Cload Word, [field_address b dim_ofs]))
-          (fun bound ->
-            check_bound bound idx (add_int (mul_int rem bound) idx))) in
+      let bound = Cop(Cload Word, [field_address b dim_ofs]) in
+      if unsafe then
+        add_int (mul_int (decr_int rem) bound) arg1
+      else
+        bind "idx" arg1
+          (fun idx ->
+            bind "bound" bound (fun bound ->
+              check_bound bound (untag_int idx) (add_int (mul_int (decr_int rem) bound)
+                idx))) in
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -797,11 +808,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
   and elt_size =
     bigarray_elt_size elt_kind in
-  let byte_offset =
-    if elt_size = 1
-    then offset
-    else Cop(Clsl, [offset; Cconst_int(log2 elt_size)]) in
-  Cop(Cadda, [Cop(Cload Word, [field_address b 1]); byte_offset])
+  array_indexing (log2 elt_size) (Cop(Cload Word, [field_address b 1])) offset
 
 let bigarray_word_kind = function
     Pbigarray_unknown -> assert false
