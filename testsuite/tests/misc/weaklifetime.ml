@@ -45,7 +45,7 @@ let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
 let check i =
   let gc1 = gccount () in
   match data.objs.(i), Weak.check data.wp i with
-  | Present x, false ->
+  | Present _, false ->
     Printf.eprintf "error (early erasure):\n\
                    \  strong pointer is still present,\n\
                    \  weak pointer was erased\n";
@@ -66,6 +66,15 @@ let replace gc1 i =
   Weak.set data.wp i (Some x);
 ;;
 
+(* This function allows its caller to check for the presence of data
+   without holding on to its value as pattern-matching does when
+   compiled to byte-code. *)
+let is_present i =
+  match data.objs.(i) with
+  | Present _ -> true
+  | Absent _ -> false
+;;
+
 (*
    Modify the data at [i] in one of the following ways:
    1. if the block and weak pointer are absent, fill them
@@ -74,9 +83,9 @@ let replace gc1 i =
 *)
 let change i =
   let gc1 = gccount () in
-  match data.objs.(i), Weak.check data.wp i with
-  | Absent _, false -> replace gc1 i;
-  | Present _, true ->
+  match is_present i, Weak.check data.wp i with
+  | false, false -> replace gc1 i;
+  | true, true ->
     if Random.int 2 = 0 then begin
       data.objs.(i) <- Absent gc1;
       let gc2 = gccount () in
