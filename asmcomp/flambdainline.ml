@@ -42,11 +42,11 @@ module Env : sig
     inlining_level : int;
     (* Number of times "inline" has been called recursively *)
     sb : Flambdasubst.t;
-    inline_threshold : Flambdacost.inline_threshold ;
+    never_inline : bool ;
     closure_depth : int;
   }
 
-  val empty : unit -> t
+  val empty : t
 
   val local : t -> t
 
@@ -86,8 +86,6 @@ module Env : sig
 
   val never_inline : t -> t
 
-  val set_inline_threshold : Flambdacost.inline_threshold -> t -> t
-
 end = struct
 
   type t = {
@@ -98,17 +96,16 @@ end = struct
     inlining_level : int;
     (* Number of times "inline" has been called recursively *)
     sb : Flambdasubst.t;
-    inline_threshold : Flambdacost.inline_threshold ;
+    never_inline : bool ;
     closure_depth : int;
   }
 
-  let empty () =
+  let empty =
     { env_approx = Variable.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       sb = Flambdasubst.empty;
-      inline_threshold =
-        Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
+      never_inline = false;
       closure_depth = 0}
 
   let local env =
@@ -162,10 +159,7 @@ end = struct
     { env with closure_depth = env.closure_depth + 1; }
 
   let never_inline env =
-    { env with inline_threshold = Flambdacost.Never_inline }
-
-  let set_inline_threshold inline_threshold env =
-    { env with inline_threshold }
+    { env with never_inline = true }
 end
 
 open Env
@@ -175,6 +169,7 @@ type ret =
     globals : Flambdaapprox.t IntMap.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
+    inline_threshold : Flambdacost.inline_threshold;
     benefit : Flambdacost.benefit;
   }
 
@@ -201,11 +196,16 @@ let benefit r f =
 let clear_benefit r =
   { r with benefit = Flambdacost.no_benefit }
 
-let init_r =
+let set_inline_threshold r inline_threshold =
+  { r with inline_threshold }
+
+let init_r () =
   { approx = value_unknown;
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;
+    inline_threshold =
+      Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
     benefit = Flambdacost.no_benefit }
 
 let add_global i approx r =
@@ -1187,6 +1187,7 @@ and direct_apply env r clos funct fun_id func closure
   let direct_apply = match funct with
     | Fclosure ({ fu_closure = Fset_of_closures _ }, _) -> true
     | _ -> false in
+  let inline_threshold = r.inline_threshold in
   let fun_cost =
     if unconditionally_inline || direct_apply then
       (* CXR mshinwell for mshinwell: this comment needs clarification *)
@@ -1222,13 +1223,15 @@ and direct_apply env r clos funct fun_id func closure
            To correct that, the threshold should be propagated through [r]
            rather than [env]
       *)
-      env.inline_threshold
+      r.inline_threshold
     else
-      Flambdacost.can_try_inlining func.body env.inline_threshold
+      Flambdacost.can_try_inlining func.body r.inline_threshold
         ~bonus:num_params
   in
+  let expr, r =
   match fun_cost with
   | Flambdacost.Never_inline -> no_transformation ()
+  | Flambdacost.Can_inline _ when env.never_inline -> no_transformation ()
   | (Flambdacost.Can_inline _) as remaining_inline_threshold ->
       let fun_var = find_declaration_variable fun_id clos in
       let recursive = Variable.Set.mem fun_var (recursive_functions clos) in
@@ -1236,8 +1239,7 @@ and direct_apply env r clos funct fun_id func closure
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing.
          pchambart: is [remaining_inline_threshold] better ? *)
-      let inline_threshold = env.inline_threshold in
-      let env = Env.set_inline_threshold remaining_inline_threshold env in
+      let r = set_inline_threshold r remaining_inline_threshold in
       let kept_params = closure.kept_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally inlined). *)
@@ -1278,6 +1280,10 @@ and direct_apply env r clos funct fun_id func closure
           no_transformation
       else
         no_transformation ()
+  in
+  if env.inlining_level = 0
+  then expr, set_inline_threshold r inline_threshold
+  else expr, r
 
 and partial_apply funct fun_id func args ap_dbg =
   let arity = function_arity func in
@@ -1405,7 +1411,7 @@ let debug_benefit =
   with _ -> false
 
 let inline tree =
-  let result, r = loop (Env.empty ()) init_r tree in
+  let result, r = loop Env.empty (init_r ()) tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
