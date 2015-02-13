@@ -699,7 +699,10 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   | Fprim((Psetfield _ | Parraysetu _ | Parraysets _) as p, block :: args, dbg, annot) ->
       let block, r = loop env r block in
       if Flambdaapprox.is_certainly_immutable r.approx
-      then Misc.fatal_error "Assignement on non-mutable value";
+      then
+        Location.prerr_warning (Debuginfo.to_location dbg)
+          Warnings.Assignment_on_non_mutable_value;
+      (* Misc.fatal_error "Assignement on non-mutable value"; *)
       (* CXR mshinwell for pchambart: This is slightly mysterious---I think
          we need a comment explaining what the approximation for a
          mutable block looks like.
