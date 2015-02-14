@@ -210,10 +210,7 @@ CAMLprim value caml_sys_file_exists(value name)
   char * temp=String_val(name);
   WCHAR * wtemp;
   int retcode;
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
   retcode=_wstat(wtemp, &st);
   free(wtemp);
   return Val_bool((retcode==0));
@@ -247,10 +244,7 @@ CAMLprim value caml_sys_is_directory(value name)
   char * temp=String_val(name);
   WCHAR * wtemp;
   int retcode;
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
   retcode=_wstat(wtemp, &st);
   free(wtemp);
 #endif /* UTF16 */
@@ -275,10 +269,7 @@ CAMLprim value caml_sys_remove(value name)
 #ifdef UTF16_TODO
   char * temp=String_val(name);
   WCHAR * wtemp;
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
   ret = _wunlink(wtemp);
   free(wtemp);
 #endif
@@ -305,14 +296,8 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   char * temp1=String_val(oldname);
   char * temp2=String_val(newname);
   WCHAR * wtemp1, * wtemp2;
-  if(is_valid_utf8(temp1))
-    wtemp1 = utf8_to_utf16(temp1);
-  else
-    wtemp1 = ansi_to_utf16(temp1);
-  if(is_valid_utf8(temp2))
-    wtemp2 = utf8_to_utf16(temp2);
-  else
-    wtemp2 = ansi_to_utf16(temp2);
+  wtemp1 = to_utf16(temp1);
+  wtemp2 = to_utf16(temp2);
   if (_wrename(wtemp1, wtemp2) != 0)
 #endif
     caml_sys_error(NO_ARG);
@@ -339,10 +324,7 @@ CAMLprim value caml_sys_chdir(value dirname)
 #ifdef UTF16_TODO
   char * temp=String_val(dirname);
   WCHAR * wtemp;
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
   if (_wchdir(wtemp) != 0) caml_sys_error(dirname);
   free(wtemp);
 #endif

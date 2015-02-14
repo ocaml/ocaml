@@ -35,10 +35,7 @@ CAMLprim value unix_chmod(value path, value perm)
 #ifdef UTF16_TODO
 	char * temp=String_val(path);
 	WCHAR * wtemp;
-	if(is_valid_utf8(temp))
-		wtemp = utf8_to_utf16(temp);
-	else
-		wtemp = ansi_to_utf16(temp);
+	wtemp = to_utf16(temp);
 	ret = _wchmod(wtemp, Int_val(perm));
 	free(wtemp);
 #endif

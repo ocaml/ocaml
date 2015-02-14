@@ -242,4 +242,12 @@ unsigned char* utf16_to_utf8(const unsigned char * str)
   return convert_from_utf16(str,wcslen(str)*sizeof(WCHAR),CP_UTF8);
 }
 
+unsigned char* to_utf16(const char* str)
+{
+  if(is_valid_utf8(str))
+    return utf8_to_utf16(str);
+  else
+    return ansi_to_utf16(str);
+}
+
 // -----------------------------------------------------------------------------

@@ -35,10 +35,7 @@ CAMLprim value unix_unlink(value path)
 #ifdef UTF16_TODO
 	char * temp=String_val(path);
 	WCHAR * wtemp;
-	if(is_valid_utf8(temp))
-		wtemp = utf8_to_utf16(temp);
-	else
-		wtemp = ansi_to_utf16(temp);
+	wtemp = to_utf16(temp);
 	if (_wunlink(wtemp) == -1) uerror("unlink", path);
 	free(wtemp);
 #endif

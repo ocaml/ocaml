@@ -24,10 +24,7 @@ CAMLprim value unix_mkdir(path, perm)
 #ifdef UTF16
 	char * temp=String_val(path);
 	WCHAR * wtemp;
-	if(is_valid_utf8(temp))
-		wtemp = utf8_to_utf16(temp);
-	else
-		wtemp = ansi_to_utf16(temp);
+	wtemp = to_utf16(temp);
 	if (_wmkdir(wtemp) == -1) uerror("mkdir", path);
 	free(wtemp);
 #else

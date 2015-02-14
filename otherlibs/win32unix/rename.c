@@ -29,14 +29,8 @@ CAMLprim value unix_rename(value path1, value path2)
 	char * temp1=String_val(path1);
 	char * temp2=String_val(path2);
 	WCHAR * wtemp1, * wtemp2;
-	if(is_valid_utf8(temp1))
-		wtemp1 = utf8_to_utf16(temp1);
-	else
-		wtemp1 = ansi_to_utf16(temp1);
-	if(is_valid_utf8(temp2))
-		wtemp2 = utf8_to_utf16(temp2);
-	else
-		wtemp2 = ansi_to_utf16(temp2);
+	wtemp1 = to_utf16(temp1);
+	wtemp2 = to_utf16(temp2);
 #endif
   if (supports_MoveFileEx < 0) {
     OSVERSIONINFO VersionInfo;

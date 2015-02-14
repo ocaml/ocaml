@@ -250,14 +250,7 @@ static void expand_pattern(char * pat)
   int preflen;
 
 #ifdef UTF16
-  if (is_valid_utf8(pat))
-  {
-    wname = utf8_to_utf16(pat);
-  }
-  else
-  {
-    wname = ansi_to_utf16(pat);
-  }
+  wname = to_utf16(pat);
   handle = _wfindfirst(wname, &ffblk);
   free(wname);
 #else
@@ -342,10 +335,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   else
     template = caml_strconcat(2, dirname, "\\*.*");
 #ifdef UTF16
-  if (is_valid_utf8(template))
-    wtemplate = utf8_to_utf16(template);
-  else
-    wtemplate = ansi_to_utf16(template);
+  wtemplate = to_utf16(template);
   h = _wfindfirst(wtemplate, &fileinfo);
   free(wtemplate);
 #else

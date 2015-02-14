@@ -31,10 +31,7 @@ CAMLprim value win_findfirst(value name)
 	WIN32_FIND_DATAW fileinfo;
 	char * tempo, *temp=String_val(name);
 	WCHAR * wtemp;
-	if(is_valid_utf8(temp))
-		wtemp = utf8_to_utf16(temp);
-	else
-		wtemp = ansi_to_utf16(temp);
+	wtemp = to_utf16(temp);
 #else
   WIN32_FIND_DATA fileinfo;
 #endif

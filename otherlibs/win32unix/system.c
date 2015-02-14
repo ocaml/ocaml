@@ -33,10 +33,7 @@ CAMLprim value win_system(cmd)
   char * temp;
   WCHAR * wtemp;
   temp=String_val(cmd);
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
 #endif
 
   caml_unix_check_path(cmd, "system");

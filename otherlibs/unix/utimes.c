@@ -55,10 +55,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   CAMLreturn(Val_unit);
 #ifdef UTF16_TODO
   temp=String_val(path);
-  if(is_valid_utf8(temp))
-    wtemp = utf8_to_utf16(temp);
-  else
-    wtemp = ansi_to_utf16(temp);
+  wtemp = to_utf16(temp);
   if (_wutime(wtemp,  t) == -1) uerror("utimes", path);
   free(wtemp);
 #endif
