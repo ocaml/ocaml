@@ -15,18 +15,44 @@ open Location
 open Longident
 open Parsetree
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
+(* sets of bound module names *)
+module StringSet =
+  Set.Make(struct
+            type t = string
+            let compare (u : t) v = compare u v
+          end)
 
-(* Collect free module identifiers in the a.s.t. *)
+(* sets of free module paths *)
+module PathSet =
+  Set.Make(struct
+            type t = Longident.t
+            let compare (u : t) v = compare u v
+          end)
 
-let free_structure_names = ref StringSet.empty
+(* we collect module paths whose roots are free module identifiers *)
+let free_paths = ref PathSet.empty
 
-let rec add_path bv = function
-  | Lident s ->
-      if not (StringSet.mem s bv)
-      then free_structure_names := StringSet.add s !free_structure_names
-  | Ldot(l, _s) -> add_path bv l
-  | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
+let rec path_root = function
+  | Lident s -> s
+  | Ldot (l, _s) -> path_root l
+  | Lapply (l1, _l2) -> path_root l1
+
+let rec add_path bv path =
+  (* if the path is of the form M.F(N.T).X,
+     also call add_path on N.T *)
+  let rec iter_on_arguments = function
+    | Lident _ -> ()
+    | Ldot (l, _s) ->
+       iter_on_arguments l;
+    | Lapply (l1, l2) ->
+       iter_on_arguments l1;
+       add_path bv l2;
+  in
+  iter_on_arguments path;
+  let root = path_root path in
+  if not (StringSet.mem root bv) then begin
+    free_paths := PathSet.add path !free_paths
+  end
 
 let open_module bv lid = add_path bv lid
 
