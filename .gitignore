@@ -76,6 +76,7 @@
 /asmrun/str.c
 /asmrun/sys.c
 /asmrun/terminfo.c
+/asmrun/u8tou16.c
 /asmrun/unix.c
 /asmrun/weak.c
 
