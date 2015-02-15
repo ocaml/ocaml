@@ -154,6 +154,8 @@ Bug fixes:
   (Mark Shinwell and Jérémie Dimino)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
+- PR#6775: Digest.file leaks file descriptor on error
+  (Valentin Gatien-Baron)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
