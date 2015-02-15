@@ -12,24 +12,24 @@
 
 (** Top modules dependencies. *)
 
-module StrS = Depend.StringSet
+module DepS = Depend.PathSet
 module Module = Odoc_module
 module Type = Odoc_type
 
-let set_to_list s =
+let root_list s =
   let l = ref [] in
-  StrS.iter (fun e -> l := e :: !l) s;
+  DepS.iter (fun e -> l := Depend.path_root e :: !l) s;
   !l
 
 let impl_dependencies ast =
-  Depend.free_structure_names := StrS.empty;
-  Depend.add_use_file StrS.empty [Parsetree.Ptop_def ast];
-  set_to_list !Depend.free_structure_names
+  Depend.free_paths := DepS.empty;
+  Depend.add_use_file Depend.StringSet.empty [Parsetree.Ptop_def ast];
+  root_list !Depend.free_paths
 
 let intf_dependencies ast =
-  Depend.free_structure_names := StrS.empty;
-  Depend.add_signature StrS.empty ast;
-  set_to_list !Depend.free_structure_names
+  Depend.free_paths := DepS.empty;
+  Depend.add_signature Depend.StringSet.empty ast;
+  root_list !Depend.free_paths
 
 
 module Dep =
