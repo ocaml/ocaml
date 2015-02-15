@@ -1,0 +1,2 @@
+mapping.cmo : lib2.cmx lib1.cmx
+mapping.cmx : lib2.cmx lib1.cmx

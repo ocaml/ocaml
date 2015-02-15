@@ -59,6 +59,7 @@ OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
 OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
 OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
+OCAMLDEP=$(OCAMLRUN) $(OTOPDIR)/tools/ocamldep
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
 		       -ocamlc "$(OTOPDIR)/boot/ocamlrun$(EXE) \
