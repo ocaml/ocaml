@@ -43,6 +43,7 @@ module Env : sig
     (* Number of times "inline" has been called recursively *)
     sb : Flambdasubst.t;
     never_inline : bool ;
+    possible_unrolls : int;
     closure_depth : int;
   }
 
@@ -86,6 +87,10 @@ module Env : sig
 
   val never_inline : t -> t
 
+  val unrolling_allowed : t -> bool
+
+  val inside_unrolled_function : t -> t
+
 end = struct
 
   type t = {
@@ -97,6 +102,7 @@ end = struct
     (* Number of times "inline" has been called recursively *)
     sb : Flambdasubst.t;
     never_inline : bool ;
+    possible_unrolls : int;
     closure_depth : int;
   }
 
@@ -106,6 +112,7 @@ end = struct
       inlining_level = 0;
       sb = Flambdasubst.empty;
       never_inline = false;
+      possible_unrolls = 1;
       closure_depth = 0}
 
   let local env =
@@ -160,6 +167,12 @@ end = struct
 
   let never_inline env =
     { env with never_inline = true }
+
+  let unrolling_allowed env = env.possible_unrolls > 0
+
+  let inside_unrolled_function env =
+    { env with possible_unrolls = env.possible_unrolls - 1 }
+
 end
 
 open Env
