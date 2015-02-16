@@ -1272,10 +1272,7 @@ and direct_apply env r clos funct fun_id func closure
              r_inlined.benefit
              inline_threshold
         then
-          let r_inlined =
-            benefit r_inlined (Flambdacost.benefit_union r.benefit)
-          in
-          body, r_inlined
+          body, benefit r_inlined (Flambdacost.benefit_union r.benefit)
         else
           (* r_inlined contains an approximation that may be invalid for the
              untransformed expression: it may reference functions that only
@@ -1285,12 +1282,40 @@ and direct_apply env r clos funct fun_id func closure
              could be returned instead of [value_unknown] *)
           no_transformation ()
       else if recursive
-           && should_inline_function_known_to_be_recursive ~func ~clos ~env
-                ~closure ~approxs ~kept_params ~max_level
       then
-        inline_recursive_functions env r funct clos fun_id func
-          (args,approxs) kept_params closure.specialised_args ap_dbg
-          no_transformation
+        let unrolling_result =
+          if Env.unrolling_allowed env && env.inlining_level <= max_level
+          then
+            let env = inside_unrolled_function env in
+            let body, r_inlined =
+              inline_non_recursive_function env (clear_benefit r) clos funct
+                fun_id func args
+            in
+            if Flambdacost.sufficient_benefit_for_inline
+                body
+                r_inlined.benefit
+                inline_threshold
+            then
+              Some (body, benefit r_inlined (Flambdacost.benefit_union r.benefit))
+            else None
+          else None
+        in
+        match unrolling_result with
+        | Some r -> r
+        | None ->
+            if should_inline_function_known_to_be_recursive ~func ~clos ~env
+                ~closure ~approxs ~kept_params ~max_level
+            then
+              let () =
+                if Variable.Map.cardinal clos.funs > 1
+                then Format.printf "try inline multi rec %a@."
+                    Closure_id.print fun_id
+              in
+              inline_recursive_functions env r funct clos fun_id func
+                (args,approxs) kept_params closure.specialised_args ap_dbg
+                no_transformation
+            else
+              no_transformation ()
       else
         no_transformation ()
   in
