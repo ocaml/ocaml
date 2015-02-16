@@ -115,6 +115,7 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
   val _rounds : int -> unit
+  val _unroll : int -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit

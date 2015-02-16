@@ -117,6 +117,10 @@ let mk_rounds f =
   "-rounds", Arg.Int f, "<n>  Set number of simplification rounds to <n>"
 ;;
 
+let mk_unroll f =
+  "-unroll", Arg.Int f, "<n>  Set maximal number of times a function can be unrolled"
+;;
+
 let mk_intf f =
   "-intf", Arg.String f, "<file>  Compile <file> as a .mli file"
 ;;
@@ -576,6 +580,7 @@ module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
   val _rounds : int -> unit
+  val _unroll : int -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -780,6 +785,7 @@ struct
     mk_impl F._impl;
     mk_inline F._inline;
     mk_rounds F._rounds;
+    mk_unroll F._unroll;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_locs F._keep_locs;
@@ -856,6 +862,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_init F._init;
     mk_inline F._inline;
     mk_rounds F._rounds;
+    mk_unroll F._unroll;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;

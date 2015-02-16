@@ -86,6 +86,7 @@ val dump_combine : bool ref
 val native_code : bool ref
 val inline_threshold : int ref
 val simplify_rounds : int ref
+val unroll : int ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list

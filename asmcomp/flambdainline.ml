@@ -47,7 +47,7 @@ module Env : sig
     closure_depth : int;
   }
 
-  val empty : t
+  val empty : unit -> t
 
   val local : t -> t
 
@@ -106,13 +106,13 @@ end = struct
     closure_depth : int;
   }
 
-  let empty =
+  let empty () =
     { env_approx = Variable.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       sb = Flambdasubst.empty;
       never_inline = false;
-      possible_unrolls = 1;
+      possible_unrolls = !Clflags.unroll;
       closure_depth = 0}
 
   let local env =
@@ -168,7 +168,8 @@ end = struct
   let never_inline env =
     { env with never_inline = true }
 
-  let unrolling_allowed env = env.possible_unrolls > 0
+  let unrolling_allowed env =
+    env.possible_unrolls > 0
 
   let inside_unrolled_function env =
     { env with possible_unrolls = env.possible_unrolls - 1 }
@@ -1449,7 +1450,7 @@ let debug_benefit =
   with _ -> false
 
 let inline tree =
-  let result, r = loop Env.empty (init_r ()) tree in
+  let result, r = loop (Env.empty ()) (init_r ()) tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."

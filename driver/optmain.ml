@@ -89,6 +89,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _impl = impl
   let _inline n = inline_threshold := n * 8
   let _rounds n = simplify_rounds := n
+  let _unroll n = unroll := n
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_locs = set keep_locs
