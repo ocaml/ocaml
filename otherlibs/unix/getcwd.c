@@ -30,27 +30,13 @@
 #endif
 
 #ifdef HAS_GETCWD
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
 CAMLprim value unix_getcwd(value unit)
 {
-#ifdef UTF16
-  CAMLparam0 ();
-  CAMLlocal1 (v);
-  WCHAR buff[PATH_MAX*2];
-  unsigned char* temp;
-  if (_wgetcwd(buff, sizeof(buff)/sizeof(WCHAR)) == 0) uerror("getcwd", Nothing);
-  temp=utf16_to_utf8(buff);
-  v=copy_string(temp);
-  free(temp);
-  CAMLreturn (v);
-#else
-  char buff[PATH_MAX];
-  if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
-  return copy_string(buff);
-#endif
+  CRT_CHAR buff[PATH_MAX];
+  if (CRT_(getcwd)(buff, sizeof(buff)/sizeof(CRT_CHAR)) == 0) uerror("getcwd", Nothing);
+  return caml_copy_crt_str(buff);
 }
 
 #else

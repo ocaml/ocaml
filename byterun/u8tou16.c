@@ -31,6 +31,9 @@
   Modified to use WideCharToMultiByte windows api
 */
 
+#include "caml/memory.h"
+#include "caml/alloc.h"
+
 #define STRICT      /* Strict typing, please */
 #include <windows.h>
 #undef STRICT
@@ -161,17 +164,17 @@ ocaml_utf8_validate (const char  *str,
     return TRUE;
 }
 
-unsigned char* convert_to_utf16(const char* str,
-                                size_t len,
-                                UINT codepage)
+WCHAR* convert_to_utf16(const char* str,
+                        size_t len,
+                        UINT codepage)
 {
-    unsigned char* outp;
+    WCHAR* outp;
     size_t outbuf_size;
     int chars;
 
     outbuf_size = len*2 + 8;
 
-    outp = malloc(outbuf_size + 2);
+    outp = caml_stat_alloc(outbuf_size + 2);
     memset(outp,0,outbuf_size + 2);
 
     if (0 == len)
@@ -186,22 +189,22 @@ unsigned char* convert_to_utf16(const char* str,
         return NULL;
     }
 
-    *(WCHAR*)(outp + sizeof(WCHAR)*chars) = (WCHAR)0;
+    *(outp + chars) = (WCHAR)0;
     return outp;
 }
 
 
-unsigned char* convert_from_utf16(const char* str,
-                                  size_t len,
-                                  UINT codepage)
+char* convert_from_utf16(const WCHAR* str,
+                         size_t len,
+                         UINT codepage)
 {
-    unsigned char* outp;
+    char* outp;
     size_t outbuf_size;
     int chars;
 
     outbuf_size = len*2 + 8;
 
-    outp = malloc(outbuf_size + 2);
+    outp = caml_stat_alloc(outbuf_size + 2);
     memset(outp,0,outbuf_size + 2);
 
     if (0 == len)
@@ -227,27 +230,35 @@ int is_valid_utf8(const char *s)
   return ocaml_utf8_validate(s,strlen(s),NULL);
 }
 
-unsigned char * ansi_to_utf16(const char * str)
+WCHAR* ansi_to_utf16(const char * str)
 {
   return convert_to_utf16(str,strlen(str),CP_ACP);
 }
 
-unsigned char * utf8_to_utf16(const char * str)
+WCHAR* utf8_to_utf16(const char * str)
 {
   return convert_to_utf16(str,strlen(str),CP_UTF8);
 }
 
-unsigned char* utf16_to_utf8(const unsigned char * str)
+char* utf16_to_utf8(const WCHAR* str)
 {
   return convert_from_utf16(str,wcslen(str)*sizeof(WCHAR),CP_UTF8);
 }
 
-unsigned char* to_utf16(const char* str)
+WCHAR* to_utf16(const char* str)
 {
   if(is_valid_utf8(str))
     return utf8_to_utf16(str);
   else
     return ansi_to_utf16(str);
+}
+
+value caml_copy_utf16(WCHAR* p)
+{
+  char* s = utf16_to_utf8(p);
+  value v = caml_copy_string(s);
+  caml_stat_free(s);
+  return v;
 }
 
 // -----------------------------------------------------------------------------

@@ -34,9 +34,7 @@
 #include "caml/sys.h"
 
 #include <flexdll.h>
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
