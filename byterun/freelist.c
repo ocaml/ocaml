@@ -130,7 +130,7 @@ static char *allocate_block (mlsize_t wh_sz, int flpi, char *prev, char *cur)
       /* In case 1, the following creates the empty block correctly.
          In case 0, it gives an invalid header to the block.  The function
          calling [caml_fl_allocate] will overwrite it. */
-    Hd_op (cur) = Make_header (0, 0, Caml_white);
+    Hd_op (cur) = Make_header_with_profinfo (0, 0, Caml_white, MY_PROFINFO);
     if (policy == Policy_first_fit){
       if (flpi + 1 < flp_size && flp[flpi + 1] == cur){
         flp[flpi + 1] = prev;
@@ -402,7 +402,7 @@ char *caml_fl_merge_block (char *bp)
   if (last_fragment == Hp_bp (bp)){
     mlsize_t bp_whsz = Whsize_bp (bp);
     if (bp_whsz <= Max_wosize){
-      hd = Make_header (bp_whsz, 0, Caml_white);
+      hd = Make_header_with_profinfo (bp_whsz, 0, Caml_white, MY_PROFINFO);
       bp = last_fragment;
       Hd_bp (bp) = hd;
       caml_fl_cur_size += Whsize_wosize (0);
@@ -522,7 +522,8 @@ void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
     }else{
       sz = size;
     }
-    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, color);
+    *(header_t *)p =
+      Make_header_with_profinfo (Wosize_whsize (sz), 0, color, MY_PROFINFO);
     if (do_merge) caml_fl_merge_block (Bp_hp (p));
     size -= sz;
     p += sz;

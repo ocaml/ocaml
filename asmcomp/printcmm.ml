@@ -87,8 +87,10 @@ let operation = function
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n | Cconst_blockheader n ->
+  | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
+  | Cconst_blockheader n ->
+    fprintf ppf "block-hdr(%s)" (Nativeint.to_string n)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n
@@ -184,6 +186,12 @@ let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%s\":" s
   | Cdefine_label l -> fprintf ppf "L%i:" l
   | Cglobal_symbol s -> fprintf ppf "global \"%s\"" s
+  | Cconst_blockheader_constant_closure n ->
+    fprintf ppf "hdr-clos(%s)" (Nativeint.to_string n)
+  | Cconst_blockheader_compilation_unit n ->
+    fprintf ppf "hdr-cu(%s)" (Nativeint.to_string n)
+  | Cconst_blockheader_structured_constant n ->
+    fprintf ppf "hdr-cst(%s)" (Nativeint.to_string n)
   | Cint8 n -> fprintf ppf "byte %i" n
   | Cint16 n -> fprintf ppf "int16 %i" n
   | Cint32 n -> fprintf ppf "int32 %s" (Nativeint.to_string n)

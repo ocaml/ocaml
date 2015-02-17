@@ -157,12 +157,35 @@ caml_byte_offset_of_source_location_map_elf_section_contents(value v_executable,
 #endif
 }
 
+static const uint64_t BUILTIN_RETURN_ADDRESS_FAILURE = 1ull << 4;
+static const uint64_t CONSTANT_CLOSURE = 2ull << 4;
+static const uint64_t STRUCTURED_CONSTANT = 3ull << 4;
+static const uint64_t COMPILATION_UNIT = 4ull << 4;
+
 void
-caml_dump_allocators_of_major_heap_blocks (const char* output_file)
+caml_dump_allocators_of_major_heap_blocks (const char* output_file,
+                                           int sample_strings)
 {
   char* chunk;
   FILE* fp;
+  uint64_t blue;
+  uint64_t accounted_for;
+  uint64_t builtin_return_address_failures;
+  uint64_t constant_closures, structured_constants, compilation_units;
   uint64_t unaccounted_for = 0ull;
+  uint64_t unaccounted_for_by_tag[256];
+  int tag;
+
+  blue = 0ull;
+  accounted_for = 0ull;
+  builtin_return_address_failures = 0ull;
+  constant_closures = 0ull;
+  structured_constants = 0ull;
+  compilation_units = 0ull;
+
+  for (tag = 0; tag < 256; tag++) {
+    unaccounted_for_by_tag[tag] = 0ull;
+  }
 
   fp = fopen(output_file, "w");
   if (fp == NULL) {
@@ -189,13 +212,22 @@ caml_dump_allocators_of_major_heap_blocks (const char* output_file)
       header_t hd = Hd_hp (hp);
       switch (Color_hd(hd)) {
         case Caml_blue:
+          blue += Whsize_hd(hd);
           break;
 
         default: {
           uint64_t approx_instr_pointer;
 
           approx_instr_pointer = Decode_profinfo_hd(hd);
-          if (approx_instr_pointer != 0ull) {
+          if (approx_instr_pointer == BUILTIN_RETURN_ADDRESS_FAILURE) {
+            builtin_return_address_failures += Whsize_hd(hd);
+          } else if (approx_instr_pointer == CONSTANT_CLOSURE) {
+            constant_closures += Whsize_hd(hd);
+          } else if (approx_instr_pointer == STRUCTURED_CONSTANT) {
+            structured_constants += Whsize_hd(hd);
+          } else if (approx_instr_pointer == COMPILATION_UNIT) {
+            compilation_units += Whsize_hd(hd);
+          } else if (approx_instr_pointer != 0ull) {
             uint64_t size_in_words_including_header;
             const char* colour;
 
@@ -208,11 +240,24 @@ caml_dump_allocators_of_major_heap_blocks (const char* output_file)
               default: assert(0);
             }
 
+            accounted_for += Whsize_hd(hd);
+
             fprintf(fp, "%p %lld %s\n", (void*) approx_instr_pointer,
                     (unsigned long long) size_in_words_including_header, colour);
           }
           else {
-            unaccounted_for++;
+            unaccounted_for += Whsize_hd(hd);
+            unaccounted_for_by_tag[Tag_hd(hd)]++;
+            if (sample_strings > 0 && Tag_hd(hd) == String_tag) {
+              fprintf(fp, "example string with no profiling info: '%s'\n",
+                Bp_hp(hp));
+              sample_strings--;
+            }
+            else if (sample_strings > 0 && Tag_hd(hd) == Closure_tag) {
+              fprintf(fp, "example closure with no profiling info: %p\n",
+                (void*) *(Op_hp(hp)));
+              sample_strings--;
+            }
           }
           break;
         }
@@ -224,16 +269,36 @@ caml_dump_allocators_of_major_heap_blocks (const char* output_file)
     chunk = Chunk_next (chunk);
   }
 
-  fprintf(fp, "blocks unaccounted for: %lld\n", (unsigned long long) unaccounted_for);
+  fprintf(fp, "word size (incl headers) of non-blue blocks with profiling info: %lld\n", (unsigned long long) accounted_for);
+  fprintf(fp, "word size (incl headers) of non-blue blocks with no profiling info: %lld\n  by tag: ", (unsigned long long) unaccounted_for);
+  for (tag = 0; tag < 256; tag++) {
+    if (unaccounted_for_by_tag[tag] > 0) {
+      fprintf(fp, "tag(%d)=%lld ", tag, (unsigned long long) unaccounted_for_by_tag[tag]);
+    }
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, "word size (incl headers) with __builtin_return_address failures: %lld\n",
+    (unsigned long long) builtin_return_address_failures);
+  fprintf(fp, "word size (incl headers) of constant closures: %lld\n",
+    (unsigned long long) constant_closures);
+  fprintf(fp, "word size (incl headers) of structured constants: %lld\n",
+    (unsigned long long) structured_constants);
+  fprintf(fp, "word size (incl headers) of compilation unit blocks: %lld\n",
+    (unsigned long long) compilation_units);
+  fprintf(fp, "word size (incl headers) of blue blocks: %lld\n", (unsigned long long) blue);
+  fprintf(fp, "word size (incl headers) of all blocks: %lld\n", (unsigned long long) (blue + accounted_for + unaccounted_for));
+  fprintf(fp, "caml_stat_heap_size in words: %lld\n", (unsigned long long) caml_stat_heap_size / sizeof(value));
 
   fclose(fp);
 }
 
 CAMLprim value
-caml_dump_allocators_of_major_heap_blocks_from_ocaml (value output_file)
+caml_dump_allocators_of_major_heap_blocks_from_ocaml (value output_file,
+                                                      value sample_strings)
 {
   assert(Is_block(output_file) && Tag_val(output_file) == String_tag);
-  caml_dump_allocators_of_major_heap_blocks(String_val(output_file));
+  caml_dump_allocators_of_major_heap_blocks(String_val(output_file),
+    Int_val(sample_strings));
   return Val_unit;
 }
 

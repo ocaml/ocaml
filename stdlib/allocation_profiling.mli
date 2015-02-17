@@ -107,7 +107,10 @@ module Heap_snapshot : sig
      allocated.  For example:
        decode-major-heap.sh profile-output-file executable-file
   *)
-  val dump_allocators_of_major_heap_blocks : filename:string -> unit
+  val dump_allocators_of_major_heap_blocks
+     : filename:string
+    -> sample_strings:int
+    -> unit
 
   (* [dump_heapgraph] writes two files that may be decoded using
      tools/allocation-profiling/decode-heapgraph.sh in order to show

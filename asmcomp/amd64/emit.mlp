@@ -404,7 +404,7 @@ let emit_instr fallthrough i =
         end;
         begin match profiling_info_label with
           | None -> ()
-          | Some _label when !Clflags.dlcode -> ()
+(*          | Some _label when !Clflags.dlcode -> ()*)
           | Some label -> begin
             assert (n <= 0xffff_ffffn);
             let lifetime_tracking_label = new_label () in
@@ -855,6 +855,9 @@ let fundecl fundecl =
 
 (* Emission of data *)
 
+let add_profiling_info n info =
+  Nativeint.logor n (Nativeint.shift_left (Nativeint.of_int info) 42)
+
 let emit_item = function
     Cglobal_symbol s ->
       `	.globl	{emit_symbol s}\n`;
@@ -862,6 +865,15 @@ let emit_item = function
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_data_label lbl}:\n`
+  | Cconst_blockheader_constant_closure n ->
+      let n = add_profiling_info n 2 in
+      `	.quad	{emit_nativeint n}\n`
+  | Cconst_blockheader_structured_constant n ->
+      let n = add_profiling_info n 3 in
+      `	.quad	{emit_nativeint n}\n`
+  | Cconst_blockheader_compilation_unit n ->
+      let n = add_profiling_info n 4 in
+      `	.quad	{emit_nativeint n}\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->

@@ -100,6 +100,9 @@ type data_item =
     Cdefine_symbol of string
   | Cdefine_label of int
   | Cglobal_symbol of string
+  | Cconst_blockheader_constant_closure of nativeint
+  | Cconst_blockheader_compilation_unit of nativeint
+  | Cconst_blockheader_structured_constant of nativeint
   | Cint8 of int
   | Cint16 of int
   | Cint32 of nativeint

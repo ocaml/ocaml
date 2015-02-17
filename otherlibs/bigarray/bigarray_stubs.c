@@ -160,7 +160,8 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     flags |= CAML_BA_MANAGED;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  res = caml_alloc_custom(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY);
+  res = caml_alloc_custom_with_profinfo(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY,
+                                        MY_PROFINFO);
   b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;

@@ -94,7 +94,9 @@ module Source_location_map = struct
     end else
       None
 
-  let create_from_dwarf_then_stuff_into_elf_section_exn ~executable ~run_command =
+  let create_from_dwarf_then_stuff_into_elf_section_exn ~executable:_ ~run_command:_ =
+    ()
+(*
     let section_contents = Filename.temp_file "ocamlopt" "" in
     run_command ("ocamlmklocs " ^ executable ^ " " ^ section_contents);
     let temp_exe = Filename.temp_file "ocamlopt" "" in
@@ -102,6 +104,7 @@ module Source_location_map = struct
       ^ " " ^ executable ^ " " ^ temp_exe);
     Sys.remove section_contents;
     run_command ("mv -f " ^ temp_exe ^ " " ^ executable)
+*)
 
   let resolve t ~instr_pointer =
     if Map.cardinal t < 1 then
@@ -196,7 +199,10 @@ let to_string = function
       addr
 
 module Heap_snapshot = struct
-  external dump_allocators_of_major_heap_blocks : filename:string -> unit
+  external dump_allocators_of_major_heap_blocks
+     : filename:string
+    -> sample_strings:int
+    -> unit
     = "caml_allocation_profiling_only_works_for_native_code"
       "caml_dump_allocators_of_major_heap_blocks_from_ocaml"
 

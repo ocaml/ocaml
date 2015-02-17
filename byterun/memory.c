@@ -319,7 +319,7 @@ static char *expand_heap (mlsize_t request)
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_bhsize (remain) > Max_wosize){
-    Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
+    Hd_hp (hp) = Make_header_with_profinfo (Max_wosize, 0, Caml_blue, MY_PROFINFO);
 #ifdef DEBUG
     caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
 #endif
@@ -337,7 +337,9 @@ static char *expand_heap (mlsize_t request)
     Field (Op_hp (hp), 0) = (value) NULL;
   }else{
     Field (Op_hp (prev), 0) = (value) NULL;
-    if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
+    if (remain == 1) {
+      Hd_hp (hp) = Make_header_with_profinfo (0, 0, Caml_white, MY_PROFINFO);
+    }
   }
   Assert (Wosize_hp (mem) >= request);
   if (caml_add_to_heap (mem) != 0){
@@ -455,7 +457,7 @@ CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
       caml_allocation_trace_caller = NULL;
     }
     else {
-      caller_aligned = (uint64_t) __builtin_return_address(0);
+      caller_aligned = (uint64_t) BUILTIN_RETURN_ADDRESS;
     }
     caller_aligned &= 0xfffffffffffffff8;
     count =

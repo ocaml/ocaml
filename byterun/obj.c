@@ -158,8 +158,9 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
      look like a pointer because there may be some references to it in
      ref_table. */
   Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
-  Hd_val (v) = Make_header (new_wosize, tag, color);
+    Make_header_with_profinfo (Wosize_whsize (wosize-new_wosize), 1, Caml_white,
+      MY_PROFINFO);
+  Hd_val (v) = Make_header_with_profinfo (new_wosize, tag, color, Profinfo_val(v));
   return Val_unit;
 }
 

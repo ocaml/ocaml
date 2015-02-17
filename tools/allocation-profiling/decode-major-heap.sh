@@ -8,7 +8,7 @@ binary="$2"
 temp=$(mktemp)
 temp_cmds=$(mktemp)
 
-cat $profile_output | grep -v "^blocks unaccounted for" \
+cat $profile_output | head -n -10 \
   | awk '{h[$1] += $2; c[$1] += 1}END{for(i in h) print i,h[i],c[i]}' \
   > $temp
 

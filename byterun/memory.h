@@ -114,6 +114,8 @@ int caml_page_table_initialize(mlsize_t bytesize);
 extern uintnat caml_lifetime_shift;
 
 #define PROFINFO_MASK 0x3fffff
+#define BUILTIN_RETURN_ADDRESS \
+  (__builtin_return_address(0) == NULL ? (void*)0x1 : __builtin_return_address(0))
 
 /*
         + (intnat) caml_stat_major_words + (intnat) caml_allocated_words \
@@ -125,7 +127,7 @@ extern uintnat caml_lifetime_shift;
     ? ((caml_young_end - caml_young_ptr \
         + (intnat) (caml_stat_minor_words * sizeof(intnat))) \
        >> caml_lifetime_shift) \
-    : (((intnat)__builtin_return_address(0)) >> 4)) \
+    : (((intnat)BUILTIN_RETURN_ADDRESS) >> 4)) \
    & PROFINFO_MASK)
 
 #define Profinfo_now (MY_PROFINFO << caml_lifetime_shift)
@@ -142,11 +144,11 @@ extern uint64_t* caml_major_allocation_profiling_array_end;
 extern void* caml_allocation_trace_caller;
 
 #define ALLOCATION_ENTRY_POINT                                              \
-  if (caml_allocation_profiling && caml_allocation_trace_caller == NULL)      \
-    caml_allocation_trace_caller = __builtin_return_address(0);
+  if (caml_allocation_profiling && caml_allocation_trace_caller == NULL)    \
+    caml_allocation_trace_caller = BUILTIN_RETURN_ADDRESS;
 
 #define CLEAR_ALLOCATION_ENTRY_POINT                                        \
-  if (caml_allocation_profiling) {                                            \
+  if (caml_allocation_profiling) {                                          \
     caml_allocation_trace_caller = NULL;                                    \
   }
 
@@ -162,7 +164,7 @@ extern void* caml_allocation_trace_caller;
     Restore_after_gc;                                                       \
     caml_young_ptr -= Bhsize_wosize (wosize);                               \
   }                                                                         \
-  if (caml_allocation_profiling) {                                            \
+  if (caml_allocation_profiling) {                                          \
     uint64_t caller_aligned;                                                \
     uint64_t* count;                                                        \
     if (caml_allocation_trace_caller != NULL) {                             \
@@ -170,13 +172,13 @@ extern void* caml_allocation_trace_caller;
       caml_allocation_trace_caller = NULL;                                  \
     }                                                                       \
     else {                                                                  \
-      caller_aligned = (uint64_t) __builtin_return_address(0);              \
+      caller_aligned = (uint64_t) BUILTIN_RETURN_ADDRESS;                   \
     }                                                                       \
     caller_aligned &= 0xfffffffffffffff8;                                   \
     count =                                                                 \
-      (uint64_t*) (((uint64_t) caml_minor_allocation_profiling_array)         \
+      (uint64_t*) (((uint64_t) caml_minor_allocation_profiling_array)       \
         + caller_aligned);                                                  \
-    if (count < caml_minor_allocation_profiling_array_end) {                  \
+    if (count < caml_minor_allocation_profiling_array_end) {                \
       *count = *count + wosize + 1;                                         \
     }                                                                       \
   }                                                                         \
