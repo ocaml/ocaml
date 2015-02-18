@@ -1352,18 +1352,50 @@ and partial_apply funct fun_id func args ap_dbg =
    3. any other function identifiers bound by the declaration where this
       function was defined (for the case of simultaneous definition of
       functions).
+
+   We must ensure that we are not redefining variables used by another
+   binding. For instance, in case of a function like
+
+     let rec f x y =
+       f (fst x) (y + snd x)
+
+   We cannot just add the bindings:
+
+     let x = fst x in
+     let y = snd x in
+     f (fst x) (y + snd x)
+
+   The definition of x would clash with the x in the environment.
+   To prevent this problem, we separate those bindings in 2 parts:
+
+     let x' = fst x in
+     let y' = snd x in
+     let x = x' in
+     let y = y' in
+     f (fst x) (y + snd x)
+
 *)
+
 and inline_non_recursive_function env r clos lfunc fun_id func args =
   let r = benefit r Flambdacost.remove_call in
   let env = inlining_level_up env in
   let clos_id = new_var "inline_non_recursive_function" in
+  let subst_params = List.map Flambdasubst.freshen_var func.params in
+  (* Before adding the bindings around the body, we must record the substitution
+     as let bindings. *)
+  let subtituted_params_around_body =
+    List.fold_right2 (fun id subst_id body ->
+        Flet (Not_assigned, id, Fvar (subst_id,Expr_id.create ()), body,
+          Expr_id.create ~name:"inline arg subst" ()))
+      func.params subst_params func.body
+  in
   (* 1. First, around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     List.fold_right2 (fun id arg body ->
         Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
-      func.params args func.body
+      subst_params args subtituted_params_around_body
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
