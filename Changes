@@ -156,6 +156,7 @@ Bug fixes:
 - PR#6768: Typechecker overflow the stack on cyclic type
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
+- PR#6787: Soundness bug with polymorphic variants
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
