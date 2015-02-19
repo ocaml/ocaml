@@ -115,7 +115,7 @@ extern uintnat caml_lifetime_shift;
 
 #define PROFINFO_MASK 0x3fffff
 #define BUILTIN_RETURN_ADDRESS \
-  (__builtin_return_address(0) == NULL ? (void*)0x1 : __builtin_return_address(0))
+  (__builtin_return_address(0) == NULL ? (void*)(0x1<<4) : __builtin_return_address(0))
 
 /*
         + (intnat) caml_stat_major_words + (intnat) caml_allocated_words \

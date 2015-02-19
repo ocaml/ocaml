@@ -404,14 +404,21 @@ let emit_instr fallthrough i =
         end;
         begin match profiling_info_label with
           | None -> ()
-(*          | Some _label when !Clflags.dlcode -> ()*)
+          | Some label when !Clflags.dlcode -> begin
+            assert (n <= 0xffff_ffffn);
+            `	pushq	%r14\n`;
+            `	{load_label_addr label}, %r14\n`;
+            `	andq	$0x0000000003fffff0, %r14\n`;
+            `	sal	$38, %r14\n`;
+            `	orq     %r14, {emit_reg i.res.(0)}\n`;
+            `	popq	%r14\n`
+          end
           | Some label -> begin
             assert (n <= 0xffff_ffffn);
             let lifetime_tracking_label = new_label () in
             let shift_end_label = new_label () in
             let end_label = new_label () in
             (* CR mshinwell: need to emit CFI stack adjustments *)
-            (* CR mshinwell: not sure if these various mem operands are ok for dlcode *)
             `	pushq	%r14\n`;
             `	movq	{emit_symbol "caml_lifetime_tracking"}(%rip), %r14\n`;
             `	cmpq    $1, %r14\n`;

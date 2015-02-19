@@ -248,14 +248,9 @@ caml_dump_allocators_of_major_heap_blocks (const char* output_file,
           else {
             unaccounted_for += Whsize_hd(hd);
             unaccounted_for_by_tag[Tag_hd(hd)]++;
-            if (sample_strings > 0 && Tag_hd(hd) == String_tag) {
-              fprintf(fp, "example string with no profiling info: '%s'\n",
-                Bp_hp(hp));
-              sample_strings--;
-            }
-            else if (sample_strings > 0 && Tag_hd(hd) == Closure_tag) {
-              fprintf(fp, "example closure with no profiling info: %p\n",
-                (void*) *(Op_hp(hp)));
+            if (sample_strings > 0) {
+              fprintf(fp, "example value (tag %d) with no profiling info: %p (first field %p)\n",
+                Tag_hd(hd), (void*) (Op_hp(hp)), (void*) *(Op_hp(hp)));
               sample_strings--;
             }
           }

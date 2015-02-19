@@ -23,7 +23,7 @@
 #include "memory.h"
 #include "mlvalues.h"
 #include "stacks.h"
-
+#include <stdio.h>
 #define Setup_for_gc
 #define Restore_after_gc
 
@@ -42,13 +42,11 @@ CAMLexport value caml_alloc_with_profinfo (mlsize_t wosize, tag_t tag, intnat pr
   if (wosize == 0){
     result = Atom (tag);
   }else if (wosize <= Max_young_wosize){
-    ALLOCATION_ENTRY_POINT;
     Alloc_small_with_profinfo (result, wosize, tag, profinfo);
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
   }else{
-    ALLOCATION_ENTRY_POINT;
     result = caml_alloc_shr_with_profinfo (wosize, tag, profinfo);
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
@@ -71,8 +69,6 @@ CAMLexport value caml_alloc_small_with_profinfo (mlsize_t wosize, tag_t tag,
   Assert (wosize > 0);
   Assert (wosize <= Max_young_wosize);
   Assert (tag < 256);
-
-  ALLOCATION_ENTRY_POINT;
 
   Alloc_small_with_profinfo (result, wosize, tag, profinfo);
 
@@ -97,12 +93,9 @@ CAMLexport value caml_alloc_string_with_profinfo (mlsize_t len, intnat profinfo)
   mlsize_t offset_index;
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
 
-  ALLOCATION_ENTRY_POINT;
-
   if (wosize <= Max_young_wosize) {
     Alloc_small_with_profinfo (result, wosize, String_tag, profinfo);
   }else{
-    result = caml_alloc_shr (wosize, String_tag);
     result = caml_alloc_shr_with_profinfo (wosize, String_tag, profinfo);
     result = caml_check_urgent_gc (result);
   }

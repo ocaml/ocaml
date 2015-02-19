@@ -315,7 +315,7 @@ static void intern_rec(value *dest)
       } else {
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, tag, intern_color);
+        *intern_dest = Make_header_with_profinfo(size, tag, intern_color, MY_PROFINFO);
         intern_dest += 1 + size;
         /* For objects, we need to freshen the oid */
         if (tag == Object_tag) {
@@ -345,7 +345,7 @@ static void intern_rec(value *dest)
       size = (len + sizeof(value)) / sizeof(value);
       v = Val_hp(intern_dest);
       if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-      *intern_dest = Make_header(size, String_tag, intern_color);
+      *intern_dest = Make_header_with_profinfo(size, String_tag, intern_color, MY_PROFINFO);
       intern_dest += 1 + size;
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
@@ -411,7 +411,7 @@ static void intern_rec(value *dest)
       case CODE_DOUBLE_BIG:
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
+        *intern_dest = Make_header_with_profinfo(Double_wosize, Double_tag, intern_color, MY_PROFINFO);
         intern_dest += 1 + Double_wosize;
         readfloat((double *) v, code);
         break;
@@ -422,7 +422,7 @@ static void intern_rec(value *dest)
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, Double_array_tag, intern_color);
+        *intern_dest = Make_header_with_profinfo(size, Double_array_tag, intern_color, MY_PROFINFO);
         intern_dest += 1 + size;
         readfloats((double *) v, len, code);
         break;
@@ -467,7 +467,7 @@ static void intern_rec(value *dest)
         size = 1 + (size + sizeof(value) - 1) / sizeof(value);
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
-        *intern_dest = Make_header(size, Custom_tag, intern_color);
+        *intern_dest = Make_header_with_profinfo(size, Custom_tag, intern_color, MY_PROFINFO);
         Custom_ops_val(v) = ops;
         intern_dest += 1 + size;
         break;

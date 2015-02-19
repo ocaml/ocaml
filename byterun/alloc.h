@@ -31,6 +31,7 @@ CAMLextern value caml_alloc_small (mlsize_t, tag_t);
 CAMLextern value caml_alloc_small_with_profinfo (mlsize_t, tag_t, intnat);
 CAMLextern value caml_alloc_tuple (mlsize_t);
 CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
+CAMLextern value caml_alloc_string_with_profinfo (mlsize_t, intnat);
 CAMLextern value caml_copy_string (char const *);
 CAMLextern value caml_copy_string_array (char const **);
 CAMLextern value caml_copy_double (double);
