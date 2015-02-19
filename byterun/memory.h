@@ -53,6 +53,32 @@ color_t caml_allocation_color (void *hp);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
+/* Corresponds to measuring block lifetimes in units of 8Mb.  With the 22 bits of
+   allocation profiling information this should enable us to get a bit over 10^13 bytes
+   as the maximum lifetime. */
+/* was 22 = 8Mb
+   was 19 = 1Mb
+   now 16 = 128k
+*/
+extern uintnat caml_lifetime_shift;
+
+#define PROFINFO_MASK 0x3fffff
+#define BUILTIN_RETURN_ADDRESS \
+  (__builtin_return_address(0) == NULL ? (void*)(0x1<<4) : __builtin_return_address(0))
+
+/*
+        + (intnat) caml_stat_major_words + (intnat) caml_allocated_words \
+        - (intnat) caml_stat_promoted_words) \
+*/
+
+#define MY_PROFINFO \
+  ((caml_lifetime_tracking \
+    ? ((caml_young_end - caml_young_ptr \
+        + (intnat) (caml_stat_minor_words * sizeof(intnat))) \
+       >> caml_lifetime_shift) \
+    : (((intnat)BUILTIN_RETURN_ADDRESS) >> 4)) \
+   & PROFINFO_MASK)
+
 /* <private> */
 
 #define Not_in_heap 0
@@ -103,32 +129,6 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #else
 #define DEBUG_clear(result, wosize)
 #endif
-
-/* Corresponds to measuring block lifetimes in units of 8Mb.  With the 22 bits of
-   allocation profiling information this should enable us to get a bit over 10^13 bytes
-   as the maximum lifetime. */
-/* was 22 = 8Mb
-   was 19 = 1Mb
-   now 16 = 128k
-*/
-extern uintnat caml_lifetime_shift;
-
-#define PROFINFO_MASK 0x3fffff
-#define BUILTIN_RETURN_ADDRESS \
-  (__builtin_return_address(0) == NULL ? (void*)(0x1<<4) : __builtin_return_address(0))
-
-/*
-        + (intnat) caml_stat_major_words + (intnat) caml_allocated_words \
-        - (intnat) caml_stat_promoted_words) \
-*/
-
-#define MY_PROFINFO \
-  ((caml_lifetime_tracking \
-    ? ((caml_young_end - caml_young_ptr \
-        + (intnat) (caml_stat_minor_words * sizeof(intnat))) \
-       >> caml_lifetime_shift) \
-    : (((intnat)BUILTIN_RETURN_ADDRESS) >> 4)) \
-   & PROFINFO_MASK)
 
 #define Profinfo_now (MY_PROFINFO << caml_lifetime_shift)
 
