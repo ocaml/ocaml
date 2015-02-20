@@ -397,8 +397,6 @@ caml_dump_heapgraph(const char* node_output_file, const char* edge_output_file)
           approx_instr_pointer_parent = Decode_profinfo_hd (hd_parent);
 
           if (approx_instr_pointer_parent != 0ull) {
-            fprintf(node_fp, "%p\n", (void*) approx_instr_pointer_parent);
-
             if (Tag_hd(hd_parent) < No_scan_tag) {
               mlsize_t field;
               value parent;
@@ -418,7 +416,15 @@ caml_dump_heapgraph(const char* node_output_file, const char* edge_output_file)
                   approx_instr_pointer_child = Decode_profinfo_hd (hd_child);
 
                   if (approx_instr_pointer_child != 0ull) {
-                    fprintf(edge_fp, "%p,%p\n",
+                    fprintf(edge_fp, "B %p,%d,%lld\n",
+                      (void*) approx_instr_pointer_parent,
+                      Tag_hd(hd_parent),
+                      (unsigned long long) Wosize_hd(hd_parent));
+                    fprintf(edge_fp, "B %p,%d,%lld\n",
+                      (void*) approx_instr_pointer_child,
+                      Tag_val(hd_child),
+                      (unsigned long long) Wosize_hd(hd_child));
+                    fprintf(edge_fp, "E %p,%p\n",
                             (void*) approx_instr_pointer_parent,
                             (void*) approx_instr_pointer_child);
                   }

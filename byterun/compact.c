@@ -144,6 +144,7 @@ static char *compact_allocate (mlsize_t size)
 
 static void do_compaction (void)
 {
+#if 0
   char *ch, *chend;
                                           Assert (caml_gc_phase == Phase_idle);
   caml_gc_message (0x10, "Compacting heap...\n", 0);
@@ -390,14 +391,15 @@ static void do_compaction (void)
   }
   ++ caml_stat_compactions;
   caml_gc_message (0x10, "done.\n", 0);
+#endif
 }
 
 uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
 void caml_compact_heap (void)
 {
+#if 0
   uintnat target_words, target_size, live;
-
   do_compaction ();
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
@@ -456,6 +458,7 @@ void caml_compact_heap (void)
     Assert (Chunk_next (caml_heap_start) == NULL);
     Assert (caml_stat_heap_size == Chunk_size (chunk));
   }
+#endif
 }
 
 void caml_compact_heap_maybe (void)
