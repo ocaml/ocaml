@@ -12,67 +12,26 @@
 /***********************************************************************/
 
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <errno.h>
+#include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-#include <windows.h>
-  
-#ifdef UTF16
 #include "u8tou16.h"
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#endif
-  
-#ifdef UTF16
-typedef  
-BOOL (WINAPI *tCreateHardLink)(
-  LPCWSTR lpFileName,
-  LPCWSTR lpExistingFileName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes  
-);
-#else
-typedef  
-BOOL (WINAPI *tCreateHardLink)(
-  LPCTSTR lpFileName,
-  LPCTSTR lpExistingFileName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-);
-#endif
-  
-CAMLprim value unix_link(value path1, value path2)
+
+CAMLprim value unix_link(value v_path1, value v_path2)
 {
-  HMODULE hModKernel32;
-  tCreateHardLink pCreateHardLink;
-#ifdef UTF16
-	char * temp1=String_val(path1);
-	char * temp2=String_val(path2);
-	WCHAR * wtemp1, * wtemp2;
-	wtemp1 = to_utf16(temp1);
-	wtemp2 = to_utf16(temp2);
-#endif
-  hModKernel32 = GetModuleHandle("KERNEL32.DLL");
-#ifdef UTF16
-  pCreateHardLink =
-    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkW");
-#else
-  pCreateHardLink =
-    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
-#endif
-  if (pCreateHardLink == NULL)
-    invalid_argument("Unix.link not implemented");
-  caml_unix_check_path(path1, "link");
-  caml_unix_check_path(path2, "link");
-#ifdef UTF16
-	if (! pCreateHardLink(wtemp2, wtemp1, NULL)) {
-#else
-  if (! pCreateHardLink(String_val(path2), String_val(path1), NULL)) {
-#endif
+  caml_unix_check_path(v_path1, "link");
+  caml_unix_check_path(v_path2, "link");
+  CRT_STR path1 = Crt_str_val(v_path1);
+  CRT_STR path2 = Crt_str_val(v_path2);
+  int ret = WINAPI_(CreateHardLink)(path1, path2, NULL);
+  Crt_str_free(path1);
+  Crt_str_free(path2);
+  if (0 != ret)
+  {
     win32_maperr(GetLastError());
-    uerror("link", path2);
+    uerror("link", v_path2);
   }
-#ifdef UTF16
-	free(wtemp1);
-	free(wtemp2);
-#endif
   return Val_unit;
 }

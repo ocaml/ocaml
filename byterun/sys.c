@@ -56,9 +56,7 @@
 #ifndef _WIN32
 extern int errno;
 #endif
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
 #ifdef _WIN32
 typedef struct _stati64 crt_ty_stat;
@@ -280,29 +278,16 @@ CAMLprim value caml_sys_chdir(value dirname)
 
 CAMLprim value caml_sys_getcwd(value unit)
 {
-#ifdef UTF16
   CAMLparam0 ();
   CAMLlocal1 (v);
-  WCHAR buff[4096*2];
-  unsigned char * temp;
+  CRT_CHAR buff[4096];
 #ifdef HAS_GETCWD
-  if (_wgetcwd(buff, sizeof(buff)/sizeof(WCHAR)) == 0) caml_sys_error(NO_ARG);
+  if (CRT_(getcwd)(buff, sizeof(buff)/sizeof(CRT_CHAR)) == 0) caml_sys_error(NO_ARG);
 #else
   if (getwd(buff) == 0) caml_sys_error(NO_ARG);
 #endif /* HAS_GETCWD */
-  temp=utf16_to_utf8(buff);
-  v=caml_copy_string(temp);
-  free(temp);
+  v = caml_copy_crt_str(buff);
   CAMLreturn (v);
-#else
-  char buff[4096];
-#ifdef HAS_GETCWD
-  if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
-#else
-  if (getwd(buff) == 0) caml_sys_error(NO_ARG);
-#endif /* HAS_GETCWD */
-  return caml_copy_string(buff);
-#endif
 }
 
 CAMLprim value caml_sys_getenv(value var)

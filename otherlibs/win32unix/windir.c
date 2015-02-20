@@ -17,9 +17,7 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
 CAMLprim value win_findfirst(value name)
 {
@@ -27,22 +25,13 @@ CAMLprim value win_findfirst(value name)
   value v;
   value valname = Val_unit;
   value valh = Val_unit;
-#ifdef UTF16
-	WIN32_FIND_DATAW fileinfo;
-	char * tempo, *temp=String_val(name);
-	WCHAR * wtemp;
-	wtemp = to_utf16(temp);
-#else
-  WIN32_FIND_DATA fileinfo;
-#endif
+  WINAPI_(WIN32_FIND_DATA) fileinfo;
+  CRT_STR c_name = Crt_str_val(name);
 
   caml_unix_check_path(name, "opendir");
   Begin_roots2 (valname,valh);
-#ifdef UTF16
-    h = FindFirstFileW(wtemp,&fileinfo);
-#else
-    h = FindFirstFile(String_val(name),&fileinfo);
-#endif
+    h = WINAPI_(FindFirstFile)(c_name,&fileinfo);
+    Crt_str_free(c_name);
     if (h == INVALID_HANDLE_VALUE) {
       DWORD err = GetLastError();
       if (err == ERROR_NO_MORE_FILES)
@@ -52,41 +41,23 @@ CAMLprim value win_findfirst(value name)
         uerror("opendir", Nothing);
       }
     }
-#ifdef UTF16
-	tempo = utf16_to_utf8(fileinfo.cFileName);
-	valname = copy_string(tempo);
-	free(tempo);
-#else
-    valname = copy_string(fileinfo.cFileName);
-#endif
+    valname = caml_copy_crt_str(fileinfo.cFileName);
     valh = win_alloc_handle(h);
     v = alloc_small(2, 0);
     Field(v,0) = valname;
     Field(v,1) = valh;
   End_roots();
-#ifdef UTF16
-	free(wtemp);
-#endif
   return v;
 }
 
 CAMLprim value win_findnext(value valh)
 {
-#ifdef UTF16
-	CAMLparam0 ();
-	CAMLlocal1 (v);
-	WIN32_FIND_DATAW fileinfo;
-	char * temp;
-#else
-  WIN32_FIND_DATA fileinfo;
-#endif
+  CAMLparam0 ();
+  CAMLlocal1 (v);
+  WINAPI_(WIN32_FIND_DATA) fileinfo;
   BOOL retcode;
 
-#ifdef UTF16
-  retcode = FindNextFileW(Handle_val(valh), &fileinfo);
-#else
-  retcode = FindNextFile(Handle_val(valh), &fileinfo);
-#endif
+  retcode = WINAPI_(FindNextFile)(Handle_val(valh), &fileinfo);
   if (!retcode) {
     DWORD err = GetLastError();
     if (err == ERROR_NO_MORE_FILES)
@@ -96,14 +67,8 @@ CAMLprim value win_findnext(value valh)
       uerror("readdir", Nothing);
     }
   }
-#ifdef UTF16
-	temp = utf16_to_utf8(fileinfo.cFileName);
-	v=copy_string(temp);
-	free(temp);
-	CAMLreturn (v);
-#else
-  return copy_string(fileinfo.cFileName);
-#endif
+  v = caml_copy_crt_str(fileinfo.cFileName);
+  CAMLreturn(v);
 }
 
 CAMLprim value win_findclose(value valh)

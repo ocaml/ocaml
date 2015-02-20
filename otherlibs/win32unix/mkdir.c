@@ -13,22 +13,14 @@
 
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
-CAMLprim value unix_mkdir(path, perm)
-     value path, perm;
+CAMLprim value unix_mkdir(value v_path, value v_perm)
 {
-  caml_unix_check_path(path, "mkdir");
-#ifdef UTF16
-	char * temp=String_val(path);
-	WCHAR * wtemp;
-	wtemp = to_utf16(temp);
-	if (_wmkdir(wtemp) == -1) uerror("mkdir", path);
-	free(wtemp);
-#else
-  if (_mkdir(String_val(path)) == -1) uerror("mkdir", path);
-#endif
+  caml_unix_check_path(v_path, "mkdir");
+  CRT_STR path = Crt_str_val(v_path);
+  int ret = CRT_(mkdir)(path);
+  Crt_str_free(path);
+  if (ret == -1) uerror("mkdir", v_path);
   return Val_unit;
 }

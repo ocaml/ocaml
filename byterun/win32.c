@@ -352,10 +352,13 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
        continue;
     }
 #else
-    name = fileinfo.name;
+    name = caml_strdup(fileinfo.name);
 #endif
     if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
-      caml_ext_table_add(contents, caml_strdup(name));
+      caml_ext_table_add(contents, name);
+    }
+    else {
+      caml_stat_free(name);
     }
   }
 #ifdef UTF16

@@ -20,9 +20,7 @@
 #define _INTEGRAL_MAX_BITS 64
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef UTF16
 #include "u8tou16.h"
-#endif
 
 #ifndef S_IFLNK
 #define S_IFLNK 0
@@ -70,15 +68,9 @@ CAMLprim value unix_stat(value path)
   struct _stati64 buf;
 
   caml_unix_check_path(path, "stat");
-#ifdef UTF16
-	char * temp=String_val(path);
-	WCHAR * wtemp;
-	wtemp = to_utf16(temp);
-	ret = _wstati64(wtemp, &buf);
-	free(wtemp);
-#else
-  ret = _stati64(String_val(path), &buf);
-#endif
+  CRT_STR p = Crt_str_val(path);
+  ret = _wstati64(p, &buf);
+  Crt_str_free(p);
   if (ret == -1) uerror("stat", path);
   if (buf.st_size > Max_long) {
     win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
@@ -93,15 +85,9 @@ CAMLprim value unix_stat_64(value path)
   struct _stati64 buf;
 
   caml_unix_check_path(path, "stat");
-#ifdef UTF16
-	char * temp=String_val(path);
-	WCHAR * wtemp;
-	wtemp = to_utf16(temp);
-	ret = _wstati64(wtemp, &buf);
-	free(wtemp);
-#else
-  ret = _stati64(String_val(path), &buf);
-#endif
+  CRT_STR p = Crt_str_val(path);
+  ret = _wstati64(p, &buf);
+  Crt_str_free(p);
   if (ret == -1) uerror("stat", path);
   return stat_aux(1, &buf);
 }
