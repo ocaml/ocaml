@@ -1,0 +1,17 @@
+sparc: save the requested size in %g2, [caml_call_gc] uses it to
+       recover the old value of [caml_young_ptr]. Needs testing.
+
+power: save the requested size in r11, [caml_call_gc] uses it to
+       recover the old value of [caml_young_ptr]. Needs testing.
+
+i386:  do not write back [caml_young_ptr] in the "gc" branch, only in
+       the "allocation success" branch. Needs testing.
+
+ARM:   adjust the pointer back to its initial value before calling
+       [caml_call_gc]. Needs testing.
+
+ARM64: same as ARM
+
+AMD64_nt: same as ARM
+
+AMD64: same as ARM
