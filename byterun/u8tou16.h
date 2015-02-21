@@ -1,4 +1,4 @@
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
 
 #ifndef WCHAR
 typedef unsigned short WCHAR;

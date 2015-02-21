@@ -238,7 +238,7 @@ static void expand_pattern(char * pat)
 {
   char * prefix, * p, * name;
   int handle;
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   struct _wfinddata_t ffblk;
   WCHAR* wname = NULL;
 #else
@@ -247,7 +247,7 @@ static void expand_pattern(char * pat)
   size_t i;
   int preflen;
 
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   wname = to_utf16(pat);
   handle = _wfindfirst(wname, &ffblk);
   free(wname);
@@ -264,18 +264,18 @@ static void expand_pattern(char * pat)
     if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
   }
   do {
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
     char * aname = utf16_to_utf8(ffblk.name);
 #else
     char * aname = ffblk.name;
 #endif
     name = caml_strconcat(2, prefix, aname);
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
     free(aname);
 #endif
     store_argument(name);
   }
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   while (_wfindnext(handle, &ffblk) != -1);
 #else
   while (_findnext(handle, &ffblk) != -1);
@@ -306,7 +306,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   size_t dirnamelen;
   char * template;
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   WCHAR * wtemplate;
   WCHAR * name;
 #else
@@ -317,7 +317,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 #else
   intptr_t h;
 #endif
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   struct _wfinddata_t fileinfo;
 #else
   struct _finddata_t fileinfo;
@@ -332,7 +332,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     template = caml_strconcat(2, dirname, "*.*");
   else
     template = caml_strconcat(2, dirname, "\\*.*");
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   wtemplate = to_utf16(template);
   h = _wfindfirst(wtemplate, &fileinfo);
   free(wtemplate);
@@ -344,7 +344,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     return errno == ENOENT ? 0 : -1;
   }
   do {
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
     name = utf16_to_utf8(fileinfo.name);
     if (NULL == name)
     {
@@ -361,7 +361,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
       caml_stat_free(name);
     }
   }
-#ifdef UTF16
+#ifdef HAS_WINAPI_UTF16
   while (_wfindnext(h, &fileinfo) == 0);
 #else
   while (_findnext(h, &fileinfo) == 0);
