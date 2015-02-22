@@ -74,7 +74,7 @@ CAMLprim value unix_open(value v_path, value flags, value perm)
   Crt_str_free(path);
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr(GetLastError());
-    uerror("open", path);
+    uerror("open", v_path);
   }
   return win_alloc_handle(h);
 }

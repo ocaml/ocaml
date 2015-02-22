@@ -308,10 +308,8 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   char * template;
 #ifdef HAS_WINAPI_UTF16
   WCHAR * wtemplate;
-  WCHAR * name;
-#else
-  char * name;
 #endif
+  char * name;
 #if _MSC_VER <= 1200
   int h;
 #else

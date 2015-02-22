@@ -15,6 +15,7 @@
 #include "unixsupport.h"
 #include <windows.h>
 #include <caml/osdeps.h>
+#include <caml/memory.h>
 #include <errno.h>
 
 static int win_has_console(void);

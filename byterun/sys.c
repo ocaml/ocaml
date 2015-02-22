@@ -58,7 +58,7 @@ extern int errno;
 #endif
 #include "u8tou16.h"
 
-#ifdef _WIN32
+#ifdef HAS_WINAPI_UTF16
 typedef struct _stati64 crt_ty_stat;
 #define crt_stat _wstati64
 #else
