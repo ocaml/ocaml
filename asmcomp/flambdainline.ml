@@ -716,7 +716,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       then
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value;
-      (* Misc.fatal_error "Assignement on non-mutable value"; *)
+      (* Misc.fatal_error "Assignment on non-mutable value"; *)
       (* XCR mshinwell for pchambart: This is slightly mysterious---I think
          we need a comment explaining what the approximation for a
          mutable block looks like.

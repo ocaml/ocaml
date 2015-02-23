@@ -387,7 +387,7 @@ let message = function
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
   | Assignment_on_non_mutable_value ->
-      "Assignement on non-mutable value"
+      "Assignment on non-mutable value"
 ;;
 
 let nerrors = ref 0;;
@@ -482,7 +482,7 @@ let descriptions =
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
    49, "Absent cmi file when looking up module alias.";
-   50, "Assignement on non-mutable value";
+   50, "Assignment on non-mutable value";
   ]
 ;;
 
