@@ -91,8 +91,8 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
 let inline_threshold = ref 10
-let simplify_rounds = ref 2
-let unroll = ref 1
+let simplify_rounds = ref 1
+let unroll = ref 0
 let force_slash = ref false             (* for ocamldep *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
