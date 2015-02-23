@@ -673,9 +673,20 @@ module Conv(P:Param1) = struct
 
     (* add info about symbols in specialised_arg *)
     let env = Variable.Map.fold copy_env spec_arg env in
-    (* keep only spec_arg that are not symbols *)
-    let spec_arg = Variable.Map.filter
-        (fun _ id -> not (Variable.Map.mem id env.cm)) spec_arg in
+
+    (* Constant closures will be moved out of their scope and assigned to
+       symbols.  When this happens, we must erase any constraint that
+       specializes an argument to another variable, since that variable may
+       no longer be in scope.  (Specializations of variables to values that
+       are now referenced by symbols, rather than variables, will already have
+       been performed.  As such, the operation is equivalent to erasing all
+       specialization information.) *)
+    let spec_arg =
+      if closed then Variable.Map.empty
+      else
+        Variable.Map.filter (fun _ id -> not (Variable.Map.mem id env.cm))
+          spec_arg
+    in
 
     let conv_function id func =
 
