@@ -209,6 +209,22 @@ let read_OCAMLPARAM ppf position =
                                         "non-integer parameter for \"inline\""))
         end
 
+      | "rounds" -> begin try
+          simplify_rounds := int_of_string v
+        with _ ->
+          Location.print_warning Location.none ppf
+            (Warnings.Bad_env_variable ("OCAMLPARAM",
+                                        "non-integer parameter for \"rounds\""))
+        end
+
+      | "unroll" -> begin try
+          unroll := int_of_string v
+        with _ ->
+          Location.print_warning Location.none ppf
+            (Warnings.Bad_env_variable ("OCAMLPARAM",
+                                        "non-integer parameter for \"unroll\""))
+        end
+
       | "intf-suffix" -> Config.interface_suffix := v
 
       | "I" -> begin
