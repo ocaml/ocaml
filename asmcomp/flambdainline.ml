@@ -417,7 +417,7 @@ let transform_closure_expression r fu_closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  (* CXR mshinwell for pchambart: we should rename [off_id] now.
+  (* XCR mshinwell for pchambart: we should rename [off_id] now.
         pchambart: done *)
   let subst_closure_id closure closure_id =
     let closure_id = AR.subst_closure_id closure.ffunction_sb closure_id in
@@ -562,7 +562,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
          other transformation must avoid transforming the information flow in
          a way that the inline function can't propagate it.
       *)
-      (* CXR mshinwell: this may be a stupid question, but why is "arg" called
+      (* XCR mshinwell: this may be a stupid question, but why is "arg" called
          "arg"?
            pchambart: it is some kind of argument for the Fvariable_in_closure
          construction. This is clearly a bad name. I will rename to "vc_closure".
@@ -717,7 +717,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value;
       (* Misc.fatal_error "Assignement on non-mutable value"; *)
-      (* CXR mshinwell for pchambart: This is slightly mysterious---I think
+      (* XCR mshinwell for pchambart: This is slightly mysterious---I think
          we need a comment explaining what the approximation for a
          mutable block looks like.
          Also, this match should be explicitly exhaustive; same elsewhere.
@@ -1204,7 +1204,7 @@ and direct_apply env r clos funct fun_id func closure
   let inline_threshold = r.inline_threshold in
   let fun_cost =
     if unconditionally_inline || direct_apply then
-      (* CXR mshinwell for mshinwell: this comment needs clarification *)
+      (* XCR mshinwell for mshinwell: this comment needs clarification *)
       (* A function is considered for inlining if it does not increase the code
          size too much. This size is verified after effectively duplicating
          and specialising the code in the current context. In that context,
@@ -1261,17 +1261,17 @@ and direct_apply env r clos funct fun_id func closure
         || (not recursive && env.inlining_level <= max_level)
       then
         let body, r_inlined =
-          inline_non_recursive_function env (clear_benefit r) clos funct
+          inline_by_copying_function_body env (clear_benefit r) clos funct
             fun_id func args
         in
         (* Now we know how large the inlined version actually is, determine
            whether or not to keep it. *)
         if unconditionally_inline
-        || direct_apply
-        || Flambdacost.sufficient_benefit_for_inline
-             body
-             r_inlined.benefit
-             inline_threshold
+          || direct_apply
+          || Flambdacost.sufficient_benefit_for_inline
+               body
+               r_inlined.benefit
+               inline_threshold
         then
           body, benefit r_inlined (Flambdacost.benefit_union r.benefit)
         else
@@ -1289,7 +1289,7 @@ and direct_apply env r clos funct fun_id func closure
           then
             let env = inside_unrolled_function env in
             let body, r_inlined =
-              inline_non_recursive_function env (clear_benefit r) clos funct
+              inline_by_copying_function_body env (clear_benefit r) clos funct
                 fun_id func args
             in
             if Flambdacost.sufficient_benefit_for_inline
@@ -1304,19 +1304,19 @@ and direct_apply env r clos funct fun_id func closure
         match unrolling_result with
         | Some r -> r
         | None ->
-            if should_inline_function_known_to_be_recursive ~func ~clos ~env
-                ~closure ~approxs ~kept_params ~max_level
-            then
-              let () =
-                if Variable.Map.cardinal clos.funs > 1
-                then Format.printf "try inline multi rec %a@."
-                    Closure_id.print fun_id
-              in
-              inline_recursive_functions env r funct clos fun_id func
-                (args,approxs) kept_params closure.specialised_args ap_dbg
-                no_transformation
-            else
-              no_transformation ()
+          if should_inline_function_known_to_be_recursive ~func ~clos ~env
+              ~closure ~approxs ~kept_params ~max_level
+          then
+            let () =
+              if Variable.Map.cardinal clos.funs > 1
+              then Format.printf "try inline multi rec %a@."
+                  Closure_id.print fun_id
+            in
+            inline_by_copying_function_declaration env r funct clos fun_id func
+              (args,approxs) kept_params closure.specialised_args ap_dbg
+              no_transformation
+          else
+            no_transformation ()
       else
         no_transformation ()
   in
@@ -1343,59 +1343,84 @@ and partial_apply funct fun_id func args ap_dbg =
       applied_args closures in
   Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
 
-(* Inlining of a non-recursive function just yields a copy of the function's
-   body.  The declaration itself is not duplicated.
-   We handle below, one by one, the three kinds of identifiers that may
-   occur in the body:
-   1. the function's parameters;
-   2. variables "bound by the closure" (see flambda.mli for definition);
-   3. any other function identifiers bound by the declaration where this
-      function was defined (for the case of simultaneous definition of
-      functions).
+(* Inline a function by substituting its body (which may be subject to further
+   transformation) at a call site.  The function's declaration is not copied.
 
-   We must ensure that we are not redefining variables used by another
-   binding. For instance, in case of a function like
+   This transformation is used when:
+   - inlining a call to a non-recursive function;
+   - inlining a call, within a recursive or mutually-recursive function, to
+     the same or another function being defined simultaneously ("unrolling").
+     The maximum depth of unrolling is bounded (see [Env.unrolling_allowed]).
+
+   In both cases, the body of the function is copied, within a sequence of
+   [let]s that bind the function parameters, the variables "bound by the
+   closure" (see flambda.mli), and any function identifiers introduced by the
+   set of closures.  These stages are delimited below by comments.
+
+   As an example, suppose we are inlining the following function:
+
+    let f x = x + y
+    ...
+    let p = f, f in
+    (fst p) 42
+
+   The call site [(fst p) 42] will be transformed to:
+
+     let clos_id = fst p in  (* must eventually yield a closure *)
+     let y = <access to [y] in [clos_id]> in
+     let x' = 42 in
+     let x = x' in
+     x + y
+
+   The binding "let x = x'" is unnecessary in these simple cases, but has
+   significance when unrolling.  In that scenario care must be taken to ensure
+   that bindings corresponding to the values of the function's arguments on
+   the "next iteration" do not clash with existing bindings.  For example,
+   suppose we are inlining the following call to [f], which lies within its
+   own declaration:
 
      let rec f x y =
        f (fst x) (y + snd x)
 
-   We cannot just add the bindings:
+   This will be transformed to:
 
-     let x = fst x in
-     let y = snd x in
-     f (fst x) (y + snd x)
+     let rec f x y =
+       let clos_id = f in  (* not used this time, since [f] has no free vars *)
+       let x' = fst x in
+       let y' = y + snd x in
+       let x = x' in
+       let y = y' in
+       f (fst x) (y + snd x)  (* this line is a copy of the body of [f] *)
 
-   The definition of x would clash with the x in the environment.
-   To prevent this problem, we separate those bindings in 2 parts:
-
-     let x' = fst x in
-     let y' = snd x in
-     let x = x' in
-     let y = y' in
-     f (fst x) (y + snd x)
-
+   The values of [x] and [y] required to evaluate the arguments to [f] have
+   been taken before [x] and [y] are rebound.  The "let x" and "let y"
+   bindings may be mysterious since they appear to shadow variables that
+   are already bound.  Shadowed bindings are not allowed at the exit from
+   the flambda passes, but may occur at this point, since they will be
+   rewritten to have fresh names when [loop] is called on the new body
+   (because [activate_substitution] has been called).
 *)
-
-and inline_non_recursive_function env r clos lfunc fun_id func args =
+and inline_by_copying_function_body env r clos lfunc fun_id func args =
   let r = benefit r Flambdacost.remove_call in
   let env = inlining_level_up env in
-  let clos_id = new_var "inline_non_recursive_function" in
+  let clos_id = new_var "inline_by_copying_function_body" in
   let subst_params = List.map Flambdasubst.freshen_var func.params in
-  (* Before adding the bindings around the body, we must record the substitution
-     as let bindings. *)
-  let subtituted_params_around_body =
+  (* In case we are going to duplicate a function's body into itself (the
+     "unrolling" case above), we need to assign fresh names to hold the
+     values of the function's arguments before we rebind them. *)
+  let substituted_params_around_body =
     List.fold_right2 (fun id subst_id body ->
-        Flet (Not_assigned, id, Fvar (subst_id,Expr_id.create ()), body,
+        Flet (Not_assigned, id, Fvar (subst_id, Expr_id.create ()), body,
           Expr_id.create ~name:"inline arg subst" ()))
       func.params subst_params func.body
   in
-  (* 1. First, around the function's body, bind the parameters to the arguments
+  (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     List.fold_right2 (fun id arg body ->
         Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
-      subst_params args subtituted_params_around_body
+      subst_params args substituted_params_around_body
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
@@ -1426,10 +1451,10 @@ and inline_non_recursive_function env r clos lfunc fun_id func args =
    some mutual recursion) to end up in here; a simultaneous binding [that is
    non-recursive] is not sufficient.
 *)
-and inline_recursive_functions env r funct clos fun_id func
+and inline_by_copying_function_declaration env r funct clos fun_id func
     (args, approxs) kept_params specialised_args ap_dbg no_transformation =
   let env = inlining_level_up env in
-  let clos_id = new_var "inline_recursive_functions" in
+  let clos_id = new_var "inline_by_copying_function_declaration" in
   let fv =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init:Variable.Map.empty
