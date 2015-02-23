@@ -47,7 +47,7 @@ module Env : sig
     closure_depth : int;
   }
 
-  val empty : unit -> t
+  val empty : never_inline:bool -> t
 
   val local : t -> t
 
@@ -106,12 +106,12 @@ end = struct
     closure_depth : int;
   }
 
-  let empty () =
+  let empty ~never_inline =
     { env_approx = Variable.Map.empty;
       current_functions = Set_of_closures_id.Set.empty;
       inlining_level = 0;
       sb = Flambdasubst.empty;
-      never_inline = false;
+      never_inline;
       possible_unrolls = !Clflags.unroll;
       closure_depth = 0}
 
@@ -1481,8 +1481,8 @@ let debug_benefit =
   try ignore (Sys.getenv "BENEFIT"); true
   with _ -> false
 
-let inline tree =
-  let result, r = loop (Env.empty ()) (init_r ()) tree in
+let inline ~never_inline tree =
+  let result, r = loop (Env.empty ~never_inline) (init_r ()) tree in
   if not (Variable.Set.is_empty r.used_variables)
   then begin
     Format.printf "remaining variables: %a@.%a@."
