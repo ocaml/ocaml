@@ -23,6 +23,10 @@ OCamlbuild:
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
 
+Libraries:
+- PR#6781: Add higher baud rates to Unix termios
+  (Damien Doligez, report by Berke Durak)
+
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
   (Peter Zotov)
