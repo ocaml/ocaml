@@ -117,9 +117,9 @@ let const_approx = function
       | Const_char c -> value_int (Char.code c)
       | Const_string _ -> value_unknown
       | Const_float s -> value_float (float_of_string s)
-      | Const_int32  _ -> value_unknown
-      | Const_int64  _ -> value_unknown
-      | Const_nativeint  _ -> value_unknown
+      | Const_int32 i -> value_boxed_int Int32 i
+      | Const_int64 i -> value_boxed_int Int64 i
+      | Const_nativeint i -> value_boxed_int Nativeint i
       end
   | Fconst_pointer i -> value_constptr i
   | Fconst_float f -> value_float f
@@ -261,6 +261,7 @@ module Import = struct
         (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
       try import_ex (SymbolMap.find sym symbol_id_map) with
       | Not_found ->
+        (* CR pchambart: make a real warning of that. *)
 (*
         Format.eprintf "Warning, couldn't find informations associated \
                         to the symbol %a. Did you forger a -I arguments ?@."
