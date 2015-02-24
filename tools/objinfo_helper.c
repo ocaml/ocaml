@@ -10,14 +10,19 @@
 /***********************************************************************/
 
 #include "../config/s.h"
-#include "../byterun/mlvalues.h"
-#include "../byterun/alloc.h"
+#include "../byterun/caml/mlvalues.h"
+#include "../byterun/caml/alloc.h"
 #include <stdio.h>
 
 #ifdef HAS_LIBBFD
 #include <stdlib.h>
 #include <string.h>
+
+// PACKAGE: protect against binutils change
+//   https://sourceware.org/bugzilla/show_bug.cgi?id=14243
+#define PACKAGE "ocamlobjinfo"
 #include <bfd.h>
+#undef PACKAGE
 
 int main(int argc, char ** argv)
 {

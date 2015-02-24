@@ -1,0 +1,10 @@
+
+#               module type S =
+  sig
+    class type c = object method m : int end
+    module M : sig class type d = c end
+  end
+# module F : functor (X : S) -> sig class type d = X.c end
+#       module M : sig module N : sig val x : int end end
+# module M : sig module N : sig ... end end
+# 

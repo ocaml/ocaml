@@ -20,7 +20,7 @@ end
 type t =
   { mutable raw_name: Raw_name.t;       (* Name *)
     stamp: int;                         (* Unique stamp *)
-    typ: Cmm.machtype_component;        (* Type of contents *)
+    mutable typ: Cmm.machtype_component;(* Type of contents *)
     mutable loc: location;              (* Actual location *)
     mutable spill: bool;                (* "true" to force stack allocation  *)
     mutable part: int option;           (* Zero-based index of part of value *)
@@ -58,6 +58,7 @@ module Map: Map.S with type key = t
 val add_set_array: Set.t -> t array -> Set.t
 val diff_set_array: Set.t -> t array -> Set.t
 val inter_set_array: Set.t -> t array -> Set.t
+val disjoint_set_array: Set.t -> t array -> bool
 val set_of_array: t array -> Set.t
 
 val reset: unit -> unit

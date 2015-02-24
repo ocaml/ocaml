@@ -39,7 +39,7 @@ type t =
   | Without_principality of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
-  | Camlp4 of string                        (* 22 *)
+  | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
   | All_clauses_guarded                     (* 25 *)
@@ -55,7 +55,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_exception of string * bool       (* 38 *)
+  | Unused_extension of string * bool * bool    (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -66,6 +66,7 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
+  | No_cmi_file of string                   (* 49 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -96,7 +97,7 @@ let number = function
   | Without_principality _ -> 19
   | Unused_argument -> 20
   | Nonreturning_statement -> 21
-  | Camlp4 _ -> 22
+  | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
   | All_clauses_guarded -> 25
@@ -112,7 +113,7 @@ let number = function
   | Unused_for_index _ -> 35
   | Unused_ancestor _ -> 36
   | Unused_constructor _ -> 37
-  | Unused_exception _ -> 38
+  | Unused_extension _ -> 38
   | Unused_rec_flag -> 39
   | Name_out_of_scope _ -> 40
   | Ambiguous_name _ -> 41
@@ -123,9 +124,10 @@ let number = function
   | Bad_env_variable _ -> 46
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
+  | No_cmi_file _ -> 49
 ;;
 
-let last_warning_number = 48
+let last_warning_number = 49
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -160,21 +162,27 @@ let letter = function
   | _ -> assert false
 ;;
 
-let active = Array.create (last_warning_number + 1) true;;
-let error = Array.create (last_warning_number + 1) false;;
+type state =
+  {
+    active: bool array;
+    error: bool array;
+  }
 
-type state = bool array * bool array
-let backup () = (Array.copy active, Array.copy error)
-let restore (a, e) =
-  assert(Array.length a = Array.length active);
-  assert(Array.length e = Array.length error);
-  Array.blit a 0 active 0 (Array.length active);
-  Array.blit e 0 error 0 (Array.length error)
+let current =
+  ref
+    {
+      active = Array.make (last_warning_number + 1) true;
+      error = Array.make (last_warning_number + 1) false;
+    }
 
-let is_active x = active.(number x);;
-let is_error x = error.(number x);;
+let backup () = !current
 
-let parse_opt flags s =
+let restore x = current := x
+
+let is_active x = (!current).active.(number x);;
+let is_error x = (!current).error.(number x);;
+
+let parse_opt error active flags s =
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
@@ -198,7 +206,7 @@ let parse_opt flags s =
     if i >= String.length s then () else
     match s.[i] with
     | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase s.[i]));
+       List.iter set (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter clear (letter s.[i]);
@@ -215,7 +223,7 @@ let parse_opt flags s =
         for n = n1 to min n2 last_warning_number do myset n done;
         loop i
     | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase s.[i]));
+       List.iter myset (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter myset (letter s.[i]);
@@ -225,7 +233,11 @@ let parse_opt flags s =
   loop 0
 ;;
 
-let parse_options errflag s = parse_opt (if errflag then error else active) s;;
+let parse_options errflag s =
+  let error = Array.copy (!current).error in
+  let active = Array.copy (!current).active in
+  parse_opt error active (if errflag then error else active) s;
+  current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
@@ -237,7 +249,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated feature: " ^ s
+  | Deprecated s -> "deprecated: " ^ s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -286,7 +298,7 @@ let message = function
   | Unused_argument -> "this argument will not be used by the function."
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"
-  | Camlp4 s -> s
+  | Preprocessor s -> s
   | Useless_record_with ->
       "all the fields are explicitly listed in this record:\n\
        the 'with' clause is useless."
@@ -320,12 +332,16 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_exception (s, false) ->
-      "unused exception constructor " ^ s ^ "."
-  | Unused_exception (s, true) ->
-      "exception constructor " ^ s ^
-      " is never raised or used to build values.\n\
+  | Unused_extension (s, false, false) ->
+      "unused extension constructor " ^ s ^ "."
+  | Unused_extension (s, true, _) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
         (However, this constructor appears in patterns.)"
+  | Unused_extension (s, false, true) ->
+      "extension constructor " ^ s ^
+      " is never used to build values.\n\
+        It is exported or rebound as a private extension."
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -366,6 +382,8 @@ let message = function
       Printf.sprintf "implicit elimination of optional argument%s %s"
         (if List.length sl = 1 then "" else "s")
         (String.concat ", " sl)
+  | No_cmi_file s ->
+      "no cmi file was found in path for module " ^ s
 ;;
 
 let nerrors = ref 0;;
@@ -377,15 +395,14 @@ let print ppf w =
   for i = 0 to String.length msg - 1 do
     if msg.[i] = '\n' then incr newlines;
   done;
-  let (out, flush, newline, space) =
-    Format.pp_get_all_formatter_output_functions ppf ()
-  in
-  let countnewline x = incr newlines; newline x in
-  Format.pp_set_all_formatter_output_functions ppf out flush countnewline space;
+  let out_functions = Format.pp_get_formatter_out_functions ppf () in
+  let countnewline x = incr newlines; out_functions.Format.out_newline x in
+  Format.pp_set_formatter_out_functions ppf
+         {out_functions with Format.out_newline = countnewline};
   Format.fprintf ppf "%d: %s" num msg;
   Format.pp_print_flush ppf ();
-  Format.pp_set_all_formatter_output_functions ppf out flush newline space;
-  if error.(num) then incr nerrors;
+  Format.pp_set_formatter_out_functions ppf out_functions;
+  if (!current).error.(num) then incr nerrors;
   !newlines
 ;;
 
@@ -426,7 +443,7 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Camlp4 warning.";
+   22, "Preprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
@@ -449,7 +466,7 @@ let descriptions =
    35, "Unused for-loop index.";
    36, "Unused ancestor variable.";
    37, "Unused constructor.";
-   38, "Unused exception constructor.";
+   38, "Unused extension constructor.";
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
@@ -457,9 +474,10 @@ let descriptions =
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
-   46, "Illegal environment variable";
-   47, "Illegal attribute payload";
-   48, "Implicit elimination of optional arguments";
+   46, "Illegal environment variable.";
+   47, "Illegal attribute payload.";
+   48, "Implicit elimination of optional arguments.";
+   49, "Absent cmi file when looking up module alias.";
   ]
 ;;
 
@@ -471,10 +489,10 @@ let help_warnings () =
     match letter c with
     | [] -> ()
     | [n] ->
-        Printf.printf "  %c Synonym for warning %i.\n" (Char.uppercase c) n
+        Printf.printf "  %c Synonym for warning %i.\n" (Char.uppercase_ascii c) n
     | l ->
         Printf.printf "  %c Set of warnings %s.\n"
-          (Char.uppercase c)
+          (Char.uppercase_ascii c)
           (String.concat ", " (List.map string_of_int l))
   done;
   exit 0

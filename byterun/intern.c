@@ -13,22 +13,22 @@
 
 /* Structured input, compact format */
 
-/* The interface of this file is "intext.h" */
+/* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
 #include <stdio.h>
-#include "alloc.h"
-#include "callback.h"
-#include "custom.h"
-#include "fail.h"
-#include "gc.h"
-#include "intext.h"
-#include "io.h"
-#include "md5.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "misc.h"
-#include "reverse.h"
+#include "caml/alloc.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/gc.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
+#include "caml/reverse.h"
 
 static unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
@@ -143,6 +143,7 @@ static void readfloat(double * dest, unsigned int code)
 #endif
 }
 
+/* [len] is a number of floats */
 static void readfloats(double * dest, mlsize_t len, unsigned int code)
 {
   mlsize_t i;
@@ -553,7 +554,7 @@ static void intern_add_to_heap(mlsize_t whsize)
 
 value caml_input_val(struct channel *chan)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len, num_objects, whsize;
   char * block;
   value res;
@@ -663,7 +664,7 @@ static value input_val_from_block(void)
 
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
-  uint32 magic;
+  uint32_t magic;
   value obj;
 
   intern_input = (unsigned char *) data;
@@ -679,9 +680,10 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   return obj;
 }
 
+/* [len] is a number of bytes */
 CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len;
   value obj;
 
@@ -698,9 +700,12 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   return obj;
 }
 
+/* [ofs] is a [value] that represents a number of bytes
+   result is a [value] that represents a number of bytes
+*/
 CAMLprim value caml_marshal_data_size(value buff, value ofs)
 {
-  uint32 magic;
+  uint32_t magic;
   mlsize_t block_len;
 
   intern_src = &Byte_u(buff, Long_val(ofs));
@@ -738,7 +743,8 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
 static void intern_bad_code_pointer(unsigned char digest[16])
 {
   char msg[256];
-  sprintf(msg, "input_value: unknown code module "
+  snprintf(msg, sizeof(msg),
+               "input_value: unknown code module "
                "%02X%02X%02X%02X%02X%02X%02X%02X"
                "%02X%02X%02X%02X%02X%02X%02X%02X",
           digest[0], digest[1], digest[2], digest[3],
@@ -770,26 +776,26 @@ CAMLexport int caml_deserialize_sint_2(void)
   return read16s();
 }
 
-CAMLexport uint32 caml_deserialize_uint_4(void)
+CAMLexport uint32_t caml_deserialize_uint_4(void)
 {
   return read32u();
 }
 
-CAMLexport int32 caml_deserialize_sint_4(void)
+CAMLexport int32_t caml_deserialize_sint_4(void)
 {
   return read32s();
 }
 
-CAMLexport uint64 caml_deserialize_uint_8(void)
+CAMLexport uint64_t caml_deserialize_uint_8(void)
 {
-  uint64 i;
+  uint64_t i;
   caml_deserialize_block_8(&i, 1);
   return i;
 }
 
-CAMLexport int64 caml_deserialize_sint_8(void)
+CAMLexport int64_t caml_deserialize_sint_8(void)
 {
-  int64 i;
+  int64_t i;
   caml_deserialize_block_8(&i, 1);
   return i;
 }

@@ -46,12 +46,14 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = Misc.input_bytes ic (String.length Config.exec_magic_number) in
+  let header =
+    really_input_string ic (String.length Config.exec_magic_number)
+  in
   if header <> Config.exec_magic_number then raise Bad_magic_number;
   seek_in ic (pos_trailer - 8 * num_sections);
   section_table := [];
   for _i = 1 to num_sections do
-    let name = Misc.input_bytes ic 4 in
+    let name = really_input_string ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table
   done
@@ -77,7 +79,7 @@ let seek_section ic name =
 (* Return the contents of a section, as a string *)
 
 let read_section_string ic name =
-  Misc.input_bytes ic (seek_section ic name)
+  really_input_string ic (seek_section ic name)
 
 (* Return the contents of a section, as marshalled data *)
 
@@ -90,3 +92,7 @@ let read_section_struct ic name =
 let pos_first_section ic =
   in_channel_length ic - 16 - 8 * List.length !section_table -
   List.fold_left (fun total (name, len) -> total + len) 0 !section_table
+
+let reset () =
+  section_table := [];
+  section_beginning := 0

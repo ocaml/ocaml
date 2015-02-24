@@ -12,14 +12,17 @@
 
 include ../config/Makefile
 
-CAMLC=../ocamlcomp.sh
-COMPFLAGS=-warn-error A $(INCLUDES)
+ROOTDIR=..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+COMPFLAGS=-warn-error A -safe-string $(INCLUDES)
 LINKFLAGS=-linkall -I $(UNIXDIR)
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
+
+INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 
 INCLUDES=\
   -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
@@ -83,7 +86,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
+	cp ocamldebug$(EXE) $(INSTALL_BINDIR)/ocamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug$(EXE)

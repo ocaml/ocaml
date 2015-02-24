@@ -60,26 +60,29 @@ libasmrunp.a: $(POBJS)
 	ar rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+
 install: install-default install-$(RUNTIMED) install-$(PROFILING)
 
 install-default:
-	cp libasmrun.a $(LIBDIR)/libasmrun.a
-	cd $(LIBDIR); $(RANLIB) libasmrun.a
+	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
 
 install-noruntimed:
 .PHONY: install-noruntimed
 
 install-runtimed:
-	cp libasmrund.a $(LIBDIR)/libasmrund.a
-	cd $(LIBDIR); $(RANLIB) libasmrund.a
+	cp libasmrund.a $(INSTALL_LIBDIR)/libasmrund.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrund.a
 .PHONY: install-runtimed
 
 install-noprof:
-	rm -f $(LIBDIR)/libasmrunp.a; ln -s libasmrun.a $(LIBDIR)/libasmrunp.a
+	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
+	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
 
 install-prof:
-	cp libasmrunp.a $(LIBDIR)/libasmrunp.a
-	cd $(LIBDIR); $(RANLIB) libasmrunp.a
+	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
 
 power-bsd_elf.S: power-elf.S
 	cp power-elf.S power-bsd_elf.S
@@ -170,40 +173,34 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 clean::
 	rm -f $(LINKEDFILES)
 
-.SUFFIXES: .S .d.o .p.o
-
-.S.o:
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S || \
+%.o: %.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
 	{ echo "If your assembler produced syntax errors, it is probably";\
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
           exit 2; }
 
-.S.p.o:
-	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S
+%.p.o: %.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $@ $<
 
-.c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm -f $*.d.c
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) -o $@ $<
 
-.c.p.o:
-	ln -s -f $*.c $*.p.c
-	$(CC) -c $(PFLAGS) $*.p.c
-	rm -f $*.p.c
+%.p.o: %.c
+	$(CC) -c $(PFLAGS) -o $@ $<
 
-.s.o:
-	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s
+%.o: %.s
+	$(ASPP) -DSYS_$(SYSTEM) -o $@ $<
 
-.s.p.o:
-	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
+%.p.o: %.s
+	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $@ $<
 
 clean::
 	rm -f *.o *.a *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
-	-gcc -MM $(FLAGS) *.c > .depend
-	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
+	$(CC) -MM $(FLAGS) *.c > .depend
+	$(CC) -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	$(CC) -MM $(FLAGS) *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend

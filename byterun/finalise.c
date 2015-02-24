@@ -13,11 +13,11 @@
 
 /* Handling of finalised values. */
 
-#include "callback.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
+#include "caml/callback.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
 
 struct final {
   value fun;
@@ -41,6 +41,7 @@ struct to_do {
 static struct to_do *to_do_hd = NULL;
 static struct to_do *to_do_tl = NULL;
 
+/* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
 {
   struct to_do *result = malloc (sizeof (struct to_do)

@@ -73,7 +73,7 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   let tags = tags++"ocaml"++"parser"++"menhir" in
   Cmd(S[menhir ;
         A "--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags; ocaml_include_flags mlypack]);
-        T tags ; A "--infer" ; A "--base" ; Px menhir_base ; atomize_paths files])
+        T tags ; A "--base" ; Px menhir_base ; atomize_paths files])
 
 let ocamldep_command arg out env _build =
   let arg = env arg and out = env out in
@@ -106,7 +106,7 @@ let menhir mly env build =
   Ocaml_compiler.prepare_compile build mly;
   Cmd(S[menhir;
         A"--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags; ocaml_include_flags mly]);
-        T menhir_tags; A"--infer"; Px mly])
+        T menhir_tags; Px mly])
 
 let ocamldoc_c tags arg odoc =
   let tags = tags++"ocaml" in

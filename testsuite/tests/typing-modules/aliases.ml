@@ -4,11 +4,6 @@ C.chr 66;;
 module C' : module type of Char = C;;
 C'.chr 66;;
 
-module C'' : (module C) = C';; (* fails *)
-
-module C'' : (module Char) = C;;
-C''.chr 66;;
-
 module C3 = struct include Char end;;
 C3.chr 66;;
 
@@ -112,7 +107,7 @@ let f (x : t) : T.t = x ;;
 module A = struct
   module B = struct type t let compare x y = 0 end
   module S = Set.Make(B)
-  let empty = S.empty 
+  let empty = S.empty
 end
 module A1 = A;;
 A1.empty = A.empty;;
@@ -192,3 +187,60 @@ module M = struct
   end
 end;;
 module type S = module type of M ;;
+
+(* PR#6365 *)
+module type S = sig module M : sig type t val x : t end end;;
+module H = struct type t = A let x = A end;;
+module H' = H;;
+module type S' = S with module M = H';; (* shouldn't introduce an alias *)
+
+(* PR#6376 *)
+module type Alias = sig module N : sig end module M = N end;;
+module F (X : sig end) = struct type t end;;
+module type A = Alias with module N := F(List);;
+module rec Bad : A = Bad;;
+
+(* Shinwell 2014-04-23 *)
+module B = struct
+ module R = struct
+   type t = string
+ end
+
+ module O = R
+end
+
+module K = struct
+ module E = B
+ module N = E.O
+end;;
+
+let x : K.N.t = "foo";;
+
+(* PR#6465 *)
+
+module M = struct type t = A module B = struct type u = B end end;;
+module P : sig type t = M.t = A module B = M.B end = M;; (* should be ok *)
+module P : sig type t = M.t = A module B = M.B end = struct include M end;;
+
+module type S = sig
+  module M : sig module P : sig end end
+  module Q = M
+end;;
+module type S = sig
+  module M : sig module N : sig end module P : sig end end
+  module Q : sig module N = M.N module P = M.P end
+end;;
+module R = struct
+  module M = struct module N = struct end module P = struct end end
+  module Q = M
+end;;
+module R' : S = R;; (* should be ok *)
+
+(* PR#6578 *)
+
+module M = struct let f x = x end
+module rec R : sig module M : sig val f : 'a -> 'a end end =
+  struct module M = M end;;
+R.M.f 3;;
+module rec R : sig module M = M end = struct module M = M end;;
+R.M.f 3;;

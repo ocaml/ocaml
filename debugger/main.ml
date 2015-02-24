@@ -193,7 +193,7 @@ let main () =
           (Unix.string_of_inet_addr Unix.inet_addr_loopback)^
           ":"^
           (string_of_int (10000 + ((Unix.getpid ()) mod 10000)))
-      | _ -> Filename.concat Filename.temp_dir_name
+      | _ -> Filename.concat (Filename.get_temp_dir_name ())
                                 ("camldebug" ^ (string_of_int (Unix.getpid ())))
       );
     begin try

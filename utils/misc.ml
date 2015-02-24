@@ -87,8 +87,24 @@ let find_in_path path name =
     in try_dir path
   end
 
+let find_in_path_rel path name =
+  let rec simplify s =
+    let open Filename in
+    let base = basename s in
+    let dir = dirname s in
+    if dir = s then dir
+    else if base = current_dir_name then simplify dir
+    else concat (simplify dir) base
+  in
+  let rec try_dir = function
+    [] -> raise Not_found
+  | dir::rem ->
+      let fullname = simplify (Filename.concat dir name) in
+      if Sys.file_exists fullname then fullname else try_dir rem
+  in try_dir path
+
 let find_in_path_uncap path name =
-  let uname = String.uncapitalize name in
+  let uname = String.uncapitalize_ascii name in
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->
@@ -124,14 +140,14 @@ let create_hashtable size init =
 (* File copy *)
 
 let copy_file ic oc =
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy () =
     let n = input ic buff 0 0x1000 in
     if n = 0 then () else (output oc buff 0 n; copy())
   in copy()
 
 let copy_file_chunk ic oc len =
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy n =
     if n <= 0 then () else begin
       let r = input ic buff 0 (min n 0x1000) in
@@ -141,22 +157,12 @@ let copy_file_chunk ic oc len =
 
 let string_of_file ic =
   let b = Buffer.create 0x10000 in
-  let buff = String.create 0x1000 in
+  let buff = Bytes.create 0x1000 in
   let rec copy () =
     let n = input ic buff 0 0x1000 in
     if n = 0 then Buffer.contents b else
-      (Buffer.add_substring b buff 0 n; copy())
+      (Buffer.add_subbytes b buff 0 n; copy())
   in copy()
-
-
-
-(* Reading from a channel *)
-
-let input_bytes ic n =
-  let result = String.create n in
-  really_input ic result 0 n;
-  result
-;;
 
 (* Integer operations *)
 
@@ -170,7 +176,9 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
-let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
+let no_overflow_mul a b = b <> 0 && (a * b) / b = a
+
+let no_overflow_lsl a k = 0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
 
 (* String operations *)
 
@@ -195,6 +203,17 @@ let search_substring pat str start =
     else if str.[i + j] = pat.[j] then search i (j+1)
     else search (i+1) 0
   in search start 0
+
+let replace_substring ~before ~after str =
+  let rec search acc curr =
+    match search_substring before str curr with
+      | next ->
+         let prefix = String.sub str curr (next - curr) in
+         search (prefix :: acc) (next + String.length before)
+      | exception Not_found ->
+        let suffix = String.sub str curr (String.length str - curr) in
+        List.rev (suffix :: acc)
+  in String.concat after (search [] 0)
 
 let rev_split_words s =
   let rec split1 res i =
@@ -226,26 +245,27 @@ let for4 (_,_,_,x) = x
 
 
 module LongString = struct
-  type t = string array
+  type t = bytes array
 
   let create str_size =
     let tbl_size = str_size / Sys.max_string_length + 1 in
-    let tbl = Array.make tbl_size "" in
+    let tbl = Array.make tbl_size Bytes.empty in
     for i = 0 to tbl_size - 2 do
-      tbl.(i) <- String.create Sys.max_string_length;
+      tbl.(i) <- Bytes.create Sys.max_string_length;
     done;
-    tbl.(tbl_size - 1) <- String.create (str_size mod Sys.max_string_length);
+    tbl.(tbl_size - 1) <- Bytes.create (str_size mod Sys.max_string_length);
     tbl
 
   let length tbl =
     let tbl_size = Array.length tbl in
-    Sys.max_string_length * (tbl_size - 1) + String.length tbl.(tbl_size - 1)
+    Sys.max_string_length * (tbl_size - 1) + Bytes.length tbl.(tbl_size - 1)
 
   let get tbl ind =
-    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length]
+    Bytes.get tbl.(ind / Sys.max_string_length) (ind mod Sys.max_string_length)
 
   let set tbl ind c =
-    tbl.(ind / Sys.max_string_length).[ind mod Sys.max_string_length] <- c
+    Bytes.set tbl.(ind / Sys.max_string_length) (ind mod Sys.max_string_length)
+              c
 
   let blit src srcoff dst dstoff len =
     for i = 0 to len - 1 do
@@ -257,14 +277,14 @@ module LongString = struct
       output_char oc (get tbl i)
     done
 
-  let unsafe_blit_to_string src srcoff dst dstoff len =
+  let unsafe_blit_to_bytes src srcoff dst dstoff len =
     for i = 0 to len - 1 do
-      String.unsafe_set dst (dstoff + i) (get src (srcoff + i))
+      Bytes.unsafe_set dst (dstoff + i) (get src (srcoff + i))
     done
 
   let input_bytes ic len =
     let tbl = create len in
-    Array.iter (fun str -> really_input ic str 0 (String.length str)) tbl;
+    Array.iter (fun str -> really_input ic str 0 (Bytes.length str)) tbl;
     tbl
 end
 
@@ -314,6 +334,39 @@ let edit_distance a b cutoff =
     else Some result
   end
 
+let spellcheck env name =
+  let cutoff =
+    match String.length name with
+      | 1 | 2 -> 0
+      | 3 | 4 -> 1
+      | 5 | 6 -> 2
+      | _ -> 3
+  in
+  let compare target acc head =
+    match edit_distance target head cutoff with
+      | None -> acc
+      | Some dist ->
+	 let (best_choice, best_dist) = acc in
+	 if dist < best_dist then ([head], dist)
+	 else if dist = best_dist then (head :: best_choice, dist)
+	 else acc
+  in
+  fst (List.fold_left (compare name) ([], max_int) env)
+
+let did_you_mean ppf get_choices =
+  (* flush now to get the error report early, in the (unheard of) case
+     where the search in the get_choices function would take a bit of
+     time; in the worst case, the user has seen the error, she can
+     interrupt the process before the spell-checking terminates. *)
+  Format.fprintf ppf "@?";
+  match get_choices () with
+  | [] -> ()
+  | choices ->
+     let rest, last = split_last choices in
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?"
+       (String.concat ", " rest)
+       (if rest = [] then "" else " or ")
+       last
 
 (* split a string [s] at every char [c], and return the list of sub-strings *)
 let split s c =
@@ -334,3 +387,7 @@ let split s c =
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
+
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringMap = Map.Make(struct type t = string let compare = compare end)

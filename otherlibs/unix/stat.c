@@ -12,15 +12,15 @@
 /***********************************************************************/
 
 #include <errno.h>
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
-#include <signals.h>
-#include "unixsupport.h"
-#include "cst2constr.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <io.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/signals.h>
+#include <caml/io.h>
+#include "unixsupport.h"
+#include "cst2constr.h"
 
 #ifndef S_IFLNK
 #define S_IFLNK 0
@@ -75,7 +75,7 @@ CAMLprim value unix_stat(value path)
   int ret;
   struct stat buf;
   char * p;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = stat(p, &buf);
   caml_leave_blocking_section();
@@ -92,7 +92,7 @@ CAMLprim value unix_lstat(value path)
   int ret;
   struct stat buf;
   char * p;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
@@ -126,7 +126,7 @@ CAMLprim value unix_stat_64(value path)
   int ret;
   struct stat buf;
   char * p;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = stat(p, &buf);
   caml_leave_blocking_section();
@@ -141,7 +141,7 @@ CAMLprim value unix_lstat_64(value path)
   int ret;
   struct stat buf;
   char * p;
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
 #ifdef HAS_SYMLINK
   ret = lstat(p, &buf);

@@ -13,11 +13,11 @@
 
 /* Registration of global memory roots */
 
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "globroots.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/globroots.h"
 
 /* The sets of global memory roots are represented as skip lists
    (see William Pugh, "Skip lists: a probabilistic alternative to
@@ -43,11 +43,11 @@ struct global_root_list {
    (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
    is faster and guaranteed to be deterministic (to reproduce bugs). */
 
-static uint32 random_seed = 0;
+static uint32_t random_seed = 0;
 
 static int random_level(void)
 {
-  uint32 r;
+  uint32_t r;
   int level = 0;
 
   /* Linear congruence with modulus = 2^32, multiplier = 69069

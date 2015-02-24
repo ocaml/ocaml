@@ -27,24 +27,23 @@ type error =
   | Pattern_type_clash of (type_expr * type_expr) list
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
-  | Orpat_vars of Ident.t
+  | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
-  | Apply_wrong_label of label * type_expr
+  | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expr * string * Path.t * Longident.t
+  | Wrong_name of string * type_expr * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
-  | Incomplete_format of string
-  | Bad_conversion of string * int * char
-  | Undefined_method of type_expr * string
-  | Undefined_inherited_method of string
+  | Invalid_format of string
+  | Undefined_method of type_expr * string * string list option
+  | Undefined_inherited_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
-  | Unbound_instance_variable of string
+  | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
@@ -52,7 +51,7 @@ type error =
   | Coercion_failure of
       type_expr * type_expr * (type_expr * type_expr) list * bool
   | Too_many_arguments of bool * type_expr
-  | Abstract_wrong_label of label * type_expr
+  | Abstract_wrong_label of arg_label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
@@ -66,9 +65,12 @@ type error =
   | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
-  | Extension of string
+  | No_value_clauses
+  | Exception_pattern_below_toplevel
+  | Inlined_record_escape
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
@@ -108,6 +110,17 @@ let rp node =
   Stypes.record (Stypes.Ti_pat node);
   node
 ;;
+
+
+let is_recarg d =
+  match (repr d.val_type).desc with
+  | Tconstr(p, _, _) -> Path.is_constructor_typath p
+  | _ -> false
+
+type recarg =
+  | Allowed
+  | Required
+  | Rejected
 
 
 let fst3 (x, _, _) = x
@@ -183,14 +196,14 @@ let iter_expression f e =
     | Pstr_value (_, pel) -> List.iter binding pel
     | Pstr_primitive _
     | Pstr_type _
+    | Pstr_typext _
     | Pstr_exception _
     | Pstr_modtype _
     | Pstr_open _
     | Pstr_class_type _
     | Pstr_attribute _
-    | Pstr_extension _
-    | Pstr_exn_rebind _ -> ()
-    | Pstr_include (me, _)
+    | Pstr_extension _ -> ()
+    | Pstr_include {pincl_mod = me}
     | Pstr_module {pmb_expr = me} -> module_expr me
     | Pstr_recmodule l -> List.iter (fun x -> module_expr x.pmb_expr) l
     | Pstr_class cdl -> List.iter (fun c -> class_expr c.pci_expr) cdl
@@ -215,7 +228,7 @@ let iter_expression f e =
     | Pcf_val (_, _, Cfk_concrete (_, e))
     | Pcf_method (_, _, Cfk_concrete (_, e)) -> expr e
     | Pcf_initializer e -> expr e
-    | Pcf_extension _ -> ()
+    | Pcf_attribute _ | Pcf_extension _ -> ()
 
   in
   expr e
@@ -257,14 +270,14 @@ let mkexp exp_desc exp_type exp_loc exp_env =
   { exp_desc; exp_type; exp_loc; exp_env; exp_extra = []; exp_attributes = [] }
 
 let option_none ty loc =
-  let lid = Longident.Lident "None" in
-  let cnone = Env.lookup_constructor lid Env.initial in
-  mkexp (Texp_construct(mknoloc lid, cnone, []))
-    ty loc Env.initial
+  let lid = Longident.Lident "None"
+  and env = Env.initial_safe_string in
+  let cnone = Env.lookup_constructor lid env in
+  mkexp (Texp_construct(mknoloc lid, cnone, [])) ty loc env
 
 let option_some texp =
   let lid = Longident.Lident "Some" in
-  let csome = Env.lookup_constructor lid Env.initial in
+  let csome = Env.lookup_constructor lid Env.initial_safe_string in
   mkexp ( Texp_construct(mknoloc lid , csome, [texp]) )
     (type_option texp.exp_type) texp.exp_loc texp.exp_env
 
@@ -280,8 +293,7 @@ let extract_concrete_record env ty =
 
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
-    (* exclude exceptions *)
-    (p0, p, {type_kind=Type_variant (_::_ as cstrs)}) -> (p0, p, cstrs)
+    (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
@@ -290,6 +302,13 @@ let extract_label_names sexp env ty =
     List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
+
+let explicit_arity =
+  List.exists
+    (function
+      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
+      | _ -> false
+    )
 
 (* Typing of patterns *)
 
@@ -430,7 +449,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   let p1_vs = sort_pattern_variables p1_vs
   and p2_vs = sort_pattern_variables p2_vs in
 
-  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
+  let rec unify_vars p1_vs p2_vs =
+    let vars vs = List.map (fun (x,_t,_,_l,_a) -> x) vs in
+    match p1_vs, p2_vs with
       | (x1,t1,_,l1,a1)::rem1, (x2,t2,_,l2,a2)::rem2 when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
@@ -444,13 +465,14 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars x))
-      | [],(x,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars x))
+      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
+      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
       | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
-          let min_var =
-            if Ident.name x < Ident.name y then x
-            else y in
-          raise (Error (loc, env, Orpat_vars min_var)) in
+          let err =
+            if Ident.name x < Ident.name y
+            then Orpat_vars (x, vars p2_vs)
+            else Orpat_vars (y, vars p1_vs) in
+          raise (Error (loc, env, err)) in
   unify_vars p1_vs p2_vs
 
 let rec build_as_type env p =
@@ -565,7 +587,8 @@ let rec expand_path env p =
     Some {type_manifest = Some ty} ->
       begin match repr ty with
         {desc=Tconstr(p,_,_)} -> expand_path env p
-      | _ -> assert false
+      | _ -> p
+         (* PR#6394: recursive module may introduce incoherent manifest *)
       end
   | _ ->
       let p' = Env.normalize_path None env p in
@@ -575,6 +598,8 @@ let compare_type_path env tpath1 tpath2 =
   Path.same (expand_path env tpath1) (expand_path env tpath2)
 
 (* Records *)
+let label_of_kind kind =
+  if kind = "record" then "field" else "constructor"
 
 module NameChoice(Name : sig
   type t
@@ -582,8 +607,8 @@ module NameChoice(Name : sig
   val get_name: t -> string
   val get_type: t -> type_expr
   val get_descrs: Env.type_descriptions -> t list
-  val fold: (t -> 'a -> 'a) -> Longident.t option -> Env.t -> 'a -> 'a
   val unbound_name_error: Env.t -> Longident.t loc -> 'a
+  val in_env: t -> bool
 end) = struct
   open Name
 
@@ -592,22 +617,17 @@ end) = struct
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 
-  let spellcheck ppf env p lid =
-    Typetexp.spellcheck_simple ppf fold
-      (fun d ->
-        if compare_type_path env p (get_type_path env d)
-        then get_name d else "") env lid
-
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
-    Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
+    Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
         try
           List.find (fun nd -> get_name nd = s) descrs
         with Not_found ->
+          let names = List.map get_name descrs in
           raise (Error (lid.loc, env,
-                        Wrong_name ("", newvar (), type_kind, tpath, lid.txt)))
+                        Wrong_name ("", newvar (), type_kind, tpath, s, names)))
       end
     | _ -> raise Not_found
 
@@ -651,10 +671,10 @@ end) = struct
         end
     | Some(tpath0, tpath, pr) ->
         let warn_pr () =
-          let kind = if type_kind = "record" then "field" else "constructor" in
+          let label = label_of_kind type_kind in
           warn lid.loc
             (Warnings.Not_principal
-               ("this type-based " ^ kind ^ " disambiguation"))
+               ("this type-based " ^ label ^ " disambiguation"))
         in
         try
           let lbl, use = disambiguate_by_type env tpath scope in
@@ -677,9 +697,12 @@ end) = struct
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
           check_lk tpath lbl;
+          if in_env lbl then
+          begin
           let s = Printtyp.string_of_path tpath in
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
+          end;
           if not pr then warn_pr ();
           lbl
         with Not_found ->
@@ -696,6 +719,7 @@ end) = struct
           raise (Error (lid.loc, env,
                         Name_type_mismatch (type_kind, lid.txt, tp, tpl)))
     in
+    if in_env lbl then
     begin match scope with
       (lab1,_)::_ when lab1 == lbl -> ()
     | _ ->
@@ -706,8 +730,8 @@ end) = struct
 end
 
 let wrap_disambiguate kind ty f x =
-  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,lid)) ->
-    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,lid)))
+  try f x with Error (loc, env, Wrong_name (_,_,tk,tp,name,valid_names)) ->
+    raise (Error (loc, env, Wrong_name (kind,ty,tk,tp,name,valid_names)))
 
 module Label = NameChoice (struct
   type t = label_description
@@ -715,8 +739,11 @@ module Label = NameChoice (struct
   let get_name lbl = lbl.lbl_name
   let get_type lbl = lbl.lbl_res
   let get_descrs = snd
-  let fold = Env.fold_labels
   let unbound_name_error = Typetexp.unbound_label_error
+  let in_env lbl =
+    match lbl.lbl_repres with
+    | Record_regular | Record_float -> true
+    | Record_inlined _ | Record_extension -> false
 end)
 
 let disambiguate_label_by_ids keep env closed ids labels =
@@ -861,21 +888,14 @@ let check_recordpat_labels loc lbl_pat_list closed =
 
 (* Constructors *)
 
-let lookup_constructor_from_type env tpath lid =
-  let (constructors, _) = Env.find_type_descrs tpath env in
-    match lid with
-      Longident.Lident s ->
-        List.find (fun cstr -> cstr.cstr_name = s) constructors
-    | _ -> raise Not_found
-
 module Constructor = NameChoice (struct
   type t = constructor_description
   let type_kind = "variant"
   let get_name cstr = cstr.cstr_name
   let get_type cstr = cstr.cstr_res
   let get_descrs = fst
-  let fold = Env.fold_constructors
   let unbound_name_error = Typetexp.unbound_constructor_error
+  let in_env _ = true
 end)
 
 (* unification of a type with a tconstr with
@@ -990,6 +1010,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
   | Ppat_interval _ ->
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
+      if List.length spl < 2 then
+        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
       let ty = newty (Ttuple(List.map snd spl_ann)) in
       unify_pat_types loc !env ty expected_ty;
@@ -1033,7 +1055,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let sargs =
         match sarg with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some {ppat_desc = Ppat_tuple spl} when
+            constr.cstr_arity > 1 || explicit_arity sp.ppat_attributes
+          -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
             if constr.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
@@ -1050,6 +1074,21 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         unify_pat_types_gadt loc env ty_res expected_ty
       else
         unify_pat_types loc !env ty_res expected_ty;
+
+      let rec check_non_escaping p =
+        match p.ppat_desc with
+        | Ppat_or (p1, p2) ->
+            check_non_escaping p1;
+            check_non_escaping p2
+        | Ppat_alias (p, _) ->
+            check_non_escaping p
+        | Ppat_constraint _ ->
+            raise (Error (p.ppat_loc, !env, Inlined_record_escape))
+        | _ ->
+            ()
+      in
+      if constr.cstr_inlined <> None then List.iter check_non_escaping sargs;
+
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
         pat_desc=Tpat_construct(lid, constr, args);
@@ -1080,6 +1119,8 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
+      if lid_sp_list = [] then
+        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
       let opath, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
@@ -1197,8 +1238,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       unify_pat_types loc !env ty expected_ty;
       { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
-  | Ppat_extension (s, _arg) ->
-      raise (Error (s.loc, !env, Extension s.txt))
+  | Ppat_exception _ ->
+      raise (Error (loc, !env, Exception_pattern_below_toplevel))
+  | Ppat_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels
     ?(lev=get_current_level()) env sp expected_ty =
@@ -1341,11 +1384,17 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
 
 let delayed_checks = ref []
 let reset_delayed_checks () = delayed_checks := []
-let add_delayed_check f = delayed_checks := f :: !delayed_checks
+let add_delayed_check f =
+  delayed_checks := (f, Warnings.backup ()) :: !delayed_checks
+
 let force_delayed_checks () =
   (* checks may change type levels *)
   let snap = Btype.snapshot () in
-  List.iter (fun f -> f ()) (List.rev !delayed_checks);
+  let w_old = Warnings.backup () in
+  List.iter
+    (fun (f, w) -> Warnings.restore w; f ())
+    (List.rev !delayed_checks);
+  Warnings.restore w_old;
   reset_delayed_checks ();
   Btype.backtrack snap
 
@@ -1371,7 +1420,7 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd3 el)
-  | Texp_match(e, cases, _) ->
+  | Texp_match(e, cases, [], _) ->
       is_nonexpansive e &&
       List.for_all
         (fun {c_lhs = _; c_guard; c_rhs} ->
@@ -1407,7 +1456,8 @@ let rec is_nonexpansive exp =
               incr count; true
           | Tcf_initializer e -> is_nonexpansive e
           | Tcf_constraint _ -> true
-          | Tcf_inherit _ -> false)
+          | Tcf_inherit _ -> false
+          | Tcf_attribute _ -> true)
         fields &&
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
@@ -1427,16 +1477,23 @@ and is_nonexpansive_mod mexp =
   | Tmod_structure str ->
       List.for_all
         (fun item -> match item.str_desc with
-          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _ | Tstr_modtype _
-          | Tstr_open _ | Tstr_class_type _ | Tstr_exn_rebind _ -> true
+          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
+          | Tstr_modtype _ | Tstr_open _ | Tstr_class_type _  -> true
           | Tstr_value (_, pat_exp_list) ->
               List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
           | Tstr_module {mb_expr=m;_}
-          | Tstr_include (m, _, _) -> is_nonexpansive_mod m
+          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
           | Tstr_recmodule id_mod_list ->
               List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
                 id_mod_list
-          | Tstr_exception _ -> false (* true would be unsound *)
+          | Tstr_exception {ext_kind = Text_decl _} ->
+              false (* true would be unsound *)
+          | Tstr_exception {ext_kind = Text_rebind _} -> true
+          | Tstr_typext te ->
+              List.for_all
+                (function {ext_kind = Text_decl _} -> false
+                        | {ext_kind = Text_rebind _} -> true)
+                te.tyext_constructors
           | Tstr_class _ -> false (* could be more precise *)
           | Tstr_attribute _ -> true
         )
@@ -1446,211 +1503,6 @@ and is_nonexpansive_mod mexp =
 and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
-
-(* Typing format strings for printing or reading.
-
-   These format strings are used by functions in modules Printf, Format, and
-   Scanf.
-
-   (Handling of * modifiers contributed by Thorsten Ohl.) *)
-
-external string_to_format :
- string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
-external format_to_string :
- ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
-
-let type_format loc fmt =
-
-  let ty_arrow gty ty = newty (Tarrow ("", instance_def gty, ty, Cok)) in
-
-  let bad_conversion fmt i c =
-    raise (Error (loc, Env.empty, Bad_conversion (fmt, i, c))) in
-  let incomplete_format fmt =
-    raise (Error (loc, Env.empty, Incomplete_format fmt)) in
-
-  let rec type_in_format fmt =
-
-    let len = String.length fmt in
-
-    let ty_input = newvar ()
-    and ty_result = newvar ()
-    and ty_aresult = newvar ()
-    and ty_uresult = newvar () in
-
-    let meta = ref 0 in
-
-    let rec scan_format i =
-      if i >= len then
-        if !meta = 0
-        then ty_uresult, ty_result
-        else incomplete_format fmt else
-      match fmt.[i] with
-      | '%' -> scan_opts i (i + 1)
-      | _ -> scan_format (i + 1)
-    and scan_opts i j =
-      if j >= len then incomplete_format fmt else
-      match fmt.[j] with
-      | '_' -> scan_rest true i (j + 1)
-      | _ -> scan_rest false i j
-    and scan_rest skip i j =
-      let rec scan_flags i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
-        | _ -> scan_width i j
-      and scan_width i j = scan_width_or_prec_value scan_precision i j
-      and scan_decimal_string scan i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '0' .. '9' -> scan_decimal_string scan i (j + 1)
-        | _ -> scan i j
-      and scan_width_or_prec_value scan i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '*' ->
-          let ty_uresult, ty_result = scan i (j + 1) in
-          ty_uresult, ty_arrow Predef.type_int ty_result
-        | '-' | '+' -> scan_decimal_string scan i (j + 1)
-        | _ -> scan_decimal_string scan i j
-      and scan_precision i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
-        | _ -> scan_conversion i j
-      and scan_indication j =
-        if j >= len then j - 1 else
-        match fmt.[j] with
-        | '@' ->
-          let k = j + 1 in
-          if k >= len then j - 1 else
-          begin match fmt.[k] with
-          | '%' ->
-            let k = k + 1 in
-            if k >= len then j - 1 else
-            begin match fmt.[k] with
-            | '%' | '@' -> k
-            | _c -> j - 1
-            end
-          | _c -> k
-          end
-        | _c -> j - 1
-      and scan_range j =
-        let rec scan_closing j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | ']' -> j
-          | '%' ->
-            let j = j + 1 in
-            if j >= len then incomplete_format fmt else
-            begin match fmt.[j] with
-            | '%' | '@' -> scan_closing (j + 1)
-            | c -> bad_conversion fmt j c
-            end
-          | c -> scan_closing (j + 1) in
-        let scan_first_pos j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | ']' -> scan_closing (j + 1)
-          | c -> scan_closing j in
-        let scan_first_neg j =
-          if j >= len then incomplete_format fmt else
-          match fmt.[j] with
-          | '^' -> scan_first_pos (j + 1)
-          | c -> scan_first_pos j in
-
-        scan_first_neg j
-
-      and conversion j ty_arg =
-        let ty_uresult, ty_result = scan_format (j + 1) in
-        ty_uresult,
-        if skip then ty_result else ty_arrow ty_arg ty_result
-
-      and conversion_a j ty_e ty_arg =
-        let ty_uresult, ty_result = conversion j ty_arg in
-        let ty_a = ty_arrow ty_input (ty_arrow ty_e ty_aresult) in
-        ty_uresult, ty_arrow ty_a ty_result
-
-      and conversion_r j ty_e ty_arg =
-        let ty_uresult, ty_result = conversion j ty_arg in
-        let ty_r = ty_arrow ty_input ty_e in
-        ty_arrow ty_r ty_uresult, ty_result
-
-      and scan_conversion i j =
-        if j >= len then incomplete_format fmt else
-        match fmt.[j] with
-        | '%' | '@' | '!' | ',' -> scan_format (j + 1)
-        | 's' | 'S' ->
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | '[' ->
-          let j = scan_range (j + 1) in
-          let j = scan_indication (j + 1) in
-          conversion j Predef.type_string
-        | 'c' | 'C' -> conversion j Predef.type_char
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' | 'N' ->
-          conversion j Predef.type_int
-        | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-        | 'B' | 'b' -> conversion j Predef.type_bool
-        | 'a' | 'r' as conv ->
-          let conversion =
-            if conv = 'a' then conversion_a else conversion_r in
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-(*            | 'a' | 'A' -> conversion j ty_e (Predef.type_array ty_e)
-            | 'l' | 'L' -> conversion j ty_e (Predef.type_list ty_e)
-            | 'o' | 'O' -> conversion j ty_e (Predef.type_option ty_e)*)
-            | _ -> conversion (j - 1) ty_e ty_e end
-(*        | 'r' ->
-          let ty_e = newvar () in
-          let j = j + 1 in
-          if j >= len then conversion_r (j - 1) ty_e ty_e else begin
-            match fmt.[j] with
-            | 'a' | 'A' -> conversion_r j ty_e (Pref.type_array ty_e)
-            | 'l' | 'L' -> conversion_r j ty_e (Pref.type_list ty_e)
-            | 'o' | 'O' -> conversion_r j ty_e (Pref.type_option ty_e)
-            | _ -> conversion_r (j - 1) ty_e ty_e end *)
-        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-        | 'l' | 'n' | 'L' as c ->
-          let j = j + 1 in
-          if j >= len then conversion (j - 1) Predef.type_int else begin
-            match fmt.[j] with
-            | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
-              let ty_arg =
-                match c with
-                | 'l' -> Predef.type_int32
-                | 'n' -> Predef.type_nativeint
-                | _ -> Predef.type_int64 in
-              conversion j ty_arg
-            | c -> conversion (j - 1) Predef.type_int
-          end
-        | '{' | '(' as c ->
-          let j = j + 1 in
-          if j >= len then incomplete_format fmt else
-          let sj =
-            Printf.CamlinternalPr.Tformat.sub_format
-              (fun fmt -> incomplete_format (format_to_string fmt))
-              (fun fmt -> bad_conversion (format_to_string fmt))
-              c (string_to_format fmt) j in
-          let sfmt = String.sub fmt j (sj - 2 - j) in
-          let ty_sfmt = type_in_format sfmt in
-          begin match c with
-          | '{' -> conversion (sj - 1) ty_sfmt
-          | _ -> incr meta; conversion (j - 1) ty_sfmt end
-        | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
-        | c -> bad_conversion fmt i c in
-      scan_flags i j in
-
-    let ty_ureader, ty_args = scan_format 0 in
-    newty
-      (Tconstr
-        (Predef.path_format6,
-         [ ty_args; ty_input; ty_aresult;
-           ty_ureader; ty_uresult; ty_result; ],
-         ref Mnil)) in
-
-  type_in_format fmt
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -1676,12 +1528,11 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_fun (p, _, _, e) when is_optional p ->
-       newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
-  | Pexp_fun (p,_,_, e) ->
-       newty (Tarrow(p, newvar (), type_approx env e, Cok))
+  | Pexp_fun (p, _, _, e) ->
+      let ty = if is_optional p then type_option (newvar ()) else newvar () in
+      newty (Tarrow(p, ty, type_approx env e, Cok))
   | Pexp_function ({pc_rhs=e}::_) ->
-       newty (Tarrow("", newvar (), type_approx env e, Cok))
+      newty (Tarrow(Nolabel, newvar (), type_approx env e, Cok))
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -1826,7 +1677,8 @@ let iter_ppat f p =
   | Ppat_or (p1,p2) -> f p1; f p2
   | Ppat_variant (_, arg) | Ppat_construct (_, arg) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
-  | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p
+  | Ppat_exception p | Ppat_alias (p,_)
+  | Ppat_constraint (p,_) | Ppat_lazy p -> f p
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args
 
 let contains_polymorphic_variant p =
@@ -1897,9 +1749,9 @@ let unify_exp env exp expected_ty =
     Printtyp.raw_type_expr expected_ty; *)
     unify_exp_types exp.exp_loc env exp.exp_type expected_ty
 
-let rec type_exp env sexp =
+let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
-  type_expect env sexp (newvar ())
+  type_expect ?recarg env sexp (newvar ())
 
 (* Typing of an expression with an expected type.
    This provide better error messages, and allows controlled
@@ -1907,15 +1759,17 @@ let rec type_exp env sexp =
    In the principal case, [type_expected'] may be at generic_level.
  *)
 
-and type_expect ?in_function env sexp ty_expected =
+and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  let prev_warnings = Typetexp.warning_attribute sexp.pexp_attributes in
-  let exp = type_expect_ ?in_function env sexp ty_expected in
-  begin match prev_warnings with Some x -> Warnings.restore x | None -> () end;
-  Cmt_format.set_saved_types (Cmt_format.Partial_expression exp :: previous_saved_types);
+  Typetexp.warning_enter_scope ();
+  Typetexp.warning_attribute sexp.pexp_attributes;
+  let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
+  Typetexp.warning_leave_scope ();
+  Cmt_format.set_saved_types
+    (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_ ?in_function env sexp ty_expected =
+and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
   let rue exp =
@@ -1934,6 +1788,11 @@ and type_expect_ ?in_function env sexp ty_expected =
           in
           let name = Path.name ~paren:Oprint.parenthesized_ident path in
           Stypes.record (Stypes.An_ident (loc, name, annot))
+        end;
+        begin match is_recarg desc, recarg with
+        | _, Allowed | true, Required | false, Rejected -> ()
+        | true, Rejected | false, Required ->
+            raise (Error (loc, env, Inlined_record_escape));
         end;
         rue {
           exp_desc =
@@ -1965,19 +1824,32 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Const_string (s, _) as cst) ->
+  | Pexp_constant(Const_string (str, _) as cst) -> (
+    (* Terrible hack for format strings *)
+    let ty_exp = expand_head env ty_expected in
+    let fmt6_path =
+      Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
+                  "format6", 0)) in
+    let is_format = match ty_exp.desc with
+      | Tconstr(path, _, _) when Path.same path fmt6_path ->
+        if !Clflags.principal && ty_exp.level <> generic_level then
+          Location.prerr_warning loc
+            (Warnings.Not_principal "this coercion to format6");
+        true
+      | _ -> false
+    in
+    if is_format then
+      let format_parsetree =
+        { (type_format loc str env) with pexp_loc = sexp.pexp_loc }  in
+      type_expect ?in_function env format_parsetree ty_expected
+    else
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
-        exp_type =
-        (* Terrible hack for format strings *)
-           begin match (repr (expand_head env ty_expected)).desc with
-             Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
-               type_format loc s
-           | _ -> instance_def Predef.type_string
-           end;
+        exp_type = instance_def Predef.type_string;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  )
   | Pexp_constant cst ->
       rue {
         exp_desc = Texp_constant cst;
@@ -2010,7 +1882,7 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_fun (l, Some default, spat, sexp) ->
+  | Pexp_fun (l, Some default, spat, sbody) ->
       assert(is_optional l); (* default allowed only with optional argument *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
@@ -2032,22 +1904,22 @@ and type_expect_ ?in_function env sexp ty_expected =
         Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
           scases
       in
-      let sfun =
-        Exp.fun_ ~loc
-          l None
-          (Pat.var ~loc (mknoloc "*opt*"))
-          (Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
-             [Vb.mk spat smatch] sexp)
+      let pat = Pat.var ~loc (mknoloc "*opt*") in
+      let body =
+        Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+          [Vb.mk spat smatch] sbody
       in
-      type_expect ?in_function env sfun ty_expected
-        (* TODO: keep attributes, call type_function directly *)
-  | Pexp_fun (l, None, spat, sexp) ->
       type_function ?in_function loc sexp.pexp_attributes env ty_expected
-        l [{pc_lhs=spat; pc_guard=None; pc_rhs=sexp}]
+        l [Exp.case pat body]
+  | Pexp_fun (l, None, spat, sbody) ->
+      type_function ?in_function loc sexp.pexp_attributes env ty_expected
+        l [Ast_helper.Exp.case spat sbody]
   | Pexp_function caselist ->
       type_function ?in_function
-        loc sexp.pexp_attributes env ty_expected "" caselist
+        loc sexp.pexp_attributes env ty_expected Nolabel caselist
   | Pexp_apply(sfunct, sargs) ->
+      if sargs = [] then
+        Syntaxerr.ill_formed_ast loc "Function application with no argument.";
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
@@ -2083,11 +1955,25 @@ and type_expect_ ?in_function env sexp ty_expected =
       end_def ();
       if is_nonexpansive arg then generalize arg.exp_type
       else generalize_expansive env arg.exp_type;
-      let cases, partial =
-        type_cases env arg.exp_type ty_expected true loc caselist
+      let rec split_cases vc ec = function
+        | [] -> List.rev vc, List.rev ec
+        | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
+            split_cases vc ({c with pc_lhs = p} :: ec) rest
+        | c :: rest ->
+            split_cases (c :: vc) ec rest
       in
+      let val_caselist, exn_caselist = split_cases [] [] caselist in
+      if val_caselist = [] && exn_caselist <> [] then
+        raise (Error (loc, env, No_value_clauses));
+      (* Note: val_caselist = [] and exn_caselist = [], i.e. a fully
+         empty pattern matching can be generated by Camlp4 with its
+         revised syntax.  Let's accept it for backward compatibility. *)
+      let val_cases, partial =
+        type_cases env arg.exp_type ty_expected true loc val_caselist in
+      let exn_cases, _ =
+        type_cases env Predef.type_exn ty_expected false loc exn_caselist in
       re {
-        exp_desc = Texp_match(arg, cases, partial);
+        exp_desc = Texp_match(arg, val_cases, exn_cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -2103,6 +1989,8 @@ and type_expect_ ?in_function env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_tuple sexpl ->
+      if List.length sexpl < 2 then
+        Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
       let to_unify = newgenty (Ttuple subtypes) in
       unify_exp_types loc env to_unify ty_expected;
@@ -2153,12 +2041,14 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
+      if lid_sexp_list = [] then
+        Syntaxerr.ill_formed_ast loc "Records cannot be empty.";
       let opt_exp =
         match opt_sexp with
           None -> None
         | Some sexp ->
             if !Clflags.principal then begin_def ();
-            let exp = type_exp env sexp in
+            let exp = type_exp ~recarg env sexp in
             if !Clflags.principal then begin
               end_def ();
               generalize_structure exp.exp_type
@@ -2468,10 +2358,12 @@ and type_expect_ ?in_function env sexp ty_expected =
   | Pexp_send (e, met) ->
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
+      let obj_meths = ref None in
       begin try
         let (meth, exp, typ) =
           match obj.exp_desc with
             Texp_ident(path, _, {val_kind = Val_self (meths, _, _, privty)}) ->
+              obj_meths := Some meths;
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
@@ -2482,7 +2374,9 @@ and type_expect_ ?in_function env sexp ty_expected =
           | Texp_ident(path, lid, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
                 begin try List.assoc met methods with Not_found ->
-                  raise(Error(e.pexp_loc, env, Undefined_inherited_method met))
+                  let valid_methods = List.map fst methods in
+                  raise(Error(e.pexp_loc, env,
+                              Undefined_inherited_method (met, valid_methods)))
                 end
               in
               begin match
@@ -2491,11 +2385,12 @@ and type_expect_ ?in_function env sexp ty_expected =
               with
                 (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
                 (path, _) ->
+                  obj_meths := Some meths;
                   let (_, typ) =
                     filter_self_method env met Private meths privty
                   in
                   let method_type = newvar () in
-                  let (obj_ty, res_ty) = filter_arrow env method_type "" in
+                  let (obj_ty, res_ty) = filter_arrow env method_type Nolabel in
                   unify env obj_ty desc.val_type;
                   unify env res_ty (instance env typ);
                   let exp =
@@ -2509,13 +2404,13 @@ and type_expect_ ?in_function env sexp ty_expected =
                                 exp_type = method_type;
                                 exp_attributes = []; (* check *)
                                 exp_env = env},
-                          ["",
+                          [ Nolabel,
                             Some {exp_desc = Texp_ident(path, lid, desc);
                                   exp_loc = obj.exp_loc; exp_extra = [];
                                   exp_type = desc.val_type;
                                   exp_attributes = []; (* check *)
                                   exp_env = env},
-                               Required])
+                            Required ])
                   in
                   (Tmeth_name met, Some (re {exp_desc = exp;
                                              exp_loc = loc; exp_extra = [];
@@ -2558,7 +2453,21 @@ and type_expect_ ?in_function env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       with Unify _ ->
-        raise(Error(e.pexp_loc, env, Undefined_method (obj.exp_type, met)))
+        let valid_methods =
+          match !obj_meths with
+          | Some meths ->
+             Some (Meths.fold (fun meth _meth_ty li -> meth::li) !meths [])
+          | None ->
+             match (expand_head env obj.exp_type).desc with
+             | Tobject (fields, _) ->
+                let (fields, _) = Ctype.flatten_fields fields in
+                let collect_fields li (meth, meth_kind, _meth_ty) =
+                  if meth_kind = Fpresent then meth::li else li in
+                Some (List.fold_left collect_fields [] fields)
+             | _ -> None
+        in
+        raise(Error(e.pexp_loc, env,
+                    Undefined_method (obj.exp_type, met, valid_methods)))
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) = Typetexp.find_class env loc cl.txt in
@@ -2595,7 +2504,12 @@ and type_expect_ ?in_function env sexp ty_expected =
             raise(Error(loc, env, Instance_variable_not_mutable(false,lab.txt)))
       with
         Not_found ->
-          raise(Error(loc, env, Unbound_instance_variable lab.txt))
+          let collect_vars name _path val_desc li =
+            match val_desc.val_kind with
+            | Val_ivar (Mutable, _) -> name::li
+            | _ -> li in
+          let valid_vars = Env.fold_values collect_vars None env [] in
+          raise(Error(loc, env, Unbound_instance_variable (lab.txt, valid_vars)))
       end
   | Pexp_override lst ->
       let _ =
@@ -2622,7 +2536,8 @@ and type_expect_ ?in_function env sexp ty_expected =
               (Path.Pident id, lab, type_expect env snewval (instance env ty))
             with
               Not_found ->
-                raise(Error(loc, env, Unbound_instance_variable lab.txt))
+                let vars = Vars.fold (fun var _ li -> var::li) !vars [] in
+                raise(Error(loc, env, Unbound_instance_variable (lab.txt, vars)))
             end
           in
           let modifs = List.map type_override lst in
@@ -2820,8 +2735,8 @@ and type_expect_ ?in_function env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
-  | Pexp_extension (s, _arg) ->
-      raise (Error (s.loc, env, Extension s.txt))
+  | Pexp_extension ext ->
+      raise (Error_forward (Typetexp.error_of_extension ext))
 
 and type_function ?in_function loc attrs env ty_expected l caselist =
   let (loc_fun, ty_fun) =
@@ -2875,7 +2790,7 @@ and type_function ?in_function loc attrs env ty_expected l caselist =
 
 and type_label_access env loc srecord lid =
   if !Clflags.principal then begin_def ();
-  let record = type_exp env srecord in
+  let record = type_exp ~recarg:Allowed env srecord in
   if !Clflags.principal then begin
     end_def ();
     generalize_structure record.exp_type
@@ -2892,6 +2807,245 @@ and type_label_access env loc srecord lid =
     wrap_disambiguate "This expression has" ty_exp
       (Label.disambiguate lid env opath) labels in
   (record, label, opath)
+
+(* Typing format strings for printing or reading.
+   These formats are used by functions in modules Printf, Format, and Scanf.
+   (Handling of * modifiers contributed by Thorsten Ohl.) *)
+
+and type_format loc str env =
+  let loc = {loc with Location.loc_ghost = true} in
+  try
+    CamlinternalFormatBasics.(CamlinternalFormat.(
+      let mk_exp_loc pexp_desc = {
+        pexp_desc = pexp_desc;
+        pexp_loc = loc;
+        pexp_attributes = [];
+      } and mk_lid_loc lid = {
+        txt = lid;
+        loc = loc;
+      } in
+      let mk_constr name args =
+        let lid = Longident.(Ldot(Lident "CamlinternalFormatBasics", name)) in
+        let arg = match args with
+          | []          -> None
+          | [ e ]       -> Some e
+          | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
+        mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
+      let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
+      let mk_int n = mk_cst (Const_int n)
+      and mk_string str = mk_cst (Const_string (str, None))
+      and mk_char chr = mk_cst (Const_char chr) in
+      let rec mk_formatting_lit fmting = match fmting with
+        | Close_box ->
+          mk_constr "Close_box" []
+        | Close_tag ->
+          mk_constr "Close_tag" []
+        | Break (org, ns, ni) ->
+          mk_constr "Break" [ mk_string org; mk_int ns; mk_int ni ]
+        | FFlush ->
+          mk_constr "FFlush" []
+        | Force_newline ->
+          mk_constr "Force_newline" []
+        | Flush_newline ->
+          mk_constr "Flush_newline" []
+        | Magic_size (org, sz) ->
+          mk_constr "Magic_size" [ mk_string org; mk_int sz ]
+        | Escaped_at ->
+          mk_constr "Escaped_at" []
+        | Escaped_percent ->
+          mk_constr "Escaped_percent" []
+        | Scan_indic c ->
+          mk_constr "Scan_indic" [ mk_char c ]
+      and mk_formatting_gen : type a b c d e f .
+          (a, b, c, d, e, f) formatting_gen -> Parsetree.expression =
+        fun fmting -> match fmting with
+        | Open_tag (Format (fmt', str')) ->
+          mk_constr "Open_tag" [ mk_format fmt' str' ]
+        | Open_box (Format (fmt', str')) ->
+          mk_constr "Open_box" [ mk_format fmt' str' ]
+      and mk_format : type a b c d e f .
+          (a, b, c, d, e, f) CamlinternalFormatBasics.fmt -> string ->
+          Parsetree.expression = fun fmt str ->
+        mk_constr "Format" [ mk_fmt fmt; mk_string str ]
+      and mk_side side = match side with
+        | Left  -> mk_constr "Left"  []
+        | Right -> mk_constr "Right" []
+        | Zeros -> mk_constr "Zeros" []
+      and mk_iconv iconv = match iconv with
+        | Int_d  -> mk_constr "Int_d"  [] | Int_pd -> mk_constr "Int_pd" []
+        | Int_sd -> mk_constr "Int_sd" [] | Int_i  -> mk_constr "Int_i"  []
+        | Int_pi -> mk_constr "Int_pi" [] | Int_si -> mk_constr "Int_si" []
+        | Int_x  -> mk_constr "Int_x"  [] | Int_Cx -> mk_constr "Int_Cx" []
+        | Int_X  -> mk_constr "Int_X"  [] | Int_CX -> mk_constr "Int_CX" []
+        | Int_o  -> mk_constr "Int_o"  [] | Int_Co -> mk_constr "Int_Co" []
+        | Int_u  -> mk_constr "Int_u"  []
+      and mk_fconv fconv = match fconv with
+        | Float_f  -> mk_constr "Float_f"  []
+        | Float_pf -> mk_constr "Float_pf" []
+        | Float_sf -> mk_constr "Float_sf" []
+        | Float_e  -> mk_constr "Float_e"  []
+        | Float_pe -> mk_constr "Float_pe" []
+        | Float_se -> mk_constr "Float_se" []
+        | Float_E  -> mk_constr "Float_E"  []
+        | Float_pE -> mk_constr "Float_pE" []
+        | Float_sE -> mk_constr "Float_sE" []
+        | Float_g  -> mk_constr "Float_g"  []
+        | Float_pg -> mk_constr "Float_pg" []
+        | Float_sg -> mk_constr "Float_sg" []
+        | Float_G  -> mk_constr "Float_G"  []
+        | Float_pG -> mk_constr "Float_pG" []
+        | Float_sG -> mk_constr "Float_sG" []
+        | Float_F  -> mk_constr "Float_F"  []
+      and mk_counter cnt = match cnt with
+        | Line_counter  -> mk_constr "Line_counter"  []
+        | Char_counter  -> mk_constr "Char_counter"  []
+        | Token_counter -> mk_constr "Token_counter" []
+      and mk_int_opt n_opt = match n_opt with
+        | None ->
+          let lid_loc = mk_lid_loc (Longident.Lident "None") in
+          mk_exp_loc (Pexp_construct (lid_loc, None))
+        | Some n ->
+          let lid_loc = mk_lid_loc (Longident.Lident "Some") in
+          mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n)))
+      and mk_fmtty : type a b c d e f g h i j k l .
+          (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression =
+      fun fmtty -> match fmtty with
+        | Char_ty rest      -> mk_constr "Char_ty"      [ mk_fmtty rest ]
+        | String_ty rest    -> mk_constr "String_ty"    [ mk_fmtty rest ]
+        | Int_ty rest       -> mk_constr "Int_ty"       [ mk_fmtty rest ]
+        | Int32_ty rest     -> mk_constr "Int32_ty"     [ mk_fmtty rest ]
+        | Nativeint_ty rest -> mk_constr "Nativeint_ty" [ mk_fmtty rest ]
+        | Int64_ty rest     -> mk_constr "Int64_ty"     [ mk_fmtty rest ]
+        | Float_ty rest     -> mk_constr "Float_ty"     [ mk_fmtty rest ]
+        | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
+        | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
+        | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
+        | Reader_ty rest    -> mk_constr "Reader_ty"    [ mk_fmtty rest ]
+        | Ignored_reader_ty rest ->
+          mk_constr "Ignored_reader_ty" [ mk_fmtty rest ]
+        | Format_arg_ty (sub_fmtty, rest) ->
+          mk_constr "Format_arg_ty" [ mk_fmtty sub_fmtty; mk_fmtty rest ]
+        | Format_subst_ty (sub_fmtty1, sub_fmtty2, rest) ->
+          mk_constr "Format_subst_ty"
+            [ mk_fmtty sub_fmtty1; mk_fmtty sub_fmtty2; mk_fmtty rest ]
+        | End_of_fmtty -> mk_constr "End_of_fmtty" []
+      and mk_ignored : type a b c d e f .
+          (a, b, c, d, e, f) ignored -> Parsetree.expression =
+      fun ign -> match ign with
+        | Ignored_char ->
+          mk_constr "Ignored_char" []
+        | Ignored_caml_char ->
+          mk_constr "Ignored_caml_char" []
+        | Ignored_string pad_opt ->
+          mk_constr "Ignored_string" [ mk_int_opt pad_opt ]
+        | Ignored_caml_string pad_opt ->
+          mk_constr "Ignored_caml_string" [ mk_int_opt pad_opt ]
+        | Ignored_int (iconv, pad_opt) ->
+          mk_constr "Ignored_int" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_int32 (iconv, pad_opt) ->
+          mk_constr "Ignored_int32" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_nativeint (iconv, pad_opt) ->
+          mk_constr "Ignored_nativeint" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_int64 (iconv, pad_opt) ->
+          mk_constr "Ignored_int64" [ mk_iconv iconv; mk_int_opt pad_opt ]
+        | Ignored_float (pad_opt, prec_opt) ->
+          mk_constr "Ignored_float" [ mk_int_opt pad_opt; mk_int_opt prec_opt ]
+        | Ignored_bool ->
+          mk_constr "Ignored_bool" []
+        | Ignored_format_arg (pad_opt, fmtty) ->
+          mk_constr "Ignored_format_arg" [ mk_int_opt pad_opt; mk_fmtty fmtty ]
+        | Ignored_format_subst (pad_opt, fmtty) ->
+          mk_constr "Ignored_format_subst" [
+            mk_int_opt pad_opt; mk_fmtty fmtty ]
+        | Ignored_reader ->
+          mk_constr "Ignored_reader" []
+        | Ignored_scan_char_set (width_opt, char_set) ->
+          mk_constr "Ignored_scan_char_set" [
+            mk_int_opt width_opt; mk_string char_set ]
+        | Ignored_scan_get_counter counter ->
+          mk_constr "Ignored_scan_get_counter" [
+            mk_counter counter
+          ]
+        | Ignored_scan_next_char ->
+          mk_constr "Ignored_scan_next_char" []
+      and mk_padding : type x y . (x, y) padding -> Parsetree.expression =
+      fun pad -> match pad with
+        | No_padding         -> mk_constr "No_padding" []
+        | Lit_padding (s, w) -> mk_constr "Lit_padding" [ mk_side s; mk_int w ]
+        | Arg_padding s      -> mk_constr "Arg_padding" [ mk_side s ]
+      and mk_precision : type x y . (x, y) precision -> Parsetree.expression =
+      fun prec -> match prec with
+        | No_precision    -> mk_constr "No_precision" []
+        | Lit_precision w -> mk_constr "Lit_precision" [ mk_int w ]
+        | Arg_precision   -> mk_constr "Arg_precision" []
+      and mk_fmt : type a b c d e f .
+          (a, b, c, d, e, f) fmt -> Parsetree.expression =
+      fun fmt -> match fmt with
+        | Char rest ->
+          mk_constr "Char" [ mk_fmt rest ]
+        | Caml_char rest ->
+          mk_constr "Caml_char" [ mk_fmt rest ]
+        | String (pad, rest) ->
+          mk_constr "String" [ mk_padding pad; mk_fmt rest ]
+        | Caml_string (pad, rest) ->
+          mk_constr "Caml_string" [ mk_padding pad; mk_fmt rest ]
+        | Int (iconv, pad, prec, rest) ->
+          mk_constr "Int" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Int32 (iconv, pad, prec, rest) ->
+          mk_constr "Int32" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Nativeint (iconv, pad, prec, rest) ->
+          mk_constr "Nativeint" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Int64 (iconv, pad, prec, rest) ->
+          mk_constr "Int64" [
+            mk_iconv iconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Float (fconv, pad, prec, rest) ->
+          mk_constr "Float" [
+            mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
+        | Bool rest ->
+          mk_constr "Bool" [ mk_fmt rest ]
+        | Flush rest ->
+          mk_constr "Flush" [ mk_fmt rest ]
+        | String_literal (s, rest) ->
+          mk_constr "String_literal" [ mk_string s; mk_fmt rest ]
+        | Char_literal (c, rest) ->
+          mk_constr "Char_literal" [ mk_char c; mk_fmt rest ]
+        | Format_arg (pad_opt, fmtty, rest) ->
+          mk_constr "Format_arg" [
+            mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
+        | Format_subst (pad_opt, fmtty, rest) ->
+          mk_constr "Format_subst" [
+            mk_int_opt pad_opt; mk_fmtty fmtty; mk_fmt rest ]
+        | Alpha rest ->
+          mk_constr "Alpha" [ mk_fmt rest ]
+        | Theta rest ->
+          mk_constr "Theta" [ mk_fmt rest ]
+        | Formatting_lit (fmting, rest) ->
+          mk_constr "Formatting_lit" [ mk_formatting_lit fmting; mk_fmt rest ]
+        | Formatting_gen (fmting, rest) ->
+          mk_constr "Formatting_gen" [ mk_formatting_gen fmting; mk_fmt rest ]
+        | Reader rest ->
+          mk_constr "Reader" [ mk_fmt rest ]
+        | Scan_char_set (width_opt, char_set, rest) ->
+          mk_constr "Scan_char_set" [
+            mk_int_opt width_opt; mk_string char_set; mk_fmt rest ]
+        | Scan_get_counter (cnt, rest) ->
+          mk_constr "Scan_get_counter" [ mk_counter cnt; mk_fmt rest ]
+        | Scan_next_char rest ->
+          mk_constr "Scan_next_char" [ mk_fmt rest ]
+        | Ignored_param (ign, rest) ->
+          mk_constr "Ignored_param" [ mk_ignored ign; mk_fmt rest ]
+        | End_of_format ->
+          mk_constr "End_of_format" []
+      in
+      let legacy_behavior = not !Clflags.strict_formats in
+      let Fmt_EBB fmt = fmt_ebb_of_string ~legacy_behavior str in
+      mk_constr "Format" [ mk_fmt fmt; mk_string str ]
+    ))
+  with Failure msg ->
+    raise (Error (loc, env, Invalid_format msg))
 
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
@@ -2945,20 +3099,22 @@ and type_label_exp create env loc ty_expected
   in
   (lid, label, {arg with exp_type = instance env arg.exp_type})
 
-and type_argument env sarg ty_expected' ty_expected =
+and type_argument ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
-    not tvar && List.for_all ((=) "") ls
+    not tvar && List.for_all ((=) Nolabel) ls
   in
   let rec is_inferred sexp =
     match sexp.pexp_desc with
-      Pexp_ident _ | Pexp_apply _ | Pexp_send _ | Pexp_field _ -> true
-    | Pexp_open (_, _, e) -> is_inferred e
+      Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
+    | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
+    | Pexp_sequence (_, e) | Pexp_open (_, _, e) -> is_inferred e
+    | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
     | _ -> false
   in
   match expand_head env ty_expected' with
-    {desc = Tarrow("",ty_arg,ty_res,_); level = lv} when is_inferred sarg ->
+    {desc = Tarrow(Nolabel,ty_arg,ty_res,_); level = lv} when is_inferred sarg ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       if !Clflags.principal then begin_def ();
@@ -2972,7 +3128,7 @@ and type_argument env sarg ty_expected' ty_expected =
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             let ty = option_none (instance env ty_arg) sarg.pexp_loc in
             make_args ((l, Some ty, Optional) :: args) ty_fun
-        | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
+        | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
             List.rev args, ty_fun, no_labels ty_res'
         | Tvar _ ->  List.rev args, ty_fun, false
         |  _ -> [], texp.exp_type, false
@@ -3008,13 +3164,14 @@ and type_argument env sarg ty_expected' ty_expected =
           {texp with exp_type = ty_res; exp_desc =
            Texp_apply
              (texp,
-              args @ ["", Some eta_var, Required])}
+              args @ [Nolabel, Some eta_var, Required])}
         in
         { texp with exp_type = ty_fun; exp_desc =
-          Texp_function("", [case eta_pat e], Total) }
+          Texp_function(Nolabel, [case eta_pat e], Total) }
       in
       Location.prerr_warning texp.exp_loc
-        (Warnings.Eliminated_optional_arguments (List.map (fun (l, _, _) -> l) args));
+        (Warnings.Eliminated_optional_arguments
+           (List.map (fun (l, _, _) -> Printtyp.string_of_label l) args));
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
@@ -3022,11 +3179,13 @@ and type_argument env sarg ty_expected' ty_expected =
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
-                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[]}],
+                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
+                       vb_loc=Location.none;
+                      }],
                      func let_var) }
       end
   | _ ->
-      let texp = type_expect env sarg ty_expected' in
+      let texp = type_expect ?recarg env sarg ty_expected' in
       unify_exp env texp ty_expected;
       texp
 
@@ -3044,7 +3203,7 @@ and type_application env funct sargs =
   let ignored = ref [] in
   let rec type_unknown_args
       (args :
-      (Asttypes.label * (unit -> Typedtree.expression) option *
+      (Asttypes.arg_label * (unit -> Typedtree.expression) option *
          Typedtree.optional) list)
     omitted ty_fun = function
       [] ->
@@ -3070,7 +3229,7 @@ and type_application env funct sargs =
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
           | Tarrow (l,t1,t2,_) when l = l1
-            || !Clflags.classic && l1 = "" && not (is_optional l) ->
+            || !Clflags.classic && l1 = Nolabel && not (is_optional l) ->
               (t1, t2)
           | td ->
               let ty_fun =
@@ -3103,8 +3262,8 @@ and type_application env funct sargs =
       not tvar &&
       let labels = List.filter (fun l -> not (is_optional l)) ls in
       List.length labels = List.length sargs &&
-      List.for_all (fun (l,_) -> l = "") sargs &&
-      List.exists (fun l -> l <> "") labels &&
+      List.for_all (fun (l,_) -> l = Nolabel) sargs &&
+      List.exists (fun l -> l <> Nolabel) labels &&
       (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
        true)
     end
@@ -3132,7 +3291,7 @@ and type_application env funct sargs =
                 raise(Error(sarg0.pexp_loc, env,
                             Apply_wrong_label(l', ty_old)))
             | _, (l', sarg0) :: more_sargs ->
-                if l <> l' && l' <> "" then
+                if l <> l' && l' <> Nolabel then
                   raise(Error(sarg0.pexp_loc, env,
                               Apply_wrong_label(l', ty_fun')))
                 else
@@ -3158,7 +3317,7 @@ and type_application env funct sargs =
             in
             if optional = Required && is_optional l' then
               Location.prerr_warning sarg0.pexp_loc
-                (Warnings.Nonoptional_label l);
+                (Warnings.Nonoptional_label (Printtyp.string_of_label l));
             sargs, more_sargs,
             if optional = Required || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty ty0)
@@ -3172,7 +3331,7 @@ and type_application env funct sargs =
           with Not_found ->
             sargs, more_sargs,
             if optional = Optional &&
-              (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+              (List.mem_assoc Nolabel sargs || List.mem_assoc Nolabel more_sargs)
             then begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "eliminated optional argument");
@@ -3201,8 +3360,8 @@ and type_application env funct sargs =
   match funct.exp_desc, sargs with
     (* Special case for ignore: avoid discarding warning *)
     Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
-    ["", sarg] ->
-      let ty_arg, ty_res = filter_arrow env (instance env funct.exp_type) "" in
+    [Nolabel, sarg] ->
+      let ty_arg, ty_res = filter_arrow env (instance env funct.exp_type) Nolabel in
       let exp = type_expect env sarg ty_arg in
       begin match (expand_head env exp.exp_type).desc with
       | Tarrow _ ->
@@ -3211,7 +3370,7 @@ and type_application env funct sargs =
           add_delayed_check (fun () -> check_application_result env false exp)
       | _ -> ()
       end;
-      (["", Some exp, Required], ty_res)
+      ([Nolabel, Some exp, Required], ty_res)
   | _ ->
       let ty = funct.exp_type in
       if ignore_labels then
@@ -3235,7 +3394,9 @@ and type_construct env loc lid sarg ty_expected attrs =
   let sargs =
     match sarg with
       None -> []
-    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when
+        constr.cstr_arity > 1 || explicit_arity attrs
+      -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch
@@ -3266,7 +3427,21 @@ and type_construct env loc lid sarg ty_expected attrs =
   in
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp env texp (instance env ty_expected);
-  let args = List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
+  let recarg =
+    match constr.cstr_inlined with
+    | None -> Rejected
+    | Some _ ->
+        begin match sargs with
+        | [{pexp_desc =
+              Pexp_ident _ |
+              Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
+            Required
+        | _ ->
+            raise (Error(loc, env, Inlined_record_escape))
+        end
+  in
+  let args =
+    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     raise(Error(loc, env, Private_type ty_res));
@@ -3559,7 +3734,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                       slot := (name, vd) :: !slot; rec_needed := true
                   | None ->
                       List.iter
-                        (fun (name, vd) -> Env.mark_value_used name vd)
+                        (fun (name, vd) -> Env.mark_value_used env name vd)
                         (get_ref slot);
                       used := true;
                       some_used := true
@@ -3572,7 +3747,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   in
   let exp_list =
     List.map2
-      (fun {pvb_expr=sexp; _} (pat, slot) ->
+      (fun {pvb_expr=sexp; pvb_attributes; _} (pat, slot) ->
         let sexp =
           if rec_flag = Recursive then wrap_unpacks sexp unpacks else sexp in
         if is_recursive then current_slot := slot;
@@ -3585,11 +3760,16 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               end_def ();
               generalize_structure ty'
             end;
-            let exp = type_expect exp_env sexp ty' in
+            let exp =
+              Typetexp.with_warning_attribute pvb_attributes (fun () ->
+                type_expect exp_env sexp ty')
+            in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
-        | _ -> type_expect exp_env sexp pat.pat_type)
+        | _ ->
+            Typetexp.with_warning_attribute pvb_attributes (fun () ->
+              type_expect exp_env sexp pat.pat_type))
       spat_sexp_list pat_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed
@@ -3612,7 +3792,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let l =
     List.map2
       (fun (p, e) pvb ->
-        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes})
+        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
+         vb_loc=pvb.pvb_loc;
+        })
       l spat_sexp_list
   in
   (l, new_env, unpacks)
@@ -3652,6 +3834,14 @@ let type_expression env sexp =
 
 (* Error report *)
 
+let spellcheck ppf unbound_name valid_names =
+  Misc.did_you_mean ppf (fun () ->
+    Misc.spellcheck valid_names unbound_name
+  )
+
+let spellcheck_idents ppf unbound valid_idents =
+  spellcheck ppf (Ident.name unbound) (List.map Ident.name valid_idents)
+
 open Format
 open Printtyp
 
@@ -3685,9 +3875,10 @@ let report_error env ppf = function
           fprintf ppf "but on the right-hand side it has type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
-  | Orpat_vars id ->
+  | Orpat_vars (id, valid_idents) ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
-        (Ident.name id)
+        (Ident.name id);
+      spellcheck_idents ppf id valid_idents
   | Expr_type_clash trace ->
       report_unification_error ppf env trace
         (function ppf ->
@@ -3709,9 +3900,9 @@ let report_error env ppf = function
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
-        | "" -> fprintf ppf "without label"
+        | Nolabel -> fprintf ppf "without label"
         | l ->
-            fprintf ppf "with label %s%s" (if is_optional l then "" else "~") l
+            fprintf ppf "with label %s" (prefixed_label_name l)
       in
       reset_and_mark_loops ty;
       fprintf ppf
@@ -3727,17 +3918,23 @@ let report_error env ppf = function
         print_labels labels
   | Label_not_mutable lid ->
       fprintf ppf "The record field %a is not mutable" longident lid
-  | Wrong_name (eorp, ty, kind, p, lid) ->
+  | Wrong_name (eorp, ty, kind, p, name, valid_names) ->
       reset_and_mark_loops ty;
+      if Path.is_constructor_typath p then begin
+        fprintf ppf "@[The field %s is not part of the record \
+                     argument for the %a constructor@]"
+          name
+          path p;
+      end else begin
       fprintf ppf "@[@[<2>%s type@ %a@]@ "
         eorp type_expr ty;
-      fprintf ppf "The %s %a does not belong to type %a@]"
-        (if kind = "record" then "field" else "constructor")
-        longident lid (*kind*) path p;
-      if kind = "record" then Label.spellcheck ppf env p lid
-                         else Constructor.spellcheck ppf env p lid
+      fprintf ppf "The %s %s does not belong to type %a@]"
+        (label_of_kind kind)
+        name (*kind*) path p;
+       end;
+      spellcheck ppf name valid_names;
   | Name_type_mismatch (kind, lid, tp, tpl) ->
-      let name = if kind = "record" then "field" else "constructor" in
+      let name = label_of_kind kind in
       report_ambiguous_type_error ppf env tp tpl
         (function ppf ->
            fprintf ppf "The %s %a@ belongs to the %s type"
@@ -3748,24 +3945,26 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but a %s was expected belonging to the %s type"
              name kind)
-  | Incomplete_format s ->
-      fprintf ppf "Premature end of format string ``%S''" s
-  | Bad_conversion (fmt, i, c) ->
-      fprintf ppf
-        "Bad conversion %%%c, at char number %d \
-         in format string ``%s''" c i fmt
-  | Undefined_method (ty, me) ->
+  | Invalid_format msg ->
+      fprintf ppf "%s" msg
+  | Undefined_method (ty, me, valid_methods) ->
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[This expression has type@;<1 2>%a@]@,\
-         It has no method %s@]" type_expr ty me
-  | Undefined_inherited_method me ->
-      fprintf ppf "This expression has no method %s" me
+         It has no method %s@]" type_expr ty me;
+      begin match valid_methods with
+        | None -> ()
+        | Some valid_methods -> spellcheck ppf me valid_methods
+      end
+  | Undefined_inherited_method (me, valid_methods) ->
+      fprintf ppf "This expression has no method %s" me;
+      spellcheck ppf me valid_methods;
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
-  | Unbound_instance_variable v ->
-      fprintf ppf "Unbound instance variable %s" v
+  | Unbound_instance_variable (var, valid_vars) ->
+      fprintf ppf "Unbound instance variable %s" var;
+      spellcheck ppf var valid_vars;
   | Instance_variable_not_mutable (b, v) ->
       if b then
         fprintf ppf "The instance variable %s is not mutable" v
@@ -3803,8 +4002,8 @@ let report_error env ppf = function
       end
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
-        | "" -> "but its first argument is not labelled"
-        |  l -> sprintf "but its first argument is labelled ~%s" l in
+        | Nolabel -> "but its first argument is not labelled"
+        | l -> sprintf "but its first argument is labelled %s" (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)
@@ -3861,8 +4060,16 @@ let report_error env ppf = function
   | Invalid_for_loop_index ->
       fprintf ppf
         "@[Invalid for-loop index: only variables and _ are allowed.@]"
-  | Extension s ->
-      fprintf ppf "Uninterpreted extension '%s'." s
+  | No_value_clauses ->
+      fprintf ppf
+        "None of the patterns in this 'match' expression match values."
+  | Exception_pattern_below_toplevel ->
+      fprintf ppf
+        "@[Exception patterns must be at the top level of a match case.@]"
+  | Inlined_record_escape ->
+      fprintf ppf
+        "@[This form is not allowed as the type of the inlined record could \
+         escape.@]"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
@@ -3872,9 +4079,16 @@ let () =
     (function
       | Error (loc, env, err) ->
         Some (Location.error_of_printer loc (report_error env) err)
+      | Error_forward err ->
+        Some err
       | _ ->
         None
     )
 
 let () =
   Env.add_delayed_check_forward := add_delayed_check
+
+(* drop ?recarg argument from the external API *)
+let type_expect ?in_function env e ty = type_expect ?in_function env e ty
+let type_exp env e = type_exp env e
+let type_argument env e t1 t2 = type_argument env e t1 t2

@@ -32,7 +32,7 @@ let test_one (df: int -> int) (mf: int -> int) x =
 let do_test divisor (df: int -> int) (mf: int -> int) =
   d := divisor;
   List.iter (test_one df mf)
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 
+    [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
      100; 1000; 10000; 100000; 1000000; max_int - 1; max_int;
      -1; -2; -3; -4; -5; -6; -7; -8; -9; -10;
      -100; -1000; -10000; -100000; -1000000; min_int + 1; min_int];
@@ -59,7 +59,7 @@ let test_one (df: nativeint -> nativeint) (mf: nativeint -> nativeint) x =
 let do_test divisor (df: nativeint -> nativeint) (mf: nativeint -> nativeint) =
   d := Nativeint.of_int divisor;
   List.iter (test_one df mf)
-    [0n; 1n; 2n; 3n; 4n; 5n; 6n; 7n; 8n; 9n; 10n; 
+    [0n; 1n; 2n; 3n; 4n; 5n; 6n; 7n; 8n; 9n; 10n;
      100n; 1000n; 10000n; 100000n; 1000000n;
      Nativeint.(pred max_int); Nativeint.max_int;
      -1n; -2n; -3n; -4n; -5n; -6n; -7n; -8n; -9n; -10n;
@@ -74,6 +74,7 @@ let do_test divisor (df: nativeint -> nativeint) (mf: nativeint -> nativeint) =
 end
 
 let _ =
+  printf "1 int\n"; WithInt.do_test 1 (fun x -> x / 1)(fun x -> x mod 1);
   printf "2 int\n"; WithInt.do_test 2 (fun x -> x / 2)(fun x -> x mod 2);
   printf "3 int\n"; WithInt.do_test 3 (fun x -> x / 3)(fun x -> x mod 3);
   printf "4 int\n"; WithInt.do_test 4 (fun x -> x / 4)(fun x -> x mod 4);
@@ -88,9 +89,11 @@ let _ =
   printf "55 int\n"; WithInt.do_test 55 (fun x -> x / 55)(fun x -> x mod 55);
   printf "125 int\n"; WithInt.do_test 125 (fun x -> x / 125)(fun x -> x mod 125);
   printf "625 int\n"; WithInt.do_test 625 (fun x -> x / 625)(fun x -> x mod 625);
+  printf "-1 int\n"; WithInt.do_test (-1) (fun x -> x / (-1))(fun x -> x mod (-1));
   printf "-2 int\n"; WithInt.do_test (-2) (fun x -> x / (-2))(fun x -> x mod (-2));
   printf "-3 int\n"; WithInt.do_test (-3) (fun x -> x / (-3))(fun x -> x mod (-3));
 
+  printf "1 nat\n"; WithNat.do_test 1 (fun x -> Nativeint.div x 1n)(fun x -> Nativeint.rem x 1n);
   printf "2 nat\n"; WithNat.do_test 2 (fun x -> Nativeint.div x 2n)(fun x -> Nativeint.rem x 2n);
   printf "3 nat\n"; WithNat.do_test 3 (fun x -> Nativeint.div x 3n)(fun x -> Nativeint.rem x 3n);
   printf "4 nat\n"; WithNat.do_test 4 (fun x -> Nativeint.div x 4n)(fun x -> Nativeint.rem x 4n);
@@ -105,6 +108,7 @@ let _ =
   printf "55 nat\n"; WithNat.do_test 55 (fun x -> Nativeint.div x 55n)(fun x -> Nativeint.rem x 55n);
   printf "125 nat\n"; WithNat.do_test 125 (fun x -> Nativeint.div x 125n)(fun x -> Nativeint.rem x 125n);
   printf "625 nat\n"; WithNat.do_test 625 (fun x -> Nativeint.div x 625n)(fun x -> Nativeint.rem x 625n);
+  printf "-1 nat\n"; WithNat.do_test (-1) (fun x -> Nativeint.div x (-1n))(fun x -> Nativeint.rem x (-1n));
   printf "-2 nat\n"; WithNat.do_test (-2) (fun x -> Nativeint.div x (-2n))(fun x -> Nativeint.rem x (-2n));
   printf "-3 nat\n"; WithNat.do_test (-3) (fun x -> Nativeint.div x (-3n))(fun x -> Nativeint.rem x (-3n));
 

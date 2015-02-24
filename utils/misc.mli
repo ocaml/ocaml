@@ -42,6 +42,8 @@ val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
+val find_in_path_rel: string list -> string -> string
+        (* Search a relative file in a list of directories. *)
 val find_in_path_uncap: string list -> string -> string
         (* Same, but search also for uncapitalized name, i.e.
            if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
@@ -66,11 +68,6 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
 val string_of_file: in_channel -> string
         (* [string_of_file ic] reads the contents of file [ic] and copies
            them to a string. It stops when encountering EOF on [ic]. *)
-val input_bytes : in_channel -> int -> string;;
-        (* [input_bytes ic n] reads [n] bytes from [ic] and returns them
-           in a new string.  It raises [End_of_file] if EOF is encountered
-           before all the bytes are read. *)
-
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
            if [n] is a power of 2*)
@@ -83,9 +80,12 @@ val no_overflow_add: int -> int -> bool
 val no_overflow_sub: int -> int -> bool
         (* [no_overflow_add n1 n2] returns [true] if the computation of
            [n1 - n2] does not overflow. *)
-val no_overflow_lsl: int -> bool
-        (* [no_overflow_add n] returns [true] if the computation of
-           [n lsl 1] does not overflow. *)
+val no_overflow_mul: int -> int -> bool
+        (* [no_overflow_mul n1 n2] returns [true] if the computation of
+           [n1 * n2] does not overflow. *)
+val no_overflow_lsl: int -> int -> bool
+        (* [no_overflow_lsl n k] returns [true] if the computation of
+           [n lsl k] does not overflow. *)
 
 val chop_extension_if_any: string -> string
         (* Like Filename.chop_extension but returns the initial file
@@ -103,6 +103,10 @@ val search_substring: string -> string -> int -> int
            occurrence of string [pat] in string [str].  Search starts
            at offset [start] in [str].  Raise [Not_found] if [pat]
            does not occur. *)
+
+val replace_substring: before:string -> after:string -> string -> string
+        (* [search_substring ~before ~after str] replaces all occurences
+           of [before] with [after] in [str] and returns the resulting string. *)
 
 val rev_split_words: string -> string list
         (* [rev_split_words s] splits [s] in blank-separated words, and return
@@ -124,14 +128,14 @@ val for4: 'a * 'b * 'c * 'd -> 'd
 
 module LongString :
   sig
-    type t = string array
+    type t = bytes array
     val create : int -> t
     val length : t -> int
     val get : t -> int -> char
     val set : t -> int -> char -> unit
     val blit : t -> int -> t -> int -> int -> unit
     val output : out_channel -> t -> int -> int -> unit
-    val unsafe_blit_to_string : t -> int -> string -> int -> int -> unit
+    val unsafe_blit_to_bytes : t -> int -> bytes -> int -> int -> unit
     val input_bytes : in_channel -> int -> t
   end
 
@@ -145,6 +149,25 @@ val edit_distance : string -> string -> int -> int option
     computes the number of insertion, deletion, substitution of
     letters, or swapping of adjacent letters to go from one word to the
     other. The particular algorithm may change in the future.
+*)
+
+val spellcheck : string list -> string -> string list
+(** [spellcheck env name] takes a list of names [env] that exist in
+    the current environment and an erroneous [name], and returns a
+    list of suggestions taken from [env], that are close enough to
+    [name] that it may be a typo for one of them. *)
+
+val did_you_mean : Format.formatter -> (unit -> string list) -> unit
+(** [did_you_mean ppf get_choices] hints that the user may have meant
+    one of the option returned by calling [get_choices]. It does nothing
+    if the returned list is empty.
+
+    The [unit -> ...] thunking is meant to delay any potentially-slow
+    computation (typically computing edit-distance with many things
+    from the current environment) to when the hint message is to be
+    printed. You should print an understandable error message before
+    calling [did_you_mean], so that users get a clear notification of
+    the failure even if producing the hint is slow.
 *)
 
 val split : string -> char -> string list
@@ -164,3 +187,9 @@ val cut_at : string -> char -> string * string
    Raise [Not_found] if the character does not appear in the string
    @since 4.01
 *)
+
+
+module StringSet: Set.S with type elt = string
+module StringMap: Map.S with type key = string
+(* TODO: replace all custom instantiations of StringSet/StringMap in various
+   compiler modules with this one. *)

@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Flags that control rational arithmetic. *)
 
 val arith_status: unit -> unit

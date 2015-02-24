@@ -40,8 +40,16 @@ let set tbl name crc source = Hashtbl.add tbl name (crc, source)
 
 let source tbl name = snd (Hashtbl.find tbl name)
 
-let extract tbl =
-  Hashtbl.fold (fun name (crc, auth) accu -> (name, crc) :: accu) tbl []
+let extract l tbl =
+  let l = List.sort_uniq String.compare l in
+  List.fold_left
+    (fun assc name ->
+       try
+         let (crc, _) = Hashtbl.find tbl name in
+           (name, Some crc) :: assc
+       with Not_found ->
+         (name, None) :: assc)
+    [] l
 
 let filter p tbl =
   let to_remove = ref [] in

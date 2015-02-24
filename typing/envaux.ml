@@ -28,7 +28,7 @@ let reset_cache () =
   Env.reset_cache()
 
 let extract_sig env mty =
-  match Mtype.scrape env mty with
+  match Env.scrape_alias env mty with
     Mty_signature sg -> sg
   | _ -> fatal_error "Envaux.extract_sig"
 
@@ -47,9 +47,9 @@ let rec env_from_summary sum subst =
           Env.add_type ~check:false id
             (Subst.type_declaration subst desc)
             (env_from_summary s subst)
-      | Env_exception(s, id, desc) ->
-          Env.add_exception ~check:false id
-            (Subst.exception_declaration subst desc)
+      | Env_extension(s, id, desc) ->
+          Env.add_extension ~check:false id
+            (Subst.extension_constructor subst desc)
             (env_from_summary s subst)
       | Env_module(s, id, desc) ->
           Env.add_module_declaration id

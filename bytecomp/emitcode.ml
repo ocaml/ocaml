@@ -20,6 +20,8 @@ open Instruct
 open Opcodes
 open Cmo_format
 
+module StringSet = Set.Make(String)
+
 (* Buffering of bytecode *)
 
 let out_buffer = ref(LongString.create 1024)
@@ -80,7 +82,7 @@ let label_table  = ref ([| |] : label_definition array)
 let extend_label_table needed =
   let new_size = ref(Array.length !label_table) in
   while needed >= !new_size do new_size := 2 * !new_size done;
-  let new_table = Array.create !new_size (Label_undefined []) in
+  let new_table = Array.make !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
   label_table := new_table
 
@@ -135,8 +137,13 @@ and slot_for_c_prim name =
 (* Debugging events *)
 
 let events = ref ([] : debug_event list)
+let debug_dirs = ref StringSet.empty
 
 let record_event ev =
+  let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
+  let abspath = Location.absolute_path path in
+  debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
+  if Filename.is_relative path then debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -144,8 +151,9 @@ let record_event ev =
 
 let init () =
   out_position := 0;
-  label_table := Array.create 16 (Label_undefined []);
+  label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
+  debug_dirs := StringSet.empty;
   events := []
 
 (* Emission of one instruction *)
@@ -353,7 +361,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name code =
+let to_file outchan unit_name objfile code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -363,8 +371,12 @@ let to_file outchan unit_name code =
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
+      debug_dirs := StringSet.add
+        (Filename.dirname (Location.absolute_path objfile))
+        !debug_dirs;
       let p = pos_out outchan in
       output_value outchan !events;
+      output_value outchan (StringSet.elements !debug_dirs);
       (p, pos_out outchan - p)
     end else
       (0, 0) in
@@ -373,7 +385,7 @@ let to_file outchan unit_name code =
       cu_pos = pos_code;
       cu_codesize = !out_position;
       cu_reloc = List.rev !reloc_info;
-      cu_imports = Env.imported_units();
+      cu_imports = Env.imports();
       cu_primitives = List.map Primitive.byte_name
                                !Translmod.primitive_declarations;
       cu_force_link = false;
@@ -394,11 +406,12 @@ let to_memory init_code fun_code =
   emit init_code;
   emit fun_code;
   let code = Meta.static_alloc !out_position in
-  LongString.unsafe_blit_to_string !out_buffer 0 code 0 !out_position;
+  LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info
   and code_size = !out_position in
+  let events = !events in
   init();
-  (code, code_size, reloc)
+  (code, code_size, reloc, events)
 
 (* Emission to a file for a packed library *)
 
@@ -409,3 +422,9 @@ let to_packed_file outchan code =
   let reloc = !reloc_info in
   init();
   reloc
+
+let reset () =
+  out_buffer := LongString.create 1024;
+  out_position := 0;
+  label_table := [| |];
+  reloc_info := []

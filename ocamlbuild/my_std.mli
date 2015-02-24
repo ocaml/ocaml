@@ -62,3 +62,6 @@ val filename_concat : string -> string -> string
 val invalid_arg' : ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 include Signatures.MISC
+
+val set_lexbuf_fname : string -> Lexing.lexbuf -> unit
+val lexbuf_of_string : ?name:string -> string -> Lexing.lexbuf

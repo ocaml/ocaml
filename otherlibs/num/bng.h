@@ -14,7 +14,7 @@
 /* $Id$ */
 
 #include <string.h>
-#include "config.h"
+#include "caml/config.h"
 
 typedef uintnat bngdigit;
 typedef bngdigit * bng;

@@ -19,7 +19,18 @@ let show m = IntMap.iter (fun k v -> Printf.printf "%d %s\n" k v) m
 
 let () =
   print_endline "Union+concat";
-  show (IntMap.merge (fun _ l r -> match l, r with Some x, None | None, Some x -> Some x | Some x, Some y -> Some (x ^ x) | _ -> assert false) m1 m2);
+  let f1 _ l r =
+    match l, r with
+    | Some x, None | None, Some x -> Some x
+    | Some x, Some y -> Some (x ^ x)
+    | _ -> assert false
+  in
+  show (IntMap.merge f1 m1 m2);
   print_endline "Inter";
-  show (IntMap.merge (fun _ l r -> match l, r with Some x, Some y when x = y -> Some x | _ -> None) m1 m2);
+  let f2 _ l r =
+    match l, r with
+    | Some x, Some y when x = y -> Some x
+    | _ -> None
+  in
+  show (IntMap.merge f2 m1 m2);
   ()

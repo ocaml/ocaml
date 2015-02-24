@@ -11,9 +11,9 @@
 (***********************************************************************)
 
 open Cmm
-open Arch
 open Reg
 open Mach
+open Arch
 
 (* Reloading for the AMD64 *)
 
@@ -105,7 +105,7 @@ method! reload_operation op arg res =
       then (arg, res)
       else super#reload_operation op arg res
   | Iconst_symbol _ ->
-      if !pic_code || !Clflags.dlcode
+      if !Clflags.pic_code || !Clflags.dlcode
       then super#reload_operation op arg res
       else (arg, res)
   | Ispecific(Iintrin(intrin, iargs)) ->

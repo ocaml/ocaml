@@ -24,9 +24,9 @@ let rec make_letdef def body =
       Clet(id, def, make_letdef rem body)
 
 let make_switch n selector caselist =
-  let index = Array.create n 0 in
+  let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.create (Array.length casev) (Cexit(0,[])) in
+  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -172,7 +172,7 @@ componentlist:
 ;
 expr:
     INTCONST    { Cconst_int $1 }
-  | FLOATCONST  { Cconst_float $1 }
+  | FLOATCONST  { Cconst_float (float_of_string $1) }
   | STRING      { Cconst_symbol $1 }
   | POINTER     { Cconst_pointer $1 }
   | IDENT       { Cvar(find_ident $1) }
@@ -316,7 +316,7 @@ dataitem:
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
   | INT INTCONST                { Cint(Nativeint.of_int $2) }
-  | FLOAT FLOATCONST            { Cdouble $2 }
+  | FLOAT FLOATCONST            { Cdouble (float_of_string $2) }
   | ADDR STRING                 { Csymbol_address $2 }
   | ADDR INTCONST               { Clabel_address $2 }
   | KSTRING STRING              { Cstring $2 }

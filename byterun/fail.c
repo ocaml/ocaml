@@ -15,16 +15,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "gc.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "signals.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/gc.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/signals.h"
+#include "caml/stacks.h"
 
 CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
 value caml_exn_bucket;
@@ -71,11 +71,9 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
 
 CAMLexport void caml_raise_with_string(value tag, char const *msg)
 {
-  CAMLparam1 (tag);
-  CAMLlocal1 (vmsg);
-
-  vmsg = caml_copy_string(msg);
-  caml_raise_with_arg(tag, vmsg);
+  CAMLparam1(tag);
+  value v_msg = caml_copy_string(msg);
+  caml_raise_with_arg(tag, v_msg);
   CAMLnoreturn;
 }
 

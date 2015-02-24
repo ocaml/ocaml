@@ -50,10 +50,10 @@ let source_of_module pos mdle =
           try find_in_path_uncap path (innermost_module ^ ext)
           with Not_found -> loop exts
     in loop source_extensions
-  else   if Filename.is_implicit fname then
-    find_in_path path fname
-  else
-    fname
+  else if Filename.is_relative fname then
+    find_in_path_rel path fname
+  else if Sys.file_exists fname then fname
+  else raise Not_found
 
 (*** Buffer cache ***)
 
@@ -74,7 +74,7 @@ let get_buffer pos mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
       let inchan = open_in_bin (source_of_module pos mdle) in
-      let content = Misc.input_bytes inchan (in_channel_length inchan) in
+      let content = really_input_string inchan (in_channel_length inchan) in
       let buffer = (content, ref []) in
       buffer_list :=
         (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));

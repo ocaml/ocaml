@@ -18,6 +18,7 @@ module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
+open Odoc_extension
 open Odoc_exception
 open Odoc_class
 open Odoc_module
@@ -287,11 +288,40 @@ let merge_types merge_options mli ml =
       in
       List.iter f l1
 
+  | Type_open, Type_open ->
+      ()
+
   | _ ->
       if !Odoc_global.inverse_merge_ml_mli then
         ()
       else
         raise (Failure (Odoc_messages.different_types mli.ty_name))
+
+(** merge of two t_type_extension, one for a .mli, another for the .ml.
+   The .mli type is completed with the information in the .ml type.
+   Information for the extension constructors is merged separately
+   by [merge_extension_constructor]. *)
+let merge_type_extension merge_options mli ml =
+  mli.te_info <- merge_info_opt merge_options mli.te_info ml.te_info;
+  mli.te_loc <- { mli.te_loc with loc_impl = ml.te_loc.loc_impl } ;
+  mli.te_code <- (match mli.te_code with None -> ml.te_code | _ -> mli.te_code)
+
+(** merge of two t_extension_constructor, one for a .mli, another for the .ml.
+   The .mli type is completed with the information in the .ml type. *)
+let merge_extension_constructor merge_options mli ml =
+  let new_desc =
+    match mli.xt_text, ml.xt_text with
+      None, None -> None
+    | Some d, None
+    | None, Some d -> Some d
+    | Some d1, Some d2 ->
+      if List.mem Merge_description merge_options then
+        Some (merge_info merge_options d1 d2)
+      else
+        Some d1
+  in
+    mli.xt_text <- new_desc
+
 
 (** Merge of two param_info, one from a .mli, one from a .ml.
    The text fields are not handled but will be recreated from the
@@ -498,6 +528,33 @@ let merge_class_types merge_options mli ml =
 let rec merge_module_types merge_options mli ml =
   mli.mt_info <- merge_info_opt merge_options mli.mt_info ml.mt_info;
   mli.mt_loc <- { mli.mt_loc with loc_impl = ml.mt_loc.loc_impl } ;
+  (* merge type extensions *)
+  List.iter
+    (fun te ->
+       let rec f exts elems =
+         match exts, elems with
+             [], _
+           | _, [] -> ()
+           | _, (Element_type_extension te2 :: rest) ->
+               let merge_ext xt =
+                 try
+                   let xt2 =
+                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name)
+                       te2.te_constructors
+                   in
+                     merge_extension_constructor merge_options xt xt2;
+                     true
+                 with Not_found -> false
+               in
+               let merged, unmerged = List.partition merge_ext exts in
+                 if merged <> [] then merge_type_extension merge_options te te2;
+                 f unmerged rest
+           | _, (_ :: rest) -> f exts rest
+       in
+         (* we look for the extensions in reverse order *)
+         f te.te_constructors (List.rev (Odoc_module.module_type_elements ml))
+    )
+    (Odoc_module.module_type_type_extensions mli);
   (* merge exceptions *)
   List.iter
     (fun ex ->
@@ -746,6 +803,33 @@ and merge_modules merge_options mli ml =
   mli.m_code <- code;
   mli.m_code_intf <- code_intf;
 
+  (* merge type extensions *)
+  List.iter
+    (fun te ->
+       let rec f exts elems =
+         match exts, elems with
+             [], _
+           | _, [] -> ()
+           | _, (Element_type_extension te2 :: rest) ->
+               let merge_ext xt =
+                 try
+                   let xt2 =
+                     List.find (fun xt2 -> xt.xt_name = xt2.xt_name)
+                       te2.te_constructors
+                   in
+                     merge_extension_constructor merge_options xt xt2;
+                     true
+                 with Not_found -> false
+               in
+               let merged, unmerged = List.partition merge_ext exts in
+                 if merged <> [] then merge_type_extension merge_options te te2;
+                 f unmerged rest
+           | _, (_ :: rest) -> f exts rest
+       in
+         (* we look for the extensions in reverse order *)
+         f te.te_constructors (List.rev (Odoc_module.module_elements ml))
+    )
+    (Odoc_module.module_type_extensions mli);
   (* merge exceptions *)
   List.iter
     (fun ex ->

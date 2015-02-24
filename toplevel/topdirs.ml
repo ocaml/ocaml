@@ -61,7 +61,12 @@ exception Load_failed
 let check_consistency ppf filename cu =
   try
     List.iter
-      (fun (name, crc) -> Consistbl.check Env.crc_units name crc filename)
+      (fun (name, crco) ->
+       Env.add_import name;
+       match crco with
+         None -> ()
+       | Some crc->
+           Consistbl.check Env.crc_units name crc filename)
       cu.cu_imports
   with Consistbl.Inconsistency(name, user, auth) ->
     fprintf ppf "@[<hv 0>The files %s@ and %s@ \
@@ -75,17 +80,25 @@ let load_compunit ic filename ppf compunit =
   let code_size = compunit.cu_codesize + 8 in
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
-  String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
   String.unsafe_blit "\000\000\000\001\000\000\000" 0
                      code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
+  let events =
+    if compunit.cu_debug = 0 then [| |]
+    else begin
+      seek_in ic compunit.cu_debug;
+      [| input_value ic |]
+    end in
+  Meta.add_debug_info code code_size events;
   begin try
     may_trace := true;
     ignore((Meta.reify_bytecode code code_size) ());
     may_trace := false;
   with exn ->
+    record_backtrace ();
     may_trace := false;
     Symtable.restore_state initial_symtable;
     print_exception_outcome ppf exn;
@@ -110,7 +123,7 @@ let rec load_file recursive ppf name =
 
 and really_load_file recursive ppf name filename ic =
   let ic = open_in_bin filename in
-  let buffer = Misc.input_bytes ic (String.length Config.cmo_magic_number) in
+  let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
   try
     if buffer = Config.cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
@@ -180,17 +193,40 @@ let _ = Hashtbl.add directive_table "mod_use"
 
 (* Install, remove a printer *)
 
+let filter_arrow ty =
+  let ty = Ctype.expand_head !toplevel_env ty in
+  match ty.desc with
+  | Tarrow (lbl, l, r, _) when not (Btype.is_optional lbl) -> Some (l, r)
+  | _ -> None
+
+let rec extract_last_arrow desc =
+  match filter_arrow desc with
+  | None -> raise (Ctype.Unify [])
+  | Some (_, r as res) ->
+      try extract_last_arrow r
+      with Ctype.Unify _ -> res
+
+let extract_target_type ty = fst (extract_last_arrow ty)
+let extract_target_parameters ty =
+  let ty = extract_target_type ty |> Ctype.expand_head !toplevel_env in
+  match ty.desc with
+  | Tconstr (path, (_ :: _ as args), _)
+      when Ctype.all_distinct_vars !toplevel_env args -> Some (path, args)
+  | _ -> None
+
 type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
-let match_printer_type ppf desc typename =
+let printer_type ppf typename =
   let (printer_type, _) =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
-  Ctype.init_def(Ident.current_time());
+  printer_type
+
+let match_simple_printer_type ppf desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
@@ -198,16 +234,45 @@ let match_printer_type ppf desc typename =
     (Ctype.instance_def desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
-  ty_arg
+  (ty_arg, None)
+
+let match_generic_printer_type ppf desc path args printer_type =
+  Ctype.begin_def();
+  let args = List.map (fun _ -> Ctype.newvar ()) args in
+  let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
+  let ty_args =
+    List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
+  let ty_expected =
+    List.fold_right
+      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty, Cunknown)))
+      ty_args (Ctype.newconstr printer_type [ty_target]) in
+  Ctype.unify !toplevel_env
+    ty_expected
+    (Ctype.instance_def desc.val_type);
+  Ctype.end_def();
+  Ctype.generalize ty_expected;
+  if not (Ctype.all_distinct_vars !toplevel_env args) then
+    raise (Ctype.Unify []);
+  (ty_expected, Some (path, ty_args))
+
+let match_printer_type ppf desc =
+  let printer_type_new = printer_type ppf "printer_type_new" in
+  let printer_type_old = printer_type ppf "printer_type_old" in
+  Ctype.init_def(Ident.current_time());
+  match extract_target_parameters desc.val_type with
+  | None ->
+     (try
+        (match_simple_printer_type ppf desc printer_type_new, false)
+      with Ctype.Unify _ ->
+        (match_simple_printer_type ppf desc printer_type_old, true))
+  | Some (path, args) ->
+     (* only 'new' style is available for generic printers *)
+     match_generic_printer_type ppf desc path args printer_type_new, false
 
 let find_printer_type ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let (ty_arg, is_old_style) =
-      try
-        (match_printer_type ppf desc "printer_type_new", false)
-      with Ctype.Unify _ ->
-        (match_printer_type ppf desc "printer_type_old", true) in
+    let (ty_arg, is_old_style) = match_printer_type ppf desc in
     (ty_arg, path, is_old_style)
   with
   | Not_found ->
@@ -220,14 +285,30 @@ let find_printer_type ppf lid =
 
 let dir_install_printer ppf lid =
   try
-    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
+    let ((ty_arg, ty), path, is_old_style) =
+      find_printer_type ppf lid in
     let v = eval_path !toplevel_env path in
-    let print_function =
-      if is_old_style then
-        (fun formatter repr -> Obj.obj v (Obj.obj repr))
-      else
-        (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-    install_printer path ty_arg print_function
+    match ty with
+    | None ->
+       let print_function =
+         if is_old_style then
+           (fun formatter repr -> Obj.obj v (Obj.obj repr))
+         else
+           (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
+       install_printer path ty_arg print_function
+    | Some (ty_path, ty_args) ->
+       let rec build v = function
+         | [] ->
+            let print_function =
+              if is_old_style then
+                (fun formatter repr -> Obj.obj v (Obj.obj repr))
+              else
+                (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
+            Zero print_function
+         | _ :: args ->
+            Succ
+              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
+       install_generic_printer' path ty_path (build v ty_args)
   with Exit -> ()
 
 let dir_remove_printer ppf lid =
@@ -266,6 +347,8 @@ let dir_trace ppf lid =
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos
         && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        && (match Ctype.(repr (expand_head !toplevel_env desc.val_type))
+            with {desc=Tarrow _} -> true | _ -> false)
         then begin
         match is_traced clos with
         | Some opath ->
@@ -318,6 +401,127 @@ let parse_warnings ppf iserr s =
   try Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
 
+(* Typing information *)
+
+let trim_signature = function
+    Mty_signature sg ->
+      Mty_signature
+        (List.map
+           (function
+               Sig_module (id, md, rs) ->
+                 Sig_module (id, {md with md_attributes =
+                                  (Location.mknoloc "...", Parsetree.PStr []) :: md.md_attributes},
+                             rs)
+             (*| Sig_modtype (id, Modtype_manifest mty) ->
+                 Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
+             | item -> item)
+           sg)
+  | mty -> mty
+
+let show_prim to_sig ppf lid =
+  let env = !Toploop.toplevel_env in
+  let loc = Location.none in
+  try
+    let s =
+      match lid with
+      | Longident.Lident s -> s
+      | Longident.Ldot (_,s) -> s
+      | Longident.Lapply _ ->
+          fprintf ppf "Invalid path %a@." Printtyp.longident lid;
+          raise Exit
+    in
+    let id = Ident.create_persistent s in
+    let sg = to_sig env loc id lid in
+    Printtyp.wrap_printing_env env
+      (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
+  with
+  | Not_found ->
+      fprintf ppf "@[Unknown element.@]@."
+  | Exit -> ()
+
+let all_show_funs = ref []
+
+let reg_show_prim name to_sig =
+  all_show_funs := to_sig :: !all_show_funs;
+  Hashtbl.add directive_table name (Directive_ident (show_prim to_sig std_out))
+
+let () =
+  reg_show_prim "show_val"
+    (fun env loc id lid ->
+       let path, desc = Typetexp.find_value env loc lid in
+       [ Sig_value (id, desc) ]
+    )
+
+let () =
+  reg_show_prim "show_type"
+    (fun env loc id lid ->
+       let path, desc = Typetexp.find_type env loc lid in
+       [ Sig_type (id, desc, Trec_not) ]
+    )
+
+let () =
+  reg_show_prim "show_exception"
+    (fun env loc id lid ->
+       let desc = Typetexp.find_constructor env loc lid in
+       if not (Ctype.equal env true [desc.cstr_res] [Predef.type_exn]) then
+         raise Not_found;
+       let ret_type =
+         if desc.cstr_generalized then Some Predef.type_exn
+         else None
+       in
+       let ext =
+         { ext_type_path = Predef.path_exn;
+           ext_type_params = [];
+           ext_args = Cstr_tuple desc.cstr_args;
+           ext_ret_type = ret_type;
+           ext_private = Asttypes.Public;
+           Types.ext_loc = desc.cstr_loc;
+           Types.ext_attributes = desc.cstr_attributes; }
+       in
+         [Sig_typext (id, ext, Text_exception)]
+    )
+
+let () =
+  reg_show_prim "show_module"
+    (fun env loc id lid ->
+       let path, md = Typetexp.find_module env loc lid in
+       [ Sig_module (id, {md with md_type = trim_signature md.md_type},
+                     Trec_not) ]
+    )
+
+let () =
+  reg_show_prim "show_module_type"
+    (fun env loc id lid ->
+       let path, desc = Typetexp.find_modtype env loc lid in
+       [ Sig_modtype (id, desc) ]
+    )
+
+let () =
+  reg_show_prim "show_class"
+    (fun env loc id lid ->
+       let path, desc = Typetexp.find_class env loc lid in
+       [ Sig_class (id, desc, Trec_not) ]
+    )
+
+let () =
+  reg_show_prim "show_class_type"
+    (fun env loc id lid ->
+       let path, desc = Typetexp.find_class_type env loc lid in
+       [ Sig_class_type (id, desc, Trec_not) ]
+    )
+
+
+let show env loc id lid =
+  let sg =
+    List.fold_left
+      (fun sg f -> try (f env loc id lid) @ sg with _ -> sg)
+      [] !all_show_funs
+  in
+  if sg = [] then raise Not_found else sg
+
+let () =
+  Hashtbl.add directive_table "show" (Directive_ident (show_prim show std_out))
+
 let _ =
   Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_out));
   Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_out));
@@ -342,8 +546,13 @@ let _ =
   Hashtbl.add directive_table "rectypes"
              (Directive_none(fun () -> Clflags.recursive_types := true));
 
+  Hashtbl.add directive_table "ppx"
+    (Directive_string(fun s -> Clflags.all_ppx := s :: !Clflags.all_ppx));
+
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));
 
   Hashtbl.add directive_table "warn_error"
-             (Directive_string (parse_warnings std_out true))
+             (Directive_string (parse_warnings std_out true));
+
+  ()

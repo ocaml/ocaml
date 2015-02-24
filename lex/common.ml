@@ -47,7 +47,7 @@ let update_tracker tr =
   fprintf tr.oc "# %d \"%s\"\n" (tr.cur_line+1) tr.file;
 ;;
 
-let copy_buffer = String.create 1024
+let copy_buffer = Bytes.create 1024
 
 let copy_chars_unix ic oc start stop =
   let n = ref (stop - start) in

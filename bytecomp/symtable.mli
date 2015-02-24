@@ -17,7 +17,7 @@ open Cmo_format
 (* Functions for batch linking *)
 
 val init: unit -> unit
-val patch_object: string -> (reloc_info * int) list -> unit
+val patch_object: bytes -> (reloc_info * int) list -> unit
 val ls_patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
 val require_primitive: string -> unit
 val initial_global_table: unit -> Obj.t array
@@ -29,7 +29,7 @@ val data_primitive_names: unit -> string
 
 (* Functions for the toplevel *)
 
-val init_toplevel: unit -> (string * Digest.t) list
+val init_toplevel: unit -> (string * Digest.t option) list
 val update_global_table: unit -> unit
 val get_global_value: Ident.t -> Obj.t
 val is_global_defined: Ident.t -> bool
@@ -57,3 +57,5 @@ exception Error of error
 open Format
 
 val report_error: formatter -> error -> unit
+
+val reset: unit -> unit

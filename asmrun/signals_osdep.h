@@ -66,18 +66,7 @@
 #elif defined(TARGET_arm) && (defined(SYS_linux_eabi) \
       || defined(SYS_linux_eabihf))
 
-  #if defined(__ANDROID__)
-    // The Android NDK does not have sys/ucontext.h yet.
-    typedef struct ucontext {
-      uint32_t uc_flags;
-      struct ucontext *uc_link;
-      stack_t uc_stack;
-      struct sigcontext uc_mcontext;
-      // Other fields omitted...
-    } ucontext_t;
-  #else
-    #include <sys/ucontext.h>
-  #endif
+  #include <sys/ucontext.h>
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)
@@ -130,6 +119,22 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
+/****************** AMD64, OpenBSD */
+
+#elif defined(TARGET_amd64) && defined (SYS_openbsd)
+
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, struct sigcontext * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (context->sc_rip)
+ #define CONTEXT_EXCEPTION_POINTER (context->sc_r14)
+ #define CONTEXT_YOUNG_PTR (context->sc_r15)
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
 /****************** I386, Linux */
 
 #elif defined(TARGET_i386) && defined(SYS_linux_elf)
@@ -142,6 +147,20 @@
      sigact.sa_flags = 0
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) context.cr2)
+
+/****************** I386, BSD_ELF */
+
+#elif defined(TARGET_i386) && defined(SYS_bsd_elf)
+
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, struct sigcontext * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (context->sc_eip)
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, BSD */
 
@@ -267,9 +286,11 @@
      sigact.sa_flags = 0
 
   typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->sc_frame.srr0)
   #define CONTEXT_EXCEPTION_POINTER (context->sc_frame.fixreg[29])
   #define CONTEXT_YOUNG_LIMIT (context->sc_frame.fixreg[30])
   #define CONTEXT_YOUNG_PTR (context->sc_frame.fixreg[31])
+  #define CONTEXT_SP (context->sc_frame.fixreg[1])
 
 /****************** SPARC, Solaris */
 
@@ -288,6 +309,7 @@
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_PC])
     /* Local register number N is saved on the stack N words
        after the stack pointer */
+  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_SP])
   #define SPARC_L_REG(n) ((long *)(context->uc_mcontext.gregs[REG_SP]))[n]
   #define CONTEXT_EXCEPTION_POINTER (SPARC_L_REG(5))
   #define CONTEXT_YOUNG_LIMIT (SPARC_L_REG(7))

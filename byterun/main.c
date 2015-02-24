@@ -14,9 +14,9 @@
 /* Main entry point (can be overridden by a user-provided main()
    function that calls caml_main() later). */
 
-#include "misc.h"
-#include "mlvalues.h"
-#include "sys.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/sys.h"
 
 CAMLextern void caml_main (char **);
 

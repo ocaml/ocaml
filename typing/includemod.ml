@@ -22,8 +22,8 @@ type symptom =
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list
-  | Exception_declarations of
-      Ident.t * exception_declaration * exception_declaration
+  | Extension_constructors of
+      Ident.t * extension_constructor * extension_constructor
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation
@@ -36,6 +36,7 @@ type symptom =
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
   | Unbound_module_path of Path.t
+  | Invalid_module_alias of Path.t
 
 type pos =
     Module of Ident.t | Modtype of Ident.t | Arg of Ident.t | Body of Ident.t
@@ -51,7 +52,7 @@ exception Error of error list
 
 let value_descriptions env cxt subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
-  Env.mark_value_used (Ident.name id) vd1;
+  Env.mark_value_used env (Ident.name id) vd1;
   let vd2 = Subst.value_description subst vd2 in
   try
     Includecore.value_descriptions env vd1 vd2
@@ -60,37 +61,37 @@ let value_descriptions env cxt subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations env cxt subst id decl1 decl2 =
-  Env.mark_type_used (Ident.name id) decl1;
+let type_declarations env ?(old_env=env) cxt subst id decl1 decl2 =
+  Env.mark_type_used env (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
   let err = Includecore.type_declarations env (Ident.name id) decl1 id decl2 in
   if err <> [] then
-    raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
+    raise(Error[cxt, old_env, Type_declarations(id, decl1, decl2, err)])
 
-(* Inclusion between exception declarations *)
+(* Inclusion between extension constructors *)
 
-let exception_declarations env cxt subst id decl1 decl2 =
-  Env.mark_exception_used Env.Positive decl1 (Ident.name id);
-  let decl2 = Subst.exception_declaration subst decl2 in
-  if Includecore.exception_declarations env decl1 decl2
+let extension_constructors env cxt subst id ext1 ext2 =
+  let ext2 = Subst.extension_constructor subst ext2 in
+  if Includecore.extension_constructors env id ext1 ext2
   then ()
-  else raise(Error[cxt, env, Exception_declarations(id, decl1, decl2)])
+  else raise(Error[cxt, env, Extension_constructors(id, ext1, ext2)])
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations env cxt subst id decl1 decl2 =
+let class_type_declarations ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, env, Class_type_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, old_env,
+                  Class_type_declarations(id, decl1, decl2, reason)])
 
-let class_declarations env cxt subst id decl1 decl2 =
+let class_declarations ~old_env env cxt subst id decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, env, Class_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, old_env, Class_declarations(id, decl1, decl2, reason)])
 
 (* Expand a module type identifier when possible *)
 
@@ -123,7 +124,7 @@ let rec normalize_module_path env cxt path =
 type field_desc =
     Field_value of string
   | Field_type of string
-  | Field_exception of string
+  | Field_typext of string
   | Field_module of string
   | Field_modtype of string
   | Field_class of string
@@ -132,7 +133,7 @@ type field_desc =
 let kind_of_field_desc = function
   | Field_value _ -> "value"
   | Field_type _ -> "type"
-  | Field_exception _ -> "exception"
+  | Field_typext _ -> "extension constructor"
   | Field_module _ -> "module"
   | Field_modtype _ -> "module type"
   | Field_class _ -> "class"
@@ -141,7 +142,7 @@ let kind_of_field_desc = function
 let item_ident_name = function
     Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
   | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
-  | Sig_exception(id, d) -> (id, d.exn_loc, Field_exception(Ident.name id))
+  | Sig_typext(id, d, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
   | Sig_module(id, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
   | Sig_modtype(id, d) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
   | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
@@ -153,9 +154,43 @@ let is_runtime_component = function
   | Sig_modtype(_,_)
   | Sig_class_type(_,_,_) -> false
   | Sig_value(_,_)
-  | Sig_exception(_,_)
+  | Sig_typext(_,_,_)
   | Sig_module(_,_,_)
   | Sig_class(_, _,_) -> true
+
+(* Print a coercion *)
+
+let rec print_list pr ppf = function
+    [] -> ()
+  | [a] -> pr ppf a
+  | a :: l -> pr ppf a; Format.fprintf ppf ";@ "; print_list pr ppf l
+let print_list pr ppf l =
+  Format.fprintf ppf "[@[%a@]]" (print_list pr) l
+
+let rec print_coercion ppf c =
+  let pr fmt = Format.fprintf ppf fmt in
+  match c with
+    Tcoerce_none -> pr "id"
+  | Tcoerce_structure (fl, nl) ->
+      pr "@[<2>struct@ %a@ %a@]"
+        (print_list print_coercion2) fl
+        (print_list print_coercion3) nl
+  | Tcoerce_functor (inp, out) ->
+      pr "@[<2>functor@ (%a)@ (%a)@]"
+        print_coercion inp
+        print_coercion out
+  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
+      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
+        Printtyp.raw_type_expr pc_type
+  | Tcoerce_alias (p, c) ->
+      pr "@[<2>alias %a@ (%a)@]"
+        Printtyp.path p
+        print_coercion c
+and print_coercion2 ppf (n, c) =
+  Format.fprintf ppf "@[%d,@ %a@]" n print_coercion c
+and print_coercion3 ppf (i, n, c) =
+  Format.fprintf ppf "@[%s, %d,@ %a@]"
+    (Ident.unique_name i) n print_coercion c
 
 (* Simplify a structure coercion *)
 
@@ -189,7 +224,9 @@ let rec modtypes env cxt subst mty1 mty2 =
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-    (Mty_alias p1, Mty_alias p2) ->
+  | (Mty_alias p1, Mty_alias p2) ->
+      if Env.is_functor_arg p2 env then
+        raise (Error[cxt, env, Invalid_module_alias p2]);
       if Path.same p1 p2 then Tcoerce_none else
       let p1 = Env.normalize_path None env p1
       and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
@@ -243,7 +280,7 @@ and try_modtypes2 env cxt mty1 mty2 =
 and signatures env cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
-    Env.add_signature sig1 (Env.in_signature env) in
+    Env.add_signature sig1 (Env.in_signature true env) in
   (* Keep ids for module aliases *)
   let (id_pos_list,_) =
     List.fold_left
@@ -279,7 +316,7 @@ and signatures env cxt subst sig1 sig2 =
         begin match unpaired with
             [] ->
               let cc =
-                signature_components new_env cxt subst (List.rev paired)
+                signature_components env new_env cxt subst (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion cc id_pos_list
@@ -309,7 +346,8 @@ and signatures env cxt subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Sig_modtype _ ->
                 Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
-            | Sig_value _ | Sig_exception _ | Sig_class _ | Sig_class_type _ ->
+            | Sig_value _ | Sig_typext _
+            | Sig_class _ | Sig_class_type _ ->
                 subst
           in
           pair_components new_subst
@@ -327,36 +365,40 @@ and signatures env cxt subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components env cxt subst = function
+and signature_components old_env env cxt subst paired =
+  let comps_rec rem = signature_components old_env env cxt subst rem in
+  match paired with
     [] -> []
   | (Sig_value(id1, valdecl1), Sig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env cxt subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
-        Val_prim p -> signature_components env cxt subst rem
-      | _ -> (pos, cc) :: signature_components env cxt subst rem
+        Val_prim p -> comps_rec rem
+      | _ -> (pos, cc) :: comps_rec rem
       end
   | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
-      type_declarations env cxt subst id1 tydecl1 tydecl2;
-      signature_components env cxt subst rem
-  | (Sig_exception(id1, excdecl1), Sig_exception(id2, excdecl2), pos)
+      type_declarations ~old_env env cxt subst id1 tydecl1 tydecl2;
+      comps_rec rem
+  | (Sig_typext(id1, ext1, _), Sig_typext(id2, ext2, _), pos)
     :: rem ->
-      exception_declarations env cxt subst id1 excdecl1 excdecl2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      extension_constructors env cxt subst id1 ext1 ext2;
+      (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
+      let p1 = Pident id1 in
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
-      (pos, cc) :: signature_components env cxt subst rem
+          (Mtype.strengthen (Env.add_functor_arg id1 env) mty1.md_type p1)
+          mty2.md_type in
+      (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      comps_rec rem
   | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
-      class_declarations env cxt subst id1 decl1 decl2;
-      (pos, Tcoerce_none) :: signature_components env cxt subst rem
+      class_declarations ~old_env env cxt subst id1 decl1 decl2;
+      (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_class_type(id1, info1, _),
      Sig_class_type(id2, info2, _), pos) :: rem ->
-      class_type_declarations env cxt subst id1 info1 info2;
-      signature_components env cxt subst rem
+      class_type_declarations ~old_env env cxt subst id1 info1 info2;
+      comps_rec rem
   | _ ->
       assert false
 
@@ -382,7 +424,10 @@ and check_modtype_equiv env cxt mty1 mty2 =
      modtypes env cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
-  | (_, _) -> raise(Error [cxt, env, Modtype_permutation])
+  | (c1, c2) ->
+      (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
+        print_coercion c1 print_coercion c2; *)
+      raise(Error [cxt, env, Modtype_permutation])
 
 (* Simplified inclusion check between module types (for Env) *)
 
@@ -398,9 +443,9 @@ let _ = Env.check_modtype_inclusion := check_modtype_inclusion
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
-let compunit impl_name impl_sig intf_name intf_sig =
+let compunit env impl_name impl_sig intf_name intf_sig =
   try
-    signatures Env.initial [] Subst.identity impl_sig intf_sig
+    signatures env [] Subst.identity impl_sig intf_sig
   with Error reasons ->
     raise(Error(([], Env.empty,Interface_mismatch(impl_name, intf_name))
                 :: reasons))
@@ -411,6 +456,15 @@ let modtypes env mty1 mty2 = modtypes env [] Subst.identity mty1 mty2
 let signatures env sig1 sig2 = signatures env [] Subst.identity sig1 sig2
 let type_declarations env id decl1 decl2 =
   type_declarations env [] Subst.identity id decl1 decl2
+
+(*
+let modtypes env m1 m2 =
+  let c = modtypes env m1 m2 in
+  Format.eprintf "@[<2>modtypes@ %a@ %a =@ %a@]@."
+    Printtyp.modtype m1 Printtyp.modtype m2
+    print_coercion c;
+  c
+*)
 
 (* Error report *)
 
@@ -444,13 +498,13 @@ let include_err ppf = function
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") errs
-  | Exception_declarations(id, d1, d2) ->
+  | Extension_constructors(id, x1, x2) ->
       fprintf ppf
-       "@[<hv 2>Exception declarations do not match:@ \
+       "@[<hv 2>Extension declarations do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-        (exception_declaration id) d1
-        (exception_declaration id) d2;
-      show_locs ppf (d1.exn_loc, d2.exn_loc)
+      (extension_constructor id) x1
+      (extension_constructor id) x2;
+      show_locs ppf (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
@@ -486,6 +540,8 @@ let include_err ppf = function
       fprintf ppf "Unbound module type %a" Printtyp.path path
   | Unbound_module_path path ->
       fprintf ppf "Unbound module %a" Printtyp.path path
+  | Invalid_module_alias path ->
+      fprintf ppf "Module %a cannot be aliased" Printtyp.path path
 
 let rec context ppf = function
     Module id :: rem ->
@@ -493,7 +549,7 @@ let rec context ppf = function
   | Modtype id :: rem ->
       fprintf ppf "@[<2>module type %a =@ %a@]" ident id context_mty rem
   | Body x :: rem ->
-      fprintf ppf "functor (%a) ->@ %a" ident x context_mty rem
+      fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
   | Arg x :: rem ->
       fprintf ppf "functor (%a : %a) -> ..." ident x context_mty rem
   | [] ->
@@ -504,11 +560,14 @@ and context_mty ppf = function
   | cxt -> context ppf cxt
 and args ppf = function
     Body x :: rem ->
-      fprintf ppf "(%a)%a" ident x args rem
+      fprintf ppf "(%s)%a" (argname x) args rem
   | Arg x :: rem ->
       fprintf ppf "(%a :@ %a) : ..." ident x context_mty rem
   | cxt ->
       fprintf ppf " :@ %a" context_mty cxt
+and argname x =
+  let s = Ident.name x in
+  if s = "*" then "" else s
 
 let path_of_context = function
     Module id :: rem ->
@@ -530,12 +589,12 @@ let include_err ppf (cxt, env, err) =
   Printtyp.wrap_printing_env env (fun () ->
     fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
 
-let buffer = ref ""
+let buffer = ref Bytes.empty
 let is_big obj =
   let size = !Clflags.error_size in
   size > 0 &&
   begin
-    if String.length !buffer < size then buffer := String.create size;
+    if Bytes.length !buffer < size then buffer := Bytes.create size;
     try ignore (Marshal.to_buffer !buffer 0 size obj []); false
     with _ -> true
   end
@@ -560,4 +619,3 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
-

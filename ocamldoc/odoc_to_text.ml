@@ -231,6 +231,10 @@ class virtual to_text =
     method normal_type_list ?par m_name sep t =
       self#relative_idents m_name (Odoc_info.string_of_type_list ?par sep t)
 
+    method normal_cstr_args ?par m_name = function
+      | Cstr_tuple l -> self#normal_type_list ?par m_name " * " l
+      | Cstr_record _ -> "{...}" (* TODO *)
+
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)
     method normal_class_type_param_list m_name t =
@@ -336,29 +340,38 @@ class virtual to_text =
     (** @return [text] value for an exception. *)
     method text_of_exception e =
       let s_name = Name.simple e.ex_name in
+      let father = Name.father e.ex_name in
       Format.fprintf Format.str_formatter "@[<hov 2>exception %s" s_name ;
-        (match e.ex_args with
-          [] -> ()
-        | _ ->
-            Format.fprintf Format.str_formatter "@ of "
-        );
-      let s = self#normal_type_list
-          ~par: false (Name.father e.ex_name) " * " e.ex_args
-      in
-      let s2 =
-        Format.fprintf Format.str_formatter "%s" s ;
-        (match e.ex_alias with
-          None -> ()
-        | Some ea ->
-            Format.fprintf Format.str_formatter " = %s"
-              (
-               match ea.ea_ex with
-                 None -> ea.ea_name
-               | Some e -> e.ex_name
-              )
-        );
-        Format.flush_str_formatter ()
-      in
+      (match e.ex_args, e.ex_ret with
+         Cstr_tuple [], None -> ()
+       | Cstr_tuple l, None ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             "of"
+             (self#normal_type_list ~par: false father " * " l)
+       | Cstr_tuple [], Some r ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             ":"
+             (self#normal_type father r)
+       | Cstr_tuple l, Some r ->
+           Format.fprintf Format.str_formatter " %s@ %s@ %s@ %s"
+             ":"
+             (self#normal_type_list ~par: false father " * " l)
+             "->"
+             (self#normal_type father r)
+       | Cstr_record _, _ ->
+           assert false
+      );
+      (match e.ex_alias with
+         None -> ()
+       | Some ea ->
+           Format.fprintf Format.str_formatter " = %s"
+            (
+              match ea.ea_ex with
+                None -> ea.ea_name
+              | Some e -> e.ex_name
+            )
+      );
+      let s2 = Format.flush_str_formatter () in
       [ CodePre s2 ] @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info e.ex_info)

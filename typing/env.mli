@@ -18,7 +18,7 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
-  | Env_exception of summary * Ident.t * exception_declaration
+  | Env_extension of summary * Ident.t * extension_constructor
   | Env_module of summary * Ident.t * module_declaration
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
@@ -29,16 +29,19 @@ type summary =
 type t
 
 val empty: t
-val initial: t
+val initial_safe_string: t
+val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
 
 type type_descriptions =
     constructor_description list * label_description list
 
 (* For short-paths *)
+type iter_cont
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
-    t -> unit
+    t -> iter_cont
+val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
@@ -60,6 +63,7 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
 val normalize_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete value or module.
@@ -86,7 +90,7 @@ val lookup_label: Longident.t -> t -> label_description
 val lookup_all_labels:
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: Longident.t -> t -> Path.t
+val lookup_module: load:bool -> Longident.t -> t -> Path.t
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
@@ -101,7 +105,7 @@ exception Recmodule
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
-val add_exception: check:bool -> Ident.t -> exception_declaration -> t -> t
+val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module: ?arg:bool -> Ident.t -> module_type -> t -> t
 val add_module_declaration: ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
@@ -128,10 +132,10 @@ val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_exception: string -> exception_declaration -> t -> Ident.t * t
+val enter_extension: string -> extension_constructor -> t -> Ident.t * t
 val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
-    ?arg:bool -> string -> module_declaration -> t -> Ident.t * t
+    ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
@@ -152,7 +156,7 @@ val read_signature: string -> string -> signature
 val save_signature: signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t) list -> signature
+    signature -> string -> string -> (string * Digest.t option) list -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
@@ -162,11 +166,12 @@ val crc_of_unit: string -> Digest.t
 
 (* Return the set of compilation units imported, with their CRC *)
 
-val imported_units: unit -> (string * Digest.t) list
+val imports: unit -> (string * Digest.t option) list
 
 (* Direct access to the table of imported compilation units with their CRC *)
 
 val crc_units: Consistbl.t
+val add_import: string -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
@@ -195,18 +200,21 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: string -> value_description -> unit
-val mark_type_used: string -> type_declaration -> unit
+val mark_value_used: t -> string -> value_description -> unit
+val mark_type_used: t -> string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> string -> type_declaration -> string -> unit
+    constructor_usage -> t -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
-val mark_exception_used:
-    constructor_usage -> exception_declaration -> string -> unit
+val mark_extension_used:
+    constructor_usage -> t -> extension_constructor -> string -> unit
 
-val in_signature: t -> t
+val in_signature: bool -> t -> t
+val implicit_coercion: t -> t
+
+val is_in_signature: t -> bool
 
 val set_value_used_callback:
     string -> value_description -> (unit -> unit) -> unit

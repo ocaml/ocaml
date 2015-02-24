@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 (** Operation on rational numbers.
 
     This module is used to support the implementation of {!Num} and

@@ -92,6 +92,7 @@ let print_out_value = Oprint.out_value
 let print_out_type = Oprint.out_type
 let print_out_class_type = Oprint.out_class_type
 let print_out_module_type = Oprint.out_module_type
+let print_out_type_extension = Oprint.out_type_extension
 let print_out_sig_item = Oprint.out_sig_item
 let print_out_signature = Oprint.out_signature
 let print_out_phrase = Oprint.out_phrase
@@ -135,7 +136,7 @@ let load_lambda ppf (size, lam) =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, lam);
+  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, slam);
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -171,8 +172,8 @@ let rec pr_item env = function
   | Sig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
-  | Sig_exception(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_exception_declaration id decl in
+  | Sig_typext(id, ext, es) :: rem ->
+      let tree = Printtyp.tree_of_extension_constructor id ext es in
       Some (tree, None, rem)
   | Sig_module(id, mty, rs) :: rem ->
       let tree = Printtyp.tree_of_module id mty rs in
@@ -450,7 +451,14 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compmisc.init_path true;
+  Compmisc.init_path ~dir:(Filename.dirname name) true;
+                     (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  use_silently ppf name
+  let explicit_name =
+    (* Prevent use_silently from searching in the path. *)
+    if Filename.is_implicit name
+    then Filename.concat Filename.current_dir_name name
+    else name
+  in
+  use_silently ppf explicit_name

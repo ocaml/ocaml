@@ -17,6 +17,8 @@ open Misc
 open Instruct
 open Cmo_format
 
+module StringSet = Set.Make(String)
+
 type error =
     Forward_reference of string * Ident.t
   | Multiple_definition of string * Ident.t
@@ -30,6 +32,7 @@ exception Error of error
 
 let relocs = ref ([] : (reloc_info * int) list)
 let events = ref ([] : debug_event list)
+let debug_dirs = ref StringSet.empty
 let primitives = ref ([] : string list)
 let force_link = ref false
 
@@ -93,12 +96,14 @@ type pack_member =
 
 let read_member_info file = (
   let name =
-    String.capitalize(Filename.basename(chop_extensions file)) in
+    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
     try
-      let buffer = input_bytes ic (String.length Config.cmo_magic_number) in
+      let buffer =
+        really_input_string ic (String.length Config.cmo_magic_number)
+      in
       if buffer <> Config.cmo_magic_number then
         raise(Error(Not_an_object_file file));
       let compunit_pos = input_binary_int ic in
@@ -137,6 +142,10 @@ let rename_append_bytecode ppf packagename oc mapping defined ofs prefix subst
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
       List.iter (relocate_debug ofs prefix subst) (input_value ic);
+      debug_dirs := List.fold_left
+        (fun s e -> StringSet.add e s)
+        !debug_dirs
+        (input_value ic);
     end;
     close_in ic;
     compunit.cu_codesize
@@ -213,8 +222,10 @@ let package_object_files ppf files targetfile targetname coercion =
                                           targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
-    if !Clflags.debug && !events <> [] then
+    if !Clflags.debug && !events <> [] then begin
       output_value oc (List.rev !events);
+      output_value oc (StringSet.elements !debug_dirs);
+    end;
     let pos_final = pos_out oc in
     let imports =
       List.filter
@@ -225,7 +236,8 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_pos = pos_code;
         cu_codesize = pos_debug - pos_code;
         cu_reloc = List.rev !relocs;
-        cu_imports = (targetname, Env.crc_of_unit targetname) :: imports;
+        cu_imports =
+          (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = !primitives;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
@@ -240,7 +252,7 @@ let package_object_files ppf files targetfile targetname coercion =
 
 (* The entry point *)
 
-let package_files ppf files targetfile =
+let package_files ppf initial_env files targetfile =
     let files =
     List.map
         (fun f ->
@@ -249,13 +261,14 @@ let package_files ppf files targetfile =
         files in
     let prefix = chop_extensions targetfile in
     let targetcmi = prefix ^ ".cmi" in
-    let targetname = String.capitalize(Filename.basename prefix) in
+    let targetname = String.capitalize_ascii(Filename.basename prefix) in
     try
-      let coercion = Typemod.package_units files targetcmi targetname in
-    let ret = package_object_files ppf files targetfile targetname coercion in
-    ret
-  with x ->
-    remove_file targetfile; raise x
+      let coercion =
+        Typemod.package_units initial_env files targetcmi targetname in
+      let ret = package_object_files ppf files targetfile targetname coercion in
+      ret
+    with x ->
+      remove_file targetfile; raise x
 
 (* Error report *)
 
@@ -285,3 +298,9 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  relocs := [];
+  events := [];
+  primitives := [];
+  force_link := false

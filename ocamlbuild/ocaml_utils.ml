@@ -40,14 +40,14 @@ let pflag_and_dep tags ptag cmd_spec =
     (fun param ->
        flag_and_dep (Param_tags.make ptag param :: tags) (cmd_spec param))
 
-let module_name_of_filename f = String.capitalize (Pathname.remove_extensions f)
+let module_name_of_filename f = String.capitalize_ascii (Pathname.remove_extensions f)
 let module_name_of_pathname x =
   module_name_of_filename (Pathname.to_string (Pathname.basename x))
 
 let ignore_stdlib x =
   if !Options.nostdlib then false
   else
-    let x' = !*stdlib_dir/((String.uncapitalize x)-.-"cmi") in
+    let x' = !*stdlib_dir/((String.uncapitalize_ascii x)-.-"cmi") in
     Pathname.exists x'
 
 let non_dependencies = ref []
@@ -69,8 +69,8 @@ let expand_module =
   memo3 (fun include_dirs module_name exts ->
     let dirname = Pathname.dirname module_name in
     let basename = Pathname.basename module_name in
-    let module_name_cap = dirname/(String.capitalize basename) in
-    let module_name_uncap = dirname/(String.uncapitalize basename) in
+    let module_name_cap = dirname/(String.capitalize_ascii basename) in
+    let module_name_uncap = dirname/(String.uncapitalize_ascii basename) in
     List.fold_right begin fun include_dir ->
       List.fold_right begin fun ext acc ->
         include_dir/(module_name_uncap-.-ext) ::
@@ -80,7 +80,8 @@ let expand_module =
 
 let string_list_of_file file =
   with_input_file file begin fun ic ->
-    Lexers.blank_sep_strings (Lexing.from_channel ic)
+    Lexers.blank_sep_strings
+      Const.Source.file (Lexing.from_channel ic)
   end
 let print_path_list = Pathname.print_path_list
 
@@ -149,7 +150,8 @@ let read_path_dependencies =
     let depends = path-.-"depends" in
     with_input_file depends begin fun ic ->
       let ocamldep_output =
-        try Lexers.ocamldep_output (Lexing.from_channel ic)
+        try Lexers.ocamldep_output
+              Const.Source.ocamldep (Lexing.from_channel ic)
         with Lexers.Error (msg,_) -> raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: bad output (%s)" msg)) in
       let deps =
         List.fold_right begin fun (path, deps) acc ->

@@ -13,11 +13,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "custom.h"
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
 /* Structural comparison on trees. */
 
@@ -205,11 +205,11 @@ static intnat compare_val(value v1, value v2, int total)
     }
     case Abstract_tag:
       compare_free_stack();
-      caml_invalid_argument("equal: abstract value");
+      caml_invalid_argument("compare: abstract value");
     case Closure_tag:
     case Infix_tag:
       compare_free_stack();
-      caml_invalid_argument("equal: functional value");
+      caml_invalid_argument("compare: functional value");
     case Object_tag: {
       intnat oid1 = Oid_val(v1);
       intnat oid2 = Oid_val(v2);
@@ -227,7 +227,7 @@ static intnat compare_val(value v1, value v2, int total)
       }
       if (compare == NULL) {
         compare_free_stack();
-        caml_invalid_argument("equal: abstract value");
+        caml_invalid_argument("compare: abstract value");
       }
       caml_compare_unordered = 0;
       res = compare(v1, v2);

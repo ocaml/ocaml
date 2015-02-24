@@ -57,7 +57,7 @@ type cmt_infos = {
   cmt_loadpath : string list;
   cmt_source_digest : string option;
   cmt_initial_env : Env.t;
-  cmt_imports : (string * Digest.t) list;
+  cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
 }
@@ -102,7 +102,8 @@ val add_saved_type : binary_part -> unit
 val get_saved_types : unit -> binary_part list
 val set_saved_types : binary_part list -> unit
 
-val record_value_dependency: Types.value_description -> Types.value_description -> unit
+val record_value_dependency:
+  Types.value_description -> Types.value_description -> unit
 
 
 (*

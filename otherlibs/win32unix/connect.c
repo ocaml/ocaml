@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include "socketaddr.h"
 

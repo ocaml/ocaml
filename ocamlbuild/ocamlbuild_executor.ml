@@ -59,22 +59,19 @@ let output_lines prefix oc buffer =
   let m = String.length u in
   let output_line i j =
     output_string oc prefix;
-    output oc u i (j - i);
+    output_substring oc u i (j - i);
     output_char oc '\n'
   in
   let rec loop i =
-    if i = m then
-      ()
+    if i < m then
+      let j =
+        try String.index_from u i '\n'
+        with Not_found -> m
+      in
+      output_line i j;
+      loop (j + 1)
     else
-      begin
-        try
-          let j = String.index_from u i '\n' in
-          output_line i j;
-          loop (j + 1)
-        with
-        | Not_found ->
-            output_line i m
-      end
+      ()
   in
   loop 0
 ;;
@@ -190,7 +187,7 @@ let execute
   (* ***)
   (*** do_read *)
   let do_read =
-    let u = String.create 4096 in
+    let u = Bytes.create 4096 in
     fun ?(loop=false) fd job ->
       (*if job.job_dying then
         ()
@@ -199,9 +196,13 @@ let execute
           let rec iteration () =
             let m =
               try
-                read fd u 0 (String.length u)
+                read fd u 0 (Bytes.length u)
               with
-              | Unix.Unix_error(_,_,_) -> 0
+              | Unix.Unix_error(e,_,_)  ->
+                let msg = error_message e in
+                display (fun oc -> fp oc
+                        "Error while reading stdout/stderr: %s\n" msg);
+                0
             in
             if m = 0 then
               if job.job_dying then
@@ -210,7 +211,7 @@ let execute
                 terminate job
             else
               begin
-                Buffer.add_substring job.job_buffer u 0 m;
+                Buffer.add_subbytes job.job_buffer u 0 m;
                 if loop then
                   iteration ()
                 else
@@ -237,6 +238,11 @@ let execute
       (*display begin fun oc -> fp oc "Terminating job %a\n%!" print_job_id job.job_id; end;*)
 
       decr jobs_active;
+
+      (* PR#5371: we would get EAGAIN below otherwise *)
+      clear_nonblock (doi job.job_stdout);
+      clear_nonblock (doi job.job_stderr);
+
       do_read ~loop:true (doi job.job_stdout) job;
       do_read ~loop:true (doi job.job_stderr) job;
       outputs := FDM.remove (doi job.job_stdout) (FDM.remove (doi job.job_stderr) !outputs);

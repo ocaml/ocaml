@@ -13,10 +13,9 @@
 
 # Common Makefile for otherlibs on the Win32/MinGW ports
 
-CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib -w s
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib -w s
-CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+include ../Makefile
 
-include ../Makefile.shared
+# The Unix version now works fine under Windows
+
 # Note .. is the current directory (this makefile is included from
 # a subdirectory)

@@ -15,7 +15,8 @@
 module Name = Odoc_name
 
 let string_of_variance t (co,cn) =
-  if t.Odoc_type.ty_kind = Odoc_type.Type_abstract &&
+  if ( t.Odoc_type.ty_kind = Odoc_type.Type_abstract ||
+      t.Odoc_type.ty_kind = Odoc_type.Type_open ) &&
     t.Odoc_type.ty_manifest = None
   then
     match (co, cn) with
@@ -106,6 +107,23 @@ let string_of_type_param_list t =
     )
     (if par then ")" else "")
 
+let string_of_type_extension_param_list te =
+  let par =
+    match te.Odoc_extension.te_type_parameters with
+      [] | [_] -> false
+    | _ -> true
+  in
+  Printf.sprintf "%s%s%s"
+    (if par then "(" else "")
+    (raw_string_of_type_list ", "
+       (List.map
+          (fun typ -> ("", typ))
+          te.Odoc_extension.te_type_parameters
+       )
+    )
+    (if par then ")" else "")
+
+
 let string_of_class_type_param_list l =
   let par =
     match l with
@@ -130,8 +148,8 @@ let string_of_class_params c =
         Printf.bprintf b "%s%s%s%s -> "
           (
            match label with
-             "" -> ""
-           | s -> s^":"
+             Asttypes.Nolabel -> ""
+           | s -> Printtyp.string_of_label s ^":"
           )
           (if parent then "(" else "")
           (Odoc_print.string_of_type_expr
@@ -153,93 +171,176 @@ let bool_of_private = function
   | Asttypes.Private -> true
   | _ -> false
 
+let field_doc_str = function
+  | None -> ""
+  | Some t -> Printf.sprintf "(* %s *)" (Odoc_misc.string_of_info t)
+
+let string_of_record l =
+  let module M = Odoc_type in
+  let module P = Printf in
+  P.sprintf "{\n%s\n}" (
+    String.concat "\n" (
+      List.map (fun field ->
+          P.sprintf "   %s%s : %s;%s"
+            (if field.M.rf_mutable then "mutable " else "") field.M.rf_name
+            (Odoc_print.string_of_type_expr field.M.rf_type)
+            (field_doc_str field.M.rf_text)
+        ) l
+    )
+  )
+
 let string_of_type t =
   let module M = Odoc_type in
-  "type "^
-  (String.concat ""
-     (List.map
-        (fun (p, co, cn) ->
-          (string_of_variance t (co, cn))^
-          (Odoc_print.string_of_type_expr p)^" "
-        )
-        t.M.ty_parameters
+   let module P = Printf in
+   let priv = bool_of_private t.M.ty_private in
+   let parameters_str =
+     String.concat " " (
+       List.map (fun (p, co, cn) ->
+         (string_of_variance t (co, cn)) ^ (Odoc_print.string_of_type_expr p)
+       ) t.M.ty_parameters
      )
-  )^
-  let priv = bool_of_private (t.M.ty_private) in
-  (Name.simple t.M.ty_name)^" "^
-  (match t.M.ty_manifest with
-    None -> ""
-  | Some typ ->
+   in
+   let manifest_str =
+     match t.M.ty_manifest with
+     | None -> ""
+     | Some (M.Object_type fields) ->
+       P.sprintf "= %s<\n%s\n>\n" (if priv then "private " else "") (
+         String.concat "\n" (
+           List.map (fun field ->
+             P.sprintf "   %s : %s;%s" field.M.of_name
+               (Odoc_print.string_of_type_expr field.M.of_type)
+               (field_doc_str field.M.of_text)
+           ) fields
+        )
+     )
+   | Some (M.Other typ) ->
      "= " ^ (if priv then "private " else "" ) ^
-       (Odoc_print.string_of_type_expr typ)^" "
-  )^
-  (match t.M.ty_kind with
-    M.Type_abstract ->
-      ""
-  | M.Type_variant l ->
-      "="^(if priv then " private" else "")^"\n"^
-      (String.concat ""
-         (List.map
-            (fun cons ->
-              "  | "^cons.M.vc_name^
-              (match cons.M.vc_args,cons.M.vc_ret with
-              | [], None -> ""
-              | l, None ->
-                  " of " ^
-                  (String.concat " * "
-                     (List.map
-                        (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
-              | [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
-              | l, Some r ->
-                  " : " ^
-                  (String.concat " * "
-                     (List.map
-                        (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
-                  ^ " -> " ^ Odoc_print.string_of_type_expr r
-              )^
-              (match cons.M.vc_text with
-                None ->
-                  ""
-              | Some t ->
-                  "(* "^(Odoc_misc.string_of_info t)^" *)"
-              )^"\n"
-            )
-            l
-         )
+       (Odoc_print.string_of_type_expr typ) ^ " "
+ in
+ let type_kind_str =
+   match t.M.ty_kind with
+   | M.Type_abstract -> ""
+   | M.Type_variant l ->
+     P.sprintf "=%s\n%s\n" (if priv then " private" else "") (
+       String.concat "\n" (
+         List.map (fun cons ->
+           let comment =
+             match cons.M.vc_text with
+             | None -> ""
+             | Some t -> P.sprintf "(* %s *)" (Odoc_misc.string_of_info t)
+           in
+           let string_of_parameters = function
+             | M.Cstr_tuple l ->
+                 String.concat " * " (
+                   List.map (fun t -> "("^Odoc_print.string_of_type_expr t^")") l
+                 )
+             | M.Cstr_record l ->
+                 string_of_record l
+           in
+           P.sprintf "  | %s%s%s" cons.M.vc_name (
+             match cons.M.vc_args, cons.M.vc_ret with
+              | M.Cstr_tuple [], None -> ""
+              | li, None -> " of " ^ (string_of_parameters li)
+              | M.Cstr_tuple [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
+              | li, Some r ->
+                 P.sprintf " : %s -> %s" (string_of_parameters li)
+                   (Odoc_print.string_of_type_expr r)
+             ) comment
+           ) l
+        )
       )
+
+  | M.Type_open ->
+      "= .." (* FIXME MG: when introducing new constuctors next time,
+                thanks to setup a minimal correct output *)
   | M.Type_record l ->
-      "= "^(if priv then "private " else "")^"{\n"^
-      (String.concat ""
-         (List.map
-            (fun record ->
-              "   "^(if record.M.rf_mutable then "mutable " else "")^
-              record.M.rf_name^" : "^
-              (Odoc_print.string_of_type_expr record.M.rf_type)^";"^
-              (match record.M.rf_text with
-                None ->
-                  ""
-              | Some t ->
-                  "(* "^(Odoc_misc.string_of_info t)^" *)"
-              )^"\n"
-            )
-            l
-         )
-      )^
-      "}\n"
-  )^
-  (match t.M.ty_info with
-    None -> ""
-  | Some info -> Odoc_misc.string_of_info info)
+     P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")
+       (string_of_record l)
+ in
+ P.sprintf "type %s %s %s%s%s" parameters_str (Name.simple t.M.ty_name)
+   manifest_str type_kind_str
+   (match t.M.ty_info with
+    | None -> ""
+    | Some info -> Odoc_misc.string_of_info info)
+
+let string_of_type_extension te =
+  let module M = Odoc_extension in
+  let module T = Odoc_type in
+    "type "
+    ^(String.concat ""
+        (List.map
+           (fun p -> (Odoc_print.string_of_type_expr p)^" ")
+           te.M.te_type_parameters
+        ))
+    ^te.M.te_type_name
+    ^" += "
+    ^(if (bool_of_private te.M.te_private) then "private " else "")
+    ^"\n"
+    ^(String.concat ""
+        (List.map
+           (fun x ->
+              "  | "
+              ^(Name.simple x.M.xt_name)
+              ^(match x.M.xt_args, x.M.xt_ret with
+                  | T.Cstr_tuple [], None -> ""
+                  | T.Cstr_tuple l, None ->
+                      " of " ^
+                        (String.concat " * "
+                           (List.map
+                              (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
+                  | T.Cstr_tuple [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
+                  | T.Cstr_tuple l, Some r ->
+                      " : " ^
+                        (String.concat " * "
+                           (List.map
+                              (fun t -> "("^Odoc_print.string_of_type_expr t^")") l))
+                      ^ " -> " ^ Odoc_print.string_of_type_expr r
+                  | T.Cstr_record _, _ ->
+                      assert false
+               )
+              ^(match x.M.xt_alias with
+                    None -> ""
+                  | Some xa ->
+                      " = "^
+                        (match xa.M.xa_xt with
+                             None -> xa.M.xa_name
+                           | Some x2 -> x2.M.xt_name
+                        )
+               )
+              ^(match x.M.xt_text with
+                    None ->
+                      ""
+                  | Some t ->
+                      "(* "^(Odoc_misc.string_of_info t)^" *)"
+               )^"\n"
+           )
+           te.M.te_constructors))
+    ^(match te.M.te_info with
+          None -> ""
+        | Some i -> Odoc_misc.string_of_info i
+     )
 
 let string_of_exception e =
+  let module T = Odoc_type in
   let module M = Odoc_exception in
   "exception "^(Name.simple e.M.ex_name)^
-  (match e.M.ex_args with
-    [] -> ""
-  | _ ->" : "^
-      (String.concat " -> "
-         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") e.M.ex_args)
-      )
+  (match e.M.ex_args, e.M.ex_ret with
+     T.Cstr_tuple [], None -> ""
+   | T.Cstr_tuple l,None ->
+       " of "^
+       (String.concat " * "
+         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
+   | T.Cstr_tuple [],Some r ->
+       " : "^
+       (Odoc_print.string_of_type_expr r)
+   | T.Cstr_tuple l,Some r ->
+       " : "^
+       (String.concat " * "
+         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))^
+       " -> "^
+       (Odoc_print.string_of_type_expr r)
+   | T.Cstr_record _, _ ->
+       assert false
   )^
   (match e.M.ex_alias with
     None -> ""

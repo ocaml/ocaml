@@ -14,14 +14,15 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-CAMLRUN=../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
-OCAMLYACC= ../boot/ocamlyacc
-OCAMLLIB = $(LIBDIR)
-OCAMLBIN = $(BINDIR)
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
+OCAMLLIB  = $(LIBDIR)
+OCAMLBIN  = $(BINDIR)
 
 OCAMLPP=-pp './remove_DEBUG'
 
@@ -36,10 +37,11 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(OCAMLBIN)
-INSTALL_MANODIR=$(MANDIR)/man3
+INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
+#MANO: man ocamldoc
+INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -74,7 +76,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A
+COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -89,6 +91,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_parameter.cmo\
 	odoc_value.cmo\
 	odoc_type.cmo\
+	odoc_extension.cmo\
 	odoc_exception.cmo\
 	odoc_class.cmo\
 	odoc_module.cmo\
@@ -145,6 +148,7 @@ OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
 
 STDLIB_MLIS=../stdlib/*.mli \
+  ../parsing/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
 	../otherlibs/str/str.mli \
 	../otherlibs/bigarray/bigarray.mli \
@@ -169,16 +173,23 @@ debug:
 	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
+	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
+	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
+	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
+	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo $(LIBCMOFILES)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS)	$(OCAMLSRCDIR)/tools/depend.cmx $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	            $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
+html_doc: stdlib_html/Pervasives.html
 
 dot: $(EXECMOFILES)
 	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
@@ -240,7 +251,7 @@ install: dummy
 	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
 
 installopt:
-	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
+	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
 installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
@@ -303,6 +314,13 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
 	$(STDLIB_MLIS)
+
+stdlib_html/Pervasives.html: $(STDLIB_MLIS)
+	$(MKDIR) stdlib_html
+	$(OCAMLDOC_RUN) -d stdlib_html -html $(INCLUDES) \
+	-t "OCaml library" \
+	$(STDLIB_MLIS)
+
 
 autotest_stdlib: dummy
 	$(MKDIR) $@

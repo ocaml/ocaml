@@ -11,8 +11,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
-
 open Int_misc
 
 type nat;;
@@ -284,18 +282,15 @@ let raw_string_of_digit nat off =
        and s1 = string_of_int (nth_digit_nat a_1 0) in
        let len = String.length s1 in
        if leading_digits < 10 then begin
-            let result = String.make (max_superscript_10_power_in_int+1) '0' in
-            String.set result 0
-                         (Char.chr (48 + leading_digits));
-            String.blit s1 0
-                 result (String.length result - len) len;
-            result
+            let result = Bytes.make (max_superscript_10_power_in_int+1) '0' in
+            Bytes.set result 0 (Char.chr (48 + leading_digits));
+            String.blit s1 0 result (Bytes.length result - len) len;
+            Bytes.to_string result
        end else begin
-            let result = String.make (max_superscript_10_power_in_int+2) '0' in
+            let result = Bytes.make (max_superscript_10_power_in_int+2) '0' in
             String.blit (string_of_int leading_digits) 0 result 0 2;
-            String.blit s1 0
-                 result (String.length result - len) len;
-            result
+            String.blit s1 0 result (Bytes.length result - len) len;
+            Bytes.to_string result
        end
   end
 
@@ -346,7 +341,7 @@ let int_to_string int s pos_ref base times =
   let i = ref int
   and j = ref times in
      while ((!i != 0) || (!j != 0)) && (!pos_ref != -1) do
-        String.set s !pos_ref (String.get digits (!i mod base));
+        Bytes.set s !pos_ref (String.get digits (!i mod base));
         decr pos_ref;
         decr j;
         i := !i / base
@@ -468,7 +463,7 @@ let unadjusted_string_of_nat nat off len_nat =
          if len > biggest_int / (succ pmax)
             then failwith "number too long"
             else let len_s = (succ pmax) * len in
-                 let s = String.make len_s '0'
+                 let s = Bytes.make len_s '0'
                  and pos_ref = ref len_s in
                    len_copy := pred !len_copy;
                    blit_nat copy1 0 nat off len;
@@ -490,7 +485,7 @@ let unadjusted_string_of_nat nat off len_nat =
                       blit_nat copy1 0 copy2 0 !len_copy;
                       set_digit_nat copy1 !len_copy 0
                    done;
-                   s
+                   Bytes.unsafe_to_string s
 
 let string_of_nat nat =
   let s = unadjusted_string_of_nat nat 0 (length_nat nat)

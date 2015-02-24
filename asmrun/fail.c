@@ -15,17 +15,17 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "alloc.h"
-#include "fail.h"
-#include "io.h"
-#include "gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "printexc.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/printexc.h"
+#include "caml/signals.h"
 #include "stack.h"
-#include "roots.h"
-#include "callback.h"
+#include "caml/roots.h"
+#include "caml/callback.h"
 
 /* The globals holding predefined exceptions */
 
@@ -104,7 +104,10 @@ void caml_raise_with_args(value tag, int nargs, value args[])
 
 void caml_raise_with_string(value tag, char const *msg)
 {
-  caml_raise_with_arg(tag, caml_copy_string(msg));
+  CAMLparam1(tag);
+  value v_msg = caml_copy_string(msg);
+  caml_raise_with_arg(tag, v_msg);
+  CAMLnoreturn;
 }
 
 void caml_failwith (char const *msg)
@@ -161,9 +164,11 @@ static value * caml_array_bound_error_exn = NULL;
 void caml_array_bound_error(void)
 {
   if (caml_array_bound_error_exn == NULL) {
-    caml_array_bound_error_exn = caml_named_value("Pervasives.array_bound_error");
+    caml_array_bound_error_exn =
+      caml_named_value("Pervasives.array_bound_error");
     if (caml_array_bound_error_exn == NULL) {
-      fprintf(stderr, "Fatal error: exception Invalid_argument(\"index out of bounds\")\n");
+      fprintf(stderr, "Fatal error: exception "
+                      "Invalid_argument(\"index out of bounds\")\n");
       exit(2);
     }
   }

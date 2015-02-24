@@ -11,10 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 #include <sys/types.h>
 #ifdef HAS_DIRENT
@@ -30,7 +30,7 @@ CAMLprim value unix_opendir(value path)
   value res;
   char * p;
 
-  p = caml_stat_alloc_string(path);
+  p = caml_strdup(String_val(path));
   caml_enter_blocking_section();
   d = opendir(p);
   caml_leave_blocking_section();

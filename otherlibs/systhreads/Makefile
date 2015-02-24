@@ -13,10 +13,13 @@
 
 include ../../config/Makefile
 
-CAMLC=../../ocamlcomp.sh -I ../unix
-CAMLOPT=../../ocamlcompopt.sh -I ../unix
+ROOTDIR=../..
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+      -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
+CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib \
+        -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot
+COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 
 BYTECODE_C_OBJS=st_stubs_b.o
 NATIVECODE_C_OBJS=st_stubs_n.o
@@ -28,7 +31,7 @@ all: libthreads.a threads.cma
 allopt: libthreadsnat.a threads.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
-	$(MKLIB) -o threads $(BYTECODE_C_OBJS) -lpthread
+	$(MKLIB) -o threads $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 st_stubs_b.o: st_stubs.c st_posix.h
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
@@ -48,12 +51,12 @@ st_stubs_n.o: st_stubs.c st_posix.h
 
 threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
-	  -cclib -lunix $(PTHREAD_LINK)
+	  -cclib -lunix $(PTHREAD_CAML_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-	  -cclib -lthreadsnat $(PTHREAD_LINK)
+	  -cclib -lthreadsnat $(PTHREAD_CAML_LINK)
 
 # Note: I removed "-cclib -lunix" from the line above.
 # Indeed, if we link threads.cmxa, then we must also link unix.cmxa,
@@ -69,21 +72,27 @@ partialclean:
 clean: partialclean
 	rm -f *.o *.a *.so
 
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
-	cp libthreads.a $(LIBDIR)/libthreads.a
-	cd $(LIBDIR); $(RANLIB) libthreads.a
-	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
-	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
-	rm -f $(LIBDIR)/threads/stdlib.cma
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
-	cp threads.h $(LIBDIR)/caml/threads.h
+	if test -f dllthreads.so; then \
+	  cp dllthreads.so $(INSTALL_STUBLIBDIR)/dllthreads.so; fi
+	cp libthreads.a $(INSTALL_LIBDIR)/libthreads.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libthreads.a
+	if test -d $(INSTALL_LIBDIR)/threads; then :; \
+	  else mkdir $(INSTALL_LIBDIR)/threads; fi
+	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(INSTALL_LIBDIR)/threads
+	rm -f $(INSTALL_LIBDIR)/threads/stdlib.cma
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
+	   $(INSTALL_LIBDIR)
+	cp threads.h $(INSTALL_LIBDIR)/caml/threads.h
 
 installopt:
-	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
-	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
-	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
-	cd $(LIBDIR)/threads; $(RANLIB) threads.a
+	cp libthreadsnat.a $(INSTALL_LIBDIR)/libthreadsnat.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libthreadsnat.a
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(INSTALL_LIBDIR)/threads
+	cd $(INSTALL_LIBDIR)/threads; $(RANLIB) threads.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -97,7 +106,7 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: $(GENFILES)
-	-gcc -MM -I../../byterun *.c > .depend
+	-$(CC) -MM -I../../byterun *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

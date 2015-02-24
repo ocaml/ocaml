@@ -1,3 +1,15 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                                OCaml                                *)
+(*                                                                     *)
+(*                        Alain Frisch, LexiFi                         *)
+(*                                                                     *)
+(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
 (* Check the effectiveness of inlining the wrapper which fills in
    default values for optional arguments.
 
@@ -18,6 +30,4 @@ let () =
   done;
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
-     (* check that we did not allocated anything between x1 and x2 *)
-
-
+     (* check that we have not allocated anything between x1 and x2 *)

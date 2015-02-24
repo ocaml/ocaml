@@ -63,8 +63,8 @@ let random() =
 exception Failed
 
 let test_sort sort_fun size =
-  let a = Array.create size 0 in
-  let check = Array.create 4096 0 in
+  let a = Array.make size 0 in
+  let check = Array.make 4096 0 in
   for i = 0 to size-1 do
     let n = random() in a.(i) <- n; check.(n) <- check.(n)+1
   done;

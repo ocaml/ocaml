@@ -11,7 +11,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** System interface. *)
+(** System interface.
+
+  Every function in this module raises [Sys_error] with an
+  informative message when the underlying system call signal
+  an error.
+*)
 
 val argv : string array
 (** The command line arguments given to the process.
@@ -94,12 +99,18 @@ val word_size : int
 (** Size of one word on the machine currently executing the OCaml
    program, in bits: 32 or 64. *)
 
+val int_size : int
+(** Size of an int.  It is 31 bits (resp. 63 bits) when using the
+    OCaml compiler on a 32 bits (resp. 64 bits) platform.  It may
+    differ for other compilers, e.g. it is 32 bits when compiling to
+    JavaScript. *)
+
 val big_endian : bool
 (** Whether the machine currently executing the Caml program is big-endian.
     @since 4.00.0 *)
 
 val max_string_length : int
-(** Maximum length of a string. *)
+(** Maximum length of strings and byte sequences. *)
 
 val max_array_length : int
 (** Maximum length of a normal array.  The maximum length of a float

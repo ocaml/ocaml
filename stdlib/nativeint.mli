@@ -16,8 +16,8 @@
    This module provides operations on the type [nativeint] of
    signed 32-bit integers (on 32-bit platforms) or
    signed 64-bit integers (on 64-bit platforms).
-   This integer type has exactly the same width as that of a [long]
-   integer type in the C compiler.  All arithmetic operations over
+   This integer type has exactly the same width as that of a
+   pointer type in the C compiler.  All arithmetic operations over
    [nativeint] are taken modulo 2{^32} or 2{^64} depending
    on the word size of the architecture.
 
@@ -170,6 +170,10 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [Nativeint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for natives ints.
+    @since 4.03.0 *)
 
 (**/**)
 

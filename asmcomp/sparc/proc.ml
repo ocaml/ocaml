@@ -81,12 +81,12 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 19 Reg.dummy in
+  let v = Array.make 19 Reg.dummy in
   for i = 0 to 18 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let hard_float_reg =
-  let v = Array.create 32 Reg.dummy in
+  let v = Array.make 32 Reg.dummy in
   for i = 0 to 31 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
@@ -105,7 +105,7 @@ let stack_slot slot ty =
 
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
-  let loc = Array.create (Array.length arg) Reg.dummy in
+  let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
@@ -171,6 +171,10 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
+(* Volatile registers: none *)
+
+let regs_are_volatile rs = false
+
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
@@ -195,6 +199,15 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall(_, _) -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

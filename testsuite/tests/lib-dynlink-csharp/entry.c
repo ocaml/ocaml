@@ -22,8 +22,8 @@
 #    define _DLLAPI __declspec(dllexport)
 #  else
 #    define _DLLAPI extern
-#  endif 
-#  if defined(__MINGW32__) || defined(UNDER_CE) 
+#  endif
+#  if defined(__MINGW32__) || defined(UNDER_CE)
 #    define _CALLPROC
 #  else
 #    define _CALLPROC __stdcall

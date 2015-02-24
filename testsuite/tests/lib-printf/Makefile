@@ -10,10 +10,8 @@
 #                                                                       #
 #########################################################################
 
-#MODULES=
-MAIN_MODULE=tprintf
-ADD_COMPFLAGS=-I $(OTOPDIR)/testsuite/lib
-ADD_MODULES=testing
+MODULES=testing
+BASEDIR=../..
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.several
+include $(BASEDIR)/makefiles/Makefile.common

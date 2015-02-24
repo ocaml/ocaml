@@ -18,22 +18,22 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/types.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__
 #include </usr/include/io.h>
 #endif
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "io.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "signals.h"
-#include "sys.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/signals.h"
+#include "caml/sys.h"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -207,7 +207,7 @@ CAMLexport void caml_flush(struct channel *channel)
 
 /* Output data */
 
-CAMLexport void caml_putword(struct channel *channel, uint32 w)
+CAMLexport void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
     caml_failwith("output_binary_int: not a binary channel");
@@ -303,10 +303,10 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
-CAMLexport uint32 caml_getword(struct channel *channel)
+CAMLexport uint32_t caml_getword(struct channel *channel)
 {
   int i;
-  uint32 res;
+  uint32_t res;
 
   if (! caml_channel_binary_mode(channel))
     caml_failwith("input_binary_int: not a binary channel");
@@ -420,14 +420,23 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
 /* OCaml entry points for the I/O functions.  Wrap struct channel *
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
+
 /* FIXME CAMLexport, but not in io.h  exported for Cash ? */
 CAMLexport void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if (--chan->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
-  unlink_channel(chan);
-  caml_stat_free(chan);
+  /* If the buffer is empty, remove the channel from the list of all
+     open channels and free it. Otherwise, keep it around so the Ocaml
+     [at_exit] function gets a chance to flush it.
+     We would want to simply flush the channel now, but flushing can
+     raise exceptions, which is forbidden in a finalization function.
+  */
+  if (chan->curr == chan->buff){
+    unlink_channel(chan);
+    caml_stat_free(chan);
+  }
 }
 
 static int compare_channel(value vchan1, value vchan2)
@@ -791,21 +800,3 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   Unlock(channel);
   CAMLreturn (Val_long(res));
 }
-
-/* Conversion between file_offset and int64 */
-
-#ifndef ARCH_INT64_TYPE
-CAMLexport value caml_Val_file_offset(file_offset fofs)
-{
-  int64 ofs;
-  ofs.l = fofs;
-  ofs.h = 0;
-  return caml_copy_int64(ofs);
-}
-
-CAMLexport file_offset caml_File_offset_val(value v)
-{
-  int64 ofs = Int64_val(v);
-  return (file_offset) ofs.l;
-}
-#endif

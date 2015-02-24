@@ -14,14 +14,15 @@ include ../config/Makefile
 
 # Various commands and dir
 ##########################
-CAMLRUN=../boot/ocamlrun
-OCAMLC   = ../ocamlcomp.sh
-OCAMLOPT = ../ocamlcompopt.sh
-OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
-OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
-OCAMLYACC= ../boot/ocamlyacc
-OCAMLLIB = $(LIBDIR)
-OCAMLBIN = $(BINDIR)
+ROOTDIR   = ..
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
+OCAMLLIB  = $(LIBDIR)
+OCAMLBIN  = $(BINDIR)
 
 OCAMLPP=-pp "grep -v DEBUG"
 
@@ -36,9 +37,9 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
-INSTALL_BINDIR=$(OCAMLBIN)
+INSTALL_BINDIR=$(DESTDIR)$(OCAMLBIN)
 
 INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -57,13 +58,13 @@ INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
 INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 	-I $(OCAMLSRCDIR)/otherlibs/str \
 	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
-	-I $(OCAMLSRCDIR)/otherlibs/win32unix \
+	-I $(OCAMLSRCDIR)/otherlibs/$(UNIXLIB) \
 	-I $(OCAMLSRCDIR)/otherlibs/num \
-	-I $(OCAMLSRCDIR)/otherlibs/win32graph
+	-I $(OCAMLSRCDIR)/otherlibs/$(GRAPHLIB)
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A
+COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -78,6 +79,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_parameter.cmo\
 	odoc_value.cmo\
 	odoc_type.cmo\
+	odoc_extension.cmo\
 	odoc_exception.cmo\
 	odoc_class.cmo\
 	odoc_module.cmo\
@@ -119,7 +121,6 @@ EXECMOFILES=$(CMOFILES) \
 	odoc_args.cmo \
 	odoc.cmo
 
-
 EXECMXFILES= $(EXECMOFILES:.cmo=.cmx)
 EXECMIFILES= $(EXECMOFILES:.cmo=.cmi)
 
@@ -133,25 +134,35 @@ OCAMLCMOFILES= \
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
-all: exe lib
+all:
+	$(MAKEREC) exe
+	$(MAKEREC) lib
+
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI)
 
 opt.opt: exeopt libopt
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+
 debug:
-	$(MAKE) OCAMLPP=""
+	$(MAKEREC) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
+	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
+	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa dynlink.cmxa $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
+	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
+	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	            $(LIBCMXFILES)
 
 # Parsers and lexers dependencies :
 ###################################
@@ -220,7 +231,7 @@ installopt_really:
 ############################
 
 clean:: dummy
-	@rm -f *~ /#*/#
+	@rm -f *~ \#*\#
 	@rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml

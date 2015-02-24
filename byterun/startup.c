@@ -17,41 +17,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #ifdef _WIN32
 #include <process.h>
 #endif
-#include "alloc.h"
-#include "backtrace.h"
-#include "callback.h"
-#include "custom.h"
-#include "debugger.h"
-#include "dynlink.h"
-#include "exec.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "freelist.h"
-#include "gc_ctrl.h"
-#include "instrtrace.h"
-#include "interp.h"
-#include "intext.h"
-#include "io.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "osdeps.h"
-#include "prims.h"
-#include "printexc.h"
-#include "reverse.h"
-#include "signals.h"
-#include "stacks.h"
-#include "sys.h"
-#include "startup.h"
-#include "version.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/callback.h"
+#include "caml/custom.h"
+#include "caml/debugger.h"
+#include "caml/dynlink.h"
+#include "caml/exec.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/freelist.h"
+#include "caml/gc_ctrl.h"
+#include "caml/instrtrace.h"
+#include "caml/interp.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/osdeps.h"
+#include "caml/prims.h"
+#include "caml/printexc.h"
+#include "caml/reverse.h"
+#include "caml/signals.h"
+#include "caml/stacks.h"
+#include "caml/sys.h"
+#include "caml/startup.h"
+#include "caml/version.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -79,7 +79,7 @@ static void init_atoms(void)
 
 /* Read the trailer of a bytecode file */
 
-static void fixup_endianness_trailer(uint32 * p)
+static void fixup_endianness_trailer(uint32_t * p)
 {
 #ifndef ARCH_BIG_ENDIAN
   Reverse_32(p, p);
@@ -153,7 +153,7 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 {
   long ofs;
   int i;
@@ -172,9 +172,9 @@ int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 /* Position fd at the beginning of the section having the given name.
    Return the length of the section data in bytes. */
 
-int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
-  int32 len = caml_seek_optional_section(fd, trail, name);
+  int32_t len = caml_seek_optional_section(fd, trail, name);
   if (len == -1)
     caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
@@ -185,7 +185,7 @@ int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 
 static char * read_section(int fd, struct exec_trailer *trail, char *name)
 {
-  int32 len;
+  int32_t len;
   char * data;
 
   len = caml_seek_optional_section(fd, trail, name);
@@ -246,10 +246,10 @@ static int parse_command_line(char **argv)
 #endif
     case 'v':
       if (!strcmp (argv[i], "-version")){
-        printf ("The OCaml runtime, version " OCAML_VERSION "\n");
+        printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
         exit (0);
       }else if (!strcmp (argv[i], "-vnum")){
-        printf (OCAML_VERSION "\n");
+        printf (OCAML_VERSION_STRING "\n");
         exit (0);
       }else{
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
@@ -374,7 +374,8 @@ CAMLexport void caml_main(char **argv)
 
   /* Should we really do that at all?  The current executable is ocamlrun
      itself, it's never a bytecode program. */
-  if (fd < 0 && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
+  if (fd < 0
+      && caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
   }
@@ -410,6 +411,7 @@ CAMLexport void caml_main(char **argv)
   /* Load the code */
   caml_code_size = caml_seek_section(fd, &trail, "CODE");
   caml_load_code(fd, caml_code_size);
+  caml_init_debug_info();
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
@@ -458,7 +460,7 @@ CAMLexport void caml_startup_code(
            char **argv)
 {
   value res;
-  char* cds_file;
+  char * cds_file;
   char * exe_name;
   static char proc_self_exe[256];
 
@@ -472,8 +474,7 @@ CAMLexport void caml_startup_code(
 #endif
   cds_file = getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
-    caml_cds_file = caml_stat_alloc(strlen(cds_file) + 1);
-    strcpy(caml_cds_file, cds_file);
+    caml_cds_file = caml_strdup(cds_file);
   }
   parse_camlrunparam();
   exe_name = argv[0];

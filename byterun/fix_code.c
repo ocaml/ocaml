@@ -13,21 +13,21 @@
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
-#include "config.h"
+#include "caml/config.h"
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 
-#include "debugger.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "md5.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "reverse.h"
+#include "caml/debugger.h"
+#include "caml/fix_code.h"
+#include "caml/instruct.h"
+#include "caml/intext.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/reverse.h"
 
 code_t caml_start_code;
 asize_t caml_code_size;
@@ -98,10 +98,10 @@ char * caml_instr_base;
 void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
-  int l [STOP + 1];
+  int l [FIRST_UNIMPLEMENTED_OP];
   int i;
 
-  for (i = 0; i <= STOP; i++) {
+  for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
     l [i] = 0;
   }
   /* Instructions with one operand */
@@ -125,7 +125,7 @@ void caml_thread_code (code_t code, asize_t len)
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
-    if (instr < 0 || instr > STOP){
+    if (instr < 0 || instr >= FIRST_UNIMPLEMENTED_OP){
       /* FIXME -- should Assert(false) ?
       caml_fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
                             (char *)(long)instr);
@@ -134,12 +134,12 @@ void caml_thread_code (code_t code, asize_t len)
     }
     *p++ = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
     if (instr == SWITCH) {
-      uint32 sizes = *p++;
-      uint32 const_size = sizes & 0xFFFF;
-      uint32 block_size = sizes >> 16;
+      uint32_t sizes = *p++;
+      uint32_t const_size = sizes & 0xFFFF;
+      uint32_t block_size = sizes >> 16;
       p += const_size + block_size;
     } else if (instr == CLOSUREREC) {
-      uint32 nfuncs = *p++;
+      uint32_t nfuncs = *p++;
       p++;                      /* skip nvars */
       p += nfuncs;
     } else {

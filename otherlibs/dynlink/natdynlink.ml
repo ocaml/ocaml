@@ -15,9 +15,9 @@
 
 type handle
 
-external ndl_open: string -> bool -> handle * string = "caml_natdynlink_open"
+external ndl_open: string -> bool -> handle * bytes = "caml_natdynlink_open"
 external ndl_run: handle -> string -> unit = "caml_natdynlink_run"
-external ndl_getmap: unit -> string = "caml_natdynlink_getmap"
+external ndl_getmap: unit -> bytes = "caml_natdynlink_getmap"
 external ndl_globals_inited: unit -> int = "caml_natdynlink_globals_inited"
 
 type linking_error =
@@ -41,11 +41,7 @@ exception Error of error
 open Cmx_format
 
 (* Copied from config.ml to avoid dependencies *)
-let cmxs_magic_number = "Caml2007D001"
-
-(* Copied from compilenv.ml to avoid dependencies *)
-let cmx_not_found_crc =
-  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
+let cmxs_magic_number = "Caml2007D002"
 
 let dll_filename fname =
   if Filename.is_implicit fname then Filename.concat (Sys.getcwd ()) fname
@@ -59,7 +55,7 @@ let read_file filename priv =
   if Obj.tag (Obj.repr res) = Obj.string_tag
   then raise (Error (Cannot_open_dll (Obj.magic res)));
 
-  let header : dynheader = Marshal.from_string data 0 in
+  let header : dynheader = Marshal.from_bytes data 0 in
   if header.dynu_magic <> cmxs_magic_number
   then raise(Error(Not_a_bytecode_file dll));
   (dll, handle, header.dynu_units)
@@ -92,7 +88,7 @@ let inited = ref false
 
 let default_available_units () =
   let map : (string*Digest.t*Digest.t*string list) list =
-    Marshal.from_string (ndl_getmap ()) 0 in
+    Marshal.from_bytes (ndl_getmap ()) 0 in
   let exe = Sys.executable_name in
   let rank = ref 0 in
   global_state :=
@@ -114,23 +110,26 @@ let init () =
 
 let add_check_ifaces allow_ext filename ui ifaces =
   List.fold_left
-    (fun ifaces (name, crc) ->
-       if name = ui.dynu_name
-       then StrMap.add name (crc,filename) ifaces
-       else
-         try
-           let (old_crc,old_src) = StrMap.find name ifaces in
-           if old_crc <> crc
-           then raise(Error(Inconsistent_import(name)))
-           else ifaces
-         with Not_found ->
-           if allow_ext then StrMap.add name (crc,filename) ifaces
-           else raise (Error(Unavailable_unit name))
+    (fun ifaces (name, crco) ->
+       match crco with
+         None -> ifaces
+       | Some crc ->
+           if name = ui.dynu_name
+           then StrMap.add name (crc,filename) ifaces
+           else
+             try
+               let (old_crc,old_src) = StrMap.find name ifaces in
+                 if old_crc <> crc
+                 then raise(Error(Inconsistent_import(name)))
+                 else ifaces
+             with Not_found ->
+               if allow_ext then StrMap.add name (crc,filename) ifaces
+               else raise (Error(Unavailable_unit name))
     ) ifaces ui.dynu_imports_cmi
 
 let check_implems filename ui implems =
   List.iter
-    (fun (name, crc) ->
+    (fun (name, crco) ->
        match name with
          |"Out_of_memory"
          |"Sys_error"
@@ -147,13 +146,15 @@ let check_implems filename ui implems =
          | _ ->
        try
          let (old_crc,old_src,state) = StrMap.find name implems in
-         if crc <> cmx_not_found_crc && old_crc <> crc
-         then raise(Error(Inconsistent_implementation(name)))
-         else match state with
-           | Check_inited i ->
-               if ndl_globals_inited() < i
-               then raise(Error(Unavailable_unit name))
-           | Loaded -> ()
+           match crco with
+             Some crc when old_crc <> crc ->
+               raise(Error(Inconsistent_implementation(name)))
+           | _ ->
+               match state with
+               | Check_inited i ->
+                   if ndl_globals_inited() < i
+                   then raise(Error(Unavailable_unit name))
+               | Loaded -> ()
        with Not_found ->
          raise (Error(Unavailable_unit name))
     ) ui.dynu_imports_cmx

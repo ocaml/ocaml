@@ -60,7 +60,7 @@ let copy_object_file ppf oc name =
       raise(Error(File_not_found name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = input_bytes ic (String.length cmo_magic_number) in
+    let buffer = really_input_string ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
@@ -124,3 +124,8 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  lib_ccobjs := [];
+  lib_ccopts := [];
+  lib_dllibs := []

@@ -191,8 +191,12 @@ linking with this library automatically adds back the
 options as if they had been provided on the
 command line, unless the
 .B -noautolink
-option is given.
-.TP
+option is given. Additionally, a substring
+.B $CAMLORIGIN
+inside a
+.BR \ \-ccopt
+options will be replaced by the full path to the .cma library,
+excluding the filename.
 .B \-absname
 Show absolute filenames in error messages.
 .TP
@@ -350,9 +354,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename
@@ -395,6 +399,9 @@ line.  This custom runtime system can be used later to execute
 bytecode executables produced with the option
 .B ocamlc\ \-use\-runtime
 .IR runtime-name .
+.TP
+.B \-no-alias-deps
+Do not record dependencies for module aliases.
 .TP
 .B \-no\-app\-funct
 Deactivates the applicative behaviour of functors. With this option,
@@ -446,6 +453,18 @@ packed object file produced.  If the
 .B \-output\-obj
 option is given,
 specify the name of the output file produced.
+This can also be used when compiling an interface or implementation
+file, without linking, in which case it sets the name of the cmi or
+cmo file, and also sets the module name to the file name up to the
+first dot.
+.TP
+.BI \-open \ module
+Opens the given module before processing the interface or
+implementation files. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open! module1;; ... open! moduleN;; were added
+at the top of each file.
 .TP
 .B \-output\-obj
 Cause the linker to produce a C object file instead of a bytecode
@@ -487,8 +506,9 @@ implementation (.ml) file.
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
-The format of the input and output of the preprocessor
-are not yet documented.
+The module
+.BR Ast_mapper (3)
+implements the external interface of a preprocessor.
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all
@@ -519,6 +539,12 @@ then the
 .B d
 suffix is supported and gives a debug version of the runtime.
 .TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
+.TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -540,6 +566,13 @@ constructs). Programs compiled with
 are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
+.TP
+.B \-unsafe\-string
+Identify the types
+.BR string \ and\  bytes ,
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
 .TP
 .BI \-use\-runtime \ runtime\-name
 Generate a bytecode executable file that can be executed on the custom
@@ -716,7 +749,7 @@ have type
 \ \ Non-returning statement.
 
 22
-\ \ Camlp4 warning.
+\ \ Preprocessor warning.
 
 23
 \ \ Useless record
@@ -773,7 +806,7 @@ mutually recursive types.
 \ \ Unused constructor.
 
 38
-\ \ Unused exception constructor.
+\ \ Unused extension constructor.
 
 39
 \ \ Unused rec flag.
@@ -875,7 +908,7 @@ Note: it is not recommended to use the
 .B \-warn\-error
 option in production code, because it will almost certainly prevent
 compiling your program with later versions of OCaml when they add new
-warnings.
+warnings or modify existing warnings.
 
 The default setting is
 .B \-warn\-error\ -a (all warnings are non-fatal).

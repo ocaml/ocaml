@@ -11,20 +11,20 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* The interface of this file is in "mlvalues.h" and "alloc.h" */
+/* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "misc.h"
-#include "reverse.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
+#include "caml/reverse.h"
+#include "caml/stacks.h"
 
 #ifdef _MSC_VER
 #include <float.h>
@@ -71,68 +71,29 @@ CAMLexport value caml_copy_double(double d)
 
 CAMLprim value caml_format_float(value fmt, value arg)
 {
-#define MAX_DIGITS 350
-/* Max number of decimal digits in a "natural" (not artificially padded)
-   representation of a float. Can be quite big for %f format.
-   Max exponent for IEEE format is 308 decimal digits.
-   Rounded up for good measure. */
-  char format_buffer[MAX_DIGITS + 20];
-  int prec, i;
-  char * p;
-  char * dest;
   value res;
   double d = Double_val(arg);
 
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
-  prec = MAX_DIGITS;
-  for (p = String_val(fmt); *p != 0; p++) {
-    if (*p >= '0' && *p <= '9') {
-      i = atoi(p) + MAX_DIGITS;
-      if (i > prec) prec = i;
-      break;
-    }
-  }
-  for( ; *p != 0; p++) {
-    if (*p == '.') {
-      i = atoi(p+1) + MAX_DIGITS;
-      if (i > prec) prec = i;
-      break;
-    }
-  }
-  if (prec < sizeof(format_buffer)) {
-    dest = format_buffer;
-  } else {
-    dest = caml_stat_alloc(prec);
-  }
-  sprintf(dest, String_val(fmt), d);
-  res = caml_copy_string(dest);
-  if (dest != format_buffer) {
-    caml_stat_free(dest);
-  }
+    res = caml_alloc_sprintf(String_val(fmt), d);
 #ifdef HAS_BROKEN_PRINTF
   } else {
-    if (isnan(d))
-    {
+    if (isnan(d)) {
       res = caml_copy_string("nan");
-    }
-    else
-    {
+    } else {
       if (d > 0)
-      {
         res = caml_copy_string("inf");
-      }
       else
-      {
         res = caml_copy_string("-inf");
-      }
     }
   }
 #endif
   return res;
 }
 
+#if 0
 /*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
 {
   char parse_buffer[64];
@@ -163,6 +124,7 @@ CAMLprim value caml_format_float(value fmt, value arg)
   if (buf != parse_buffer) caml_stat_free(buf);
   caml_failwith("float_of_string");
 }
+#endif
 
 CAMLprim value caml_float_of_string(value vs)
 {
@@ -416,9 +378,9 @@ CAMLprim value caml_log1p_float(value f)
 union double_as_two_int32 {
     double d;
 #if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
-    struct { uint32 h; uint32 l; } i;
+    struct { uint32_t h; uint32_t l; } i;
 #else
-    struct { uint32 l; uint32 h; } i;
+    struct { uint32_t l; uint32_t h; } i;
 #endif
 };
 
@@ -505,7 +467,7 @@ CAMLprim value caml_classify_float(value vd)
   }
 #else
   union double_as_two_int32 u;
-  uint32 h, l;
+  uint32_t h, l;
 
   u.d = Double_val(vd);
   h = u.i.h;  l = u.i.l;

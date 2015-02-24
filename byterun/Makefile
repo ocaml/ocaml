@@ -46,30 +46,21 @@ libcamlrun_shared.so: $(PICOBJS)
 
 install::
 	if test -f libcamlrun_shared.so; then \
-	  cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so; fi
+	  cp libcamlrun_shared.so $(INSTALL_LIBDIR)/libcamlrun_shared.so; fi
 
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.o .pic.o
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) $< -o $@
 
-.c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm $*.d.c
+%.pic.o: %.c
+	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $< -o $@
 
-.c.pic.o:
-	ln -s -f $*.c $*.pic.c
-	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
-	rm $*.pic.c
-
-clean::
-	rm -f *.pic.c *.d.c
-
-depend : prims.c opnames.h jumptbl.h version.h
-	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
-	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
+depend : prims.c caml/opnames.h caml/jumptbl.h caml/version.h
+	-$(CC) -MM $(BYTECCCOMPOPTS) *.c > .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 
 include .depend

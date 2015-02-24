@@ -13,10 +13,10 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#include "mlvalues.h"
-#include "fail.h"
+#include "caml/mlvalues.h"
+#include "caml/fail.h"
 #include "libgraph.h"
-#include "callback.h"
+#include "caml/callback.h"
 #include <windows.h>
 
 static value gr_reset(void);
@@ -37,7 +37,7 @@ MSG msg;
 
 static char *szOcamlWindowClass = "OcamlWindowClass";
 static BOOL gr_initialized = 0;
-CAMLprim value caml_gr_clear_graph(void);
+CAMLprim value caml_gr_clear_graph(value unit);
 HANDLE hInst;
 
 HFONT CreationFont(char *name)
@@ -48,7 +48,8 @@ HFONT CreationFont(char *name)
    CurrentFont.lfWeight = FW_NORMAL;
    CurrentFont.lfHeight = grwindow.CurrentFontSize;
    CurrentFont.lfPitchAndFamily = (BYTE) (FIXED_PITCH | FF_MODERN);
-   strcpy(CurrentFont.lfFaceName, name);  /* Courier */
+   strncpy(CurrentFont.lfFaceName, name, sizeof(CurrentFont.lfFaceName));
+   CurrentFont.lfFaceName[sizeof(CurrentFont.lfFaceName) - 1] = 0;
    return (CreateFontIndirect(&CurrentFont));
 }
 
@@ -99,7 +100,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
                 // End application
         case WM_DESTROY:
                 ResetForClose(hwnd);
-		gr_check_open();
+                gr_check_open();
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);
@@ -267,7 +268,7 @@ CAMLprim value caml_gr_open_graph(value arg)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_close_graph(void)
+CAMLprim value caml_gr_close_graph(value unit)
 {
         if (gr_initialized) {
                 PostMessage(grwindow.hwnd, WM_CLOSE, 0, 0);
@@ -276,7 +277,7 @@ CAMLprim value caml_gr_close_graph(void)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_clear_graph(void)
+CAMLprim value caml_gr_clear_graph(value unit)
 {
         gr_check_open();
         if(grremember_mode) {
@@ -290,13 +291,13 @@ CAMLprim value caml_gr_clear_graph(void)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_size_x(void)
+CAMLprim value caml_gr_size_x(value unit)
 {
         gr_check_open();
         return Val_int(grwindow.width);
 }
 
-CAMLprim value caml_gr_size_y(void)
+CAMLprim value caml_gr_size_y(value unit)
 {
         gr_check_open();
         return Val_int(grwindow.height);
@@ -311,7 +312,7 @@ CAMLprim value caml_gr_resize_window (value vx, value vy)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_synchronize(void)
+CAMLprim value caml_gr_synchronize(value unit)
 {
         gr_check_open();
         BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
@@ -336,7 +337,7 @@ CAMLprim value caml_gr_sigio_signal(value unit)
         return Val_unit;
 }
 
-CAMLprim value caml_gr_sigio_handler(void)
+CAMLprim value caml_gr_sigio_handler(value unit)
 {
         return Val_unit;
 }

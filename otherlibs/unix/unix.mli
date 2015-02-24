@@ -11,7 +11,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(** Interface to the Unix system *)
+(** Interface to the Unix system.
+
+    Note: all the functions of this module (except [error_message] and
+    [handle_unix_error]) are liable to raise the [Unix_error]
+    exception whenever the underlying system call signals an error. *)
 
 
 (** {6 Error report} *)
@@ -259,22 +263,30 @@ val openfile : string -> open_flag list -> file_perm -> file_descr
 val close : file_descr -> unit
 (** Close a file descriptor. *)
 
-val read : file_descr -> string -> int -> int -> int
-(** [read fd buff ofs len] reads [len] characters from descriptor
-   [fd], storing them in string [buff], starting at position [ofs]
-   in string [buff]. Return the number of characters actually read. *)
+val read : file_descr -> bytes -> int -> int -> int
+(** [read fd buff ofs len] reads [len] bytes from descriptor [fd],
+    storing them in byte sequence [buff], starting at position [ofs] in
+    [buff]. Return the number of bytes actually read. *)
 
-val write : file_descr -> string -> int -> int -> int
-(** [write fd buff ofs len] writes [len] characters to descriptor
-   [fd], taking them from string [buff], starting at position [ofs]
-   in string [buff]. Return the number of characters actually
-   written.  [write] repeats the writing operation until all characters
-   have been written or an error occurs.  *)
+val write : file_descr -> bytes -> int -> int -> int
+(** [write fd buff ofs len] writes [len] bytes to descriptor [fd],
+    taking them from byte sequence [buff], starting at position [ofs]
+    in [buff]. Return the number of bytes actually written.  [write]
+    repeats the writing operation until all bytes have been written or
+    an error occurs.  *)
 
-val single_write : file_descr -> string -> int -> int -> int
+val single_write : file_descr -> bytes -> int -> int -> int
 (** Same as [write], but attempts to write only once.
    Thus, if an error occurs, [single_write] guarantees that no data
    has been written. *)
+
+val write_substring : file_descr -> string -> int -> int -> int
+(** Same as [write], but take the data from a string instead of a byte
+    sequence. *)
+
+val single_write_substring : file_descr -> string -> int -> int -> int
+(** Same as [single_write], but take the data from a string instead of
+    a byte sequence. *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
@@ -283,12 +295,27 @@ val single_write : file_descr -> string -> int -> int -> int
 val in_channel_of_descr : file_descr -> in_channel
 (** Create an input channel reading from the given descriptor.
    The channel is initially in binary mode; use
-   [set_binary_mode_in ic false] if text mode is desired. *)
+   [set_binary_mode_in ic false] if text mode is desired.
+   Beware that channels are buffered so more characters may have been
+   read from the file descriptor than those accessed using channel functions.
+   Channels also keep a copy of the current position in the file.
+
+   You need to explicitly close all channels created with this function.
+   Closing the channel also closes the underlying file descriptor (unless
+   it was already closed). *)
 
 val out_channel_of_descr : file_descr -> out_channel
 (** Create an output channel writing on the given descriptor.
    The channel is initially in binary mode; use
-   [set_binary_mode_out oc false] if text mode is desired. *)
+   [set_binary_mode_out oc false] if text mode is desired.
+   Beware that channels are buffered so you may have to [flush] them
+   to ensure that all data has been sent to the file descriptor.
+   Channels also keep a copy of the current position in the file.
+
+   You need to explicitly close all channels created with this function.
+   Closing the channel flushes the data and closes the underlying file
+   descriptor (unless it has already been closed, in which case the
+   buffered data is lost).*)
 
 val descr_of_in_channel : in_channel -> file_descr
 (** Return the descriptor corresponding to an input channel. *)
@@ -799,8 +826,8 @@ val setitimer :
    its previous status. The [s] argument is interpreted as follows:
    [s.it_value], if nonzero, is the time to the next timer expiration;
    [s.it_interval], if nonzero, specifies a value to
-   be used in reloading it_value when the timer expires.
-   Setting [s.it_value] to zero disable the timer.
+   be used in reloading [it_value] when the timer expires.
+   Setting [s.it_value] to zero disables the timer.
    Setting [s.it_interval] to zero causes the timer to be disabled
    after its next expiration. *)
 
@@ -994,20 +1021,28 @@ type msg_flag =
 (** The flags for {!Unix.recv},  {!Unix.recvfrom},
    {!Unix.send} and {!Unix.sendto}. *)
 
-val recv : file_descr -> string -> int -> int -> msg_flag list -> int
+val recv : file_descr -> bytes -> int -> int -> msg_flag list -> int
 (** Receive data from a connected socket. *)
 
 val recvfrom :
-  file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
+  file_descr -> bytes -> int -> int -> msg_flag list -> int * sockaddr
 (** Receive data from an unconnected socket. *)
 
-val send : file_descr -> string -> int -> int -> msg_flag list -> int
+val send : file_descr -> bytes -> int -> int -> msg_flag list -> int
 (** Send data over a connected socket. *)
 
+val send_substring : file_descr -> string -> int -> int -> msg_flag list -> int
+(** Same as [send], but take the data from a string instead of a byte
+    sequence. *)
+
 val sendto :
-  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+  file_descr -> bytes -> int -> int -> msg_flag list -> sockaddr -> int
 (** Send data over an unconnected socket. *)
 
+val sendto_substring :
+  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+(** Same as [sendto], but take the data from a string instead of a
+    byte sequence. *)
 
 
 (** {6 Socket options} *)

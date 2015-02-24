@@ -112,11 +112,11 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
       | Unknown s ->
-          bprintf b "%s: unknown option `%s'.\n" progname s
+          bprintf b "%s: unknown option '%s'.\n" progname s
       | Missing s ->
-          bprintf b "%s: option `%s' needs an argument.\n" progname s
+          bprintf b "%s: option '%s' needs an argument.\n" progname s
       | Wrong (opt, arg, expected) ->
-          bprintf b "%s: wrong argument `%s'; option `%s' expects %s.\n"
+          bprintf b "%s: wrong argument '%s'; option '%s' expects %s.\n"
                   progname arg opt expected
       | Message s ->
           bprintf b "%s: %s.\n" progname s
@@ -129,7 +129,7 @@ let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
   incr current;
   while !current < l do
     let s = argv.(!current) in
-    if String.length s >= 1 && String.get s 0 = '-' then begin
+    if String.length s >= 1 && s.[0] = '-' then begin
       let action =
         try assoc3 s !speclist
         with Not_found -> stop (Unknown s)
@@ -255,18 +255,24 @@ let add_padding len ksd =
       ksd
   | (kwd, (Symbol (l, _) as spec), msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make (len - cutcol + 3) ' ' in
+      let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
       (kwd, spec, "\n" ^ spaces ^ msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
-      let spaces = String.make (len - String.length kwd - cutcol) ' ' in
-      let prefix = String.sub msg 0 cutcol in
-      let suffix = String.sub msg cutcol (String.length msg - cutcol) in
-      (kwd, spec, prefix ^ spaces ^ suffix)
+      let kwd_len = String.length kwd in
+      let diff = len - kwd_len - cutcol in
+      if diff <= 0 then
+        (kwd, spec, msg)
+      else
+        let spaces = String.make diff ' ' in
+        let prefix = String.sub msg 0 cutcol in
+        let suffix = String.sub msg cutcol (String.length msg - cutcol) in
+        (kwd, spec, prefix ^ spaces ^ suffix)
 ;;
 
-let align speclist =
+let align ?(limit=max_int) speclist =
   let completed = add_help speclist in
   let len = List.fold_left max_arg_len 0 completed in
+  let len = min len limit in
   List.map (add_padding len) completed
 ;;

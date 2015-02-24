@@ -65,7 +65,8 @@ let as_cset = function
 %%
 
 lexer_definition:
-    header named_regexps refill_handler Trule definition other_definitions header Tend
+    header named_regexps refill_handler Trule definition other_definitions
+    header Tend
         { {header = $1;
            refill_handler = $3;
            entrypoints = $5 :: List.rev $6;

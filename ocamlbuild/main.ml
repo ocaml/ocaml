@@ -56,9 +56,12 @@ let show_documentation () =
    this means that even if they were not part of any flag declaration,
    they should be marked as useful, to avoid the "unused tag" warning. *)
 let builtin_useful_tags =
-  Tags.of_list
-    ["include"; "traverse"; "not_hygienic";
-     "pack"; "ocamlmklib"; "native"; "thread"; "nopervasives"]
+  Tags.of_list [
+    "include"; "traverse"; "not_hygienic"; "precious";
+    "pack"; "ocamlmklib"; "native"; "thread";
+    "nopervasives"; "use_menhir"; "ocamldep";
+    "thread";
+  ]
 ;;
 
 let proceed () =
@@ -71,14 +74,14 @@ let proceed () =
     (* If we are in the first run before launching the plugin, we
        should skip the user-visible operations (hygiene) that may need
        information from the plugin to run as the user expects it.
-       
+
        Note that we don't need to disable the [Hooks] call as they are
        no-ops anyway, before any plugin has registered hooks. *)
     Plugin.we_need_a_plugin () && not !Options.just_plugin in
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
-  Configuration.parse_string
+  Configuration.parse_string ~source:Const.Source.builtin
     "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml\n\
      <**/*.byte>: ocaml, byte, program\n\
      <**/*.odoc>: ocaml, doc\n\
@@ -88,18 +91,25 @@ let proceed () =
      <**/*.cmo>: ocaml, byte\n\
      <**/*.cmi>: ocaml, byte, native\n\
      <**/*.cmx>: ocaml, native\n\
+     <**/*.mly>: infer\n\
+     <**/.svn>|\".bzr\"|\".hg\"|\".git\"|\"_darcs\": -traverse\n\
     ";
 
+  List.iter
+    (Configuration.parse_string ~source:Const.Source.command_line)
+    !Options.tag_lines;
+
   Configuration.tag_any !Options.tags;
-  if !Options.recursive
-  || Sys.file_exists (* authorized since we're not in build *) "_tags"
-  || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
+  if !Options.recursive || Options.ocamlbuild_project_heuristic ()
   then Configuration.tag_any ["traverse"];
 
   (* options related to findlib *)
-  List.iter
-    (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
-    !Options.ocaml_pkgs;
+  if !Options.use_ocamlfind then
+    List.iter
+      (fun pkg ->
+        let tag = Param_tags.make "package" pkg in
+        Configuration.tag_any [tag])
+      !Options.ocaml_pkgs;
 
   begin match !Options.ocaml_syntax with
   | Some syntax -> Configuration.tag_any [Param_tags.make "syntax" syntax]
@@ -110,7 +120,7 @@ let proceed () =
   let entry_include_dirs = ref [] in
   let entry =
     Slurp.filter
-      begin fun path name _ ->
+      begin fun path name () ->
         let dir =
           if path = Filename.current_dir_name then
             None
@@ -118,8 +128,21 @@ let proceed () =
             Some path
         in
         let path_name = path/name in
-        if name = "_tags" then
-          ignore (Configuration.parse_file ?dir path_name);
+
+        if name = "_tags" then begin
+          let tags_path =
+            (* PR#6482: remember that this code is run lazily by the Slurp command,
+               and may run only after the working directory has been changed.
+
+               On the other hand, always using the absolute path makes
+               error messages longer and more frigthening in case of
+               syntax error in the _tags file. So we use the absolute
+               path only when necessary -- the working directory has
+               changed. *)
+            if Sys.getcwd () = Pathname.pwd then path_name
+            else Pathname.pwd / path_name in
+          ignore (Configuration.parse_file ?dir tags_path);
+        end;
 
         (List.mem name ["_oasis"] || (String.length name > 0 && name.[0] <> '_'))
         && (name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
@@ -148,17 +171,14 @@ let proceed () =
       let tags = tags_of_pathname (path/name) in
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
+  Slurp.force hygiene_entry;
   if !Options.hygiene && not first_run_for_plugin then
-    Fda.inspect hygiene_entry
-  else
-    Slurp.force hygiene_entry;
+    Fda.inspect hygiene_entry;
   let entry = hygiene_entry in
   Hooks.call_hook Hooks.After_hygiene;
   Options.include_dirs := Pathname.current_dir_name :: List.rev !entry_include_dirs;
   dprintf 3 "include directories are:@ %a" print_string_list !Options.include_dirs;
   Options.entry := Some entry;
-
-  List.iter Configuration.parse_string !Options.tag_lines;
 
   Hooks.call_hook Hooks.Before_rules;
   Ocaml_specific.init ();
@@ -245,10 +265,10 @@ let proceed () =
     else
       ()
   with
-  | Ocaml_dependencies.Circular_dependencies(seen, p) ->
+  | Ocaml_dependencies.Circular_dependencies(cycle, p) ->
       raise
         (Exit_build_error
-          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l seen))
+          (sbprintf "@[<2>Circular dependencies: %S already seen in@ %a@]@." p pp_l cycle))
 ;;
 
 open Exit_codes;;
@@ -282,8 +302,10 @@ let main () =
           Log.finish ~how:`Quiet ();
           Pervasives.exit rc
       | Solver.Failed backtrace ->
-          Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@\n@[<v2>Backtrace:%a@]@]@."
-            Report.print_backtrace_analyze backtrace Report.print_backtrace backtrace;
+          Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@."
+            Report.print_backtrace_analyze backtrace;
+          Log.raw_dprintf 1 "@[<v2>Backtrace:%a@]@]@."
+            Report.print_backtrace backtrace;
           exit rc_solver_failed
       | Failure s ->
           Log.eprintf "Failure:@ %s." s;

@@ -10,9 +10,8 @@
 #                                                                       #
 #########################################################################
 
-MAIN_MODULE=tformat
-ADD_COMPFLAGS=-I $(OTOPDIR)/testsuite/lib
-ADD_MODULES=testing
+BASEDIR=../..
+MODULES=testing
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.several
+include $(BASEDIR)/makefiles/Makefile.common

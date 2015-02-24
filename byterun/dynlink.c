@@ -18,18 +18,18 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include "alloc.h"
-#include "dynlink.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
-#include "prims.h"
+#include "caml/alloc.h"
+#include "caml/dynlink.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
+#include "caml/prims.h"
 
 #ifndef NATIVE_CODE
 
@@ -79,9 +79,7 @@ static char * parse_ld_conf(void)
   stdlib = getenv("OCAMLLIB");
   if (stdlib == NULL) stdlib = getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  ldconfname = caml_stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
-  strcpy(ldconfname, stdlib);
-  strcat(ldconfname, "/" LD_CONF_NAME);
+  ldconfname = caml_strconcat(3, stdlib, "/", LD_CONF_NAME);
   if (stat(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;

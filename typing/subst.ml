@@ -76,6 +76,13 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
+let type_path s p =
+  match Path.constructor_typath p with
+  | Regular p -> type_path s p
+  | Cstr (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
+  | LocalExt _ -> type_path s p
+  | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
+
 (* Special type ids for saved signatures *)
 
 let new_id = ref (-1)
@@ -184,6 +191,30 @@ let type_expr s ty =
   cleanup_types ();
   ty'
 
+let label_declaration s l =
+  {
+    ld_id = l.ld_id;
+    ld_mutable = l.ld_mutable;
+    ld_type = typexp s l.ld_type;
+    ld_loc = loc s l.ld_loc;
+    ld_attributes = attrs s l.ld_attributes;
+  }
+
+let constructor_arguments s = function
+  | Cstr_tuple l ->
+      Cstr_tuple (List.map (typexp s) l)
+  | Cstr_record l ->
+      Cstr_record (List.map (label_declaration s) l)
+
+let constructor_declaration s c =
+  {
+    cd_id = c.cd_id;
+    cd_args = constructor_arguments s c.cd_args;
+    cd_res = may_map (typexp s) c.cd_res;
+    cd_loc = loc s c.cd_loc;
+    cd_attributes = attrs s c.cd_attributes;
+  }
+
 let type_declaration s decl =
   let decl =
     { type_params = List.map (typexp s) decl.type_params;
@@ -192,31 +223,10 @@ let type_declaration s decl =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
         | Type_variant cstrs ->
-            Type_variant
-              (List.map
-                 (fun c ->
-                    {
-                      cd_id = c.cd_id;
-                      cd_args = List.map (typexp s) c.cd_args;
-                      cd_res = may_map (typexp s) c.cd_res;
-                      cd_loc = loc s c.cd_loc;
-                      cd_attributes = attrs s c.cd_attributes;
-                    }
-                 )
-                 cstrs)
+            Type_variant (List.map (constructor_declaration s) cstrs)
         | Type_record(lbls, rep) ->
-            Type_record
-              (List.map (fun l ->
-                   {
-                     ld_id = l.ld_id;
-                     ld_mutable = l.ld_mutable;
-                     ld_type = typexp s l.ld_type;
-                     ld_loc = loc s l.ld_loc;
-                     ld_attributes = attrs s l.ld_attributes;
-                   }
-                 )
-                  lbls,
-               rep)
+            Type_record (List.map (label_declaration s) lbls, rep)
+        | Type_open -> Type_open
         end;
       type_manifest =
         begin
@@ -298,11 +308,18 @@ let value_description s descr =
     val_attributes = attrs s descr.val_attributes;
    }
 
-let exception_declaration s descr =
-  { exn_args = List.map (type_expr s) descr.exn_args;
-    exn_loc = loc s descr.exn_loc;
-    exn_attributes = attrs s descr.exn_attributes;
-   }
+let extension_constructor s ext =
+  let ext =
+    { ext_type_path = type_path s ext.ext_type_path;
+      ext_type_params = List.map (typexp s) ext.ext_type_params;
+      ext_args = constructor_arguments s ext.ext_args;
+      ext_ret_type = may_map (typexp s) ext.ext_ret_type;
+      ext_private = ext.ext_private;
+      ext_attributes = ext.ext_attributes;
+      ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
+  in
+    cleanup_types ();
+    ext
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
@@ -316,8 +333,11 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_exception(id, _) |
-     Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+  | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+      (* cheat and pretend they are types cf. PR#6650 *)
+      let id' = Ident.rename id in
+      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+  | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
@@ -354,8 +374,8 @@ and signature_component s comp newid =
       Sig_value(newid, value_description s d)
   | Sig_type(id, d, rs) ->
       Sig_type(newid, type_declaration s d, rs)
-  | Sig_exception(id, d) ->
-      Sig_exception(newid, exception_declaration s d)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(newid, extension_constructor s ext, es)
   | Sig_module(id, d, rs) ->
       Sig_module(newid, module_declaration s d, rs)
   | Sig_modtype(id, d) ->

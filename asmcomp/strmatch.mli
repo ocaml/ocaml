@@ -23,6 +23,6 @@ end
 module Make(I:I) : sig
   (* Compile stringswitch (arg,cases,d)
      Note: cases should not contain string duplicates *)
-  val compile : Cmm.expression (* arg *) -> Cmm.expression (* d *) ->
+  val compile : Cmm.expression (* arg *) -> Cmm.expression option (* d *) ->
     (string * Cmm.expression) list (* cases *)-> Cmm.expression
 end

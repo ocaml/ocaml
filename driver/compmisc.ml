@@ -13,12 +13,12 @@
 open Compenv
 
 (* Initialize the search path.
-   The current directory is always searched first,
+   [dir] is always searched first (default: the current directory),
    then the directories specified with the -I option (in command-line order),
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path native =
+let init_path ?(dir="") native =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else if !Clflags.use_vmthreads && not native then
@@ -30,7 +30,7 @@ let init_path native =
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
-  Config.load_path := "" ::
+  Config.load_path := dir ::
       List.rev_append exp_dirs (Clflags.std_include_dir ());
   Env.reset_cache ()
 
@@ -40,19 +40,21 @@ let init_path native =
    toplevel initialization (PR#1775) *)
 
 let open_implicit_module m env =
-  try
-    Env.open_pers_signature m env
-  with Not_found ->
-    Misc.fatal_error (Printf.sprintf "cannot open implicit module %S" m)
+  let open Asttypes in
+  let lid = {loc = Location.in_file "command line";
+             txt = Longident.Lident m } in
+  snd (Typemod.type_open_ Override env lid.loc lid)
 
 let initial_env () =
   Ident.reinit();
+  let initial =
+    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    else Env.initial_safe_string
+  in
   let env =
-    if !Clflags.nopervasives
-    then Env.initial
-    else
-      open_implicit_module "Pervasives" Env.initial
+    if !Clflags.nopervasives then initial else
+    open_implicit_module "Pervasives" initial
   in
   List.fold_left (fun env m ->
     open_implicit_module m env
-  ) env !implicit_modules
+  ) env (!implicit_modules @ List.rev !Clflags.open_modules)

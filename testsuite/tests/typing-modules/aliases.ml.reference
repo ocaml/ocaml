@@ -8,17 +8,13 @@
     val escaped : char -> string
     val lowercase : char -> char
     val uppercase : char -> char
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
-# - : char = 'B'
-#   Characters 27-29:
-  module C'' : (module C) = C';; (* fails *)
-                            ^^
-Error: Signature mismatch:
-       Modules do not match: (module C') is not included in (module C)
-#   module C'' = Char
 # - : char = 'B'
 #   module C3 :
   sig
@@ -27,8 +23,11 @@ Error: Signature mismatch:
     val escaped : char -> string
     val lowercase : char -> char
     val uppercase : char -> char
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
@@ -42,8 +41,11 @@ Error: Signature mismatch:
       val escaped : char -> string
       val lowercase : char -> char
       val uppercase : char -> char
+      val lowercase_ascii : char -> char
+      val uppercase_ascii : char -> char
       type t = char
       val compare : t -> t -> int
+      val equal : t -> t -> bool
       external unsafe_chr : int -> char = "%identity"
     end
 # module C4 :
@@ -53,8 +55,11 @@ Error: Signature mismatch:
     val escaped : char -> string
     val lowercase : char -> char
     val uppercase : char -> char
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
     type t = char
     val compare : t -> t -> int
+    val equal : t -> t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 # - : char = 'B'
@@ -347,4 +352,51 @@ Error: In this `with' constraint, the new definition of I
     module Q :
       sig type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq end
   end
+#     module type S = sig module M : sig type t val x : t end end
+# module H : sig type t = A val x : t end
+# module H' = H
+# module type S' = sig module M : sig type t = H.t = A val x : t end end
+#     module type Alias = sig module N : sig  end module M = N end
+# module F : functor (X : sig  end) -> sig type t end
+# Characters -1--1:
+  module type A = Alias with module N := F(List);;
+  
+Error: Module type declarations do not match:
+         module type A = sig module M = F(List) end
+       does not match
+         module type A = sig module M = F(List) end
+       At position module type A = <here>
+       Modules do not match:
+         sig module M = F(List) end
+       is not included in
+         sig module M = F(List) end
+       At position module type A = sig module M : <here> end
+       Module F(List) cannot be aliased
+# Characters 17-18:
+  module rec Bad : A = Bad;;
+                   ^
+Error: Unbound module type A
+#                           module B : sig module R : sig type t = string end module O = R end
+module K : sig module E = B module N = E.O end
+#   val x : K.N.t = "foo"
+#       module M : sig type t = A module B : sig type u = B end end
+# module P : sig type t = M.t = A module B = M.B end
+# module P : sig type t = M.t = A module B = M.B end
+#         module type S = sig module M : sig module P : sig  end end module Q = M end
+#       module type S =
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q : sig module N = M.N module P = M.P end
+  end
+#       module R :
+  sig
+    module M : sig module N : sig  end module P : sig  end end
+    module Q = M
+  end
+# module R' : S
+#           module M : sig val f : 'a -> 'a end
+module rec R : sig module M : sig val f : 'a -> 'a end end
+# - : int = 3
+# module rec R : sig module M = M end
+# - : int = 3
 # 

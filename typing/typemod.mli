@@ -26,18 +26,24 @@ val type_toplevel_phrase:
 val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
+val type_interface:
+        Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
         Env.t -> Typedtree.structure_item list -> unit
+val type_open_:
+        ?toplevel:bool -> Asttypes.override_flag ->
+        Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
 
 val simplify_signature: signature -> signature
 
-val save_signature : string -> Typedtree.signature -> string -> string ->
+val save_signature:
+  string -> Typedtree.signature -> string -> string ->
   Env.t -> Types.signature_item list -> unit
 
 val package_units:
-        string list -> string -> string -> Typedtree.module_coercion
+  Env.t -> string list -> string -> string -> Typedtree.module_coercion
 
 type error =
     Cannot_apply of module_type
@@ -58,10 +64,10 @@ type error =
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
-  | Extension of string
   | Recursive_module_require_explicit_type
   | Apply_generative
 
 exception Error of Location.t * Env.t * error
+exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit

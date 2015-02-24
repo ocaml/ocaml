@@ -154,6 +154,8 @@ let primitives_table = create_hashtable 57 [
   "%boolnot", Pnot;
   "%big_endian", Pctconst Big_endian;
   "%word_size", Pctconst Word_size;
+  "%int_size", Pctconst Int_size;
+  "%max_wosize", Pctconst Max_wosize;
   "%ostype_unix", Pctconst Ostype_unix;
   "%ostype_win32", Pctconst Ostype_win32;
   "%ostype_cygwin", Pctconst Ostype_cygwin;
@@ -311,6 +313,22 @@ let primitives_table = create_hashtable 57 [
   "%bswap_int32", Pbbswap(Pint32);
   "%bswap_int64", Pbbswap(Pint64);
   "%bswap_native", Pbbswap(Pnativeint);
+  "%int_as_pointer", Pint_as_pointer;
+]
+
+let index_primitives_table =
+  let make_ba_ref n="%caml_ba_opt_ref_"^(string_of_int n),
+    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
+  and make_ba_set n="%caml_ba_opt_set_"^(string_of_int n),
+    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout) in
+  create_hashtable 10 [
+    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray else Parrayrefs Pgenarray );
+    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray else Parraysets Pgenarray );
+    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu else Pstringrefs );
+    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu else Pstringsets );
+    make_ba_ref 1; make_ba_set 1;
+    make_ba_ref 2; make_ba_set 2;
+    make_ba_ref 3; make_ba_set 3;
 ]
 
 let prim_makearray =
@@ -325,98 +343,117 @@ let find_primitive loc prim_name =
   match prim_name with
       "%revapply" -> Prevapply loc
     | "%apply" -> Pdirapply loc
-    | name -> Hashtbl.find primitives_table name
+    | "%loc_LOC" -> Ploc Loc_LOC
+    | "%loc_FILE" -> Ploc Loc_FILE
+    | "%loc_LINE" -> Ploc Loc_LINE
+    | "%loc_POS" -> Ploc Loc_POS
+    | "%loc_MODULE" -> Ploc Loc_MODULE
+    | name ->
+      try Hashtbl.find index_primitives_table name @@ () with
+        | Not_found -> Hashtbl.find primitives_table name
 
-let transl_prim loc env prim args =
-  let prim_name = prim.prim_name in
-  try
-    let (gencomp, intcomp, floatcomp, stringcomp,
-         nativeintcomp, int32comp, int64comp,
-         simplify_constant_constructor) =
-      Hashtbl.find comparisons_table prim_name in
-    begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
-      when simplify_constant_constructor ->
+let specialize_comparison table env ty =
+  let (gencomp, intcomp, floatcomp, stringcomp,
+           nativeintcomp, int32comp, int64comp, _) = table in
+  match () with
+  | () when is_base_type env ty Predef.path_int
+         || is_base_type env ty Predef.path_char
+         || not (maybe_pointer_type env ty)           -> intcomp
+  | () when is_base_type env ty Predef.path_float     -> floatcomp
+  | () when is_base_type env ty Predef.path_string    -> stringcomp
+  | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
+  | () when is_base_type env ty Predef.path_int32     -> int32comp
+  | () when is_base_type env ty Predef.path_int64     -> int64comp
+  | () -> gencomp
+
+(* Specialize a primitive from available type information,
+   raise Not_found if primitive is unknown  *)
+
+let specialize_primitive loc p env ty ~has_constant_constructor =
+  match p.prim_intrin with
+  | Some intrin -> Pintrin intrin
+  | None ->
+    try
+      let table = Hashtbl.find comparisons_table p.prim_name in
+      let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
+        table in
+      if has_constant_constructor && simplify_constant_constructor then
         intcomp
-    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
-      when simplify_constant_constructor ->
-        intcomp
-    | [arg1; {exp_desc = Texp_variant(_, None)}]
-      when simplify_constant_constructor ->
-        intcomp
-    | [{exp_desc = Texp_variant(_, None)}; exp2]
-      when simplify_constant_constructor ->
-        intcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int
-                     || has_base_type arg1 Predef.path_char ->
-        intcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_float ->
-        floatcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_string ->
-        stringcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_nativeint ->
-        nativeintcomp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int32 ->
-        int32comp
-    | [arg1; arg2] when has_base_type arg1 Predef.path_int64 ->
-        int64comp
-    | _ ->
-        gencomp
-    end
-  with Not_found ->
-  try
-    let p = find_primitive loc prim_name in
-    (* Try strength reduction based on the type of the argument *)
-    begin match (p, args) with
-        (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
-      | (Parraylength Pgenarray, [arg])   -> Parraylength(array_kind arg)
-      | (Parrayrefu Pgenarray, arg1 :: _) -> Parrayrefu(array_kind arg1)
-      | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
-      | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
-      | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
+      else
+        match is_function_type env ty with
+        | Some (lhs,rhs) -> specialize_comparison table env lhs
+        | None -> gencomp
+    with Not_found ->
+      let p = find_primitive loc p.prim_name in
+      (* Try strength reduction based on the type of the argument *)
+      let params = match is_function_type env ty with
+        | None -> []
+        | Some (p1, rhs) -> match is_function_type env rhs with
+          | None -> [p1]
+          | Some (p2, _) -> [p1;p2]
+      in
+      match (p, params) with
+        (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
+      | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
+      | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
+      | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
+      | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
+      | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
       | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-                      arg1 :: _) ->
-            let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayref(unsafe, n, k, l)
+         p1 :: _) ->
+          let (k, l) = bigarray_type_kind_and_layout env p1 in
+          Pbigarrayref(unsafe, n, k, l)
       | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-                      arg1 :: _) ->
-            let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayset(unsafe, n, k, l)
+         p1 :: _) ->
+          let (k, l) = bigarray_type_kind_and_layout env p1 in
+          Pbigarrayset(unsafe, n, k, l)
       | _ -> p
-    end
-  with Not_found ->
-    match prim.prim_intrin with
-    | Some intrin -> Pintrin intrin
-    | None ->
-      if String.length prim_name > 0 && prim_name.[0] = '%' then
-        raise(Error(loc, Unknown_builtin_primitive prim_name));
-      Pccall prim
 
+(* Eta-expand a primitive *)
 
-(* Eta-expand a primitive without knowing the types of its arguments *)
-
-let transl_primitive loc p =
+let transl_primitive loc p env ty =
   let prim =
-    try
-      let (gencomp, _, _, _, _, _, _, _) =
-        Hashtbl.find comparisons_table p.prim_name in
-      gencomp
-    with Not_found ->
-    try
-      find_primitive loc p.prim_name
-    with Not_found ->
-      Pccall p in
+    try specialize_primitive loc p env ty ~has_constant_constructor:false
+    with Not_found -> Pccall p
+  in
   match prim with
-    Plazyforce ->
+  | Plazyforce ->
       let parm = Ident.create "prim" in
       Lfunction(Curried, [parm],
                 Matching.inline_lazy_force (Lvar parm) Location.none)
+  | Ploc kind ->
+    let lam = lam_of_loc kind loc in
+    begin match p.prim_arity with
+      | 0 -> lam
+      | 1 -> (* TODO: we should issue a warning ? *)
+        let param = Ident.create "prim" in
+        Lfunction(Curried, [param],
+          Lprim(Pmakeblock(0, Immutable), [lam; Lvar param]))
+      | _ -> assert false
+    end
   | _ ->
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
       Lfunction(Curried, params,
                 Lprim(prim, List.map (fun id -> Lvar id) params))
+
+let transl_primitive_application loc prim env ty args =
+  let prim_name = prim.prim_name in
+  try
+    let has_constant_constructor = match args with
+        [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
+      | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; _]
+      | [_; {exp_desc = Texp_variant(_, None)}]
+      | [{exp_desc = Texp_variant(_, None)}; _] -> true
+      | _ -> false
+    in
+    specialize_primitive loc prim env ty ~has_constant_constructor
+  with Not_found ->
+    if String.length prim_name > 0 && prim_name.[0] = '%' then
+      raise(Error(loc, Unknown_builtin_primitive prim_name));
+    Pccall prim
+
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -513,12 +550,14 @@ let rec push_defaults loc bindings cases partial =
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function(l, pl,partial)} as exp}] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
-      [{c_lhs=pat; c_guard=None; c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
+      [{c_lhs=pat; c_guard=None;
+        c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}] partial
+      push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}]
+                    partial
   | [case] ->
       let exp =
         List.fold_left
@@ -539,10 +578,12 @@ let rec push_defaults loc bindings cases partial =
                            val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
-             cases, partial) }
+             cases, [], partial) }
       in
       push_defaults loc bindings
-        [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)}; c_guard=None; c_rhs=exp}] Total
+        [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
+          c_guard=None; c_rhs=exp}]
+        Total
   | _ ->
       cases
 
@@ -634,7 +675,7 @@ and transl_exp0 e =
                   Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos],
                         e.exp_loc))
       else
-        transl_primitive e.exp_loc p
+        transl_primitive e.exp_loc p e.exp_env e.exp_type
   | Texp_ident(path, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
@@ -652,8 +693,8 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, _, {val_kind = Val_prim p})} as fn,
-               oargs)
+  | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
+                exp_type = prim_type }, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg,_) -> arg <> None) oargs ->
       let args, args' = cut p.prim_arity oargs in
@@ -678,13 +719,8 @@ and transl_exp0 e =
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
-        if p.prim_name = "%sequand" && Path.last path = "&" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (&); you should use (&&) instead");
-        if p.prim_name = "%sequor" && Path.last path = "or" then
-          Location.prerr_warning fn.exp_loc
-            (Warnings.Deprecated "operator (or); you should use (||) instead");
-        let prim = transl_prim e.exp_loc e.exp_env p args in
+        let prim = transl_primitive_application
+            e.exp_loc p e.exp_env prim_type args in
         match (prim, args) with
           (Praise k, [arg1]) ->
             let targ = List.hd argl in
@@ -697,6 +733,12 @@ and transl_exp0 e =
                   k
             in
             wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+        | (Ploc kind, []) ->
+          lam_of_loc kind e.exp_loc
+        | (Ploc kind, [arg1]) ->
+          let lam = lam_of_loc kind arg1.exp_loc in
+          Lprim(Pmakeblock(0, Immutable), lam :: argl)
+        | (Ploc _, _) -> assert false
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->
@@ -708,12 +750,8 @@ and transl_exp0 e =
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
-  | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
-      Matching.for_multiple_match e.exp_loc
-        (transl_list argl) (transl_cases pat_expr_list) partial
-  | Texp_match(arg, pat_expr_list, partial) ->
-      Matching.for_function e.exp_loc None
-        (transl_exp arg) (transl_cases pat_expr_list) partial
+  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
+    transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
@@ -727,7 +765,10 @@ and transl_exp0 e =
       end
   | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
-      begin match cstr.cstr_tag with
+      if cstr.cstr_inlined <> None then begin match ll with
+        | [x] -> x
+        | _ -> assert false
+      end else begin match cstr.cstr_tag with
         Cstr_constant n ->
           Lconst(Const_pointer n)
       | Cstr_block n ->
@@ -736,10 +777,12 @@ and transl_exp0 e =
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable), ll)
           end
-      | Cstr_exception (path, _) ->
-          let slot = transl_path ~loc:e.exp_loc e.exp_env path in
-          if cstr.cstr_arity = 0 then slot
-          else Lprim(Pmakeblock(0, Immutable), slot :: ll)
+      | Cstr_extension(path, is_const) ->
+          if is_const then
+            transl_path e.exp_env path
+          else
+            Lprim(Pmakeblock(0, Immutable),
+                  transl_path e.exp_env path :: ll)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -755,20 +798,26 @@ and transl_exp0 e =
                   [Lconst(Const_base(Const_int tag)); lam])
       end
   | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
-      transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
+      transl_record e.exp_env lbl1.lbl_all lbl1.lbl_repres lbl_expr_list
+        opt_init_expr
   | Texp_record ([], _) ->
       fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Pfield lbl.lbl_pos
-        | Record_float -> Pfloatfield lbl.lbl_pos in
+          Record_regular | Record_inlined _ -> Pfield lbl.lbl_pos
+        | Record_float -> Pfloatfield lbl.lbl_pos
+        | Record_extension -> Pfield (lbl.lbl_pos + 1)
+      in
       Lprim(access, [transl_exp arg])
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
-        | Record_float -> Psetfloatfield lbl.lbl_pos in
+          Record_regular
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
+        | Record_float -> Psetfloatfield lbl.lbl_pos
+        | Record_extension -> Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
+      in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
       let kind = array_kind e in
@@ -880,7 +929,6 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_exn
                 || has_base_type e Predef.path_array
                 || has_base_type e Predef.path_list
-                || has_base_type e Predef.path_format6
                 || has_base_type e Predef.path_option
                 || has_base_type e Predef.path_nativeint
                 || has_base_type e Predef.path_int32
@@ -1051,14 +1099,14 @@ and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
                     [self; transl_normal_path var; transl_exp expr])
 
-and transl_record all_labels repres lbl_expr_list opt_init_expr =
+and transl_record env all_labels repres lbl_expr_list opt_init_expr =
   let size = Array.length all_labels in
   (* Determine if there are "enough" new fields *)
   if 3 + 2 * List.length lbl_expr_list >= size
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.create (Array.length all_labels) staticfail in
+    let lv = Array.make (Array.length all_labels) staticfail in
     let init_id = Ident.create "init" in
     begin match opt_init_expr with
       None -> ()
@@ -1066,7 +1114,8 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         for i = 0 to Array.length all_labels - 1 do
           let access =
             match all_labels.(i).lbl_repres with
-              Record_regular -> Pfield i
+              Record_regular | Record_inlined _ -> Pfield i
+            | Record_extension -> Pfield (i + 1)
             | Record_float -> Pfloatfield i in
           lv.(i) <- Lprim(access, [Lvar init_id])
         done
@@ -1084,13 +1133,26 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-          Record_regular -> Lconst(Const_block(0, cl))
+        | Record_regular -> Lconst(Const_block(0, cl))
+        | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
+        | Record_extension ->
+            raise Not_constant
       with Not_constant ->
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
-        | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
+        | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
+        | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+        | Record_extension ->
+            let path =
+              match all_labels.(0).lbl_res.desc with
+              | Tconstr(p, _, _) -> p
+              | _ -> assert false
+            in
+            let slot = transl_path env path in
+            Lprim(Pmakeblock(0, mut), slot :: ll)
+    in
     begin match opt_init_expr with
       None -> lam
     | Some init_expr -> Llet(Strict, init_id, transl_exp init_expr, lam)
@@ -1104,8 +1166,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
-        | Record_float -> Psetfloatfield lbl.lbl_pos in
+          Record_regular
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
+        | Record_float -> Psetfloatfield lbl.lbl_pos
+        | Record_extension -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
+      in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with
       None -> assert false
@@ -1115,6 +1180,34 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
   end
+
+and transl_match e arg pat_expr_list exn_pat_expr_list partial =
+  let id = name_pattern "exn" exn_pat_expr_list
+  and cases = transl_cases pat_expr_list
+  and exn_cases = transl_cases exn_pat_expr_list in
+  let static_catch body val_ids handler =
+    let static_exception_id = next_negative_raise_count () in
+    Lstaticcatch
+      (Ltrywith (Lstaticraise (static_exception_id, body), id,
+                 Matching.for_trywith (Lvar id) exn_cases),
+       (static_exception_id, val_ids),
+       handler)
+  in
+  match arg, exn_cases with
+  | {exp_desc = Texp_tuple argl}, [] ->
+    Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
+  | {exp_desc = Texp_tuple argl}, _ :: _ ->
+    let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
+    let lvars = List.map (fun id -> Lvar id) val_ids in
+    static_catch (transl_list argl) val_ids
+      (Matching.for_multiple_match e.exp_loc lvars cases partial)
+  | arg, [] ->
+    Matching.for_function e.exp_loc None (transl_exp arg) cases partial
+  | arg, _ :: _ ->
+    let val_id = name_pattern "val" pat_expr_list in
+    static_catch [transl_exp arg] [val_id]
+      (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
+
 
 (* Wrapper for class compilation *)
 

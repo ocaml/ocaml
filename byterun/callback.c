@@ -14,19 +14,19 @@
 /* Callbacks from C to OCaml */
 
 #include <string.h>
-#include "callback.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/callback.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
 
-#include "interp.h"
-#include "instruct.h"
-#include "fix_code.h"
-#include "stacks.h"
+#include "caml/interp.h"
+#include "caml/instruct.h"
+#include "caml/fix_code.h"
+#include "caml/stacks.h"
 
 CAMLexport int caml_callback_depth = 0;
 
@@ -216,6 +216,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
 {
   struct named_value * nv;
   char * name = String_val(vname);
+  size_t namelen = strlen(name);
   unsigned int h = hash_value_name(name);
 
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
@@ -225,8 +226,8 @@ CAMLprim value caml_register_named_value(value vname, value val)
     }
   }
   nv = (struct named_value *)
-         caml_stat_alloc(sizeof(struct named_value) + strlen(name));
-  strcpy(nv->name, name);
+          caml_stat_alloc(sizeof(struct named_value) + namelen);
+  memcpy(nv->name, name, namelen + 1);
   nv->val = val;
   nv->next = named_value_table[h];
   named_value_table[h] = nv;

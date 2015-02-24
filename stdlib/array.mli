@@ -47,6 +47,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    size is only [Sys.max_array_length / 2].*)
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
+  [@@ocaml.deprecated "Use Array.make instead."]
 (** @deprecated [Array.create] is an alias for {!Array.make}. *)
 
 val init : int -> (int -> 'a) -> 'a array
@@ -73,6 +74,7 @@ val make_matrix : int -> int -> 'a -> 'a array array
    size is only [Sys.max_array_length / 2]. *)
 
 val create_matrix : int -> int -> 'a -> 'a array array
+  [@@ocaml.deprecated "Use Array.make_matrix instead."]
 (** @deprecated [Array.create_matrix] is an alias for {!Array.make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
@@ -152,7 +154,8 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 
 external make_float: int -> float array = "caml_make_float_vect"
 (** [Array.make_float n] returns a fresh float array of length [n],
-    with uninitialized data. *)
+    with uninitialized data.
+    @since 4.02 *)
 
 (** {6 Sorting} *)
 

@@ -42,7 +42,7 @@ let lib_ccobjs = ref []
 let lib_ccopts = ref []
 let lib_dllibs = ref []
 
-let add_ccobjs l =
+let add_ccobjs origin l =
   if not !Clflags.no_auto_link then begin
     if
       String.length !Clflags.use_runtime = 0
@@ -50,7 +50,8 @@ let add_ccobjs l =
     then begin
       if l.lib_custom then Clflags.custom_runtime := true;
       lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-      lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+      let replace_origin = Misc.replace_substring ~before:"$CAMLORIGIN" ~after:origin in
+      lib_ccopts := List.map replace_origin l.lib_ccopts @ !lib_ccopts;
     end;
     lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
@@ -113,7 +114,7 @@ let scan_file obj_name tolink =
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = input_bytes ic (String.length cmo_magic_number) in
+    let buffer = really_input_string ic (String.length cmo_magic_number) in
     if buffer = cmo_magic_number then begin
       (* This is a .cmo file. It must be linked in any case.
          Read the relocation information to see which modules it
@@ -132,7 +133,7 @@ let scan_file obj_name tolink =
       seek_in ic pos_toc;
       let toc = (input_value ic : library) in
       close_in ic;
-      add_ccobjs toc;
+      add_ccobjs (Filename.dirname file_name) toc;
       let required =
         List.fold_right
           (fun compunit reqd ->
@@ -158,15 +159,20 @@ let scan_file obj_name tolink =
 (* Consistency check between interfaces *)
 
 let crc_interfaces = Consistbl.create ()
+let interfaces = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency ppf file_name cu =
   begin try
     List.iter
-      (fun (name, crc) ->
-        if name = cu.cu_name
-        then Consistbl.set crc_interfaces name crc file_name
-        else Consistbl.check crc_interfaces name crc file_name)
+      (fun (name, crco) ->
+        interfaces := name :: !interfaces;
+        match crco with
+          None -> ()
+        | Some crc ->
+            if name = cu.cu_name
+            then Consistbl.set crc_interfaces name crc file_name
+            else Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_import(name, user, auth)))
@@ -183,7 +189,11 @@ let check_consistency ppf file_name cu =
     (cu.cu_name, file_name) :: !implementations_defined
 
 let extract_crc_interfaces () =
-  Consistbl.extract crc_interfaces
+  Consistbl.extract !interfaces crc_interfaces
+
+let clear_crc_interfaces () =
+  Consistbl.clear crc_interfaces;
+  interfaces := []
 
 (* Record compilation events *)
 
@@ -256,7 +266,7 @@ let output_debug_info oc =
   List.iter
     (fun (ofs, evl) ->
       output_binary_int oc ofs;
-      Array.iter (output_string oc) evl)
+      Array.iter (output_bytes oc) evl)
     !debug_info;
   debug_info := []
 
@@ -300,14 +310,14 @@ let link_bytecode ppf tolink exec_name standalone =
     Bytesections.init_record outchan;
     (* The path to the bytecode interpreter (in use_runtime mode) *)
     if String.length !Clflags.use_runtime > 0 then begin
-      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_string outchan ("#!" ^ (make_absolute !Clflags.use_runtime));
       output_char outchan '\n';
       Bytesections.record outchan "RNTM"
     end;
     (* The bytecode *)
     let start_code = pos_out outchan in
     Symtable.init();
-    Consistbl.clear crc_interfaces;
+    clear_crc_interfaces ();
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     let check_dlls = standalone && Config.target = Config.host in
     if check_dlls then begin
@@ -317,7 +327,7 @@ let link_bytecode ppf tolink exec_name standalone =
       try Dll.open_dlls Dll.For_checking sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
     end;
-    let output_fun = output_string outchan
+    let output_fun = output_bytes outchan
     and currpos_fun () = pos_out outchan - start_code in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
     if check_dlls then Dll.close_all_dlls();
@@ -371,12 +381,12 @@ let output_code_string_counter = ref 0
 
 let output_code_string outchan code =
   let pos = ref 0 in
-  let len = String.length code in
+  let len = Bytes.length code in
   while !pos < len do
-    let c1 = Char.code(code.[!pos]) in
-    let c2 = Char.code(code.[!pos + 1]) in
-    let c3 = Char.code(code.[!pos + 2]) in
-    let c4 = Char.code(code.[!pos + 3]) in
+    let c1 = Char.code(Bytes.get code !pos) in
+    let c2 = Char.code(Bytes.get code (!pos + 1)) in
+    let c3 = Char.code(Bytes.get code (!pos + 2)) in
+    let c4 = Char.code(Bytes.get code (!pos + 3)) in
     pos := !pos + 4;
     Printf.fprintf outchan "0x%02x%02x%02x%02x, " c4 c3 c2 c1;
     incr output_code_string_counter;
@@ -440,11 +450,11 @@ let link_bytecode_as_c ppf tolink outfile =
 \n           char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
-    Consistbl.clear crc_interfaces;
+    clear_crc_interfaces ();
     let currpos = ref 0 in
     let output_fun code =
       output_code_string outchan code;
-      currpos := !currpos + String.length code
+      currpos := !currpos + Bytes.length code
     and currpos_fun () = !currpos in
     List.iter (link_file ppf output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
@@ -571,7 +581,8 @@ let link ppf objfiles output_name =
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);
+        if Ccomp.compile_file ~output_name:(Some obj_file) c_file <> 0 then
+          raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) then begin
           temps := obj_file :: !temps;
           if not (
@@ -629,3 +640,13 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
+
+let reset () =
+  lib_ccobjs := [];
+  lib_ccopts := [];
+  lib_dllibs := [];
+  missing_globals := IdentSet.empty;
+  Consistbl.clear crc_interfaces;
+  implementations_defined := [];
+  debug_info := [];
+  output_code_string_counter := 0

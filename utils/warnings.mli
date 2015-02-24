@@ -34,7 +34,7 @@ type t =
   | Without_principality of string          (* 19 *)
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
-  | Camlp4 of string                        (* 22 *)
+  | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
   | All_clauses_guarded                     (* 25 *)
@@ -50,7 +50,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool (* 37 *)
-  | Unused_exception of string * bool       (* 38 *)
+  | Unused_extension of string * bool * bool   (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
   | Ambiguous_name of string list * string list * bool (* 41 *)
@@ -61,6 +61,7 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
+  | No_cmi_file of string                   (* 49 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

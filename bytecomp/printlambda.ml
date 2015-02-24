@@ -40,6 +40,12 @@ let rec struct_const ppf = function
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
+let array_kind = function
+  | Pgenarray -> "gen"
+  | Paddrarray -> "addr"
+  | Pintarray -> "int"
+  | Pfloatarray -> "float"
+
 let boxed_integer_name = function
   | Pnativeint -> "nativeint"
   | Pint32 -> "int32"
@@ -84,14 +90,24 @@ let print_bigarray name unsafe kind ppf layout =
 let record_rep ppf r =
   match r with
   | Record_regular -> fprintf ppf "regular"
+  | Record_inlined i -> fprintf ppf "inlined(%i)" i
   | Record_float -> fprintf ppf "float"
+  | Record_extension -> fprintf ppf "ext"
 ;;
+
+let string_of_loc_kind = function
+  | Loc_FILE -> "loc_FILE"
+  | Loc_LINE -> "loc_LINE"
+  | Loc_MODULE -> "loc_MODULE"
+  | Loc_POS -> "loc_POS"
+  | Loc_LOC -> "loc_LOC"
 
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
   | Prevapply _ -> fprintf ppf "revapply"
   | Pdirapply _ -> fprintf ppf "dirapply"
+  | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
@@ -148,16 +164,18 @@ let primitive ppf = function
   | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
   | Pstringsets -> fprintf ppf "string.set"
-  | Parraylength _ -> fprintf ppf "array.length"
-  | Pmakearray _ -> fprintf ppf "makearray "
-  | Parrayrefu _ -> fprintf ppf "array.unsafe_get"
-  | Parraysetu _ -> fprintf ppf "array.unsafe_set"
-  | Parrayrefs _ -> fprintf ppf "array.get"
-  | Parraysets _ -> fprintf ppf "array.set"
+  | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
+  | Pmakearray k -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
+  | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
+  | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
+  | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"
        | Word_size -> "word_size"
+       | Int_size -> "int_size"
+       | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
        | Ostype_cygwin -> "ostype_cygwin" in
@@ -229,6 +247,7 @@ let primitive ppf = function
      else fprintf ppf "bigarray.array1.set64"
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
+  | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Pintrin intrin -> fprintf ppf "%s" (Intrin.intrin_name intrin)
 
 let rec lam ppf = function
@@ -312,8 +331,12 @@ let rec lam ppf = function
            if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case \"%s\":@ %a@]" (String.escaped s) lam l)
           cases;
-        if !spc then fprintf ppf "@ " else spc := true;
-        fprintf ppf "@[<hv 1>default:@ %a@]" lam default in
+        begin match default with
+        | Some default ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>default:@ %a@]" lam default
+        | None -> ()
+        end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
   | Lstaticraise (i, ls)  ->

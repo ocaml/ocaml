@@ -31,17 +31,18 @@ type directive_fun =
 
 (* The table of toplevel value bindings and its accessors *)
 
-let toplevel_value_bindings =
-  (Hashtbl.create 37 : (string, Obj.t) Hashtbl.t)
+module StringMap = Map.Make(String)
+
+let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
 let getvalue name =
   try
-    Hashtbl.find toplevel_value_bindings name
+    StringMap.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  Hashtbl.replace toplevel_value_bindings name v
+  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -52,7 +53,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          Hashtbl.find toplevel_value_bindings name
+          StringMap.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -82,6 +83,7 @@ let print_out_value = Oprint.out_value
 let print_out_type = Oprint.out_type
 let print_out_class_type = Oprint.out_class_type
 let print_out_module_type = Oprint.out_module_type
+let print_out_type_extension = Oprint.out_type_extension
 let print_out_sig_item = Oprint.out_sig_item
 let print_out_signature = Oprint.out_signature
 let print_out_phrase = Oprint.out_phrase
@@ -94,7 +96,13 @@ let outval_of_value env obj ty =
 let print_value env obj ppf ty =
   !print_out_value ppf (outval_of_value env obj ty)
 
+type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 let install_printer = Printer.install_printer
+let install_generic_printer = Printer.install_generic_printer
+let install_generic_printer' = Printer.install_generic_printer'
 let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
@@ -108,7 +116,7 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
   in
   let items =
     List.concat
@@ -134,6 +142,12 @@ let toplevel_startup_hook = ref (fun () -> ())
 let may_trace = ref false (* Global lock on tracing *)
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
+let backtrace = ref None
+
+let record_backtrace () =
+  if Printexc.backtrace_status ()
+  then backtrace := Some (Printexc.get_backtrace ())
+
 let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
@@ -143,76 +157,46 @@ let load_lambda ppf lam =
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
-  let (code, code_size, reloc) = Emitcode.to_memory init_code fun_code in
+  let (code, code_size, reloc, events) = Emitcode.to_memory init_code fun_code in
+  Meta.add_debug_info code code_size [| events |];
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
+  let initial_bindings = !toplevel_value_bindings in
   try
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
     Result retval
   with x ->
     may_trace := false;
+    record_backtrace ();
     if can_free then begin
+      Meta.remove_debug_info code;
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
+    toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
 
 (* Print the outcome of an evaluation *)
 
-let rec pr_item env items =
-  Printtyp.hide_rec_items items;
-  match items with
-  | Sig_value(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_value_description id decl in
-      let valopt =
-        match decl.val_kind with
-        | Val_prim _ -> None
-        | _ ->
-            let v =
-              outval_of_value env (getvalue (Translmod.toplevel_name id))
-                decl.val_type
-            in
-            Some v
-      in
-      Some (tree, valopt, rem)
-  | Sig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
-      pr_item env rem
-  | Sig_type(id, decl, rs) :: rem ->
-      let tree = Printtyp.tree_of_type_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_exception(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_exception_declaration id decl in
-      Some (tree, None, rem)
-  | Sig_module(id, md, rs) :: rem ->
-      let tree = Printtyp.tree_of_module id md.md_type rs in
-      Some (tree, None, rem)
-  | Sig_modtype(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_modtype_declaration id decl in
-      Some (tree, None, rem)
-  | Sig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_class_declaration id decl rs in
-      Some (tree, None, rem)
-  | Sig_class_type(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_cltype_declaration id decl rs in
-      Some (tree, None, rem)
-  | _ -> None
-
-let rec item_list env = function
-  | [] -> []
-  | items ->
-     match pr_item env items with
-     | None -> []
-     | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
+let pr_item =
+  Printtyp.print_items
+    (fun env -> function
+      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+          Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
+                  val_type)
+      | _ -> None
+    )
 
 (* The current typing environment for the toplevel *)
 
@@ -226,7 +210,14 @@ let print_out_exception ppf exn outv =
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
-  print_out_exception ppf exn outv
+  print_out_exception ppf exn outv;
+  if Printexc.backtrace_status ()
+  then
+    match !backtrace with
+      | None -> ()
+      | Some b ->
+          print_string b;
+          backtrace := None
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
@@ -261,7 +252,7 @@ let execute_phrase print_outcome ppf phr =
                       let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                       Ophr_eval (outv, ty)
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (item_list newenv sg'))
+                  | _ -> Ophr_signature (pr_item newenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -272,6 +263,15 @@ let execute_phrase print_outcome ppf phr =
               Ophr_exception (exn, outv)
         in
         !print_out_phrase ppf out_phr;
+        if Printexc.backtrace_status ()
+        then begin
+          match !backtrace with
+            | None -> ()
+            | Some b ->
+                pp_print_string ppf b;
+                pp_print_flush ppf ();
+                backtrace := None;
+        end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
         | Ophr_exception _ -> false
@@ -280,19 +280,27 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir(dir_name, dir_arg) ->
-      try
-        match (Hashtbl.find directive_table dir_name, dir_arg) with
-        | (Directive_none f, Pdir_none) -> f (); true
-        | (Directive_string f, Pdir_string s) -> f s; true
-        | (Directive_int f, Pdir_int n) -> f n; true
-        | (Directive_ident f, Pdir_ident lid) -> f lid; true
-        | (Directive_bool f, Pdir_bool b) -> f b; true
-        | (_, _) ->
-            fprintf ppf "Wrong type of argument for directive `%s'.@." dir_name;
-            false
-      with Not_found ->
-        fprintf ppf "Unknown directive `%s'.@." dir_name;
-        false
+      let d =
+        try Some (Hashtbl.find directive_table dir_name)
+        with Not_found -> None
+      in
+      begin match d with
+      | None ->
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
+      | Some d ->
+          match d, dir_arg with
+          | Directive_none f, Pdir_none -> f (); true
+          | Directive_string f, Pdir_string s -> f s; true
+          | Directive_int f, Pdir_int n -> f n; true
+          | Directive_ident f, Pdir_ident lid -> f lid; true
+          | Directive_bool f, Pdir_bool b -> f b; true
+          | _ ->
+              fprintf ppf "Wrong type of argument for directive `%s'.@."
+                dir_name;
+              false
+      end
+
 
 (* Temporary assignment to a reference *)
 
@@ -311,11 +319,14 @@ let protect r newval body =
 
 let use_print_results = ref true
 
-let phrase ppf phr =
+let preprocess_phrase ppf phr =
   let phr =
     match phr with
     | Ptop_def str ->
-        Ptop_def (Pparse.apply_rewriters ast_impl_magic_number str)
+        let str =
+          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
+        in
+        Ptop_def str
     | phr -> phr
   in
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
@@ -342,7 +353,7 @@ let use_file ppf wrap_mod name =
         try
           List.iter
             (fun ph ->
-              let ph = phrase ppf ph in
+              let ph = preprocess_phrase ppf ph in
               if not (execute_phrase !use_print_results ppf ph) then raise Exit)
             (if wrap_mod then
                parse_mod_use_file name lb
@@ -375,7 +386,7 @@ let read_input_default prompt buffer len =
     while true do
       if !i >= len then raise Exit;
       let c = input_char Pervasives.stdin in
-      buffer.[!i] <- c;
+      Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;
     done;
@@ -412,12 +423,17 @@ let refill_lexbuf buffer len =
    can call directives from Topdirs. *)
 
 let _ =
+  Clflags.debug := true;
   Sys.interactive := true;
   let crc_intfs = Symtable.init_toplevel() in
   Compmisc.init_path false;
   List.iter
-    (fun (name, crc) ->
-      Consistbl.set Env.crc_units name crc Sys.executable_name)
+    (fun (name, crco) ->
+      Env.add_import name;
+      match crco with
+        None -> ()
+      | Some crc->
+          Consistbl.set Env.crc_units name crc Sys.executable_name)
     crc_intfs
 
 let load_ocamlinit ppf =
@@ -464,7 +480,7 @@ let loop ppf =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = phrase ppf phr  in
+      let phr = preprocess_phrase ppf phr  in
       Env.reset_cache_toplevel ();
       ignore(execute_phrase true ppf phr)
     with
@@ -482,7 +498,14 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compmisc.init_path false;
+  Compmisc.init_path ~dir:(Filename.dirname name) true;
+                     (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  use_silently ppf name
+  let explicit_name =
+    (* Prevent use_silently from searching in the path. *)
+    if Filename.is_implicit name
+    then Filename.concat Filename.current_dir_name name
+    else name
+  in
+  use_silently ppf explicit_name

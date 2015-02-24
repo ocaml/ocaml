@@ -33,10 +33,13 @@ let init_path () =
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
+  let initial =
+    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    else Env.initial_safe_string
+  in
   try
-    if !Clflags.nopervasives
-    then Env.initial
-    else Env.open_pers_signature "Pervasives" Env.initial
+    if !Clflags.nopervasives then initial else
+    Env.open_pers_signature "Pervasives" initial
   with Not_found ->
     fatal_error "cannot open pervasives.cmi"
 
@@ -53,15 +56,21 @@ let (++) x f = f x
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
    no error occured, else None and an error message is printed.*)
+
+let tool_name = "ocamldoc"
+
 let process_implementation_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize_ascii(Filename.basename prefixname) in
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
-    let parsetree = Pparse.file Format.err_formatter inputfile Parse.implementation ast_impl_magic_number in
+    let parsetree =
+      Pparse.file ~tool_name Format.err_formatter inputfile
+        Parse.implementation ast_impl_magic_number
+    in
     let typedtree =
       Typemod.type_implementation
         sourcefile prefixname modulename env parsetree
@@ -86,11 +95,14 @@ let process_implementation_file ppf sourcefile =
 let process_interface_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize_ascii(Filename.basename prefixname) in
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
-  let ast = Pparse.file Format.err_formatter inputfile Parse.interface ast_intf_magic_number in
-  let sg = Typemod.transl_signature (initial_env()) ast in
+  let ast =
+    Pparse.file ~tool_name Format.err_formatter inputfile
+      Parse.interface ast_intf_magic_number
+  in
+  let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
   (ast, sg, inputfile)
 
@@ -193,7 +205,7 @@ let process_file ppf sourcefile =
             try Filename.chop_extension file
             with _ -> file
           in
-          String.capitalize (Filename.basename s)
+          String.capitalize_ascii (Filename.basename s)
         in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
@@ -318,6 +330,7 @@ let rec remove_module_elements_between_stop keep eles =
           else
             f keep q
       | Odoc_module.Element_value _
+      | Odoc_module.Element_type_extension _
       | Odoc_module.Element_exception _
       | Odoc_module.Element_type _ ->
           if keep then
@@ -427,7 +440,7 @@ let analyse_files ?(init=[]) files =
     );
 
   if !Odoc_global.sort_modules then
-    Sort.list (fun m1 -> fun m2 -> m1.Odoc_module.m_name < m2.Odoc_module.m_name) merged_modules
+    List.sort (fun m1 m2 -> compare m1.Odoc_module.m_name m2.Odoc_module.m_name) merged_modules
   else
     merged_modules
 

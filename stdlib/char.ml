@@ -62,6 +62,17 @@ let uppercase c =
   then unsafe_chr(code c - 32)
   else c
 
+let lowercase_ascii c =
+  if (c >= 'A' && c <= 'Z')
+  then unsafe_chr(code c + 32)
+  else c
+
+let uppercase_ascii c =
+  if (c >= 'a' && c <= 'z')
+  then unsafe_chr(code c - 32)
+  else c
+
 type t = char
 
 let compare c1 c2 = code c1 - code c2
+let equal (c1: t) (c2: t) = compare c1 c2 = 0

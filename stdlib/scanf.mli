@@ -485,6 +485,18 @@ val kscanf :
     exception that aborted the scanning process as arguments.
 *)
 
+val ksscanf :
+  string -> (Scanning.in_channel -> exn -> 'd) ->
+    ('a, 'b, 'c, 'd) scanner
+(** Same as {!Scanf.kscanf} but reads from the given string.
+    @since 4.02.0 *)
+
+val kfscanf :
+  Pervasives.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
+    ('a, 'b, 'c, 'd) scanner
+(** Same as {!Scanf.kscanf}, but reads from the given regular input channel.
+    @since 4.02.0 *)
+
 (** {6 Reading format strings from input} *)
 
 val bscanf_format :

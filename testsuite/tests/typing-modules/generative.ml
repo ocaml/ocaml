@@ -27,7 +27,8 @@ module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
 
 (* tests for shortened functor notation () *)
 module X (X: sig end) (Y: sig end) = functor (Z: sig end) -> struct end;;
-module Y = functor (X: sig end) (Y:sig end) -> functor (Z: sig end) -> struct end;;
+module Y = functor (X: sig end) (Y:sig end) -> functor (Z: sig end) ->
+  struct end;;
 module Z = functor (_: sig end) (_:sig end) (_: sig end) -> struct end;;
 module GZ : functor (X: sig end) () (Z: sig end) -> sig end
           = functor (X: sig end) () (Z: sig end) -> struct end;;

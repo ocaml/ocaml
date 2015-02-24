@@ -53,6 +53,9 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            phrase executed with no errors and [false] otherwise.
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
+val preprocess_phrase : formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
+        (* Preprocess the given toplevel phrase using regular and ppx
+           preprocessors. Return the updated phrase. *)
 val use_file : formatter -> string -> bool
 val use_silently : formatter -> string -> bool
 val mod_use_file : formatter -> string -> bool
@@ -62,14 +65,26 @@ val mod_use_file : formatter -> string -> bool
            [mod_use_file] wrap the file contents into a module. *)
 val eval_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
+val record_backtrace : unit -> unit
 
 (* Printing of values *)
 
 val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
 val print_untyped_exception: formatter -> Obj.t -> unit
 
+type ('a, 'b) gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 val install_printer :
   Path.t -> Types.type_expr -> (formatter -> Obj.t -> unit) -> unit
+val install_generic_printer :
+  Path.t -> Path.t ->
+  (int -> (int -> Obj.t -> Outcometree.out_value,
+           Obj.t -> Outcometree.out_value) gen_printer) -> unit
+val install_generic_printer' :
+  Path.t -> Path.t -> (formatter -> Obj.t -> unit,
+                       formatter -> Obj.t -> unit) gen_printer -> unit
 val remove_printer : Path.t -> unit
 
 val max_printer_depth: int ref
@@ -92,6 +107,8 @@ val print_out_class_type :
   (formatter -> Outcometree.out_class_type -> unit) ref
 val print_out_module_type :
   (formatter -> Outcometree.out_module_type -> unit) ref
+val print_out_type_extension :
+  (formatter -> Outcometree.out_type_extension -> unit) ref
 val print_out_sig_item :
   (formatter -> Outcometree.out_sig_item -> unit) ref
 val print_out_signature :
@@ -101,7 +118,7 @@ val print_out_phrase :
 
 (* Hooks for external line editor *)
 
-val read_interactive_input : (string -> string -> int -> int * bool) ref
+val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 
 (* Hooks for initialization *)
 

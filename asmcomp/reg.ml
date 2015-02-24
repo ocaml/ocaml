@@ -32,7 +32,7 @@ end
 type t =
   { mutable raw_name: Raw_name.t;
     stamp: int;
-    typ: Cmm.machtype_component;
+    mutable typ: Cmm.machtype_component;
     mutable loc: location;
     mutable spill: bool;
     mutable part: int option;
@@ -75,13 +75,13 @@ let create ty =
 
 let createv tyv =
   let n = Array.length tyv in
-  let rv = Array.create n dummy in
+  let rv = Array.make n dummy in
   for i = 0 to n-1 do rv.(i) <- create tyv.(i) done;
   rv
 
 let createv_like rv =
   let n = Array.length rv in
-  let rv' = Array.create n dummy in
+  let rv' = Array.make n dummy in
   for i = 0 to n-1 do rv'.(i) <- create rv.(i).typ done;
   rv'
 
@@ -181,6 +181,16 @@ let inter_set_array s v =
            else if Set.mem v.(i) s then Set.add v.(i) (inter_all(i+1))
            else inter_all(i+1)
          in inter_all 0
+
+let disjoint_set_array s v =
+  match Array.length v with
+    0 -> true
+  | 1 -> not (Set.mem v.(0) s)
+  | n -> let rec disjoint_all i =
+           if i >= n then true
+           else if Set.mem v.(i) s then false
+           else disjoint_all (i+1)
+         in disjoint_all 0
 
 let set_of_array v =
   match Array.length v with

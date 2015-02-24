@@ -81,9 +81,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .IP
 Directories can also be added to the search path once the toplevel
@@ -133,11 +133,18 @@ window.
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.
 .TP
+.BI \-open \ module
+Opens the given module before starting the toplevel. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open! module1;; ... open! moduleN;; were input.
+.TP
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
-The format of the input and output of the preprocessor
-are not yet documented.
+The module
+.BR Ast_mapper (3)
+implements the external interface of a preprocessor.
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all
@@ -156,6 +163,12 @@ use it once before publishing source code.
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported.
+.TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This will become the default in
+a future version of OCaml.
 .TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
@@ -177,13 +190,20 @@ constructs). Programs compiled with
 are therefore slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 .TP
+.B \-unsafe\-string
+Identify the types
+.BR string \ and\  bytes ,
+thereby making strings writable. For reasons of backward compatibility,
+this is the default setting for the moment, but this will change in a future
+version of OCaml.
+.TP
 .B \-version
 Print version string and exit.
 .TP
 .B \-vnum
 Print short version number and exit.
 .TP
-.BI \-w \ warning-list
+.BI \-w \ warning\-list
 Enable or disable warnings according to the argument
 .IR warning-list .
 See
@@ -192,7 +212,7 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
-.BI \-warn-error \ warning-list
+.BI \-warn\-error \ warning\-list
 Mark as fatal the warnings described by the argument
 .IR warning\-list .
 Note that a warning is not triggered (and does not trigger an error) if

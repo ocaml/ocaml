@@ -12,9 +12,11 @@
 /***********************************************************************/
 
 #include <stdio.h>
-#include "config.h"
-#include "misc.h"
-#include "memory.h"
+#include <string.h>
+#include <stdarg.h>
+#include "caml/config.h"
+#include "caml/misc.h"
+#include "caml/memory.h"
 
 #ifdef DEBUG
 
@@ -24,14 +26,13 @@ int caml_failed_assert (char * expr, char * file, int line)
            file, line, expr);
   fflush (stderr);
   exit (100);
-  return 1; /* not reached */
 }
 
-void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
+void caml_set_fields (value v, unsigned long start, unsigned long filler)
 {
   mlsize_t i;
-  for (i = start; i < Wosize_bp (bp); i++){
-    Field (Val_bp (bp), i) = (value) filler;
+  for (i = start; i < Wosize_val (v); i++){
+    Field (v, i) = (value) filler;
   }
 }
 
@@ -67,6 +68,7 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
   exit(2);
 }
 
+/* [size] and [modulo] are numbers of bytes */
 char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
@@ -114,10 +116,59 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   return res;
 }
 
+void caml_ext_table_remove(struct ext_table * tbl, void * data)
+{
+  int i;
+  for (i = 0; i < tbl->size; i++) {
+    if (tbl->contents[i] == data) {
+      caml_stat_free(tbl->contents[i]);
+      memmove(&tbl->contents[i], &tbl->contents[i + 1],
+              (tbl->size - i - 1) * sizeof(void *));
+      tbl->size--;
+    }
+  }
+}
+
 void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 {
   int i;
   if (free_entries)
     for (i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
   caml_stat_free(tbl->contents);
+}
+
+CAMLexport char * caml_strdup(const char * s)
+{
+  size_t slen = strlen(s);
+  char * res = caml_stat_alloc(slen + 1);
+  memcpy(res, s, slen + 1);
+  return res;
+}
+
+CAMLexport char * caml_strconcat(int n, ...)
+{
+  va_list args;
+  char * res, * p;
+  size_t len;
+  int i;
+
+  len = 0;
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const char * s = va_arg(args, const char *);
+    len += strlen(s);
+  }
+  va_end(args);
+  res = caml_stat_alloc(len + 1);
+  va_start(args, n);
+  p = res;
+  for (i = 0; i < n; i++) {
+    const char * s = va_arg(args, const char *);
+    size_t l = strlen(s);
+    memcpy(p, s, l);
+    p += l;
+  }
+  va_end(args);
+  *p = 0;
+  return res;
 }

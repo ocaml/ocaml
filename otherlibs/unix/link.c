@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_link(value path1, value path2)
@@ -22,8 +22,8 @@ CAMLprim value unix_link(value path1, value path2)
   char * p1;
   char * p2;
   int ret;
-  p1 = caml_stat_alloc_string(path1);
-  p2 = caml_stat_alloc_string(path2);
+  p1 = caml_strdup(String_val(path1));
+  p2 = caml_strdup(String_val(path2));
   caml_enter_blocking_section();
   ret = link(p1, p2);
   caml_leave_blocking_section();

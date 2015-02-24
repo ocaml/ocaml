@@ -59,7 +59,8 @@ val new_structured_constant:
   Clambda.ustructured_constant ->
   shared:bool -> (* can be shared with another structually equal constant *)
   string
-val structured_constants: unit -> (string * bool * Clambda.ustructured_constant) list
+val structured_constants:
+  unit -> (string * bool * Clambda.ustructured_constant) list
 val add_exported_constant: string -> unit
 
 type structured_constants
@@ -77,10 +78,6 @@ val cache_unit_info: unit_infos -> unit
         (* Enter the given infos in the cache.  The infos will be
            honored by [symbol_for_global] and [global_approx]
            without looking at the corresponding .cmx file. *)
-
-val cmx_not_found_crc: Digest.t
-        (* Special digest used in the [ui_imports_cmx] list to signal
-           that no [.cmx] file was found and used for the imported unit *)
 
 val read_library_info: string -> library_infos
 

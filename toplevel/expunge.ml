@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* "Expunge" a toplevel by removing compiler modules from the global List.map.
+(* "Expunge" a toplevel by removing compiler modules from the global map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
 open Misc
@@ -44,7 +44,7 @@ let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   for i = (if negate then 4 else 3) to Array.length Sys.argv - 1 do
-    to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
+    to_keep := StringSet.add (String.capitalize_ascii Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   Bytesections.read_toc ic;
@@ -65,7 +65,7 @@ let main () =
           let global_map = (input_value ic : Symtable.global_map) in
           output_value oc (expunge_map global_map)
       | "CRCS" ->
-          let crcs = (input_value ic : (string * Digest.t) list) in
+          let crcs = (input_value ic : (string * Digest.t option) list) in
           output_value oc (expunge_crcs crcs)
       | _ ->
           copy_file_chunk ic oc len

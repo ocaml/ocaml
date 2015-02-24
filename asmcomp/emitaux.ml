@@ -88,16 +88,10 @@ let emit_bytes_directive directive s =
    done;
    if !pos > 0 then emit_char '\n'
 
-(* PR#4813: assemblers do strange things with float literals indeed,
-   so we convert to IEEE representation ourselves and emit float
-   literals as 32- or 64-bit integers. *)
-
-let emit_float64_directive directive f =
-  let x = Int64.bits_of_float (float_of_string f) in
+let emit_float64_directive directive x =
   emit_printf "\t%s\t0x%Lx\n" directive x
 
-let emit_float64_split_directive directive f =
-  let x = Int64.bits_of_float (float_of_string f) in
+let emit_float64_split_directive directive x =
   let lo = Int64.logand x 0xFFFF_FFFFL
   and hi = Int64.shift_right_logical x 32 in
   emit_printf "\t%s\t0x%Lx, 0x%Lx\n"
@@ -105,8 +99,7 @@ let emit_float64_split_directive directive f =
     (if Arch.big_endian then hi else lo)
     (if Arch.big_endian then lo else hi)
 
-let emit_float32_directive directive f =
-  let x = Int32.bits_of_float (float_of_string f) in
+let emit_float32_directive directive x =
   emit_printf "\t%s\t0x%lx\n" directive x
 
 (* Record live pointers at call points *)
@@ -218,7 +211,7 @@ let reset_debug_info () =
 
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
-let emit_debug_info dbg =
+let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers)
      && dbg.Debuginfo.dinfo_line > 0 (* PR#6243 *)
@@ -230,12 +223,27 @@ let emit_debug_info dbg =
       with Not_found ->
         let file_num = !file_pos_num_cnt in
         incr file_pos_num_cnt;
-        emit_string "\t.file\t";
-        emit_int file_num; emit_char '\t';
-        emit_string_literal file_name; emit_char '\n';
+        file_emitter file_num file_name;
         file_pos_nums := (file_name,file_num) :: !file_pos_nums;
         file_num in
-    emit_string "\t.loc\t";
-    emit_int file_num; emit_char '\t';
-    emit_int line; emit_char '\n'
+    loc_emitter file_num line;
   end
+
+let emit_debug_info dbg =
+  emit_debug_info_gen dbg (fun file_num file_name ->
+    emit_string "\t.file\t";
+    emit_int file_num; emit_char '\t';
+    emit_string_literal file_name; emit_char '\n';
+  )
+    (fun file_num line ->
+      emit_string "\t.loc\t";
+      emit_int file_num; emit_char '\t';
+      emit_int line; emit_char '\n')
+
+let reset () =
+  reset_debug_info ();
+  frame_descriptors := []
+
+let binary_backend_available = ref false
+let create_asm_file = ref true
+
