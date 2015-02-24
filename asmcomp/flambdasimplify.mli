@@ -33,3 +33,23 @@ val primitive
   -> (Expr_id.t flambda list * (Flambdaapprox.t list))
   -> 'a flambda
   -> 'a flambda * Flambdaapprox.t
+
+(** Simplify a sequential logical "arg1 AND arg2" expression. *)
+val sequential_and
+   : arg1:'a flambda
+  -> arg1_approx:Flambdaapprox.t
+  -> arg2:'a flambda
+  -> arg2_approx:Flambdaapprox.t
+  -> dbg:Debuginfo.t
+  -> annot:'a
+  -> 'a flambda * Flambdaapprox.t * Flambdacost.benefit
+
+(** Like [sequential_and], but for "arg1 OR arg2". *)
+val sequential_or
+   : arg1:'a flambda
+  -> arg1_approx:Flambdaapprox.t
+  -> arg2:'a flambda
+  -> arg2_approx:Flambdaapprox.t
+  -> dbg:Debuginfo.t
+  -> annot:'a
+  -> 'a flambda * Flambdaapprox.t * Flambdacost.benefit

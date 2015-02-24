@@ -417,8 +417,6 @@ let transform_closure_expression r fu_closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  (* XCR mshinwell for pchambart: we should rename [off_id] now.
-        pchambart: done *)
   let subst_closure_id closure closure_id =
     let closure_id = AR.subst_closure_id closure.ffunction_sb closure_id in
     (try ignore (find_declaration closure_id closure.ffunctions)
@@ -434,15 +432,21 @@ let transform_closure_expression r fu_closure closure_id rel annot =
     let closure_id = subst_closure_id set_of_closures closure_id in
     let rel = Misc.may_map (subst_closure_id set_of_closures) rel in
     let ret_approx = value_closure { fun_id = closure_id; set_of_closures } in
-    Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
-    ret r ret_approx
+    let closure =
+      match rel with
+      | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
+        fu_closure
+      | None | Some _ ->
+        Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot)
+    in
+    closure, ret r ret_approx
   | Value_unresolved sym ->
     (* If the set_of_closure comes from a symbol that can't be recovered,
        we know that it comes from another compilation unit, hence it cannot
        have been transformed during this rewriting. So it is safe to keep
        this expression unchanged. *)
     Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
-    ret r (value_unresolved sym)
+      ret r (value_unresolved sym)
   | _ ->
     Format.printf "%a@.%a@." Closure_id.print closure_id
       Printflambda.flambda fu_closure;
@@ -764,6 +768,23 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
       *)
       let args, _, r = loop_list env r args in
       Fprim(p, block :: args, dbg, annot), ret r value_unknown
+  | Fprim ((Psequand | Psequor) as primitive, [arg1; arg2], dbg, annot) ->
+      let arg1, r = loop env r arg1 in
+      let arg1_approx = r.approx in
+      let arg2, r = loop env r arg2 in
+      let arg2_approx = r.approx in
+      let simplifier =
+        match primitive with
+        | Psequand -> Flambdasimplify.sequential_and
+        | Psequor -> Flambdasimplify.sequential_or
+        | _ -> assert false
+      in
+      let expr, approx, simplify_benefit =
+        simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
+      in
+      expr, ret (benefit r (Flambdacost.benefit_union simplify_benefit)) approx
+  | Fprim ((Psequand | Psequor), _, _, _) ->
+    Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
   | Fprim(p, args, dbg, annot) as expr ->
       let (args', approxs, r) = loop_list env r args in
       let expr = if args' == args then expr else Fprim(p, args', dbg, annot) in
@@ -1388,39 +1409,24 @@ and partial_apply funct fun_id func args ap_dbg =
        let clos_id = f in  (* not used this time, since [f] has no free vars *)
        let x' = fst x in
        let y' = y + snd x in
-       let x = x' in
-       let y = y' in
-       f (fst x) (y + snd x)  (* this line is a copy of the body of [f] *)
-
-   The values of [x] and [y] required to evaluate the arguments to [f] have
-   been taken before [x] and [y] are rebound.  The "let x" and "let y"
-   bindings may be mysterious since they appear to shadow variables that
-   are already bound.  Shadowed bindings are not allowed at the exit from
-   the flambda passes, but may occur at this point, since they will be
-   rewritten to have fresh names when [loop] is called on the new body
-   (because [activate_substitution] has been called).
+       f (fst x') (y' + snd x')  (* the body of [f] with parameter names freshened *)
 *)
 and inline_by_copying_function_body env r clos lfunc fun_id func args =
   let r = benefit r Flambdacost.remove_call in
   let env = inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_body" in
+  (* Assign fresh names for the function's parameters and rewrite the body to use
+     these new names. *)
   let subst_params = List.map Flambdasubst.freshen_var func.params in
-  (* In case we are going to duplicate a function's body into itself (the
-     "unrolling" case above), we need to assign fresh names to hold the
-     values of the function's arguments before we rebind them. *)
-  let substituted_params_around_body =
-    List.fold_right2 (fun id subst_id body ->
-        Flet (Not_assigned, id, Fvar (subst_id, Expr_id.create ()), body,
-          Expr_id.create ~name:"inline arg subst" ()))
-      func.params subst_params func.body
-  in
+  let subst_map = Variable.Map.of_list (List.combine func.params subst_params) in
+  let body = Flambdaiter.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     List.fold_right2 (fun id arg body ->
         Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
-      subst_params args substituted_params_around_body
+      subst_params args body
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =

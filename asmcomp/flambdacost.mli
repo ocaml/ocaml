@@ -22,7 +22,9 @@ val can_try_inlining : _ Flambda.flambda -> inline_threshold -> bonus:int -> inl
 type benefit
 
 val no_benefit : benefit
+(* CR mshinwell: change [benefit_union] occurrences to [+] *)
 val benefit_union : benefit -> benefit -> benefit
+(*val (+) : benefit -> benefit -> benefit*)
 
 val remove_call : benefit -> benefit
 val remove_alloc : benefit -> benefit

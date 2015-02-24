@@ -57,6 +57,7 @@ let remove_unused_closure_variables tree =
     | e -> e in
   Flambdaiter.map aux tree
 
+(* CR mshinwell: rename [eid] and/or [annot] to be consistent *)
 let const_int_expr expr n eid =
   if Flambdaeffects.no_effects expr
   then Flambdaapprox.make_const_int n eid
@@ -87,6 +88,80 @@ let const_comparison_expr expr cmp x y eid =
      | Cle -> x <= y
      | Cge -> x >= y)
     eid
+
+module Simplify_sequential_logical_operator (G : sig
+  val canonical_absorbing_element : int
+  val is_absorbing_element : int -> bool
+  val primitive : Lambda.primitive
+end) = struct
+  let sequential_op ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot =
+    let arg1_no_effects = Flambdaeffects.no_effects arg1 in
+    let arg2_no_effects = Flambdaeffects.no_effects arg2 in
+    let arg2_annot = Flambda.data_at_toplevel_node arg2 in
+    let module C = Flambdacost in
+    let open Flambdaapprox in
+    let completely_eliminated () =
+      Fconst (Fconst_pointer G.canonical_absorbing_element, annot),
+        Flambdaapprox.value_constptr G.canonical_absorbing_element,
+        C.remove_branch (C.remove_code arg1 (
+          C.remove_code arg2 C.no_benefit))
+    in
+    match arg1_approx.Flambdaapprox.descr with
+    | (Value_int n | Value_constptr n) when G.is_absorbing_element n ->
+      if arg1_no_effects then
+        completely_eliminated ()
+      else
+        arg1, arg1_approx, C.remove_branch (C.remove_code arg2 C.no_benefit)
+    | (Value_int n | Value_constptr n) -> (* when not the absorbing element *)
+      if arg1_no_effects then
+        arg2, arg2_approx, C.remove_branch (C.remove_code arg1 C.no_benefit)
+      else
+        begin match arg2_approx.Flambdaapprox.descr with
+        | (Value_int arg2_val | Value_constptr arg2_val)
+            when arg2_no_effects ->
+          Fsequence (arg1, Fconst (Fconst_pointer arg2_val, arg2_annot),
+              annot), arg2_approx,
+            C.remove_branch (C.remove_code arg2 C.no_benefit)
+        | _ ->
+          Fsequence (arg1, arg2, annot), arg2_approx,
+            C.remove_branch C.no_benefit
+        end
+    | _ ->
+      match arg2_approx.Flambdaapprox.descr with
+      | (Value_int n | Value_constptr n)
+          when G.is_absorbing_element n ->
+        begin match arg1_no_effects, arg2_no_effects with
+        | true, true -> completely_eliminated ()
+        | true, false (* we must run [arg1]: it might short-circuit [arg2] *)
+        | false, false ->
+          Fprim (G.primitive, [arg1; arg2], dbg, annot),
+            Flambdaapprox.value_constptr G.canonical_absorbing_element,
+              C.no_benefit
+        | false, true ->
+          Fsequence (arg1,
+              Fconst (Fconst_pointer G.canonical_absorbing_element,
+                arg2_annot), annot),
+            Flambdaapprox.value_constptr G.canonical_absorbing_element,
+              C.remove_branch (C.remove_code arg2 C.no_benefit)
+        end
+      | _ ->
+        Fprim (G.primitive, [arg1; arg2], dbg, annot),
+          Flambdaapprox.value_unknown, C.no_benefit
+end
+
+module Simplify_and = Simplify_sequential_logical_operator (struct
+  let canonical_absorbing_element = 0
+  let is_absorbing_element n = (n = 0)
+  let primitive = Lambda.Psequand
+end)
+let sequential_and = Simplify_and.sequential_op
+
+module Simplify_or = Simplify_sequential_logical_operator (struct
+  let canonical_absorbing_element = 1
+  let is_absorbing_element n = (n <> 0)
+  let primitive = Lambda.Psequor
+end)
+let sequential_or = Simplify_or.sequential_op
 
 let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
   let open Lambda in
@@ -136,8 +211,8 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
               const_comparison_expr expr cmp x y eid
           | Pisout ->
               const_bool_expr expr (y > x || y < 0) eid
-          | Psequand -> const_bool_expr expr (x <> 0 && y <> 0) eid
-          | Psequor  -> const_bool_expr expr (x <> 0 || y <> 0) eid
+          (* [Psequand] and [Psequor] are omitted, just in case one of the operands
+             has a side-effect and must not be evaluated. *)
           | _ ->
               expr, value_unknown
           end

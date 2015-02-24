@@ -261,9 +261,11 @@ module Import = struct
         (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
       try import_ex (SymbolMap.find sym symbol_id_map) with
       | Not_found ->
+(*
         Format.eprintf "Warning, couldn't find informations associated \
                         to the symbol %a. Did you forger a -I arguments ?@."
           Symbol.print sym;
+*)
         value_unresolved sym
 
   let rec really_import = function
