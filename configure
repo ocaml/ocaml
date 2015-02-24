@@ -723,7 +723,7 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
-      shared_libraries_supported=true;;
+      shared_libraries_supported=false;;
     m88k-*-openbsd*)
       shared_libraries_supported=false;;
     vax-*-openbsd*)
