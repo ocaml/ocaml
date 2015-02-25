@@ -13,7 +13,7 @@
 open Abstract_identifiers
 open Flambdautils
 
-(* Two types of information are propagated during inlining:
+(* Two kinds of information are propagated during inlining:
    - [E.t] "environments", top-down;
    - [R.t] "results", bottom-up, approximately following the evaluation
      order.  *)
@@ -45,15 +45,14 @@ let check_var_and_constant_result env r original_lam approx =
   in
   lam, r
 
+(* This adds only the minimal set of approximations to the closures.
+   It is not strictly necessary to have this restriction, but it helps
+   to catch potential substitution bugs. *)
 let populate_closure_approximations
       ~(function_declaration : _ Flambda.function_declaration)
       ~(free_var_info : (_ * A.t) Variable.Map.t)
       ~(parameter_approximations : A.t Variable.Map.t)
       env =
-  (* This adds only the minimal set of approximations to the closures.
-     This is not stricly needed to restrict it like that, but it helps
-     catching potential substitution bugs. *)
-
   (* Add approximations of used free variables *)
   let env =
     Variable.Map.fold
@@ -86,7 +85,7 @@ let should_inline_function_known_to_be_recursive
         func.params approxs
 
 (* Make an informed guess at whether [clos], with approximations [approxs],
-   looks to be a functor. *)
+   is a functor. *)
 let functor_like env clos approxs =
   E.at_toplevel env &&
     List.for_all A.known approxs &&
@@ -1166,7 +1165,6 @@ and inline_by_copying_function_declaration env r funct clos fun_id func
        then there is nothing to do to improve it here. *)
     no_transformation ()
   else
-
   (* First we generate a copy of the function application, including the
      function declaration(s), but with variables (not yet bound) in place of
      the arguments. *)
