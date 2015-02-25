@@ -10,23 +10,23 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Lambda
 open Abstract_identifiers
 open Flambda
 open Flambdaapprox
 open Flambdautils
 
+(* Two types of information are propagated during inlining:
+   - [E.t] "environments", top-down;
+   - [R.t] "results", bottom-up, approximately following the evaluation
+     order.  *)
 module E = Flambda_inline_env
 module R = Flambda_inline_result
 let ret = R.set_approx
 
+module L = Lambda
+
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
-
-(* There are two types of informations propagated.
-   - propagating top-down: in the env type
-   - propagating following approximatively the evaluation order ~ bottom-up:
-     in the ret type *)
 
 let check_constant_result r lam approx =
   let lam, approx = Flambdaapprox.check_constant_result lam approx in
@@ -75,32 +75,6 @@ let populate_closure_approximations
        E.add_approx id approx env)
       env function_declaration.params in
   env
-
-let which_function_parameters_can_we_specialize ~params ~args
-      ~approximations_of_args ~unchanging_params =
-  assert (List.length params = List.length args);
-  assert (List.length args = List.length approximations_of_args);
-  List.fold_right2 (fun (id, arg) approx (spec_args, args, args_decl) ->
-      let new_id, args_decl =
-        (* If the argument expression is not a variable, we declare a new one.
-           This is needed for adding arguments to cl_specialised_arg which
-           requires a variable *)
-        match arg with
-        | Fvar (var,_) ->
-            var, args_decl
-        | _ ->
-            let new_id = Flambdasubst.freshen_var id in
-            let args_decl = (new_id, arg) :: args_decl in
-            new_id, args_decl in
-      let spec_args =
-        if Flambdaapprox.useful approx && Variable.Set.mem id unchanging_params then
-          Variable.Map.add id new_id spec_args
-        else
-          spec_args
-      in
-      spec_args, new_id :: args, args_decl)
-    (List.combine params args) approximations_of_args
-    (Variable.Map.empty, [], [])
 
 let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
       ~approxs ~unchanging_params ~max_level =
@@ -399,46 +373,39 @@ and loop_direct (env : E.t) (r : R.t) tree : 'a flambda * R.t =
       let r = List.fold_left (fun r (id,_) -> R.exit_scope r id) r defs in
       Fletrec (defs, body, annot),
       r
-  | Fprim(Pgetglobal id, [], _dbg, _annot) as expr ->
+  | Fprim(L.Pgetglobal id, [], _dbg, _annot) as expr ->
       let approx =
         if Ident.is_predef_exn id
         then value_unknown
         else Import.import_global id in
       expr, ret r approx
-  | Fprim(Pgetglobalfield(id,i), [], _dbg, _annot) as expr ->
+  | Fprim(L.Pgetglobalfield(id,i), [], _dbg, _annot) as expr ->
       let approx =
         if id = Compilenv.current_unit_id ()
         then R.find_global r ~field_index:i
         else get_field i [really_import_approx (Import.import_global id)] in
       check_constant_result r expr approx
-  | Fprim(Psetglobalfield i, [arg], dbg, annot) as expr ->
+  | Fprim(L.Psetglobalfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
       let expr = if arg == arg' then expr
-        else Fprim(Psetglobalfield i, [arg'], dbg, annot) in
+        else Fprim(L.Psetglobalfield i, [arg'], dbg, annot) in
       let r = R.add_global r ~field_index:i ~approx:(R.approx r) in
       expr, ret r value_unknown
-  | Fprim(Pfield i, [arg], dbg, annot) as expr ->
+  | Fprim(L.Pfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
       let expr =
         if arg == arg' then expr
-        else Fprim(Pfield i, [arg'], dbg, annot) in
+        else Fprim(L.Pfield i, [arg'], dbg, annot) in
       let approx = get_field i [R.approx r] in
       check_var_and_constant_result env r expr approx
-  | Fprim((Psetfield _ | Parraysetu _ | Parraysets _) as p, block :: args, dbg, annot) ->
+  | Fprim((L.Psetfield _ | L.Parraysetu _ | L.Parraysets _) as p,
+          block :: args, dbg, annot) ->
       let block, r = loop env r block in
       if Flambdaapprox.is_certainly_immutable (R.approx r)
       then
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value;
       (* Misc.fatal_error "Assignment on non-mutable value"; *)
-      (* XCR mshinwell for pchambart: This is slightly mysterious---I think
-         we need a comment explaining what the approximation for a
-         mutable block looks like.
-         Also, this match should be explicitly exhaustive; same elsewhere.
-         pchambart:
-           This was completely wrong and never triggered.
-           done commenting.
-      *)
       (* Mutable blocks are always represented by [Value_unknown] or
          [Value_bottom]. If something else is propagated here, then
          whe know that some miscompilation could happen.
@@ -478,22 +445,22 @@ and loop_direct (env : E.t) (r : R.t) tree : 'a flambda * R.t =
       *)
       let args, _, r = loop_list env r args in
       Fprim(p, block :: args, dbg, annot), ret r value_unknown
-  | Fprim ((Psequand | Psequor) as primitive, [arg1; arg2], dbg, annot) ->
+  | Fprim ((L.Psequand | L.Psequor) as primitive, [arg1; arg2], dbg, annot) ->
       let arg1, r = loop env r arg1 in
       let arg1_approx = (R.approx r) in
       let arg2, r = loop env r arg2 in
       let arg2_approx = (R.approx r) in
       let simplifier =
         match primitive with
-        | Psequand -> Flambdasimplify.sequential_and
-        | Psequor -> Flambdasimplify.sequential_or
+        | L.Psequand -> Flambdasimplify.sequential_and
+        | L.Psequor -> Flambdasimplify.sequential_or
         | _ -> assert false
       in
       let expr, approx, simplify_benefit =
         simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
       in
       expr, ret (R.map_benefit r (Flambdacost.benefit_union simplify_benefit)) approx
-  | Fprim ((Psequand | Psequor), _, _, _) ->
+  | Fprim ((L.Psequand | L.Psequor), _, _, _) ->
     Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
   | Fprim(p, args, dbg, annot) as expr ->
       let (args', approxs, r) = loop_list env r args in
@@ -1185,8 +1152,9 @@ and inline_by_copying_function_declaration env r funct clos fun_id func
       ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
   let spec_args, args, args_decl =
-    which_function_parameters_can_we_specialize ~params:func.params
-      ~args ~approximations_of_args:approxs ~unchanging_params
+    Flambdaapprox.which_function_parameters_can_we_specialize
+      ~params:func.params ~args ~approximations_of_args:approxs
+      ~unchanging_params
   in
   if Variable.Set.equal specialised_args (Variable.Map.keys spec_args)
   then

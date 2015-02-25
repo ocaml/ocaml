@@ -136,3 +136,14 @@ module Import : sig
   val import_global : Ident.t -> t
   val import_symbol : Symbol.t -> t
 end
+
+(* CR mshinwell for mshinwell: think about this function some more---can it
+   be made more generic?  If not maybe move back into Flambdainline *)
+val which_function_parameters_can_we_specialize
+   : params:Variable.t list
+  -> args:'a Flambda.flambda list
+  -> approximations_of_args:t list
+  -> unchanging_params:Variable.Set.t
+  -> Variable.t Variable.Map.t
+    * (Variable.t list)
+    * ((Variable.t * 'a Flambda.flambda) list)
