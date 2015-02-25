@@ -66,8 +66,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
     | Fclosure ({ fu_closure = Fset_of_closures _ }, _) -> true
     | _ -> false in
   let inline_threshold = R.inline_threshold r in
+  let fun_var = U.find_declaration_variable fun_id clos in
+  let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
   let fun_cost =
-    if unconditionally_inline || direct_apply then
+    if unconditionally_inline || (direct_apply && not recursive) then
       (* XCR mshinwell for mshinwell: this comment needs clarification *)
       (* A function is considered for inlining if it does not increase the code
          size too much. This size is verified after effectively duplicating
@@ -112,8 +114,6 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   | Can_inline _ when E.never_inline env ->
     no_transformation ()
   | (Can_inline _) as remaining_inline_threshold ->
-      let fun_var = U.find_declaration_variable fun_id clos in
-      let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
       (* CR mshinwell for mshinwell: add comment about stub functions *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing.
