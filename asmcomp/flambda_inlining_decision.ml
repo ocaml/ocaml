@@ -135,6 +135,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
         if unconditionally_inline
           || direct_apply
           || Flambdacost.sufficient_benefit_for_inline
+               ~original:(fst (no_transformation()))
                body
                (R.benefit r_inlined)
                inline_threshold
@@ -182,10 +183,21 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
               then Format.printf "try inline multi rec %a@."
                   Closure_id.print fun_id
             in
-            inline_by_copying_function_declaration ~env ~r ~funct ~clos
-              ~fun_id ~func ~args_with_approxs:(args, approxs)
-              ~unchanging_params ~specialised_args:closure.specialised_args
-              ~ap_dbg ~no_transformation
+            let expr, r_inlined =
+              inline_by_copying_function_declaration ~env ~r:(R.clear_benefit r)
+                ~funct ~clos ~fun_id ~func ~args_with_approxs:(args, approxs)
+                ~unchanging_params ~specialised_args:closure.specialised_args
+                ~ap_dbg ~no_transformation
+            in
+            if Flambdacost.sufficient_benefit_for_inline
+                ~original:(fst (no_transformation ()))
+                expr
+                (R.benefit r_inlined)
+                inline_threshold
+            then
+              expr, R.map_benefit r_inlined (Flambdacost.benefit_union (R.benefit r))
+            else
+              no_transformation ()
           else
             no_transformation ()
       else

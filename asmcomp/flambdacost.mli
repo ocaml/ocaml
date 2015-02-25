@@ -33,6 +33,11 @@ val remove_branch : benefit -> benefit
 
 val remove_code : _ Flambda.flambda -> benefit -> benefit
 
-val sufficient_benefit_for_inline : _ Flambda.flambda -> benefit -> inline_threshold -> bool
+val sufficient_benefit_for_inline :
+  ?original:_ Flambda.flambda ->
+  _ Flambda.flambda ->
+  benefit ->
+  inline_threshold ->
+  bool
 
 val print_benefit : Format.formatter -> benefit -> unit

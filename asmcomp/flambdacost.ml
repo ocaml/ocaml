@@ -229,13 +229,23 @@ let evaluate_benefit b =
   + b.remove_prim * remove_prim_bonus
   + b.remove_branch * remove_branch_bonus
 
-let sufficient_benefit_for_inline lam benefit inline_threshold =
+let sufficient_benefit_for_inline ?original lam benefit inline_threshold =
   match inline_threshold with
-  | Never_inline -> false
+  | Never_inline ->
+      false
   | Can_inline threshold ->
       match lambda_smaller' lam ~than:max_int with
-      | None -> false
+      | None ->
+          false
       | Some size ->
+          let threshold =
+            match original with
+            | None -> threshold
+            | Some original ->
+                match lambda_smaller' lam ~than:max_int with
+                | None -> threshold
+                | Some size -> threshold + size
+          in
           size - evaluate_benefit benefit <= threshold
 
 let print_benefit ppf b =
