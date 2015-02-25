@@ -70,6 +70,142 @@ let populate_closure_approximations
       env function_declaration.params in
   env
 
+(* The main functions: iterate on the expression rewriting it and
+   propagating up an approximation of the value.
+
+   The naming conventions is:
+   * [env] is the top down environment
+   * [r] is the bottom up informations (used variables, expression
+     approximation, ...)
+
+   In general the pattern is to do a subset of these steps:
+   * recursive call of loop on the arguments with the original
+     environment:
+       [let new_arg, r = loop env r arg]
+   * generate fresh new identifiers (if subst.active is true) and
+     add the substitution to the environment:
+       [let new_id, env = new_subst_id id env]
+   * associate in the environment the approximation of values to
+     identifiers:
+       [let env = E.add_approx id (R.approx r) env]
+   * recursive call of loop on the body of the expression, using
+     the new environment
+   * mark used variables:
+       [let r = use_var r id]
+   * remove variable related bottom up informations:
+       [let r = exit_scope r id in]
+   * rebuild the expression according to the informations about
+     its content.
+   * associate its description to the returned value:
+       [ret r approx]
+   * replace the returned expression by a contant or a direct variable
+     acces (when possible):
+       [check_var_and_constant_result env r expr approx]
+ *)
+
+(* Transform an expression denoting an access to a variable bound in
+   a closure.  Variables in the closure ([fenv_field.vc_closure]) may
+   have been alpha-renamed since [expr] was constructed; as such, we
+   must ensure the same happens to [expr].  The renaming information is
+   contained within the approximation deduced from [vc_closure] (as
+   such, that approximation *must* identify which closure it is).
+
+   For instance in some imaginary syntax for flambda:
+
+     [let f x =
+        let g y ~closure:{a} = a + y in
+        let closure = { a = x } in
+          g 12 ~closure]
+
+   when [f] is traversed, [g] can be inlined, resulting in the
+   expression
+
+     [let f z =
+        let g y ~closure:{a} = a + y in
+        let closure = { a = x } in
+          closure.a + 12]
+
+   [closure.a] being a notation for:
+
+     [Fvariable_in_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
+
+   If [f] is inlined later, the resulting code will be
+
+     [let x = ... in
+      let g' y' ~closure':{a'} = a' + y' in
+      let closure' = { a' = x } in
+        closure'.a' + 12]
+
+   in particular the field [a] of the closure has been alpha renamed to [a'].
+   This information must be carried from the declaration to the use.
+
+   If the function is declared outside of the alpha renamed part, there is
+   no need for renaming in the [Ffunction] and [Fvariable_in_closure].
+   This is not usualy the case, except when the closure declaration is a
+   symbol.
+
+   What ensures that This information is available at [Fvariable_in_closure]
+   point is that those constructions can only be introduced by inlining,
+   which requires those same informations. For this to still be valid,
+   other transformation must avoid transforming the information flow in
+   a way that the inline function can't propagate it.
+*)
+let transform_variable_in_closure_expression env r expr vc_closure
+      (fenv_field : _ Flambda.fvariable_in_closure) annot
+      : _ Flambda.t * R.t =
+  match A.descr (R.approx r) with
+  | Value_closure { set_of_closures; fun_id } ->
+    let module AR =
+      Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+    in
+    let env_var =
+      AR.subst_variable_in_closure
+        set_of_closures.ffunction_sb
+        fenv_field.vc_var
+    in
+    let env_fun_id =
+      AR.subst_closure_id
+        set_of_closures.ffunction_sb
+        fenv_field.vc_fun
+    in
+
+    assert(Closure_id.equal env_fun_id fun_id);
+
+    let approx =
+      try Var_within_closure.Map.find env_var set_of_closures.bound_var with
+      | Not_found ->
+        Format.printf "no field %a in closure %a@ %a@."
+          Var_within_closure.print env_var
+          Closure_id.print env_fun_id
+          Printflambda.flambda vc_closure;
+        assert false in
+
+    let expr : _ Flambda.t =
+      if vc_closure == fenv_field.vc_closure
+      then expr (* if the argument didn't change, the names didn't also *)
+      else Fvariable_in_closure ({ vc_closure; vc_fun = env_fun_id;
+                                   vc_var = env_var }, annot) in
+    check_var_and_constant_result env r expr approx
+  | Value_unresolved sym ->
+    (* This value comes from a symbol for which we couldn't find any
+       information. This tells us that this function couldn't have been
+       renamed. So we can keep it unchanged *)
+    Fvariable_in_closure ({ fenv_field with vc_closure }, annot),
+    ret r (A.value_unresolved sym)
+  | Value_unknown ->
+    (* We must have the correct approximation of the value to ensure
+       we take account of all alpha-renamings. *)
+    Format.printf "[Fvariable_in_closure] without suitable \
+                   approximation : %a@.%a@.%a@."
+      Printflambda.flambda expr
+      Printflambda.flambda vc_closure
+      Printflambda.flambda fenv_field.vc_closure;
+    assert false
+  | Value_block _ | Value_int _ | Value_constptr _
+  | Value_float _ | A.Value_boxed_int _ | Value_set_of_closures _
+  | Value_bottom | Value_extern _ | Value_symbol _ ->
+    assert false
+
 let transform_closure_expression r fu_closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
@@ -113,39 +249,6 @@ let transform_closure_expression r fu_closure closure_id rel annot =
       Printflambda.flambda fu_closure;
     assert false
 
-(* The main functions: iterate on the expression rewriting it and
-   propagating up an approximation of the value.
-
-   The naming conventions is:
-   * [env] is the top down environment
-   * [r] is the bottom up informations (used variables, expression
-     approximation, ...)
-
-   In general the pattern is to do a subset of these steps:
-   * recursive call of loop on the arguments with the original
-     environment:
-       [let new_arg, r = loop env r arg]
-   * generate fresh new identifiers (if subst.active is true) and
-     add the substitution to the environment:
-       [let new_id, env = new_subst_id id env]
-   * associate in the environment the approximation of values to
-     identifiers:
-       [let env = E.add_approx id (R.approx r) env]
-   * recursive call of loop on the body of the expression, using
-     the new environment
-   * mark used variables:
-       [let r = use_var r id]
-   * remove variable related bottom up informations:
-       [let r = exit_scope r id in]
-   * rebuild the expression according to the informations about
-     its content.
-   * associate its description to the returned value:
-       [ret r approx]
-   * replace the returned expression by a contant or a direct variable
-     acces (when possible):
-       [check_var_and_constant_result env r expr approx]
- *)
-
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (A.really_import_approx (R.approx r))
@@ -174,122 +277,9 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       transform_closure_expression r flam closure.fu_fun
           closure.fu_relative_to annot
   | Fvariable_in_closure (fenv_field, annot) as expr ->
-      (* CR mshinwell for pchambart: I think we need a small example here.
-         I also rewrote the comment, please check it is correct.  Also, I
-         think we need to explain thoroughly why it is the case that a
-         [Value_closure] approximation is always present here.
-         pchambart: I tried to write an example, but ocaml syntax is
-           too high level to explain that, and the concrete syntax is too
-           heavy (and there is no syntax for maps...)
-      *)
-      (* This kind of expression denotes an access to a variable bound in
-         a closure.  Variables in the closure ([fenv_field.vc_closure]) may
-         have been alpha-renamed since [expr] was constructed; as such, we
-         must ensure the same happens to [expr].  The renaming information is
-         contained within the approximation deduced from [vc_closure] (as
-         such, that approximation *must* identify which closure it is).
-
-         For instance in some imaginary syntax for flambda:
-
-           [let f x =
-              let g y ~closure:{a} = a + y in
-              let closure = { a = x } in
-                g 12 ~closure]
-
-         when [f] is traversed, [g] can be inlined, resulting in the
-         expression
-
-           [let f z =
-              let g y ~closure:{a} = a + y in
-              let closure = { a = x } in
-                closure.a + 12]
-
-         [closure.a] being a notation for:
-
-           [Fvariable_in_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
-
-         If [f] is inlined later, the resulting code will be
-
-           [let x = ... in
-            let g' y' ~closure':{a'} = a' + y' in
-            let closure' = { a' = x } in
-              closure'.a' + 12]
-
-         in particular the field [a] of the closure has been alpha renamed to [a'].
-         This information must be carried from the declaration to the use.
-
-         If the function is declared outside of the alpha renamed part, there is
-         no need for renaming in the [Ffunction] and [Fvariable_in_closure].
-         This is not usualy the case, except when the closure declaration is a
-         symbol.
-
-         What ensures that This information is available at [Fvariable_in_closure]
-         point is that those constructions can only be introduced by inlining,
-         which requires those same informations. For this to still be valid,
-         other transformation must avoid transforming the information flow in
-         a way that the inline function can't propagate it.
-      *)
-      (* XCR mshinwell: this may be a stupid question, but why is "arg" called
-         "arg"?
-           pchambart: it is some kind of argument for the Fvariable_in_closure
-         construction. This is clearly a bad name. I will rename to "vc_closure".
-           done
-      *)
       let vc_closure, r = loop env r fenv_field.vc_closure in
-      begin match A.descr (R.approx r) with
-      | Value_closure { set_of_closures; fun_id } ->
-        let module AR =
-          Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
-        in
-        let env_var =
-          AR.subst_variable_in_closure
-            set_of_closures.ffunction_sb
-            fenv_field.vc_var
-        in
-        let env_fun_id =
-          AR.subst_closure_id
-            set_of_closures.ffunction_sb
-            fenv_field.vc_fun
-        in
-
-        assert(Closure_id.equal env_fun_id fun_id);
-
-        let approx =
-          try Var_within_closure.Map.find env_var set_of_closures.bound_var with
-          | Not_found ->
-            Format.printf "no field %a in closure %a@ %a@."
-              Var_within_closure.print env_var
-              Closure_id.print env_fun_id
-              Printflambda.flambda vc_closure;
-            assert false in
-
-        let expr =
-          if vc_closure == fenv_field.vc_closure
-          then expr (* if the argument didn't change, the names didn't also *)
-          else Fvariable_in_closure ({ vc_closure; vc_fun = env_fun_id;
-                                       vc_var = env_var }, annot) in
-        check_var_and_constant_result env r expr approx
-
-      | Value_unresolved sym ->
-        (* This value comes from a symbol for which we couldn't find any
-           information. This tells us that this function couldn't have been
-           renamed. So we can keep it unchanged *)
-        Fvariable_in_closure ({ fenv_field with vc_closure }, annot),
-        ret r (A.value_unresolved sym)
-      | Value_unknown ->
-        (* We must have the correct approximation of the value to ensure
-           we take account of all alpha-renamings. *)
-        Format.printf "[Fvariable_in_closure] without suitable \
-                       approximation : %a@.%a@.%a@."
-          Printflambda.flambda expr
-          Printflambda.flambda vc_closure
-          Printflambda.flambda fenv_field.vc_closure;
-        assert false
-      | Value_block _ | Value_int _ | Value_constptr _
-      | Value_float _ | A.Value_boxed_int _ | Value_set_of_closures _
-      | Value_bottom | Value_extern _ | Value_symbol _ ->
-        assert false
-      end
+      transform_variable_in_closure_expression env r expr vc_closure
+          fenv_field annot
   | Flet(str, id, lam, body, annot) ->
       (* The different cases for rewriting [Flet] are, if the original code
          corresponds to [let id = lam in body],
@@ -390,44 +380,6 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       then
         Location.prerr_warning (Debuginfo.to_location dbg)
           Warnings.Assignment_on_non_mutable_value;
-      (* Misc.fatal_error "Assignment on non-mutable value"; *)
-      (* Mutable blocks are always represented by [Value_unknown] or
-         [Value_bottom]. If something else is propagated here, then
-         whe know that some miscompilation could happen.
-         This is probably an user using [Obj.magic] or [Obj.set_field] in
-         an inappropriate situation.
-         Such a situation could be
-         [let x = (1,1) in
-          Obj.set_field (Obj.repr x) 0 (Obj.repr 2);
-          assert(fst x = 2)]
-         The user would probably expect the assertion to be true, but the
-         compiler could propagate the value of [x].
-         This certainly won't always prevent this kind of errors, but may
-         prevent most of them.
-
-         This may not be completely correct as some correct unreachable
-         code branch could also trigger it. But the likelyness seems small
-         enouth to prefer to catch those errors.
-
-         example of such a problematic pattern could be
-         [type a = { a : int }
-          type b = { mutable b : int }
-          type _ t =
-            | A : a t
-            | B : b t
-          let f (type x) (v:x t) (r:x) =
-            match v with
-            | A -> r.a
-            | B -> r.b <- 2; 3
-
-         let v =
-         let r =
-           ref A in
-           r := A; (* Some pattern that the compiler can't understand *)
-           f !r { a = 1 }]
-         when inlining [f], the B branch is unreachable, yet the compiler
-         can't prove it and needs to keep it.
-      *)
       let args, _, r = loop_list env r args in
       Fprim(p, block :: args, dbg, annot), ret r A.value_unknown
   | Fprim ((Psequand | Psequor) as primitive, [arg1; arg2], dbg, annot) ->
@@ -534,7 +486,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
          if arg is not effectful we can also drop it. *)
       let arg, r = loop env r arg in
       let get_failaction () : _ Flambda.t =
-        (* If the switch is applied to a staticaly known value that is
+        (* If the switch is applied to a statically-known value that is
            outside of each match case:
            * if there is a default action take that case
            * otherwise this is something that is guaranteed not to
@@ -605,8 +557,6 @@ and loop_list env r l = match l with
       then l, approxs, r
       else h' :: t', approxs, r
 
-(* CR mshinwell for pchambart: Could you write some more explanation as to
-   how this function works?  We can probably refactor it some after that. *)
 (* Transforms closure definitions by applying [loop] on the code of every
    one of the set and on the expressions of the free variables.
    If the substitution is activated, alpha renaming also occur on everything
@@ -902,12 +852,10 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
      let x = x' in
      x + y
 
-   The binding "let x = x'" is unnecessary in these simple cases, but has
-   significance when unrolling.  In that scenario care must be taken to ensure
-   that bindings corresponding to the values of the function's arguments on
-   the "next iteration" do not clash with existing bindings.  For example,
-   suppose we are inlining the following call to [f], which lies within its
-   own declaration:
+   When unrolling a recursive function we rename the arguments to the
+   recursive call in order to avoid clashes with existing bindings.  For
+   example, suppose we are inlining the following call to [f], which lies
+   within its own declaration:
 
      let rec f x y =
        f (fst x) (y + snd x)
@@ -918,7 +866,7 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
        let clos_id = f in  (* not used this time, since [f] has no free vars *)
        let x' = fst x in
        let y' = y + snd x in
-       f (fst x') (y' + snd x')  (* the body of [f] with parameter names freshened *)
+       f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
 *)
 and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
   let r = R.map_benefit r Flambdacost.remove_call in

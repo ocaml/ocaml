@@ -22,6 +22,46 @@ type 'a boxed_int = 'a Flambdaexport.boxed_int =
   | Int64 : int64 boxed_int
   | Nativeint : nativeint boxed_int
 
+(* Note about mutable blocks:
+
+   Mutable blocks are always represented by [Value_unknown] or
+   [Value_bottom]. If something else is propagated here, then
+   whe know that some miscompilation could happen.
+   This is probably an user using [Obj.magic] or [Obj.set_field] in
+   an inappropriate situation.
+   Such a situation could be
+   [let x = (1,1) in
+    Obj.set_field (Obj.repr x) 0 (Obj.repr 2);
+    assert(fst x = 2)]
+   The user would probably expect the assertion to be true, but the
+   compiler could propagate the value of [x].
+   This certainly won't always prevent this kind of errors, but may
+   prevent most of them.
+
+   This may not be completely correct as some correct unreachable
+   code branch could also trigger it. But the likelyness seems small
+   enouth to prefer to catch those errors.
+
+   example of such a problematic pattern could be
+   [type a = { a : int }
+    type b = { mutable b : int }
+    type _ t =
+      | A : a t
+      | B : b t
+    let f (type x) (v:x t) (r:x) =
+      match v with
+      | A -> r.a
+      | B -> r.b <- 2; 3
+
+   let v =
+   let r =
+     ref A in
+     r := A; (* Some pattern that the compiler can't understand *)
+     f !r { a = 1 }]
+   when inlining [f], the B branch is unreachable, yet the compiler
+   can't prove it and needs to keep it.
+*)
+
 type descr =
   | Value_block of tag * t array
   | Value_int of int
