@@ -135,6 +135,8 @@ type 'a flambda =
   | Funreachable of 'a
       (** Represents code that has been proved to be unreachable. *)
 
+and 'a t = 'a flambda
+
 and 'a fapply = {
   ap_function : 'a flambda;
   ap_arg : 'a flambda list;

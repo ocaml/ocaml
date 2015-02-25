@@ -13,27 +13,26 @@
 open Misc
 open Abstract_identifiers
 
-include Flambda
-
 (* access functions *)
 
-let find_declaration cf { funs } =
+let find_declaration cf ({ funs } : _ Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 
-let find_declaration_variable cf { funs } =
+let find_declaration_variable cf ({ funs } : _ Flambda.function_declarations) =
   let var = Closure_id.unwrap cf in
   if not (Variable.Map.mem var funs)
   then raise Not_found
   else var
 
-let find_free_variable cv { cl_free_var } =
+let find_free_variable cv ({ cl_free_var } : _ Flambda.fset_of_closures) =
   Variable.Map.find (Var_within_closure.unwrap cv) cl_free_var
 
 (* utility functions *)
 
-let function_arity f = List.length f.params
+let function_arity (f : _ Flambda.function_declaration) = List.length f.params
 
-let variables_bound_by_the_closure cf decls =
+let variables_bound_by_the_closure cf
+      (decls : _ Flambda.function_declarations) =
   let func = find_declaration cf decls in
   let params = Variable.Set.of_list func.params in
   let functions = Variable.Map.keys decls.funs in
@@ -41,7 +40,8 @@ let variables_bound_by_the_closure cf decls =
     (Variable.Set.diff func.free_variables params)
     functions
 
-let data_at_toplevel_node = function
+let data_at_toplevel_node (expr : _ Flambda.t) =
+  match expr with
   | Fsymbol (_,data)
   | Fvar (_,data)
   | Fconst (_,data)
@@ -66,7 +66,8 @@ let data_at_toplevel_node = function
   | Fevent(_,_,data)
   | Funreachable data -> data
 
-let description_of_toplevel_node = function
+let description_of_toplevel_node (expr : _ Flambda.t) =
+  match expr with
   | Fsymbol (sym,_) ->
       Format.asprintf "%%%a" Symbol.print sym
   | Fvar (id,data) ->
@@ -94,11 +95,11 @@ let description_of_toplevel_node = function
   | Fevent(lam, ev, data) -> "event"
   | Funreachable _ -> "unreachable"
 
-let recursive_functions { funs } =
+let recursive_functions ({ funs } : _ Flambda.function_declarations) =
   let function_variables = Variable.Map.keys funs in
   let directed_graph =
-    Variable.Map.map
-      (fun ffun -> Variable.Set.inter ffun.free_variables function_variables)
+    Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
+        Variable.Set.inter ffun.free_variables function_variables)
       funs in
   let connected_components =
     Variable_connected_components.connected_components_sorted_from_roots_to_leaf
@@ -110,7 +111,7 @@ let recursive_functions { funs } =
           List.fold_right Variable.Set.add elts rec_fun)
     Variable.Set.empty connected_components
 
-let rec same l1 l2 =
+let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   l1 == l2 || (* it is ok for string case: if they are physicaly the same,
                  it is the same original branch *)
   match (l1, l2) with
@@ -229,7 +230,7 @@ let make_key _ = None
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
   Variable.Set.fold (fun var acc ->
-      let expr =
+      let expr : _ Flambda.t =
         Fvariable_in_closure
           ({ vc_closure = Fvar (clos_id, Expr_id.create ());
              vc_fun = fun_id;
@@ -240,7 +241,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       f ~acc ~var ~expr)
     (variables_bound_by_the_closure fun_id clos) init
 
-let make_closure_declaration ~id ~body ~params =
+let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   let free_variables = Flambdaiter.free_variables body in
   let param_set = Variable.Set.of_list params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -251,19 +252,18 @@ let make_closure_declaration ~id ~body ~params =
       (fun id sb -> Variable.Map.add id (Flambdasubst.freshen_var id) sb)
       free_variables Variable.Map.empty in
   let body = Flambdasubst.toplevel_substitution sb body in
-
   let subst id = Variable.Map.find id sb in
-
-  let function_declaration =
+  let function_declaration : _ Flambda.function_declaration =
     { stub = false;
       params = List.map subst params;
       free_variables = Variable.Set.map subst free_variables;
       body;
-      dbg = Debuginfo.none } in
-
+      dbg = Debuginfo.none;
+    }
+  in
   let fv' =
     Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' (Fvar(id,Expr_id.create ())) fv')
+        Variable.Map.add id' (Flambda.Fvar(id,Expr_id.create ())) fv')
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
   let current_unit = Symbol.Compilation_unit.get_current_exn () in
@@ -340,11 +340,14 @@ let fixpoint state =
   in
   fp state
 
-let unchanging_params_in_recursion decls =
+let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   let escaping_functions = ref Variable.Set.empty in
   let state = ref Pair_var_var.Map.empty in
   let variables_at_position =
-    Variable.Map.map (fun decl -> Array.of_list decl.params) decls.funs in
+    Variable.Map.map (fun (decl : _ Flambda.function_declaration) ->
+        Array.of_list decl.params)
+      decls.funs
+  in
   let link
       ~callee ~callee_arg
       ~caller ~caller_arg =
@@ -374,7 +377,7 @@ let unchanging_params_in_recursion decls =
     match find_callee_arg ~callee ~callee_pos with
     | None -> () (* not a recursive call *)
     | Some callee_arg ->
-        match arg with
+        match (arg : _ Flambda.t) with
         | Fvar(caller_arg,_) ->
             begin
               match Variable.Map.find caller decls.funs with
@@ -397,7 +400,8 @@ let unchanging_params_in_recursion decls =
     | exception Not_found -> 0
     | func -> function_arity func
   in
-  let rec loop ~caller = function
+  let rec loop ~caller (expr : _ Flambda.t) =
+    match expr with
     | Fvar (var,_) -> test_escape var
     | Fapply ({ ap_function = Fvar(callee,_); ap_arg }, _) ->
         let num_args = List.length ap_arg in
@@ -415,9 +419,12 @@ let unchanging_params_in_recursion decls =
     | e ->
         Flambdaiter.apply_on_subexpressions (loop ~caller) e
   in
-  Variable.Map.iter (fun caller decl -> loop caller decl.body) decls.funs;
+  Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
+      loop caller decl.body)
+    decls.funs;
   let state =
-    Variable.Map.fold (fun func_var { params } state ->
+    Variable.Map.fold (fun func_var
+          ({ params } : _ Flambda.function_declaration) state ->
         if Variable.Set.mem func_var !escaping_functions
         then
           List.fold_left (fun state param ->
@@ -434,7 +441,9 @@ let unchanging_params_in_recursion decls =
         | Arguments _ -> acc)
       result Variable.Set.empty
   in
-  let variables = Variable.Map.fold (fun _ { params } set ->
+  let variables = Variable.Map.fold (fun _
+        ({ params } : _ Flambda.function_declaration) set ->
       Variable.Set.union (Variable.Set.of_list params) set)
-      decls.funs Variable.Set.empty in
+    decls.funs Variable.Set.empty
+  in
   Variable.Set.diff variables not_kept

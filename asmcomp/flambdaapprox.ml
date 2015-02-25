@@ -51,7 +51,10 @@ and value_set_of_closures =
 and t =
   { descr : descr;
     var : Variable.t option;
-    symbol : Symbol.t option }
+    symbol : Symbol.t option;
+  }
+
+let descr t = t.descr
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
@@ -285,6 +288,9 @@ module Import = struct
     import_approx
       (Ident.Map.find id (Compilenv.approx_for_global unit).ex_globals)
 end
+
+let really_import_approx approx =
+  { approx with descr = Import.really_import approx.descr }
 
 let which_function_parameters_can_we_specialize ~params ~args
       ~approximations_of_args ~unchanging_params =

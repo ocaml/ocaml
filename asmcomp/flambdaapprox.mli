@@ -50,8 +50,6 @@ and value_set_of_closures = {
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
 }
 
-(* CXR mshinwell for pchambart: call this type [t]
-   pchambart: done *)
 and t = {
   descr : descr;
   var : Variable.t option;
@@ -105,6 +103,8 @@ val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
 val make_const_float : float -> 'a -> 'a Flambda.flambda * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.flambda * t
 
+val descr : t -> descr
+
 (* An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
 
@@ -136,6 +136,8 @@ module Import : sig
   val import_global : Ident.t -> t
   val import_symbol : Symbol.t -> t
 end
+
+val really_import_approx : t -> t
 
 (* CR mshinwell for mshinwell: think about this function some more---can it
    be made more generic?  If not maybe move back into Flambdainline *)
