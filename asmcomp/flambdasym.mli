@@ -14,11 +14,9 @@
     constants and build the exported informations. The generated
     flambda is not suitable for any other transformations *)
 
-open Flambda
-
-val convert :
-  compilation_unit:Symbol.Compilation_unit.t ->
-  'a flambda ->
-  unit flambda *
-  unit flambda Symbol.SymbolMap.t *
-  Flambdaexport.exported
+val convert
+   : compilation_unit:Symbol.Compilation_unit.t
+  -> 'a Flambdatypes.flambda
+  -> unit Flambdatypes.flambda
+       * unit Flambdatypes.flambda Symbol.SymbolMap.t
+       * Flambdaexport.exported

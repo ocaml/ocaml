@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
@@ -171,7 +171,7 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
       expr, Flambdaapprox.value_block(tag, Array.of_list approxs)
   | _ ->
       let open Flambdaapprox in
-      let eid = data_at_toplevel_node expr in
+      let eid = Flambda.data_at_toplevel_node expr in
       match descrs approxs with
       | [Value_int x] ->
           begin match p with

@@ -57,6 +57,13 @@ module Compilation_unit = struct
 
   let name x = x.id
 
+  let current = ref None
+  let set_current t = current := Some t
+  let get_current () = !current
+  let get_current_exn () =
+    match !current with
+    | Some current -> current
+    | None -> Misc.fatal_error "Compilation_unit.get_current_exn"
 end
 
 (** *)

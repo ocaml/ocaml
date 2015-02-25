@@ -15,7 +15,7 @@ open Symbol
 open Abstract_identifiers
 open Lambda
 open Clambda
-open Flambda
+open Flambdatypes
 
 type ('a,'b) declaration_position =
   | Local of 'a
@@ -150,9 +150,9 @@ module type Param2 = sig
   include Param1
   val fun_offset_table : int Closure_id.Map.t
   val fv_offset_table : int Var_within_closure.Map.t
-  val closures : t Flambda.function_declarations Closure_id.Map.t
+  val closures : t Flambdatypes.function_declarations Closure_id.Map.t
   val constant_closures : Set_of_closures_id.Set.t
-  val functions : unit Flambda.function_declarations Set_of_closures_id.Map.t
+  val functions : unit Flambdatypes.function_declarations Set_of_closures_id.Map.t
 end
 
 type const_lbl =

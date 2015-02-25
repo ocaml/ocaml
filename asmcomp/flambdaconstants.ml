@@ -51,7 +51,7 @@
 open Ext_types
 open Symbol
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 type constant_result = {
   not_constant_id : Variable.Set.t;
@@ -60,7 +60,7 @@ type constant_result = {
 
 module type Param = sig
   type t
-  val expr : t Flambda.flambda
+  val expr : t Flambdatypes.flambda
   val for_clambda : bool
   val compilation_unit : Compilation_unit.t
 end
@@ -348,7 +348,7 @@ module NotConstants(P:Param) = struct
 end
 
 let not_constants (type a) ~for_clambda ~compilation_unit
-    (expr:a Flambda.flambda) =
+    (expr:a Flambdatypes.flambda) =
   let module P = struct
     type t = a
     let expr = expr

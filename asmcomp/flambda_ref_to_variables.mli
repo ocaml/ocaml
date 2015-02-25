@@ -9,8 +9,8 @@
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
-open Abstract_identifiers
-open Flambda
 
-val eliminate_ref : Expr_id.t flambda -> Expr_id.t flambda
-(* Transform let-bound mutable records into variables *)
+(* Transform [let]-bound mutable records into variables *)
+val eliminate_ref
+   : Abstract_identifiers.Expr_id.t Flambdatypes.flambda
+  -> Abstract_identifiers.Expr_id.t Flambdatypes.flambda

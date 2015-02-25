@@ -11,11 +11,10 @@
 (*                                                                     *)
 (***********************************************************************)
 
-
 open Format
 open Ext_types
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 let rec lam ppf = function
   | Fsymbol (symbol,_) ->

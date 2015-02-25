@@ -12,7 +12,7 @@
 
 open Lambda
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 (* Determine whether the estimated size of a flambda term is below
    some threshold *)

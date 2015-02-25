@@ -12,8 +12,9 @@
 
 open Lambda
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 open Flambdaapprox
+open Flambda
 
 module IntMap = Ext_types.Int.Map
 
@@ -231,62 +232,6 @@ let find_global i r =
         (Format.asprintf "couldn't find global %i@." i)
 
 
-let subst_toplevel sb lam =
-  let subst id = try Variable.Map.find id sb with Not_found -> id in
-  let f = function
-    | Fvar (id,_) -> Fvar (subst id,Expr_id.create ())
-    | Fset_of_closures (cl,_) ->
-        Fset_of_closures (
-          { cl with
-            cl_specialised_arg = Variable.Map.map subst cl.cl_specialised_arg },
-          Expr_id.create ())
-    | e -> e
-  in
-  Flambdaiter.map_toplevel f lam
-
-(* Utility function to duplicate an expression and makes a function from it *)
-(* CR mshinwell for pchambart: can we kick this function out of this source
-   file?  It seems generic, and maybe useful elsewhere in due course.
-      pchambart: It certainly could.
- *)
-let make_closure_declaration id lam params =
-  let free_variables = Flambdaiter.free_variables lam in
-  let param_set = Variable.Set.of_list params in
-
-  let sb =
-    Variable.Set.fold
-      (fun id sb -> Variable.Map.add id (Flambdasubst.freshen_var id) sb)
-      free_variables Variable.Map.empty in
-  let body = subst_toplevel sb lam in
-
-  let subst id = Variable.Map.find id sb in
-
-  let function_declaration =
-    { stub = false;
-      params = List.map subst params;
-      free_variables = Variable.Set.map subst free_variables;
-      body;
-      dbg = Debuginfo.none } in
-
-  let fv' =
-    Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' (Fvar(id,Expr_id.create ())) fv')
-      (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
-      Variable.Map.empty in
-
-  Fclosure
-    ({ fu_closure =
-         Fset_of_closures
-           ({ cl_fun =
-                { ident = Set_of_closures_id.create (Compilenv.current_unit ());
-                  funs = Variable.Map.singleton id function_declaration;
-                  compilation_unit = Compilenv.current_unit () };
-              cl_free_var = fv';
-              cl_specialised_arg = Variable.Map.empty },
-            Expr_id.create ());
-       fu_fun = Closure_id.wrap id;
-       fu_relative_to = None},
-     Expr_id.create ())
 
 let check_constant_result r lam approx =
   let lam, approx = Flambdaapprox.check_constant_result lam approx in
@@ -1003,6 +948,7 @@ and loop_list env r l = match l with
 and transform_set_of_closures_expression env r cl annot =
   let ffuns =
     Flambdasubst.rewrite_recursive_calls_with_symbols env.sb cl.cl_fun
+        ~make_closure_symbol:Compilenv.closure_symbol
   in
   let fv = cl.cl_free_var in
 
@@ -1026,7 +972,8 @@ and transform_set_of_closures_expression env r cl annot =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
   let fv, ffuns, sb, ffunction_sb =
-    AR.subst_function_declarations_and_free_variables env.sb fv ffuns in
+    AR.subst_function_declarations_and_free_variables env.sb fv ffuns
+  in
   let env = Env.set_sb sb env in
 
   let apply_substitution = Flambdasubst.subst_var env.sb in
@@ -1111,7 +1058,7 @@ and transform_set_of_closures_expression env r cl annot =
   let r = Variable.Map.fold (fun _id' v acc -> use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
-  let unchanging_params = Flambdaiter.arguments_kept_in_recursion ffuns in
+  let unchanging_params = Flambda.unchanging_params_in_recursion ffuns in
 
   let closure = { internal_closure with ffunctions = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
@@ -1402,7 +1349,7 @@ and inline_by_copying_function_body env r clos lfunc fun_id func args =
      these new names. *)
   let subst_params = List.map Flambdasubst.freshen_var func.params in
   let subst_map = Variable.Map.of_list (List.combine func.params subst_params) in
-  let body = Flambdaiter.toplevel_substitution subst_map func.body in
+  let body = Flambdasubst.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =

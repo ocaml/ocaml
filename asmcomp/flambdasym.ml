@@ -27,8 +27,9 @@ Then the tables needed to build the Flambdaexport.exported type are build.
 open Misc
 open Symbol
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 open Flambdaexport
+open Flambda
 
 let all_closures expr =
   let closures = ref Set_of_closures_id.Set.empty in
@@ -52,7 +53,7 @@ let functions not_constants expr =
     fun_id_map := Set_of_closures_id.Map.add cl.cl_fun.ident cl.cl_fun !fun_id_map;
     argument_kept :=
       Set_of_closures_id.Map.add cl.cl_fun.ident
-                 (Flambdaiter.arguments_kept_in_recursion cl_fun) !argument_kept
+          (Flambda.unchanging_params_in_recursion cl_fun) !argument_kept
   in
   Flambdaiter.iter_on_closures aux expr;
   !fun_id_map, !cf_map, !argument_kept
@@ -69,7 +70,7 @@ let list_used_variable_withing_closure expr =
 
 module type Param1 = sig
   type t
-  val expr : t Flambda.flambda
+  val expr : t Flambdatypes.flambda
   val not_constants : Flambdaconstants.constant_result
   val constant_closures : Set_of_closures_id.Set.t
 end
@@ -899,7 +900,7 @@ module Prepare(P:Param2) = struct
 
 end
 
-let convert (type a) ~compilation_unit (expr:a Flambda.flambda) =
+let convert (type a) ~compilation_unit (expr:a Flambdatypes.flambda) =
   let not_constants = Flambdaconstants.not_constants ~compilation_unit ~for_clambda:true expr in
   let constant_closures = constant_closures not_constants expr in
   let module P1 = struct

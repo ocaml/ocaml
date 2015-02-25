@@ -12,7 +12,7 @@
 
 open Symbol
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
@@ -70,7 +70,8 @@ let new_subst_exn t i =
      i', Active { t with sb_exn; }
 
 let freshen_var var =
-  Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var
+  Variable.rename var
+    ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let active_new_subst_id t id =
   let id' = freshen_var id in
@@ -112,13 +113,14 @@ let subst_var t var =
      try Variable.Map.find var t.sb_var with
      | Not_found -> var
 
-let rewrite_recursive_calls_with_symbols subst function_declarations =
-  match subst with
+let rewrite_recursive_calls_with_symbols t function_declarations
+      ~make_closure_symbol =
+  match t with
   | Inactive -> function_declarations
   | Active _ ->
     let closure_symbols = Variable.Map.fold (fun id _ map ->
         let cf = Closure_id.wrap id in
-        let sym = Compilenv.closure_symbol cf in
+        let sym = make_closure_symbol cf in
         SymbolMap.add sym id map)
         function_declarations.funs SymbolMap.empty in
     let funs = Variable.Map.map (fun ffun ->
@@ -133,6 +135,20 @@ let rewrite_recursive_calls_with_symbols subst function_declarations =
         function_declarations.funs
     in
     { function_declarations with funs }
+
+let toplevel_substitution sb tree =
+  let sb v = try Variable.Map.find v sb with Not_found -> v in
+  let aux = function
+    | Fvar (id,e) -> Fvar (sb id,e)
+    | Fassign (id,e,d) -> Fassign (sb id,e,d)
+    | Fset_of_closures (cl,d) ->
+        Fset_of_closures ({cl with
+                   cl_specialised_arg =
+                     Variable.Map.map sb cl.cl_specialised_arg},
+                  d)
+    | e -> e
+  in
+  Flambdaiter.map_toplevel aux tree
 
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
 
@@ -196,7 +212,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
           free_variables;
           params;
           (* keep code in sync with the closure *)
-          body = Flambdaiter.toplevel_substitution subst.sb_var ffun.body;
+          body = toplevel_substitution subst.sb_var ffun.body;
         }, subst
       in
       let subst, t =
@@ -211,8 +227,9 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
             let funs = Variable.Map.add id ffun funs in
             funs, subst)
           ffuns.funs (Variable.Map.empty, subst) in
-      { ident = Set_of_closures_id.create (Compilenv.current_unit ());
-        compilation_unit = Compilenv.current_unit ();
+      let current_unit = Compilation_unit.get_current_exn () in
+      { ident = Set_of_closures_id.create current_unit;
+        compilation_unit = current_unit;
         funs }, Active subst, t
 
   let subst_function_declarations_and_free_variables subst fv ffuns =

@@ -49,10 +49,12 @@ val subst_var : t -> Variable.t -> Variable.t
 val freshen_var : Variable.t -> Variable.t
 val subst_var : t -> Variable.t -> Variable.t
 
-val rewrite_recursive_calls_with_symbols :
-  t ->
-  Expr_id.t Flambda.function_declarations ->
-  Expr_id.t Flambda.function_declarations
+val rewrite_recursive_calls_with_symbols
+   : t
+  -> Expr_id.t Flambdatypes.function_declarations
+  -> make_closure_symbol:(Closure_id.t -> Symbol.t)
+  -> Expr_id.t Flambdatypes.function_declarations
+
 (** Replace recursive access to the closures in the set through
     [Fsymbol] by the corresponding [Fvar]. This is used to recover
     the recursive call when importing code from another compilation unit.
@@ -85,8 +87,8 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
   val subst_function_declarations_and_free_variables :
     subst ->
     'a Variable.Map.t ->
-    'b Flambda.function_declarations ->
-    'a Variable.Map.t * 'b Flambda.function_declarations * subst * t
+    'b Flambdatypes.function_declarations ->
+    'a Variable.Map.t * 'b Flambdatypes.function_declarations * subst * t
 
   val subst_closure_id : t -> Closure_id.t -> Closure_id.t
   val subst_variable_in_closure :
@@ -94,3 +96,8 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
     Var_within_closure.t ->
     Var_within_closure.t
 end
+
+val toplevel_substitution
+   : Variable.t Variable.Map.t
+  -> 'a Flambdatypes.flambda
+  -> 'a Flambdatypes.flambda

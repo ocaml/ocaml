@@ -12,7 +12,7 @@
 
 open Symbol
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 
 val check :

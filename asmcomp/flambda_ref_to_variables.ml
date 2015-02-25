@@ -14,7 +14,7 @@
 
 open Lambda
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 let rename_var var =
   Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var

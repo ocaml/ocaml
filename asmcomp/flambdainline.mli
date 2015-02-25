@@ -10,10 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Flambda
-open Abstract_identifiers
-
-val inline : never_inline:bool -> Expr_id.t flambda -> Expr_id.t flambda
 (** The primary purpose of this function is to perform inlining of both
     non-recursive and recursive functions.
 
@@ -24,3 +20,7 @@ val inline : never_inline:bool -> Expr_id.t flambda -> Expr_id.t flambda
     - some constants are propagated
     - some dead code is eliminated.
 *)
+val inline
+   : never_inline:bool
+  -> Abstract_identifiers.Expr_id.t Flambdatypes.flambda
+  -> Abstract_identifiers.Expr_id.t Flambdatypes.flambda

@@ -20,10 +20,7 @@
     * detect constants values and transform them to Uconst
    For everything else, it is basically the identity.
 *)
-open Flambda
-
-val convert :
-  'a flambda *
-  'a flambda Symbol.SymbolMap.t *
-  Flambdaexport.exported ->
-  Clambda.ulambda
+val convert
+   : 'a Flambdatypes.flambda * 'a Flambdatypes.flambda Symbol.SymbolMap.t
+       * Flambdaexport.exported
+  -> Clambda.ulambda

@@ -49,6 +49,9 @@ module Compilation_unit : sig
   val get_persistent_ident : t -> Ident.t
   val get_linkage_name : t -> linkage_name
 
+  val set_current : t -> unit
+  val get_current : unit -> t option
+  val get_current_exn : unit -> t
 end
 
 (***********************************************************************)

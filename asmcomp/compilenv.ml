@@ -34,7 +34,7 @@ let export_infos_table =
 
 let imported_closure_table =
   (Set_of_closures_id.Tbl.create 10
-   : Expr_id.t Flambda.function_declarations Set_of_closures_id.Tbl.t)
+   : Expr_id.t Flambdatypes.function_declarations Set_of_closures_id.Tbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -97,6 +97,16 @@ let symbolname_for_pack pack name =
 
 let unit_id_from_name name = Ident.create_persistent name
 
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
+  let prefix = "caml" ^ unitname in
+  match idopt with
+  | None -> prefix
+  | Some id -> prefix ^ "__" ^ id
+
+let current_unit_linkage_name () =
+  linkage_name
+    (make_symbol ~unitname:current_unit.ui_symbol None)
+
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_closure_table;
@@ -115,7 +125,13 @@ let reset ?packname name =
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- Flambdaexport.empty_export;
   merged_environment := Flambdaexport.empty_export;
-  Hashtbl.clear export_infos_table
+  Hashtbl.clear export_infos_table;
+  let compilation_unit =
+    Compilation_unit.create
+      (Ident.name !current_unit_id)
+      (current_unit_linkage_name ())
+  in
+  Compilation_unit.set_current compilation_unit
 
 let current_unit_infos () =
   current_unit
@@ -124,12 +140,6 @@ let current_unit_name () =
   current_unit.ui_name
 
 let current_unit_id () = !current_unit_id
-
-let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
-  let prefix = "caml" ^ unitname in
-  match idopt with
-  | None -> prefix
-  | Some id -> prefix ^ "__" ^ id
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in
@@ -249,16 +259,12 @@ let symbol_for_global' id =
     { sym_unit = unit_for_global id;
       sym_label }
 
-let current_unit_linkage_name () =
-  linkage_name
-    (make_symbol ~unitname:current_unit.ui_symbol None)
-
 (* Register the approximation of the module being compiled *)
 
 let set_global_approx approx =
   current_unit.ui_approx <- approx
 
-(* Exporting and importing cross module informations *)
+(* Exporting and importing cross module information *)
 
 let set_export_info export_info =
   current_unit.ui_export_info <- export_info
@@ -318,9 +324,9 @@ let current_unit_linkage_name () =
     (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let current_unit () =
-  Compilation_unit.create
-    (Ident.name (current_unit_id ()))
-    (current_unit_linkage_name ())
+  match Compilation_unit.get_current () with
+  | Some current_unit -> current_unit
+  | None -> Misc.fatal_error "Compilenv.current_unit"
 
 let current_unit_symbol () =
   { sym_unit = current_unit ();
@@ -455,7 +461,7 @@ let function_label fv =
 
 let imported_closure =
   let open Symbol in
-  let open Flambda in
+  let open Flambdatypes in
   let import_closure clos =
 
     let orig_var_map clos =

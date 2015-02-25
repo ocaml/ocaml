@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 val apply_on_subexpressions : ('a flambda -> unit) ->
   'a flambda -> unit
@@ -44,9 +44,3 @@ val expression_free_variables : 'a flambda -> Variable.Set.t
 val subexpression_bound_variables : 'a flambda -> (Variable.Set.t*'a flambda) list
 
 val map_data : ('a -> 'b) -> 'a flambda -> 'b flambda
-
-val toplevel_substitution : Variable.t Variable.Map.t ->
-  'a flambda -> 'a flambda
-
-val arguments_kept_in_recursion : 'a function_declarations ->
-  Variable.Set.t

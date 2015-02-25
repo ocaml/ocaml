@@ -12,7 +12,7 @@
 
 open Symbol
 open Abstract_identifiers
-open Flambda
+open Flambdatypes
 
 let fatal_error_f fmt = Printf.kprintf Misc.fatal_error fmt
 

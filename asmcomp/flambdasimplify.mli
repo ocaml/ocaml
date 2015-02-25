@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Flambda
+open Flambdatypes
 open Abstract_identifiers
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an

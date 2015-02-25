@@ -69,7 +69,9 @@ val approx_env: unit -> Flambdaexport.exported
 val approx_for_global: Compilation_unit.t -> Flambdaexport.exported
         (* Loads the exported information declaring the compilation_unit *)
 
-val imported_closure: Set_of_closures_id.t -> Expr_id.t Flambda.function_declarations
+val imported_closure
+   : Set_of_closures_id.t
+  -> Expr_id.t Flambdatypes.function_declarations
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit
