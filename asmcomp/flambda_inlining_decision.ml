@@ -109,11 +109,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
         ~bonus:num_params
   in
   let expr, r =
-  match fun_cost with
-  | Never_inline -> no_transformation ()
-  | Can_inline _ when E.never_inline env ->
-    no_transformation ()
-  | (Can_inline _) as remaining_inline_threshold ->
+    match fun_cost with
+    | Never_inline -> no_transformation ()
+    | Can_inline _ when E.never_inline env -> no_transformation ()
+    | (Can_inline _) as remaining_inline_threshold ->
       (* CR mshinwell for mshinwell: add comment about stub functions *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
          [inline_threshold] is confusing.
@@ -150,8 +149,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
              does not depends on the effective value of its arguments, it
              could be returned instead of [A.value_unknown] *)
           no_transformation ()
-      else if recursive
-      then
+      else if recursive then
         let unrolling_result =
           if E.unrolling_allowed env
               && E.inlining_level env <= max_level
