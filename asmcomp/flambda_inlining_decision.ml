@@ -182,10 +182,11 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                   Closure_id.print fun_id
             in
             let expr, r_inlined =
-              inline_by_copying_function_declaration ~env ~r:(R.clear_benefit r)
-                ~funct ~clos ~fun_id ~func ~args_with_approxs:(args, approxs)
-                ~unchanging_params ~specialised_args:closure.specialised_args
-                ~ap_dbg ~no_transformation
+              inline_by_copying_function_declaration ~env
+                ~r:(R.clear_benefit r) ~funct ~clos ~fun_id ~func
+                ~args_with_approxs:(args, approxs) ~unchanging_params
+                ~specialised_args:closure.specialised_args ~ap_dbg
+                ~no_transformation
             in
             if Flambdacost.sufficient_benefit_for_inline
                 ~original:(fst (no_transformation ()))
@@ -193,7 +194,8 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                 (R.benefit r_inlined)
                 inline_threshold
             then
-              expr, R.map_benefit r_inlined (Flambdacost.benefit_union (R.benefit r))
+              expr, R.map_benefit r_inlined
+                  (Flambdacost.benefit_union (R.benefit r))
             else
               no_transformation ()
           else
