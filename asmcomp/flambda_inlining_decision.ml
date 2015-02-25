@@ -41,21 +41,23 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
      inlined, and the strategy used will be that for non-recursive functions.
 
      The cases where this happens are:
-     1. Stub functions for handling tuplified functions (generated during closure
-        conversion).
+     1. Stub functions for handling tuplified functions (generated during
+        closure conversion).
      2. Stub functions for handling default optional arguments (generated in
         bytecomp/simplify.ml).
      3. Functor-like functions, viz. [is_probably_a_functor].
 
-     In the third case, we know from the definition of the [is_probably_a_functor]
-     predicate that the function is non-recursive.  In the other two cases, the
-     functions may actually be recursive, but not "directly recursive" (where we
-     say a function [f] is "directly recursive" if [f] is free in the body of
-     [f]).  It would in general be wrong to mark directly recursive functions as
+     In the third case, we know from the definition of [is_probably_a_functor]
+     that the function is non-recursive.  In the other two cases, the functions
+     may actually be recursive, but not "directly recursive" (where we say a
+     function [f] is "directly recursive" if [f] is free in the body of [f]).
+     It would in general be wrong to mark directly recursive functions as
      stubs, even if specific cases work correctly.
   *)
   (* CR mshinwell for mshinwell: finish the comment *)
-  let unconditionally_inline = func.stub || is_probably_a_functor env clos approxs in
+  let unconditionally_inline =
+    func.stub || is_probably_a_functor env clos approxs
+  in
   let num_params = List.length func.params in
   (* CR pchambart to pchambart: find a better name
      This is true if the function is directly an argument of the
@@ -119,7 +121,8 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       let r = R.set_inline_threshold r remaining_inline_threshold in
       let unchanging_params = closure.unchanging_params in
       (* Try inlining if the function is non-recursive and not too far above
-         the threshold (or if the function is to be unconditionally inlined). *)
+         the threshold (or if the function is to be unconditionally
+         inlined). *)
       if unconditionally_inline
         || (not recursive && E.inlining_level env <= max_level)
       then
