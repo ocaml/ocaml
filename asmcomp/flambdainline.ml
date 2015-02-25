@@ -13,15 +13,10 @@
 open Abstract_identifiers
 open Flambdautils
 
-(* Two kinds of information are propagated during inlining:
-   - [E.t] "environments", top-down;
-   - [R.t] "results", bottom-up, approximately following the evaluation
-     order.  *)
+module A = Flambdaapprox
 module E = Flambda_inline_env
 module R = Flambda_inline_result
 let ret = R.set_approx
-
-module A = Flambdaapprox
 
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
@@ -70,13 +65,13 @@ let populate_closure_approximations
       env function_declaration.params in
   env
 
-(* The main functions: iterate on the expression rewriting it and
+(* The main functions below iterate on an expression rewriting it and
    propagating up an approximation of the value.
 
-   The naming conventions is:
-   * [env] is the top down environment
-   * [r] is the bottom up informations (used variables, expression
-     approximation, ...)
+   Two kinds of information are propagated during inlining:
+   - [E.t] "environments", top-down, usually called "env";
+   - [R.t] "results", bottom-up approximately following the
+     evaluation order, usually called "r".
 
    In general the pattern is to do a subset of these steps:
    * recursive call of loop on the arguments with the original
