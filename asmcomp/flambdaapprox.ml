@@ -96,7 +96,7 @@ let value_closure c = approx (Value_closure c)
 let value_set_of_closures c = approx (Value_set_of_closures c)
 let value_block (t,b) = approx (Value_block (t,b))
 let value_extern ex = approx (Value_extern ex)
-let value_symbol sym = approx (Value_symbol sym)
+let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some sym }
 let value_bottom = approx Value_bottom
 let value_unresolved sym = approx (Value_unresolved sym)
 
@@ -150,12 +150,13 @@ let check_constant_result (lam : 'a flambda) approx =
 
 let check_var_and_constant_result ~is_present_in_env lam approx =
   let res = match approx.var with
-    | None ->
-        lam
-    | Some var ->
-        if is_present_in_env var
-        then Fvar(var, Flambdautils.data_at_toplevel_node lam)
-        else lam
+    | Some var when is_present_in_env var ->
+        Fvar(var, Flambdautils.data_at_toplevel_node lam)
+    | _ ->
+        match approx.symbol with
+        | Some sym ->
+            Fsymbol(sym, Flambdautils.data_at_toplevel_node lam)
+        | None -> lam
   in
   check_constant_result res approx
 
@@ -198,6 +199,80 @@ let get_field i = function
       value_unresolved sym
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
+
+let equal_boxed_int (type t1) (type t2)
+    (bi1:t1 boxed_int) (i1:t1)
+    (bi2:t2 boxed_int) (i2:t2) =
+  match bi1, bi2 with
+  | Int32, Int32 -> Int32.equal i1 i2
+  | Int64, Int64 -> Int64.equal i1 i2
+  | Nativeint, Nativeint -> Nativeint.equal i1 i2
+  | _ -> false
+
+(* Closures and set of closures descriptions cannot be merged.
+
+   let f x =
+     let g y -> x + y in
+     g
+   in
+   let v =
+     if ...
+     then f 1
+     else f 2
+   in
+   v 3
+
+   The approximation for [f 1] and [f 2] could both contain the
+   description of [g]. But if [f] where inlined, a new [g] would
+   be created in each branch, leading to incompatible description.
+   And we must never make the descrition for a function less
+   precise that it used to be: its information are needed for
+   rewriting [Fvariable_in_closure] and [Fclosure] constructions
+   in [Flambdainline.loop]
+*)
+let rec meet_descr d1 d2 = match d1, d2 with
+  | Value_int i, Value_int j when i = j ->
+      d1
+  | Value_constptr i, Value_constptr j when i = j ->
+      d1
+  | Value_symbol s1, Value_symbol s2 when Symbol.equal s1 s2 ->
+      d1
+  | Value_extern e1, Value_extern e2 when Flambdaexport.ExportId.equal e1 e2 ->
+      d1
+  | Value_float i, Value_float j when i = j ->
+      d1
+  | Value_boxed_int (bi1, i1), Value_boxed_int (bi2, i2) when
+      equal_boxed_int bi1 i1 bi2 i2 ->
+      d1
+  | Value_block (tag1, a1), Value_block (tag2, a2)
+    when tag1 = tag2 && Array.length a1 = Array.length a2 ->
+      Value_block (tag1, Array.mapi (fun i v -> meet v a2.(i)) a1)
+  | _ -> Value_unknown
+
+and meet a1 a2 =
+  match a1, a2 with
+  | { descr = Value_bottom }, a
+  | a, { descr = Value_bottom } -> a
+  | _ ->
+      let var =
+        match a1.var, a2.var with
+        | None, _ | _, None -> None
+        | Some v1, Some v2 ->
+            if Variable.equal v1 v2
+            then Some v1
+            else None
+      in
+      let symbol =
+        match a1.symbol, a2.symbol with
+        | None, _ | _, None -> None
+        | Some v1, Some v2 ->
+            if Symbol.equal v1 v2
+            then Some v1
+            else None
+      in
+      { descr = meet_descr a1.descr a2.descr;
+        var;
+        symbol }
 
 (** Import external approx *)
 

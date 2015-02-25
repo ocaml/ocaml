@@ -440,8 +440,11 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           Flambdaeffects.sequence arg ifso annot, r
       | _ ->
           let ifso, r = loop env r ifso in
+          let ifso_approx = R.approx r in
           let ifnot, r = loop env r ifnot in
-          Fifthenelse(arg, ifso, ifnot, annot), ret r A.value_unknown
+          let ifnot_approx = R.approx r in
+          Fifthenelse(arg, ifso, ifnot, annot),
+          ret r (A.meet ifso_approx ifnot_approx)
       end
   | Fsequence(lam1, lam2, annot) ->
       let lam1, r = loop env r lam1 in
@@ -506,16 +509,21 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           Flambdaeffects.sequence arg lam annot, r
       | _ ->
           let f (i,v) (acc, r) =
+            let approx = R.approx r in
             let lam, r = loop env r v in
-            ((i,lam)::acc, r) in
+            ((i,lam)::acc, R.set_approx r (A.meet (R.approx r) approx)) in
+          let r = R.set_approx r A.value_bottom in
           let fs_consts, r = List.fold_right f sw.fs_consts ([], r) in
           let fs_blocks, r = List.fold_right f sw.fs_blocks ([], r) in
           let fs_failaction, r = match sw.fs_failaction with
             | None -> None, r
-            | Some l -> let l, r = loop env r l in Some l, r in
+            | Some l ->
+                let approx = R.approx r in
+                let l, r = loop env r l in
+                Some l, R.set_approx r (A.meet (R.approx r) approx) in
           let sw =
             { sw with fs_failaction; fs_consts; fs_blocks; } in
-          Fswitch(arg, sw, annot), ret r A.value_unknown
+          Fswitch(arg, sw, annot), r
       end
   | Fstringswitch(arg, sw, def, annot) ->
       let arg, r = loop env r arg in

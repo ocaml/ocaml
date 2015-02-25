@@ -143,6 +143,8 @@ val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
 val make_const_float : float -> 'a -> 'a Flambda.flambda * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.flambda * t
 
+val meet : t -> t -> t
+
 val descr : t -> descr
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
