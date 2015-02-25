@@ -118,6 +118,7 @@ ASMCOMP=\
   asmcomp/flambdacost.cmo \
   asmcomp/flambdasimplify.cmo \
   asmcomp/flambda_inline_env.cmo \
+  asmcomp/flambda_inline_result.cmo \
   asmcomp/flambdainline.cmo \
   asmcomp/flambda_ref_to_variables.cmo \
   asmcomp/flambdasym.cmo \
