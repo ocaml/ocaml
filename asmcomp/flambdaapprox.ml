@@ -208,7 +208,7 @@ module Import = struct
     ignore(Compilenv.approx_for_global (ExportId.unit ex));
 
     let ex_info = Compilenv.approx_env () in
-    try match EidMap.find ex ex_info.ex_values with
+    try match find_description ex ex_info with
       | Value_int i -> value_int i
       | Value_constptr i -> value_constptr i
       | Value_float f -> value_float f

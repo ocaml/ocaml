@@ -237,14 +237,14 @@ module Conv(P:Param1) = struct
       let export = Compilenv.approx_for_global sym.sym_unit in
       try
         let id = SymbolMap.find sym export.ex_symbol_id in
-        let descr = EidMap.find id export.ex_values in
+        let descr = find_description id export in
         Some descr
       with
       | Not_found -> None
 
   let extern_id_descr ex =
     let export = Compilenv.approx_env () in
-    try Some (EidMap.find ex export.ex_values)
+    try Some (find_description ex export)
     with Not_found -> None
 
   let get_descr approx =
@@ -919,11 +919,11 @@ let convert (type a) ~compilation_unit (expr:a Flambda.flambda) =
 
   let export = let open Flambdaexport in
     { empty_export with
-      ex_values = C2.ex_values;
+      ex_values = Flambdaexport.nest_eid_map C2.ex_values;
       ex_globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;
       ex_symbol_id = C2.ex_symbol_id;
-      ex_id_symbol = C2.ex_id_symbol;
+      ex_id_symbol = Flambdaexport.nest_eid_map C2.ex_id_symbol;
       ex_functions = C2.ex_functions;
       ex_functions_off = C2.ex_functions_off;
       ex_constant_closures = constant_closures;

@@ -57,13 +57,13 @@ type exported = {
   (** Code of exported functions indexed by function identifier *)
   ex_functions_off : unit Flambda.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by offset identifier *)
-  ex_values : descr EidMap.t;
+  ex_values : descr EidMap.t Compilation_unit.Map.t;
   (** Structure of exported values  *)
   ex_globals : approx Ident.Map.t;
   (** Global variables provided by the unit: usualy only the top-level
       module identifier, but packs contains multiple ones. *)
 
-  ex_id_symbol : Symbol.t EidMap.t;
+  ex_id_symbol : Symbol.t EidMap.t Compilation_unit.Map.t;
   ex_symbol_id : ExportId.t SymbolMap.t;
   (** Associates symbols and values *)
 
@@ -94,6 +94,10 @@ val import_for_pack :
 
 val clear_import_state : unit -> unit
 (** Drops the state after importing several units in the same pack. *)
+
+val find_description : ExportId.t -> exported -> descr
+
+val nest_eid_map : 'a EidMap.t -> 'a EidMap.t Compilation_unit.Map.t
 
 (**/**)
 (* debug printing functions *)
