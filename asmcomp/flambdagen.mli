@@ -59,4 +59,4 @@ val lambda_to_flambda
        are currently disabled, this may not be necessary. *)
   -> symbol_for_global':(Ident.t -> Symbol.t)
   -> Lambda.lambda
-  -> Expr_id.t Flambdatypes.flambda
+  -> Expr_id.t Flambda.flambda

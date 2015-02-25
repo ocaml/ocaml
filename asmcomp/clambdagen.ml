@@ -15,7 +15,7 @@ open Symbol
 open Abstract_identifiers
 open Lambda
 open Clambda
-open Flambdatypes
+open Flambda
 
 type ('a,'b) declaration_position =
   | Local of 'a
@@ -86,8 +86,8 @@ module Offsets(P:Param1) = struct
     Switch.Store
       (struct
         type t = P.t flambda
-        type key = Flambda.sharing_key
-        let make_key = Flambda.make_key
+        type key = Flambdautils.sharing_key
+        let make_key = Flambdautils.make_key
       end)
 
   (* The offset table associate a function label to its offset
@@ -111,7 +111,7 @@ module Offsets(P:Param1) = struct
        pointer inside the closure value *)
     let aux_fun_offset (map,env_pos) (id, func) =
       let pos = env_pos + 1 in
-      let arity = Flambda.function_arity func in
+      let arity = Flambdautils.function_arity func in
       let env_pos = env_pos + 1 +
                     (if arity <> 1 then 3 else 2) in
       let map = Closure_id.Map.add (Closure_id.wrap id) pos map in
@@ -150,9 +150,9 @@ module type Param2 = sig
   include Param1
   val fun_offset_table : int Closure_id.Map.t
   val fv_offset_table : int Var_within_closure.Map.t
-  val closures : t Flambdatypes.function_declarations Closure_id.Map.t
+  val closures : t Flambda.function_declarations Closure_id.Map.t
   val constant_closures : Set_of_closures_id.Set.t
-  val functions : unit Flambdatypes.function_declarations Set_of_closures_id.Map.t
+  val functions : unit Flambda.function_declarations Set_of_closures_id.Map.t
 end
 
 type const_lbl =
@@ -166,8 +166,8 @@ module Conv(P:Param2) = struct
     Switch.Store
       (struct
         type t = P.t flambda
-        type key = Flambda.sharing_key
-        let make_key = Flambda.make_key
+        type key = Flambdautils.sharing_key
+        let make_key = Flambdautils.make_key
       end)
 
   (* The offset table associate a function label to its offset
@@ -589,7 +589,7 @@ module Conv(P:Param2) = struct
             env, id :: params) func.params (env, []) in
 
       { Clambda.label = Compilenv.function_label cf;
-        arity = Flambda.function_arity func;
+        arity = Flambdautils.function_arity func;
         params = if closed then params else params @ [env_var];
         body = conv env_body func.body;
         dbg = func.dbg } in

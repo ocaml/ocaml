@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 let apply_on_subexpressions f = function
   | Fsymbol _

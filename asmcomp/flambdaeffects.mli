@@ -11,4 +11,4 @@
 (***********************************************************************)
 
 (* Simple effectful test, should be replaced by call to Purity module *)
-val no_effects : _ Flambdatypes.flambda -> bool
+val no_effects : _ Flambda.flambda -> bool

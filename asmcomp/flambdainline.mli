@@ -22,5 +22,5 @@
 *)
 val inline
    : never_inline:bool
-  -> Abstract_identifiers.Expr_id.t Flambdatypes.flambda
-  -> Abstract_identifiers.Expr_id.t Flambdatypes.flambda
+  -> Abstract_identifiers.Expr_id.t Flambda.flambda
+  -> Abstract_identifiers.Expr_id.t Flambda.flambda

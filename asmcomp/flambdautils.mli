@@ -19,24 +19,24 @@ open Abstract_identifiers
 (** Access functions *)
 
 val find_declaration :
-  Closure_id.t -> 'a Flambdatypes.function_declarations -> 'a Flambdatypes.function_declaration
+  Closure_id.t -> 'a Flambda.function_declarations -> 'a Flambda.function_declaration
 (** [find_declaration f decl] raises [Not_found] if [f] is not in [decl]. *)
 
 val find_declaration_variable :
-  Closure_id.t -> 'a Flambdatypes.function_declarations -> Variable.t
+  Closure_id.t -> 'a Flambda.function_declarations -> Variable.t
 (** [find_declaration_variable f decl] raises [Not_found] if [f] is not in
     [decl]. *)
 
 val find_free_variable :
-  Var_within_closure.t -> 'a Flambdatypes.fset_of_closures -> 'a Flambdatypes.flambda
+  Var_within_closure.t -> 'a Flambda.fset_of_closures -> 'a Flambda.flambda
 (** [find_free_variable v clos] raises [Not_found] if [c] is not in [clos]. *)
 
 (** Utility functions *)
 
-val function_arity : 'a Flambdatypes.function_declaration -> int
+val function_arity : 'a Flambda.function_declaration -> int
 
 val variables_bound_by_the_closure :
-  Closure_id.t -> 'a Flambdatypes.function_declarations -> Variable.Set.t
+  Closure_id.t -> 'a Flambda.function_declarations -> Variable.Set.t
 (** Variables "bound by a closure" are those variables free in the
     corresponding function's body that are neither:
     - bound as parameters of that function; nor
@@ -46,15 +46,15 @@ val variables_bound_by_the_closure :
     [f], [g] or [h] are bound in any of the closures for [f], [g] and [h].
 *)
 
-val can_be_merged : 'a Flambdatypes.flambda -> 'a Flambdatypes.flambda -> bool
+val can_be_merged : 'a Flambda.flambda -> 'a Flambda.flambda -> bool
 (** If [can_be_merged f1 f2] is [true], it is safe to merge switch
     branches containing [f1] and [f2]. *)
 
-val data_at_toplevel_node : 'a Flambdatypes.flambda -> 'a
+val data_at_toplevel_node : 'a Flambda.flambda -> 'a
 
-val description_of_toplevel_node : 'a Flambdatypes.flambda -> string
+val description_of_toplevel_node : 'a Flambda.flambda -> string
 
-val recursive_functions : 'a Flambdatypes.function_declarations -> Variable.Set.t
+val recursive_functions : 'a Flambda.function_declarations -> Variable.Set.t
 (** Recursive functions are the one that can call themselves or call
     a function that can.
 
@@ -68,16 +68,16 @@ val recursive_functions : 'a Flambdatypes.function_declarations -> Variable.Set.
 (** Sharing key *)
 (* CR mshinwell for pchambart: this needs a proper comment as discussed *)
 type sharing_key
-val make_key : 'a Flambdatypes.flambda -> sharing_key option
+val make_key : 'a Flambda.flambda -> sharing_key option
 
 (* Fold over the variables bound by a given closure, at the same time
    creating [Fvariable_in_closure] expressions to access them. *)
 val fold_over_exprs_for_variables_bound_by_closure
    : fun_id:Closure_id.t
   -> clos_id:Variable.t
-  -> clos:'a Flambdatypes.function_declarations
+  -> clos:'a Flambda.function_declarations
   -> init:'b
-  -> f:(acc:'b -> var:Variable.t -> expr:Expr_id.t Flambdatypes.flambda -> 'b)
+  -> f:(acc:'b -> var:Variable.t -> expr:Expr_id.t Flambda.flambda -> 'b)
   -> 'b
 
 (* Given an expression, freshen all variables within it, and form a function
@@ -87,10 +87,10 @@ val fold_over_exprs_for_variables_bound_by_closure
    free variables of [body]. *)
 val make_closure_declaration
    : id:Variable.t
-  -> body:Expr_id.t Flambdatypes.flambda
+  -> body:Expr_id.t Flambda.flambda
   -> params:Variable.t list
-  -> Expr_id.t Flambdatypes.flambda
+  -> Expr_id.t Flambda.flambda
 
 val unchanging_params_in_recursion
-   : 'a Flambdatypes.function_declarations
+   : 'a Flambda.function_declarations
   -> Variable.Set.t

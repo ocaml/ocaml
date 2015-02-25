@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 val apply_on_subexpressions : ('a flambda -> unit) ->
   'a flambda -> unit

@@ -12,7 +12,7 @@
 
 open Symbol
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;

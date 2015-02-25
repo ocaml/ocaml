@@ -11,7 +11,7 @@
 (***********************************************************************)
 
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
@@ -97,7 +97,7 @@ end) = struct
   let sequential_op ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot =
     let arg1_no_effects = Flambdaeffects.no_effects arg1 in
     let arg2_no_effects = Flambdaeffects.no_effects arg2 in
-    let arg2_annot = Flambda.data_at_toplevel_node arg2 in
+    let arg2_annot = Flambdautils.data_at_toplevel_node arg2 in
     let module C = Flambdacost in
     let open Flambdaapprox in
     let completely_eliminated () =
@@ -171,7 +171,7 @@ let primitive p (args, approxs) expr : 'a flambda * Flambdaapprox.t =
       expr, Flambdaapprox.value_block(tag, Array.of_list approxs)
   | _ ->
       let open Flambdaapprox in
-      let eid = Flambda.data_at_toplevel_node expr in
+      let eid = Flambdautils.data_at_toplevel_node expr in
       match descrs approxs with
       | [Value_int x] ->
           begin match p with

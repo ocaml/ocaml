@@ -34,7 +34,7 @@ let export_infos_table =
 
 let imported_closure_table =
   (Set_of_closures_id.Tbl.create 10
-   : Expr_id.t Flambdatypes.function_declarations Set_of_closures_id.Tbl.t)
+   : Expr_id.t Flambda.function_declarations Set_of_closures_id.Tbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -461,7 +461,7 @@ let function_label fv =
 
 let imported_closure =
   let open Symbol in
-  let open Flambdatypes in
+  let open Flambda in
   let import_closure clos =
 
     let orig_var_map clos =

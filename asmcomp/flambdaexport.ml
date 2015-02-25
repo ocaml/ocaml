@@ -13,7 +13,7 @@
 open Ext_types
 open Symbol
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 module Innerid = Id(struct end)
 module ExportId = UnitId(Innerid)(Compilation_unit)

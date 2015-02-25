@@ -42,7 +42,7 @@ and value_offset = {
 }
 
 and value_set_of_closures = {
-  ffunctions : Expr_id.t Flambdatypes.function_declarations;
+  ffunctions : Expr_id.t Flambda.function_declarations;
   bound_var : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
@@ -95,15 +95,15 @@ val value_symbol : Symbol.t -> t
 val value_bottom : t
 val value_unresolved : Symbol.t -> t
 
-val const_approx : Flambdatypes.const -> t
+val const_approx : Flambda.const -> t
 
 val print_approx : Format.formatter -> t -> unit
 
-val make_const_int : int -> 'a -> 'a Flambdatypes.flambda * t
-val make_const_ptr : int -> 'a -> 'a Flambdatypes.flambda * t
-val make_const_bool : bool -> 'a -> 'a Flambdatypes.flambda * t
-val make_const_float : float -> 'a -> 'a Flambdatypes.flambda * t
-val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambdatypes.flambda * t
+val make_const_int : int -> 'a -> 'a Flambda.flambda * t
+val make_const_ptr : int -> 'a -> 'a Flambda.flambda * t
+val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
+val make_const_float : float -> 'a -> 'a Flambda.flambda * t
+val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.flambda * t
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
@@ -117,15 +117,15 @@ val useful : t -> bool
 val is_certainly_immutable : t -> bool
 
 val check_constant_result
-   : Expr_id.t Flambdatypes.flambda
+   : Expr_id.t Flambda.flambda
   -> t
-  -> Expr_id.t Flambdatypes.flambda * t
+  -> Expr_id.t Flambda.flambda * t
 
 val check_var_and_constant_result
    : is_present_in_env:(Variable.t -> bool)
-  -> Expr_id.t Flambdatypes.flambda
+  -> Expr_id.t Flambda.flambda
   -> t
-  -> Expr_id.t Flambdatypes.flambda * t
+  -> Expr_id.t Flambda.flambda * t
 
 val get_field : int -> t list -> t
 

@@ -12,7 +12,7 @@
 
 open Lambda
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 let no_effects_prim = function
   | Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _

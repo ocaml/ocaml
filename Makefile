@@ -105,9 +105,9 @@ ASMCOMP=\
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
   asmcomp/symbol.cmo asmcomp/abstract_identifiers.cmo \
-  asmcomp/flambdatypes.cmo asmcomp/flambdaiter.cmo \
+  asmcomp/flambda.cmo asmcomp/flambdaiter.cmo \
   asmcomp/flambdasubst.cmo \
-  asmcomp/flambda.cmo asmcomp/printflambda.cmo \
+  asmcomp/flambdautils.cmo asmcomp/printflambda.cmo \
   asmcomp/flambdacheck.cmo \
   asmcomp/flambdaconstants.cmo \
   asmcomp/flambdagen.cmo \

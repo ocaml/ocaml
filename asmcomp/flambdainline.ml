@@ -12,9 +12,9 @@
 
 open Lambda
 open Abstract_identifiers
-open Flambdatypes
-open Flambdaapprox
 open Flambda
+open Flambdaapprox
+open Flambdautils
 
 module IntMap = Ext_types.Int.Map
 
@@ -1058,7 +1058,7 @@ and transform_set_of_closures_expression env r cl annot =
   let r = Variable.Map.fold (fun _id' v acc -> use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
-  let unchanging_params = Flambda.unchanging_params_in_recursion ffuns in
+  let unchanging_params = Flambdautils.unchanging_params_in_recursion ffuns in
 
   let closure = { internal_closure with ffunctions = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in

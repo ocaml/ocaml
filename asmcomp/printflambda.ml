@@ -14,7 +14,7 @@
 open Format
 open Ext_types
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 let rec lam ppf = function
   | Fsymbol (symbol,_) ->

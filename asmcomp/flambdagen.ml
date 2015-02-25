@@ -13,7 +13,7 @@
 open Misc
 open Lambda
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 type t = {
   current_compilation_unit : Symbol.Compilation_unit.t;
@@ -69,7 +69,7 @@ let find_var env id =
      all names containing "ident" refer to content of type [Ident.t], hence
        comming from the Lambda
      all names containing "var" refer to content of type [Variable.t], hence
-       already converted in Flambda.
+       already converted in Flambdautils.
  *)
 (* Naming conventions:
    All variable names containing "id" or "ident" are of type [Ident.t] or are
@@ -77,12 +77,12 @@ let find_var env id =
      [Lambda.lamba], i.e. before closure conversion.
    All variable names containing "var" are of type [Variable.t] or are
      collections of [Variable.t]. Those refer to identifiers for the
-     type [Flambdatypes.flambda], i.e. after closure conversion.
+     type [Flambda.flambda], i.e. after closure conversion.
 
   There is an exception to the [Ident.t] refering to variables of [Lambda.t]:
   the module identifiers appearing in the constructions [Pgetglobal],
   [Pgetglobalfield] and [Psetglobalfield]. Those constructions also appear in
-  [Flambdatypes.flambda].
+  [Flambda.flambda].
 
 *)
 

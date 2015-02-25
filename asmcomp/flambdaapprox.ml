@@ -12,7 +12,7 @@
 
 open Symbol
 open Abstract_identifiers
-open Flambdatypes
+open Flambda
 
 type tag = int
 
@@ -130,15 +130,15 @@ let check_constant_result (lam : 'a flambda) approx =
   if Flambdaeffects.no_effects lam then
     match approx.descr with
     | Value_int n ->
-      make_const_int n (Flambda.data_at_toplevel_node lam)
+      make_const_int n (Flambdautils.data_at_toplevel_node lam)
     | Value_constptr n ->
-      make_const_ptr n (Flambda.data_at_toplevel_node lam)
+      make_const_ptr n (Flambdautils.data_at_toplevel_node lam)
     | Value_float f ->
-      make_const_float f (Flambda.data_at_toplevel_node lam)
+      make_const_float f (Flambdautils.data_at_toplevel_node lam)
     | Value_boxed_int (t,i) ->
-      make_const_boxed_int t i (Flambda.data_at_toplevel_node lam)
+      make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
-      Fsymbol(sym, Flambda.data_at_toplevel_node lam), approx
+      Fsymbol(sym, Flambdautils.data_at_toplevel_node lam), approx
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
       lam, approx
@@ -151,7 +151,7 @@ let check_var_and_constant_result ~is_present_in_env lam approx =
         lam
     | Some var ->
         if is_present_in_env var
-        then Fvar(var, Flambda.data_at_toplevel_node lam)
+        then Fvar(var, Flambdautils.data_at_toplevel_node lam)
         else lam
   in
   check_constant_result res approx
