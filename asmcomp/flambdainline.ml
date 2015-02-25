@@ -12,7 +12,6 @@
 
 open Abstract_identifiers
 open Flambda
-open Flambdaapprox
 open Flambdautils
 
 (* Two types of information are propagated during inlining:
