@@ -108,10 +108,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   in
   let expr, r =
   match fun_cost with
-  | Flambdacost.Never_inline -> no_transformation ()
-  | Flambdacost.Can_inline _ when E.never_inline env ->
+  | Never_inline -> no_transformation ()
+  | Can_inline _ when E.never_inline env ->
     no_transformation ()
-  | (Flambdacost.Can_inline _) as remaining_inline_threshold ->
+  | (Can_inline _) as remaining_inline_threshold ->
       let fun_var = U.find_declaration_variable fun_id clos in
       let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
       (* CR mshinwell for mshinwell: add comment about stub functions *)
