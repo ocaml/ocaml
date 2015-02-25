@@ -89,3 +89,6 @@ let rec no_effects = function
   | Funreachable _ -> true
 
   | Fevent _ -> assert false
+
+let sequence l1 l2 annot =
+  if no_effects l1 then l2 else Fsequence (l1, l2, annot)

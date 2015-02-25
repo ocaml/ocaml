@@ -231,8 +231,6 @@ let find_global i r =
       Misc.fatal_error
         (Format.asprintf "couldn't find global %i@." i)
 
-
-
 let check_constant_result r lam approx =
   let lam, approx = Flambdaapprox.check_constant_result lam approx in
   lam, ret r approx
@@ -251,11 +249,6 @@ let check_var_and_constant_result env r original_lam approx =
     | _ -> r
   in
   lam, r
-
-let sequence l1 l2 annot =
-  if Flambdaeffects.no_effects l1
-  then l2
-  else Fsequence(l1,l2,annot)
 
 let really_import_approx approx =
   { approx with descr = Import.really_import approx.descr }
@@ -286,17 +279,6 @@ let populate_closure_approximations
       env function_declaration.params in
   env
 
-(* [unchanging_params] is the set of parameters whose values are known not to change
-   during the execution of a recursive function.  As such, occurrences of the
-   parameters may always be replaced by the corresponding values.
-
-   For example, [x] would be in [unchanging_params] for both of the following
-   functions:
-
-     let rec f x y = (f x y) + (f x (y+1))
-
-     let rec f x l = List.iter (f x) l
-*)
 let which_function_parameters_can_we_specialize ~params ~args
       ~approximations_of_args ~unchanging_params =
   assert (List.length params = List.length args);
@@ -759,13 +741,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
           (* constant false, keep ifnot *)
           let ifnot, r = loop env r ifnot in
           let r = benefit r Flambdacost.remove_branch in
-          sequence arg ifnot annot, r
+          Flambdaeffects.sequence arg ifnot annot, r
       | Value_constptr _
       | Value_block _ ->
           (* constant true, keep ifso *)
           let ifso, r = loop env r ifso in
           let r = benefit r Flambdacost.remove_branch in
-          sequence arg ifso annot, r
+          Flambdaeffects.sequence arg ifso annot, r
       | _ ->
           let ifso, r = loop env r ifso in
           let ifnot, r = loop env r ifnot in
@@ -775,7 +757,7 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
   | Fsequence(lam1, lam2, annot) ->
       let lam1, r = loop env r lam1 in
       let lam2, r = loop env r lam2 in
-      sequence lam1 lam2 annot,
+      Flambdaeffects.sequence lam1 lam2 annot,
       r
   | Fwhile(cond, body, annot) ->
       let cond, r = loop env r cond in
@@ -831,13 +813,13 @@ and loop_direct (env:Env.t) r tree : 'a flambda * ret =
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
           let r = benefit r Flambdacost.remove_branch in
-          sequence arg lam annot, r
+          Flambdaeffects.sequence arg lam annot, r
       | Value_block(tag,_) ->
           let lam = try List.assoc tag sw.fs_blocks with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
           let r = benefit r Flambdacost.remove_branch in
-          sequence arg lam annot, r
+          Flambdaeffects.sequence arg lam annot, r
       | _ ->
           let f (i,v) (acc, r) =
             let lam, r = loop env r v in

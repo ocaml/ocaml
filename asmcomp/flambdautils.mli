@@ -91,6 +91,18 @@ val make_closure_declaration
   -> params:Variable.t list
   -> Expr_id.t Flambda.flambda
 
+(* [unchanging_params_in_recursion] calculates the set of parameters whose
+   values are known not to change during the execution of a recursive
+   function.  As such, occurrences of the parameters may always be replaced
+   by the corresponding values.
+
+   For example, [x] would be in [unchanging_params] for both of the following
+   functions:
+
+     let rec f x y = (f x y) + (f x (y+1))
+
+     let rec f x l = List.iter (f x) l
+*)
 val unchanging_params_in_recursion
    : 'a Flambda.function_declarations
   -> Variable.Set.t
