@@ -22,7 +22,6 @@ module R = Flambda_inline_result
 let ret = R.set_approx
 
 module A = Flambdaapprox
-module F = Flambda
 
 let new_var name =
   Variable.create ~current_compilation_unit:(Compilenv.current_unit ()) name
@@ -180,7 +179,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       check_constant_result r tree (A.Import.import_symbol sym)
   | Fvar (id, annot) ->
       let id = Flambdasubst.subst_var (E.sb env) id in
-      let tree = F.Fvar (id, annot) in
+      let tree : _ Flambda.t = Fvar (id, annot) in
       check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst,_) -> tree, ret r (A.const_approx cst)
   | Fapply ({ ap_function = funct; ap_arg = args;
@@ -337,10 +336,10 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
          the declaration. *)
       let r_body = R.set_used_variables r init_used_var in
       let body, r = loop body_env r_body body in
-      let expr, r =
+      let (expr : _ Flambda.t), r =
         if Variable.Set.mem id (R.used_variables r)
         then
-          F.Flet (str, id, lam, body, annot),
+          Flet (str, id, lam, body, annot),
             (* if [lam] is kept, add its used variables *)
             R.set_used_variables r
               (Variable.Set.union def_used_var (R.used_variables r))
@@ -378,8 +377,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           defs, env_acc, r) defs ([],env,r) in
       let body, r = loop body_env r body in
       let r = List.fold_left (fun r (id,_) -> R.exit_scope r id) r defs in
-      Fletrec (defs, body, annot),
-      r
+      Fletrec (defs, body, annot), r
   | Fprim(Pgetglobal id, [], _dbg, _annot) as expr ->
       let approx =
         if Ident.is_predef_exn id
@@ -396,15 +394,15 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       check_constant_result r expr approx
   | Fprim(Psetglobalfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
-      let expr = if arg == arg' then expr
-        else F.Fprim(Psetglobalfield i, [arg'], dbg, annot) in
+      let expr : _ Flambda.t = if arg == arg' then expr
+        else Fprim(Psetglobalfield i, [arg'], dbg, annot) in
       let r = R.add_global r ~field_index:i ~approx:(R.approx r) in
       expr, ret r A.value_unknown
   | Fprim(Pfield i, [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
-      let expr =
+      let expr : _ Flambda.t =
         if arg == arg' then expr
-        else F.Fprim(Pfield i, [arg'], dbg, annot) in
+        else Fprim(Pfield i, [arg'], dbg, annot) in
       let approx = A.get_field i [R.approx r] in
       check_var_and_constant_result env r expr approx
   | Fprim((Psetfield _ | Parraysetu _ | Parraysets _) as p,
@@ -453,7 +451,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
          can't prove it and needs to keep it.
       *)
       let args, _, r = loop_list env r args in
-      F.Fprim(p, block :: args, dbg, annot), ret r A.value_unknown
+      Fprim(p, block :: args, dbg, annot), ret r A.value_unknown
   | Fprim ((Psequand | Psequor) as primitive, [arg1; arg2], dbg, annot) ->
       let arg1, r = loop env r arg1 in
       let arg1_approx = (R.approx r) in
@@ -480,8 +478,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let i = Flambdasubst.sb_exn (E.sb env) i in
       let args, _, r = loop_list env r args in
       let r = R.use_staticfail r i in
-      F.Fstaticraise (i, args, annot),
-      ret r A.value_bottom
+      Fstaticraise (i, args, annot), ret r A.value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
       let i, sb = Flambdasubst.new_subst_exn (E.sb env) i in
       let env = E.set_sb sb env in
@@ -497,16 +494,14 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
         let handler, r = loop env r handler in
         let r = List.fold_left R.exit_scope r vars in
         let r = R.exit_scope_catch r i in
-        F.Fstaticcatch (i, vars, body, handler, annot),
-        ret r A.value_unknown
+        Fstaticcatch (i, vars, body, handler, annot), ret r A.value_unknown
   | Ftrywith(body, id, handler, annot) ->
       let body, r = loop env r body in
       let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
       let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
       let handler, r = loop env r handler in
       let r = R.exit_scope r id in
-      F.Ftrywith(body, id, handler, annot),
-      ret r A.value_unknown
+      Ftrywith(body, id, handler, annot), ret r A.value_unknown
   | Fifthenelse(arg, ifso, ifnot, annot) ->
       (* When arg is the constant false or true (or something considered
          as true), we can drop the if and replace it by a sequence.
@@ -527,25 +522,21 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       | _ ->
           let ifso, r = loop env r ifso in
           let ifnot, r = loop env r ifnot in
-          F.Fifthenelse(arg, ifso, ifnot, annot),
-          ret r A.value_unknown
+          Fifthenelse(arg, ifso, ifnot, annot), ret r A.value_unknown
       end
   | Fsequence(lam1, lam2, annot) ->
       let lam1, r = loop env r lam1 in
       let lam2, r = loop env r lam2 in
-      Flambdaeffects.sequence lam1 lam2 annot,
-      r
+      Flambdaeffects.sequence lam1 lam2 annot, r
   | Fwhile(cond, body, annot) ->
       let cond, r = loop env r cond in
       let body, r = loop env r body in
-      F.Fwhile(cond, body, annot),
-      ret r A.value_unknown
+      Fwhile(cond, body, annot), ret r A.value_unknown
   | Fsend(kind, met, obj, args, dbg, annot) ->
       let met, r = loop env r met in
       let obj, r = loop env r obj in
       let args, _, r = loop_list env r args in
-      F.Fsend(kind, met, obj, args, dbg, annot),
-      ret r A.value_unknown
+      Fsend(kind, met, obj, args, dbg, annot), ret r A.value_unknown
   | Ffor(id, lo, hi, dir, body, annot) ->
       let lo, r = loop env r lo in
       let hi, r = loop env r hi in
@@ -553,20 +544,18 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
       let body, r = loop env r body in
       let r = R.exit_scope r id in
-      F.Ffor(id, lo, hi, dir, body, annot),
-      ret r A.value_unknown
+      Ffor(id, lo, hi, dir, body, annot), ret r A.value_unknown
   | Fassign(id, lam, annot) ->
       let lam, r = loop env r lam in
       let id = Flambdasubst.subst_var (E.sb env) id in
       let r = R.use_var r id in
-      F.Fassign(id, lam, annot),
-      ret r A.value_unknown
+      Fassign(id, lam, annot), ret r A.value_unknown
   | Fswitch(arg, sw, annot) ->
       (* When arg is known to be a block with a fixed tag or a fixed integer,
          we can drop the switch and replace it by a sequence.
          if arg is not effectful we can also drop it. *)
       let arg, r = loop env r arg in
-      let get_failaction () =
+      let get_failaction () : _ Flambda.t =
         (* If the switch is applied to a staticaly known value that is
            outside of each match case:
            * if there is a default action take that case
@@ -580,7 +569,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
                   | Float f -> ...]
          *)
         match sw.fs_failaction with
-        | None -> F.Funreachable (Expr_id.create ())
+        | None -> Funreachable (Expr_id.create ())
         | Some f -> f in
       begin match (R.approx r).descr with
       | Value_int i
@@ -607,8 +596,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
             | Some l -> let l, r = loop env r l in Some l, r in
           let sw =
             { sw with fs_failaction; fs_consts; fs_blocks; } in
-          F.Fswitch(arg, sw, annot),
-          ret r A.value_unknown
+          Fswitch(arg, sw, annot), ret r A.value_unknown
       end
   | Fstringswitch(arg, sw, def, annot) ->
       let arg, r = loop env r arg in
@@ -625,8 +613,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
             let def, r = loop env r def in
             Some def, r
       in
-      F.Fstringswitch(arg, sw, def, annot),
-      ret r A.value_unknown
+      Fstringswitch(arg, sw, def, annot), ret r A.value_unknown
   | Funreachable _ -> tree, ret r A.value_bottom
   | Fevent _ -> assert false
 
@@ -879,9 +866,9 @@ and transform_application_expression env r (funct, fapprox)
    inline. *)
 and direct_apply env r clos funct fun_id func closure
     (args, approxs) ap_dbg eid =
-  let no_transformation () =
-    F.Fapply ({ap_function = funct; ap_arg = args;
-               ap_kind = Direct fun_id; ap_dbg}, eid),
+  let no_transformation () : _ Flambda.t * R.t =
+    Fapply ({ap_function = funct; ap_arg = args;
+             ap_kind = Direct fun_id; ap_dbg}, eid),
     ret r A.value_unknown
   in
   let max_level = 3 in
@@ -1039,7 +1026,7 @@ and direct_apply env r clos funct fun_id func closure
   then expr, R.set_inline_threshold r inline_threshold
   else expr, r
 
-and partial_apply funct fun_id func args ap_dbg =
+and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
   let arity = function_arity func in
   let remaining_args = arity - (List.length args) in
   assert(remaining_args > 0);
@@ -1047,7 +1034,7 @@ and partial_apply funct fun_id func args ap_dbg =
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
   let call_args =
-    List.map (fun id' -> F.Fvar (id', Expr_id.create ())) param_sb
+    List.map (fun id' -> Flambda.Fvar (id', Expr_id.create ())) param_sb
   in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
@@ -1061,9 +1048,10 @@ and partial_apply funct fun_id func args ap_dbg =
   in
   let closures = make_closure_declaration new_fun_id expr remaining_args in
   let with_args = List.fold_right (fun (id', arg) expr ->
-      F.Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
-      applied_args closures in
-  F.Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
+      Flambda.Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
+    applied_args closures
+  in
+  Flet(Not_assigned, funct_id, funct, with_args, Expr_id.create ())
 
 (* Inline a function by substituting its body (which may be subject to further
    transformation) at a call site.  The function's declaration is not copied.
@@ -1125,7 +1113,7 @@ and inline_by_copying_function_body env r clos lfunc fun_id func args =
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     List.fold_right2 (fun id arg body ->
-        F.Flet (Not_assigned, id, arg, body,
+        Flambda.Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
       subst_params args body
   in
@@ -1133,15 +1121,15 @@ and inline_by_copying_function_body env r clos lfunc fun_id func args =
   let bindings_for_vars_bound_by_closure_and_params_around_body =
     fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init:bindings_for_params_around_body ~f:(fun ~acc:body ~var ~expr ->
-        F.Flet (Not_assigned, var, expr, body, Expr_id.create ()))
+        Flambda.Flet (Not_assigned, var, expr, body, Expr_id.create ()))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
      introduced by the whole set of closures. *)
   let expr =
     Variable.Map.fold (fun id _ expr ->
-        F.Flet (Not_assigned, id,
-          F.Fclosure (
-            { fu_closure = F.Fvar (clos_id, Expr_id.create ());
+        Flambda.Flet (Not_assigned, id,
+          Fclosure (
+            { fu_closure = Fvar (clos_id, Expr_id.create ());
               fu_fun = Closure_id.wrap id;
               fu_relative_to = Some fun_id;
             }, Expr_id.create ()),
@@ -1149,7 +1137,7 @@ and inline_by_copying_function_body env r clos lfunc fun_id func args =
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
   in
   loop (E.activate_substitution env) r
-       (F.Flet (Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
+       (Flet (Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
 
 (* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
@@ -1194,7 +1182,8 @@ and inline_by_copying_function_declaration env r funct clos fun_id func
               fu_fun = fun_id;
               fu_relative_to = None;
             }, Expr_id.create ());
-        ap_arg = List.map (fun id -> F.Fvar (id, Expr_id.create ())) args;
+        ap_arg =
+          List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
         ap_kind = Direct fun_id;
         ap_dbg;
       }, Expr_id.create ())
@@ -1204,7 +1193,7 @@ and inline_by_copying_function_declaration env r funct clos fun_id func
   let expr : _ Flambda.t =
     Flet (Not_assigned, clos_id, funct,
       List.fold_left (fun expr (id, arg) ->
-          F.Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
+          Flambda.Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
         duplicated_application args_decl,
       Expr_id.create ())
   in
