@@ -11,7 +11,10 @@
 (***********************************************************************)
 
 (** The primary purpose of this function is to perform inlining of both
-    non-recursive and recursive functions.
+    non-recursive and recursive functions.  The inlining is directed by
+    decisions made in the [Flambda_inlining_decision] module.  Readers
+    interested in the strategy, rather than the technicalities, are
+    advised to start reading at that module instead of this one.
 
     Along the way, some other optimizations and analyses are performed:
     - direct calls are identified
