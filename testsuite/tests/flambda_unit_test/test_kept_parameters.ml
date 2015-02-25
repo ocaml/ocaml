@@ -114,9 +114,9 @@ let func_multi_rec_4 =
 
 let run () =
   let test f l =
-    let b = Variable.Set.equal (Flambdaiter.arguments_kept_in_recursion f) (Variable.Set.of_list l) in
+    let b = Variable.Set.equal (Flambdautils.unchanging_params_in_recursion f) (Variable.Set.of_list l) in
     if not b then
-      Format.eprintf "kept: %a@." Variable.Set.print (Flambdaiter.arguments_kept_in_recursion f);
+      Format.eprintf "kept: %a@." Variable.Set.print (Flambdautils.unchanging_params_in_recursion f);
     b
   in
   assert( test func_non_rec_1 [x] );

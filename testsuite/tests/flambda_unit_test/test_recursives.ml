@@ -56,7 +56,7 @@ let func_rec_3 =
   fun_decls' [fun_f; fun_g]
 
 let run () =
-  let test f l = Variable.Set.equal (recursive_functions f) (Variable.Set.of_list l) in
+  let test f l = Variable.Set.equal (Flambdautils.recursive_functions f) (Variable.Set.of_list l) in
   assert( test func_non_rec_1 [] );
   assert( test func_non_rec_2 [] );
   assert( test func_rec_1 [f] );
