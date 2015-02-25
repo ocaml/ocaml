@@ -341,8 +341,19 @@ let populate_closure_approximations
       env function_declaration.params in
   env
 
+(* [unchanging_params] is the set of parameters whose values are known not to change
+   during the execution of a recursive function.  As such, occurrences of the
+   parameters may always be replaced by the corresponding values.
+
+   For example, [x] would be in [unchanging_params] for both of the following
+   functions:
+
+     let rec f x y = (f x y) + (f x (y+1))
+
+     let rec f x l = List.iter (f x) l
+*)
 let which_function_parameters_can_we_specialize ~params ~args
-      ~approximations_of_args ~kept_params =
+      ~approximations_of_args ~unchanging_params =
   assert (List.length params = List.length args);
   assert (List.length args = List.length approximations_of_args);
   List.fold_right2 (fun (id, arg) approx (spec_args, args, args_decl) ->
@@ -358,7 +369,7 @@ let which_function_parameters_can_we_specialize ~params ~args
             let args_decl = (new_id, arg) :: args_decl in
             new_id, args_decl in
       let spec_args =
-        if Flambdaapprox.useful approx && Variable.Set.mem id kept_params then
+        if Flambdaapprox.useful approx && Variable.Set.mem id unchanging_params then
           Variable.Map.add id new_id spec_args
         else
           spec_args
@@ -367,43 +378,15 @@ let which_function_parameters_can_we_specialize ~params ~args
     (List.combine params args) approximations_of_args
     (Variable.Map.empty, [], [])
 
-let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init ~f =
-  Variable.Set.fold (fun var acc ->
-      let expr =
-        Fvariable_in_closure
-          ({ vc_closure = Fvar (clos_id, Expr_id.create ());
-             vc_fun = fun_id;
-             vc_var = Var_within_closure.wrap var;
-           },
-           Expr_id.create ())
-      in
-      f ~acc ~var ~expr)
-    (variables_bound_by_the_closure fun_id clos) init
-
-(* CR mshinwell for pchambart: throughout, [kept_params] needs a better name.
-   Those are the parameters for which it is safe to specialise the function
-   body to one known approximation.
-   We know that recursive calls won't modify them: they are alias of the
-   parameters.
-   For instance x is in kept_params:
-     [let rec f x y = (f x y) + (f x (y+1))]
-   partial application also works
-   [let rec f x l = List.iter (f x) l]
-
-   Maybe naming it for what it is used for instead of what it is may be better ?
-   Does parameter_safe_for_specialisation sound ok ?
- *)
-
 let should_inline_function_known_to_be_recursive ~func ~clos ~env ~closure
-      ~approxs ~kept_params ~max_level =
+      ~approxs ~unchanging_params ~max_level =
   assert (List.length func.params = List.length approxs);
   (not (Env.inside_set_of_closures_declaration clos.ident env))
-    && (not (Variable.Set.is_empty closure.kept_params))
+    && (not (Variable.Set.is_empty closure.unchanging_params))
     && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
     && env.inlining_level <= max_level
     && List.exists2 (fun id approx ->
-          Flambdaapprox.useful approx && Variable.Set.mem id kept_params)
+          Flambdaapprox.useful approx && Variable.Set.mem id unchanging_params)
         func.params approxs
 
 (* Make an informed guess at whether [clos], with approximations [approxs],
@@ -1065,7 +1048,7 @@ and transform_set_of_closures_expression env r cl annot =
       bound_var = Variable.Map.fold (fun id (_,desc) map ->
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
-      kept_params = Variable.Set.empty;
+      unchanging_params = Variable.Set.empty;
       specialised_args = Variable.Map.keys cl_specialised_arg;
       ffunction_sb;
     }
@@ -1128,9 +1111,9 @@ and transform_set_of_closures_expression env r cl annot =
   let r = Variable.Map.fold (fun _id' v acc -> use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
-  let kept_params = Flambdaiter.arguments_kept_in_recursion ffuns in
+  let unchanging_params = Flambdaiter.arguments_kept_in_recursion ffuns in
 
-  let closure = { internal_closure with ffunctions = ffuns; kept_params } in
+  let closure = { internal_closure with ffunctions = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> exit_scope r id) ffuns.funs r in
   Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
              cl_specialised_arg}, annot),
@@ -1275,7 +1258,7 @@ and direct_apply env r clos funct fun_id func closure
          [inline_threshold] is confusing.
          pchambart: is [remaining_inline_threshold] better ? *)
       let r = set_inline_threshold r remaining_inline_threshold in
-      let kept_params = closure.kept_params in
+      let unchanging_params = closure.unchanging_params in
       (* Try inlining if the function is non-recursive and not too far above
          the threshold (or if the function is to be unconditionally inlined). *)
       if unconditionally_inline
@@ -1326,7 +1309,7 @@ and direct_apply env r clos funct fun_id func closure
         | Some r -> r
         | None ->
           if should_inline_function_known_to_be_recursive ~func ~clos ~env
-              ~closure ~approxs ~kept_params ~max_level
+              ~closure ~approxs ~unchanging_params ~max_level
           then
             let () =
               if Variable.Map.cardinal clos.funs > 1
@@ -1334,7 +1317,7 @@ and direct_apply env r clos funct fun_id func closure
                   Closure_id.print fun_id
             in
             inline_by_copying_function_declaration env r funct clos fun_id func
-              (args,approxs) kept_params closure.specialised_args ap_dbg
+              (args,approxs) unchanging_params closure.specialised_args ap_dbg
               no_transformation
           else
             no_transformation ()
@@ -1458,7 +1441,7 @@ and inline_by_copying_function_body env r clos lfunc fun_id func args =
    non-recursive] is not sufficient.
 *)
 and inline_by_copying_function_declaration env r funct clos fun_id func
-    (args, approxs) kept_params specialised_args ap_dbg no_transformation =
+    (args, approxs) unchanging_params specialised_args ap_dbg no_transformation =
   let env = inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_declaration" in
   let fv =
@@ -1468,7 +1451,7 @@ and inline_by_copying_function_declaration env r funct clos fun_id func
   in
   let spec_args, args, args_decl =
     which_function_parameters_can_we_specialize ~params:func.params
-      ~args ~approximations_of_args:approxs ~kept_params
+      ~args ~approximations_of_args:approxs ~unchanging_params
   in
   if Variable.Set.equal specialised_args (Variable.Map.keys spec_args)
   then

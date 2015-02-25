@@ -42,7 +42,7 @@ and value_offset =
 and value_set_of_closures =
   { ffunctions : Expr_id.t function_declarations;
     bound_var : t Var_within_closure.Map.t;
-    kept_params : Variable.Set.t;
+    unchanging_params : Variable.Set.t;
     specialised_args : Variable.Set.t;
     ffunction_sb :
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
@@ -215,7 +215,7 @@ module Import = struct
           value_block (tag, Array.map import_approx fields)
       | Value_closure { fun_id; closure = { closure_id; bound_var } } ->
         let bound_var = Var_within_closure.Map.map import_approx bound_var in
-        let kept_params =
+        let unchanging_params =
           try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
         in
@@ -224,7 +224,7 @@ module Import = struct
             set_of_closures =
               { ffunctions = Compilenv.imported_closure closure_id;
                 bound_var;
-                kept_params = kept_params;
+                unchanging_params = unchanging_params;
                 specialised_args = Variable.Set.empty;
                 ffunction_sb =
                   Flambdasubst.
@@ -232,14 +232,14 @@ module Import = struct
               } }
       | Value_set_of_closures { closure_id; bound_var } ->
         let bound_var = Var_within_closure.Map.map import_approx bound_var in
-        let kept_params =
+        let unchanging_params =
           try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
           | Not_found -> assert false
         in
         value_set_of_closures
           { ffunctions = Compilenv.imported_closure closure_id;
             bound_var;
-            kept_params = kept_params;
+            unchanging_params = unchanging_params;
             specialised_args = Variable.Set.empty;
             ffunction_sb =
               Flambdasubst.

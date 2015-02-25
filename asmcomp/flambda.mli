@@ -71,3 +71,13 @@ val recursive_functions : 'a function_declarations -> Variable.Set.t
 (* CR mshinwell for pchambart: this needs a proper comment as discussed *)
 type sharing_key
 val make_key : 'a flambda -> sharing_key option
+
+(* Fold over the variables bound by a given closure, at the same time
+   creating [Fvariable_in_closure] expressions to access them. *)
+val fold_over_exprs_for_variables_bound_by_closure
+   : fun_id:Closure_id.t
+  -> clos_id:Variable.t
+  -> clos:'a function_declarations
+  -> init:'b
+  -> f:(acc:'b -> var:Variable.t -> expr:Expr_id.t flambda -> 'b)
+  -> 'b

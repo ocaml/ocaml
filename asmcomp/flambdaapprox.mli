@@ -44,7 +44,7 @@ and value_offset = {
 and value_set_of_closures = {
   ffunctions : Expr_id.t function_declarations;
   bound_var : t Var_within_closure.Map.t;
-  kept_params : Variable.Set.t;
+  unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
   ffunction_sb :
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;

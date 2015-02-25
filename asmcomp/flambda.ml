@@ -225,3 +225,17 @@ let can_be_merged = same
 
 type sharing_key = unit
 let make_key _ = None
+
+let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
+      ~init ~f =
+  Variable.Set.fold (fun var acc ->
+      let expr =
+        Fvariable_in_closure
+          ({ vc_closure = Fvar (clos_id, Expr_id.create ());
+             vc_fun = fun_id;
+             vc_var = Var_within_closure.wrap var;
+           },
+           Expr_id.create ())
+      in
+      f ~acc ~var ~expr)
+    (variables_bound_by_the_closure fun_id clos) init
