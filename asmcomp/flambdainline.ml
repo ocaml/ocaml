@@ -154,18 +154,13 @@ let transform_variable_in_closure_expression env r expr vc_closure
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
     in
     let env_var =
-      AR.subst_variable_in_closure
-        set_of_closures.ffunction_sb
-        fenv_field.vc_var
+      AR.subst_variable_in_closure set_of_closures.ffunction_sb
+          fenv_field.vc_var
     in
     let env_fun_id =
-      AR.subst_closure_id
-        set_of_closures.ffunction_sb
-        fenv_field.vc_fun
+      AR.subst_closure_id set_of_closures.ffunction_sb fenv_field.vc_fun
     in
-
     assert(Closure_id.equal env_fun_id fun_id);
-
     let approx =
       try Var_within_closure.Map.find env_var set_of_closures.bound_var with
       | Not_found ->
@@ -174,7 +169,6 @@ let transform_variable_in_closure_expression env r expr vc_closure
           Closure_id.print env_fun_id
           Printflambda.flambda vc_closure;
         assert false in
-
     let expr : _ Flambda.t =
       if vc_closure == fenv_field.vc_closure
       then expr (* if the argument didn't change, the names didn't also *)
