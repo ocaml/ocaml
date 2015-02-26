@@ -1358,27 +1358,17 @@ let intrin_args ty =
   let rec intrin_types acc = function
       [] -> acc
     | k :: l ->
-      let kind, l =
-        let array_index = function
-            ["int"] :: l -> l
-          | _ -> raise(Intrin.Intrin_error (Format.asprintf
-                    "Array intrin parameters must be followed by int"))
-        in
+      let kind =
         match k with
-        | ["float"; "array"] -> `Array_float, array_index l
-        | ["m128d_array"]
-        | ["m128i_array"]    -> `Array_m128, array_index l
-        | ["m256d_array"]
-        | ["m256i_array"]    -> `Array_m256, array_index l
-        | ["float"]          -> `Float, l
-        | ["int"]            -> `Int, l
-        | ["int64"]          -> `Int64, l
+        | ["float"]          -> `Float
+        | ["int"]            -> `Int
+        | ["int64"]          -> `Int64
         | ["m128d"]
-        | ["m128i"]          -> `M128, l
+        | ["m128i"]          -> `M128
         | ["m256d"]
-        | ["m256i"]          -> `M256, l
-        | ["unit"]           -> `Unit, l
-        | _                  -> `Int, l (* we'll treat everything else as pointer *)
+        | ["m256i"]          -> `M256
+        | ["unit"]           -> `Unit
+        | _                  -> `Int (* we'll treat everything else as pointer *)
       in
       intrin_types (kind :: acc) l
   in

@@ -248,3 +248,11 @@ CAMLprim value caml_set_oo_id (value obj) {
 CAMLprim value caml_int_as_pointer (value n) {
   return n - 1;
 }
+
+CAMLprim value caml_adda (value x, value y) {
+  return x + y;
+}
+
+CAMLprim value caml_lsla (value x, value y) {
+  return x << y;
+}

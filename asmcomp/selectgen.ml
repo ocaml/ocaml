@@ -45,8 +45,10 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
   | Cintrin intrin ->
-      match intrin.Intrin.result with
-        `Float -> typ_float
+      let iargs = intrin.Intrin.args in
+      match iargs.(Array.length iargs - 1).Intrin.kind with
+        `Addr  -> typ_addr
+      | `Float -> typ_float
       | `Int   -> typ_int
       | `Int64 -> typ_int
       | `M128  -> typ_xmm
@@ -298,7 +300,35 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
-  | (Cintrin _, _) -> fatal_error "amd64 intrinsics not supported"
+  | (Cintrin intrin, _) ->
+      let rec loop args iargs nargs acc_args acc_iargs =
+        match args, iargs with
+          [], _ -> List.rev acc_args, List.rev acc_iargs
+        | arg :: args, iarg :: iargs ->
+            begin match iarg.Intrin.kind with
+              `Int when iarg.Intrin.immediate ->
+                begin match arg with
+                  Cconst_int n ->
+                    loop args iargs nargs acc_args ((Iarg_imm n) :: acc_iargs)
+                | _ -> fatal_error "Selectgen.select_operation: Non-immediate argument"
+                end
+            | `Unit -> loop args iargs nargs acc_args ((Iarg_imm 0) :: acc_iargs)
+            | _ ->
+                match iarg.Intrin.reload, arg with
+                  `M64 , Cop(Cload (Double|Double_u|M128_u|M256_u as chunk), [loc])
+                | `M128, Cop(Cload (M128_u|M256_u as chunk), [loc])
+                | `M256, Cop(Cload (M256_u as chunk), [loc]) ->
+                    let addr, arg1 = self#select_addressing chunk loc in
+                    loop args iargs (nargs + Arch.num_args_addressing addr)
+                      (arg1 :: acc_args) ((Iarg_addr (nargs, chunk, addr)) :: acc_iargs)
+                | _, _ ->
+                    loop args iargs (nargs + 1) (arg :: acc_args)
+                      (Iarg nargs :: acc_iargs)
+            end
+        | _, _ -> fatal_error "Selection.select_oper_1"
+      in
+      let args, iargs = loop args (Array.to_list intrin.Intrin.args) 0 [] [] in
+      (Iintrin (intrin, Array.of_list iargs), args)
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function

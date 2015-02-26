@@ -13,7 +13,6 @@
 (* Description of primitive functions *)
 
 open Misc
-open Intrin
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -21,7 +20,7 @@ type description =
     prim_alloc: bool;          (* Does it allocates or raise? *)
     prim_native_name: string;  (* Name of C function for the nat. code gen. *)
     prim_native_float: bool;   (* Does the above operate on unboxed floats? *)
-    prim_intrin: intrin option }
+    prim_intrin: Intrin.intrin option }
 
 let parse_declaration arity decl =
   match decl with
@@ -56,7 +55,7 @@ let description_list p =
   let list = List.rev list in
   match p.prim_intrin with
   | None -> list
-  | Some intrin -> list @ (intrin_description intrin)
+  | Some intrin -> list @ (Intrin.description intrin)
 
 let native_name p =
   if p.prim_native_name <> ""

@@ -15,11 +15,8 @@
 exception Intrin_error of string
 
 type arg_kind =
-  [ `Array_float
-  | `Array_m128
-  | `Array_m256
+  [ `Addr
   | `Float
-  | `Imm
   | `Int
   | `Int64
   | `M128
@@ -30,15 +27,16 @@ type arg = {
   kind        : arg_kind;
   cp_to_reg   : [ `No | `Result | `A | `C | `D ];
   reload      : [ `No | `M64 | `M128 | `M256 ];
+  immediate   : bool;
+  output      : bool;
+  register    : bool;
   commutative : bool }
 
 type intrin = {
-  asm         : [ `Emit_string of string | `Emit_arg of int ] list;
-  args        : arg list;
-  result      : [ `Float | `Int | `Int64 | `M128 | `M256 | `Unit ];
-  result_reg  : [ `Any | `C ] }
+  asm  : [ `Emit_string of string | `Emit_arg of int ] list;
+  args : arg array }
 
 val parse_intrin: arg_kind list -> string list -> intrin
 
-val intrin_name : intrin -> string
-val intrin_description : intrin -> string list
+val name : intrin -> string
+val description : intrin -> string list

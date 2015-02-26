@@ -34,10 +34,12 @@ let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
      R12; R13; R10; R11; RBP; |]
 
-let float_reg_name = Array.init 16 (fun i -> XMM i)
+let float_reg_name  = Array.init 16 (fun i -> XMM i)
+let float2_reg_name = Array.init 16 (fun i -> YMM i)
 
-let register_name r =
+let register_name r typ =
   if r < 100 then Reg64 (int_reg_name.(r))
+  else if typ = Cmm.YMM then Regf (float2_reg_name.(r - 100))
   else Regf (float_reg_name.(r - 100))
 
 (* CFI directives *)
@@ -148,8 +150,10 @@ let emit_Llabel fallthrough lbl =
 (* Output a pseudo-register *)
 
 let reg = function
-  | { loc = Reg.Reg r } -> register_name r
-  | { loc = Stack s; typ = Float } as r ->
+  | { loc = Reg.Reg r; typ } -> register_name r typ
+  | { loc = Stack s; typ = Float }
+  | { loc = Stack s; typ = XMM }
+  | { loc = Stack s; typ = YMM } as r ->
       let ofs = slot_offset s (register_class r) in
       mem64 REAL8 ofs RSP
   | { loc = Stack s } as r ->
@@ -410,36 +414,20 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 
 let emit_intrin i intrin iargs =
-  let open Intrin in
-  if intrin.asm <> [] then begin
-    let instr_to_arg = Array.make (List.length intrin.args) 0 in
-    let _ = List.fold_left (fun (instr_i, arg_i) iarg ->
-      instr_to_arg.(instr_i) <- arg_i;
-      let arg_i = arg_i +
-        match iarg with
-          Iintrin_arg_imm _ -> 0
-        | Iintrin_arg_ord -> 1
-        | Iintrin_arg_addr addr ->
-            match addr with
-              Ibased _ -> 0
-            | Iindexed _
-            | Iscaled _ -> 1
-            | Iindexed2 _
-            | Iindexed2scaled _ -> 2
-      in
-      instr_i + 1, arg_i) (0, 0) iargs
-    in
-    I.intrin (List.map (function
-        \`Emit_string s -> Intrin_string s
-      | \`Emit_arg 0 -> Intrin_arg (res i 0)
-      | \`Emit_arg n ->
-          let n = n - 1 in
-          match List.nth iargs n with
-          | Iintrin_arg_ord -> Intrin_arg (arg i instr_to_arg.(n))
-          | Iintrin_arg_imm imm -> Intrin_arg (Imm (Int64.of_int imm))
-          | Iintrin_arg_addr addr -> Intrin_arg (addressing addr REAL8 i instr_to_arg.(n))
-      ) intrin.asm)
-  end
+  I.intrin (List.map (function
+      \`Emit_string s -> Intrin_string s
+    | \`Emit_arg 0 -> Intrin_arg (res i 0)
+    | \`Emit_arg n ->
+        match iargs.(n - 1) with
+          Iarg n -> Intrin_arg (arg i n)
+        | Iarg_imm n -> Intrin_arg (Imm (Int64.of_int n))
+        | Iarg_addr (n, chunk, addr) ->
+            let typ =
+              match chunk with
+                Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
+              | _ -> assert false
+            in
+            Intrin_arg (addressing addr typ i n)) intrin.Intrin.asm)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
@@ -451,7 +439,11 @@ let emit_instr fallthrough i =
       if src.loc <> dst.loc then
         begin match src.typ, src.loc, dst.loc with
         | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src) (reg dst)
-        | Float, _, _ -> I.movsd (reg src) (reg dst)
+        | Float, _, _                 -> I.movsd (reg src) (reg dst)
+        | XMM, Reg.Reg _, Reg.Reg _   -> I.movapd (reg src) (reg dst)
+        | XMM, _, _                   -> I.movupd (reg src) (reg dst)
+        | YMM, Reg.Reg _, Reg.Reg _   -> I.vmovapd (reg src) (reg dst)
+        | YMM, _, _                   -> I.vmovupd (reg src) (reg dst)
         | _ -> I.mov (reg src) (reg dst)
         end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
@@ -648,6 +640,8 @@ let emit_instr fallthrough i =
       I.cvtsi2sd  (arg i 0)  (res i 0)
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0) (res i 0)
+  | Lop(Iintrin(intrin, iargs)) ->
+      emit_intrin i intrin iargs
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
@@ -674,8 +668,6 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
-  | Lop(Ispecific(Iintrin(intrin, iargs))) ->
-      emit_intrin i intrin iargs
   | Lreloadretaddr ->
       ()
   | Lreturn ->

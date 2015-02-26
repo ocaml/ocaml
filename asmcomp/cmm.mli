@@ -53,10 +53,10 @@ type memory_chunk =
   | Single
   | Double                              (* 64-bit-aligned 64-bit float *)
   | Double_u                            (* word-aligned 64-bit float *)
-  | M128
-  | M128_u
-  | M256
-  | M256_u
+  | M128                                (* 64-bit-aligned 128-bit float vector *)
+  | M128_u                              (* 128-bit-aligned 128-bit float vector *)
+  | M256                                (* 64-bit-aligned 256-bit float vector *)
+  | M256_u                              (* 256-bit-aligned 256-bit float vector *)
 
 type operation =
     Capply of machtype * Debuginfo.t

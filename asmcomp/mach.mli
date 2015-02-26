@@ -31,6 +31,11 @@ type test =
   | Ioddtest
   | Ieventest
 
+type intrin_arg =
+  | Iarg of int
+  | Iarg_imm of int
+  | Iarg_addr of int * Cmm.memory_chunk * Arch.addressing_mode
+
 type operation =
     Imove
   | Ispill
@@ -53,6 +58,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
+  | Iintrin of Intrin.intrin * intrin_arg array
   | Ispecific of Arch.specific_operation
 
 type instruction =

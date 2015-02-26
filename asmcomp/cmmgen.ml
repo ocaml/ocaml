@@ -1276,12 +1276,13 @@ let rec is_unboxed_number = function
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
         | Pintrin intrin ->
-            begin match intrin.Intrin.result with
-              `Float -> Boxed_float
+            let iargs = intrin.Intrin.args in
+            begin match iargs.(Array.length iargs - 1).Intrin.kind with
+            | `Float -> Boxed_float
             | `Int64 -> Boxed_integer Pint64
             | `M128  -> Boxed_m128
             | `M256  -> Boxed_m256
-            | `Int | `Unit  -> No_unboxing
+            | `Addr | `Int | `Unit -> No_unboxing
             end
         | _ -> No_unboxing
       end
@@ -1599,35 +1600,29 @@ let rec transl = function
       return_unit(Cassign(id, transl exp))
 
 and transl_intrin intrin args =
-  let open Intrin in
-  let rec loop args acc = function
-      [] -> List.rev acc
-    | ocaml_arg :: ocaml_args ->
-        let transl_arg, args =
-          match ocaml_arg.kind, args with
-          | `Array_float, arg :: ofs :: args ->
-              array_indexing log2_size_float (transl arg) (transl ofs), args
-          | `Array_m128, arg :: ofs :: args ->
-              array_indexing log2_size_xmm (transl arg) (transl ofs), args
-          | `Array_m256, arg :: ofs :: args ->
-              array_indexing log2_size_ymm (transl arg) (transl ofs), args
-          | `Float, arg :: args -> transl_unbox_float arg, args
-          | `Imm, Uconst (Uconst_int n) :: args -> Cconst_int n, args
-          | `Int, arg :: args -> transl arg, args
-          | `Int64, arg :: args -> transl_unbox_int Pint64 arg, args
-          | `M128, arg :: args -> transl_unbox_m128 arg, args
-          | `M256, arg :: args -> transl_unbox_m256 arg, args
-          | `Unit, arg :: args -> remove_unit(transl arg), args
-          | _, _ -> fatal_error (Printf.sprintf
-            "Cmmgen.transl_intrin_1 %s" (intrin_name intrin))
-        in
-        loop args (transl_arg :: acc) ocaml_args
+  let iargs = intrin.Intrin.args in
+  let transl_args = List.mapi (fun i arg ->
+    let iarg = iargs.(i) in
+    match iarg.Intrin.kind with
+      `Float -> transl_unbox_float arg
+    | `Int when iarg.Intrin.immediate ->
+        begin match arg with
+          Uconst (Uconst_int n) -> Cconst_int n
+        | _ ->
+            fatal_error (Printf.sprintf
+              "Intrin %s expects immediate integer argument" (Intrin.name intrin))
+        end
+    | `Addr | `Int -> transl arg
+    | `Int64 -> transl_unbox_int Pint64 arg
+    | `M128 -> transl_unbox_m128 arg
+    | `M256 -> transl_unbox_m256 arg
+    | `Unit -> remove_unit(transl arg)) args
   in
-  let transl_args = loop args [] intrin.args in
+  let ident x = x in
   let box_res =
-    match intrin.result with
+    match iargs.(Array.length iargs - 1).Intrin.kind with
       `Float -> box_float
-    | `Int   -> fun x -> x
+    | `Addr | `Int -> ident
     | `Int64 -> box_int Pint64
     | `M128  -> box_m128
     | `M256  -> box_m256
@@ -1652,7 +1647,12 @@ and transl_prim_1 p arg dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   | Pint_as_pointer ->
-     Cop(Cadda, [transl arg; Cconst_int (-1)])
+      begin match transl arg with
+      | Cconst_int n -> Cconst_int (n - 1)
+      | Cop(Caddi, [x; Cconst_int 1]) -> x
+      | Cop(Caddi, [x; Cconst_int y]) -> Cop(Caddi, [x; Cconst_int (y - 1)])
+      | arg -> Cop(Cadda, [arg; Cconst_int (-1)])
+      end
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl arg])
@@ -1758,6 +1758,19 @@ and transl_prim_2 p arg1 arg2 dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float arg2]))
+  | Padda ->
+      begin match transl arg1, transl arg2 with
+      | Cconst_int x, Cconst_int y -> Cconst_int (x + y)
+      | x, y -> Cop(Cadda, [x; y])
+      end
+  | Plsla ->
+      begin match transl arg1, transl arg2 with
+      | Cconst_int x, Cconst_int y -> Cconst_int (x lsl y)
+      | Cop(Clsl, [x; Cconst_int y]), Cconst_int z -> Cop(Clsl, [x; Cconst_int (y + z)])
+      | Cop(Caddi, [x; Cconst_int y]), Cconst_int z ->
+          Cop(Caddi, [Cop(Clsl, [x; Cconst_int z]); Cconst_int (y lsl z)])
+      | x, y -> Cop(Clsl, [x; y])
+      end
 
   (* Boolean operations *)
   | Psequand ->

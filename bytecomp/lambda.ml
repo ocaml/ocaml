@@ -125,6 +125,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Address operations *)
+  | Padda | Plsla
   (* Intrinsics *)
   | Pintrin of Intrin.intrin
 

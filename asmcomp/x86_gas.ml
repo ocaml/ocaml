@@ -241,6 +241,7 @@ let print_instr b = function
 let print_line b = function
   | Ins instr -> print_instr b instr
   | Intrin args ->
+      bprintf b "\t";
       List.iter (function
         | Intrin_arg a -> bprintf b "%a" arg a
         | Intrin_string s -> bprintf b "%s" s) args

@@ -76,6 +76,7 @@ method reload_operation op arg res =
       | _ ->
           (arg, res)
       end
+      (* XXX vbrankov: Implement this for intrin *)
   | _ ->
       (self#makeregs arg, self#makeregs res)
 

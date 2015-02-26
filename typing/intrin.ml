@@ -15,11 +15,8 @@
 exception Intrin_error of string
 
 type arg_kind =
-  [ `Array_float
-  | `Array_m128
-  | `Array_m256
+  [ `Addr
   | `Float
-  | `Imm
   | `Int
   | `Int64
   | `M128
@@ -30,13 +27,14 @@ type arg = {
   kind        : arg_kind;
   cp_to_reg   : [ `No | `Result | `A | `C | `D ];
   reload      : [ `No | `M64 | `M128 | `M256 ];
+  immediate   : bool;
+  output      : bool;
+  register    : bool;
   commutative : bool }
 
 type intrin = {
-  asm         : [ `Emit_string of string | `Emit_arg of int ] list;
-  args        : arg list;
-  result      : [ `Float | `Int | `Int64 | `M128 | `M256 | `Unit ];
-  result_reg  : [ `Any | `C ] }
+  asm  : [ `Emit_string of string | `Emit_arg of int ] list;
+  args : arg array }
 
 (** Parses assembly code given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
@@ -70,71 +68,51 @@ let parse_asm ~nargs asm =
   in
   List.rev (loop [] asm 0)
 
-let parse_intrin args decl =
+let parse_intrin kinds decl =
   let error f = Printf.ksprintf (fun msg -> raise (Intrin_error msg)) f in
   match decl with
     asm :: params ->
-      let asm = parse_asm ~nargs:(List.length args) asm in
-      let cut_tail l =
-        match List.rev l with
-        | h :: t -> List.rev t, h
-        | [] -> error "Primitive.parse_intrin"
+      let asm = parse_asm ~nargs:(List.length kinds) asm in
+      let rec loop kinds params acc_args =
+        match kinds, params with
+          [], [] -> List.rev acc_args
+        | [], param :: params -> (* XXX vbrankov *) loop [] params acc_args
+        | kind :: kinds, param :: params ->
+          let arg = ref {
+            kind;
+            cp_to_reg   = `No;
+            reload      = `No;
+            immediate   = false;
+            output      = false;
+            register    = false;
+            commutative = false } in
+          String.iter (function
+              '0' -> arg := { !arg with cp_to_reg = `Result }
+            | 'a' -> arg := { !arg with cp_to_reg = `A }
+            | 'c' -> arg := { !arg with cp_to_reg = `C }
+            | 'd' -> arg := { !arg with cp_to_reg = `D }
+            | 'i' -> arg := { !arg with immediate = true }
+            | 'm' ->
+                arg := { !arg with reload = (
+                  match !arg.reload with
+                  | `No  -> `M64
+                  | `M64 -> `M128
+                  | _    -> `M256) }
+            | 'r' -> arg := { !arg with register = true }
+            | 'x' -> arg := { !arg with commutative = true }
+            | '=' ->
+                arg := { !arg with output = true }
+            | c -> error "Unknown argument modifier '%c'" c) param;
+          loop kinds params (!arg :: acc_args)
+        | _, _ -> error "Missing argument descripions"
       in
-      let args, result = cut_tail args in
-      let params, result_param = cut_tail params in
-      if List.length args <> List.length params then
-        error "The number of arguments and parameters must be the same";
-      let args = List.map2 (fun kind param ->
-        let kind = ref kind in
-        let cp_to_reg = ref `No in
-        let reload = ref `No in
-        let commutative = ref false in
-        String.iter (function
-            '0' -> cp_to_reg := `Result
-          | 'a' -> cp_to_reg := `A
-          | 'c' -> cp_to_reg := `C
-          | 'd' -> cp_to_reg := `D
-          | 'i' -> if !kind = `Int then kind := `Imm
-                   else error "Only integer argument can be immediate"
-          | 'x' -> commutative := true
-          | 'm' ->
-              reload := (
-                match !reload with
-                | `No  -> `M64
-                | `M64 -> `M128
-                | _    -> `M256)
-          | c -> error "Unknown argument modifier '%c'" c) param;
-        { kind        = !kind;
-          cp_to_reg   = !cp_to_reg;
-          reload      = !reload;
-          commutative = !commutative }) args params in
-      let result =
-        let error s = error "%s cannot be the result of intrin" s in
-        match result with
-          `Array_float -> error "float array"
-        | `Array_m128 -> error "array_m128"
-        | `Array_m256 -> error "array_m256"
-        | `Float -> `Float
-        | `Imm -> error "immediate integer"
-        | `Int -> `Int
-        | `Int64 -> `Int64
-        | `M128 -> `M128
-        | `M256 -> `M256
-        | `Unit -> `Unit
-      in
-      let result_reg =
-        let reg = ref `Any in
-        String.iter (function
-            'c' -> reg := `C
-          | c -> error "Unknown result modifier '%c'" c) result_param;
-        !reg
-      in
-      { asm; args; result; result_reg }
+      let args = loop kinds params [] in
+      { asm; args = Array.of_list args }
   | [] -> error "Primitive.parse_intrin"
 
-let intrin_name intrin =
+let name intrin =
   String.concat "" (List.map (function
-      `Emit_arg i -> Printf.sprintf "$%d" i
+      `Emit_arg i -> Printf.sprintf "%%%d" i
     | `Emit_string s ->
         let rec escape s i =
           try
@@ -146,8 +124,8 @@ let intrin_name intrin =
         in
         escape s 0) intrin.asm)
 
-let intrin_description intrin =
-  let args = List.map (fun arg ->
+let description intrin =
+  let args = Array.map (fun arg ->
     let cp_to_reg =
       match arg.cp_to_reg with
       | `No -> ""
@@ -166,4 +144,4 @@ let intrin_description intrin =
     let commutative = if arg.commutative then "x" else "" in
     cp_to_reg ^ reload ^ commutative) intrin.args in
   let result = "" in
-  [intrin_name intrin] @ args @ [result]
+  [name intrin] @ (Array.to_list args) @ [result]

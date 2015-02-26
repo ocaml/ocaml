@@ -29,11 +29,6 @@ type addressing_mode =
   | Iscaled of int * int                (* reg * scale + displ *)
   | Iindexed2scaled of int * int        (* reg + reg * scale + displ *)
 
-type intrin_arg =
-    Iintrin_arg_ord
-  | Iintrin_arg_imm of int
-  | Iintrin_arg_addr of addressing_mode
-
 type specific_operation =
     Ilea of addressing_mode             (* "lea" gives scaled adds *)
   | Istore_int of nativeint * addressing_mode * bool
@@ -45,7 +40,6 @@ type specific_operation =
   | Ibswap of int                      (* endiannes conversion *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
-  | Iintrin of Intrin.intrin * intrin_arg list
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
@@ -134,54 +128,3 @@ let print_specific_operation printreg op ppf arg =
                    (Array.sub arg 1 (Array.length arg - 1))
   | Ibswap i ->
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
-  | Iintrin (intrin, iargs) ->
-      let open Intrin in
-      let instr_to_arg = Array.make (List.length intrin.args) 0 in
-      let _ = List.fold_left (fun (instr_i, arg_i) iarg ->
-        instr_to_arg.(instr_i) <- arg_i;
-        let arg_i = arg_i +
-          match iarg with
-            Iintrin_arg_imm _ -> 0
-          | Iintrin_arg_ord -> 1
-          | Iintrin_arg_addr addr ->
-              match addr with
-                Ibased _ -> 0
-              | Iindexed _
-              | Iscaled _ -> 1
-              | Iindexed2 _
-              | Iindexed2scaled _ -> 2
-        in
-        instr_i + 1, arg_i) (0, 0) iargs
-      in
-      List.iter (function
-          `Emit_string s -> fprintf ppf "%s" s
-        | `Emit_arg 0 -> fprintf ppf "r"
-        | `Emit_arg i ->
-            let i = i - 1 in
-            match List.nth iargs i with
-            | Iintrin_arg_ord -> fprintf ppf "%a" printreg arg.(instr_to_arg.(i))
-            | Iintrin_arg_imm n -> fprintf ppf "%n" n
-            | Iintrin_arg_addr addr ->
-                fprintf ppf "%a" (print_addressing' printreg addr instr_to_arg.(i)) arg
-        ) intrin.asm
-
-let map_intrin_regs arg intrin iargs f =
-  let open Intrin in
-  let arg' = Array.copy arg in
-  let arg_i = ref 0 in
-  List.iter2 (fun a iarg ->
-    let copy () =
-      arg'.(!arg_i) <- f arg.(!arg_i) a;
-      incr arg_i
-    in
-    match iarg with
-      Iintrin_arg_imm _ -> ()
-    | Iintrin_arg_ord -> copy ()
-    | Iintrin_arg_addr addr ->
-        match addr with
-        | Ibased _ -> ()
-        | Iindexed _
-        | Iscaled _ -> copy ()
-        | Iindexed2 _
-        | Iindexed2scaled _ -> copy (); copy ()) intrin.args iargs;
-  arg'

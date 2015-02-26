@@ -138,6 +138,17 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
+  | Iintrin (intrin, iargs) ->
+      List.iter (function
+          `Emit_string s -> fprintf ppf "%s" s
+        | `Emit_arg 0 -> fprintf ppf "r"
+        | `Emit_arg i ->
+            match iargs.(i - 1) with
+              Iarg i -> fprintf ppf "%a" reg arg.(i)
+            | Iarg_imm n -> fprintf ppf "%n" n
+            | Iarg_addr (i, chunk, addr) ->
+                fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
+                  (Arch.print_addressing' reg addr i) arg) intrin.Intrin.asm;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 
