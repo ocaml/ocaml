@@ -699,6 +699,10 @@ and transform_set_of_closures_expression env r cl annot =
       then E.set_never_inline closure_env
       else closure_env in
 
+    let closure_env =
+      E.note_entering_closure closure_env ~closure_id:(Closure_id.wrap fid)
+        ~where:Transform_set_of_closures_expression
+    in
     let body, r = loop closure_env r ffun.body in
     let used_params =
       List.fold_left
@@ -901,6 +905,10 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
           expr, Expr_id.create ()))
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
   in
+  let env =
+    E.note_entering_closure env ~closure_id:fun_id
+      ~where:Inline_by_copying_function_body
+  in
   loop (E.activate_substitution env) r
        (Flet (Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
 
@@ -962,6 +970,10 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
           Flambda.Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
         duplicated_application args_decl,
       Expr_id.create ())
+  in
+  let env =
+    E.note_entering_closure env ~closure_id:fun_id
+      ~where:Inline_by_copying_function_declaration
   in
   loop (E.activate_substitution env) r expr
 

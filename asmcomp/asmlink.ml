@@ -265,7 +265,7 @@ let link_shared ppf objfiles output_name =
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
-  Asmgen.compile_unit
+  Asmgen.compile_unit output_name
     startup !Clflags.keep_startup_file startup_obj
     (fun () ->
        make_shared_startup_file ppf
@@ -322,7 +322,7 @@ let link ppf objfiles output_name =
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
-  Asmgen.compile_unit
+  Asmgen.compile_unit output_name
     startup !Clflags.keep_startup_file startup_obj
     (fun () -> make_startup_file ppf units_tolink);
   call_linker (List.map object_file_name objfiles) startup_obj output_name;

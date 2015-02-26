@@ -30,6 +30,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       ~args_with_approxs ~ap_dbg ~eid
       ~inline_by_copying_function_body
       ~inline_by_copying_function_declaration =
+  let closure_stack = E.inlining_stats_closure_stack env in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =
     Fapply ({ap_function = funct; ap_arg = args;
@@ -110,8 +111,13 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   in
   let expr, r =
     match fun_cost with
-    | Never_inline -> no_transformation ()
-    | Can_inline _ when E.never_inline env -> no_transformation ()
+    | Never_inline ->
+      Flambda_inlining_stats.record_decision Never_inline ~closure_stack;
+      no_transformation ()
+    | Can_inline _ when E.never_inline env ->
+      Flambda_inlining_stats.record_decision Can_inline_but_env_says_not_to
+        ~closure_stack;
+      no_transformation ()
     | (Can_inline _) as remaining_inline_threshold ->
       (* CR mshinwell for mshinwell: add comment about stub functions *)
       (* CR mshinwell for pchambart: two variables called [threshold] and
@@ -138,18 +144,26 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                body
                (R.benefit r_inlined)
                inline_threshold
-        then
+        then begin
+          Flambda_inlining_stats.record_decision
+            (Inlined_copying_body (R.benefit r_inlined, inline_threshold))
+            ~closure_stack;
           body, R.map_benefit r_inlined
             (Flambdacost.benefit_union (R.benefit r))
-        else
+        end else begin
           (* r_inlined contains an approximation that may be invalid for the
              untransformed expression: it may reference functions that only
              exists if the body of the function is effectively inlined.
              If the function approximation contained an approximation that
              does not depends on the effective value of its arguments, it
              could be returned instead of [A.value_unknown] *)
+          Flambda_inlining_stats.record_decision
+            (Tried_copying_body (R.benefit r_inlined, inline_threshold))
+            ~closure_stack;
           no_transformation ()
+        end
       else if recursive then
+        let tried_unrolling = ref false in
         let unrolling_result =
           if E.unrolling_allowed env
               && E.inlining_level env <= max_level
@@ -159,15 +173,19 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
               inline_by_copying_function_body ~env ~r:(R.clear_benefit r)
                 ~clos ~lfunc:funct ~fun_id ~func ~args
             in
+            tried_unrolling := true;
             if Flambdacost.sufficient_benefit_for_inline
                 body
                 (R.benefit r_inlined)
                 inline_threshold
-            then
+            then begin
+              Flambda_inlining_stats.record_decision
+                (Unrolled (R.benefit r_inlined, inline_threshold))
+                ~closure_stack;
               Some (body,
                 R.map_benefit r_inlined
                   (Flambdacost.benefit_union (R.benefit r)))
-            else None
+            end else None
           else None
         in
         match unrolling_result with
@@ -193,15 +211,31 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                 expr
                 (R.benefit r_inlined)
                 inline_threshold
-            then
+            then begin
+              Flambda_inlining_stats.record_decision
+                (Inlined_copying_decl (Tried_unrolling !tried_unrolling,
+                  R.benefit r_inlined, inline_threshold))
+                ~closure_stack;
               expr, R.map_benefit r_inlined
                   (Flambdacost.benefit_union (R.benefit r))
-            else
+            end else begin
+              Flambda_inlining_stats.record_decision
+                (Tried_copying_decl (Tried_unrolling !tried_unrolling,
+                  R.benefit r_inlined, inline_threshold))
+                ~closure_stack;
               no_transformation ()
-          else
+            end
+          else begin
+            Flambda_inlining_stats.record_decision
+              (Did_not_try_copying_decl (Tried_unrolling !tried_unrolling))
+              ~closure_stack;
             no_transformation ()
-      else
+          end
+      else begin
+        Flambda_inlining_stats.record_decision Can_inline_but_tried_nothing
+          ~closure_stack;
         no_transformation ()
+      end
   in
   if E.inlining_level env = 0
   then expr, R.set_inline_threshold r inline_threshold

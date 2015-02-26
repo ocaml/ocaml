@@ -159,7 +159,7 @@ let flambda ppf (size, lam) =
     const;
   Clambdagen.convert fl_sym
 
-let compile_unit asm_filename keep_asm obj_filename gen =
+let compile_unit output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
   try
@@ -169,6 +169,11 @@ let compile_unit asm_filename keep_asm obj_filename gen =
       if create_asm then close_out !Emitaux.output_channel;
     with exn when create_asm ->
       close_out !Emitaux.output_channel;
+      begin match Sys.getenv "INLINING_STATS" with
+      | exception Not_found -> ()
+      | _ ->
+        Flambda_inlining_stats.save_then_forget_decisions ~output_prefix
+      end;
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;
@@ -276,7 +281,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit asmfile !keep_asm_file (prefixname ^ ext_obj)
+  compile_unit prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
     (fun () -> gen_implementation ?toplevel ppf (size, lam))
 
 (* Error report *)

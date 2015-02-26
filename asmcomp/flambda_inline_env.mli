@@ -49,3 +49,15 @@ val inside_unrolled_function : t -> t
 val inlining_level : t -> int
 val sb : t -> Flambdasubst.t
 val never_inline : t -> bool
+
+(* If collecting inlining statistics, record that the inliner is about to
+   descend into [closure_id].  This information enables us to produce a
+   stack of closures that form a kind of context around an inlining
+   decision point. *)
+val note_entering_closure
+   : t
+  -> closure_id:Closure_id.t
+  -> where:Flambda_inlining_stats.where_entering_closure
+  -> t
+
+val inlining_stats_closure_stack : t -> Flambda_inlining_stats.Closure_stack.t
