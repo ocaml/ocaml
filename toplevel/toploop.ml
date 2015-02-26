@@ -474,6 +474,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
+  Location.formatter_for_warnings := ppf;
   fprintf ppf "        OCaml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in

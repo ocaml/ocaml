@@ -36,6 +36,8 @@ Runtime:
   (Damien Doligez and Roshan James)
 
 Bug fixes:
+- PR#5271: parsing/Location.prerr_warning is hard-coded to use Format.err_formatter
+  (Damien Doligez, report by Rolf Rolles)
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
 - PR#6616: allow meaningful use of -use-runtime without -custom.
