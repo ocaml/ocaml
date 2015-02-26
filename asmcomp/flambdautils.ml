@@ -281,6 +281,70 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
        fu_relative_to = None},
      Expr_id.create ())
 
+
+(* CR pchambart to pchambart: in fact partial application doesn't work because
+   there are no 'known' partial application left: they are converted to
+   applications new partial function declaration.
+   That can be improved (and many other cases) by keeping track of aliases in
+   closure of functions. *)
+
+(* A parameter [x] of the function [f] is considered as unchanging if during
+   an 'external' (call from outside the set of closures) call of [f], every
+   recursive call of [f] all the instances of [x] are aliased to the original
+   one.
+
+   This function computes an underapproximation of that set by computing the
+   flow of parameters between the different function of the set of closures.
+   We will write (f, x) <- (g, y) to denote that the parameter [x] of the
+   function [f] can be an alias of the parameter [y] of the function [g].
+   (f, x) <- Anything denote that unknown values can flow to [x].
+   The '<-' relation is transitive.
+
+   [x] is not unchanging if either
+      (f, x) <- Anything
+   or (f, x) <- (f, y) with x != y
+
+   Notice that having (f, x) <- (g, a) and (f, x) <- (g, b) does not make
+   x not unchanging. This is because (g, a) and (g, b) represent necessarily
+   different values only if g is the externaly called function. If some
+   value where created during the execution of the function that could
+   flow to (g, a), then (g, a) <- Anything, so (f, x) <- Anything.
+
+ *)
+
+(* This is computed in two steps:
+   * accumulate the atomic <- relations
+   * compute the transitive closure
+
+   We record [(f, x) <- Argument (g, y)] when the function g calls f and
+   the y parameter of g is used as argument for the x parameter of f. For
+   instance in
+
+     let rec f x = ...
+     and g y = f x
+
+   We record [(f, x) <- Anything] when some unknown values can flow to a the
+   [y] parameter.
+
+     let rec f x = f 1
+
+   We record also [(f, x) <- Anything] if [f] could escape. This is over
+   approximated by considering that a function escape when its variable is used
+   for something else than an application:
+
+     let rec f x = (f,f)
+
+
+  The <- relation is represented by the type
+
+     t Pair_var_var.Map.t
+
+  if [Pair_var_var.Set.mem (g, y) s] and
+  [Argument s = Pair_var_var.Map.find (f, x) relation]
+  then (f, x) <- (g, y) is in the relation.
+
+*)
+
 module Pair_var_var =
   Ext_types.Identifiable.Make(Ext_types.Pair(Variable.M)(Variable.M))
 
@@ -288,7 +352,7 @@ type t =
   | Anything
   | Arguments of Pair_var_var.Set.t
 
-let fixpoint state =
+let transitive_closure state =
   let union s1 s2 =
     match s1, s2 with
     | Anything, _ | _, Anything -> Anything
@@ -301,7 +365,6 @@ let fixpoint state =
     | Arguments s1, Arguments s2 -> Pair_var_var.Set.equal s1 s2
   in
   let update arg state =
-    let (func, var) = arg in
     let original_set =
       try Pair_var_var.Map.find arg state with
       | Not_found -> Arguments Pair_var_var.Set.empty
@@ -318,15 +381,6 @@ let fixpoint state =
                union set acc)
             arguments original_set
         in
-        let set =
-          match set with
-          | Arguments args ->
-              if Pair_var_var.Set.exists (fun (func', var') ->
-                  Variable.equal func func' && not (Variable.equal var var'))
-                  args
-              then Anything
-              else set
-          | Anything -> Anything in
         Pair_var_var.Map.add arg set state
   in
   let once state =
@@ -342,7 +396,7 @@ let fixpoint state =
 
 let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   let escaping_functions = ref Variable.Set.empty in
-  let state = ref Pair_var_var.Map.empty in
+  let relation = ref Pair_var_var.Map.empty in
   let variables_at_position =
     Variable.Map.map (fun (decl : _ Flambda.function_declaration) ->
         Array.of_list decl.params)
@@ -352,17 +406,17 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
       ~callee ~callee_arg
       ~caller ~caller_arg =
     let kind =
-      try Pair_var_var.Map.find (callee,callee_arg) !state with
+      try Pair_var_var.Map.find (callee,callee_arg) !relation with
       | Not_found -> Arguments Pair_var_var.Set.empty in
     match kind with
     | Anything -> ()
     | Arguments set ->
-        state :=
+        relation :=
           Pair_var_var.Map.add (callee,callee_arg)
-            (Arguments (Pair_var_var.Set.add (caller,caller_arg) set)) !state
+            (Arguments (Pair_var_var.Set.add (caller,caller_arg) set)) !relation
   in
   let mark ~callee ~callee_arg =
-    state := Pair_var_var.Map.add (callee,callee_arg) Anything !state
+    relation := Pair_var_var.Map.add (callee,callee_arg) Anything !relation
   in
   let find_callee_arg ~callee ~callee_pos =
     match Variable.Map.find callee variables_at_position with
@@ -373,6 +427,8 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
           Some arr.(callee_pos)
         else None
   in
+  (* If the called closure is in the current set of closures, record the
+     relation (callee, callee_arg) <- (caller, caller_arg) *)
   let check_argument ~caller ~callee ~callee_pos arg =
     match find_callee_arg ~callee ~callee_pos with
     | None -> () (* not a recursive call *)
@@ -382,7 +438,7 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
             begin
               match Variable.Map.find caller decls.funs with
               | exception Not_found ->
-                  mark ~callee ~callee_arg
+                  assert false
               | { params } ->
                   if List.mem caller_arg params then
                     link ~caller ~caller_arg ~callee ~callee_arg
@@ -422,23 +478,28 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
       loop caller decl.body)
     decls.funs;
-  let state =
+  let relation =
     Variable.Map.fold (fun func_var
-          ({ params } : _ Flambda.function_declaration) state ->
+          ({ params } : _ Flambda.function_declaration) relation ->
         if Variable.Set.mem func_var !escaping_functions
         then
-          List.fold_left (fun state param ->
-              Pair_var_var.Map.add (func_var,param) Anything state)
-            state params
-        else state)
-      decls.funs !state
+          List.fold_left (fun relation param ->
+              Pair_var_var.Map.add (func_var,param) Anything relation)
+            relation params
+        else relation)
+      decls.funs !relation
   in
-  let result = fixpoint state in
-  let not_kept =
-    Pair_var_var.Map.fold (fun (_,var) set acc ->
+  let result = transitive_closure relation in
+  let not_unchanging =
+    Pair_var_var.Map.fold (fun (func,var) set not_unchanging ->
         match set with
-        | Anything -> Variable.Set.add var acc
-        | Arguments _ -> acc)
+        | Anything -> Variable.Set.add var not_unchanging
+        | Arguments set ->
+            if Pair_var_var.Set.exists (fun (func', var') ->
+                Variable.equal func func' && not (Variable.equal var var'))
+                set
+            then Variable.Set.add var not_unchanging
+            else not_unchanging)
       result Variable.Set.empty
   in
   let variables = Variable.Map.fold (fun _
@@ -446,4 +507,4 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
       Variable.Set.union (Variable.Set.of_list params) set)
     decls.funs Variable.Set.empty
   in
-  Variable.Set.diff variables not_kept
+  Variable.Set.diff variables not_unchanging
