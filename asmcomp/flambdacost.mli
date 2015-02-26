@@ -41,3 +41,4 @@ val sufficient_benefit_for_inline :
   bool
 
 val print_benefit : Format.formatter -> benefit -> unit
+val print_benefit_summary : Format.formatter -> benefit -> unit

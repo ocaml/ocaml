@@ -166,14 +166,14 @@ let compile_unit output_prefix asm_filename keep_asm obj_filename gen =
     if create_asm then Emitaux.output_channel := open_out asm_filename;
     begin try
       gen ();
-      if create_asm then close_out !Emitaux.output_channel;
-    with exn when create_asm ->
-      close_out !Emitaux.output_channel;
       begin match Sys.getenv "INLINING_STATS" with
       | exception Not_found -> ()
       | _ ->
         Flambda_inlining_stats.save_then_forget_decisions ~output_prefix
       end;
+      if create_asm then close_out !Emitaux.output_channel;
+    with exn when create_asm ->
+      close_out !Emitaux.output_channel;
       if not keep_asm then remove_file asm_filename;
       raise exn
     end;

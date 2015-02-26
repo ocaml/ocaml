@@ -30,7 +30,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       ~args_with_approxs ~ap_dbg ~eid
       ~inline_by_copying_function_body
       ~inline_by_copying_function_declaration =
-  let closure_stack = E.inlining_stats_closure_stack env in
+  let closure_stack =
+    E.inlining_stats_closure_stack
+      (E.note_entering_closure env ~closure_id:fun_id ~where:Inlining_decision)
+  in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =
     Fapply ({ap_function = funct; ap_arg = args;

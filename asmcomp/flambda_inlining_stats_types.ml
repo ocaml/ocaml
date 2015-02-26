@@ -21,3 +21,4 @@ type where_entering_closure =
   | Transform_set_of_closures_expression
   | Inline_by_copying_function_body
   | Inline_by_copying_function_declaration
+  | Inlining_decision

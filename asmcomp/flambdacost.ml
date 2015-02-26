@@ -255,3 +255,11 @@ let print_benefit ppf b =
     b.remove_alloc
     b.remove_prim
     b.remove_branch
+
+let print_benefit_summary ppf b =
+  Format.fprintf ppf "@[C%i,A%i,P%i,B%i=%i@]"
+    b.remove_call
+    b.remove_alloc
+    b.remove_prim
+    b.remove_branch
+    (evaluate_benefit b)
