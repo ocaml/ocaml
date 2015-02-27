@@ -36,10 +36,14 @@ Runtime:
   (Damien Doligez and Roshan James)
 
 Bug fixes:
-- PR#5271: parsing/Location.prerr_warning is hard-coded to use Format.err_formatter
+- PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
+- PR#6573: extern "C" for systhreads/threads.h
+  (Mickaël Delahaye)
+- PR#6607: The manual doesn't mention 0x200 flag for OCAMLRUNPARAM=v
+  (Alain Frisch)
 - PR#6616: allow meaningful use of -use-runtime without -custom.
   (Peter Zotov)
 - PR#6628: Configure script rejects legitimate arguments
@@ -48,11 +52,9 @@ Bug fixes:
   (report by user 'william')
 - PR#6665: Failure of tests/asmcomp on sparc
   (Stéphane Glondu)
-- PR#6573: extern "C" for systhreads/threads.h
-  (Mickaël Delahaye)
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
-- PR#6680: Missing parentheses when printing polymorphic variant value in warning
+- PR#6680: Missing parens when printing polymorphic variant value in warning
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
            type variable in place of a local abstract type
 - PR#6717: Pprintast does not print let-pattern attributes
