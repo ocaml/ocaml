@@ -1,5 +1,4 @@
 open Abstract_identifiers
-open Flambda_inlining_stats_types
 
 module Closure_stack : sig
   type t
@@ -9,12 +8,12 @@ module Closure_stack : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> where:where_entering_closure
+    -> where:Flambda_inlining_stats_types.where_entering_closure
     -> t
 end
 
 val record_decision
-   : Decision.t
+   : Flambda_inlining_stats_types.Decision.t
   -> closure_stack:Closure_stack.t
   -> debuginfo:Debuginfo.t
   -> unit

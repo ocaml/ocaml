@@ -1,11 +1,11 @@
 open Abstract_identifiers
-open Flambda_inlining_stats_types
 
 let vim_trailer = "# vim:fdm=expr:filetype=plain:\
   foldexpr=getline(v\\:lnum)=~'^\\\\s*$'&&getline(v\\:lnum+1)=~'\\\\S'?'<1'\\:1"
 
 module Closure_stack = struct
-  type t = (Closure_id.t * where_entering_closure) list
+  type t
+    = (Closure_id.t * Flambda_inlining_stats_types.where_entering_closure) list
 
   let create () = []
 
@@ -67,7 +67,8 @@ module Line_number_then_time = struct
 end
 
 let decisions :
-  (Line_number_then_time.t * (Closure_stack.t * Decision.t)) list
+  (Line_number_then_time.t
+      * (Closure_stack.t * Flambda_inlining_stats_types.Decision.t)) list
     Closure_id.Tbl.t = Closure_id.Tbl.create 42
 
 let record_decision decision ~closure_stack ~debuginfo =
@@ -101,7 +102,8 @@ let really_save_then_forget_decisions ~output_prefix =
           let line = Line_number_then_time.line_number key in
           Printf.fprintf out_channel "  %5d: (%5d) " line time;
           Closure_stack.save closure_stack ~out_channel;
-          Printf.fprintf out_channel ": %s\n" (Decision.to_string decision))
+          Printf.fprintf out_channel ": %s\n"
+            (Flambda_inlining_stats_types.Decision.to_string decision))
         bucket;
       Printf.fprintf out_channel "\n") decisions;
   Printf.fprintf out_channel "%s\n" vim_trailer;

@@ -1,5 +1,3 @@
-(* Types used for producing statistics about inlining. *)
-
 module Wsb = Flambdacost.Whether_sufficient_benefit
 
 module Tried_unrolling = struct
