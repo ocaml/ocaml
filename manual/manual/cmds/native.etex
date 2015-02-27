@@ -465,7 +465,7 @@ to \var{lowercase-letter}.
 Warning numbers and letters which are out of the range of warnings
 that are currently defined are ignored. The warning are as follows.
 \begin{options}
-\input{warnings.tex}
+\input{warnings-help.tex}
 \end{options}
 
 The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45".

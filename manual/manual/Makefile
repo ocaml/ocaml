@@ -1,6 +1,6 @@
 # $Id$
 
-FILES=allfiles.tex biblio.tex foreword.tex version.tex warnings.etex
+FILES=allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
@@ -113,7 +113,7 @@ clean:
 	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
-	rm -f warnings.etex
+	rm -f warnings-help.etex
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
@@ -136,6 +136,6 @@ version.tex: $(SRC)/VERSION
 	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' \
 	    $(SRC)/VERSION > version.tex
 
-warnings.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.etex
+	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/' >$@
