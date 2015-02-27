@@ -278,6 +278,9 @@ and meet a1 a2 =
 
 module Import = struct
   open Flambdaexport
+
+  let reported_missing_symbols = SymbolTbl.create 0
+
   let rec import_ex ex : t =
 
     ignore(Compilenv.approx_for_global (ExportId.unit ex));
@@ -339,12 +342,14 @@ module Import = struct
         (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
       try import_ex (SymbolMap.find sym symbol_id_map) with
       | Not_found ->
-        (* CR pchambart: make a real warning of that. *)
-(*
-        Format.eprintf "Warning, couldn't find informations associated \
-                        to the symbol %a. Did you forger a -I arguments ?@."
-          Symbol.print sym;
-*)
+        if not (SymbolTbl.mem reported_missing_symbols sym)
+        then begin
+          SymbolTbl.add reported_missing_symbols sym ();
+          Location.prerr_warning (Location.in_file "some_file")
+            (Warnings.Missing_symbol_information
+               (Format.asprintf "%a" Symbol.print sym,
+                Format.asprintf "%a" Compilation_unit.print sym.Symbol.sym_unit));
+        end;
         value_unresolved sym
 
   let rec really_import = function

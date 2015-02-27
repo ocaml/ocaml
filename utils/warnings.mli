@@ -63,6 +63,7 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
   | Assignment_on_non_mutable_value         (* 50 *)
+  | Missing_symbol_information of string * string (* 51 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

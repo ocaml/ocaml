@@ -829,6 +829,12 @@ mutually recursive types.
 45
 \ \ Open statement shadows an already defined label or constructor.
 
+50
+\ \ Abusive use of Obj.magic (only apply to ocamlopt).
+
+51
+\ \ Missing symbol information (only apply to ocamlopt).
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

@@ -68,6 +68,7 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
   | Assignment_on_non_mutable_value         (* 50 *)
+  | Missing_symbol_information of string * string (* 51 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -127,9 +128,10 @@ let number = function
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
   | Assignment_on_non_mutable_value -> 50
+  | Missing_symbol_information _ -> 51
 ;;
 
-let last_warning_number = 50
+let last_warning_number = 51
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -388,6 +390,11 @@ let message = function
       "no cmi file was found in path for module " ^ s
   | Assignment_on_non_mutable_value ->
       "Assignment on non-mutable value"
+  | Missing_symbol_information (symbol, unit) ->
+      Printf.sprintf
+        "No information found for the symbol %s, preventing potential optimisation.\n\
+         Some .cmx or .cmxa file is probably missing. It can usualy be solved by adding a -I arguments"
+        symbol
 ;;
 
 let nerrors = ref 0;;
