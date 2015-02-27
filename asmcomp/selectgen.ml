@@ -327,7 +327,10 @@ method select_operation op args =
             end
         | _, _ -> fatal_error "Selection.select_oper_1"
       in
-      let args, iargs = loop args (Array.to_list intrin.Intrin.args) 0 [] [] in
+      let nres = Array.fold_left (fun nres intrin ->
+        if intrin.Intrin.output then nres + 1 else nres) 0 intrin.Intrin.args
+      in
+      let args, iargs = loop args (Array.to_list intrin.Intrin.args) nres [] [] in
       (Iintrin (intrin, Array.of_list iargs), args)
   | _ -> fatal_error "Selection.select_oper"
 
@@ -433,6 +436,8 @@ method insert_moves src dst =
   for i = 0 to min (Array.length src) (Array.length dst) - 1 do
     self#insert_move src.(i) dst.(i)
   done
+
+method intrin_pseudoreg _ r = r
 
 (* Adjust the types of destination pseudoregs for a [Cassign] assignment.
    The type inferred at [let] binding might be [Int] while we assign
@@ -581,6 +586,26 @@ method emit_expr env exp =
               self#insert (Iop(Ialloc size)) [||] rd;
               self#emit_stores env new_args rd;
               Some rd
+          | Iintrin (intrin, iargs) ->
+              let r1 = self#emit_tuple env new_args in
+              let rd = self#regs_for_ty in
+              let rec loop r1 rd rsrc rdst iargs =
+                match r1, iargs with
+                  [], _ -> Array.of_list (List.rev rsrc), Array.of_list (List.rev rdst)
+                | r :: r1, iarg :: iargs ->
+                    let rnew = intrin_pseudoreg iarg r in
+                    if 
+                    self#insert_move r rnew
+                    if iarg.Intrin.output then
+                      loop r1 (r :: rsrc) rdst iargs
+                    else
+                      loop r1 rsrc (r :: rdst) iargs
+                | _, _ ->
+                    fatal_error ("Selection.emit_expr: not enough iargs " ^
+                      (Intrin.name intrin))
+              in
+              let rsrc, rdst = loop r1 [] rd iargs in
+              Some (self#insert_op_debug op dbg rsrc rdsr)
           | op ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in

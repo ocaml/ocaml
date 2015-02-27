@@ -28,6 +28,7 @@ type arg = {
   cp_to_reg   : [ `No | `Result | `A | `C | `D ];
   reload      : [ `No | `M64 | `M128 | `M256 ];
   immediate   : bool;
+  input       : bool;
   output      : bool;
   register    : bool;
   commutative : bool }
@@ -83,6 +84,7 @@ let parse_intrin kinds decl =
             cp_to_reg   = `No;
             reload      = `No;
             immediate   = false;
+            input       = true;
             output      = false;
             register    = false;
             commutative = false } in
@@ -100,8 +102,8 @@ let parse_intrin kinds decl =
                   | _    -> `M256) }
             | 'r' -> arg := { !arg with register = true }
             | 'x' -> arg := { !arg with commutative = true }
-            | '=' ->
-                arg := { !arg with output = true }
+            | '=' -> arg := { !arg with input = false; output = true }
+            | '+' -> arg := { !arg with input = true; output = true }
             | c -> error "Unknown argument modifier '%c'" c) param;
           loop kinds params (!arg :: acc_args)
         | _, _ -> error "Missing argument descripions"

@@ -28,6 +28,7 @@ type arg = {
   cp_to_reg   : [ `No | `Result | `A | `C | `D ];
   reload      : [ `No | `M64 | `M128 | `M256 ];
   immediate   : bool;
+  input       : bool;
   output      : bool;
   register    : bool;
   commutative : bool }
