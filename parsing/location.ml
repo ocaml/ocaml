@@ -251,7 +251,7 @@ let print_loc ppf loc =
 let print ppf loc =
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
-  else fprintf ppf "%a%s" print_loc loc msg_colon
+  else fprintf ppf "%a%s@." print_loc loc msg_colon
 ;;
 
 let print_compact ppf loc =
