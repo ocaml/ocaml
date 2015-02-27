@@ -77,7 +77,7 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) -inlining-stats `./Compflags $@` -c $<
 
 .ml.p.cmx:
 	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<

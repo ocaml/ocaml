@@ -88,6 +88,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline n = inline_threshold := n * 8
+  let _inlining_stats () = inlining_stats := true
   let _rounds n = simplify_rounds := n
   let _unroll n = unroll := n
   let _intf = intf

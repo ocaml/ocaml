@@ -223,31 +223,6 @@ let remove_alloc_bonus = 10
 let remove_prim_bonus = 3
 let remove_branch_bonus = 10
 
-let evaluate_benefit b =
-  b.remove_call * remove_call_bonus
-  + b.remove_alloc * remove_alloc_bonus
-  + b.remove_prim * remove_prim_bonus
-  + b.remove_branch * remove_branch_bonus
-
-let sufficient_benefit_for_inline ?original lam benefit inline_threshold =
-  match inline_threshold with
-  | Never_inline ->
-      false
-  | Can_inline threshold ->
-      match lambda_smaller' lam ~than:max_int with
-      | None ->
-          false
-      | Some size ->
-          let threshold =
-            match original with
-            | None -> threshold
-            | Some original ->
-                match lambda_smaller' lam ~than:max_int with
-                | None -> threshold
-                | Some size -> threshold + size
-          in
-          size - evaluate_benefit benefit <= threshold
-
 let print_benefit ppf b =
   Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
                       remove_prim: %i@ remove_branc: %i@]"
@@ -256,10 +231,67 @@ let print_benefit ppf b =
     b.remove_prim
     b.remove_branch
 
-let print_benefit_summary ppf b =
-  Format.fprintf ppf "@[C%i,A%i,P%i,B%i=%i@]"
-    b.remove_call
-    b.remove_alloc
-    b.remove_prim
-    b.remove_branch
-    (evaluate_benefit b)
+let evaluate_benefit b =
+  b.remove_call * remove_call_bonus
+  + b.remove_alloc * remove_alloc_bonus
+  + b.remove_prim * remove_prim_bonus
+  + b.remove_branch * remove_branch_bonus
+
+module Whether_sufficient_benefit = struct
+  type maybe_inline = {
+    benefit : benefit;
+    inline_threshold : inline_threshold;
+    evaluated_size : int;
+    evaluated_benefit : int;
+    evaluated_threshold : int;
+  }
+
+  type t =
+    | Do_not_inline
+    | Maybe_inline of maybe_inline
+
+  let create ?original lam benefit (inline_threshold : inline_threshold) =
+    match inline_threshold with
+    | Never_inline -> Do_not_inline
+    | Can_inline threshold ->
+      match lambda_smaller' lam ~than:max_int with
+      | None -> Do_not_inline
+      | Some evaluated_size ->
+        let evaluated_threshold =
+          match original with
+          | None -> threshold
+          | Some original ->
+            match lambda_smaller' lam ~than:max_int with
+            | None -> threshold
+            | Some size -> threshold + evaluated_size
+        in
+        let evaluated_benefit = evaluate_benefit benefit in
+        Maybe_inline {
+          benefit; inline_threshold;
+          evaluated_size; evaluated_benefit; evaluated_threshold;
+        }
+
+  let evaluate = function
+    | Do_not_inline -> false
+    | Maybe_inline maybe ->
+      maybe.evaluated_size - maybe.evaluated_benefit
+          <= maybe.evaluated_threshold
+
+  let to_string t =
+    match t with
+    | Do_not_inline -> "no"
+    | Maybe_inline maybe ->
+      Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i},\
+                      thresh=%s,eval_size=%d,eval_benefit=%d,\
+                      eval_thresh=%d}=%s"
+        maybe.benefit.remove_call
+        maybe.benefit.remove_alloc
+        maybe.benefit.remove_prim
+        maybe.benefit.remove_branch
+        (match maybe.inline_threshold with
+          | Never_inline -> "N" | Can_inline i -> string_of_int i)
+        maybe.evaluated_size
+        maybe.evaluated_benefit
+        maybe.evaluated_threshold
+        (if evaluate t then "yes" else "no")
+end

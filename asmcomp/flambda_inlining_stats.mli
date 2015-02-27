@@ -15,8 +15,9 @@ module Closure_stack : sig
 end
 
 val record_decision
-   : decision
+   : Decision.t
   -> closure_stack:Closure_stack.t
+  -> debuginfo:Debuginfo.t
   -> unit
 
 val save_then_forget_decisions : output_prefix:string -> unit

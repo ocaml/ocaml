@@ -59,6 +59,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _I s = option_with_arg "-I" s
   let _impl s = with_impl := true; option_with_arg "-impl" s
   let _inline n = option_with_int "-inline" n
+  let _inlining_stats = option "-inlining-stats"
   let _rounds n = option_with_int "-rounds" n
   let _unroll n = option_with_int "-unroll" n
   let _intf s = with_intf := true; option_with_arg "-intf" s

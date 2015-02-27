@@ -113,6 +113,10 @@ let mk_inline f =
   "-inline", Arg.Int f, "<n>  Set aggressiveness of inlining to <n>"
 ;;
 
+let mk_inlining_stats f =
+  "-inlining-stats", Arg.Unit f, " Emit .i files containing inlining statistics"
+;;
+
 let mk_rounds f =
   "-rounds", Arg.Int f, "<n>  Set number of simplification rounds to <n>"
 ;;
@@ -579,6 +583,7 @@ end;;
 module type Optcommon_options = sig
   val _compact : unit -> unit
   val _inline : int -> unit
+  val _inlining_stats : unit -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
 
@@ -784,6 +789,7 @@ struct
     mk_I F._I;
     mk_impl F._impl;
     mk_inline F._inline;
+    mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
     mk_intf F._intf;
@@ -861,6 +867,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
+    mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
     mk_labels F._labels;
