@@ -57,7 +57,9 @@ val never_inline : t -> bool
 val note_entering_closure
    : t
   -> closure_id:Closure_id.t
-  -> where:Flambda_inlining_stats.where_entering_closure
+  -> where:Flambda_inlining_stats_types.where_entering_closure
   -> t
 
-val inlining_stats_closure_stack : t -> Flambda_inlining_stats.Closure_stack.t
+val inlining_stats_closure_stack
+   : t
+  -> Flambda_inlining_stats.Closure_stack.t

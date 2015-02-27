@@ -1,6 +1,5 @@
 open Abstract_identifiers
-
-include module type of Flambda_inlining_stats_types
+open Flambda_inlining_stats_types
 
 module Closure_stack : sig
   type t

@@ -279,7 +279,7 @@ module Whether_sufficient_benefit = struct
 
   let to_string t =
     match t with
-    | Do_not_inline -> "no"
+    | Do_not_inline -> "do-not-inline"
     | Maybe_inline maybe ->
       Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i},\
                       thresh=%s,eval_size=%d,eval_benefit=%d,\

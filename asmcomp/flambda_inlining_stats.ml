@@ -1,9 +1,8 @@
 open Abstract_identifiers
+open Flambda_inlining_stats_types
 
 let vim_trailer = "# vim:fdm=expr:filetype=plain:\
   foldexpr=getline(v\\:lnum)=~'^\\\\s*$'&&getline(v\\:lnum+1)=~'\\\\S'?'<1'\\:1"
-
-include Flambda_inlining_stats_types
 
 module Closure_stack = struct
   type t = (Closure_id.t * where_entering_closure) list
