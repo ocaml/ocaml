@@ -313,10 +313,12 @@ method select_operation op args =
                 end
             | `Unit -> loop args iargs narg nres acc_args ((Iarg_imm 0) :: acc_iargs)
             | _ ->
-                match iarg.Intrin.reload, arg with
-                  `M64 , Cop(Cload (Double|Double_u|M128_u|M256_u as chunk), [loc])
-                | `M128, Cop(Cload (M128_u|M256_u as chunk), [loc])
-                | `M256, Cop(Cload (M256_u as chunk), [loc]) when iarg.Intrin.input ->
+                match iarg.Intrin.kind, arg with
+                | `Int  , Cop(Cload (Word as chunk), [loc])
+                | `Float, Cop(Cload (Double|Double_u|M128_u|M256_u as chunk), [loc])
+                | `M128 , Cop(Cload (M128_u|M256_u as chunk), [loc])
+                | `M256 , Cop(Cload (M256_u as chunk), [loc])
+                  when iarg.Intrin.input && iarg.Intrin.memory ->
                     let addr, arg1 = self#select_addressing chunk loc in
                     loop args iargs (narg + Arch.num_args_addressing addr) nres
                       (arg1 :: acc_args) ((Iarg_addr (narg, chunk, addr)) :: acc_iargs)
@@ -589,31 +591,36 @@ method emit_expr env exp =
           | Iintrin (intrin, iargs) ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
-              let rec loop r1 rsrc rdst rsrc_new rdst_new iargs =
-                match r1, iargs with
-                  [], _ ->
-                    Array.of_list (List.rev rsrc),
-                    Array.of_list (List.rev rdst),
-                    Array.of_list (List.rev rsrc_new),
-                    Array.of_list (List.rev rdst_new)
-                | r :: r1, iarg :: iargs ->
-                    let r_new = self#intrin_pseudoreg iarg r in
-                    let rsrc, rsrc_new =
-                      if iarg.Intrin.input then r :: rsrc, r_new :: rsrc_new
-                      else rsrc, rsrc_new
-                    in
-                    let rdst, rdst_new =
-                      if iarg.Intrin.output then r :: rdst, r_new :: rdst_new
-                      else rdst, rdst_new
-                    in
-                    loop r1 rsrc rdst rsrc_new rdst_new iargs
-                | _, _ ->
-                    fatal_error ("Selection.emit_expr: not enough iargs " ^
-                      (Intrin.name intrin))
-              in
-              let rsrc, rdst, rsrc_new, rdst_new =
-                loop (Array.to_list r1 @ Array.to_list rd) [] [] [] []
-                  (Array.to_list intrin.Intrin.args) in
+              let iargs = intrin.Intrin.args in
+              let rs = Array.append r1 rd in
+              let rs_new = Array.mapi (fun i -> self#intrin_pseudoreg iargs.(i)) rs in
+              for i = 0 to Array.length rs - 1 do
+                match iargs.(i).Intrin.copy_to_output with
+                | None -> ()
+                | Some n -> rs_new.(i) <- rs_new.(n)
+              done;
+
+              let rsrc = ref [] in
+              let rsrc_new = ref [] in
+              let rdst = ref [] in
+              let rdst_new = ref [] in
+              for i = 0 to Array.length rs - 1 do
+                let iarg = iargs.(i) in
+                if iarg.Intrin.input then begin
+                  rsrc := rs.(i) :: !rsrc;
+                  rsrc_new := rs_new.(i) :: !rsrc_new
+                end;
+                if iarg.Intrin.output then begin
+                  rdst := rs.(i) :: !rdst;
+                  rdst_new := rs_new.(i) :: !rdst_new
+                end
+              done;
+
+              let rsrc     = Array.of_list (List.rev !rsrc    ) in
+              let rsrc_new = Array.of_list (List.rev !rsrc_new) in
+              let rdst     = Array.of_list (List.rev !rdst    ) in
+              let rdst_new = Array.of_list (List.rev !rdst_new) in
+
               self#insert_moves rsrc rsrc_new;
               self#insert_debug (Iop new_op) dbg rsrc_new rdst_new;
               self#insert_moves rdst_new rdst;

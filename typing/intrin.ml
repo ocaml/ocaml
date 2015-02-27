@@ -24,15 +24,16 @@ type arg_kind =
   | `Unit ]
 
 type arg = {
-  kind         : arg_kind;
-  cp_to_reg    : [ `No | `Result | `A | `C | `D ];
-  reload       : [ `No | `M64 | `M128 | `M256 ];
-  earlyclobber : bool;
-  immediate    : bool;
-  input        : bool;
-  output       : bool;
-  register     : bool;
-  commutative  : bool }
+  kind           : arg_kind;
+  mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
+  copy_to_output : int option;
+  commutative    : bool;
+  earlyclobber   : bool;
+  immediate      : bool;
+  input          : bool;
+  memory         : bool;
+  output         : bool;
+  register       : bool }
 
 type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
@@ -81,32 +82,44 @@ let parse_intrin kinds decl =
   let args = Array.mapi (fun i kind ->
     let arg = ref {
       kind;
-      cp_to_reg    = `No;
-      reload       = `No;
-      earlyclobber = false; 
-      immediate    = false;
-      input        = true;
-      output       = false;
-      register     = false;
-      commutative  = false } in
+      mach_register  = None;
+      copy_to_output = None;
+      commutative    = false;
+      earlyclobber   = false;
+      immediate      = false;
+      input          = true;
+      memory         = false;
+      output         = false;
+      register       = false } in
+    
+    let cstrs = decl.(i + 1) in
+    let i = ref 0 in
+    while !i < String.length cstrs && cstrs.[!i] >= '0' && cstrs.[!i] <= '9' do
+      incr i
+    done;
+    let cstrs =
+      if !i > 0 then begin
+        let copy_to_output = Some (int_of_string (String.sub cstrs 0 !i)) in
+        arg := { !arg with copy_to_output };
+        String.sub cstrs !i (String.length cstrs - !i)
+      end else cstrs
+    in
+
     String.iter (function
-        '0' -> arg := { !arg with cp_to_reg = `Result }
-      | 'a' -> arg := { !arg with cp_to_reg = `A }
-      | 'c' -> arg := { !arg with cp_to_reg = `C }
-      | 'd' -> arg := { !arg with cp_to_reg = `D }
-      | 'i' -> arg := { !arg with immediate = true }
-      | 'm' ->
-          arg := { !arg with reload = (
-            match !arg.reload with
-            | `No  -> `M64
-            | `M64 -> `M128
-            | _    -> `M256) }
-      | 'r' -> arg := { !arg with register = true }
-      | 'x' -> arg := { !arg with commutative = true }
+        'a' -> arg := { !arg with mach_register = Some `a }
+      | 'b' -> arg := { !arg with mach_register = Some `b }
+      | 'c' -> arg := { !arg with mach_register = Some `c }
+      | 'd' -> arg := { !arg with mach_register = Some `d }
+      | 'S' -> arg := { !arg with mach_register = Some `S }
+      | 'D' -> arg := { !arg with mach_register = Some `D }
+      | '%' -> arg := { !arg with commutative = true }
       | '&' -> arg := { !arg with earlyclobber = true }
+      | 'i' -> arg := { !arg with immediate = true }
+      | 'm' -> arg := { !arg with memory = true }
+      | 'r' -> arg := { !arg with register = true }
       | '=' -> arg := { !arg with input = false; output = true }
       | '+' -> arg := { !arg with input = true; output = true }
-      | c -> error "Unknown argument modifier '%c'" c) decl.(i + 1);
+      | c -> error "Unknown argument modifier '%c'" c) cstrs;
     !arg) kinds in
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
@@ -136,22 +149,22 @@ let name intrin =
 
 let description intrin =
   let args = Array.map (fun arg ->
-    let cp_to_reg =
-      match arg.cp_to_reg with
-      | `No -> ""
-      | `Result -> "0"
-      | `A -> "a"
-      | `C -> "c"
-      | `D -> "d"
-    in
-    let reload =
-      match arg.reload with
-      | `No   -> ""
-      | `M64  -> "m"
-      | `M128 -> "mm"
-      | `M256 -> "mmm"
-    in
-    let commutative = if arg.commutative then "x" else "" in
-    cp_to_reg ^ reload ^ commutative) intrin.args in
+      ( match arg.copy_to_output with None -> "" | Some x -> string_of_int x )
+    ^ ( match arg.mach_register with None -> "" | Some r ->
+          match r with
+          | `a -> "a"
+          | `b -> "b"
+          | `c -> "c"
+          | `d -> "d"
+          | `S -> "S"
+          | `D -> "D" )
+    ^ ( if arg.commutative             then "x" else "" )
+    ^ ( if arg.earlyclobber            then "&" else "" )
+    ^ ( if arg.immediate               then "i" else "" )
+    ^ ( if arg.memory                  then "m" else "" )
+    ^ ( if arg.register                then "r" else "" )
+    ^ ( if arg.output && arg.input     then "+" else "" )
+    ^ ( if arg.output && not arg.input then "=" else "" )
+    ) intrin.args in
   let result = "" in
   [name intrin] @ (Array.to_list args) @ [result]

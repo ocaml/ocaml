@@ -424,7 +424,8 @@ let emit_intrin i intrin iargs =
         | Iarg_addr (n, chunk, addr) ->
             let typ =
               match chunk with
-                Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
+                Word -> QWORD
+              | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
               | _ -> assert false
             in
             Intrin_arg (addressing addr typ i n)) intrin.Intrin.asm)

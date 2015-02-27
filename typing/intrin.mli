@@ -24,15 +24,16 @@ type arg_kind =
   | `Unit ]
 
 type arg = {
-  kind         : arg_kind;
-  cp_to_reg    : [ `No | `Result | `A | `C | `D ];
-  reload       : [ `No | `M64 | `M128 | `M256 ];
-  earlyclobber : bool;
-  immediate    : bool;
-  input        : bool;
-  output       : bool;
-  register     : bool;
-  commutative  : bool }
+  kind           : arg_kind;
+  mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
+  copy_to_output : int option;
+  commutative    : bool;
+  earlyclobber   : bool;
+  immediate      : bool;
+  input          : bool;
+  memory         : bool;
+  output         : bool;
+  register       : bool }
 
 type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;

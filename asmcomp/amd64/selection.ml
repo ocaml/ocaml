@@ -74,8 +74,11 @@ let rec select_addr exp =
 exception Use_default
 
 let rax = phys_reg 0
+let rbx = phys_reg 1
 let rcx = phys_reg 5
 let rdx = phys_reg 4
+let rdi = phys_reg 2
+let rsi = phys_reg 3
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -168,11 +171,16 @@ method! select_store is_assign addr exp =
       super#select_store is_assign addr exp
 
 method! intrin_pseudoreg iarg r =
-  match iarg.Intrin.cp_to_reg with
-  | `No | `Result -> r
-  | `A -> rax
-  | `C -> rcx
-  | `D -> rdx
+  match iarg.Intrin.mach_register with
+  | None -> r
+  | Some r ->
+      match r with
+      | `a -> rax
+      | `b -> rbx
+      | `c -> rcx
+      | `d -> rdx
+      | `S -> rsi
+      | `D -> rdi
 
 method! select_operation op args =
   match op with
