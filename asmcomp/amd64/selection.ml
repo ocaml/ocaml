@@ -167,6 +167,13 @@ method! select_store is_assign addr exp =
   | _ ->
       super#select_store is_assign addr exp
 
+method! intrin_pseudoreg iarg r =
+  match iarg.Intrin.cp_to_reg with
+  | `No | `Result -> r
+  | `A -> rax
+  | `C -> rcx
+  | `D -> rdx
+
 method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
