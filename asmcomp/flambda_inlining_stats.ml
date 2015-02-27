@@ -81,6 +81,8 @@ let record_decision decision ~closure_stack ~debuginfo =
     in
     let key = Line_number_then_time.create ~debuginfo ~time:!time in
     let data = closure_stack, decision in
+    (* The order here is important so that the "time rebasing" works
+       properly, below. *)
     Closure_id.Tbl.replace decisions closure_id ((key, data) :: bucket);
     incr time
   end
@@ -89,10 +91,16 @@ let really_save_then_forget_decisions ~output_prefix =
   let out_channel = open_out (output_prefix ^ ".i") in
   Closure_id.Tbl.iter (fun closure_id bucket ->
       Printf.fprintf out_channel "%a\n" Closure_id.output closure_id;
+      let bucket =
+        (* Rebase timestamps to start at zero within each bucket. *)
+        List.mapi (fun rebased_time (key, (closure_stack, decision)) ->
+            key, (rebased_time, closure_stack, decision))
+          (List.rev bucket)
+      in
       let bucket = List.sort Line_number_then_time.compare_fst bucket in
-      List.iter (fun (key, (closure_stack, decision)) ->
+      List.iter (fun (key, (time, closure_stack, decision)) ->
           let line = Line_number_then_time.line_number key in
-          Printf.fprintf out_channel "  %5d: " line;
+          Printf.fprintf out_channel "  %5d: (%5d) " line time;
           Closure_stack.save closure_stack ~out_channel;
           Printf.fprintf out_channel ": %s\n" (Decision.to_string decision))
         bucket;

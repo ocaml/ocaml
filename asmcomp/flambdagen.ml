@@ -274,14 +274,11 @@ let rec close t env = function
       Flet(let_kind, var, close_let_bound_expression t var env lam,
            close t (add_var id var env) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
-      (* CXR-someday mshinwell: Identifiers should have proper names.  If
-         the function is anonymous, the location can be used.
-         pchambart: done *)
       let closure_bound_var =
         let name = match body with
           | Levent(_,{ lev_loc }) ->
-            Format.asprintf "anonymous_function %a" Location.print lev_loc
-          | _ -> "anonymous_function" in
+            Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
+          | _ -> "anon-fn" in
         fresh_variable t name
       in
       let decl =
