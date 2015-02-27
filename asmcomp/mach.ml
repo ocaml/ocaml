@@ -33,6 +33,7 @@ type test =
 
 type intrin_arg =
   | Iarg of int
+  | Ires of int
   | Iarg_imm of int
   | Iarg_addr of int * Cmm.memory_chunk * Arch.addressing_mode
 

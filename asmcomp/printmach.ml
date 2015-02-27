@@ -141,10 +141,10 @@ let operation op arg ppf res =
   | Iintrin (intrin, iargs) ->
       List.iter (function
           `Emit_string s -> fprintf ppf "%s" s
-        | `Emit_arg 0 -> fprintf ppf "r"
         | `Emit_arg i ->
-            match iargs.(i - 1) with
+            match iargs.(i) with
               Iarg i -> fprintf ppf "%a" reg arg.(i)
+            | Ires i -> fprintf ppf "%a" reg res.(i)
             | Iarg_imm n -> fprintf ppf "%n" n
             | Iarg_addr (i, chunk, addr) ->
                 fprintf ppf "%s[%a]" (Printcmm.chunk chunk)

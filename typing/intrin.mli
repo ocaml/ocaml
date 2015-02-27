@@ -34,8 +34,10 @@ type arg = {
   commutative : bool }
 
 type intrin = {
-  asm  : [ `Emit_string of string | `Emit_arg of int ] list;
-  args : arg array }
+  asm    : [ `Emit_string of string | `Emit_arg of int ] list;
+  args   : arg array;
+  cc     : bool;
+  memory : bool }
 
 val parse_intrin: arg_kind list -> string list -> intrin
 

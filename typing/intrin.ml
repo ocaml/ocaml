@@ -34,8 +34,10 @@ type arg = {
   commutative : bool }
 
 type intrin = {
-  asm  : [ `Emit_string of string | `Emit_arg of int ] list;
-  args : arg array }
+  asm    : [ `Emit_string of string | `Emit_arg of int ] list;
+  args   : arg array;
+  cc     : bool;
+  memory : bool }
 
 (** Parses assembly code given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
@@ -71,46 +73,48 @@ let parse_asm ~nargs asm =
 
 let parse_intrin kinds decl =
   let error f = Printf.ksprintf (fun msg -> raise (Intrin_error msg)) f in
-  match decl with
-    asm :: params ->
-      let asm = parse_asm ~nargs:(List.length kinds) asm in
-      let rec loop kinds params acc_args =
-        match kinds, params with
-          [], [] -> List.rev acc_args
-        | [], param :: params -> (* XXX vbrankov *) loop [] params acc_args
-        | kind :: kinds, param :: params ->
-          let arg = ref {
-            kind;
-            cp_to_reg   = `No;
-            reload      = `No;
-            immediate   = false;
-            input       = true;
-            output      = false;
-            register    = false;
-            commutative = false } in
-          String.iter (function
-              '0' -> arg := { !arg with cp_to_reg = `Result }
-            | 'a' -> arg := { !arg with cp_to_reg = `A }
-            | 'c' -> arg := { !arg with cp_to_reg = `C }
-            | 'd' -> arg := { !arg with cp_to_reg = `D }
-            | 'i' -> arg := { !arg with immediate = true }
-            | 'm' ->
-                arg := { !arg with reload = (
-                  match !arg.reload with
-                  | `No  -> `M64
-                  | `M64 -> `M128
-                  | _    -> `M256) }
-            | 'r' -> arg := { !arg with register = true }
-            | 'x' -> arg := { !arg with commutative = true }
-            | '=' -> arg := { !arg with input = false; output = true }
-            | '+' -> arg := { !arg with input = true; output = true }
-            | c -> error "Unknown argument modifier '%c'" c) param;
-          loop kinds params (!arg :: acc_args)
-        | _, _ -> error "Missing argument descripions"
-      in
-      let args = loop kinds params [] in
-      { asm; args = Array.of_list args }
-  | [] -> error "Primitive.parse_intrin"
+  let kinds = Array.of_list kinds in
+  let decl = Array.of_list decl in
+  let nargs = Array.length kinds in
+  let asm = parse_asm ~nargs decl.(0) in
+  let args = Array.mapi (fun i kind ->
+    let arg = ref {
+      kind;
+      cp_to_reg   = `No;
+      reload      = `No;
+      immediate   = false;
+      input       = true;
+      output      = false;
+      register    = false;
+      commutative = false } in
+    String.iter (function
+        '0' -> arg := { !arg with cp_to_reg = `Result }
+      | 'a' -> arg := { !arg with cp_to_reg = `A }
+      | 'c' -> arg := { !arg with cp_to_reg = `C }
+      | 'd' -> arg := { !arg with cp_to_reg = `D }
+      | 'i' -> arg := { !arg with immediate = true }
+      | 'm' ->
+          arg := { !arg with reload = (
+            match !arg.reload with
+            | `No  -> `M64
+            | `M64 -> `M128
+            | _    -> `M256) }
+      | 'r' -> arg := { !arg with register = true }
+      | 'x' -> arg := { !arg with commutative = true }
+      | '=' -> arg := { !arg with input = false; output = true }
+      | '+' -> arg := { !arg with input = true; output = true }
+      | c -> error "Unknown argument modifier '%c'" c) decl.(i + 1);
+    !arg) kinds in
+  if args.(nargs - 1).input then
+    error "The last argument is input";
+  let intrin = ref { asm; args; cc = false; memory = false } in
+  for i = nargs + 1 to Array.length decl - 1 do
+    match decl.(i) with
+      "cc"     -> intrin := { !intrin with cc     = true }
+    | "memory" -> intrin := { !intrin with memory = true }
+    | d -> error "Unknown argument \"%s\"" d
+  done;
+  !intrin
 
 let name intrin =
   String.concat "" (List.map (function

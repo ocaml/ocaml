@@ -301,36 +301,36 @@ method select_operation op args =
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
   | (Cintrin intrin, _) ->
-      let rec loop args iargs nargs acc_args acc_iargs =
+      let rec loop args iargs narg nres acc_args acc_iargs =
         match args, iargs with
-          [], _ -> List.rev acc_args, List.rev acc_iargs
         | arg :: args, iarg :: iargs ->
             begin match iarg.Intrin.kind with
               `Int when iarg.Intrin.immediate ->
                 begin match arg with
                   Cconst_int n ->
-                    loop args iargs nargs acc_args ((Iarg_imm n) :: acc_iargs)
+                    loop args iargs narg nres acc_args ((Iarg_imm n) :: acc_iargs)
                 | _ -> fatal_error "Selectgen.select_operation: Non-immediate argument"
                 end
-            | `Unit -> loop args iargs nargs acc_args ((Iarg_imm 0) :: acc_iargs)
+            | `Unit -> loop args iargs narg nres acc_args ((Iarg_imm 0) :: acc_iargs)
             | _ ->
                 match iarg.Intrin.reload, arg with
                   `M64 , Cop(Cload (Double|Double_u|M128_u|M256_u as chunk), [loc])
                 | `M128, Cop(Cload (M128_u|M256_u as chunk), [loc])
-                | `M256, Cop(Cload (M256_u as chunk), [loc]) ->
+                | `M256, Cop(Cload (M256_u as chunk), [loc]) when iarg.Intrin.input ->
                     let addr, arg1 = self#select_addressing chunk loc in
-                    loop args iargs (nargs + Arch.num_args_addressing addr)
-                      (arg1 :: acc_args) ((Iarg_addr (nargs, chunk, addr)) :: acc_iargs)
+                    loop args iargs (narg + Arch.num_args_addressing addr) nres
+                      (arg1 :: acc_args) ((Iarg_addr (narg, chunk, addr)) :: acc_iargs)
                 | _, _ ->
-                    loop args iargs (nargs + 1) (arg :: acc_args)
-                      (Iarg nargs :: acc_iargs)
+                    let acc_iarg = if iarg.Intrin.input then Iarg narg else Ires nres in
+                    let narg = if iarg.Intrin.input then narg + 1 else narg in
+                    let nres = if iarg.Intrin.output then nres + 1 else nres in
+                    loop args iargs narg nres (arg :: acc_args) (acc_iarg :: acc_iargs)
             end
+        | [], [iarg] ->
+          List.rev acc_args, List.rev (Ires nres :: acc_iargs)
         | _, _ -> fatal_error "Selection.select_oper_1"
       in
-      let nres = Array.fold_left (fun nres intrin ->
-        if intrin.Intrin.output then nres + 1 else nres) 0 intrin.Intrin.args
-      in
-      let args, iargs = loop args (Array.to_list intrin.Intrin.args) nres [] [] in
+      let args, iargs = loop args (Array.to_list intrin.Intrin.args) 0 0 [] [] in
       (Iintrin (intrin, Array.of_list iargs), args)
   | _ -> fatal_error "Selection.select_oper"
 
@@ -588,8 +588,8 @@ method emit_expr env exp =
               Some rd
           | Iintrin (intrin, iargs) ->
               let r1 = self#emit_tuple env new_args in
-              let rd = self#regs_for_ty in
-              let rec loop r1 rsrc rdst rsrc_new rdst_new =
+              let rd = self#regs_for ty in
+              let rec loop r1 rsrc rdst rsrc_new rdst_new iargs =
                 match r1, iargs with
                   [], _ ->
                     Array.of_list (List.rev rsrc),
@@ -597,20 +597,27 @@ method emit_expr env exp =
                     Array.of_list (List.rev rsrc_new),
                     Array.of_list (List.rev rdst_new)
                 | r :: r1, iarg :: iargs ->
-                    let r_new = intrin_pseudoreg iarg r in
+                    let r_new = self#intrin_pseudoreg iarg r in
                     let rsrc, rsrc_new =
                       if iarg.Intrin.input then r :: rsrc, r_new :: rsrc_new
+                      else rsrc, rsrc_new
                     in
                     let rdst, rdst_new =
                       if iarg.Intrin.output then r :: rdst, r_new :: rdst_new
+                      else rdst, rdst_new
                     in
-                    loop r1 rsrc rdst rsrc_new rdst_new
+                    loop r1 rsrc rdst rsrc_new rdst_new iargs
                 | _, _ ->
                     fatal_error ("Selection.emit_expr: not enough iargs " ^
                       (Intrin.name intrin))
               in
-              let rsrc, rdst = loop r1 [] rd iargs in
-              Some (self#insert_op_debug op dbg rsrc rdsr)
+              let rsrc, rdst, rsrc_new, rdst_new =
+                loop (Array.to_list r1 @ Array.to_list rd) [] [] [] []
+                  (Array.to_list intrin.Intrin.args) in
+              self#insert_moves rsrc rsrc_new;
+              self#insert_debug (Iop new_op) dbg rsrc_new rdst_new;
+              self#insert_moves rdst_new rdst;
+              Some rd
           | op ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in

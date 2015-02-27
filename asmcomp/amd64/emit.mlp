@@ -416,10 +416,10 @@ let tailrec_entry_point = ref 0
 let emit_intrin i intrin iargs =
   I.intrin (List.map (function
       \`Emit_string s -> Intrin_string s
-    | \`Emit_arg 0 -> Intrin_arg (res i 0)
     | \`Emit_arg n ->
-        match iargs.(n - 1) with
+        match iargs.(n) with
           Iarg n -> Intrin_arg (arg i n)
+        | Ires n -> Intrin_arg (res i n)
         | Iarg_imm n -> Intrin_arg (Imm (Int64.of_int n))
         | Iarg_addr (n, chunk, addr) ->
             let typ =
