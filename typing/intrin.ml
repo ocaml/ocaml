@@ -24,14 +24,15 @@ type arg_kind =
   | `Unit ]
 
 type arg = {
-  kind        : arg_kind;
-  cp_to_reg   : [ `No | `Result | `A | `C | `D ];
-  reload      : [ `No | `M64 | `M128 | `M256 ];
-  immediate   : bool;
-  input       : bool;
-  output      : bool;
-  register    : bool;
-  commutative : bool }
+  kind         : arg_kind;
+  cp_to_reg    : [ `No | `Result | `A | `C | `D ];
+  reload       : [ `No | `M64 | `M128 | `M256 ];
+  earlyclobber : bool;
+  immediate    : bool;
+  input        : bool;
+  output       : bool;
+  register     : bool;
+  commutative  : bool }
 
 type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
@@ -80,13 +81,14 @@ let parse_intrin kinds decl =
   let args = Array.mapi (fun i kind ->
     let arg = ref {
       kind;
-      cp_to_reg   = `No;
-      reload      = `No;
-      immediate   = false;
-      input       = true;
-      output      = false;
-      register    = false;
-      commutative = false } in
+      cp_to_reg    = `No;
+      reload       = `No;
+      earlyclobber = false; 
+      immediate    = false;
+      input        = true;
+      output       = false;
+      register     = false;
+      commutative  = false } in
     String.iter (function
         '0' -> arg := { !arg with cp_to_reg = `Result }
       | 'a' -> arg := { !arg with cp_to_reg = `A }
@@ -101,11 +103,13 @@ let parse_intrin kinds decl =
             | _    -> `M256) }
       | 'r' -> arg := { !arg with register = true }
       | 'x' -> arg := { !arg with commutative = true }
+      | '&' -> arg := { !arg with earlyclobber = true }
       | '=' -> arg := { !arg with input = false; output = true }
       | '+' -> arg := { !arg with input = true; output = true }
       | c -> error "Unknown argument modifier '%c'" c) decl.(i + 1);
     !arg) kinds in
-  if args.(nargs - 1).input then
+  let ret = args.(nargs - 1) in
+  if ret.input && ret.kind != `Unit then
     error "The last argument is input";
   let intrin = ref { asm; args; cc = false; memory = false } in
   for i = nargs + 1 to Array.length decl - 1 do
