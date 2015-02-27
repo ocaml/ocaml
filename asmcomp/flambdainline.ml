@@ -691,13 +691,12 @@ and transform_set_of_closures_expression env r cl annot =
         ~parameter_approximations
         set_of_closures_env in
 
-    (* We do not inline inside stubs: a stub is always inlined, allowing to
-       inline inside a stub could result to forcing more code than expected
-       to be inlined. *)
     let closure_env =
-      if ffun.stub
-      then E.set_never_inline closure_env
-      else closure_env in
+      if Flambda_inlining_decision.should_inline_inside_declaration ffun then
+        closure_env
+      else
+        E.set_never_inline closure_env
+    in
 
     let closure_env =
       E.note_entering_closure closure_env ~closure_id:(Closure_id.wrap fid)

@@ -272,3 +272,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   if E.inlining_level env = 0
   then expr, R.set_inline_threshold r inline_threshold
   else expr, r
+
+(* We do not inline inside stubs, which are always inlined at their call site.
+   Inlining inside the declaration of a stub could result in more code than
+   expected being inlined. *)
+(* CR mshinwell for pchambart: maybe we need an example here *)
+let should_inline_inside_declaration (decl : _ Flambda.function_declaration) =
+  not decl.stub

@@ -41,3 +41,8 @@ val inlining_decision_for_call_site
           unit -> (Expr_id.t Flambda.t * Flambda_inline_result.t))
       -> Expr_id.t Flambda.t * Flambda_inline_result.t)
   -> Expr_id.t Flambda.t * Flambda_inline_result.t
+
+(* When a function declaration is encountered in [Flambdainline], the body
+   may be subject to inlining immediately, thus changing the declaration.
+   This function must return [true] for that to be able to happen. *)
+val should_inline_inside_declaration : _ Flambda.function_declaration -> bool
