@@ -589,17 +589,22 @@ method emit_expr env exp =
           | Iintrin (intrin, iargs) ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for_ty in
-              let rec loop r1 rd rsrc rdst iargs =
+              let rec loop r1 rsrc rdst rsrc_new rdst_new =
                 match r1, iargs with
-                  [], _ -> Array.of_list (List.rev rsrc), Array.of_list (List.rev rdst)
+                  [], _ ->
+                    Array.of_list (List.rev rsrc),
+                    Array.of_list (List.rev rdst),
+                    Array.of_list (List.rev rsrc_new),
+                    Array.of_list (List.rev rdst_new)
                 | r :: r1, iarg :: iargs ->
-                    let rnew = intrin_pseudoreg iarg r in
-                    if 
-                    self#insert_move r rnew
-                    if iarg.Intrin.output then
-                      loop r1 (r :: rsrc) rdst iargs
-                    else
-                      loop r1 rsrc (r :: rdst) iargs
+                    let r_new = intrin_pseudoreg iarg r in
+                    let rsrc, rsrc_new =
+                      if iarg.Intrin.input then r :: rsrc, r_new :: rsrc_new
+                    in
+                    let rdst, rdst_new =
+                      if iarg.Intrin.output then r :: rdst, r_new :: rdst_new
+                    in
+                    loop r1 rsrc rdst rsrc_new rdst_new
                 | _, _ ->
                     fatal_error ("Selection.emit_expr: not enough iargs " ^
                       (Intrin.name intrin))
