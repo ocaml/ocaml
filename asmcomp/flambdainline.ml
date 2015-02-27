@@ -221,7 +221,8 @@ let transform_closure_expression r fu_closure closure_id rel annot =
       | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
         fu_closure
       | None | Some _ ->
-        Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot)
+        Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel},
+            annot)
     in
     closure, ret r ret_approx
   | Value_unresolved sym ->
@@ -282,20 +283,20 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
       let env = E.set_sb sb env in
       let def_used_var = R.used_variables r in
-      let body_env = match str with
+      let body_env =
+        match str with
         | Assigned ->
-           (* if the variable is mutable, we don't propagate anything about it *)
-           E.clear_approx id env
-        | Not_assigned ->
-           E.add_approx id (R.approx r) env in
+         (* if the variable is mutable, we don't propagate anything about it *)
+         E.clear_approx id env
+        | Not_assigned -> E.add_approx id (R.approx r) env
+      in
       (* To distinguish variables used by the body and the declaration,
          [body] is rewritten without the set of used variables from
          the declaration. *)
       let r_body = R.set_used_variables r init_used_var in
       let body, r = loop body_env r_body body in
       let (expr : _ Flambda.t), r =
-        if Variable.Set.mem id (R.used_variables r)
-        then
+        if Variable.Set.mem id (R.used_variables r) then
           Flet (str, id, lam, body, annot),
             (* if [lam] is kept, add its used variables *)
             R.set_used_variables r
@@ -309,8 +310,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
            seem as important as for the let.
            I should find a nice pattern to allow to do that elsewhere
            without too much syntactic noise. *)
-        else if Flambdaeffects.no_effects lam
-        then
+        else if Flambdaeffects.no_effects lam then
           let r = R.map_benefit r (Flambdacost.remove_code lam) in
           body, r
         else
@@ -323,15 +323,19 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
   | Fletrec(defs, body, annot) ->
       let defs, sb = Flambdasubst.new_subst_ids (E.sb env) defs in
       let env = E.set_sb sb env in
-      let def_env = List.fold_left (fun env_acc (id,_lam) ->
-          E.add_approx id A.value_unknown env_acc)
+      let def_env =
+        List.fold_left (fun env_acc (id,_lam) ->
+            E.add_approx id A.value_unknown env_acc)
           env defs
       in
-      let defs, body_env, r = List.fold_right (fun (id,lam) (defs, env_acc, r) ->
-          let lam, r = loop def_env r lam in
-          let defs = (id,lam) :: defs in
-          let env_acc = E.add_approx id (R.approx r) env_acc in
-          defs, env_acc, r) defs ([],env,r) in
+      let defs, body_env, r =
+        List.fold_right (fun (id,lam) (defs, env_acc, r) ->
+            let lam, r = loop def_env r lam in
+            let defs = (id,lam) :: defs in
+            let env_acc = E.add_approx id (R.approx r) env_acc in
+            defs, env_acc, r)
+          defs ([],env,r)
+      in
       let body, r = loop body_env r body in
       let r = List.fold_left (fun r (id,_) -> R.exit_scope r id) r defs in
       Fletrec (defs, body, annot), r
@@ -385,7 +389,8 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let expr, approx, simplify_benefit =
         simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
       in
-      expr, ret (R.map_benefit r (Flambdacost.benefit_union simplify_benefit)) approx
+      expr, ret (R.map_benefit r (Flambdacost.benefit_union simplify_benefit))
+        approx
   | Fprim ((Psequand | Psequor), _, _, _) ->
     Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
   | Fprim(p, args, dbg, annot) as expr ->

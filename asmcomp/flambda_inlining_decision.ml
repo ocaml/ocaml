@@ -77,7 +77,6 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive) then
-      (* XCR mshinwell for mshinwell: this comment needs clarification *)
       (* A function is considered for inlining if it does not increase the code
          size too much. This size is verified after effectively duplicating
          and specialising the code in the current context. In that context,
@@ -185,9 +184,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       else if recursive then
         let tried_unrolling = ref false in
         let unrolling_result =
-          if E.unrolling_allowed env
-              && E.inlining_level env <= max_level
-          then
+          if E.unrolling_allowed env && E.inlining_level env <= max_level then
             let env = E.inside_unrolled_function env in
             let body, r_inlined =
               inline_by_copying_function_body ~env ~r:(R.clear_benefit r)
