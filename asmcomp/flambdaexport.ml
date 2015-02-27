@@ -272,13 +272,18 @@ let ex_functions_off ex_functions =
   let aux _ f map = Variable.Map.fold (aux_fun f) f.funs map in
   Set_of_closures_id.Map.fold aux ex_functions Closure_id.Map.empty
 
+
 let import_eidmap_for_pack units pack f map =
-  Compilation_unit.Map.map
-    (fun map ->
-       EidMap.map_keys
-         (import_eid_for_pack units pack)
-         (EidMap.map f map))
-    map
+  nest_eid_map
+    (Compilation_unit.Map.fold
+       (fun _ map acc -> EidMap.disjoint_union map acc)
+       (Compilation_unit.Map.map
+          (fun map ->
+             EidMap.map_keys
+            (import_eid_for_pack units pack)
+            (EidMap.map f map))
+          map)
+       EidMap.empty)
 
 let import_for_pack ~pack_units ~pack exp =
   let import_sym = import_symbol_for_pack pack_units pack in
