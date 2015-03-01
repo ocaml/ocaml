@@ -24,7 +24,7 @@ open Parsetree
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%' ; ':']
 let operator_chars = [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/';
                        ':'; '<'; '='; '>'; '?'; '@'; '^'; '|'; '~' ]
 let numeric_chars  = [ '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9' ]
@@ -343,11 +343,15 @@ class printer  ()= object(self:'self)
     else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->  pp f "@[<2>`%s@;%a@]" l self#simple_pattern p
     | Ppat_construct (({txt=Lident("()"|"[]");_}), _) -> self#simple_pattern f x
-    | Ppat_construct (({txt;_} as li), po) -> (* FIXME The third field always false *)
-        if txt = Lident "::" then
+    | Ppat_construct (({txt=Lident s;_} as li), po) -> (* FIXME The third field always false *)
+        if s = "::" then
           pp f "%a" pattern_list_helper x
         else
           (match po with
+          | Some ({ppat_desc = Ppat_tuple([pat1; pat2]);_}) when s.[0] = ':' ->
+              pp f "(%a) %a (%a)"  self#simple_pattern  pat1 self#longident_loc li self#simple_pattern pat2
+          | Some x when s.[0] = ':' ->
+              pp f "(%a)@;%a"  self#longident_loc li self#simple_pattern x
           |Some x ->
               pp f "%a@;%a"  self#longident_loc li self#simple_pattern x
           | None -> pp f "%a@;"self#longident_loc li )
@@ -556,10 +560,17 @@ class printer  ()= object(self:'self)
                (*reset here only because [function,match,try,sequence] are lower priority*)
             end (e,l))
 
-    | Pexp_construct (li, Some eo)
+    | Pexp_construct ({txt= Lident s ;_} as li, Some eo)
       when not (is_simple_construct (view_expr x))-> (* Not efficient FIXME*)
         (match view_expr x with
         | `cons ls -> self#list self#simple_expr f ls ~sep:"@;::@;"
+        | `normal when s.[0] = ':' ->
+            begin match eo with
+              | ({pexp_desc= Pexp_tuple([e1;e2]);_}) ->
+                  pp f "@[<2>%a@;%s@;%a@]" self#simple_expr e1  s  self#simple_expr e2
+              | _ ->
+                  pp f "@[<2>(%a)@;%a@]" self#longident_loc li  self#simple_expr eo
+            end
         | `normal ->
             pp f "@[<2>%a@;%a@]" self#longident_loc li
               self#simple_expr  eo
@@ -1301,7 +1312,7 @@ class printer  ()= object(self:'self)
   method constructor_declaration f (name, args, res, attrs) =
     match res with
     | None ->
-        pp f "%s%a%a" name
+        pp f "%a%a%a" protect_ident name
           self#attributes attrs
           (fun f -> function
              | Pcstr_tuple [] -> ()
@@ -1310,7 +1321,7 @@ class printer  ()= object(self:'self)
              | Pcstr_record l -> pp f "@;of@;%a" (self#record_declaration) l
           ) args
     | Some r ->
-        pp f "%s%a:@;%a" name
+        pp f "%a%a:@;%a" protect_ident name
           self#attributes attrs
           (fun f -> function
              | Pcstr_tuple [] -> self#core_type1 f r

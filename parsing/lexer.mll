@@ -268,8 +268,10 @@ let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let constructorchar =
+  ['$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '@' '^' '|']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+  constructorchar | ['!' '?' '~']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_literal =
@@ -433,7 +435,6 @@ rule token = parse
   | "."  { DOT }
   | ".." { DOTDOT }
   | ":"  { COLON }
-  | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }
   | ":>" { COLONGREATER }
   | ";"  { SEMI }
@@ -483,6 +484,23 @@ rule token = parse
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+
+  | ':' ['|' '&' '$'] constructorchar *
+  (* := and :> are invalid operators since  COLONEQUAL and COLONGREATER already exist.
+     :< is invalid because [ x:<foo:bar> ] is valid. *)
+  | ':' ['=' '>' '<'] constructorchar +
+            { INFIXCONSTRUCTOR0(Lexing.lexeme lexbuf) }
+  | ':' ['@' '^'] constructorchar *
+            { INFIXCONSTRUCTOR1(Lexing.lexeme lexbuf) }
+  | "::" constructorchar *
+            { INFIXCONSTRUCTOR1BIS(Lexing.lexeme lexbuf) }
+  | ':' ['+' '-'] constructorchar *
+            { INFIXCONSTRUCTOR2(Lexing.lexeme lexbuf) }
+  | ':' "**" constructorchar *
+            { INFIXCONSTRUCTOR4(Lexing.lexeme lexbuf) }
+  | ':' ['*' '/' '%'] constructorchar *
+            { INFIXCONSTRUCTOR3(Lexing.lexeme lexbuf) }
+
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),

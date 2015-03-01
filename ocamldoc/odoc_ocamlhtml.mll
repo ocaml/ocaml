@@ -251,8 +251,10 @@ let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let constructorchar =
+  ['$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '@' '^' '|']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+  constructorchar | ['!' '?' '~']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -366,7 +368,6 @@ rule token = parse
   | "."  { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ".." { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ":"  { print (Lexing.lexeme lexbuf) ; token lexbuf }
-  | "::" { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ":=" { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ":>" { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ";"  { print (Lexing.lexeme lexbuf) ; token lexbuf }
@@ -406,6 +407,22 @@ rule token = parse
   | "**" symbolchar *
             { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | ['*' '/' '%'] symbolchar *
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+
+  | ':' ['|' '&' '$'] constructorchar *
+  (* := and :> are invalid operators since  COLONEQUAL and COLONGREATER already exist.
+     :< is invalid because [ x:<foo:bar> ] is valid. *)
+  | ':' ['=' '>' '<'] constructorchar +
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+  | ':' ['@' '^'] constructorchar *
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+  | "::" constructorchar *
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+  | ':' ['+' '-'] constructorchar *
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+  | ':' "**" constructorchar *
+            { print (Lexing.lexeme lexbuf) ; token lexbuf }
+  | ':' ['*' '/' '%'] constructorchar *
             { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | eof { () }
   | _

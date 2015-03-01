@@ -19,19 +19,11 @@ let cautious f ppf arg =
   try f ppf arg with
     Ellipsis -> fprintf ppf "..."
 
-let rec print_ident ppf =
-  function
-    Oide_ident s -> pp_print_string ppf s
-  | Oide_dot (id, s) ->
-      print_ident ppf id; pp_print_char ppf '.'; pp_print_string ppf s
-  | Oide_apply (id1, id2) ->
-      fprintf ppf "%a(%a)" print_ident id1 print_ident id2
-
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
   ||
   (match name.[0] with
-      'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' ->
+      'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' | '(' | '[' ->
         false
     | _ -> true)
 
@@ -40,6 +32,15 @@ let value_ident ppf name =
     fprintf ppf "( %s )" name
   else
     pp_print_string ppf name
+
+let rec print_ident ppf =
+  function
+    Oide_ident s -> value_ident ppf s
+  | Oide_dot (id, s) ->
+      print_ident ppf id; pp_print_char ppf '.'; value_ident ppf s
+  | Oide_apply (id1, id2) ->
+      fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+
 
 (* Values *)
 
@@ -506,15 +507,15 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
       | [] ->
           pp_print_string ppf name
       | _ ->
-          fprintf ppf "@[<2>%s of@ %a@]" name
+          fprintf ppf "@[<2>%a of@ %a@]" value_ident name
             (print_typlist print_simple_out_type " *") tyl
       end
   | Some ret_type ->
       begin match tyl with
       | [] ->
-          fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
+          fprintf ppf "@[<2>%a :@ %a@]" value_ident name print_simple_out_type  ret_type
       | _ ->
-          fprintf ppf "@[<2>%s :@ %a -> %a@]" name
+          fprintf ppf "@[<2>%a :@ %a -> %a@]" value_ident name
             (print_typlist print_simple_out_type " *")
             tyl print_simple_out_type ret_type
       end
