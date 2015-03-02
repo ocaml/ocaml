@@ -67,6 +67,8 @@ module Closure_id : sig
   val get_compilation_unit : t -> Symbol.Compilation_unit.t
 
   val unique_name : t -> string
+
+  val output_full : out_channel -> t -> unit
 end
 
 module Var_within_closure : sig

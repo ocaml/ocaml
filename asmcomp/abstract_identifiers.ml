@@ -70,6 +70,11 @@ module Variable = struct
   let get_compilation_unit var = var.var_unit
 
   let unique_name var = Ident.unique_name var.var_var
+
+  let output_full c t =
+    Compilation_unit.output c t.var_unit;
+    Printf.fprintf c ".";
+    Ident.output c t.var_var
 end
 
 module Expr_id = struct

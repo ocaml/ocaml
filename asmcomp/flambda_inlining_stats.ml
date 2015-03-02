@@ -1,6 +1,6 @@
 open Abstract_identifiers
 
-let vim_trailer = "# vim:fdm=expr:filetype=plain:\
+let vim_trailer = "vim:fdm=expr:filetype=plain:\
   foldexpr=getline(v\\:lnum)=~'^\\\\s*$'&&getline(v\\:lnum+1)=~'\\\\S'?'<1'\\:1"
 
 module Closure_stack = struct
@@ -34,11 +34,14 @@ module Closure_stack = struct
 
   let save t ~out_channel =
     let print_elt (closure_id, where) =
-      Printf.fprintf out_channel "%a" Closure_id.output closure_id
-(*
-      Printf.fprintf out_channel "%c|%a|" (char_of_where where)
-        Closure_id.output closure_id
-*)
+      let output =
+        let current_unit = Compilenv.current_unit () in
+        if Closure_id.in_compilation_unit current_unit closure_id then
+          Closure_id.output
+        else
+          Closure_id.output_full
+      in
+      Printf.fprintf out_channel "%a" output closure_id
     in
     let rec loop = function
       | [] -> Printf.fprintf out_channel "[]"
@@ -106,7 +109,7 @@ let really_save_then_forget_decisions ~output_prefix =
             (Flambda_inlining_stats_types.Decision.to_string decision))
         bucket;
       Printf.fprintf out_channel "\n") decisions;
-  Printf.fprintf out_channel "%s\n" vim_trailer;
+  Printf.fprintf out_channel "# %s\n" vim_trailer;
   close_out out_channel;
   Closure_id.Tbl.clear decisions;
   time := 0
