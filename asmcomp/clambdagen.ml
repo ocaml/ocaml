@@ -394,8 +394,43 @@ module Conv(P:Param2) = struct
         | None ->
             Uprim(p, args, dbg)
         | Some l ->
+            (* CR: pchambart
+               There is a problem here: structured_constant_label should share
+               the equal constants, but it is not correct:
+               For instance if we emit:
+                 sym_1 -> (sym_3,sym_3)
+                 sym_2 -> (sym_4,sym_4)
+                 sym_3 -> (1,2)
+                 sym_4 -> (1,2)
+               If it is emited in that order, when sym_1 and sym_2 are emited,
+               sym_3 and sym_4 havent. When sym_4 is emited it is seen as
+               equal to sym_3 thus replaced by it. But since it is after sym_1
+               and sym_2, those two are still considered different.
+
+               It this was done in topological order,
+                 sym_3 -> (1,2)
+                 sym_4 -> (1,2)
+                 sym_1 -> (sym_3,sym_3)
+                 sym_2 -> (sym_4,sym_4)
+
+               references to sym_4 would have been rewritten to sym_3 so sym_2 would
+               effectively be shared with sym_1.
+
+               Notice that for cyclic values this still wouldn't be sufficient. we
+               would need some kind of automata minimization for sharing all the
+               constants.
+
+               Maybe constant sharing should be done earlier.
+            *)
+
             let cst = Uconst_block (tag,l) in
+            Format.printf "const block %a@." Printclambda.structured_constant cst;
             let lbl = structured_constant_label expected_symbol ~shared:true cst in
+            let () =
+              match expected_symbol with
+              | None -> ()
+              | Some s -> Format.printf "exp: %a got %s@." Symbol.print s lbl
+            in
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
