@@ -52,18 +52,16 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
         closure conversion).
      2. Stub functions for handling default optional arguments (generated in
         bytecomp/simplify.ml).
-     3. Functor-like functions, viz. [is_probably_a_functor].
 
-     In the third case, we know from the definition of [is_probably_a_functor]
-     that the function is non-recursive.  In the other two cases, the functions
-     may actually be recursive, but not "directly recursive" (where we say a
-     function [f] is "directly recursive" if [f] is free in the body of [f]).
-     It would in general be wrong to mark directly recursive functions as
-     stubs, even if specific cases work correctly.
+     In both cases, the functions may actually be recursive, but not
+     "directly recursive" (where we say a function [f] is "directly recursive"
+     if [f] is free in the body of [f]). It would in general be wrong to mark
+     directly recursive functions as stubs, even if specific cases work
+     correctly.
   *)
   (* CR mshinwell for mshinwell: finish the comment *)
   let unconditionally_inline =
-    func.stub || is_probably_a_functor env clos approxs
+    func.stub
   in
   let num_params = List.length func.params in
   (* CR pchambart to pchambart: find a better name
@@ -76,7 +74,11 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   let fun_var = U.find_declaration_variable fun_id clos in
   let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
   let fun_cost =
-    if unconditionally_inline || (direct_apply && not recursive) then
+    if unconditionally_inline || (direct_apply && not recursive)
+       || is_probably_a_functor env clos approxs then
+      (* CR pchambart: need to explain that the previous fun_cost is used
+         for performance reasons, and that for functor it is acceptable. *)
+
       (* A function is considered for inlining if it does not increase the code
          size too much. This size is verified after effectively duplicating
          and specialising the code in the current context. In that context,
