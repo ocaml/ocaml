@@ -113,7 +113,7 @@ type control =
        - [0x020] Change of GC parameters.
        - [0x040] Computation of major GC slice size.
        - [0x080] Calling of finalisation functions.
-       - [0x100] Bytecode executable search at start-up.
+       - [0x100] Bytecode executable and shared library search at start-up.
        - [0x200] Computation of compaction-triggering condition.
        Default: 0. *)
 
