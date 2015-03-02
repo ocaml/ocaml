@@ -17,7 +17,8 @@ let create () =
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;
     inline_threshold =
-      Flambdacost.Can_inline (min !Clflags.inline_threshold 100);
+      (* CR pchambart: Add a warning if this is too big *)
+      Flambdacost.Can_inline !Clflags.inline_threshold;
     benefit = Flambdacost.no_benefit;
   }
 
