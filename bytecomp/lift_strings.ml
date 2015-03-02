@@ -1,5 +1,32 @@
 open Lambda
 
+(* CR pchambart: this file is not doing only string lifting anymore, it
+   should probably be renamed. It prepares lambda for closure conversion.
+   Const_block handling should probably completely disapear from
+   flambdagen.
+*)
+
+(* Constant blocks must be deconstructed before lifting, otherwise, we
+   would miss the cases like
+     ("a", "b")
+*)
+
+
+let rec destruct_constant = function
+  | Const_block (tag, l) ->
+      Lprim(Pmakeblock(tag, Asttypes.Immutable), List.map destruct_constant l)
+  | Const_base _
+  | Const_pointer _
+  | Const_immstring _
+  | Const_float_array _ as c ->
+      Lconst c
+
+let destruct_constants l =
+  Simplif.map (function
+      | Lconst c -> destruct_constant c
+      | l -> l)
+    l
+
 let rec lift_strings acc = function
     | Lvar _ as lam ->
         acc, lam
@@ -108,6 +135,7 @@ and lift_strings_couple_list :
       lams (acc, [])
 
 let lift_strings_to_toplevel lam =
+  let lam = destruct_constants lam in
   let bindings, lam = lift_strings [] lam in
   List.fold_left (fun lam (id, (string,opt)) ->
       Llet(Strict,id,
