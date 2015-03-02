@@ -424,13 +424,7 @@ module Conv(P:Param2) = struct
             *)
 
             let cst = Uconst_block (tag,l) in
-            Format.printf "const block %a@." Printclambda.structured_constant cst;
             let lbl = structured_constant_label expected_symbol ~shared:true cst in
-            let () =
-              match expected_symbol with
-              | None -> ()
-              | Some s -> Format.printf "exp: %a got %s@." Symbol.print s lbl
-            in
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
