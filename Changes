@@ -30,6 +30,7 @@ Libraries:
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
   (Peter Zotov)
+- GPR#139: more versatile specification of locations of .annot
 
 Runtime:
 - PR#6675: GC hooks
