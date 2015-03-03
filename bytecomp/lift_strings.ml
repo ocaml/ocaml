@@ -52,6 +52,7 @@ let rec lift_strings acc = function
         acc, Lapply(funct, args, loc)
     | Lletrec(defs, body) ->
         let acc, defs = lift_strings_couple_list acc defs in
+        let acc, body = lift_strings acc body in
         acc, Lletrec(defs, body)
     | Lsend(kind, met, obj, args, loc) ->
         let acc, met = lift_strings acc met in
