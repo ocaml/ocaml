@@ -17,6 +17,8 @@ open Lambda
 open Clambda
 open Flambda
 
+module Symbol_SCC = Sort_connected_components.Make(Symbol_Identifiable)
+
 type ('a,'b) declaration_position =
   | Local of 'a
   | External of 'b
@@ -394,35 +396,6 @@ module Conv(P:Param2) = struct
         | None ->
             Uprim(p, args, dbg)
         | Some l ->
-            (* CR: pchambart
-               There is a problem here: structured_constant_label should share
-               the equal constants, but it is not correct:
-               For instance if we emit:
-                 sym_1 -> (sym_3,sym_3)
-                 sym_2 -> (sym_4,sym_4)
-                 sym_3 -> (1,2)
-                 sym_4 -> (1,2)
-               If it is emited in that order, when sym_1 and sym_2 are emited,
-               sym_3 and sym_4 havent. When sym_4 is emited it is seen as
-               equal to sym_3 thus replaced by it. But since it is after sym_1
-               and sym_2, those two are still considered different.
-
-               It this was done in topological order,
-                 sym_3 -> (1,2)
-                 sym_4 -> (1,2)
-                 sym_1 -> (sym_3,sym_3)
-                 sym_2 -> (sym_4,sym_4)
-
-               references to sym_4 would have been rewritten to sym_3 so sym_2 would
-               effectively be shared with sym_1.
-
-               Notice that for cyclic values this still wouldn't be sufficient. we
-               would need some kind of automata minimization for sharing all the
-               constants.
-
-               Maybe constant sharing should be done earlier.
-            *)
-
             let cst = Uconst_block (tag,l) in
             let lbl = structured_constant_label expected_symbol ~shared:true cst in
             Uconst(Uconst_ref (lbl, Some (cst)))
@@ -691,12 +664,57 @@ module Conv(P:Param2) = struct
     (* | Uconst(Uconst_ref(None, Some cst)) -> cst *)
     | _ -> assert false
 
+  let symbol_dependency existing expr =
+    let r = ref SymbolSet.empty in
+    Flambdaiter.iter
+      (function
+        | Fsymbol (sym,_) ->
+            if SymbolMap.mem sym existing
+            then r := SymbolSet.add sym !r
+        | _ -> ())
+      expr;
+    !r
+
+  (* Symbols needs to be sorted before transforming their definition to allow as
+     much sharing as possible. For instance if the existing symbols are:
+       sym_1 -> (sym_3,sym_3)
+       sym_2 -> (sym_4,sym_4)
+       sym_3 -> (1,2)
+       sym_4 -> (1,2)
+     In that case, we expect sym_3 and sym_4 to be shared and also sym_1 and
+     sym_2. If it is converted in that order, when sym_1 and sym_2 are converted,
+     sym_3 and sym_4 havent and are not known to be equal yet. Hence sym_1 and
+     sym_2 won't be shared. To avoid that problem, we need to convert the symbol
+     from leaf to roots, the dependency topological order:
+        sym_3 -> (1,2)
+        sym_4 -> (1,2)
+        sym_1 -> (sym_3,sym_3)
+        sym_2 -> (sym_4,sym_4)
+
+      Notice that for cyclic values there is no good order that allows to find
+      this sharing. We would need some kind of automata minimization procedure.
+  *)
+
   let constants =
-    SymbolMap.mapi
-      (fun sym lam ->
-         let ulam = conv empty_env ~expected_symbol:sym lam in
-         structured_constant_for_symbol sym ulam)
-      P.constants
+    let symbol_dependency_map =
+      SymbolMap.map (fun expr -> symbol_dependency P.constants expr)
+        P.constants
+    in
+    let sorted_symbols =
+      List.flatten
+        (List.map (function
+             | Symbol_SCC.Has_loop l -> l
+             | No_loop v -> [v])
+            (List.rev
+               (Array.to_list
+                  (Symbol_SCC.connected_components_sorted_from_roots_to_leaf
+                     symbol_dependency_map))))
+    in
+    List.fold_left (fun acc sym ->
+        let lam = SymbolMap.find sym P.constants in
+        let ulam = conv empty_env ~expected_symbol:sym lam in
+        SymbolMap.add sym (structured_constant_for_symbol sym ulam) acc)
+      SymbolMap.empty sorted_symbols
 
   let res = conv empty_env P.expr
 

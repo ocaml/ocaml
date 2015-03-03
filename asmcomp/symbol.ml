@@ -84,6 +84,11 @@ end
 
 include Printers
 
-module SymbolSet = ExtSet(Printers)
-module SymbolMap = ExtMap(Printers)
-module SymbolTbl = ExtHashtbl(Printers)
+module Symbol_Identifiable = struct
+  include Printers
+  include Identifiable.Make(Printers)
+end
+
+module SymbolSet = Symbol_Identifiable.Set
+module SymbolMap = Symbol_Identifiable.Map
+module SymbolTbl = Symbol_Identifiable.Tbl

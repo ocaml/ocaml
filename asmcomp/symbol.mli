@@ -62,6 +62,9 @@ module Printers : PrintableHashOrdered with type t = t
 
 include (PrintableHashOrdered with type t := t)
 
-module SymbolSet : ExtSet with module M := Printers
-module SymbolMap : ExtMap with module M := Printers
-module SymbolTbl : ExtHashtbl with module M := Printers
+module Symbol_Identifiable : Identifiable
+  with type t = t
+
+module SymbolSet = Symbol_Identifiable.Set
+module SymbolMap = Symbol_Identifiable.Map
+module SymbolTbl = Symbol_Identifiable.Tbl
