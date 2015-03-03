@@ -620,7 +620,7 @@ let rec map f lam =
     | Lstaticraise (i,args) ->
         Lstaticraise (i,List.map (map f) args)
     | Lstaticcatch (body, id, handler) ->
-        Lstaticcatch(map f body, id, handler)
+        Lstaticcatch(map f body, id, map f handler)
     | Ltrywith(e1, v, e2) ->
         Ltrywith(map f e1, v, map f e2)
     | Lifthenelse(e1, e2, e3) ->
