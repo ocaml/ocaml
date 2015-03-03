@@ -57,12 +57,12 @@ let lambda_smaller' lam ~than:threshold =
     | Fsymbol _ -> ()
     | Fconst(
         (Fconst_base(Const_int _ | Const_char _ | Const_float _ |
-                     Const_int32 _ | Const_int64 _ | Const_nativeint _) |
-         Fconst_pointer _ | Fconst_float _), _) -> incr size
-    | Fconst(
-        (Fconst_base( Const_string _ )
-        | Fconst_float_array _ | Fconst_immstring _ ) , _) ->
-        raise Exit (* Do not duplicate: should be moved out by a previous pass *)
+                     Const_int32 _ | Const_int64 _ | Const_nativeint _)
+        | Fconst_pointer _ | Fconst_float _
+        | Fconst_float_array _ | Fconst_immstring _), _) -> incr size
+    | Fconst(Fconst_base( Const_string _ ), _) ->
+        assert false
+        (* should be moved out by a previous pass: see [List_string] *)
     | Fapply ({ ap_function = fn; ap_arg = args; ap_kind = direct }, _) ->
         let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
         size := !size + call_cost; lambda_size fn; lambda_list_size args
