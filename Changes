@@ -70,6 +70,7 @@ Bug fixes:
   (Valentin Gatien-Baron)
 - PR#6787: Soundness bug with polymorphic variants
 - PR#6790: otherlibs should be built with -g
+- PR#6799: include guards missing for unixsupport.h and other files
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
