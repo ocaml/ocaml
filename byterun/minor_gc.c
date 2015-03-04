@@ -347,7 +347,7 @@ CAMLexport void caml_gc_dispatch (void)
   }
   if (trigger != caml_young_alloc_start || caml_requested_major_slice){
     /* The minor heap is half-full, do a major GC slice. */
-    caml_major_collection_slice (0);
+    caml_major_collection_slice (-1);
     caml_requested_major_slice = 0;
     caml_young_trigger = caml_young_alloc_start;
     caml_young_limit = caml_young_trigger;

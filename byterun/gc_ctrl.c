@@ -418,7 +418,6 @@ CAMLprim value caml_gc_minor(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   Assert (v == Val_unit);
-  caml_request_major_slice ();  /* FIXME do we want to do this ? */
   caml_request_minor_gc ();
   caml_gc_dispatch ();
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
