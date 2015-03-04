@@ -171,6 +171,17 @@ let print_symbols ppf export =
   in
    Compilation_unit.Map.iter (fun _ -> EidMap.iter print_symbol) export.ex_id_symbol
 
+let print_offsets ppf export =
+  Format.fprintf ppf "@[<v 2>offset_fun:@ ";
+  Closure_id.Map.iter (fun cid off ->
+      Format.fprintf ppf "%a -> %i@ "
+        Closure_id.print cid off) export.ex_offset_fun;
+  Format.fprintf ppf "@]@ @[<v 2>offset_fv:@ ";
+  Var_within_closure.Map.iter (fun vid off ->
+      Format.fprintf ppf "%a -> %i@ "
+        Var_within_closure.print vid off) export.ex_offset_fv;
+  Format.fprintf ppf "@]@ "
+
 let print_all ppf export =
   let open Format in
   fprintf ppf "approxs@ %a@.@."
