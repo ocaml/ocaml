@@ -13,6 +13,8 @@
 #                                                                       #
 #########################################################################
 
+echo Configuring OCaml version `head -1 VERSION`
+
 configure_options="$*"
 prefix=/usr/local
 bindir=''
