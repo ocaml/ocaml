@@ -442,6 +442,13 @@ module Conv(P:Param1) = struct
             | Some (Value_closure { closure }) ->
                 let ex = new_descr (Value_closure { fun_id = id; closure }) in
                 Value_id ex
+            | _ when not (Closure_id.in_compilation_unit
+                            (Compilenv.current_unit ())
+                            id) ->
+                (* If some cmx files are missing, the value could be unknown.
+                   Notice that this is valid only for something comming from
+                   another compilation unit, otherwise this is a bug. *)
+                Value_unknown
             | Some _ -> assert false
             | _ ->
                 Format.printf "Unknown closure in offset %a@."
@@ -461,6 +468,13 @@ module Conv(P:Param1) = struct
                      Printflambda.flambda expr
                      Printflambda.flambda ulam;
                    assert false)
+          | _ when not (Closure_id.in_compilation_unit
+                          (Compilenv.current_unit ())
+                          env_fun_id) ->
+              (* If some cmx files are missing, the value could be unknown.
+                   Notice that this is valid only for something comming from
+                   another compilation unit, otherwise this is a bug. *)
+              Value_unknown
           | Some _ -> assert false
           | None ->
               Format.printf "Unknown closure in env_field %a@.%a@."
