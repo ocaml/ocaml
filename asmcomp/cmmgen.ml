@@ -1279,7 +1279,9 @@ let rec is_unboxed_number = function
             let iargs = intrin.Intrin.args in
             begin match iargs.(Array.length iargs - 1).Intrin.kind with
             | `Float -> Boxed_float
+            | `Int32 -> Boxed_integer Pint32
             | `Int64 -> Boxed_integer Pint64
+            | `Nativeint -> Boxed_integer Pnativeint
             | `M128  -> Boxed_m128
             | `M256  -> Boxed_m256
             | `Addr | `Int | `Unit -> No_unboxing
@@ -1603,30 +1605,29 @@ and transl_intrin intrin args =
   let iargs = intrin.Intrin.args in
   let transl_args = List.mapi (fun i arg ->
     let iarg = iargs.(i) in
-    match iarg.Intrin.kind with
-      `Float -> transl_unbox_float arg
-    | `Int when iarg.Intrin.immediate ->
-        begin match arg with
-          Uconst (Uconst_int n) -> Cconst_int n
-        | _ ->
-            fatal_error (Printf.sprintf
-              "Intrin %s expects immediate integer argument" (Intrin.name intrin))
-        end
-    | `Addr | `Int -> transl arg
-    | `Int64 -> transl_unbox_int Pint64 arg
-    | `M128 -> transl_unbox_m128 arg
-    | `M256 -> transl_unbox_m256 arg
-    | `Unit -> remove_unit(transl arg)) args
+    if iarg.Intrin.register then begin
+      match iarg.Intrin.kind with
+      | `Addr | `Int -> transl arg
+      | `Float       -> transl_unbox_float          arg
+      | `Int32       -> transl_unbox_int Pint32     arg
+      | `Int64       -> transl_unbox_int Pint64     arg
+      | `Nativeint   -> transl_unbox_int Pnativeint arg
+      | `M128        -> transl_unbox_m128           arg
+      | `M256        -> transl_unbox_m256           arg
+      | `Unit        -> remove_unit (transl arg)
+    end else transl arg) args
   in
   let ident x = x in
   let box_res =
     match iargs.(Array.length iargs - 1).Intrin.kind with
-      `Float -> box_float
-    | `Addr | `Int -> ident
-    | `Int64 -> box_int Pint64
-    | `M128  -> box_m128
-    | `M256  -> box_m256
-    | `Unit  -> return_unit
+      `Addr | `Int -> ident
+    | `Float       -> box_float
+    | `Int32       -> box_int Pint32
+    | `Int64       -> box_int Pint64
+    | `Nativeint   -> box_int Pnativeint
+    | `M128        -> box_m128
+    | `M256        -> box_m256
+    | `Unit        -> return_unit
   in
   box_res(Cop(Cintrin intrin, transl_args))
 

@@ -18,7 +18,9 @@ type arg_kind =
   [ `Addr
   | `Float
   | `Int
+  | `Int32
   | `Int64
+  | `Nativeint
   | `M128
   | `M256
   | `Unit ]
@@ -26,7 +28,7 @@ type arg_kind =
 type arg = {
   kind           : arg_kind;
   mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
-  copy_to_output : int option;
+  copy_to_output : int list;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
@@ -39,7 +41,8 @@ type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
   args   : arg array;
   cc     : bool;
-  memory : bool }
+  memory : bool;
+  decl   : string array }
 
 (** Parses assembly code given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
@@ -83,7 +86,7 @@ let parse_intrin kinds decl =
     let arg = ref {
       kind;
       mach_register  = None;
-      copy_to_output = None;
+      copy_to_output = [];
       commutative    = false;
       earlyclobber   = false;
       immediate      = false;
@@ -93,43 +96,59 @@ let parse_intrin kinds decl =
       register       = false } in
     
     let cstrs = decl.(i + 1) in
-    let i = ref 0 in
-    while !i < String.length cstrs && cstrs.[!i] >= '0' && cstrs.[!i] <= '9' do
-      incr i
-    done;
-    let cstrs =
-      if !i > 0 then begin
-        let copy_to_output = Some (int_of_string (String.sub cstrs 0 !i)) in
-        arg := { !arg with copy_to_output };
-        String.sub cstrs !i (String.length cstrs - !i)
-      end else cstrs
-    in
-
-    String.iter (function
-        'a' -> arg := { !arg with mach_register = Some `a }
-      | 'b' -> arg := { !arg with mach_register = Some `b }
-      | 'c' -> arg := { !arg with mach_register = Some `c }
-      | 'd' -> arg := { !arg with mach_register = Some `d }
-      | 'S' -> arg := { !arg with mach_register = Some `S }
-      | 'D' -> arg := { !arg with mach_register = Some `D }
-      | '%' -> arg := { !arg with commutative = true }
-      | '&' -> arg := { !arg with earlyclobber = true }
+    let copy_to_output = ref (0, "") in
+    String.iteri (fun j -> function
+        '%' ->
+        if i >= Array.length kinds - 1 then error "'%%' constraint used with last operand"
+        arg := { !arg with commutative = true }
+      | '&' ->
+        if not !arg.output then error "input operand constraint contains '&'"
+        else arg := { !arg with earlyclobber = true }
+      | '+' ->
+        if j > 0 then
+          error "output constraint '+' for operand %d is not at the beginning" i
+        else arg := { !arg with input = true; output = true }
+      | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c->
+        let k, s = !copy_to_output in
+        if s <> "" && k != j then begin
+          arg := { !arg with copy_to_output = int_of_string s :: !arg.copy_to_output };
+          copy_to_output := (i + 1, String.make 1 c)
+        end else copy_to_output := (i + 1, s ^ String.make 1 c)
+      | '=' ->
+        if j > 0 then
+          error "output constraint '=' for operand %d is not at the beginning" i
+        else arg := { !arg with input = false; output = true }
+      | 'a' -> arg := { !arg with register = true; mach_register = Some `a }
+      | 'b' -> arg := { !arg with register = true; mach_register = Some `b }
+      | 'c' -> arg := { !arg with register = true; mach_register = Some `c }
+      | 'd' -> arg := { !arg with register = true; mach_register = Some `d }
+      | 'g' -> arg := { !arg with immediate = true; memory = true; register = true }
       | 'i' -> arg := { !arg with immediate = true }
       | 'm' -> arg := { !arg with memory = true }
       | 'r' -> arg := { !arg with register = true }
-      | '=' -> arg := { !arg with input = false; output = true }
-      | '+' -> arg := { !arg with input = true; output = true }
-      | c -> error "Unknown argument modifier '%c'" c) cstrs;
+      | 'D' -> arg := { !arg with register = true; mach_register = Some `D }
+      | 'S' -> arg := { !arg with register = true; mach_register = Some `S }
+      | c -> error "invalid punctuation '%c' in constraint" c) cstrs;
+    let _, s = !copy_to_output in
+    if s <> "" then
+      arg := { !arg with copy_to_output = int_of_string s :: !arg.copy_to_output };
     !arg) kinds in
+  Array.iter (fun arg ->
+    List.iter (fun i ->
+      if i >= Array.length args then
+        error "matching constraint references invalid operand number";
+      if not args.(i).output then
+        error "matching constraint references non-output operand"
+      ) arg.copy_to_output) args;
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
-    error "The last argument is input";
-  let intrin = ref { asm; args; cc = false; memory = false } in
+    error "output operand constraint lacks '='";
+  let intrin = ref { decl; asm; args; cc = false; memory = false } in
   for i = nargs + 1 to Array.length decl - 1 do
     match decl.(i) with
       "cc"     -> intrin := { !intrin with cc     = true }
     | "memory" -> intrin := { !intrin with memory = true }
-    | d -> error "Unknown argument \"%s\"" d
+    | _ -> ()
   done;
   !intrin
 
@@ -147,24 +166,4 @@ let name intrin =
         in
         escape s 0) intrin.asm)
 
-let description intrin =
-  let args = Array.map (fun arg ->
-      ( match arg.copy_to_output with None -> "" | Some x -> string_of_int x )
-    ^ ( match arg.mach_register with None -> "" | Some r ->
-          match r with
-          | `a -> "a"
-          | `b -> "b"
-          | `c -> "c"
-          | `d -> "d"
-          | `S -> "S"
-          | `D -> "D" )
-    ^ ( if arg.commutative             then "x" else "" )
-    ^ ( if arg.earlyclobber            then "&" else "" )
-    ^ ( if arg.immediate               then "i" else "" )
-    ^ ( if arg.memory                  then "m" else "" )
-    ^ ( if arg.register                then "r" else "" )
-    ^ ( if arg.output && arg.input     then "+" else "" )
-    ^ ( if arg.output && not arg.input then "=" else "" )
-    ) intrin.args in
-  let result = "" in
-  [name intrin] @ (Array.to_list args) @ [result]
+let description intrin = Array.to_list intrin.decl

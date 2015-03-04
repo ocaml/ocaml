@@ -1362,7 +1362,9 @@ let intrin_args ty =
         match k with
         | ["float"]          -> `Float
         | ["int"]            -> `Int
+        | ["int32"]          -> `Int32
         | ["int64"]          -> `Int64
+        | ["nativeint"]      -> `Nativeint
         | ["m128d"]
         | ["m128i"]          -> `M128
         | ["m256d"]

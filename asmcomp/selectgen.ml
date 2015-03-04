@@ -49,8 +49,7 @@ let oper_result_type = function
       match iargs.(Array.length iargs - 1).Intrin.kind with
         `Addr  -> typ_addr
       | `Float -> typ_float
-      | `Int   -> typ_int
-      | `Int64 -> typ_int
+      | `Int | `Int32 | `Int64 | `Nativeint -> typ_int
       | `M128  -> typ_xmm
       | `M256  -> typ_ymm
       | `Unit  -> typ_void
@@ -595,14 +594,13 @@ method emit_expr env exp =
               let rs = Array.append r1 rd in
               let rs_new = Array.mapi (fun i -> self#intrin_pseudoreg iargs.(i)) rs in
               for i = 0 to Array.length rs - 1 do
-                match iargs.(i).Intrin.copy_to_output with
-                | None -> ()
-                | Some n -> rs_new.(i) <- rs_new.(n)
+                List.iter (fun n ->
+                  rs_new.(i) <- rs_new.(n)) iargs.(i).Intrin.copy_to_output
               done;
 
-              let rsrc = ref [] in
+              let rsrc     = ref [] in
               let rsrc_new = ref [] in
-              let rdst = ref [] in
+              let rdst     = ref [] in
               let rdst_new = ref [] in
               for i = 0 to Array.length rs - 1 do
                 let iarg = iargs.(i) in

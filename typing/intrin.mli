@@ -18,7 +18,9 @@ type arg_kind =
   [ `Addr
   | `Float
   | `Int
+  | `Int32
   | `Int64
+  | `Nativeint
   | `M128
   | `M256
   | `Unit ]
@@ -26,7 +28,7 @@ type arg_kind =
 type arg = {
   kind           : arg_kind;
   mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
-  copy_to_output : int option;
+  copy_to_output : int list;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
@@ -39,7 +41,8 @@ type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
   args   : arg array;
   cc     : bool;
-  memory : bool }
+  memory : bool;
+  decl   : string array }
 
 val parse_intrin: arg_kind list -> string list -> intrin
 
