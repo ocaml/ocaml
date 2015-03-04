@@ -201,7 +201,8 @@ val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].
    [v] must be heap-allocated.  [f] will be called with [v] as
    argument at some point between the first time [v] becomes unreachable
-   and the time [v] is collected by the GC.  Several functions can
+   (including through weak pointers) and the time [v] is collected by
+   the GC. Several functions can
    be registered for the same value, or even several instances of the
    same function.  Each instance will be called once (or never,
    if the program terminates before [v] becomes unreachable).
@@ -221,7 +222,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
    as expected:
-   - [ let v = ... in Gc.finalise (fun x -> ...) v ]
+   - [ let v = ... in Gc.finalise (fun _ -> ...v...) v ]
 
    Instead you should write:
    - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
@@ -239,17 +240,16 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    [finalise] will raise [Invalid_argument] if [v] is not
-   heap-allocated.  Some examples of values that are not
+   guaranteed to be heap-allocated.  Some examples of values that are not
    heap-allocated are integers, constant constructors, booleans,
    the empty array, the empty list, the unit value.  The exact list
    of what is heap-allocated or not is implementation-dependent.
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   You should also be aware that compiler optimisations may duplicate
-   some immutable values, for example floating-point numbers when
-   stored into arrays, so they can be finalised and collected while
-   another copy is still in use by the program.
+   Note that values of types [float] and ['a lazy] (for any ['a]) are
+   sometimes allocated and sometimes not, so finalising them is unsafe,
+   and [finalise] will also raise [Invalid_argument] for them.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
