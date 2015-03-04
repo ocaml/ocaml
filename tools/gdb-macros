@@ -34,7 +34,7 @@ else
 end
 
 define camlcheckheader
-  if $arg0 >> 10 <= 0 || $arg0 >> 10 > 0x1000000000000
+  if $arg0 >> 10 <= 0 || $arg0 >> 10 >= 0x1000000000000
     if ($arg0 & $caml_unalloc_mask) == $caml_unalloc_value
       set $camlcheckheader_result = 2
     else
@@ -108,7 +108,7 @@ define camlheader
       printf "Custom "
     end
 
-    printf "%d]", $size
+    printf "%lu]", $size
   end
 end
 
@@ -137,6 +137,9 @@ define camlint
     printf "UNALLOCATED MEMORY"
   else
     printf "INT %ld", ($arg0 >> 1)
+  end
+  if ($arg0 & 0xFF) == 0xF9 && ($arg0 >> 10) < 0x1000000000000
+    printf " [possible infix header]"
   end
 end
 
@@ -168,7 +171,14 @@ define camlblock
     end
   end
 
-  if $tag != 252 && $tag != 253 && $tag != 254
+  if $tag == 249
+    set $mybaseaddr = $arg0 - $camlwordsize * $mysize
+    camlblock $mybaseaddr
+    # reset $tag, which was clobbered by the recursive call (yuck)
+    set $tag = 249
+  end
+
+  if $tag != 249 && $tag != 252 && $tag != 253 && $tag != 254
     set $isvalues = $tag < 251
     set $count = 0
     while $count < $mysize && $count < 10
