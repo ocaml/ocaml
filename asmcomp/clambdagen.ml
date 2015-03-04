@@ -39,7 +39,7 @@ let list_closures expr constants =
   SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
   !closures
 
-let reexported_offset extern_fun_offset_table extern_fv_offset_table expr =
+let reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants =
   let set_fun = ref Closure_id.Set.empty in
   let set_fv = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
@@ -54,6 +54,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr =
     | e -> ()
   in
   Flambdaiter.iter aux expr;
+  SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
   let f extern_map offset new_map =
     try
       Closure_id.Map.add offset (Closure_id.Map.find offset extern_map) new_map
@@ -740,7 +741,7 @@ let convert (type a)
   let extern_fv_offset_table =
     (Compilenv.approx_env ()).Flambdaexport.ex_offset_fv in
   let add_ext_offset_fun, add_ext_offset_fv =
-    reexported_offset extern_fun_offset_table extern_fv_offset_table expr in
+    reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants in
   let module P2 = struct include P1
     let fun_offset_table = fun_offset_table
     let fv_offset_table = fv_offset_table
