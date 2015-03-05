@@ -1166,7 +1166,7 @@ fun ib fmt readers -> match fmt with
   | Theta _ ->
     invalid_arg "scanf: bad conversion \"%t\""
   | Custom _ ->
-    invalid_arg "scanf: bad conversion <custom>"
+    invalid_arg "scanf: bad conversion \"%?\" (custom converter)"
   | Reader fmt_rest ->
     let Cons (reader, readers_rest) = readers in
     let x = reader ib in
