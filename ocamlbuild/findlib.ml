@@ -153,7 +153,7 @@ let add_atom a l = match a, l with
   | A "", _ -> l
   | _ -> a :: l
 
-let compile_flags l =
+let include_flags ?(arg="-I") l =
   let pkgs = topological_closure l in
   let locations = List.fold_left begin fun acc p ->
     SSet.add p.location acc
@@ -162,12 +162,12 @@ let compile_flags l =
   (* includes *)
   let flags =
     List.fold_left begin fun acc l ->
-      add_atom (P l) (add_atom (A "-I") acc)
+      add_atom (P l) (add_atom (A arg) acc)
     end flags (SSet.elements locations)
   in
   S (List.rev flags)
-let compile_flags_byte = compile_flags
-let compile_flags_native = compile_flags
+let compile_flags_byte l = include_flags l
+let compile_flags_native l = include_flags l
 
 let link_flags f l =
   let pkgs = topological_closure l in
