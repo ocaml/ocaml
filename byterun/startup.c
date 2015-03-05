@@ -205,116 +205,6 @@ Algorithm:
 
 */
 
-/* Configuration parameters and flags */
-
-struct caml_startup_params caml_startup_params;
-
-static void init_startup_params()
-{
-  struct caml_startup_params *p = &caml_startup_params;
-  p->percent_free_init = Percent_free_def;
-  p->max_percent_free_init = Max_percent_free_def;
-  p->minor_heap_init = Minor_heap_def;
-  p->heap_chunk_init = Heap_chunk_def;
-  p->heap_size_init = Init_heap_def;
-  p->max_stack_init = Max_stack_def;
-}
-
-/* Parse options on the command line */
-
-static int parse_command_line(char **argv)
-{
-  int i, j;
-
-  for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
-    switch(argv[i][1]) {
-#ifdef DEBUG
-    case 't':
-      caml_startup_params.trace_flag++;
-      break;
-#endif
-    case 'v':
-      if (!strcmp (argv[i], "-version")){
-        printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
-        exit (0);
-      }else if (!strcmp (argv[i], "-vnum")){
-        printf (OCAML_VERSION_STRING "\n");
-        exit (0);
-      }else{
-        caml_startup_params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
-      }
-      break;
-    case 'p':
-      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", caml_names_of_builtin_cprim[j]);
-      exit(0);
-      break;
-    case 'b':
-      caml_startup_params.backtrace_enabled_init = 1;
-      break;
-    case 'I':
-      if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
-        i++;
-      }
-      break;
-    default:
-      caml_fatal_error_arg("Unknown option %s.\n", argv[i]);
-    }
-  }
-  return i;
-}
-
-/* Parse the OCAMLRUNPARAM variable */
-/* The option letter for each runtime option is the first letter of the
-   last word of the ML name of the option (see [stdlib/gc.mli]).
-   Except for l (maximum stack size) and h (initial heap size).
-*/
-
-/* If you change these functions, see also their copy in asmrun/startup.c */
-
-static void scanmult (char *opt, uintnat *var)
-{
-  char mult = ' ';
-  unsigned int val;
-  sscanf (opt, "=%u%c", &val, &mult);
-  sscanf (opt, "=0x%x%c", &val, &mult);
-  switch (mult) {
-  case 'k':   *var = (uintnat) val * 1024; break;
-  case 'M':   *var = (uintnat) val * 1024 * 1024; break;
-  case 'G':   *var = (uintnat) val * 1024 * 1024 * 1024; break;
-  default:    *var = (uintnat) val; break;
-  }
-}
-
-static void parse_camlrunparam(void)
-{
-  char *opt = getenv ("OCAMLRUNPARAM");
-
-  if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
-
-  if (opt != NULL){
-    while (*opt != '\0'){
-      switch (*opt++){
-      case 'b': caml_startup_params.backtrace_enabled_init = 1; break;
-      case 'h': scanmult (opt, &caml_startup_params.heap_size_init); break;
-      case 'i': scanmult (opt, &caml_startup_params.heap_chunk_init); break;
-      case 'l': scanmult (opt, &caml_startup_params.max_stack_init); break;
-      case 'o': scanmult (opt, &caml_startup_params.percent_free_init); break;
-      case 'O': scanmult (opt, &caml_startup_params.max_percent_free_init); break;
-      case 'p': caml_startup_params.parser_trace = 1; break;
-      /* case 'R': see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &caml_startup_params.minor_heap_init); break;
-#ifdef DEBUG
-      case 't': caml_startup_params.trace_flag = 1; break;
-#endif
-      case 'v': scanmult (opt, &caml_startup_params.verb_gc); break;
-      case 'e': caml_startup_params.eventlog_enabled = 1; break;
-      }
-    }
-  }
-}
-
 extern void caml_init_ieee_floats (void);
 
 #ifdef _WIN32
@@ -340,7 +230,7 @@ CAMLexport void caml_main(char **argv)
   char * exe_name;
   static char proc_self_exe[256];
 
-  init_startup_params();
+  caml_init_startup_params();
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
@@ -351,10 +241,6 @@ CAMLexport void caml_main(char **argv)
   caml_ext_table_init(&caml_shared_libs_path, 8);
   caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
-#ifdef DEBUG
-  caml_startup_params.verb_gc = 0xBF;
-#endif
-  parse_camlrunparam();
   pos = 0;
 
   /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
@@ -370,7 +256,7 @@ CAMLexport void caml_main(char **argv)
   }
 
   if (fd < 0) {
-    pos = parse_command_line(argv);
+    pos = caml_parse_command_line(argv);
     if (argv[pos] == 0)
       caml_fatal_error("No bytecode file specified.\n");
     exe_name = argv[pos];
@@ -449,7 +335,7 @@ CAMLexport void caml_startup_code(
   char * exe_name;
   static char proc_self_exe[256];
 
-  init_startup_params();
+  caml_init_startup_params();
   caml_init_ieee_floats();
 #ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
@@ -462,7 +348,6 @@ CAMLexport void caml_startup_code(
   if (cds_file != NULL) {
     caml_cds_file = caml_strdup(cds_file);
   }
-  parse_camlrunparam();
   exe_name = argv[0];
   if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
