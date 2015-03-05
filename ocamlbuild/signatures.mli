@@ -505,8 +505,8 @@ Given any list of package [l], [topological_closure l] returns a list of
 packages including [l] and their dependencies, in an order where any element
 may only depend on the previous ones. *)
 
-  val include_flags: ?arg:string -> package list -> command_spec
-    (** Return the list of include directories. [arg] default to ["-I"]. *)
+  val include_flags: package list -> command_spec
+    (** Return the list of include directories. *)
 
   val compile_flags_byte: package list -> command_spec
     (** Return the flags to add when compiling in byte mode (include
