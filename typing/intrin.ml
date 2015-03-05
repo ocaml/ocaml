@@ -25,17 +25,20 @@ type arg_kind =
   | `M256
   | `Unit ]
 
-type arg = {
-  kind           : arg_kind;
-  mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
+type alternative = {
+  mach_register  : [ `all | `a | `b | `c | `d | `S | `D ];
   copy_to_output : int list;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
-  input          : bool;
-  memory         : bool;
-  output         : bool;
+  memory         : [ `no | `m | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
   register       : bool }
+
+type arg = {
+  kind         : arg_kind;
+  input        : bool;
+  output       : bool;
+  alternatives : alternative array }
 
 type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
@@ -81,65 +84,104 @@ let parse_intrin kinds decl =
   let kinds = Array.of_list kinds in
   let decl = Array.of_list decl in
   let nargs = Array.length kinds in
+  if Array.length decl < Array.length kinds + 1 then
+    error "expected constraints for all arguments";
   let asm = parse_asm ~nargs decl.(0) in
   let args = Array.mapi (fun i kind ->
     let arg = ref {
       kind;
-      mach_register  = None;
+      input        = true;
+      output       = false;
+      alternatives = [| |] } in
+    let alt = ref {
+      mach_register  = `all;
       copy_to_output = [];
       commutative    = false;
       earlyclobber   = false;
       immediate      = false;
-      input          = true;
-      memory         = false;
-      output         = false;
+      memory         = `no;
       register       = false } in
-    
-    let cstrs = decl.(i + 1) in
-    let copy_to_output = ref (0, "") in
+    let decl = decl.(i + 1) in
+    let add_digit =
+      let s = ref 0 in
+      let e = ref 0 in
+      fun j c ->
+        if !e > !s && !e != j then begin
+          let a = String.sub decl !s (!e - !s) in
+          if !s > 0 && decl.[!s - 1] = 'm' then
+            let memory =
+              match a with
+                "8" -> `m8
+              | "16" -> `m16
+              | "32" -> `m32
+              | "64" -> `m64
+              | "128" -> `m128
+              | "256" -> `m256
+              | _ -> error "invalid memory alignment constraint 'm%s'" a
+            in
+            alt := { !alt with memory }
+          else
+            alt := { !alt with copy_to_output = int_of_string a :: !alt.copy_to_output };
+          s := j;
+          e := j + 1
+        end else
+          e := j + 1
+    in
     String.iteri (fun j -> function
         '%' ->
-        if i >= Array.length kinds - 1 then error "'%%' constraint used with last operand"
-        arg := { !arg with commutative = true }
+          if i >= Array.length kinds - 1 then
+            error "'%%' constraint used with last operand";
+          alt := { !alt with commutative = true }
       | '&' ->
-        if not !arg.output then error "input operand constraint contains '&'"
-        else arg := { !arg with earlyclobber = true }
+          if not !arg.output then error "input operand constraint contains '&'";
+            alt := { !alt with earlyclobber = true }
       | '+' ->
-        if j > 0 then
-          error "output constraint '+' for operand %d is not at the beginning" i
-        else arg := { !arg with input = true; output = true }
-      | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c->
-        let k, s = !copy_to_output in
-        if s <> "" && k != j then begin
-          arg := { !arg with copy_to_output = int_of_string s :: !arg.copy_to_output };
-          copy_to_output := (i + 1, String.make 1 c)
-        end else copy_to_output := (i + 1, s ^ String.make 1 c)
+          if j > 0 then
+            error "output constraint '+' for operand %d is not at the beginning" i;
+          arg := { !arg with input = true; output = true }
+      | '-' ->
+          arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
+          alt := {
+            mach_register  = `all;
+            copy_to_output = [];
+            commutative    = false;
+            earlyclobber   = false;
+            immediate      = false;
+            memory         = `no;
+            register       = false }
+      | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c ->
+          add_digit j c
       | '=' ->
         if j > 0 then
-          error "output constraint '=' for operand %d is not at the beginning" i
-        else arg := { !arg with input = false; output = true }
-      | 'a' -> arg := { !arg with register = true; mach_register = Some `a }
-      | 'b' -> arg := { !arg with register = true; mach_register = Some `b }
-      | 'c' -> arg := { !arg with register = true; mach_register = Some `c }
-      | 'd' -> arg := { !arg with register = true; mach_register = Some `d }
-      | 'g' -> arg := { !arg with immediate = true; memory = true; register = true }
-      | 'i' -> arg := { !arg with immediate = true }
-      | 'm' -> arg := { !arg with memory = true }
-      | 'r' -> arg := { !arg with register = true }
-      | 'D' -> arg := { !arg with register = true; mach_register = Some `D }
-      | 'S' -> arg := { !arg with register = true; mach_register = Some `S }
-      | c -> error "invalid punctuation '%c' in constraint" c) cstrs;
-    let _, s = !copy_to_output in
-    if s <> "" then
-      arg := { !arg with copy_to_output = int_of_string s :: !arg.copy_to_output };
+          error "output constraint '=' for operand %d is not at the beginning" i;
+        arg := { !arg with input = false; output = true }
+      | 'a' -> alt := { !alt with register = true; mach_register = `a }
+      | 'b' -> alt := { !alt with register = true; mach_register = `b }
+      | 'c' -> alt := { !alt with register = true; mach_register = `c }
+      | 'd' -> alt := { !alt with register = true; mach_register = `d }
+      | 'g' -> alt := { !alt with immediate = true; memory = `m; register = true }
+      | 'i' -> alt := { !alt with immediate = true }
+      | 'm' -> alt := { !alt with memory = `m }
+      | 'r' -> alt := { !alt with register = true }
+      | 'D' -> alt := { !alt with register = true; mach_register = `D }
+      | 'S' -> alt := { !alt with register = true; mach_register = `S }
+      | c -> error "invalid punctuation '%c' in constraint" c) decl;
+    add_digit (String.length decl + 1) '0'; (* flushes *)
+    arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
     !arg) kinds in
+  List.iter (function
+      `Emit_arg i -> if i >= Array.length args then error "operand number out of range"
+    | `Emit_string _ -> ()) asm;
   Array.iter (fun arg ->
-    List.iter (fun i ->
-      if i >= Array.length args then
-        error "matching constraint references invalid operand number";
-      if not args.(i).output then
-        error "matching constraint references non-output operand"
-      ) arg.copy_to_output) args;
+    if Array.length arg.alternatives != Array.length args.(0).alternatives then
+      error "operand constraints for 'asm' differ in number of alternatives";
+    Array.iter (fun alt ->
+      List.iter (fun i ->
+        if i >= Array.length args then
+          error "matching constraint references invalid operand number";
+        if not args.(i).output then
+          error "matching constraint references non-output operand"
+        ) alt.copy_to_output) arg.alternatives) args;
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
     error "output operand constraint lacks '='";

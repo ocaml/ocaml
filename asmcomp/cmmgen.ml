@@ -1605,17 +1605,15 @@ and transl_intrin intrin args =
   let iargs = intrin.Intrin.args in
   let transl_args = List.mapi (fun i arg ->
     let iarg = iargs.(i) in
-    if iarg.Intrin.register then begin
-      match iarg.Intrin.kind with
-      | `Addr | `Int -> transl arg
-      | `Float       -> transl_unbox_float          arg
-      | `Int32       -> transl_unbox_int Pint32     arg
-      | `Int64       -> transl_unbox_int Pint64     arg
-      | `Nativeint   -> transl_unbox_int Pnativeint arg
-      | `M128        -> transl_unbox_m128           arg
-      | `M256        -> transl_unbox_m256           arg
-      | `Unit        -> remove_unit (transl arg)
-    end else transl arg) args
+    match iarg.Intrin.kind with
+    | `Addr | `Int -> transl arg
+    | `Float       -> transl_unbox_float          arg
+    | `Int32       -> transl_unbox_int Pint32     arg
+    | `Int64       -> transl_unbox_int Pint64     arg
+    | `Nativeint   -> transl_unbox_int Pnativeint arg
+    | `M128        -> transl_unbox_m128           arg
+    | `M256        -> transl_unbox_m256           arg
+    | `Unit        -> remove_unit (transl arg)) args
   in
   let ident x = x in
   let box_res =

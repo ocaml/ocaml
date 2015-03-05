@@ -25,17 +25,20 @@ type arg_kind =
   | `M256
   | `Unit ]
 
-type arg = {
-  kind           : arg_kind;
-  mach_register  : [ `a | `b | `c | `d | `S | `D ] option;
+type alternative = {
+  mach_register  : [ `all | `a | `b | `c | `d | `S | `D ];
   copy_to_output : int list;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
-  input          : bool;
-  memory         : bool;
-  output         : bool;
+  memory         : [ `no | `m | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
   register       : bool }
+
+type arg = {
+  kind         : arg_kind;
+  input        : bool;
+  output       : bool;
+  alternatives : alternative array }
 
 type intrin = {
   asm    : [ `Emit_string of string | `Emit_arg of int ] list;
