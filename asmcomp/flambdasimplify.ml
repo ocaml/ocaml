@@ -54,10 +54,11 @@ let remove_unused_closure_variables tree =
            cl_fun.funs
            Variable.Set.empty in
        let cl_free_var =
-         Variable.Map.filter (fun id _ ->
-           Variable.Set.mem id all_free_var
+         Variable.Map.filter (fun id expr ->
+             Variable.Set.mem id all_free_var
              || Var_within_closure.Set.mem (Var_within_closure.wrap id)
-                                       used_variable_within_closure)
+               used_variable_within_closure
+             || not (Flambdaeffects.no_effects expr))
            cl_free_var in
        Fset_of_closures ({ closure with cl_free_var }, eid)
     | e -> e
