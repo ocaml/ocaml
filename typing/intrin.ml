@@ -27,11 +27,11 @@ type arg_kind =
 
 type alternative = {
   mach_register  : [ `all | `a | `b | `c | `d | `S | `D ];
-  copy_to_output : int list;
+  copy_to_output : int option;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
-  memory         : [ `no | `m | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
+  memory         : [ `no | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
   register       : bool }
 
 type arg = {
@@ -95,7 +95,7 @@ let parse_intrin kinds decl =
       alternatives = [| |] } in
     let alt = ref {
       mach_register  = `all;
-      copy_to_output = [];
+      copy_to_output = None;
       commutative    = false;
       earlyclobber   = false;
       immediate      = false;
@@ -111,17 +111,17 @@ let parse_intrin kinds decl =
           if !s > 0 && decl.[!s - 1] = 'm' then
             let memory =
               match a with
-                "8" -> `m8
-              | "16" -> `m16
-              | "32" -> `m32
-              | "64" -> `m64
+                "8"   -> `m8
+              | "16"  -> `m16
+              | "32"  -> `m32
+              | "64"  -> `m64
               | "128" -> `m128
               | "256" -> `m256
               | _ -> error "invalid memory alignment constraint 'm%s'" a
             in
             alt := { !alt with memory }
           else
-            alt := { !alt with copy_to_output = int_of_string a :: !alt.copy_to_output };
+            alt := { !alt with copy_to_output = Some (int_of_string a) };
           s := j;
           e := j + 1
         end else
@@ -143,7 +143,7 @@ let parse_intrin kinds decl =
           arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
           alt := {
             mach_register  = `all;
-            copy_to_output = [];
+            copy_to_output = None;
             commutative    = false;
             earlyclobber   = false;
             immediate      = false;
@@ -159,9 +159,9 @@ let parse_intrin kinds decl =
       | 'b' -> alt := { !alt with register = true; mach_register = `b }
       | 'c' -> alt := { !alt with register = true; mach_register = `c }
       | 'd' -> alt := { !alt with register = true; mach_register = `d }
-      | 'g' -> alt := { !alt with immediate = true; memory = `m; register = true }
+      | 'g' -> alt := { !alt with immediate = true; memory = `m16; register = true }
       | 'i' -> alt := { !alt with immediate = true }
-      | 'm' -> alt := { !alt with memory = `m }
+      | 'm' -> alt := { !alt with memory = `m16 }
       | 'r' -> alt := { !alt with register = true }
       | 'D' -> alt := { !alt with register = true; mach_register = `D }
       | 'S' -> alt := { !alt with register = true; mach_register = `S }
@@ -176,12 +176,15 @@ let parse_intrin kinds decl =
     if Array.length arg.alternatives != Array.length args.(0).alternatives then
       error "operand constraints for 'asm' differ in number of alternatives";
     Array.iter (fun alt ->
-      List.iter (fun i ->
+      match alt.copy_to_output with
+      | None -> ()
+      | Some i ->
+          if arg.output then error "matching constraint not valid in output parameter";
         if i >= Array.length args then
           error "matching constraint references invalid operand number";
         if not args.(i).output then
           error "matching constraint references non-output operand"
-        ) alt.copy_to_output) arg.alternatives) args;
+      ) arg.alternatives) args;
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
     error "output operand constraint lacks '='";

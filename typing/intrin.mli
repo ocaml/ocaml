@@ -27,11 +27,11 @@ type arg_kind =
 
 type alternative = {
   mach_register  : [ `all | `a | `b | `c | `d | `S | `D ];
-  copy_to_output : int list;
+  copy_to_output : int option;
   commutative    : bool;
   earlyclobber   : bool;
   immediate      : bool;
-  memory         : [ `no | `m | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
+  memory         : [ `no | `m8 | `m16 | `m32 | `m64 | `m128 | `m256 ];
   register       : bool }
 
 type arg = {

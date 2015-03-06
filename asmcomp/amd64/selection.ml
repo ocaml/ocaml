@@ -170,17 +170,15 @@ method! select_store is_assign addr exp =
   | _ ->
       super#select_store is_assign addr exp
 
-method! intrin_pseudoreg iarg r =
-  match iarg.Intrin.mach_register with
-  | None -> r
-  | Some r ->
-      match r with
-      | `a -> rax
-      | `b -> rbx
-      | `c -> rcx
-      | `d -> rdx
-      | `S -> rsi
-      | `D -> rdi
+method! intrin_pseudoreg alt r =
+  match alt.Intrin.mach_register with
+  | `all -> r
+  | `a   -> rax
+  | `b   -> rbx
+  | `c   -> rcx
+  | `d   -> rdx
+  | `S   -> rsi
+  | `D   -> rdi
 
 method! select_operation op args =
   match op with

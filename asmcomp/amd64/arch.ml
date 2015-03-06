@@ -78,7 +78,7 @@ let num_args_addressing = function
 
 (* Printing operations and addressing modes *)
 
-let print_addressing' printreg addr i ppf arg =
+let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, 0) ->
       fprintf ppf "\"%s\"" s
@@ -86,18 +86,16 @@ let print_addressing' printreg addr i ppf arg =
       fprintf ppf "\"%s\" + %i" s n
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "%a%s" printreg arg.(i) idx
+      fprintf ppf "%a%s" printreg arg.(0) idx
   | Iindexed2 n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "%a + %a%s" printreg arg.(i) printreg arg.(i + 1) idx
+      fprintf ppf "%a + %a%s" printreg arg.(0) printreg arg.(1) idx
   | Iscaled(scale, n) ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "%a  * %i%s" printreg arg.(i) scale idx
+      fprintf ppf "%a  * %i%s" printreg arg.(0) scale idx
   | Iindexed2scaled(scale, n) ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
-      fprintf ppf "%a + %a * %i%s" printreg arg.(i) printreg arg.(i + 1) scale idx
-
-let print_addressing printreg addr ppf arg = print_addressing' printreg addr 0 ppf arg
+      fprintf ppf "%a + %a * %i%s" printreg arg.(0) printreg arg.(1) scale idx
 
 let print_specific_operation printreg op ppf arg =
   match op with

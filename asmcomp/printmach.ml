@@ -142,13 +142,20 @@ let operation op arg ppf res =
       List.iter (function
           `Emit_string s -> fprintf ppf "%s" s
         | `Emit_arg i ->
-            match iargs.(i) with
-              Iarg i -> fprintf ppf "%a" reg arg.(i)
-            | Ires i -> fprintf ppf "%a" reg res.(i)
-            | Iarg_imm n -> fprintf ppf "%n" n
-            | Iarg_addr (i, chunk, addr) ->
+            let iarg = iargs.(i) in
+            match iarg.kind with
+              `addr (chunk, addr, _) ->
                 fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
-                  (Arch.print_addressing' reg addr i) arg) intrin.Intrin.asm;
+                  (Arch.print_addressing reg addr)
+                  (match iarg.src with
+                      `arg n -> Array.sub arg n (Array.length arg - n)
+                    | `res n -> Array.sub res n (Array.length res - n))
+            | `imm n -> fprintf ppf "%n" n
+            | `reg | `stack ->
+                fprintf ppf "%a" reg
+                  (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
+            | `unit -> fprintf ppf "()"
+) intrin.Intrin.asm;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 

@@ -31,11 +31,15 @@ type test =
   | Ioddtest
   | Ieventest
 
-type intrin_arg =
-  | Iarg of int
-  | Ires of int
-  | Iarg_imm of int
-  | Iarg_addr of int * Cmm.memory_chunk * Arch.addressing_mode
+type intrin_arg = {
+  alt    : Intrin.alternative;
+  src    : [ `arg of int | `res of int ];
+  num_reg: int;
+  kind   : [ `addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
+           | `imm of int
+           | `reg
+           | `stack
+           | `unit ] }
 
 type operation =
     Imove

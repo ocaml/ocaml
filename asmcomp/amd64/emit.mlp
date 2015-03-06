@@ -417,18 +417,28 @@ let emit_intrin i intrin iargs =
   I.intrin (List.map (function
       \`Emit_string s -> Intrin_string s
     | \`Emit_arg n ->
-        match iargs.(n) with
-          Iarg n -> Intrin_arg (arg i n)
-        | Ires n -> Intrin_arg (res i n)
-        | Iarg_imm n -> Intrin_arg (Imm (Int64.of_int n))
-        | Iarg_addr (n, chunk, addr) ->
-            let typ =
-              match chunk with
-                Word -> QWORD
-              | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
-              | _ -> assert false
-            in
-            Intrin_arg (addressing addr typ i n)) intrin.Intrin.asm)
+        let iarg = iargs.(n) in
+        Intrin_arg (
+          match iarg.kind with
+            \`imm n -> Imm (Int64.of_int n)
+          | \`unit -> Imm (Int64.of_int 0)
+          | \`reg | \`stack ->
+              begin match iarg.src with
+                \`arg n -> arg i n
+              | \`res n -> res i n
+              end
+          | \`addr (chunk, addr, _) ->
+              let typ =
+                match chunk with
+                  Word -> QWORD
+                | Byte_unsigned | Byte_signed -> BYTE
+                | Sixteen_unsigned | Sixteen_signed -> WORD
+                | Thirtytwo_unsigned | Thirtytwo_signed -> DWORD
+                | Single -> REAL4
+                | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
+              in
+              let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
+              addressing addr typ i n)) intrin.Intrin.asm)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =

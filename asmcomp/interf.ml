@@ -89,14 +89,19 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm lbl) -> ()
-    | Iop(Iintrin (intrin, args)) ->
-        Array.iteri (fun n iarg ->
-          if iarg.Intrin.earlyclobber then
-            match args.(n) with
-              Iarg n
-            | Iarg_addr (n, _, _) -> Array.iter (add_interf i.arg.(n)) i.res
-            | Ires n -> Array.iter (add_interf i.res.(n)) i.arg
-            | Iarg_imm _ -> ()) intrin.Intrin.args;
+    | Iop(Iintrin (intrin, iargs)) ->
+        Array.iter (fun iarg ->
+          let alt = iarg.Mach.alt in
+          if alt.Intrin.earlyclobber then
+            match iarg.src with
+              `arg n ->
+                for m = n to n + iarg.num_reg - 1 do
+                  Array.iter (add_interf i.arg.(m)) i.res
+                done
+            | `res n ->
+                for m = n to n + iarg.num_reg - 1 do
+                  Array.iter (add_interf i.res.(m)) i.arg
+                done) iargs;
         interf i.next
     | Iop op ->
         add_interf_set i.res i.live;
