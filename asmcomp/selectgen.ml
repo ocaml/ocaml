@@ -300,6 +300,35 @@ method select_operation op args =
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
   | (Cintrin intrin, _) ->
+      exception Not_possible_to_represent
+      let alternative_cost intrin alts args =
+        let cost = ref 0 in
+        let iargs = Array.mapi (fun i arg ->
+          let intrin_arg = intrin.Intrin.args.(i) in
+          let alt = alts.(i) in
+          match alt.Intrin.memory, arg with
+            _, Cconst_int n when alt.Intrin.immediate -> Iarg_imm n
+          | _, _ when intrin_arg.Intrin.kind = `Unit -> Iarg_unit
+          |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
+          | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
+          | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64)                , Cop(Cload (Word | Single | Double | Double_u | M128 | M256 as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128)        , Cop(Cload (M128_u                                          as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256), Cop(Cload (M256_u                                          as chunk), [loc])
+            when intrin_arg.Intrin.input ->
+              Iarg_addr (chunk, loc)
+          | _, Cop(Cload _, _) when alt.Intrin.register ->
+              incr cost;
+              Iarg
+          | _, _ when alt.Intrin.register -> Iarg
+          | _, _ when alt.Intrin.memory <> `no ->
+              cost := !cost + 2;
+              Iarg_stack
+          | _, _ -> raise Not_possible_to_represent) args
+        in
+        !cost, iargs
+      in
+
       let rec loop args iargs narg nres acc_args acc_iargs =
         match args, iargs with
         | arg :: args, iarg :: iargs ->
