@@ -159,6 +159,8 @@ Bug fixes:
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
 - PR#6787: Soundness bug with polymorphic variants
+- PR#6791: "%s@[", "%s@{" regression in Scanf
+  (Benoît Vaugon)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind

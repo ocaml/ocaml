@@ -1125,6 +1125,12 @@ fun ib fmt readers -> match fmt with
     let scan width _ ib = scan_string (Some stp) width ib in
     let str_rest = String_literal (str, rest) in
     pad_prec_scanf ib str_rest readers pad No_precision scan token_string
+  | String (pad, Formatting_gen (Open_tag (Format (fmt', _)), rest)) ->
+    let scan width _ ib = scan_string (Some '{') width ib in
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
+  | String (pad, Formatting_gen (Open_box (Format (fmt', _)), rest)) ->
+    let scan width _ ib = scan_string (Some '[') width ib in
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
   | String (pad, rest) ->
     let scan width _ ib = scan_string None width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_string
