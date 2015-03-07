@@ -49,7 +49,7 @@ Standard library:
   (Peter Zotov)
 - expose Sys.{int_size,max_wosize} for improved js_of_ocaml portability
   (Hugo Heuzard)
-* PR#5960 Add List.cons (Daniel Bünzli).
+* PR#5960 Add List.{cons,consr} (Daniel Bünzli).
 * Filename: Optional ?perms argument to open_temp_file
   (Daniel Bünzli, review by Jacques-Pascal Deplaix)
 

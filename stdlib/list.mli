@@ -40,6 +40,11 @@ val cons : 'a -> 'a list -> 'a list
 
     @since 4.03.0 *)
 
+val consr : 'a list -> 'a -> 'a list
+(** [consr] is like {!cons} but with arguments reversed.
+
+    @since 4.03.0 *)
+
 val nth : 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
