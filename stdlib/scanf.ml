@@ -1029,6 +1029,7 @@ fun k fmt -> match fmt with
   | Flush rest                       -> take_format_readers k rest
   | String_literal (_, rest)         -> take_format_readers k rest
   | Char_literal (_, rest)           -> take_format_readers k rest
+  | Custom (_, _, rest)              -> take_format_readers k rest
 
   | Scan_char_set (_, _, rest)       -> take_format_readers k rest
   | Scan_get_counter (_, rest)       -> take_format_readers k rest
@@ -1068,6 +1069,7 @@ fun k fmtty fmt -> match fmtty with
   | Bool_ty rest                -> take_fmtty_format_readers k rest fmt
   | Alpha_ty rest               -> take_fmtty_format_readers k rest fmt
   | Theta_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Any_ty rest                 -> take_fmtty_format_readers k rest fmt
   | Format_arg_ty (_, rest)     -> take_fmtty_format_readers k rest fmt
   | End_of_fmtty                -> take_format_readers k fmt
   | Format_subst_ty (ty1, ty2, rest) ->
@@ -1169,6 +1171,8 @@ fun ib fmt readers -> match fmt with
     invalid_arg "scanf: bad conversion \"%a\""
   | Theta _ ->
     invalid_arg "scanf: bad conversion \"%t\""
+  | Custom _ ->
+    invalid_arg "scanf: bad conversion \"%?\" (custom converter)"
   | Reader fmt_rest ->
     let Cons (reader, readers_rest) = readers in
     let x = reader ib in

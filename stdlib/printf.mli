@@ -110,7 +110,28 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    the corresponding [width] or [precision]. This integer argument
    precedes immediately the argument to print.
    For instance, [%.*f] prints a [float] with as many fractional
-   digits as the value of the argument given before the float. *)
+   digits as the value of the argument given before the float.
+
+   A format string may also contain custom converters, where an arbitrary
+   function can be used to convert one or more arguments. There is no
+   syntax for custom converters, so the only way to have them in a format
+   string is to construct the format string using the low-level GADT
+   representation defined in {!CamlinternalFormatBasics}. However it can be
+   the job of a pre-processor to choose a specific syntax and embed them
+   automatically.
+
+   For instance a pre-processor could choose to interpret strings prefixed
+   with ["!"] as format strings where [%{ ... }] is a special form to pass
+   a to_string function, so that one could write:
+
+   {[
+     type t = { x : int; y : int }
+
+     let string_of_t t = Printf.sprintf "{ x = %d; y = %d }" t.x t.y
+
+     Printf.printf !"t = %{string_of_t}" { x = 42; y = 42 }
+   ]}
+*)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)

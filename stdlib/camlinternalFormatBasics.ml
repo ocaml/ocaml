@@ -65,6 +65,11 @@ type ('a, 'b) precision =
    only accept an optional number as precision option (no extra argument) *)
 type prec_option = int option
 
+type ('a, 'b, 'c, 'd) custom_arity =
+  | Custom_zero : ('a, 'b, 'a, 'b) custom_arity
+  | Custom_succ : ('a, 'b, 'c, 'd) custom_arity ->
+    ('a, 'b, 'x -> 'c, 'x -> 'd) custom_arity
+
 (***)
 
 (*        Relational format types
@@ -306,6 +311,11 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+  | Any_ty :                                                  (* Used for custom formats *)
+      ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+      ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+       'x -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 
   (* Scanf specific constructor. *)
   | Reader_ty :                                               (* %r  *)
@@ -391,6 +401,9 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
   | Theta :                                                  (* %t *)
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         (('b -> 'c) -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+  | Custom :
+      ('c, 'a, 'x, 'y) custom_arity * ('b -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      ('y, 'b, 'c, 'd, 'e, 'f) fmt
 
   (* Format specific constructor: *)
   | Formatting_lit :                                         (* @_ *)
@@ -490,6 +503,8 @@ let rec erase_rel : type a b c d e f g h i j k l .
     Alpha_ty (erase_rel rest)
   | Theta_ty rest ->
     Theta_ty (erase_rel rest)
+  | Any_ty rest ->
+    Any_ty (erase_rel rest)
   | Reader_ty rest ->
     Reader_ty (erase_rel rest)
   | Ignored_reader_ty rest ->
@@ -543,6 +558,8 @@ fun fmtty1 fmtty2 -> match fmtty1 with
     Alpha_ty (concat_fmtty rest fmtty2)
   | Theta_ty rest ->
     Theta_ty (concat_fmtty rest fmtty2)
+  | Any_ty rest ->
+    Any_ty (concat_fmtty rest fmtty2)
   | Reader_ty rest ->
     Reader_ty (concat_fmtty rest fmtty2)
   | Ignored_reader_ty rest ->
@@ -588,6 +605,8 @@ fun fmt1 fmt2 -> match fmt1 with
     Alpha (concat_fmt rest fmt2)
   | Theta rest ->
     Theta (concat_fmt rest fmt2)
+  | Custom (arity, f, rest) ->
+    Custom (arity, f, concat_fmt rest fmt2)
   | Reader rest ->
     Reader (concat_fmt rest fmt2)
   | Flush rest ->
