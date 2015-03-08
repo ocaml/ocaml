@@ -1689,7 +1689,7 @@ When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-begin%foo[@bar] ... end     === [%foo (let x = 2 in x + 1) [@bar]]
+let%foo[@bar] x = 2 in x + 1 === [%foo (let x = 2 in x + 1) [@bar]]
 \end{verbatim}
 
 \section{Quoted strings}\label{s:quoted-strings}
