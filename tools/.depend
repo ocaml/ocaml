@@ -1,23 +1,21 @@
 depend.cmi : ../parsing/parsetree.cmi ../parsing/longident.cmi
 profiling.cmi :
-untypeast.cmi : ../typing/typedtree.cmi ../typing/path.cmi \
-    ../parsing/parsetree.cmi ../parsing/longident.cmi
 addlabels.cmo : ../parsing/parsetree.cmi ../parsing/parse.cmi \
     ../parsing/longident.cmi ../parsing/location.cmi ../parsing/asttypes.cmi
 addlabels.cmx : ../parsing/parsetree.cmi ../parsing/parse.cmx \
     ../parsing/longident.cmx ../parsing/location.cmx ../parsing/asttypes.cmi
-cmt2annot.cmo : untypeast.cmi ../typing/types.cmi ../typing/typedtree.cmi \
-    ../typing/tast_mapper.cmi ../typing/stypes.cmi ../parsing/pprintast.cmi \
-    ../typing/path.cmi ../typing/oprint.cmi ../parsing/location.cmi \
-    ../typing/ident.cmi ../typing/envaux.cmi ../typing/env.cmi \
-    ../utils/config.cmi ../typing/cmt_format.cmi ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
-cmt2annot.cmx : untypeast.cmx ../typing/types.cmx ../typing/typedtree.cmx \
-    ../typing/tast_mapper.cmx ../typing/stypes.cmx ../parsing/pprintast.cmx \
-    ../typing/path.cmx ../typing/oprint.cmx ../parsing/location.cmx \
-    ../typing/ident.cmx ../typing/envaux.cmx ../typing/env.cmx \
-    ../utils/config.cmx ../typing/cmt_format.cmx ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
+cmt2annot.cmo : ../typing/untypeast.cmi ../typing/types.cmi \
+    ../typing/typedtree.cmi ../typing/tast_mapper.cmi ../typing/stypes.cmi \
+    ../parsing/pprintast.cmi ../typing/path.cmi ../typing/oprint.cmi \
+    ../parsing/location.cmi ../typing/ident.cmi ../typing/envaux.cmi \
+    ../typing/env.cmi ../utils/config.cmi ../typing/cmt_format.cmi \
+    ../parsing/asttypes.cmi ../typing/annot.cmi
+cmt2annot.cmx : ../typing/untypeast.cmx ../typing/types.cmx \
+    ../typing/typedtree.cmx ../typing/tast_mapper.cmx ../typing/stypes.cmx \
+    ../parsing/pprintast.cmx ../typing/path.cmx ../typing/oprint.cmx \
+    ../parsing/location.cmx ../typing/ident.cmx ../typing/envaux.cmx \
+    ../typing/env.cmx ../utils/config.cmx ../typing/cmt_format.cmx \
+    ../parsing/asttypes.cmi ../typing/annot.cmi
 cvt_emit.cmo :
 cvt_emit.cmx :
 depend.cmo : ../parsing/parsetree.cmi ../utils/misc.cmi \
@@ -80,11 +78,3 @@ read_cmt.cmo : ../typing/cmt_format.cmi cmt2annot.cmo ../utils/clflags.cmi
 read_cmt.cmx : ../typing/cmt_format.cmx cmt2annot.cmx ../utils/clflags.cmx
 scrapelabels.cmo :
 scrapelabels.cmx :
-untypeast.cmo : ../typing/typedtree.cmi ../typing/path.cmi \
-    ../parsing/parsetree.cmi ../utils/misc.cmi ../parsing/longident.cmi \
-    ../typing/ident.cmi ../parsing/asttypes.cmi ../parsing/ast_helper.cmi \
-    untypeast.cmi
-untypeast.cmx : ../typing/typedtree.cmx ../typing/path.cmx \
-    ../parsing/parsetree.cmi ../utils/misc.cmx ../parsing/longident.cmx \
-    ../typing/ident.cmx ../parsing/asttypes.cmi ../parsing/ast_helper.cmx \
-    untypeast.cmi
