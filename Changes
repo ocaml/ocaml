@@ -125,6 +125,8 @@ OCamlbuild:
   (Peter Zotov)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
+- PR#6794: pass package-specific include flags when building C files
+  (Jérémie Dimino, request by Peter Zotov)
 
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
