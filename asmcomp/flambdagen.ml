@@ -21,6 +21,16 @@ type t = {
   symbol_for_global' : (Ident.t -> Symbol.t)
 }
 
+type env = {
+  variables : Variable.t Ident.tbl;
+  static_exceptions : Static_exception.t Ext_types.Int.Map.t;
+}
+
+let empty_env = {
+  variables = Ident.empty;
+  static_exceptions = Ext_types.Int.Map.empty;
+}
+
 let rec add_debug_info ev flam =
   match ev.lev_kind with
   | Lev_after _ ->
@@ -51,14 +61,23 @@ let rename_var t ?append var =
   let new_var = Variable.rename ~current_compilation_unit ?append var in
   new_var
 
-let add_var id var (env : Variable.t Ident.tbl) = Ident.add id var env
+let add_var id var env = { env with variables = Ident.add id var env.variables }
 let add_vars ids vars env = List.fold_right2 add_var ids vars env
 
 let find_var env id =
-  try Ident.find_same id env
+  try Ident.find_same id env.variables
   with Not_found ->
-    Format.eprintf "%s@." (Ident.unique_name id);
     fatal_error ("Flambdagen.close: var " ^ Ident.unique_name id)
+
+let add_static_exception st_exn fresh_st_exn env =
+  { env with
+    static_exceptions =
+      Ext_types.Int.Map.add st_exn fresh_st_exn env.static_exceptions }
+
+let find_static_exception env st_exn =
+  try Ext_types.Int.Map.find st_exn env.static_exceptions
+  with Not_found ->
+    fatal_error ("Flambdagen.close: exn " ^ string_of_int st_exn)
 
 (* CR mshinwell for pchambart: We should establish conventions for various
    kinds of identifier and make sure that we stick to them everywhere.  Some
@@ -143,7 +162,7 @@ module Function_decl : sig
   val closure_env_without_parameters
      : t list
     -> create_var:(Ident.t -> Variable.t)
-    -> Variable.t Ident.tbl
+    -> env
 end = struct
   type t = {
     (* CXR mshinwell for pchambart: maybe the name [rec_ident] is misleading.
@@ -214,7 +233,7 @@ end = struct
     set_diff (set_diff (all_used_idents ts) (all_params ts)) (let_rec_idents ts)
 
   let closure_env_without_parameters ts ~create_var =
-    Ident.empty
+    empty_env
     (* add recursive functions *)
     |> List.fold_right
       (fun t env -> add_var t.let_rec_ident t.closure_bound_var env)
@@ -396,10 +415,12 @@ let rec close t env = function
         Misc.may_map (close t env) def,
         nid ~name:"stringswitch" ())
   | Lstaticraise (i, args) ->
-      Fstaticraise (Static_exception.of_int i, close_list t env args, nid ())
+      Fstaticraise (find_static_exception env i, close_list t env args, nid ())
   | Lstaticcatch(body, (i, ids), handler) ->
+      let st_exn = Static_exception.create () in
+      let env = add_static_exception i st_exn env in
       let vars = List.map (create_var t) ids in
-      Fstaticcatch (Static_exception.of_int i, vars,
+      Fstaticcatch (st_exn, vars,
                     close t env body, close t (add_vars ids vars env) handler,
                     nid ())
   | Ltrywith(body, id, handler) ->
@@ -567,5 +588,5 @@ let lambda_to_flambda ~current_compilation_unit
      There is no runtime cost to this transformation: strings are
      constants, they will not appear in the closures *)
   let lam = Lift_strings.lift_strings_to_toplevel lam in
-  let flam = close t Ident.empty lam in
+  let flam = close t empty_env lam in
   flam

@@ -107,7 +107,6 @@ module Static_exception : sig
 
   val create : unit -> t
 
-  val of_int : int -> t
   val to_int : t -> int
 end
 

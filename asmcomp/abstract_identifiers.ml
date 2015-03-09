@@ -107,7 +107,6 @@ module Static_exception = struct
 
   let create () = Lambda.next_raise_count ()
 
-  let of_int t = t
   let to_int t = t
 end
 
