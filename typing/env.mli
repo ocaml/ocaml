@@ -191,6 +191,7 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
+  | Illegal_value_name of Location.t * string
 
 exception Error of error
 
@@ -258,3 +259,4 @@ val fold_cltypes:
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
+val check_value_name: string -> Location.t -> unit
