@@ -106,6 +106,14 @@ Features wishes:
 OCaml 4.02.2:
 -------------
 
+Language features:
+- PR#6583: add a new class of binary operators with the same syntactic
+  precedence as method calls; these operators start with # followed
+  by a non-empty sequence of operator symbols (for instance #+, #!?).
+  It is also possible to use '#' as part of these extra symbols
+  (for instance ##, or #+#); this is rejected by the type-checker,
+  but can be used e.g. by ppx rewriters.
+
 Compilers:
 - PR#6475: accept -o in ocamlc when compiling C files
   (Vincent Laporte, Peter Zotov)

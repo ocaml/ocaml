@@ -399,6 +399,7 @@ let mkctf_attrs d attrs =
 %token SEMI
 %token SEMISEMI
 %token SHARP
+%token <string> SHARPOP
 %token SIG
 %token STAR
 %token <string * string option> STRING
@@ -475,7 +476,7 @@ The precedences must be listed from low to high.
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
 %nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
 %nonassoc below_SHARP
-%nonassoc SHARP                         /* simple_expr/toplevel_directive */
+%nonassoc SHARP SHARPOP                 /* simple_expr/toplevel_directive */
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
@@ -1286,6 +1287,8 @@ simple_expr:
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | simple_expr SHARPOP simple_expr
+      { mkinfix $1 $2 $3 }
   | LPAREN MODULE module_expr RPAREN
       { mkexp (Pexp_pack $3) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
@@ -1977,6 +1980,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | SHARPOP                                     { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
