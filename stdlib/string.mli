@@ -125,6 +125,29 @@ val concat : string -> string list -> string
     Raise [Invalid_argument] if the result is longer than
     {!Sys.max_string_length} bytes. *)
 
+val split : string -> string -> string list 
+(** [String.split sep s] is the list of all (possibly empty)
+    substrings of [s] that are delimited by matches of the non empty
+    separator string [sep].
+
+    Matching separators in [s] starts from the beginning of [s] and once
+    one is found, the separator is skipped and matching starts again
+    (i.e. separator matches can't overlap). If there is no separator 
+    match in [s], [[s]] is returned.
+
+    The invariants [String.concat sep (String.split sep s) = s] and
+    [String.split sep s <> []] always hold.
+
+    @raise Invalid_argument if [sep] is the empty string.
+    @since 4.01.1 *)
+
+val rsplit : string -> string -> string list 
+(** [String.rsplit sep s] is like {!split} but the matching is 
+    done backwards, starting from the end of [s].
+    
+    @raise Invalid_argument if [sep] is the empty string.
+    @since 4.01.1 *)
+
 val iter : (char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
