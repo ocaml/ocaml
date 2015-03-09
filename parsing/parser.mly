@@ -1750,7 +1750,7 @@ with_constraint:
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label COLONEQUAL core_type
+  | TYPE type_parameters label COLONEQUAL core_type_no_attr
       { Pwith_typesubst
           (Type.mk (mkrhs $3 3)
              ~params:$2
