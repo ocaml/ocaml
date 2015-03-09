@@ -124,8 +124,10 @@ let parse_intrin kinds decl =
             alt := { !alt with copy_to_output = Some (int_of_string a) };
           s := j;
           e := j + 1
-        end else
+        end else begin
+          if !e != j then s := j;
           e := j + 1
+        end
     in
     String.iteri (fun j -> function
         '%' ->
@@ -139,7 +141,7 @@ let parse_intrin kinds decl =
           if j > 0 then
             error "output constraint '+' for operand %d is not at the beginning" i;
           arg := { !arg with input = true; output = true }
-      | '-' ->
+      | ',' ->
           arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
           alt := {
             mach_register  = `all;

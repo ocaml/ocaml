@@ -262,45 +262,53 @@ method intrin_alternative_cost intrin args alt_index =
     let cost    = ref 0 in
     let num_arg = ref 0 in
     let num_res = ref 0 in
-    let iargs = List.mapi (fun j arg ->
-      let intrin_arg = intrin.Intrin.args.(j) in
+    let iargs = Array.mapi (fun j intrin_arg ->
       let alt = intrin_arg.Intrin.alternatives.(alt_index) in
       let kind, num_reg =
-        match alt.Intrin.memory, arg with
-          _, Cconst_int n when alt.Intrin.immediate -> `imm n, 0
-        | _, _ when intrin_arg.Intrin.kind = `Unit -> `unit, 0
-        |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
-        | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
-        | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
-        | (`m8 | `m16 | `m32 | `m64)                , Cop(Cload (Word | Single | Double | Double_u | M128 | M256 as chunk), [loc])
-        | (`m8 | `m16 | `m32 | `m64 | `m128)        , Cop(Cload (M128_u                                          as chunk), [loc])
-        | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256), Cop(Cload (M256_u                                          as chunk), [loc])
-          when intrin_arg.Intrin.input && alt.Intrin.copy_to_output = None ->
-            let addr, arg1 = self#select_addressing chunk loc in
-            `addr (chunk, addr, arg1), Arch.num_args_addressing addr
-        | _, Cop(Cload _, _) when alt.Intrin.register ->
-            cost := !cost + 1;
-            `reg, 1
-        | _, _ when alt.Intrin.register -> `reg, 1
-        | _, _ when alt.Intrin.memory <> `no ->
-            (* putting an argument to the stack and reloading it is expensive *)
-            cost := !cost + 3;
-            `stack, 1
-        | _, _ -> raise Intrin_alternative_not_possible
+        if j > Array.length args then assert false
+        else if j = Array.length args then
+          (if not alt.Intrin.register then `stack else `reg),
+          (if intrin_arg.Intrin.kind = `Unit then 0 else 1)
+        else if alt.Intrin.copy_to_output <> None then `reg, 1
+        else
+          match alt.Intrin.memory, args.(j) with
+            _, Cconst_int n when alt.Intrin.immediate -> `imm n, 0
+          | _, _ when intrin_arg.Intrin.kind = `Unit -> `unit, 0
+          |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
+          | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
+          | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64)                , Cop(Cload (Word | Single | Double | Double_u | M128 | M256 as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128)        , Cop(Cload (M128_u                                          as chunk), [loc])
+          | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256), Cop(Cload (M256_u                                          as chunk), [loc])
+            when intrin_arg.Intrin.input && alt.Intrin.copy_to_output = None ->
+              let addr, arg1 = self#select_addressing chunk loc in
+              `addr (chunk, addr, arg1), Arch.num_args_addressing addr
+          | _, Cop(Cload _, _) when alt.Intrin.register ->
+              cost := !cost + 1;
+              `reg, 1
+          | _, _ when alt.Intrin.register -> `reg, 1
+          | _, _ when alt.Intrin.memory <> `no ->
+              (* putting an argument to the stack and reloading it is expensive *)
+              cost := !cost + 3;
+              `stack, 1
+          | _, _ ->
+              raise Intrin_alternative_not_possible
       in
       let src = if intrin_arg.Intrin.input then `arg !num_arg else `res !num_res in
       if intrin_arg.Intrin.input  then num_arg := !num_arg + num_reg;
       if intrin_arg.Intrin.output then num_res := !num_res + num_reg;
-      { Mach.alt; src; num_reg; kind }) args in
-    Some (iargs, cost)
+      { Mach.alt; src; num_reg; kind }) intrin.Intrin.args in
+    Some (iargs, !cost)
   with Intrin_alternative_not_possible -> None
 
 (* XXX vbrankov: Rename intrin to asm or inline_asm *)
 (* Finds the best intrinsics alternative in terms of cost *)
 method intrin_best_alternative intrin args =
+  let args = Array.of_list args in
   let rec loop i best =
     let i = i - 1 in
-    if i < 0 then best
+    if i < 0 then
+      match best with None -> None | Some (iargs, _) -> Some iargs
     else
       let best =
         match self#intrin_alternative_cost intrin args i with
@@ -362,16 +370,21 @@ method select_operation op args =
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
   | (Cintrin intrin, _) ->
       begin match self#intrin_best_alternative intrin args with
-        None -> fatal_error "inconsistent operand constraints in an 'asm'"
-      | Some (iargs, _) ->
-          let args =
-            List.fold_right2 (fun arg iarg args ->
-              match iarg.Mach.kind with
-                `imm _ | `unit     ->         args
-              | `addr (_, _, arg1) -> arg1 :: args
-              | `reg | `stack      ->  arg :: args) args iargs []
+        None ->
+          fatal_error (Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
+            (Intrin.name intrin))
+      | Some iargs ->
+          let _, args =
+            List.fold_right (fun arg (i, args) ->
+              let args =
+                match iargs.(i).Mach.kind with
+                  `imm _ | `unit     ->         args
+                | `addr (_, _, arg1) -> arg1 :: args
+                | `reg | `stack      ->  arg :: args
+              in
+              i + 1, args) args (0, [])
           in
-          (Iintrin (intrin, Array.of_list iargs), args)
+          (Iintrin (intrin, iargs), args)
       end
   | _ -> fatal_error "Selection.select_oper"
 
@@ -631,8 +644,13 @@ method emit_expr env exp =
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               let rs = Array.append r1 rd in
-              let rs_new = Array.mapi (fun i ->
-                self#intrin_pseudoreg iargs.(i).Mach.alt) rs in
+              let rs_new = Array.mapi (fun i reg ->
+                let iarg = iargs.(i) in
+                match iarg.kind with
+                  `stack ->
+                  reg.Reg.spill <- true;
+                  reg
+                | _ -> self#intrin_pseudoreg iarg.Mach.alt reg) rs in
               for i = 0 to Array.length rs - 1 do
                 match iargs.(i).Mach.alt.Intrin.copy_to_output with
                   None -> ()

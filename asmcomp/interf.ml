@@ -102,6 +102,8 @@ let build_graph fundecl =
                 for m = n to n + iarg.num_reg - 1 do
                   Array.iter (add_interf i.res.(m)) i.arg
                 done) iargs;
+        add_interf_set i.res i.live;
+        add_interf_self i.res;
         interf i.next
     | Iop op ->
         add_interf_set i.res i.live;
