@@ -588,6 +588,9 @@ intnat caml_major_collection_slice (intnat howmuch)
   }
 
  finished:
+  caml_gc_message (0x40, "work-done = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                   (uintnat) (p * 1000000));
   /* adjust backlog based on work actually done */
   caml_major_backlog -= p;
   /* adjust history unless forced GC */
