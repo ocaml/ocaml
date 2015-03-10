@@ -438,6 +438,16 @@ rule token = parse
   | ":>" { COLONGREATER }
   | ";"  { SEMI }
   | ";;" { SEMISEMI }
+  | ";@" { reset_string_buffer();
+           is_in_string := true;
+           let start_loc = Location.curr lexbuf in
+           let string_start = lexbuf.lex_start_p in
+           let end_loc = alcomment lexbuf in
+           is_in_string := false;
+           lexbuf.lex_start_p <- string_start;
+           let loc = { start_loc with
+                       Location.loc_end = end_loc.Location.loc_end } in
+           ALCOMMENT (get_stored_string(), loc) }
   | "<"  { LESS }
   | "<-" { LESSMINUS }
   | "="  { EQUAL }
@@ -621,6 +631,16 @@ and string = parse
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
+
+and alcomment = parse
+  | ' '* newline
+      { let loc = Location.curr lexbuf in
+        update_loc lexbuf None 1 false 0;
+        loc }
+  | eof { Location.curr lexbuf }
+  | _
+      { store_string_char (Lexing.lexeme_char lexbuf 0);
+        alcomment lexbuf }
 
 and quoted_string delim = parse
   | newline

@@ -157,6 +157,9 @@ let unclosed opening_name opening_num closing_name closing_num =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
 
+let undocumented pos =
+    raise Syntaxerr.(Error(Undocumented (rhs_loc pos)))
+
 let expecting pos nonterm =
     raise Syntaxerr.(Error(Expecting(rhs_loc pos, nonterm)))
 
@@ -418,6 +421,7 @@ let mkctf_attrs d attrs =
 %token WHILE
 %token WITH
 %token <string * Location.t> COMMENT
+%token <string * Location.t> ALCOMMENT
 
 %token EOL
 
@@ -523,7 +527,7 @@ top_structure:
 ;
 top_structure_tail:
     /* empty */                          { [] }
-  | structure_item top_structure_tail    { $1 :: $2 }
+  | documented_structure_item top_structure_tail    { $1 @ $2 }
 ;
 use_file:
     use_file_tail                        { $1 }
@@ -535,9 +539,9 @@ use_file_tail:
   | SEMISEMI EOF                              { [] }
   | SEMISEMI seq_expr post_item_attributes use_file_tail
                                               { Ptop_def[mkstrexp $2 $3] :: $4 }
-  | SEMISEMI structure_item use_file_tail     { Ptop_def[$2] :: $3 }
+  | SEMISEMI documented_structure_item use_file_tail     { Ptop_def $2 :: $3 }
   | SEMISEMI toplevel_directive use_file_tail { $2 :: $3 }
-  | structure_item use_file_tail              { Ptop_def[$1] :: $2 }
+  | documented_structure_item use_file_tail              { Ptop_def $1 :: $2 }
   | toplevel_directive use_file_tail          { $1 :: $2 }
 ;
 parse_core_type:
@@ -626,8 +630,26 @@ structure:
 structure_tail:
     /* empty */          { [] }
   | SEMISEMI structure   { $2 }
-  | structure_item structure_tail { $1 :: $2 }
+  | documented_structure_item structure_tail { $1 @ $2 }
 ;
+alcomment:
+    ALCOMMENT
+    { let comment, loc = $1 in
+      let exp = Exp.mk ~loc (Pexp_constant (Const_string (comment, None))) in
+      let loc = rhs_loc 1 in
+      let str = Str.mk ~loc (Pstr_eval (exp, [])) in
+      let payload = PStr [str] in
+      Str.mk ~loc (Pstr_attribute (mkloc "doc" loc, payload)),
+      Sig.mk ~loc (Psig_attribute (mkloc "doc" loc, payload))
+    }
+;
+documented_structure_item:
+  | structure_item
+    { undocumented 1 }
+  | alcomment structure_item
+    { [fst $1; $2] }
+;
+
 structure_item:
     LET ext_attributes rec_flag let_bindings
       {
@@ -729,7 +751,13 @@ module_type:
 signature:
     /* empty */          { [] }
   | SEMISEMI signature   { $2 }
-  | signature_item signature { $1 :: $2 }
+  | documented_signature_item signature { $1 @ $2 }
+;
+documented_signature_item:
+  | signature_item
+    { undocumented 1 }
+  | alcomment signature_item
+    { [snd $1; $2] }
 ;
 signature_item:
     VAL val_ident COLON core_type post_item_attributes
