@@ -154,8 +154,7 @@ let operation op arg ppf res =
             | `reg | `stack ->
                 fprintf ppf "%a" reg
                   (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
-            | `unit -> fprintf ppf "()"
-) intrin.Intrin.asm;
+            | `unit -> fprintf ppf "()") intrin.Intrin.asm;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 

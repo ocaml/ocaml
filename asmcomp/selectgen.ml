@@ -266,10 +266,11 @@ method intrin_alternative_cost intrin args alt_index =
       let alt = intrin_arg.Intrin.alternatives.(alt_index) in
       let kind, num_reg =
         if j > Array.length args then assert false
-        else if j = Array.length args then
-          (if not alt.Intrin.register then `stack else `reg),
-          (if intrin_arg.Intrin.kind = `Unit then 0 else 1)
-        else if alt.Intrin.copy_to_output <> None then `reg, 1
+        else if j = Array.length args then begin
+          if intrin_arg.Intrin.kind = `Unit then `unit, 0
+          else if alt.Intrin.register then `reg, 1
+          else `stack, 1
+        end else if alt.Intrin.copy_to_output <> None then `reg, 1
         else
           match alt.Intrin.memory, args.(j) with
             _, Cconst_int n when alt.Intrin.immediate -> `imm n, 0
@@ -375,16 +376,16 @@ method select_operation op args =
             (Intrin.name intrin))
       | Some iargs ->
           let _, args =
-            List.fold_right (fun arg (i, args) ->
+            List.fold_left (fun (i, args) arg ->
               let args =
                 match iargs.(i).Mach.kind with
                   `imm _ | `unit     ->         args
                 | `addr (_, _, arg1) -> arg1 :: args
                 | `reg | `stack      ->  arg :: args
               in
-              i + 1, args) args (0, [])
+              i + 1, args) (0, []) args
           in
-          (Iintrin (intrin, iargs), args)
+          (Iintrin (intrin, iargs), List.rev args)
       end
   | _ -> fatal_error "Selection.select_oper"
 
