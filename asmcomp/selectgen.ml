@@ -258,47 +258,49 @@ method mark_instr = function
 
 (* Finds the cost of the given intrinsics alternative *)
 method intrin_alternative_cost intrin args alt_index =
+  let open Intrin in
   try
     let cost    = ref 0 in
     let num_arg = ref 0 in
     let num_res = ref 0 in
     let iargs = Array.mapi (fun j intrin_arg ->
-      let alt = intrin_arg.Intrin.alternatives.(alt_index) in
-      let kind, num_reg =
+      let alt = intrin_arg.alternatives.(alt_index) in
+      let kind, num_reg, arg_cost =
         if j > Array.length args then assert false
         else if j = Array.length args then begin
-          if intrin_arg.Intrin.kind = `Unit then `unit, 0
-          else if alt.Intrin.register then `reg, 1
-          else `stack, 1
-        end else if alt.Intrin.copy_to_output <> None then `reg, 1
+          if intrin_arg.kind = `Unit then `unit, 0, 0
+          else if alt.register then `reg, 1, alt.disparage
+          else `stack, 1, alt.reload_disparage
+        end else if alt.copy_to_output <> None then `reg, 1, 0
         else
-          match alt.Intrin.memory, args.(j) with
-            _, Cconst_int n when alt.Intrin.immediate -> `imm n, 0
-          | _, _ when intrin_arg.Intrin.kind = `Unit -> `unit, 0
+          match alt.memory, args.(j) with
+            _, Cconst_int n when alt.immediate ->
+              `imm n, 0, alt.disparage
+          | _, _ when intrin_arg.kind = `Unit ->
+              `unit, 0, 0
           |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
           | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
           | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64)                , Cop(Cload (Word | Single | Double | Double_u | M128 | M256 as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64 | `m128)        , Cop(Cload (M128_u                                          as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256), Cop(Cload (M256_u                                          as chunk), [loc])
-            when intrin_arg.Intrin.input && alt.Intrin.copy_to_output = None ->
+            when intrin_arg.input && alt.copy_to_output = None ->
               let addr, arg1 = self#select_addressing chunk loc in
-              `addr (chunk, addr, arg1), Arch.num_args_addressing addr
-          | _, Cop(Cload _, _) when alt.Intrin.register ->
-              cost := !cost + 1;
-              `reg, 1
-          | _, _ when alt.Intrin.register -> `reg, 1
-          | _, _ when alt.Intrin.memory <> `no ->
-              (* putting an argument to the stack and reloading it is expensive *)
-              cost := !cost + 3;
-              `stack, 1
+              `addr (chunk, addr, arg1), Arch.num_args_addressing addr, alt.disparage
+          | _, Cop(Cload _, _) when alt.register ->
+              `reg, 1, alt.disparage
+          | _, _ when alt.register ->
+              `reg, 1, alt.disparage
+          | _, _ when alt.memory <> `no ->
+              `stack, 1, alt.reload_disparage
           | _, _ ->
               raise Intrin_alternative_not_possible
       in
-      let src = if intrin_arg.Intrin.input then `arg !num_arg else `res !num_res in
-      if intrin_arg.Intrin.input  then num_arg := !num_arg + num_reg;
-      if intrin_arg.Intrin.output then num_res := !num_res + num_reg;
-      { Mach.alt; src; num_reg; kind }) intrin.Intrin.args in
+      cost := !cost + arg_cost;
+      let src = if intrin_arg.input then `arg !num_arg else `res !num_res in
+      if intrin_arg.input  then num_arg := !num_arg + num_reg;
+      if intrin_arg.output then num_res := !num_res + num_reg;
+      { Mach.alt; src; num_reg; kind }) intrin.args in
     Some (iargs, !cost)
   with Intrin_alternative_not_possible -> None
 

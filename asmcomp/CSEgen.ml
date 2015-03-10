@@ -198,7 +198,8 @@ method class_of_operation op =
   | Iintop_imm(_, _) -> Op_pure
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
-  | Iintrin (intrin, _) -> if intrin.Intrin.memory then Op_store true else Op_other
+  | Iintrin (intrin, _) ->
+      if List.mem `memory intrin.Intrin.clobber then Op_store true else Op_other
   | Ispecific _ -> Op_other
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
