@@ -73,34 +73,34 @@ let rec select_addr exp =
 
 exception Use_default
 
-let rax = phys_reg 0
-let rbx = phys_reg 1
-let rcx = phys_reg 5
-let rdx = phys_reg 4
-let rdi = phys_reg 2
-let rsi = phys_reg 3
-let r8  = phys_reg 6
-let r9  = phys_reg 7
-let r10 = phys_reg 10
-let r11 = phys_reg 11
-let r12 = phys_reg 8
-let r13 = phys_reg 9
-let x0  = phys_reg 100
-let x1  = phys_reg 101
-let x2  = phys_reg 102
-let x3  = phys_reg 103
-let x4  = phys_reg 104
-let x5  = phys_reg 105
-let x6  = phys_reg 106
-let x7  = phys_reg 107
-let x8  = phys_reg 108
-let x9  = phys_reg 109
-let x10 = phys_reg 110
-let x11 = phys_reg 111
-let x12 = phys_reg 112
-let x13 = phys_reg 113
-let x14 = phys_reg 114
-let x15 = phys_reg 115
+let rax    = phys_reg 0
+let rbx    = phys_reg 1
+let rcx    = phys_reg 5
+let rdx    = phys_reg 4
+let rdi    = phys_reg 2
+let rsi    = phys_reg 3
+let r8     = phys_reg 6
+let r9     = phys_reg 7
+let r10    = phys_reg 10
+let r11    = phys_reg 11
+let r12    = phys_reg 8
+let r13    = phys_reg 9
+let rxmm0  = phys_reg 100
+let rxmm1  = phys_reg 101
+let rxmm2  = phys_reg 102
+let rxmm3  = phys_reg 103
+let rxmm4  = phys_reg 104
+let rxmm5  = phys_reg 105
+let rxmm6  = phys_reg 106
+let rxmm7  = phys_reg 107
+let rxmm8  = phys_reg 108
+let rxmm9  = phys_reg 109
+let rxmm10 = phys_reg 110
+let rxmm11 = phys_reg 111
+let rxmm12 = phys_reg 112
+let rxmm13 = phys_reg 113
+let rxmm14 = phys_reg 114
+let rxmm15 = phys_reg 115
 
 let pseudoregs_for_operation op arg res =
   match op with
@@ -207,22 +207,22 @@ method! intrin_pseudoreg alt r =
   | `r11 -> r11
   | `r12 -> r12
   | `r13 -> r13
-  | `x0  -> x0
-  | `x1  -> x1
-  | `x2  -> x2
-  | `x3  -> x3
-  | `x4  -> x4
-  | `x5  -> x5
-  | `x6  -> x6
-  | `x7  -> x7
-  | `x8  -> x8
-  | `x9  -> x9
-  | `x10 -> x10
-  | `x11 -> x11
-  | `x12 -> x12
-  | `x13 -> x13
-  | `x14 -> x14
-  | `x15 -> x15
+  | `x0  -> rxmm0
+  | `x1  -> rxmm1
+  | `x2  -> rxmm2
+  | `x3  -> rxmm3
+  | `x4  -> rxmm4
+  | `x5  -> rxmm5
+  | `x6  -> rxmm6
+  | `x7  -> rxmm7
+  | `x8  -> rxmm8
+  | `x9  -> rxmm9
+  | `x10 -> rxmm10
+  | `x11 -> rxmm11
+  | `x12 -> rxmm12
+  | `x13 -> rxmm13
+  | `x14 -> rxmm14
+  | `x15 -> rxmm15
 
 method! select_operation op args =
   match op with

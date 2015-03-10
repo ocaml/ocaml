@@ -135,10 +135,34 @@ let all_phys_regs =
 let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
-let rax = phys_reg 0
-let rcx = phys_reg 5
-let rdx = phys_reg 4
-let rbp = phys_reg 12
+let rax    = phys_reg 0
+let rbx    = phys_reg 1
+let rcx    = phys_reg 5
+let rdx    = phys_reg 4
+let rdi    = phys_reg 2
+let rsi    = phys_reg 3
+let r8     = phys_reg 6
+let r9     = phys_reg 7
+let r10    = phys_reg 10
+let r11    = phys_reg 11
+let r12    = phys_reg 8
+let r13    = phys_reg 9
+let rbp    = phys_reg 12
+let rxmm0  = phys_reg 100
+let rxmm1  = phys_reg 101
+let rxmm2  = phys_reg 102
+let rxmm3  = phys_reg 103
+let rxmm4  = phys_reg 104
+let rxmm5  = phys_reg 105
+let rxmm6  = phys_reg 106
+let rxmm7  = phys_reg 107
+let rxmm8  = phys_reg 108
+let rxmm9  = phys_reg 109
+let rxmm10 = phys_reg 110
+let rxmm11 = phys_reg 111
+let rxmm12 = phys_reg 112
+let rxmm13 = phys_reg 113
+let rxmm14 = phys_reg 114
 let rxmm15 = phys_reg 115
 
 let stack_slot slot ty =
@@ -269,6 +293,44 @@ let destroyed_at_oper = function
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
+  | Iop(Iintrin(intrin, _)) ->
+      List.fold_left (fun regs c ->
+        try
+          let reg =
+            match c with
+            | `cc | `memory -> raise Not_found
+            | `a   -> rax
+            | `b   -> rbx
+            | `c   -> rcx
+            | `d   -> rdx
+            | `S   -> rsi
+            | `D   -> rdi
+            | `r8  -> r8
+            | `r9  -> r9
+            | `r10 -> r10
+            | `r11 -> r11
+            | `r12 -> r12
+            | `r13 -> r13
+            | `x0  -> rxmm0
+            | `x1  -> rxmm1
+            | `x2  -> rxmm2
+            | `x3  -> rxmm3
+            | `x4  -> rxmm4
+            | `x5  -> rxmm5
+            | `x6  -> rxmm6
+            | `x7  -> rxmm7
+            | `x8  -> rxmm8
+            | `x9  -> rxmm9
+            | `x10 -> rxmm10
+            | `x11 -> rxmm11
+            | `x12 -> rxmm12
+            | `x13 -> rxmm13
+            | `x14 -> rxmm14
+            | `x15 -> rxmm15
+          in
+          reg :: regs
+        with Not_found -> regs) [] intrin.Intrin.clobber
+      |> Array.of_list
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
     if fp then
