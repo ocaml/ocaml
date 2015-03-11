@@ -34,13 +34,15 @@ let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
      R12; R13; R10; R11; RBP; |]
 
-let float_reg_name  = Array.init 16 (fun i -> XMM i)
-let float2_reg_name = Array.init 16 (fun i -> YMM i)
+let int_reg8h_name = [| AH; BH; CH; DH |]
+
+let float_reg_name  = Array.init 16 (fun i -> Regf (XMM i))
+let float2_reg_name = Array.init 16 (fun i -> Regf (YMM i))
 
 let register_name r typ =
   if r < 100 then Reg64 (int_reg_name.(r))
-  else if typ = Cmm.YMM then Regf (float2_reg_name.(r - 100))
-  else Regf (float_reg_name.(r - 100))
+  else if typ = Cmm.YMM then float2_reg_name.(r - 100)
+  else float_reg_name.(r - 100)
 
 (* CFI directives *)
 
@@ -174,6 +176,7 @@ let arg i n = reg i.arg.(n)
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
+let reg_high_8_name = Array.map (fun r -> Reg8H r) int_reg8h_name
 let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
 let reg_low_32_name = Array.map (fun r -> Reg32 r) int_reg_name
 
@@ -183,13 +186,26 @@ let emit_subreg tbl typ r =
   | Stack s -> mem64 typ (slot_offset s (register_class r)) RSP
   | _ -> assert false
 
-let arg8 i n = emit_subreg reg_low_8_name BYTE i.arg.(n)
-let arg16 i n = emit_subreg reg_low_16_name WORD i.arg.(n)
-let arg32 i n = emit_subreg reg_low_32_name DWORD i.arg.(n)
-let arg64 i n = reg64 i.arg.(n)
+let emit_subregf tbl typ r =
+  match r.loc with
+  | Reg.Reg r when r >= 100 -> tbl.(r - 100)
+  | Stack s -> mem64 typ (slot_offset s (register_class r)) RSP
+  | _ -> assert false
 
-let res16 i n = emit_subreg reg_low_16_name WORD i.res.(n)
-let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n)
+let arg8   i n = emit_subreg reg_low_8_name  BYTE  i.arg.(n)
+let arg8h  i n = emit_subreg reg_high_8_name BYTE  i.arg.(n)
+let arg16  i n = emit_subreg reg_low_16_name WORD  i.arg.(n)
+let arg32  i n = emit_subreg reg_low_32_name DWORD i.arg.(n)
+let arg64  i n = reg64 i.arg.(n)
+let argxmm i n = emit_subregf float_reg_name  REAL8 i.arg.(n)
+let argymm i n = emit_subregf float2_reg_name REAL8 i.arg.(n)
+
+let res8   i n = emit_subreg reg_low_8_name  WORD  i.res.(n)
+let res8h  i n = emit_subreg reg_high_8_name WORD  i.res.(n)
+let res16  i n = emit_subreg reg_low_16_name WORD  i.res.(n)
+let res32  i n = emit_subreg reg_low_32_name DWORD i.res.(n)
+let resxmm i n = emit_subregf float_reg_name  REAL8 i.res.(n)
+let resymm i n = emit_subregf float2_reg_name REAL8 i.res.(n)
 
 (* Output an addressing mode *)
 
@@ -414,31 +430,52 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 
 let emit_intrin i intrin iargs =
-  I.intrin (List.map (function
-      \`Emit_string s -> Intrin_string s
-    | \`Emit_arg n ->
-        let iarg = iargs.(n) in
-        Intrin_arg (
-          match iarg.kind with
-            \`imm n -> Imm (Int64.of_int n)
-          | \`unit -> Imm (Int64.of_int 0)
-          | \`reg | \`stack ->
-              begin match iarg.src with
-                \`arg n -> arg i n
-              | \`res n -> res i n
-              end
-          | \`addr (chunk, addr, _) ->
-              let typ =
-                match chunk with
-                  Word -> QWORD
-                | Byte_unsigned | Byte_signed -> BYTE
-                | Sixteen_unsigned | Sixteen_signed -> WORD
-                | Thirtytwo_unsigned | Thirtytwo_signed -> DWORD
-                | Single -> REAL4
-                | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
-              in
-              let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
-              addressing addr typ i n)) intrin.Intrin.asm)
+  let rec emit_template t acc =
+    Array.fold_left (fun acc -> function
+        Intrin.Emit_string s -> Intrin_string s :: acc
+      | Intrin.Emit_dialect d ->
+          emit_template d.(if X86_proc.masm then 1 else 0) acc
+      | Intrin.Emit_arg (n, modifier) ->
+          let iarg = iargs.(n) in
+          let arg = Intrin_arg (
+            match iarg.kind with
+              \`imm n -> Imm (Int64.of_int n)
+            | \`unit -> Imm (Int64.of_int 0)
+            | \`reg | \`stack ->
+                begin match modifier, iarg.src with
+                  Intrin.None, \`arg n -> arg i n
+                | Intrin.R8L , \`arg n -> arg8 i n
+                | Intrin.R8H , \`arg n -> arg8h i n
+                | Intrin.R16 , \`arg n -> arg16 i n
+                | Intrin.R32 , \`arg n -> arg32 i n
+                | Intrin.R64 , \`arg n -> arg i n
+                | Intrin.XMM , \`arg n -> argxmm i n
+                | Intrin.YMM , \`arg n -> argymm i n
+                | Intrin.None, \`res n -> res i n
+                | Intrin.R8L , \`res n -> res8 i n
+                | Intrin.R8H , \`res n -> res8h i n
+                | Intrin.R16 , \`res n -> res16 i n
+                | Intrin.R32 , \`res n -> res32 i n
+                | Intrin.R64 , \`res n -> res i n
+                | Intrin.XMM , \`res n -> resxmm i n
+                | Intrin.YMM , \`res n -> resymm i n
+                end
+            | \`addr (chunk, addr, _) ->
+                let typ =
+                  match chunk with
+                    Word -> QWORD
+                  | Byte_unsigned | Byte_signed -> BYTE
+                  | Sixteen_unsigned | Sixteen_signed -> WORD
+                  | Thirtytwo_unsigned | Thirtytwo_signed -> DWORD
+                  | Single -> REAL4
+                  | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
+                in
+                let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
+                addressing addr typ i n)
+          in
+          arg :: acc) acc t
+  in
+  I.intrin (emit_template intrin.Intrin.template [] |> List.rev)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
@@ -448,13 +485,19 @@ let emit_instr fallthrough i =
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
-        begin match src.typ, src.loc, dst.loc with
-        | Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src) (reg dst)
-        | Float, _, _                 -> I.movsd (reg src) (reg dst)
-        | XMM, Reg.Reg _, Reg.Reg _   -> I.movapd (reg src) (reg dst)
-        | XMM, _, _                   -> I.movupd (reg src) (reg dst)
-        | YMM, Reg.Reg _, Reg.Reg _   -> I.vmovapd (reg src) (reg dst)
-        | YMM, _, _                   -> I.vmovupd (reg src) (reg dst)
+        begin match src.typ, dst.typ, src.loc, dst.loc with
+        | Float, _, Reg.Reg _, Reg.Reg _ 
+        | _, Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src) (reg dst)
+        | Float, _, _, _                 
+        | _, Float, _, _                 -> I.movsd (reg src) (reg dst)
+        | XMM, _, Reg.Reg _, Reg.Reg _  
+        | _, XMM, Reg.Reg _, Reg.Reg _   -> I.movapd (reg src) (reg dst)
+        | XMM, _, _, _                   
+        | _, XMM, _, _                   -> I.movupd (reg src) (reg dst)
+        | YMM, _, Reg.Reg _, Reg.Reg _   
+        | _, YMM, Reg.Reg _, Reg.Reg _   -> I.vmovapd (reg src) (reg dst)
+        | YMM, _, _, _                   
+        | _, YMM, _, _                   -> I.vmovupd (reg src) (reg dst)
         | _ -> I.mov (reg src) (reg dst)
         end
   | Lop(Iconst_int n | Iconst_blockheader n) ->

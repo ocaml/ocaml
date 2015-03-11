@@ -32,7 +32,7 @@ type register =
   | `x8 | `x9 | `x10 | `x11 | `x12 | `x13 | `x14 | `x15 ]
 
 type alternative = {
-  mach_register    : [ `all | register ];
+  mach_register    : [ `r | `sse | register ];
   copy_to_output   : int option;
   commutative      : bool;
   disparage        : int;
@@ -48,11 +48,27 @@ type arg = {
   output       : bool;
   alternatives : alternative array }
 
+type arg_modifier =
+  | None
+  | R8L
+  | R8H
+  | R16
+  | R32
+  | R64
+  | XMM
+  | YMM
+
+type template_item =
+    Emit_arg of int * arg_modifier
+  | Emit_dialect of template array
+  | Emit_string of string
+and template = template_item array
+
 type intrin = {
-  asm     : [ `Emit_string of string | `Emit_arg of int ] list;
-  args    : arg array;
-  clobber : [ `cc | `memory | register ] list;
-  decl    : string array }
+  template : template;
+  args     : arg array;
+  clobber  : [ `cc | `memory | register ] list;
+  decl     : string array }
 
 val parse_intrin: arg_kind list -> string list -> intrin
 

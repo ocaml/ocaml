@@ -139,22 +139,36 @@ let operation op arg ppf res =
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Iintrin (intrin, iargs) ->
-      List.iter (function
-          `Emit_string s -> fprintf ppf "%s" s
-        | `Emit_arg i ->
-            let iarg = iargs.(i) in
-            match iarg.kind with
-              `addr (chunk, addr, _) ->
-                fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
-                  (Arch.print_addressing reg addr)
-                  (match iarg.src with
-                      `arg n -> Array.sub arg n (Array.length arg - n)
-                    | `res n -> Array.sub res n (Array.length res - n))
-            | `imm n -> fprintf ppf "%n" n
-            | `reg | `stack ->
-                fprintf ppf "%a" reg
-                  (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
-            | `unit -> fprintf ppf "()") intrin.Intrin.asm;
+      let rec print a =
+        Array.iter (function
+            Intrin.Emit_dialect d ->
+              print d.(if X86_proc.masm then 1 else 0)
+          | Intrin.Emit_string s -> fprintf ppf "%s" s
+          | Intrin.Emit_arg (i, modifier) ->
+              let iarg = iargs.(i) in
+              match iarg.kind with
+                `addr (chunk, addr, _) ->
+                  fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
+                    (Arch.print_addressing reg addr)
+                    (match iarg.src with
+                        `arg n -> Array.sub arg n (Array.length arg - n)
+                      | `res n -> Array.sub res n (Array.length res - n))
+              | `imm n -> fprintf ppf "%n" n
+              | `reg | `stack ->
+                  fprintf ppf "%a%s" reg
+                    (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
+                    ( match modifier with
+                      | Intrin.None -> ""
+                      | Intrin.R8L -> "l"
+                      | Intrin.R8H -> "h"
+                      | Intrin.R16 -> "w"
+                      | Intrin.R32 -> "k"
+                      | Intrin.R64 -> "q"
+                      | Intrin.XMM -> "x"
+                      | Intrin.YMM -> "y" )
+              | `unit -> fprintf ppf "()") a
+      in
+      print intrin.Intrin.template;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 
