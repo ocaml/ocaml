@@ -258,12 +258,12 @@ class printer  ()= object(self:'self)
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x with
-          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a%a@]" self#string_quot l
-                self#attributes attrs
+          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a@;%a@]" self#string_quot l
                 (fun f l -> match l with
                 |[] -> ()
                 | _ -> pp f "@;of@;%a"
                       (self#list self#core_type ~sep:"&")  ctl) ctl
+                self#attributes attrs
           | Rinherit ct -> self#core_type f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l
@@ -1235,11 +1235,11 @@ class printer  ()= object(self:'self)
 
   method record_declaration f lbls =
     let type_record_field f pld =
-      pp f "@[<2>%a%s%a:@;%a@]"
+      pp f "@[<2>%a%s:@;%a@;%a@]"
         self#mutable_flag pld.pld_mutable
         pld.pld_name.txt
-        self#attributes pld.pld_attributes
         self#core_type pld.pld_type
+        self#attributes pld.pld_attributes
     in
     pp f "{@\n%a}"
       (self#list type_record_field ~sep:";@\n" )  lbls
@@ -1301,17 +1301,16 @@ class printer  ()= object(self:'self)
   method constructor_declaration f (name, args, res, attrs) =
     match res with
     | None ->
-        pp f "%s%a%a" name
-          self#attributes attrs
+        pp f "%s%a@;%a" name
           (fun f -> function
              | Pcstr_tuple [] -> ()
              | Pcstr_tuple l ->
                  pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l
              | Pcstr_record l -> pp f "@;of@;%a" (self#record_declaration) l
           ) args
-    | Some r ->
-        pp f "%s%a:@;%a" name
           self#attributes attrs
+    | Some r ->
+        pp f "%s:@;%a@;%a" name
           (fun f -> function
              | Pcstr_tuple [] -> self#core_type1 f r
              | Pcstr_tuple l -> pp f "%a@;->@;%a"
@@ -1321,6 +1320,7 @@ class printer  ()= object(self:'self)
                  pp f "%a@;->@;%a" (self#record_declaration) l self#core_type1 r
           )
           args
+          self#attributes attrs
 
 
   method extension_constructor f x =
