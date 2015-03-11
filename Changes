@@ -36,6 +36,8 @@ OCamlbuild:
 Libraries:
 - PR#6781: Add higher baud rates to Unix termios
   (Damien Doligez, report by Berke Durak)
+- PR#6285: Add support for nanosecond precision in Unix.stat()
+  (Jérémie Dimino, report by user 'gfxmonk')
 
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
@@ -45,6 +47,8 @@ Tools:
 Runtime:
 - PR#6675: GC hooks
   (Damien Doligez and Roshan James)
+- PR#6078: Release the runtime system when calling caml_dlopen
+  (Jérémie Dimino)
 
 Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
