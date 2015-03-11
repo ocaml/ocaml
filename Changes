@@ -235,6 +235,8 @@ Standard library:
   (Jacques Garrigue, report by Mark Shinwell)
 - PR#6572: Fatal error with recursive modules
   (Jacques Garrigue, report by Quentin Stievenart)
+- PR#6575: Array.init evaluates callback although it should not do so
+  (Alain Frisch, report by Gerd Stolpmann)
 - PR#6578: Recursive module containing alias causes Segmentation fault
   (Jacques Garrigue)
 - PR#6581: Some bugs in generative functors
