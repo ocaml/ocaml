@@ -1,0 +1,2 @@
+a.cmo : lib1.cmo
+a.cmx : lib1.cmx

@@ -12,9 +12,12 @@
 
 (** Module dependencies. *)
 
+module PathSet : Set.S with type elt = Longident.t
 module StringSet : Set.S with type elt = string
 
-val free_structure_names : StringSet.t ref
+val path_root : Longident.t -> string
+
+val free_paths : PathSet.t ref
 
 val open_module : StringSet.t -> Longident.t -> unit
 
