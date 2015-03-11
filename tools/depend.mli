@@ -16,11 +16,7 @@ module StringSet : Set.S with type elt = string
 
 val free_structure_names : StringSet.t ref
 
-val open_module :
-  StringSet.t ->
-  ?attributes:(string Location.loc * Parsetree.payload) list ->
-  Longident.t ->
-  StringSet.t
+val open_module : StringSet.t -> Longident.t -> StringSet.t
 
 val add_use_file : StringSet.t -> Parsetree.toplevel_phrase list -> unit
 
