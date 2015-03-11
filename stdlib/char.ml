@@ -19,8 +19,6 @@ external unsafe_chr: int -> char = "%identity"
 let chr n =
   if n < 0 || n > 255 then invalid_arg "Char.chr" else unsafe_chr n
 
-external is_printable: char -> bool = "caml_is_printable"
-
 external string_create: int -> string = "caml_create_string"
 external string_unsafe_get : string -> int -> char = "%string_unsafe_get"
 external string_unsafe_set : string -> int -> char -> unit
@@ -33,12 +31,11 @@ let escaped = function
   | '\t' -> "\\t"
   | '\r' -> "\\r"
   | '\b' -> "\\b"
-  | c ->
-    if is_printable c then begin
+  | ' ' .. '~' as c ->
       let s = string_create 1 in
       string_unsafe_set s 0 c;
       s
-    end else begin
+  | c ->
       let n = code c in
       let s = string_create 4 in
       string_unsafe_set s 0 '\\';
@@ -46,7 +43,6 @@ let escaped = function
       string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
       string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
       s
-    end
 
 let lowercase c =
   if (c >= 'A' && c <= 'Z')

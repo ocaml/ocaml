@@ -23,8 +23,10 @@ val chr : int -> char
 
 val escaped : char -> string
 (** Return a string representing the given character,
-   with special characters escaped following the lexical conventions
-   of OCaml. *)
+    with special characters escaped following the lexical conventions
+    of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash, double-quote, and single-quote. *)
 
 val lowercase : char -> char
 (** Convert the given character to its equivalent lowercase character. *)
