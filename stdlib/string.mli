@@ -158,13 +158,20 @@ val trim : string -> string
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
-   represented by escape sequences, following the lexical
-   conventions of OCaml.  If there is no special
-   character in the argument, return the original string itself,
-   not a copy. Its inverse function is Scanf.unescaped.
+    represented by escape sequences, following the lexical
+    conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
 
-   Raise [Invalid_argument] if the result is longer than
-   {!Sys.max_string_length} bytes. *)
+    If there is no special character in the argument that needs
+    escaping, return the original string itself, not a copy.
+
+    Raise [Invalid_argument] if the result is longer than
+    {!Sys.max_string_length} bytes.
+
+    The function {!Scanf.unescaped} is a left inverse of [escaped],
+    i.e. [Scanf.unescaped (escaped s) = s] for any string [s] (unless
+    [escape s] fails). *)
 
 val index : string -> char -> int
 (** [String.index s c] returns the index of the first
