@@ -268,12 +268,12 @@ class printer  ()= object(self:'self)
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x with
-          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a%a@]" self#string_quot l
-                self#attributes attrs
+          | Rtag (l, attrs, _, ctl) -> pp f "@[<2>%a%a@;%a@]" self#string_quot l
                 (fun f l -> match l with
                 |[] -> ()
                 | _ -> pp f "@;of@;%a"
                       (self#list self#core_type ~sep:"&")  ctl) ctl
+                self#attributes attrs
           | Rinherit ct -> self#core_type f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l
@@ -609,7 +609,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
-    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *) 
+    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *)
     | Pexp_poly (e, None) ->
         pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
     | Pexp_poly (e, Some ct) ->
@@ -1256,22 +1256,22 @@ class printer  ()= object(self:'self)
       match pcd.pcd_res with
       | None ->
           pp f "|@;%s%a%a" pcd.pcd_name.txt
-             self#attributes pcd.pcd_attributes
              (fun f -> function
               | [] -> ()
               | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l)
              pcd.pcd_args
-      | Some x ->
-          pp f "|@;%s%a:@;%a" pcd.pcd_name.txt
              self#attributes pcd.pcd_attributes
+      | Some x ->
+          pp f "|@;%s:@;%a%a" pcd.pcd_name.txt
              (self#list self#core_type1 ~sep:"@;->@;") (pcd.pcd_args@[x])
+             self#attributes pcd.pcd_attributes
     in
     let label_declaration f pld =
-      pp f "@[<2>%a%s%a:@;%a;@]"
+      pp f "@[<2>%a%s:@;%a%a;@]"
          self#mutable_flag pld.pld_mutable
          pld.pld_name.txt
-         self#attributes pld.pld_attributes
          self#core_type pld.pld_type
+         self#attributes pld.pld_attributes
     in
     let repr f =
       let intro f =
