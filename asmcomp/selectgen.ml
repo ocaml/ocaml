@@ -274,10 +274,8 @@ method intrin_alternative_cost intrin args alt_index =
         end else if alt.copy_to_output <> None then `reg, 1, 0
         else
           match alt.memory, args.(j) with
-            _, Cconst_int n when alt.immediate ->
-              `imm n, 0, alt.disparage
-          | _, _ when intrin_arg.kind = `Unit ->
-              `unit, 0, 0
+            _, Cconst_int n when alt.immediate -> `imm (n asr 1), 0, alt.disparage
+          | _, _ when intrin_arg.kind = `Unit  -> `unit, 0, 0
           |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
           | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
           | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
@@ -287,14 +285,10 @@ method intrin_alternative_cost intrin args alt_index =
             when intrin_arg.input && alt.copy_to_output = None ->
               let addr, arg1 = self#select_addressing chunk loc in
               `addr (chunk, addr, arg1), Arch.num_args_addressing addr, alt.disparage
-          | _, Cop(Cload _, _) when alt.register ->
-              `reg, 1, alt.disparage
-          | _, _ when alt.register ->
-              `reg, 1, alt.disparage
-          | _, _ when alt.memory <> `no ->
-              `stack, 1, alt.reload_disparage
-          | _, _ ->
-              raise Intrin_alternative_not_possible
+          | _, Cop(Cload _, _) when alt.register -> `reg, 1, alt.disparage
+          | _, _ when alt.register               -> `reg, 1, alt.disparage
+          | _, _ when alt.memory <> `no          -> `stack, 1, alt.reload_disparage
+          | _, _ -> raise Intrin_alternative_not_possible
       in
       cost := !cost + arg_cost;
       let src = if intrin_arg.input then `arg !num_arg else `res !num_res in
@@ -647,13 +641,15 @@ method emit_expr env exp =
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               let rs = Array.append r1 rd in
-              let rs_new = Array.mapi (fun i reg ->
-                let iarg = iargs.(i) in
-                match iarg.kind with
-                  `stack ->
-                  reg.Reg.spill <- true;
-                  reg
-                | _ -> self#intrin_pseudoreg iarg.Mach.alt reg) rs in
+              let rs_new = Array.copy rs in
+              let _ = Array.fold_left (fun pos iarg ->
+                for i = pos to pos + iarg.num_reg - 1 do
+                  match iarg.kind with
+                    `addr _ | `imm _ | `unit -> ()
+                  | `stack -> rs_new.(i).Reg.spill <- true
+                  | `reg   -> rs_new.(i) <- self#intrin_pseudoreg iarg.Mach.alt rs_new.(i)
+                done;
+                pos + iarg.num_reg) 0 iargs in
               for i = 0 to Array.length rs - 1 do
                 match iargs.(i).Mach.alt.Intrin.copy_to_output with
                   None -> ()

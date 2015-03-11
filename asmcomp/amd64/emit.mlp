@@ -486,19 +486,15 @@ let emit_instr fallthrough i =
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
         begin match src.typ, dst.typ, src.loc, dst.loc with
-        | Float, _, Reg.Reg _, Reg.Reg _ 
-        | _, Float, Reg.Reg _, Reg.Reg _ -> I.movapd (reg src) (reg dst)
-        | Float, _, _, _                 
-        | _, Float, _, _                 -> I.movsd (reg src) (reg dst)
-        | XMM, _, Reg.Reg _, Reg.Reg _  
-        | _, XMM, Reg.Reg _, Reg.Reg _   -> I.movapd (reg src) (reg dst)
-        | XMM, _, _, _                   
-        | _, XMM, _, _                   -> I.movupd (reg src) (reg dst)
-        | YMM, _, Reg.Reg _, Reg.Reg _   
-        | _, YMM, Reg.Reg _, Reg.Reg _   -> I.vmovapd (reg src) (reg dst)
-        | YMM, _, _, _                   
-        | _, YMM, _, _                   -> I.vmovupd (reg src) (reg dst)
-        | _ -> I.mov (reg src) (reg dst)
+        | (Float | XMM | YMM), (Addr | Int), Reg.Reg _, Reg.Reg _
+        | (Addr | Int), (Float | XMM | YMM), Reg.Reg _, Reg.Reg _
+                                                         -> I.movq    (reg src) (reg dst)
+        | (Float | XMM), _, Reg.Reg _, Reg.Reg _         -> I.movapd  (reg src) (reg dst)
+        | Float, _, _, _                                 -> I.movsd   (reg src) (reg dst)
+        | XMM, _, _, _                                   -> I.movupd  (reg src) (reg dst)
+        | YMM, _, Reg.Reg _, Reg.Reg _                   -> I.vmovapd (reg src) (reg dst)
+        | YMM, _, _, _                                   -> I.vmovupd (reg src) (reg dst)
+        | _                                              -> I.mov     (reg src) (reg dst)
         end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
       if n = 0n then begin

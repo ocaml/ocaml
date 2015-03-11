@@ -155,6 +155,7 @@ type instruction =
   | MOV of arg * arg
   | MOVAPD of arg * arg
   | MOVLPD of arg * arg
+  | MOVQ of arg * arg
   | MOVSD of arg * arg
   | MOVSS of arg * arg
   | MOVSX of arg * arg

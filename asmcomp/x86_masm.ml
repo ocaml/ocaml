@@ -182,6 +182,7 @@ let print_instr b = function
   | MOV (arg1, arg2) -> i2 b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
+  | MOVQ (arg1, arg2) -> i2 b "movq" arg1 arg2
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
   | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2
   | MOVSX (arg1, arg2) -> i2 b "movsx" arg1 arg2

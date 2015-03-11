@@ -169,6 +169,7 @@ module I = struct
   let lea x y = emit (LEA (x, y))
   let mov x y = emit (MOV (x, y))
   let movapd x y = emit (MOVAPD (x, y))
+  let movq x y = emit (MOVQ (x, y))
   let movsd x y = emit (MOVSD (x, y))
   let movss x y = emit (MOVSS (x, y))
   let movsx x y = emit (MOVSX (x, y))

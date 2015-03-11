@@ -196,9 +196,8 @@ method! intrin_pseudoreg alt r =
   match alt.Intrin.mach_register with
   | `r   when r.Reg.typ = Addr  || r.Reg.typ = Int -> r
   | `sse when r.Reg.typ = Float || r.Reg.typ = XMM || r.Reg.typ = YMM -> r
-  (* [mov r64, xmm] does not exist, therefore move goes via the stack *)
-  | `r   -> let r = Reg.create Addr in r.Reg.spill <- true; r
-  | `sse -> let r = Reg.create XMM  in r.Reg.spill <- true; r
+  | `r   -> Reg.create Addr
+  | `sse -> Reg.create XMM
   | `a   -> rax
   | `b   -> rbx
   | `c   -> rcx
