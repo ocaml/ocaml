@@ -509,6 +509,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
+  CAML_INSTR_INIT ();
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }

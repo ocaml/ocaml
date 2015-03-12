@@ -171,14 +171,29 @@ CAMLexport char * caml_strconcat(int n, ...)
 #ifdef CAML_INSTR
 /* Timers for GC latency profiling (experimental, Linux-only) */
 
+#include <limits.h>
+
 struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
+intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
 
 #define Get_time(p,i) ((p)->ts[(i)].tv_nsec + 1000000000 * (p)->ts[(i)].tv_sec)
+
+void CAML_INSTR_INIT (void)
+{
+  char *s;
+
+  CAML_INSTR_STARTTIME = 0;
+  s = getenv ("OCAML_INSTR_START");
+  if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
+  CAML_INSTR_STOPTIME = LONG_MAX;
+  s = getenv ("OCAML_INSTR_STOP");
+  if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
+}
 
 void CAML_INSTR_ATEXIT (void)
 {
   int i;
-  struct CAML_INSTR_BLOCK *p;
+  struct CAML_INSTR_BLOCK *p, *prev, *next;
   FILE *f = NULL;
   char *fname;
 
@@ -203,6 +218,16 @@ void CAML_INSTR_ATEXIT (void)
   }
 
   if (f != NULL){
+    /* reverse the list */
+    prev = NULL;
+    p = CAML_INSTR_LOG;
+    while (p != NULL){
+      next = p->next;
+      p->next = prev;
+      prev = p;
+      p = next;
+    }
+    CAML_INSTR_LOG = prev;
     fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
