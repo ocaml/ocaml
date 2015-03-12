@@ -43,60 +43,60 @@ let transl_object =
 let comparisons_table = create_hashtable 11 [
   "%equal",
       (Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Ceq,
        Pfloatcomp Ceq,
        Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
               prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
        Pbintcomp(Pint64, Ceq),
        true);
   "%notequal",
       (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
        Pbintcomp(Pint64, Cneq),
        true);
   "%lessthan",
       (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Clt,
        Pfloatcomp Clt,
        Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
        Pbintcomp(Pint64, Clt),
        false);
   "%greaterthan",
       (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
        Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
        Pbintcomp(Pint64, Cgt),
        false);
   "%lessequal",
       (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cle,
        Pfloatcomp Cle,
        Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
        Pbintcomp(Pint64, Cle),
@@ -104,37 +104,37 @@ let comparisons_table = create_hashtable 11 [
   "%greaterequal",
       (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
               prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pintcomp Cge,
        Pfloatcomp Cge,
        Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
        Pbintcomp(Pint64, Cge),
        false);
   "%compare",
       (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false; prim_intrin = None},
+              prim_native_name = ""; prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false; prim_intrin = None},
+              prim_native_float = false; prim_asm = None},
        false)
 ]
 
@@ -335,11 +335,11 @@ let index_primitives_table =
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false; prim_intrin = None }
+    prim_native_name = ""; prim_native_float = false; prim_asm = None }
 
 let prim_obj_dup =
   { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false; prim_intrin = None }
+    prim_native_name = ""; prim_native_float = false; prim_asm = None }
 
 let find_primitive loc prim_name =
   match prim_name with
@@ -372,8 +372,8 @@ let specialize_comparison table env ty =
    raise Not_found if primitive is unknown  *)
 
 let specialize_primitive loc p env ty ~has_constant_constructor =
-  match p.prim_intrin with
-  | Some intrin -> Pintrin intrin
+  match p.prim_asm with
+  | Some asm -> Pasm asm
   | None ->
     try
       let table = Hashtbl.find comparisons_table p.prim_name in

@@ -83,7 +83,7 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
-  | Intrin_error of string
+  | Inline_asm_error of string
 
 exception Error of Location.t * error
 

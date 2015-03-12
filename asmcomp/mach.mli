@@ -31,12 +31,12 @@ type test =
   | Ioddtest
   | Ieventest
 
-type intrin_arg = {
-  alt    : Intrin.alternative;
+type asm_arg = {
+  alt    : Inline_asm.alternative;
   src    : [ `arg of int | `res of int ];
   num_reg: int;
   kind   : [ `addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
-           | `imm of int
+           | `imm of int64
            | `reg
            | `stack
            | `unit ] }
@@ -63,7 +63,7 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
-  | Iintrin of Intrin.intrin * intrin_arg array
+  | Iasm of Inline_asm.inline_asm * asm_arg array
   | Ispecific of Arch.specific_operation
 
 type instruction =

@@ -429,36 +429,37 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
-let emit_intrin i intrin iargs =
+let emit_asm i asm iargs =
+  let open Inline_asm in
   let rec emit_template t acc =
     Array.fold_left (fun acc -> function
-        Intrin.Emit_string s -> Intrin_string s :: acc
-      | Intrin.Emit_dialect d ->
+        Emit_string s -> Asm_string s :: acc
+      | Emit_dialect d ->
           emit_template d.(if X86_proc.masm then 1 else 0) acc
-      | Intrin.Emit_arg (n, modifier) ->
+      | Emit_arg (n, modifier) ->
           let iarg = iargs.(n) in
-          let arg = Intrin_arg (
-            match iarg.kind with
-              \`imm n -> Imm (Int64.of_int n)
-            | \`unit -> Imm (Int64.of_int 0)
+          let arg = Asm_arg (
+            match iarg.Mach.kind with
+              \`imm n -> Imm n
+            | \`unit -> Imm Int64.zero
             | \`reg | \`stack ->
                 begin match modifier, iarg.src with
-                  Intrin.None, \`arg n -> arg i n
-                | Intrin.R8L , \`arg n -> arg8 i n
-                | Intrin.R8H , \`arg n -> arg8h i n
-                | Intrin.R16 , \`arg n -> arg16 i n
-                | Intrin.R32 , \`arg n -> arg32 i n
-                | Intrin.R64 , \`arg n -> arg i n
-                | Intrin.XMM , \`arg n -> argxmm i n
-                | Intrin.YMM , \`arg n -> argymm i n
-                | Intrin.None, \`res n -> res i n
-                | Intrin.R8L , \`res n -> res8 i n
-                | Intrin.R8H , \`res n -> res8h i n
-                | Intrin.R16 , \`res n -> res16 i n
-                | Intrin.R32 , \`res n -> res32 i n
-                | Intrin.R64 , \`res n -> res i n
-                | Intrin.XMM , \`res n -> resxmm i n
-                | Intrin.YMM , \`res n -> resymm i n
+                  None, \`arg n -> arg i n
+                | R8L , \`arg n -> arg8 i n
+                | R8H , \`arg n -> arg8h i n
+                | R16 , \`arg n -> arg16 i n
+                | R32 , \`arg n -> arg32 i n
+                | R64 , \`arg n -> arg i n
+                | XMM , \`arg n -> argxmm i n
+                | YMM , \`arg n -> argymm i n
+                | None, \`res n -> res i n
+                | R8L , \`res n -> res8 i n
+                | R8H , \`res n -> res8h i n
+                | R16 , \`res n -> res16 i n
+                | R32 , \`res n -> res32 i n
+                | R64 , \`res n -> res i n
+                | XMM , \`res n -> resxmm i n
+                | YMM , \`res n -> resymm i n
                 end
             | \`addr (chunk, addr, _) ->
                 let typ =
@@ -475,7 +476,7 @@ let emit_intrin i intrin iargs =
           in
           arg :: acc) acc t
   in
-  I.intrin (emit_template intrin.Intrin.template [] |> List.rev)
+  I.asm (emit_template asm.template [] |> List.rev)
 
 (* Emit an instruction *)
 let emit_instr fallthrough i =
@@ -690,8 +691,8 @@ let emit_instr fallthrough i =
       I.cvtsi2sd  (arg i 0)  (res i 0)
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0) (res i 0)
-  | Lop(Iintrin(intrin, iargs)) ->
-      emit_intrin i intrin iargs
+  | Lop(Iasm(asm, iargs)) ->
+      emit_asm i asm iargs
   | Lop(Ispecific(Ilea addr)) ->
       I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->

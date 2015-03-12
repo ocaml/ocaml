@@ -127,8 +127,8 @@ type primitive =
   | Pint_as_pointer
   (* Address operations *)
   | Padda | Plsla
-  (* Intrinsics *)
-  | Pintrin of Intrin.intrin
+  (* Inline asm *)
+  | Pasm of Inline_asm.inline_asm
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

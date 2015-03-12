@@ -417,7 +417,7 @@ let comp_primitive p args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Padda -> Kccall("caml_adda", 2)
   | Plsla -> Kccall("caml_lsla", 2)
-  | Pintrin _ -> fatal_error "Bytegen.comp_primitive: asm used in byte code"
+  | Pasm _ -> fatal_error "Bytegen.comp_primitive: asm used in byte code"
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
@@ -646,11 +646,11 @@ let rec comp_expr env exp sz cont =
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
-  (* Intrinsics are not supported in byte code *)
-  | Lprim(Pintrin _, args) ->
+  (* Inline asm is not supported in byte code *)
+  | Lprim(Pasm _, args) ->
       comp_args env [] sz
         ( Kconst(Const_base(Const_string
-            ("Intrinsics not supported in byte code", None))) ::
+            ("Inline asm not supported in byte code", None))) ::
           Kccall("caml_failwith", 1) ::
           discard_dead_code cont )
   | Lprim(p, args) ->

@@ -89,10 +89,10 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm lbl) -> ()
-    | Iop(Iintrin (intrin, iargs)) ->
+    | Iop(Iasm (asm, iargs)) ->
         Array.iter (fun iarg ->
           let alt = iarg.Mach.alt in
-          if alt.Intrin.earlyclobber then
+          if alt.Inline_asm.earlyclobber then
             match iarg.src with
               `arg n ->
                 for m = n to n + iarg.num_reg - 1 do

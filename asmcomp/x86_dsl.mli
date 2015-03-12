@@ -190,5 +190,5 @@ module I : sig
   val xor: arg -> arg -> unit
   val xorpd: arg -> arg -> unit
 
-  val intrin: intrin list -> unit
+  val asm: asm list -> unit
 end

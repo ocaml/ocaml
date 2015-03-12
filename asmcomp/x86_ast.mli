@@ -185,13 +185,13 @@ type instruction =
   | XOR of arg * arg
   | XORPD of arg * arg
 
-type intrin =
-  | Intrin_arg of arg
-  | Intrin_string of string
+type asm =
+  | Asm_arg of arg
+  | Asm_string of string
 
 type asm_line =
   | Ins of instruction
-  | Intrin of intrin list
+  | Asm of asm list
 
   | Align of bool * int
   | Byte of constant

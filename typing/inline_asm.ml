@@ -10,9 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Description of intrinsic primitives *)
+(* Description of inline asm primitives *)
 
-exception Intrin_error of string
+exception Inline_asm_error of string
 
 type arg_kind =
   [ `Addr
@@ -64,7 +64,7 @@ type template_item =
   | Emit_string of string
 and template = template_item array
 
-type intrin = {
+type inline_asm = {
   template : template;
   args     : arg array;
   clobber  : [ `cc | `memory | register ] list;
@@ -96,7 +96,7 @@ let parse_template ~nargs template =
           let j = first_non_digit s (i + 2) in
           let arg = int_of_string (String.sub s (i + 2) (j - i - 2)) in
           if arg < 0 || arg >= nargs then
-            raise(Intrin_error(Printf.sprintf
+            raise(Inline_asm_error(Printf.sprintf
               "invalid 'asm': operand number out of range"));
           let c =
             begin match c with
@@ -128,7 +128,7 @@ let parse_template ~nargs template =
           let j = first_non_digit s (i + 1) in
           let arg = int_of_string (String.sub s (i + 1) (j - i - 1)) in
           if arg < 0 || arg >= nargs then
-            raise(Intrin_error(Printf.sprintf
+            raise(Inline_asm_error(Printf.sprintf
               "invalid 'asm': operand number out of range"));
           let acc = Emit_arg (arg, None) :: acc in
           if j < len then loop acc (String.sub s j (len - j)) 0
@@ -137,8 +137,8 @@ let parse_template ~nargs template =
   in
   List.rev (loop [] template 0) |> Array.of_list
 
-let parse_intrin kinds decl =
-  let error f = Printf.ksprintf (fun msg -> raise (Intrin_error msg)) f in
+let parse kinds decl =
+  let error f = Printf.ksprintf (fun msg -> raise (Inline_asm_error msg)) f in
   let kinds = Array.of_list kinds in
   let decl = Array.of_list decl in
   let nargs = Array.length kinds in
@@ -267,7 +267,7 @@ let parse_intrin kinds decl =
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
     error "output operand constraint lacks '='";
-  let intrin = ref { decl; template; args; clobber = [] } in
+  let inline_asm = ref { decl; template; args; clobber = [] } in
   for i = nargs + 1 to Array.length decl - 1 do
     try
       let c =
@@ -304,10 +304,10 @@ let parse_intrin kinds decl =
         | "%xmm15" | "%ymm15" -> `x15
         | _ -> raise Not_found
       in
-      intrin := { !intrin with clobber = c :: !intrin.clobber }
+      inline_asm := { !inline_asm with clobber = c :: !inline_asm.clobber }
     with Not_found -> ()
   done;
-  !intrin
+  !inline_asm
 
-let name intrin = intrin.decl.(0)
-let description intrin = Array.to_list intrin.decl
+let name inline_asm = inline_asm.decl.(0)
+let description inline_asm = Array.to_list inline_asm.decl

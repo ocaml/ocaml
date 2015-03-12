@@ -90,10 +90,10 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
-  | Cintrin intrin -> Intrin.name intrin
+  | Casm asm -> Inline_asm.name asm
 
 let rec expr ppf = function
-  | Cconst_int n -> fprintf ppf "%i" n
+  | Cconst_int n -> fprintf ppf "const int %i" n
   | Cconst_natint n | Cconst_blockheader n ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cconst_float n -> fprintf ppf "%F" n

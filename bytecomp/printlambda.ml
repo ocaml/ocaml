@@ -250,7 +250,7 @@ let primitive ppf = function
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Padda -> fprintf ppf "adda"
   | Plsla -> fprintf ppf "lsla"
-  | Pintrin intrin -> fprintf ppf "%s" (Intrin.name intrin)
+  | Pasm asm -> fprintf ppf "%s" (Inline_asm.name asm)
 
 let rec lam ppf = function
   | Lvar id ->

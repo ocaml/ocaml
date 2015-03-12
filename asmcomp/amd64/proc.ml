@@ -293,7 +293,7 @@ let destroyed_at_oper = function
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
-  | Iop(Iintrin(intrin, _)) ->
+  | Iop(Iasm(asm, _)) ->
       List.fold_left (fun regs c ->
         try
           let reg =
@@ -329,7 +329,7 @@ let destroyed_at_oper = function
             | `x15 -> rxmm15
           in
           reg :: regs
-        with Not_found -> regs) [] intrin.Intrin.clobber
+        with Not_found -> regs) [] asm.Inline_asm.clobber
       |> Array.of_list
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->
@@ -369,7 +369,7 @@ let max_register_pressure = function
 let op_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iintrin _ -> false
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iasm _ -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true

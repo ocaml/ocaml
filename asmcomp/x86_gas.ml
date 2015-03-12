@@ -241,11 +241,11 @@ let print_instr b = function
 
 let print_line b = function
   | Ins instr -> print_instr b instr
-  | Intrin args ->
+  | Asm args ->
       bprintf b "\t";
       List.iter (function
-        | Intrin_arg a -> bprintf b "%a" arg a
-        | Intrin_string s -> bprintf b "%s" s) args
+        | Asm_arg a -> bprintf b "%a" arg a
+        | Asm_string s -> bprintf b "%s" s) args
 
   | Align (_data,n) ->
       (* MacOSX assembler interprets the integer n as a 2^n alignment *)

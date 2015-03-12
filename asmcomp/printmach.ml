@@ -138,13 +138,14 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iintrin (intrin, iargs) ->
+  | Iasm (asm, iargs) ->
+      let open Inline_asm in
       let rec print a =
         Array.iter (function
-            Intrin.Emit_dialect d ->
+            Emit_dialect d ->
               print d.(if X86_proc.masm then 1 else 0)
-          | Intrin.Emit_string s -> fprintf ppf "%s" s
-          | Intrin.Emit_arg (i, modifier) ->
+          | Emit_string s -> fprintf ppf "%s" s
+          | Emit_arg (i, modifier) ->
               let iarg = iargs.(i) in
               match iarg.kind with
                 `addr (chunk, addr, _) ->
@@ -153,22 +154,22 @@ let operation op arg ppf res =
                     (match iarg.src with
                         `arg n -> Array.sub arg n (Array.length arg - n)
                       | `res n -> Array.sub res n (Array.length res - n))
-              | `imm n -> fprintf ppf "%n" n
+              | `imm n -> fprintf ppf "%Ld" n
               | `reg | `stack ->
                   fprintf ppf "%a%s" reg
                     (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
                     ( match modifier with
-                      | Intrin.None -> ""
-                      | Intrin.R8L -> "l"
-                      | Intrin.R8H -> "h"
-                      | Intrin.R16 -> "w"
-                      | Intrin.R32 -> "k"
-                      | Intrin.R64 -> "q"
-                      | Intrin.XMM -> "x"
-                      | Intrin.YMM -> "y" )
+                      | None -> ""
+                      | R8L -> "l"
+                      | R8H -> "h"
+                      | R16 -> "w"
+                      | R32 -> "k"
+                      | R64 -> "q"
+                      | XMM -> "x"
+                      | YMM -> "y" )
               | `unit -> fprintf ppf "()") a
       in
-      print intrin.Intrin.template;
+      print asm.template;
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 

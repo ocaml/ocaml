@@ -192,8 +192,8 @@ method! select_store is_assign addr exp =
   | _ ->
       super#select_store is_assign addr exp
 
-method! intrin_pseudoreg alt r =
-  match alt.Intrin.mach_register with
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
   | `r   when r.Reg.typ = Addr  || r.Reg.typ = Int -> r
   | `sse when r.Reg.typ = Float || r.Reg.typ = XMM || r.Reg.typ = YMM -> r
   | `r   -> Reg.create Addr

@@ -197,5 +197,5 @@ module I = struct
   let xor x y= emit (XOR (x, y))
   let xorpd x y = emit (XORPD (x, y))
 
-  let intrin args = directive (Intrin args)
+  let asm args = directive (Asm args)
 end

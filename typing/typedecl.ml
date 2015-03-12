@@ -46,7 +46,7 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
-  | Intrin_error of string
+  | Inline_asm_error of string
 
 open Typedtree
 
@@ -1342,8 +1342,8 @@ let transl_exception env sext =
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
     ext, newenv
 
-(** Extracts types of function argument infos to be used by intrinsics. *)
-let intrin_args ty =
+(** Extracts types of function argument infos to be used by inline asm. *)
+let inline_asm_args ty =
   let open Types in
   let rec get_types acc ty =
     match ty.desc with
@@ -1352,10 +1352,10 @@ let intrin_args ty =
         let exprs = List.concat (List.map (get_types []) exprs) in
         (List.rev (Path.name path :: List.concat exprs)) :: acc
     | _ ->
-      raise(Intrin.Intrin_error (Format.asprintf
-        "Unsupported intrinsic parameter %a" Printtyp.type_expr ty))
+      raise(Inline_asm.Inline_asm_error (Format.asprintf
+        "Unsupported inline_asm parameter %a" Printtyp.type_expr ty))
   in
-  let rec intrin_types acc = function
+  let rec inline_asm_types acc = function
       [] -> acc
     | k :: l ->
       let kind =
@@ -1372,9 +1372,9 @@ let intrin_args ty =
         | ["unit"]           -> `Unit
         | _                  -> `Int (* we'll treat everything else as pointer *)
       in
-      intrin_types (kind :: acc) l
+      inline_asm_types (kind :: acc) l
   in
-  List.rev (intrin_types [] (List.rev (get_types [] ty)))
+  List.rev (inline_asm_types [] (List.rev (get_types [] ty)))
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1393,12 +1393,12 @@ let transl_value_decl env loc valdecl =
         match decl with
           "%asm" :: decl ->
             begin try
-              let intrin = Intrin.parse_intrin (intrin_args ty) decl in
+              let inline_asm = Inline_asm.parse (inline_asm_args ty) decl in
               {prim_name = "%asm"; prim_arity = arity; prim_alloc = true;
                prim_native_name = ""; prim_native_float = false;
-               prim_intrin = Some intrin}
-            with Intrin.Intrin_error s ->
-              raise(Error(valdecl.pval_type.ptyp_loc, Intrin_error s))
+               prim_asm = Some inline_asm}
+            with Inline_asm.Inline_asm_error s ->
+              raise(Error(valdecl.pval_type.ptyp_loc, Inline_asm_error s))
             end
         | _ ->
             let prim = Primitive.parse_declaration arity decl in
@@ -1753,7 +1753,7 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
-  | Intrin_error s ->
+  | Inline_asm_error s ->
       fprintf ppf "%s" s
 
 let () =

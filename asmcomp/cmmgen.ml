@@ -1059,7 +1059,7 @@ let check_bound unsafe dbg a1 a2 k =
 let default_prim name =
   { prim_name = name; prim_arity = 0 (*ignored*);
     prim_alloc = true; prim_native_name = ""; prim_native_float = false;
-    prim_intrin = None }
+    prim_asm = None }
 
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
@@ -1275,9 +1275,9 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
-        | Pintrin intrin ->
-            let iargs = intrin.Intrin.args in
-            begin match iargs.(Array.length iargs - 1).Intrin.kind with
+        | Pasm asm ->
+            let args = asm.Inline_asm.args in
+            begin match args.(Array.length args - 1).Inline_asm.kind with
             | `Float -> Boxed_float
             | `Int32 -> Boxed_integer Pint32
             | `Int64 -> Boxed_integer Pint64
@@ -1488,8 +1488,8 @@ let rec transl = function
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
           tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
-      | (Pintrin intrin, args) ->
-          transl_intrin intrin args
+      | (Pasm asm, args) ->
+          transl_asm asm args
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->
@@ -1601,11 +1601,11 @@ let rec transl = function
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
 
-and transl_intrin intrin args =
-  let iargs = intrin.Intrin.args in
+and transl_asm asm args =
+  let asm_args = asm.Inline_asm.args in
   let transl_args = List.mapi (fun i arg ->
-    let iarg = iargs.(i) in
-    match iarg.Intrin.kind with
+    let asm_arg = asm_args.(i) in
+    match asm_arg.Inline_asm.kind with
     | `Addr | `Int -> transl arg
     | `Float       -> transl_unbox_float          arg
     | `Int32       -> transl_unbox_int Pint32     arg
@@ -1617,7 +1617,7 @@ and transl_intrin intrin args =
   in
   let ident x = x in
   let box_res =
-    match iargs.(Array.length iargs - 1).Intrin.kind with
+    match asm_args.(Array.length asm_args - 1).Inline_asm.kind with
       `Addr | `Int -> ident
     | `Float       -> box_float
     | `Int32       -> box_int Pint32
@@ -1627,7 +1627,7 @@ and transl_intrin intrin args =
     | `M256        -> box_m256
     | `Unit        -> return_unit
   in
-  box_res(Cop(Cintrin intrin, transl_args))
+  box_res(Cop(Casm asm, transl_args))
 
 and transl_prim_1 p arg dbg =
   match p with

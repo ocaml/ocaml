@@ -76,13 +76,12 @@ method reload_operation op arg res =
       | _ ->
           (arg, res)
       end
-  | Iintrin (intrin, iargs) ->
-      (* XXX vbrankov: Test copy_to_output *)
+  | Iasm (asm, iargs) ->
       let arg = Array.copy arg in
       let res = Array.copy res in
       Array.iter (fun iarg ->
         let alt = iarg.Mach.alt in
-        match alt.Intrin.memory with
+        match alt.Inline_asm.memory with
           `m8 | `m16 | `m32 | `m64 -> ()
         | _ ->
             let src, i =

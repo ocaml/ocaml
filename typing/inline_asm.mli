@@ -10,9 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Description of intrinsic primitives *)
+(* Description of inline asm primitives *)
 
-exception Intrin_error of string
+exception Inline_asm_error of string
 
 type arg_kind =
   [ `Addr
@@ -64,13 +64,13 @@ type template_item =
   | Emit_string of string
 and template = template_item array
 
-type intrin = {
+type inline_asm = {
   template : template;
   args     : arg array;
   clobber  : [ `cc | `memory | register ] list;
   decl     : string array }
 
-val parse_intrin: arg_kind list -> string list -> intrin
+val parse: arg_kind list -> string list -> inline_asm
 
-val name : intrin -> string
-val description : intrin -> string list
+val name : inline_asm -> string
+val description : inline_asm -> string list

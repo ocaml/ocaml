@@ -44,9 +44,9 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
-  | Cintrin intrin ->
-      let iargs = intrin.Intrin.args in
-      match iargs.(Array.length iargs - 1).Intrin.kind with
+  | Casm asm ->
+      let args = asm.Inline_asm.args in
+      match args.(Array.length args - 1).Inline_asm.kind with
         `Addr  -> typ_addr
       | `Float -> typ_float
       | `Int | `Int32 | `Int64 | `Nativeint -> typ_int
@@ -176,7 +176,7 @@ let catch_regs = ref []
 (* Name of function being compiled *)
 let current_function_name = ref ""
 
-exception Intrin_alternative_not_possible
+exception Asm_alternative_not_possible
 
 (* The default instruction selection class *)
 
@@ -256,59 +256,61 @@ method mark_instr = function
     self#mark_call
   | _ -> ()
 
-(* Finds the cost of the given intrinsics alternative *)
-method intrin_alternative_cost intrin args alt_index =
-  let open Intrin in
+(* Finds the cost of the given inline asm alternative *)
+method asm_alternative_cost asm args alt_index =
+  let open Inline_asm in
   try
     let cost    = ref 0 in
     let num_arg = ref 0 in
     let num_res = ref 0 in
-    let iargs = Array.mapi (fun j intrin_arg ->
-      let alt = intrin_arg.alternatives.(alt_index) in
+    let asm_mach_args = Array.mapi (fun j asm_arg ->
+      let alt = asm_arg.alternatives.(alt_index) in
       let kind, num_reg, arg_cost =
         if j > Array.length args then assert false
         else if j = Array.length args then begin
-          if intrin_arg.kind = `Unit then `unit, 0, 0
+          if asm_arg.kind = `Unit then `unit, 0, 0
           else if alt.register then `reg, 1, alt.disparage
           else `stack, 1, alt.reload_disparage
         end else if alt.copy_to_output <> None then `reg, 1, 0
         else
           match alt.memory, args.(j) with
-            _, Cconst_int n when alt.immediate -> `imm (n asr 1), 0, alt.disparage
-          | _, _ when intrin_arg.kind = `Unit  -> `unit, 0, 0
+            _, Cconst_int n when alt.immediate ->
+              `imm (Int64.of_int n), 0, alt.disparage
+          | _, Cconst_natint n when alt.immediate ->
+              `imm (Int64.of_nativeint n), 0, alt.disparage
+          | _, _ when asm_arg.kind = `Unit  -> `unit, 0, 0
           |  `m8                                      , Cop(Cload (Byte_unsigned | Byte_signed                     as chunk), [loc])
           | (`m8 | `m16)                              , Cop(Cload (Sixteen_unsigned | Sixteen_signed               as chunk), [loc])
           | (`m8 | `m16 | `m32)                       , Cop(Cload (Thirtytwo_unsigned | Thirtytwo_signed           as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64)                , Cop(Cload (Word | Single | Double | Double_u | M128 | M256 as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64 | `m128)        , Cop(Cload (M128_u                                          as chunk), [loc])
           | (`m8 | `m16 | `m32 | `m64 | `m128 | `m256), Cop(Cload (M256_u                                          as chunk), [loc])
-            when intrin_arg.input && alt.copy_to_output = None ->
+            when asm_arg.input && alt.copy_to_output = None ->
               let addr, arg1 = self#select_addressing chunk loc in
               `addr (chunk, addr, arg1), Arch.num_args_addressing addr, alt.disparage
           | _, Cop(Cload _, _) when alt.register -> `reg, 1, alt.disparage
           | _, _ when alt.register               -> `reg, 1, alt.disparage
           | _, _ when alt.memory <> `no          -> `stack, 1, alt.reload_disparage
-          | _, _ -> raise Intrin_alternative_not_possible
+          | _, _ -> raise Asm_alternative_not_possible
       in
       cost := !cost + arg_cost;
-      let src = if intrin_arg.input then `arg !num_arg else `res !num_res in
-      if intrin_arg.input  then num_arg := !num_arg + num_reg;
-      if intrin_arg.output then num_res := !num_res + num_reg;
-      { Mach.alt; src; num_reg; kind }) intrin.args in
-    Some (iargs, !cost)
-  with Intrin_alternative_not_possible -> None
+      let src = if asm_arg.input then `arg !num_arg else `res !num_res in
+      if asm_arg.input  then num_arg := !num_arg + num_reg;
+      if asm_arg.output then num_res := !num_res + num_reg;
+      { Mach.alt; src; num_reg; kind }) asm.args in
+    Some (asm_mach_args, !cost)
+  with Asm_alternative_not_possible -> None
 
-(* XXX vbrankov: Rename intrin to asm or inline_asm *)
-(* Finds the best intrinsics alternative in terms of cost *)
-method intrin_best_alternative intrin args =
+(* Finds the best inline asm alternative in terms of cost *)
+method asm_best_alternative asm args =
   let args = Array.of_list args in
   let rec loop i best =
     let i = i - 1 in
     if i < 0 then
-      match best with None -> None | Some (iargs, _) -> Some iargs
+      match best with None -> None | Some (asm_mach_args, _) -> Some asm_mach_args
     else
       let best =
-        match self#intrin_alternative_cost intrin args i with
+        match self#asm_alternative_cost asm args i with
           None -> best
         | Some ((_, cost) as ai) ->
             match best with
@@ -318,7 +320,7 @@ method intrin_best_alternative intrin args =
       in
       loop i best
   in
-  loop (Array.length intrin.Intrin.args.(0).Intrin.alternatives) None
+  loop (Array.length asm.Inline_asm.args.(0).Inline_asm.alternatives) None
 
 (* Default instruction selection for operators *)
 
@@ -365,23 +367,23 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
-  | (Cintrin intrin, _) ->
-      begin match self#intrin_best_alternative intrin args with
+  | (Casm asm, _) ->
+      begin match self#asm_best_alternative asm args with
         None ->
           fatal_error (Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
-            (Intrin.name intrin))
-      | Some iargs ->
+            (Inline_asm.name asm))
+      | Some asm_mach_args ->
           let _, args =
             List.fold_left (fun (i, args) arg ->
               let args =
-                match iargs.(i).Mach.kind with
+                match asm_mach_args.(i).Mach.kind with
                   `imm _ | `unit     ->         args
                 | `addr (_, _, arg1) -> arg1 :: args
                 | `reg | `stack      ->  arg :: args
               in
               i + 1, args) (0, []) args
           in
-          (Iintrin (intrin, iargs), List.rev args)
+          (Iasm (asm, asm_mach_args), List.rev args)
       end
   | _ -> fatal_error "Selection.select_oper"
 
@@ -488,7 +490,7 @@ method insert_moves src dst =
     self#insert_move src.(i) dst.(i)
   done
 
-method intrin_pseudoreg _ r = r
+method asm_pseudoreg _ r = r
 
 (* Adjust the types of destination pseudoregs for a [Cassign] assignment.
    The type inferred at [let] binding might be [Int] while we assign
@@ -637,7 +639,7 @@ method emit_expr env exp =
               self#insert (Iop(Ialloc size)) [||] rd;
               self#emit_stores env new_args rd;
               Some rd
-          | Iintrin (intrin, iargs) ->
+          | Iasm (asm, iargs) ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               let rs = Array.append r1 rd in
@@ -647,15 +649,14 @@ method emit_expr env exp =
                   match iarg.kind with
                     `addr _ | `imm _ | `unit -> ()
                   | `stack -> rs_new.(i).Reg.spill <- true
-                  | `reg   -> rs_new.(i) <- self#intrin_pseudoreg iarg.Mach.alt rs_new.(i)
+                  | `reg   -> rs_new.(i) <- self#asm_pseudoreg iarg.Mach.alt rs_new.(i)
                 done;
                 pos + iarg.num_reg) 0 iargs in
               for i = 0 to Array.length rs - 1 do
-                match iargs.(i).Mach.alt.Intrin.copy_to_output with
+                match iargs.(i).Mach.alt.Inline_asm.copy_to_output with
                   None -> ()
                 | Some n -> rs_new.(i) <- rs_new.(n)
               done;
-              (* XXX vbrankov: Implement Stack registers. *)
 
               let rsrc     = ref [] in
               let rsrc_new = ref [] in
@@ -663,14 +664,14 @@ method emit_expr env exp =
               let rdst_new = ref [] in
               let pos      = ref 0  in
               Array.iteri (fun i iarg ->
-                let intrin_arg = intrin.Intrin.args.(i) in
+                let asm_arg = asm.Inline_asm.args.(i) in
                 let new_pos = !pos + iarg.Mach.num_reg in
                 for i = !pos to new_pos - 1 do
-                  if intrin_arg.Intrin.input then begin
+                  if asm_arg.Inline_asm.input then begin
                     rsrc := rs.(i) :: !rsrc;
                     rsrc_new := rs_new.(i) :: !rsrc_new
                   end;
-                  if intrin_arg.Intrin.output then begin
+                  if asm_arg.Inline_asm.output then begin
                     rdst := rs.(i) :: !rdst;
                     rdst_new := rs_new.(i) :: !rdst_new
                   end
