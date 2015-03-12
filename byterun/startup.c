@@ -230,6 +230,7 @@ static uintnat minor_heap_init = Minor_heap_def;
 static uintnat heap_chunk_init = Heap_chunk_def;
 static uintnat heap_size_init = Init_heap_def;
 static uintnat max_stack_init = Max_stack_def;
+static uintnat major_window_init = Major_window_def;
 
 /* Parse options on the command line */
 
@@ -322,6 +323,7 @@ static void parse_camlrunparam(void)
       case 't': caml_trace_flag = 1; break;
 #endif
       case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'w': scanmult (opt, &major_window_init); break;
       }
     }
   }
@@ -401,7 +403,7 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+                percent_free_init, max_percent_free_init, major_window_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */

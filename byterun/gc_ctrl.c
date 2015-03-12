@@ -358,6 +358,13 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
+static uintnat norm_window (intnat w)
+{
+  if (w < 1) w = 1;
+  if (w > Max_major_window) w = Max_major_window;
+  return w;
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
@@ -506,7 +513,7 @@ uintnat caml_normalize_heap_increment (uintnat i)
 
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
-                   uintnat percent_m)
+                   uintnat percent_m, uintnat window`)
 {
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
@@ -519,6 +526,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_percent_free = norm_pfree (percent_fr);
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
+  caml_major_window = norm_window (window);
   caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
                    caml_minor_heap_size / 1024);
   caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
@@ -534,4 +542,6 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   }
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
+  caml_gc_message (0x20, "Initial smoothing window: %d\n",
+                   caml_major_window);
 }

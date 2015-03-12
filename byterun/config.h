@@ -169,5 +169,12 @@ typedef uint64 uintnat;
  */
 #define Max_percent_free_def 500
 
+/* Default setting for the major GC slice smoothing window: 1
+   (i.e. no smoothing)
+*/
+#define Major_window_def 1
+
+/* Maximum size of the major GC slice smoothing window. */
+#define Max_major_window 50
 
 #endif /* CAML_CONFIG_H */
