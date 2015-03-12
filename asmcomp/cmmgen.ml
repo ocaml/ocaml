@@ -56,6 +56,8 @@ let white_closure_header sz = block_header Obj.closure_tag sz
 let black_closure_header sz = black_block_header Obj.closure_tag sz
 let infix_header ofs = block_header Obj.infix_tag ofs
 let float_header = block_header Obj.double_tag (size_float / size_addr)
+let m128_header = block_header Obj.double_tag (2 * size_float / size_addr)
+let m256_header = block_header Obj.double_tag (4 * size_float / size_addr)
 let floatarray_header len =
       block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
@@ -63,19 +65,17 @@ let string_header len =
 let boxedint32_header = block_header Obj.custom_tag 2
 let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 let boxedintnat_header = block_header Obj.custom_tag 2
-let m128_header = block_header Obj.double_tag (16 / size_addr)
-let m256_header = block_header Obj.double_tag (32 / size_addr)
 
 let alloc_block_header tag sz = Cconst_blockheader(block_header tag sz)
 let alloc_float_header = Cconst_blockheader(float_header)
+let alloc_m128_header = Cconst_blockheader(m128_header)
+let alloc_m256_header = Cconst_blockheader(m256_header)
 let alloc_floatarray_header len = Cconst_blockheader(floatarray_header len)
 let alloc_closure_header sz = Cconst_blockheader(white_closure_header sz)
 let alloc_infix_header ofs = Cconst_blockheader(infix_header ofs)
 let alloc_boxedint32_header = Cconst_blockheader(boxedint32_header)
 let alloc_boxedint64_header = Cconst_blockheader(boxedint64_header)
 let alloc_boxedintnat_header = Cconst_blockheader(boxedintnat_header)
-let alloc_m128_header = Cconst_natint(m128_header)
-let alloc_m256_header = Cconst_natint(m256_header)
 
 (* Integers *)
 
@@ -418,18 +418,29 @@ let test_bool = function
 
 (* Float *)
 
-let box_float c = Cop(Calloc, [alloc_float_header; c])
+let box_floatx alloc c = Cop(Calloc, [alloc; c])
 
-let rec unbox_float = function
+let rec unbox_floatx addr = function
     Cop(Calloc, [header; c]) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_floatx addr body)
   | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_float e1, unbox_float e2)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
-  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
-  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_float e1, unbox_float e2)
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
-  | c -> Cop(Cload Double_u, [c])
+      Cifthenelse(cond, unbox_floatx addr e1, unbox_floatx addr e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_floatx addr e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_floatx addr) el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_floatx addr e1, unbox_floatx addr e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_floatx addr e1, id, unbox_floatx addr e2)
+  | c -> Cop(Cload addr, [c])
+
+let box_float    = box_floatx alloc_float_header
+let box_m128d    = box_floatx alloc_m128_header
+let box_m256d    = box_floatx alloc_m256_header
+let box_m128i    = box_floatx alloc_m128_header
+let box_m256i    = box_floatx alloc_m256_header
+let unbox_float  = unbox_floatx Double_u
+let unbox_m128d  = unbox_floatx M128d_u
+let unbox_m256d  = unbox_floatx M256d_u
+let unbox_m128i  = unbox_floatx M128i_u
+let unbox_m256i  = unbox_floatx M256i_u
 
 (* Complex *)
 
@@ -439,36 +450,6 @@ let box_complex c_re c_im =
 let complex_re c = Cop(Cload Double_u, [c])
 let complex_im c = Cop(Cload Double_u,
                        [Cop(Cadda, [c; Cconst_int size_float])])
-
-(* M128 *)
-
-let box_m128 c = Cop(Calloc, [alloc_m128_header; c])
-
-let rec unbox_m128 = function
-    Cop(Calloc, [header; c]) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_m128 body)
-  | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_m128 e1, unbox_m128 e2)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_m128 e2)
-  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_m128 el)
-  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_m128 e1, unbox_m128 e2)
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_m128 e1, id, unbox_m128 e2)
-  | c -> Cop(Cload M128, [c])
-
-(* M256 *)
-
-let box_m256 c = Cop(Calloc, [alloc_m256_header; c])
-
-let rec unbox_m256 = function
-    Cop(Calloc, [header; c]) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_m256 body)
-  | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_m256 e1, unbox_m256 e2)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_m256 e2)
-  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_m256 el)
-  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_m256 e1, unbox_m256 e2)
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_m256 e1, id, unbox_m256 e2)
-  | c -> Cop(Cload M256, [c])
 
 (* Unit *)
 
@@ -528,15 +509,11 @@ let get_size ptr =
 
 (* Array indexing *)
 
-let log2_size_addr = Misc.log2 size_addr
+let log2_size_addr  = Misc.log2 size_addr
 let log2_size_float = Misc.log2 size_float
-let log2_size_xmm = Misc.log2 (size_float * 2)
-let log2_size_ymm = Misc.log2 (size_float * 4)
 
 let wordsize_shift = 9
-let numfloat_shift = 9 + log2_size_float - log2_size_addr
-let numxmm_shift = 9 + log2_size_xmm - log2_size_addr
-let numymm_shift = 9 + log2_size_ymm - log2_size_addr
+let numfloat_shift = 9 + log2_size_float  - log2_size_addr
 
 let is_addr_array_hdr hdr =
   Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); floatarray_tag])
@@ -1232,8 +1209,10 @@ type unboxed_number_kind =
     No_unboxing
   | Boxed_float
   | Boxed_integer of boxed_integer
-  | Boxed_m128
-  | Boxed_m256
+  | Boxed_m128d
+  | Boxed_m256d
+  | Boxed_m128i
+  | Boxed_m256i
 
 let rec is_unboxed_number = function
     Uconst(Uconst_ref(_, Uconst_float _)) ->
@@ -1281,9 +1260,11 @@ let rec is_unboxed_number = function
             | `Float -> Boxed_float
             | `Int32 -> Boxed_integer Pint32
             | `Int64 -> Boxed_integer Pint64
+            | `M128d -> Boxed_m128d
+            | `M256d -> Boxed_m256d
+            | `M128i -> Boxed_m128i
+            | `M256i -> Boxed_m256i
             | `Nativeint -> Boxed_integer Pnativeint
-            | `M128  -> Boxed_m128
-            | `M256  -> Boxed_m256
             | `Addr | `Int | `Unit -> No_unboxing
             end
         | _ -> No_unboxing
@@ -1412,16 +1393,22 @@ let rec transl = function
           transl_unbox_let box_float unbox_float transl_unbox_float
                            Double_u 0
                            id exp body
+      | Boxed_m128d ->
+          transl_unbox_let box_m128d unbox_m128d transl_unbox_m128d M128d_u 0
+                           id exp body
+      | Boxed_m256d ->
+          transl_unbox_let box_m256d unbox_m256d transl_unbox_m256d M256d_u 0
+                           id exp body
+      | Boxed_m128i ->
+          transl_unbox_let box_m128i unbox_m128i transl_unbox_m128i M128i_u 0
+                           id exp body
+      | Boxed_m256i ->
+          transl_unbox_let box_m256i unbox_m256i transl_unbox_m256i M256i_u 0
+                           id exp body
       | Boxed_integer bi ->
           transl_unbox_let (box_int bi) (unbox_int bi) (transl_unbox_int bi)
                            (if bi = Pint32 then Thirtytwo_signed else Word)
                            size_addr
-                           id exp body
-      | Boxed_m128 ->
-          transl_unbox_let box_m128 unbox_m128 transl_unbox_m128 M128 0
-                           id exp body
-      | Boxed_m256 ->
-          transl_unbox_let box_m256 unbox_m256 transl_unbox_m256 M256 0
                            id exp body
       end
   | Uletrec(bindings, body) ->
@@ -1610,9 +1597,11 @@ and transl_asm asm args =
     | `Float       -> transl_unbox_float          arg
     | `Int32       -> transl_unbox_int Pint32     arg
     | `Int64       -> transl_unbox_int Pint64     arg
+    | `M128d       -> transl_unbox_m128d          arg
+    | `M256d       -> transl_unbox_m256d          arg
+    | `M128i       -> transl_unbox_m128i          arg
+    | `M256i       -> transl_unbox_m256i          arg
     | `Nativeint   -> transl_unbox_int Pnativeint arg
-    | `M128        -> transl_unbox_m128           arg
-    | `M256        -> transl_unbox_m256           arg
     | `Unit        -> remove_unit (transl arg)) args
   in
   let ident x = x in
@@ -1622,9 +1611,11 @@ and transl_asm asm args =
     | `Float       -> box_float
     | `Int32       -> box_int Pint32
     | `Int64       -> box_int Pint64
+    | `M128d       -> box_m128d
+    | `M256d       -> box_m256d
+    | `M128i       -> box_m128i
+    | `M256i       -> box_m256i
     | `Nativeint   -> box_int Pnativeint
-    | `M128        -> box_m128
-    | `M256        -> box_m256
     | `Unit        -> return_unit
   in
   box_res(Cop(Casm asm, transl_args))
@@ -2136,6 +2127,14 @@ and transl_unbox_float = function
     Uconst(Uconst_ref(_, Uconst_float f)) -> Cconst_float f
   | exp -> unbox_float(transl exp)
 
+and transl_unbox_m128d exp = unbox_m128d(transl exp)
+
+and transl_unbox_m256d exp = unbox_m256d(transl exp)
+
+and transl_unbox_m128i exp = unbox_m128i(transl exp)
+
+and transl_unbox_m256i exp = unbox_m256i(transl exp)
+
 and transl_unbox_int bi = function
     Uconst(Uconst_ref(_, Uconst_int32 n)) ->
       Cconst_natint (Nativeint.of_int32 n)
@@ -2146,10 +2145,6 @@ and transl_unbox_int bi = function
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
-
-and transl_unbox_m128 exp = unbox_m128(transl exp)
-
-and transl_unbox_m256 exp = unbox_m256(transl exp)
 
 and transl_unbox_let box_fn unbox_fn transl_unbox_fn box_chunk box_offset
                      id exp body =

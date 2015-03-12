@@ -21,8 +21,15 @@ let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
   else
-    fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F"
-                                     | XMM -> "X" | YMM -> "Y" );
+    fprintf ppf "%s" (
+      match r.typ with
+        Addr -> "A"
+      | Int -> "I"
+      | Float -> "F"
+      | M128d -> "M128d"
+      | M256d -> "M256d"
+      | M128i -> "M128i"
+      | M256i -> "M256i" );
   fprintf ppf "/%i" r.stamp;
   begin match r.loc with
   | Unknown -> ()

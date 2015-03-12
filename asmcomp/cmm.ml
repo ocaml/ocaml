@@ -14,8 +14,10 @@ type machtype_component =
     Addr
   | Int
   | Float
-  | XMM
-  | YMM
+  | M128d
+  | M256d
+  | M128i
+  | M256i
 
 type machtype = machtype_component array
 
@@ -23,15 +25,17 @@ let typ_void = ([||] : machtype_component array)
 let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
-let typ_xmm = [|XMM|]
-let typ_ymm = [|YMM|]
+let typ_m128d = [|M128d|]
+let typ_m256d = [|M256d|]
+let typ_m128i = [|M128i|]
+let typ_m256i = [|M256i|]
 
 let size_component = function
     Addr -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
-  | XMM -> 16
-  | YMM -> 32
+  | M128d | M128i -> 16
+  | M256d | M256i -> 32
 
 let size_machtype mty =
   let size = ref 0 in
@@ -69,10 +73,14 @@ type memory_chunk =
   | Single
   | Double
   | Double_u
-  | M128
-  | M128_u
-  | M256
-  | M256_u
+  | M128d_a
+  | M128d_u
+  | M256d_a
+  | M256d_u
+  | M128i_a
+  | M128i_u
+  | M256i_a
+  | M256i_u
 
 type operation =
     Capply of machtype * Debuginfo.t

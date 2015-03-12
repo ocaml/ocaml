@@ -20,9 +20,11 @@ type arg_kind =
   | `Int
   | `Int32
   | `Int64
+  | `M128d
+  | `M256d
+  | `M128i
+  | `M256i
   | `Nativeint
-  | `M128
-  | `M256
   | `Unit ]
 
 type register =

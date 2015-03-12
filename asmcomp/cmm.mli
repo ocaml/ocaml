@@ -16,8 +16,10 @@ type machtype_component =
     Addr
   | Int
   | Float
-  | XMM
-  | YMM
+  | M128d
+  | M256d
+  | M128i
+  | M256i
 
 type machtype = machtype_component array
 
@@ -25,8 +27,10 @@ val typ_void: machtype
 val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
-val typ_xmm: machtype
-val typ_ymm: machtype
+val typ_m128d: machtype
+val typ_m256d: machtype
+val typ_m128i: machtype
+val typ_m256i: machtype
 
 val size_component: machtype_component -> int
 val size_machtype: machtype -> int
@@ -51,12 +55,16 @@ type memory_chunk =
   | Thirtytwo_signed
   | Word
   | Single
-  | Double                              (* 64-bit-aligned 64-bit float *)
-  | Double_u                            (* word-aligned 64-bit float *)
-  | M128                                (* 64-bit-aligned 128-bit float vector *)
-  | M128_u                              (* 128-bit-aligned 128-bit float vector *)
-  | M256                                (* 64-bit-aligned 256-bit float vector *)
-  | M256_u                              (* 256-bit-aligned 256-bit float vector *)
+  | Double                              (*  64-bit-aligned 64-bit float *)
+  | Double_u                            (*    word-aligned 64-bit float *)
+  | M128d_a                             (*  64-bit-aligned 128-bit packed 64-bit float *)
+  | M128d_u                             (* 128-bit-aligned 128-bit packed 64-bit float *)
+  | M256d_a                             (*  64-bit-aligned 256-bit packed 64-bit float *)
+  | M256d_u                             (* 256-bit-aligned 256-bit packed 64-bit float *)
+  | M128i_a                             (*  64-bit-aligned 128-bit packed 64-bit int *)
+  | M128i_u                             (* 128-bit-aligned 128-bit packed 64-bit int *)
+  | M256i_a                             (*  64-bit-aligned 256-bit packed 64-bit int *)
+  | M256i_u                             (* 256-bit-aligned 256-bit packed 64-bit int *)
 
 type operation =
     Capply of machtype * Debuginfo.t

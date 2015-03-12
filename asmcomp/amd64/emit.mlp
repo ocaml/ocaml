@@ -36,12 +36,12 @@ let int_reg_name =
 
 let int_reg8h_name = [| AH; BH; CH; DH |]
 
-let float_reg_name  = Array.init 16 (fun i -> Regf (XMM i))
-let float2_reg_name = Array.init 16 (fun i -> Regf (YMM i))
+let float_reg_name = Array.init 16 (fun i -> Regf (XMM i))
+let ymm_reg_name   = Array.init 16 (fun i -> Regf (YMM i))
 
 let register_name r typ =
   if r < 100 then Reg64 (int_reg_name.(r))
-  else if typ = Cmm.YMM then float2_reg_name.(r - 100)
+  else if typ = Cmm.M256d || typ = Cmm.M256i then ymm_reg_name.(r - 100)
   else float_reg_name.(r - 100)
 
 (* CFI directives *)
@@ -154,8 +154,10 @@ let emit_Llabel fallthrough lbl =
 let reg = function
   | { loc = Reg.Reg r; typ } -> register_name r typ
   | { loc = Stack s; typ = Float }
-  | { loc = Stack s; typ = XMM }
-  | { loc = Stack s; typ = YMM } as r ->
+  | { loc = Stack s; typ = M128d }
+  | { loc = Stack s; typ = M128i }
+  | { loc = Stack s; typ = M256d }
+  | { loc = Stack s; typ = M256i } as r ->
       let ofs = slot_offset s (register_class r) in
       mem64 REAL8 ofs RSP
   | { loc = Stack s } as r ->
@@ -197,15 +199,15 @@ let arg8h  i n = emit_subreg reg_high_8_name BYTE  i.arg.(n)
 let arg16  i n = emit_subreg reg_low_16_name WORD  i.arg.(n)
 let arg32  i n = emit_subreg reg_low_32_name DWORD i.arg.(n)
 let arg64  i n = reg64 i.arg.(n)
-let argxmm i n = emit_subregf float_reg_name  REAL8 i.arg.(n)
-let argymm i n = emit_subregf float2_reg_name REAL8 i.arg.(n)
+let argxmm i n = emit_subregf float_reg_name REAL8 i.arg.(n)
+let argymm i n = emit_subregf ymm_reg_name   REAL8 i.arg.(n)
 
 let res8   i n = emit_subreg reg_low_8_name  WORD  i.res.(n)
 let res8h  i n = emit_subreg reg_high_8_name WORD  i.res.(n)
 let res16  i n = emit_subreg reg_low_16_name WORD  i.res.(n)
 let res32  i n = emit_subreg reg_low_32_name DWORD i.res.(n)
-let resxmm i n = emit_subregf float_reg_name  REAL8 i.res.(n)
-let resymm i n = emit_subregf float2_reg_name REAL8 i.res.(n)
+let resxmm i n = emit_subregf float_reg_name REAL8 i.res.(n)
+let resymm i n = emit_subregf ymm_reg_name   REAL8 i.res.(n)
 
 (* Output an addressing mode *)
 
@@ -469,7 +471,9 @@ let emit_asm i asm iargs =
                   | Sixteen_unsigned | Sixteen_signed -> WORD
                   | Thirtytwo_unsigned | Thirtytwo_signed -> DWORD
                   | Single -> REAL4
-                  | Double | Double_u | M128 | M128_u | M256 | M256_u -> REAL8
+                  | Double | Double_u
+                  | M128d_a | M128d_u | M256d_a | M256d_u
+                  | M128i_a | M128i_u | M256i_a | M256i_u -> REAL8
                 in
                 let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
                 addressing addr typ i n)
@@ -487,15 +491,19 @@ let emit_instr fallthrough i =
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
         begin match src.typ, dst.typ, src.loc, dst.loc with
-        | (Float | XMM | YMM), (Addr | Int), Reg.Reg _, Reg.Reg _
-        | (Addr | Int), (Float | XMM | YMM), Reg.Reg _, Reg.Reg _
-                                                         -> I.movq    (reg src) (reg dst)
-        | (Float | XMM), _, Reg.Reg _, Reg.Reg _         -> I.movapd  (reg src) (reg dst)
-        | Float, _, _, _                                 -> I.movsd   (reg src) (reg dst)
-        | XMM, _, _, _                                   -> I.movupd  (reg src) (reg dst)
-        | YMM, _, Reg.Reg _, Reg.Reg _                   -> I.vmovapd (reg src) (reg dst)
-        | YMM, _, _, _                                   -> I.vmovupd (reg src) (reg dst)
-        | _                                              -> I.mov     (reg src) (reg dst)
+        | (Float | M128d | M256d | M128i | M256i), (Addr | Int), Reg.Reg _, Reg.Reg _
+        | (Addr | Int), (Float | M128d | M256d | M128i | M256i), Reg.Reg _, Reg.Reg _
+                                                   -> I.movq    (reg src) (reg dst)
+        | (Float | M128d), _, Reg.Reg _, Reg.Reg _ -> I.movapd  (reg src) (reg dst)
+        | Float, _, _, _                           -> I.movsd   (reg src) (reg dst)
+        | M128d, _, _, _                           -> I.movupd  (reg src) (reg dst)
+        | M128i, _, Reg.Reg _, Reg.Reg _           -> I.movdqa  (reg src) (reg dst)
+        | M128i, _, _, _                           -> I.movdqu  (reg src) (reg dst)
+        | M256d, _, Reg.Reg _, Reg.Reg _           -> I.vmovapd (reg src) (reg dst)
+        | M256d, _, _, _                           -> I.vmovupd (reg src) (reg dst)
+        | M256i, _, Reg.Reg _, Reg.Reg _           -> I.vmovdqa (reg src) (reg dst)
+        | M256i, _, _, _                           -> I.vmovdqu (reg src) (reg dst)
+        | _                                          -> I.mov     (reg src) (reg dst)
         end
   | Lop(Iconst_int n | Iconst_blockheader n) ->
       if n = 0n then begin
@@ -582,14 +590,22 @@ let emit_instr fallthrough i =
           I.cvtss2sd (addressing addr REAL4 i 0) dest
       | Double | Double_u ->
           I.movsd (addressing addr REAL8 i 0) dest
-      | M128 ->
-          I.movupd (addressing addr REAL8 i 0) dest
-      | M128_u ->
+      | M128d_a ->
           I.movapd (addressing addr REAL8 i 0) dest
-      | M256 ->
-          I.vmovupd (addressing addr REAL8 i 0) dest
-      | M256_u ->
+      | M128d_u ->
+          I.movupd (addressing addr REAL8 i 0) dest
+      | M128i_a ->
+          I.movdqa (addressing addr REAL8 i 0) dest
+      | M128i_u ->
+          I.movdqu (addressing addr REAL8 i 0) dest
+      | M256d_a ->
           I.vmovapd (addressing addr REAL8 i 0) dest
+      | M256d_u ->
+          I.vmovupd (addressing addr REAL8 i 0) dest
+      | M256i_a ->
+          I.vmovdqa (addressing addr REAL8 i 0) dest
+      | M256i_u ->
+          I.vmovdqu (addressing addr REAL8 i 0) dest
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
@@ -606,14 +622,22 @@ let emit_instr fallthrough i =
           I.movss xmm15 (addressing addr REAL4 i 1)
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
-      | M128 ->
-          I.movupd (arg i 0) (addressing addr REAL8 i 1)
-      | M128_u ->
+      | M128d_a ->
           I.movapd (arg i 0) (addressing addr REAL8 i 1)
-      | M256 ->
-          I.vmovupd (arg i 0) (addressing addr REAL8 i 1)
-      | M256_u ->
+      | M128d_u ->
+          I.movupd (arg i 0) (addressing addr REAL8 i 1)
+      | M128i_a ->
+          I.movdqa (arg i 0) (addressing addr REAL8 i 1)
+      | M128i_u ->
+          I.movdqu (arg i 0) (addressing addr REAL8 i 1)
+      | M256d_a ->
           I.vmovapd (arg i 0) (addressing addr REAL8 i 1)
+      | M256d_u ->
+          I.vmovupd (arg i 0) (addressing addr REAL8 i 1)
+      | M256i_a ->
+          I.vmovdqa (arg i 0) (addressing addr REAL8 i 1)
+      | M256i_u ->
+          I.vmovdqu (arg i 0) (addressing addr REAL8 i 1)
       end
   | Lop(Ialloc n) ->
       if !fastcode_flag then begin

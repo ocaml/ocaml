@@ -184,6 +184,8 @@ let print_instr b = function
       i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
+  | MOVDQA (arg1, arg2) -> i2 b "movdqa" arg1 arg2
+  | MOVDQU (arg1, arg2) -> i2 b "movdqu" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
   | MOVQ (arg1, arg2) -> i2 b "movq" arg1 arg2
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
@@ -210,6 +212,8 @@ let print_instr b = function
   | TEST (arg1, arg2) -> i2_s b "test" arg1 arg2
   | UCOMISD (arg1, arg2) -> i2 b "ucomisd" arg1 arg2
   | VMOVAPD (arg1, arg2) -> i2 b "vmovapd" arg1 arg2
+  | VMOVDQA (arg1, arg2) -> i2 b "vmovdqa" arg1 arg2
+  | VMOVDQU (arg1, arg2) -> i2 b "vmovdqu" arg1 arg2
   | VMOVUPD (arg1, arg2) -> i2 b "vmovupd" arg1 arg2
   | XCHG (arg1, arg2) -> i2 b "xchg" arg1 arg2
   | XOR (arg1, arg2) -> i2_s b "xor" arg1 arg2

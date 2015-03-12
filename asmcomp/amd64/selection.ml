@@ -194,10 +194,10 @@ method! select_store is_assign addr exp =
 
 method! asm_pseudoreg alt r =
   match alt.Inline_asm.mach_register with
-  | `r   when r.Reg.typ = Addr  || r.Reg.typ = Int -> r
-  | `sse when r.Reg.typ = Float || r.Reg.typ = XMM || r.Reg.typ = YMM -> r
+  | `r   when List.mem r.Reg.typ [ Addr; Int ] -> r
+  | `sse when List.mem r.Reg.typ [ Float; M128d; M128i; M256d; M256i ] -> r
   | `r   -> Reg.create Addr
-  | `sse -> Reg.create XMM
+  | `sse -> Reg.create Float
   | `a   -> rax
   | `b   -> rbx
   | `c   -> rcx

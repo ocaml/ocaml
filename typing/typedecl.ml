@@ -1365,10 +1365,10 @@ let inline_asm_args ty =
         | ["int32"]          -> `Int32
         | ["int64"]          -> `Int64
         | ["nativeint"]      -> `Nativeint
-        | ["m128d"]
-        | ["m128i"]          -> `M128
-        | ["m256d"]
-        | ["m256i"]          -> `M256
+        | ["m128d"]          -> `M128d
+        | ["m128i"]          -> `M128i
+        | ["m256d"]          -> `M256d
+        | ["m256i"]          -> `M256i
         | ["unit"]           -> `Unit
         | _                  -> `Int (* we'll treat everything else as pointer *)
       in

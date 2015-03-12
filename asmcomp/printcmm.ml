@@ -19,8 +19,10 @@ let machtype_component ppf = function
   | Addr -> fprintf ppf "addr"
   | Int -> fprintf ppf "int"
   | Float -> fprintf ppf "float"
-  | XMM -> fprintf ppf "xmm"
-  | YMM -> fprintf ppf "ymm"
+  | M128d -> fprintf ppf "m128d"
+  | M128i -> fprintf ppf "m128i"
+  | M256d -> fprintf ppf "m256d"
+  | M256i -> fprintf ppf "m256i"
 
 let machtype ppf mty =
   match Array.length mty with
@@ -49,10 +51,14 @@ let chunk = function
   | Single -> "float32"
   | Double -> "float64"
   | Double_u -> "float64u"
-  | M128 -> "m128"
-  | M128_u -> "m128u"
-  | M256 -> "m256"
-  | M256_u -> "m256u"
+  | M128d_a -> "m128d_a"
+  | M128d_u -> "m128d_u"
+  | M256d_a -> "m256d_a"
+  | M256d_u -> "m256d_u"
+  | M128i_a -> "m128i_a"
+  | M128i_u -> "m128i_u"
+  | M256i_a -> "m256i_a"
+  | M256i_u -> "m256i_u"
 
 let operation = function
   | Capply(ty, d) -> "app" ^ Debuginfo.to_string d

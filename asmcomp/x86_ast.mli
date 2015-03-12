@@ -154,6 +154,8 @@ type instruction =
   | LEAVE
   | MOV of arg * arg
   | MOVAPD of arg * arg
+  | MOVDQA of arg * arg
+  | MOVDQU of arg * arg
   | MOVLPD of arg * arg
   | MOVQ of arg * arg
   | MOVSD of arg * arg
@@ -180,6 +182,8 @@ type instruction =
   | TEST of arg * arg
   | UCOMISD of arg * arg
   | VMOVAPD of arg * arg
+  | VMOVDQA of arg * arg
+  | VMOVDQU of arg * arg
   | VMOVUPD of arg * arg
   | XCHG of arg * arg
   | XOR of arg * arg
