@@ -1,0 +1,41 @@
+#!/bin/sh
+
+#########################################################################
+#                                                                       #
+#                                 OCaml                                 #
+#                                                                       #
+#                 Damien Doligez, Jane Street Capital                   #
+#                                                                       #
+#   Copyright 2014 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
+# Use this script on OCAML_INSTR_FILE file
+
+# usage: ocaml-instr-graph <file>
+
+tmpfile=/tmp/ocaml-instr-graph.$$
+
+rm -f $tmpfile-*
+
+awk '
+  function output (filename){
+    printf ("%d %.3f\n", time, $2/1000) >>"'$tmpfile'-" filename;
+  }
+  $1 != "@@" { next; }
+  $3 == "overhead" { ++time; }
+  $3 == "minor" { output("minor"); }
+  $3 == "major" { output("major"); }
+  $3 == "dispatch" || $3 == "coll" { output("gc"); }
+' <$1
+
+gnuplot -p <<EOF
+ set title "$2"
+ plot "$tmpfile-minor" using 1:2 title 'minor' lt rgb "#00AA00", \
+      "$tmpfile-major" using 1:2 title 'major' lt rgb "#0000FF", \
+      "$tmpfile-gc" using 1:2 title 'total' lt rgb "#DD0000"
+EOF
+
+rm -f $tmpfile-*

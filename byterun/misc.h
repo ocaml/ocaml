@@ -163,6 +163,9 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #include <time.h>
 #include <stdio.h>
 
+extern intnat caml_stat_minor_collections;
+extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+
 struct CAML_INSTR_BLOCK {
   struct timespec ts[10];
   char *tag[10];
@@ -179,19 +182,24 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 /* Allocate the data block for a given name.
    [t] must have been declared with [CAML_INSTR_DECLARE]. */
 #define CAML_INSTR_ALLOC(t) do{                                     \
-    t = malloc (sizeof (struct CAML_INSTR_BLOCK));                  \
-    t->index = 0;                                                   \
-    t->tag[0] = "";                                                 \
-    t->next = CAML_INSTR_LOG;                                       \
-    CAML_INSTR_LOG = t;                                             \
+    if (caml_stat_minor_collections >= CAML_INSTR_STARTTIME         \
+        && caml_stat_minor_collections < CAML_INSTR_STOPTIME){      \
+      t = malloc (sizeof (struct CAML_INSTR_BLOCK));                \
+      t->index = 0;                                                 \
+      t->tag[0] = "";                                               \
+      t->next = CAML_INSTR_LOG;                                     \
+      CAML_INSTR_LOG = t;                                           \
+    }                                                               \
   }while(0)
 
 /* Allocate the data block and start the timer.
    [t] must have been declared with [CAML_INSTR_DECLARE]
    and allocated with [CAML_INSTR_ALLOC]. */
 #define CAML_INSTR_START(t, msg) do{                                \
-    t->tag[0] = msg;                                                \
-    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]));          \
+    if (t != NULL){                                                 \
+      t->tag[0] = msg;                                              \
+      clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]));        \
+    }                                                               \
   }while(0)
 
 /* Declare a timer, allocate its data, and start it.
@@ -204,9 +212,11 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 /* Record an intermediate time within a given timer.
    [t] must have been declared, allocated, and started. */
 #define CAML_INSTR_TIME(t, msg) do{                                 \
-    ++ t->index;                                                    \
-    t->tag[t->index] = (msg);                                       \
-    clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index]));   \
+    if (t != NULL){                                                 \
+      ++ t->index;                                                  \
+      t->tag[t->index] = (msg);                                     \
+      clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index])); \
+    }                                                               \
   }while(0)
 
 /* Count an event occurrence. */
@@ -218,12 +228,19 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 #define CAML_INSTR_INT(msg, data) do{                               \
     CAML_INSTR_DECLARE (__caml_tmp);                                \
     CAML_INSTR_ALLOC (__caml_tmp);                                  \
-    __caml_tmp->ts[0].tv_sec = __caml_tmp->ts[0].tv_nsec = 0;       \
-    __caml_tmp->index = 1;                                          \
-    __caml_tmp->tag[1] = msg "#";                                   \
-    __caml_tmp->ts[1].tv_sec = 0;                                   \
-    __caml_tmp->ts[1].tv_nsec = (data);                             \
+    if (__caml_tmp != NULL){                                        \
+      __caml_tmp->ts[0].tv_sec = __caml_tmp->ts[0].tv_nsec = 0;     \
+      __caml_tmp->index = 1;                                        \
+      __caml_tmp->tag[1] = msg "#";                                 \
+      __caml_tmp->ts[1].tv_sec = 0;                                 \
+      __caml_tmp->ts[1].tv_nsec = (data);                           \
+    }                                                               \
   }while(0)
+
+/* This function is called at the start of the program to set up
+   the data for the above macros.
+*/
+extern void CAML_INSTR_INIT (void);
 
 /* This function is automatically called by the runtime to output
    the collected data to the dump file. */
@@ -238,6 +255,7 @@ extern void CAML_INSTR_ATEXIT (void);
 #define CAML_INSTR_TIME(t, msg) /**/
 #define CAML_INSTR_EVENT(msg) /**/
 #define CAML_INSTR_INT(msg, c) /**/
+#define CAML_INSTR_INIT() /**/
 #define CAML_INSTR_ATEXIT() /**/
 
 #endif /* CAML_INSTR */
