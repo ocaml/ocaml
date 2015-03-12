@@ -19,7 +19,7 @@
 #include "misc.h"
 
 typedef struct {
-  void *block;           /* address of the malloced block this chunk live in */
+  void *block;           /* address of the malloced block this chunk lives in */
   asize_t alloc;         /* in bytes, used for compaction */
   asize_t size;          /* in bytes */
   char *next;
@@ -49,6 +49,8 @@ extern uintnat caml_fl_size_at_phase_change;
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
+
+extern int caml_major_window;
 
 void caml_init_major_heap (asize_t);           /* size in bytes */
 asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */

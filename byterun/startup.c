@@ -484,7 +484,7 @@ CAMLexport void caml_startup_code(
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+                percent_free_init, max_percent_free_init, major_window_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */

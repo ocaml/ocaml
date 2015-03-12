@@ -513,7 +513,7 @@ uintnat caml_normalize_heap_increment (uintnat i)
 
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
-                   uintnat percent_m, uintnat window`)
+                   uintnat percent_m, uintnat window)
 {
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
