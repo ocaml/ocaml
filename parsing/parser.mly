@@ -1780,10 +1780,8 @@ poly_type_no_attr:
 core_type:
     core_type_no_attr
       { $1 }
-/*
   | core_type attribute
       { Typ.attr $1 $2 }
-*/
 ;
 core_type_no_attr:
     core_type2
