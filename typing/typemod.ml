@@ -305,6 +305,11 @@ let rec map_rec'' fn decls rem =
       fn Trec_not d1 :: map_rec'' fn dl rem
   | _ -> map_rec fn decls rem
 
+let maybe_rec rec_flag k fn decls rem =
+  match rec_flag with
+  | Recursive -> k fn decls rem
+  | Nonrecursive -> map_end (fn Trec_not) decls rem
+
 (* Add type extension flags to extension contructors *)
 let map_ext fn exts rem =
   match exts with
@@ -353,10 +358,11 @@ and approx_sig env ssg =
     [] -> []
   | item :: srem ->
       match item.psig_desc with
-      | Psig_type (_, sdecls) ->
+      | Psig_type (rf, sdecls) ->
           let decls = Typedecl.approx_type_decl env sdecls in
           let rem = approx_sig env srem in
-          map_rec' (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
+          maybe_rec rf map_rec'
+            (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
       | Psig_module pmd ->
           let id = Ident.create pmd.pmd_name.txt in
           let md = approx_module_declaration env pmd in
@@ -585,7 +591,7 @@ and transl_signature env sg =
             let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
-            map_rec'' (fun rs td ->
+            maybe_rec rec_flag map_rec'' (fun rs td ->
                 Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
         | Psig_typext styext ->
@@ -1228,7 +1234,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
         Tstr_type (rec_flag, decls),
-        map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
+        maybe_rec rec_flag map_rec''
+          (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
           decls [],
         enrich_type_decls anchor decls env newenv
     | Pstr_typext styext ->
