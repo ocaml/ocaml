@@ -144,9 +144,9 @@ let parse kinds decl =
   let kinds = Array.of_list kinds in
   let decl = Array.of_list decl in
   let nargs = Array.length kinds in
-  if Array.length decl < Array.length kinds + 1 then
+  if Array.length decl < Array.length kinds + 2 then
     error "expected constraints for all arguments";
-  let template = parse_template ~nargs decl.(0) in
+  let template = parse_template ~nargs decl.(1) in
   let args = Array.mapi (fun i kind ->
     let arg = ref {
       kind;
@@ -163,7 +163,7 @@ let parse kinds decl =
       memory           = `no;
       reload_disparage = 4;
       register         = false } in
-    let decl = decl.(i + 1) in
+    let decl = decl.(i + 2) in
     let add_digit =
       let s = ref 0 in
       let e = ref 0 in
@@ -311,5 +311,6 @@ let parse kinds decl =
   done;
   !inline_asm
 
-let name inline_asm = inline_asm.decl.(0)
+let name inline_asm = inline_asm.decl.(1)
 let description inline_asm = Array.to_list inline_asm.decl
+let bytecode_call inline_asm = inline_asm.decl.(0)

@@ -76,3 +76,4 @@ val parse: arg_kind list -> string list -> inline_asm
 
 val name : inline_asm -> string
 val description : inline_asm -> string list
+val bytecode_call : inline_asm -> string

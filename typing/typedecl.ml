@@ -1394,7 +1394,7 @@ let transl_value_decl env loc valdecl =
           "%asm" :: decl ->
             begin try
               let inline_asm = Inline_asm.parse (inline_asm_args ty) decl in
-              {prim_name = "%asm"; prim_arity = arity; prim_alloc = true;
+              {prim_name = ""; prim_arity = arity; prim_alloc = true;
                prim_native_name = ""; prim_native_float = false;
                prim_asm = Some inline_asm}
             with Inline_asm.Inline_asm_error s ->
