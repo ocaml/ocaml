@@ -70,6 +70,7 @@ module EnvLazy : sig
   val force : ('a -> 'b) -> ('a,'b) t -> 'b
   val create : 'a -> ('a,'b) t
   val is_val : ('a,'b) t -> bool
+  val get_arg : ('a,'b) t -> 'a option
 
 end  = struct
 
@@ -95,6 +96,9 @@ end  = struct
 
   let is_val x =
     match !x with Done _ -> true | _ -> false
+
+  let get_arg x =
+    match !x with Thunk a -> Some a | _ -> None
 
   let create x =
     let x = ref (Thunk x) in
@@ -978,11 +982,23 @@ let lookup_cltype lid env =
 type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
+let rec scrape_alias_safe env mty =
+  match mty with
+  | Mty_alias (Pident id) when Ident.persistent id -> false
+  | Mty_alias path ->
+      scrape_alias_safe env (find_module path env).md_type
+  | _ -> true
+
 let iter_env proj1 proj2 f env () =
   Ident.iter (fun id (x,_) -> f (Pident id) x) (proj1 env);
   let rec iter_components path path' mcomps =
-    (* if EnvLazy.is_val mcomps then *)
     let cont () =
+      let safe =
+        match EnvLazy.get_arg mcomps with
+          None -> true
+        | Some (env, sub, path, mty) -> scrape_alias_safe env mty
+      in
+      if not safe then () else
       match EnvLazy.force !components_of_module_maker' mcomps with
         Structure_comps comps ->
           Tbl.iter

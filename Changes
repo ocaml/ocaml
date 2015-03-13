@@ -177,6 +177,7 @@ Bug fixes:
 - PR#6787: Soundness bug with polymorphic variants
 - PR#6791: "%s@[", "%s@{" regression in Scanf
   (Benoît Vaugon)
+- PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
