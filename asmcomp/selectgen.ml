@@ -314,22 +314,37 @@ method asm_alternative_cost asm args alt_index =
 
 (* Finds the best inline asm alternative in terms of cost *)
 method asm_best_alternative asm args =
+  let rec try_all_commutations asm args i j best =
+    if j >= Array.length args - 1 then
+      match self#asm_alternative_cost asm args i with
+        None -> best
+      | Some (iargs, cost) ->
+          match best with
+            None -> Some (iargs, Array.copy args, cost)
+          | Some (_, _, cost') when cost' >= cost -> Some (iargs, Array.copy args, cost)
+          | _ -> best
+    else
+      let asm_arg = asm.Inline_asm.args.(j).Inline_asm.alternatives.(i) in
+      if asm_arg.Inline_asm.commutative then begin
+        let best = try_all_commutations asm args i (j + 1) best in
+        let arg_j = args.(j) in
+        args.(j) <- args.(j + 1);
+        args.(j + 1) <- arg_j;
+        let best = try_all_commutations asm args i (j + 1) best in
+        args.(j + 1) <- args.(j);
+        args.(j) <- arg_j;
+        best
+      end else try_all_commutations asm args i (j + 1) best
+  in
+
   let args = Array.of_list args in
   let rec loop i best =
     let i = i - 1 in
     if i < 0 then
-      match best with None -> None | Some (asm_mach_args, _) -> Some asm_mach_args
-    else
-      let best =
-        match self#asm_alternative_cost asm args i with
-          None -> best
-        | Some ((_, cost) as ai) ->
-            match best with
-              None -> Some ai
-            | Some (_, cost') when cost' >= cost -> Some ai
-            | _ -> best
-      in
-      loop i best
+      match best with
+        None -> None
+      | Some (iargs, args, _) -> Some (iargs, Array.to_list args)
+    else loop i (try_all_commutations asm args i 0 best)
   in
   loop (Array.length asm.Inline_asm.args.(0).Inline_asm.alternatives) None
 
@@ -383,7 +398,7 @@ method select_operation op args =
         None ->
           fatal_error (Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
             (Inline_asm.name asm))
-      | Some asm_mach_args ->
+      | Some (asm_mach_args, args) ->
           let _, args =
             List.fold_left (fun (i, args) arg ->
               let args =

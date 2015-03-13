@@ -100,7 +100,7 @@ class virtual selector_generic : object
   method asm_alternative_cost : Inline_asm.inline_asm -> Cmm.expression array -> int
     -> (Mach.asm_arg array * int) option
   method asm_best_alternative : Inline_asm.inline_asm -> Cmm.expression list
-    -> Mach.asm_arg array option
+    -> (Mach.asm_arg array * Cmm.expression list) option
   method asm_pseudoreg : Inline_asm.alternative -> Reg.t -> Reg.t
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
