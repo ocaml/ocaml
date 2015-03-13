@@ -353,7 +353,7 @@ and approx_sig env ssg =
     [] -> []
   | item :: srem ->
       match item.psig_desc with
-      | Psig_type sdecls ->
+      | Psig_type (_, sdecls) ->
           let decls = Typedecl.approx_type_decl env sdecls in
           let rem = approx_sig env srem in
           map_rec' (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
@@ -578,13 +578,13 @@ and transl_signature env sg =
             mksig (Tsig_value tdesc) env loc :: trem,
             Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
               final_env
-        | Psig_type sdecls ->
+        | Psig_type (rec_flag, sdecls) ->
             List.iter
               (fun decl -> check_name check_type names decl.ptype_name)
               sdecls;
-            let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
+            let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_type decls) env loc :: trem,
+            mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
             map_rec'' (fun rs td ->
                 Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
@@ -1222,12 +1222,12 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_primitive sdesc ->
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
-    | Pstr_type sdecls ->
+    | Pstr_type (rec_flag, sdecls) ->
         List.iter
           (fun decl -> check_name check_type names decl.ptype_name)
           sdecls;
-        let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-        Tstr_type decls,
+        let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
+        Tstr_type (rec_flag, decls),
         map_rec'' (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
           decls [],
         enrich_type_decls anchor decls env newenv
