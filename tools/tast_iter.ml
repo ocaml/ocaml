@@ -22,7 +22,7 @@ let structure_item sub x =
   | Tstr_eval (exp, _attrs) -> sub # expression exp
   | Tstr_value (rec_flag, list) -> sub # bindings (rec_flag, list)
   | Tstr_primitive v -> sub # value_description v
-  | Tstr_type list -> List.iter (sub # type_declaration) list
+  | Tstr_type (_, list) -> List.iter (sub # type_declaration) list
   | Tstr_typext te -> sub # type_extension te
   | Tstr_exception ext -> sub # extension_constructor ext
   | Tstr_module mb -> sub # module_binding mb
@@ -179,7 +179,7 @@ let signature_item sub item =
   match item.sig_desc with
   | Tsig_value v ->
       sub # value_description v
-  | Tsig_type list ->
+  | Tsig_type (_rec_flag, list) ->
       List.iter (sub # type_declaration) list
   | Tsig_typext te ->
       sub # type_extension te
