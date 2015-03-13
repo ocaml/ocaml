@@ -134,8 +134,8 @@ let structure_item sub item =
         Pstr_value (rec_flag, List.map (sub.value_binding sub) list)
     | Tstr_primitive vd ->
         Pstr_primitive (sub.value_description sub vd)
-    | Tstr_type list ->
-        Pstr_type (List.map (sub.type_declaration sub) list)
+    | Tstr_type (rec_flag, list) ->
+        Pstr_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tstr_typext tyext ->
         Pstr_typext (sub.type_extension sub tyext)
     | Tstr_exception ext ->
@@ -469,8 +469,8 @@ let signature_item sub item =
     match item.sig_desc with
       Tsig_value v ->
         Psig_value (sub.value_description sub v)
-    | Tsig_type list ->
-        Psig_type (List.map (sub.type_declaration sub) list)
+    | Tsig_type (rec_flag, list) ->
+        Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tsig_typext tyext ->
         Psig_typext (sub.type_extension sub tyext)
     | Tsig_exception ext ->
