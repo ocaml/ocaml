@@ -193,9 +193,14 @@ class printer  ()= object(self:'self)
     | Virtual -> pp f "virtual@;"
 
   (* trailing space added *)
-  method rec_flag f = function
+  method rec_flag f rf =
+    match rf with
     | Nonrecursive -> ()
     | Recursive -> pp f "rec "
+  method nonrec_flag f rf =
+    match rf with
+    | Nonrecursive -> pp f "nonrec "
+    | Recursive -> ()
   method direction_flag f = function
     | Upto -> pp f "to@ "
     | Downto -> pp f "downto@ "
@@ -597,7 +602,7 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>assert@ %a@]" self#simple_expr e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" self#simple_expr e
-    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *) 
+    (* Pexp_poly: impossible but we should print it anyway, rather than assert false *)
     | Pexp_poly (e, None) ->
         pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
     | Pexp_poly (e, Some ct) ->
@@ -920,8 +925,8 @@ class printer  ()= object(self:'self)
 
   method signature_item f x :unit= begin
     match x.psig_desc with
-    | Psig_type l ->
-        self#type_def_list f l
+    | Psig_type (rf, l) ->
+        self#type_def_list f (rf, l)
     | Psig_value vd ->
         let intro = if vd.pval_prim = [] then "val" else "external" in
           pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
@@ -1091,8 +1096,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>let@ _ =@ %a@]%a"
           self#expression e
           self#item_attributes attrs
-    | Pstr_type [] -> assert false
-    | Pstr_type l  -> self#type_def_list f l
+    | Pstr_type (_, []) -> assert false
+    | Pstr_type (rf, l)  -> self#type_def_list f (rf, l)
     | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
     | Pstr_typext te -> self#type_extension f te
@@ -1213,14 +1218,15 @@ class printer  ()= object(self:'self)
   method type_params f = function
     [] -> ()
   | l -> pp f "%a " (self#list self#type_param ~first:"(" ~last:")" ~sep:",") l
-  method  type_def_list f l =
-    let type_decl kwd f x =
+  method  type_def_list f (rf, l) =
+    let type_decl kwd rf f x =
       let eq =
         if (x.ptype_kind = Ptype_abstract)
            && (x.ptype_manifest = None) then ""
         else " ="
       in
-      pp f "@[<2>%s %a%s%s%a@]%a" kwd
+      pp f "@[<2>%s %a%a%s%s%a@]%a" kwd
+        self#nonrec_flag rf
         self#type_params x.ptype_params
         x.ptype_name.txt eq
         self#type_declaration x
@@ -1228,10 +1234,10 @@ class printer  ()= object(self:'self)
     in
     match l with
     | [] -> assert false
-    | [x] -> type_decl "type" f x
+    | [x] -> type_decl "type" rf f x
     | x :: xs -> pp f "@[<v>%a@,%a@]"
-          (type_decl "type") x
-          (self#list ~sep:"@," (type_decl "and")) xs
+          (type_decl "type" rf) x
+          (self#list ~sep:"@," (type_decl "and" Recursive)) xs
 
   method record_declaration f lbls =
     let type_record_field f pld =
