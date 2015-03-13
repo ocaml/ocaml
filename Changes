@@ -115,6 +115,8 @@ Language features:
   It is also possible to use '#' as part of these extra symbols
   (for instance ##, or #+#); this is rejected by the type-checker,
   but can be used e.g. by ppx rewriters.
+- PR#6016: add a "nonrec" keyword for type declarations
+  (Jérémie Dimino)
 
 Compilers:
 - PR#6475: accept -o in ocamlc when compiling C files
