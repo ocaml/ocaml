@@ -157,7 +157,7 @@ module Sig = struct
   let mk ?(loc = !default_loc) d = {psig_desc = d; psig_loc = loc}
 
   let value ?loc a = mk ?loc (Psig_value a)
-  let type_ ?loc a = mk ?loc (Psig_type a)
+  let type_ ?loc rec_flag a = mk ?loc (Psig_type (rec_flag, a))
   let type_extension ?loc a = mk ?loc (Psig_typext a)
   let exception_ ?loc a = mk ?loc (Psig_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
@@ -177,7 +177,7 @@ module Str = struct
   let eval ?loc ?(attrs = []) a = mk ?loc (Pstr_eval (a, attrs))
   let value ?loc a b = mk ?loc (Pstr_value (a, b))
   let primitive ?loc a = mk ?loc (Pstr_primitive a)
-  let type_ ?loc a = mk ?loc (Pstr_type a)
+  let type_ ?loc rec_flag a = mk ?loc (Pstr_type (rec_flag, a))
   let type_extension ?loc a = mk ?loc (Pstr_typext a)
   let exception_ ?loc a = mk ?loc (Pstr_exception a)
   let module_ ?loc a = mk ?loc (Pstr_module a)
