@@ -135,6 +135,12 @@ static void start_cycle (void)
 #endif
 }
 
+#ifdef CAML_INSTR
+#define INSTR(x) x
+#else
+#define INSTR(x) /**/
+#endif
+
 static void mark_slice (intnat work)
 {
   value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
@@ -147,6 +153,8 @@ static void mark_slice (intnat work)
 #ifdef CAML_INSTR
   int timing = 0;
   CAML_INSTR_DECLARE (tmr);
+  int slice_fields = 0;
+  int slice_pointers = 0;
 #endif
 
   if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
@@ -172,6 +180,7 @@ static void mark_slice (intnat work)
       }
 #endif
       if (Tag_hd (hd) < No_scan_tag){
+        INSTR (slice_fields += size;)
         for (i = 0; i < size; i++){
           child = Field (v, i);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -186,6 +195,7 @@ static void mark_slice (intnat work)
 #else
           if (Is_block (child) && Is_in_heap (child)) {
 #endif
+            INSTR (++ slice_pointers;)
             hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
               value f = Forward_val (child);
@@ -213,9 +223,7 @@ static void mark_slice (intnat work)
           }
         }
       }
-#ifdef CAML_INSTR
-      if (timing) CAML_INSTR_TIME(tmr, "mark_large_array");
-#endif
+      INSTR (if (timing) CAML_INSTR_TIME(tmr, "mark_large_array");)
       work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
@@ -330,6 +338,8 @@ static void mark_slice (intnat work)
   }
   gray_vals_cur = gray_vals_ptr;
   if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
+  INSTR (CAML_INSTR_INT ("major/mark/slice/fields", slice_fields);)
+  INSTR (CAML_INSTR_INT ("major/mark/slice/pointers", slice_pointers);)
 }
 
 static void sweep_slice (intnat work)
@@ -391,11 +401,10 @@ static char *mark_slice_name[] = {
   /* 7 */ NULL,
   /* 8 */ NULL,
   /* 9 */ NULL,
-  /* 10 */ "major/mark_roots",
-  /* 11 */ "major/mark_main",
-  /* 12 */ "major/mark_weak1",
-  /* 13 */ "major/mark_weak2",
-  /* 14 */ "major/mark_final",
+  /* 10 */ "major/mark_main",
+  /* 11 */ "major/mark_weak1",
+  /* 12 */ "major/mark_weak2",
+  /* 13 */ "major/mark_final",
 };
 #endif
 
