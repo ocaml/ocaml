@@ -435,11 +435,11 @@ static char *mark_slice_name[] = {
   /* 7 */ NULL,
   /* 8 */ NULL,
   /* 9 */ NULL,
-  /* 10 */ "major/mark_roots",
-  /* 11 */ "major/mark_main",
-  /* 12 */ "major/mark_weak1",
-  /* 13 */ "major/mark_weak2",
-  /* 14 */ "major/mark_final",
+  /* 10 */  "major/mark_roots",
+  /* 11 */  "major/mark_main",
+  /* 12 */  "major/mark_weak1",
+  /* 13 */  "major/mark_weak2",
+  /* 14 */  "major/mark_final",
 };
 #endif
 
@@ -615,7 +615,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   return (intnat) (0.1 * caml_major_backlog + 0.1 * caml_major_backlog_history);
 }
 
-/* This does not call [caml_compact_heap_maybe] because the estimations of
+/* This does not call [caml_compact_heap_maybe] because the estimates of
    free and live memory are only valid for a cycle done incrementally.
    Besides, this function itself is called by [caml_compact_heap_maybe].
 */
