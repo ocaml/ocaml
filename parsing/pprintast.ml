@@ -393,6 +393,7 @@ class printer  ()= object(self:'self)
         pp f "@[<2>(lazy@;%a)@]" self#pattern1 p
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" self#pattern1 p
+    | Ppat_extension e -> self#extension f e
     | _ -> self#paren true self#pattern f x
 
   method label_exp f (l,opt,p) =
