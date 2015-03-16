@@ -149,6 +149,12 @@ static void start_cycle (void)
 static value current_value = 0;
 static mlsize_t current_index = 0;
 
+#ifdef CAML_INSTR
+#define INSTR(x) x
+#else
+#define INSTR(x) /**/
+#endif
+
 static void mark_slice (intnat work)
 {
   value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
@@ -157,6 +163,10 @@ static void mark_slice (intnat work)
   mlsize_t size, i, start, end; /* [start] is a local copy of [current_index] */
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   int marking_closure = 0;
+#endif
+#ifdef CAML_INSTR
+  int slice_fields = 0;
+  int slice_pointers = 0;
 #endif
 
   if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
@@ -183,6 +193,7 @@ static void mark_slice (intnat work)
         end = (size - start < work) ? size : (start + work);
         CAMLassert (end > start);
         for (i = start; i < end; i++){
+          INSTR (slice_fields += end - start;)
           child = Field (v, i);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
           if (Is_block (child)
@@ -196,6 +207,7 @@ static void mark_slice (intnat work)
 #else
           if (Is_block (child) && Is_in_heap (child)) {
 #endif
+            INSTR (++ slice_pointers;)
             chd = Hd_val (child);
             if (Tag_hd (chd) == Forward_tag){
               value f = Forward_val (child);
@@ -374,6 +386,8 @@ static void mark_slice (intnat work)
   current_value = v;
   current_index = start;
   if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
+  INSTR (CAML_INSTR_INT ("major/mark/slice/fields", slice_fields);)
+  INSTR (CAML_INSTR_INT ("major/mark/slice/pointers", slice_pointers);)
 }
 
 static void sweep_slice (intnat work)
