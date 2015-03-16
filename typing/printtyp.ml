@@ -1142,7 +1142,7 @@ let dummy =
 
 let hide_rec_items = function
   | Sig_type(id, decl, rs) ::rem
-    when rs <> Trec_next && not !Clflags.real_paths ->
+    when rs = Trec_first && not !Clflags.real_paths ->
       let rec get_ids = function
           Sig_type (id, _, Trec_next) :: rem ->
             id :: get_ids rem
@@ -1171,15 +1171,17 @@ let rec tree_of_modtype = function
       Omty_alias (tree_of_path p)
 
 and tree_of_signature sg =
-  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env) sg
+  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
 
-and tree_of_signature_rec env' = function
+and tree_of_signature_rec env' in_type_group = function
     [] -> []
   | item :: rem ->
-      begin match item with
-        Sig_type (_, _, rs) when rs <> Trec_next -> ()
-      | _ -> set_printing_env env'
-      end;
+      let in_type_group =
+        match in_type_group, item with
+          true, Sig_type (_, _, Trec_next) -> true
+        | _, Sig_type (_, _, (Trec_not | Trec_first)) -> set_printing_env env'; true
+        | _ -> set_printing_env env'; false
+      in
       let (sg, rem) = filter_rem_sig item rem in
       let trees =
         match item with
@@ -1203,7 +1205,7 @@ and tree_of_signature_rec env' = function
             [tree_of_cltype_declaration id decl rs]
       in
       let env' = Env.add_signature (item :: sg) env' in
-      trees @ tree_of_signature_rec env' rem
+      trees @ tree_of_signature_rec env' in_type_group rem
 
 and tree_of_modtype_declaration id decl =
   let mty =
