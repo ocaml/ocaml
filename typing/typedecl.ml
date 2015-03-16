@@ -1348,33 +1348,29 @@ let inline_asm_args ty =
   let rec get_types acc ty =
     match ty.desc with
     | Tarrow(_, t1, t2, _) -> let acc = get_types acc t1 in get_types acc t2
-    | Tconstr(path, exprs, _) ->
-        let exprs = List.concat (List.map (get_types []) exprs) in
-        (List.rev (Path.name path :: List.concat exprs)) :: acc
-    | _ ->
+    | Tconstr(path, _, _) ->
+        let kind =
+          match Path.name path with
+          | "float"     -> `Float
+          | "int"       -> `Int
+          | "int32"     -> `Int32
+          | "int64"     -> `Int64
+          | "nativeint" -> `Nativeint
+          | "m128d"     -> `M128d
+          | "m128i"     -> `M128i
+          | "m256d"     -> `M256d
+          | "m256i"     -> `M256i
+          | "unit"      -> `Unit
+          | _           -> `Addr (* we'll treat everything else as pointer *)
+        in
+        (kind :: acc)
+    | Tlink _ -> `Addr :: acc
+    | Ttuple _ -> `Addr :: acc
+    | desc ->
       raise(Inline_asm.Inline_asm_error (Format.asprintf
         "Unsupported inline_asm parameter %a" Printtyp.type_expr ty))
   in
-  let rec inline_asm_types acc = function
-      [] -> acc
-    | k :: l ->
-      let kind =
-        match k with
-        | ["float"]          -> `Float
-        | ["int"]            -> `Int
-        | ["int32"]          -> `Int32
-        | ["int64"]          -> `Int64
-        | ["nativeint"]      -> `Nativeint
-        | ["m128d"]          -> `M128d
-        | ["m128i"]          -> `M128i
-        | ["m256d"]          -> `M256d
-        | ["m256i"]          -> `M256i
-        | ["unit"]           -> `Unit
-        | _                  -> `Int (* we'll treat everything else as pointer *)
-      in
-      inline_asm_types (kind :: acc) l
-  in
-  List.rev (inline_asm_types [] (List.rev (get_types [] ty)))
+  get_types [] ty |> List.rev
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =

@@ -12,13 +12,15 @@
 
 BASEDIR=../..
 
-CASES=float_round
+BYTE_CASES=float_round
+CASES=$(BYTE_CASES) comprehensive
 
 default: run-byte run-native compare-asm
 
 include $(BASEDIR)/makefiles/Makefile.common
 
-.SUFFIXES: .byte$(EXE) .c .ml .native$(EXE) .o
+.SUFFIXES: .byte$(EXE) .c .ml .native$(EXE)
+.PRECIOUS: %.o
 
 $(CASES:=.ml): %: $(ARCH)/%
 	@ln -s $< $@
@@ -29,14 +31,14 @@ $(CASES:=_stubs.c): %: $(ARCH)/%
 %.byte$(EXE): %.ml %_stubs.o
 	@$(OCAMLC) -custom -o $@ $(<:.ml=_stubs.c) $<
 
-.ml.native$(EXE):
+%.native$(EXE): %.ml %_stubs.o
 	@$(OCAMLOPT) -S -o $@ $(<:.ml=_stubs.c) $<
 
-.s.exe:
+.exe.s:
 
 .PHONY: run-byte
-run-byte: $(CASES:=.byte$(EXE))
-	@for file in $<; do \
+run-byte: $(BYTE_CASES:=.byte$(EXE))
+	@for file in $^; do \
 	  printf " ... testing '$$file'"; \
 	  ./$$file \
 	  && echo " => passed" || echo " => failed"; \
@@ -44,15 +46,16 @@ run-byte: $(CASES:=.byte$(EXE))
 
 .PHONY: run-native
 run-native: $(CASES:=.native$(EXE))
-	@for file in $<; do \
+	@for file in $^; do \
 	  printf " ... testing '$$file'"; \
 	  ./$$file \
 	  && echo " => passed" || echo " => failed"; \
 	done
 
+
 .PHONY: compare-asm
 compare-asm: $(CASES:=.s)
-	@for file in $<; do \
+	@for file in $^; do \
 	  printf " ... verifying '$$file'"; \
 	  cmp -s $$file $(ARCH)/$$file \
 	  && echo " => passed" || echo " => failed"; \

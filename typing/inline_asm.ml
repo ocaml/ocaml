@@ -75,6 +75,7 @@ type inline_asm = {
 (** Parses the template given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
 let parse_template ~nargs template =
+  let template = Scanf.unescaped template in
   (* Returns the index of the first non digit character with index greater or equal [i].
      If such character does not exist, returns the length of the string. *)
   let rec first_non_digit s i =
