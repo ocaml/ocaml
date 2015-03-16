@@ -99,7 +99,7 @@ let operation = function
   | Casm asm -> Inline_asm.name asm
 
 let rec expr ppf = function
-  | Cconst_int n -> fprintf ppf "const int %i" n
+  | Cconst_int n -> fprintf ppf "%i" n
   | Cconst_natint n | Cconst_blockheader n ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cconst_float n -> fprintf ppf "%F" n

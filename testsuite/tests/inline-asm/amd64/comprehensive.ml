@@ -226,4 +226,3 @@ let () =
   let x = !ri in let y = !ri in func18a x y; assert (y = 12);
   let x = !ri in func18a !ri x; assert (x = 12);
   let x = !ri in func18a x !ri; assert (!ri = 12);
-
