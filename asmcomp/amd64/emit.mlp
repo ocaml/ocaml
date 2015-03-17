@@ -34,8 +34,6 @@ let int_reg_name =
   [| RAX; RBX; RDI; RSI; RDX; RCX; R8; R9;
      R12; R13; R10; R11; RBP; |]
 
-let int_reg8h_name = [| AH; BH; CH; DH |]
-
 let float_reg_name = Array.init 16 (fun i -> Regf (XMM i))
 let ymm_reg_name   = Array.init 16 (fun i -> Regf (YMM i))
 
@@ -178,7 +176,6 @@ let arg i n = reg i.arg.(n)
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
-let reg_high_8_name = Array.map (fun r -> Reg8H r) int_reg8h_name
 let reg_low_16_name = Array.map (fun r -> Reg16 r) int_reg_name
 let reg_low_32_name = Array.map (fun r -> Reg32 r) int_reg_name
 
@@ -188,6 +185,18 @@ let emit_subreg tbl typ r =
   | Stack s -> mem64 typ (slot_offset s (register_class r)) RSP
   | _ -> assert false
 
+let emit_subregh asm r =
+  match r.loc with
+  | Reg.Reg 0 -> Reg8H AH
+  | Reg.Reg 1 -> Reg8H BH
+  | Reg.Reg 5 -> Reg8H CH
+  | Reg.Reg 4 -> Reg8H DH
+  | Reg.Reg _ -> failwith (Printf.sprintf
+      "inline asm '%s' 'h' operand modifier on register other than a, b, c or d"
+      (Inline_asm.name asm))
+  | Stack s -> mem64 BYTE (slot_offset s (register_class r)) RSP
+  | _ -> assert false
+
 let emit_subregf tbl typ r =
   match r.loc with
   | Reg.Reg r when r >= 100 -> tbl.(r - 100)
@@ -195,7 +204,6 @@ let emit_subregf tbl typ r =
   | _ -> assert false
 
 let arg8   i n = emit_subreg reg_low_8_name  BYTE  i.arg.(n)
-let arg8h  i n = emit_subreg reg_high_8_name BYTE  i.arg.(n)
 let arg16  i n = emit_subreg reg_low_16_name WORD  i.arg.(n)
 let arg32  i n = emit_subreg reg_low_32_name DWORD i.arg.(n)
 let arg64  i n = reg64 i.arg.(n)
@@ -203,7 +211,6 @@ let argxmm i n = emit_subregf float_reg_name REAL8 i.arg.(n)
 let argymm i n = emit_subregf ymm_reg_name   REAL8 i.arg.(n)
 
 let res8   i n = emit_subreg reg_low_8_name  WORD  i.res.(n)
-let res8h  i n = emit_subreg reg_high_8_name WORD  i.res.(n)
 let res16  i n = emit_subreg reg_low_16_name WORD  i.res.(n)
 let res32  i n = emit_subreg reg_low_32_name DWORD i.res.(n)
 let resxmm i n = emit_subregf float_reg_name REAL8 i.res.(n)
@@ -448,7 +455,7 @@ let emit_asm i asm iargs =
                 begin match modifier, iarg.src with
                   None, \`arg n -> arg i n
                 | R8L , \`arg n -> arg8 i n
-                | R8H , \`arg n -> arg8h i n
+                | R8H , \`arg n -> emit_subregh asm i.arg.(n)
                 | R16 , \`arg n -> arg16 i n
                 | R32 , \`arg n -> arg32 i n
                 | R64 , \`arg n -> arg i n
@@ -456,7 +463,7 @@ let emit_asm i asm iargs =
                 | YMM , \`arg n -> argymm i n
                 | None, \`res n -> res i n
                 | R8L , \`res n -> res8 i n
-                | R8H , \`res n -> res8h i n
+                | R8H , \`res n -> emit_subregh asm i.res.(n)
                 | R16 , \`res n -> res16 i n
                 | R32 , \`res n -> res32 i n
                 | R64 , \`res n -> res i n

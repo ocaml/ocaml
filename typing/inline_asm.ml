@@ -12,6 +12,17 @@
 
 (* Description of inline asm primitives *)
 
+(* Not implemented:
+   
+  - Explicit register naming ("sub %[p1], %[out_name]")
+  - '*' modifier
+  - Simple constraints: 'o', 'V', '<', '>', 'n', 'E', 'F', 's', 'X', 'p'
+  - X86 machine constraints: 'R', 'q', 'Q', 'A', 'f', 't', 'u', 'y', 'Yz', 'I',
+    'J', 'K', 'L', 'M', 'N', 'G', 'C', 'e', 'Z'
+  - X87 registers
+  - MMX registers
+  - All other machine constraints. *)
+
 exception Inline_asm_error of string
 
 type arg_kind =

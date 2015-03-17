@@ -52,7 +52,6 @@ run-native: $(CASES:=.native$(EXE))
 	  && echo " => passed" || echo " => failed"; \
 	done
 
-
 .PHONY: compare-asm
 compare-asm: $(CASES:=.s)
 	@for file in $^; do \

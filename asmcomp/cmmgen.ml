@@ -1294,6 +1294,14 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
         if Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset
         then Cvar unboxed_id
         else e
+    | Cop(Casm asm as op, argv) ->
+        let argv = List.mapi (fun i arg ->
+          match asm.Inline_asm.args.(i).Inline_asm.output, arg with
+            true, Cvar id when Ident.same id boxed_id ->
+              assigned := true;
+              Cvar unboxed_id
+          | _, _ -> subst arg) argv in
+        Cop(op, argv)
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)

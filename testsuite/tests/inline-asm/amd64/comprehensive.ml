@@ -11,13 +11,20 @@ let ri64  = ref 6L
 let rinat = ref 6n
 let rt    = ref (6, 6)
 
-external func1a : 'a ref -> 'a                 = "%asm" "" "mov	(%0), %1	# func1a" "r" "=r"
-external func1b : float ref -> 'a              = "%asm" "" "mov	(%0), %1	# func1b" "r" "=r"
-external func1c : int ref -> int               = "%asm" "" "mov	(%0), %1	# func1c" "r" "=r"
-external func1d : int32 ref -> 'a              = "%asm" "" "mov	(%0), %1	# func1d" "r" "=r"
-external func1e : int64 ref -> 'a              = "%asm" "" "mov	(%0), %1	# func1e" "r" "=r"
-external func1f : nativeint ref -> 'a          = "%asm" "" "mov	(%0), %1	# func1f" "r" "=r"
-external func1g : (int * int) ref -> int * int = "%asm" "" "mov	(%0), %1	# func1g" "r" "=r"
+external func1a : 'a ref -> 'a                
+  = "%asm" "" "mov	(%0), %1	# func1a" "r" "=r"
+external func1b : float ref -> 'a
+  = "%asm" "" "mov	(%0), %1	# func1b" "r" "=r"
+external func1c : int ref -> int
+  = "%asm" "" "mov	(%0), %1	# func1c" "r" "=r"
+external func1d : int32 ref -> 'a
+  = "%asm" "" "mov	(%0), %1	# func1d" "r" "=r"
+external func1e : int64 ref -> 'a
+  = "%asm" "" "mov	(%0), %1	# func1e" "r" "=r"
+external func1f : nativeint ref -> 'a
+  = "%asm" "" "mov	(%0), %1	# func1f" "r" "=r"
+external func1g : (int * int) ref -> int * int
+  = "%asm" "" "mov	(%0), %1	# func1g" "r" "=r"
 let () =
   (* Test a memory-register instruction *)
   let x = func1a rf    in assert (x = !rf);
@@ -33,13 +40,20 @@ let () =
   let x = func1f rinat in assert (x = !rinat);
   let x = func1g rt    in assert (x = !rt);
 
-external func2a : 'a -> 'a ref                   -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2b : 'a -> float ref                -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2c : int -> int ref                 -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2d : 'a -> int32 ref                -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2e : 'a -> int64 ref                -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2f : 'a -> nativeint ref            -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2g : (int * int) -> (int * int) ref -> unit = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2a : 'a -> 'a ref                   -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2b : 'a -> float ref                -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2c : int -> int ref                 -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2d : 'a -> int32 ref                -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2e : 'a -> int64 ref                -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2f : 'a -> nativeint ref            -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+external func2g : (int * int) -> (int * int) ref -> unit
+  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
 let () =
   (* Test a register-memory instruction *)
   func2a f    rf   ; assert (!rf    = f);
@@ -67,13 +81,20 @@ let () =
   rinat := 6n;
   rt    := (6, 6);
 
-external func3a : 'a -> 'a               = "%asm" "" "mov	%0, %1	# func3a" "r" "=r"
-external func3b : float -> float         = "%asm" "" "mov	%0, %1	# func3b" "r" "=r"
-external func3c : int -> int             = "%asm" "" "mov	%0, %1	# func3c" "r" "=r"
-external func3d : int32 -> int32         = "%asm" "" "mov	%0, %1	# func3d" "r" "=r"
-external func3e : int64 -> int64         = "%asm" "" "mov	%0, %1	# func3e" "r" "=r"
-external func3f : nativeint -> nativeint = "%asm" "" "mov	%0, %1	# func3f" "r" "=r"
-external func3g : int * int -> int * int = "%asm" "" "mov	%0, %1	# func3g" "r" "=r"
+external func3a : 'a -> 'a
+  = "%asm" "" "mov	%0, %1	# func3a" "r" "=r"
+external func3b : float -> float
+  = "%asm" "" "mov	%0, %1	# func3b" "r" "=r"
+external func3c : int -> int
+  = "%asm" "" "mov	%0, %1	# func3c" "r" "=r"
+external func3d : int32 -> int32
+  = "%asm" "" "mov	%0, %1	# func3d" "r" "=r"
+external func3e : int64 -> int64
+  = "%asm" "" "mov	%0, %1	# func3e" "r" "=r"
+external func3f : nativeint -> nativeint
+  = "%asm" "" "mov	%0, %1	# func3f" "r" "=r"
+external func3g : int * int -> int * int
+  = "%asm" "" "mov	%0, %1	# func3g" "r" "=r"
 let () =
   (* Test a register-register instruction *)
   let x = func3a f    in assert (x = f);
@@ -89,10 +110,14 @@ let () =
   let x = func3f inat in assert (x = inat);
   let x = func3g t    in assert (x = t);
 
-external func4a : int -> unit       = "%asm" "" "add	$0x2, %0	# func4a" "+r" "="
-external func4b : int32 -> unit     = "%asm" "" "add	$0x1, %0	# func4b" "+r" "="
-external func4c : int64 -> unit     = "%asm" "" "add	$0x1, %0	# func4c" "+r" "="
-external func4d : nativeint -> unit = "%asm" "" "add	$0x1, %0	# func4d" "+r" "="
+external func4a : int -> unit
+  = "%asm" "" "add	$0x2, %0	# func4a" "+r" "="
+external func4b : int32 -> unit
+  = "%asm" "" "add	$0x1, %0	# func4b" "+r" "="
+external func4c : int64 -> unit
+  = "%asm" "" "add	$0x1, %0	# func4c" "+r" "="
+external func4d : nativeint -> unit
+  = "%asm" "" "add	$0x1, %0	# func4d" "+r" "="
 let () =
   (* Test a immediate-register instruction *)
   let x = !ri                   in func4a x; assert (x = 7);
@@ -146,12 +171,12 @@ let () =
   let x = !ri in func11a 5 x; assert (x = 11);
 
 external func12a : int -> int -> int -> int = "%asm" ""
-       "sar	$1, %1
+       "sar	$1, %1	# func12a
 	xorq	$1, %2
 	mul	%1
 	orq	$1, %2
 	shl	$1, %3
-	orq	$1, %3        # func12a" "%2" "r" "=a" "=d" "cc"
+	orq	$1, %3" "%2" "r" "=a" "=d" "cc"
 let () =
   (* Test multiple outputs and commutative inputs *)
   let x = !ri in
@@ -161,20 +186,22 @@ let () =
   assert (z = 36);
   assert (w = 0);
 
-external func12b : float -> float -> float = "%asm" "" "addsd	%1, %2	# func12b" "2" "mx" "=x"
-external func12c : float -> float -> float = "%asm" "" "addsd	%1, %2	# func12c" "%2" "mx" "=x"
+external func12b : float -> float -> float
+  = "%asm" "" "addsd	%1, %2	# func12b" "2" "mx" "=x"
+external func12c : float -> float -> float
+  = "%asm" "" "addsd	%1, %2	# func12c" "%2" "mx" "=x"
 let () =
   (* Test commutative inputs *)
   let x = !rf +. 1. in let z = func12b !rf x in assert (z = 13.);
   let x = !rf +. 1. in let z = func12c !rf x in assert (z = 13.);
 
 external func13a : int -> int -> int -> int = "%asm" ""
-       "sar	$1, %1
+       "sar	$1, %1	# func 13a
 	xorq	$1, %2
 	mul	%1
 	orq	$1, %2
 	shl	$1, %3
-	orq	$1, %3        # func13a" "%2" "D" "=a" "=d" "cc"
+	orq	$1, %3" "%2" "D" "=a" "=d" "cc"
 let () =
   (* Test multiple outputs, commutative inputs and an exact input argument *)
   let x = !ri in
@@ -226,3 +253,270 @@ let () =
   let x = !ri in let y = !ri in func18a x y; assert (y = 12);
   let x = !ri in func18a !ri x; assert (x = 12);
   let x = !ri in func18a x !ri; assert (!ri = 12);
+  ri := 6
+
+(* func19 and slight disparagement weren't implemented because how it works is
+   unclear. *)
+
+external func20a : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func20a
+	decq	%1" "d?,r" "+r?,a" "," "memory" "cc"
+external func20b : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func20b
+	decq	%1" "d,r?" "+r,a?" "," "memory" "cc"
+let () =
+  (* Test slight alternative disparagement *)
+  let x = !ri in let y = !ri in func20a x y; assert (y = 12);
+  let x = !ri in let y = !ri in func20b x y; assert (y = 12);
+
+external func21a : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func21a
+	decq	%1" "d??,r?" "+r??,a?" "," "memory" "cc"
+external func21b : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func21b
+	decq	%1" "d?,r??" "+r?,a??" "," "memory" "cc"
+let () =
+  (* Test multiple slight alternative disparagement *)
+  let x = !ri in let y = !ri in func21a x y; assert (y = 12);
+  let x = !ri in let y = !ri in func21b x y; assert (y = 12);
+
+external func22a : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func22a
+	decq	%1" "d!,r??" "+r!,a??" "," "memory" "cc"
+external func22b : int -> int -> unit = "%asm" ""
+       "add	%0, %1	# func22b
+	decq	%1" "d??,r!" "+r??,a!" "," "memory" "cc"
+let () =
+  (* Test severe alternative disparagement *)
+  let x = !ri in let y = !ri in func22a x y; assert (y = 12);
+  let x = !ri in let y = !ri in func22b x y; assert (y = 12);
+
+external func23a : int -> int -> unit = "%asm" ""
+       "sar	$1, %0	# func23a
+	xorq	$1, %1
+	mul	%0
+	orq	$1, %1
+	shl	$1, %0
+	orq	$1, %0" "g" "+a" "" "%rdx" "cc"
+let () =
+  (* Test register clobber *)
+  let x = !ri in let y = !ri in func23a x y; assert (y = 36);
+
+external func24a : int -> int -> unit = "%asm" ""
+       "mov	%0, %%rdi	# func24a
+	call	foo
+        jmp	next
+foo:	sar	$1, %%rdi
+	xorq	$1, %1
+	mul	%%rdi
+	orq	$1, %1
+	ret
+next:	" "g" "+a" "" "%rdi" "%rsi" "%rcx" "%r8" "%r9" "memory" "cc"
+let () =
+  (* Test multiple register clobber *)
+  let x = !ri in let y = !ri in func24a x y; assert (y = 36);
+
+external func25a : int -> int -> int -> int -> int = "%asm" ""
+       "mov	%0, %2	# func25a
+	mov	%1, %3
+	shr	$10, %2
+	shl	$10, %3
+	add	%0, %2
+	lea	(%1, %3, 1), %4
+	xor	%2, %4
+	orq	$1, %4" "g" "g" "=&r" "=&r" "=r" "cc"
+let () =
+  (* Test explicit temporaries *)
+  let x = !ri in
+  let y = !ri in
+  let z = !ri in
+  let w = !ri in
+  let u = func25a x y z w in
+  assert (u = 6656);
+
+(* Explicit register naming is not implemented *)
+(* Less common constraint types are not implemented *)
+
+external func35a : char -> char = "%asm" ""
+       "xor	%1, %1	# func35a
+	mov	%b0, %b1" "d" "=a"
+external func35b : char -> char = "%asm" ""
+       "xor	%1, %1	# func35b
+	mov	%h0, %h1" "d" "=a"
+let () =
+  (* Test operand modifiers 'b' and 'h' *)
+  let a = func35a 'a' in assert (a = 'a');
+  let a = func35b 'a' in assert (a <> 'a');
+
+external func36a : int -> int -> int -> int -> int = "%asm" ""
+       "mov	%0, %4	# func36a
+	add	%1, %2
+        add	%3, %4
+        add	%2, %4
+	orq	$1, %4" "a" "b" "c" "d" "=&r" "cc"
+let () =
+  (* Test register operands a, b, c and a *)
+  let x = !ri in
+  let y = !ri + 1 in
+  let z = !ri + 2 in
+  let w = !ri + 3 in
+  let u = func36a x y z w in
+  assert (u = 32)
+
+external func37a : int -> int -> int = "%asm" ""
+       "mov	%0, %2	# func37a
+	add	%1, %2
+        subq	$1, %2" "D" "S" "=&r" "cc"
+let () =
+  (* Test register operands S and D *)
+  let x = !ri in
+  let y = !ri + 1 in
+  let z = func37a x y in
+  assert (z = 13)
+
+(* X87 and MMX registers are currently not supported *)
+
+type m128d
+external _mm_set_pd : float -> float -> m128d = "%asm" ""
+       "unpcklpd	%1, %2	# _mm_set_pd" "2" "xm128" "=x"
+external _mm_cvtsd_f64 : m128d -> float = "%asm" ""
+       "xorpd	%1, %1	# _mm_cvtsd_f64
+	movsd	%0, %1" "xm64" "=x"
+external _mm_unpackhi_pd : m128d -> m128d -> m128d = "%asm" ""
+       "unpckhpd	%1, %2	# _mm_unpackhi_pd" "2" "xm128" "=x"
+
+external func43a : m128d -> m128d -> unit
+  = "%asm" "" "addpd	%0, %1	# func43a" "x" "+&x" ""
+let () =
+  (* Test XMM registers *)
+  let x = _mm_set_pd 1. 2. in
+  let y = _mm_set_pd 3. 4. in
+  func43a x y;
+  assert (_mm_cvtsd_f64 y = 4.);
+  assert (_mm_cvtsd_f64 (_mm_unpackhi_pd y y) = 6.);
+
+(* Integer constraints are currently not supported *)
+
+external func55a : string -> unit
+  = "%asm" "" "mov%B0	$1, (%0)	# func55a" "r" "" "memory"
+let () =
+  (* Test 'B' operand modifier *)
+  let s = "abcdefgh" in
+  func55a s;
+  assert (s = "\001bcdefgh")
+
+external func56a : string -> unit
+  = "%asm" "" "mov%W0	$1, (%0)	# func56a" "r" "" "memory"
+let () =
+  (* Test 'W' operand modifier *)
+  let s = "abcdefgh" in
+  func56a s;
+  assert (s = "\001\000cdefgh")
+
+external func57a : string -> unit
+  = "%asm" "" "mov%L0	$1, (%0)	# func57a" "r" "" "memory"
+let () =
+  (* Test 'L' operand modifier *)
+  let s = "abcdefgh" in
+  func57a s;
+  assert (s = "\001\000\000\000efgh")
+
+(* Labels are not supported *)
+
+external func67a : int64 -> string -> unit
+  = "%asm" "" "mov	%b0, (%1)	# func67a" "r" "r" "" "memory"
+let () =
+  (* Test 'b' operand modifier *)
+  let s = "abcdefgh" in
+  func67a 0x41L s;
+  assert (s = "Abcdefgh")
+
+external func68a : int64 -> string -> unit
+  = "%asm" "" "mov	%w0, (%1)	# func68a" "r" "r" "" "memory"
+let () =
+  (* Test 'w' operand modifier *)
+  let s = "abcdefgh" in
+  func68a 0x4241L s;
+  assert (s = "ABcdefgh")
+
+external func69a : int64 -> string -> unit
+  = "%asm" "" "mov	%k0, (%1)	# func69a" "r" "r" "" "memory"
+let () =
+  (* Test 'k' operand modifier *)
+  let s = "abcdefgh" in
+  func69a 0x44434241L s;
+  assert (s = "ABCDefgh")
+
+external func70a : int64 -> string -> unit
+  = "%asm" "" "mov	%q0, (%1)	# func70a" "r" "r" "" "memory"
+let () =
+  (* Test 'q' operand modifier *)
+  let s = "abcdefgh" in
+  func70a 0x4847464544434241L s;
+  assert (s = "ABCDEFGH")
+
+external func71a : int64 -> string -> unit
+  = "%asm" "" "mov	%h0, (%1)	# func71a" "a" "r" "" "memory"
+let () =
+  (* Test 'h' operand modifier *)
+  let s = "abcdefgh" in
+  func71a 0x4241L s;
+  assert (s = "Bbcdefgh")
+
+external int64_blank : unit -> int64 = "%asm" "" "" "" "=r"
+external int64_clone : int64 -> int64 = "%asm" "" "" "1" "=r"
+type int64_boxed = int64
+external __cpuid : int64_boxed -> int64_boxed -> int64_boxed -> int64_boxed
+  -> int64 -> int64 -> int64 -> int64 -> unit
+  = "%asm" ""
+       "mov	8(%0), %eax	# __cpuid
+	cpuid
+	mov	%eax, 8(%0)
+	mov	%ebx, 8(%1)
+	mov	%ecx, 8(%2)
+	mov	%edx, 8(%3)" "r" "r" "r" "r" "a" "b" "c" "d" ""
+let __cpuid a =
+  let a = int64_clone a in
+  let b = int64_blank () in
+  let c = int64_blank () in
+  let d = int64_blank () in
+  __cpuid a b c d a b c d;
+  a, b, c, d
+
+let supports_avx =
+  let _, _, c, _ = __cpuid 1L in
+  Int64.logand c (Int64.shift_left 1L 28) <> 0L
+
+type m256d
+external _mm256_unpacklo_pd : m256d -> m256d -> m256d = "%asm" ""
+       "vunpcklpd	%t0, %t1, %t2	# _mm256_unpacklo_pd" "x" "xm256" "=x"
+external _mm256_unpackhi_pd : m256d -> m256d -> m256d = "%asm" ""
+       "vunpckhpd	%t0, %t1, %t2	# _mm256_unpackhi_pd" "x" "xm256" "=x"
+external _mm256_castpd128_pd256 : m128d -> m256d
+  = "%asm" "" "" "1" "=x"
+external _mm256_castpd256_pd128 : m256d -> m128d
+  = "%asm" "" "" "1" "=x"
+let _mm256_set_pd x y z w =
+  _mm256_unpacklo_pd
+    (_mm256_castpd128_pd256 (_mm_set_pd x y))
+    (_mm256_castpd128_pd256 (_mm_set_pd z w))
+
+external func78a : m128d -> m256d = "%asm" ""
+       "vmovapd	%t0, %t1	# func78" "x" "=x"
+let () =
+  if supports_avx then begin
+    let x = _mm_set_pd 1. 2. in
+    let y = func78a x in
+    assert (_mm256_castpd256_pd128 y = x)
+  end
+
+external func79a : m256d -> m128d = "%asm" ""
+       "movapd	%x0, %x1	# func79" "x" "=x"
+let () =
+  if supports_avx then begin
+    let x = _mm256_set_pd 1. 2. 3. 4. in
+    let y = func79a x in
+    assert (_mm256_castpd256_pd128 x = y)
+  end
+
+
