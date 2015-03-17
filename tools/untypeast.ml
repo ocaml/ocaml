@@ -54,8 +54,8 @@ and untype_structure_item item =
         Pstr_value (rec_flag, List.map untype_binding list)
     | Tstr_primitive vd ->
         Pstr_primitive (untype_value_description vd)
-    | Tstr_type (rec_flag, list) ->
-        Pstr_type (rec_flag, List.map untype_type_declaration list)
+    | Tstr_type list ->
+        Pstr_type (List.map untype_type_declaration list)
     | Tstr_typext tyext ->
         Pstr_typext (untype_type_extension tyext)
     | Tstr_exception ext ->
@@ -367,8 +367,8 @@ and untype_signature_item item =
     match item.sig_desc with
       Tsig_value v ->
         Psig_value (untype_value_description v)
-    | Tsig_type (rec_flag, list) ->
-        Psig_type (rec_flag, List.map untype_type_declaration list)
+    | Tsig_type list ->
+        Psig_type (List.map untype_type_declaration list)
     | Tsig_typext tyext ->
         Psig_typext (untype_type_extension tyext)
     | Tsig_exception ext ->
@@ -624,7 +624,7 @@ and untype_class_field cf =
         in
         let exp = remove_fun_self exp in
         Pcf_method (lab, priv, Cfk_concrete (o, untype_expression exp))
-    | Tcf_initializer exp -> 
+    | Tcf_initializer exp ->
         let remove_fun_self = function
           | { exp_desc = Texp_function("", [case], _) } when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e

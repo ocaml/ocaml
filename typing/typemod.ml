@@ -305,6 +305,16 @@ let rec map_rec_type_with_row_types ~rec_flag fn decls rem =
       else
         map_rec_type ~rec_flag fn decls rem
 
+let rec_flag_of_ptype_declarations tds =
+  let is_nonrec =
+    List.exists
+      (fun td ->
+         List.exists (fun (n, _) -> n.txt = "nonrec")
+           td.ptype_attributes)
+      tds
+  in
+  if is_nonrec then Nonrecursive else Recursive
+
 (* Add type extension flags to extension contructors *)
 let map_ext fn exts rem =
   match exts with
@@ -353,7 +363,8 @@ and approx_sig env ssg =
     [] -> []
   | item :: srem ->
       match item.psig_desc with
-      | Psig_type (rec_flag, sdecls) ->
+      | Psig_type sdecls ->
+          let rec_flag = rec_flag_of_ptype_declarations sdecls in
           let decls = Typedecl.approx_type_decl env sdecls in
           let rem = approx_sig env srem in
           map_rec_type ~rec_flag
@@ -567,14 +578,15 @@ and transl_signature env sg =
             (if List.exists (Ident.equal tdesc.val_id) (get_values rem) then rem
             else Sig_value(tdesc.val_id, tdesc.val_val) :: rem),
               final_env
-        | Psig_type (rec_flag, sdecls) ->
+        | Psig_type sdecls ->
+            let rec_flag = rec_flag_of_ptype_declarations sdecls in
             List.iter
               (fun decl ->
                 check_name "type" type_names decl.ptype_name)
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
+            mksig (Tsig_type decls) env loc :: trem,
             map_rec_type_with_row_types ~rec_flag
               (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
             final_env
@@ -1241,12 +1253,13 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_primitive sdesc ->
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
         Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
-    | Pstr_type (rec_flag, sdecls) ->
+    | Pstr_type sdecls ->
+        let rec_flag = rec_flag_of_ptype_declarations sdecls in
         List.iter
           (fun decl -> check_name "type" type_names decl.ptype_name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
-        Tstr_type (rec_flag, decls),
+        Tstr_type decls,
         map_rec_type_with_row_types ~rec_flag
           (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
           decls [],

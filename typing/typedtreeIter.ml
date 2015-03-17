@@ -136,7 +136,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_value (rec_flag, list) ->
             iter_bindings rec_flag list
         | Tstr_primitive vd -> iter_value_description vd
-        | Tstr_type (rf, list) -> iter_type_declarations rf list
+        | Tstr_type list -> iter_type_declarations list
         | Tstr_typext tyext -> iter_type_extension tyext
         | Tstr_exception ext -> iter_extension_constructor ext
         | Tstr_module x -> iter_module_binding x
@@ -191,7 +191,17 @@ module MakeIterator(Iter : IteratorArgument) : sig
       option iter_core_type decl.typ_manifest;
       Iter.leave_type_declaration decl
 
-    and iter_type_declarations rec_flag decls =
+    and iter_type_declarations decls =
+      let rec_flag =
+        let is_nonrec =
+          List.exists
+            (fun td ->
+               List.exists (fun (n, _) -> n.txt = "nonrec")
+                 td.typ_attributes)
+            decls
+        in
+        if is_nonrec then Nonrecursive else Recursive
+      in
       Iter.enter_type_declarations rec_flag;
       List.iter iter_type_declaration decls;
       Iter.leave_type_declarations rec_flag
@@ -360,8 +370,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         match item.sig_desc with
           Tsig_value vd ->
             iter_value_description vd
-        | Tsig_type (rf, list) ->
-            iter_type_declarations rf list
+        | Tsig_type list ->
+            iter_type_declarations list
         | Tsig_exception ext ->
             iter_extension_constructor ext
         | Tsig_typext tyext ->

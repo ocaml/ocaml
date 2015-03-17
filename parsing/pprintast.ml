@@ -936,8 +936,8 @@ class printer  ()= object(self:'self)
 
   method signature_item f x :unit= begin
     match x.psig_desc with
-    | Psig_type (rf, l) ->
-        self#type_def_list f (rf, l)
+    | Psig_type l ->
+        self#type_def_list f l
     | Psig_value vd ->
         let intro = if vd.pval_prim = [] then "val" else "external" in
           pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
@@ -1106,8 +1106,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>let@ _ =@ %a@]%a"
           self#expression e
           self#item_attributes attrs
-    | Pstr_type (_, []) -> assert false
-    | Pstr_type (rf, l)  -> self#type_def_list f (rf, l)
+    | Pstr_type [] -> assert false
+    | Pstr_type l  -> self#type_def_list f l
     | Pstr_value (rf, l) -> (* pp f "@[<hov2>let %a%a@]"  self#rec_flag rf self#bindings l *)
         pp f "@[<2>%a@]" self#bindings (rf,l)
     | Pstr_typext te -> self#type_extension f te
@@ -1228,7 +1228,17 @@ class printer  ()= object(self:'self)
   method type_params f = function
     [] -> ()
   | l -> pp f "%a " (self#list self#type_param ~first:"(" ~last:")" ~sep:",") l
-  method  type_def_list f (rf, l) =
+  method  type_def_list f l =
+    let rf =
+      let is_nonrec =
+        List.exists
+          (fun td ->
+             List.exists (fun (n, _) -> n.txt = "nonrec")
+               td.ptype_attributes)
+          l
+      in
+      if is_nonrec then Nonrecursive else Recursive
+    in
     let type_decl kwd rf f x =
       let eq =
         if (x.ptype_kind = Ptype_abstract)

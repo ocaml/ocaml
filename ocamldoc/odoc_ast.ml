@@ -83,11 +83,11 @@ module Typedtree_search =
         end
       | Typedtree.Tstr_exception ext ->
           Hashtbl.add table (E (Name.from_ident ext.ext_id)) tt
-      | Typedtree.Tstr_type (rf, ident_type_decl_list) ->
+      | Typedtree.Tstr_type ident_type_decl_list ->
           List.iter
             (fun td ->
               Hashtbl.add table (T (Name.from_ident td.typ_id))
-                (Typedtree.Tstr_type (rf, [td])))
+                (Typedtree.Tstr_type [td]))
             ident_type_decl_list
       | Typedtree.Tstr_class info_list ->
           List.iter
@@ -145,7 +145,7 @@ module Typedtree_search =
 
     let search_type_declaration table name =
       match Hashtbl.find table (T name) with
-      | (Typedtree.Tstr_type (_, [td])) -> td
+      | (Typedtree.Tstr_type [td]) -> td
       | _ -> assert false
 
     let search_class_exp table name =
@@ -1179,7 +1179,7 @@ module Analyser =
             let new_env = Odoc_env.add_value env new_value.val_name in
             (0, new_env, [Element_value new_value])
 
-      | Parsetree.Pstr_type (rf, name_typedecl_list) ->
+      | Parsetree.Pstr_type name_typedecl_list ->
           (* of (string * type_declaration) list *)
           let extended_env =
             List.fold_left
@@ -1191,9 +1191,14 @@ module Analyser =
               name_typedecl_list
           in
           let env =
-            match rf with
-            | Recursive -> extended_env
-            | Nonrecursive -> env
+            let is_nonrec =
+              List.exists
+                (fun td ->
+                   List.exists (fun (n, _) -> n.txt = "nonrec")
+                     td.Parsetree.ptype_attributes)
+                name_typedecl_list
+            in
+            if is_nonrec then env else extended_env
           in
           let rec f ?(first=false) maybe_more_acc last_pos name_type_decl_list =
             match name_type_decl_list with

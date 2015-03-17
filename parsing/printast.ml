@@ -640,8 +640,8 @@ and signature_item i ppf x =
   | Psig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
-  | Psig_type (rf, l) ->
-      line i ppf "Psig_type %a\n" fmt_rec_flag rf;
+  | Psig_type l ->
+      line i ppf "Psig_type\n";
       list i type_declaration ppf l;
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
@@ -748,8 +748,8 @@ and structure_item i ppf x =
   | Pstr_primitive vd ->
       line i ppf "Pstr_primitive\n";
       value_description i ppf vd;
-  | Pstr_type (rf, l) ->
-      line i ppf "Pstr_type %a\n" fmt_rec_flag rf;
+  | Pstr_type l ->
+      line i ppf "Pstr_type\n";
       list i type_declaration ppf l;
   | Pstr_typext te ->
       line i ppf "Pstr_typext\n";

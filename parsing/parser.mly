@@ -289,6 +289,17 @@ let mkcf_attrs d attrs =
 let mkctf_attrs d attrs =
   Ctf.mk ~loc:(symbol_rloc()) ~attrs d
 
+let add_nonrec_attr rf tds =
+  match rf with
+  | Recursive -> tds
+  | Nonrecursive ->
+      let add_attr td =
+        let name = { txt = "nonrec"; loc = td.ptype_loc } in
+        let attrs = (name, PStr []) :: td.ptype_attributes in
+        { td with ptype_attributes = attrs }
+      in
+      List.map add_attr tds
+
 %}
 
 /* Tokens */
@@ -645,7 +656,7 @@ structure_item:
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
   | TYPE nonrec_flag type_declarations
-      { mkstr(Pstr_type ($2, List.rev $3) ) }
+      { mkstr(Pstr_type (add_nonrec_attr $2 (List.rev $3)) ) }
   | TYPE nonrec_flag str_type_extension
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
         mkstr(Pstr_typext $3) }
@@ -733,7 +744,7 @@ signature_item:
                 (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
                    ~loc:(symbol_rloc()))) }
   | TYPE nonrec_flag type_declarations
-      { mksig(Psig_type ($2, List.rev $3)) }
+      { mksig(Psig_type (add_nonrec_attr $2 (List.rev $3))) }
   | TYPE nonrec_flag sig_type_extension
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
         mksig(Psig_typext $3) }

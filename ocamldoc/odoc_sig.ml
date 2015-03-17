@@ -329,10 +329,10 @@ module Analyser =
         | Parsetree.Psig_include _
         | Parsetree.Psig_class _
         | Parsetree.Psig_class_type _ as tp -> take_item tp
-        | Parsetree.Psig_type (rf, types) ->
+        | Parsetree.Psig_type types ->
           (match List.filter (fun td -> not (Name.Set.mem td.Parsetree.ptype_name.txt erased)) types with
           | [] -> acc
-          | types -> take_item (Parsetree.Psig_type (rf, types)))
+          | types -> take_item (Parsetree.Psig_type types))
         | Parsetree.Psig_module {Parsetree.pmd_name=name}
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
           if Name.Set.mem name.txt erased then acc else take_item m
@@ -722,7 +722,7 @@ module Analyser =
             let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
-        | Parsetree.Psig_type (rf, name_type_decl_list) ->
+        | Parsetree.Psig_type name_type_decl_list ->
             let extended_env =
               List.fold_left
                 (fun acc_env td ->
@@ -733,9 +733,14 @@ module Analyser =
                 name_type_decl_list
             in
             let env =
-              match rf with
-              | Recursive -> extended_env
-              | Nonrecursive -> env
+              let is_nonrec =
+                List.exists
+                  (fun td ->
+                     List.exists (fun (n, _) -> n.txt = "nonrec")
+                       td.Parsetree.ptype_attributes)
+                  name_type_decl_list
+              in
+              if is_nonrec then env else extended_env
             in
             let rec f ?(first=false) acc_maybe_more last_pos name_type_decl_list =
               match name_type_decl_list with
