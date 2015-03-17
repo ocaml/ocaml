@@ -67,6 +67,8 @@ Toplevel and debugger:
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
+- PR#4832: Filling bigarrays may block out runtime
+  (Markus Mottl)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
