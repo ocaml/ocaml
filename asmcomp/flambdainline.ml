@@ -885,10 +885,10 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
-    List.fold_right2 (fun id arg body ->
+    List.fold_left2 (fun body id arg ->
         Flambda.Flet (Not_assigned, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
-      subst_params args body
+       body subst_params args
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
