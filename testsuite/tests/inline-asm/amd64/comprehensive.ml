@@ -1,3 +1,10 @@
+open Intrinsics
+open Intrinsics.Sse2
+open Intrinsics.Avx
+
+type m128d = Intrinsics.m128d
+type m256d = Intrinsics.m256d
+
 let f     = 5.
 let i     = 5
 let i32   = 5l
@@ -376,15 +383,6 @@ let () =
 
 (* X87 and MMX registers are currently not supported *)
 
-type m128d
-external _mm_set_pd : float -> float -> m128d = "%asm" ""
-       "unpcklpd	%1, %2	# _mm_set_pd" "2" "xm128" "=x"
-external _mm_cvtsd_f64 : m128d -> float = "%asm" ""
-       "xorpd	%1, %1	# _mm_cvtsd_f64
-	movsd	%0, %1" "xm64" "=x"
-external _mm_unpackhi_pd : m128d -> m128d -> m128d = "%asm" ""
-       "unpckhpd	%1, %2	# _mm_unpackhi_pd" "2" "xm128" "=x"
-
 external func43a : m128d -> m128d -> unit
   = "%asm" "" "addpd	%0, %1	# func43a" "x" "+&x" ""
 let () =
@@ -463,43 +461,9 @@ let () =
   func71a 0x4241L s;
   assert (s = "Bbcdefgh")
 
-external int64_blank : unit -> int64 = "%asm" "" "" "" "=r"
-external int64_clone : int64 -> int64 = "%asm" "" "" "1" "=r"
-type int64_boxed = int64
-external __cpuid : int64_boxed -> int64_boxed -> int64_boxed -> int64_boxed
-  -> int64 -> int64 -> int64 -> int64 -> unit
-  = "%asm" ""
-       "mov	8(%0), %eax	# __cpuid
-	cpuid
-	mov	%eax, 8(%0)
-	mov	%ebx, 8(%1)
-	mov	%ecx, 8(%2)
-	mov	%edx, 8(%3)" "r" "r" "r" "r" "a" "b" "c" "d" ""
-let __cpuid a =
-  let a = int64_clone a in
-  let b = int64_blank () in
-  let c = int64_blank () in
-  let d = int64_blank () in
-  __cpuid a b c d a b c d;
-  a, b, c, d
-
 let supports_avx =
-  let _, _, c, _ = __cpuid 1L in
-  Int64.logand c (Int64.shift_left 1L 28) <> 0L
-
-type m256d
-external _mm256_unpacklo_pd : m256d -> m256d -> m256d = "%asm" ""
-       "vunpcklpd	%t0, %t1, %t2	# _mm256_unpacklo_pd" "x" "xm256" "=x"
-external _mm256_unpackhi_pd : m256d -> m256d -> m256d = "%asm" ""
-       "vunpckhpd	%t0, %t1, %t2	# _mm256_unpackhi_pd" "x" "xm256" "=x"
-external _mm256_castpd128_pd256 : m128d -> m256d
-  = "%asm" "" "" "1" "=x"
-external _mm256_castpd256_pd128 : m256d -> m128d
-  = "%asm" "" "" "1" "=x"
-let _mm256_set_pd x y z w =
-  _mm256_unpacklo_pd
-    (_mm256_castpd128_pd256 (_mm_set_pd x y))
-    (_mm256_castpd128_pd256 (_mm_set_pd z w))
+  let _, _, c, _ = __cpuid 1 in
+  c land bit_AVX <> 0
 
 external func78a : m128d -> m256d = "%asm" ""
        "vmovapd	%t0, %t1	# func78" "x" "=x"

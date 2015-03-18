@@ -13,26 +13,29 @@
 BASEDIR=../..
 
 BYTE_CASES=float_round
-CASES=$(BYTE_CASES) comprehensive
+CASES=$(BYTE_CASES) comprehensive test_intrinsics
 
 default: run-byte run-native compare-asm
 
 include $(BASEDIR)/makefiles/Makefile.common
 
 .SUFFIXES: .byte$(EXE) .c .ml .native$(EXE)
-.PRECIOUS: %.o
+.PRECIOUS: %.c %.ml %.o
 
-$(CASES:=.ml): %: $(ARCH)/%
+%.ml: $(ARCH)/%.ml
 	@ln -s $< $@
 
-$(CASES:=_stubs.c): %: $(ARCH)/%
+%.c: $(ARCH)/%.c
 	@ln -s $< $@
+
+%.o: %.c
+	@$(OCAMLC) $^
 
 %.byte$(EXE): %.ml %_stubs.o
-	@$(OCAMLC) -custom -o $@ $(<:.ml=_stubs.c) $<
+	@$(OCAMLC) -custom -o $@ $^
 
-%.native$(EXE): %.ml %_stubs.o
-	@$(OCAMLOPT) -S -o $@ $(<:.ml=_stubs.c) $<
+%.native$(EXE): intrinsics.ml %.ml
+	@$(OCAMLOPT) -S -inline 20 -o $@ $^
 
 .exe.s:
 

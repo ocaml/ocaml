@@ -299,7 +299,7 @@ method asm_alternative_cost asm args alt_index =
             when asm_arg.input && alt.copy_to_output = None ->
               let addr, arg1 = self#select_addressing chunk loc in
               `addr (chunk, addr, arg1), Arch.num_args_addressing addr, alt.disparage
-          | _, Cop(Cload _, _) when alt.register -> `reg, 1, alt.disparage
+          | _, Cop(Cload _, _) when alt.register -> `reg, 1, alt.reload_disparage
           | _, _ when alt.register               -> `reg, 1, alt.disparage
           | _, _ when alt.memory <> `no          -> `stack, 1, alt.reload_disparage
           | _, _ -> raise Asm_alternative_not_possible
