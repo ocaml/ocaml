@@ -1121,12 +1121,8 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
 
 /* Copying a big array into another one */
 
-static inline int is_mmapped(struct caml_ba_array *ba)
-{
-  return (ba->flags & CAML_BA_MAPPED_FILE);
-}
-
 #define LEAVE_RUNTIME_OP_CUTOFF 4096
+#define is_mmapped(ba) ((ba)->flags & CAML_BA_MAPPED_FILE)
 
 CAMLprim value caml_ba_blit(value vsrc, value vdst)
 {
