@@ -4,8 +4,8 @@
 = <fun>
 #               class ['a] c : unit -> object constraint 'a = int method f : 'a c end
 and ['a] d : unit -> object constraint 'a = int method f : 'a c end
-#                 Characters 238-275:
-  ........d () = object
+#                 Characters 234-275:
+  ....and d () = object
     inherit ['a] c ()
   end..
 Error: Some type variables are unbound in this type:
@@ -19,8 +19,8 @@ and ['a] d : unit -> object constraint 'a = int #c end
 # *             class ['a] c :
   'a -> object ('a) constraint 'a = < f : 'a; .. > method f : 'a end
 # - : ('a c as 'a) -> 'a = <fun>
-# *           Characters 134-176:
-  ......x () = object
+# *           Characters 128-176:
+  class x () = object
     method virtual f : int
   end..
 Error: This class should be virtual. The following methods are undefined : f
@@ -29,8 +29,8 @@ Error: This class should be virtual. The following methods are undefined : f
                                                    ^^^^^^^^
 Error: This pattern cannot match self: it only matches values of type
        < f : int >
-#           Characters 38-110:
-  ......['a] c () = object
+#           Characters 32-110:
+  class ['a] c () = object
     constraint 'a = int
     method f x = (x : bool c)
   end..
@@ -51,17 +51,17 @@ Error: The abbreviation c is used with parameters bool c
     method f : 'a -> 'b -> unit
   end
 #     val x : '_a list ref = {contents = []}
-#     Characters 6-50:
-  ......['a] c () = object
+#     Characters 0-50:
+  class ['a] c () = object
     method f = (x : 'a)
   end..
 Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_b list ref method f : 'a end,
        contains type variables that cannot be generalized
-#       Characters 24-52:
+#       Characters 20-52:
   type 'a c = <f : 'a c; g : 'a d>
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of d, type int c should be 'a c
 #   type 'a c = < f : 'a c; g : 'a d >
 and 'a d = < f : 'a c >
@@ -69,14 +69,14 @@ and 'a d = < f : 'a c >
 and 'a d = < f : int c >
 #   type 'a u = < x : 'a >
 and 'a t = 'a t u
-#   Characters 18-32:
+#   Characters 15-32:
   and 'a t = 'a t u;;
-     ^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 # type 'a u = 'a
-# Characters 5-18:
+# Characters 0-18:
   type t = t u * t u;;
-       ^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 #   type t = < x : 'a > as 'a
 # type 'a u = 'a
@@ -217,8 +217,8 @@ class e :
 #     * * * * * * * * * * * * * * * * * * * * *                             module M : sig class c : unit -> object method xc : int end end
 #         class d : unit -> object val x : int method xc : int method xd : int end
 # - : int * int = (1, 2)
-#         Characters 7-154:
-  ......virtual ['a] matrix (sz, init : int * 'a) = object
+#         Characters 1-154:
+  class virtual ['a] matrix (sz, init : int * 'a) = object
     val m = Array.make_matrix sz sz init
     method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
   end..
