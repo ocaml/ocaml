@@ -670,19 +670,23 @@ method emit_expr env exp =
               let rd = self#regs_for ty in
               let rs = Array.append r1 rd in
               let rs_new = Array.copy rs in
-              let _ = Array.fold_left (fun pos iarg ->
+              let rs_pos = Array.make (Array.length iargs) 0 in
+              for i = 1 to Array.length iargs - 1 do
+                rs_pos.(i) <- rs_pos.(i - 1) + iargs.(i - 1).num_reg
+              done;
+              Array.iteri (fun i iarg ->
+                let pos = rs_pos.(i) in
                 for i = pos to pos + iarg.num_reg - 1 do
                   match iarg.kind with
                     `addr _ | `imm _ | `unit -> ()
                   | `stack -> rs_new.(i).Reg.spill <- true
                   | `reg   -> rs_new.(i) <- self#asm_pseudoreg iarg.Mach.alt rs_new.(i)
-                done;
-                pos + iarg.num_reg) 0 iargs in
-              for i = 0 to Array.length rs - 1 do
-                match iargs.(i).Mach.alt.Inline_asm.copy_to_output with
+                done) iargs;
+              (* This has to be done in two passes! *)
+              Array.iteri (fun i iarg ->
+                match iarg.alt.Inline_asm.copy_to_output with
                   None -> ()
-                | Some n -> rs_new.(i) <- rs_new.(n)
-              done;
+                | Some n -> rs_new.(rs_pos.(i)) <- rs_new.(rs_pos.(n))) iargs;
 
               let rsrc     = ref [] in
               let rsrc_new = ref [] in
