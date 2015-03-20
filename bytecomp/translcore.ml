@@ -25,8 +25,7 @@ open Typeopt
 open Lambda
 
 type error =
-    Illegal_letrec_pat
-  | Illegal_letrec_expr
+    Illegal_letrec_expr
   | Free_super_var
   | Unknown_builtin_primitive of string
   | Unreachable_reached
@@ -1306,7 +1305,7 @@ and transl_let rec_flag pat_expr_list body =
           (fun {vb_pat=pat} -> match pat.pat_desc with
               Tpat_var (id,_) -> id
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
-            | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
+            | _ -> assert false)
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
         let lam = transl_exp expr in
@@ -1473,9 +1472,6 @@ let transl_let rec_flag pat_expr_list body =
 open Format
 
 let report_error ppf = function
-  | Illegal_letrec_pat ->
-      fprintf ppf
-        "Only variables are allowed as left-hand side of `let rec'"
   | Illegal_letrec_expr ->
       fprintf ppf
         "This kind of expression is not allowed as right-hand side of `let rec'"
