@@ -1685,18 +1685,16 @@ type_kind:
       { (Ptype_variant(List.rev $2), Public, None) }
   | EQUAL PRIVATE constructor_declarations
       { (Ptype_variant(List.rev $3), Private, None) }
-  | EQUAL private_flag BAR constructor_declarations
-      { (Ptype_variant(List.rev $4), $2, None) }
   | EQUAL DOTDOT
       { (Ptype_open, Public, None) }
-  | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $4), $2, None) }
-  | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $6), $4, Some $2) }
+  | EQUAL private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $4, $2, None) }
+  | EQUAL core_type EQUAL private_flag constructor_declarations
+      { (Ptype_variant(List.rev $5), $4, Some $2) }
   | EQUAL core_type EQUAL DOTDOT
       { (Ptype_open, Public, Some $2) }
-  | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $6), $4, Some $2) }
+  | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $6, $4, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
@@ -1737,8 +1735,9 @@ type_parameter_list:
   | type_parameter_list COMMA type_parameter    { $3 :: $1 }
 ;
 constructor_declarations:
-    constructor_declaration                     { [$1] }
-  | constructor_declarations BAR constructor_declaration { $3 :: $1 }
+    constructor_declaration                              { [$1] }
+  | bar_constructor_declaration                          { [$1] }
+  | constructor_declarations bar_constructor_declaration { $2 :: $1 }
 ;
 constructor_declaration:
   | constr_ident generalized_constructor_arguments attributes
@@ -1747,24 +1746,26 @@ constructor_declaration:
        Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3
       }
 ;
-str_exception_declaration:
-  | EXCEPTION extension_constructor_declaration post_item_attributes
+bar_constructor_declaration:
+  | BAR constr_ident generalized_constructor_arguments attributes
       {
-        let ext = $2 in
-        {ext with pext_attributes = ext.pext_attributes @ $3}
-      }
-  | EXCEPTION extension_constructor_rebind post_item_attributes
-      {
-        let ext = $2 in
-        {ext with pext_attributes = ext.pext_attributes @ $3}
+       let args,res = $3 in
+       Type.constructor (mkrhs $2 2) ~args ?res ~loc:(symbol_rloc()) ~attrs:$4
       }
 ;
+str_exception_declaration:
+  | sig_exception_declaration                    { $1 }
+  | EXCEPTION constr_ident EQUAL constr_longident attributes
+    post_item_attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4)
+          ~loc:(symbol_rloc()) ~attrs:($5 @ $6) }
+;
 sig_exception_declaration:
-  | EXCEPTION extension_constructor_declaration post_item_attributes
-      {
-        let ext = $2 in
-        {ext with pext_attributes = ext.pext_attributes @ $3}
-      }
+  | EXCEPTION constr_ident generalized_constructor_arguments attributes
+    post_item_attributes
+      { let args, res = $3 in
+          Te.decl (mkrhs $2 2) ~args ?res
+            ~loc:(symbol_rloc()) ~attrs:($4 @ $5) }
 ;
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
@@ -1779,10 +1780,17 @@ generalized_constructor_arguments:
 
 label_declarations:
     label_declaration                           { [$1] }
-  | label_declarations SEMI label_declaration   { $3 :: $1 }
+  | label_declaration_semi                      { [$1] }
+  | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
 label_declaration:
     mutable_flag label COLON poly_type_no_attr attributes
+      {
+       Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
+      }
+;
+label_declaration_semi:
+    mutable_flag label COLON poly_type_no_attr attributes SEMI
       {
        Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
       }
@@ -1792,37 +1800,49 @@ label_declaration:
 
 str_type_extension:
   TYPE nonrec_flag optional_type_parameters type_longident
-  PLUSEQ private_flag opt_bar str_extension_constructors post_item_attributes
+  PLUSEQ private_flag str_extension_constructors post_item_attributes
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $8) ~params:$3 ~priv:$6 ~attrs:$9 }
+        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6 ~attrs:$8 }
 ;
 sig_type_extension:
   TYPE nonrec_flag optional_type_parameters type_longident
-  PLUSEQ private_flag opt_bar sig_extension_constructors post_item_attributes
+  PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        Te.mk (mkrhs $4 4) (List.rev $8) ~params:$3 ~priv:$6 ~attrs:$9 }
+        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6 ~attrs:$8 }
 ;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
+  | bar_extension_constructor_declaration                 { [$1] }
   | extension_constructor_rebind                          { [$1] }
-  | str_extension_constructors BAR extension_constructor_declaration
-      { $3 :: $1 }
-  | str_extension_constructors BAR extension_constructor_rebind
-      { $3 :: $1 }
+  | bar_extension_constructor_rebind                      { [$1] }
+  | str_extension_constructors bar_extension_constructor_declaration
+      { $2 :: $1 }
+  | str_extension_constructors bar_extension_constructor_rebind
+      { $2 :: $1 }
 ;
 sig_extension_constructors:
     extension_constructor_declaration                     { [$1] }
-  | sig_extension_constructors BAR extension_constructor_declaration
-      { $3 :: $1 }
+  | bar_extension_constructor_declaration                 { [$1] }
+  | sig_extension_constructors bar_extension_constructor_declaration
+      { $2 :: $1 }
 ;
 extension_constructor_declaration:
   | constr_ident generalized_constructor_arguments attributes
       { let args, res = $2 in
         Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3 }
 ;
+bar_extension_constructor_declaration:
+  | BAR constr_ident generalized_constructor_arguments attributes
+      { let args, res = $3 in
+        Te.decl (mkrhs $2 2) ~args ?res ~loc:(symbol_rloc()) ~attrs:$4 }
+;
 extension_constructor_rebind:
   | constr_ident EQUAL constr_longident attributes
       { Te.rebind (mkrhs $1 1) (mkrhs $3 3) ~loc:(symbol_rloc()) ~attrs:$4 }
+;
+bar_extension_constructor_rebind:
+  | BAR constr_ident EQUAL constr_longident attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~loc:(symbol_rloc()) ~attrs:$5 }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
