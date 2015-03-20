@@ -152,6 +152,7 @@ let operation op arg ppf res =
             Emit_dialect d ->
               print d.(if X86_proc.masm then 1 else 0)
           | Emit_string s -> fprintf ppf "%s" s
+          | Emit_unique -> fprintf ppf "%%="
           | Emit_arg (i, modifier) ->
               let iarg = iargs.(i) in
               match iarg.kind with

@@ -438,11 +438,15 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 
+let asm_unique = ref 0
+
 let emit_asm i asm iargs =
+  incr asm_unique;
   let open Inline_asm in
   let rec emit_template t acc =
     Array.fold_left (fun acc -> function
         Emit_string s -> Asm_string s :: acc
+      | Emit_unique -> Asm_string (string_of_int !asm_unique) :: acc
       | Emit_dialect d ->
           emit_template d.(if X86_proc.masm then 1 else 0) acc
       | Emit_arg (n, modifier) ->

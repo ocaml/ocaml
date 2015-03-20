@@ -64,6 +64,7 @@ type template_item =
     Emit_arg of int * arg_modifier
   | Emit_dialect of template array
   | Emit_string of string
+  | Emit_unique
 and template = template_item array
 
 type inline_asm = {

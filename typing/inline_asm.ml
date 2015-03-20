@@ -75,6 +75,7 @@ type template_item =
     Emit_arg of int * arg_modifier
   | Emit_dialect of template array
   | Emit_string of string
+  | Emit_unique
 and template = template_item array
 
 type inline_asm = {
@@ -103,6 +104,9 @@ let parse_template ~nargs template =
         '%', '%' -> (* Unescape *)
           let s = (String.sub s 0 i) ^ (String.sub s (i + 1) (len - i - 1)) in
           loop acc s (i + 1)
+      | '%', '=' ->
+          let acc = if i = 0 then acc else Emit_string (String.sub s 0 i) :: acc in
+          loop (Emit_unique :: acc) (String.sub s (i + 2) (len - i - 2)) 0
       | '%', ( 'B' | 'L' | 'Q' | 'S' | 'T' | 'W' | 'b' | 'h' | 'w' | 'k' | 'q' | 't'
              | 'x' as c)
         when len > i + 1 && s.[i + 2] >= '0' && s.[i + 2] <= '9' ->
@@ -262,7 +266,7 @@ let parse kinds decl =
         Emit_arg (i, _) ->
           if i >= Array.length args then error "operand number out of range"
       | Emit_dialect ds -> Array.iter check_operand_number ds
-      | Emit_string _ -> ()) a
+      | Emit_string _ | Emit_unique -> ()) a
   in
   check_operand_number template;
   Array.iter (fun arg ->
