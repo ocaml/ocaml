@@ -78,6 +78,7 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
+  | Illegal_letrec_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -4486,6 +4487,9 @@ let report_error env ppf = function
   | Illegal_letrec_pat ->
       fprintf ppf
         "Only variables are allowed as left-hand side of `let rec'"
+  | Illegal_letrec_expr ->
+      fprintf ppf
+        "This kind of expression is not allowed as right-hand side of `let rec'"
 
 
 let report_error env ppf err =

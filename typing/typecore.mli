@@ -125,6 +125,7 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
+  | Illegal_letrec_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
