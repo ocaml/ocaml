@@ -134,7 +134,7 @@ let parse_template ~nargs template =
             | _   -> assert false
             end |> function
               `dialect d ->
-                Emit_dialect [| [| Emit_string (String.make 1 c) |];
+                Emit_dialect [| [| Emit_string (String.make 1 d) |];
                                 [| Emit_string "" |] |]
             | `reg r -> Emit_arg (arg, r)
           in

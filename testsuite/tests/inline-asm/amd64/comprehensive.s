@@ -2934,7 +2934,7 @@ next:
 	ret
 .L120:
 	movq	camlComprehensive__175@GOTPCREL(%rip), %rdi
-	movB	$1, (%rdi)	# func55a
+	movb	$1, (%rdi)	# func55a
 	movq	camlComprehensive__176@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
@@ -2952,7 +2952,7 @@ next:
 	ret
 .L119:
 	movq	camlComprehensive__179@GOTPCREL(%rip), %rdi
-	movW	$1, (%rdi)	# func56a
+	movw	$1, (%rdi)	# func56a
 	movq	camlComprehensive__180@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
@@ -2970,7 +2970,7 @@ next:
 	ret
 .L118:
 	movq	camlComprehensive__183@GOTPCREL(%rip), %rdi
-	movL	$1, (%rdi)	# func57a
+	movl	$1, (%rdi)	# func57a
 	movq	camlComprehensive__184@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
