@@ -77,6 +77,7 @@ type error =
   | Not_an_extension_constructor
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Illegal_letrec_pat
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -4482,6 +4483,9 @@ let report_error env ppf = function
                    integers of type %s" ty
   | Unknown_literal (n, m) ->
       fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
+  | Illegal_letrec_pat ->
+      fprintf ppf
+        "Only variables are allowed as left-hand side of `let rec'"
 
 
 let report_error env ppf err =
