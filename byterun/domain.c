@@ -262,12 +262,16 @@ void caml_trigger_stw_gc() {
   request_stw();
 }
 
+void caml_interrupt_self() {
+  interrupt_domain(domain_self);
+}
+
 /* Arrange for a garbage collection to be performed on the current domain
    as soon as possible */
 void caml_urge_major_slice (void)
 {
   caml_force_major_slice = 1;
-  interrupt_domain(domain_self);
+  caml_interrupt_self();
 }
 
 

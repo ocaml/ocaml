@@ -21,6 +21,9 @@
 #include "callback.h"
 #include "platform.h"
 #include "alloc.h"
+#ifdef NATIVE_CODE
+#include "stack.h"
+#endif
 
 /* A caml_root is in fact a value. We don't expose that fact outside
    of this file so that C code doesn't attempt to directly modify it.
@@ -83,7 +86,7 @@ CAMLexport void caml_modify_root(caml_root root, value newv)
   caml_modify_field(v, 0, newv);
 }
 
-void caml_scan_global_roots(scanning_action f)
+static void scan_global_roots(scanning_action f)
 {
   value r, newr;
   caml_plat_lock(&roots_mutex);
@@ -120,4 +123,69 @@ void caml_cleanup_deleted_roots()
   }
 
   caml_plat_unlock(&roots_mutex);
+}
+
+#ifdef NATIVE_CODE
+
+/* Linked-list of natdynlink'd globals */
+
+typedef struct link {
+  void *data;
+  struct link *next;
+} link;
+
+static link *cons(void *data, link *tl) {
+  link *lnk = caml_stat_alloc(sizeof(link));
+  lnk->data = data;
+  lnk->next = tl;
+  return lnk;
+}
+
+#define iter_list(list,lnk) \
+  for (lnk = list; lnk != NULL; lnk = lnk->next)
+
+
+/* protected by roots_mutex */
+static link * caml_dyn_globals = NULL;
+
+void caml_register_dyn_global(void *v) {
+  caml_plat_lock(&roots_mutex);
+  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+  caml_plat_unlock(&roots_mutex);
+}
+
+static void scan_native_globals(scanning_action f)
+{
+  int i, j;
+  static link* dyn_globals;
+  value glob;
+  link* lnk;
+
+  caml_plat_lock(&roots_mutex);
+  dyn_globals = caml_dyn_globals;
+  caml_plat_unlock(&roots_mutex);
+
+  /* The global roots */
+  for (i = 0; caml_globals[i] != 0; i++) {
+    glob = caml_globals[i];
+    for (j = 0; j < Wosize_val(glob); j++)
+      f (Op_val(glob)[j], &Op_val(glob)[j]);
+  }
+
+  /* Dynamic (natdynlink) global roots */
+  iter_list(dyn_globals, lnk) {
+    glob = (value) lnk->data;
+    for (j = 0; j < Wosize_val(glob); j++){
+      f (Op_val(glob)[j], &Op_val(glob)[j]);      
+    }
+  }
+}
+
+#endif
+
+void caml_scan_global_roots(scanning_action f) {
+  scan_global_roots(f);
+#ifdef NATIVE_CODE
+  scan_native_globals(f);
+#endif
 }

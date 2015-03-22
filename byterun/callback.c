@@ -124,6 +124,10 @@ CAMLexport value caml_callback3_exn(value closure,
 
 #else
 
+static void init_callback_code(void)
+{
+}
+
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
