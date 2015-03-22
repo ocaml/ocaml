@@ -26,6 +26,22 @@
 #include "shared_heap.h"
 #include "fiber.h"
 
+#ifdef NATIVE_CODE
+#include "frame_descriptors.h"
+
+/* Communication with [caml_start_program] and [caml_call_gc]. */
+
+/* FIXME: there should be one of these per domain */
+
+char * caml_top_of_stack;
+char * caml_bottom_of_stack = NULL; /* no stack initially */
+uintnat caml_last_return_address = 1; /* not in OCaml code initially */
+value * caml_gc_regs;
+intnat caml_globals_inited = 0;
+static intnat caml_globals_scanned = 0;
+
+#endif
+
 CAMLexport __thread struct caml__roots_block *caml_local_roots = NULL;
 
 CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
@@ -34,7 +50,12 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   int i, j;
   value* sp;
 
+#ifdef NATIVE_CODE
+  caml_scan_stack_roots(f, caml_bottom_of_stack,
+                        caml_last_return_address, caml_gc_regs);
+#else
   f(caml_current_stack, &caml_current_stack);
+#endif
   for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){

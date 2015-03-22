@@ -71,7 +71,7 @@ void caml_record_signal(int signal_number)
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else
-  caml_young_limit = caml_young_end;
+  caml_interrupt_self();
 #endif
 }
 
