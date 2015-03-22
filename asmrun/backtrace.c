@@ -23,11 +23,12 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "stack.h"
+#include "frame_descriptors.h"
 
-int caml_backtrace_active = 0;
-int caml_backtrace_pos = 0;
-code_t * caml_backtrace_buffer = NULL;
-value caml_backtrace_last_exn = Val_unit;
+CAMLexport __thread int caml_backtrace_active = 0;
+CAMLexport __thread int caml_backtrace_pos = 0;
+CAMLexport __thread code_t * caml_backtrace_buffer = NULL;
+CAMLexport __thread caml_root caml_backtrace_last_exn;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* In order to prevent the GC from walking through the debug information
@@ -51,9 +52,10 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
-      caml_register_global_root(&caml_backtrace_last_exn);
+      caml_backtrace_last_exn = caml_create_root(Val_unit);
     } else {
-      caml_remove_global_root(&caml_backtrace_last_exn);
+      caml_delete_root(caml_backtrace_last_exn);
+      caml_backtrace_last_exn = NULL;
     }
   }
   return Val_unit;
@@ -72,18 +74,10 @@ CAMLprim value caml_backtrace_status(value vunit)
 frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 {
   frame_descr * d;
-  uintnat h;
-
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
 
   while (1) {
-    h = Hash_retaddr(*pc);
-    while (1) {
-      d = caml_frame_descriptors[h];
-      if (d == 0) return NULL; /* can happen if some code compiled without -g */
-      if (d->retaddr == *pc) break;
-      h = (h+1) & caml_frame_descriptors_mask;
-    }
+    d = caml_find_frame_descr(*pc);
+    if (d == NULL) return NULL;
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, update sp/pc and return the frame descriptor */
@@ -118,9 +112,9 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
-  if (exn != caml_backtrace_last_exn) {
+  if (exn != caml_read_root(caml_backtrace_last_exn)) {
     caml_backtrace_pos = 0;
-    caml_backtrace_last_exn = exn;
+    caml_modify_root(caml_backtrace_last_exn, exn);
   }
   if (caml_backtrace_buffer == NULL) {
     Assert(caml_backtrace_pos == 0);
@@ -195,7 +189,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      Field(trace, trace_pos) = Val_Descrptr(descr);
+      caml_initialize_field(trace, trace_pos, Val_Descrptr(descr));
     }
   }
 
@@ -313,14 +307,14 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
     p = caml_alloc_small(5, 0);
-    Field(p, 0) = Val_bool(li.loc_is_raise);
-    Field(p, 1) = fname;
-    Field(p, 2) = Val_int(li.loc_lnum);
-    Field(p, 3) = Val_int(li.loc_startchr);
-    Field(p, 4) = Val_int(li.loc_endchr);
+    Init_field(p, 0, Val_bool(li.loc_is_raise));
+    Init_field(p, 1, fname);
+    Init_field(p, 2, Val_int(li.loc_lnum));
+    Init_field(p, 3, Val_int(li.loc_startchr));
+    Init_field(p, 4, Val_int(li.loc_endchr));
   } else {
     p = caml_alloc_small(1, 1);
-    Field(p, 0) = Val_bool(li.loc_is_raise);
+    Init_field(p, 0, Val_bool(li.loc_is_raise));
   }
 
   CAMLreturn(p);
@@ -359,7 +353,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
     res = caml_alloc(saved_caml_backtrace_pos, tag);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
       /* [Val_Descrptr] always returns an immediate. */
-      Field(res, i) = Val_Descrptr(saved_caml_backtrace_buffer[i]);
+      Init_field(res, i, Val_Descrptr(saved_caml_backtrace_buffer[i]));
     }
   }
 

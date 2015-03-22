@@ -22,6 +22,7 @@
 #include "fail.h"
 #include "memory.h"
 #include "osdeps.h"
+#include "domain.h"
 #include "signals.h"
 #include "signals_machdep.h"
 #include "signals_osdep.h"
@@ -52,7 +53,7 @@ extern char caml_system__code_begin, caml_system__code_end;
     (char *)(pc) <= caml_code_area_end)     \
 || ((char *)(pc) >= &caml_system__code_begin && \
     (char *)(pc) <= &caml_system__code_end)     \
-|| (Classify_addr(pc) & In_code_area) )
+/* FIXME || (Classify_addr(pc) & In_code_area) */ )
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
@@ -65,10 +66,7 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  caml_young_limit = caml_young_start;
-  if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
-    caml_minor_collection();
-  }
+  caml_handle_gc_interrupt(0);
   caml_process_pending_signals();
 }
 
@@ -82,13 +80,6 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #endif
   if (sig < 0 || sig >= NSIG) return;
   caml_record_signal(sig);
-  /* Some ports cache [caml_young_limit] in a register.
-     Use the signal context to modify that register too, but only if
-     we are inside OCaml code (not inside C code). */
-#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-  if (Is_in_code_area(CONTEXT_PC))
-    CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
-#endif
   errno = saved_errno;
 }
 
@@ -138,6 +129,7 @@ int caml_set_signal_action(int signo, int action)
 /* Machine- and OS-dependent handling of bound check trap */
 
 #if defined(TARGET_power) || (defined(TARGET_sparc) && defined(SYS_solaris))
+#error "Power and Sparc unsupported on multicore"
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
 #if defined(SYS_solaris)
