@@ -21,11 +21,12 @@ DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
-  debugger.o meta.o dynlink.o addrmap.o
+  finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
+  debugger.o meta.o dynlink.o addrmap.o domain.o minor_heap.o platform.o \
+  eventlog.o params.o frame_descriptors.o
 
 ASMOBJS=$(ARCH).o
 
@@ -97,8 +98,6 @@ main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
-freelist.c: ../byterun/freelist.c
-	ln -s ../byterun/freelist.c freelist.c
 major_gc.c: ../byterun/major_gc.c
 	ln -s ../byterun/major_gc.c major_gc.c
 minor_gc.c: ../byterun/minor_gc.c
@@ -145,14 +144,14 @@ callback.c: ../byterun/callback.c
 	ln -s ../byterun/callback.c callback.c
 weak.c: ../byterun/weak.c
 	ln -s ../byterun/weak.c weak.c
-compact.c: ../byterun/compact.c
-	ln -s ../byterun/compact.c compact.c
 finalise.c: ../byterun/finalise.c
 	ln -s ../byterun/finalise.c finalise.c
 custom.c: ../byterun/custom.c
 	ln -s ../byterun/custom.c custom.c
 meta.c: ../byterun/meta.c
 	ln -s ../byterun/meta.c meta.c
+roots.c: ../byterun/roots.c
+	ln -s ../byterun/roots.c roots.c
 globroots.c: ../byterun/globroots.c
 	ln -s ../byterun/globroots.c globroots.c
 $(UNIX_OR_WIN32).c: ../byterun/$(UNIX_OR_WIN32).c
@@ -165,12 +164,23 @@ debugger.c: ../byterun/debugger.c
 	ln -s ../byterun/debugger.c debugger.c
 addrmap.c: ../byterun/addrmap.c
 	ln -s ../byterun/addrmap.c addrmap.c
+domain.c: ../byterun/domain.c
+	ln -s ../byterun/domain.c domain.c
+minor_heap.c: ../byterun/minor_heap.c
+	ln -s ../byterun/minor_heap.c minor_heap.c
+platform.c: ../byterun/platform.c
+	ln -s ../byterun/platform.c platform.c
+eventlog.c: ../byterun/eventlog.c
+	ln -s ../byterun/eventlog.c eventlog.c
+params.c: ../byterun/params.c
+	ln -s ../byterun/params.c params.c
 
-LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
+LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
-  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c
+  weak.c finalise.c meta.c custom.c main.c globroots.c \
+  $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
+  domain.c minor_heap.c platform.c eventlog.c
 
 clean::
 	rm -f $(LINKEDFILES)

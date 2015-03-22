@@ -20,6 +20,8 @@
 #include "intext.h"
 #include "osdeps.h"
 #include "fail.h"
+#include "frame_descriptors.h"
+#include "globroots.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -74,8 +76,8 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   header = caml_input_value_from_malloc(sym, 0);
 
   res = caml_alloc_tuple(2);
-  Field(res, 0) = handle;
-  Field(res, 1) = header;
+  Init_field(res, 0, handle);
+  Init_field(res, 1, header);
   CAMLreturn(res);
 }
 
@@ -98,15 +100,9 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   sym = optsym("");
   if (NULL != sym) caml_register_dyn_global(sym);
 
-  sym = optsym("__data_begin");
-  sym2 = optsym("__data_end");
-  if (NULL != sym && NULL != sym2)
-    caml_page_table_add(In_static_data, sym, sym2);
-
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
   if (NULL != sym && NULL != sym2) {
-    caml_page_table_add(In_code_area, sym, sym2);
     cf = caml_stat_alloc(sizeof(struct code_fragment));
     cf->code_start = (char *) sym;
     cf->code_end = (char *) sym2;

@@ -53,7 +53,6 @@ char * caml_exception_pointer = NULL;
 
 void caml_raise(value v)
 {
-  Unlock_exn();
   if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards
@@ -63,6 +62,13 @@ void caml_raise(value v)
 #endif
   while (caml_local_roots != NULL &&
          (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
+    Assert(caml_local_roots != NULL);
+    struct caml__mutex_unwind* m = caml_local_roots->mutexes;
+    while (m) {
+      /* unlocked in reverse order of locking */
+      caml_plat_unlock(m->mutex);
+      m = m->next;
+    }
     caml_local_roots = caml_local_roots->next;
   }
 #undef PUSHED_AFTER
@@ -81,8 +87,8 @@ void caml_raise_with_arg(value tag, value arg)
   CAMLlocal1 (bucket);
 
   bucket = caml_alloc_small (2, 0);
-  Field(bucket, 0) = tag;
-  Field(bucket, 1) = arg;
+  Init_field(bucket, 0, tag);
+  Init_field(bucket, 1, arg);
   caml_raise(bucket);
   CAMLnoreturn;
 }
@@ -96,8 +102,8 @@ void caml_raise_with_args(value tag, int nargs, value args[])
 
   Assert(1 + nargs <= Max_young_wosize);
   bucket = caml_alloc_small (1 + nargs, 0);
-  Field(bucket, 0) = tag;
-  for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
+  Init_field(bucket, 0, tag);
+  for (i = 0; i < nargs; i++) Init_field(bucket, 1 + i, args[i]);
   caml_raise(bucket);
   CAMLnoreturn;
 }
