@@ -352,7 +352,7 @@ rule token = parse
           NATIVEINT (cvt_nativeint_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
-  | (float_literal | int_literal) identchar*
+  | (float_literal | int_literal) identchar+
       { raise (Error(Invalid_literal (Lexing.lexeme lexbuf), Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
