@@ -197,7 +197,7 @@ let clear_crc_interfaces () =
 
 (* Record compilation events *)
 
-let debug_info = ref ([] : (int * LongString.t) list)
+let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
 (* Link in a compilation unit *)
 
@@ -208,8 +208,14 @@ let link_compunit ppf output_fun currpos_fun inchan file_name compunit =
   Symtable.ls_patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let buffer = LongString.input_bytes inchan compunit.cu_debugsize in
-    debug_info := (currpos_fun(), buffer) :: !debug_info
+    let debug_event_list : Instruct.debug_event list = input_value inchan in
+    let debug_dirs : string list = input_value inchan in
+    let file_path = Filename.dirname (Location.absolute_path file_name) in
+    let debug_dirs =
+      if List.mem file_path debug_dirs
+      then debug_dirs
+      else file_path :: debug_dirs in
+    debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
   Array.iter output_fun code_block;
   if !Clflags.link_everything then
@@ -264,9 +270,10 @@ let link_file ppf output_fun currpos_fun = function
 let output_debug_info oc =
   output_binary_int oc (List.length !debug_info);
   List.iter
-    (fun (ofs, evl) ->
+    (fun (ofs, evl, debug_dirs) ->
       output_binary_int oc ofs;
-      Array.iter (output_bytes oc) evl)
+      output_value oc evl;
+      output_value oc debug_dirs)
     !debug_info;
   debug_info := []
 
