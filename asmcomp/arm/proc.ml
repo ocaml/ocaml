@@ -224,6 +224,7 @@ let destroyed_at_oper = function
         | Clobber (D n) -> hard_float_reg.(n) :: regs
         | Clobber (R 12) -> hard_int_reg.(8) :: regs
         | Clobber (R n) -> hard_int_reg.(n) :: regs
+        | Clobber VFP -> assert false
       ) [] asm.Inline_asm.arch_specifics
       |> Array.of_list
   | _ -> [||]

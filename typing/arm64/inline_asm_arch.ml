@@ -11,24 +11,21 @@
 (***********************************************************************)
 
 type register =
-    R of int
-  | D of int
-  | VFP
+    D of int
+  | FP
+  | X of int
 
-type arch_specific =
-    Clobber of register
-  | Length of int
+type arch_specific = register
 
 let parse_register_constraint = function
-    't' -> Some VFP
+    'w' -> Some FP
   |  _ -> None
 
 let parse_arch_specific s =
   try
     let i = int_of_string (String.sub s 1 (String.length s - 1)) in
     match s.[0] with
-      'd' when (i >= 0 && i <= 7) || i = 12 -> Some (Clobber (D i))
-    | 'l' -> Some (Length i)
-    | 'r' when i >= 0 && i <= 31 -> Some (Clobber (R i))
+      'd' when i >= 0 && i <= 31 -> Some (D i)
+    | 'x' when i >= 0 && i <= 28 && i <> 18 -> Some (X i)
     | _ -> None
   with _ -> None

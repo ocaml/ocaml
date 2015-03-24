@@ -29,7 +29,12 @@ let is_offset chunk n =
     | Thirtytwo_unsigned | Thirtytwo_signed | Single ->
         n land 3 = 0 && n lsr 2 < 0x1000
     | Word | Double | Double_u ->
-        n land 7 = 0 && n lsr 3 < 0x1000)
+        n land 7 = 0 && n lsr 3 < 0x1000
+    | M128d_a | M128d_u
+    | M128i_a | M128i_u
+    | M256d_a | M256d_u
+    | M256i_a | M256i_u ->
+        Misc.fatal_error "Vector data types not supported on architecture ARM64")
 
 (* An automaton to recognize ( 0+1+0* | 1+0+1* )
 
@@ -116,6 +121,11 @@ method select_addressing chunk = function
       (Ibased(s, 0), Ctuple [])
   | arg ->
       (Iindexed 0, arg)
+
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
+  | Some Inline_asm_arch.FP -> Reg.create Float
+  | _ -> r
 
 method! select_operation op args =
   match op with

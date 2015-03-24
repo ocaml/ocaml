@@ -160,6 +160,11 @@ method select_shift_arith op arithop arithrevop args =
       | op_args -> op_args
       end
 
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
+  | Some Inline_asm_arch.VFP -> Reg.create Float
+  | _ -> r
+
 method! select_operation op args =
   match (op, args) with
   (* Recognize special shift arithmetic *)
