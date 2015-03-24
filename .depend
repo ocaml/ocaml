@@ -104,6 +104,7 @@ typing/includecore.cmi : typing/types.cmi typing/typedtree.cmi \
 typing/includemod.cmi : typing/types.cmi typing/typedtree.cmi \
     typing/path.cmi parsing/location.cmi typing/includecore.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi
+typing/inline_asm.cmi : typing/inline_asm_arch.cmo
 typing/mtype.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi \
     typing/env.cmi
 typing/oprint.cmi : typing/outcometree.cmi
@@ -251,8 +252,8 @@ typing/predef.cmo : typing/types.cmi typing/path.cmi parsing/location.cmi \
     typing/ident.cmi typing/btype.cmi parsing/asttypes.cmi typing/predef.cmi
 typing/predef.cmx : typing/types.cmx typing/path.cmx parsing/location.cmx \
     typing/ident.cmx typing/btype.cmx parsing/asttypes.cmi typing/predef.cmi
-typing/inline_asm.cmo : typing/inline_asm.cmi
-typing/inline_asm.cmx : typing/inline_asm.cmi
+typing/inline_asm.cmo : typing/inline_asm.cmi typing/inline_asm_arch.cmo
+typing/inline_asm.cmx : typing/inline_asm.cmi typing/inline_asm_arch.cmx
 typing/primitive.cmo : utils/misc.cmi typing/primitive.cmi
 typing/primitive.cmx : utils/misc.cmx typing/primitive.cmi
 typing/printtyp.cmo : typing/types.cmi typing/primitive.cmi \

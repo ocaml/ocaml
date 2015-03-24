@@ -199,7 +199,7 @@ method class_of_operation op =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Iasm (asm, _) ->
-      if List.mem `memory asm.Inline_asm.clobber then Op_store true else Op_other
+      if asm.Inline_asm.clobber_memory then Op_store true else Op_other
   | Ispecific _ -> Op_other
 
 (* Operations that are so cheap that it isn't worth factoring them. *)

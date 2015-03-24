@@ -23,6 +23,8 @@
   - MMX registers
   - All other machine constraints. *)
 
+include Inline_asm_arch
+
 exception Inline_asm_error of string
 
 type arg_kind =
@@ -38,14 +40,8 @@ type arg_kind =
   | `Nativeint
   | `Unit ]
 
-type register =
-  [ `D  | `S  | `a   | `b   | `c   | `d
-  | `r8 | `r9 | `r10 | `r11 | `r12 | `r13
-  | `x0 | `x1 | `x2  | `x3  | `x4  | `x5  | `x6  | `x7
-  | `x8 | `x9 | `x10 | `x11 | `x12 | `x13 | `x14 | `x15 ]
-
 type alternative = {
-  mach_register    : [ `r | `sse | register ];
+  mach_register    : register option;
   copy_to_output   : int option;
   commutative      : bool;
   disparage        : int;
@@ -79,10 +75,12 @@ type template_item =
 and template = template_item array
 
 type inline_asm = {
-  template : template;
-  args     : arg array;
-  clobber  : [ `cc | `memory | register ] list;
-  decl     : string array }
+  template       : template;
+  args           : arg array;
+  clobber_cc     : bool;
+  clobber_memory : bool;
+  arch_specifics : arch_specific list;
+  decl           : string array }
 
 (** Parses the template given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
@@ -170,7 +168,7 @@ let parse kinds decl =
       output       = false;
       alternatives = [| |] } in
     let alt = ref {
-      mach_register    = `r;
+      mach_register    = None;
       copy_to_output   = None;
       commutative      = false;
       disparage        = 1;
@@ -214,7 +212,7 @@ let parse kinds decl =
           comment := false;
           arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
           alt := {
-            mach_register    = `r;
+            mach_register    = None;
             copy_to_output   = None;
             commutative      = false;
             disparage        = 1;
@@ -245,19 +243,14 @@ let parse kinds decl =
           error "output constraint '=' for operand %d is not at the beginning" i;
         arg := { !arg with input = false; output = true }
       | '?' -> alt := { !alt with disparage = !alt.disparage + 1 }
-      | 'D' -> alt := { !alt with register = true; mach_register = `D }
-      | 'S' -> alt := { !alt with register = true; mach_register = `S }
       | '^' -> alt := { !alt with reload_disparage = !alt.reload_disparage + 1 }
-      | 'a' -> alt := { !alt with register = true; mach_register = `a }
-      | 'b' -> alt := { !alt with register = true; mach_register = `b }
-      | 'c' -> alt := { !alt with register = true; mach_register = `c }
-      | 'd' -> alt := { !alt with register = true; mach_register = `d }
       | 'g' -> alt := { !alt with immediate = true; memory = `m16; register = true }
       | 'i' -> alt := { !alt with immediate = true }
       | 'm' -> alt := { !alt with memory = `m16 }
-      | 'r' -> alt := { !alt with register = true; mach_register = `r }
-      | 'x' -> alt := { !alt with register = true; mach_register = `sse }
-      | c -> error "invalid punctuation '%c' in constraint" c) decl;
+      | c ->
+          match parse_register_constraint c with
+            Some r -> alt := { !alt with register = true; mach_register = Some r }
+          | None -> error "invalid punctuation '%c' in constraint" c) decl;
     add_digit (String.length decl + 1) '0'; (* flushes *)
     arg := { !arg with alternatives = Array.append !arg.alternatives [| !alt |] };
     !arg) kinds in
@@ -285,45 +278,18 @@ let parse kinds decl =
   let ret = args.(nargs - 1) in
   if ret.input && ret.kind != `Unit then
     error "output operand constraint lacks '='";
-  let inline_asm = ref { decl; template; args; clobber = [] } in
+  let inline_asm = ref { decl; template; args; clobber_cc = false;
+    clobber_memory = false; arch_specifics = [] } in
   for i = nargs + 1 to Array.length decl - 1 do
-    try
-      let c =
-        match decl.(i) with
-          "cc"     -> `cc
-        | "memory" -> `memory
-        | "%rdi"   -> `D
-        | "%rsi"   -> `S
-        | "%rax"   -> `a
-        | "%rbx"   -> `b
-        | "%rcx"   -> `c
-        | "%rdx"   -> `d
-        | "%r8"    -> `r8
-        | "%r9"    -> `r9
-        | "%r10"   -> `r10
-        | "%r11"   -> `r11
-        | "%r12"   -> `r12
-        | "%r13"   -> `r13
-        | "%xmm0"  | "%ymm0"  -> `x0
-        | "%xmm1"  | "%ymm1"  -> `x1
-        | "%xmm2"  | "%ymm2"  -> `x2
-        | "%xmm3"  | "%ymm3"  -> `x3
-        | "%xmm4"  | "%ymm4"  -> `x4
-        | "%xmm5"  | "%ymm5"  -> `x5
-        | "%xmm6"  | "%ymm6"  -> `x6
-        | "%xmm7"  | "%ymm7"  -> `x7
-        | "%xmm8"  | "%ymm8"  -> `x8
-        | "%xmm9"  | "%ymm9"  -> `x9
-        | "%xmm10" | "%ymm10" -> `x10
-        | "%xmm11" | "%ymm11" -> `x11
-        | "%xmm12" | "%ymm12" -> `x12
-        | "%xmm13" | "%ymm13" -> `x13
-        | "%xmm14" | "%ymm14" -> `x14
-        | "%xmm15" | "%ymm15" -> `x15
-        | _ -> raise Not_found
-      in
-      inline_asm := { !inline_asm with clobber = c :: !inline_asm.clobber }
-    with Not_found -> ()
+    match decl.(i) with
+      "cc"     -> inline_asm := { !inline_asm with clobber_cc = true }
+    | "memory" -> inline_asm := { !inline_asm with clobber_memory = true }
+    | a ->
+        match parse_arch_specific a with
+          Some a ->
+            inline_asm := { !inline_asm with
+              arch_specifics = a :: !inline_asm.arch_specifics }
+        | None -> ()
   done;
   !inline_asm
 

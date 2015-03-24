@@ -339,7 +339,7 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if !pic_code then begin
+  if !Clflags.pic_code then begin
     let lbl_pic = new_label() in
     let lbl_got = gotrel_literal lbl_pic in
     let lbl_sym = symbol_literal s in
@@ -363,6 +363,39 @@ let emit_load_symbol_addr dst s =
     `	ldr	{emit_reg dst}, {emit_label lbl} @ {emit_symbol s}\n`;
     1
   end
+
+let asm_unique = ref 0
+
+let emit_asm i asm iargs =
+  incr asm_unique;
+  let open Inline_asm in
+  let open Inline_asm_arch in
+  let rec emit_template t =
+    Array.iter (function
+        Emit_string s -> `{emit_string s}`
+      | Emit_unique -> `{emit_string (string_of_int !asm_unique)}`
+      | Emit_dialect d -> emit_template d.(0)
+      | Emit_arg (n, _) ->
+          let iarg = iargs.(n) in
+          match iarg.Mach.kind with
+            \`imm n -> `#{emit_int (Int64.to_int n)}`
+          | \`unit -> `#{emit_int 0}`
+          | \`reg | \`stack ->
+              begin match iarg.src with
+                \`arg n -> `{emit_reg i.arg.(n)}`
+              | \`res n -> `{emit_reg i.res.(n)}`
+              end
+          | \`addr (chunk, addr, _) ->
+              match iarg.src with
+                \`arg n -> `{emit_addressing addr i.arg n}`
+              | \`res n -> `{emit_addressing addr i.res n}`) t
+  in
+  `	`;
+  emit_template asm.template;
+  `\n`;
+  List.fold_left (fun n -> function
+    | Clobber _ -> n
+    | Length n -> n) 1 asm.arch_specifics
 
 (* Output the assembly code for an instruction *)
 
@@ -623,6 +656,7 @@ let emit_instr i =
     | Lop(Iintoffloat) ->
         `	ftosizd	s14, {emit_reg i.arg.(0)}\n`;
         `	fmrs	{emit_reg i.res.(0)}, s14\n`; 2
+    | Lop(Iasm(asm, iargs)) -> emit_asm i asm iargs
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific Inegmulf as op) ->
         let instr = (match op with
                        Iaddf              -> "faddd"

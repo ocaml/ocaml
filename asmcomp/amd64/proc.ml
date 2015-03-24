@@ -292,42 +292,37 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iop(Iasm(asm, _)) ->
-      List.fold_left (fun regs c ->
-        try
-          let reg =
-            match c with
-            | `cc | `memory -> raise Not_found
-            | `a   -> rax
-            | `b   -> rbx
-            | `c   -> rcx
-            | `d   -> rdx
-            | `S   -> rsi
-            | `D   -> rdi
-            | `r8  -> r8
-            | `r9  -> r9
-            | `r10 -> r10
-            | `r11 -> r11
-            | `r12 -> r12
-            | `r13 -> r13
-            | `x0  -> rxmm0
-            | `x1  -> rxmm1
-            | `x2  -> rxmm2
-            | `x3  -> rxmm3
-            | `x4  -> rxmm4
-            | `x5  -> rxmm5
-            | `x6  -> rxmm6
-            | `x7  -> rxmm7
-            | `x8  -> rxmm8
-            | `x9  -> rxmm9
-            | `x10 -> rxmm10
-            | `x11 -> rxmm11
-            | `x12 -> rxmm12
-            | `x13 -> rxmm13
-            | `x14 -> rxmm14
-            | `x15 -> rxmm15
-          in
-          reg :: regs
-        with Not_found -> regs) [] asm.Inline_asm.clobber
+      List.map (function
+          Inline_asm_arch.R
+        | Inline_asm_arch.SSE -> assert false
+        | Inline_asm_arch.A   -> rax
+        | Inline_asm_arch.B   -> rbx
+        | Inline_asm_arch.C   -> rcx
+        | Inline_asm_arch.D   -> rdx
+        | Inline_asm_arch.SI   -> rsi
+        | Inline_asm_arch.DI   -> rdi
+        | Inline_asm_arch.R8  -> r8
+        | Inline_asm_arch.R9  -> r9
+        | Inline_asm_arch.R10 -> r10
+        | Inline_asm_arch.R11 -> r11
+        | Inline_asm_arch.R12 -> r12
+        | Inline_asm_arch.R13 -> r13
+        | Inline_asm_arch.X0  -> rxmm0
+        | Inline_asm_arch.X1  -> rxmm1
+        | Inline_asm_arch.X2  -> rxmm2
+        | Inline_asm_arch.X3  -> rxmm3
+        | Inline_asm_arch.X4  -> rxmm4
+        | Inline_asm_arch.X5  -> rxmm5
+        | Inline_asm_arch.X6  -> rxmm6
+        | Inline_asm_arch.X7  -> rxmm7
+        | Inline_asm_arch.X8  -> rxmm8
+        | Inline_asm_arch.X9  -> rxmm9
+        | Inline_asm_arch.X10 -> rxmm10
+        | Inline_asm_arch.X11 -> rxmm11
+        | Inline_asm_arch.X12 -> rxmm12
+        | Inline_asm_arch.X13 -> rxmm13
+        | Inline_asm_arch.X14 -> rxmm14
+        | Inline_asm_arch.X15 -> rxmm15) asm.Inline_asm.arch_specifics
       |> Array.of_list
   | Iswitch(_, _) -> [| rax; rdx |]
   | _ ->

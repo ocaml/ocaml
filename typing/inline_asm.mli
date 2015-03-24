@@ -12,6 +12,8 @@
 
 (* Description of inline asm primitives *)
 
+open Inline_asm_arch
+
 exception Inline_asm_error of string
 
 type arg_kind =
@@ -27,14 +29,8 @@ type arg_kind =
   | `Nativeint
   | `Unit ]
 
-type register =
-  [ `D  | `S  | `a   | `b   | `c   | `d
-  | `r8 | `r9 | `r10 | `r11 | `r12 | `r13
-  | `x0 | `x1 | `x2  | `x3  | `x4  | `x5  | `x6  | `x7
-  | `x8 | `x9 | `x10 | `x11 | `x12 | `x13 | `x14 | `x15 ]
-
 type alternative = {
-  mach_register    : [ `r | `sse | register ];
+  mach_register    : register option;
   copy_to_output   : int option;
   commutative      : bool;
   disparage        : int;
@@ -68,10 +64,12 @@ type template_item =
 and template = template_item array
 
 type inline_asm = {
-  template : template;
-  args     : arg array;
-  clobber  : [ `cc | `memory | register ] list;
-  decl     : string array }
+  template       : template;
+  args           : arg array;
+  clobber_cc     : bool;
+  clobber_memory : bool;
+  arch_specifics : arch_specific list;
+  decl           : string array }
 
 val parse: arg_kind list -> string list -> inline_asm
 

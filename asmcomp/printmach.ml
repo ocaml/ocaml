@@ -150,7 +150,11 @@ let operation op arg ppf res =
       let rec print a =
         Array.iter (function
             Emit_dialect d ->
-              print d.(if X86_proc.masm then 1 else 0)
+              for i = 0 to Array.length d - 1 do
+                fprintf ppf (if i = 0 then "{" else " | ");
+                print d.(i)
+              done;
+              fprintf ppf "}"
           | Emit_string s -> fprintf ppf "%s" s
           | Emit_unique -> fprintf ppf "%%="
           | Emit_arg (i, modifier) ->
