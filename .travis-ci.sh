@@ -4,7 +4,7 @@ i386)
   make world.opt
   sudo make install
   cd testsuite && make all
-  git clone git://github.com/ocaml/camlp4
+  git clone git://github.com/ocaml/camlp4 -b 4.02
   cd camlp4 && ./configure && make && sudo make install
   git clone git://github.com/ocaml/opam
   cd opam && ./configure && make lib-ext && make && sudo make install
