@@ -91,6 +91,7 @@ Bug fixes:
   (Benoît Vaugon)
 - PR#6799: include guards missing for unixsupport.h and other files
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
+- PR#6817: GADT exhaustiveness breakage with modules
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
