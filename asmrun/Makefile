@@ -25,7 +25,7 @@ COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
   finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
-  debugger.o meta.o dynlink.o addrmap.o domain.o minor_heap.o platform.o \
+  debugger.o meta.o dynlink.o addrmap.o domain.o platform.o \
   eventlog.o params.o frame_descriptors.o
 
 ASMOBJS=$(ARCH).o
@@ -166,8 +166,6 @@ addrmap.c: ../byterun/addrmap.c
 	ln -s ../byterun/addrmap.c addrmap.c
 domain.c: ../byterun/domain.c
 	ln -s ../byterun/domain.c domain.c
-minor_heap.c: ../byterun/minor_heap.c
-	ln -s ../byterun/minor_heap.c minor_heap.c
 platform.c: ../byterun/platform.c
 	ln -s ../byterun/platform.c platform.c
 eventlog.c: ../byterun/eventlog.c
@@ -180,7 +178,7 @@ LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
-  domain.c minor_heap.c platform.c eventlog.c
+  domain.c platform.c eventlog.c
 
 clean::
 	rm -f $(LINKEDFILES)

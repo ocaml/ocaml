@@ -5,7 +5,6 @@
 #include "fail.h"
 #include "memory.h"
 #include "shared_heap.h"
-#include "minor_heap.h"
 #include "domain.h"
 #include "addrmap.h"
 #include "roots.h"
