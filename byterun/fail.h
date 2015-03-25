@@ -55,8 +55,8 @@ struct caml_exception_context {
   struct caml__roots_block* local_roots;
 };
 
-CAMLextern struct caml_exception_context * caml_external_raise;
-extern value caml_exn_bucket;
+CAMLextern __thread struct caml_exception_context * caml_external_raise;
+extern __thread value caml_exn_bucket;
 int caml_is_special_exception(value exn);
 
 /* </private> */
