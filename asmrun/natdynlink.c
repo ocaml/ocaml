@@ -20,6 +20,7 @@
 #include "caml/intext.h"
 #include "caml/osdeps.h"
 #include "caml/fail.h"
+#include "caml/signals.h"
 
 #include <stdio.h>
 #include <string.h>

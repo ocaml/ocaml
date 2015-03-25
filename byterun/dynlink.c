@@ -30,6 +30,7 @@
 #include "caml/misc.h"
 #include "caml/osdeps.h"
 #include "caml/prims.h"
+#include "caml/signals.h"
 
 #ifndef NATIVE_CODE
 
