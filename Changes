@@ -246,6 +246,8 @@ Bug fixes:
   (Daniel Bünzli)
 - GPR#251: fix cross-compilation with ocamldoc enabled
   (whitequark)
+- GPR#269: fix compilation of the native toplevel
+  (Jérémie Dimino, Thomas Refis)
 
 Features wishes:
 - PR#4714: List.cons
