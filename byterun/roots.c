@@ -51,10 +51,11 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
   value* sp;
 
 #ifdef NATIVE_CODE
+  /* FIXME: does not work when domain != self */
   caml_scan_stack_roots(f, caml_bottom_of_stack,
                         caml_last_return_address, caml_gc_regs);
 #else
-  f(caml_current_stack, &caml_current_stack);
+  f(*(domain->current_stack), domain->current_stack);
 #endif
   for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
