@@ -24,7 +24,7 @@ ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
 	         $(EXTRALIBS) libcamlrun.$(A)
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \
+	$(MKEXE) -o ocamlrund$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \
 	         $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
 
 libcamlrun.$(A): $(OBJS)
