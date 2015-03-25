@@ -26,8 +26,8 @@
 #include "signals.h"
 #include "fiber.h"
 
-CAMLexport struct caml_exception_context * caml_external_raise = NULL;
-value caml_exn_bucket;
+CAMLexport __thread struct caml_exception_context * caml_external_raise = NULL;
+__thread value caml_exn_bucket;
 
 CAMLexport void caml_raise(value v)
 {
