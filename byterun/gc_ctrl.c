@@ -29,7 +29,6 @@
 #include "domain.h"
 #include "globroots.h"
 #include "signals.h"
-#include "minor_heap.h"
 #include "startup.h"
 
 #ifndef NATIVE_CODE
@@ -471,9 +470,7 @@ major_heap_size =
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
 
-  caml_init_minor_heaps();
-  
-  caml_domain_register_main(caml_startup_params.minor_heap_init);
+  caml_init_domains(caml_startup_params.minor_heap_init);
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);

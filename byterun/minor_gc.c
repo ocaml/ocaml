@@ -26,7 +26,6 @@
 #include "signals.h"
 #include "weak.h"
 #include "domain.h"
-#include "minor_heap.h"
 #include "shared_heap.h"
 #include "addrmap.h"
 #include "fiber.h"
@@ -75,14 +74,8 @@ static void clear_table (struct caml_ref_table *tbl)
 void caml_set_minor_heap_size (asize_t size)
 {
   if (caml_young_ptr != caml_young_end) caml_minor_collection ();
-  Assert (caml_young_ptr == caml_young_end);
-  caml_free_minor_heap ();
 
-  caml_allocate_minor_heap(size);
-
-  caml_update_young_limit((uintnat)caml_young_start);
-  caml_young_ptr = caml_young_end;
-  caml_minor_heap_size = size;
+  caml_reallocate_minor_heap(size);
 
   reset_table (&caml_remembered_set.ref);
 }
