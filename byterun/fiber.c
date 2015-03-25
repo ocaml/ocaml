@@ -97,8 +97,10 @@ struct caml_runqueue* caml_init_runqueue()
 {
   value stack;
 
-  /* Create a stack for the main program */
-  stack = caml_alloc(Stack_size/sizeof(value), Stack_tag);
+  /* Create a stack for the main program.
+     The GC is not initialised yet, so we use caml_alloc_shr
+     which cannot trigger it */
+  stack = caml_alloc_shr(Stack_size/sizeof(value), Stack_tag);
   Stack_sp(stack) = 0;
   Stack_dirty_domain(stack) = 0;
   load_stack(stack);

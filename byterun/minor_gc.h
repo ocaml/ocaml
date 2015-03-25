@@ -16,7 +16,6 @@
 
 
 #include "misc.h"
-#include "minor_heap.h"
 #include "addrmap.h"
 
 CAMLextern __thread char *caml_young_ptr;
@@ -49,6 +48,7 @@ CAMLextern void caml_minor_collection (void);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
+struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
 
 #define Oldify(p) do{ \
