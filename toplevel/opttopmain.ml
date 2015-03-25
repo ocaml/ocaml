@@ -67,6 +67,7 @@ module Options = Main_args.Make_opttop_options (struct
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
+  let _noinit = set noinit
   let _inline n = inline_threshold := n * 8
   let _labels = clear classic
   let _no_alias_deps = set transparent_modules
@@ -101,6 +102,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
+  let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split
@@ -111,6 +113,9 @@ module Options = Main_args.Make_opttop_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _safe_string = clear unsafe_string
+  let _unsafe_string = set unsafe_string
+  let _open s = open_modules := s :: !open_modules
 
   let anonymous = file_argument
 end);;
