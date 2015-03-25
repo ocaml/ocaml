@@ -277,7 +277,9 @@ installopt:
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
 	   else :; fi
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
+	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKE) installopt
 
@@ -659,15 +661,25 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i all; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i all || exit $$?; \
+	done
 otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i allopt; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i allopt || exit $$?; \
+	done
 partialclean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i partialclean; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i partialclean || exit $$?; \
+	done
 clean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i clean; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i clean || exit $$?; \
+	done
 alldepend::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i depend; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i depend || exit $$?; \
+	done
 
 # The replay debugger
 
