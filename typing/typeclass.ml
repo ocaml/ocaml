@@ -676,6 +676,8 @@ let rec class_field self_loc cl_num self_type meths vars
 
       let field =
         lazy begin
+          (* Read the generalized type *)
+          let (_, ty) = Meths.find lab.txt !meths in
           let meth_type =
             Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
@@ -815,12 +817,16 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of method bodies *)
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  (* if !Clflags.principal then *) begin
+    let ms = !meths in
+    (* Generalize the spine of methods accessed through self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) ms;
+    meths :=
+      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance val_env ty)) ms;
+    (* But keep levels correct on the type of self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
+  end;
   let fields = List.map Lazy.force (List.rev fields) in
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
-      methods;
   let meths = Meths.map (function (id, ty) -> id) !meths in
 
   (* Check for private methods made public *)
@@ -1217,7 +1223,7 @@ let initial_env define_class approx
 
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in
-  if !Clflags.principal then Ctype.generalize_spine constr_type;
+  (*if !Clflags.principal then*) Ctype.generalize_spine constr_type;
   let dummy_cty =
     Cty_signature
       { csig_self = Ctype.newvar ();

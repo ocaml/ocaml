@@ -53,6 +53,7 @@ Standard library:
   (Daniel Bünzli, review by Jacques-Pascal Deplaix)
 
 Type system:
+- PR#5545: Type annotations on methods cannot control the choice of abbreviation
 * PR#6465: allow incremental weakening of module aliases (Jacques Garrigue).
   This is done by adding equations to submodules when expanding aliases.
   In theory this may be incompatible is some corner cases defining a module

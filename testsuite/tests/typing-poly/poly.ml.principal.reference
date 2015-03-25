@@ -74,7 +74,11 @@
     method empty : bool
     method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c
   end
-#                   class ['a] ostream1 :
+#                   Characters 166-178:
+      self#tl#fold ~f ~init:(f self#hd init)
+      ^^^^^^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+class ['a] ostream1 :
   hd:'a ->
   tl:'b ->
   object ('b)
