@@ -59,6 +59,11 @@ method select_addressing chunk exp =
       then (Iindexed2, Ctuple[e1; e2])
       else (Iindexed d, Cop(Cadda, [e1; e2]))
 
+method! asm_pseudoreg alt r =
+  match alt.Inline_asm.mach_register with
+  | Some Inline_asm_arch.FP -> Reg.create Float
+  | _ -> r
+
 method! select_operation op args =
   match (op, args) with
   (* PowerPC does not support immediate operands for multiply high *)

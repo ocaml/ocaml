@@ -70,6 +70,10 @@ let register_class r =
     Int -> 0
   | Addr -> 0
   | Float -> 1
+  | M128d
+  | M128i
+  | M256d
+  | M256i -> fatal_error "Vector data types not supported on architecture Power"
 
 let num_available_registers = [| 23; 31 |]
 
@@ -125,6 +129,10 @@ let calling_conventions
           loc.(i) <- stack_slot (make_stack !ofs) Float;
           ofs := !ofs + size_float
         end
+    | M128d
+    | M128i
+    | M256d
+    | M256i -> fatal_error "Vector data types not supported on architecture Power"
   done;
   (loc, Misc.align !ofs 16)
   (* Keep stack 16-aligned. *)
@@ -180,6 +188,10 @@ let poweropen_external_conventions first_int last_int
           ofs := !ofs + size_float
         end;
         int := !int + (if ppc64 then 1 else 2)
+    | M128d
+    | M128i
+    | M256d
+    | M256i -> fatal_error "Vector data types not supported on architecture Power"
   done;
   (loc, Misc.align !ofs 16) (* Keep stack 16-aligned *)
 
@@ -214,6 +226,18 @@ let destroyed_at_c_call =
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+  | Iop(Iasm(asm, _)) ->
+      let open Inline_asm_arch in
+      List.fold_left (fun regs -> function
+          Length _ -> regs
+        | Clobber r ->
+            match r with
+              F n when n >= 1  && n <= 31 -> hard_float_reg.(n - 1) :: regs
+            | R n when n >= 3  && n <= 10 -> hard_int_reg.(n - 3) :: regs
+            | R n when n >= 14 && n <= 28 -> hard_int_reg.(n - 8) :: regs
+            | F _ | R _ | FP -> assert false
+      ) [] asm.Inline_asm.arch_specifics
+      |> Array.of_list
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
