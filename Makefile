@@ -118,7 +118,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file INSTALL."
 	@echo "If you've just unpacked the distribution, something like"
 	@echo "	./configure"
-	@echo "	make world.opt"
+	@echo "	make world"
 	@echo "	make install"
 	@echo "should work.  But see the file INSTALL for more details."
 
@@ -137,6 +137,7 @@ world:
 
 # Compile also native code compiler and libraries, fast
 world.opt:
+	$(error Multicore doesn't yet support native code compiler. `make world` will build the bytecode compiler)
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
 
