@@ -128,6 +128,21 @@ struct caml__mutex_unwind {
          caml_local_roots->mutexes->next)
 
 
+/* One-shot events.
+   Once created, can be waited for (once) or triggered (once).
+   Events cannot be reused, and are free after being both
+   waited for and triggered */
+
+typedef struct {
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  int waited, triggered;
+} caml_plat_event;
+
+void caml_plat_event_init(caml_plat_event*);
+void caml_plat_event_wait(caml_plat_event*);
+void caml_plat_event_trigger(caml_plat_event*);
+
 
 /* Better implementations of shared_stack can use CAS (+ABA protection) or LL/SC */
 

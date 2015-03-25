@@ -3,6 +3,41 @@
 #include "platform.h"
 #include "fail.h"
 
+/* One-shot events */
+
+
+void caml_plat_event_init(caml_plat_event* e)
+{
+  pthread_mutex_init(&e->mutex, 0);
+  pthread_cond_init(&e->cond, 0);
+  e->triggered = e->waited = 0;
+}
+
+void caml_plat_event_wait(caml_plat_event* e)
+{
+  pthread_mutex_lock(&e->mutex);
+  Assert(!e->waited);
+  e->waited = 1;
+  while (!e->triggered) {
+    pthread_cond_wait(&e->cond, &e->mutex);
+  }
+  pthread_mutex_unlock(&e->mutex);
+  pthread_mutex_destroy(&e->mutex);
+  pthread_cond_destroy(&e->cond);
+}
+
+void caml_plat_event_trigger(caml_plat_event* e)
+{
+  pthread_mutex_lock(&e->mutex);
+  Assert(!e->triggered);
+  e->triggered = 1;
+  pthread_cond_broadcast(&e->cond);
+  pthread_mutex_unlock(&e->mutex);
+}
+
+
+/* Memory management */
+
 #define Is_power_2(align) \
   ((align) != 0 && ((align) & ((align) - 1)) == 0)
 
