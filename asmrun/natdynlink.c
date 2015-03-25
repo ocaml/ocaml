@@ -20,6 +20,7 @@
 #include "intext.h"
 #include "osdeps.h"
 #include "fail.h"
+#include "signals.h"
 
 #include <stdio.h>
 #include <string.h>

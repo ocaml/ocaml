@@ -30,6 +30,7 @@
 #include "misc.h"
 #include "osdeps.h"
 #include "prims.h"
+#include "signals.h"
 
 #ifndef NATIVE_CODE
 
