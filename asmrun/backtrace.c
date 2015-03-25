@@ -72,14 +72,16 @@ CAMLprim value caml_backtrace_status(value vunit)
 frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 {
   frame_descr * d;
+  frame_table_elt e;
   uintnat h;
 
   while (1) {
     h = Hash_retaddr(*pc);
     while (1) {
-      d = caml_frame_descriptors[h];
+      e = caml_frame_descriptors[h];
+      d = e.frame_descr;
       if (d == 0) return NULL; /* can happen if some code compiled without -g */
-      if (d->retaddr == *pc) break;
+      if (e.retaddr == *pc) break;
       h = (h+1) & caml_frame_descriptors_mask;
     }
     /* Skip to next frame */
