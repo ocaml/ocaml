@@ -69,7 +69,7 @@ win32.$(O): ../byterun/win32.c
 	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(IFLEXDIR) ../byterun/win32.c
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c $<
 
 clean::
 	rm -f $(LINKEDFILES)

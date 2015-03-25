@@ -150,6 +150,7 @@ CAMLprim value caml_float_of_string(value vs)
  error:
   if (buf != parse_buffer) caml_stat_free(buf);
   caml_failwith("float_of_string");
+  return Val_unit; /* not reached */
 }
 
 CAMLprim value caml_int_of_float(value f)

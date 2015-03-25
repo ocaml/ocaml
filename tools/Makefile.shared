@@ -276,8 +276,15 @@ beforedepend:: opnames.ml
 
 # Display info on compiled files
 
+ifeq "$(CCOMPTYPE)" "msvc"
+CCOUT = -Fe
+else
+EMPTY =
+CCOUT = -o $(EMPTY)
+endif
+
 objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
+	$(BYTECC) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
           objinfo_helper.c $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \

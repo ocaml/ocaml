@@ -1660,6 +1660,12 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Add Unix-style optimization flag
+bytecccompopts="-O $bytecccompopts"
+dllcccompopts="-O $dllcccompopts"
+nativecccompopts="-O $nativecccompopts"
+sharedcccompopts="-O $sharedcccompopts"
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"

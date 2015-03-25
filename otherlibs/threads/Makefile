@@ -16,7 +16,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
+CFLAGS=-I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 ROOTDIR=../..
 CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
