@@ -35,7 +35,6 @@ void (*caml_scan_roots_hook) (scanning_action) = NULL;
 /* Invariant:
    either caml_frame_descriptors or caml_old_frame_descriptors is NULL */
 frame_descr ** caml_frame_descriptors = NULL;
-static frame_descr ** caml_old_frame_descriptors = NULL;
 int caml_frame_descriptors_mask = 0;
 
 /* Linked-list */
@@ -58,74 +57,37 @@ static link *cons(void *data, link *tl) {
 /* Linked-list of frametables */
 
 static link *frametables = NULL;
-static link *registered_frametables = NULL;
+static intnat num_descr = 0;
 
-void caml_register_frametable(intnat *table) {
-  registered_frametables = cons(table,registered_frametables);
-
-  if (NULL != caml_frame_descriptors) {
-    caml_old_frame_descriptors = caml_frame_descriptors;
-    caml_frame_descriptors = NULL;
-    /* force caml_init_frame_descriptors to be called */
   }
 }
 
-void caml_init_frame_descriptors(void)
-{
-  intnat tblsize, i, j, len;
+static int count_desciptors(link *list) {
+  intnat num_descr = 0;
+  link *lnk;
+  iter_list(list,lnk) {
+    num_descr += *((intnat*) lnk->data);
+  }
+  return num_descr;
+}
+
+static link* frametables_list_tail(link *list) {
+  link *lnk, *tail = NULL;
+  iter_list(list,lnk) {
+    tail = lnk;
+  }
+  return tail;
+}
+
+static void fill_hashtable(link *frametables) {
+  intnat len, j;
   intnat * tbl;
   frame_descr * d;
   uintnat nextd;
   uintnat h;
-  link *lnk;
-  link *registered_frametables_tail = NULL;
+  link *lnk = NULL;
 
-  static int inited = 0;
-  static intnat num_descr = 0;
-
-  Assert(!inited || caml_old_frame_descriptors);
-
-  if (!inited) {
-    for (i = 0; caml_frametable[i] != 0; i++)
-      caml_register_frametable(caml_frametable[i]);
-    inited = 1;
-  }
-
-  Assert(registered_frametables);
-
-  /* Count the frame descriptors and find the tail */
-  iter_list(registered_frametables,lnk) {
-    num_descr += *((intnat*) lnk->data);
-    registered_frametables_tail = lnk;
-  }
-
-  /* Reallocate the caml_frame_descriptor table if it is too small */
-  if(caml_frame_descriptors_mask + 1 < 2 * num_descr) {
-
-    /* The size of the hashtable is a power of 2 greater or equal to
-       2 times the number of descriptors */
-    tblsize = 4;
-    while (tblsize < 2 * num_descr) tblsize *= 2;
-
-    /* Re-allocate the hash table */
-    if(caml_old_frame_descriptors) caml_stat_free(caml_old_frame_descriptors);
-    caml_old_frame_descriptors = NULL;
-    caml_frame_descriptors =
-      (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
-    for (i = 0; i < tblsize; i++) caml_frame_descriptors[i] = NULL;
-    caml_frame_descriptors_mask = tblsize - 1;
-
-    /* mark everything for update */
-    registered_frametables_tail->next = frametables;
-    frametables = NULL;
-  } else {
-    caml_frame_descriptors = caml_old_frame_descriptors;
-    caml_old_frame_descriptors = NULL;
-  }
-
-  /* Fill the hash table */
-  iter_list(registered_frametables,lnk) {
-    registered_frametables_tail = lnk;
+  iter_list(frametables,lnk) {
     tbl = (intnat*) lnk->data;
     len = *tbl;
     d = (frame_descr *)(tbl + 1);
@@ -144,9 +106,57 @@ void caml_init_frame_descriptors(void)
       d = (frame_descr *) nextd;
     }
   }
-  registered_frametables_tail->next = frametables;
-  frametables = registered_frametables;
-  registered_frametables = NULL;
+}
+
+static void init_frame_descriptors(link *new_frametables)
+{
+  intnat tblsize, increase, i;
+  link *tail = NULL;
+
+  Assert(new_frametables);
+
+  tail = frametables_list_tail(new_frametables);
+  increase = count_desciptors(new_frametables);
+  tblsize = caml_frame_descriptors_mask + 1;
+
+  /* Reallocate the caml_frame_descriptor table if it is too small */
+  if(tblsize < (num_descr + increase) * 2) {
+
+    /* Merge both lists */
+    tail->next = frametables;
+    frametables = NULL;
+
+    /* [num_descr] can be less than [num_descr + increase] if frame
+       tables where unregistered */
+    num_descr = count_desciptors(new_frametables);
+
+    tblsize = 4;
+    while (tblsize < 2 * num_descr) tblsize *= 2;
+
+    caml_frame_descriptors_mask = tblsize - 1;
+    if(caml_frame_descriptors) caml_stat_free(caml_frame_descriptors);
+    caml_frame_descriptors =
+      (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
+    for (i = 0; i < tblsize; i++) caml_frame_descriptors[i] = NULL;
+  } else {
+    num_descr += increase;
+  }
+
+  fill_hashtable(new_frametables);
+  tail->next = frametables;
+}
+
+void caml_init_frame_descriptors(void) {
+  intnat i;
+  link *new_frametables = NULL;
+  for (i = 0; caml_frametable[i] != 0; i++)
+    new_frametables = cons(caml_frametable[i],new_frametables);
+  init_frame_descriptors(new_frametables);
+}
+
+void caml_register_frametable(intnat *table) {
+  link *new_frametables = cons(table,NULL);
+  init_frame_descriptors(new_frametables);
 }
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
@@ -203,7 +213,6 @@ void caml_oldify_local_roots (void)
   }
 
   /* The stack and local roots */
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
   regs = caml_gc_regs;
@@ -298,7 +307,6 @@ void caml_do_roots (scanning_action f)
   }
 
   /* The stack and local roots */
-  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
   /* Global C roots */
