@@ -45,6 +45,8 @@ let remove_loc =
 let is_not_doc = function
   | ({Location.txt = "ocaml.doc"}, _) -> false
   | ({Location.txt = "ocaml.text"}, _) -> false
+  | ({Location.txt = "doc"}, _) -> false
+  | ({Location.txt = "text"}, _) -> false
   | _ -> true
 
 let attrs s x =
