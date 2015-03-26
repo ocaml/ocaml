@@ -106,23 +106,11 @@ prims.c : primitives
 	 sed -e 's/.*/	"&",/' primitives; \
 	 echo '	 0 };') > prims.c
 
-opnames.h : instruct.h
-	sed -e '/\/\*/d' \
-	    -e '/^#/d' \
-	    -e 's/enum /char * names_of_/' \
-	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' instruct.h > opnames.h
-
-# jumptbl.h is required only if you have GCC 2.0 or later
-jumptbl.h : instruct.h
-	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
-	       -e '/^}/q' instruct.h > jumptbl.h
-
 version.h : ../VERSION ../tools/make-version-header.sh
 	../tools/make-version-header.sh ../VERSION > version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
-	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
+	rm -f primitives prims.c ld.conf
 	rm -f version.h
 .PHONY: clean

@@ -538,9 +538,8 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
-	awk -f tools/make-opcodes > bytecomp/opcodes.ml
+bytecomp/opcodes.ml: byterun/instruct.tbl
+	$(CPP) -I byterun bytecomp/opcodes.ml.c > bytecomp/opcodes.ml
 
 partialclean::
 	rm -f bytecomp/opcodes.ml

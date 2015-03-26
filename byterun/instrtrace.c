@@ -22,9 +22,15 @@
 #include "instruct.h"
 #include "misc.h"
 #include "mlvalues.h"
-#include "opnames.h"
 #include "prims.h"
 #include "stacks.h"
+
+char* names_of_instructions [] = {
+#define Instruction(name) #name,
+#include "instruct.tbl"
+#undef Instruction
+};
+
 
 extern code_t caml_start_code;
 

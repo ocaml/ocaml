@@ -220,7 +220,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
-#    include "jumptbl.h"
+#define Instruction(name) &&lbl_##name,
+#include "instruct.tbl"
+#undef Instruction
   };
 #endif
 
