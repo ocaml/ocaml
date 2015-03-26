@@ -19,11 +19,6 @@
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
    with OS-level threads, called "domains".
-
-   A domain is "alive" from when it is created until it terminates,
-   and is "active" during that time except when blocked in a
-   long-running system call / C call. Such long-running calls are
-   wrapped by caml_domain_deactivate and caml_domain_activate.
 */
 
 
@@ -32,23 +27,14 @@ struct dom_internal {
   atomic_uintnat* interrupt_word_address;
   struct domain state;
 
-  /* fields accessed concurrently by several threads */
-  atomic_uintnat is_active; /* domain is not in a blocking section */
-
   /* fields accessed by the domain itself and the domain requesting an RPC */
   atomic_uintnat rpc_request;
   domain_rpc_handler rpc_handler;
   void* rpc_data;
   atomic_uintnat* rpc_completion_signal;
-  
 
-  /* fields protected by roots_lock */
+
   caml_plat_mutex roots_lock;
-  int sampled_roots_dirty;
-
-
-  /* fields only modified during STW */
-  struct dom_internal* next;
 
   /* fields protected by all_domains_lock */
   int running;
@@ -75,6 +61,29 @@ static __thread dom_internal* domain_self;
 
 CAMLexport __thread char *caml_young_start = NULL, *caml_young_end = NULL;
 
+static __thread char domains_locked[Max_domains];
+
+/* If you lock a domain, you are responsible for handling
+   its incoming RPC requests */
+static int try_lock_domain(dom_internal* target) {
+  Assert(domains_locked[target->state.id] == 0);
+  if (caml_plat_try_lock(&target->roots_lock)) {
+    domains_locked[target->state.id] = 1;
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+static int domain_is_locked(dom_internal* target) {
+  return domains_locked[target->state.id];
+}
+
+static void unlock_domain(dom_internal* target) {
+  Assert(domains_locked[target->state.id] == 1);
+  domains_locked[target->state.id] = 0;
+  caml_plat_unlock(&target->roots_lock);
+}
 
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
@@ -123,9 +132,7 @@ void caml_reallocate_minor_heap(asize_t size)
 }
 
 /* must be run on the domain's thread */
-static void activate_domain();
-
-static dom_internal* create_domain(uintnat initial_minor_heap_size, int is_main) {
+static void create_domain(uintnat initial_minor_heap_size, int is_main) {
   int i;
   dom_internal* d = 0;
   Assert (domain_self == 0);
@@ -141,16 +148,16 @@ static dom_internal* create_domain(uintnat initial_minor_heap_size, int is_main)
 
   if (d) {
     d->running = 1;
-    atomic_store_rel(&d->is_active, 0);
     d->state.is_main = 0;
     d->state.internals = d;
     /* FIXME: shutdown RPC? */
     atomic_store_rel(&d->rpc_request, RPC_IDLE);
 
     domain_self = d;
+    caml_plat_lock(&d->roots_lock);
+
     caml_young_start = caml_young_end = caml_young_ptr = 0;
     d->interrupt_word_address = &caml_young_limit;
-    caml_plat_mutex_init(&d->roots_lock);
 
     d->state.shared_heap = caml_init_shared_heap();
     caml_init_major_gc();
@@ -171,8 +178,6 @@ static dom_internal* create_domain(uintnat initial_minor_heap_size, int is_main)
     d->state.mark_stack_count = &caml_mark_stack_count;
   }
   caml_plat_unlock(&all_domains_lock);
-
-  return d;
 }
 
 
@@ -208,13 +213,11 @@ void caml_init_domains(uintnat minor_size) {
   }
 
 
-  dom_internal* dom = create_domain(minor_size, 1);
-  if (!dom) caml_fatal_error("Failed to create main domain");
+  create_domain(minor_size, 1);
+  if (!domain_self) caml_fatal_error("Failed to create main domain");
 
   caml_init_global_roots();
   caml_init_signal_handling();
-
-  activate_domain();
 }
 
 
@@ -225,19 +228,6 @@ static void domain_terminate() {
   /* FIXME: proper domain termination and reuse */
   /* interrupt_word_address must not go away */
   pause();
-}
-
-
-static void domain_filter_live() {
-  int i;
-  caml_plat_lock(&all_domains_lock);
-  for (i = 0; i < Max_domains; i++) {
-    dom_internal* d = &all_domains[i];
-    if (!atomic_load_acq(&d->is_active)) {
-      d->sampled_roots_dirty = 1;
-    }
-  }
-  caml_plat_unlock(&all_domains_lock);
 }
 
 struct domain_startup_params {
@@ -252,12 +242,12 @@ static void* domain_thread_func(void* v) {
   struct domain_startup_params* p = v;
 
   callback = p->callback;
-  p->newdom = create_domain(caml_startup_params.minor_heap_init, 0);
+  create_domain(caml_startup_params.minor_heap_init, 0);
+  p->newdom = domain_self;
   caml_plat_event_trigger(&p->ev);
 
-  if (p->newdom) {
+  if (domain_self) {
     caml_gc_log("Domain starting");
-    activate_domain();
     /* FIXME exceptions */
     caml_callback_exn(callback, Val_unit);
     domain_terminate();
@@ -414,51 +404,8 @@ void caml_handle_gc_interrupt(int required_words) {
   }
 }
 
-void caml_domain_spin() {
-  check_rpc();
-  cpu_relax();
-}
-
-
-
-
-/* Once per GC cycle, the world stops and all active domains (those
-   not engaged in a long-running system call) synchronise. Below is
-   the implementation of the synchronisation barrier. It's more or
-   less a standard linear barrier, except it needs to handle the
-   number of participating domains varying (as domains become active
-   or inactive). */
-
-/* 3 fields are packed into domstat, so they may be modified atomically
-    phase   (1 bit)   - current phase of barrier executing
-    waiters (15 bits) - number of domains currently waiting on barrier
-    active  (15 bits) - number of domains currently active */
-    
-static atomic_uintnat domstat;
-#define DOMSTAT_PHASE(stat)   ((stat) & 1)
-#define DOMSTAT_WAITERS(stat) (((stat) & 0xffff) >> 1)
-#define DOMSTAT_ACTIVE(stat)  ((stat) >> 16)
-
-/* Activating a domain blocks until the current stop-the-world phase
-   is complete */
-static void activate_domain() 
-{
-  /* add 1 to DOMSTAT_ACTIVE when DOMSTAT_PHASE and DOMSTAT_WAITERS are zero */
-  while (1) {
-    uintnat stat = atomic_load_acq(&domstat);
-    if (DOMSTAT_PHASE(stat) == 0 && DOMSTAT_WAITERS(stat) == 0) {
-      /* DOMSTAT_ACTIVE += 1 */
-      if (atomic_cas(&domstat, stat, stat + 0x10000)) break;
-    }
-    cpu_relax();
-  }
-
-  atomic_store_rel(&domain_self->is_active, 1);
-  caml_plat_lock(&domain_self->roots_lock);
-}
-
 CAMLexport void caml_leave_blocking_section() {
-  activate_domain();
+  caml_plat_lock(&domain_self->roots_lock);
   caml_restore_stack_gc();
   caml_process_pending_signals();
 }
@@ -466,130 +413,106 @@ CAMLexport void caml_leave_blocking_section() {
 CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
-  domain_self->sampled_roots_dirty = 1;
   caml_plat_unlock(&domain_self->roots_lock);
-  atomic_store_rel(&domain_self->is_active, 0);
-  /* subtract 1 from DOMSTAT_ACTIVE */
-  atomic_fetch_add(&domstat, -0x10000);
 }
 
-struct rpc_domain_takeover {
-  dom_internal* target;
-  struct rpc_domain_takeover* next;
-};
-static int try_lock_domain(struct rpc_domain_takeover* takeover, 
-                           dom_internal* target);
-static void unlock_domain(struct rpc_domain_takeover* takeover);
 
-static void gc_inactive_domains()
-{
-  while (1) {
-    /* find a running, inactive, dirty domain
-       and try to take its roots_lock */
-    int i;
-    struct dom_internal* found = 0;
-    struct rpc_domain_takeover takeover;
-    caml_plat_lock(&all_domains_lock);
-    for (i = 0; i < Max_domains; i++) {
-      struct dom_internal* d = &all_domains[i];
-      if (d->running && try_lock_domain(&takeover, d)) {
-        if (d->sampled_roots_dirty) {
-          d->sampled_roots_dirty = 0;
-          found = d;
-          break;
-        } else {
-          unlock_domain(&takeover);
-        }
+static atomic_uintnat heaps_marked;
+static atomic_uintnat domain_accounted_for[Max_domains];
+
+static void stw_phase () {
+  int i;
+  int my_heaps = 0;
+  char inactive_domains_locked[Max_domains] = {0};
+
+  /* First, make sure all domains are accounted for. */
+  for (i = 0; i < Max_domains; i++) {
+    dom_internal* d = &all_domains[i];
+    while (!atomic_load_acq(&domain_accounted_for[i])) {
+      /* not accounted for yet */
+      int mine = (d == domain_self) || domain_is_locked(d);
+      if (!mine && try_lock_domain(d)) {
+        /* mine now! */
+        inactive_domains_locked[i] = 1;
+        mine = 1;
       }
-    }
-    caml_plat_unlock(&all_domains_lock);
-
-    if (!found) break;
-
-    /* If we found one, GC it */
-    caml_gc_log("GCing inactive domain [%02d]", found->state.id);
-
-    while (caml_sweep(found->state.shared_heap, 10) <= 0);
-
-    caml_do_sampled_roots(&caml_darken, &found->state);
-    caml_empty_mark_stack();
-
-    caml_cycle_heap(found->state.shared_heap);
-
-    unlock_domain(&takeover);
-  }
-}
-
-/* synchronise all domains. returns 1 if this was the last domain to enter the barrier */
-static int barrier_enter(int phase) {
-  uintnat oldstat = atomic_fetch_add(&domstat, 2); /* DOMSTAT_WAITERS += 1 */
-  uintnat ticket = DOMSTAT_WAITERS(oldstat) + 1; /* we just set DOMSTAT_WAITERS to ticket */
-  Assert (DOMSTAT_WAITERS(oldstat) < DOMSTAT_ACTIVE(oldstat));
-  Assert (DOMSTAT_PHASE(oldstat) == phase);
-  
-  while (1) {
-    uintnat newstat = atomic_load_acq(&domstat);
-    if (DOMSTAT_WAITERS(newstat) != ticket || DOMSTAT_PHASE(newstat) != phase) {
-      /* we are no longer the most recent domain to enter the barrier */
-      /* wait for the barrier to complete */
-      while (1) {
-        uintnat stat = atomic_load_acq(&domstat);
-        if (DOMSTAT_PHASE(stat) != phase) break;
+      if (mine) {
+        /* accounted for by current thread */
+        atomic_store_rel(&domain_accounted_for[i], 1);
+        my_heaps++;
+      } else {
+        /* locked by some other thread,
+           but not yet accounted for, need to wait */
         check_rpc();
         cpu_relax();
       }
-      return 0;
-    } else if (DOMSTAT_ACTIVE(newstat) == DOMSTAT_WAITERS(newstat)) {
-      /* we are the most recent domain to enter the barrier, and there
-         are no more active domains to enter the barrier, either because
-         we were last or the remaining domains deactivated. */
-      Assert (DOMSTAT_PHASE(newstat) == phase);
-      Assert (DOMSTAT_WAITERS(newstat) == ticket);
-      return 1;
     }
-    check_rpc();
-    cpu_relax();
-  }
-}
-
-/* the domain for which barrier_enter returns 1 must call barrier_release */
-static void barrier_release(int phase) {
-  /* nobody else can modify dstat, since all of the other domains
-     are waiting */
-  uintnat stat = atomic_load_acq(&domstat);
-  /* DOMSTAT_WAITERS = 0; DOMSTAT_PHASE = !phase */
-  atomic_store_rel(&domstat, (stat & ~0xffff) | (!phase));
-}
-
-
-
-static void stw_phase() {
-  Assert(atomic_load_acq(&domain_self->is_active));
-  while (caml_sweep(domain_self->state.shared_heap, 10) <= 0);
-
-  caml_empty_minor_heap();
-  caml_finish_marking();
-
-  if (!domain_self->state.is_main) usleep(10000);
-  if (barrier_enter(0)) {
-    gc_inactive_domains();
-    domain_filter_live();
-    caml_cleanup_deleted_roots();
-    barrier_release(0);
   }
 
-  caml_cycle_heap(domain_self->state.shared_heap);
+  caml_gc_log("Contributing %d heaps to GC", my_heaps);
 
-  /* filter_remembered_sets(); */
-  
-  if (barrier_enter(1)) {
-    /* nothing to do here, just verify filter_remembered_sets is globally done */
+  /* Finish GC on the domains we've locked */
+
+  for (i = 0; i < Max_domains; i++) {
+    dom_internal* d = &all_domains[i];
+    if (!d->state.shared_heap)
+      continue; /* skip non-running domains */
+
+    if (d == domain_self) {
+      /* finish GC */
+      while (caml_sweep(d->state.shared_heap, 10) <= 0);
+      caml_empty_minor_heap();
+      caml_finish_marking();
+    } else if (domain_is_locked(d)) {
+      /* GC some inactive domain that we locked */
+      caml_gc_log("GCing inactive domain [%02d]", d->state.id);
+      while (caml_sweep(d->state.shared_heap, 10) <= 0);
+      caml_do_sampled_roots(&caml_darken, &d->state);
+      caml_empty_mark_stack();
+    }
+  }
+
+  /* Wait until all threads finish GC */
+
+  if (atomic_fetch_add(&heaps_marked, (uintnat)my_heaps)
+      + (uintnat)my_heaps == Max_domains) {
+    /* we marked the last heap, so all other threads are waiting */
+    //caml_cleanup_deleted_roots();
+
     caml_cycle_heap_stw();
+    caml_gc_log("GC cycle completed (heap cycled)");
+
+    /* reset for next GC */
+    for (i = 0; i < Max_domains; i++) {
+      atomic_store_rel(&domain_accounted_for[i], 0);
+    }
     atomic_store_rel(&stw_requested, 0);
+
+    /* allow other threads to proceed */
+    atomic_store_rel(&heaps_marked, 0);
+  } else {
+    /* we didn't mark the last heap, so wait */
+    while (atomic_load_acq(&heaps_marked)) {
+      Assert(atomic_load_acq(&heaps_marked) <= Max_domains);
+      check_rpc();
+      cpu_relax();
+    }
     caml_gc_log("GC cycle completed");
-    barrier_release(1);
+  }
+
+  /* Finally, start the next sweeping cycle and
+     unlock any inactive domains we locked for GC */
+
+  for (i = 0; i < Max_domains; i++) {
+    dom_internal* d = &all_domains[i];
+    if ((d == domain_self || domain_is_locked(d)) && d->state.shared_heap)
+      caml_cycle_heap(d->state.shared_heap);
+
+    if (inactive_domains_locked[i])
+      unlock_domain(d);
   }
 }
+
 
 static void handle_rpc(dom_internal* target)
 {
@@ -617,60 +540,25 @@ static void handle_rpc(dom_internal* target)
   }
 }
 
-static __thread struct rpc_domain_takeover* domains_taken_over = 0;
-
-static int rpc_already_taken_over(dom_internal* d) {
-  struct rpc_domain_takeover* i;
-  if (d == domain_self) return 1;
-  for (i = domains_taken_over; i; i = i->next) {
-    if (i->target == d) return 1;
-  }
-  return 0;
-}
-
-/* If you lock a domain, you are responsible for handling
-   its incoming RPC requests */
-static int try_lock_domain(struct rpc_domain_takeover* takeover, 
-                    dom_internal* target) {
-  if (atomic_load_acq(&target->is_active))
-    return 0;
-
-  Assert (!rpc_already_taken_over(target));
-  if (caml_plat_try_lock(&target->roots_lock)) {
-    /* take over this domain as it is deactivated */
-    takeover->target = target;
-    takeover->next = domains_taken_over;
-    domains_taken_over = takeover;
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-static void unlock_domain(struct rpc_domain_takeover* takeover)
-{
-  domains_taken_over = takeover->next;
-  caml_plat_unlock(&takeover->target->roots_lock);
-}
-
 /* Handle incoming RPC requests for the current domain,
    and any domains we have temporarily taken over */
 static void check_rpc()
 {
-  struct rpc_domain_takeover* i;
+  int i;
   handle_rpc(domain_self);
-  for (i = domains_taken_over; i; i = i->next) {
-    handle_rpc(i->target);
+  for (i = 0; i < Max_domains; i++) {
+    dom_internal* d = &all_domains[i];
+    if (domain_is_locked(d))
+      handle_rpc(d);
   }
 }
 
 static void attempt_rpc_takeover(dom_internal* target) {
-  struct rpc_domain_takeover takeover;
-  if (try_lock_domain(&takeover, target)) {
+  if (try_lock_domain(target)) {
     /* process pending RPC for this domain */
     check_rpc();
 
-    unlock_domain(&takeover);
+    unlock_domain(target);
   }
 }
 
@@ -685,7 +573,7 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   atomic_uintnat completed = ATOMIC_UINTNAT_INIT(0);
   dom_internal* target = domain->internals;
 
-  if (rpc_already_taken_over(target)) {
+  if (target == domain_self || domain_is_locked(target)) {
     /* well that was easy */
     handler(&target->state, data);
     return;

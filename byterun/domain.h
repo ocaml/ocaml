@@ -11,7 +11,6 @@ struct domain {
   struct dom_internal* internals;
   struct caml_runqueue* runqueue;
   struct caml_heap_state* shared_heap;
-  struct caml_sampled_roots* sampled_roots;
   struct caml_remembered_set* remembered_set;
 
   struct caml__roots_block** local_roots;
@@ -63,7 +62,5 @@ struct domain* caml_owner_of_young_block(value);
 
 void caml_domain_rpc(struct domain*, 
                      domain_rpc_handler, void*);
-
-void caml_domain_spin();
 
 #endif /* CAML_DOMAIN_H */
