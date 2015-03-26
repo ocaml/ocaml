@@ -43,8 +43,8 @@ let remove_loc =
   {default_mapper with location = (fun _this _loc -> Location.none)}
 
 let is_not_doc = function
-  | ({Location.txt = "doc"}, _) -> false
-  | ({Location.txt = "text"}, _) -> false
+  | ({Location.txt = "ocaml.doc"}, _) -> false
+  | ({Location.txt = "ocaml.text"}, _) -> false
   | _ -> true
 
 let attrs s x =

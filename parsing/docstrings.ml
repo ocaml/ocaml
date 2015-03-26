@@ -80,7 +80,7 @@ type docs =
 
 let empty_docs = { docs_pre = None; docs_post = None }
 
-let doc_loc = {txt = "doc"; loc = Location.none}
+let doc_loc = {txt = "ocaml.doc"; loc = Location.none}
 
 let docs_attr ds =
   let open Asttypes in
@@ -130,7 +130,7 @@ type text = docstring list
 
 let empty_text = []
 
-let text_loc = {txt = "text"; loc = Location.none}
+let text_loc = {txt = "ocaml.text"; loc = Location.none}
 
 let text_attr ds =
   let open Asttypes in
