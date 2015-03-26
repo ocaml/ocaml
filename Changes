@@ -59,6 +59,8 @@ Type system:
   In theory this may be incompatible is some corner cases defining a module
   type through inference, but no breakage known on published code.
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
+- PR#6645: Guarantee that Set.add doesn't allocate and returns the original
+  set if the added element is already in the set
 
 Toplevel and debugger:
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
