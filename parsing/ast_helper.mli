@@ -25,6 +25,7 @@ type attrs = attribute list
 
 val default_loc: loc ref
     (** Default value for all optional location arguments. *)
+
 val with_default_loc: loc -> (unit -> 'a) -> 'a
     (** Set the [default_loc] within the scope of the execution
         of the provided function. *)

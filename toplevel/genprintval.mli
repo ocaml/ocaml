@@ -54,6 +54,7 @@ module type S =
            unit
     (** [install_generic_printer' function_path constructor_path printer]
         function_path is used to remove the printer. *)
+
     val remove_printer : Path.t -> unit
     val outval_of_untyped_exception : t -> Outcometree.out_value
     val outval_of_value :
