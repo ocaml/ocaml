@@ -325,6 +325,7 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   return Whsize_hd(hd);
 }
 
+static void verify_swept(struct caml_heap_state*);
 intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep local pools */
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
@@ -342,6 +343,11 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep global pools */
   while (work > 0 && local->unswept_large) {
     work -= large_alloc_sweep(local);
+  }
+
+  if (work > 0) {
+    /* sweeping is complete, check everything worked */
+    verify_swept(local);
   }
   return work;
 }
@@ -516,7 +522,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
   }
 }
 
-static void verify_freelists (struct caml_heap_state* local) {
+static void verify_swept (struct caml_heap_state* local) {
   int i;
   struct mem_stats pool_stats = {}, large_stats = {};
   /* sweeping should be done by this point */
@@ -554,7 +560,7 @@ void caml_cycle_heap_stw() {
 
 void caml_cycle_heap(struct caml_heap_state* local) {
   int i;
-  verify_freelists(local);
+  caml_gc_log("Cycling heap [%02d]", local->owner->id);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = 0;
