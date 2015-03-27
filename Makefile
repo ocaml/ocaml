@@ -439,36 +439,38 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp config/Makefile
-	@rm -f utils/config.ml
-	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-	    -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
-	    -e 's|%%CCOMPTYPE%%|cc|' \
-	    -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
-	    -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
-	    -e 's|%%PACKLD%%|$(PACKLD)|' \
-	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
-	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
-	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-	    -e 's|%%ARCMD%%|$(ARCMD)|' \
-	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
-	    -e 's|%%ARCH%%|$(ARCH)|' \
-	    -e 's|%%MODEL%%|$(MODEL)|' \
-	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
-	    -e 's|%%EXT_OBJ%%|.o|' \
-	    -e 's|%%EXT_ASM%%|.s|' \
-	    -e 's|%%EXT_LIB%%|.a|' \
-	    -e 's|%%EXT_DLL%%|.so|' \
-	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
-	    -e 's|%%ASM%%|$(ASM)|' \
-	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
-	    -e 's|%%MKDLL%%|$(MKDLL)|' \
-	    -e 's|%%MKEXE%%|$(MKEXE)|' \
-	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-	    -e 's|%%HOST%%|$(HOST)|' \
-	    -e 's|%%TARGET%%|$(TARGET)|' \
-	    utils/config.mlp > utils/config.ml
+utils/config.ml: utils/config.ml.c config/Makefile
+	$(CPP) -I byterun \
+	  -DOMIT_TYPEDEFS \
+	  -DCAML_NAME_SPACE \
+	  -DLIBDIR='"$(LIBDIR)"' \
+	  -DBYTERUN='"$(BINDIR)/ocamlrun"' \
+	  -DCCOMPTYPE='"cc"' \
+	  -DBYTECC='"$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)"' \
+	  -DNATIVECC='"$(NATIVECC) $(NATIVECCCOMPOPTS)"' \
+	  -DPACKLD='"$(PACKLD)"' \
+	  -DBYTECCLIBS='"$(BYTECCLIBS)"' \
+	  -DNATIVECCLIBS='"$(NATIVECCLIBS)"' \
+	  -DRANLIBCMD='"$(RANLIBCMD)"' \
+	  -DARCMD='"$(ARCMD)"' \
+	  -DCC_PROFILE='"$(CC_PROFILE)"' \
+	  -DARCH='"$(ARCH)"' \
+	  -DMODEL='"$(MODEL)"' \
+	  -DSYSTEM='"$(SYSTEM)"' \
+	  -DEXT_OBJ='".o"' \
+	  -DEXT_ASM='".s"' \
+	  -DEXT_LIB='".a"' \
+	  -DEXT_DLL='".so"' \
+	  -DSYSTHREAD_SUPPORT='$(SYSTHREAD_SUPPORT)' \
+	  -DASM='"$(ASM)"' \
+	  -DASM_CFI_SUPPORT='$(ASM_CFI_SUPPORTED)' \
+	  -DWITH_FRAME_POINTERS='$(WITH_FRAME_POINTERS)' \
+	  -DMKDLL='"$(MKDLL)"' \
+	  -DMKEXE='"$(MKEXE)"' \
+	  -DMKMAINDLL='"$(MKMAINDLL)"' \
+	  -DHOST='"$(HOST)"' \
+	  -DTARGET='"$(TARGET)"' \
+	  utils/config.ml.c > utils/config.ml
 
 partialclean::
 	rm -f utils/config.ml

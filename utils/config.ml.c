@@ -10,22 +10,12 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(***********************************************************************)
-(**                                                                   **)
-(**               WARNING WARNING WARNING                             **)
-(**                                                                   **)
-(** When you change this file, you must make the parallel change      **)
-(** in config.mlp                                                     **)
-(**                                                                   **)
-(***********************************************************************)
-
+#include "config.h"
 
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
-module C = Myocamlbuild_config
-
-let standard_library_default = C.libdir
+let standard_library_default = LIBDIR
 
 let standard_library =
   try
@@ -36,40 +26,30 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let windows =
-  match Sys.os_type with
-  | "Win32" -> true
-  |    _    -> false
-
-let sf = Printf.sprintf
-
-let standard_runtime =
-  if windows then "ocamlrun"
-  else C.bindir^"/ocamlrun"
-let ccomp_type = C.ccomptype
-let bytecomp_c_compiler =
-  sf "%s %s %s" C.bytecc C.bytecccompopts C.sharedcccompopts
-let bytecomp_c_libraries = C.bytecclibs
-let native_c_compiler = sf "%s %s" C.nativecc C.nativecccompopts
-let native_c_libraries = C.nativecclibs
-let native_pack_linker = C.packld
-let ranlib = C.ranlibcmd
-let ar = C.arcmd
-let cc_profile = C.cc_profile
-let mkdll = C.mkdll
-let mkexe = C.mkexe
-let mkmaindll = C.mkmaindll
+let standard_runtime = BYTERUN
+let ccomp_type = CCOMPTYPE
+let bytecomp_c_compiler = BYTECC
+let bytecomp_c_libraries = BYTECCLIBS
+let native_c_compiler = NATIVECC
+let native_c_libraries = NATIVECCLIBS
+let native_pack_linker = PACKLD
+let ranlib = RANLIBCMD
+let ar = ARCMD
+let cc_profile = CC_PROFILE
+let mkdll = MKDLL
+let mkexe = MKEXE
+let mkmaindll = MKMAINDLL
 
 let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I016"
-and cmo_magic_number = "Caml1999O009"
-and cma_magic_number = "Caml1999A010"
-and cmx_magic_number = "Caml1999Y011"
-and cmxa_magic_number = "Caml1999Z010"
+and cmi_magic_number = "Caml1999I017"
+and cmo_magic_number = "Caml1999O010"
+and cma_magic_number = "Caml1999A011"
+and cmx_magic_number = "Caml1999Y014"
+and cmxa_magic_number = "Caml1999Z013"
 and ast_impl_magic_number = "Caml1999M016"
 and ast_intf_magic_number = "Caml1999N015"
-and cmxs_magic_number = "Caml2007D001"
-and cmt_magic_number = "Caml2012T002"
+and cmxs_magic_number = "Caml2007D002"
+and cmt_magic_number = "Caml2012T004"
 
 let load_path = ref ([] : string list)
 
@@ -77,27 +57,28 @@ let interface_suffix = ref ".mli"
 
 let max_tag = 245
 (* This is normally the same as in obj.ml, but we have to define it
-   separately because it can differ when we're in the middle of a
+   separately because it can differ in the middle of a
    bootstrapping phase. *)
 let lazy_tag = 246
 
-let max_young_wosize = 256
-let stack_threshold = 256 (* see byterun/config.h *)
+let max_young_wosize = Max_young_wosize
+let stack_threshold = Stack_threshold_words
 
-let architecture = C.arch
-let model = C.model
-let system = C.system
+let architecture = ARCH
+let model = MODEL
+let system = SYSTEM
 
-let asm = C.asm
-let asm_cfi_supported = C.asm_cfi_supported
+let asm = ASM
+let asm_cfi_supported = ASM_CFI_SUPPORT
+let with_frame_pointers = WITH_FRAME_POINTERS
 
-let ext_obj = C.ext_obj
-let ext_asm = C.ext_asm
-let ext_lib = C.ext_lib
-let ext_dll = C.ext_dll
+let ext_obj = EXT_OBJ
+let ext_asm = EXT_ASM
+let ext_lib = EXT_LIB
+let ext_dll = EXT_DLL
 
-let host = C.host
-let target = C.target
+let host = HOST
+let target = TARGET
 
 let default_executable_name =
   match Sys.os_type with
@@ -105,7 +86,7 @@ let default_executable_name =
   | "Win32" | "Cygwin" -> "camlprog.exe"
   | _ -> "camlprog"
 
-let systhread_supported = C.systhread_support;;
+let systhread_supported = SYSTHREAD_SUPPORT;;
 
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
@@ -127,6 +108,7 @@ let print_config oc =
   p "system" system;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
+  p_bool "with_frame_pointers" with_frame_pointers;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;
@@ -136,6 +118,8 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+
+  (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
   p "cmo_magic_number" cmo_magic_number;
