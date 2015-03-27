@@ -55,6 +55,7 @@ Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
 - PR#5395: OCamlbuild mishandles relative symlinks and include paths
+  (Damien Doligez, report by Didier Le Botlan)
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
 - PR#6573: extern "C" for systhreads/threads.h
@@ -82,6 +83,8 @@ Bug fixes:
   (Benoît Vaugon, report by Vassili Karpov)
 - PR#6749: ocamlopt returns n for (n mod 1) instead of 0
   (Mark Shinwell and Jérémie Dimino)
+- PR#6759: big_int_of_string incorrectly parses some hexa literals.
+  (Damien Doligez, report by Pierre-yves Strub)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
 - PR#6775: Digest.file leaks file descriptor on error
