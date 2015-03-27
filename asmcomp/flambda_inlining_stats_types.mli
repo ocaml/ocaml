@@ -19,6 +19,7 @@ end
 module Inlined : sig
   type t =
     | Copying_body of Copying_body.t
+    | Copying_body_with_subfunctions of Copying_body.t
     | Unrolled of Flambdacost.Whether_sufficient_benefit.t
     | Copying_decl of
         Tried_unrolling.t * Flambdacost.Whether_sufficient_benefit.t

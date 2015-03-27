@@ -24,12 +24,15 @@ end
 module Inlined = struct
   type t =
     | Copying_body of Copying_body.t
+    | Copying_body_with_subfunctions of Copying_body.t
     | Unrolled of Wsb.t
     | Copying_decl of Tried_unrolling.t * Wsb.t
 
   let to_string = function
     | Copying_body cb ->
       Printf.sprintf "copying body (%s)" (Copying_body.to_string cb)
+    | Copying_body_with_subfunctions cb ->
+      Printf.sprintf "copying body using subfunctions (%s)" (Copying_body.to_string cb)
     | Unrolled wsb ->
       Printf.sprintf "unrolled (%s)" (Wsb.to_string wsb)
     | Copying_decl (tried, wsb) ->

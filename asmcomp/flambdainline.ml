@@ -800,7 +800,7 @@ and direct_apply env r clos funct fun_id func closure
   Flambda_inlining_decision.inlining_decision_for_call_site
     ~env ~r ~clos ~funct ~fun_id ~func ~closure ~args_with_approxs ~ap_dbg ~eid
     ~inline_by_copying_function_body ~inline_by_copying_function_declaration
-
+    ~loop
 and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
   let arity = function_arity func in
   let remaining_args = arity - (List.length args) in

@@ -136,7 +136,7 @@ let can_try_inlining lam inline_threshold ~bonus =
   | Can_inline inline_threshold ->
      match lambda_smaller'
              lam
-             ~than:((inline_threshold + bonus) * 2)
+             ~than:((inline_threshold + bonus) * 4)
      with
      | None -> Never_inline
      | Some size -> Can_inline (inline_threshold - size)
@@ -231,11 +231,14 @@ let print_benefit ppf b =
     b.remove_prim
     b.remove_branch
 
+let benefit_factor = 4
+
 let evaluate_benefit b =
-  b.remove_call * remove_call_bonus
-  + b.remove_alloc * remove_alloc_bonus
-  + b.remove_prim * remove_prim_bonus
-  + b.remove_branch * remove_branch_bonus
+  benefit_factor *
+  (b.remove_call * remove_call_bonus
+   + b.remove_alloc * remove_alloc_bonus
+   + b.remove_prim * remove_prim_bonus
+   + b.remove_branch * remove_branch_bonus)
 
 module Whether_sufficient_benefit = struct
   type maybe_inline = {

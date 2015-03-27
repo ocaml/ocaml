@@ -24,12 +24,110 @@ let should_inline_function_known_to_be_recursive
           A.useful approx && Variable.Set.mem id unchanging_params)
         func.params approxs
 
+
+let inline_non_recursive
+    ~inline_by_copying_function_body
+    ~env ~r ~clos ~ funct ~fun_id
+    ~(func : 'a Flambda.function_declaration)
+    ~(record_decision : Flambda_inlining_stats_types.Decision.t -> unit)
+    ~inline_threshold
+    ~direct_apply
+    ~no_transformation
+    ~args
+    ~loop =
+  let body, r_inlined =
+    (* We first try to inline that function preventing further inlining below *)
+    inline_by_copying_function_body ~env
+      ~r:(R.set_inline_threshold (R.clear_benefit r) Flambdacost.Never_inline)
+      ~clos ~lfunc:funct ~fun_id ~func ~args
+  in
+  let unconditionally_inline =
+    func.stub
+  in
+  (* Now we know how large the inlined version actually is,
+     determine whether or not to keep it. *)
+  let keep_inlined_version =
+    if unconditionally_inline then begin
+      record_decision (Inlined (Copying_body Unconditionally));
+      true
+    end else if direct_apply then begin
+      (* The function declaration was local to the application
+         expression; always inline it. *)
+      record_decision (Inlined (Copying_body Decl_local_to_application));
+      true
+    end else begin
+      let wsb =
+        Flambdacost.Whether_sufficient_benefit.create
+          ~original:(fst (no_transformation()))
+          body
+          (R.benefit r_inlined)
+          (Can_inline 0)
+      in
+      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+        record_decision (Inlined (Copying_body (Evaluated wsb)));
+        true
+      end else begin
+        record_decision (Tried (Copying_body (Evaluated wsb)));
+        false
+      end
+    end
+  in
+  if keep_inlined_version then begin
+    (* The function is sufficiently beneficial to be inlined by itself
+       so we keep it and we continue for potential inlining below *)
+    let r = R.map_benefit r (Flambdacost.benefit_union (R.benefit r_inlined)) in
+    let body = Flambdasimplify.lift_lets body in
+    let env =
+      E.note_entering_closure env ~closure_id:fun_id
+        ~where:Inline_by_copying_function_body
+    in
+    loop env r body
+  end else begin
+    (* The function is not sufficiently good by itself, but may become if
+       we allow inlining below *)
+    let body, r_inlined =
+      inline_by_copying_function_body ~env
+        ~r:(R.clear_benefit r)
+        ~clos ~lfunc:funct ~fun_id ~func ~args
+    in
+    let keep_inlined_version =
+      let wsb =
+        Flambdacost.Whether_sufficient_benefit.create
+          ~original:(fst (no_transformation()))
+          body
+          (R.benefit r_inlined)
+          (Can_inline 0)
+      in
+      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+        record_decision (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
+        true
+      end else begin
+        record_decision (Tried (Copying_body_with_subfunctions (Evaluated wsb)));
+        false
+      end
+    in
+    if keep_inlined_version then begin
+      body, R.map_benefit r_inlined (Flambdacost.benefit_union (R.benefit r))
+    end
+    else begin
+      (* r_inlined contains an approximation that may be invalid for the
+         untransformed expression: it may reference functions that only
+         exists if the body of the function is effectively inlined.
+         If the function approximation contained an approximation that
+         does not depends on the effective value of its arguments, it
+         could be returned instead of [A.value_unknown] *)
+      no_transformation ()
+    end
+  end
+
+
 let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       ~(func : 'a Flambda.function_declaration)
       ~(closure : Flambdaapprox.value_set_of_closures)
       ~args_with_approxs ~ap_dbg ~eid
       ~inline_by_copying_function_body
-      ~inline_by_copying_function_declaration =
+      ~inline_by_copying_function_declaration
+      ~loop =
   let record_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
@@ -139,50 +237,14 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       if unconditionally_inline
         || (not recursive && E.inlining_level env <= max_level)
       then
-        let body, r_inlined =
-          inline_by_copying_function_body ~env ~r:(R.clear_benefit r) ~clos
-            ~lfunc:funct ~fun_id ~func ~args
-        in
-        (* Now we know how large the inlined version actually is, determine
-           whether or not to keep it. *)
-        let keep_inlined_version =
-          if unconditionally_inline then begin
-            record_decision (Inlined (Copying_body Unconditionally));
-            true
-          end else if direct_apply then begin
-            (* The function declaration was local to the application
-               expression; always inline it. *)
-            record_decision (Inlined (Copying_body Decl_local_to_application));
-            true
-          end else begin
-            let wsb =
-              Flambdacost.Whether_sufficient_benefit.create
-                ~original:(fst (no_transformation()))
-                body
-                (R.benefit r_inlined)
-                inline_threshold
-            in
-            if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
-              record_decision (Inlined (Copying_body (Evaluated wsb)));
-              true
-            end else begin
-              record_decision (Tried (Copying_body (Evaluated wsb)));
-              false
-            end
-          end
-        in
-        if keep_inlined_version then begin
-          body, R.map_benefit r_inlined
-            (Flambdacost.benefit_union (R.benefit r))
-        end else begin
-          (* r_inlined contains an approximation that may be invalid for the
-             untransformed expression: it may reference functions that only
-             exists if the body of the function is effectively inlined.
-             If the function approximation contained an approximation that
-             does not depends on the effective value of its arguments, it
-             could be returned instead of [A.value_unknown] *)
-          no_transformation ()
-        end
+        inline_non_recursive
+          ~inline_by_copying_function_body
+          ~env ~r ~clos ~funct ~fun_id ~func
+          ~record_decision
+          ~inline_threshold
+          ~direct_apply
+          ~no_transformation
+          ~args ~loop
       else if recursive then
         let tried_unrolling = ref false in
         let unrolling_result =

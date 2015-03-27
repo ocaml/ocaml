@@ -40,6 +40,11 @@ val inlining_decision_for_call_site
       -> no_transformation:(
           unit -> (Expr_id.t Flambda.t * Flambda_inline_result.t))
       -> Expr_id.t Flambda.t * Flambda_inline_result.t)
+  -> loop:(
+      Flambda_inline_env.t
+      -> Flambda_inline_result.t
+      -> Expr_id.t Flambda.t
+      -> Expr_id.t Flambda.t * Flambda_inline_result.t)
   -> Expr_id.t Flambda.t * Flambda_inline_result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body
