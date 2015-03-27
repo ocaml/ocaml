@@ -78,14 +78,9 @@ typedef struct {
   unsigned short live_ofs[1];
 } frame_descr;
 
-typedef struct {
-  frame_descr *frame_descr;
-  uintnat retaddr;
-} frame_table_elt;
-
 /* Hash table of frame descriptors */
 
-extern frame_table_elt * caml_frame_descriptors;
+extern frame_descr ** caml_frame_descriptors;
 extern int caml_frame_descriptors_mask;
 
 #define Hash_retaddr(addr) \

@@ -32,7 +32,7 @@ struct caml__roots_block *caml_local_roots = NULL;
 void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
-frame_table_elt * caml_frame_descriptors = NULL;
+frame_descr ** caml_frame_descriptors = NULL;
 int caml_frame_descriptors_mask = 0;
 
 /* Linked-list */
@@ -57,19 +57,6 @@ static link *cons(void *data, link *tl) {
 static link *frametables = NULL;
 static intnat num_descr = 0;
 
-void caml_unregister_frametable(intnat *table) {
-  link *lnk;
-  link *previous = frametables;
-  iter_list(frametables,lnk) {
-    if(lnk->data == table) {
-      previous->next = lnk->next;
-      caml_stat_free(lnk);
-      break;
-    }
-    previous = lnk;
-  }
-}
-
 static int count_desciptors(link *list) {
   intnat num_descr = 0;
   link *lnk;
@@ -87,11 +74,21 @@ static link* frametables_list_tail(link *list) {
   return tail;
 }
 
+static frame_descr * next_frame_descr(frame_descr * d) {
+  uintnat nextd;
+  nextd =
+    ((uintnat)d +
+     sizeof(char *) + sizeof(short) + sizeof(short) +
+     sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
+    & -sizeof(frame_descr *);
+  if (d->frame_size & 1) nextd += 8;
+  return((frame_descr *) nextd);
+}
+
 static void fill_hashtable(link *frametables) {
   intnat len, j;
   intnat * tbl;
   frame_descr * d;
-  uintnat nextd;
   uintnat h;
   link *lnk = NULL;
 
@@ -101,22 +98,11 @@ static void fill_hashtable(link *frametables) {
     d = (frame_descr *)(tbl + 1);
     for (j = 0; j < len; j++) {
       h = Hash_retaddr(d->retaddr);
-      /* After unloading then reloading of modules, it is possible
-         to have a frame with the same retaddr as a previous one.
-         In that case, we overwrite it. */
-      while (caml_frame_descriptors[h].frame_descr != NULL
-             && caml_frame_descriptors[h].retaddr != d->retaddr) {
+      while (caml_frame_descriptors[h] != NULL) {
         h = (h+1) & caml_frame_descriptors_mask;
       }
-      caml_frame_descriptors[h].frame_descr = d;
-      caml_frame_descriptors[h].retaddr = d->retaddr;
-      nextd =
-        ((uintnat)d +
-         sizeof(char *) + sizeof(short) + sizeof(short) +
-         sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-        & -sizeof(frame_descr *);
-      if (d->frame_size & 1) nextd += 8;
-      d = (frame_descr *) nextd;
+      caml_frame_descriptors[h] = d;
+      d = next_frame_descr(d);
     }
   }
 }
@@ -149,8 +135,8 @@ static void init_frame_descriptors(link *new_frametables)
     caml_frame_descriptors_mask = tblsize - 1;
     if(caml_frame_descriptors) caml_stat_free(caml_frame_descriptors);
     caml_frame_descriptors =
-      (frame_table_elt *) caml_stat_alloc(tblsize * sizeof(frame_table_elt));
-    for (i = 0; i < tblsize; i++) caml_frame_descriptors[i].frame_descr = NULL;
+      (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
+    for (i = 0; i < tblsize; i++) caml_frame_descriptors[i] = NULL;
   } else {
     num_descr += increase;
   }
@@ -170,6 +156,59 @@ void caml_init_frame_descriptors(void) {
 void caml_register_frametable(intnat *table) {
   link *new_frametables = cons(table,NULL);
   init_frame_descriptors(new_frametables);
+}
+
+static void remove_entry(frame_descr * d) {
+  uintnat i;
+  uintnat r;
+  uintnat j;
+
+  i = Hash_retaddr(d->retaddr);
+  while (caml_frame_descriptors[i] != d) {
+    i = (i+1) & caml_frame_descriptors_mask;
+  }
+
+ r1:
+  j = i;
+  caml_frame_descriptors[i] = NULL;
+ r2:
+  i = (i+1) & caml_frame_descriptors_mask;
+  // r3
+  if(caml_frame_descriptors[i] == NULL) return;
+  r = Hash_retaddr(caml_frame_descriptors[i]->retaddr);
+  /* If r is between i and j (cyclically), i.e. if
+     caml_frame_descriptors[i]->retaddr don't need to be moved */
+  if(( ( j < r )  && ( r <= i ) ) ||
+     ( ( i < j )  && ( j < r )  ) ||      /* i cycled, r not */
+     ( ( r <= i ) && ( i < j ) )     ) {  /* i and r cycled */
+    goto r2;
+  }
+  // r4
+  caml_frame_descriptors[j] = caml_frame_descriptors[i];
+  goto r1;
+}
+
+void caml_unregister_frametable(intnat *table) {
+  intnat len, j;
+  link *lnk;
+  link *previous = frametables;
+  frame_descr * d;
+
+  len = *table;
+  d = (frame_descr *)(table + 1);
+  for (j = 0; j < len; j++) {
+    remove_entry(d);
+    d = next_frame_descr(d);
+  }
+
+  iter_list(frametables,lnk) {
+    if(lnk->data == table) {
+      previous->next = lnk->next;
+      caml_stat_free(lnk);
+      break;
+    }
+    previous = lnk;
+  }
 }
 
 /* Communication with [caml_start_program] and [caml_call_gc]. */
@@ -194,7 +233,6 @@ void caml_oldify_local_roots (void)
   uintnat retaddr;
   value * regs;
   frame_descr * d;
-  frame_table_elt e;
   uintnat h;
   int i, j, n, ofs;
 #ifdef Stack_grows_upwards
@@ -235,9 +273,8 @@ void caml_oldify_local_roots (void)
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr(retaddr);
       while(1) {
-        e = caml_frame_descriptors[h];
-        d = e.frame_descr;
-        if (e.retaddr == retaddr) break;
+        d = caml_frame_descriptors[h];
+        if (d->retaddr == retaddr) break;
         h = (h+1) & caml_frame_descriptors_mask;
       }
       if (d->frame_size != 0xFFFF) {
@@ -340,7 +377,6 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   uintnat retaddr;
   value * regs;
   frame_descr * d;
-  frame_table_elt e;
   uintnat h;
   int i, j, n, ofs;
 #ifdef Stack_grows_upwards
@@ -359,9 +395,8 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr(retaddr);
       while(1) {
-        e = caml_frame_descriptors[h];
-        d = e.frame_descr;
-        if (e.retaddr == retaddr) break;
+        d = caml_frame_descriptors[h];
+        if (d->retaddr == retaddr) break;
         h = (h+1) & caml_frame_descriptors_mask;
       }
       if (d->frame_size != 0xFFFF) {
