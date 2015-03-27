@@ -25,7 +25,6 @@ exception Exit_build_error of string
 exception Exit_silently
 
 let clean () =
-  Log.finish ();
   Shell.rm_rf !Options.build_dir;
   if !Options.make_links then begin
     let entry =
@@ -34,6 +33,7 @@ let clean () =
     in
     Slurp.force (Resource.clean_up_links entry)
   end;
+  Log.finish ();
   raise Exit_silently
 ;;
 

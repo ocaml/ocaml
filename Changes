@@ -68,6 +68,7 @@ Bug fixes:
   (Michael Grünewald, Damien Doligez)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
+- PR#6652: ocamlbuild -clean does not print a newline after output
 - PR#6665: Failure of tests/asmcomp on sparc
   (Stéphane Glondu)
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
@@ -83,7 +84,7 @@ Bug fixes:
   (Benoît Vaugon, report by Vassili Karpov)
 - PR#6749: ocamlopt returns n for (n mod 1) instead of 0
   (Mark Shinwell and Jérémie Dimino)
-- PR#6759: big_int_of_string incorrectly parses some hexa literals.
+- PR#6759: big_int_of_string incorrectly parses some hexa literals
   (Damien Doligez, report by Pierre-yves Strub)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
