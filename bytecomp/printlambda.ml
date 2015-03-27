@@ -248,8 +248,6 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
-  | Padda -> fprintf ppf "adda"
-  | Plsla -> fprintf ppf "lsla"
   | Pasm asm -> fprintf ppf "%s" (Inline_asm.name asm)
 
 let rec lam ppf = function

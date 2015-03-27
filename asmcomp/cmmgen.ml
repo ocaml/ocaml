@@ -1637,12 +1637,7 @@ and transl_prim_1 p arg dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   | Pint_as_pointer ->
-      begin match transl arg with
-      | Cconst_int n -> Cconst_int (n - 1)
-      | Cop(Caddi, [x; Cconst_int 1]) -> x
-      | Cop(Caddi, [x; Cconst_int y]) -> Cop(Caddi, [x; Cconst_int (y - 1)])
-      | arg -> Cop(Cadda, [arg; Cconst_int (-1)])
-      end
+     Cop(Cadda, [transl arg; Cconst_int (-1)])
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl arg])
@@ -1748,25 +1743,6 @@ and transl_prim_2 p arg1 arg2 dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float arg2]))
-  | Padda ->
-      begin match transl arg1, transl arg2 with
-      | Cconst_int x, Cconst_int y -> Cconst_int (x + y)
-      | x, Cconst_int 0
-      | Cconst_int 0, x -> x
-      | x, y -> Cop(Cadda, [x; y])
-      end
-  | Plsla ->
-      begin match transl arg1, transl arg2 with
-      | Cconst_int x, Cconst_int y -> Cconst_int (x lsl (y asr 1))
-      | Cop(Clsl, [x; Cconst_int y]), Cconst_int z ->
-          let z = z asr 1 in
-          Cop(Clsl, [x; Cconst_int (y + z)])
-      | Cop(Caddi, [x; Cconst_int y]), Cconst_int z ->
-          let z = z asr 1 in
-          Cop(Caddi, [Cop(Clsl, [x; Cconst_int z]); Cconst_int (y lsl z)])
-      | x, Cconst_int y -> Cop(Clsl, [x; Cconst_int (y asr 1)])
-      | x, y -> Cop(Clsl, [x; Cop(Casr, [y; Cconst_int 1])])
-      end
 
   (* Boolean operations *)
   | Psequand ->
