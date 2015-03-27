@@ -67,6 +67,8 @@ let builtin_useful_tags =
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
+  Options.include_dirs := List.map Pathname.normalize !Options.include_dirs;
+  Options.exclude_dirs := List.map Pathname.normalize !Options.exclude_dirs;
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
   let options_wd = Sys.getcwd () in

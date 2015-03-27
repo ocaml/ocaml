@@ -54,6 +54,7 @@ Runtime:
 Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
+- PR#5395: OCamlbuild mishandles relative symlinks and include paths
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
 - PR#6573: extern "C" for systhreads/threads.h
