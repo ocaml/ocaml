@@ -1807,7 +1807,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   let legacy_behavior = match legacy_behavior with
     | Some flag -> flag
     | None -> true
-  (** When this flag is enabled, the format parser tries to behave as
+  (*  When this flag is enabled, the format parser tries to behave as
       the <4.02 implementations, in particular it ignores most benine
       nonsensical format. When the flag is disabled, it will reject any
       format that is not accepted by the specification.
