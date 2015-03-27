@@ -829,6 +829,18 @@ mutually recursive types.
 45
 \ \ Open statement shadows an already defined label or constructor.
 
+46
+\ \ Error in environment variable.
+
+47
+\ \ Illegal attribute payload.
+
+48
+\ \ Implicit elimination of optional arguments.
+
+49
+\ \ Missing cmi file when looking up module alias.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -911,7 +923,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error\ -a (all warnings are non-fatal).
+.B \-warn\-error \-a
+(all warnings are non-fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.
