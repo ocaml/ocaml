@@ -202,8 +202,7 @@
 /byterun/.depend
 /byterun/.depend.nt
 /byterun/.DS_Store
-/byterun/primitives
-/byterun/prims.c
+/byterun/primitives.tbl
 /byterun/version.h
 /byterun/ocamlrun
 /byterun/ocamlrun.exe

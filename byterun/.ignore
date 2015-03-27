@@ -1,5 +1,3 @@
-primitives
-prims.c
 version.h
 ocamlrun
 ocamlrun.exe

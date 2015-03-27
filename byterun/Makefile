@@ -57,7 +57,7 @@ clean::
 %.pic.o: %.c
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $< -o $@
 
-depend : prims.c version.h
+depend : version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend

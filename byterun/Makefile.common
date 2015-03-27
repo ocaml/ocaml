@@ -91,26 +91,15 @@ install-runtimed:
 # Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
 # port, the "sort" program in the path is Microsoft's and not cygwin's
 
-primitives : $(PRIMS)
-	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
-	  | sort | uniq > primitives
-
-prims.c : primitives
-	(echo '#include "mlvalues.h"'; \
-	 echo '#include "prims.h"'; \
-	 sed -e 's/.*/extern value &();/' primitives; \
-	 echo 'c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/	&,/' primitives; \
-	 echo '	 0 };'; \
-	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/	"&",/' primitives; \
-	 echo '	 0 };') > prims.c
+primitives.tbl : $(PRIMS)
+	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/Prim(\1)/p" $(PRIMS) \
+	  | sort | uniq > primitives.tbl
 
 version.h : ../VERSION ../tools/make-version-header.sh
 	../tools/make-version-header.sh ../VERSION > version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
-	rm -f primitives prims.c ld.conf
+	rm -f primitives.tbl ld.conf
 	rm -f version.h
 .PHONY: clean

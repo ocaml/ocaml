@@ -548,17 +548,11 @@ beforedepend:: bytecomp/opcodes.ml
 
 # The predefined exceptions and primitives
 
-byterun/primitives:
-	cd byterun; $(MAKE) primitives
+byterun/primitives.tbl:
+	cd byterun; $(MAKE) primitives.tbl
 
-bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
-	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
-	 sed -e '$$s/;$$//'; \
-	 echo '|]'; \
-	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
-	 echo '|]') > bytecomp/runtimedef.ml
+bytecomp/runtimedef.ml: byterun/primitives.tbl byterun/fail.h bytecomp/runtimedef.ml.c
+	$(CPP) -I byterun bytecomp/runtimedef.ml.c > bytecomp/runtimedef.ml
 
 partialclean::
 	rm -f bytecomp/runtimedef.ml
