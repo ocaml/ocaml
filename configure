@@ -723,7 +723,7 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -Wl,-no_compact_unwind"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
-      shared_libraries_supported=false;;
+      shared_libraries_supported=true;;
     m88k-*-openbsd*)
       shared_libraries_supported=false;;
     vax-*-openbsd*)
@@ -1725,6 +1725,12 @@ echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
+case "$target" in
+    *-apple-darwin*)
+      echo "BYTECAMLRUN=\$(ROOTDIR)/byterun/libcamlrun.a" >> Makefile;;
+    *)
+      echo "BYTECAMLRUN=" >> Makefile;;
+esac
 
 
 rm -f tst hasgot.c
