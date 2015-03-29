@@ -169,7 +169,7 @@ contributed his changes to the OCaml project.
 
 REQUIREMENTS:
 
-Thoss ports run under MS Windows Seven, Vista, XP, and 2000.
+Those ports run under MS Windows Seven, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -281,7 +281,7 @@ NOTES:
 
 * The replay debugger is partially supported (no reverse execution).
 
-* The default Makefile.mingw an Makefile.mingw64 pass -static-libgcc to the linker.
+* The default Makefile.mingw and Makefile.mingw64 pass -static-libgcc to the linker.
   For more information on this topic:
 
   http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options
