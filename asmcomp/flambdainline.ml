@@ -924,8 +924,8 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
    non-recursive] is not sufficient.
 *)
 and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
-    ~args_with_approxs ~unchanging_params ~specialised_args ~ap_dbg
-    ~no_transformation =
+    ~args_with_approxs ~unchanging_params ~specialised_args ~ap_dbg =
+
   let args, approxs = args_with_approxs in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_declaration" in
@@ -943,7 +943,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
   then
     (* If the function already has the right set of specialised arguments,
        then there is nothing to do to improve it here. *)
-    no_transformation ()
+    None
   else
   (* First we generate a copy of the function application, including the
      function declaration(s), but with variables (not yet bound) in place of
@@ -979,7 +979,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_declaration
   in
-  loop (E.activate_substitution env) r expr
+  Some (loop (E.activate_substitution env) r expr)
 
 let debug_benefit =
   try ignore (Sys.getenv "BENEFIT"); true

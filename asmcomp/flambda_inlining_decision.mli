@@ -37,9 +37,7 @@ val inlining_decision_for_call_site
       -> unchanging_params:Variable.Set.t
       -> specialised_args:Variable.Set.t
       -> ap_dbg:Debuginfo.t
-      -> no_transformation:(
-          unit -> (Expr_id.t Flambda.t * Flambda_inline_result.t))
-      -> Expr_id.t Flambda.t * Flambda_inline_result.t)
+      -> (Expr_id.t Flambda.t * Flambda_inline_result.t) option)
   -> loop:(
       Flambda_inline_env.t
       -> Flambda_inline_result.t

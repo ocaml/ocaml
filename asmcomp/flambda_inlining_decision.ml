@@ -290,36 +290,39 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                   Closure_id.print fun_id
             in
 *)
-            let expr, r_inlined =
+            let copied_function_declaration =
               inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~funct ~clos ~fun_id ~func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
                 ~specialised_args:closure.specialised_args ~ap_dbg
-                ~no_transformation
             in
-            let wsb =
-              Flambdacost.Whether_sufficient_benefit.create
-                ~original:(fst (no_transformation ()))
-                expr
-                (R.benefit r_inlined)
-                inline_threshold
-            in
-            let keep_inlined_version =
-              if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
-                record_decision (Inlined (Copying_decl (
-                  Tried_unrolling !tried_unrolling, wsb)));
-                true
-              end else begin
-                record_decision (Tried (Copying_decl (
-                  Tried_unrolling !tried_unrolling, wsb)));
-                false
-              end
-            in
-            if keep_inlined_version then
-              expr, R.map_benefit r_inlined
-                  (Flambdacost.benefit_union (R.benefit r))
-            else
-              no_transformation ()
+            match copied_function_declaration with
+            | Some (expr, r_inlined) ->
+                let wsb =
+                  Flambdacost.Whether_sufficient_benefit.create
+                    ~original:(fst (no_transformation ()))
+                    expr
+                    (R.benefit r_inlined)
+                    inline_threshold
+                in
+                let keep_inlined_version =
+                  if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+                    record_decision (Inlined (Copying_decl (
+                        Tried_unrolling !tried_unrolling, wsb)));
+                    true
+                  end else begin
+                    record_decision (Tried (Copying_decl (
+                        Tried_unrolling !tried_unrolling, wsb)));
+                    false
+                  end
+                in
+                if keep_inlined_version then
+                  expr, R.map_benefit r_inlined
+                    (Flambdacost.benefit_union (R.benefit r))
+                else
+                  no_transformation ()
+            | None ->
+                no_transformation ()
           else begin
             record_decision
               (Did_not_try_copying_decl (Tried_unrolling !tried_unrolling));
