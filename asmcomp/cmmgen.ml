@@ -1254,7 +1254,7 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
-        | Pasm asm ->
+        | Pasm (asm, _) ->
             let args = asm.Inline_asm.args in
             begin match args.(Array.length args - 1).Inline_asm.kind with
             | `Float -> Boxed_float
@@ -1475,8 +1475,8 @@ let rec transl = function
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
           tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
-      | (Pasm asm, args) ->
-          transl_asm asm args
+      | (Pasm (asm, loc), args) ->
+          transl_asm asm loc args
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->
@@ -1588,7 +1588,7 @@ let rec transl = function
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
 
-and transl_asm asm args =
+and transl_asm asm loc args =
   let asm_args = asm.Inline_asm.args in
   let transl_args = List.mapi (fun i arg ->
     let asm_arg = asm_args.(i) in
@@ -1618,7 +1618,7 @@ and transl_asm asm args =
     | `Nativeint   -> box_int Pnativeint
     | `Unit        -> return_unit
   in
-  box_res(Cop(Casm asm, transl_args))
+  box_res(Cop(Casm (asm, loc), transl_args))
 
 and transl_prim_1 p arg dbg =
   match p with

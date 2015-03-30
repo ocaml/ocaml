@@ -18,6 +18,8 @@ open Cmm
 open Reg
 open Mach
 
+exception Inline_asm_error of Location.t * string
+
 type environment = (Ident.t, Reg.t array) Tbl.t
 
 (* Infer the type of the result of an operation *)
@@ -46,7 +48,7 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
-  | Casm asm ->
+  | Casm (asm, _) ->
       let args = asm.Inline_asm.args in
       match args.(Array.length args - 1).Inline_asm.kind with
         `Addr  -> typ_addr
@@ -393,11 +395,16 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
-  | (Casm asm, _) ->
+  | (Casm (asm, loc), _) ->
       begin match self#asm_best_alternative asm args with
         None ->
-          fatal_error (Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
-            (Inline_asm.name asm))
+          (* This error means that no inline assembly alterternative fits the
+             arguments.  Catching it in [typedecl.ml] is impossible because at
+             that level not everything about the arguments is known.  The
+             compromise is to propagate [loc] and raise the error here. *)
+          raise (Inline_asm_error (loc,
+            Printf.sprintf "inconsistent operand constraints in an 'asm': %s"
+              (Inline_asm.name asm)))
       | Some (asm_mach_args, args) ->
           let _, args =
             List.fold_left (fun (i, args) arg ->
@@ -1064,3 +1071,15 @@ let _ =
 let reset () =
   catch_regs := [];
   current_function_name := ""
+
+(* Error report *)
+
+let report_error ppf s = Format.fprintf ppf "%s" s
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Inline_asm_error (loc, err) ->
+          Some (Location.error_of_printer loc report_error err)
+      | _ -> None
+    )

@@ -371,7 +371,7 @@ let specialize_comparison table env ty =
 
 let specialize_primitive loc p env ty ~has_constant_constructor =
   match p.prim_asm with
-  | Some asm -> Pasm asm
+  | Some asm -> Pasm (asm, loc)
   | None ->
     try
       let table = Hashtbl.find comparisons_table p.prim_name in

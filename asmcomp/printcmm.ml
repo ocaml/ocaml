@@ -96,7 +96,7 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
-  | Casm asm -> Inline_asm.name asm
+  | Casm (asm, _) -> Inline_asm.name asm
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
