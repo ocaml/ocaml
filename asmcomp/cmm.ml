@@ -10,6 +10,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* Packed float and int types are separate due to amd64 architecture.  Even
+   though the representation is the same and the same registers are used, they
+   require different instructions for conversion and load/store, otherwise a
+   significant performance penalty is incurred.  See "Intel(R) 64 and IA-32
+   Architectures Optimization Reference Manual", April 2012, page 5-2. *)
 type machtype_component =
     Addr
   | Int

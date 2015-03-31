@@ -72,6 +72,10 @@ let frame_required () =
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
+      (* Registers can differ in size, for example vector registers can be 32 bytes.  Each
+         stack slot is the size of the largest register used by the function.  Clearly a
+         proper solution that should be implemented down the road is to use the size of
+         each register separately. *)
       (!stack_offset + reg_size () * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
        + (if fp then 8 else 0))
     in Misc.align sz 16
@@ -79,6 +83,7 @@ let frame_size () =                     (* includes return address *)
     !stack_offset + 8
 
 let slot_offset loc cl =
+  (* See [frame_size] for the comment on how stack slots should have variable sizes *)
   match loc with
   | Incoming n -> frame_size() + n
   | Local n ->
@@ -452,11 +457,11 @@ let emit_asm i asm iargs =
       | Emit_arg (n, modifier) ->
           let iarg = iargs.(n) in
           let arg = Asm_arg (
-            match iarg.Mach.kind with
-              \`imm n -> Imm n
-            | \`unit -> Imm Int64.zero
-            | \`reg | \`stack ->
-                begin match modifier, iarg.src with
+            match iarg.Mach.source with
+              Imm n -> Imm n
+            | Unit -> Imm Int64.zero
+            | Reg | Stack ->
+                begin match modifier, iarg.reg with
                   None, \`arg n -> arg i n
                 | R8L , \`arg n -> arg8 i n
                 | R8H , \`arg n -> emit_subregh asm i.arg.(n)
@@ -474,7 +479,7 @@ let emit_asm i asm iargs =
                 | XMM , \`res n -> resxmm i n
                 | YMM , \`res n -> resymm i n
                 end
-            | \`addr (chunk, addr, _) ->
+            | Addr (chunk, addr, _) ->
                 let typ =
                   match chunk with
                     Word -> QWORD
@@ -486,7 +491,7 @@ let emit_asm i asm iargs =
                   | M128d_a | M128d_u | M256d_a | M256d_u
                   | M128i_a | M128i_u | M256i_a | M256i_u -> REAL8
                 in
-                let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
+                let n = match iarg.reg with \`arg n -> n | \`res n -> assert false in
                 addressing addr typ i n)
           in
           arg :: acc) acc t

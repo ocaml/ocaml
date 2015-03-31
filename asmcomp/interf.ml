@@ -93,7 +93,7 @@ let build_graph fundecl =
         Array.iter (fun iarg ->
           let alt = iarg.Mach.alt in
           if alt.Inline_asm.earlyclobber then
-            match iarg.src with
+            match iarg.reg with
               `arg n ->
                 for m = n to n + iarg.num_reg - 1 do
                   Array.iter (add_interf i.arg.(m)) i.res

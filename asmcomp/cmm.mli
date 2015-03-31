@@ -16,10 +16,10 @@ type machtype_component =
     Addr
   | Int
   | Float
-  | M128d
-  | M256d
-  | M128i
-  | M256i
+  | M128d (** 128-bit packed floats *)
+  | M256d (** 256-bit packed floats *)
+  | M128i (** 128-bit packed ints *)
+  | M256i (** 256-bit packed ints *)
 
 type machtype = machtype_component array
 
@@ -57,14 +57,14 @@ type memory_chunk =
   | Single
   | Double                              (*  64-bit-aligned 64-bit float *)
   | Double_u                            (*    word-aligned 64-bit float *)
-  | M128d_a                             (*  64-bit-aligned 128-bit packed 64-bit float *)
-  | M128d_u                             (* 128-bit-aligned 128-bit packed 64-bit float *)
-  | M256d_a                             (*  64-bit-aligned 256-bit packed 64-bit float *)
-  | M256d_u                             (* 256-bit-aligned 256-bit packed 64-bit float *)
-  | M128i_a                             (*  64-bit-aligned 128-bit packed 64-bit int *)
-  | M128i_u                             (* 128-bit-aligned 128-bit packed 64-bit int *)
-  | M256i_a                             (*  64-bit-aligned 256-bit packed 64-bit int *)
-  | M256i_u                             (* 256-bit-aligned 256-bit packed 64-bit int *)
+  | M128d_a                             (*  64-bit-aligned 128-bit packed floats *)
+  | M128d_u                             (* 128-bit-aligned 128-bit packed floats *)
+  | M256d_a                             (*  64-bit-aligned 256-bit packed floats *)
+  | M256d_u                             (* 256-bit-aligned 256-bit packed floats *)
+  | M128i_a                             (*  64-bit-aligned 128-bit packed ints *)
+  | M128i_u                             (* 128-bit-aligned 128-bit packed ints *)
+  | M256i_a                             (*  64-bit-aligned 256-bit packed ints *)
+  | M256i_u                             (* 256-bit-aligned 256-bit packed ints *)
 
 type operation =
     Capply of machtype * Debuginfo.t

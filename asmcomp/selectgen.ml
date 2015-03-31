@@ -262,7 +262,7 @@ method mark_instr = function
     self#mark_call
   | _ -> ()
 
-(* Finds the cost of the given inline asm alternative *)
+(* If the given inline assembly alternative is possible returns its cost *)
 method asm_alternative_cost asm args alt_index =
   let open Inline_asm in
   try
@@ -271,20 +271,20 @@ method asm_alternative_cost asm args alt_index =
     let num_res = ref 0 in
     let asm_mach_args = Array.mapi (fun j asm_arg ->
       let alt = asm_arg.alternatives.(alt_index) in
-      let kind, num_reg, arg_cost =
+      let source, num_reg, arg_cost =
         if j > Array.length args then assert false
         else if j = Array.length args then begin
-          if asm_arg.kind = `Unit then `unit, 0, 0
-          else if alt.register then `reg, 1, alt.disparage
-          else `stack, 1, alt.reload_disparage
-        end else if alt.copy_to_output <> None then `reg, 1, 0
+          if asm_arg.kind = `Unit then Unit, 0, 0
+          else if alt.register then Reg, 1, alt.disparage
+          else Stack, 1, alt.reload_disparage
+        end else if alt.copy_to_output <> None then Reg, 1, 0
         else
           match alt.memory, args.(j) with
             _, Cconst_int n when alt.immediate ->
-              `imm (Int64.of_int n), 0, alt.disparage
+              Imm (Int64.of_int n), 0, alt.disparage
           | _, Cconst_natint n when alt.immediate ->
-              `imm (Int64.of_nativeint n), 0, alt.disparage
-          | _, _ when asm_arg.kind = `Unit  -> `unit, 0, 0
+              Imm (Int64.of_nativeint n), 0, alt.disparage
+          | _, _ when asm_arg.kind = `Unit  -> Unit, 0, 0
           |  `m8,
             Cop(Cload (Byte_unsigned | Byte_signed as chunk), [loc])
           | (`m8 | `m16),
@@ -300,17 +300,20 @@ method asm_alternative_cost asm args alt_index =
             Cop(Cload (M256d_a | M256i_a as chunk), [loc])
             when asm_arg.input && alt.copy_to_output = None ->
               let addr, arg1 = self#select_addressing chunk loc in
-              `addr (chunk, addr, arg1), Arch.num_args_addressing addr, alt.disparage
-          | _, Cop(Cload _, _) when alt.register -> `reg, 1, alt.reload_disparage
-          | _, _ when alt.register               -> `reg, 1, alt.disparage
-          | _, _ when alt.memory <> `no          -> `stack, 1, alt.reload_disparage
+              Addr (chunk, addr, arg1),
+                Arch.num_args_addressing addr,
+                alt.disparage
+          | _, Cop(Cload _, _) when alt.register -> Reg, 1, alt.reload_disparage
+          | _, _ when alt.register               -> Reg, 1, alt.disparage
+          | _, _ when alt.memory <> `no          ->
+              Stack, 1, alt.reload_disparage
           | _, _ -> raise Asm_alternative_not_possible
       in
       cost := !cost + arg_cost;
-      let src = if asm_arg.input then `arg !num_arg else `res !num_res in
+      let reg = if asm_arg.input then `arg !num_arg else `res !num_res in
       if asm_arg.input  then num_arg := !num_arg + num_reg;
       if asm_arg.output then num_res := !num_res + num_reg;
-      { Mach.alt; src; num_reg; kind }) asm.args in
+      { Mach.alt; reg; num_reg; source }) asm.args in
     Some (asm_mach_args, !cost)
   with Asm_alternative_not_possible -> None
 
@@ -323,7 +326,8 @@ method asm_best_alternative asm args =
       | Some (iargs, cost) ->
           match best with
             None -> Some (iargs, Array.copy args, cost)
-          | Some (_, _, cost') when cost' >= cost -> Some (iargs, Array.copy args, cost)
+          | Some (_, _, cost') when cost' >= cost ->
+              Some (iargs, Array.copy args, cost)
           | _ -> best
     else
       let asm_arg = asm.Inline_asm.args.(j).Inline_asm.alternatives.(i) in
@@ -409,10 +413,10 @@ method select_operation op args =
           let _, args =
             List.fold_left (fun (i, args) arg ->
               let args =
-                match asm_mach_args.(i).Mach.kind with
-                  `imm _ | `unit     ->         args
-                | `addr (_, _, arg1) -> arg1 :: args
-                | `reg | `stack      ->  arg :: args
+                match asm_mach_args.(i).Mach.source with
+                  Imm _ | Unit      ->         args
+                | Addr (_, _, arg1) -> arg1 :: args
+                | Reg | Stack       ->  arg :: args
               in
               i + 1, args) (0, []) args
           in
@@ -684,10 +688,10 @@ method emit_expr env exp =
               Array.iteri (fun i iarg ->
                 let pos = rs_pos.(i) in
                 for i = pos to pos + iarg.num_reg - 1 do
-                  match iarg.kind with
-                    `addr _ | `imm _ | `unit -> ()
-                  | `stack -> rs_new.(i).Reg.spill <- true
-                  | `reg   -> rs_new.(i) <- self#asm_pseudoreg iarg.Mach.alt rs_new.(i)
+                  match iarg.source with
+                    Addr _ | Imm _ | Unit -> ()
+                  | Stack -> rs_new.(i).Reg.spill <- true
+                  | Reg   -> rs_new.(i) <- self#asm_pseudoreg iarg.Mach.alt rs_new.(i)
                 done) iargs;
               (* This has to be done in two passes! *)
               Array.iteri (fun i iarg ->

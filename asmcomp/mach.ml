@@ -31,15 +31,18 @@ type test =
   | Ioddtest
   | Ieventest
 
+type asm_arg_source =
+  Addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
+| Imm of int64
+| Reg
+| Stack
+| Unit
+
 type asm_arg = {
   alt    : Inline_asm.alternative;
-  src    : [ `arg of int | `res of int ];
+  reg    : [ `arg of int | `res of int ];
   num_reg: int;
-  kind   : [ `addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
-           | `imm of int64
-           | `reg
-           | `stack
-           | `unit ] }
+  source : asm_arg_source }
 
 type operation =
     Imove

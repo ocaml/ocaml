@@ -488,11 +488,11 @@ let emit_asm i asm iargs =
       | Emit_arg (n, modifier) ->
           let iarg = iargs.(n) in
           let arg = Asm_arg (
-            match iarg.Mach.kind with
-              \`imm n -> Imm n
-            | \`unit -> Imm Int64.zero
-            | \`reg | \`stack ->
-                begin match modifier, iarg.src with
+            match iarg.Mach.source with
+              Imm n -> Imm n
+            | Unit -> Imm Int64.zero
+            | Reg | Stack ->
+                begin match modifier, iarg.reg with
                   None, \`arg n -> Reg32 (reg32 i.arg.(n))
                 | R8L , \`arg n -> reg8 i.arg.(n)
                 | R8H , \`arg n -> reg8h asm i.arg.(n)
@@ -507,7 +507,7 @@ let emit_asm i asm iargs =
                     fatal_error ("64-bit and vector data types "
                       ^ "not supported on architecture I386")
                 end
-            | \`addr (chunk, addr, _) ->
+            | Addr (chunk, addr, _) ->
                 let typ =
                   match chunk with
                     Word -> QWORD
@@ -519,7 +519,7 @@ let emit_asm i asm iargs =
                   | M128d_a | M128d_u | M256d_a | M256d_u
                   | M128i_a | M128i_u | M256i_a | M256i_u -> REAL8
                 in
-                let n = match iarg.src with \`arg n -> n | \`res n -> assert false in
+                let n = match iarg.reg with \`arg n -> n | \`res n -> assert false in
                 addressing addr typ i n)
           in
           arg :: acc) acc t

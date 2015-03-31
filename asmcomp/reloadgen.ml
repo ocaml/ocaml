@@ -85,7 +85,7 @@ method reload_operation op arg res =
           `m8 | `m16 | `m32 | `m64 -> ()
         | _ ->
             let src, i =
-              match iarg.Mach.src with
+              match iarg.Mach.reg with
                 `arg i -> arg, i
               | `res i -> res, i
             in

@@ -445,15 +445,15 @@ let emit_asm i asm iargs =
       | Emit_dialect d -> emit_template d.(0)
       | Emit_arg (n, _) ->
           let iarg = iargs.(n) in
-          match iarg.Mach.kind with
-            \`imm n -> `#{emit_int (Int64.to_int n)}`
-          | \`unit -> `#{emit_int 0}`
-          | \`reg | \`stack ->
-              begin match iarg.src with
+          match iarg.Mach.source with
+            Imm n -> `#{emit_int (Int64.to_int n)}`
+          | Unit -> `#{emit_int 0}`
+          | Reg | Stack ->
+              begin match iarg.reg with
                 \`arg n -> `{emit_reg i.arg.(n)}`
               | \`res n -> `{emit_reg i.res.(n)}`
               end
-          | \`addr (_, _, _) ->
+          | Addr (_, _, _) ->
               fatal_error (
                 "Addressing currently not supported in inline assembly "
                 ^ "for the architecture Power")) t

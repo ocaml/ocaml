@@ -159,17 +159,17 @@ let operation op arg ppf res =
           | Emit_unique -> fprintf ppf "%%="
           | Emit_arg (i, modifier) ->
               let iarg = iargs.(i) in
-              match iarg.kind with
-                `addr (chunk, addr, _) ->
+              match iarg.source with
+                Addr (chunk, addr, _) ->
                   fprintf ppf "%s[%a]" (Printcmm.chunk chunk)
                     (Arch.print_addressing reg addr)
-                    (match iarg.src with
+                    (match iarg.reg with
                         `arg n -> Array.sub arg n (Array.length arg - n)
                       | `res n -> Array.sub res n (Array.length res - n))
-              | `imm n -> fprintf ppf "%Ld" n
-              | `reg | `stack ->
+              | Imm n -> fprintf ppf "%Ld" n
+              | Reg | Stack ->
                   fprintf ppf "%a%s" reg
-                    (match iarg.src with `arg n -> arg.(n) | `res n -> res.(n))
+                    (match iarg.reg with `arg n -> arg.(n) | `res n -> res.(n))
                     ( match modifier with
                       | None -> ""
                       | R8L -> "l"
@@ -179,7 +179,7 @@ let operation op arg ppf res =
                       | R64 -> "q"
                       | XMM -> "x"
                       | YMM -> "y" )
-              | `unit -> fprintf ppf "()") a
+              | Unit -> fprintf ppf "()") a
       in
       print asm.template;
   | Ispecific op ->

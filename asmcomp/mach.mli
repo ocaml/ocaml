@@ -31,15 +31,21 @@ type test =
   | Ioddtest
   | Ieventest
 
+(* The kind of machine source for each inline assembly argument *)
+type asm_arg_source =
+  Addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
+               (** The source is the memory pointed by register(s) *)
+| Imm of int64 (** An immediate value *)
+| Reg          (** The source is a machine register *)
+| Stack        (** The source is a stack slot.  This is used in the case when
+                   the source must be the memory but [Addr] cannot be used. *)
+| Unit         (** No machine source needed for the argument *)
+
 type asm_arg = {
   alt    : Inline_asm.alternative;
-  src    : [ `arg of int | `res of int ];
+  reg    : [ `arg of int | `res of int ];
   num_reg: int;
-  kind   : [ `addr of Cmm.memory_chunk * Arch.addressing_mode * Cmm.expression
-           | `imm of int64
-           | `reg
-           | `stack
-           | `unit ] }
+  source : asm_arg_source }
 
 type operation =
     Imove
