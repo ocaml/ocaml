@@ -245,7 +245,7 @@ and add_sig_item bv item =
   match item.psig_desc with
     Psig_value vd ->
       add_type bv vd.pval_type; bv
-  | Psig_type dcls ->
+  | Psig_type (_, dcls) ->
       List.iter (add_type_declaration bv) dcls; bv
   | Psig_typext te ->
       add_type_extension bv te; bv
@@ -304,7 +304,7 @@ and add_struct_item bv item =
       let bv = add_bindings rf bv pel in bv
   | Pstr_primitive vd ->
       add_type bv vd.pval_type; bv
-  | Pstr_type dcls ->
+  | Pstr_type (_, dcls) ->
       List.iter (add_type_declaration bv) dcls; bv
   | Pstr_typext te ->
       add_type_extension bv te;

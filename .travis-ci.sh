@@ -14,7 +14,7 @@ i386)
   git config --global user.name "Some Name"
   opam init -y -a git://github.com/ocaml/opam-repository
   opam install -y oasis
-  opam pin add -y utop https://github.com/diml/utop
+  opam pin add -y utop git://github.com/diml/utop
   ;;
 *)
   echo unknown arch

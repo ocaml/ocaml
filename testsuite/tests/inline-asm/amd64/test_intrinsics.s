@@ -1502,6 +1502,10 @@ camlTest_intrinsics__entry:
 	.globl	camlTest_intrinsics__code_end
 camlTest_intrinsics__code_end:
 	.data
+				/* relocation table start */
+	.align	8
+				/* relocation table end */
+	.data
 	.globl	camlTest_intrinsics__data_end
 camlTest_intrinsics__data_end:
 	.long	0

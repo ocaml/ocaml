@@ -179,6 +179,8 @@ val trim : bytes -> bytes
 val escaped : bytes -> bytes
 (** Return a copy of the argument, with special characters represented
     by escape sequences, following the lexical conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
 
     Raise [Invalid_argument] if the result is longer than
     {!Sys.max_string_length} bytes. *)

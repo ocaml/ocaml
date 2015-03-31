@@ -531,11 +531,14 @@ let approx_ulam = function
   | _ -> Value_unknown
 
 let find_action idxs acts tag =
-  let res = ref None in
-  for i = 0 to Array.length idxs - 1 do
-    if idxs.(i) = tag then res := Some acts.(i)
-  done;
-  !res
+  if 0 <= tag && tag < Array.length idxs then begin
+    let idx = idxs.(tag) in
+    assert(0 <= idx && idx < Array.length acts);
+    Some acts.(idx)
+  end else
+    (* Can this happen? *)
+    None
+
 
 let rec substitute fpc sb ulam =
   match ulam with

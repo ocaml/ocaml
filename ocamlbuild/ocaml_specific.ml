@@ -576,6 +576,8 @@ let () =
       ["ocaml"; "doc"];
       ["ocaml"; "mktop"];
       ["ocaml"; "infer_interface"];
+      (* PR#6794: ocamlbuild should pass -package flags when building C files *)
+      ["c"; "compile"];
     ] in
 
     (* tags package(X), predicate(X) and syntax(X) *)
@@ -584,7 +586,8 @@ let () =
       if not (List.mem "ocamldep" tags) then
         (* PR#6184: 'ocamlfind ocamldep' does not support -predicate *)
         pflag tags "predicate" (fun pkg -> S [A "-predicates"; A pkg]);
-      pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
+      if List.mem "ocaml" tags then
+        pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
     end all_tags
   end else begin
     try
@@ -593,7 +596,9 @@ let () =
       flag ["ocaml"; "byte"; "compile"] (Findlib.compile_flags_byte pkgs);
       flag ["ocaml"; "native"; "compile"] (Findlib.compile_flags_native pkgs);
       flag ["ocaml"; "byte"; "link"] (Findlib.link_flags_byte pkgs);
-      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs)
+      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs);
+      (* PR#6794: ocamlbuild should pass -package flags when building C files *)
+      flag ["c"; "compile"] (Findlib.include_flags pkgs)
     with Findlib.Findlib_error e ->
       Findlib.report_error e
   end
@@ -713,7 +718,10 @@ flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
 (* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "link"; "thread"] (A "-thread");;
-if not !Options.use_ocamlfind then begin
+if !Options.use_ocamlfind then
+  (* PR#6794: Needed as we pass -package when compiling C files *)
+  flag ["c"; "compile"; "thread"] (A "-thread")
+else begin
   flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
   flag ["ocaml"; "link"; "thread"; "native"; "program"] (A "threads.cmxa");
   flag ["ocaml"; "link"; "thread"; "byte"; "program"] (A "threads.cma");

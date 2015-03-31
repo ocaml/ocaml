@@ -384,6 +384,7 @@ let forget_process fd pid =
   let checkpoint =
     List.find (function c -> c.c_pid = pid) (!current_checkpoint::!checkpoints)
   in
+  if pid > 0 then begin
     Printf.eprintf "Lost connection with process %d" pid;
     let kont =
       if checkpoint == !current_checkpoint then begin
@@ -409,6 +410,7 @@ let forget_process fd pid =
     if checkpoint.c_parent.c_pid > 0 then
       wait_child checkpoint.c_parent.c_fd;
     kont ()
+  end
 
 (* Try to recover when the current checkpoint is lost. *)
 let recover () =

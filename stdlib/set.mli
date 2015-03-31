@@ -76,7 +76,8 @@ module type S =
 
     val add: elt -> t -> t
     (** [add x s] returns a set containing all elements of [s],
-       plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
+       plus [x]. If [x] was already in [s], [s] is returned unchanged
+       (the result of the function is then physically equal to [s]). *)
 
     val singleton: elt -> t
     (** [singleton x] returns the one-element set containing only [x]. *)

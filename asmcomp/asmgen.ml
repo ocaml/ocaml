@@ -142,7 +142,7 @@ let gen_implementation ?toplevel ppf (size, lam) =
 
 let compile_implementation ?toplevel prefixname ppf (size, lam) =
   let asmfile =
-    if !keep_asm_file
+    if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in

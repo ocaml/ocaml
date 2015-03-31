@@ -1124,6 +1124,13 @@ let instance_def sch =
   cleanup_types ();
   ty
 
+let generic_instance ?partial env sch =
+  let old = !current_level in
+  current_level := generic_level;
+  let ty = instance env sch in
+  current_level := old;
+  ty
+
 let instance_list env schl =
   let env = gadt_env env in
   let tyl = List.map (fun t -> copy ?env t) schl in
@@ -2068,7 +2075,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl then raise (Unify [])
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
             with Not_found -> ()
             end
         (*

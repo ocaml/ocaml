@@ -122,6 +122,10 @@ camlFloat_round__entry:
 	.globl	camlFloat_round__code_end
 camlFloat_round__code_end:
 	.data
+				/* relocation table start */
+	.align	8
+				/* relocation table end */
+	.data
 	.globl	camlFloat_round__data_end
 camlFloat_round__data_end:
 	.long	0

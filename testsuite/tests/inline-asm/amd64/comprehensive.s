@@ -3219,6 +3219,10 @@ next:
 	.globl	camlComprehensive__code_end
 camlComprehensive__code_end:
 	.data
+				/* relocation table start */
+	.align	8
+				/* relocation table end */
+	.data
 	.globl	camlComprehensive__data_end
 camlComprehensive__data_end:
 	.long	0

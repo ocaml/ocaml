@@ -505,12 +505,15 @@ Given any list of package [l], [topological_closure l] returns a list of
 packages including [l] and their dependencies, in an order where any element
 may only depend on the previous ones. *)
 
+  val include_flags: package list -> command_spec
+    (** Return the list of include directories. *)
+
   val compile_flags_byte: package list -> command_spec
     (** Return the flags to add when compiling in byte mode (include
 directories). *)
 
   val compile_flags_native: package list -> command_spec
-    (** Same as [link_flags_byte] but for native mode. *)
+    (** Same as [compile_flags_byte] but for native mode. *)
 
   val link_flags_byte: package list -> command_spec
     (** Return the flags to add when linking in byte mode. It includes:
@@ -603,7 +606,7 @@ module type PLUGIN = sig
         target (or phony target), since it will be filled up by a digest of
         it dependencies.
       - The ~tags argument in deprecated, don't use it.
-      
+
       Finally, the optional ~doc argument allows to give an informal
       explanation of the rule purpose and behavior, that will be
       displayed by [ocamlbuild -documentation]. For example, it is

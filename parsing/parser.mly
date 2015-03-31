@@ -378,6 +378,7 @@ let mkctf_attrs d attrs =
 %token MUTABLE
 %token <nativeint> NATIVEINT
 %token NEW
+%token NONREC
 %token OBJECT
 %token OF
 %token OPEN
@@ -399,6 +400,7 @@ let mkctf_attrs d attrs =
 %token SEMI
 %token SEMISEMI
 %token SHARP
+%token <string> SHARPOP
 %token SIG
 %token STAR
 %token <string * string option> STRING
@@ -476,6 +478,7 @@ The precedences must be listed from low to high.
 %nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
 %nonassoc below_SHARP
 %nonassoc SHARP                         /* simple_expr/toplevel_directive */
+%left     SHARPOP
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
@@ -652,10 +655,11 @@ structure_item:
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | TYPE type_declarations
-      { mkstr(Pstr_type (List.rev $2) ) }
-  | TYPE str_type_extension
-      { mkstr(Pstr_typext $2) }
+  | TYPE nonrec_flag type_declarations
+      { mkstr(Pstr_type ($2, List.rev $3) ) }
+  | TYPE nonrec_flag str_type_extension
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        mkstr(Pstr_typext $3) }
   | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
   | MODULE module_binding
@@ -739,10 +743,11 @@ signature_item:
       { mksig(Psig_value
                 (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
                    ~loc:(symbol_rloc()))) }
-  | TYPE type_declarations
-      { mksig(Psig_type (List.rev $2)) }
-  | TYPE sig_type_extension
-      { mksig(Psig_typext $2) }
+  | TYPE nonrec_flag type_declarations
+      { mksig(Psig_type ($2, List.rev $3)) }
+  | TYPE nonrec_flag sig_type_extension
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        mksig(Psig_typext $3) }
   | EXCEPTION sig_exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
@@ -1286,6 +1291,8 @@ simple_expr:
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | simple_expr SHARPOP simple_expr
+      { mkinfix $1 $2 $3 }
   | LPAREN MODULE module_expr RPAREN
       { mkexp (Pexp_pack $3) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
@@ -1646,10 +1653,10 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-  | constr_ident attributes generalized_constructor_arguments
+  | constr_ident generalized_constructor_arguments attributes
       {
-       let args,res = $3 in
-       Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
+       let args,res = $2 in
+       Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3
       }
 ;
 str_exception_declaration:
@@ -1674,14 +1681,14 @@ sig_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type
+  | COLON constructor_arguments MINUSGREATER simple_core_type_no_attr
                                   { ($2,Some $4) }
-  | COLON simple_core_type
+  | COLON simple_core_type_no_attr
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
 constructor_arguments:
-  | core_type_list { Pcstr_tuple (List.rev $1) }
+  | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
   | LBRACE label_declarations opt_semi RBRACE { Pcstr_record (List.rev $2) }
 ;
 label_declarations:
@@ -1689,9 +1696,9 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label attributes COLON poly_type
+    mutable_flag label COLON poly_type_no_attr attributes
       {
-       Type.field (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
+       Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
       }
 ;
 
@@ -1723,13 +1730,13 @@ sig_extension_constructors:
       { $3 :: $1 }
 ;
 extension_constructor_declaration:
-  | constr_ident attributes generalized_constructor_arguments
-      { let args, res = $3 in
-        Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2 }
+  | constr_ident generalized_constructor_arguments attributes
+      { let args, res = $2 in
+        Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3 }
 ;
 extension_constructor_rebind:
-  | constr_ident attributes EQUAL constr_longident
-      { Te.rebind (mkrhs $1 1) (mkrhs $4 4) ~loc:(symbol_rloc()) ~attrs:$2 }
+  | constr_ident EQUAL constr_longident attributes
+      { Te.rebind (mkrhs $1 1) (mkrhs $3 3) ~loc:(symbol_rloc()) ~attrs:$4 }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
@@ -1739,7 +1746,7 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type constraints
+    TYPE type_parameters label_longident with_type_binder core_type_no_attr constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
@@ -1750,7 +1757,7 @@ with_constraint:
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label COLONEQUAL core_type
+  | TYPE type_parameters label COLONEQUAL core_type_no_attr
       { Pwith_typesubst
           (Type.mk (mkrhs $3 3)
              ~params:$2
@@ -1778,10 +1785,22 @@ poly_type:
       | typevar_list DOT core_type
           { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
+poly_type_no_attr:
+        core_type_no_attr
+          { $1 }
+      | typevar_list DOT core_type_no_attr
+          { mktyp(Ptyp_poly(List.rev $1, $3)) }
+;
 
 /* Core types */
 
 core_type:
+    core_type_no_attr
+      { $1 }
+  | core_type attribute
+      { Typ.attr $1 $2 }
+;
+core_type_no_attr:
     core_type2
       { $1 }
   | core_type2 AS QUOTE ident
@@ -1805,8 +1824,6 @@ simple_core_type:
       { $1 }
   | LPAREN core_type_comma_list RPAREN %prec below_SHARP
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
-  | simple_core_type attribute
-      { Typ.attr $1 $2 }
 ;
 
 simple_core_type_no_attr:
@@ -1880,8 +1897,8 @@ row_field:
   | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
-    name_tag attributes OF opt_ampersand amper_type_list
-      { Rtag ($1, $2, $4, List.rev $5) }
+    name_tag OF opt_ampersand amper_type_list attributes
+      { Rtag ($1, $5, $3, List.rev $4) }
   | name_tag attributes
       { Rtag ($1, $2, true, []) }
 ;
@@ -1890,8 +1907,8 @@ opt_ampersand:
   | /* empty */                                 { false }
 ;
 amper_type_list:
-    core_type                                   { [$1] }
-  | amper_type_list AMPERSAND core_type         { $3 :: $1 }
+    core_type_no_attr                           { [$1] }
+  | amper_type_list AMPERSAND core_type_no_attr { $3 :: $1 }
 ;
 name_tag_list:
     name_tag                                    { [$1] }
@@ -1926,7 +1943,7 @@ meth_list:
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label attributes COLON poly_type            { ($1, $2, $4) }
+    label COLON poly_type_no_attr attributes    { ($1, $4, $3) }
 ;
 label:
     LIDENT                                      { $1 }
@@ -1977,6 +1994,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | SHARPOP                                     { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
@@ -2083,6 +2101,10 @@ name_tag:
 rec_flag:
     /* empty */                                 { Nonrecursive }
   | REC                                         { Recursive }
+;
+nonrec_flag:
+    /* empty */                                 { Recursive }
+  | NONREC                                      { Nonrecursive }
 ;
 direction_flag:
     TO                                          { Upto }

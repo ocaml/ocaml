@@ -115,7 +115,12 @@ module Make(Ord: OrderedType) =
       | Node(l, v, r, _) as t ->
           let c = Ord.compare x v in
           if c = 0 then t else
-          if c < 0 then bal (add x l) v r else bal l v (add x r)
+          if c < 0 then
+            let ll = add x l in
+            if l == ll then t else bal ll v r
+          else
+            let rr = add x r in
+            if r == rr then t else bal l v rr
 
     let singleton x = Node(Empty, x, Empty, 1)
 
