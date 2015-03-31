@@ -18,7 +18,7 @@ let ri64  = ref 6L
 let rinat = ref 6n
 let rt    = ref (6, 6)
 
-external func1a : 'a ref -> 'a                
+external func1a : 'a ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1a" "r" "=r"
 external func1b : float ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1b" "r" "=r"
@@ -244,7 +244,7 @@ let () =
   (* Test immediate argument *)
   let x = !ri in func16a 6 x; assert (x = 12);
   let x = Int64.add !ri64 1L in func16b 6L x; assert (x = 13L);
- 
+
 external func17a : int -> int -> unit = "%asm" ""
        "add	%0, %1	# func17a
 	decq	%1" "m#hello" "+r" "" "cc"
