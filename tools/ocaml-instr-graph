@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #########################################################################
 #                                                                       #
@@ -6,7 +6,7 @@
 #                                                                       #
 #                 Damien Doligez, Jane Street Capital                   #
 #                                                                       #
-#   Copyright 2014 Institut National de Recherche en Informatique et    #
+#   Copyright 2015 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
 #   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
@@ -27,6 +27,7 @@
 datafile=
 curves=,
 title=
+titleset=false
 max=1000000000
 ranget=
 rangen=
@@ -36,7 +37,7 @@ to=1000000000
 while [[ $# > 0 ]]; do
     case $1 in
         -d) curves=$curves$2,; shift 2;;
-        -t) title=$2; shift 2;;
+        -t) title=$2; titleset=true; shift 2;;
         -m) max=$2; shift 2;;
         -rt) ranget="set yrange [0:$2]"; shift 2;;
         -rn) rangen="set y2range [0:$2]"; shift 2;;
@@ -49,7 +50,11 @@ done
 if [[ "$curves" = , ]]; then
     curves=,major,minor,coll,dispatch,
 fi
-        
+
+if ! $titleset; then
+    title=$datafile
+fi
+
 tmpfile=/tmp/ocaml-instr-graph.$$
 
 rm -f $tmpfile-*
