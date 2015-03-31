@@ -16,6 +16,7 @@ digest.cmi :
 filename.cmi :
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmi :
+gc_temp.cmi :
 genlex.cmi : stream.cmi
 hashtbl.cmi :
 int32.cmi :
@@ -94,7 +95,9 @@ format.cmo : string.cmi pervasives.cmi camlinternalFormatBasics.cmi \
 format.cmx : string.cmx pervasives.cmx camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx buffer.cmx format.cmi
 gc.cmo : sys.cmi printf.cmi gc.cmi
+gc_temp.cmo : gc_temp.cmi
 gc.cmx : sys.cmx printf.cmx gc.cmi
+gc_temp.cmx : gc_temp.cmi
 genlex.cmo : string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi bytes.cmi \
     genlex.cmi
 genlex.cmx : string.cmx stream.cmx list.cmx hashtbl.cmx char.cmx bytes.cmx \

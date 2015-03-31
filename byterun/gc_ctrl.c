@@ -503,6 +503,11 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
+CAMLprim value caml_get_minor_free (value v)
+{
+  return Val_int (caml_young_ptr - caml_young_alloc_start);
+}
+
 uintnat caml_normalize_heap_increment (uintnat i)
 {
   if (i < Bsize_wsize (Heap_chunk_min)){
