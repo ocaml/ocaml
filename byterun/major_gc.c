@@ -530,7 +530,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
   if (p > 0.4) p = 0.6;
-  CAML_INSTR_INT ("major/work/extra",
+  CAML_INSTR_INT ("major/work/extra#",
                   (uintnat) (caml_extra_heap_resources * 1000000));
 
   caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
@@ -590,14 +590,8 @@ intnat caml_major_collection_slice (intnat howmuch)
   }
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
   if (caml_gc_phase == Phase_mark){
-    CAML_INSTR_INT ("major/work/mark", computed_work);
-    mark_slice (computed_work/4);
-    CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
-    mark_slice (computed_work/4);
-    CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
-    mark_slice (computed_work/4);
-    CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
-    mark_slice (computed_work - 3*computed_work/4);
+    CAML_INSTR_INT ("major/work/mark#", computed_work);
+    mark_slice (computed_work);
     CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
     caml_gc_message (0x02, "!", 0);
     /*
@@ -607,7 +601,7 @@ intnat caml_major_collection_slice (intnat howmuch)
     */
   }else{
     Assert (caml_gc_phase == Phase_sweep);
-    CAML_INSTR_INT ("major/work/sweep", computed_work);
+    CAML_INSTR_INT ("major/work/sweep#", computed_work);
     sweep_slice (computed_work);
     CAML_INSTR_TIME (tmr, "major/sweep");
     caml_gc_message (0x02, "$", 0);

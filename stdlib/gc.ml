@@ -59,16 +59,18 @@ let print_stat c =
   fprintf c "major_collections: %d\n" st.major_collections;
   fprintf c "compactions:       %d\n" st.compactions;
   fprintf c "\n";
-  fprintf c "minor_words:    %.0f\n" st.minor_words;
-  fprintf c "promoted_words: %.0f\n" st.promoted_words;
-  fprintf c "major_words:    %.0f\n" st.major_words;
+  let l1 = String.length (sprintf "%.0f" st.minor_words) in
+  fprintf c "minor_words:    %*.0f\n" l1 st.minor_words;
+  fprintf c "promoted_words: %*.0f\n" l1 st.promoted_words;
+  fprintf c "major_words:    %*.0f\n" l1 st.major_words;
   fprintf c "\n";
-  fprintf c "top_heap_words: %d\n" st.top_heap_words;
-  fprintf c "heap_words:     %d\n" st.heap_words;
-  fprintf c "live_words:     %d\n" st.live_words;
-  fprintf c "free_words:     %d\n" st.free_words;
-  fprintf c "largest_free:   %d\n" st.largest_free;
-  fprintf c "fragments:      %d\n" st.fragments;
+  let l2 = String.length (sprintf "%d" st.top_heap_words) in
+  fprintf c "top_heap_words: %*d\n" l2 st.top_heap_words;
+  fprintf c "heap_words:     %*d\n" l2 st.heap_words;
+  fprintf c "live_words:     %*d\n" l2 st.live_words;
+  fprintf c "free_words:     %*d\n" l2 st.free_words;
+  fprintf c "largest_free:   %*d\n" l2 st.largest_free;
+  fprintf c "fragments:      %*d\n" l2 st.fragments;
   fprintf c "\n";
   fprintf c "live_blocks: %d\n" st.live_blocks;
   fprintf c "free_blocks: %d\n" st.free_blocks;

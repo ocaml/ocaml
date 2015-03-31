@@ -94,4 +94,4 @@ awk -v curves="$curves" -v clip=$max -v tmpfile="$tmpfile" -v from=$from \
   printf "\n"
 ) | gnuplot -p
 
-#rm -f $tmpfile-*
+rm -f $tmpfile-*

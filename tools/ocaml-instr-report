@@ -77,9 +77,11 @@ function store(value,tag) {
     val[tag, "off-scale"] = value;
 }
 
-$1 == "@@" {
-    store($2, $3);
-}
+$1 == "@@" && $3 ~ /@/ { total[$3] += $2; }
+
+$1 == "@@" && $3 ~ /#/ { store($2, $3); }
+
+$1 == "@@" { store($2, $3); }
 
 function display(n, val, kind,    i) {
     graph_width = 35;
@@ -102,14 +104,31 @@ function display(n, val, kind,    i) {
 
 END {
     n = asorti(total,tags);
+    total_alloc = 0;
+    for (i = 1; i <= n; i++){
+        t = tags[i];
+        if (t ~ /^alloc/) total_alloc += total[t];
+    }
     for (i = 1; i <= n; i++){
         t = tags[i];
         if (t ~ /#/){
-            kind = "n";
+            kind = "n";        # number
+        }else if (t ~ /@/){
+            kind = "e";        # event
         }else{
-            kind = "t";
+            kind = "t";        # timer
         }
-        printf ("==== %s: %d\n", t, total[t]);
+        if (kind == "e"){
+            printf ("==== %-12s:%9d", t, total[t]);
+            if (t ~ /^alloc/){
+                cumul += total[t] / total_alloc;
+                printf(" (%6.2f%%)", cumul * 100);
+            }
+            printf ("\n");
+            continue;
+        }else{
+            printf ("==== %s: %d\n", t, total[t]);
+        }
         num = bin[t,0];
         found = num;
         if (num == total[t] && kind == "t"){
