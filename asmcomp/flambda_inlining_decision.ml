@@ -33,6 +33,7 @@ let inline_non_recursive
     ~inline_threshold
     ~direct_apply
     ~no_transformation
+    ~probably_a_functor
     ~args
     ~loop =
   let body, r_inlined =
@@ -63,7 +64,8 @@ let inline_non_recursive
           (R.benefit r_inlined)
           (Can_inline 0)
       in
-      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+      if Flambdacost.Whether_sufficient_benefit.evaluate
+          ~probably_a_functor wsb then begin
         record_decision (Inlined (Copying_body (Evaluated wsb)));
         true
       end else begin
@@ -98,7 +100,8 @@ let inline_non_recursive
           (R.benefit r_inlined)
           (Can_inline 0)
       in
-      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+      if Flambdacost.Whether_sufficient_benefit.evaluate
+          ~probably_a_functor wsb then begin
         record_decision (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
         true
       end else begin
@@ -171,9 +174,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
   let inline_threshold = R.inline_threshold r in
   let fun_var = U.find_declaration_variable fun_id clos in
   let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
+  let probably_a_functor = is_probably_a_functor env clos approxs in
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive)
-       || is_probably_a_functor env clos approxs then
+       || probably_a_functor then
       (* CR pchambart: need to explain that the previous fun_cost is used
          for performance reasons, and that for functor it is acceptable. *)
 
@@ -244,6 +248,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
           ~inline_threshold
           ~direct_apply
           ~no_transformation
+          ~probably_a_functor
           ~args ~loop
       else if recursive then
         let tried_unrolling = ref false in
@@ -261,7 +266,8 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                 inline_threshold
             in
             let keep_unrolled_version =
-              if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+              if Flambdacost.Whether_sufficient_benefit.evaluate
+                  ~probably_a_functor:false wsb then begin
                 record_decision (Inlined (Unrolled wsb));
                 true
               end else begin
@@ -306,7 +312,8 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                     inline_threshold
                 in
                 let keep_inlined_version =
-                  if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
+                  if Flambdacost.Whether_sufficient_benefit.evaluate
+                      ~probably_a_functor:false wsb then begin
                     record_decision (Inlined (Copying_decl (
                         Tried_unrolling !tried_unrolling, wsb)));
                     true

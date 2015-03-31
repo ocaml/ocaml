@@ -274,11 +274,14 @@ module Whether_sufficient_benefit = struct
           evaluated_size; evaluated_benefit; evaluated_threshold;
         }
 
-  let evaluate = function
+  let evaluate ~probably_a_functor = function
     | Do_not_inline -> false
     | Maybe_inline maybe ->
-      maybe.evaluated_size - maybe.evaluated_benefit
-          <= maybe.evaluated_threshold
+      if probably_a_functor then
+        true
+      else
+        maybe.evaluated_size - maybe.evaluated_benefit
+            <= maybe.evaluated_threshold
 
   let to_string t =
     match t with
@@ -296,5 +299,5 @@ module Whether_sufficient_benefit = struct
         maybe.evaluated_size
         maybe.evaluated_benefit
         maybe.evaluated_threshold
-        (if evaluate t then "yes" else "no")
+        (if evaluate ~probably_a_functor:false t then "yes" else "no")
 end

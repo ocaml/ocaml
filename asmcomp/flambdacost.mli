@@ -45,7 +45,7 @@ module Whether_sufficient_benefit : sig
     -> inline_threshold
     -> t
 
-  val evaluate : t -> bool
+  val evaluate : probably_a_functor:bool -> t -> bool
 
   val to_string : t -> string
 end
