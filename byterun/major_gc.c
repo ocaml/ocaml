@@ -338,8 +338,8 @@ static void mark_slice (intnat work)
   }
   gray_vals_cur = gray_vals_ptr;
   if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
-  INSTR (CAML_INSTR_INT ("major/mark/slice/fields", slice_fields);)
-  INSTR (CAML_INSTR_INT ("major/mark/slice/pointers", slice_pointers);)
+  INSTR (CAML_INSTR_INT ("major/mark/slice/fields#", slice_fields);)
+  INSTR (CAML_INSTR_INT ("major/mark/slice/pointers#", slice_pointers);)
 }
 
 static void sweep_slice (intnat work)
@@ -477,7 +477,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   }
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
-  CAML_INSTR_INT ("major/work/extra",
+  CAML_INSTR_INT ("major/work/extra#",
                   (uintnat) (caml_extra_heap_resources * 1000000));
 
   caml_gc_message (0x40, "allocated_words = %"
@@ -500,13 +500,13 @@ intnat caml_major_collection_slice (intnat howmuch)
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
   if (howmuch == 0) howmuch = computed_work;
   if (caml_gc_phase == Phase_mark){
-    CAML_INSTR_INT ("major/work/mark", howmuch);
+    CAML_INSTR_INT ("major/work/mark#", howmuch);
     mark_slice (howmuch);
     CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
     caml_gc_message (0x02, "!", 0);
   }else{
     Assert (caml_gc_phase == Phase_sweep);
-    CAML_INSTR_INT ("major/work/sweep", howmuch);
+    CAML_INSTR_INT ("major/work/sweep#", howmuch);
     sweep_slice (howmuch);
     CAML_INSTR_TIME (tmr, "major/sweep");
     caml_gc_message (0x02, "$", 0);

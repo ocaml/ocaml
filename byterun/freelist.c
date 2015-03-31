@@ -147,6 +147,33 @@ static char *allocate_block (mlsize_t wh_sz, int flpi, char *prev, char *cur)
   return cur + Bosize_hd (h) - Bsize_wsize (wh_sz);
 }
 
+#ifdef CAML_INSTR
+static uintnat instr_size [20] =
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static char *instr_name [20] = {
+  NULL,
+  "alloc01",
+  "alloc02",
+  "alloc03",
+  "alloc04",
+  "alloc05",
+  "alloc06",
+  "alloc07",
+  "alloc08",
+  "alloc09",
+  "alloc10-19",
+  "alloc20-29",
+  "alloc30-39",
+  "alloc40-49",
+  "alloc50-59",
+  "alloc60-69",
+  "alloc70-79",
+  "alloc80-89",
+  "alloc90-99",
+  "alloc_large",
+};
+#endif /*CAML_INSTR*/
+
 /* [caml_fl_allocate] does not set the header of the newly allocated block.
    The calling function must do it before any GC function gets called.
    [caml_fl_allocate] returns a head pointer.
@@ -158,6 +185,16 @@ char *caml_fl_allocate (mlsize_t wo_sz)
   mlsize_t sz, prevsz;
                                   Assert (sizeof (char *) == sizeof (value));
                                   Assert (wo_sz >= 1);
+#ifdef CAML_INSTR
+  if (wo_sz < 10){
+    ++instr_size[wo_sz];
+  }else if (wo_sz < 100){
+    ++instr_size[wo_sz/10 + 9];
+  }else{
+    ++instr_size[19];
+  }
+#endif /* CAML_INSTR */
+
   switch (policy){
   case Policy_next_fit:
                                   Assert (fl_prev != NULL);
@@ -339,6 +376,13 @@ static char *last_fragment;
 
 void caml_fl_init_merge (void)
 {
+#ifdef CAML_INSTR
+  int i;
+  for (i = 1; i < 20; i++){
+    CAML_INSTR_EVENT (instr_name[i], instr_size[i]);
+    instr_size[i] = 0;
+  }
+#endif /* CAML_INSTR */
   last_fragment = NULL;
   caml_fl_merge = Fl_head;
 #ifdef DEBUG

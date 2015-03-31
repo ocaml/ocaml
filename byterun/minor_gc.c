@@ -77,7 +77,7 @@ void caml_set_minor_heap_size (asize_t size)
   Assert (size <= Bsize_wsize(Minor_heap_max));
   Assert (size % sizeof (value) == 0);
   if (caml_young_ptr != caml_young_end){
-    CAML_INSTR_EVENT ("force_minor/set_minor_heap_size");
+    CAML_INSTR_EVENT ("force_minor/set_minor_heap_size", 1);
     caml_minor_collection ();
   }
                                     Assert (caml_young_ptr == caml_young_end);
@@ -263,7 +263,7 @@ void caml_empty_minor_heap (void)
     if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
     CAML_INSTR_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-    CAML_INSTR_INT ("minor/promoted", caml_allocated_words - prev_alloc_words);
+    CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
   }
 #ifdef DEBUG
@@ -307,7 +307,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
   if (caml_force_major_slice){
-    CAML_INSTR_EVENT ("force_minor/check_urgent_gc");
+    CAML_INSTR_EVENT ("force_minor/check_urgent_gc", 1);
     caml_minor_collection();
   }
   CAMLreturn (extra_root);
@@ -321,7 +321,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
   if (tbl->base == NULL){
     caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
-    CAML_INSTR_EVENT ("urge_major/realloc_ref_table");
+    CAML_INSTR_EVENT ("urge_major/realloc_ref_table", 1);
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
     tbl->limit = tbl->end;
     caml_urge_major_slice ();

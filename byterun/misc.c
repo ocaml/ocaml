@@ -230,13 +230,19 @@ void CAML_INSTR_ATEXIT (void)
     CAML_INSTR_LOG = prev;
     fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
-      for (i = 0; i < p->index; i++){
-        fprintf (f, "@@ %9ld %s\n",
-                 Get_time(p, i+1) - Get_time (p, i), p->tag[i+1]);
-      }
-      if (p->tag[0][0] != '\000'){
-        fprintf (f, "@@ %9ld %s\n",
-                 Get_time(p, p->index) - Get_time (p, 0), p->tag[0]);
+      if (p->index != 0){
+        /* timers and counters */
+        for (i = 0; i < p->index; i++){
+          fprintf (f, "@@ %9ld %s\n",
+                   Get_time(p, i+1) - Get_time (p, i), p->tag[i+1]);
+        }
+        if (p->tag[0][0] != '\000'){
+          fprintf (f, "@@ %9ld %s\n",
+                   Get_time(p, p->index) - Get_time (p, 0), p->tag[0]);
+        }
+      }else{
+        /* events */
+        fprintf (f, "@@ %9ld %s@\n", Get_time(p, 0), p->tag[0]);
       }
     }
     fclose (f);
