@@ -268,7 +268,7 @@ CAMLprim value caml_sys_getenv(value var)
 }
 
 char * caml_exe_name;
-static char ** caml_main_argv;
+char ** caml_main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {

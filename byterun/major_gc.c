@@ -59,6 +59,8 @@ static value *weak_prev;
 static unsigned long major_gc_counter = 0;
 #endif
 
+void (*caml_major_gc_hook)(void) = NULL;
+
 static void realloc_gray_vals (void)
 {
   value *new;
@@ -308,6 +310,7 @@ static void mark_slice (intnat work)
         limit = chunk + Chunk_size (chunk);
         work = 0;
         caml_fl_size_at_phase_change = caml_fl_cur_size;
+        if (caml_major_gc_hook) (*caml_major_gc_hook)();
       }
         break;
       default: Assert (0);
