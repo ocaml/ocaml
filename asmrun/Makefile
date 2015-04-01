@@ -15,7 +15,7 @@ include ../config/Makefile
 
 CC=$(NATIVECC)
 FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
-      -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR) -fPIC
+      -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(IFLEXDIR)
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
@@ -174,7 +174,7 @@ clean::
 	rm -f $(LINKEDFILES)
 
 %.o: %.S
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -k -o $@ $< || \
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
 	{ echo "If your assembler produced syntax errors, it is probably";\
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
