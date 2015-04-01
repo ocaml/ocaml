@@ -1260,7 +1260,7 @@ camlComprehensive__211:
 	.quad	3840
 camlComprehensive__212:
 	.quad	camlComprehensive__211
-	.quad	949
+	.quad	951
 	.quad	9
 	.data
 	.quad	4092
@@ -1272,7 +1272,7 @@ camlComprehensive__213:
 	.quad	3840
 camlComprehensive__214:
 	.quad	camlComprehensive__213
-	.quad	967
+	.quad	969
 	.quad	9
 	.text
 	.align	16
@@ -1281,7 +1281,7 @@ camlComprehensive__entry:
 	.cfi_startproc
 	subq	$8, %rsp
 	.cfi_adjust_cfa_offset 8
-.L196:
+.L192:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	camlComprehensive__4@GOTPCREL(%rip), %rbx
 	movq	%rbx, (%rax)
@@ -1296,7 +1296,7 @@ camlComprehensive__entry:
 	movq	%rbx, 40(%rax)
 	movq	$96, %rax
 	call	caml_allocN@PLT
-.L197:
+.L193:
 	leaq	8(%r15), %rax
 	movq	$1024, -8(%rax)
 	movq	camlComprehensive__9@GOTPCREL(%rip), %rbx
@@ -1333,11 +1333,11 @@ camlComprehensive__entry:
 	movsd	(%rax), %xmm0
 	movsd	(%rbx), %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L198
-	je	.L195
-.L198:
+	jp	.L194
+	je	.L191
+.L194:
 	call	caml_alloc2@PLT
-.L199:
+.L195:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1347,15 +1347,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L195:
+.L191:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	mov	(%rax), %rbx	# func1a
 	movq	(%rax), %rax
 	cmpq	%rax, %rbx
-	je	.L194
+	je	.L190
 	call	caml_alloc2@PLT
-.L200:
+.L196:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1365,7 +1365,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L194:
+.L190:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	64(%rax), %rax
 	mov	(%rax), %rbx	# func1a
@@ -1373,9 +1373,9 @@ camlComprehensive__entry:
 	movslq	8(%rax), %rax
 	movslq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L193
+	je	.L189
 	call	caml_alloc2@PLT
-.L201:
+.L197:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1385,7 +1385,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L193:
+.L189:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	72(%rax), %rax
 	mov	(%rax), %rbx	# func1a
@@ -1393,9 +1393,9 @@ camlComprehensive__entry:
 	movq	8(%rax), %rax
 	movq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L192
+	je	.L188
 	call	caml_alloc2@PLT
-.L202:
+.L198:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1405,7 +1405,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L192:
+.L188:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	80(%rax), %rax
 	mov	(%rax), %rbx	# func1a
@@ -1413,9 +1413,9 @@ camlComprehensive__entry:
 	movq	8(%rax), %rax
 	movq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L191
+	je	.L187
 	call	caml_alloc2@PLT
-.L203:
+.L199:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1425,20 +1425,20 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L191:
+.L187:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	88(%rax), %rax
 	mov	(%rax), %rdi	# func1a
 	movq	(%rax), %rsi
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L204:
+.L200:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L190
+	jne	.L186
 	call	caml_alloc2@PLT
-.L205:
+.L201:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1448,7 +1448,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L190:
+.L186:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rax
 	mov	(%rax), %rbx	# func1b
@@ -1456,11 +1456,11 @@ camlComprehensive__entry:
 	movsd	(%rax), %xmm0
 	movsd	(%rbx), %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L206
-	je	.L189
-.L206:
+	jp	.L202
+	je	.L185
+.L202:
 	call	caml_alloc2@PLT
-.L207:
+.L203:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1470,15 +1470,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L189:
+.L185:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	mov	(%rax), %rbx	# func1c
 	movq	(%rax), %rax
 	cmpq	%rax, %rbx
-	je	.L188
+	je	.L184
 	call	caml_alloc2@PLT
-.L208:
+.L204:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1488,7 +1488,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L188:
+.L184:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	64(%rax), %rax
 	mov	(%rax), %rbx	# func1d
@@ -1496,9 +1496,9 @@ camlComprehensive__entry:
 	movslq	8(%rax), %rax
 	movslq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L187
+	je	.L183
 	call	caml_alloc2@PLT
-.L209:
+.L205:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1508,7 +1508,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L187:
+.L183:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	72(%rax), %rax
 	mov	(%rax), %rbx	# func1e
@@ -1516,9 +1516,9 @@ camlComprehensive__entry:
 	movq	8(%rax), %rax
 	movq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L186
+	je	.L182
 	call	caml_alloc2@PLT
-.L210:
+.L206:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1528,7 +1528,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L186:
+.L182:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	80(%rax), %rax
 	mov	(%rax), %rbx	# func1f
@@ -1536,9 +1536,9 @@ camlComprehensive__entry:
 	movq	8(%rax), %rax
 	movq	8(%rbx), %rbx
 	cmpq	%rax, %rbx
-	je	.L185
+	je	.L181
 	call	caml_alloc2@PLT
-.L211:
+.L207:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1548,20 +1548,20 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L185:
+.L181:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	88(%rax), %rax
 	mov	(%rax), %rdi	# func1g
 	movq	(%rax), %rsi
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L212:
+.L208:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L184
+	jne	.L180
 	call	caml_alloc2@PLT
-.L213:
+.L209:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1571,21 +1571,21 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L184:
+.L180:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rbx
 	movq	camlComprehensive__4@GOTPCREL(%rip), %rdi
 	mov	%rdi, (%rbx)	# func2a
-	movsd	.L214(%rip), %xmm0
+	movsd	.L210(%rip), %xmm0
 	movq	48(%rax), %rax
 	movq	(%rax), %rax
 	movsd	(%rax), %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L215
-	je	.L183
-.L215:
+	jp	.L211
+	je	.L179
+.L211:
 	call	caml_alloc2@PLT
-.L216:
+.L212:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1595,7 +1595,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L183:
+.L179:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rbx
 	movq	$11, %rdi
@@ -1603,9 +1603,9 @@ camlComprehensive__entry:
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	cmpq	$11, %rax
-	je	.L182
+	je	.L178
 	call	caml_alloc2@PLT
-.L217:
+.L213:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1615,7 +1615,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L182:
+.L178:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	64(%rax), %rbx
 	movq	camlComprehensive__5@GOTPCREL(%rip), %rdi
@@ -1625,9 +1625,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movslq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L181
+	je	.L177
 	call	caml_alloc2@PLT
-.L218:
+.L214:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1637,7 +1637,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L181:
+.L177:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	72(%rax), %rbx
 	movq	camlComprehensive__6@GOTPCREL(%rip), %rdi
@@ -1647,9 +1647,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L180
+	je	.L176
 	call	caml_alloc2@PLT
-.L219:
+.L215:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1659,7 +1659,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L180:
+.L176:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	80(%rax), %rbx
 	movq	camlComprehensive__7@GOTPCREL(%rip), %rdi
@@ -1669,9 +1669,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L179
+	je	.L175
 	call	caml_alloc2@PLT
-.L220:
+.L216:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1681,7 +1681,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L179:
+.L175:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	88(%rax), %rbx
 	movq	camlComprehensive__8@GOTPCREL(%rip), %rsi
@@ -1690,13 +1690,13 @@ camlComprehensive__entry:
 	movq	(%rax), %rdi
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L221:
+.L217:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L178
+	jne	.L174
 	call	caml_alloc2@PLT
-.L222:
+.L218:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1706,7 +1706,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L178:
+.L174:
 	movq	camlComprehensive__9@GOTPCREL(%rip), %rsi
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rdi
@@ -1733,16 +1733,16 @@ camlComprehensive__entry:
 	movq	48(%rax), %rbx
 	movq	camlComprehensive__4@GOTPCREL(%rip), %rdi
 	mov	%rdi, (%rbx)	# func2a
-	movsd	.L214(%rip), %xmm0
+	movsd	.L210(%rip), %xmm0
 	movq	48(%rax), %rax
 	movq	(%rax), %rax
 	movsd	(%rax), %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L223
-	je	.L177
-.L223:
+	jp	.L219
+	je	.L173
+.L219:
 	call	caml_alloc2@PLT
-.L224:
+.L220:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1752,7 +1752,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L177:
+.L173:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rbx
 	movq	$11, %rdi
@@ -1760,9 +1760,9 @@ camlComprehensive__entry:
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	cmpq	$11, %rax
-	je	.L176
+	je	.L172
 	call	caml_alloc2@PLT
-.L225:
+.L221:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1772,7 +1772,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L176:
+.L172:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	64(%rax), %rbx
 	movq	camlComprehensive__5@GOTPCREL(%rip), %rdi
@@ -1782,9 +1782,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movslq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L175
+	je	.L171
 	call	caml_alloc2@PLT
-.L226:
+.L222:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1794,7 +1794,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L175:
+.L171:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	72(%rax), %rbx
 	movq	camlComprehensive__6@GOTPCREL(%rip), %rdi
@@ -1804,9 +1804,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L174
+	je	.L170
 	call	caml_alloc2@PLT
-.L227:
+.L223:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1816,7 +1816,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L174:
+.L170:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	80(%rax), %rbx
 	movq	camlComprehensive__7@GOTPCREL(%rip), %rdi
@@ -1826,9 +1826,9 @@ camlComprehensive__entry:
 	movq	(%rax), %rax
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L173
+	je	.L169
 	call	caml_alloc2@PLT
-.L228:
+.L224:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1838,7 +1838,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L173:
+.L169:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	88(%rax), %rbx
 	movq	camlComprehensive__8@GOTPCREL(%rip), %rsi
@@ -1847,13 +1847,13 @@ camlComprehensive__entry:
 	movq	(%rax), %rdi
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L229:
+.L225:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L172
+	jne	.L168
 	call	caml_alloc2@PLT
-.L230:
+.L226:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1863,7 +1863,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L172:
+.L168:
 	movq	camlComprehensive__9@GOTPCREL(%rip), %rsi
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rdi
@@ -1888,14 +1888,14 @@ camlComprehensive__entry:
 	call	caml_modify@PLT
 	movq	camlComprehensive__4@GOTPCREL(%rip), %rax
 	mov	%rax, %rax	# func3a
-	movsd	.L214(%rip), %xmm0
+	movsd	.L210(%rip), %xmm0
 	movsd	(%rax), %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L231
-	je	.L171
-.L231:
+	jp	.L227
+	je	.L167
+.L227:
 	call	caml_alloc2@PLT
-.L232:
+.L228:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1905,13 +1905,13 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L171:
+.L167:
 	movq	$11, %rax
 	mov	%rax, %rax	# func3a
 	cmpq	$11, %rax
-	je	.L170
+	je	.L166
 	call	caml_alloc2@PLT
-.L233:
+.L229:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1921,15 +1921,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L170:
+.L166:
 	movq	camlComprehensive__5@GOTPCREL(%rip), %rax
 	mov	%rax, %rax	# func3a
 	movq	$5, %rbx
 	movslq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L169
+	je	.L165
 	call	caml_alloc2@PLT
-.L234:
+.L230:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1939,15 +1939,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L169:
+.L165:
 	movq	camlComprehensive__6@GOTPCREL(%rip), %rax
 	mov	%rax, %rax	# func3a
 	movq	$5, %rbx
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L168
+	je	.L164
 	call	caml_alloc2@PLT
-.L235:
+.L231:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1957,15 +1957,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L168:
+.L164:
 	movq	camlComprehensive__7@GOTPCREL(%rip), %rax
 	mov	%rax, %rax	# func3a
 	movq	$5, %rbx
 	movq	8(%rax), %rax
 	cmpq	%rbx, %rax
-	je	.L167
+	je	.L163
 	call	caml_alloc2@PLT
-.L236:
+.L232:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1975,18 +1975,18 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L167:
+.L163:
 	movq	camlComprehensive__8@GOTPCREL(%rip), %rsi
 	mov	%rsi, %rdi	# func3a
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L237:
+.L233:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L166
+	jne	.L162
 	call	caml_alloc2@PLT
-.L238:
+.L234:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1996,18 +1996,18 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L166:
-	movsd	.L214(%rip), %xmm0
+.L162:
+	movsd	.L210(%rip), %xmm0
 	movq	%xmm0, %rax
 	mov	%rax, %rbx	# func3b
 	movq	%rbx, %xmm0
 	movq	%rax, %xmm1
 	ucomisd	%xmm1, %xmm0
-	jp	.L239
-	je	.L165
-.L239:
+	jp	.L235
+	je	.L161
+.L235:
 	call	caml_alloc2@PLT
-.L240:
+.L236:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2017,13 +2017,13 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L165:
+.L161:
 	movq	$11, %rax
 	mov	%rax, %rax	# func3c
 	cmpq	$11, %rax
-	je	.L164
+	je	.L160
 	call	caml_alloc2@PLT
-.L241:
+.L237:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2033,16 +2033,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L164:
+.L160:
 	movq	$5, %rax
 	mov	%rax, %rax	# func3d
 	salq	$32, %rax
 	sarq	$32, %rax
 	movq	$5, %rbx
 	cmpq	%rbx, %rax
-	je	.L163
+	je	.L159
 	call	caml_alloc2@PLT
-.L242:
+.L238:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2052,14 +2052,14 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L163:
+.L159:
 	movq	$5, %rax
 	mov	%rax, %rax	# func3e
 	movq	$5, %rbx
 	cmpq	%rbx, %rax
-	je	.L162
+	je	.L158
 	call	caml_alloc2@PLT
-.L243:
+.L239:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2069,14 +2069,14 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L162:
+.L158:
 	movq	$5, %rax
 	mov	%rax, %rax	# func3f
 	movq	$5, %rbx
 	cmpq	%rbx, %rax
-	je	.L161
+	je	.L157
 	call	caml_alloc2@PLT
-.L244:
+.L240:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2086,18 +2086,18 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L161:
+.L157:
 	movq	camlComprehensive__8@GOTPCREL(%rip), %rsi
 	mov	%rsi, %rdi	# func3g
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L245:
+.L241:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L160
+	jne	.L156
 	call	caml_alloc2@PLT
-.L246:
+.L242:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2107,15 +2107,15 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L160:
+.L156:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	$0x2, %rax	# func4a
 	cmpq	$15, %rax
-	je	.L159
+	je	.L155
 	call	caml_alloc2@PLT
-.L247:
+.L243:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2125,7 +2125,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L159:
+.L155:
 	movq	$6, %rax
 	add	$0x1, %rax	# func4b
 	movq	$6, %rax
@@ -2138,9 +2138,9 @@ camlComprehensive__entry:
 	mov	$0x2, %rbx	# func5a
 	add	%rax, %rbx
 	cmpq	$15, %rbx
-	je	.L158
+	je	.L154
 	call	caml_alloc2@PLT
-.L248:
+.L244:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2150,16 +2150,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L158:
+.L154:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	mov	$0x2, %rax	# func6a
 	add	%rax, %rax
 	cmpq	$15, %rax
-	jne	.L157
+	jne	.L153
 	call	caml_alloc2@PLT
-.L249:
+.L245:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2169,7 +2169,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L157:
+.L153:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2177,9 +2177,9 @@ camlComprehensive__entry:
 	decq	%rax
 	mov	%rax, %rax
 	cmpq	$25, %rax
-	je	.L156
+	je	.L152
 	call	caml_alloc2@PLT
-.L250:
+.L246:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2189,7 +2189,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L156:
+.L152:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2197,9 +2197,9 @@ camlComprehensive__entry:
 	add	%rax, %rbx	# func8a
 	decq	%rbx
 	cmpq	$23, %rbx
-	je	.L155
+	je	.L151
 	call	caml_alloc2@PLT
-.L251:
+.L247:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2209,14 +2209,14 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L155:
+.L151:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	mov	(%rax), %rax	# func9a
 	cmpq	$13, %rax
-	je	.L154
+	je	.L150
 	call	caml_alloc2@PLT
-.L252:
+.L248:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2226,16 +2226,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L154:
+.L150:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	inc	%eax	# func10a
 	inc	%eax
 	cmpq	$15, %rax
-	je	.L153
+	je	.L149
 	call	caml_alloc2@PLT
-.L253:
+.L249:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2245,7 +2245,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L153:
+.L149:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rdx
@@ -2253,9 +2253,9 @@ camlComprehensive__entry:
 	add	%rax, %rdx	# func11a
 	decq	%rdx
 	cmpq	$23, %rdx
-	je	.L152
+	je	.L148
 	call	caml_alloc2@PLT
-.L254:
+.L250:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2265,7 +2265,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L152:
+.L148:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
@@ -2277,9 +2277,9 @@ camlComprehensive__entry:
 	shl	$1, %rdx
 	orq	$1, %rdx
 	cmpq	$73, %rax
-	je	.L151
+	je	.L147
 	call	caml_alloc2@PLT
-.L255:
+.L251:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2289,11 +2289,11 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L151:
+.L147:
 	cmpq	$1, %rdx
-	je	.L150
+	je	.L146
 	call	caml_alloc2@PLT
-.L256:
+.L252:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2303,21 +2303,21 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L150:
+.L146:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rax
 	movq	(%rax), %rax
-	movsd	.L257(%rip), %xmm0
+	movsd	.L253(%rip), %xmm0
 	addsd	(%rax), %xmm0
 	movsd	(%rax), %xmm1
 	addsd	%xmm0, %xmm1	# func12b
-	movsd	.L258(%rip), %xmm0
+	movsd	.L254(%rip), %xmm0
 	ucomisd	%xmm0, %xmm1
-	jp	.L259
-	je	.L149
-.L259:
+	jp	.L255
+	je	.L145
+.L255:
 	call	caml_alloc2@PLT
-.L260:
+.L256:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2327,20 +2327,20 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L149:
+.L145:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	48(%rax), %rax
 	movq	(%rax), %rax
-	movsd	.L257(%rip), %xmm0
+	movsd	.L253(%rip), %xmm0
 	addsd	(%rax), %xmm0
 	addsd	(%rax), %xmm0	# func12c
-	movsd	.L258(%rip), %xmm1
+	movsd	.L254(%rip), %xmm1
 	ucomisd	%xmm1, %xmm0
-	jp	.L261
-	je	.L148
-.L261:
+	jp	.L257
+	je	.L144
+.L257:
 	call	caml_alloc2@PLT
-.L262:
+.L258:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2350,7 +2350,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L148:
+.L144:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rdi
@@ -2362,9 +2362,9 @@ camlComprehensive__entry:
 	shl	$1, %rdx
 	orq	$1, %rdx
 	cmpq	$73, %rax
-	je	.L147
+	je	.L143
 	call	caml_alloc2@PLT
-.L263:
+.L259:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2374,11 +2374,11 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L147:
+.L143:
 	cmpq	$1, %rdx
-	je	.L146
+	je	.L142
 	call	caml_alloc2@PLT
-.L264:
+.L260:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2388,16 +2388,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L146:
+.L142:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	%rax, %rax	# func14a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L145
+	je	.L141
 	call	caml_alloc2@PLT
-.L265:
+.L261:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2407,16 +2407,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L145:
+.L141:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
 	add	(%rax), %rbx	# func14a
 	decq	%rbx
 	cmpq	$25, %rbx
-	je	.L144
+	je	.L140
 	call	caml_alloc2@PLT
-.L266:
+.L262:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2426,16 +2426,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L144:
+.L140:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	%rax, %rax	# func15a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L143
+	je	.L139
 	call	caml_alloc2@PLT
-.L267:
+.L263:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2445,16 +2445,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L143:
+.L139:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
 	add	(%rax), %rbx	# func15a
 	decq	%rbx
 	cmpq	$25, %rbx
-	je	.L142
+	je	.L138
 	call	caml_alloc2@PLT
-.L268:
+.L264:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2464,16 +2464,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L142:
+.L138:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	$13, %rax	# func15a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L141
+	je	.L137
 	call	caml_alloc2@PLT
-.L269:
+.L265:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2483,16 +2483,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L141:
+.L137:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	$13, %rax	# func16a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L140
+	je	.L136
 	call	caml_alloc2@PLT
-.L270:
+.L266:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2502,7 +2502,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L140:
+.L136:
 	movq	$1, %rax
 	movq	camlComprehensive@GOTPCREL(%rip), %rbx
 	movq	72(%rbx), %rbx
@@ -2512,9 +2512,9 @@ camlComprehensive__entry:
 	add	$6, %rbx	# func16n
 	movq	$13, %rax
 	cmpq	%rax, %rbx
-	je	.L139
+	je	.L135
 	call	caml_alloc2@PLT
-.L271:
+.L267:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2524,16 +2524,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L139:
+.L135:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
 	add	(%rax), %rbx	# func17a
 	decq	%rbx
 	cmpq	$25, %rbx
-	je	.L138
+	je	.L134
 	call	caml_alloc2@PLT
-.L272:
+.L268:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2543,16 +2543,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L138:
+.L134:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	add	%rax, %rax	# func18a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L137
+	je	.L133
 	call	caml_alloc2@PLT
-.L273:
+.L269:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2562,16 +2562,16 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L137:
+.L133:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
 	add	(%rax), %rbx	# func18a
 	decq	%rbx
 	cmpq	$25, %rbx
-	je	.L136
+	je	.L132
 	call	caml_alloc2@PLT
-.L274:
+.L270:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2581,7 +2581,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L136:
+.L132:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rbx
 	movq	(%rbx), %rdi
@@ -2590,9 +2590,9 @@ camlComprehensive__entry:
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
 	cmpq	$25, %rax
-	je	.L135
+	je	.L131
 	call	caml_alloc2@PLT
-.L275:
+.L271:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2602,7 +2602,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L135:
+.L131:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rbx
 	movq	$13, (%rbx)
@@ -2612,9 +2612,9 @@ camlComprehensive__entry:
 	add	%rbx, %rax	# func20a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L134
+	je	.L130
 	call	caml_alloc2@PLT
-.L276:
+.L272:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2624,7 +2624,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L134:
+.L130:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2632,9 +2632,9 @@ camlComprehensive__entry:
 	add	%rdx, %rax	# func20b
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L133
+	je	.L129
 	call	caml_alloc2@PLT
-.L277:
+.L273:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2644,7 +2644,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L133:
+.L129:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
@@ -2652,9 +2652,9 @@ camlComprehensive__entry:
 	add	%rbx, %rax	# func21a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L132
+	je	.L128
 	call	caml_alloc2@PLT
-.L278:
+.L274:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2664,7 +2664,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L132:
+.L128:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2672,9 +2672,9 @@ camlComprehensive__entry:
 	add	%rdx, %rax	# func21b
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L131
+	je	.L127
 	call	caml_alloc2@PLT
-.L279:
+.L275:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2684,7 +2684,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L131:
+.L127:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
@@ -2692,9 +2692,9 @@ camlComprehensive__entry:
 	add	%rbx, %rax	# func22a
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L130
+	je	.L126
 	call	caml_alloc2@PLT
-.L280:
+.L276:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2704,7 +2704,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L130:
+.L126:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2712,9 +2712,9 @@ camlComprehensive__entry:
 	add	%rdx, %rax	# func22b
 	decq	%rax
 	cmpq	$25, %rax
-	je	.L129
+	je	.L125
 	call	caml_alloc2@PLT
-.L281:
+.L277:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2724,7 +2724,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L129:
+.L125:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
@@ -2736,9 +2736,9 @@ camlComprehensive__entry:
 	shl	$1, %rbx
 	orq	$1, %rbx
 	cmpq	$73, %rax
-	je	.L128
+	je	.L124
 	call	caml_alloc2@PLT
-.L282:
+.L278:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2748,7 +2748,7 @@ camlComprehensive__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L128:
+.L124:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rbx
@@ -2763,9 +2763,9 @@ foo:	sar	$1, %rdi
 	ret
 next:	
 	cmpq	$73, %rax
-	je	.L127
+	je	.L123
 	call	caml_alloc2@PLT
-.L283:
+.L279:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2775,7 +2775,7 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L127:
+.L123:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rax
@@ -2788,9 +2788,9 @@ next:
 	xor	%rbx, %rax
 	orq	$1, %rax
 	cmpq	$13313, %rax
-	je	.L126
+	je	.L122
 	call	caml_alloc2@PLT
-.L284:
+.L280:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2800,14 +2800,14 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L126:
+.L122:
 	movq	$195, %rdx
 	xor	%rax, %rax	# func35a
 	mov	%dl, %al
 	cmpq	$195, %rax
-	je	.L125
+	je	.L121
 	call	caml_alloc2@PLT
-.L285:
+.L281:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2817,14 +2817,14 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L125:
+.L121:
 	movq	$195, %rdx
 	xor	%rax, %rax	# func35b
 	mov	%dh, %ah
 	cmpq	$195, %rax
-	jne	.L124
+	jne	.L120
 	call	caml_alloc2@PLT
-.L286:
+.L282:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2834,7 +2834,7 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L124:
+.L120:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rdi
@@ -2851,9 +2851,9 @@ next:
         add	%rcx, %rdi
 	orq	$1, %rdi
 	cmpq	$65, %rdi
-	je	.L123
+	je	.L119
 	call	caml_alloc2@PLT
-.L287:
+.L283:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2863,7 +2863,7 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L123:
+.L119:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	56(%rax), %rax
 	movq	(%rax), %rsi
@@ -2875,9 +2875,9 @@ next:
 	add	%rsi, %rax
         subq	$1, %rax
 	cmpq	$27, %rax
-	je	.L122
+	je	.L118
 	call	caml_alloc2@PLT
-.L288:
+.L284:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2887,22 +2887,22 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L122:
-	movsd	.L289(%rip), %xmm0
-	movsd	.L257(%rip), %xmm1
+.L118:
+	movsd	.L285(%rip), %xmm0
+	movsd	.L253(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
-	movsd	.L290(%rip), %xmm0
-	movsd	.L291(%rip), %xmm2
+	movsd	.L286(%rip), %xmm0
+	movsd	.L287(%rip), %xmm2
 	unpcklpd	%xmm0, %xmm2	# _mm_set_pd
 	addpd	%xmm1, %xmm2	# func43a
 	xorpd	%xmm1, %xmm1	# _mm_cvtsd_f64
 	movsd	%xmm2, %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L292
-	je	.L121
-.L292:
+	jp	.L288
+	je	.L117
+.L288:
 	call	caml_alloc2@PLT
-.L293:
+.L289:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2912,17 +2912,17 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L121:
-	movsd	.L294(%rip), %xmm0
+.L117:
+	movsd	.L290(%rip), %xmm0
 	unpckhpd	%xmm2, %xmm2	# _mm_unpackhi_pd
 	xorpd	%xmm1, %xmm1	# _mm_cvtsd_f64
 	movsd	%xmm2, %xmm1
 	ucomisd	%xmm0, %xmm1
-	jp	.L295
-	je	.L120
-.L295:
+	jp	.L291
+	je	.L116
+.L291:
 	call	caml_alloc2@PLT
-.L296:
+.L292:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2932,15 +2932,15 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L120:
+.L116:
 	movq	camlComprehensive__175@GOTPCREL(%rip), %rdi
 	movb	$1, (%rdi)	# func55a
 	movq	camlComprehensive__176@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L119
+	jne	.L115
 	call	caml_alloc2@PLT
-.L297:
+.L293:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2950,15 +2950,15 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L119:
+.L115:
 	movq	camlComprehensive__179@GOTPCREL(%rip), %rdi
 	movw	$1, (%rdi)	# func56a
 	movq	camlComprehensive__180@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L118
+	jne	.L114
 	call	caml_alloc2@PLT
-.L298:
+.L294:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2968,15 +2968,15 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L118:
+.L114:
 	movq	camlComprehensive__183@GOTPCREL(%rip), %rdi
 	movl	$1, (%rdi)	# func57a
 	movq	camlComprehensive__184@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L117
+	jne	.L113
 	call	caml_alloc2@PLT
-.L299:
+.L295:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -2986,16 +2986,16 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L117:
+.L113:
 	movq	camlComprehensive__187@GOTPCREL(%rip), %rdi
 	movq	$65, %rax
 	mov	%al, (%rdi)	# func67a
 	movq	camlComprehensive__189@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L116
+	jne	.L112
 	call	caml_alloc2@PLT
-.L300:
+.L296:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3005,16 +3005,16 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L116:
+.L112:
 	movq	camlComprehensive__192@GOTPCREL(%rip), %rdi
 	movq	$16961, %rax
 	mov	%ax, (%rdi)	# func68a
 	movq	camlComprehensive__194@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L115
+	jne	.L111
 	call	caml_alloc2@PLT
-.L301:
+.L297:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3024,16 +3024,16 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L115:
+.L111:
 	movq	camlComprehensive__197@GOTPCREL(%rip), %rdi
 	movq	$1145258561, %rax
 	mov	%eax, (%rdi)	# func69a
 	movq	camlComprehensive__199@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L114
+	jne	.L110
 	call	caml_alloc2@PLT
-.L302:
+.L298:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3043,16 +3043,16 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L114:
+.L110:
 	movq	camlComprehensive__202@GOTPCREL(%rip), %rdi
 	movabsq	$5208208757389214273, %rax
 	mov	%rax, (%rdi)	# func70a
 	movq	camlComprehensive__204@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L113
+	jne	.L109
 	call	caml_alloc2@PLT
-.L303:
+.L299:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3062,16 +3062,16 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L113:
+.L109:
 	movq	camlComprehensive__207@GOTPCREL(%rip), %rdi
 	movq	$16961, %rax
 	mov	%ah, (%rdi)	# func71a
 	movq	camlComprehensive__208@GOTPCREL(%rip), %rsi
 	call	caml_string_equal@PLT
 	cmpq	$1, %rax
-	jne	.L112
+	jne	.L108
 	call	caml_alloc2@PLT
-.L304:
+.L300:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3081,29 +3081,13 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L112:
-	
-	
-	movq	$3, %rax
-	sar	$1, %rax	# __cpuid
-	cpuid
-	sal	$1, %rax
-	orq	$1, %rax
-	sal	$1, %rbx
-	orq	$1, %rbx
-	sal	$1, %rcx
-	orq	$1, %rcx
-	sal	$1, %rdx
-	orq	$1, %rdx
-	movq	$40, %rax
-	call	caml_allocN@PLT
-.L305:
-	leaq	8(%r15), %rax
-	movq	$4096, -8(%rax)
-	movq	$3, (%rax)
-	movq	%rbx, 8(%rax)
-	movq	%rcx, 16(%rax)
-	movq	%rdx, 24(%rax)
+.L108:
+	movq	$3, %rdi
+	movq	ocaml___cpuid_stub@GOTPCREL(%rip), %rax
+	call	caml_c_call@PLT
+.L301:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
 	movq	16(%rax), %rax
 	andq	$536870913, %rax
 	cmpq	$1, %rax
@@ -3114,13 +3098,13 @@ next:
 	movq	%rax, 96(%rbx)
 	movq	96(%rbx), %rax
 	cmpq	$1, %rax
-	je	.L111
-	movsd	.L289(%rip), %xmm0
-	movsd	.L257(%rip), %xmm1
+	je	.L107
+	movsd	.L285(%rip), %xmm0
+	movsd	.L253(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L306:
+.L302:
 	leaq	8(%r15), %rsi
 	movq	$2302, -8(%rsi)
 	movupd	%xmm1, (%rsi)
@@ -3131,13 +3115,13 @@ next:
 	movupd	%xmm0, (%rdi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L307:
+.L303:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L111
+	jne	.L107
 	call	caml_alloc2@PLT
-.L308:
+.L304:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3147,24 +3131,24 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L111:
+.L107:
 	movq	camlComprehensive@GOTPCREL(%rip), %rax
 	movq	96(%rax), %rax
 	cmpq	$1, %rax
-	je	.L110
-	movsd	.L290(%rip), %xmm0
-	movsd	.L291(%rip), %xmm1
+	je	.L106
+	movsd	.L286(%rip), %xmm0
+	movsd	.L287(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 					# _mm256_castpd128_pd256
-	movsd	.L289(%rip), %xmm0
-	movsd	.L257(%rip), %xmm2
+	movsd	.L285(%rip), %xmm0
+	movsd	.L253(%rip), %xmm2
 	unpcklpd	%xmm0, %xmm2	# _mm_set_pd
 					# _mm256_castpd128_pd256
 	vunpcklpd	%ymm2, %ymm1, %ymm0	# _mm256_unpacklo_pd
 	movapd	%xmm0, %xmm1	# func79
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L309:
+.L305:
 	leaq	8(%r15), %rsi
 	movq	$2302, -8(%rsi)
 	movupd	%xmm1, (%rsi)
@@ -3174,13 +3158,13 @@ next:
 	movupd	%xmm0, (%rdi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L310:
+.L306:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L110
+	jne	.L106
 	call	caml_alloc2@PLT
-.L311:
+.L307:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -3190,7 +3174,7 @@ next:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L110:
+.L106:
 	movq	$1, %rax
 	addq	$8, %rsp
 	.cfi_adjust_cfa_offset -8
@@ -3201,19 +3185,19 @@ next:
 	.size camlComprehensive__entry,. - camlComprehensive__entry
 	.data
 	.section .rodata.cst8,"a",@progbits
-.L294:
-	.quad	0x4018000000000000
-.L291:
-	.quad	0x4008000000000000
 .L290:
+	.quad	0x4018000000000000
+.L287:
+	.quad	0x4008000000000000
+.L286:
 	.quad	0x4010000000000000
-.L289:
+.L285:
 	.quad	0x4000000000000000
-.L258:
+.L254:
 	.quad	0x402a000000000000
-.L257:
+.L253:
 	.quad	0x3ff0000000000000
-.L214:
+.L210:
 	.quad	0x4014000000000000
 	.text
 	.globl	camlComprehensive__code_end
@@ -3229,22 +3213,6 @@ camlComprehensive__data_end:
 	.globl	camlComprehensive__frametable
 camlComprehensive__frametable:
 	.quad	98
-	.quad	.L311
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L310
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L309
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L308
-	.word	16
-	.word	0
-	.align	8
 	.quad	.L307
 	.word	16
 	.word	0
@@ -3293,23 +3261,23 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L295
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L294
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L293
 	.word	16
 	.word	0
 	.align	8
-	.quad	.L288
+	.quad	.L292
 	.word	16
 	.word	0
 	.align	8
-	.quad	.L287
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L286
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L285
+	.quad	.L289
 	.word	16
 	.word	0
 	.align	8
@@ -3405,23 +3373,23 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L261
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L260
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L259
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L258
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L256
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L255
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L254
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L253
 	.word	16
 	.word	0
 	.align	8
@@ -3477,6 +3445,10 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L239
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L238
 	.word	16
 	.word	0
@@ -3486,10 +3458,6 @@ camlComprehensive__frametable:
 	.word	0
 	.align	8
 	.quad	.L236
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L235
 	.word	16
 	.word	0
 	.align	8
@@ -3505,6 +3473,10 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L231
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L230
 	.word	16
 	.word	0
@@ -3514,10 +3486,6 @@ camlComprehensive__frametable:
 	.word	0
 	.align	8
 	.quad	.L228
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L227
 	.word	16
 	.word	0
 	.align	8
@@ -3533,6 +3501,10 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L223
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L222
 	.word	16
 	.word	0
@@ -3542,10 +3514,6 @@ camlComprehensive__frametable:
 	.word	0
 	.align	8
 	.quad	.L220
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L219
 	.word	16
 	.word	0
 	.align	8
@@ -3561,19 +3529,19 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L215
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L214
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L213
 	.word	16
 	.word	0
 	.align	8
 	.quad	.L212
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L211
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L210
 	.word	16
 	.word	0
 	.align	8
@@ -3589,6 +3557,10 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L206
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L205
 	.word	16
 	.word	0
@@ -3598,10 +3570,6 @@ camlComprehensive__frametable:
 	.word	0
 	.align	8
 	.quad	.L203
-	.word	16
-	.word	0
-	.align	8
-	.quad	.L202
 	.word	16
 	.word	0
 	.align	8
@@ -3617,7 +3585,23 @@ camlComprehensive__frametable:
 	.word	16
 	.word	0
 	.align	8
+	.quad	.L198
+	.word	16
+	.word	0
+	.align	8
 	.quad	.L197
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L196
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L195
+	.word	16
+	.word	0
+	.align	8
+	.quad	.L193
 	.word	16
 	.word	0
 	.align	8

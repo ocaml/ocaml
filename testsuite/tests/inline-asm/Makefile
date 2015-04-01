@@ -34,7 +34,7 @@ include $(BASEDIR)/makefiles/Makefile.common
 %.byte$(EXE): %.ml %_stubs.o
 	@$(OCAMLC) -custom -o $@ $^
 
-%.native$(EXE): intrinsics.ml %.ml
+%.native$(EXE): intrinsics.ml intrinsics_stubs.o %.ml
 	@$(OCAMLOPT) -S -inline 20 -o $@ $^
 
 .exe.s:

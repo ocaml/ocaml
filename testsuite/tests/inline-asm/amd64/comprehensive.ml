@@ -462,8 +462,9 @@ let () =
   assert (s = "Bbcdefgh")
 
 let supports_avx =
-  let _, _, c, _ = __cpuid 1 in
-  c land bit_AVX <> 0
+  let open Cpuid in
+  let cpuid = __cpuid 1 in
+  cpuid.c land bit_AVX <> 0
 
 external func78a : m128d -> m256d = "%asm" ""
        "vmovapd	%t0, %t1	# func78" "x" "=x"

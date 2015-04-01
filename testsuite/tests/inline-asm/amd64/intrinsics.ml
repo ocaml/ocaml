@@ -1,67 +1,58 @@
 type m128d
 type m256d
 
-external blank_int : unit -> int = "%asm" "" "" "" "=r"
-external __cpuid : int -> int -> int -> int = "%asm" "cpuid"
-       "sar	$1, %rax	# __cpuid
-	cpuid
-	sal	$1, %rax
-	orq	$1, %rax
-	sal	$1, %rbx
-	orq	$1, %rbx
-	sal	$1, %rcx
-	orq	$1, %rcx
-	sal	$1, %rdx
-	orq	$1, %rdx" "+a" "+b" "+c" "=d"
-let __cpuid a =
-  let b = blank_int () in
-  let c = blank_int () in
-  let d = __cpuid a b c in
-  a, b, c, d
+module Cpuid = struct
+  type t = {
+    a : int;
+    b : int;
+    c : int;
+    d : int }
+  external __cpuid : int -> t = "ocaml___cpuid_stub"
 
-(* %ecx *)
-let bit_SSE3        = 1 lsl 0
-let bit_PCLMUL      = 1 lsl 1
-let bit_SSSE3       = 1 lsl 9
-let bit_FMA         = 1 lsl 12
-let bit_CMPXCHG16B  = 1 lsl 13
-let bit_SSE4_1      = 1 lsl 19
-let bit_SSE4_2      = 1 lsl 20
-let bit_MOVBE       = 1 lsl 22
-let bit_POPCNT      = 1 lsl 23
-let bit_AES         = 1 lsl 25
-let bit_XSAVE       = 1 lsl 26
-let bit_OSXSAVE     = 1 lsl 27
-let bit_AVX         = 1 lsl 28
-let bit_F16C        = 1 lsl 29
-let bit_RDRND       = 1 lsl 30
+  (* %ecx *)
+  let bit_SSE3        = 1 lsl 0
+  let bit_PCLMUL      = 1 lsl 1
+  let bit_SSSE3       = 1 lsl 9
+  let bit_FMA         = 1 lsl 12
+  let bit_CMPXCHG16B  = 1 lsl 13
+  let bit_SSE4_1      = 1 lsl 19
+  let bit_SSE4_2      = 1 lsl 20
+  let bit_MOVBE       = 1 lsl 22
+  let bit_POPCNT      = 1 lsl 23
+  let bit_AES         = 1 lsl 25
+  let bit_XSAVE       = 1 lsl 26
+  let bit_OSXSAVE     = 1 lsl 27
+  let bit_AVX         = 1 lsl 28
+  let bit_F16C        = 1 lsl 29
+  let bit_RDRND       = 1 lsl 30
 
-(* %edx *)
-let bit_CMPXCHG8B   = 1 lsl 8
-let bit_CMOV        = 1 lsl 15
-let bit_MMX         = 1 lsl 23
-let bit_FXSAVE      = 1 lsl 24
-let bit_SSE         = 1 lsl 25
-let bit_SSE2        = 1 lsl 26
+  (* %edx *)
+  let bit_CMPXCHG8B   = 1 lsl 8
+  let bit_CMOV        = 1 lsl 15
+  let bit_MMX         = 1 lsl 23
+  let bit_FXSAVE      = 1 lsl 24
+  let bit_SSE         = 1 lsl 25
+  let bit_SSE2        = 1 lsl 26
 
-(* Extended Features *)
-(* %ecx *)
-let bit_LAHF_LM     = 1 lsl 0
-let bit_ABM         = 1 lsl 5
-let bit_SSE4a       = 1 lsl 6
-let bit_XOP         = 1 lsl 11
-let bit_LWP         = 1 lsl 15
-let bit_FMA4        = 1 lsl 16
-let bit_TBM         = 1 lsl 21
+  (* Extended Features *)
+  (* %ecx *)
+  let bit_LAHF_LM     = 1 lsl 0
+  let bit_ABM         = 1 lsl 5
+  let bit_SSE4a       = 1 lsl 6
+  let bit_XOP         = 1 lsl 11
+  let bit_LWP         = 1 lsl 15
+  let bit_FMA4        = 1 lsl 16
+  let bit_TBM         = 1 lsl 21
 
-(* %edx *)
-let bit_LM          = 1 lsl 29
-let bit_3DNOWP      = 1 lsl 30
-let bit_3DNOW       = 1 lsl 31
+  (* %edx *)
+  let bit_LM          = 1 lsl 29
+  let bit_3DNOWP      = 1 lsl 30
+  let bit_3DNOW       = 1 lsl 31
 
-(* Extended Features (%eax == 7) *)
-let bit_FSGSBASE    = 1 lsl 0
-let bit_BMI         = 1 lsl 3
+  (* Extended Features (%eax == 7) *)
+  let bit_FSGSBASE    = 1 lsl 0
+  let bit_BMI         = 1 lsl 3
+end
 
 module Sse2 = struct
   external _mm_add_sd : m128d -> m128d -> m128d = "%asm" ""

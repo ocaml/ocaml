@@ -58,8 +58,9 @@ let () =
   assert (z = _mm_set_pd 3. 4.)
 
 let () =
-  let _, _, c, _ = __cpuid 1 in
-  if c land bit_AVX <> 0 then begin
+  let open Cpuid in
+  let cpuid = __cpuid 1 in
+  if cpuid.c land bit_AVX <> 0 then begin
     let open Intrinsics.Avx in
     let x = !(ref (_mm256_set_pd 1. 2. 3. 4.)) in
     let y = _mm256_set_pd 5. 6. 7. 8. in

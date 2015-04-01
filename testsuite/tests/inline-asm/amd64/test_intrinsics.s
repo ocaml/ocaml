@@ -395,7 +395,7 @@ camlTest_intrinsics__70:
 	.quad	3840
 camlTest_intrinsics__71:
 	.quad	camlTest_intrinsics__70
-	.quad	135
+	.quad	137
 	.quad	9
 	.data
 	.quad	4092
@@ -407,7 +407,7 @@ camlTest_intrinsics__72:
 	.quad	3840
 camlTest_intrinsics__73:
 	.quad	camlTest_intrinsics__72
-	.quad	139
+	.quad	141
 	.quad	9
 	.text
 	.align	16
@@ -416,14 +416,14 @@ camlTest_intrinsics__entry:
 	.cfi_startproc
 	subq	$72, %rsp
 	.cfi_adjust_cfa_offset 72
-.L138:
+.L134:
 	movq	$88, %rax
 	call	caml_allocN@PLT
-.L139:
+.L135:
 	leaq	8(%r15), %rax
 	movq	$2302, -8(%rax)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rax)
 	leaq	24(%rax), %rbx
@@ -431,8 +431,8 @@ camlTest_intrinsics__entry:
 	movq	%rax, (%rbx)
 	movq	(%rbx), %rbx
 	movq	%rbx, (%rsp)
-	movsd	.L142(%rip), %xmm1
-	movsd	.L143(%rip), %xmm2
+	movsd	.L138(%rip), %xmm1
+	movsd	.L139(%rip), %xmm2
 	unpcklpd	%xmm1, %xmm2	# _mm_set_pd
 	movupd	%xmm2, 32(%rsp)
 	movupd	(%rbx), %xmm3
@@ -446,13 +446,13 @@ camlTest_intrinsics__entry:
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L144:
+.L140:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L137
+	jne	.L133
 	call	caml_alloc2@PLT
-.L145:
+.L141:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -462,31 +462,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L137:
+.L133:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	addsd	(%rax), %xmm0	# _mm_add_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L146:
+.L142:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
+	movsd	.L138(%rip), %xmm0
 	movapd	%xmm0, %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L147:
+.L143:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L136
+	jne	.L132
 	call	caml_alloc2@PLT
-.L148:
+.L144:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -496,7 +496,42 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L136:
+.L132:
+	movq	(%rsp), %rax
+	movupd	(%rax), %xmm0
+	movupd	32(%rsp), %xmm1
+	addpd	%xmm1, %xmm0	# _mm_add_pd
+	movq	$48, %rax
+	call	caml_allocN@PLT
+.L145:
+	leaq	8(%r15), %rdi
+	movq	$2302, -8(%rdi)
+	movupd	%xmm0, (%rdi)
+	leaq	24(%rdi), %rsi
+	movq	$2302, -8(%rsi)
+	movsd	.L146(%rip), %xmm0
+	movsd	.L138(%rip), %xmm1
+	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
+	movupd	%xmm1, (%rsi)
+	movq	caml_equal@GOTPCREL(%rip), %rax
+	call	caml_c_call@PLT
+.L147:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
+	cmpq	$1, %rax
+	jne	.L131
+	call	caml_alloc2@PLT
+.L148:
+	leaq	8(%r15), %rax
+	movq	$2048, -8(%rax)
+	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
+	movq	%rbx, (%rax)
+	movq	camlTest_intrinsics__14@GOTPCREL(%rip), %rbx
+	movq	%rbx, 8(%rax)
+	movq	%r14, %rsp
+	popq	%r14
+	ret
+.L131:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
@@ -509,54 +544,19 @@ camlTest_intrinsics__entry:
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L150(%rip), %xmm0
-	movsd	.L142(%rip), %xmm1
+	movsd	.L146(%rip), %xmm0
+	movsd	.L138(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
+.L150:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
+	cmpq	$1, %rax
+	jne	.L130
+	call	caml_alloc2@PLT
 .L151:
-	movq	caml_young_ptr@GOTPCREL(%rip), %r11
-	movq	(%r11), %r15
-	cmpq	$1, %rax
-	jne	.L135
-	call	caml_alloc2@PLT
-.L152:
-	leaq	8(%r15), %rax
-	movq	$2048, -8(%rax)
-	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
-	movq	%rbx, (%rax)
-	movq	camlTest_intrinsics__14@GOTPCREL(%rip), %rbx
-	movq	%rbx, 8(%rax)
-	movq	%r14, %rsp
-	popq	%r14
-	ret
-.L135:
-	movq	(%rsp), %rax
-	movupd	(%rax), %xmm0
-	movupd	32(%rsp), %xmm1
-	addpd	%xmm1, %xmm0	# _mm_add_pd
-	movq	$48, %rax
-	call	caml_allocN@PLT
-.L153:
-	leaq	8(%r15), %rdi
-	movq	$2302, -8(%rdi)
-	movupd	%xmm0, (%rdi)
-	leaq	24(%rdi), %rsi
-	movq	$2302, -8(%rsi)
-	movsd	.L150(%rip), %xmm0
-	movsd	.L142(%rip), %xmm1
-	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
-	movupd	%xmm1, (%rsi)
-	movq	caml_equal@GOTPCREL(%rip), %rax
-	call	caml_c_call@PLT
-.L154:
-	movq	caml_young_ptr@GOTPCREL(%rip), %r11
-	movq	(%r11), %r15
-	cmpq	$1, %rax
-	jne	.L134
-	call	caml_alloc2@PLT
-.L155:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -566,32 +566,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L134:
+.L130:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	subsd	%xmm1, %xmm0	# _mm_sub_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L156:
+.L152:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L157(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L153(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L158:
+.L154:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L133
+	jne	.L129
 	call	caml_alloc2@PLT
-.L159:
+.L155:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -601,31 +601,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L133:
+.L129:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	subsd	(%rax), %xmm0	# _mm_sub_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L160:
+.L156:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L140(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L136(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L161:
+.L157:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L132
+	jne	.L128
 	call	caml_alloc2@PLT
-.L162:
+.L158:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -635,32 +635,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L132:
+.L128:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	subpd	%xmm1, %xmm0	# _mm_sub_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L163:
+.L159:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L157(%rip), %xmm0
+	movsd	.L153(%rip), %xmm0
 	movapd	%xmm0, %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L164:
+.L160:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L131
+	jne	.L127
 	call	caml_alloc2@PLT
-.L165:
+.L161:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -670,32 +670,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L131:
+.L127:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	subpd	%xmm0, %xmm1	# _mm_sub_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L166:
+.L162:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm1, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
+	movsd	.L136(%rip), %xmm0
 	movapd	%xmm0, %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L167:
+.L163:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L130
+	jne	.L126
 	call	caml_alloc2@PLT
-.L168:
+.L164:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -705,32 +705,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L130:
+.L126:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	mulsd	%xmm1, %xmm0	# _mm_mul_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L169:
+.L165:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L170:
+.L166:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L129
+	jne	.L125
 	call	caml_alloc2@PLT
-.L171:
+.L167:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -740,31 +740,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L129:
+.L125:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	mulsd	(%rax), %xmm0	# _mm_mul_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L172:
+.L168:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L173:
+.L169:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L128
+	jne	.L124
 	call	caml_alloc2@PLT
-.L174:
+.L170:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -774,7 +774,42 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L128:
+.L124:
+	movq	(%rsp), %rax
+	movupd	(%rax), %xmm0
+	movupd	32(%rsp), %xmm1
+	mulpd	%xmm1, %xmm0	# _mm_mul_pd
+	movq	$48, %rax
+	call	caml_allocN@PLT
+.L171:
+	leaq	8(%r15), %rdi
+	movq	$2302, -8(%rdi)
+	movupd	%xmm0, (%rdi)
+	leaq	24(%rdi), %rsi
+	movq	$2302, -8(%rsi)
+	movsd	.L172(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
+	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
+	movupd	%xmm1, (%rsi)
+	movq	caml_equal@GOTPCREL(%rip), %rax
+	call	caml_c_call@PLT
+.L173:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
+	cmpq	$1, %rax
+	jne	.L123
+	call	caml_alloc2@PLT
+.L174:
+	leaq	8(%r15), %rax
+	movq	$2048, -8(%rax)
+	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
+	movq	%rbx, (%rax)
+	movq	camlTest_intrinsics__32@GOTPCREL(%rip), %rbx
+	movq	%rbx, 8(%rax)
+	movq	%r14, %rsp
+	popq	%r14
+	ret
+.L123:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
@@ -787,54 +822,19 @@ camlTest_intrinsics__entry:
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L176(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L172(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
+.L176:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
+	cmpq	$1, %rax
+	jne	.L122
+	call	caml_alloc2@PLT
 .L177:
-	movq	caml_young_ptr@GOTPCREL(%rip), %r11
-	movq	(%r11), %r15
-	cmpq	$1, %rax
-	jne	.L127
-	call	caml_alloc2@PLT
-.L178:
-	leaq	8(%r15), %rax
-	movq	$2048, -8(%rax)
-	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
-	movq	%rbx, (%rax)
-	movq	camlTest_intrinsics__32@GOTPCREL(%rip), %rbx
-	movq	%rbx, 8(%rax)
-	movq	%r14, %rsp
-	popq	%r14
-	ret
-.L127:
-	movq	(%rsp), %rax
-	movupd	(%rax), %xmm0
-	movupd	32(%rsp), %xmm1
-	mulpd	%xmm1, %xmm0	# _mm_mul_pd
-	movq	$48, %rax
-	call	caml_allocN@PLT
-.L179:
-	leaq	8(%r15), %rdi
-	movq	$2302, -8(%rdi)
-	movupd	%xmm0, (%rdi)
-	leaq	24(%rdi), %rsi
-	movq	$2302, -8(%rsi)
-	movsd	.L176(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
-	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
-	movupd	%xmm1, (%rsi)
-	movq	caml_equal@GOTPCREL(%rip), %rax
-	call	caml_c_call@PLT
-.L180:
-	movq	caml_young_ptr@GOTPCREL(%rip), %r11
-	movq	(%r11), %r15
-	cmpq	$1, %rax
-	jne	.L126
-	call	caml_alloc2@PLT
-.L181:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -844,32 +844,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L126:
+.L122:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	divsd	%xmm1, %xmm0	# _mm_div_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L182:
+.L178:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L183(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L179(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L184:
+.L180:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L125
+	jne	.L121
 	call	caml_alloc2@PLT
-.L185:
+.L181:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -879,31 +879,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L125:
+.L121:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	divsd	(%rax), %xmm0	# _mm_div_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L186:
+.L182:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L187:
+.L183:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L124
+	jne	.L120
 	call	caml_alloc2@PLT
-.L188:
+.L184:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -913,32 +913,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L124:
+.L120:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	divpd	%xmm1, %xmm0	# _mm_div_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L189:
+.L185:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L190(%rip), %xmm0
-	movsd	.L183(%rip), %xmm1
+	movsd	.L186(%rip), %xmm0
+	movsd	.L179(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L191:
+.L187:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L123
+	jne	.L119
 	call	caml_alloc2@PLT
-.L192:
+.L188:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -948,32 +948,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L123:
+.L119:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	divpd	%xmm0, %xmm1	# _mm_div_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L193:
+.L189:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm1, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L194:
+.L190:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L122
+	jne	.L118
 	call	caml_alloc2@PLT
-.L195:
+.L191:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -983,31 +983,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L122:
+.L118:
 	movq	(%rsp), %rax
 	sqrtsd	(%rax), %xmm0	# _mm_sqrt_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L196:
+.L192:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
 	xorpd	%xmm0, %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L137(%rip), %xmm1
 	sqrtsd	%xmm1, %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L197:
+.L193:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L121
+	jne	.L117
 	call	caml_alloc2@PLT
-.L198:
+.L194:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1017,32 +1017,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L121:
+.L117:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	sqrtpd	%xmm0, %xmm0	# _mm_sqrt_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L199:
+.L195:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
+	movsd	.L136(%rip), %xmm0
 	sqrtsd	%xmm0, %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L200:
+.L196:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L120
+	jne	.L116
 	call	caml_alloc2@PLT
-.L201:
+.L197:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1052,32 +1052,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L120:
+.L116:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	minsd	%xmm1, %xmm0	# _mm_min_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L202:
+.L198:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L203:
+.L199:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L119
+	jne	.L115
 	call	caml_alloc2@PLT
-.L204:
+.L200:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1087,31 +1087,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L119:
+.L115:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	minsd	(%rax), %xmm0	# _mm_min_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L205:
+.L201:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L206:
+.L202:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L118
+	jne	.L114
 	call	caml_alloc2@PLT
-.L207:
+.L203:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1121,32 +1121,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L118:
+.L114:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	minpd	%xmm1, %xmm0	# _mm_min_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L208:
+.L204:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L209:
+.L205:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L117
+	jne	.L113
 	call	caml_alloc2@PLT
-.L210:
+.L206:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1156,32 +1156,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L117:
+.L113:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	minpd	%xmm1, %xmm0	# _mm_min_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L211:
+.L207:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L141(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L137(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L212:
+.L208:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L116
+	jne	.L112
 	call	caml_alloc2@PLT
-.L213:
+.L209:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1191,32 +1191,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L116:
+.L112:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	maxsd	%xmm1, %xmm0	# _mm_max_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L214:
+.L210:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L140(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L136(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L215:
+.L211:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L115
+	jne	.L111
 	call	caml_alloc2@PLT
-.L216:
+.L212:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1226,31 +1226,31 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L115:
+.L111:
 	movupd	32(%rsp), %xmm0
 	movq	(%rsp), %rax
 	maxsd	(%rax), %xmm0	# _mm_max_sd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L217:
+.L213:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L218:
+.L214:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L114
+	jne	.L110
 	call	caml_alloc2@PLT
-.L219:
+.L215:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1260,32 +1260,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L114:
+.L110:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	maxpd	%xmm1, %xmm0	# _mm_max_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L220:
+.L216:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L221:
+.L217:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L113
+	jne	.L109
 	call	caml_alloc2@PLT
-.L222:
+.L218:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1295,32 +1295,32 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L113:
+.L109:
 	movq	(%rsp), %rax
 	movupd	(%rax), %xmm0
 	movupd	32(%rsp), %xmm1
 	maxpd	%xmm1, %xmm0	# _mm_max_pd
 	movq	$48, %rax
 	call	caml_allocN@PLT
-.L223:
+.L219:
 	leaq	8(%r15), %rdi
 	movq	$2302, -8(%rdi)
 	movupd	%xmm0, (%rdi)
 	leaq	24(%rdi), %rsi
 	movq	$2302, -8(%rsi)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 	movupd	%xmm1, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L224:
+.L220:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L112
+	jne	.L108
 	call	caml_alloc2@PLT
-.L225:
+.L221:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1330,44 +1330,28 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L112:
-	
-	
-	movq	$3, %rax
-	sar	$1, %rax	# __cpuid
-	cpuid
-	sal	$1, %rax
-	orq	$1, %rax
-	sal	$1, %rbx
-	orq	$1, %rbx
-	sal	$1, %rcx
-	orq	$1, %rcx
-	sal	$1, %rdx
-	orq	$1, %rdx
-	movq	$40, %rax
-	call	caml_allocN@PLT
-.L226:
-	leaq	8(%r15), %rax
-	movq	$4096, -8(%rax)
-	movq	$3, (%rax)
-	movq	%rbx, 8(%rax)
-	movq	%rcx, 16(%rax)
-	movq	%rdx, 24(%rax)
+.L108:
+	movq	$3, %rdi
+	movq	ocaml___cpuid_stub@GOTPCREL(%rip), %rax
+	call	caml_c_call@PLT
+.L222:
+	movq	caml_young_ptr@GOTPCREL(%rip), %r11
+	movq	(%r11), %r15
 	movq	16(%rax), %rax
 	andq	$536870913, %rax
 	cmpq	$1, %rax
-	je	.L110
+	je	.L106
 	movq	$136, %rax
 	call	caml_allocN@PLT
-.L227:
+.L223:
 	leaq	8(%r15), %rax
 	movq	$4350, -8(%rax)
-	movsd	.L142(%rip), %xmm0
-	movsd	.L143(%rip), %xmm1
+	movsd	.L138(%rip), %xmm0
+	movsd	.L139(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 					# _mm256_castpd128_pd256
-	movsd	.L140(%rip), %xmm0
-	movsd	.L141(%rip), %xmm2
+	movsd	.L136(%rip), %xmm0
+	movsd	.L137(%rip), %xmm2
 	unpcklpd	%xmm0, %xmm2	# _mm_set_pd
 					# _mm256_castpd128_pd256
 	vunpcklpd	%ymm2, %ymm1, %ymm0	# _mm256_unpacklo_pd
@@ -1377,12 +1361,12 @@ camlTest_intrinsics__entry:
 	movq	%rax, (%rbx)
 	movq	(%rbx), %rbx
 	movq	%rbx, (%rsp)
-	movsd	.L176(%rip), %xmm0
-	movsd	.L228(%rip), %xmm1
+	movsd	.L172(%rip), %xmm0
+	movsd	.L224(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 					# _mm256_castpd128_pd256
-	movsd	.L150(%rip), %xmm2
-	movsd	.L229(%rip), %xmm3
+	movsd	.L146(%rip), %xmm2
+	movsd	.L225(%rip), %xmm3
 	unpcklpd	%xmm2, %xmm3	# _mm_set_pd
 					# _mm256_castpd128_pd256
 	vunpcklpd	%ymm3, %ymm1, %ymm1	# _mm256_unpacklo_pd
@@ -1394,8 +1378,8 @@ camlTest_intrinsics__entry:
 	vmovupd	%ymm1, (%rdi)
 	leaq	96(%rax), %rsi
 	movq	$4350, -8(%rsi)
-	movsd	.L230(%rip), %xmm1
-	movsd	.L231(%rip), %xmm3
+	movsd	.L226(%rip), %xmm1
+	movsd	.L227(%rip), %xmm3
 	unpcklpd	%xmm1, %xmm3	# _mm_set_pd
 					# _mm256_castpd128_pd256
 	unpcklpd	%xmm0, %xmm2	# _mm_set_pd
@@ -1404,13 +1388,13 @@ camlTest_intrinsics__entry:
 	vmovupd	%ymm0, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L232:
+.L228:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L111
+	jne	.L107
 	call	caml_alloc2@PLT
-.L233:
+.L229:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1420,38 +1404,38 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L111:
+.L107:
 	movq	(%rsp), %rax
 	vmovupd	(%rax), %ymm0
 	vmovupd	32(%rsp), %ymm1
 	vaddpd	%ymm1, %ymm0, %ymm0	# _mm256_add_pd
 	movq	$80, %rax
 	call	caml_allocN@PLT
-.L234:
+.L230:
 	leaq	8(%r15), %rdi
 	movq	$4350, -8(%rdi)
 	vmovupd	%ymm0, (%rdi)
 	leaq	40(%rdi), %rsi
 	movq	$4350, -8(%rsi)
-	movsd	.L230(%rip), %xmm0
-	movsd	.L231(%rip), %xmm1
+	movsd	.L226(%rip), %xmm0
+	movsd	.L227(%rip), %xmm1
 	unpcklpd	%xmm0, %xmm1	# _mm_set_pd
 					# _mm256_castpd128_pd256
-	movsd	.L176(%rip), %xmm0
-	movsd	.L150(%rip), %xmm2
+	movsd	.L172(%rip), %xmm0
+	movsd	.L146(%rip), %xmm2
 	unpcklpd	%xmm0, %xmm2	# _mm_set_pd
 					# _mm256_castpd128_pd256
 	vunpcklpd	%ymm2, %ymm1, %ymm0	# _mm256_unpacklo_pd
 	vmovupd	%ymm0, (%rsi)
 	movq	caml_equal@GOTPCREL(%rip), %rax
 	call	caml_c_call@PLT
-.L235:
+.L231:
 	movq	caml_young_ptr@GOTPCREL(%rip), %r11
 	movq	(%r11), %r15
 	cmpq	$1, %rax
-	jne	.L110
+	jne	.L106
 	call	caml_alloc2@PLT
-.L236:
+.L232:
 	leaq	8(%r15), %rax
 	movq	$2048, -8(%rax)
 	movq	caml_exn_Assert_failure@GOTPCREL(%rip), %rbx
@@ -1461,7 +1445,7 @@ camlTest_intrinsics__entry:
 	movq	%r14, %rsp
 	popq	%r14
 	ret
-.L110:
+.L106:
 	movq	$1, %rax
 	addq	$72, %rsp
 	.cfi_adjust_cfa_offset -72
@@ -1472,31 +1456,31 @@ camlTest_intrinsics__entry:
 	.size camlTest_intrinsics__entry,. - camlTest_intrinsics__entry
 	.data
 	.section .rodata.cst8,"a",@progbits
-.L231:
+.L227:
 	.quad	0x4024000000000000
-.L230:
+.L226:
 	.quad	0x4028000000000000
-.L229:
+.L225:
 	.quad	0x4014000000000000
-.L228:
+.L224:
 	.quad	0x401c000000000000
-.L190:
+.L186:
 	.quad	0x3fe0000000000000
-.L183:
+.L179:
 	.quad	0x3fd5555555555555
-.L176:
+.L172:
 	.quad	0x4020000000000000
-.L157:
+.L153:
 	.quad	0xc000000000000000
-.L150:
+.L146:
 	.quad	0x4018000000000000
-.L143:
+.L139:
 	.quad	0x4008000000000000
-.L142:
+.L138:
 	.quad	0x4010000000000000
-.L141:
+.L137:
 	.quad	0x3ff0000000000000
-.L140:
+.L136:
 	.quad	0x4000000000000000
 	.text
 	.globl	camlTest_intrinsics__code_end
@@ -1512,41 +1496,25 @@ camlTest_intrinsics__data_end:
 	.globl	camlTest_intrinsics__frametable
 camlTest_intrinsics__frametable:
 	.quad	85
-	.quad	.L236
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L235
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L234
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L233
-	.word	80
-	.word	0
-	.align	8
 	.quad	.L232
 	.word	80
+	.word	0
+	.align	8
+	.quad	.L231
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L230
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L229
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L228
+	.word	80
 	.word	1
-	.word	0
-	.align	8
-	.quad	.L227
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L226
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L225
-	.word	80
-	.word	0
-	.align	8
-	.quad	.L224
-	.word	80
 	.word	0
 	.align	8
 	.quad	.L223
@@ -1559,12 +1527,10 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L221
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L220
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L219
@@ -1573,7 +1539,6 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L218
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L217
@@ -1583,11 +1548,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L216
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L215
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L214
@@ -1597,11 +1562,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L213
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L212
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L211
@@ -1611,11 +1576,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L210
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L209
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L208
@@ -1625,11 +1590,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L207
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L206
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L205
@@ -1639,11 +1604,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L204
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L203
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L202
@@ -1653,11 +1618,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L201
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L200
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L199
@@ -1667,11 +1632,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L198
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L197
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L196
@@ -1681,11 +1646,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L195
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L194
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L193
@@ -1695,9 +1660,14 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L192
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L191
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L190
 	.word	80
 	.word	1
 	.word	0
@@ -1716,16 +1686,16 @@ camlTest_intrinsics__frametable:
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L186
+	.quad	.L185
 	.word	80
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L185
+	.quad	.L184
 	.word	80
 	.word	0
 	.align	8
-	.quad	.L184
+	.quad	.L183
 	.word	80
 	.word	1
 	.word	0
@@ -1744,16 +1714,16 @@ camlTest_intrinsics__frametable:
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L179
+	.quad	.L178
 	.word	80
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L178
+	.quad	.L177
 	.word	80
 	.word	0
 	.align	8
-	.quad	.L177
+	.quad	.L176
 	.word	80
 	.word	1
 	.word	0
@@ -1772,18 +1742,13 @@ camlTest_intrinsics__frametable:
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L172
-	.word	80
-	.word	1
-	.word	0
-	.align	8
 	.quad	.L171
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L170
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L169
@@ -1793,11 +1758,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L168
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L167
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L166
@@ -1807,11 +1772,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L165
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L164
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L163
@@ -1821,11 +1786,11 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L162
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L161
 	.word	80
-	.word	1
 	.word	0
 	.align	8
 	.quad	.L160
@@ -1835,9 +1800,14 @@ camlTest_intrinsics__frametable:
 	.align	8
 	.quad	.L159
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L158
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L157
 	.word	80
 	.word	1
 	.word	0
@@ -1856,16 +1826,16 @@ camlTest_intrinsics__frametable:
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L153
+	.quad	.L152
 	.word	80
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L152
+	.quad	.L151
 	.word	80
 	.word	0
 	.align	8
-	.quad	.L151
+	.quad	.L150
 	.word	80
 	.word	1
 	.word	0
@@ -1884,21 +1854,35 @@ camlTest_intrinsics__frametable:
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L146
-	.word	80
-	.word	1
-	.word	0
-	.align	8
 	.quad	.L145
 	.word	80
+	.word	1
 	.word	0
 	.align	8
 	.quad	.L144
 	.word	80
+	.word	0
+	.align	8
+	.quad	.L143
+	.word	80
 	.word	1
 	.word	0
 	.align	8
-	.quad	.L139
+	.quad	.L142
+	.word	80
+	.word	1
+	.word	0
+	.align	8
+	.quad	.L141
+	.word	80
+	.word	0
+	.align	8
+	.quad	.L140
+	.word	80
+	.word	1
+	.word	0
+	.align	8
+	.quad	.L135
 	.word	80
 	.word	0
 	.align	8
