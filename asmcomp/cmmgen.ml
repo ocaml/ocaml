@@ -1248,6 +1248,7 @@ let rec is_unboxed_number e =
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
+        | Praise _ -> Undetermined
         | _ -> No_unboxing
       end
   | Ulet (_, _, e) | Uletrec (_, e) | Usequence (_, e) -> is_unboxed_number e
