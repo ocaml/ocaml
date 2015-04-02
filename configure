@@ -13,6 +13,8 @@
 #                                                                       #
 #########################################################################
 
+echo Configuring OCaml version `head -1 VERSION`
+
 configure_options="$*"
 prefix=/usr/local
 bindir=''
@@ -1287,6 +1289,15 @@ fi
 if sh ./hasgot pwrite; then
   inf "pwrite() found"
   echo "#define HAS_PWRITE" >> s.h
+fi
+
+nanosecond_stat=none
+for i in 1 2 3; do
+  if sh ./trycompile -DHAS_NANOSECOND_STAT=$i nanosecond_stat.c; then nanosecond_stat=$i; break; fi
+done
+if test $nanosecond_stat != "none"; then
+  inf "stat() supports nanosecond precision."
+  echo "#define HAS_NANOSECOND_STAT $nanosecond_stat" >> s.h
 fi
 
 nargs=none

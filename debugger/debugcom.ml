@@ -293,4 +293,14 @@ module Remote_value =
            (* string equality -> equality of remote pointers *)
       | (_, _) -> false
 
+    let pointer rv =
+      match rv with
+      | Remote v ->
+        let bytes = ref [] in
+        String.iter (fun c -> bytes := c :: !bytes) v;
+        let obytes = if Sys.big_endian then List.rev !bytes else !bytes in
+        let to_hex c = Printf.sprintf "%02x" (Char.code c) in
+        String.concat "" (List.map to_hex obytes)
+      | Local _ -> ""
+
   end

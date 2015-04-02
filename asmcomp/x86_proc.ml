@@ -50,6 +50,11 @@ let system = match Config.system with
 
   | _ -> S_unknown
 
+let windows =
+  match system with
+  | S_mingw64 | S_cygwin | S_win64 -> true
+  | _ -> false
+
 let string_of_string_literal s =
   let b = Buffer.create (String.length s + 2) in
   let last_was_escape = ref false in
@@ -265,3 +270,4 @@ let generate_code asm =
   | Some f -> binary_content := Some (f instrs)
   | None -> binary_content := None
   end
+

@@ -226,8 +226,8 @@ READ_CMT= \
           ../typing/tast_mapper.cmo \
           ../typing/cmt_format.cmo \
           ../typing/stypes.cmo \
+          ../typing/untypeast.cmo \
           \
-          untypeast.cmo \
           cmt2annot.cmo read_cmt.cmo
 
 read_cmt: $(READ_CMT)

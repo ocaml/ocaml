@@ -63,6 +63,7 @@ let keyword_table =
     "module", MODULE;
     "mutable", MUTABLE;
     "new", NEW;
+    "nonrec", NONREC;
     "object", OBJECT;
     "of", OF;
     "open", OPEN;
@@ -483,6 +484,8 @@ rule token = parse
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | '#' (symbolchar | '#') +
+            { SHARPOP(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),

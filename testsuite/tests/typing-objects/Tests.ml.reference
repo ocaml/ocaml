@@ -2,8 +2,8 @@
 #   - : < x : int > ->
     < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int >
 = <fun>
-#               class ['a] c : unit -> object constraint 'a = int method f : 'a c end
-and ['a] d : unit -> object constraint 'a = int method f : 'a c end
+#               class ['a] c : unit -> object constraint 'a = int method f : int c end
+and ['a] d : unit -> object constraint 'a = int method f : int c end
 #                 Characters 238-275:
   ........d () = object
     inherit ['a] c ()
@@ -285,7 +285,8 @@ Error: This expression has type 'a t but an expression was expected of type
 Warning 10: this expression should have type unit.
 - : ('a t as 'a) t -> unit = <fun>
 #         class ['a] c :
-  unit -> object constraint 'a = (< .. > as 'b) -> unit method m : 'a end
+  unit ->
+  object constraint 'a = (< .. > as 'b) -> unit method m : 'b -> unit end
 #       class ['a] c :
   unit ->
   object constraint 'a = unit -> (< .. > as 'b) method m : 'a -> 'b end

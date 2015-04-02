@@ -261,7 +261,7 @@ let link_shared ppf objfiles output_name =
     (List.rev !Clflags.ccobjs) in
 
   let startup =
-    if !Clflags.keep_startup_file
+    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
@@ -318,7 +318,8 @@ let link ppf objfiles output_name =
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                (* put user's opts first *)
   let startup =
-    if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
+    if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
+    then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   Asmgen.compile_unit

@@ -1059,20 +1059,25 @@ let rec copy ?env ?partial ?keep_names ty =
               (* Open row if partial for pattern and contains Reither *)
               let more', row =
                 match partial with
-                  Some (free_univars, false) when row.row_closed
-                  && not row.row_fixed && TypeSet.is_empty (free_univars ty) ->
+                  Some (free_univars, false) ->
+                    let more' =
+                      if more.id != more'.id then more' else
+                      let lv = if keep then more.level else !current_level in
+                      newty2 lv (Tvar None)
+                    in
                     let not_reither (_, f) =
                       match row_field_repr f with
                         Reither _ -> false
                       | _ -> true
                     in
-                    if List.for_all not_reither row.row_fields
-                    then (more', row) else
-                    (newty2 (if keep then more.level else !current_level)
-                       (Tvar None),
-                     {row_fields = List.filter not_reither row.row_fields;
-                      row_more = more; row_bound = ();
-                      row_closed = false; row_fixed = false; row_name = None})
+                    if row.row_closed && not row.row_fixed
+                    && TypeSet.is_empty (free_univars ty)
+                    && not (List.for_all not_reither row.row_fields) then
+                      (more',
+                       {row_fields = List.filter not_reither row.row_fields;
+                        row_more = more'; row_bound = ();
+                        row_closed = false; row_fixed = false; row_name = None})
+                    else (more', row)
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
@@ -1117,6 +1122,13 @@ let instance ?partial env sch =
 let instance_def sch =
   let ty = copy sch in
   cleanup_types ();
+  ty
+
+let generic_instance ?partial env sch =
+  let old = !current_level in
+  current_level := generic_level;
+  let ty = instance env sch in
+  current_level := old;
   ty
 
 let instance_list env schl =
@@ -2063,7 +2075,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl then raise (Unify [])
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
             with Not_found -> ()
             end
         (*

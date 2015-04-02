@@ -49,6 +49,8 @@ type mapper =
     structure_item: mapper -> structure_item -> structure_item;
     typ: mapper -> core_type -> core_type;
     type_declaration: mapper -> type_declaration -> type_declaration;
+    type_declarations: mapper -> (rec_flag * type_declaration list) ->
+      (rec_flag * type_declaration list);
     type_extension: mapper -> type_extension -> type_extension;
     type_kind: mapper -> type_kind -> type_kind;
     value_binding: mapper -> value_binding -> value_binding;

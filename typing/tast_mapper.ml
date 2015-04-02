@@ -50,6 +50,8 @@ type mapper =
     structure_item: mapper -> structure_item -> structure_item;
     typ: mapper -> core_type -> core_type;
     type_declaration: mapper -> type_declaration -> type_declaration;
+    type_declarations: mapper -> (rec_flag * type_declaration list) ->
+      (rec_flag * type_declaration list);
     type_extension: mapper -> type_extension -> type_extension;
     type_kind: mapper -> type_kind -> type_kind;
     value_binding: mapper -> value_binding -> value_binding;
@@ -102,7 +104,9 @@ let structure_item sub {str_desc; str_loc; str_env} =
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Tstr_value (rec_flag, list)
     | Tstr_primitive v -> Tstr_primitive (sub.value_description sub v)
-    | Tstr_type list -> Tstr_type (List.map (sub.type_declaration sub) list)
+    | Tstr_type (rec_flag, list) ->
+        let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
+        Tstr_type (rec_flag, list)
     | Tstr_typext te -> Tstr_typext (sub.type_extension sub te)
     | Tstr_exception ext -> Tstr_exception (sub.extension_constructor sub ext)
     | Tstr_module mb -> Tstr_module (sub.module_binding sub mb)
@@ -155,6 +159,9 @@ let type_declaration sub x =
   let typ_manifest = opt (sub.typ sub) x.typ_manifest in
   let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
   {x with typ_cstrs; typ_kind; typ_manifest; typ_params}
+
+let type_declarations sub (rec_flag, list) =
+  (rec_flag, List.map (sub.type_declaration sub) list)
 
 let type_extension sub x =
   let tyext_params = List.map (tuple2 (sub.typ sub) id) x.tyext_params in
@@ -340,8 +347,9 @@ let signature_item sub x =
     match x.sig_desc with
     | Tsig_value v ->
         Tsig_value (sub.value_description sub v)
-    | Tsig_type list ->
-        Tsig_type (List.map (sub.type_declaration sub) list)
+    | Tsig_type (rec_flag, list) ->
+        let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
+        Tsig_type (rec_flag, list)
     | Tsig_typext te ->
         Tsig_typext (sub.type_extension sub te)
     | Tsig_exception ext ->
@@ -650,6 +658,7 @@ let default =
     structure_item;
     typ;
     type_declaration;
+    type_declarations;
     type_extension;
     type_kind;
     value_binding;
