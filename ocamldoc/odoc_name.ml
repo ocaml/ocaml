@@ -28,6 +28,8 @@ let infix_chars = [ '|' ;
                     ':' ;
                     '~' ;
                     '!' ;
+                    '.' ;
+                    '#' ;
                   ]
 
 type t = string

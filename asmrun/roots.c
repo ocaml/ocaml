@@ -13,15 +13,15 @@
 
 /* To walk the memory roots for garbage collection */
 
-#include "finalise.h"
-#include "globroots.h"
-#include "memory.h"
-#include "major_gc.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/finalise.h"
+#include "caml/globroots.h"
+#include "caml/memory.h"
+#include "caml/major_gc.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 #include "stack.h"
-#include "roots.h"
+#include "caml/roots.h"
 #include <string.h>
 #include <stdio.h>
 

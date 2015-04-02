@@ -10,5 +10,5 @@
 (*                                                                     *)
 (***********************************************************************)
 
-val init_path : bool -> unit
+val init_path : ?dir:string -> bool -> unit
 val initial_env : unit -> Env.t

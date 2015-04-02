@@ -11,3 +11,4 @@ end
 module M = F (Offset)
 
 let () = M.test (Offset.M.Set.singleton "42")
+let v = Pr6726.Test.v

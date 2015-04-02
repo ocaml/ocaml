@@ -32,9 +32,6 @@ let mkctf d = Ctf.mk ~loc:(symbol_rloc()) d
 let mkcf d = Cf.mk ~loc:(symbol_rloc()) d
 
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
-let mkoption d =
-  let loc = {d.ptyp_loc with loc_ghost = true} in
-  Typ.mk ~loc (Ptyp_constr(mkloc (Ldot (Lident "*predef*", "option")) loc,[d]))
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
@@ -73,7 +70,7 @@ let ghunit () =
   ghexp (Pexp_construct (mknoloc (Lident "()"), None))
 
 let mkinfix arg1 name arg2 =
-  mkexp(Pexp_apply(mkoperator name 2, ["", arg1; "", arg2]))
+  mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
 let neg_float_string f =
   if String.length f > 0 && f.[0] = '-'
@@ -93,7 +90,7 @@ let mkuminus name arg =
   | ("-" | "-."), Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
-      mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
+      mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
@@ -104,7 +101,7 @@ let mkuplus name arg =
   | "+", Pexp_constant(Const_nativeint _)
   | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
   | _ ->
-      mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
+      mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkexp_cons consloc args loc =
   Exp.mk ~loc (Pexp_construct(mkloc (Lident "::") consloc, Some args))
@@ -149,8 +146,9 @@ let mkexp_constraint e (t1, t2) =
   | _, Some t -> ghexp(Pexp_coerce(e, t1, t))
   | None, None -> assert false
 
-let array_function str name =
-  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+let array_function par assign=
+  let op = if assign then par^"<-" else par in
+  ghloc ( Lident op )
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -165,46 +163,54 @@ let expecting pos nonterm =
 let not_expecting pos nonterm =
     raise Syntaxerr.(Error(Not_expecting(rhs_loc pos, nonterm)))
 
-let bigarray_function str name =
-  ghloc (Ldot(Ldot(Lident "Bigarray", str), name))
+let bigarray_function order assign =
+  let op =
+    match order with
+      | 1 -> ".{}"
+      | 2 -> ".{,}"
+      | 3 -> ".{,,}"
+      | _ -> ".{,..,}"
+  in
+  let op= if assign then op^"<-" else op in
+  ghloc ( Lident op )
 
 let bigarray_untuplify = function
     { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
 let bigarray_get arr arg =
-  let get = if !Clflags.fast then "unsafe_get" else "get" in
+  let get order = bigarray_function order false in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
-                       ["", arr; "", c1]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 1)),
+                       [Nolabel, arr; Nolabel, c1]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" get)),
-                       ["", arr; "", c1; "", c2]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 2)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" get)),
-                       ["", arr; "", c1; "", c2; "", c3]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 3)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "get")),
-                       ["", arr; "", ghexp(Pexp_array coords)]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(get 0)),
+                       [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set = if !Clflags.fast then "unsafe_set" else "set" in
+  let set order = bigarray_function order true in
   match bigarray_untuplify arg with
     [c1] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
-                       ["", arr; "", c1; "", newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 1)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, newval]))
   | [c1;c2] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array2" set)),
-                       ["", arr; "", c1; "", c2; "", newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 2)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, newval]))
   | [c1;c2;c3] ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array3" set)),
-                       ["", arr; "", c1; "", c2; "", c3; "", newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 3)),
+                       [Nolabel, arr; Nolabel, c1; Nolabel, c2; Nolabel, c3; Nolabel, newval]))
   | coords ->
-      mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
-                       ["", arr;
-                        "", ghexp(Pexp_array coords);
-                        "", newval]))
+      mkexp(Pexp_apply(ghexp(Pexp_ident(set 0)),
+                       [Nolabel, arr;
+                        Nolabel, ghexp(Pexp_array coords);
+                        Nolabel, newval]))
 
 let lapply p1 p2 =
   if !Clflags.applicative_functors
@@ -372,6 +378,7 @@ let mkctf_attrs d attrs =
 %token MUTABLE
 %token <nativeint> NATIVEINT
 %token NEW
+%token NONREC
 %token OBJECT
 %token OF
 %token OPEN
@@ -393,6 +400,7 @@ let mkctf_attrs d attrs =
 %token SEMI
 %token SEMISEMI
 %token SHARP
+%token <string> SHARPOP
 %token SIG
 %token STAR
 %token <string * string option> STRING
@@ -470,6 +478,7 @@ The precedences must be listed from low to high.
 %nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
 %nonassoc below_SHARP
 %nonassoc SHARP                         /* simple_expr/toplevel_directive */
+%left     SHARPOP
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
@@ -642,10 +651,15 @@ structure_item:
       { mkstr
           (Pstr_primitive (Val.mk (mkrhs $2 2) $4
                              ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
-  | TYPE type_declarations
-      { mkstr(Pstr_type (List.rev $2) ) }
-  | TYPE str_type_extension
-      { mkstr(Pstr_typext $2) }
+  | VAL val_ident COLON core_type post_item_attributes
+      { mkstr
+          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
+                             ~attrs:$5 ~loc:(symbol_rloc()))) }
+  | TYPE nonrec_flag type_declarations
+      { mkstr(Pstr_type ($2, List.rev $3) ) }
+  | TYPE nonrec_flag str_type_extension
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        mkstr(Pstr_typext $3) }
   | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
   | MODULE module_binding
@@ -729,10 +743,11 @@ signature_item:
       { mksig(Psig_value
                 (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
                    ~loc:(symbol_rloc()))) }
-  | TYPE type_declarations
-      { mksig(Psig_type (List.rev $2)) }
-  | TYPE sig_type_extension
-      { mksig(Psig_typext $2) }
+  | TYPE nonrec_flag type_declarations
+      { mksig(Psig_type ($2, List.rev $3)) }
+  | TYPE nonrec_flag sig_type_extension
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        mksig(Psig_typext $3) }
   | EXCEPTION sig_exception_declaration
       { mksig(Psig_exception $2) }
   | MODULE UIDENT module_declaration post_item_attributes
@@ -935,13 +950,13 @@ class_type:
       { $1 }
   | QUESTION LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER
     class_type
-      { mkcty(Pcty_arrow("?" ^ $2 , mkoption $4, $6)) }
+      { mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
   | OPTLABEL simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_arrow("?" ^ $1, mkoption $2, $4)) }
+      { mkcty(Pcty_arrow(Optional $1, $2, $4)) }
   | LIDENT COLON simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_arrow($1, $3, $5)) }
+      { mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
   | simple_core_type_or_tuple_no_attr MINUSGREATER class_type
-      { mkcty(Pcty_arrow("", $1, $3)) }
+      { mkcty(Pcty_arrow(Nolabel, $1, $3)) }
  ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
@@ -1038,21 +1053,21 @@ seq_expr:
 ;
 labeled_simple_pattern:
     QUESTION LPAREN label_let_pattern opt_default RPAREN
-      { ("?" ^ fst $3, $4, snd $3) }
+      { (Optional (fst $3), $4, snd $3) }
   | QUESTION label_var
-      { ("?" ^ fst $2, None, snd $2) }
+      { (Optional (fst $2), None, snd $2) }
   | OPTLABEL LPAREN let_pattern opt_default RPAREN
-      { ("?" ^ $1, $4, $3) }
+      { (Optional $1, $4, $3) }
   | OPTLABEL pattern_var
-      { ("?" ^ $1, None, $2) }
+      { (Optional $1, None, $2) }
   | TILDE LPAREN label_let_pattern RPAREN
-      { (fst $3, None, snd $3) }
+      { (Labelled (fst $3), None, snd $3) }
   | TILDE label_var
-      { (fst $2, None, snd $2) }
+      { (Labelled (fst $2), None, snd $2) }
   | LABEL simple_pattern
-      { ($1, None, $2) }
+      { (Labelled $1, None, $2) }
   | simple_pattern
-      { ("", None, $1) }
+      { (Nolabel, None, $1) }
 ;
 pattern_var:
     LIDENT            { mkpat(Ppat_var (mkrhs $1 1)) }
@@ -1167,11 +1182,11 @@ expr:
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, mkrhs $3 3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "set")),
-                         ["",$1; "",$4; "",$7])) }
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" true)),
+                         [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
-                         ["",$1; "",$4; "",$7])) }
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" true)),
+                         [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
   | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
@@ -1216,13 +1231,13 @@ simple_expr:
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
-                         ["",$1; "",$4])) }
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".()" false)),
+                         [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
-      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "get")),
-                         ["",$1; "",$4])) }
+      { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function ".[]" false)),
+                         [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
   | simple_expr DOT LBRACE expr RBRACE
@@ -1259,23 +1274,25 @@ simple_expr:
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
-      { mkexp(Pexp_apply(mkoperator $1 1, ["",$2])) }
+      { mkexp(Pexp_apply(mkoperator $1 1, [Nolabel,$2])) }
   | BANG simple_expr
-      { mkexp(Pexp_apply(mkoperator "!" 1, ["",$2])) }
+      { mkexp(Pexp_apply(mkoperator "!" 1, [Nolabel,$2])) }
   | NEW ext_attributes class_longident
       { mkexp_attrs (Pexp_new(mkrhs $3 3)) $2 }
-  | LBRACELESS field_expr_list opt_semi GREATERRBRACE
-      { mkexp (Pexp_override(List.rev $2)) }
-  | LBRACELESS field_expr_list opt_semi error
+  | LBRACELESS field_expr_list GREATERRBRACE
+      { mkexp (Pexp_override $2) }
+  | LBRACELESS field_expr_list error
       { unclosed "{<" 1 ">}" 4 }
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
-  | mod_longident DOT LBRACELESS field_expr_list opt_semi GREATERRBRACE
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override(List.rev $4))))}
-  | mod_longident DOT LBRACELESS field_expr_list opt_semi error
+  | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+  | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | simple_expr SHARPOP simple_expr
+      { mkinfix $1 $2 $3 }
   | LPAREN MODULE module_expr RPAREN
       { mkexp (Pexp_pack $3) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
@@ -1300,19 +1317,19 @@ simple_labeled_expr_list:
 ;
 labeled_simple_expr:
     simple_expr %prec below_SHARP
-      { ("", $1) }
+      { (Nolabel, $1) }
   | label_expr
       { $1 }
 ;
 label_expr:
     LABEL simple_expr %prec below_SHARP
-      { ($1, $2) }
+      { (Labelled $1, $2) }
   | TILDE label_ident
-      { $2 }
+      { (Labelled (fst $2), snd $2) }
   | QUESTION label_ident
-      { ("?" ^ fst $2, snd $2) }
+      { (Optional (fst $2), snd $2) }
   | OPTLABEL simple_expr %prec below_SHARP
-      { ("?" ^ $1, $2) }
+      { (Optional $1, $2) }
 ;
 label_ident:
     LIDENT   { ($1, mkexp(Pexp_ident(mkrhs (Lident $1) 1))) }
@@ -1412,10 +1429,14 @@ lbl_expr:
       { (mkrhs $1 1, exp_of_label $1 1) }
 ;
 field_expr_list:
+    field_expr opt_semi { [$1] }
+  | field_expr SEMI field_expr_list { $1 :: $3 }
+;
+field_expr:
     label EQUAL expr
-      { [mkrhs $1 1,$3] }
-  | field_expr_list SEMI label EQUAL expr
-      { (mkrhs $3 3, $5) :: $1 }
+      { (mkrhs $1 1, $3) }
+  | label
+      { (mkrhs $1 1, exp_of_label (Lident $1) 1) }
 ;
 expr_semi_list:
     expr                                        { [$1] }
@@ -1632,10 +1653,10 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-  | constr_ident attributes generalized_constructor_arguments
+  | constr_ident generalized_constructor_arguments attributes
       {
-       let args,res = $3 in
-       Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2
+       let args,res = $2 in
+       Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3
       }
 ;
 str_exception_declaration:
@@ -1660,14 +1681,14 @@ sig_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type
+  | COLON constructor_arguments MINUSGREATER simple_core_type_no_attr
                                   { ($2,Some $4) }
-  | COLON simple_core_type
+  | COLON simple_core_type_no_attr
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
 constructor_arguments:
-  | core_type_list { Pcstr_tuple (List.rev $1) }
+  | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
   | LBRACE label_declarations opt_semi RBRACE { Pcstr_record (List.rev $2) }
 ;
 label_declarations:
@@ -1675,9 +1696,9 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label attributes COLON poly_type
+    mutable_flag label COLON poly_type_no_attr attributes
       {
-       Type.field (mkrhs $2 2) $5 ~mut:$1 ~attrs:$3 ~loc:(symbol_rloc())
+       Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
       }
 ;
 
@@ -1709,13 +1730,13 @@ sig_extension_constructors:
       { $3 :: $1 }
 ;
 extension_constructor_declaration:
-  | constr_ident attributes generalized_constructor_arguments
-      { let args, res = $3 in
-        Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$2 }
+  | constr_ident generalized_constructor_arguments attributes
+      { let args, res = $2 in
+        Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3 }
 ;
 extension_constructor_rebind:
-  | constr_ident attributes EQUAL constr_longident
-      { Te.rebind (mkrhs $1 1) (mkrhs $4 4) ~loc:(symbol_rloc()) ~attrs:$2 }
+  | constr_ident EQUAL constr_longident attributes
+      { Te.rebind (mkrhs $1 1) (mkrhs $3 3) ~loc:(symbol_rloc()) ~attrs:$4 }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
@@ -1725,7 +1746,7 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type constraints
+    TYPE type_parameters label_longident with_type_binder core_type_no_attr constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
@@ -1736,7 +1757,7 @@ with_constraint:
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label COLONEQUAL core_type
+  | TYPE type_parameters label COLONEQUAL core_type_no_attr
       { Pwith_typesubst
           (Type.mk (mkrhs $3 3)
              ~params:$2
@@ -1764,10 +1785,22 @@ poly_type:
       | typevar_list DOT core_type
           { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
+poly_type_no_attr:
+        core_type_no_attr
+          { $1 }
+      | typevar_list DOT core_type_no_attr
+          { mktyp(Ptyp_poly(List.rev $1, $3)) }
+;
 
 /* Core types */
 
 core_type:
+    core_type_no_attr
+      { $1 }
+  | core_type attribute
+      { Typ.attr $1 $2 }
+;
+core_type_no_attr:
     core_type2
       { $1 }
   | core_type2 AS QUOTE ident
@@ -1777,13 +1810,13 @@ core_type2:
     simple_core_type_or_tuple
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow("?" ^ $2 , mkoption $4, $6)) }
+      { mktyp(Ptyp_arrow(Optional $2 , $4, $6)) }
   | OPTLABEL core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow("?" ^ $1 , mkoption $2, $4)) }
+      { mktyp(Ptyp_arrow(Optional $1 , $2, $4)) }
   | LIDENT COLON core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow($1, $3, $5)) }
+      { mktyp(Ptyp_arrow(Labelled $1, $3, $5)) }
   | core_type2 MINUSGREATER core_type2
-      { mktyp(Ptyp_arrow("", $1, $3)) }
+      { mktyp(Ptyp_arrow(Nolabel, $1, $3)) }
 ;
 
 simple_core_type:
@@ -1791,8 +1824,6 @@ simple_core_type:
       { $1 }
   | LPAREN core_type_comma_list RPAREN %prec below_SHARP
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
-  | simple_core_type attribute
-      { Typ.attr $1 $2 }
 ;
 
 simple_core_type_no_attr:
@@ -1866,8 +1897,8 @@ row_field:
   | simple_core_type                            { Rinherit $1 }
 ;
 tag_field:
-    name_tag attributes OF opt_ampersand amper_type_list
-      { Rtag ($1, $2, $4, List.rev $5) }
+    name_tag OF opt_ampersand amper_type_list attributes
+      { Rtag ($1, $5, $3, List.rev $4) }
   | name_tag attributes
       { Rtag ($1, $2, true, []) }
 ;
@@ -1876,8 +1907,8 @@ opt_ampersand:
   | /* empty */                                 { false }
 ;
 amper_type_list:
-    core_type                                   { [$1] }
-  | amper_type_list AMPERSAND core_type         { $3 :: $1 }
+    core_type_no_attr                           { [$1] }
+  | amper_type_list AMPERSAND core_type_no_attr { $3 :: $1 }
 ;
 name_tag_list:
     name_tag                                    { [$1] }
@@ -1912,7 +1943,7 @@ meth_list:
   | DOTDOT                                      { [], Open }
 ;
 field:
-    label attributes COLON poly_type            { ($1, $2, $4) }
+    label COLON poly_type_no_attr attributes    { ($1, $4, $3) }
 ;
 label:
     LIDENT                                      { $1 }
@@ -1963,6 +1994,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | SHARPOP                                     { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
@@ -1979,7 +2011,25 @@ operator:
   | COLONEQUAL                                  { ":=" }
   | PLUSEQ                                      { "+=" }
   | PERCENT                                     { "%" }
+  | index_operator                              { $1 }
 ;
+index_operator:
+    DOT index_operator_core opt_assign_arrow { $2^$3 }
+;
+index_operator_core:
+  | LPAREN RPAREN                               { ".()" }
+  | LBRACKET RBRACKET                           { ".[]" }
+  | LBRACE RBRACE                               { ".{}" }
+  | LBRACE COMMA  RBRACE                        { ".{,}" }
+  | LBRACE COMMA COMMA RBRACE                   { ".{,,}" }
+  | LBRACE COMMA DOTDOT COMMA RBRACE            { ".{,..,}"}
+;
+
+opt_assign_arrow:
+	                                        { "" }
+  | LESSMINUS                                   { "<-" }
+;
+
 constr_ident:
     UIDENT                                      { $1 }
 /*  | LBRACKET RBRACKET                           { "[]" } */
@@ -2051,6 +2101,10 @@ name_tag:
 rec_flag:
     /* empty */                                 { Nonrecursive }
   | REC                                         { Recursive }
+;
+nonrec_flag:
+    /* empty */                                 { Recursive }
+  | NONREC                                      { Nonrecursive }
 ;
 direction_flag:
     TO                                          { Upto }

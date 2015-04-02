@@ -11,20 +11,20 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* The interface of this file is in "mlvalues.h" and "alloc.h" */
+/* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "misc.h"
-#include "reverse.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
+#include "caml/reverse.h"
+#include "caml/stacks.h"
 
 #ifdef _MSC_VER
 #include <float.h>

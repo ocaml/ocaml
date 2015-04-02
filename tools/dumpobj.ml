@@ -394,6 +394,8 @@ let op_shapes = [
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
+  opRERAISE, Nothing;
+  opRAISE_NOTRACE, Nothing;
 ];;
 
 let print_event ev =
@@ -412,52 +414,54 @@ let print_instr ic =
   if op >= Array.length names_of_instructions || op < 0
   then (print_string "*** unknown opcode : "; print_int op)
   else print_string names_of_instructions.(op);
-  print_string " ";
-  begin try match List.assoc op op_shapes with
-  | Uint -> print_int (inputu ic)
-  | Sint -> print_int (inputs ic)
-  | Uint_Uint
-     -> print_int (inputu ic); print_string ", "; print_int (inputu ic)
-  | Disp -> let p = currpc ic in print_int (p + inputs ic)
-  | Uint_Disp
-     -> print_int (inputu ic); print_string ", ";
-        let p = currpc ic in print_int (p + inputs ic)
-  | Sint_Disp
-     -> print_int (inputs ic); print_string ", ";
-        let p = currpc ic in print_int (p + inputs ic)
-  | Getglobal -> print_getglobal_name ic
-  | Getglobal_Uint
-     -> print_getglobal_name ic; print_string ", "; print_int (inputu ic)
-  | Setglobal -> print_setglobal_name ic
-  | Primitive -> print_primitive ic
-  | Uint_Primitive
-     -> print_int(inputu ic); print_string ", "; print_primitive ic
-  | Switch
-     -> let n = inputu ic in
-        let orig = currpc ic in
-        for i = 0 to (n land 0xFFFF) - 1 do
-          print_string "\n        int "; print_int i; print_string " -> ";
-          print_int(orig + inputs ic);
-        done;
-        for i = 0 to (n lsr 16) - 1 do
-          print_string "\n        tag "; print_int i; print_string " -> ";
-          print_int(orig + inputs ic);
-        done;
-  | Closurerec
-     -> let nfuncs = inputu ic in
-        let nvars = inputu ic in
-        let orig = currpc ic in
-        print_int nvars;
-        for _i = 0 to nfuncs - 1 do
-          print_string ", ";
-          print_int (orig + inputs ic);
-        done;
-  | Pubmet
-     -> let tag = inputs ic in
-        let _cache = inputu ic in
-        print_int tag
-  | Nothing -> ()
-  with Not_found -> print_string "(unknown arguments)"
+  begin try
+    let shape = List.assoc op op_shapes in
+    if shape <> Nothing then print_string " ";
+    match shape with
+    | Uint -> print_int (inputu ic)
+    | Sint -> print_int (inputs ic)
+    | Uint_Uint
+       -> print_int (inputu ic); print_string ", "; print_int (inputu ic)
+    | Disp -> let p = currpc ic in print_int (p + inputs ic)
+    | Uint_Disp
+       -> print_int (inputu ic); print_string ", ";
+          let p = currpc ic in print_int (p + inputs ic)
+    | Sint_Disp
+       -> print_int (inputs ic); print_string ", ";
+          let p = currpc ic in print_int (p + inputs ic)
+    | Getglobal -> print_getglobal_name ic
+    | Getglobal_Uint
+       -> print_getglobal_name ic; print_string ", "; print_int (inputu ic)
+    | Setglobal -> print_setglobal_name ic
+    | Primitive -> print_primitive ic
+    | Uint_Primitive
+       -> print_int(inputu ic); print_string ", "; print_primitive ic
+    | Switch
+       -> let n = inputu ic in
+          let orig = currpc ic in
+          for i = 0 to (n land 0xFFFF) - 1 do
+            print_string "\n        int "; print_int i; print_string " -> ";
+            print_int(orig + inputs ic);
+          done;
+          for i = 0 to (n lsr 16) - 1 do
+            print_string "\n        tag "; print_int i; print_string " -> ";
+            print_int(orig + inputs ic);
+          done;
+    | Closurerec
+       -> let nfuncs = inputu ic in
+          let nvars = inputu ic in
+          let orig = currpc ic in
+          print_int nvars;
+          for _i = 0 to nfuncs - 1 do
+            print_string ", ";
+            print_int (orig + inputs ic);
+          done;
+    | Pubmet
+       -> let tag = inputs ic in
+          let _cache = inputu ic in
+          print_int tag
+    | Nothing -> ()
+  with Not_found -> print_string " (unknown arguments)"
   end;
   print_string "\n";
 ;;

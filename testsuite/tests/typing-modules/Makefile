@@ -10,5 +10,6 @@
 #                                                                       #
 #########################################################################
 
-include ../../makefiles/Makefile.toplevel
-include ../../makefiles/Makefile.common
+BASEDIR=../..
+include $(BASEDIR)/makefiles/Makefile.toplevel
+include $(BASEDIR)/makefiles/Makefile.common

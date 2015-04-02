@@ -89,6 +89,7 @@ val std_include_flag : string -> string
 val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
+val pic_code : bool ref
 val runtime_variant : string ref
 val force_slash : bool ref
 val keep_locs : bool ref

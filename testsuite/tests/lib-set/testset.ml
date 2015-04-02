@@ -130,3 +130,18 @@ let rset() =
 let _ =
   Random.init 42;
   for i = 1 to 25000 do test (relt()) (rset()) (rset()) done
+
+let () =
+  (* #6645: check that adding an element to set that already contains
+     it doesn't allocate and return the original set. *)
+  let s1 = ref S.empty in
+  for i = 1 to 10 do s1 := S.add i !s1 done;
+  let s2 = ref !s1 in
+
+  let a0 = Gc.allocated_bytes () in
+  let a1 = Gc.allocated_bytes () in
+  for i = 1 to 10 do s2 := S.add i !s2 done;
+  let a2 = Gc.allocated_bytes () in
+
+  assert (!s2 == !s1);
+  assert(a2 -. a1 = a1 -. a0)

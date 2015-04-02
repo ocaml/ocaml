@@ -493,6 +493,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       begin match c with
         | Big_endian -> make_const_bool Arch.big_endian
         | Word_size -> make_const_int (8*Arch.size_int)
+        | Int_size -> make_const_int (8*Arch.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
@@ -527,6 +529,16 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
 let approx_ulam = function
     Uconst c -> Value_const c
   | _ -> Value_unknown
+
+let find_action idxs acts tag =
+  if 0 <= tag && tag < Array.length idxs then begin
+    let idx = idxs.(tag) in
+    assert(0 <= idx && idx < Array.length acts);
+    Some acts.(idx)
+  end else
+    (* Can this happen? *)
+    None
+
 
 let rec substitute fpc sb ulam =
   match ulam with
@@ -572,13 +584,32 @@ let rec substitute fpc sb ulam =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw) ->
-      Uswitch(substitute fpc sb arg,
-              { sw with
-                us_actions_consts =
-                  Array.map (substitute fpc sb) sw.us_actions_consts;
-                us_actions_blocks =
-                  Array.map (substitute fpc sb) sw.us_actions_blocks;
-               })
+      let sarg = substitute fpc sb arg in
+      let action =
+        (* Unfortunately, we cannot easily deal with the
+           case of a constructed block (makeblock) bound to a local
+           identifier.  This would require to keep track of
+           local let bindings (at least their approximations)
+           in this substitute function.
+        *)
+        match sarg with
+        | Uconst (Uconst_ref (_,  Uconst_block (tag, _))) ->
+            find_action sw.us_index_blocks sw.us_actions_blocks tag
+        | Uconst (Uconst_ptr tag) ->
+            find_action sw.us_index_consts sw.us_actions_consts tag
+        | _ -> None
+      in
+      begin match action with
+      | Some u -> substitute fpc sb u
+      | None ->
+          Uswitch(sarg,
+                  { sw with
+                    us_actions_consts =
+                      Array.map (substitute fpc sb) sw.us_actions_consts;
+                    us_actions_blocks =
+                      Array.map (substitute fpc sb) sw.us_actions_blocks;
+                  })
+      end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
         (substitute fpc sb arg,

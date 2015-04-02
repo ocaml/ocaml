@@ -84,3 +84,9 @@ module Z = struct
   type X1.t += A of {x: int}
   type X2.t += A of {x: int}
 end;;
+
+(* PR#6716 *)
+
+type _ c = C : [`A] c
+type t = T : {x:[<`A] c} -> t;;
+let f (T { x = C }) = ();;

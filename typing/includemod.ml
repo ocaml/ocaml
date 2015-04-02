@@ -179,8 +179,9 @@ let rec print_coercion ppf c =
       pr "@[<2>functor@ (%a)@ (%a)@]"
         print_coercion inp
         print_coercion out
-  | Tcoerce_primitive pd ->
-      pr "prim %s" pd.Primitive.prim_name
+  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
+      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
+        Printtyp.raw_type_expr pc_type
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
@@ -279,7 +280,7 @@ and try_modtypes2 env cxt mty1 mty2 =
 and signatures env cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
-    Env.add_signature sig1 (Env.in_signature env) in
+    Env.add_signature sig1 (Env.in_signature true env) in
   (* Keep ids for module aliases *)
   let (id_pos_list,_) =
     List.fold_left

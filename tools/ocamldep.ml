@@ -78,7 +78,7 @@ let add_to_synonym_list synonyms suffix =
 
 (* Find file 'name' (capitalized) in search path *)
 let find_file name =
-  let uname = String.uncapitalize name in
+  let uname = String.uncapitalize_ascii name in
   let rec find_in_array a pos =
     if pos >= Array.length a then None else begin
       let s = a.(pos) in
@@ -192,11 +192,15 @@ let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
   Depend.StringSet.iter
     (fun dep ->
+       (* filter out "*predef*" *)
       if (String.length dep > 0)
-          && (match dep.[0] with 'A'..'Z' -> true | _ -> false) then begin
-            print_char ' ';
-            print_string dep
-          end)
+          && (match dep.[0] with
+              | 'A'..'Z' | '\128'..'\255' -> true
+              | _ -> false) then
+        begin
+          print_char ' ';
+          print_string dep
+        end)
     deps;
   print_char '\n'
 
@@ -331,7 +335,7 @@ let sort_files_by_dependencies files =
 (* Init Hashtbl with all defined modules *)
   let files = List.map (fun (file, file_kind, deps) ->
     let modname =
-      String.capitalize (Filename.chop_extension (Filename.basename file))
+      String.capitalize_ascii (Filename.chop_extension (Filename.basename file))
     in
     let key = (modname, file_kind) in
     let new_deps = ref [] in

@@ -11,11 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
 #include <errno.h>
-#include <alloc.h>
-#include <fail.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 
 CAMLprim value win_findfirst(name)

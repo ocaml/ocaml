@@ -241,7 +241,7 @@ module MT = struct
     let loc = sub.location sub loc in
     match desc with
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
+    | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
@@ -289,7 +289,7 @@ module M = struct
         eval ~loc ~attrs:(sub.attributes sub attrs) (sub.expr sub x)
     | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
-    | Pstr_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
+    | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Pstr_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
@@ -793,17 +793,6 @@ let ppx_context = PpxContext.make
 
 
 let apply_lazy ~source ~target mapper =
-  let ic = open_in_bin source in
-  let magic =
-    really_input_string ic (String.length Config.ast_impl_magic_number)
-  in
-  if magic <> Config.ast_impl_magic_number
-  && magic <> Config.ast_intf_magic_number then
-    failwith "Ast_mapper: OCaml version mismatch or malformed input";
-  Location.input_name := input_value ic;
-  let ast = input_value ic in
-  close_in ic;
-
   let implem ast =
     try
       let fields, ast =
@@ -844,16 +833,32 @@ let apply_lazy ~source ~target mapper =
             psig_loc  = Location.none}]
       | None -> raise exn
   in
-  let ast =
-    if magic = Config.ast_impl_magic_number
-    then Obj.magic (implem (Obj.magic ast))
-    else Obj.magic (iface (Obj.magic ast))
+
+  let ic = open_in_bin source in
+  let magic =
+    really_input_string ic (String.length Config.ast_impl_magic_number)
   in
-  let oc = open_out_bin target in
-  output_string oc magic;
-  output_value oc !Location.input_name;
-  output_value oc ast;
-  close_out oc
+
+  let rewrite transform =
+    Location.input_name := input_value ic;
+    let ast = input_value ic in
+    close_in ic;
+    let ast = transform ast in
+    let oc = open_out_bin target in
+    output_string oc magic;
+    output_value oc !Location.input_name;
+    output_value oc ast;
+    close_out oc
+  and fail () =
+    close_in ic;
+    failwith "Ast_mapper: OCaml version mismatch or malformed input";
+  in
+
+  if magic = Config.ast_impl_magic_number then
+    rewrite (implem : structure -> structure)
+  else if magic = Config.ast_intf_magic_number then
+    rewrite (iface : signature -> signature)
+  else fail ()
 
 let drop_ppx_context_str ~restore = function
   | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, a)}

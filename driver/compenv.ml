@@ -85,7 +85,7 @@ let module_of_filename ppf inputfile outputprefix =
       String.sub basename 0 pos
     with Not_found -> basename
   in
-  let name = String.capitalize name in
+  let name = String.capitalize_ascii name in
   check_unit_name ppf inputfile name;
   name
 ;;
@@ -264,6 +264,10 @@ let read_OCAMLPARAM ppf position =
           | Before_args ->
             first_objfiles := v :: !first_objfiles
         end
+
+      | "pic" ->
+        if !native_code then
+          set "pic" [ pic_code ] v
 
       | "can-discard" ->
         can_discard := v ::!can_discard

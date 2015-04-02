@@ -179,6 +179,8 @@ val trim : bytes -> bytes
 val escaped : bytes -> bytes
 (** Return a copy of the argument, with special characters represented
     by escape sequences, following the lexical conventions of OCaml.
+    All characters outside the ASCII printable range (32..126) are
+    escaped, as well as backslash and double-quote.
 
     Raise [Invalid_argument] if the result is longer than
     {!Sys.max_string_length} bytes. *)
@@ -229,22 +231,50 @@ val rcontains_from : bytes -> int -> char -> bool
     position in [s]. *)
 
 val uppercase : bytes -> bytes
+  [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
-    translated to uppercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set. *)
+   translated to uppercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : bytes -> bytes
+  [@@ocaml.deprecated "Use Bytes.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
-    translated to lowercase, including accented letters of the ISO
-    Latin-1 (8859-1) character set. *)
+   translated to lowercase, including accented letters of the ISO
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : bytes -> bytes
-(** Return a copy of the argument, with the first byte set to
-    uppercase. *)
+  [@@ocaml.deprecated "Use Bytes.capitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : bytes -> bytes
-(** Return a copy of the argument, with the first byte set to
-    lowercase. *)
+  [@@ocaml.deprecated "Use Bytes.uncapitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val uppercase_ascii : bytes -> bytes
+(** Return a copy of the argument, with all lowercase letters
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val lowercase_ascii : bytes -> bytes
+(** Return a copy of the argument, with all uppercase letters
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val capitalize_ascii : bytes -> bytes
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
+
+val uncapitalize_ascii : bytes -> bytes
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -255,6 +285,9 @@ val compare: t -> t -> int
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equality function for byte sequences.
+    @since 4.03.0 *)
 
 (** {4 Unsafe conversions (for advanced users)}
 

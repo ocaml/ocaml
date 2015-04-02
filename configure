@@ -13,6 +13,8 @@
 #                                                                       #
 #########################################################################
 
+echo Configuring OCaml version `head -1 VERSION`
+
 configure_options="$*"
 prefix=/usr/local
 bindir=''
@@ -77,17 +79,13 @@ wrn() {
 }
 
 err() {
-  printf "[ERROR!]%b\n" "$*" 1>&3
+  printf "[ERROR!] %b\n" "$*" 1>&3
   exit 2
 }
 
 exec 3>&1
 
 # Parse command-line arguments
-
-if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
-  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
-fi
 
 while : ; do
   case "$1" in
@@ -155,7 +153,12 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
-    *) err "Unknown option \"$1\".";;
+    *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
+         err "configure expects arguments of the form '-prefix /foo/bar'," \
+             "not '-prefix=/foo/bar' (note the '=')."
+       else
+         err "Unknown option \"$1\"."
+       fi;;
   esac
   shift
 done
@@ -374,10 +377,15 @@ case "$bytecc,$target" in
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   *gcc*,*-*-cygwin*)
+    case $target in
+      i686-*) flavor=cygwin;;
+      x86_64-*) flavor=cygwin64;;
+      *) err "unknown cygwin variant";;
+    esac
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
+      flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
@@ -1281,6 +1289,15 @@ fi
 if sh ./hasgot pwrite; then
   inf "pwrite() found"
   echo "#define HAS_PWRITE" >> s.h
+fi
+
+nanosecond_stat=none
+for i in 1 2 3; do
+  if sh ./trycompile -DHAS_NANOSECOND_STAT=$i nanosecond_stat.c; then nanosecond_stat=$i; break; fi
+done
+if test $nanosecond_stat != "none"; then
+  inf "stat() supports nanosecond precision."
+  echo "#define HAS_NANOSECOND_STAT $nanosecond_stat" >> s.h
 fi
 
 nargs=none

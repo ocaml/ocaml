@@ -10,8 +10,8 @@
 /***********************************************************************/
 
 #include "../config/s.h"
-#include "../byterun/mlvalues.h"
-#include "../byterun/alloc.h"
+#include "../byterun/caml/mlvalues.h"
+#include "../byterun/caml/alloc.h"
 #include <stdio.h>
 
 #ifdef HAS_LIBBFD

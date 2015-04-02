@@ -18,7 +18,7 @@ open Types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)
-let free_vars ty =
+let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
     let ty = repr ty in
@@ -30,7 +30,12 @@ let free_vars ty =
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
-          if not (static_row row) then loop row.row_more
+          if not (static_row row) then begin
+            match row.row_more.desc with
+            | Tvar _ when param -> ret := TypeSet.add ty !ret
+            | _ -> loop row.row_more
+          end
+      (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
     end
@@ -47,17 +52,18 @@ let constructor_args cd_args cd_res path rep =
     | Cstr_tuple l -> l
     | Cstr_record l -> List.map (fun l -> l.ld_type) l
   in
-  let arg_vars_set = free_vars (newgenty (Ttuple tyl)) in
   let existentials =
     match cd_res with
     | None -> []
     | Some type_ret ->
+        let arg_vars_set = free_vars (newgenty (Ttuple tyl)) in
         let res_vars = free_vars type_ret in
         TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
   in
   match cd_args with
   | Cstr_tuple l -> existentials, l, None
   | Cstr_record lbls ->
+      let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
       let type_params = TypeSet.elements arg_vars_set in
       let tdecl =
         {

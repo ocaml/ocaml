@@ -117,8 +117,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_value (rec_flag, map_bindings rec_flag list)
         | Tstr_primitive vd ->
           Tstr_primitive (map_value_description vd)
-        | Tstr_type list ->
-          Tstr_type (List.map map_type_declaration list)
+        | Tstr_type (rf, list) ->
+          Tstr_type (rf, List.map map_type_declaration list)
         | Tstr_typext tyext ->
           Tstr_typext (map_type_extension tyext)
         | Tstr_exception ext ->
@@ -134,8 +134,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_class list ->
           let list =
             List.map
-              (fun (ci, string_list, virtual_flag) ->
-                 map_class_declaration ci, string_list, virtual_flag)
+              (fun (ci, string_list) ->
+                 map_class_declaration ci, string_list)
               list
           in
             Tstr_class list
@@ -417,7 +417,7 @@ module MakeMap(Map : MapArgument) = struct
       match item.sig_desc with
           Tsig_value vd ->
             Tsig_value (map_value_description vd)
-        | Tsig_type list -> Tsig_type (List.map map_type_declaration list)
+        | Tsig_type (rf, list) -> Tsig_type (rf, List.map map_type_declaration list)
         | Tsig_typext tyext ->
           Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->

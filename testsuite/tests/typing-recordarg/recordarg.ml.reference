@@ -61,4 +61,7 @@ Error: Multiple definition of the extension constructor name A.
                  ^
 Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
+#         type _ c = C : [ `A ] c
+type t = T : { x : [< `A ] c; } -> t
+# val f : t -> unit = <fun>
 # 

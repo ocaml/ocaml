@@ -1,0 +1,104 @@
+(setglobal Module_coercion!
+  (let (M = (makeblock 0))
+    (makeblock 0 M
+      (makeblock 0 (function prim (array.length[int] prim))
+        (function prim prim (array.get[int] prim prim))
+        (function prim prim
+          (array.unsafe_get[int] prim prim))
+        (function prim prim prim
+          (array.set[int] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[int] prim prim prim))
+        (function prim prim (caml_int_compare prim prim))
+        (function prim prim (== prim prim))
+        (function prim prim (!= prim prim))
+        (function prim prim (< prim prim))
+        (function prim prim (> prim prim))
+        (function prim prim (<= prim prim))
+        (function prim prim (>= prim prim)))
+      (makeblock 0 (function prim (array.length[float] prim))
+        (function prim prim (array.get[float] prim prim))
+        (function prim prim
+          (array.unsafe_get[float] prim prim))
+        (function prim prim prim
+          (array.set[float] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[float] prim prim prim))
+        (function prim prim
+          (caml_float_compare prim prim))
+        (function prim prim (==. prim prim))
+        (function prim prim (!=. prim prim))
+        (function prim prim (<. prim prim))
+        (function prim prim (>. prim prim))
+        (function prim prim (<=. prim prim))
+        (function prim prim (>=. prim prim)))
+      (makeblock 0 (function prim (array.length[addr] prim))
+        (function prim prim (array.get[addr] prim prim))
+        (function prim prim
+          (array.unsafe_get[addr] prim prim))
+        (function prim prim prim
+          (array.set[addr] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[addr] prim prim prim))
+        (function prim prim
+          (caml_string_compare prim prim))
+        (function prim prim
+          (caml_string_equal prim prim))
+        (function prim prim
+          (caml_string_notequal prim prim))
+        (function prim prim
+          (caml_string_lessthan prim prim))
+        (function prim prim
+          (caml_string_greaterthan prim prim))
+        (function prim prim
+          (caml_string_lessequal prim prim))
+        (function prim prim
+          (caml_string_greaterequal prim prim)))
+      (makeblock 0 (function prim (array.length[addr] prim))
+        (function prim prim (array.get[addr] prim prim))
+        (function prim prim
+          (array.unsafe_get[addr] prim prim))
+        (function prim prim prim
+          (array.set[addr] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[addr] prim prim prim))
+        (function prim prim
+          (caml_int32_compare prim prim))
+        (function prim prim (Int32.== prim prim))
+        (function prim prim (Int32.!= prim prim))
+        (function prim prim (Int32.< prim prim))
+        (function prim prim (Int32.> prim prim))
+        (function prim prim (Int32.<= prim prim))
+        (function prim prim (Int32.>= prim prim)))
+      (makeblock 0 (function prim (array.length[addr] prim))
+        (function prim prim (array.get[addr] prim prim))
+        (function prim prim
+          (array.unsafe_get[addr] prim prim))
+        (function prim prim prim
+          (array.set[addr] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[addr] prim prim prim))
+        (function prim prim
+          (caml_int64_compare prim prim))
+        (function prim prim (Int64.== prim prim))
+        (function prim prim (Int64.!= prim prim))
+        (function prim prim (Int64.< prim prim))
+        (function prim prim (Int64.> prim prim))
+        (function prim prim (Int64.<= prim prim))
+        (function prim prim (Int64.>= prim prim)))
+      (makeblock 0 (function prim (array.length[addr] prim))
+        (function prim prim (array.get[addr] prim prim))
+        (function prim prim
+          (array.unsafe_get[addr] prim prim))
+        (function prim prim prim
+          (array.set[addr] prim prim prim))
+        (function prim prim prim
+          (array.unsafe_set[addr] prim prim prim))
+        (function prim prim
+          (caml_nativeint_compare prim prim))
+        (function prim prim (Nativeint.== prim prim))
+        (function prim prim (Nativeint.!= prim prim))
+        (function prim prim (Nativeint.< prim prim))
+        (function prim prim (Nativeint.> prim prim))
+        (function prim prim (Nativeint.<= prim prim))
+        (function prim prim (Nativeint.>= prim prim))))))

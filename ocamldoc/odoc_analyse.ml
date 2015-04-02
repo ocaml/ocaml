@@ -62,7 +62,7 @@ let tool_name = "ocamldoc"
 let process_implementation_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize_ascii(Filename.basename prefixname) in
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
@@ -95,7 +95,7 @@ let process_implementation_file ppf sourcefile =
 let process_interface_file ppf sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize_ascii(Filename.basename prefixname) in
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast =
@@ -205,7 +205,7 @@ let process_file ppf sourcefile =
             try Filename.chop_extension file
             with _ -> file
           in
-          String.capitalize (Filename.basename s)
+          String.capitalize_ascii (Filename.basename s)
         in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)

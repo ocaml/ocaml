@@ -832,8 +832,9 @@ let do_zyva (low,high) arg cases actions =
   if !ok_inter <> old_ok then Hashtbl.clear t ;
 
   let s = {cases=cases ; actions=actions} in
+
 (*
-  Printf.eprintf "ZYVA: %b\n" !ok_inter ;
+  Printf.eprintf "ZYVA: %b [low=%i,high=%i]\n" !ok_inter low high ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)
@@ -857,11 +858,13 @@ let abstract_shared actions =
   !handlers,actions
 
 let zyva lh arg cases actions =
+  assert (Array.length cases > 0) ;
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   hs (do_zyva lh arg cases actions)
 
 and test_sequence arg cases actions =
+  assert (Array.length cases > 0) ;
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   let old_ok = !ok_inter in

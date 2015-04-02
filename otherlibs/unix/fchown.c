@@ -11,9 +11,9 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <fail.h>
-#include <mlvalues.h>
-#include <signals.h>
+#include <caml/fail.h>
+#include <caml/mlvalues.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_FCHMOD

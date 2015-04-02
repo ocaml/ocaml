@@ -846,6 +846,7 @@ rule main = parse
       else
         LBRACE
     }
+| '\r' { main lexbuf }
 | _
     {
       incr_cpts lexbuf ;

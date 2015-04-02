@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "misc.h"
+#include "caml/misc.h"
 
 union sock_addr_union {
   struct sockaddr s_gen;

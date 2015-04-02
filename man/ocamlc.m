@@ -191,8 +191,12 @@ linking with this library automatically adds back the
 options as if they had been provided on the
 command line, unless the
 .B -noautolink
-option is given.
-.TP
+option is given. Additionally, a substring
+.B $CAMLORIGIN
+inside a
+.BR \ \-ccopt
+options will be replaced by the full path to the .cma library,
+excluding the filename.
 .B \-absname
 Show absolute filenames in error messages.
 .TP
@@ -350,9 +354,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename
@@ -745,7 +749,7 @@ have type
 \ \ Non-returning statement.
 
 22
-\ \ Camlp4 warning.
+\ \ Preprocessor warning.
 
 23
 \ \ Useless record

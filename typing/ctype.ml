@@ -1059,20 +1059,25 @@ let rec copy ?env ?partial ?keep_names ty =
               (* Open row if partial for pattern and contains Reither *)
               let more', row =
                 match partial with
-                  Some (free_univars, false) when row.row_closed
-                  && not row.row_fixed && TypeSet.is_empty (free_univars ty) ->
+                  Some (free_univars, false) ->
+                    let more' =
+                      if more.id != more'.id then more' else
+                      let lv = if keep then more.level else !current_level in
+                      newty2 lv (Tvar None)
+                    in
                     let not_reither (_, f) =
                       match row_field_repr f with
                         Reither _ -> false
                       | _ -> true
                     in
-                    if List.for_all not_reither row.row_fields
-                    then (more', row) else
-                    (newty2 (if keep then more.level else !current_level)
-                       (Tvar None),
-                     {row_fields = List.filter not_reither row.row_fields;
-                      row_more = more; row_bound = ();
-                      row_closed = false; row_fixed = false; row_name = None})
+                    if row.row_closed && not row.row_fixed
+                    && TypeSet.is_empty (free_univars ty)
+                    && not (List.for_all not_reither row.row_fields) then
+                      (more',
+                       {row_fields = List.filter not_reither row.row_fields;
+                        row_more = more'; row_bound = ();
+                        row_closed = false; row_fixed = false; row_name = None})
+                    else (more', row)
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
@@ -1117,6 +1122,13 @@ let instance ?partial env sch =
 let instance_def sch =
   let ty = copy sch in
   cleanup_types ();
+  ty
+
+let generic_instance ?partial env sch =
+  let old = !current_level in
+  current_level := generic_level;
+  let ty = instance env sch in
+  current_level := old;
   ty
 
 let instance_list env schl =
@@ -2061,8 +2073,11 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
             mcomp_type_decl type_pairs env p1 p2 tl1 tl2
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
-            let decl = Env.find_type p env in
-            if non_aliasable p decl then raise (Unify [])
+            begin try
+              let decl = Env.find_type p env in
+              if non_aliasable p decl || is_datatype decl then raise (Unify [])
+            with Not_found -> ()
+            end
         (*
         | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when n1 = n2 ->
             mcomp_list type_pairs env tl1 tl2
@@ -2318,6 +2333,18 @@ let unify_eq env t1 t2 =
       try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
       with Not_found -> false
 
+let unify1_var env t1 t2 =
+  assert (is_Tvar t1);
+  occur env t1 t2;
+  occur_univar env t2;
+  let d1 = t1.desc in
+  link_type t1 t2;
+  try
+    update_level env t1.level t2
+  with Unify _ as e ->
+    t1.desc <- d1;
+    raise e
+
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
@@ -2334,15 +2361,9 @@ let rec unify (env:Env.t ref) t1 t2 =
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar _, _) ->
-        occur !env t1 t2;
-        occur_univar !env t2;
-        link_type t1 t2;
-        update_level !env t1.level t2
+        unify1_var !env t1 t2
     | (_, Tvar _) ->
-        occur !env t2 t1;
-        occur_univar !env t1;
-        link_type t2 t1;
-        update_level !env t2.level t1
+        unify1_var !env t2 t1
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;
@@ -2741,6 +2762,19 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
       let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      (* PR#6744 *)
+      let split_univars =
+        List.partition
+          (fun ty -> try occur_univar !env ty; true with Unify _ -> false) in
+      let (tl1',tlu1) = split_univars tl1'
+      and (tl2',tlu2) = split_univars tl2' in
+      begin match tlu1, tlu2 with
+        [], [] -> ()
+      | (tu1::tlu1), (tu2::_) ->
+          (* Attempt to merge all the types containing univars *)
+          List.iter (unify env tu1) (tlu1@tlu2)
+      | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
+      end;
       (* Is this handling of levels really principal? *)
       List.iter (update_level !env (repr more).level) (tl1' @ tl2');
       let e = ref None in
@@ -2845,7 +2879,7 @@ let filter_arrow env t l =
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
-    when l = l' || !Clflags.classic && l = "" && not (is_optional l') ->
+    when l = l' || !Clflags.classic && l = Nolabel && not (is_optional l') ->
       (t1, t2)
   | _ ->
       raise (Unify [])
@@ -3653,7 +3687,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         (* Use moregeneral for class parameters, need to recheck everything to
            keeps relationships (PR#4824) *)
         let clty_params =
-          List.fold_right (fun ty cty -> Cty_arrow ("*",ty,cty)) in
+          List.fold_right (fun ty cty -> Cty_arrow (Labelled "*",ty,cty)) in
         match_class_types ~trace:false env
           (clty_params patt_params patt_type)
           (clty_params subj_params subj_type)

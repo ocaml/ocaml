@@ -169,6 +169,17 @@ let warning_attribute attrs =
     )
     attrs
 
+let with_warning_attribute attrs f =
+  try
+    warning_enter_scope ();
+    warning_attribute attrs;
+    let ret = f () in
+    warning_leave_scope ();
+    ret
+  with exn ->
+    warning_leave_scope ();
+    raise exn
+
 type variable_context = int * (string, type_expr) Tbl.t
 
 (* Local definitions *)
@@ -240,6 +251,7 @@ let find_class env loc lid =
   r
 
 let find_value env loc lid =
+  Env.check_value_name (Longident.last lid) loc;
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
@@ -421,7 +433,12 @@ let rec transl_type env policy styp =
   | Ptyp_arrow(l, st1, st2) ->
     let cty1 = transl_type env policy st1 in
     let cty2 = transl_type env policy st2 in
-    let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
+    let ty1 = cty1.ctyp_type in
+    let ty1 =
+      if Btype.is_optional l
+      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
+      else ty1 in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     if List.length stl < 2 then
@@ -859,60 +876,37 @@ open Format
 open Printtyp
 
 let spellcheck ppf fold env lid =
-  let cutoff =
-    match String.length (Longident.last lid) with
-      | 1 | 2 -> 0
-      | 3 | 4 -> 1
-      | 5 | 6 -> 2
-      | _ -> 3
-  in
-  let compare target head acc =
-    let (best_choice, best_dist) = acc in
-    match Misc.edit_distance target head cutoff with
-      | None -> (best_choice, best_dist)
-      | Some dist ->
-        let choice =
-          if dist < best_dist then [head]
-          else if dist = best_dist then head :: best_choice
-          else best_choice in
-        (choice, min dist best_dist)
-  in
-  let init = ([], max_int) in
-  let handle (choice, _dist) =
-    match List.rev choice with
-      | [] -> ()
-      | last :: rev_rest ->
-        fprintf ppf "@\nHint: Did you mean %s%s%s?"
-          (String.concat ", " (List.rev rev_rest))
-          (if rev_rest = [] then "" else " or ")
-          last
-  in
-  (* flush now to get the error report early, in the (unheard of) case
-     where the linear search would take a bit of time; in the worst
-     case, the user has seen the error, she can interrupt the process
-     before the spell-checking terminates. *)
-  fprintf ppf "@?";
+  let choices ~path name =
+    let env = fold (fun x xs -> x::xs) path env [] in
+    Misc.spellcheck env name in
   match lid with
     | Longident.Lapply _ -> ()
     | Longident.Lident s ->
-      handle (fold (compare s) None env init)
+       Misc.did_you_mean ppf (fun () -> choices ~path:None s)
     | Longident.Ldot (r, s) ->
-      handle (fold (compare s) (Some r) env init)
+       Misc.did_you_mean ppf (fun () -> choices ~path:(Some r) s)
 
-let spellcheck_simple ppf fold extr =
-  spellcheck ppf (fun f -> fold (fun decl x -> f (extr decl) x))
+let fold_descr fold get_name f = fold (fun descr acc -> f (get_name descr) acc)
+let fold_simple fold4 f = fold4 (fun name _path _descr acc -> f name acc)
 
-let spellcheck ppf fold =
-  spellcheck ppf (fun f -> fold (fun s _ _ x -> f s x))
-
-type cd = string list * int
+let fold_values = fold_simple Env.fold_values
+let fold_types = fold_simple Env.fold_types
+let fold_modules = fold_simple Env.fold_modules
+let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
+let fold_labels = fold_descr Env.fold_labels (fun d -> d.lbl_name)
+let fold_classs = fold_simple Env.fold_classs
+let fold_modtypes = fold_simple Env.fold_modtypes
+let fold_cltypes = fold_simple Env.fold_cltypes
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
+     (* we don't use "spellcheck" here: the function that raises this
+        error seems not to be called anywhere, so it's unclear how it
+        should be handled *)
     fprintf ppf "Unbound type parameter %s@." name
   | Unbound_type_constructor lid ->
     fprintf ppf "Unbound type constructor %a" longident lid;
-    spellcheck ppf Env.fold_types env lid;
+    spellcheck ppf fold_types env lid;
   | Unbound_type_constructor_2 p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
       path p
@@ -977,26 +971,25 @@ let report_error env ppf = function
         s "Multiple occurences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
-      spellcheck ppf Env.fold_values env lid;
+      spellcheck ppf fold_values env lid;
   | Unbound_module lid ->
       fprintf ppf "Unbound module %a" longident lid;
-      spellcheck ppf Env.fold_modules env lid;
+      spellcheck ppf fold_modules env lid;
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" longident lid;
-      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
-        env lid;
+      spellcheck ppf fold_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" longident lid;
-      spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
+      spellcheck ppf fold_labels env lid;
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid;
-      spellcheck ppf Env.fold_classs env lid;
+      spellcheck ppf fold_classs env lid;
   | Unbound_modtype lid ->
       fprintf ppf "Unbound module type %a" longident lid;
-      spellcheck ppf Env.fold_modtypes env lid;
+      spellcheck ppf fold_modtypes env lid;
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
-      spellcheck ppf Env.fold_cltypes env lid;
+      spellcheck ppf fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->

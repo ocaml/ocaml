@@ -57,11 +57,13 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/printtyped.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/envaux.cmo typing/includecore.cmo \
-  typing/typedtreeIter.cmo typing/typedtreeMap.cmo typing/cmt_format.cmo \
+  typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
+  typing/tast_mapper.cmo \
+  typing/cmt_format.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
   typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
-  typing/typemod.cmo
+  typing/typemod.cmo typing/untypeast.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
@@ -79,7 +81,23 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
   driver/errors.cmo driver/compile.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+INTEL_ASM=\
+  asmcomp/x86_proc.cmo \
+  asmcomp/x86_dsl.cmo \
+  asmcomp/x86_gas.cmo \
+  asmcomp/x86_masm.cmo
+
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+
+ASMCOMP=\
+  $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/arch.cmo asmcomp/debuginfo.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo asmcomp/compilenv.cmo \
@@ -192,7 +210,7 @@ coldstart:
 	if test -f boot/libcamlrun.a; then :; else \
 	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
 	if test -d stdlib/caml; then :; else \
-	  ln -s ../byterun stdlib/caml; fi
+	  ln -s ../byterun/caml stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
 core:
@@ -318,8 +336,12 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
-	cp utils/*.cmi parsing/*.cmi typing/*.cmi bytecomp/*.cmi driver/*.cmi \
-	   toplevel/*.cmi $(INSTALL_COMPLIBDIR)
+	cp utils/*.cmi utils/*.cmt utils/*.cmti \
+	   parsing/*.cmi parsing/*.cmt parsing/*.cmti \
+	   typing/*.cmi typing/*.cmt typing/*.cmti \
+	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti \
+	   driver/*.cmi driver/*.cmt driver/*.cmti \
+	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   $(INSTALL_COMPLIBDIR)
@@ -343,7 +365,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	cp asmcomp/*.cmi $(INSTALL_COMPLIBDIR)
+	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
 		else :; fi
@@ -538,8 +560,8 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/instruct.h
-	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
+bytecomp/opcodes.ml: byterun/caml/instruct.h
+	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/caml/instruct.h | \
 	awk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
@@ -552,9 +574,9 @@ beforedepend:: bytecomp/opcodes.ml
 byterun/primitives:
 	cd byterun; $(MAKE) primitives
 
-bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
+bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
 	 sed -e '$$s/;$$//'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
@@ -799,9 +821,8 @@ alldepend::
 # Check that the stack limit is reasonable.
 
 checkstack:
-	@if $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	              -o tools/checkstack tools/checkstack.c; \
-	  then tools/checkstack; \
+	@if $(MKEXE) -o tools/checkstack$(EXE) tools/checkstack.c; \
+	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi
 	@rm -f tools/checkstack

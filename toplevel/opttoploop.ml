@@ -136,7 +136,7 @@ let load_lambda ppf (size, lam) =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
-  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, lam);
+  Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, slam);
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
 
@@ -451,7 +451,14 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compmisc.init_path true;
+  Compmisc.init_path ~dir:(Filename.dirname name) true;
+                     (* Note: would use [Filename.abspath] here, if we had it. *)
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
-  use_silently ppf name
+  let explicit_name =
+    (* Prevent use_silently from searching in the path. *)
+    if Filename.is_implicit name
+    then Filename.concat Filename.current_dir_name name
+    else name
+  in
+  use_silently ppf explicit_name

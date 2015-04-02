@@ -315,7 +315,7 @@ let extension_constructor s ext =
       ext_args = constructor_arguments s ext.ext_args;
       ext_ret_type = may_map (typexp s) ext.ext_ret_type;
       ext_private = ext.ext_private;
-      ext_attributes = ext.ext_attributes;
+      ext_attributes = attrs s ext.ext_attributes;
       ext_loc = if s.for_saving then Location.none else ext.ext_loc; }
   in
     cleanup_types ();
@@ -333,8 +333,11 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_typext(id, _, _) |
-     Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+  | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+      (* cheat and pretend they are types cf. PR#6650 *)
+      let id' = Ident.rename id in
+      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+  | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
