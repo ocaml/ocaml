@@ -69,6 +69,7 @@ Bug fixes:
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
 - PR#6652: ocamlbuild -clean does not print a newline after output
+- PR#6658: cross-compiler: version check not working on OS X
 - PR#6665: Failure of tests/asmcomp on sparc
   (Stéphane Glondu)
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
