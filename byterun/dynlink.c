@@ -192,7 +192,7 @@ void caml_build_primitive_table_builtin(void)
     caml_ext_table_add(&caml_prim_name_table,
                        strdup(caml_names_of_builtin_cprim[i]));
 #endif
-}
+  }
 }
 
 #endif /* NATIVE_CODE */
