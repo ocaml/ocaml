@@ -870,6 +870,9 @@ let rec path_of_module mexp =
       path_of_module mexp
   | _ -> raise Not_a_path
 
+let path_of_module mexp =
+ try Some (path_of_module mexp) with Not_a_path -> None
+
 (* Check that all core type schemes in a structure are closed *)
 
 let rec closed_modtype = function
@@ -1134,7 +1137,7 @@ let rec type_module ?(alias=false) sttn funct_body anchor env smod =
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let arg = type_module true funct_body None env sarg in
-      let path = try Some (path_of_module arg) with Not_a_path -> None in
+      let path = path_of_module arg in
       let funct =
         type_module (sttn && path <> None) funct_body None env sfunct in
       begin match Env.scrape_alias env funct.mod_type with
