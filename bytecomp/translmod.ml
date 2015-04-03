@@ -96,8 +96,8 @@ let rec apply_coercion strict restr arg =
           apply_coercion Strict cc_res
             (Lapply(Lvar id, [apply_coercion Alias cc_arg (Lvar param)],
                     Location.none))))
-  | Tcoerce_primitive {pc_desc; pc_type; pc_env} ->
-      transl_primitive Location.none pc_desc pc_env pc_type
+  | Tcoerce_primitive {pc_desc; pc_type; pc_env; pc_loc } ->
+      transl_primitive pc_loc pc_desc pc_env pc_type
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion Alias cc (transl_normal_path path))
@@ -396,7 +396,7 @@ and transl_structure fields cc rootpath = function
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p ->
-                        transl_primitive Location.none
+                        transl_primitive p.pc_loc
                           p.pc_desc p.pc_env p.pc_type
                     | _ -> apply_coercion Strict cc (get_field pos))
                   pos_cc_list))
