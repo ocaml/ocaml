@@ -1,7 +1,3 @@
-jumptbl.h
-primitives
-prims.c
-opnames.h
 version.h
 ocamlrun
 ocamlrun.exe

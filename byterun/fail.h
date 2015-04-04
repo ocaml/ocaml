@@ -25,18 +25,11 @@
 #include "mlvalues.h"
 
 /* <private> */
-#define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
-#define SYS_ERROR_EXN 1         /* "Sys_error" */
-#define FAILURE_EXN 2           /* "Failure" */
-#define INVALID_EXN 3           /* "Invalid_argument" */
-#define END_OF_FILE_EXN 4       /* "End_of_file" */
-#define ZERO_DIVIDE_EXN 5       /* "Division_by_zero" */
-#define NOT_FOUND_EXN 6         /* "Not_found" */
-#define MATCH_FAILURE_EXN 7     /* "Match_failure" */
-#define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
-#define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
-#define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
-#define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
+enum {
+#define Exception(name, id, caml_name) name = id,
+#include "exceptions.tbl"
+#undef Exception
+};
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {

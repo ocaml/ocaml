@@ -315,6 +315,7 @@ exe=""
 iflexdir=""
 SO="so"
 TOOLCHAIN="cc"
+cpp="$cc -E -P"
 
 case "$bytecc,$target" in
   cc,*-*-nextstep*)
@@ -457,6 +458,14 @@ case $? in
            "Make sure the C compiler $cc is properly installed."
      fi;;
 esac
+
+# Check C preprocessor (particularly, whether it supports -P)
+
+cpp_output="`$cpp cpp.c | tr -d '[[:space:]]'`"
+
+if test x"$cpp_output" != x"ok"; then
+    err "C preprocessor not working: got '$cpp_output', expected 'ok'"
+fi
 
 # Determine which ocamlrun executable to use; for cross-compilation, a native
 # "ocamlrun" executable must be available on the system.
@@ -1684,6 +1693,7 @@ echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link" >> Makefile
 echo "BYTECCRPATH=$byteccrpath" >> Makefile
+echo "CPP=$cpp" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile

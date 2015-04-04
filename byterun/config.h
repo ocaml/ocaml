@@ -25,6 +25,7 @@
 #include "compatibility.h"
 #endif
 
+#ifndef OMIT_TYPEDEFS
 /* Types for 32-bit integers, 64-bit integers,
    native integers (as wide as a pointer type) */
 
@@ -79,6 +80,7 @@ typedef uint64 uintnat;
 #else
 #error "No integer type available to represent pointers"
 #endif
+#endif
 
 /* Endianness of floats */
 
@@ -114,10 +116,12 @@ typedef uint64 uintnat;
 #define Page_log 12             /* A page is 4 kilobytes. */
 
 /* Initial size of stack (bytes). */
-#define Stack_size (4096 * sizeof(value))
+#define Stack_size_words 4096
+#define Stack_size (Stack_size_words * sizeof(value))
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold (256 * sizeof(value))
+#define Stack_threshold_words 256
+#define Stack_threshold (Stack_threshold_words * sizeof(value))
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)
