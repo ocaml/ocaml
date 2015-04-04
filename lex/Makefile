@@ -39,6 +39,9 @@ clean::
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
 
+parser.cmo: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+parser.cmx: COMPFLAGS:=-w -50..51 ${COMPFLAGS}
+
 clean::
 	rm -f parser.ml parser.mli parser.output
 
