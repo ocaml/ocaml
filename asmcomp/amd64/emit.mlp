@@ -521,7 +521,10 @@ let emit_asm i asm iargs =
                 let n = match iarg.reg with \`arg n -> n | \`res n -> assert false in
                 addressing addr typ i n)
           in
-          arg :: acc) acc t
+          arg :: acc
+      | Record_frame ->
+          let lbl = record_frame_label i.live i.dbg in
+          Asm_string (emit_label lbl ^ ":\n") :: acc) acc t
   in
   I.asm (emit_template asm.template [] |> List.rev)
 

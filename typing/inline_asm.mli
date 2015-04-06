@@ -99,6 +99,8 @@ type template_item =
   (* Fixed text *)
   | Emit_unique
   (* A number unique for each instance of the generated assembly code *)
+  | Record_frame
+  (* Records the stack frame *)
 and template = template_item array
 
 (** A full specification of the inline assembly primitive *)
