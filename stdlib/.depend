@@ -127,8 +127,8 @@ moreLabels.cmo : set.cmi map.cmi hashtbl.cmi moreLabels.cmi
 moreLabels.cmx : set.cmx map.cmx hashtbl.cmx moreLabels.cmi
 nativeint.cmo : sys.cmi pervasives.cmi nativeint.cmi
 nativeint.cmx : sys.cmx pervasives.cmx nativeint.cmi
-obj.cmo : marshal.cmi int32.cmi array.cmi obj.cmi
-obj.cmx : marshal.cmx int32.cmx array.cmx obj.cmi
+obj.cmo : marshal.cmi int32.cmi floatArray.cmi obj.cmi
+obj.cmx : marshal.cmx int32.cmx floatArray.cmx obj.cmi
 oo.cmo : camlinternalOO.cmi oo.cmi
 oo.cmx : camlinternalOO.cmx oo.cmi
 parsing.cmo : obj.cmi lexing.cmi array.cmi parsing.cmi
@@ -257,8 +257,8 @@ moreLabels.cmo : set.cmi map.cmi hashtbl.cmi moreLabels.cmi
 moreLabels.p.cmx : set.p.cmx map.p.cmx hashtbl.p.cmx moreLabels.cmi
 nativeint.cmo : sys.cmi pervasives.cmi nativeint.cmi
 nativeint.p.cmx : sys.p.cmx pervasives.p.cmx nativeint.cmi
-obj.cmo : marshal.cmi int32.cmi array.cmi obj.cmi
-obj.p.cmx : marshal.p.cmx int32.p.cmx array.p.cmx obj.cmi
+obj.cmo : marshal.cmi int32.cmi floatArray.cmi obj.cmi
+obj.p.cmx : marshal.p.cmx int32.p.cmx floatArray.p.cmx obj.cmi
 oo.cmo : camlinternalOO.cmi oo.cmi
 oo.p.cmx : camlinternalOO.p.cmx oo.cmi
 parsing.cmo : obj.cmi lexing.cmi array.cmi parsing.cmi

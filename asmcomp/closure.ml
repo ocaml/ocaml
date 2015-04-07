@@ -149,20 +149,29 @@ let prim_size prim args =
   | Psetglobal id -> 1
   | Pmakeblock(tag, mut) -> 5 + List.length args
   | Pfield f -> 1
-  | Psetfield(f, isptr) -> if isptr then 4 else 1
-  | Pfloatfield f -> 1
+  | Psetfield(f, Pmaybe_addr) -> 4
+  | Psetfield(f, Pnot_addr) -> 1
   | Psetfloatfield f -> 1
   | Pduprecord _ -> 10 + List.length args
+  | Pobjsize -> 2
+  | Pobjfield -> 12
+  | Pobjsetfield -> 16
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
-  | Pmakearray kind -> 5 + List.length args
-  | Parraylength kind -> if kind = Pgenarray then 6 else 2
-  | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
-  | Parraysetu kind -> if kind = Pgenarray then 16 else 4
-  | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
-  | Parraysets kind -> if kind = Pgenarray then 22 else 10
+  | Pmakearray -> 5 + List.length args
+  | Parraylength -> 2
+  | Parrayrefu -> 2
+  | Parraysetu _ -> 4
+  | Parrayrefs -> 8
+  | Parraysets _ -> 10
+  | Pmakefloatarray -> 5 + List.length args
+  | Pfloatarraylength -> 2
+  | Pfloatarrayrefu -> 2
+  | Pfloatarraysetu -> 4
+  | Pfloatarrayrefs -> 8
+  | Pfloatarraysets -> 10
   | Pbittest -> 3
   | Pbigarrayref(_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset(_, ndims, _, _) -> 4 + ndims * 6
@@ -240,8 +249,9 @@ let rec is_pure_clambda = function
     Uvar v -> true
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
+           Pobjsetfield | Pccall _ | Praise _ | Poffsetref _ | Pstringsetu |
+           Pstringsets | Parraysetu _ | Parraysets _ | Pfloatarraysetu |
+           Pfloatarraysets | Pbigarrayset _), _, _) -> false
   | Uprim(p, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
 
@@ -696,8 +706,9 @@ let rec is_pure = function
     Lvar v -> true
   | Lconst cst -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
+           Pobjsetfield | Pccall _ | Praise _ | Poffsetref _ | Pstringsetu |
+           Pstringsets | Parraysetu _ | Parraysets _ | Pfloatarraysetu |
+           Pfloatarraysets | Pbigarrayset _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
@@ -957,7 +968,7 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false), [getglobal id; ulam], Debuginfo.none),
+      (Uprim(Psetfield(n, Pnot_addr), [getglobal id; ulam], Debuginfo.none),
        Value_unknown)
   | Lprim(Praise k, [Levent(arg, ev)]) ->
       let (ulam, approx) = close fenv cenv arg in

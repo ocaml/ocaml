@@ -143,7 +143,7 @@ let primitives_table = create_hashtable 57 [
   "%ignore", Pignore;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, true);
+  "%setfield0", Psetfield(0, Pmaybe_addr);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
   "%raise", Praise Raise_regular;
@@ -200,19 +200,19 @@ let primitives_table = create_hashtable 57 [
   "%string_safe_set", Pstringsets;
   "%string_unsafe_get", Pstringrefu;
   "%string_unsafe_set", Pstringsetu;
-  "%array_length", Parraylength Pgenarray;
-  "%array_safe_get", Parrayrefs Pgenarray;
-  "%array_safe_set", Parraysets Pgenarray;
-  "%array_unsafe_get", Parrayrefu Pgenarray;
-  "%array_unsafe_set", Parraysetu Pgenarray;
-  "%obj_size", Parraylength Pgenarray;
-  "%obj_field", Parrayrefu Pgenarray;
-  "%obj_set_field", Parraysetu Pgenarray;
-  "%float_array_length", Parraylength Pfloatarray;
-  "%float_array_safe_get", Parrayrefs Pfloatarray;
-  "%float_array_safe_set", Parraysets Pfloatarray;
-  "%float_array_unsafe_get", Parrayrefu Pfloatarray;
-  "%float_array_unsafe_set", Parraysetu Pfloatarray;
+  "%array_length", Parraylength;
+  "%array_safe_get", Parrayrefs;
+  "%array_safe_set", Parraysets Pmaybe_addr;
+  "%array_unsafe_get", Parrayrefu;
+  "%array_unsafe_set", Parraysetu Pmaybe_addr;
+  "%float_array_length", Pfloatarraylength;
+  "%float_array_safe_get", Pfloatarrayrefs;
+  "%float_array_safe_set", Pfloatarraysets;
+  "%float_array_unsafe_get", Pfloatarrayrefu;
+  "%float_array_unsafe_set", Pfloatarraysetu;
+  "%obj_size", Pobjsize;
+  "%obj_field", Pobjfield;
+  "%obj_set_field", Pobjsetfield;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
@@ -323,10 +323,10 @@ let primitives_table = create_hashtable 57 [
 
 let fast_index_primitives_table =
   create_hashtable 12 [
-    "%array_opt_get", Parrayrefu Pgenarray;
-    "%array_opt_set", Parraysetu Pgenarray;
-    "%float_array_opt_get", Parrayrefu Pfloatarray;
-    "%float_array_opt_set", Parraysetu Pfloatarray;
+    "%array_opt_get", Parrayrefu;
+    "%array_opt_set", Parraysetu Pmaybe_addr;
+    "%float_array_opt_get", Pfloatarrayrefu;
+    "%float_array_opt_set", Pfloatarraysetu;
     "%string_opt_get", Pstringrefu;
     "%string_opt_set", Pstringsetu;
     "%caml_ba_opt_ref_1",
@@ -345,10 +345,10 @@ let fast_index_primitives_table =
 
 let safe_index_primitives_table =
   create_hashtable 12 [
-    "%array_opt_get", Parrayrefs Pgenarray;
-    "%array_opt_set", Parraysets Pgenarray;
-    "%float_array_opt_get", Parrayrefs Pfloatarray;
-    "%float_array_opt_set", Parraysets Pfloatarray;
+    "%array_opt_get", Parrayrefs;
+    "%array_opt_set", Parraysets Pmaybe_addr;
+    "%float_array_opt_get", Pfloatarrayrefs;
+    "%float_array_opt_set", Pfloatarraysets;
     "%string_opt_get", Pstringrefs;
     "%string_opt_set", Pstringsets;
     "%caml_ba_opt_ref_1",
@@ -396,7 +396,7 @@ let specialize_comparison table env ty =
   match () with
   | () when is_base_type env ty Predef.path_int
          || is_base_type env ty Predef.path_char
-         || not (maybe_pointer_type env ty)           -> intcomp
+         || (maybe_addr_type env ty) = Pnot_addr      -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
@@ -428,12 +428,9 @@ let specialize_primitive loc p env ty ~has_constant_constructor =
         | Some (p2, _) -> [p1;p2]
     in
     match (p, params) with
-      (Psetfield(n, _), [p1; p2]) -> Psetfield(n, maybe_pointer_type env p2)
-    | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
-    | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
-    | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
-    | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
-    | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
+      (Psetfield(n, Pmaybe_addr), [p1; p2]) -> Psetfield(n, maybe_addr_type env p2)
+    | (Parraysetu Pmaybe_addr, p1 :: _) -> Parraysetu(maybe_addr_array_type env p1)
+    | (Parraysets Pmaybe_addr, p1 :: _) -> Parraysets(maybe_addr_array_type env p1)
     | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in
@@ -503,7 +500,6 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
-    | Lprim (Pmakearray (Pgenarray), args) -> false
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
     | lam -> check idlist lam
@@ -521,7 +517,7 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
-    | Lprim(Pmakearray(_), args) ->
+    | Lprim(Pmakearray, args) ->
         List.for_all (check idlist) args
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
@@ -657,8 +653,9 @@ let event_function exp lam =
 let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
-  | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
+  | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs | Parraysets _
+  | Pfloatarrayrefs | Pfloatarraysets | Pbigarrayref _ | Pbigarrayset _
+  | Pduprecord _ -> true
   | _ -> false
 
 (* Assertions *)
@@ -849,29 +846,21 @@ and transl_exp0 e =
       let access =
         match lbl.lbl_repres with
           Record_regular
-        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_addr newval)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension -> Psetfield (lbl.lbl_pos + 1, maybe_pointer newval)
+        | Record_extension -> Psetfield (lbl.lbl_pos + 1, maybe_addr newval)
       in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
-      let kind = array_kind e in
       let ll = transl_list expr_list in
       begin try
         (* Deactivate constant optimization if array is small enough *)
         if List.length ll <= 4 then raise Not_constant;
         let cl = List.map extract_constant ll in
-        let master =
-          match kind with
-          | Paddrarray | Pintarray ->
-              Lconst(Const_block(0, cl))
-          | Pfloatarray ->
-              Lconst(Const_float_array(List.map extract_float cl))
-          | Pgenarray ->
-              raise Not_constant in             (* can this really happen? *)
+        let master = Lconst(Const_block(0, cl)) in
         Lprim(Pccall prim_obj_dup, [master])
       with Not_constant ->
-        Lprim(Pmakearray kind, ll)
+        Lprim(Pmakearray, ll)
       end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
@@ -904,7 +893,7 @@ and transl_exp0 e =
       Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
              [lambda_unit], Location.none)
   | Texp_instvar(path_self, path, _) ->
-      Lprim(Parrayrefu Paddrarray,
+      Lprim(Parrayrefu,
             [transl_normal_path path_self; transl_normal_path path])
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar (transl_normal_path path_self) path expr
@@ -1131,7 +1120,7 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar self var expr =
-  Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
+  Lprim(Parraysetu (maybe_addr expr),
                     [self; transl_normal_path var; transl_exp expr])
 
 and transl_record env all_labels repres lbl_expr_list opt_init_expr =
@@ -1178,7 +1167,7 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
         match repres with
           Record_regular -> Lprim(Pmakeblock(0, mut), ll)
         | Record_inlined tag -> Lprim(Pmakeblock(tag, mut), ll)
-        | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+        | Record_float -> Lprim(Pmakefloatarray, ll)
         | Record_extension ->
             let path =
               match all_labels.(0).lbl_res.desc with
@@ -1202,9 +1191,9 @@ and transl_record env all_labels repres lbl_expr_list opt_init_expr =
       let upd =
         match lbl.lbl_repres with
           Record_regular
-        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
+        | Record_inlined _ -> Psetfield(lbl.lbl_pos, maybe_addr expr)
         | Record_float -> Psetfloatfield lbl.lbl_pos
-        | Record_extension -> Psetfield(lbl.lbl_pos + 1, maybe_pointer expr)
+        | Record_extension -> Psetfield(lbl.lbl_pos + 1, maybe_addr expr)
       in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
     begin match opt_init_expr with

@@ -33,73 +33,38 @@ let is_base_type env ty base_ty_path =
 let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
-let maybe_pointer_type env typ =
+let maybe_addr_type env typ =
   match scrape env typ with
   | Tconstr(p, args, abbrev) ->
-      not (Path.same p Predef.path_int) &&
-      not (Path.same p Predef.path_char) &&
-      begin try
-        match Env.find_type p env with
-        | {type_kind = Type_variant []} -> true (* type exn *)
-        | {type_kind = Type_variant cstrs} ->
-            List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
-        | _ -> true
-      with Not_found -> true
-        (* This can happen due to e.g. missing -I options,
-           causing some .cmi files to be unavailable.
-           Maybe we should emit a warning. *)
-      end
-  | _ -> true
-
-let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
-
-let array_element_kind env ty =
-  match scrape env ty with
-  | Tvar _ | Tunivar _ ->
-      Pgenarray
-  | Tconstr(p, args, abbrev) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        Pintarray
-      else if Path.same p Predef.path_float then
-        Pfloatarray
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then
-        Paddrarray
+      if Path.same p Predef.path_int then Pnot_addr
+      else if Path.same p Predef.path_char then Pnot_addr
       else begin
         try
           match Env.find_type p env with
-            {type_kind = Type_abstract} ->
-              Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Cstr_tuple [])
-                cstrs ->
-              Pintarray
-          | {type_kind = _} ->
-              Paddrarray
-        with Not_found ->
+          | {type_kind = Type_variant cstrs} ->
+              if List.for_all (fun c -> c.Types.cd_args = Cstr_tuple []) cstrs
+              then Pnot_addr
+              else Pmaybe_addr
+          | _ -> Pmaybe_addr
+        with Not_found -> Pmaybe_addr
           (* This can happen due to e.g. missing -I options,
              causing some .cmi files to be unavailable.
              Maybe we should emit a warning. *)
-          Pgenarray
       end
-  | _ ->
-      Paddrarray
+  | _ -> Pmaybe_addr
 
-let array_type_kind env ty =
+let maybe_addr exp = maybe_addr_type exp.exp_env exp.exp_type
+
+let maybe_addr_array_type env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
-      array_element_kind env elt_ty
+      maybe_addr_type env elt_ty
   | _ ->
       (* This can happen with e.g. Obj.field *)
-      Pgenarray
+      Pmaybe_addr
 
-let array_kind exp = array_type_kind exp.exp_env exp.exp_type
-
-let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
+let maybe_addr_array exp = maybe_addr_array_type exp.exp_env exp.exp_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with

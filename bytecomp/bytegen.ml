@@ -152,10 +152,8 @@ let rec size_of_lambda = function
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
   | Lprim(Pmakeblock(tag, mut), args) -> RHS_block (List.length args)
-  | Lprim (Pmakearray (Paddrarray|Pintarray), args) ->
-      RHS_block (List.length args)
-  | Lprim (Pmakearray Pfloatarray, args) -> RHS_floatblock (List.length args)
-  | Lprim (Pmakearray Pgenarray, args) -> assert false
+  | Lprim (Pmakearray, args) -> RHS_block (List.length args)
+  | Lprim (Pmakefloatarray, args) -> RHS_floatblock (List.length args)
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), args) ->
       RHS_block size
   | Lprim (Pduprecord (Record_extension, size), args) ->
@@ -307,10 +305,13 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Psetfield(n, addr) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
+  | Pobjsize -> Kvectlength
+  | Pobjfield -> Kccall("caml_obj_field", 2)
+  | Pobjsetfield -> Kccall("caml_obj_set_field", 3)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pnegint -> Knegint
   | Paddint -> Kaddint
@@ -351,19 +352,16 @@ let comp_primitive p args =
   | Pstring_set_16(_) -> Kccall("caml_string_set16", 3)
   | Pstring_set_32(_) -> Kccall("caml_string_set32", 3)
   | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
-  | Parraylength kind -> Kvectlength
-  | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
-  | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
-  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
-  | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
-  | Parraysets _ -> Kccall("caml_array_set_addr", 3)
-  | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
-  | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
-  | Parrayrefu _ -> Kgetvectitem
-  | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
+  | Parraylength -> Kvectlength
+  | Parrayrefs -> Kccall("caml_array_get", 2)
+  | Parraysets _ -> Kccall("caml_array_set", 3)
+  | Parrayrefu -> Kgetvectitem
   | Parraysetu _ -> Ksetvectitem
+  | Pfloatarraylength -> Kvectlength
+  | Pfloatarrayrefs -> Kccall("caml_double_array_get", 2)
+  | Pfloatarraysets -> Kccall("caml_double_array_set", 3)
+  | Pfloatarrayrefu -> Kccall("caml_double_array_unsafe_get", 2)
+  | Pfloatarraysetu -> Kccall("caml_double_array_unsafe_set", 3)
   | Pctconst c ->
      let const_name = match c with
        | Big_endian -> "big_endian"
@@ -625,19 +623,10 @@ let rec comp_expr env exp sz cont =
         (Kpush::
          Kconst (Const_base (Const_int n))::
          Kaddint::cont)
-  | Lprim(Pmakearray kind, args) ->
-      begin match kind with
-        Pintarray | Paddrarray ->
-          comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
-      | Pfloatarray ->
-          comp_args env args sz (Kmakefloatblock(List.length args) :: cont)
-      | Pgenarray ->
-          if args = []
-          then Kmakeblock(0, 0) :: cont
-          else comp_args env args sz
-                 (Kmakeblock(List.length args, 0) ::
-                  Kccall("caml_make_array", 1) :: cont)
-      end
+  | Lprim(Pmakearray, args) ->
+      comp_args env args sz (Kmakeblock(List.length args, 0) :: cont)
+  | Lprim(Pmakefloatarray, args) ->
+      comp_args env args sz (Kmakefloatblock(List.length args) :: cont)
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
       let p = Pintcomp (commute_comparison c)

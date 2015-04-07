@@ -53,16 +53,16 @@ let transl_meth_list lst =
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
-  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
+  let addr = Typeopt.maybe_addr expr in
+  Lprim(Parraysetu addr, [Lvar obj; Lvar id; transl_exp expr])
 
 let copy_inst_var obj id expr templ offset =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
+  let addr = Typeopt.maybe_addr expr in
   let id' = Ident.create (Ident.name id) in
   Llet(Strict, id', Lprim (Pidentity, [Lvar id]),
-  Lprim(Parraysetu kind,
+  Lprim(Parraysetu addr,
         [Lvar obj; Lvar id';
-         Lprim(Parrayrefu kind, [Lvar templ; Lprim(Paddint,
+         Lprim(Parrayrefu, [Lvar templ; Lprim(Paddint,
                                                    [Lvar id';
                                                     Lvar offset])])]))
 
@@ -500,7 +500,7 @@ let rec builtin_meths self env env2 body =
   let conv = function
     (* Lvar s when List.mem s self ->  "_self", [] *)
     | p when const_path p -> "const", [p]
-    | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
+    | Lprim(Parrayrefu, [Lvar s; Lvar n]) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
         "env", [Lvar env2; Lconst(Const_pointer n)]
@@ -652,7 +652,7 @@ let transl_class ids cl_id pub_meths cl vflag =
           [lfunction (self :: args)
              (if not (IdentSet.mem env (free_variables body')) then body' else
               Llet(Alias, env,
-                   Lprim(Parrayrefu Paddrarray,
+                   Lprim(Parrayrefu,
                          [Lvar self; Lvar env2]), body'))]
         end
       | _ -> assert false
@@ -661,7 +661,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let env1 = Ident.create "env" and env1' = Ident.create "env'" in
   let copy_env envs self =
     if top then lambda_unit else
-    Lifused(env2, Lprim(Parraysetu Paddrarray,
+    Lifused(env2, Lprim(Parraysetu Pmaybe_addr,
                         [Lvar self; Lvar env2; Lvar env1']))
   and subst_env envs l lam =
     if top then lam else
@@ -777,7 +777,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                 [Lvar tables; Lprim(Pmakeblock(0, Immutable), inh_keys)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, true), [Lvar cached; lam])
+    Lprim(Psetfield(i, Pmaybe_addr), [Lvar cached; lam])
   in
   let ldirect () =
     ltable cla

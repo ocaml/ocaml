@@ -83,6 +83,36 @@ CAMLprim value caml_obj_block(value tag, value size)
   return res;
 }
 
+CAMLprim value caml_obj_field(value arg, value index)
+{
+  double d;
+  value res;
+
+  if (Tag_val(arg) == Double_array_tag) {
+    d = Double_field(arg, Long_val(index));
+#define Setup_for_gc
+#define Restore_after_gc
+    Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+    Store_double_val(res, d);
+    return res;
+  } else {
+    return Field(arg, Long_val(index));
+  }
+}
+
+CAMLprim value caml_obj_set_field(value arg, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  if (Tag_val(arg) == Double_array_tag)
+    Store_double_field(arg, idx, Double_val(newval));
+  else
+    Modify(&Field(arg, idx), newval);
+  return Val_unit;
+}
+
+
 CAMLprim value caml_obj_dup(value arg)
 {
   CAMLparam1 (arg);

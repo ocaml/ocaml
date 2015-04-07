@@ -42,10 +42,13 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
   | Pfield of int
-  | Psetfield of int * bool
+  | Psetfield of int * maybe_addr
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
+  | Pobjsize
+  | Pobjfield
+  | Pobjsetfield
   (* Force lazy values *)
   | Plazyforce
   (* External call *)
@@ -69,12 +72,19 @@ type primitive =
   (* String operations *)
   | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
   (* Array operations *)
-  | Pmakearray of array_kind
-  | Parraylength of array_kind
-  | Parrayrefu of array_kind
-  | Parraysetu of array_kind
-  | Parrayrefs of array_kind
-  | Parraysets of array_kind
+  | Pmakearray
+  | Parraylength
+  | Parrayrefu
+  | Parraysetu of maybe_addr
+  | Parrayrefs
+  | Parraysets of maybe_addr
+  (* Float array operations *)
+  | Pmakefloatarray
+  | Pfloatarraylength
+  | Pfloatarrayrefu
+  | Pfloatarraysetu
+  | Pfloatarrayrefs
+  | Pfloatarraysets
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
@@ -129,8 +139,8 @@ type primitive =
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
-and array_kind =
-    Pgenarray | Paddrarray | Pintarray | Pfloatarray
+and maybe_addr =
+    Pmaybe_addr | Pnot_addr
 
 and boxed_integer =
     Pnativeint | Pint32 | Pint64
