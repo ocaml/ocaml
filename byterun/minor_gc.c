@@ -170,7 +170,7 @@ void caml_oldify_one (value v, value *p)
             }
           }
         }
-        if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+        if (!vv || ft == Forward_tag || ft == Lazy_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = caml_alloc_shr (1, Forward_tag);
