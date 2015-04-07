@@ -33,6 +33,8 @@ STDLIB_MODULES=\
   complex \
   digest \
   filename \
+  floatArray \
+  floatArrayLabels \
   format \
   gc \
   genlex \

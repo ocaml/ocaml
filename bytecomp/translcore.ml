@@ -208,6 +208,11 @@ let primitives_table = create_hashtable 57 [
   "%obj_size", Parraylength Pgenarray;
   "%obj_field", Parrayrefu Pgenarray;
   "%obj_set_field", Parraysetu Pgenarray;
+  "%float_array_length", Parraylength Pfloatarray;
+  "%float_array_safe_get", Parrayrefs Pfloatarray;
+  "%float_array_safe_set", Parraysets Pfloatarray;
+  "%float_array_unsafe_get", Parrayrefu Pfloatarray;
+  "%float_array_unsafe_set", Parraysetu Pfloatarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
@@ -316,19 +321,48 @@ let primitives_table = create_hashtable 57 [
   "%int_as_pointer", Pint_as_pointer;
 ]
 
-let index_primitives_table =
-  let make_ba_ref n="%caml_ba_opt_ref_"^(string_of_int n),
-    fun () -> Pbigarrayref(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout)
-  and make_ba_set n="%caml_ba_opt_set_"^(string_of_int n),
-    fun () -> Pbigarrayset(!Clflags.fast, n, Pbigarray_unknown, Pbigarray_unknown_layout) in
-  create_hashtable 10 [
-    "%array_opt_get", ( fun () -> if !Clflags.fast then Parrayrefu Pgenarray else Parrayrefs Pgenarray );
-    "%array_opt_set", ( fun () -> if !Clflags.fast then Parraysetu Pgenarray else Parraysets Pgenarray );
-    "%string_opt_get", ( fun () -> if !Clflags.fast then Pstringrefu else Pstringrefs );
-    "%string_opt_set", ( fun () -> if !Clflags.fast then Pstringsetu else Pstringsets );
-    make_ba_ref 1; make_ba_set 1;
-    make_ba_ref 2; make_ba_set 2;
-    make_ba_ref 3; make_ba_set 3;
+let fast_index_primitives_table =
+  create_hashtable 12 [
+    "%array_opt_get", Parrayrefu Pgenarray;
+    "%array_opt_set", Parraysetu Pgenarray;
+    "%float_array_opt_get", Parrayrefu Pfloatarray;
+    "%float_array_opt_set", Parraysetu Pfloatarray;
+    "%string_opt_get", Pstringrefu;
+    "%string_opt_set", Pstringsetu;
+    "%caml_ba_opt_ref_1",
+       Pbigarrayref(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_ref_2",
+       Pbigarrayref(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_ref_3",
+       Pbigarrayref(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_1",
+       Pbigarrayset(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_2",
+       Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_3",
+       Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+]
+
+let safe_index_primitives_table =
+  create_hashtable 12 [
+    "%array_opt_get", Parrayrefs Pgenarray;
+    "%array_opt_set", Parraysets Pgenarray;
+    "%float_array_opt_get", Parrayrefs Pfloatarray;
+    "%float_array_opt_set", Parraysets Pfloatarray;
+    "%string_opt_get", Pstringrefs;
+    "%string_opt_set", Pstringsets;
+    "%caml_ba_opt_ref_1",
+       Pbigarrayref(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_ref_2",
+       Pbigarrayref(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_ref_3",
+       Pbigarrayref(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_1",
+       Pbigarrayset(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_2",
+       Pbigarrayset(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+    "%caml_ba_opt_set_3",
+       Pbigarrayset(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
 ]
 
 let prim_makearray =
@@ -349,7 +383,11 @@ let find_primitive loc prim_name =
     | "%loc_POS" -> Ploc Loc_POS
     | "%loc_MODULE" -> Ploc Loc_MODULE
     | name ->
-      try Hashtbl.find index_primitives_table name @@ () with
+      let index_primitives_table =
+        if !Clflags.fast then fast_index_primitives_table
+        else safe_index_primitives_table
+      in
+        try Hashtbl.find index_primitives_table name with
         | Not_found -> Hashtbl.find primitives_table name
 
 let specialize_comparison table env ty =
