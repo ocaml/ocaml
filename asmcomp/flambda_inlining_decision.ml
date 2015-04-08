@@ -254,33 +254,38 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
         let tried_unrolling = ref false in
         let unrolling_result =
           if E.unrolling_allowed env && E.inlining_level env <= max_level then
-            let env = E.inside_unrolled_function env in
-            let body, r_inlined =
-              inline_by_copying_function_body ~env ~r:(R.clear_benefit r)
-                ~clos ~lfunc:funct ~fun_id ~func ~args
-            in
-            tried_unrolling := true;
-            let wsb =
-              Flambdacost.Whether_sufficient_benefit.create body
-                (R.benefit r_inlined)
-                inline_threshold
-            in
-            let keep_unrolled_version =
-              if Flambdacost.Whether_sufficient_benefit.evaluate
-                  ~probably_a_functor:false wsb then begin
-                record_decision (Inlined (Unrolled wsb));
-                true
-              end else begin
-                (* No decision is recorded here; we will try another strategy
-                   below, and then record that we also tried to unroll. *)
-                false
-              end
-            in
-            if keep_unrolled_version then
-              Some (body,
-                R.map_benefit r_inlined
-                  (Flambdacost.benefit_union (R.benefit r)))
-            else None
+            if E.inside_set_of_closures_declaration clos.ident env then
+              (* Self unrolling *)
+              None
+            else begin
+              let env = E.inside_unrolled_function env in
+              let body, r_inlined =
+                inline_by_copying_function_body ~env ~r:(R.clear_benefit r)
+                  ~clos ~lfunc:funct ~fun_id ~func ~args
+              in
+              tried_unrolling := true;
+              let wsb =
+                Flambdacost.Whether_sufficient_benefit.create body
+                  (R.benefit r_inlined)
+                  inline_threshold
+              in
+              let keep_unrolled_version =
+                if Flambdacost.Whether_sufficient_benefit.evaluate
+                    ~probably_a_functor:false wsb then begin
+                  record_decision (Inlined (Unrolled wsb));
+                  true
+                end else begin
+                  (* No decision is recorded here; we will try another strategy
+                     below, and then record that we also tried to unroll. *)
+                  false
+                end
+              in
+              if keep_unrolled_version then
+                Some (body,
+                  R.map_benefit r_inlined
+                    (Flambdacost.benefit_union (R.benefit r)))
+              else None
+            end
           else None
         in
         match unrolling_result with
