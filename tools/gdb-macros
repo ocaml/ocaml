@@ -184,11 +184,13 @@ define camlblock
     while $count < $mysize && $count < 10
       set $adr = $arg0 + $camlwordsize * $count
       set $field = * (unsigned long *) $adr
-      printf "%#lx: [%d] %#016lx ", $adr, $count, $field
+      printf "%#lx: [%d] 0x%016lx ", $adr, $count, $field
       if ($field & 7) == 0 && $isvalues
         camlheap $field
         printf " "
-        camlheader $field
+        if $field != 0
+          camlheader $field
+        end
       end
       if ($field & 1) == 1
         camlint $field
@@ -203,14 +205,15 @@ define camlblock
 end
 
 define caml
-  if ($arg0 & 1) == 1
-    camlint $arg0
+  set $caml_argument = (long) $arg0
+  if ($caml_argument & 1) == 1
+    camlint $caml_argument
     printf "\n"
   end
-  if ($arg0 & 7) == 0
-    camlblock $arg0
+  if ($caml_argument & 7) == 0
+    camlblock $caml_argument
   end
-  if ($arg0 & 7) != 0 && ($arg0 & 1) != 1
-    printf "invalid pointer: %#016lx\n", $arg0
+  if ($caml_argument & 7) != 0 && ($caml_argument & 1) != 1
+    printf "invalid pointer: %#016lx\n", $caml_argument
   end
 end
