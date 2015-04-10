@@ -14,7 +14,7 @@ nat_stubs.o: nat_stubs.c ../../byterun/alloc.h \
  ../../byterun/config.h ../../byterun/custom.h ../../byterun/intext.h \
  ../../byterun/io.h ../../byterun/platform.h ../../byterun/memory.h \
  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/minor_gc.h \
- ../../byterun/minor_heap.h ../../byterun/addrmap.h \
+../../byterun/addrmap.h \
  ../../byterun/domain.h ../../byterun/fail.h ../../byterun/hash.h \
  ../../byterun/memory.h ../../byterun/mlvalues.h bng.h nat.h
 arith_flags.cmi :
