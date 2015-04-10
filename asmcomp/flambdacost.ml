@@ -243,6 +243,7 @@ let evaluate_benefit b =
 module Whether_sufficient_benefit = struct
   type maybe_inline = {
     benefit : benefit;
+    probably_a_functor : bool;
     inline_threshold : inline_threshold;
     evaluated_size : int;
     evaluated_benefit : int;
@@ -253,7 +254,7 @@ module Whether_sufficient_benefit = struct
     | Do_not_inline
     | Maybe_inline of maybe_inline
 
-  let create ?original lam benefit (inline_threshold : inline_threshold) =
+  let create ?original lam benefit ~probably_a_functor (inline_threshold : inline_threshold) =
     match inline_threshold with
     | Never_inline -> Do_not_inline
     | Can_inline threshold ->
@@ -270,14 +271,14 @@ module Whether_sufficient_benefit = struct
         in
         let evaluated_benefit = evaluate_benefit benefit in
         Maybe_inline {
-          benefit; inline_threshold;
+          benefit; inline_threshold; probably_a_functor;
           evaluated_size; evaluated_benefit; evaluated_threshold;
         }
 
-  let evaluate ~probably_a_functor = function
+  let evaluate = function
     | Do_not_inline -> false
     | Maybe_inline maybe ->
-      if probably_a_functor then
+      if maybe.probably_a_functor then
         true
       else
         maybe.evaluated_size - maybe.evaluated_benefit
@@ -289,7 +290,7 @@ module Whether_sufficient_benefit = struct
     | Maybe_inline maybe ->
       Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i},\
                       thresh=%s,eval_size=%d,eval_benefit=%d,\
-                      eval_thresh=%d}=%s"
+                      eval_thresh=%d,functor=%b}=%s"
         maybe.benefit.remove_call
         maybe.benefit.remove_alloc
         maybe.benefit.remove_prim
@@ -299,5 +300,6 @@ module Whether_sufficient_benefit = struct
         maybe.evaluated_size
         maybe.evaluated_benefit
         maybe.evaluated_threshold
-        (if evaluate ~probably_a_functor:false t then "yes" else "no")
+        maybe.probably_a_functor
+        (if evaluate t then "yes" else "no")
 end

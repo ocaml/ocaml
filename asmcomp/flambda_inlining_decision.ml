@@ -61,11 +61,11 @@ let inline_non_recursive
         Flambdacost.Whether_sufficient_benefit.create
           ~original:(fst (no_transformation()))
           body
+          ~probably_a_functor
           (R.benefit r_inlined)
           (Can_inline 0)
       in
-      if Flambdacost.Whether_sufficient_benefit.evaluate
-          ~probably_a_functor wsb then begin
+      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
         record_decision (Inlined (Copying_body (Evaluated wsb)));
         true
       end else begin
@@ -97,11 +97,11 @@ let inline_non_recursive
         Flambdacost.Whether_sufficient_benefit.create
           ~original:(fst (no_transformation()))
           body
+          ~probably_a_functor
           (R.benefit r_inlined)
           (Can_inline 0)
       in
-      if Flambdacost.Whether_sufficient_benefit.evaluate
-          ~probably_a_functor wsb then begin
+      if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
         record_decision (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
         true
       end else begin
@@ -266,12 +266,12 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
               tried_unrolling := true;
               let wsb =
                 Flambdacost.Whether_sufficient_benefit.create body
+                  ~probably_a_functor:false
                   (R.benefit r_inlined)
                   inline_threshold
               in
               let keep_unrolled_version =
-                if Flambdacost.Whether_sufficient_benefit.evaluate
-                    ~probably_a_functor:false wsb then begin
+                if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
                   record_decision (Inlined (Unrolled wsb));
                   true
                 end else begin
@@ -313,12 +313,12 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                   Flambdacost.Whether_sufficient_benefit.create
                     ~original:(fst (no_transformation ()))
                     expr
+                    ~probably_a_functor:false
                     (R.benefit r_inlined)
                     inline_threshold
                 in
                 let keep_inlined_version =
-                  if Flambdacost.Whether_sufficient_benefit.evaluate
-                      ~probably_a_functor:false wsb then begin
+                  if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
                     record_decision (Inlined (Copying_decl (
                         Tried_unrolling !tried_unrolling, wsb)));
                     true

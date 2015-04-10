@@ -42,10 +42,11 @@ module Whether_sufficient_benefit : sig
      : ?original:_ Flambda.flambda
     -> _ Flambda.flambda
     -> benefit
+    -> probably_a_functor:bool
     -> inline_threshold
     -> t
 
-  val evaluate : probably_a_functor:bool -> t -> bool
+  val evaluate : t -> bool
 
   val to_string : t -> string
 end
