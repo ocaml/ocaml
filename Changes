@@ -147,6 +147,8 @@ OCamlbuild:
   (Peter Zotov)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
+- PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
+  (François Pottier)
 - PR#6794: pass package-specific include flags when building C files
   (Jérémie Dimino, request by Peter Zotov)
 
