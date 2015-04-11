@@ -189,6 +189,8 @@ Bug fixes:
 - PR#6787: Soundness bug with polymorphic variants
 - PR#6791: "%s@[", "%s@{" regression in Scanf
   (Benoît Vaugon)
+- PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
+  (Gabriel Scherer, report by Damien Doligez)
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - PR#6817: GADT exhaustiveness breakage with modules
 - GPR#143: fix getsockopt behaviour for boolean socket options
