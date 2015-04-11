@@ -33,6 +33,8 @@ OCamlbuild:
   (Peter Zotov)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
+- PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
+  (François Pottier)
 
 Libraries:
 - PR#6781: Add higher baud rates to Unix termios
