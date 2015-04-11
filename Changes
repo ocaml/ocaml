@@ -67,6 +67,10 @@ Toplevel and debugger:
   (Peter Zotov and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+OCamlbuild:
+- PR#6794, PR#6809: pass package-specific include flags when building C files
+  (Jérémie Dimino, request by Peter Zotov)
+
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
@@ -149,8 +153,6 @@ OCamlbuild:
   (Peter Zotov, Gabriel Scherer)
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
-- PR#6794: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by Peter Zotov)
 
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
