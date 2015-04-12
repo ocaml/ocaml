@@ -17,11 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "backtrace.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 #include "stack.h"
 
 int caml_backtrace_active = 0;

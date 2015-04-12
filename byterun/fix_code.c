@@ -13,21 +13,21 @@
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
-#include "config.h"
+#include "caml/config.h"
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 
-#include "debugger.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "md5.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "reverse.h"
+#include "caml/debugger.h"
+#include "caml/fix_code.h"
+#include "caml/instruct.h"
+#include "caml/intext.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/reverse.h"
 
 code_t caml_start_code;
 asize_t caml_code_size;

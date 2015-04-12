@@ -14,9 +14,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "config.h"
-#include "misc.h"
-#include "memory.h"
+#include "caml/config.h"
+#include "caml/misc.h"
+#include "caml/memory.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;

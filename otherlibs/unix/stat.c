@@ -12,15 +12,15 @@
 /***********************************************************************/
 
 #include <errno.h>
-#include <mlvalues.h>
-#include <memory.h>
-#include <alloc.h>
-#include <signals.h>
-#include "unixsupport.h"
-#include "cst2constr.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <io.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/signals.h>
+#include <caml/io.h>
+#include "unixsupport.h"
+#include "cst2constr.h"
 
 #ifndef S_IFLNK
 #define S_IFLNK 0

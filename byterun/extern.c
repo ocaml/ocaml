@@ -13,20 +13,20 @@
 
 /* Structured output */
 
-/* The interface of this file is "intext.h" */
+/* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "gc.h"
-#include "intext.h"
-#include "io.h"
-#include "md5.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "reverse.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/gc.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/md5.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/reverse.h"
 
 static uintnat obj_counter;  /* Number of objects emitted so far */
 static uintnat size_32;  /* Size in words of 32-bit block for struct. */

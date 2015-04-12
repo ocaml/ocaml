@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef __CYGWIN32__
 #include "flexdll.h"
@@ -38,9 +38,9 @@
 #else
 #include <sys/dir.h>
 #endif
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)

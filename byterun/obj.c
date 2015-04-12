@@ -14,16 +14,16 @@
 /* Operations on objects */
 
 #include <string.h>
-#include "alloc.h"
-#include "fail.h"
-#include "gc.h"
-#include "interp.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "prims.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/gc.h"
+#include "caml/interp.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/prims.h"
 
 CAMLprim value caml_static_alloc(value size)
 {

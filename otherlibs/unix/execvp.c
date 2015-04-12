@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <memory.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 
 extern char ** cstringvect();

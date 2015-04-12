@@ -19,10 +19,10 @@
 
 #include <string.h>
 
-#include "alloc.h"
-#include "config.h"
-#include "debugger.h"
-#include "misc.h"
+#include "caml/alloc.h"
+#include "caml/config.h"
+#include "caml/debugger.h"
+#include "caml/misc.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
@@ -64,14 +64,14 @@ void caml_debugger_cleanup_fork(void)
 #include <process.h>
 #endif
 
-#include "fail.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "io.h"
-#include "mlvalues.h"
-#include "stacks.h"
-#include "sys.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/instruct.h"
+#include "caml/intext.h"
+#include "caml/io.h"
+#include "caml/mlvalues.h"
+#include "caml/stacks.h"
+#include "caml/sys.h"
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */

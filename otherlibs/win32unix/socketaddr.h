@@ -14,7 +14,7 @@
 #ifndef CAML_SOCKETADDR_H
 #define CAML_SOCKETADDR_H
 
-#include "misc.h"
+#include "caml/misc.h"
 
 union sock_addr_union {
   struct sockaddr s_gen;

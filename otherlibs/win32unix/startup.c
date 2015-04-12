@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "winworker.h"
 #include "windbug.h"
 

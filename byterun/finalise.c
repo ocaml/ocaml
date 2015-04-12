@@ -13,11 +13,11 @@
 
 /* Handling of finalised values. */
 
-#include "callback.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
+#include "caml/callback.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
 
 struct final {
   value fun;

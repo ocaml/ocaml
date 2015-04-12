@@ -19,12 +19,12 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "instruct.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "opnames.h"
-#include "prims.h"
-#include "stacks.h"
+#include "caml/instruct.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/opnames.h"
+#include "caml/prims.h"
+#include "caml/stacks.h"
 
 extern code_t caml_start_code;
 

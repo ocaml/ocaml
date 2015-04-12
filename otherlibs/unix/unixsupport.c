@@ -11,11 +11,11 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <alloc.h>
-#include <callback.h>
-#include <memory.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/callback.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>

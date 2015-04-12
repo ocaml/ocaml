@@ -13,19 +13,19 @@
 
 #include <limits.h>
 
-#include "compact.h"
-#include "custom.h"
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "weak.h"
+#include "caml/compact.h"
+#include "caml/custom.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/weak.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 #define NATIVE_CODE_AND_NO_NAKED_POINTERS

@@ -14,19 +14,19 @@
 /* Primitives for the toplevel */
 
 #include <string.h>
-#include "alloc.h"
-#include "config.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "interp.h"
-#include "intext.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "prims.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/fix_code.h"
+#include "caml/interp.h"
+#include "caml/intext.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/prims.h"
+#include "caml/stacks.h"
 
 #ifndef NATIVE_CODE
 

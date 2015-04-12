@@ -202,11 +202,11 @@
 /byterun/.depend
 /byterun/.depend.nt
 /byterun/.DS_Store
-/byterun/jumptbl.h
+/byterun/caml/jumptbl.h
 /byterun/primitives
 /byterun/prims.c
-/byterun/opnames.h
-/byterun/version.h
+/byterun/caml/opnames.h
+/byterun/caml/version.h
 /byterun/ocamlrun
 /byterun/ocamlrun.exe
 /byterun/ocamlrund

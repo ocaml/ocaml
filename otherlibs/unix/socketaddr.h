@@ -14,7 +14,7 @@
 #ifndef CAML_SOCKETADDR_H
 #define CAML_SOCKETADDR_H
 
-#include "misc.h"
+#include "caml/misc.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>

@@ -14,19 +14,19 @@
 /* Callbacks from C to OCaml */
 
 #include <string.h>
-#include "callback.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/callback.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
 
-#include "interp.h"
-#include "instruct.h"
-#include "fix_code.h"
-#include "stacks.h"
+#include "caml/interp.h"
+#include "caml/instruct.h"
+#include "caml/fix_code.h"
+#include "caml/stacks.h"
 
 CAMLexport int caml_callback_depth = 0;
 

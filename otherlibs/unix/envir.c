@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
 
 #ifndef _WIN32
 extern char ** environ;

@@ -13,11 +13,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "custom.h"
-#include "fail.h"
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
 /* Structural comparison on trees. */
 
