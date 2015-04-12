@@ -108,6 +108,8 @@ Features wishes:
 - PR#6452, GPR#140: add internal suport for custom printing formats
   (Jérémie Dimino)
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
+- PR#6635: support M.[], M.(), M.{< >} and M.[| |]
+  (Jeremy Yallop, review by Gabriel Radanne)
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
