@@ -16,6 +16,10 @@
 #ifndef CAML_COMPATIBILITY_H
 #define CAML_COMPATIBILITY_H
 
+/* internal global variables renamed between 4.02.1 and 4.03.0 */
+#define caml_stat_top_heap_size caml_stat_top_heap_wsz
+#define caml_stat_heap_size caml_stat_heap_wsz
+
 #ifndef CAML_NAME_SPACE
 
 /*
