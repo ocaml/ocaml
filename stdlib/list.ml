@@ -27,6 +27,10 @@ let tl = function
     [] -> failwith "tl"
   | a::l -> l
 
+let cons hd tl = hd :: tl
+
+let consr tl hd = hd :: tl
+
 let nth l n =
   if n < 0 then invalid_arg "List.nth" else
   let rec nth_aux l n =
