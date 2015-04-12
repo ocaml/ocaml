@@ -173,7 +173,7 @@ type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list * Location.t
-  | Lfunction of function_kind * Ident.t list * lambda
+  | Lfunction of lfunction
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
@@ -190,6 +190,11 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and lfunction =
+  { kind: function_kind;
+    params: Ident.t list;
+    body: lambda }
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -324,7 +329,7 @@ let iter f = function
   | Lconst _ -> ()
   | Lapply(fn, args, _) ->
       f fn; List.iter f args
-  | Lfunction(kind, params, body) ->
+  | Lfunction{kind; params; body} ->
       f body
   | Llet(str, id, arg, body) ->
       f arg; f body
@@ -378,7 +383,7 @@ let free_ids get l =
     iter free l;
     fv := List.fold_right IdentSet.add (get l) !fv;
     match l with
-      Lfunction(kind, params, body) ->
+      Lfunction{kind; params; body} ->
         List.iter (fun param -> fv := IdentSet.remove param !fv) params
     | Llet(str, id, arg, body) ->
         fv := IdentSet.remove id !fv
@@ -470,7 +475,7 @@ let subst_lambda s lam =
       begin try Ident.find_same id s with Not_found -> l end
   | Lconst sc as l -> l
   | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
-  | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
+  | Lfunction{kind; params; body} -> Lfunction{kind; params; body = subst body}
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args) -> Lprim(p, List.map subst args)

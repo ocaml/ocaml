@@ -140,7 +140,7 @@ let rec check_recordwith_updates id e =
 ;;
 
 let rec size_of_lambda = function
-  | Lfunction(kind, params, body) as funct ->
+  | Lfunction{kind; params; body} as funct ->
       RHS_function (1 + IdentSet.cardinal(free_variables funct), List.length params)
   | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
     when check_recordwith_updates id body ->
@@ -492,7 +492,7 @@ let rec comp_expr env exp sz cont =
           comp_args env args' (sz + 3)
             (getmethod :: Kapply nargs :: cont1)
         end
-  | Lfunction(kind, params, body) -> (* assume kind = Curried *)
+  | Lfunction{kind; params; body} -> (* assume kind = Curried *)
       let lbl = new_label() in
       let fv = IdentSet.elements(free_variables exp) in
       let to_compile =
@@ -507,7 +507,7 @@ let rec comp_expr env exp sz cont =
           (add_pop 1 cont))
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in
-      if List.for_all (function (_, Lfunction(_,_,_)) -> true | _ -> false)
+      if List.for_all (function (_, Lfunction _) -> true | _ -> false)
                       decl then begin
         (* let rec of functions *)
         let fv =
@@ -515,7 +515,7 @@ let rec comp_expr env exp sz cont =
         let rec_idents = List.map (fun (id, lam) -> id) decl in
         let rec comp_fun pos = function
             [] -> []
-          | (id, Lfunction(kind, params, body)) :: rem ->
+          | (id, Lfunction{kind; params; body}) :: rem ->
               let lbl = new_label() in
               let to_compile =
                 { params = params; body = body; label = lbl; free_vars = fv;

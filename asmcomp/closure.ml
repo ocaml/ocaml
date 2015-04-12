@@ -129,14 +129,14 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction(Curried, new_ids, body) in
+        let inner_fun = Lfunction{kind = Curried; params = new_ids; body} in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction(kind, params, wrapper_body)); inner]
+    [(fun_id, Lfunction{kind; params; body = wrapper_body}); inner]
   with Exit ->
-    [(fun_id, Lfunction(kind, params, body))]
+    [(fun_id, Lfunction{kind; params; body})]
 
 
 (* Determine whether the estimated size of a clambda term is below
@@ -840,7 +840,7 @@ let rec close fenv cenv = function
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
-  | Lfunction(kind, params, body) as funct ->
+  | Lfunction{kind; params; body} as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
@@ -877,8 +877,10 @@ let rec close fenv cenv = function
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
         let (new_fun, approx) = close fenv cenv
-          (Lfunction(
-            Curried, final_args, Lapply(funct, internal_args, loc)))
+          (Lfunction{
+               kind = Curried;
+               params = final_args;
+               body = Lapply(funct, internal_args, loc)})
         in
         let new_fun = iter first_args new_fun in
         (new_fun, approx)
@@ -912,7 +914,7 @@ let rec close fenv cenv = function
       end
   | Lletrec(defs, body) ->
       if List.for_all
-           (function (id, Lfunction(_, _, _)) -> true | _ -> false)
+           (function (id, Lfunction _) -> true | _ -> false)
            defs
       then begin
         (* Simple case: only function definitions *)
@@ -1066,7 +1068,7 @@ and close_list_approx fenv cenv = function
       (ulam :: ulams, approx :: approxs)
 
 and close_named fenv cenv id = function
-    Lfunction(kind, params, body) as funct ->
+    Lfunction{kind; params; body} as funct ->
       close_one_function fenv cenv id funct
   | lam ->
       close fenv cenv lam
@@ -1078,7 +1080,7 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction(kind, params, body)) ->
+           | (id, Lfunction{kind; params; body}) ->
                split_default_wrapper id kind params body
            | _ -> assert false
          )
@@ -1098,7 +1100,7 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction(kind, params, body)) ->
+          (id, Lfunction{kind; params; body}) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
             let fundesc =
