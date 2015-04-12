@@ -115,6 +115,8 @@ Features wishes:
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
 - PR#6719: improve Buffer.add_channel when not enough input is available
   (Simon Cruanes)
+- GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
+  (Frédéric Bour)
 - GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
   (Gabriel Radanne)
 - GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
