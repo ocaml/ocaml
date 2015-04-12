@@ -32,6 +32,7 @@ let value_declarations : ((string * Location.t), (unit -> unit)) Hashtbl.t =
        cf Includemod.value_descriptions). *)
 
 let type_declarations = Hashtbl.create 16
+let module_declarations = Hashtbl.create 16
 
 type constructor_usage = Positive | Pattern | Privatize
 type constructor_usages =
@@ -402,6 +403,7 @@ let reset_cache () =
   clear_imports ();
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
   Hashtbl.clear used_constructors;
   Hashtbl.clear prefixed_sg
 
@@ -415,6 +417,7 @@ let reset_cache_toplevel () =
   List.iter (Hashtbl.remove persistent_structures) l;
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
   Hashtbl.clear used_constructors;
   Hashtbl.clear prefixed_sg
 
@@ -671,11 +674,20 @@ let rec is_functor_arg path env =
 
 (* Lookup by name *)
 
+let mark_module_used name md =
+  try Hashtbl.find module_declarations (name, md.md_loc) ()
+  with Not_found -> ()
+
 exception Recmodule
 
 let rec lookup_module_descr lid env =
   match lid with
     Lident s ->
+      begin try
+        let (_, md) = EnvTbl.find_name s env.modules in
+        mark_module_used s md;
+      with Not_found -> ()
+      end;
       begin try
         EnvTbl.find_name s env.components
       with Not_found ->
@@ -708,8 +720,9 @@ and lookup_module ~load lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (p, {md_type}) as r = EnvTbl.find_name s env.modules in
-        begin match md_type with
+        let (p, md) as r = EnvTbl.find_name s env.modules in
+        mark_module_used s md;
+        begin match md.md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
@@ -1301,7 +1314,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_module None id (Pident id) md !env !env;
+            env := store_module ~check:false None id (Pident id) md !env !env;
             incr pos
         | Sig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
@@ -1457,7 +1470,10 @@ and store_extension ~check slot id path ext env renv =
                 env.constrs renv.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_module slot id path md env renv =
+and store_module ~check slot id path md env renv =
+  if check then
+    check_usage md.md_loc id (fun s -> Warnings.Unused_module_declaration s)
+      module_declarations;
   { env with
     modules = EnvTbl.add "module" slot id (path, md) env.modules renv.modules;
     components =
@@ -1519,13 +1535,13 @@ let add_type ~check id info env =
 and add_extension ~check id ext env =
   store_extension ~check None id (Pident id) ext env env
 
-and add_module_declaration ?(arg=false) id md env =
+and add_module_declaration ?(arg=false) ~check id md env =
   let path =
     (*match md.md_type with
       Mty_alias path -> normalize_path env path
     | _ ->*) Pident id
   in
-  let env = store_module None id path md env env in
+  let env = store_module ~check None id path md env env in
   if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
@@ -1538,7 +1554,7 @@ and add_cltype id ty env =
   store_cltype None id (Pident id) ty env env
 
 let add_module ?arg id mty env =
-  add_module_declaration ?arg id (md mty) env
+  add_module_declaration ?arg ~check:false id (md mty) env
 
 let add_local_constraint id info elv env =
   match info with
@@ -1559,7 +1575,7 @@ let enter_value ?check = enter (store_value ?check)
 and enter_type = enter (store_type ~check:true)
 and enter_extension = enter (store_extension ~check:true)
 and enter_module_declaration ?arg id md env =
-  add_module_declaration ?arg id md env
+  add_module_declaration ?arg ~check:true id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
 and enter_modtype = enter store_modtype
@@ -1577,7 +1593,7 @@ let add_item comp env =
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, md, _)   -> add_module_declaration id md env
+  | Sig_module(id, md, _)   -> add_module_declaration ~check:false id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env
@@ -1607,7 +1623,7 @@ let open_signature slot root sg env0 =
         | Sig_typext(id, ext, _) ->
             store_extension ~check:false slot (Ident.hide id) p ext env env0
         | Sig_module(id, mty, _) ->
-            store_module slot (Ident.hide id) p mty env env0
+            store_module ~check:false slot (Ident.hide id) p mty env env0
         | Sig_modtype(id, decl) ->
             store_modtype slot (Ident.hide id) p decl env env0
         | Sig_class(id, decl, _) ->

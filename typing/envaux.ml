@@ -52,7 +52,7 @@ let rec env_from_summary sum subst =
             (Subst.extension_constructor subst desc)
             (env_from_summary s subst)
       | Env_module(s, id, desc) ->
-          Env.add_module_declaration id
+          Env.add_module_declaration ~check:false id
             (Subst.module_declaration subst desc)
             (env_from_summary s subst)
       | Env_modtype(s, id, desc) ->
@@ -76,7 +76,8 @@ let rec env_from_summary sum subst =
           Env.open_signature Asttypes.Override path'
             (extract_sig env md.md_type) env
       | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
-          Env.add_module_declaration id (Subst.module_declaration subst desc)
+          Env.add_module_declaration ~check:false
+            id (Subst.module_declaration subst desc)
             ~arg:true (env_from_summary s subst)
       | Env_functor_arg _ -> assert false
     in

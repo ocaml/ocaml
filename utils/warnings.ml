@@ -67,6 +67,7 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Unused_module_declaration of string     (* 50 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -125,9 +126,10 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
+  | Unused_module_declaration _ -> 50
 ;;
 
-let last_warning_number = 49
+let last_warning_number = 50
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -240,7 +242,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48..50";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -384,6 +386,8 @@ let message = function
         (String.concat ", " sl)
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
+  | Unused_module_declaration s ->
+      Printf.sprintf "module %s is unused" s
 ;;
 
 let nerrors = ref 0;;
