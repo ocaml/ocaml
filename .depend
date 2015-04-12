@@ -130,7 +130,8 @@ typing/typecore.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi typing/annot.cmi
 typing/typedecl.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
-    typing/includecore.cmi typing/ident.cmi typing/env.cmi
+    typing/includecore.cmi typing/ident.cmi typing/env.cmi \
+    parsing/asttypes.cmi
 typing/typedtreeIter.cmi : typing/typedtree.cmi parsing/asttypes.cmi
 typing/typedtreeMap.cmi : typing/typedtree.cmi
 typing/typedtree.cmi : typing/types.cmi typing/primitive.cmi typing/path.cmi \
