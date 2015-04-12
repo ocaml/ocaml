@@ -254,6 +254,10 @@ let rec lam ppf = function
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
+  | Lapply(lfun, largs, info) when info.apply_should_be_tailcall ->
+      let lams ppf largs =
+        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
+      fprintf ppf "@[<2>(apply@ %a%a @@tailcall)@]" lam lfun lams largs
   | Lapply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

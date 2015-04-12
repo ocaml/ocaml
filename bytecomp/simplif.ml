@@ -24,8 +24,8 @@ let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst cst as lam -> lam
-  | Lapply(e1, el, loc) ->
-      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, loc)
+  | Lapply(e1, el, info) ->
+      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, info)
   | Lfunction{kind; params; body} as lam ->
       if IdentSet.mem id (free_variables lam)
       then raise Real_reference
@@ -193,7 +193,7 @@ let simplify_exits lam =
 
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
-  | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
+  | Lapply(l1, ll, info) -> Lapply(simplif l1, List.map simplif ll, info)
   | Lfunction{kind; params; body = l} ->
      Lfunction{kind; params; body = simplif l}
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
@@ -203,16 +203,16 @@ let simplify_exits lam =
     let ll = List.map simplif ll in
     match p, ll with
         (* Simplify %revapply, for n-ary functions with n > 1 *)
-      | Prevapply loc, [x; Lapply(f, args, _)]
-      | Prevapply loc, [x; Levent (Lapply(f, args, _),_)] ->
-        Lapply(f, args@[x], loc)
-      | Prevapply loc, [x; f] -> Lapply(f, [x], loc)
+      | Prevapply loc, [x; Lapply(f, args, info)]
+      | Prevapply loc, [x; Levent (Lapply(f, args, info),_)] ->
+        Lapply(f, args@[x], {info with apply_loc=loc})
+      | Prevapply loc, [x; f] -> Lapply(f, [x], mk_apply_info loc)
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
-      | Pdirapply loc, [Lapply(f, args, _); x]
-      | Pdirapply loc, [Levent (Lapply(f, args, _),_); x] ->
-        Lapply(f, args@[x], loc)
-      | Pdirapply loc, [f; x] -> Lapply(f, [x], loc)
+      | Pdirapply loc, [Lapply(f, args, info); x]
+      | Pdirapply loc, [Levent (Lapply(f, args, info),_); x] ->
+        Lapply(f, args@[x], {info with apply_loc=loc})
+      | Pdirapply loc, [f; x] -> Lapply(f, [x], mk_apply_info loc)
 
       | _ -> Lprim(p, ll)
      end
@@ -518,9 +518,14 @@ let rec emit_tail_infos is_tail lambda =
   match lambda with
   | Lvar _ -> ()
   | Lconst _ -> ()
-  | Lapply (func, l, loc) ->
+  | Lapply (func, l, ({apply_loc=loc} as info)) ->
+      if info.apply_should_be_tailcall
+      && not is_tail
+      && Warnings.is_active Warnings.Expect_tailcall
+        then Location.prerr_warning loc Warnings.Expect_tailcall;
       list_emit_tail_infos false l;
-      Stypes.record (Stypes.An_call (loc, call_kind l))
+      if !Clflags.annotations then
+        Stypes.record (Stypes.An_call (loc, call_kind l));
   | Lfunction {body = lam} ->
       emit_tail_infos true lam
   | Llet (_, _, lam, body) ->
@@ -576,7 +581,8 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false meth;
       emit_tail_infos false obj;
       list_emit_tail_infos false args;
-      Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
+      if !Clflags.annotations then
+        Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)));
   | Levent (lam, _) ->
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
@@ -591,5 +597,6 @@ and list_emit_tail_infos is_tail =
 
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
-  if !Clflags.annotations then emit_tail_infos true res;
+  if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
+    then emit_tail_infos true res;
   res

@@ -38,7 +38,7 @@ let lapply func args loc =
   | _ ->
       Lapply(func, args, loc)
 
-let mkappl (func, args) = Lapply (func, args, Location.none);;
+let mkappl (func, args) = Lapply (func, args, no_apply_info);;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -449,7 +449,7 @@ let transl_class_rebind ids cl vf =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
-    let obj_init0 = lapply (Lvar obj_init) [Lvar self] Location.none in
+    let obj_init0 = lapply (Lvar obj_init) [Lvar self] no_apply_info in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then
       raise(Error(cl.cl_loc, Illegal_class_expr));

@@ -161,6 +161,18 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type apply_info = {
+  apply_loc : Location.t;
+  apply_should_be_tailcall : bool; (* true if [@tailcall] was specified *)
+}
+
+let mk_apply_info ?(tailcall=false) loc =
+  {apply_loc=loc;
+   apply_should_be_tailcall=tailcall; }
+
+let no_apply_info =
+  {apply_loc=Location.none; apply_should_be_tailcall=false;}
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -172,7 +184,7 @@ type shared_code = (int * int) list
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list * Location.t
+  | Lapply of lambda * lambda list * apply_info
   | Lfunction of lfunction
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
@@ -245,8 +257,8 @@ let make_key e =
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
-    | Lapply (e,es,loc) ->
-        Lapply (tr_rec env e,tr_recs env es,Location.none)
+    | Lapply (e,es,info) ->
+        Lapply (tr_rec env e,tr_recs env es,{info with apply_loc=Location.none})
     | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e

@@ -161,6 +161,18 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type apply_info = {
+  apply_loc : Location.t;
+  apply_should_be_tailcall : bool; (* true if [@tailcall] was specified *)
+}
+
+val no_apply_info : apply_info
+(** Default [apply_info]: no location, no tailcall *)
+
+val mk_apply_info : ?tailcall:bool -> Location.t -> apply_info
+(** Build apply_info
+    @param tailcall if true, the application should be in tail position; default false *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -181,7 +193,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list * Location.t
+  | Lapply of lambda * lambda list * apply_info
   | Lfunction of lfunction
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
