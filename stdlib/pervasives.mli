@@ -966,6 +966,9 @@ external decr : int ref -> unit = "%decr"
 (** Decrement the integer contained in the given reference.
    Equivalent to [fun r -> r := pred !r]. *)
 
+(** {6 Result type} *)
+
+type ('a,'b) result = Ok of 'a | Error of 'b
 
 (** {6 Operations on format strings} *)
 

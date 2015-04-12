@@ -122,6 +122,8 @@ Features wishes:
 - GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
   (Gabriel Radanne)
 - GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
+- GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
+  (Yaron Minsky)
 
 OCaml 4.02.2:
 -------------
