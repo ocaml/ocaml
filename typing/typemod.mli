@@ -35,6 +35,9 @@ val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
+val type_open_splitted_env:
+  ?toplevel:bool -> Asttypes.override_flag -> from:Env.t -> into:Env.t -> 
+   Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
 val type_open_:
         ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t

@@ -581,8 +581,8 @@ class printer  ()= object(self:'self)
         pp f "@[<hov2>!poly!@ %a@]" self#simple_expr e
     | Pexp_poly (e, Some ct) ->
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]" self#simple_expr e self#core_type ct
-    | Pexp_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) self#longident_loc lid
+    | Pexp_open (ovf, oseq, e) ->
+        pp f "@[<hv>let open%s %a in@;%a@]" (override ovf) self#reset#open_seq oseq
           self#expression  e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l  self#simple_expr eo
@@ -953,7 +953,7 @@ class printer  ()= object(self:'self)
     | Psig_open od ->
         pp f "@[<hov2>open%s@ %a@]%a"
            (override od.popen_override)
-           self#longident_loc od.popen_lid
+           self#reset#open_seq od.popen_seq
            self#item_attributes od.popen_attributes
     | Psig_include incl ->
         pp f "@[<hov2>include@ %a@]%a"
@@ -1079,6 +1079,10 @@ class printer  ()= object(self:'self)
           (self#list ~sep:"@," (binding "and" Nonrecursive)) xs
     end
 
+	method open_seq f l =
+		let item f (lident,attributes) = pp f "@[<2>%a %a@]" self#longident_loc lident self#attributes attributes in
+		pp f "@[<hv>%a@]" (self#list ~sep:"@;<1 -5>and " item) l
+
   method structure_item f x = begin
     match x.pstr_desc with
     | Pstr_eval (e, attrs) ->
@@ -1117,9 +1121,9 @@ class printer  ()= object(self:'self)
             )) x.pmb_expr
           self#item_attributes x.pmb_attributes
     | Pstr_open od ->
-        pp f "@[<2>open%s@;%a@]%a"
+        pp f "@[<2>open%s@ %a@]%a"
            (override od.popen_override)
-           self#longident_loc od.popen_lid
+           self#reset#open_seq od.popen_seq
            self#item_attributes od.popen_attributes
     | Pstr_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
         pp f "@[<hov2>module@ type@ %s%a@]%a"

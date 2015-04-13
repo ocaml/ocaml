@@ -362,8 +362,8 @@ module E = struct
     | Pexp_object cls -> sub.class_structure sub cls
     | Pexp_newtype (s, e) -> sub.expr sub e
     | Pexp_pack me -> sub.module_expr sub me
-    | Pexp_open (ovf, lid, e) ->
-        iter_loc sub lid; sub.expr sub e
+    | Pexp_open (ovf, seq, e) ->
+        List.iter(fun (lid,attr) -> iter_loc sub lid) seq; sub.expr sub e
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
 end
@@ -520,8 +520,8 @@ let default_iterator =
 
 
     open_description =
-      (fun this {popen_lid; popen_override; popen_attributes; popen_loc} ->
-         iter_loc this popen_lid;
+      (fun this {popen_seq; popen_override; popen_attributes; popen_loc} ->
+         List.iter( fun (lid,_attrs) -> iter_loc this lid) popen_seq;
          this.location this popen_loc;
          this.attributes this popen_attributes
       );

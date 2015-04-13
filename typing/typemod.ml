@@ -20,19 +20,20 @@ open Asttypes
 open Parsetree
 open Types
 open Format
+open Typedtree
 
 type error =
-    Cannot_apply of module_type
+    Cannot_apply of Types.module_type
   | Not_included of Includemod.error list
-  | Cannot_eliminate_dependency of module_type
+  | Cannot_eliminate_dependency of Types.module_type
   | Signature_expected
-  | Structure_expected of module_type
+  | Structure_expected of Types.module_type
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.error list
   | Repeated_name of string * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_declaration
-  | Non_generalizable_module of module_type
+  | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Non_generalizable_module of Types.module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
@@ -47,7 +48,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-open Typedtree
 
 let fst3 (x,_,_) = x
 
@@ -73,27 +73,33 @@ let extract_sig_open env loc mty =
       raise(Error(loc, env, Cannot_scrape_alias path))
   | _ -> raise(Error(loc, env, Structure_expected mty))
 
-(* Compute the environment after opening a module *)
-
-let type_open_ ?toplevel ovf env loc lid =
-  let path, md = Typetexp.find_module env lid.loc lid.txt in
-  let sg = extract_sig_open env lid.loc md.md_type in
+(* Compute a new environment from the environment [env] after opening a module in the reference environment [ref_env]. *)
+let type_open_splitted_env ?toplevel ovf ~from:ref_env ~into:env loc lid =
+  let path, md = Typetexp.find_module ref_env lid.loc lid.txt in
+  let sg = extract_sig_open ref_env lid.loc md.md_type in
   path, Env.open_signature ~loc ?toplevel ovf path sg env
 
+
+(* Compute the environment after opening a module *)
+
+let type_open_ ?toplevel ovf env loc lid = type_open_splitted_env ovf ~from:env ~into:env loc lid
+
+
 let type_open ?toplevel env sod =
-  let (path, newenv) =
-    type_open_ ?toplevel sod.popen_override env sod.popen_loc sod.popen_lid
+  let open_item (paths, seq, new_env ) (lid,attrs) =
+    let  (path, new_env) = type_open_splitted_env ?toplevel sod.popen_override ~from:env ~into:new_env sod.popen_loc lid in
+    path::paths, (path,lid,attrs)::seq, new_env in
+  let paths, open_seq, new_env =  List.fold_left open_item ([],[],env) sod.popen_seq
   in
   let od =
     {
       open_override = sod.popen_override;
-      open_path = path;
-      open_txt = sod.popen_lid;
+      open_seq;
       open_attributes = sod.popen_attributes;
       open_loc = sod.popen_loc;
     }
   in
-  (path, newenv, od)
+  (paths, new_env, od)
 
 (* Record a module type *)
 let rm node =
@@ -1561,7 +1567,7 @@ let () =
   Typecore.type_module := type_module_alias;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open_ ?toplevel:None;
+  Typecore.type_open := type_open_splitted_env ?toplevel:None;
   Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 

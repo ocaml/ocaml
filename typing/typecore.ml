@@ -2878,11 +2878,14 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (ovf, lid, e) ->
-      let (path, newenv) = !type_open ovf env sexp.pexp_loc lid in
-      let exp = type_expect newenv e ty_expected in
+  | Pexp_open (ovf, oseq, e) ->
+      let open_item (open_seq,new_env) (lid,attrs) =
+        let (path, new_env) = !type_open ovf ~from:env ~into:new_env sexp.pexp_loc lid in
+        (path,lid,attrs):: open_seq, new_env in
+      let (open_seq, new_env) = List.fold_left open_item ([],env) oseq in
+      let exp = type_expect new_env e ty_expected in
       { exp with
-        exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
+        exp_extra = (Texp_open (ovf, open_seq, new_env), loc,
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }

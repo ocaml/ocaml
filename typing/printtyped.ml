@@ -256,9 +256,9 @@ and expression_extra i ppf x attrs =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_open (ovf, m, _, _) ->
-      line i ppf "Texp_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
-      attributes i ppf attrs;
+  | Texp_open (ovf, seq, _) ->
+      line i ppf "Texp_open %a \n" fmt_override_flag ovf;
+      open_seq (i+1) ppf seq []
   | Texp_poly cto ->
       line i ppf "Texp_poly\n";
       attributes i ppf attrs;
@@ -616,6 +616,13 @@ and module_type i ppf x =
 
 and signature i ppf x = list i signature_item ppf x.sig_items
 
+and open_seq i ppf seq attrs =
+			list i (fun i ppf (m,_,attrs) ->
+			line i ppf "<open>\n";
+				line (i+1) ppf "%a\n" fmt_path m;
+				attributes (i+1) ppf attrs) ppf seq;
+   attributes i ppf attrs
+
 and signature_item i ppf x =
   line i ppf "signature_item %a\n" fmt_location x.sig_loc;
   let i = i+1 in
@@ -644,10 +651,8 @@ and signature_item i ppf x =
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
   | Tsig_open od ->
-      line i ppf "Tsig_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
-      attributes i ppf od.open_attributes
+      line i ppf "Tsig_open %a\n" fmt_override_flag od.open_override;
+      open_seq (i+1) ppf od.open_seq od.open_attributes
   | Tsig_include incl ->
       line i ppf "Tsig_include\n";
       attributes i ppf incl.incl_attributes;
@@ -749,10 +754,8 @@ and structure_item i ppf x =
       attributes i ppf x.mtd_attributes;
       modtype_declaration i ppf x.mtd_type
   | Tstr_open od ->
-      line i ppf "Tstr_open %a %a\n"
-           fmt_override_flag od.open_override
-           fmt_path od.open_path;
-      attributes i ppf od.open_attributes
+      line i ppf "Tstr_open %a\n" fmt_override_flag od.open_override;
+      open_seq (i+1) ppf od.open_seq od.open_attributes
   | Tstr_class (l) ->
       line i ppf "Tstr_class\n";
       list i class_declaration ppf (List.map (fun (cl, _) -> cl) l);

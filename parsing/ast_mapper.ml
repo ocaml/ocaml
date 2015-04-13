@@ -377,8 +377,9 @@ module E = struct
     | Pexp_object cls -> object_ ~loc ~attrs (sub.class_structure sub cls)
     | Pexp_newtype (s, e) -> newtype ~loc ~attrs s (sub.expr sub e)
     | Pexp_pack me -> pack ~loc ~attrs (sub.module_expr sub me)
-    | Pexp_open (ovf, lid, e) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
+    | Pexp_open (ovf, oseq, e) ->
+        let oseq = List.map (fun (lid,attrs) -> (map_loc sub lid,attrs) ) oseq in
+        open_ ~loc ~attrs ovf oseq (sub.expr sub e)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
 end
@@ -548,8 +549,8 @@ let default_mapper =
 
 
     open_description =
-      (fun this {popen_lid; popen_override; popen_attributes; popen_loc} ->
-         Opn.mk (map_loc this popen_lid)
+      (fun this {popen_seq; popen_override; popen_attributes; popen_loc} ->
+         Opn.mk (List.map (fun (lid,attrs) -> (map_loc this lid, attrs) ) popen_seq )
            ~override:popen_override
            ~loc:(this.location this popen_loc)
            ~attrs:(this.attributes this popen_attributes)

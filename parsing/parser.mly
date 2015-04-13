@@ -420,7 +420,6 @@ let class_of_let_bindings lbs body =
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "extension")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
-
 (* Alternatively, we could keep the generic module type in the Parsetree
    and extract the package type during type-checking. In that case,
    the assertions below should be turned into explicit checks. *)
@@ -459,6 +458,8 @@ let package_type_of_module_type pmty =
         "only module type identifier and 'with type' constraints are supported"
 
 
+let mks_local_open ?(attr=[]) lid expr =
+  mkexp @@ Pexp_open(Fresh, [lid, attr ], expr )
 %}
 
 /* Tokens */
@@ -961,11 +962,16 @@ signature_item:
         mksig(Psig_attribute $1) }
 ;
 open_statement:
-  | OPEN override_flag ext_attributes mod_longident post_item_attributes
-      { let (ext, attrs) = $3 in
-        Opn.mk (mkrhs $4 4) ~override:$2 ~attrs:(attrs@$5)
-          ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
-      , ext}
+  | OPEN override_flag ext_attributes open_sequence post_item_attributes
+      {  let (ext,attrs) = $3 in
+         Opn.mk (List.rev $4) ~override:$2 ~attrs:(attrs@$5)
+         ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
+         , ext
+      }
+;
+open_sequence:
+  | mod_longident attributes {[mkrhs $1 1, $2]}
+  | open_sequence AND mod_longident attributes { (mkrhs $3 3, $4)::$1 }
 ;
 sig_include_statement:
     INCLUDE ext_attributes module_type post_item_attributes %prec below_WITH
@@ -1354,8 +1360,8 @@ expr:
       { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
-  | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
-      { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
+  | LET OPEN override_flag ext_attributes open_sequence IN seq_expr
+      { mkexp_attrs (Pexp_open($3, List.rev $5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
       { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
@@ -1482,10 +1488,10 @@ simple_expr:
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
+      { mks_local_open (mkrhs $1 1) $4 }
   | mod_longident DOT LPAREN RPAREN
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
+      { mks_local_open (mkrhs $1 1) @@
+	  mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1509,7 +1515,7 @@ simple_expr:
   | mod_longident DOT LBRACE record_expr RBRACE
       { let (exten, fields) = $4 in
         let rec_exp = mkexp(Pexp_record(fields, exten)) in
-        mkexp(Pexp_open(Fresh, mkrhs $1 1, rec_exp)) }
+        mks_local_open (mkrhs $1 1) rec_exp }
   | mod_longident DOT LBRACE record_expr error
       { unclosed "{" 3 "}" 5 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
@@ -1519,9 +1525,9 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp (Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+      { mks_local_open (mkrhs $1 1) @@ mkexp(Pexp_array(List.rev $4)) }
   | mod_longident DOT LBRACKETBAR BARRBRACKET
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array []))) }
+      { mks_local_open (mkrhs $1 1) @@ mkexp(Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 3 "|]" 6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
@@ -1530,10 +1536,10 @@ simple_expr:
       { unclosed "[" 1 "]" 4 }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
-        mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
+        mks_local_open (mkrhs $1 1) list_exp }
   | mod_longident DOT LBRACKET RBRACKET
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
+      { mks_local_open (mkrhs $1 1) @@
+        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
@@ -1549,9 +1555,9 @@ simple_expr:
   | LBRACELESS GREATERRBRACE
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+      { mks_local_open (mkrhs $1 1) @@ mkexp (Pexp_override $4) }
   | mod_longident DOT LBRACELESS GREATERRBRACE
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
+      { mks_local_open (mkrhs $1 1) @@ mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
@@ -1568,7 +1574,7 @@ simple_expr:
       { unclosed "(" 1 ")" 6 }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
-      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+      { mkexp(Pexp_open(Fresh, [mkrhs $1 1, [] ],
         mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $6),
                                 ghtyp (Ptyp_package $8)))
                     $5 )) }

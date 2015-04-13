@@ -77,8 +77,8 @@ let iterator =
     | Pexp_construct (id, _)
     | Pexp_field (_, id)
     | Pexp_setfield (_, id, _)
-    | Pexp_new id
-    | Pexp_open (_, id, _) -> simple_longident id
+    | Pexp_new id -> simple_longident id
+    | Pexp_open (_, seq, _) -> List.iter (fun (id,_attrs) -> simple_longident id) seq
     | Pexp_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()
@@ -105,7 +105,7 @@ let iterator =
   in
   let open_description self opn =
     super.open_description self opn;
-    simple_longident opn.popen_lid
+    List.iter (fun (lid,_attrs) -> simple_longident lid) opn.popen_seq
   in
   let with_constraint self wc =
     super.with_constraint self wc;

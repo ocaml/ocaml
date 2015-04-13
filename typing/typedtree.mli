@@ -115,6 +115,7 @@ and expression =
     exp_attributes: attributes;
    }
 
+and open_seq = ( Path.t * Longident.t loc * attributes ) list
 and exp_extra =
   | Texp_constraint of core_type
         (** E : T *)
@@ -122,8 +123,8 @@ and exp_extra =
         (** E :> T           [Texp_coerce (None, T)]
             E : T0 :> T      [Texp_coerce (Some T0, T)]
          *)
-  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
-        (** let open[!] M in    [Texp_open (!, P, M, env)]
+  | Texp_open of override_flag * open_seq * Env.t
+        (** let open[!] M [and N and ..] in    [Texp_open (!, [M;N;..], env)]
                                 where [env] is the environment after opening [P]
          *)
   | Texp_poly of core_type option
@@ -427,8 +428,7 @@ and module_type_declaration =
 
 and open_description =
     {
-     open_path: Path.t;
-     open_txt: Longident.t loc;
+     open_seq: open_seq;
      open_override: override_flag;
      open_loc: Location.t;
      open_attributes: attribute list;

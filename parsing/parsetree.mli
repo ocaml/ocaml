@@ -338,9 +338,9 @@ and expression_desc =
 
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
-  | Pexp_open of override_flag * Longident.t loc * expression
-        (* let open M in E
-           let! open M in E
+  | Pexp_open of override_flag * open_sequence * expression
+        (* let open M [and N] in E
+           let! open M [and N] in E
         *)
   | Pexp_extension of extension
         (* [%id] *)
@@ -689,7 +689,7 @@ and signature_item_desc =
         (* module type S = MT
            module type S *)
   | Psig_open of open_description
-        (* open X *)
+        (* open X and Y .. *)
   | Psig_include of include_description
         (* include MT *)
   | Psig_class of class_description list
@@ -720,17 +720,18 @@ and module_type_declaration =
 (* S = MT
    S       (abstract module type declaration, pmtd_type = None)
 *)
-
+and open_sequence  = (Longident.t loc *attributes) list
+(* sequence of identifier open A and B and ... *)
 and open_description =
     {
-     popen_lid: Longident.t loc;
+     popen_seq: open_sequence;
      popen_override: override_flag;
      popen_loc: Location.t;
      popen_attributes: attributes;
     }
-(* open! X - popen_override = Override (silences the 'used identifier
+(* open! X [and Y..] - popen_override = Override (silences the 'used identifier
                               shadowing' warning)
-   open  X - popen_override = Fresh
+   open  X [and Y].. - popen_override = Fresh
  *)
 
 and 'a include_infos =
@@ -816,7 +817,7 @@ and structure_item_desc =
   | Pstr_modtype of module_type_declaration
         (* module type S = MT *)
   | Pstr_open of open_description
-        (* open X *)
+        (* open X and Y and ... *)
   | Pstr_class of class_declaration list
         (* class c1 = ... and ... and cn = ... *)
   | Pstr_class_type of class_type_declaration list
