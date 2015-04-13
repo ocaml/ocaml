@@ -210,7 +210,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   value env;
   intnat extra_args;
   struct caml_exception_context * initial_external_raise;
-  int initial_sp_offset;
+  int initial_stack_words;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
   struct caml_exception_context exception_ctx = { &raise_buf, caml_local_roots };
@@ -238,7 +238,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
-  initial_sp_offset = (char *) caml_stack_high - (char *) caml_extern_sp;
+  initial_stack_words = caml_stack_high - caml_extern_sp;
   initial_external_raise = caml_external_raise;
   caml_callback_depth++;
   saved_pc = NULL;
@@ -865,10 +865,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
       if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
-      if (caml_trap_sp_off >= -initial_sp_offset) {
+      if (caml_trap_sp_off >= -initial_stack_words) {
         caml_external_raise = initial_external_raise;
-        caml_extern_sp = (value *) ((char *) caml_stack_high
-                                    - initial_sp_offset);
+        caml_extern_sp = caml_stack_high - initial_stack_words;
         caml_callback_depth--;
         return Make_exception_result(accu);
       }
