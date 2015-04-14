@@ -433,18 +433,17 @@ CAMLprim value caml_gt_float(value f, value g)
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
+CAMLprim value caml_float_compare_float(double f, double g)
+{
+  /* If one or both of f and g is NaN, order according to the convention
+     NaN = NaN and NaN < x for all other floats x. */
+  /* [f == f] if and only if f is not NaN */
+  return Val_int((f > g) - (f < g) + (f == f) - (g == g));
+}
+
 CAMLprim value caml_float_compare(value vf, value vg)
 {
-  double f = Double_val(vf);
-  double g = Double_val(vg);
-  if (f == g) return Val_int(0);
-  if (f < g) return Val_int(-1);
-  if (f > g) return Val_int(1);
-  /* One or both of f and g is NaN.  Order according to the
-     convention NaN = NaN and NaN < x for all other floats x. */
-  if (f == f) return Val_int(1);  /* f is not NaN, g is NaN */
-  if (g == g) return Val_int(-1); /* g is not NaN, f is NaN */
-  return Val_int(0);              /* both f and g are NaN */
+  return caml_float_compare_float(Double_val(vf), Double_val(vg));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };

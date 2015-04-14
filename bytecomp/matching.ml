@@ -1478,7 +1478,7 @@ let prim_obj_tag =
   {prim_name = "caml_obj_tag";
    prim_arity = 1; prim_alloc = false;
    prim_native_name = "";
-   prim_native_float = false}
+   prim_native_float = `No}
 
 let get_mod_field modname field =
   lazy (
@@ -1709,12 +1709,12 @@ let strings_test_threshold = 8
 let prim_string_notequal =
   Pccall{prim_name = "caml_string_notequal";
          prim_arity = 2; prim_alloc = false;
-         prim_native_name = ""; prim_native_float = false}
+         prim_native_name = ""; prim_native_float = `No}
 
 let prim_string_compare =
   Pccall{prim_name = "caml_string_compare";
          prim_arity = 2; prim_alloc = false;
-         prim_native_name = ""; prim_native_float = false}
+         prim_native_name = ""; prim_native_float = `No}
 
 let bind_sw arg k = match arg with
 | Lvar _ -> k arg

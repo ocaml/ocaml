@@ -1020,7 +1020,7 @@ let check_bound unsafe dbg a1 a2 k =
 
 let default_prim name =
   { prim_name = name; prim_arity = 0 (*ignored*);
-    prim_alloc = true; prim_native_name = ""; prim_native_float = false }
+    prim_alloc = true; prim_native_name = ""; prim_native_float = `No }
 
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
@@ -1199,7 +1199,11 @@ let rec is_unboxed_number = function
       Boxed_float
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
-          Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
+          Pccall p ->
+            begin match p.prim_native_float with
+              `No | `Only_input -> No_unboxing
+            | `Yes -> Boxed_float
+            end
         | Pfloatfield _ -> Boxed_float
         | Pfloatofint -> Boxed_float
         | Pnegfloat -> Boxed_float
@@ -1379,14 +1383,20 @@ let rec transl = function
       | (Pmakeblock(tag, mut), args) ->
           make_alloc tag (List.map transl args)
       | (Pccall prim, args) ->
-          if prim.prim_native_float then
-            box_float
-              (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
+          begin match prim.prim_native_float with
+            `No ->
+              Cop(Cextcall(Primitive.native_name prim, typ_addr,
+                           prim.prim_alloc, dbg),
+                  List.map transl args)
+          | `Yes ->
+              box_float
+                (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
+                     List.map transl_unbox_float args))
+          | `Only_input ->
+              (Cop(Cextcall(prim.prim_native_name, typ_addr, prim.prim_alloc,
+                            dbg),
                    List.map transl_unbox_float args))
-          else
-            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc,
-                         dbg),
-                List.map transl args)
+          end
       | (Pmakearray kind, []) ->
           transl_structured_constant (Uconst_block(0, []))
       | (Pmakearray kind, args) ->
