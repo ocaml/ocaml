@@ -741,7 +741,7 @@ alldepend:: depend
 
 distclean:
 	$(MAKE) clean
-        rm -f asmrun/.depend.nt byterun/.depend.nt
+	rm -f asmrun/.depend.nt byterun/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h
