@@ -199,10 +199,10 @@ static void stack_free(struct intern_stack* s) {
 
 static void stack_realloc(struct intern_stack* s, value save) {
   CAMLparam1(save);
-  /* reallocate stack */
-  caml_gc_log("stack realloc");
   int i;
   int new_len = s->len * 2;
+  /* reallocate stack */
+  caml_gc_log("Reallocating intern stack to size %d", new_len);
   if (new_len >= INTERN_STACK_MAX_SIZE) {
     caml_gc_log ("Stack overflow in un-marshaling value");
     stack_free(s);
@@ -216,6 +216,13 @@ static void stack_realloc(struct intern_stack* s, value save) {
     STACK_FIELD(new_vals, i) = STACK_FIELD(s->curr_vals, i);
     STACK_OP(new_vals, i) = STACK_OP(s->curr_vals, i);
     STACK_ARG(new_vals, i) = STACK_ARG(s->curr_vals, i);
+  }
+
+  for (; i < new_len; i++) {
+    STACK_VAL(new_vals, i) = Val_unit;
+    STACK_FIELD(new_vals, i) = Val_unit;
+    STACK_OP(new_vals, i) = Val_unit;
+    STACK_ARG(new_vals, i) = Val_unit;
   }
 
   if (s->curr_vals != s->first_vals) caml_stat_free(s->curr_vals);
