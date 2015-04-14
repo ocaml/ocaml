@@ -28,8 +28,12 @@
 
 #ifdef _MSC_VER
 #include <float.h>
+#ifndef isnan
 #define isnan _isnan
+#endif
+#ifndef isfinite
 #define isfinite _finite
+#endif
 #endif
 
 #ifdef ARCH_ALIGN_DOUBLE
