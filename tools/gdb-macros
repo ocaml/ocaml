@@ -38,7 +38,11 @@ define camlcheckheader
     if ($arg0 & $caml_unalloc_mask) == $caml_unalloc_value
       set $camlcheckheader_result = 2
     else
-      set $camlcheckheader_result = 1
+      if $arg0 == (unsigned long) 0
+        set $camlcheckheader_result = 3
+      else
+        set $camlcheckheader_result = 1
+      end
     end
   else
     set $camlcheckheader_result = 0
@@ -56,7 +60,11 @@ define camlheader
     if $camlcheckheader_result == 2
       printf "[UNALLOCATED MEMORY]"
     else
-      printf "[**invalid header**]"
+      if $camlcheckheader_result == 3
+        printf "[** fragment **] 0x%016lu", $hd
+      else
+        printf "[**invalid header**] 0x%016lu", $hd
+      end
     end
     set $size = 0
   else
@@ -115,6 +123,7 @@ end
 define camlheap
   if $arg0 >= caml_young_start && $arg0 < caml_young_end
     printf "YOUNG"
+    set $camlheap_result = 1
   else
     set $chunk = caml_heap_start
     set $found = 0
@@ -126,8 +135,11 @@ define camlheap
       end
       set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
     end
-    if ! $found
+    if $found
+      set $camlheap_result = 1
+    else
       printf "OUT-OF-HEAP"
+      set $camlheap_result = 0
     end
   end
 end
@@ -149,6 +161,7 @@ define camlblock
   printf " "
   camlheader $arg0
   set $mysize = $size
+  set $camlnext = $arg0 + $camlwordsize * ($size + 1)
   printf "\n"
   
   if $tag == 252
@@ -187,8 +200,8 @@ define camlblock
       printf "%#lx: [%d] 0x%016lx ", $adr, $count, $field
       if ($field & 7) == 0 && $isvalues
         camlheap $field
-        printf " "
-        if $field != 0
+        if $camlheap_result
+          printf " "
           camlheader $field
         end
       end
@@ -204,9 +217,11 @@ define camlblock
   end    
 end
 
+# displays an OCaml value
 define caml
   set $caml_argument = (long) $arg0
   if ($caml_argument & 1) == 1
+    set $camlnext = 0
     camlint $caml_argument
     printf "\n"
   end
@@ -214,6 +229,22 @@ define caml
     camlblock $caml_argument
   end
   if ($caml_argument & 7) != 0 && ($caml_argument & 1) != 1
+    set $camlnext = 0
     printf "invalid pointer: %#016lx\n", $caml_argument
+  end
+end
+
+# displays the next OCaml value in memory
+define camlnext
+  caml $camlnext
+end
+
+# displays the list of heap chunks
+define camlchunks
+  set $chunk = caml_heap_start
+  while $chunk != 0
+    set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
+    printf "chunk: addr = %-#16x   size = %d\n", $chunk, $chunk_size
+    set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
   end
 end
