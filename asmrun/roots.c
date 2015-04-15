@@ -57,7 +57,7 @@ static link *cons(void *data, link *tl) {
 static link *frametables = NULL;
 static intnat num_descr = 0;
 
-static int count_desciptors(link *list) {
+static int count_descriptors(link *list) {
   intnat num_descr = 0;
   link *lnk;
   iter_list(list,lnk) {
@@ -115,7 +115,7 @@ static void init_frame_descriptors(link *new_frametables)
   Assert(new_frametables);
 
   tail = frametables_list_tail(new_frametables);
-  increase = count_desciptors(new_frametables);
+  increase = count_descriptors(new_frametables);
   tblsize = caml_frame_descriptors_mask + 1;
 
   /* Reallocate the caml_frame_descriptor table if it is too small */
@@ -127,7 +127,7 @@ static void init_frame_descriptors(link *new_frametables)
 
     /* [num_descr] can be less than [num_descr + increase] if frame
        tables where unregistered */
-    num_descr = count_desciptors(new_frametables);
+    num_descr = count_descriptors(new_frametables);
 
     tblsize = 4;
     while (tblsize < 2 * num_descr) tblsize *= 2;
