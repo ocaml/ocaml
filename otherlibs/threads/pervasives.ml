@@ -41,6 +41,8 @@ exception Exit
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
+let flip f x y = f y x
+
 (* Debugging *)
 
 external __LOC__ : string = "%loc_LOC"

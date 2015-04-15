@@ -195,6 +195,11 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
    @since 4.01
 *)
 
+val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
+(** [flip f] takes its (first) two arguments in the reverse order of [f].
+
+    @since 4.03.0 *)
+
 (** {6 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
