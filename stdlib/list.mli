@@ -35,6 +35,11 @@ val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
    [Failure "tl"] if the list is empty. *)
 
+val cons : 'a -> 'a list -> 'a list
+(** [cons hd tl] is [hd :: tl].
+
+    @since 4.03.0 *)
+
 val nth : 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
