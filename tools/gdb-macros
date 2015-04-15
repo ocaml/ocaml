@@ -219,18 +219,18 @@ end
 
 # displays an OCaml value
 define caml
-  set $caml_argument = (long) $arg0
-  if ($caml_argument & 1) == 1
+  set $camllast = (long) $arg0
+  if ($camllast & 1) == 1
     set $camlnext = 0
-    camlint $caml_argument
+    camlint $camllast
     printf "\n"
   end
-  if ($caml_argument & 7) == 0
-    camlblock $caml_argument
+  if ($camllast & 7) == 0
+    camlblock $camllast
   end
-  if ($caml_argument & 7) != 0 && ($caml_argument & 1) != 1
+  if ($camllast & 7) != 0 && ($camllast & 1) != 1
     set $camlnext = 0
-    printf "invalid pointer: %#016lx\n", $caml_argument
+    printf "invalid pointer: %#016lx\n", $camllast
   end
 end
 
@@ -239,12 +239,20 @@ define camlnext
   caml $camlnext
 end
 
+# displays the n-th field of the previously displayed value
+define camlfield
+  set $camlfield_addr = ((long *) $camllast)[$arg0]
+  caml $camlfield_addr
+end
+
 # displays the list of heap chunks
 define camlchunks
   set $chunk = caml_heap_start
   while $chunk != 0
     set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
-    printf "chunk: addr = %-#16x   size = %d\n", $chunk, $chunk_size
+    set $chunk_alloc = * (unsigned long *) ($chunk - 3 * $camlwordsize)
+    printf "chunk: addr = %#x .. %#x", $chunk, $chunk + $chunk_size
+    printf "  (size = %#x; alloc = %#x)\n", $chunk_size, $chunk_alloc
     set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
   end
 end
