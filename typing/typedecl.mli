@@ -56,6 +56,8 @@ val compute_variance_decls:
     (Types.type_declaration * Types.type_declaration *
      Types.class_declaration * Types.class_type_declaration) list
 
+type native_repr_kind = Unboxed | Untagged
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -83,6 +85,9 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
+  | Invalid_native_repr_attribute_payload of native_repr_kind
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
 
 exception Error of Location.t * error
 

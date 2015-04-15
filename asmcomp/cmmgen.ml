@@ -1061,8 +1061,7 @@ let check_bound unsafe dbg a1 a2 k =
 (* Simplification of some primitives into C calls *)
 
 let default_prim name =
-  { prim_name = name; prim_arity = 0 (*ignored*);
-    prim_alloc = true; prim_native_name = ""; prim_native_float = false }
+  Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
 
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
@@ -1237,6 +1236,12 @@ type unboxed_number_kind =
   | Boxed_integer of boxed_integer
   | No_result (* expression never returns a result *)
 
+let unboxed_number_kind_of_unbox = function
+  | Same_as_ocaml_repr -> No_unboxing
+  | Unboxed_float -> Boxed_float
+  | Unboxed_integer bi -> Boxed_integer bi
+  | Untagged_int -> No_unboxing
+
 let rec is_unboxed_number e =
   (* Given unboxed_number_kind from two branches of the code, returns the
      resulting unboxed_number_kind *)
@@ -1244,17 +1249,20 @@ let rec is_unboxed_number e =
     match k1, is_unboxed_number e with
     | Boxed_float, Boxed_float -> Boxed_float
     | Boxed_integer bi1, Boxed_integer bi2 when bi1 = bi2 -> k1
-    | No_result, k | k, No_result -> k (* if a branch never returns, it is safe to unbox it *)
+    | No_result, k | k, No_result ->
+        k (* if a branch never returns, it is safe to unbox it *)
     | _, _ -> No_unboxing
   in
   match e with
   | Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
   | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
-  | Uconst(Uconst_ref(_, Uconst_int64 _)) when size_int = 8 -> Boxed_integer Pint64
-  | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) when size_int = 8 ->
+      Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_nativeint _)) ->
+      Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
-        | Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
+        | Pccall p -> unboxed_number_kind_of_unbox p.prim_native_repr_res
         | Pfloatfield _ -> Boxed_float
         | Pfloatofint -> Boxed_float
         | Pnegfloat -> Boxed_float
@@ -1434,14 +1442,7 @@ let rec transl = function
       | (Pmakeblock(tag, mut), args) ->
           make_alloc tag (List.map transl args)
       | (Pccall prim, args) ->
-          if prim.prim_native_float then
-            box_float
-              (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
-                   List.map transl_unbox_float args))
-          else
-            Cop(Cextcall(Primitive.native_name prim, typ_val, prim.prim_alloc,
-                         dbg),
-                List.map transl args)
+          transl_ccall prim args dbg
       | (Pmakearray kind, []) ->
           transl_structured_constant (Uconst_block(0, []))
       | (Pmakearray kind, args) ->
@@ -1595,6 +1596,37 @@ let rec transl = function
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
+
+and transl_ccall prim args dbg =
+  let transl_arg native_repr arg =
+    match native_repr with
+    | Same_as_ocaml_repr -> transl arg
+    | Unboxed_float -> transl_unbox_float arg
+    | Unboxed_integer bi -> transl_unbox_int bi arg
+    | Untagged_int -> untag_int (transl arg)
+  in
+  let rec transl_args native_repr_args args =
+    match native_repr_args, args with
+    | [], args ->
+        (* We don't require the two lists to be of the same length as
+           [default_prim] always sets the arity to [0]. *)
+        List.map transl args
+    | _, [] -> assert false
+    | native_repr :: native_repr_args, arg :: args ->
+        transl_arg native_repr arg :: transl_args native_repr_args args
+  in
+  let typ_res, wrap_result =
+    match prim.prim_native_repr_res with
+    | Same_as_ocaml_repr -> (typ_val, fun x -> x)
+    | Unboxed_float -> (typ_float, box_float)
+    | Unboxed_integer Pint64 when size_int = 4 -> ([|Int; Int|], box_int Pint64)
+    | Unboxed_integer bi -> (typ_int, box_int bi)
+    | Untagged_int -> (typ_int, tag_int)
+  in
+  let args = transl_args prim.prim_native_repr_args args in
+  wrap_result
+    (Cop(Cextcall(Primitive.native_name prim,
+                  typ_res, prim.prim_alloc, dbg), args))
 
 and transl_prim_1 p arg dbg =
   match p with
