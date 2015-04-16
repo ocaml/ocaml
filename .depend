@@ -139,7 +139,8 @@ typing/typecore.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi typing/annot.cmi
 typing/typedecl.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
-    typing/includecore.cmi typing/ident.cmi typing/env.cmi
+    typing/includecore.cmi typing/ident.cmi typing/env.cmi \
+    parsing/asttypes.cmi
 typing/typedtree.cmi : typing/types.cmi typing/primitive.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi typing/env.cmi parsing/asttypes.cmi
@@ -405,11 +406,11 @@ typing/typetexp.cmx : utils/warnings.cmx typing/types.cmx \
     parsing/ast_helper.cmx typing/typetexp.cmi
 typing/untypeast.cmo : typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \
-    parsing/location.cmi typing/ident.cmi parsing/asttypes.cmi \
+    parsing/location.cmi typing/ident.cmi typing/env.cmi parsing/asttypes.cmi \
     parsing/ast_helper.cmi typing/untypeast.cmi
 typing/untypeast.cmx : typing/typedtree.cmx typing/path.cmx \
     parsing/parsetree.cmi utils/misc.cmx parsing/longident.cmx \
-    parsing/location.cmx typing/ident.cmx parsing/asttypes.cmi \
+    parsing/location.cmx typing/ident.cmx typing/env.cmx parsing/asttypes.cmi \
     parsing/ast_helper.cmx typing/untypeast.cmi
 bytecomp/bytegen.cmi : bytecomp/lambda.cmi bytecomp/instruct.cmi
 bytecomp/bytelibrarian.cmi :
@@ -799,15 +800,15 @@ asmcomp/clambda.cmo : bytecomp/lambda.cmi typing/ident.cmi \
 asmcomp/clambda.cmx : bytecomp/lambda.cmx typing/ident.cmx \
     bytecomp/debuginfo.cmx parsing/asttypes.cmi asmcomp/clambda.cmi
 asmcomp/clambdagen.cmo : asmcomp/symbol.cmi bytecomp/switch.cmi \
-    utils/misc.cmi bytecomp/lambda.cmi typing/ident.cmi \
-    asmcomp/flambdautils.cmi asmcomp/flambdaiter.cmi \
+    utils/sort_connected_components.cmi utils/misc.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi asmcomp/flambdautils.cmi asmcomp/flambdaiter.cmi \
     asmcomp/flambdaexport.cmi asmcomp/flambda.cmi utils/ext_types.cmi \
     bytecomp/debuginfo.cmi asmcomp/compilenv.cmi asmcomp/clambda.cmi \
     parsing/asttypes.cmi asmcomp/abstract_identifiers.cmi \
     asmcomp/clambdagen.cmi
 asmcomp/clambdagen.cmx : asmcomp/symbol.cmx bytecomp/switch.cmx \
-    utils/misc.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    asmcomp/flambdautils.cmx asmcomp/flambdaiter.cmx \
+    utils/sort_connected_components.cmx utils/misc.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx asmcomp/flambdautils.cmx asmcomp/flambdaiter.cmx \
     asmcomp/flambdaexport.cmx asmcomp/flambda.cmi utils/ext_types.cmx \
     bytecomp/debuginfo.cmx asmcomp/compilenv.cmx asmcomp/clambda.cmx \
     parsing/asttypes.cmi asmcomp/abstract_identifiers.cmx \
@@ -891,12 +892,14 @@ asmcomp/flambda_inline_result.cmx : utils/misc.cmx asmcomp/flambdacost.cmx \
     asmcomp/flambdaapprox.cmx utils/ext_types.cmx utils/clflags.cmx \
     asmcomp/abstract_identifiers.cmx asmcomp/flambda_inline_result.cmi
 asmcomp/flambda_inlining_decision.cmo : asmcomp/flambdautils.cmi \
-    asmcomp/flambdacost.cmi asmcomp/flambdaapprox.cmi \
+    asmcomp/flambdasimplify.cmi asmcomp/flambdacost.cmi \
+    asmcomp/flambdaapprox.cmi asmcomp/flambda_inlining_stats_types.cmi \
     asmcomp/flambda_inlining_stats.cmi asmcomp/flambda_inline_result.cmi \
     asmcomp/flambda_inline_env.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi asmcomp/flambda_inlining_decision.cmi
 asmcomp/flambda_inlining_decision.cmx : asmcomp/flambdautils.cmx \
-    asmcomp/flambdacost.cmx asmcomp/flambdaapprox.cmx \
+    asmcomp/flambdasimplify.cmx asmcomp/flambdacost.cmx \
+    asmcomp/flambdaapprox.cmx asmcomp/flambda_inlining_stats_types.cmx \
     asmcomp/flambda_inlining_stats.cmx asmcomp/flambda_inline_result.cmx \
     asmcomp/flambda_inline_env.cmx asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmx asmcomp/flambda_inlining_decision.cmi
@@ -1021,13 +1024,15 @@ asmcomp/flambdamovelets.cmx : asmcomp/printflambda.cmx \
 asmcomp/flambdasimplify.cmo : bytecomp/lambda.cmi asmcomp/flambdautils.cmi \
     asmcomp/flambdaiter.cmi asmcomp/flambdaeffects.cmi \
     asmcomp/flambdacost.cmi asmcomp/flambdaapprox.cmi asmcomp/flambda.cmi \
-    utils/clflags.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
-    asmcomp/abstract_identifiers.cmi asmcomp/flambdasimplify.cmi
+    asmcomp/compilenv.cmi utils/clflags.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/abstract_identifiers.cmi \
+    asmcomp/flambdasimplify.cmi
 asmcomp/flambdasimplify.cmx : bytecomp/lambda.cmx asmcomp/flambdautils.cmx \
     asmcomp/flambdaiter.cmx asmcomp/flambdaeffects.cmx \
     asmcomp/flambdacost.cmx asmcomp/flambdaapprox.cmx asmcomp/flambda.cmi \
-    utils/clflags.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
-    asmcomp/abstract_identifiers.cmx asmcomp/flambdasimplify.cmi
+    asmcomp/compilenv.cmx utils/clflags.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/abstract_identifiers.cmx \
+    asmcomp/flambdasimplify.cmi
 asmcomp/flambdasubst.cmo : asmcomp/symbol.cmi utils/misc.cmi \
     asmcomp/flambdaiter.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi asmcomp/flambdasubst.cmi
@@ -1240,18 +1245,18 @@ driver/optcompile.cmo : utils/warnings.cmi typing/typemod.cmi \
     typing/typedtree.cmi typing/typecore.cmi bytecomp/translmod.cmi \
     typing/stypes.cmi bytecomp/simplif.cmi typing/printtyped.cmi \
     typing/printtyp.cmi bytecomp/printlambda.cmi parsing/printast.cmi \
-    parsing/pprintast.cmi driver/pparse.cmi utils/misc.cmi \
-    typing/includemod.cmi typing/env.cmi utils/config.cmi driver/compmisc.cmi \
-    asmcomp/compilenv.cmi driver/compenv.cmi utils/clflags.cmi \
-    utils/ccomp.cmi asmcomp/asmgen.cmi driver/optcompile.cmi
+    parsing/pprintast.cmi driver/pparse.cmi typing/includemod.cmi \
+    typing/env.cmi utils/config.cmi driver/compmisc.cmi asmcomp/compilenv.cmi \
+    driver/compenv.cmi utils/clflags.cmi utils/ccomp.cmi asmcomp/asmgen.cmi \
+    driver/optcompile.cmi
 driver/optcompile.cmx : utils/warnings.cmx typing/typemod.cmx \
     typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
     typing/stypes.cmx bytecomp/simplif.cmx typing/printtyped.cmx \
     typing/printtyp.cmx bytecomp/printlambda.cmx parsing/printast.cmx \
-    parsing/pprintast.cmx driver/pparse.cmx utils/misc.cmx \
-    typing/includemod.cmx typing/env.cmx utils/config.cmx driver/compmisc.cmx \
-    asmcomp/compilenv.cmx driver/compenv.cmx utils/clflags.cmx \
-    utils/ccomp.cmx asmcomp/asmgen.cmx driver/optcompile.cmi
+    parsing/pprintast.cmx driver/pparse.cmx typing/includemod.cmx \
+    typing/env.cmx utils/config.cmx driver/compmisc.cmx asmcomp/compilenv.cmx \
+    driver/compenv.cmx utils/clflags.cmx utils/ccomp.cmx asmcomp/asmgen.cmx \
+    driver/optcompile.cmi
 driver/opterrors.cmo : parsing/location.cmi driver/opterrors.cmi
 driver/opterrors.cmx : parsing/location.cmx driver/opterrors.cmi
 driver/optmain.cmo : utils/warnings.cmi asmcomp/printmach.cmi \
