@@ -508,3 +508,53 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
     decls.funs Variable.Set.empty
   in
   Variable.Set.diff variables not_unchanging
+
+type argument =
+  | Used
+  | Argument of Variable.t
+
+let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t =
+  let used_variables = ref Variable.Set.empty in
+  let used_variable var =
+    used_variables := Variable.Set.add var !used_variables
+  in
+  let variables_at_position =
+    Variable.Map.fold (fun var (decl : _ Flambda.function_declaration) map ->
+        let cid = Closure_id.wrap var in
+        Closure_id.Map.add cid (Array.of_list decl.params) map)
+      decls.funs Closure_id.Map.empty
+  in
+  let find_callee_arg ~callee ~callee_pos =
+    match Closure_id.Map.find callee variables_at_position with
+    | exception Not_found -> Used (* not a recursive call *)
+    | arr ->
+        assert(callee_pos < Array.length arr);
+        (* Direct calls don't have overapplication *)
+        Argument arr.(callee_pos)
+  in
+  let rec loop (expr : _ Flambda.t) =
+    match expr with
+    | Fvar (var,_) -> used_variable var
+    | Fapply ({ ap_arg; ap_kind = Direct callee }, _) ->
+        List.iteri (fun callee_pos arg ->
+            match arg with
+            | Flambda.Fvar (var, _) -> begin
+                match find_callee_arg ~callee ~callee_pos with
+                | Used -> used_variable var
+                | Argument param ->
+                    if not (Variable.equal var param) then
+                      used_variable var
+              end
+            | _ -> loop arg)
+          ap_arg;
+    | e ->
+        Flambdaiter.apply_on_subexpressions loop e
+  in
+  Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
+      loop decl.body)
+    decls.funs;
+  let arguments = Variable.Map.fold (fun _ decl acc ->
+      Variable.Set.union acc (Variable.Set.of_list decl.Flambda.params))
+      decls.funs Variable.Set.empty
+  in
+  Variable.Set.diff arguments !used_variables

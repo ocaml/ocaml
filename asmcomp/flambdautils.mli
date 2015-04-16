@@ -106,3 +106,7 @@ val make_closure_declaration
 val unchanging_params_in_recursion
    : 'a Flambda.function_declarations
   -> Variable.Set.t
+
+val unused_arguments
+  : 'a Flambda.function_declarations
+  -> Variable.Set.t
