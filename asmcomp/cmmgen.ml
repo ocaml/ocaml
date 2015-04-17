@@ -2619,6 +2619,7 @@ let final_curry_function arity =
     fun_dbg  = Debuginfo.none }
 
 let rec intermediate_curry_functions arity num =
+  assert (arity > 0);
   if num = arity - 1 then
     [final_curry_function arity]
   else begin
@@ -2678,7 +2679,13 @@ let rec intermediate_curry_functions arity num =
 
 let curry_function arity =
   if arity >= 0
-  then intermediate_curry_functions arity 0
+  then if arity = 0
+    then
+      (* Calls to functions of arity 0 are direct calls *)
+      [Cdata([Cglobal_symbol "caml_curry0";
+              Cdefine_symbol "caml_curry0";
+              Cint 0n])]
+    else intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
 
