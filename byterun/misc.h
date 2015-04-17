@@ -198,7 +198,7 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 #define CAML_INSTR_START(t, msg) do{                                \
     if (t != NULL){                                                 \
       t->tag[0] = msg;                                              \
-      clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[0]));        \
+      clock_gettime (CLOCK_REALTIME, &(t->ts[0]));                  \
     }                                                               \
   }while(0)
 
@@ -215,27 +215,17 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
     if (t != NULL){                                                 \
       ++ t->index;                                                  \
       t->tag[t->index] = (msg);                                     \
-      clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &(t->ts[t->index])); \
+      clock_gettime (CLOCK_REALTIME, &(t->ts[t->index]));           \
     }                                                               \
   }while(0)
 
-/* Count an event occurrence with multiplicity. */
-#define CAML_INSTR_EVENT(msg, count) do{                            \
-    CAML_INSTR_DECLARE (__caml_tmp);                                \
-    CAML_INSTR_ALLOC (__caml_tmp);                                  \
-    if (__caml_tmp != NULL){                                        \
-      __caml_tmp->tag[0] = msg;                                     \
-      __caml_tmp->ts[0].tv_sec = 0;                                 \
-      __caml_tmp->ts[0].tv_nsec = (count);                          \
-    }                                                               \
-  }while(0)
-
-/* Record an integer data point. [msg] must start with # or % */
+/* Record an integer data point.
+   If [msg] ends with # it will be interpreted as an integer-valued event.
+   If it ends with @ it will be interpreted as an event counter.
+*/
 #define CAML_INSTR_INT(msg, data) do{                               \
-    CAML_INSTR_DECLARE (__caml_tmp);                                \
-    CAML_INSTR_ALLOC (__caml_tmp);                                  \
+    CAML_INSTR_SETUP (__caml_tmp, "");                              \
     if (__caml_tmp != NULL){                                        \
-      __caml_tmp->ts[0].tv_sec = __caml_tmp->ts[0].tv_nsec = 0;     \
       __caml_tmp->index = 1;                                        \
       __caml_tmp->tag[1] = msg;                                     \
       __caml_tmp->ts[1].tv_sec = 0;                                 \
@@ -259,7 +249,6 @@ extern void CAML_INSTR_ATEXIT (void);
 #define CAML_INSTR_START(t, name) /**/
 #define CAML_INSTR_SETUP(t, name) /**/
 #define CAML_INSTR_TIME(t, msg) /**/
-#define CAML_INSTR_EVENT(msg, count) /**/
 #define CAML_INSTR_INT(msg, c) /**/
 #define CAML_INSTR_INIT() /**/
 #define CAML_INSTR_ATEXIT() /**/

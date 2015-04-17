@@ -434,7 +434,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   Assert (Hd_hp (hp) == Make_header (wosize, tag, caml_allocation_color (hp)));
   caml_allocated_words += Whsize_wosize (wosize);
   if (caml_allocated_words > Wsize_bsize (caml_minor_heap_size)){
-    CAML_INSTR_EVENT ("urge_major/alloc_shr", 1);
+    CAML_INSTR_INT ("urge_major/alloc_shr@", 1);
     caml_urge_major_slice ();
   }
 #ifdef DEBUG
@@ -486,14 +486,14 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (res > max) res = max;
   caml_extra_heap_resources += (double) res / (double) max;
   if (caml_extra_heap_resources > 1.0){
-    CAML_INSTR_EVENT ("urge_major/adjust_gc_speed_1", 1);
+    CAML_INSTR_INT ("urge_major/adjust_gc_speed_1@", 1);
     caml_extra_heap_resources = 1.0;
     caml_urge_major_slice ();
   }
   if (caml_extra_heap_resources
            > (double) Wsize_bsize (caml_minor_heap_size) / 2.0
              / (double) Wsize_bsize (caml_stat_heap_size)) {
-    CAML_INSTR_EVENT ("urge_major/adjust_gc_speed_2", 1);
+    CAML_INSTR_INT ("urge_major/adjust_gc_speed_2@", 1);
     caml_urge_major_slice ();
   }
 }

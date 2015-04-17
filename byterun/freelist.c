@@ -152,25 +152,25 @@ static uintnat instr_size [20] =
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 static char *instr_name [20] = {
   NULL,
-  "alloc01",
-  "alloc02",
-  "alloc03",
-  "alloc04",
-  "alloc05",
-  "alloc06",
-  "alloc07",
-  "alloc08",
-  "alloc09",
-  "alloc10-19",
-  "alloc20-29",
-  "alloc30-39",
-  "alloc40-49",
-  "alloc50-59",
-  "alloc60-69",
-  "alloc70-79",
-  "alloc80-89",
-  "alloc90-99",
-  "alloc_large",
+  "alloc01@",
+  "alloc02@",
+  "alloc03@",
+  "alloc04@",
+  "alloc05@",
+  "alloc06@",
+  "alloc07@",
+  "alloc08@",
+  "alloc09@",
+  "alloc10-19@",
+  "alloc20-29@",
+  "alloc30-39@",
+  "alloc40-49@",
+  "alloc50-59@",
+  "alloc60-69@",
+  "alloc70-79@",
+  "alloc80-89@",
+  "alloc90-99@",
+  "alloc_large@",
 };
 #endif /*CAML_INSTR*/
 
@@ -379,7 +379,7 @@ void caml_fl_init_merge (void)
 #ifdef CAML_INSTR
   int i;
   for (i = 1; i < 20; i++){
-    CAML_INSTR_EVENT (instr_name[i], instr_size[i]);
+    CAML_INSTR_INT (instr_name[i], instr_size[i]);
     instr_size[i] = 0;
   }
 #endif /* CAML_INSTR */
