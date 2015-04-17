@@ -986,7 +986,13 @@ let debug_benefit =
   with _ -> false
 
 let inline ~never_inline tree =
-  let result, r = loop (E.empty ~never_inline) (R.create ()) tree in
+  let r =
+    if never_inline then
+      R.set_inline_threshold (R.create ()) Flambdacost.Never_inline
+    else
+      R.create ()
+  in
+  let result, r = loop (E.empty ~never_inline:false) r tree in
   if not (Variable.Set.is_empty (R.used_variables r))
   then begin
     Format.printf "remaining variables: %a@.%a@."
