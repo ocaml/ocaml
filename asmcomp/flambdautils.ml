@@ -535,7 +535,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
   let rec loop (expr : _ Flambda.t) =
     match expr with
     | Fvar (var,_) -> used_variable var
-    | Fapply ({ ap_arg; ap_kind = Direct callee }, _) ->
+    | Fapply ({ ap_function; ap_arg; ap_kind = Direct callee }, _) ->
         List.iteri (fun callee_pos arg ->
             match arg with
             | Flambda.Fvar (var, _) -> begin
@@ -547,6 +547,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
               end
             | _ -> loop arg)
           ap_arg;
+        loop ap_function
     | e ->
         Flambdaiter.apply_on_subexpressions loop e
   in
