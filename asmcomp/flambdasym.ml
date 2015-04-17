@@ -484,39 +484,39 @@ module Conv(P:Param1) = struct
         Fvariable_in_closure({vc_closure = ulam;vc_var = env_var;vc_fun = env_fun_id}, ()),
         approx
 
-    | Fapply({ap_function =
-                Fclosure ({fu_closure = Fset_of_closures ({ cl_fun = ffuns;
-                                                     cl_free_var = fv;
-                                                     cl_specialised_arg }, _);
-                            fu_fun = off;
-                            fu_relative_to = (None as rel)}, _);
-              ap_arg = args;
-              ap_kind = Direct direc;
-              ap_dbg = dbg}, _) ->
-        assert (Closure_id.equal off direc);
-        let uargs, args_approx = conv_list_approx env args in
-        let func =
-          try find_declaration off ffuns
-          with Not_found -> assert false in
-        assert(List.length uargs = List.length func.params);
-        let args_approx =
-          List.fold_right2 Variable.Map.add func.params args_approx Variable.Map.empty
-          |> Variable.Map.filter (fun var _ -> Variable.Map.mem var cl_specialised_arg) in
-        let uffuns, fun_approx = conv_closure env ffuns args_approx cl_specialised_arg fv in
-        let approx = match get_descr fun_approx with
-          | Some(Value_closure { fun_id; closure = { results } }) ->
-              Closure_id.Map.find fun_id results
-          | _ -> Value_unknown
-        in
+    (* | Fapply({ap_function = *)
+    (*             Fclosure ({fu_closure = Fset_of_closures ({ cl_fun = ffuns; *)
+    (*                                                  cl_free_var = fv; *)
+    (*                                                  cl_specialised_arg }, _); *)
+    (*                         fu_fun = off; *)
+    (*                         fu_relative_to = (None as rel)}, _); *)
+    (*           ap_arg = args; *)
+    (*           ap_kind = Direct direc; *)
+    (*           ap_dbg = dbg}, _) -> *)
+    (*     assert (Closure_id.equal off direc); *)
+    (*     let uargs, args_approx = conv_list_approx env args in *)
+    (*     let func = *)
+    (*       try find_declaration off ffuns *)
+    (*       with Not_found -> assert false in *)
+    (*     assert(List.length uargs = List.length func.params); *)
+    (*     let args_approx = *)
+    (*       List.fold_right2 Variable.Map.add func.params args_approx Variable.Map.empty *)
+    (*       |> Variable.Map.filter (fun var _ -> Variable.Map.mem var cl_specialised_arg) in *)
+    (*     let uffuns, fun_approx = conv_closure env ffuns args_approx cl_specialised_arg fv in *)
+    (*     let approx = match get_descr fun_approx with *)
+    (*       | Some(Value_closure { fun_id; closure = { results } }) -> *)
+    (*           Closure_id.Map.find fun_id results *)
+    (*       | _ -> Value_unknown *)
+    (*     in *)
 
-        Fapply({ap_function =
-                  Fclosure ({fu_closure = uffuns;
-                              fu_fun = off;
-                              fu_relative_to = rel}, ());
-                ap_arg = uargs;
-                ap_kind = Direct direc;
-                ap_dbg = dbg}, ()),
-        approx
+    (*     Fapply({ap_function = *)
+    (*               Fclosure ({fu_closure = uffuns; *)
+    (*                           fu_fun = off; *)
+    (*                           fu_relative_to = rel}, ()); *)
+    (*             ap_arg = uargs; *)
+    (*             ap_kind = Direct direc; *)
+    (*             ap_dbg = dbg}, ()), *)
+    (*     approx *)
 
     | Fapply({ap_function = funct; ap_arg = args; ap_kind = direct; ap_dbg = dbg}, _) ->
         let ufunct, fun_approx = conv_approx env funct in
