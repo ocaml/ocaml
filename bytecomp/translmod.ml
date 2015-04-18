@@ -93,9 +93,11 @@ let rec apply_coercion strict restr arg =
                   attr = default_function_attribute;
                   body = apply_coercion
                            Strict cc_res
-                           (Lapply(Lvar id,
-                                   [apply_coercion Alias cc_arg (Lvar param)],
-                                   no_apply_info))})
+                           (Lapply{ap_should_be_tailcall=false;
+                                   ap_loc=Location.none;
+                                   ap_func=Lvar id;
+                                   ap_args=[apply_coercion Alias cc_arg (Lvar param)];
+                                   ap_inlined=Default_inline})})
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
       transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
@@ -280,7 +282,11 @@ let eval_rec_bindings bindings cont =
       bind_inits rem
   | (id, Some(loc, shape), rhs) :: rem ->
       Llet(Strict, id,
-           Lapply(mod_prim "init_mod", [loc; shape], no_apply_info),
+           Lapply{ap_should_be_tailcall=false;
+                  ap_loc=Location.none;
+                  ap_func=mod_prim "init_mod";
+                  ap_args=[loc; shape];
+                  ap_inlined=Default_inline},
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -295,8 +301,11 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       patch_forwards rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs],
-                       no_apply_info),
+      Lsequence(Lapply{ap_should_be_tailcall=false;
+                       ap_loc=Location.none;
+                       ap_func=mod_prim "update_mod";
+                       ap_args=[shape; Lvar id; rhs];
+                       ap_inlined=Default_inline},
                 patch_forwards rem)
   in
     bind_inits bindings
@@ -368,8 +377,11 @@ let rec transl_module cc rootpath mexp =
   | Tmod_apply(funct, arg, ccarg) ->
       oo_wrap mexp.mod_env true
         (apply_coercion Strict cc)
-        (Lapply(transl_module Tcoerce_none None funct,
-                [transl_module ccarg None arg], mk_apply_info mexp.mod_loc))
+        (Lapply{ap_should_be_tailcall=false;
+                ap_loc=mexp.mod_loc;
+                ap_func=transl_module Tcoerce_none None funct;
+                ap_args=[transl_module ccarg None arg];
+                ap_inlined=Default_inline})
   | Tmod_constraint(arg, mty, _, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
@@ -833,16 +845,18 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
-  Lapply(Lprim(Pfield toploop_getvalue_pos,
-                 [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id, None)))],
-         no_apply_info)
+  Lapply{ap_should_be_tailcall=false;
+         ap_loc=Location.none;
+         ap_func=Lprim(Pfield toploop_getvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
+         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)))];
+         ap_inlined=Default_inline}
 
 let toploop_setvalue id lam =
-  Lapply(Lprim(Pfield toploop_setvalue_pos,
-                 [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id, None))); lam],
-         no_apply_info)
+  Lapply{ap_should_be_tailcall=false;
+         ap_loc=Location.none;
+         ap_func=Lprim(Pfield toploop_setvalue_pos, [Lprim(Pgetglobal toploop_ident, [])]);
+         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None))); lam];
+         ap_inlined=Default_inline}
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 

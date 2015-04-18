@@ -119,7 +119,13 @@ let split_default_wrapper fun_id kind params body attr =
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
-        let wrapper_body = Lapply (Lvar inner_id, args, no_apply_info) in
+        let wrapper_body =
+          Lapply {ap_should_be_tailcall=false;
+                  ap_loc=Location.none;
+                  ap_func=Lvar inner_id;
+                  ap_args=args;
+                  ap_inlined=Default_inline}
+        in
 
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
@@ -859,7 +865,7 @@ let rec close fenv cenv = function
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply(funct, args, {apply_loc=loc; apply_inlined=attribute}) ->
+  | Lapply{ap_func = funct; ap_args = args; ap_loc = loc; ap_inlined = attribute} ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
@@ -894,7 +900,11 @@ let rec close fenv cenv = function
           (Lfunction{
                kind = Curried;
                params = final_args;
-               body = Lapply(funct, internal_args, mk_apply_info loc);
+               body = Lapply{ap_should_be_tailcall=false;
+                             ap_loc=loc;
+                             ap_func=funct;
+                             ap_args=internal_args;
+                             ap_inlined=Default_inline};
                attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
@@ -964,7 +974,11 @@ let rec close fenv cenv = function
       end
   | Lprim(Pdirapply loc,[funct;arg])
   | Lprim(Prevapply loc,[arg;funct]) ->
-      close fenv cenv (Lapply(funct, [arg], mk_apply_info loc))
+      close fenv cenv (Lapply{ap_should_be_tailcall=false;
+                              ap_loc=loc;
+                              ap_func=funct;
+                              ap_args=[arg];
+                              ap_inlined=Default_inline})
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
                             (getglobal id)

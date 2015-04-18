@@ -453,7 +453,7 @@ let rec comp_expr env exp sz cont =
       end
   | Lconst cst ->
       Kconst cst :: cont
-  | Lapply(func, args, info) ->
+  | Lapply{ap_func = func; ap_args = args} ->
       let nargs = List.length args in
       if is_tailcall cont then begin
         comp_args env args sz
@@ -577,7 +577,11 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz (add_const_unit cont)
   | Lprim(Pdirapply loc, [func;arg])
   | Lprim(Prevapply loc, [arg;func]) ->
-      let exp = Lapply(func, [arg], mk_apply_info loc) in
+      let exp = Lapply{ap_should_be_tailcall=false;
+                       ap_loc=loc;
+                       ap_func=func;
+                       ap_args=[arg];
+                       ap_inlined=Default_inline} in
       comp_expr env exp sz cont
   | Lprim(Pnot, [arg]) ->
       let newcont =
@@ -820,7 +824,7 @@ let rec comp_expr env exp sz cont =
       | Lev_after ty ->
           let info =
             match lam with
-              Lapply(_, args, _)      -> Event_return (List.length args)
+              Lapply{ap_args = args}  -> Event_return (List.length args)
             | Lsend(_, _, _, args, _) -> Event_return (List.length args + 1)
             | _                       -> Event_other
           in
