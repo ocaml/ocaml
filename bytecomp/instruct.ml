@@ -100,7 +100,10 @@ type instruction =
   | Kgetpubmet of int
   | Kgetdynmet
   | Kevent of debug_event
-  | Kswapstack
+  | Khandle
+  | Kperform
+  | Kcontinue
+  | Kdiscontinue
   | Kstop
 
 let immed_min = -0x40000000
