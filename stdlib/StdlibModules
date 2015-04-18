@@ -32,6 +32,7 @@ STDLIB_MODULES=\
   char \
   complex \
   digest \
+  effects \
   filename \
   format \
   gc \

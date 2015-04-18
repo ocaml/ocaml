@@ -311,9 +311,16 @@ let comp_primitive p sz args =
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
-  | Pswapstack ->
-     check_stack (sz + 3);
-     Kswapstack
+  | Phandle -> Khandle
+  | Pperform ->
+      check_stack (sz + 1);
+      Kperform
+  | Pcontinue ->
+     check_stack (sz + 1);
+     Kcontinue
+  | Pdiscontinue ->
+     check_stack (sz + 1);
+     Kdiscontinue
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint

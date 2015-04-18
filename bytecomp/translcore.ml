@@ -208,7 +208,10 @@ let primitives_table = create_hashtable 57 [
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
-  "%swap_stack", Pswapstack;
+  "%handle", Phandle;
+  "%perform", Pperform;
+  "%continue", Pcontinue;
+  "%discontinue", Pdiscontinue;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
   "%nativeint_neg", Pnegbint Pnativeint;
