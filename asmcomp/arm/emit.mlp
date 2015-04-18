@@ -192,9 +192,9 @@ let name_for_int_operation = function
   | Iand  -> "ands"
   | Ior   -> "orrs"
   | Ixor  -> "eors"
-  | Ilsl  -> "lsls"
-  | Ilsr  -> "lsrs"
-  | Iasr  -> "asrs"
+  | Ilsl  -> "lsls" (* NB. The T1 encoding only supports shifts from 1-32 *)
+  | Ilsr  -> "lsrs" (* NB. The T1 encoding only supports shifts from 1-32 *)
+  | Iasr  -> "asrs" (* NB. The T1 encoding only supports shifts from 1-32 *)
   | _ -> assert false
 
 let name_for_shift_operation = function
@@ -749,6 +749,9 @@ let emit_instr i =
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
+    | Lop(Iintop_imm((Ilsl|Ilsr|Iasr), 0)) ->
+        (* because lsls/lsrs/asrs do not support an imm arg #0 in thumb mode *)
+        `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`; 1
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
