@@ -59,7 +59,7 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 let string_of_cst = function
-  | Const_string(s, _) -> Some s
+  | PConst_string(s, _) -> Some s
   | _ -> None
 
 let string_of_payload = function
@@ -82,13 +82,13 @@ let rec error_of_extension ext =
     in
     begin match p with
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
+              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::
            {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
+              ({pexp_desc=Pexp_constant(PConst_string(if_highlight,_))}, _)}::
            inner) ->
         Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
     | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
+              ({pexp_desc=Pexp_constant(PConst_string(msg,_))}, _)}::inner) ->
         Location.error ~loc ~sub:(sub_from inner) msg
     | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
     end
@@ -124,7 +124,7 @@ let emit_external_warnings =
         begin match a with
         | {txt="ocaml.ppwarning"|"ppwarning"},
           PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (Const_string (s, _))},_);
+                                         (PConst_string (s, _))},_);
                 pstr_loc}] ->
             Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
         | _ -> ()

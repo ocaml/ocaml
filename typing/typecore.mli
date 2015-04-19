@@ -114,6 +114,8 @@ type error =
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
   | Unrefuted_pattern of Typedtree.pattern
+  | Literal_overflow of string
+  | Unknown_literal of string * char
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -138,3 +140,5 @@ val type_package:
 val create_package_type : Location.t -> Env.t ->
   Longident.t * (Longident.t * Parsetree.core_type) list ->
   Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
+
+val constant: Parsetree.constant -> (Asttypes.constant, error) result

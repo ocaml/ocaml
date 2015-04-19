@@ -49,17 +49,18 @@ let fmt_string_loc f x =
   fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
 ;;
 
+let fmt_char_option f = function
+  | None -> fprintf f "None"
+  | Some c -> fprintf f "Some %c" c
+
 let fmt_constant f x =
   match x with
-  | Const_int (i) -> fprintf f "Const_int %d" i;
-  | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s, None) -> fprintf f "Const_string(%S,None)" s;
-  | Const_string (s, Some delim) ->
-      fprintf f "Const_string (%S,Some %S)" s delim;
-  | Const_float (s) -> fprintf f "Const_float %s" s;
-  | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
-  | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;
-  | Const_nativeint (i) -> fprintf f "Const_nativeint %nd" i;
+  | PConst_int (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
+  | PConst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | PConst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
+  | PConst_string (s, Some delim) ->
+      fprintf f "PConst_string (%S,Some %S)" s delim;
+  | PConst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 
 let fmt_mutable_flag f x =
@@ -887,7 +888,8 @@ and directive_argument i ppf x =
   match x with
   | Pdir_none -> line i ppf "Pdir_none\n"
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
-  | Pdir_int (n) -> line i ppf "Pdir_int %d\n" n;
+  | Pdir_int (n, None) -> line i ppf "Pdir_int %s\n" n;
+  | Pdir_int (n, Some m) -> line i ppf "Pdir_int %s%c\n" n m;
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
 ;;
