@@ -72,34 +72,25 @@ let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
-let neg_float_string f =
+let neg_string f =
   if String.length f > 0 && f.[0] = '-'
   then String.sub f 1 (String.length f - 1)
   else "-" ^ f
 
 let mkuminus name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant(Const_int n) ->
-      mkexp(Pexp_constant(Const_int(-n)))
-  | "-", Pexp_constant(Const_int32 n) ->
-      mkexp(Pexp_constant(Const_int32(Int32.neg n)))
-  | "-", Pexp_constant(Const_int64 n) ->
-      mkexp(Pexp_constant(Const_int64(Int64.neg n)))
-  | "-", Pexp_constant(Const_nativeint n) ->
-      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | ("-" | "-."), Pexp_constant(Const_float f) ->
-      mkexp(Pexp_constant(Const_float(neg_float_string f)))
+  | "-", Pexp_constant(PConst_int (n,m)) ->
+      mkexp(Pexp_constant(PConst_int(neg_string n,m)))
+  | ("-" | "-."), Pexp_constant(PConst_float (f, m)) ->
+      mkexp(Pexp_constant(PConst_float(neg_string f, m)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
 let mkuplus name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant(Const_int _)
-  | "+", Pexp_constant(Const_int32 _)
-  | "+", Pexp_constant(Const_int64 _)
-  | "+", Pexp_constant(Const_nativeint _)
-  | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
+  | "+", Pexp_constant(PConst_int _)
+  | ("+" | "+."), Pexp_constant(PConst_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [Nolabel, arg]))
 
@@ -430,7 +421,7 @@ let class_of_let_bindings lbs body =
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
-%token <string> FLOAT
+%token <string * char option> FLOAT
 %token FOR
 %token FUN
 %token FUNCTION
@@ -448,9 +439,7 @@ let class_of_let_bindings lbs body =
 %token <string> INFIXOP4
 %token INHERIT
 %token INITIALIZER
-%token <int> INT
-%token <int32> INT32
-%token <int64> INT64
+%token <string * char option> INT
 %token <string> LABEL
 %token LAZY
 %token LBRACE
@@ -476,7 +465,6 @@ let class_of_let_bindings lbs body =
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
-%token <nativeint> NATIVEINT
 %token NEW
 %token NONREC
 %token OBJECT
@@ -583,9 +571,9 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
+%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT LBRACKETPERCENTPERCENT
 
 
@@ -2159,26 +2147,17 @@ label:
 /* Constants */
 
 constant:
-    INT                               { Const_int $1 }
-  | CHAR                              { Const_char $1 }
-  | STRING                            { let (s, d) = $1 in Const_string (s, d) }
-  | FLOAT                             { Const_float $1 }
-  | INT32                             { Const_int32 $1 }
-  | INT64                             { Const_int64 $1 }
-  | NATIVEINT                         { Const_nativeint $1 }
+  | INT                               { let (n, m) = $1 in PConst_int (n, m) }
+  | CHAR                              { PConst_char $1 }
+  | STRING                            { let (s, d) = $1 in PConst_string (s, d) }
+  | FLOAT                             { let (f, m) = $1 in PConst_float (f, m) }
 ;
 signed_constant:
     constant                               { $1 }
-  | MINUS INT                              { Const_int(- $2) }
-  | MINUS FLOAT                            { Const_float("-" ^ $2) }
-  | MINUS INT32                            { Const_int32(Int32.neg $2) }
-  | MINUS INT64                            { Const_int64(Int64.neg $2) }
-  | MINUS NATIVEINT                        { Const_nativeint(Nativeint.neg $2) }
-  | PLUS INT                               { Const_int $2 }
-  | PLUS FLOAT                             { Const_float $2 }
-  | PLUS INT32                             { Const_int32 $2 }
-  | PLUS INT64                             { Const_int64 $2 }
-  | PLUS NATIVEINT                         { Const_nativeint $2 }
+  | MINUS INT                              { let (n, m) = $2 in PConst_int("-" ^ n, m) }
+  | MINUS FLOAT                            { let (f, m) = $2 in PConst_float("-" ^ f, m) }
+  | PLUS INT                               { let (n, m) = $2 in PConst_int (n, m) }
+  | PLUS FLOAT                             { let (f, m) = $2 in PConst_float(f, m) }
 ;
 
 /* Identifiers and long identifiers */
@@ -2293,7 +2272,7 @@ class_longident:
 toplevel_directive:
     SHARP ident                 { Ptop_dir($2, Pdir_none) }
   | SHARP ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
-  | SHARP ident INT             { Ptop_dir($2, Pdir_int $3) }
+  | SHARP ident INT             { let (n, m) = $3 in Ptop_dir($2, Pdir_int (n ,m)) }
   | SHARP ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
   | SHARP ident FALSE           { Ptop_dir($2, Pdir_bool false) }

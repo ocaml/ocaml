@@ -18,7 +18,6 @@
 *)
 
 
-open Asttypes
 open Parsetree
 open Ast_helper
 open Location
@@ -626,13 +625,13 @@ let default_mapper =
 
 let rec extension_of_error {loc; msg; if_highlight; sub} =
   { loc; txt = "ocaml.error" },
-  PStr ([Str.eval (Exp.constant (Const_string (msg, None)));
-         Str.eval (Exp.constant (Const_string (if_highlight, None)))] @
+  PStr ([Str.eval (Exp.constant (PConst_string (msg, None)));
+         Str.eval (Exp.constant (PConst_string (if_highlight, None)))] @
         (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
 let attribute_of_warning loc s =
   { loc; txt = "ocaml.ppwarning" },
-  PStr ([Str.eval ~loc (Exp.constant (Const_string (s, None)))])
+  PStr ([Str.eval ~loc (Exp.constant (PConst_string (s, None)))])
 
 module StringMap = Map.Make(struct
     type t = string
@@ -660,7 +659,7 @@ module PpxContext = struct
 
   let lid name = { txt = Lident name; loc = Location.none }
 
-  let make_string x = Exp.constant (Const_string (x, None))
+  let make_string x = Exp.constant (PConst_string (x, None))
 
   let make_bool x =
     if x
@@ -715,7 +714,7 @@ module PpxContext = struct
   let restore fields =
     let field name payload =
       let rec get_string = function
-        | { pexp_desc = Pexp_constant (Const_string (str, None)) } -> str
+        | { pexp_desc = Pexp_constant (PConst_string (str, None)) } -> str
         | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
                              { %s }] string syntax" name
       and get_bool pexp =
