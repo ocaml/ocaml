@@ -206,6 +206,7 @@ Bug fixes:
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - PR#6817: GADT exhaustiveness breakage with modules
 - PR#6836: Assertion failure using -short-paths
+- PR#6841: Changing compilation unit name with -o breaks ocamldebug
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
