@@ -304,15 +304,23 @@ let comp_primitive p sz args =
   | Psetglobal id -> Ksetglobal id
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
-  | Pfield n -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Pfield(n, ptr, Immutable) -> Kgetfield n
+  | Pfield(n, ptr, Mutable) -> Kgetmutablefield n
+  | Psetfield(n, ptr, mut) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
-  | Pswapstack ->
-     check_stack (sz + 3);
-     Kswapstack
+  | Phandle -> Khandle
+  | Pperform ->
+      check_stack (sz + 1);
+      Kperform
+  | Pcontinue ->
+     check_stack (sz + 1);
+     Kcontinue
+  | Pdiscontinue ->
+     check_stack (sz + 1);
+     Kdiscontinue
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint

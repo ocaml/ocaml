@@ -213,7 +213,7 @@ void caml_debugger_init(void)
   }
   open_connection();
   caml_debugger_in_use = 1;
-  caml_trap_barrier_off = 0;
+  caml_trap_barrier_off = 2; /* Bigger than default caml_trap_sp_off (1) */
 }
 
 static value getval(struct channel *chan)

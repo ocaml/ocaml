@@ -1288,7 +1288,8 @@ let make_field_args binding_kind arg first_pos last_pos argl =
   let rec make_args pos =
     if pos > last_pos
     then argl
-    else (Lprim(Pfield pos, [arg]), binding_kind) :: make_args (pos + 1)
+    else (Lprim(Pfield(pos, true, Immutable), [arg]), binding_kind)
+         :: make_args (pos + 1)
   in make_args first_pos
 
 let get_key_constr = function
@@ -1402,11 +1403,11 @@ let make_variant_matching_nonconst p lab def ctx = function
   | ((arg, mut) :: argl) ->
       let def = make_default (matcher_variant_nonconst lab) def
       and ctx = filter_ctx p ctx in
-      {pm=
-        {cases = []; args = (Lprim(Pfield 1, [arg]), Alias) :: argl;
-          default=def} ;
-        ctx=ctx ;
-        pat = normalize_pat p}
+      {pm = { cases = [];
+              args = (Lprim(Pfield(1, true, Immutable), [arg]), Alias) :: argl;
+              default = def };
+       ctx = ctx;
+       pat = normalize_pat p}
 
 let get_key_variant p = match p.pat_desc with
 | Tpat_variant(lab, Some _ , _) ->  Cstr_block (Btype.hash_variant lab)
@@ -1490,7 +1491,7 @@ let get_mod_field modname field =
       with Not_found ->
         fatal_error ("Primitive "^modname^"."^field^" not found.")
       in
-      Lprim(Pfield p, [Lprim(Pgetglobal mod_ident, [])])
+      Lprim(Pfield(p, true, Immutable), [Lprim(Pgetglobal mod_ident, [])])
     with Not_found -> fatal_error ("Module "^modname^" unavailable.")
   )
 
@@ -1519,7 +1520,7 @@ let inline_lazy_force_cond arg loc =
               (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
               Lprim(Pintcomp Ceq,
                     [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))]),
-              Lprim(Pfield 0, [varg]),
+              Lprim(Pfield(0, true, Mutable), [varg]),
               Lifthenelse(
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
@@ -1540,7 +1541,7 @@ let inline_lazy_force_switch arg loc =
              { sw_numconsts = 0; sw_consts = [];
                sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
+                 [ (Obj.forward_tag, Lprim(Pfield(0, true, Mutable), [varg]));
                    (Obj.lazy_tag,
                     Lapply(force_fun, [varg], loc)) ];
                sw_failaction = Some varg } ))))
@@ -1589,7 +1590,8 @@ let make_tuple_matching arity def = function
       let rec make_args pos =
         if pos >= arity
         then argl
-        else (Lprim(Pfield pos, [arg]), Alias) :: make_args (pos + 1) in
+        else (Lprim(Pfield(pos, true, Immutable), [arg]), Alias)
+             :: make_args (pos + 1) in
       {cases = []; args = make_args 0 ;
         default=make_default (matcher_tuple arity) def}
 
@@ -1620,7 +1622,7 @@ let matcher_record num_fields p rem = match p.pat_desc with
 | Tpat_var _      -> get_args_record num_fields omega rem
 | _               -> get_args_record num_fields p rem
 
-let make_record_matching all_labels def = function
+let make_record_matching env all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"
   | ((arg, mut) :: argl) ->
       let rec make_args pos =
@@ -1628,7 +1630,9 @@ let make_record_matching all_labels def = function
           let lbl = all_labels.(pos) in
           let access =
             match lbl.lbl_repres with
-              Record_regular -> Pfield lbl.lbl_pos
+              Record_regular ->
+                let ptr = Typeopt.maybe_pointer_type env lbl.lbl_arg in
+                  Pfield(lbl.lbl_pos, ptr, lbl.lbl_mut)
             | Record_float -> Pfloatfield lbl.lbl_pos in
           let str =
             match lbl.lbl_mut with
@@ -1641,11 +1645,11 @@ let make_record_matching all_labels def = function
       {cases = []; args = make_args 0 ; default = def}
 
 
-let divide_record all_labels p ctx pm =
+let divide_record env all_labels p ctx pm =
   let get_args = get_args_record (Array.length all_labels) in
   divide_line
     (filter_ctx p)
-    (make_record_matching all_labels)
+    (make_record_matching env all_labels)
     get_args
     p ctx pm
 
@@ -2404,7 +2408,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
                 nonconsts
                 default
             in
-              Llet(Alias, tag, Lprim(Pfield 0, [arg]), tests)
+              Llet(Alias, tag, Lprim(Pfield(0, true, Immutable), [arg]), tests)
       in
         List.fold_right
           (fun (path, act) rem ->
@@ -2470,7 +2474,7 @@ let call_switcher_variant_constant fail arg int_lambda_list =
 
 let call_switcher_variant_constr fail arg int_lambda_list =
   let v = Ident.create "variant" in
-  Llet(Alias, v, Lprim(Pfield 0, [arg]),
+  Llet(Alias, v, Lprim(Pfield(0, true, Immutable), [arg]),
        call_switcher
          fail (Lvar v) min_int max_int int_lambda_list)
 
@@ -2803,7 +2807,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         repr partial ctx pm
   | Tpat_record ((_, lbl,_)::_,_) ->
       compile_no_test
-        (divide_record lbl.lbl_all (normalize_pat pat))
+        (divide_record pat.pat_env lbl.lbl_all (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_constant cst ->
       compile_test

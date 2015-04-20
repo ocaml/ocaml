@@ -39,15 +39,18 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag
-  | Pfield of int
-  | Psetfield of int * bool
+  | Pfield of int * bool * mutable_flag
+  | Psetfield of int * bool * mutable_flag
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
-  (* Context switch *)
-  | Pswapstack
+  (* Context switches *)
+  | Phandle
+  | Pperform
+  | Pcontinue
+  | Pdiscontinue
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
