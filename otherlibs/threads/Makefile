@@ -41,7 +41,8 @@ LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo		\
   $(LIB)/weak.cmo $(LIB)/filename.cmo $(LIB)/complex.cmo		\
   $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/bytesLabels.cmo	\
-  $(LIB)/stringLabels.cmo $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo
+  $(LIB)/stringLabels.cmo $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo    \
+  $(LIB)/effects.cmo
 
 UNIXLIB=../unix
 

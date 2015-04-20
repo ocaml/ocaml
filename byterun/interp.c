@@ -74,6 +74,13 @@ sp is a local copy of the global variable caml_extern_sp. */
 #define Restore_after_c_call \
   { sp = caml_extern_sp; env = *sp++; saved_pc = NULL; }
 
+/* Context switch interface */
+#define Setup_for_context_switch \
+  { sp -=3; sp[0] = Val_pc(pc); sp[1] = env; \
+    sp[2] = Val_long(extra_args); caml_extern_sp = sp; }
+#define Restore_after_context_switch \
+  { sp = caml_extern_sp; }
+
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
 #define Setup_for_event \
   { sp -= 6; \
@@ -211,6 +218,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
   intnat extra_args;
   struct caml_exception_context * initial_external_raise;
   int initial_stack_words;
+  value initial_parent_stack;
+  intnat initial_trap_sp_off;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
   struct caml_exception_context exception_ctx = { &raise_buf, caml_local_roots };
@@ -238,6 +247,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
+  initial_trap_sp_off = caml_trap_sp_off;
+  initial_parent_stack = caml_parent_stack;
   initial_stack_words = caml_stack_high - caml_extern_sp;
   initial_external_raise = caml_external_raise;
   caml_callback_depth++;
@@ -253,6 +264,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     goto raise_exception;
   }
   caml_external_raise = &exception_ctx;
+
+  caml_trap_sp_off = 1;
+  caml_parent_stack = Val_long(0);
 
   sp = caml_extern_sp;
   pc = prog;
@@ -282,7 +296,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         if (Is_minor(*s)) Assert(caml_young_ptr < (char*)*s);
       }
     }
-#endif    
+#endif
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_startup_params.trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
@@ -724,14 +738,24 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Access to components of blocks */
 
     Instruct(GETFIELD0):
-      accu = Field(accu, 0); Next;
+      accu = FieldImm(accu, 0); Next;
     Instruct(GETFIELD1):
-      accu = Field(accu, 1); Next;
+      accu = FieldImm(accu, 1); Next;
     Instruct(GETFIELD2):
-      accu = Field(accu, 2); Next;
+      accu = FieldImm(accu, 2); Next;
     Instruct(GETFIELD3):
-      accu = Field(accu, 3); Next;
+      accu = FieldImm(accu, 3); Next;
     Instruct(GETFIELD):
+      accu = FieldImm(accu, *pc); pc++; Next;
+    Instruct(GETMUTABLEFIELD0):
+      accu = Field(accu, 0); Next;
+    Instruct(GETMUTABLEFIELD1):
+      accu = Field(accu, 1); Next;
+    Instruct(GETMUTABLEFIELD2):
+      accu = Field(accu, 2); Next;
+    Instruct(GETMUTABLEFIELD3):
+      accu = Field(accu, 3); Next;
+    Instruct(GETMUTABLEFIELD):
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
       double d = Double_field(accu, *pc);
@@ -865,19 +889,35 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
       if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
-      if (caml_trap_sp_off >= -initial_stack_words) {
-        caml_external_raise = initial_external_raise;
-        caml_extern_sp = caml_stack_high - initial_stack_words;
-        caml_callback_depth--;
-        return Make_exception_result(accu);
+      if (caml_trap_sp_off > 0) {
+        if (caml_parent_stack == Val_long(0)) {
+          caml_external_raise = initial_external_raise;
+          caml_parent_stack = initial_parent_stack;
+          caml_trap_sp_off = initial_trap_sp_off;
+          caml_extern_sp = caml_stack_high - initial_stack_words;
+          caml_callback_depth--;
+          return Make_exception_result(accu);
+        } else {
+          value cont;
+          Setup_for_context_switch
+          cont = caml_finish_exception(accu);
+          Restore_after_context_switch
+          pc = Code_val(cont);
+          env = cont;
+          extra_args = 0;
+          goto check_stacks;
+        }
+      } else {
+        sp = caml_stack_high + caml_trap_sp_off;
+        pc = Pc_val(Trap_pc(sp));
+        caml_trap_sp_off = Long_val(Trap_link(sp));
+        env = sp[2];
+        extra_args = Long_val(sp[3]);
+        sp += 4;
       }
-      sp = caml_stack_high + caml_trap_sp_off;
-      pc = Pc_val(Trap_pc(sp));
-      caml_trap_sp_off = Long_val(Trap_link(sp));
-      env = sp[2];
-      extra_args = Long_val(sp[3]);
-      sp += 4;
       Next;
+
+
 
 /* Stack checks */
 
@@ -1137,6 +1177,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(STOP):
       caml_external_raise = initial_external_raise;
+      caml_parent_stack = initial_parent_stack;
+      caml_trap_sp_off = initial_trap_sp_off;
       caml_extern_sp = sp;
       caml_callback_depth--;
       return accu;
@@ -1157,41 +1199,81 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 /* Context switching */
 
-    Instruct(SWAPSTACK): {
-      value fn, target, cont;
+    Instruct(HANDLE): {
+      value hval, hexn, heff;
+      value cont;
 
-      /* allocate a continuation record */
-      Alloc_small(cont, 2, 0);
+      hval = sp[0];
+      hexn = sp[1];
+      heff = sp[2];
+      sp += 3;
 
-      fn = sp[0];
-      target = accu;
-      if (Field(target, 1) != Val_int(0)) {
-        Setup_for_c_call;
-        caml_failwith("wat");
+      Setup_for_context_switch
+      cont = caml_handle(accu, hval, hexn, heff);
+      Restore_after_context_switch
+
+      pc = Code_val(cont);
+      env = cont;
+      extra_args = 0;
+      goto check_stacks;
+    }
+
+    Instruct(PERFORM): {
+      value cont;
+      if (caml_parent_stack == Val_long(0)) {
+        accu = Field(caml_read_root(caml_global_data), UNHANDLED_EXN);
+        goto raise_exception;
+      } else {
+        Setup_for_context_switch
+        cont = caml_perform(accu);
+        Restore_after_context_switch
+
+        pc = Code_val(cont);
+        env = cont;
+        extra_args = 1;
+        goto check_stacks;
       }
+    }
 
-      /* push most of a function-call frame to the stack, and the trapsp */
-      sp -= 3;
-      sp[0] = Val_long(caml_trap_sp_off);
-      sp[1] = Val_pc(pc);
-      sp[2] = env;
-      sp[3] = Val_long(extra_args);
+    Instruct(CONTINUE): {
+      value ret;
 
-      /* swap stacks and create continuation */
-      caml_extern_sp = sp;
-      Init_field(cont, 0, caml_swap_stack(Field(target, 0)));
-      Init_field(cont, 1, Val_int(0));
-      sp = caml_extern_sp;
+      ret = sp[0];
+      sp += 1;
 
-      /* mark old continuation as used */
-      caml_modify_field(target, 1, Val_int(1));
+      Setup_for_context_switch
+      accu = caml_continue(accu, ret);
+      Restore_after_context_switch
 
-      /* pop new trapsp, push continuation completing function frame */
-      caml_trap_sp_off = Long_val(sp[0]);
-      sp[0] = cont;
+      pc = Pc_val(sp[0]);
+      env = sp[1];
+      extra_args = Long_val(sp[2]);
+      sp += 3;
+      Next;
+    }
 
-      pc = Code_val(fn);
-      env = fn;
+    Instruct(DISCONTINUE): {
+      value ret;
+
+      ret = sp[0];
+      sp += 1;
+
+      Setup_for_context_switch
+      accu = caml_continue(accu, ret);
+      Restore_after_context_switch
+
+      goto raise_exception;
+    }
+
+    Instruct(FINISH): {
+      value cont;
+
+      Setup_for_context_switch
+      cont = caml_finish(accu);
+      Restore_after_context_switch
+
+      pc = Code_val(cont);
+      env = cont;
       extra_args = 0;
       goto check_stacks;
     }

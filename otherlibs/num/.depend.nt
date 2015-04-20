@@ -13,7 +13,7 @@ nat_stubs.dobj: nat_stubs.c ../../byterun/alloc.h \
   ../../byterun/mlvalues.h ../../byterun/custom.h ../../byterun/intext.h \
   ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/fail.h \
   ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h bng.h nat.h
+  ../../byterun/minor_gc.h bng.h nat.h
 big_int.cmi: nat.cmi
 num.cmi: ratio.cmi nat.cmi big_int.cmi
 ratio.cmi: nat.cmi big_int.cmi
@@ -46,7 +46,7 @@ nat_stubs.sobj: nat_stubs.c ../../byterun/alloc.h \
   ../../byterun/mlvalues.h ../../byterun/custom.h ../../byterun/intext.h \
   ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/fail.h \
   ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h bng.h nat.h
+  ../../byterun/minor_gc.h bng.h nat.h
 big_int.cmi: nat.cmi
 num.cmi: ratio.cmi nat.cmi big_int.cmi
 ratio.cmi: nat.cmi big_int.cmi
