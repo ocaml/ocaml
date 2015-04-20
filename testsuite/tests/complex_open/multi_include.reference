@@ -1,0 +1,16 @@
+Two-level nested include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+Local include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+Nested_global include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included
+Global include:
+	Module M correctly included
+	Module N correctly included
+	Module L correctly included

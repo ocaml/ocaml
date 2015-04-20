@@ -656,7 +656,7 @@ and signature_item i ppf x =
   | Tsig_include incl ->
       line i ppf "Tsig_include\n";
       attributes i ppf incl.incl_attributes;
-      module_type i ppf incl.incl_mod
+      list i module_type ppf incl.incl_mods
   | Tsig_class (l) ->
       line i ppf "Tsig_class\n";
       list i class_description ppf l;
@@ -765,7 +765,7 @@ and structure_item i ppf x =
   | Tstr_include incl ->
       line i ppf "Tstr_include";
       attributes i ppf incl.incl_attributes;
-      module_expr i ppf incl.incl_mod;
+      list i module_expr ppf incl.incl_mods;
   | Tstr_attribute (s, arg) ->
       line i ppf "Tstr_attribute \"%s\"\n" s.txt;
       Printast.payload i ppf arg

@@ -90,7 +90,7 @@ let module_declaration sub x =
   let md_type = sub.module_type sub x.md_type in
   {x with md_type}
 
-let include_infos f x = {x with incl_mod = f x.incl_mod}
+let include_infos f x = {x with incl_mods = List.map f x.incl_mods}
 
 let class_type_declaration sub x =
   class_infos sub (sub.class_type sub) x

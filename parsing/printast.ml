@@ -683,7 +683,7 @@ and signature_item i ppf x =
       attributes i ppf od.popen_attributes
   | Psig_include incl ->
       line i ppf "Psig_include\n";
-      module_type i ppf incl.pincl_mod;
+      list i module_type ppf incl.pincl_mods;
       attributes i ppf incl.pincl_attributes
   | Psig_class (l) ->
       line i ppf "Psig_class\n";
@@ -797,7 +797,7 @@ and structure_item i ppf x =
   | Pstr_include incl ->
       line i ppf "Pstr_include";
       attributes i ppf incl.pincl_attributes;
-      module_expr i ppf incl.pincl_mod
+      list i module_expr ppf incl.pincl_mods
   | Pstr_extension ((s, arg), attrs) ->
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;

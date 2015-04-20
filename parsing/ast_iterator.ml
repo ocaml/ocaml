@@ -528,15 +528,15 @@ let default_iterator =
 
 
     include_description =
-      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
-         this.module_type this pincl_mod;
+      (fun this {pincl_mods; pincl_attributes; pincl_loc} ->
+         List.iter (this.module_type this) pincl_mods;
          this.location this pincl_loc;
          this.attributes this pincl_attributes
       );
 
     include_declaration =
-      (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
-         this.module_expr this pincl_mod;
+      (fun this {pincl_mods; pincl_attributes; pincl_loc} ->
+         List.iter (this.module_expr this) pincl_mods;
          this.location this pincl_loc;
          this.attributes this pincl_attributes
       );

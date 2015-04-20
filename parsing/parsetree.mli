@@ -736,7 +736,7 @@ and open_description =
 
 and 'a include_infos =
     {
-     pincl_mod: 'a;
+     pincl_mods: 'a list;
      pincl_loc: Location.t;
      pincl_attributes: attributes;
     }

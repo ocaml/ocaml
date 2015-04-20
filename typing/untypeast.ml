@@ -526,7 +526,7 @@ let include_infos f sub incl =
   let loc = sub.location sub incl.incl_loc; in
   let attrs = sub.attributes sub incl.incl_attributes in
   Incl.mk ~loc ~attrs
-    (f sub incl.incl_mod)
+    (List.map (f sub) incl.incl_mods)
 
 let include_declaration sub = include_infos sub.module_expr sub
 let include_description sub = include_infos sub.module_type sub

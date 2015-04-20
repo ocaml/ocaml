@@ -259,26 +259,28 @@
             [
               signature_item (extensions.ml[16,382+11]..[16,382+36])
                 Psig_include
-                module_type (extensions.ml[16,382+19]..[16,382+36])
-                  Pmty_with
-                  module_type (extensions.ml[16,382+19]..[16,382+20])
-                    Pmty_ident "S" (extensions.ml[16,382+19]..[16,382+20])
-                  [
-                    Pwith_type "t" (extensions.ml[16,382+31]..[16,382+32])
-                      type_declaration "t" (extensions.ml[16,382+31]..[16,382+32]) (extensions.ml[16,382+26]..[16,382+36])
-                        ptype_params =
-                          []
-                        ptype_cstrs =
-                          []
-                        ptype_kind =
-                          Ptype_abstract
-                        ptype_private = Public
-                        ptype_manifest =
-                          Some
-                            core_type (extensions.ml[16,382+35]..[16,382+36])
-                              Ptyp_constr "t" (extensions.ml[16,382+35]..[16,382+36])
-                              []
-                  ]
+                [
+                  module_type (extensions.ml[16,382+19]..[16,382+36])
+                    Pmty_with
+                    module_type (extensions.ml[16,382+19]..[16,382+20])
+                      Pmty_ident "S" (extensions.ml[16,382+19]..[16,382+20])
+                    [
+                      Pwith_type "t" (extensions.ml[16,382+31]..[16,382+32])
+                        type_declaration "t" (extensions.ml[16,382+31]..[16,382+32]) (extensions.ml[16,382+26]..[16,382+36])
+                          ptype_params =
+                            []
+                          ptype_cstrs =
+                            []
+                          ptype_kind =
+                            Ptype_abstract
+                          ptype_private = Public
+                          ptype_manifest =
+                            Some
+                              core_type (extensions.ml[16,382+35]..[16,382+36])
+                                Ptyp_constr "t" (extensions.ml[16,382+35]..[16,382+36])
+                                []
+                    ]
+                ]
             ]
           core_type (extensions.ml[17,421+4]..[17,421+32])
             Ptyp_extension "foo"

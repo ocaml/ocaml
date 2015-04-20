@@ -364,10 +364,12 @@ and add_sig_item (bv, m) item =
   | Psig_open od ->
       (open_modules bv od.popen_seq, m)
   | Psig_include incl ->
-      let Node (s, m') = add_modtype_binding bv incl.pincl_mod in
-      add_names s;
-      let add = StringMap.fold StringMap.add m' in
-      (add bv, add m)
+      let add_modtype' (bv,m) incl =
+        let Node (s, m') = add_modtype_binding bv incl in
+        add_names s;
+        let add = StringMap.fold StringMap.add m' in
+        (add bv, add m) in
+      List.fold_left add_modtype' (bv,m) incl.pincl_mods
   | Psig_class cdl ->
       List.iter (add_class_description bv) cdl; (bv, m)
   | Psig_class_type cdtl ->
@@ -459,10 +461,12 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
-      let Node (s, m') = add_module_binding bv incl.pincl_mod in
-      add_names s;
-      let add = StringMap.fold StringMap.add m' in
-      (add bv, add m)
+      let add_module_binding' (bv,m) incl =
+        let Node (s, m') = add_module_binding bv incl in
+        add_names s;
+        let add = StringMap.fold StringMap.add m' in
+        (add bv, add m) in
+      List.fold_left add_module_binding' (bv,m) incl.pincl_mods
   | Pstr_attribute _ -> (bv, m)
   | Pstr_extension (e, _) ->
       handle_extension e;

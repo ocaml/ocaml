@@ -957,7 +957,7 @@ class printer  ()= object(self:'self)
            self#item_attributes od.popen_attributes
     | Psig_include incl ->
         pp f "@[<hov2>include@ %a@]%a"
-          self#module_type incl.pincl_mod
+          (self#list ~sep:"@,and@," self#module_type) incl.pincl_mods
           self#item_attributes incl.pincl_attributes
     | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
         pp f "@[<hov2>module@ type@ %s%a@]%a"
@@ -1181,7 +1181,7 @@ class printer  ()= object(self:'self)
           self#item_attributes vd.pval_attributes
     | Pstr_include incl ->
         pp f "@[<hov2>include@ %a@]%a"
-          self#module_expr incl.pincl_mod
+          (self#list ~sep:"@,and@," self#module_expr) incl.pincl_mods
           self#item_attributes incl.pincl_attributes
     | Pstr_recmodule decls -> (* 3.07 *)
         let aux f = function

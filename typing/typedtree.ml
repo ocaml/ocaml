@@ -331,8 +331,8 @@ and open_description =
 
 and 'a include_infos =
     {
-     incl_mod: 'a;
-     incl_type: Types.signature;
+     incl_mods:'a list;
+     incl_types: Types.signature list;
      incl_loc: Location.t;
      incl_attributes: attribute list;
     }

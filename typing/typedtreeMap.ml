@@ -147,7 +147,7 @@ module MakeMap(Map : MapArgument) = struct
           in
             Tstr_class_type list
         | Tstr_include incl ->
-          Tstr_include {incl with incl_mod = map_module_expr incl.incl_mod}
+          Tstr_include {incl with incl_mods = List.map map_module_expr incl.incl_mods}
         | Tstr_attribute x -> Tstr_attribute x
     in
     Map.leave_structure_item { item with str_desc = str_desc}
@@ -439,7 +439,7 @@ module MakeMap(Map : MapArgument) = struct
             Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open _ -> item.sig_desc
         | Tsig_include incl ->
-            Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
+            Tsig_include {incl with incl_mods = List.map map_module_type incl.incl_mods }
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
             Tsig_class_type (List.map map_class_type_declaration list)

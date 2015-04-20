@@ -805,6 +805,11 @@ module_expr:
       { mkmod(Pmod_extension $1) }
 ;
 
+module_exprs:
+	| module_expr {[$1]}
+	| module_exprs AND module_expr {$3::$1}
+;
+
 structure:
     seq_expr post_item_attributes structure_tail
       { mark_rhs_docs 1 2;
@@ -850,9 +855,9 @@ structure_item:
         mkstr(Pstr_attribute $1) }
 ;
 str_include_statement:
-    INCLUDE ext_attributes module_expr post_item_attributes
+    INCLUDE ext_attributes module_exprs post_item_attributes
       { let (ext, attrs) = $2 in
-        Incl.mk $3 ~attrs:(attrs@$4)
+        Incl.mk (List.rev $3) ~attrs:(attrs@$4)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
       , ext }
 ;
@@ -923,6 +928,10 @@ module_type:
   | module_type attribute
       { Mty.attr $1 $2 }
 ;
+module_types:
+	| module_type {[$1]}
+	| module_types AND module_type {$3::$1}
+;
 signature:
     /* empty */          { [] }
   | SEMISEMI signature   { (text_sig 1) @ $2 }
@@ -974,9 +983,9 @@ open_sequence:
   | open_sequence AND mod_longident attributes { (mkrhs $3 3, $4)::$1 }
 ;
 sig_include_statement:
-    INCLUDE ext_attributes module_type post_item_attributes %prec below_WITH
+    INCLUDE ext_attributes module_types post_item_attributes %prec below_WITH
       { let (ext, attrs) = $2 in
-        Incl.mk $3 ~attrs:(attrs@$4)
+        Incl.mk (List.rev $3) ~attrs:(attrs@$4)
             ~loc:(symbol_rloc()) ~docs:(symbol_docs ())
       , ext}
 ;

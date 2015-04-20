@@ -399,12 +399,14 @@ and approx_sig env ssg =
           let (path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
-          let smty = sincl.pincl_mod in
-          let mty = approx_modtype env smty in
-          let sg = Subst.signature Subst.identity
+	  let include_sig (env, sg_list) smty =
+            let mty = approx_modtype env smty in
+            let sg = Subst.signature Subst.identity
                      (extract_sig env smty.pmty_loc mty) in
-          let newenv = Env.add_signature sg env in
-          sg @ approx_sig newenv srem
+            let newenv = Env.add_signature sg env in
+            (newenv, sg :: sg_list) in
+	  let newenv, sg = List.fold_left include_sig (env,[]) sincl.pincl_mods in
+	  (List.concat @@ List.rev sg) @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
@@ -676,7 +678,7 @@ and transl_signature env sg =
             mksig (Tsig_open od) env loc :: trem,
             rem, final_env
         | Psig_include sincl ->
-            let smty = sincl.pincl_mod in
+	   let include_ (tmty_l, sg_l,env) smty =
             let tmty =
               Builtin_attributes.with_warning_attribute sincl.pincl_attributes
                 (fun () -> transl_modtype env smty)
@@ -686,17 +688,17 @@ and transl_signature env sg =
                        (extract_sig env smty.pmty_loc mty) in
             List.iter (check_sig_item names item.psig_loc) sg;
             let newenv = Env.add_signature sg env in
-            let incl =
-              { incl_mod = tmty;
-                incl_type = sg;
-                incl_attributes = sincl.pincl_attributes;
-                incl_loc = sincl.pincl_loc;
-              }
-            in
-            let (trem, rem, final_env) = transl_sig newenv srem  in
-            mksig (Tsig_include incl) env loc :: trem,
-            sg @ rem,
-            final_env
+	   				tmty::tmty_l, sg :: sg_l, newenv in
+			let rt_l, rsg_l, new_env = List.fold_left include_ ([],[],env) sincl.pincl_mods in
+			let t_l, sg_l = List.rev rt_l, List.rev rsg_l in
+	    let incl =
+      	{ incl_mods = t_l;
+        	incl_types = sg_l;
+         	incl_attributes = sincl.pincl_attributes;
+          incl_loc = sincl.pincl_loc;
+        } in
+	   let (trem, rem, final_env) = transl_sig new_env srem  in
+	    mksig (Tsig_include incl) env loc :: trem, (List.concat sg_l) @ rem , final_env
         | Psig_class cl ->
             List.iter
               (fun {pci_name} -> check_name check_type names pci_name)
@@ -1423,7 +1425,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
              classes []),
         new_env
     | Pstr_include sincl ->
-        let smodl = sincl.pincl_mod in
+       let include_ (modl_l, sg_l, env) smodl =
         let modl =
           Builtin_attributes.with_warning_attribute sincl.pincl_attributes
             (fun () -> type_module true funct_body None env smodl)
@@ -1433,14 +1435,17 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (extract_sig_open env smodl.pmod_loc modl.mod_type) in
         List.iter (check_sig_item names loc) sg;
         let new_env = Env.add_signature sg env in
-        let incl =
-          { incl_mod = modl;
-            incl_type = sg;
-            incl_attributes = sincl.pincl_attributes;
-            incl_loc = sincl.pincl_loc;
-          }
-        in
-        Tstr_include incl, sg, new_env
+        modl::modl_l, sg :: sg_l, new_env in
+    (* we add modules from the left to the right in the environment by reversing pincl_mods *)
+       	let rmodl_l, rsg_l, env = List.fold_left include_ ([],[],env) sincl.pincl_mods  in
+			 	let modl_l, sg_l = List.rev rmodl_l, List.rev rsg_l in
+       	let incl =
+         { incl_mods = modl_l;
+           incl_types = sg_l;
+           incl_attributes = sincl.pincl_attributes;
+           incl_loc = sincl.pincl_loc;
+         } in
+       Tstr_include incl, List.flatten sg_l, env
     | Pstr_extension (ext, _attrs) ->
         raise (Error_forward (Builtin_attributes.error_of_extension ext))
     | Pstr_attribute x ->
