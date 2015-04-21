@@ -4,7 +4,7 @@
 #                                                                       #
 #                                 OCaml                                 #
 #                                                                       #
-#                 Damien Doligez, Jane Street Capital                   #
+#                  Damien Doligez, Jane Street Group, LLC               #
 #                                                                       #
 #   Copyright 2015 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
@@ -32,7 +32,7 @@ max=1000000000
 ranget=
 rangen=
 from=0
-to=1000000000
+to=1e19
 
 while [[ $# > 0 ]]; do
     case $1 in
@@ -62,25 +62,29 @@ rm -f $tmpfile-*
 awk -v curves="$curves" -v clip=$max -v tmpfile="$tmpfile" -v from=$from \
     -v to=$to '
   function output (filename){
+    time = ($2 - starttime) / 1e9;
     if (time < from || time >= to) return;
     if (index(curves, "," filename ",") != 0){
       gsub (/\//,":",filename);
-      point = $2 / 1000;
+      point = ($3 - $2) / 1000;
       if (point > clip) point = clip;
-      printf ("%d %.3f\n", time, point) >> tmpfile "-" filename;
+      printf ("%.6f %.3f\n", time, point) >> tmpfile "-" filename;
     }
   }
+  BEGIN {starttime = 9e18;}
   $1 != "@@" { next; }
-  $3 == "overhead" { ++time; }
-  { output($3); }
+  $2 < starttime { starttime = $2 } 
+  { output($4); }
 ' $datafile
 
 ( echo set title \"$title\"
   echo set key left top
   echo set ytics nomirror
+  echo 'set format y "%gus"'
   echo "$ranget"
   echo "$rangen"
   echo set y2tics nomirror
+  echo 'set format x "%gs"'
   printf "plot "
   for curve in ${curves//,/ }; do
       f=$tmpfile-${curve//\//:}
