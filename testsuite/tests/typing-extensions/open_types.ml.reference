@@ -13,21 +13,21 @@
   type bar += Bar of int (* Error: type is not open *)
               ^^^^^^^^^^
 Error: Cannot extend type definition bar
-#     Characters 6-20:
+#     Characters 1-20:
   type baz = bar = .. (* Error: type kinds don't match *)
-       ^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type bar
        Their kinds differ.
 #         type 'a foo = ..
-#     Characters 6-32:
+#     Characters 1-32:
   type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *)
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type 'a foo
        They have different arities.
 #     type ('a, 'b) foo = ..
-#     Characters 6-38:
+#     Characters 1-38:
   type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *)
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          ('a, 'a) foo
        Their constraints differ.
