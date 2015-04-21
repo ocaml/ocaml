@@ -181,6 +181,10 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
+type function_attribute = {
+  inline : bool;
+}
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -206,7 +210,8 @@ type lambda =
 and lfunction =
   { kind: function_kind;
     params: Ident.t list;
-    body: lambda }
+    body: lambda;
+    attr: function_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -229,6 +234,10 @@ and lambda_event_kind =
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
+
+let default_function_attribute = {
+  inline = false;
+}
 
 (* Build sharing keys *)
 (*
@@ -487,7 +496,8 @@ let subst_lambda s lam =
       begin try Ident.find_same id s with Not_found -> l end
   | Lconst sc as l -> l
   | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
-  | Lfunction{kind; params; body} -> Lfunction{kind; params; body = subst body}
+  | Lfunction{kind; params; body; attr} ->
+     Lfunction{kind; params; body = subst body; attr}
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args) -> Lprim(p, List.map subst args)

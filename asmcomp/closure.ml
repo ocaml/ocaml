@@ -101,7 +101,7 @@ let occurs_var var u =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper fun_id kind params body =
+let split_default_wrapper fun_id kind params body attr =
   let rec aux map = function
     | Llet(Strict, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -129,14 +129,16 @@ let split_default_wrapper fun_id kind params body =
             Ident.empty inner_params new_ids
         in
         let body = Lambda.subst_lambda subst body in
-        let inner_fun = Lfunction{kind = Curried; params = new_ids; body} in
+        let inner_fun = Lfunction{kind = Curried; params = new_ids; body;
+                                  attr} in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction{kind; params; body = wrapper_body}); inner]
+    [(fun_id, Lfunction{kind; params; body = wrapper_body;
+                        attr = default_function_attribute}); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; body})]
+    [(fun_id, Lfunction{kind; params; body; attr})]
 
 
 (* Determine whether the estimated size of a clambda term is below
@@ -880,7 +882,8 @@ let rec close fenv cenv = function
           (Lfunction{
                kind = Curried;
                params = final_args;
-               body = Lapply(funct, internal_args, mk_apply_info loc)})
+               body = Lapply(funct, internal_args, mk_apply_info loc);
+               attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
         (new_fun, approx)
@@ -1080,8 +1083,8 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction{kind; params; body}) ->
-               split_default_wrapper id kind params body
+           | (id, Lfunction{kind; params; body; attr}) ->
+               split_default_wrapper id kind params body attr
            | _ -> assert false
          )
          fun_defs)

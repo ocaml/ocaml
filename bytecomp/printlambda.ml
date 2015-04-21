@@ -249,6 +249,9 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let function_attribute ppf { inline } =
+  if inline then fprintf ppf "inline@ "
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -262,7 +265,7 @@ let rec lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
-  | Lfunction{kind; params; body} ->
+  | Lfunction{kind; params; body; attr} ->
       let pr_params ppf params =
         match kind with
         | Curried ->
@@ -276,7 +279,8 @@ let rec lam ppf = function
                 Ident.print ppf param)
               params;
             fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a)@]" pr_params params lam body
+      fprintf ppf "@[<2>(function%a@ %a%a)@]" pr_params params
+        function_attribute attr lam body
   | Llet(str, id, arg, body) ->
       let kind = function
         Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v" in

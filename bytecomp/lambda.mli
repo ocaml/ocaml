@@ -190,6 +190,10 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
+type function_attribute = {
+  inline : bool;
+}
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -217,7 +221,8 @@ type lambda =
 and lfunction =
   { kind: function_kind;
     params: Ident.t list;
-    body: lambda }
+    body: lambda;
+    attr: function_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -258,6 +263,8 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
 val commute_comparison : comparison -> comparison
 val negate_comparison : comparison -> comparison
+
+val default_function_attribute : function_attribute
 
 (***********************)
 (* For static failures *)

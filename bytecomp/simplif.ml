@@ -194,8 +194,8 @@ let simplify_exits lam =
   let rec simplif = function
   | (Lvar _|Lconst _) as l -> l
   | Lapply(l1, ll, info) -> Lapply(simplif l1, List.map simplif ll, info)
-  | Lfunction{kind; params; body = l} ->
-     Lfunction{kind; params; body = simplif l}
+  | Lfunction{kind; params; body = l; attr} ->
+      Lfunction{kind; params; body = simplif l; attr}
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -438,8 +438,8 @@ let simplify_lets lam =
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
-  | Lfunction{kind; params; body = l} ->
-     Lfunction{kind; params; body = simplif l}
+  | Lfunction{kind; params; body = l; attr} ->
+     Lfunction{kind; params; body = simplif l; attr}
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
