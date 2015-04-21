@@ -1,7 +1,9 @@
 (* additional GC functions *)
 (* These are in a separate file because we want to do our testing
-   on code that doesn't like changes to the Gc module's interface.
-   Ultimately, these new functions will be in Gc.
+   on code that doesn't like changes to the [Gc] module's interface.
+   Ultimately, these new functions will be in [Gc].
 *)
 
-external get_minor_free : unit -> int = "caml_get_minor_free";;
+external get_minor_free : unit -> int = "caml_get_minor_free" "noalloc"
+external get_bucket : int -> int = "caml_get_major_bucket" "noalloc"
+external get_credit : unit -> int = "caml_get_major_credit" "noalloc"

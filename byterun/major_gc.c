@@ -12,6 +12,7 @@
 /***********************************************************************/
 
 #include <limits.h>
+#include <math.h>
 
 #include "compact.h"
 #include "custom.h"
@@ -55,12 +56,11 @@ static char *markhp, *chunk, *limit;
 int caml_gc_subphase;     /* Subphase_{main,weak1,weak2,final} */
 static value *weak_prev;
 
-static double caml_major_backlog = 0.0;
-static double caml_major_backlog_history = 0.0;
-
 int caml_major_window = 1;
-static double ring[Max_major_window] = { 0. };
-static int ring_index;
+double caml_major_ring[Max_major_window] = { 0. };
+int caml_major_ring_index = 0;
+double caml_major_work_credit = 0.0;
+double caml_gc_clock = 0.0;
 
 #ifdef DEBUG
 static unsigned long major_gc_counter = 0;
@@ -451,13 +451,15 @@ static char *mark_slice_name[] = {
 };
 #endif
 
-/* The main entry point for the GC.  Called after each minor GC.
-   [howmuch] is the amount of work to do, 0 to let the GC compute it.
-   Return the computed amount of work to do.
+/* The main entry point for the major GC. Called about once for each
+   minor GC. [howmuch] is the amount of work to do:
+   -1 if the GC is triggered automatically
+   0 to let the GC compute the amount of work
+   [n] to make the GC do enough work to (on average) free [n] words
  */
-intnat caml_major_collection_slice (intnat howmuch)
+void caml_major_collection_slice (intnat howmuch)
 {
-  double p, dp, filt_p, remaining_p = 0;
+  double p, dp, filt_p, spend;
   intnat computed_work;
   int i;
   /*
@@ -529,7 +531,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   }
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
-  if (p > 0.4) p = 0.6;
+  if (p > 0.3) p = 0.3;
   CAML_INSTR_INT ("major/work/extra#",
                   (uintnat) (caml_extra_heap_resources * 1000000));
 
@@ -545,27 +547,48 @@ intnat caml_major_collection_slice (intnat howmuch)
                    (intnat) (p * 1000000));
 
   for (i = 0; i < caml_major_window; i++){
-    ring[i] += p / caml_major_window;
+    caml_major_ring[i] += p / caml_major_window;
+  }
+
+  if (caml_gc_clock >= 1.0){
+    caml_gc_clock -= 1.0;
+    ++caml_major_ring_index;
+    if (caml_major_ring_index >= caml_major_window){
+      caml_major_ring_index = 0;
+    }
   }
   if (howmuch == -1){
-    /* naturally-triggered GC */
-    filt_p = ring[ring_index];
-    ring[ring_index] = 0;
-    ++ring_index;
-    if (ring_index >= caml_major_window) ring_index = 0;
-  }else if (howmuch == 0){
-    /* forced GC */
-    filt_p = ring[ring_index];
-    ring[ring_index] = 0;
+    /* auto-triggered GC slice: spend work credit on the current bucket,
+       then do the remaining work, if any */
+    /* Note that the minor GC guarantees that the major slice is called in
+       automatic mode (with [howmuch] = -1) at least once per clock tick.
+       This means we never leave a non-empty bucket behind. */
+    spend = fmin (caml_major_work_credit,
+                  caml_major_ring[caml_major_ring_index]);
+    caml_major_work_credit -= spend;
+    filt_p = caml_major_ring[caml_major_ring_index] - spend;
+    caml_major_ring[caml_major_ring_index] = 0.0;
   }else{
-    /* forced GC, manual setting of work */
-    filt_p = (double) howmuch * 3.0 * (100 + caml_percent_free)
+    /* forced GC slice: do work and add it to the credit */
+    if (howmuch == 0){
+      /* automatic setting: size of next slice
+         we do not use the current bucket, as it may be empty */
+      int i = caml_major_ring_index + 1;
+      if (i >= caml_major_window) i = 0;
+      filt_p = caml_major_ring[i];
+    }else{
+      /* manual setting */
+      filt_p = (double) howmuch * 3.0 * (100 + caml_percent_free)
         / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2.0;
+    }
+    caml_major_work_credit += filt_p;
   }
+
+  p = filt_p;
 
   caml_gc_message (0x40, "filtered work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (filt_p * 1000000));
+                   (intnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_idle){
     start_cycle ();
@@ -578,8 +601,6 @@ intnat caml_major_collection_slice (intnat howmuch)
     p = 0;
     goto finished;
   }
-
-  p = filt_p;
 
   if (caml_gc_phase == Phase_mark){
     computed_work = (intnat) (p * (Wsize_bsize (caml_stat_heap_size) * 250
@@ -617,15 +638,21 @@ intnat caml_major_collection_slice (intnat howmuch)
                          ARCH_INTNAT_PRINTF_FORMAT "du\n",
                    (intnat) (p * 1000000));
 
-  /* push back work not done into the window */
-  p = filt_p - p + remaining_p;
-  for (i = 0; i < caml_major_window; i++) ring[i] += p / caml_major_window;
+  /* if some of the work was not done, take it back from the credit
+     or spread it over the buckets. */
+  p = filt_p - p;
+  spend = fmin (p, caml_major_work_credit);
+  caml_major_work_credit -= spend;
+  if (p > spend){
+    p -= spend;
+    p /= caml_major_window;
+    for (i = 0; i < caml_major_window; i++) caml_major_ring[i] += p;
+  }
 
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;
   caml_extra_heap_resources = 0.0;
-  return (intnat) (0.1 * caml_major_backlog + 0.1 * caml_major_backlog_history);
 }
 
 /* This does not call [caml_compact_heap_maybe] because the estimates of
@@ -713,5 +740,5 @@ void caml_init_major_heap (asize_t heap_size)
   heap_is_pure = 1;
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
-  for (i = 0; i < Max_major_window; i++) ring[i] = 0.0;
+  for (i = 0; i < Max_major_window; i++) caml_major_ring[i] = 0.0;
 }
