@@ -649,6 +649,9 @@ let rec cut n l =
 
 let try_ids = Hashtbl.create 8
 
+let has_inline_attribute e =
+  List.exists (fun ({txt},_) -> txt="inline") e.exp_attributes
+
 let has_tailcall_attribute e =
   List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
 
@@ -697,7 +700,12 @@ and transl_exp0 e =
             let pl = push_defaults e.exp_loc [] pat_expr_list partial in
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
-      Lfunction{kind; params; body; attr = default_function_attribute}
+      let attr =
+        if has_inline_attribute e
+        then { inline = true }
+        else default_function_attribute
+      in
+      Lfunction{kind; params; body; attr}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
