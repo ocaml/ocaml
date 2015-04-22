@@ -77,7 +77,10 @@ module type S =
     val add: key -> 'a -> 'a t -> 'a t
     (** [add x y m] returns a map containing the same bindings as
        [m], plus a binding of [x] to [y]. If [x] was already bound
-       in [m], its previous binding disappears. *)
+       in [m] to a value that is physically equal to [y],
+       [m] is returned unchanged (the result of the function is
+       then physically equal to [m]). Otherwise, the previous binding
+       of [x] in [m] disappears. *)
 
     val singleton: key -> 'a -> 'a t
     (** [singleton x y] returns the one-element map that contains a binding [y]

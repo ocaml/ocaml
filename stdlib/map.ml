@@ -103,14 +103,16 @@ module Make(Ord: OrderedType) = struct
     let rec add x data = function
         Empty ->
           Node(Empty, x, data, Empty, 1)
-      | Node(l, v, d, r, h) ->
+      | Node(l, v, d, r, h) as m ->
           let c = Ord.compare x v in
           if c = 0 then
-            Node(l, x, data, r, h)
+            if d == data then m else Node(l, x, data, r, h)
           else if c < 0 then
-            bal (add x data l) v d r
+            let ll = add x data l in
+            if l == ll then m else bal ll v d r
           else
-            bal l v d (add x data r)
+            let rr = add x data r in
+            if r == rr then m else bal l v d rr
 
     let rec find x = function
         Empty ->

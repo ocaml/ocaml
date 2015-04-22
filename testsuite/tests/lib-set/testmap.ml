@@ -155,3 +155,30 @@ let () =
   for i = 1 to 10 do m1 := M.add i (float i) !m1 done;
   let m2 = M.filter (fun e _ -> e >= 0) !m1 in
   assert (m2 == !m1)
+
+let () =
+  (* check that adding a binding "x -> y" to a map that already
+     contains it doesn't allocate and return the original map. *)
+  let m1 = ref M.empty in
+  let tmp = ref None in
+  for i = 1 to 10 do
+    tmp := Some (float i);
+    m1 := M.add i !tmp !m1
+  done;
+  let m2 = ref !m1 in
+
+  let a0 = Gc.allocated_bytes () in
+  let a1 = Gc.allocated_bytes () in
+
+  (* 10 |-> !tmp is already present in !m2 *)
+  m2 := M.add 10 !tmp !m2;
+
+  let a2 = Gc.allocated_bytes () in
+
+  assert (!m2 == !m1);
+  assert(a2 -. a1 = a1 -. a0);
+
+  (* 4 |-> Some 84. is not present in !m2 *)
+  m2 := M.add 4 (Some 84.) !m2;
+
+  assert (not (!m2 == !m1));
