@@ -134,7 +134,9 @@ module type S =
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter p m] returns the map with all the bindings in [m]
-        that satisfy predicate [p].
+        that satisfy predicate [p]. If [p] satisfies every binding in [m],
+        [m] is returned unchanged (the result of the function is then
+        physically equal to [m])
         @since 3.12.0
      *)
 

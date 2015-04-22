@@ -147,3 +147,11 @@ let () =
 
   assert (!m2 == !m1);
   assert(a2 -. a1 = a1 -. a0)
+
+let () =
+  (* check that filtering a map where all bindings are satisfied by
+     the given predicate returns the original map *)
+  let m1 = ref M.empty in
+  for i = 1 to 10 do m1 := M.add i (float i) !m1 done;
+  let m2 = M.filter (fun e _ -> e >= 0) !m1 in
+  assert (m2 == !m1)

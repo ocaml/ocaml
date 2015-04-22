@@ -270,12 +270,13 @@ module Make(Ord: OrderedType) = struct
 
     let rec filter p = function
         Empty -> Empty
-      | Node(l, v, d, r, _) ->
+      | Node(l, v, d, r, _) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pvd = p v d in
           let r' = filter p r in
-          if pvd then join l' v d r' else concat l' r'
+          if pvd then if l==l' && r==r' then t else join l' v d r'
+          else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)
