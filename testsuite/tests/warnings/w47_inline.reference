@@ -1,0 +1,12 @@
+File "w47_inline.ml", line 8, characters 23-29:
+Warning 47: illegal payload for attribute 'inline'.
+It must be either empty, 'force' or 'inline'
+File "w47_inline.ml", line 7, characters 23-29:
+Warning 47: illegal payload for attribute 'inline'.
+It must be either empty, 'force' or 'inline'
+File "w47_inline.ml", line 6, characters 23-29:
+Warning 47: illegal payload for attribute 'inline'.
+It must be either empty, 'force' or 'inline'
+File "w47_inline.ml", line 5, characters 23-29:
+Warning 47: illegal payload for attribute 'inline'.
+It must be either empty, 'force' or 'inline'
