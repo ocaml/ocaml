@@ -528,8 +528,7 @@ method emit_expr env exp =
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall(lbl, alloc) ->
-              let (loc_arg, stack_ofs) =
-                self#emit_extcall_args env new_args in
+              let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
               let rd = self#regs_for ty in
               let loc_res = self#insert_op_debug (Iextcall(lbl, alloc)) dbg
                                     loc_arg (Proc.loc_external_results rd) in
@@ -674,7 +673,7 @@ method private emit_parts_list env exp_list =
             None -> None
           | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
 
-method private emit_tuple env exp_list =
+method private emit_tuple_not_flattened env exp_list =
   let rec emit_list = function
     [] -> []
   | exp :: rem ->
@@ -682,14 +681,26 @@ method private emit_tuple env exp_list =
       let loc_rem = emit_list rem in
       match self#emit_expr env exp with
         None -> assert false  (* should have been caught in emit_parts *)
-      | Some loc_exp -> loc_exp :: loc_rem in
-  Array.concat(emit_list exp_list)
+      | Some loc_exp -> loc_exp :: loc_rem
+  in
+  emit_list exp_list
+
+method private emit_tuple env exp_list =
+  Array.concat (self#emit_tuple_not_flattened env exp_list)
 
 method emit_extcall_args env args =
-  let r1 = self#emit_tuple env args in
-  let (loc_arg, stack_ofs as arg_stack) = Proc.loc_external_arguments r1 in
-  self#insert_move_args r1 loc_arg stack_ofs;
-  arg_stack
+  let args = self#emit_tuple_not_flattened env args in
+  let arg_hard_regs, stack_ofs =
+    Proc.loc_external_arguments (Array.of_list args)
+  in
+  (* Flattening [args] and [arg_hard_regs] causes parts of values split
+     across multiple registers to line up correctly, by virtue of the
+     semantics of [split_int64_for_32bit_target] in cmmgen.ml, and the
+     required semantics of [loc_external_arguments] (see proc.mli). *)
+  let args = Array.concat args in
+  let arg_hard_regs = Array.concat (Array.to_list arg_hard_regs) in
+  self#insert_move_args args arg_hard_regs stack_ofs;
+  arg_hard_regs, stack_ofs
 
 method emit_stores env data regs_addr =
   let a =

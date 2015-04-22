@@ -154,7 +154,11 @@ let loc_results res =
    Return values in r0...r1 or d0. *)
 
 let loc_external_arguments arg =
-  calling_conventions 0 7 100 107 outgoing arg
+  let arg =
+    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
+  in
+  let loc, alignment = calling_conventions 0 7 100 107 outgoing arg in
+  Array.map (fun reg -> [|reg|]) loc, alignment
 let loc_external_results res =
   let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
 

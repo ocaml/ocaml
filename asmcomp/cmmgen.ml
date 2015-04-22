@@ -752,6 +752,24 @@ let box_int bi arg =
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
+(* Offsets of the least and most significant words for
+   an int64 on a 32 bit target *)
+let int64_for_32bit_target_offsets =
+  if Arch.big_endian then
+    (8, 4)
+  else
+    (4, 8)
+
+let split_int64_for_32bit_target arg =
+  bind "split_int64" arg (fun arg ->
+    let least_sig_ofs, most_sig_ofs =
+      int64_for_32bit_target_offsets
+    in
+    let least_sig_addr = Cop (Cadda, [Cconst_int least_sig_ofs; arg]) in
+    let most_sig_addr = Cop (Cadda, [Cconst_int most_sig_ofs; arg]) in
+    Ctuple [Cop (Cload Thirtytwo_unsigned, [least_sig_addr]);
+            Cop (Cload Thirtytwo_unsigned, [most_sig_addr])])
+
 let rec unbox_int bi arg =
   match arg with
     Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
@@ -772,8 +790,11 @@ let rec unbox_int bi arg =
   | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_int bi e1, unbox_int bi e2)
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_int bi e1, id, unbox_int bi e2)
   | _ ->
-      Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word_int),
-          [Cop(Cadda, [arg; Cconst_int size_addr])])
+      if size_int = 4 && bi = Pint64 then
+        split_int64_for_32bit_target arg
+      else
+        Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word_int),
+            [Cop(Cadda, [arg; Cconst_int size_addr])])
 
 let make_unsigned_int bi arg =
   if bi = Pint32 && size_int = 8
@@ -1346,7 +1367,6 @@ let subst_boxed_number boxed_number boxed_id unboxed_id exp =
     | Cassign(id, arg) when Ident.same id boxed_id ->
         Cassign(unboxed_id, subst(unbox_number boxed_number arg))
     | Cassign(id, arg) -> Cassign(id, subst arg)
-    | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload chunk, [Cvar id])
       when Ident.same id boxed_id &&
            chunk = box_chunk boxed_number &&
@@ -1358,6 +1378,16 @@ let subst_boxed_number boxed_number boxed_id unboxed_id exp =
            ofs = box_offset boxed_number ->
         Cvar unboxed_id
     | Cop(op, argv) -> Cop(op, List.map subst argv)
+    (* 64 bits integer on 32 bit target *)
+    | Ctuple [Cop (Cload Thirtytwo_unsigned,
+                   [Cop (Cadda, [Cconst_int ofs1; Cvar id1])]);
+              Cop (Cload Thirtytwo_unsigned,
+                   [Cop (Cadda, [Cconst_int ofs2; Cvar id2])])]
+      when size_int = 4 && boxed_number = Boxed_integer Pint64 &&
+           Ident.same id1 boxed_id && Ident.same id2 boxed_id &&
+           ((ofs1, ofs2) = int64_for_32bit_target_offsets) ->
+        Cvar unboxed_id
+    | Ctuple argv -> Ctuple(List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
     | Cswitch(arg, index, cases) ->
@@ -2153,7 +2183,12 @@ and transl_unbox_int bi = function
   | Uconst(Uconst_ref(_, Uconst_nativeint n)) ->
       Cconst_natint n
   | Uconst(Uconst_ref(_, Uconst_int64 n)) ->
-      assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
+      if size_int = 8 then
+        Cconst_natint (Int64.to_nativeint n)
+      else
+        let low = Int64.to_nativeint n in
+        let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
+        Ctuple [Cconst_natint low; Cconst_natint high]
   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
