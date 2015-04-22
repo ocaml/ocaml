@@ -77,7 +77,8 @@ module type S =
     val add: elt -> t -> t
     (** [add x s] returns a set containing all elements of [s],
        plus [x]. If [x] was already in [s], [s] is returned unchanged
-       (the result of the function is then physically equal to [s]). *)
+       (the result of the function is then physically equal to [s]).
+       @before 4.03 Physical equality was not ensured. *)
 
     val singleton: elt -> t
     (** [singleton x] returns the one-element set containing only [x]. *)
@@ -85,7 +86,8 @@ module type S =
     val remove: elt -> t -> t
     (** [remove x s] returns a set containing all elements of [s],
        except [x]. If [x] was not in [s], [s] is returned unchanged
-       (the result of the function is then physically equal to [s]). *)
+       (the result of the function is then physically equal to [s]).
+       @before 4.03 Physical equality was not ensured. *)
 
     val union: t -> t -> t
     (** Set union. *)
@@ -129,7 +131,8 @@ module type S =
     (** [filter p s] returns the set of all elements in [s]
        that satisfy predicate [p]. If [p] satisfies every element in [s],
        [s] is returned unchanged (the result of the function is then
-       physically equal to [s]). *)
+       physically equal to [s]).
+       @before 4.03 Physical equality was not ensured.*)
 
     val partition: (elt -> bool) -> t -> t * t
     (** [partition p s] returns a pair of sets [(s1, s2)], where
