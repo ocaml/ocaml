@@ -23,6 +23,7 @@ val debug : bool ref
 val fast : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
+val no_check_prims : bool ref
 val bytecode_compatible_32 : bool ref
 val output_c_object : bool ref
 val all_ccopts : string list ref

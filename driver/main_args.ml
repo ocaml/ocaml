@@ -160,6 +160,10 @@ let mk_no_app_funct f =
   "-no-app-funct", Arg.Unit f, " Deactivate applicative functors"
 ;;
 
+let mk_no_check_prims f =
+  "-no-check-prims", Arg.Unit f, " Do not check runtime for primitives"
+;;
+
 let mk_no_float_const_prop f =
   "-no-float-const-prop", Arg.Unit f,
   " Deactivate constant propagation for floating-point operations"
@@ -541,6 +545,7 @@ module type Bytecomp_options = sig
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
+  val _no_check_prims : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -642,6 +647,7 @@ struct
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
+    mk_custom F._no_check_prims;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
@@ -661,6 +667,7 @@ struct
     mk_modern F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
+    mk_no_check_prims F._no_check_prims;
     mk_noassert F._noassert;
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
