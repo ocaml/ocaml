@@ -223,10 +223,18 @@ module Make(Ord: OrderedType) =
 
     let rec remove x = function
         Empty -> Empty
-      | Node(l, v, r, _) ->
+      | (Node(l, v, r, _) as t) ->
           let c = Ord.compare x v in
-          if c = 0 then merge l r else
-          if c < 0 then bal (remove x l) v r else bal l v (remove x r)
+          if c = 0 then merge l r
+          else
+            if c < 0 then
+              let ll = remove x l in
+              if l == ll then t
+              else bal ll v r
+            else
+              let rr = remove x r in
+              if r == rr then t
+              else bal l v rr
 
     let rec union s1 s2 =
       match (s1, s2) with
