@@ -332,12 +332,14 @@ module Make(Ord: OrderedType) =
 
     let rec filter p = function
         Empty -> Empty
-      | Node(l, v, r, _) ->
+      | (Node(l, v, r, _)) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pv = p v in
           let r' = filter p r in
-          if pv then join l' v r' else concat l' r'
+          if pv then
+            if l==l' && r==r' then t else join l' v r'
+          else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)

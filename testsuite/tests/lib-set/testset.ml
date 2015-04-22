@@ -160,3 +160,11 @@ let () =
 
   assert (!s2 == !s1);
   assert(a2 -. a1 = a1 -. a0)
+
+let () =
+  (* check that filtering a set where all elements are satisfied by
+     the given predicate return the original set *)
+  let s1 = ref S.empty in
+  for i = 1 to 10 do s1 := S.add i !s1 done;
+  let s2 = S.filter (fun e -> e >= 0) !s1 in
+  assert (s2 == !s1)

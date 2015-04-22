@@ -127,7 +127,9 @@ module type S =
 
     val filter: (elt -> bool) -> t -> t
     (** [filter p s] returns the set of all elements in [s]
-       that satisfy predicate [p]. *)
+       that satisfy predicate [p]. If [p] satisfies every element in [s],
+       [s] is returned unchanged (the result of the function is then
+       physically equal to [s]). *)
 
     val partition: (elt -> bool) -> t -> t * t
     (** [partition p s] returns a pair of sets [(s1, s2)], where
