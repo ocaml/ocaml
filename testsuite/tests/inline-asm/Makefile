@@ -12,7 +12,7 @@
 
 BASEDIR=../..
 
-BYTE_CASES=float_round
+BYTE_CASES=float_round output_params
 CASES=$(BYTE_CASES) comprehensive test_intrinsics
 
 default: run-byte run-native compare-asm

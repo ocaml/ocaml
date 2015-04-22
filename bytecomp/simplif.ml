@@ -41,6 +41,16 @@ let rec eliminate_ref id = function
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v]) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lvar id]))
+  | Lprim(Pasm appl, el) when !Clflags.native_code ->
+      let open Inline_asm in
+      let ref_eliminated = Array.copy appl.ref_eliminated in
+      let el = List.mapi (fun i e ->
+        match appl.asm.args.(i).output, e with
+          true, Lvar v when Ident.same v id ->
+            ref_eliminated.(i) <- true;
+            Lvar v
+        | _, _ -> eliminate_ref id e) el in
+      Lprim(Pasm { appl with ref_eliminated }, el)
   | Lprim(p, el) ->
       Lprim(p, List.map (eliminate_ref id) el)
   | Lswitch(e, sw) ->

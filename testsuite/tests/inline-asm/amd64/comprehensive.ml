@@ -18,17 +18,23 @@ let ri64  = ref 6L
 let rinat = ref 6n
 let rt    = ref (6, 6)
 
+type float_ref = float ref
+type int_ref = int ref
+type int32_ref = int32 ref
+type int64_ref = int64 ref
+type nativeint_ref = nativeint ref
+
 external func1a : 'a ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1a" "r" "=r"
-external func1b : float ref -> 'a
+external func1b : float_ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1b" "r" "=r"
-external func1c : int ref -> int
+external func1c : int_ref -> int
   = "%asm" "" "mov	(%0), %1	# func1c" "r" "=r"
-external func1d : int32 ref -> 'a
+external func1d : int32_ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1d" "r" "=r"
-external func1e : int64 ref -> 'a
+external func1e : int64_ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1e" "r" "=r"
-external func1f : nativeint ref -> 'a
+external func1f : nativeint_ref -> 'a
   = "%asm" "" "mov	(%0), %1	# func1f" "r" "=r"
 external func1g : (int * int) ref -> int * int
   = "%asm" "" "mov	(%0), %1	# func1g" "r" "=r"
@@ -48,19 +54,19 @@ let () =
   let x = func1g rt    in assert (x = !rt);
 
 external func2a : 'a -> 'a ref                   -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2b : 'a -> float ref                -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+  = "%asm" "" "mov	%0, %1	# func2a" "r" "+r" "=" "memory"
+external func2b : float -> float ref             -> unit
+  = "%asm" "" "mov	%0, %1	# func2b" "r" "+r" "=" "memory"
 external func2c : int -> int ref                 -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2d : 'a -> int32 ref                -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2e : 'a -> int64 ref                -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
-external func2f : 'a -> nativeint ref            -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+  = "%asm" "" "mov	%0, %1	# func2c" "r" "+r" "=" "memory"
+external func2d : int32 -> int32 ref             -> unit
+  = "%asm" "" "mov	%0, %1	# func2d" "r" "+r" "=" "memory"
+external func2e : int64 -> int64 ref             -> unit
+  = "%asm" "" "mov	%0, %1	# func2e" "r" "+r" "=" "memory"
+external func2f : nativeint -> nativeint ref     -> unit
+  = "%asm" "" "mov	%0, %1	# func2f" "r" "+r" "=" "memory"
 external func2g : (int * int) -> (int * int) ref -> unit
-  = "%asm" "" "mov	%0, (%1)	# func2a" "r" "+r" "=" "memory"
+  = "%asm" "" "mov	%0, %1	# func2g" "r" "+r" "=" "memory"
 let () =
   (* Test a register-memory instruction *)
   func2a f    rf   ; assert (!rf    = f);
@@ -117,20 +123,20 @@ let () =
   let x = func3f inat in assert (x = inat);
   let x = func3g t    in assert (x = t);
 
-external func4a : int -> unit
+external func4a : int ref -> unit
   = "%asm" "" "add	$0x2, %0	# func4a" "+r" "="
-external func4b : int32 -> unit
+external func4b : int32 ref -> unit
   = "%asm" "" "add	$0x1, %0	# func4b" "+r" "="
-external func4c : int64 -> unit
+external func4c : int64 ref -> unit
   = "%asm" "" "add	$0x1, %0	# func4c" "+r" "="
-external func4d : nativeint -> unit
+external func4d : nativeint ref -> unit
   = "%asm" "" "add	$0x1, %0	# func4d" "+r" "="
 let () =
   (* Test a immediate-register instruction *)
-  let x = !ri                   in func4a x; assert (x = 7);
-  let x = Int32.add i32 1l      in func4b x; assert (x = 6l);
-  let x = Int64.add i64 1L      in func4c x; assert (x = 6L);
-  let x = Nativeint.add inat 1n in func4d x; assert (x = 6n);
+  let x = ref 6  in func4a x; assert (!x = 7);
+  let x = ref 6l in func4b x; assert (!x = 7l);
+  let x = ref 6L in func4c x; assert (!x = 7L);
+  let x = ref 6n in func4d x; assert (!x = 7n);
 
 external func5a : int -> int       = "%asm" ""
        "mov	$0x2, %1	# func5a
@@ -163,21 +169,21 @@ let () =
   (* Test memory argument *)
   let x = func9a !ri in assert (x = 6);
 
-external func10a : int -> unit = "%asm" ""
+external func10a : int ref -> unit = "%asm" ""
        "inc	%%eax	# func10a
 	inc	%%eax" "+a" "" "cc"
 let () =
   (* Test exact register EAX argument *)
-  let x = !ri in func10a x; assert (x = 7);
+  let x = ref 6 in func10a x; assert (!x = 7);
 
-external func11a : int -> int -> unit = "%asm" ""
+external func11a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func11a
 	decq	%1" "r" "+d" "" "cc"
 let () =
   (* Test exact register RDX argument *)
-  let x = !ri in func11a 5 x; assert (x = 11);
+  let x = ref 6 in func11a 5 x; assert (!x = 11);
 
-external func12a : int -> int -> int -> int = "%asm" ""
+external func12a : int -> int -> int ref -> int = "%asm" ""
        "sar	$1, %1	# func12a
 	xorq	$1, %2
 	mul	%1
@@ -188,9 +194,9 @@ let () =
   (* Test multiple outputs and commutative inputs *)
   let x = !ri in
   let y = !ri in
-  let z = !ri in
+  let z = ref 0 in
   let w = func12a x y z in
-  assert (z = 36);
+  assert (!z = 36);
   assert (w = 0);
 
 external func12b : float -> float -> float
@@ -202,7 +208,7 @@ let () =
   let x = !rf +. 1. in let z = func12b !rf x in assert (z = 13.);
   let x = !rf +. 1. in let z = func12c !rf x in assert (z = 13.);
 
-external func13a : int -> int -> int -> int = "%asm" ""
+external func13a : int -> int -> int ref -> int = "%asm" ""
        "sar	$1, %1	# func 13a
 	xorq	$1, %2
 	mul	%1
@@ -213,92 +219,92 @@ let () =
   (* Test multiple outputs, commutative inputs and an exact input argument *)
   let x = !ri in
   let y = !ri in
-  let z = !ri in
+  let z = ref 0 in
   let w = func13a x y z in
-  assert (z = 36);
+  assert (!z = 36);
   assert (w = 0);
 
-external func14a : int -> int -> unit = "%asm" ""
+external func14a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func14a
 	decq	%1" "rm" "+r" "" "cc"
 let () =
   (* Test multiple memory-register constraint *)
-  let x = !ri in let y = !ri in func14a x y; assert (y = 12);
-  let x = !ri in func14a !ri x; assert (x = 12);
+  let x = !ri in let y = ref !ri in func14a x y; assert (!y = 12);
+  let x = ref !ri in func14a !ri x; assert (!x = 12);
 
-external func15a : int -> int -> unit = "%asm" ""
+external func15a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func15a
 	decq	%1" "g" "+r" "" "cc"
 let () =
   (* Test multiple immediate-memory-register constraint *)
-  let x = !ri in let y = !ri in func15a x y; assert (y = 12);
-  let x = !ri in func15a !ri x; assert (x = 12);
-  let x = !ri in func15a 6 x; assert (x = 12);
+  let x = !ri in let y = ref !ri in func15a x y; assert (!y = 12);
+  let x = ref !ri in func15a !ri x; assert (!x = 12);
+  let x = ref !ri in func15a 6 x; assert (!x = 12);
 
-external func16a : int -> int -> unit = "%asm" ""
+external func16a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func16a
 	decq	%1" "i" "+r" "" "cc"
-external func16b : int64 -> int64 -> unit = "%asm" ""
-       "add	%0, %1	# func16n" "i" "+r" "" "cc"
+external func16b : int64 -> int64 ref -> unit = "%asm" ""
+       "add	%0, %1	# func16b" "i" "+r" "" "cc"
 let () =
   (* Test immediate argument *)
-  let x = !ri in func16a 6 x; assert (x = 12);
-  let x = Int64.add !ri64 1L in func16b 6L x; assert (x = 13L);
+  let x = ref 1 in func16a 6 x; assert (!x = 7);
+  let x = ref 1L in func16b 6L x; assert (!x = 7L);
 
-external func17a : int -> int -> unit = "%asm" ""
+external func17a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func17a
 	decq	%1" "m#hello" "+r" "" "cc"
 let () =
   (* Test constraint comments *)
-  let x = !ri in func17a !ri x; assert (x = 12);
+  let x = ref !ri in func17a !ri x; assert (!x = 12);
 
-external func18a : int -> int -> unit = "%asm" ""
+external func18a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func18a
 	decq	%1" "r,m,r" "+m,r,r" ",," "memory" "cc"
 let () =
   (* Test multiple constraint alternatives *)
-  let x = !ri in let y = !ri in func18a x y; assert (y = 12);
-  let x = !ri in func18a !ri x; assert (x = 12);
-  let x = !ri in func18a x !ri; assert (!ri = 12);
+  let x = !ri in let y = ref !ri in func18a x y; assert (!y = 12);
+  let x = ref !ri in func18a !ri x; assert (!x = 12);
+  let x = !ri in func18a x ri; assert (!ri = 12);
   ri := 6
 
 (* func19 and slight disparagement weren't implemented because how it works is
    unclear. *)
 
-external func20a : int -> int -> unit = "%asm" ""
+external func20a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func20a
 	decq	%1" "d?,r" "+r?,a" "," "memory" "cc"
-external func20b : int -> int -> unit = "%asm" ""
+external func20b : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func20b
 	decq	%1" "d,r?" "+r,a?" "," "memory" "cc"
 let () =
   (* Test slight alternative disparagement *)
-  let x = !ri in let y = !ri in func20a x y; assert (y = 12);
-  let x = !ri in let y = !ri in func20b x y; assert (y = 12);
+  let x = !ri in let y = ref !ri in func20a x y; assert (!y = 12);
+  let x = !ri in let y = ref !ri in func20b x y; assert (!y = 12);
 
-external func21a : int -> int -> unit = "%asm" ""
+external func21a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func21a
 	decq	%1" "d??,r?" "+r??,a?" "," "memory" "cc"
-external func21b : int -> int -> unit = "%asm" ""
+external func21b : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func21b
 	decq	%1" "d?,r??" "+r?,a??" "," "memory" "cc"
 let () =
   (* Test multiple slight alternative disparagement *)
-  let x = !ri in let y = !ri in func21a x y; assert (y = 12);
-  let x = !ri in let y = !ri in func21b x y; assert (y = 12);
+  let x = !ri in let y = ref !ri in func21a x y; assert (!y = 12);
+  let x = !ri in let y = ref !ri in func21b x y; assert (!y = 12);
 
-external func22a : int -> int -> unit = "%asm" ""
+external func22a : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func22a
 	decq	%1" "d!,r??" "+r!,a??" "," "memory" "cc"
-external func22b : int -> int -> unit = "%asm" ""
+external func22b : int -> int ref -> unit = "%asm" ""
        "add	%0, %1	# func22b
 	decq	%1" "d??,r!" "+r??,a!" "," "memory" "cc"
 let () =
   (* Test severe alternative disparagement *)
-  let x = !ri in let y = !ri in func22a x y; assert (y = 12);
-  let x = !ri in let y = !ri in func22b x y; assert (y = 12);
+  let x = !ri in let y = ref !ri in func22a x y; assert (!y = 12);
+  let x = !ri in let y = ref !ri in func22b x y; assert (!y = 12);
 
-external func23a : int -> int -> unit = "%asm" ""
+external func23a : int -> int ref -> unit = "%asm" ""
        "sar	$1, %0	# func23a
 	xorq	$1, %1
 	mul	%0
@@ -307,9 +313,9 @@ external func23a : int -> int -> unit = "%asm" ""
 	orq	$1, %0" "g" "+a" "" "%rdx" "cc"
 let () =
   (* Test register clobber *)
-  let x = !ri in let y = !ri in func23a x y; assert (y = 36);
+  let x = !ri in let y = ref !ri in func23a x y; assert (!y = 36);
 
-external func24a : int -> int -> unit = "%asm" ""
+external func24a : int -> int ref -> unit = "%asm" ""
        "mov	%0, %%rdi	# func24a
 	call	foo
         jmp	next
@@ -321,9 +327,9 @@ foo:	sar	$1, %%rdi
 next:	" "g" "+a" "" "%rdi" "%rsi" "%rcx" "%r8" "%r9" "memory" "cc"
 let () =
   (* Test multiple register clobber *)
-  let x = !ri in let y = !ri in func24a x y; assert (y = 36);
+  let x = !ri in let y = ref !ri in func24a x y; assert (!y = 36);
 
-external func25a : int -> int -> int -> int -> int = "%asm" ""
+external func25a : int -> int -> int ref -> int ref -> int = "%asm" ""
        "mov	%0, %2	# func25a
 	mov	%1, %3
 	shr	$10, %2
@@ -336,8 +342,8 @@ let () =
   (* Test explicit temporaries *)
   let x = !ri in
   let y = !ri in
-  let z = !ri in
-  let w = !ri in
+  let z = ref !ri in
+  let w = ref !ri in
   let u = func25a x y z w in
   assert (u = 6656);
 
@@ -383,15 +389,15 @@ let () =
 
 (* X87 and MMX registers are currently not supported *)
 
-external func43a : m128d -> m128d -> unit
+external func43a : m128d -> m128d ref -> unit
   = "%asm" "" "addpd	%0, %1	# func43a" "x" "+&x" ""
 let () =
   (* Test XMM registers *)
   let x = _mm_set_pd 1. 2. in
-  let y = _mm_set_pd 3. 4. in
+  let y = ref (_mm_set_pd 3. 4.) in
   func43a x y;
-  assert (_mm_cvtsd_f64 y = 4.);
-  assert (_mm_cvtsd_f64 (_mm_unpackhi_pd y y) = 6.);
+  assert (_mm_cvtsd_f64 !y = 4.);
+  assert (_mm_cvtsd_f64 (_mm_unpackhi_pd !y !y) = 6.);
 
 (* Integer constraints are currently not supported *)
 
@@ -483,5 +489,3 @@ let () =
     let y = func79a x in
     assert (_mm256_castpd256_pd128 x = y)
   end
-
-

@@ -1215,8 +1215,10 @@ type unboxed_number_kind =
   | Boxed_m256i
 
 let rec is_unboxed_number = function
-    Uconst(Uconst_ref(_, Uconst_float _)) ->
-      Boxed_float
+    Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
+  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
           Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
@@ -1254,9 +1256,10 @@ let rec is_unboxed_number = function
         | Pbigstring_load_32(_) -> Boxed_integer Pint32
         | Pbigstring_load_64(_) -> Boxed_integer Pint64
         | Pbbswap bi -> Boxed_integer bi
-        | Pasm (asm, _) ->
-            let args = asm.Inline_asm.args in
-            begin match args.(Array.length args - 1).Inline_asm.kind with
+        | Pasm appl ->
+            let open Inline_asm in
+            let args = appl.asm.args in
+            begin match args.(Array.length args - 1).kind with
             | `Float -> Boxed_float
             | `Int32 -> Boxed_integer Pint32
             | `Int64 -> Boxed_integer Pint64
@@ -1475,8 +1478,8 @@ let rec transl = function
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
           tag_int (Cop(Cload Word, [field_address (transl b) dim_ofs]))
-      | (Pasm (asm, loc), args) ->
-          transl_asm asm loc args
+      | (Pasm appl, args) ->
+          transl_asm appl args
       | (p, [arg]) ->
           transl_prim_1 p arg dbg
       | (p, [arg1; arg2]) ->
@@ -1588,37 +1591,63 @@ let rec transl = function
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
 
-and transl_asm asm loc args =
-  let asm_args = asm.Inline_asm.args in
-  let transl_args = List.mapi (fun i arg ->
-    let asm_arg = asm_args.(i) in
-    match asm_arg.Inline_asm.kind with
-    | `Addr | `Int -> transl arg
-    | `Float       -> transl_unbox_float          arg
-    | `Int32       -> transl_unbox_int Pint32     arg
-    | `Int64       -> transl_unbox_int Pint64     arg
-    | `M128d       -> transl_unbox_m128d          arg
-    | `M256d       -> transl_unbox_m256d          arg
-    | `M128i       -> transl_unbox_m128i          arg
-    | `M256i       -> transl_unbox_m256i          arg
-    | `Nativeint   -> transl_unbox_int Pnativeint arg
-    | `Unit        -> remove_unit (transl arg)) args
+and transl_asm appl args =
+  let open Inline_asm in
+  let rec sequence = function
+    [] -> assert false
+  | [c] -> c
+  | [c; c'] -> Csequence(c, c')
+  | c :: cs -> Csequence(c, sequence cs)
   in
-  let ident x = x in
-  let box_res =
-    match asm_args.(Array.length asm_args - 1).Inline_asm.kind with
-      `Addr | `Int -> ident
-    | `Float       -> box_float
-    | `Int32       -> box_int Pint32
-    | `Int64       -> box_int Pint64
-    | `M128d       -> box_m128d
-    | `M256d       -> box_m256d
-    | `M128i       -> box_m128i
-    | `M256i       -> box_m256i
-    | `Nativeint   -> box_int Pnativeint
-    | `Unit        -> return_unit
+  let rec make_expression transl_args assigns args n =
+    let asm_arg = appl.asm.args.(n) in
+    let transl_unbox, unbox, box =
+      match asm_arg.kind with
+        `Addr
+      | `Int       -> transl, (fun x -> x), (fun x -> x)
+      | `Float     -> transl_unbox_float, unbox_float, box_float
+      | `Int32     -> transl_unbox_int Pint32, unbox_int Pint32, box_int Pint32
+      | `Int64     -> transl_unbox_int Pint64, unbox_int Pint64, box_int Pint64
+      | `M128d     -> transl_unbox_m128d, unbox_m128d, box_m128d
+      | `M256d     -> transl_unbox_m256d, unbox_m256d, box_m256d
+      | `M128i     -> transl_unbox_m128i, unbox_m128i, box_m128i
+      | `M256i     -> transl_unbox_m256i, unbox_m256i, box_m256i
+      | `Nativeint ->
+          transl_unbox_int Pnativeint, unbox_int Pnativeint, box_int Pnativeint
+      | `Unit      ->
+          (fun x -> remove_unit (transl x)), (fun x -> x), return_unit
+    in
+    match args with
+      arg :: args ->
+        if asm_arg.output then
+          let unboxed = Ident.create "unboxed" in
+          let id = match arg with Uvar id -> id | _ -> Ident.create "deref" in
+          let assign, arg_expr =
+            if appl.ref_eliminated.(n) then
+              Cassign(id, box (Cvar unboxed)), Cvar id
+            else
+              return_unit(set_field (Cvar id) 0 (box (Cvar unboxed))),
+              get_field (Cvar id) 0
+          in
+          let assigns = assign :: assigns in
+          let transl_args = (Cvar unboxed) :: transl_args in
+          let expr = Clet(unboxed, unbox arg_expr,
+            make_expression transl_args assigns args (n + 1)) in
+          match arg with
+            Uvar _ -> expr
+          | _ -> Clet(id, transl arg, expr)
+        else
+          let transl_args = (transl_unbox arg) :: transl_args in
+          make_expression transl_args assigns args (n + 1)
+    | [] ->
+        let asm = box (Cop(Casm appl, List.rev transl_args)) in
+        if asm_arg.kind = `Unit || assigns = [] then
+          sequence (asm :: assigns)
+        else
+          let result = Ident.create "result" in
+          Clet(result, asm, sequence (assigns @ [Cvar result]))
   in
-  box_res(Cop(Casm (asm, loc), transl_args))
+  make_expression [] [] args 0
 
 and transl_prim_1 p arg dbg =
   match p with

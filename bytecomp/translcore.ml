@@ -371,7 +371,9 @@ let specialize_comparison table env ty =
 
 let specialize_primitive loc p env ty ~has_constant_constructor =
   match p.prim_asm with
-  | Some asm -> Pasm (asm, loc)
+  | Some asm ->
+      let ref_eliminated = Array.make p.prim_arity false in
+      Pasm { Inline_asm.asm; ref_eliminated; loc }
   | None ->
     try
       let table = Hashtbl.find comparisons_table p.prim_name in
@@ -416,6 +418,8 @@ let transl_primitive loc p env ty =
     try specialize_primitive loc p env ty ~has_constant_constructor:false
     with Not_found -> Pccall p
   in
+  let rec make_params n =
+    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
@@ -432,8 +436,6 @@ let transl_primitive loc p env ty =
       | _ -> assert false
     end
   | _ ->
-      let rec make_params n =
-        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
       Lfunction(Curried, params,
                 Lprim(prim, List.map (fun id -> Lvar id) params))

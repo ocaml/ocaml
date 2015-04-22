@@ -48,8 +48,8 @@ let oper_result_type = function
   | Cintoffloat -> typ_int
   | Craise _ -> typ_void
   | Ccheckbound _ -> typ_void
-  | Casm (asm, _) ->
-      let args = asm.Inline_asm.args in
+  | Casm appl ->
+      let args = appl.Inline_asm.asm.Inline_asm.args in
       match args.(Array.length args - 1).Inline_asm.kind with
         `Addr  -> typ_addr
       | `Float -> typ_float
@@ -399,7 +399,8 @@ method select_operation op args =
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
   | (Ccheckbound _, _) -> self#select_arith Icheckbound args
-  | (Casm (asm, loc), _) ->
+  | (Casm appl, _) ->
+      let { Inline_asm.asm; loc; _ } = appl in
       begin match self#asm_best_alternative asm args with
         None ->
           (* This error means that no inline assembly alterternative fits the

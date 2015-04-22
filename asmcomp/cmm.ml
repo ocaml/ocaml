@@ -104,7 +104,7 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
-  | Casm of Inline_asm.inline_asm * Location.t
+  | Casm of Inline_asm.application
 
 type expression =
     Cconst_int of int

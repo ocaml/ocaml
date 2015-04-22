@@ -1353,26 +1353,39 @@ let transl_exception env sext =
 (** Extracts types of function argument infos to be used by inline asm. *)
 let inline_asm_args ty =
   let open Types in
+  let get_atomic_type path =
+    match Path.last path with
+      "float"     -> `Float
+    | "int"       -> `Int
+    | "int32"     -> `Int32
+    | "int64"     -> `Int64
+    | "nativeint" -> `Nativeint
+    | "m128d"     -> `M128d
+    | "m128i"     -> `M128i
+    | "m256d"     -> `M256d
+    | "m256i"     -> `M256i
+    | _           -> `Addr (* we'll treat everything else as pointer *)
+  in
   let get_type = function
-      Tconstr(path, _, _) ->
-        begin match Path.name path with
-        | "float"     -> `Float
-        | "int"       -> `Int
-        | "int32"     -> `Int32
-        | "int64"     -> `Int64
-        | "nativeint" -> `Nativeint
-        | "m128d"     -> `M128d
-        | "m128i"     -> `M128i
-        | "m256d"     -> `M256d
-        | "m256i"     -> `M256i
-        | "unit"      -> `Unit
-        | _           -> `Addr (* we'll treat everything else as pointer *)
+      Tconstr(path, exprs, _) ->
+        begin match Path.last path with
+        | "unit" -> `Unit
+        | "ref" ->
+            begin match exprs with
+            | [expr] ->
+                begin match expr.desc with
+                  Tconstr(path, _, _) -> get_atomic_type path
+                | _ -> `Addr
+                end
+            | _ -> `Addr
+            end
+        | _ -> get_atomic_type path
         end
     | _ -> `Addr
   in
   let rec get_types acc ty =
     match ty.desc with
-    | Tarrow(_, t1, t2, _) -> get_types (get_type t1.desc :: acc) t2
+      Tarrow(_, t1, t2, _) -> get_types (get_type t1.desc :: acc) t2
     | t -> List.rev (get_type t :: acc)
   in
   get_types [] ty

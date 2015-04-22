@@ -126,7 +126,7 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
   (* Inline asm *)
-  | Pasm of Inline_asm.inline_asm * Location.t
+  | Pasm of Inline_asm.application
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

@@ -118,6 +118,12 @@ type inline_asm = {
   (** The raw string declaration of the assembly primitive *)
 }
 
+(** An application of inline assembly *)
+type application = {
+  asm            : inline_asm;
+  ref_eliminated : bool array;
+  loc            : Location.t }
+
 val parse: arg_kind list -> string list -> inline_asm
 
 val name : inline_asm -> string

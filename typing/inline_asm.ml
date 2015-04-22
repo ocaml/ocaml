@@ -70,6 +70,11 @@ type inline_asm = {
   arch_specifics : arch_specific list;
   decl           : string array }
 
+type application = {
+  asm            : inline_asm;
+  ref_eliminated : bool array;
+  loc            : Location.t }
+
 (** Parses the template given as string with arguments given as %i, for example
     "addpd %0 %1".  Double percentage is unescaped. *)
 let parse_template ~nargs template =
