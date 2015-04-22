@@ -190,8 +190,13 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
+type inline_attribute =
+  | Force_inline
+  | Never_inline
+  | Default_inline
+
 type function_attribute = {
-  inline : bool;
+  inline : inline_attribute;
 }
 
 type lambda =

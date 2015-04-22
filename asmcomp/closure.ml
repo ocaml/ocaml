@@ -1091,7 +1091,7 @@ and close_functions fenv cenv fun_defs =
   in
   let inline_attribute = match fun_defs with
     | [_, Lfunction{kind; params; body; attr = { inline }}] -> inline
-    | _ -> false (* recursive functions can't be inlined *)
+    | _ -> Default_inline (* recursive functions can't be inlined *)
   in
 
   (* Update and check nesting depth *)
@@ -1172,8 +1172,10 @@ and close_functions fenv cenv fun_defs =
         fun_params
     in
     let threshold =
-      if inline_attribute then max_int else
-        !Clflags.inline_threshold + n
+      match inline_attribute with
+      | Default_inline -> !Clflags.inline_threshold + n
+      | Force_inline -> max_int
+      | Never_inline -> min_int
     in
     if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);

@@ -64,6 +64,7 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Expect_tailcall                         (* 50 *)
   | Missplaced_attribute of string          (* 51 *)
+  | Duplicated_attribute of string          (* 52 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

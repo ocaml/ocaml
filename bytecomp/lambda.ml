@@ -181,8 +181,13 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
+type inline_attribute =
+  | Force_inline
+  | Never_inline
+  | Default_inline
+
 type function_attribute = {
-  inline : bool;
+  inline : inline_attribute;
 }
 
 type lambda =
@@ -236,7 +241,7 @@ let const_unit = Const_pointer 0
 let lambda_unit = Lconst const_unit
 
 let default_function_attribute = {
-  inline = false;
+  inline = Default_inline;
 }
 
 (* Build sharing keys *)

@@ -250,7 +250,10 @@ let primitive ppf = function
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
 let function_attribute ppf { inline } =
-  if inline then fprintf ppf "inline@ "
+  match inline with
+  | Default_inline -> ()
+  | Force_inline -> fprintf ppf "force_inline@ "
+  | Never_inline -> fprintf ppf "never_inline@ "
 
 let rec lam ppf = function
   | Lvar id ->

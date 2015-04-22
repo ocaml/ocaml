@@ -649,8 +649,40 @@ let rec cut n l =
 
 let try_ids = Hashtbl.create 8
 
+let is_inline_attribute = function
+  | {txt=("inline"|"ocaml.inline")}, _ -> true
+  | _ -> false
+
+let get_inline_attribute e =
+  let warning txt = Warnings.Attribute_payload
+      (txt, "It must be either empty, 'force' or 'inline'")
+  in
+  match List.filter is_inline_attribute e.exp_attributes with
+  | [] -> Default_inline
+  | [({txt;loc}, payload)] -> begin
+      let open Parsetree in
+      match payload with
+      | PStr [] -> Force_inline
+      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+          match pexp_desc with
+          | Pexp_ident { txt = Longident.Lident "never" } ->
+              Never_inline
+          | Pexp_ident { txt = Longident.Lident "force" } ->
+              Force_inline
+          | _ ->
+              Location.prerr_warning loc (warning txt);
+              Default_inline
+        end
+      | _ ->
+          Location.prerr_warning loc (warning txt);
+          Default_inline
+    end
+  | _ :: ({txt;loc}, _) :: _ ->
+      Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
+      Default_inline
+
 let has_inline_attribute e =
-  List.exists (fun ({txt},_) -> txt="inline") e.exp_attributes
+  List.exists is_inline_attribute e.exp_attributes
 
 let has_tailcall_attribute e =
   List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
@@ -710,11 +742,7 @@ and transl_exp0 e =
             let pl = push_defaults e.exp_loc [] pat_expr_list partial in
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
-      let attr =
-        if has_inline_attribute e
-        then { inline = true }
-        else default_function_attribute
-      in
+      let attr = { inline = get_inline_attribute e } in
       Lfunction{kind; params; body; attr}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)

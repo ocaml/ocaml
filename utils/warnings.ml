@@ -69,6 +69,7 @@ type t =
   | No_cmi_file of string                   (* 49 *)
   | Expect_tailcall                         (* 50 *)
   | Missplaced_attribute of string          (* 51 *)
+  | Duplicated_attribute of string          (* 52 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -129,9 +130,10 @@ let number = function
   | No_cmi_file _ -> 49
   | Expect_tailcall -> 50
   | Missplaced_attribute _ -> 51
+  | Duplicated_attribute _ -> 52
 ;;
 
-let last_warning_number = 51
+let last_warning_number = 52
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -392,6 +394,8 @@ let message = function
       Printf.sprintf "expected tailcall"
   | Missplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
+  | Duplicated_attribute attr_name ->
+      Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
 ;;
 
 let nerrors = ref 0;;
