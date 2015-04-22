@@ -635,9 +635,9 @@ let rec expr_size env = function
       expr_size env body
   | Uprim(Pmakeblock(tag, mut), args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Paddrarray | Pintarray), args, _) ->
+  | Uprim(Pmakearray, args, _) ->
       RHS_block (List.length args)
-  | Uprim(Pmakearray(Pfloatarray), args, _) ->
+  | Uprim(Pmakefloatarray, args, _) ->
       RHS_floatblock (List.length args)
   | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
       RHS_block sz
@@ -1208,8 +1208,8 @@ let rec is_unboxed_number = function
         | Psubfloat -> Boxed_float
         | Pmulfloat -> Boxed_float
         | Pdivfloat -> Boxed_float
-        | Parrayrefu Pfloatarray -> Boxed_float
-        | Parrayrefs Pfloatarray -> Boxed_float
+        | Pfloatarrayrefu -> Boxed_float
+        | Pfloatarrayrefs -> Boxed_float
         | Pbintofint bi -> Boxed_integer bi
         | Pcvtbint(src, dst) -> Boxed_integer dst
         | Pnegbint bi -> Boxed_integer bi
@@ -1387,19 +1387,15 @@ let rec transl = function
             Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc,
                          dbg),
                 List.map transl args)
-      | (Pmakearray kind, []) ->
+      | (Pmakearray, []) ->
           transl_structured_constant (Uconst_block(0, []))
-      | (Pmakearray kind, args) ->
-          begin match kind with
-            Pgenarray ->
-              Cop(Cextcall("caml_make_array", typ_addr, true, Debuginfo.none),
-                  [make_alloc 0 (List.map transl args)])
-          | Paddrarray | Pintarray ->
-              make_alloc 0 (List.map transl args)
-          | Pfloatarray ->
-              make_float_alloc Obj.double_array_tag
-                              (List.map transl_unbox_float args)
-          end
+      | (Pmakearray, args) ->
+          make_alloc 0 (List.map transl args)
+      | (Pmakefloatarray, []) ->
+          transl_structured_constant (Uconst_block(0, []))
+      | (Pmakefloatarray, args) ->
+          make_float_alloc Obj.double_array_tag
+            (List.map transl_unbox_float args)
       | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
             bigarray_get unsafe elt_kind layout
@@ -1559,6 +1555,17 @@ and transl_prim_1 p arg dbg =
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   | Pint_as_pointer ->
      Cop(Cadda, [transl arg; Cconst_int (-1)])
+  | Pobjsize ->
+      let len =
+        if wordsize_shift = numfloat_shift then
+          Cop(Clsr, [header(transl arg); Cconst_int wordsize_shift])
+        else
+          bind "header" (header(transl arg)) (fun hdr ->
+            Cifthenelse(is_addr_array_hdr hdr,
+                        Cop(Clsr, [hdr; Cconst_int wordsize_shift]),
+                        Cop(Clsr, [hdr; Cconst_int numfloat_shift])))
+      in
+      Cop(Cor, [len; Cconst_int 1])
   (* Exceptions *)
   | Praise k ->
       Cop(Craise (k, dbg), [transl arg])
@@ -1601,23 +1608,10 @@ and transl_prim_1 p arg dbg =
   | Pstringlength ->
       tag_int(string_length (transl arg))
   (* Array operations *)
-  | Parraylength kind ->
-      begin match kind with
-        Pgenarray ->
-          let len =
-            if wordsize_shift = numfloat_shift then
-              Cop(Clsr, [header(transl arg); Cconst_int wordsize_shift])
-            else
-              bind "header" (header(transl arg)) (fun hdr ->
-                Cifthenelse(is_addr_array_hdr hdr,
-                            Cop(Clsr, [hdr; Cconst_int wordsize_shift]),
-                            Cop(Clsr, [hdr; Cconst_int numfloat_shift]))) in
-          Cop(Cor, [len; Cconst_int 1])
-      | Paddrarray | Pintarray ->
-          Cop(Cor, [addr_array_length(header(transl arg)); Cconst_int 1])
-      | Pfloatarray ->
-          Cop(Cor, [float_array_length(header(transl arg)); Cconst_int 1])
-      end
+  | Parraylength ->
+      Cop(Cor, [addr_array_length(header(transl arg)); Cconst_int 1])
+  | Pfloatarraylength ->
+      Cop(Cor, [float_array_length(header(transl arg)); Cconst_int 1])
   (* Boolean operations *)
   | Pnot ->
       Cop(Csubi, [Cconst_int 4; transl arg]) (* 1 -> 3, 3 -> 1 *)
@@ -1651,12 +1645,11 @@ and transl_prim_1 p arg dbg =
 and transl_prim_2 p arg1 arg2 dbg =
   match p with
   (* Heap operations *)
-    Psetfield(n, ptr) ->
-      if ptr then
-        return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
-                        [field_address (transl arg1) n; transl arg2]))
-      else
-        return_unit(set_field (transl arg1) n (transl arg2))
+    Psetfield(n, Pmaybe_addr) ->
+      return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
+                      [field_address (transl arg1) n; transl arg2]))
+  | Psetfield(n, Pnot_addr) ->
+      return_unit(set_field (transl arg1) n (transl arg2))
   | Psetfloatfield n ->
       let ptr = transl arg1 in
       return_unit(
@@ -1664,7 +1657,12 @@ and transl_prim_2 p arg1 arg2 dbg =
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float arg2]))
-
+  | Pobjfield ->
+      bind "arr" (transl arg1) (fun arr ->
+            bind "index" (transl arg2) (fun idx ->
+              Cifthenelse(is_addr_array_ptr arr,
+                          addr_array_ref arr idx,
+                          float_array_ref arr idx)))
   (* Boolean operations *)
   | Psequand ->
       Cifthenelse(test_bool(transl arg1), transl arg2, Cconst_int 1)
@@ -1793,49 +1791,22 @@ and transl_prim_2 p arg1 arg2 dbg =
                       (unaligned_load_64 ba_data idx)))))
 
   (* Array operations *)
-  | Parrayrefu kind ->
-      begin match kind with
-        Pgenarray ->
-          bind "arr" (transl arg1) (fun arr ->
-            bind "index" (transl arg2) (fun idx ->
-              Cifthenelse(is_addr_array_ptr arr,
-                          addr_array_ref arr idx,
-                          float_array_ref arr idx)))
-      | Paddrarray | Pintarray ->
-          addr_array_ref (transl arg1) (transl arg2)
-      | Pfloatarray ->
-          float_array_ref (transl arg1) (transl arg2)
-      end
-  | Parrayrefs kind ->
-      begin match kind with
-      | Pgenarray ->
-          bind "index" (transl arg2) (fun idx ->
-          bind "arr" (transl arg1) (fun arr ->
-          bind "header" (header arr) (fun hdr ->
-            if wordsize_shift = numfloat_shift then
-              Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                        Cifthenelse(is_addr_array_hdr hdr,
-                                    addr_array_ref arr idx,
-                                    float_array_ref arr idx))
-            else
-              Cifthenelse(is_addr_array_hdr hdr,
-                Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                          addr_array_ref arr idx),
-                Csequence(make_checkbound dbg [float_array_length hdr; idx],
-                          float_array_ref arr idx)))))
-      | Paddrarray | Pintarray ->
-          bind "index" (transl arg2) (fun idx ->
-          bind "arr" (transl arg1) (fun arr ->
-            Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
-                      addr_array_ref arr idx)))
-      | Pfloatarray ->
-          box_float(
-            bind "index" (transl arg2) (fun idx ->
-            bind "arr" (transl arg1) (fun arr ->
-              Csequence(make_checkbound dbg
-                                        [float_array_length(header arr); idx],
-                        unboxed_float_array_ref arr idx))))
-      end
+  | Parrayrefu ->
+      addr_array_ref (transl arg1) (transl arg2)
+  | Parrayrefs ->
+      bind "index" (transl arg2) (fun idx ->
+      bind "arr" (transl arg1) (fun arr ->
+        Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
+                  addr_array_ref arr idx)))
+  | Pfloatarrayrefu ->
+      float_array_ref (transl arg1) (transl arg2)
+  | Pfloatarrayrefs ->
+      box_float(
+        bind "index" (transl arg2) (fun idx ->
+        bind "arr" (transl arg1) (fun arr ->
+          Csequence(make_checkbound dbg
+                                    [float_array_length(header arr); idx],
+                    unboxed_float_array_ref arr idx))))
 
   (* Operations on bitvects *)
   | Pbittest ->
@@ -1892,8 +1863,16 @@ and transl_prim_2 p arg1 arg2 dbg =
 
 and transl_prim_3 p arg1 arg2 arg3 dbg =
   match p with
+  (* Heap operations *)
+  | Pobjsetfield ->
+      bind "newval" (transl arg3) (fun newval ->
+        bind "index" (transl arg2) (fun index ->
+          bind "arr" (transl arg1) (fun arr ->
+            Cifthenelse(is_addr_array_ptr arr,
+                        addr_array_set arr index newval,
+                        float_array_set arr index (unbox_float newval)))))
   (* String operations *)
-    Pstringsetu ->
+  | Pstringsetu ->
       return_unit(Cop(Cstore Byte_unsigned,
                       [add_int (transl arg1) (untag_int(transl arg2));
                         untag_int(transl arg3)]))
@@ -1909,59 +1888,38 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
   (* Array operations *)
   | Parraysetu kind ->
       return_unit(begin match kind with
-        Pgenarray ->
-          bind "newval" (transl arg3) (fun newval ->
-            bind "index" (transl arg2) (fun index ->
-              bind "arr" (transl arg1) (fun arr ->
-                Cifthenelse(is_addr_array_ptr arr,
-                            addr_array_set arr index newval,
-                            float_array_set arr index (unbox_float newval)))))
-      | Paddrarray ->
+      | Pmaybe_addr ->
           addr_array_set (transl arg1) (transl arg2) (transl arg3)
-      | Pintarray ->
+      | Pnot_addr ->
           int_array_set (transl arg1) (transl arg2) (transl arg3)
-      | Pfloatarray ->
-          float_array_set (transl arg1) (transl arg2) (transl_unbox_float arg3)
       end)
   | Parraysets kind ->
-      return_unit(begin match kind with
-      | Pgenarray ->
-          bind "newval" (transl arg3) (fun newval ->
-          bind "index" (transl arg2) (fun idx ->
-          bind "arr" (transl arg1) (fun arr ->
-          bind "header" (header arr) (fun hdr ->
-            if wordsize_shift = numfloat_shift then
-              Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                        Cifthenelse(is_addr_array_hdr hdr,
-                                    addr_array_set arr idx newval,
-                                    float_array_set arr idx
-                                                    (unbox_float newval)))
-            else
-              Cifthenelse(is_addr_array_hdr hdr,
-                Csequence(make_checkbound dbg [addr_array_length hdr; idx],
-                          addr_array_set arr idx newval),
-                Csequence(make_checkbound dbg [float_array_length hdr; idx],
-                          float_array_set arr idx
-                                          (unbox_float newval)))))))
-      | Paddrarray ->
+      return_unit (begin match kind with
+      | Pmaybe_addr ->
           bind "newval" (transl arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       addr_array_set arr idx newval))))
-      | Pintarray ->
+      | Pnot_addr ->
           bind "newval" (transl arg3) (fun newval ->
           bind "index" (transl arg2) (fun idx ->
           bind "arr" (transl arg1) (fun arr ->
             Csequence(make_checkbound dbg [addr_array_length(header arr); idx],
                       int_array_set arr idx newval))))
-      | Pfloatarray ->
-          bind "newval" (transl_unbox_float arg3) (fun newval ->
-          bind "index" (transl arg2) (fun idx ->
-          bind "arr" (transl arg1) (fun arr ->
-            Csequence(make_checkbound dbg [float_array_length(header arr);idx],
-                      float_array_set arr idx newval))))
       end)
+  | Pfloatarraysetu ->
+      return_unit
+        (float_array_set
+           (transl arg1) (transl arg2)
+           (transl_unbox_float arg3))
+  | Pfloatarraysets ->
+      return_unit
+        (bind "newval" (transl_unbox_float arg3) (fun newval ->
+         bind "index" (transl arg2) (fun idx ->
+         bind "arr" (transl arg1) (fun arr ->
+           Csequence(make_checkbound dbg [float_array_length(header arr);idx],
+                     float_array_set arr idx newval)))))
 
   | Pstring_set_16(unsafe) ->
      return_unit

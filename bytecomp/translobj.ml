@@ -58,7 +58,8 @@ let next_cache tag =
 let rec is_path = function
     Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
   | Lprim (Pfield _, [lam]) -> is_path lam
-  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
+  | Lprim((Parrayrefu | Parrayrefs | Pfloatarrayrefu | Pfloatarrayrefs),
+          [lam1; lam2]) ->
       is_path lam1 && is_path lam2
   | _ -> false
 
@@ -116,7 +117,7 @@ let transl_store_label_init glob size f arg =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
-     Lprim(Psetfield(size, false),
+     Lprim(Psetfield(size, Pnot_addr),
            [Lprim(Pgetglobal glob, []);
             Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))

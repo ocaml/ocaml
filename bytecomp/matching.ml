@@ -1669,14 +1669,14 @@ let matcher_array len p rem = match p.pat_desc with
 | Tpat_any -> Parmatch.omegas len @ rem
 | _ -> raise NoMatch
 
-let make_array_matching kind p def ctx = function
+let make_array_matching p def ctx = function
   | [] -> fatal_error "Matching.make_array_matching"
   | ((arg, mut) :: argl) ->
       let len = get_key_array p in
       let rec make_args pos =
         if pos >= len
         then argl
-        else (Lprim(Parrayrefu kind, [arg; Lconst(Const_base(Const_int pos))]),
+        else (Lprim(Parrayrefu, [arg; Lconst(Const_base(Const_int pos))]),
               StrictOpt) :: make_args (pos + 1) in
       let def = make_default (matcher_array len) def
       and ctx = filter_ctx p ctx in
@@ -1684,9 +1684,9 @@ let make_array_matching kind p def ctx = function
         ctx=ctx ;
         pat = normalize_pat p}
 
-let divide_array kind ctx pm =
+let divide_array ctx pm =
   divide
-    (make_array_matching kind)
+    make_array_matching
     (=) get_key_array get_args_array ctx pm
 
 
@@ -2287,7 +2287,7 @@ let mk_failaction_pos partial seen ctx defs  =
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
   let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin 
+  if List.length fail_pats < 32 then begin
     let fail,jmps =
       scan_def
         []
@@ -2305,7 +2305,7 @@ let mk_failaction_pos partial seen ctx defs  =
     let fail,jumps =  mk_failaction_neg partial ctx defs in
     if dbg then
       eprintf "FAIL: %s\n"
-        (match fail with 
+        (match fail with
         | None -> "<none>"
         | Some lam -> string_of_lam lam) ;
     fail,[],jumps
@@ -2555,7 +2555,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
   lambda1, jumps_union local_jumps total1
 
 
-let combine_array arg kind partial ctx def
+let combine_array arg partial ctx def
     (len_lambda_list, total1, pats)  =
   let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
@@ -2565,7 +2565,7 @@ let combine_array arg kind partial ctx def
         fail (Lvar newvar)
         0 max_int len_lambda_list in
     bind
-      Alias newvar (Lprim(Parraylength kind, [arg])) switch in
+      Alias newvar (Lprim(Parraylength, [arg])) switch in
   lambda1, jumps_union local_jumps total1
 
 (* Insertion of debugging events *)
@@ -2844,9 +2844,8 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         divide_constructor (combine_constructor arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
-      let kind = Typeopt.array_pattern_kind pat in
       compile_test (compile_match repr partial) partial
-        (divide_array kind) (combine_array arg kind partial)
+        divide_array (combine_array arg partial)
         ctx pm
   | Tpat_lazy _ ->
       compile_no_test

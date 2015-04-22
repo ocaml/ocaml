@@ -11,24 +11,28 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Array operations *)
+(* Float array operations *)
 
-external length : 'a array -> int = "%array_length"
-external get: 'a array -> int -> 'a = "%array_safe_get"
-external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
-external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
-external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-external make: int -> 'a -> 'a array = "caml_make_vect"
-external create: int -> 'a -> 'a array = "caml_make_vect"
-external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
-external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
-external concat : 'a array list -> 'a array = "caml_array_concat"
+type t
+
+external length : t -> int = "%float_array_length"
+external get: t -> int -> float = "%float_array_safe_get"
+external set: t -> int -> float -> unit = "%float_array_safe_set"
+external unsafe_get: t -> int -> float = "%float_array_unsafe_get"
+external unsafe_set: t -> int -> float -> unit = "%float_array_unsafe_set"
+external make: int -> float -> t = "caml_make_double_array"
+external create: int -> t = "caml_create_double_array"
+external unsafe_sub : t -> int -> int -> t = "caml_double_array_sub"
+external append_prim : t -> t -> t = "caml_double_array_append"
+external concat : t list -> t = "caml_double_array_concat"
 external unsafe_blit :
-  'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
+  t -> int -> t -> int -> int -> unit = "caml_double_array_blit"
+
+let empty = create 0
 
 let init l f =
-  if l = 0 then [||] else
-  if l < 0 then invalid_arg "Array.init"
+  if l = 0 then empty else
+  if l < 0 then invalid_arg "FloatArray.init"
   (* See #6575. We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
@@ -38,20 +42,15 @@ let init l f =
    done;
    res
 
-let make_float l =
-  make l 0.0
-
 let make_matrix sx sy init =
-  let res = make sx [||] in
+  let res = Array.make sx empty in
   for x = 0 to pred sx do
-    unsafe_set res x (make sy init)
+    Array.unsafe_set res x (make sy init)
   done;
   res
 
-let create_matrix = make_matrix
-
 let copy a =
-  let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
+  let l = length a in if l = 0 then empty else unsafe_sub a 0 l
 
 let append a1 a2 =
   let l1 = length a1 in
@@ -61,18 +60,18 @@ let append a1 a2 =
 
 let sub a ofs len =
   if len < 0 || ofs > length a - len
-  then invalid_arg "Array.sub"
+  then invalid_arg "FloatArray.sub"
   else unsafe_sub a ofs len
 
 let fill a ofs len v =
   if ofs < 0 || len < 0 || ofs > length a - len
-  then invalid_arg "Array.fill"
+  then invalid_arg "FloatArray.fill"
   else for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
 let blit a1 ofs1 a2 ofs2 len =
   if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
              || ofs2 < 0 || ofs2 > length a2 - len
-  then invalid_arg "Array.blit"
+  then invalid_arg "FloatArray.blit"
   else unsafe_blit a1 ofs1 a2 ofs2 len
 
 let iter f a =
@@ -80,7 +79,7 @@ let iter f a =
 
 let map f a =
   let l = length a in
-  if l = 0 then [||] else begin
+  if l = 0 then empty else begin
     let r = make l (f(unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f(unsafe_get a i))
@@ -93,7 +92,7 @@ let iteri f a =
 
 let mapi f a =
   let l = length a in
-  if l = 0 then [||] else begin
+  if l = 0 then empty else begin
     let r = make l (f 0 (unsafe_get a 0)) in
     for i = 1 to l - 1 do
       unsafe_set r i (f i (unsafe_get a i))
@@ -106,16 +105,10 @@ let to_list a =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
   tolist (length a - 1) []
 
-(* Cannot use List.length here because the List module depends on Array. *)
-let rec list_length accu = function
-  | [] -> accu
-  | h::t -> list_length (succ accu) t
-;;
-
 let of_list = function
-    [] -> [||]
+    [] -> empty
   | hd::tl as l ->
-      let a = make (list_length 0 l) hd in
+      let a = make (List.length l) hd in
       let rec fill i = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in

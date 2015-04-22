@@ -34,10 +34,6 @@
    The GC will magically change things from (2) to (3) according to its
    fancy.
 
-   We cannot use representation (3) for a [float Lazy.t] because
-   [caml_make_array] assumes that only a [float] value can have tag
-   [Double_tag].
-
    We have to use the built-in type constructor [lazy_t] to
    let the compiler implement the special typing and compilation
    rules for the [lazy] keyword.
@@ -63,7 +59,7 @@ let from_fun (f : unit -> 'arg) =
 
 let from_val (v : 'arg) =
   let t = Obj.tag (Obj.repr v) in
-  if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+  if t = Obj.forward_tag || t = Obj.lazy_tag then begin
     make_forward v
   end else begin
     (Obj.magic v : 'arg t)
