@@ -87,7 +87,9 @@ module type S =
 
     val remove: key -> 'a t -> 'a t
     (** [remove x m] returns a map containing the same bindings as
-       [m], except for [x] which is unbound in the returned map. *)
+       [m], except for [x] which is unbound in the returned map.
+       If [x] was not in [m], [m] is returned unchanged
+       (the result of the function is then physically equal to [m]). *)
 
     val merge:
          (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t

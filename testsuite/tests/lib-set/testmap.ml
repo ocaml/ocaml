@@ -132,3 +132,18 @@ let rmap() =
 let _ =
   Random.init 42;
   for i = 1 to 10000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
+
+let () =
+  (* check that removing a binding from a map that is not present in this map
+     (1) doesn't allocate and (2) return the original map *)
+  let m1 = ref M.empty in
+  for i = 1 to 10 do m1 := M.add i (float i) !m1 done;
+  let m2 = ref !m1 in
+
+  let a0 = Gc.allocated_bytes () in
+  let a1 = Gc.allocated_bytes () in
+  for i = 11 to 30 do m2 := M.remove i !m2 done;
+  let a2 = Gc.allocated_bytes () in
+
+  assert (!m2 == !m1);
+  assert(a2 -. a1 = a1 -. a0)

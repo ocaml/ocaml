@@ -153,14 +153,13 @@ module Make(Ord: OrderedType) = struct
     let rec remove x = function
         Empty ->
           Empty
-      | Node(l, v, d, r, h) ->
+      | (Node(l, v, d, r, h) as t) ->
           let c = Ord.compare x v in
-          if c = 0 then
-            merge l r
+          if c = 0 then merge l r
           else if c < 0 then
-            bal (remove x l) v d r
+            let ll = remove x l in if l == ll then t else bal ll v d r
           else
-            bal l v d (remove x r)
+            let rr = remove x r in if r == rr then t else bal l v d rr
 
     let rec iter f = function
         Empty -> ()
