@@ -454,38 +454,6 @@ let rec filter_row_fields erase = function
                     (**************************************)
 
 
-exception Non_closed0
-
-let rec closed_schema_rec ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    let level = ty.level in
-    ty.level <- pivot_level - level;
-    match ty.desc with
-      Tvar _ when level <> generic_level ->
-        raise Non_closed0
-    | Tfield(_, kind, t1, t2) ->
-        if field_kind_repr kind = Fpresent then
-          closed_schema_rec t1;
-        closed_schema_rec t2
-    | Tvariant row ->
-        let row = row_repr row in
-        iter_row closed_schema_rec row;
-        if not (static_row row) then closed_schema_rec row.row_more
-    | _ ->
-        iter_type_expr closed_schema_rec ty
-  end
-
-(* Return whether all variables of type [ty] are generic. *)
-let closed_schema ty =
-  try
-    closed_schema_rec ty;
-    unmark_type ty;
-    true
-  with Non_closed0 ->
-    unmark_type ty;
-    false
-
 exception Non_closed of type_expr * bool
 
 let free_variables = ref []
@@ -4204,6 +4172,40 @@ let cyclic_abbrev env id ty =
     | _ ->
         false
   in check_cycle [] ty
+
+(* Check for non-generalizable type variables *)
+exception Non_closed0
+let visited = ref TypeSet.empty
+
+let rec closed_schema_rec env ty =
+  let ty = expand_head env ty in
+  if TypeSet.mem ty !visited then () else begin
+    visited := TypeSet.add ty !visited;
+    match ty.desc with
+      Tvar _ when ty.level <> generic_level ->
+        raise Non_closed0
+    | Tfield(_, kind, t1, t2) ->
+        if field_kind_repr kind = Fpresent then
+          closed_schema_rec env t1;
+        closed_schema_rec env t2
+    | Tvariant row ->
+        let row = row_repr row in
+        iter_row (closed_schema_rec env) row;
+        if not (static_row row) then closed_schema_rec env row.row_more
+    | _ ->
+        iter_type_expr (closed_schema_rec env) ty
+  end
+
+(* Return whether all variables of type [ty] are generic. *)
+let closed_schema env ty =
+  visited := TypeSet.empty;
+  try
+    closed_schema_rec env ty;
+    visited := TypeSet.empty;
+    true
+  with Non_closed0 ->
+    visited := TypeSet.empty;
+    false
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)
