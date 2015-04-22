@@ -63,6 +63,7 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
   | Expect_tailcall                         (* 50 *)
+  | Missplaced_attribute of string          (* 51 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

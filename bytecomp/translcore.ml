@@ -656,6 +656,16 @@ let has_tailcall_attribute e =
   List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
 
 let rec transl_exp e =
+  let () =
+    let missplaced_inline_attr = Warnings.Missplaced_attribute "inline" in
+    if Warnings.is_active missplaced_inline_attr then (
+      match e.exp_desc with
+      | Texp_function _ -> ()
+      | _ when has_inline_attribute e ->
+          Location.prerr_warning e.exp_loc missplaced_inline_attr
+      | _ -> ()
+    )
+  in
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
