@@ -84,7 +84,8 @@ module type S =
 
     val remove: elt -> t -> t
     (** [remove x s] returns a set containing all elements of [s],
-       except [x]. If [x] was not in [s], [s] is returned unchanged. *)
+       except [x]. If [x] was not in [s], [s] is returned unchanged
+       (the result of the function is then physically equal to [s]). *)
 
     val union: t -> t -> t
     (** Set union. *)
