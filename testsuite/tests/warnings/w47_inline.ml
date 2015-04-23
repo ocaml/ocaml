@@ -11,3 +11,5 @@ let h x = (a [@inlined]) x (* accepted *)
 let i x = (a [@inlined never]) x (* accepted *)
 let j x = (a [@inlined force]) x (* accepted *)
 let k x = (a [@inlined malformed]) x (* rejected *)
+
+let l x = x [@@inline] (* accepted *)

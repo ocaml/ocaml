@@ -16,3 +16,6 @@ let a x =
   fun y -> y + b
 
 let b x y = (a [@inlined]) x y
+
+let c x = x + 1 [@@inline never]
+let d x = (c [@inlined]) x

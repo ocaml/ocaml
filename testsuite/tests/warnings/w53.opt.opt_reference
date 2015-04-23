@@ -8,3 +8,5 @@ File "w53.opt.ml", line 18, characters 12-30:
 Warning 53: Inlining impossible in this context: Over-application
 File "w53.opt.ml", line 18, characters 12-30:
 Warning 53: Inlining impossible in this context: Function information unavailable
+File "w53.opt.ml", line 21, characters 10-26:
+Warning 53: Inlining impossible in this context: Function information unavailable
