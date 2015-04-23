@@ -658,12 +658,12 @@ let is_inlined_attribute = function
   | _ -> false
 
 (* the 'inline' and 'inlined' attributes can be used as
-   [@inline], [@inline never] or [@inline force].
-   [@inline] is equivalent to [@inline force] *)
+   [@inline], [@inline never] or [@inline always].
+   [@inline] is equivalent to [@inline always] *)
 
 let make_get_inline_attribute is_attribute attributes =
   let warning txt = Warnings.Attribute_payload
-      (txt, "It must be either empty, 'force' or 'never'")
+      (txt, "It must be either empty, 'always' or 'never'")
   in
   let inline_attribute, exp_attributes =
     List.partition is_attribute attributes
@@ -674,13 +674,13 @@ let make_get_inline_attribute is_attribute attributes =
     | [({txt;loc}, payload)] -> begin
         let open Parsetree in
         match payload with
-        | PStr [] -> Force_inline
+        | PStr [] -> Always_inline
         | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
             match pexp_desc with
             | Pexp_ident { txt = Longident.Lident "never" } ->
                 Never_inline
-            | Pexp_ident { txt = Longident.Lident "force" } ->
-                Force_inline
+            | Pexp_ident { txt = Longident.Lident "always" } ->
+                Always_inline
             | _ ->
                 Location.prerr_warning loc (warning txt);
                 Default_inline
@@ -704,12 +704,12 @@ let add_inline_attribute expr loc attributes =
   | Lfunction({ attr } as funct), inline_attribute ->
       begin match attr.inline with
       | Default_inline -> ()
-      | Force_inline | Never_inline ->
+      | Always_inline | Never_inline ->
           Location.prerr_warning loc
             (Warnings.Duplicated_attribute "inline")
       end;
       Lfunction { funct with attr = { inline = inline_attribute } }
-  | expr, (Force_inline | Never_inline) ->
+  | expr, (Always_inline | Never_inline) ->
       Location.prerr_warning loc
         (Warnings.Missplaced_attribute "inline");
       expr

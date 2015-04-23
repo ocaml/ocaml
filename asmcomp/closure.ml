@@ -705,7 +705,7 @@ let rec is_pure = function
   | _ -> false
 
 let warning_if_forced_inline ~loc ~attribute warning =
-  if attribute = Force_inline then
+  if attribute = Always_inline then
     Location.prerr_warning loc (Warnings.Inlining_impossible warning)
 
 (* Generate a direct application *)
@@ -1183,7 +1183,7 @@ and close_functions fenv cenv fun_defs =
     let threshold =
       match inline_attribute with
       | Default_inline -> !Clflags.inline_threshold + n
-      | Force_inline -> max_int
+      | Always_inline -> max_int
       | Never_inline -> min_int
     in
     if lambda_smaller ubody threshold

@@ -1,3 +1,5 @@
+File "w52.ml", line 9, characters 4-43:
+Warning 52: the "inline" attribute is used more than once on this expression
 File "w52.ml", line 5, characters 26-39:
 Warning 52: the "ocaml.inlined" attribute is used more than once on this expression
 File "w52.ml", line 3, characters 51-63:

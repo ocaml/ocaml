@@ -252,7 +252,7 @@ let primitive ppf = function
 let function_attribute ppf { inline } =
   match inline with
   | Default_inline -> ()
-  | Force_inline -> fprintf ppf "force_inline@ "
+  | Always_inline -> fprintf ppf "always_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
 
 let apply_tailcall_attribute ppf tailcall =
@@ -261,7 +261,7 @@ let apply_tailcall_attribute ppf tailcall =
 
 let apply_inlined_attribute ppf = function
   | Default_inline -> ()
-  | Force_inline -> fprintf ppf " force_inline"
+  | Always_inline -> fprintf ppf " always_inline"
   | Never_inline -> fprintf ppf " never_inline"
 
 let rec lam ppf = function

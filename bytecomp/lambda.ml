@@ -162,7 +162,7 @@ type structured_constant =
   | Const_immstring of string
 
 type inline_attribute =
-  | Force_inline (* [@inline] or [@inline force] *)
+  | Always_inline (* [@inline] or [@inline always] *)
   | Never_inline (* [@inline never] *)
   | Default_inline (* no [@inline] attribute *)
 
