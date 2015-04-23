@@ -777,27 +777,39 @@ let bigarray_elt_size = function
   | Pbigarray_complex64 -> 16
 
 let bigarray_indexing unsafe elt_kind layout b args dbg =
-  let check_bound a1 a2 k =
-    if unsafe then k else Csequence(make_checkbound dbg [a1;a2], k) in
+  let check_bound bound idx v =
+    Csequence(make_checkbound dbg [bound;idx], v) in
+  (* Validates the given multidimensional offset against the array bounds and
+     transforms it into a one dimensional offset.  The offsets are expressions
+     evaluating to int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
+      (* Avoid the costly binding if [idx] is not needed *)
       if unsafe then arg
       else
-        bind "idx" arg
-          (fun idx ->
-             check_bound (Cop(Cload Word,[field_address b dim_ofs])) (untag_int idx) idx)
+        bind "idx" arg (fun idx ->
+          (* Load the nativeint bound for the given dimension *)
+          let bound = Cop(Cload Word,[field_address b dim_ofs]) in
+          (* Transform the index to nativeint to compare it with the bound *)
+          let idxn = untag_int idx in
+          check_bound bound idxn idx)
   | arg1 :: argl ->
+      (* The remainder of the list is transformed into a one dimensional offset
+         *)
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
+      (* Load the nativeint bound for the given dimension *)
       let bound = Cop(Cload Word, [field_address b dim_ofs]) in
-      if unsafe then
-        add_int (mul_int (decr_int rem) bound) arg1
+      (* Avoid the costly bindings if [idx] and [bound] are not needed *)
+      if unsafe then add_int (mul_int (decr_int rem) bound) arg1
       else
-        bind "idx" arg1
-          (fun idx ->
-            bind "bound" bound (fun bound ->
-              check_bound bound (untag_int idx) (add_int (mul_int (decr_int rem) bound)
-                idx))) in
+        bind "idx" arg1 (fun idx ->
+          bind "bound" bound (fun bound ->
+            (* Transform the index to nativeint to compare it with the bound *)
+            let idxn = untag_int idx in
+            check_bound bound idxn
+              (add_int (mul_int (decr_int rem) bound) idx))) in
+  (* The offset as an expression evaluating to int *)
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -808,6 +820,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
   and elt_size =
     bigarray_elt_size elt_kind in
+  (* [array_indexing] can simplify the given expressions *)
   array_indexing (log2 elt_size) (Cop(Cload Word, [field_address b 1])) offset
 
 let bigarray_word_kind = function
