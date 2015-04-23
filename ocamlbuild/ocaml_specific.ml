@@ -525,12 +525,22 @@ end;;
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "doc"] (atomize !Options.ocaml_docflags);;
+flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
 (* Tell menhir to explain conflicts *)
 flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
 flag [ "ocaml" ; "menhir" ; "infer" ] (S[A "--infer"]);;
 
-flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
+(* Define two ocamlbuild flags [only_tokens] and [external_tokens(Foo)]
+   which correspond to menhir's [--only-tokens] and [--external-tokens Foo].
+   When they are used, these flags should be passed both to [menhir] and to
+   [menhir --raw-depend]. *)
+let () =
+  List.iter begin fun mode ->
+    flag [ mode; "only_tokens" ] (S[A "--only-tokens"]);
+    pflag [ mode ] "external_tokens" (fun name ->
+      S[A "--external-tokens"; A name]);
+  end [ "menhir"; "menhir_ocamldep" ];;
 
 (* Tell ocamllex to generate ml code *)
 flag [ "ocaml" ; "ocamllex" ; "generate_ml" ] (S[A "-ml"]);;

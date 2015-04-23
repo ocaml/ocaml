@@ -83,6 +83,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _compat_32 = set bytecode_compatible_32
   let _config = show_config
   let _custom = set custom_runtime
+  let _no_check_prims = set no_check_prims
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s

@@ -245,7 +245,7 @@ val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val is_contractive: Env.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
-val closed_schema: type_expr -> bool
+val closed_schema: Env.t -> type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 

@@ -153,23 +153,26 @@ let rec abbreviate_class_type path params cty =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
 let rec closed_class_type =
   function
     Cty_constr (_, params, _) ->
-      List.for_all Ctype.closed_schema params
+      List.for_all (Ctype.closed_schema Env.empty) params
   | Cty_signature sign ->
-      Ctype.closed_schema sign.csig_self
+      Ctype.closed_schema Env.empty sign.csig_self
         &&
-      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
+      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
         sign.csig_vars
         true
   | Cty_arrow (_, ty, cty) ->
-      Ctype.closed_schema ty
+      Ctype.closed_schema Env.empty ty
         &&
       closed_class_type cty
 
 let closed_class cty =
-  List.for_all Ctype.closed_schema cty.cty_params
+  List.for_all (Ctype.closed_schema Env.empty) cty.cty_params
     &&
   closed_class_type cty.cty_type
 
