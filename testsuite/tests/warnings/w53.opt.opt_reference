@@ -1,0 +1,10 @@
+File "w53.opt.ml", line 4, characters 10-26:
+Warning 53: Inlining impossible in this context: Function information unavailable
+File "w53.opt.ml", line 8, characters 10-27:
+Warning 53: Inlining impossible in this context: Unknown function
+File "w53.opt.ml", line 12, characters 10-26:
+Warning 53: Inlining impossible in this context: Partial application
+File "w53.opt.ml", line 18, characters 12-30:
+Warning 53: Inlining impossible in this context: Over-application
+File "w53.opt.ml", line 18, characters 12-30:
+Warning 53: Inlining impossible in this context: Function information unavailable
