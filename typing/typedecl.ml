@@ -1451,7 +1451,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl = name_recursion sdecl id decl in
   let decl =
     {decl with type_variance =
-     compute_variance_decl env false decl
+     compute_variance_decl env true decl
        (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)} in
   Ctype.end_def();
   generalize_decl decl;

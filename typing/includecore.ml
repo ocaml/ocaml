@@ -27,7 +27,8 @@ let value_descriptions env vd1 vd2 =
         (Val_prim p1, Val_prim p2) ->
           if p1 = p2 then Tcoerce_none else raise Dont_match
       | (Val_prim p, _) ->
-          let pc = {pc_desc = p; pc_type = vd2.val_type; pc_env = env } in
+          let pc = {pc_desc = p; pc_type = vd2.val_type;
+                  pc_env = env; pc_loc = vd1.val_loc; } in
           Tcoerce_primitive pc
       | (_, Val_prim p) -> raise Dont_match
       | (_, _) -> Tcoerce_none

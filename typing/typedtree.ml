@@ -269,6 +269,7 @@ and primitive_coercion =
     pc_desc: Primitive.description;
     pc_type: type_expr;
     pc_env: Env.t;
+    pc_loc : Location.t;
   }
 
 and signature = {

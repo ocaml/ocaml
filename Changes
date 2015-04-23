@@ -27,6 +27,7 @@ Compilers:
   (Frédéric Bour, review by Gabriel Scherer)
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
 - PR#6679: fix pprintast printing of constraints in type declarations
+- PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
 - some cmm optimizations of integer operations with constants
   (Stephen Dolan, review by Pierre Chambart)
 
@@ -67,11 +68,18 @@ Toplevel and debugger:
   (Peter Zotov and Jake Donham,
    review by Gabriel Scherer and Jacques-Henri Jourdan)
 
+OCamlbuild:
+- PR#6794, PR#6809: pass package-specific include flags when building C files
+  (Jérémie Dimino, request by Peter Zotov)
+
 Bug fixes:
 * PR#4539: change exception string raised when comparing functional values
   (Nicolas Braud-Santoni, report by Eric Cooper)
 - PR#4832: Filling bigarrays may block out runtime
   (Markus Mottl)
+- PR#5663: program rejected due to nongeneralizable type variable that
+    appears nowhere
+  (Jacques Garrigue, report by Stephen Weeks)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid header
     name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
@@ -92,6 +100,7 @@ Bug fixes:
 - PR#6651: Failing component lookup
 * PR#6664: Crash when finalising lazy values of the wrong type.
   (Damien Doligez)
+- PR#6672: Unused variance specification allowed in with constraint
 - PR#6744: Univars can escape through polymorphic variants (partial fix)
 - PR#6776: Failure to kill the "tick" thread, segfault when exiting the runtime
 - PR#6752: Extensible variant types and scope escaping
@@ -104,12 +113,24 @@ Features wishes:
 - PR#6452, GPR#140: add internal suport for custom printing formats
   (Jérémie Dimino)
 - PR#6611: remove the option wrapper on optional arguments in the syntax tree
+- PR#6635: support M.[], M.(), M.{< >} and M.[| |]
+  (Jeremy Yallop, review by Gabriel Radanne)
 - PR#6691: install .cmt[i] files for stdlib and compiler-libs
   (David Sheets, request by Gabriel Radanne)
 - PR#6742: remove duplicate virtual_flag information from Tstr_class
+- PR#6719: improve Buffer.add_channel when not enough input is available
+  (Simon Cruanes)
+* PR#6816: reject integer and float literals followed by alphanum
+  (Hugo Heuzard)
+- GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
+  (Simon Cruanes)
+- GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
+  (Frédéric Bour)
 - GPR#137: add untypeast.ml (in open recursion style) to compiler-libs
   (Gabriel Radanne)
 - GPR#142: add a CAMLdrop macro for undoing CAMLparam*/CAMLlocal*
+- GPR#147: [type 'a result = Ok of 'a | Error of 'b] in Pervasives
+  (Yaron Minsky)
 
 OCaml 4.02.2:
 -------------
@@ -147,8 +168,8 @@ OCamlbuild:
   (Peter Zotov)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
-- PR#6794: pass package-specific include flags when building C files
-  (Jérémie Dimino, request by Peter Zotov)
+- PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
+  (François Pottier)
 
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
@@ -185,8 +206,13 @@ Bug fixes:
 - PR#6787: Soundness bug with polymorphic variants
 - PR#6791: "%s@[", "%s@{" regression in Scanf
   (Benoît Vaugon)
+- PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
+  (Gabriel Scherer, report by Damien Doligez)
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - PR#6817: GADT exhaustiveness breakage with modules
+- PR#6836: Assertion failure using -short-paths
+- PR#6841: Changing compilation unit name with -o breaks ocamldebug
+- PR#6842: export Typemod.modtype_of_package
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind

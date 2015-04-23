@@ -21,6 +21,8 @@ let source_extensions = [".ml"]
 (*** Conversion function. ***)
 
 let source_of_module pos mdle =
+  let pos_fname = pos.Lexing.pos_fname in
+  if Sys.file_exists pos_fname then pos_fname else
   let is_submodule m m' =
     let len' = String.length m' in
     try
