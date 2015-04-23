@@ -110,6 +110,7 @@ Bug fixes:
 - PR#6817: GADT exhaustiveness breakage with modules
 - PR#6836: Assertion failure using -short-paths
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
+- PR#6842: export Typemod.modtype_of_package
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
