@@ -76,8 +76,10 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 /* Context switch interface */
 #define Setup_for_context_switch \
-  { sp -=3; sp[0] = Val_pc(pc); sp[1] = env; \
+  { sp -= 3; sp[0] = Val_pc(pc); sp[1] = env; \
     sp[2] = Val_long(extra_args); caml_extern_sp = sp; }
+#define Setup_for_tail_context_switch \
+  { caml_extern_sp = sp + *pc; }
 #define Restore_after_context_switch \
   { sp = caml_extern_sp; }
 
@@ -902,9 +904,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
           Setup_for_context_switch
           cont = caml_finish_exception(accu);
           Restore_after_context_switch
+          extra_args = Long_val(sp[0]);
+          sp += 1;
           pc = Code_val(cont);
           env = cont;
-          extra_args = 0;
           goto check_stacks;
         }
       } else {
@@ -1209,7 +1212,25 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 3;
 
       Setup_for_context_switch
-      cont = caml_handle(accu, hval, hexn, heff);
+      cont = caml_handle(accu, hval, hexn, heff, 0);
+      Restore_after_context_switch
+
+      pc = Code_val(cont);
+      env = cont;
+      extra_args = 0;
+      goto check_stacks;
+    }
+
+    Instruct(HANDLETERM): {
+      value hval, hexn, heff;
+      value cont;
+
+      hval = sp[0];
+      hexn = sp[1];
+      heff = sp[2];
+
+      Setup_for_tail_context_switch
+      cont = caml_handle(accu, hval, hexn, heff, extra_args);
       Restore_after_context_switch
 
       pc = Code_val(cont);
@@ -1228,9 +1249,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
         cont = caml_perform(accu);
         Restore_after_context_switch
 
+        extra_args = Long_val(sp[0]) + 1;
+        sp += 1;
+
         pc = Code_val(cont);
         env = cont;
-        extra_args = 1;
         goto check_stacks;
       }
     }
@@ -1242,7 +1265,23 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 1;
 
       Setup_for_context_switch
-      accu = caml_continue(accu, ret);
+      accu = caml_continue(accu, ret, 0);
+      Restore_after_context_switch
+
+      pc = Pc_val(sp[0]);
+      env = sp[1];
+      extra_args = Long_val(sp[2]);
+      sp += 3;
+      Next;
+    }
+
+    Instruct(CONTINUETERM): {
+      value ret;
+
+      ret = sp[0];
+
+      Setup_for_tail_context_switch
+      accu = caml_continue(accu, ret, extra_args);
       Restore_after_context_switch
 
       pc = Pc_val(sp[0]);
@@ -1259,7 +1298,19 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 1;
 
       Setup_for_context_switch
-      accu = caml_continue(accu, ret);
+      accu = caml_continue(accu, ret, 0);
+      Restore_after_context_switch
+
+      goto raise_exception;
+    }
+
+    Instruct(DISCONTINUETERM): {
+      value ret;
+
+      ret = sp[0];
+
+      Setup_for_tail_context_switch
+      accu = caml_continue(accu, ret, extra_args);
       Restore_after_context_switch
 
       goto raise_exception;
@@ -1272,9 +1323,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       cont = caml_finish(accu);
       Restore_after_context_switch
 
+      extra_args = Long_val(sp[0]);
+      sp += 1;
+
       pc = Code_val(cont);
       env = cont;
-      extra_args = 0;
       goto check_stacks;
     }
 

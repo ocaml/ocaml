@@ -18,10 +18,9 @@ CAMLextern __thread intnat caml_extra_args;
 CAMLextern __thread int caml_c_call_args;
 CAMLextern __thread code_t caml_saved_pc;
 
-value caml_handle(value body, value hval, value heff, value hexn);
+value caml_handle(value body, value hval, value heff, value hexn, intnat extra_args);
 value caml_perform(value effect);
-value caml_continue(value cont, value ret);
-value caml_discontinue(value cont, value exn);
+value caml_continue(value cont, value ret, intnat extra_args);
 value caml_finish(value ret);
 value caml_finish_exception(value exn);
 
