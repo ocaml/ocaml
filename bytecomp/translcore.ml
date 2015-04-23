@@ -661,12 +661,12 @@ let is_inlined_attribute = function
    [@inline], [@inline never] or [@inline force].
    [@inline] is equivalent to [@inline force] *)
 
-let make_get_inline_attribute is_attribute e =
+let make_get_inline_attribute is_attribute attributes =
   let warning txt = Warnings.Attribute_payload
       (txt, "It must be either empty, 'force' or 'never'")
   in
   let inline_attribute, exp_attributes =
-    List.partition is_attribute e.exp_attributes
+    List.partition is_attribute attributes
   in
   let attribute_value =
     match inline_attribute with
@@ -695,8 +695,24 @@ let make_get_inline_attribute is_attribute e =
   in
   attribute_value, exp_attributes
 
-let get_inline_attribute e =
-  fst (make_get_inline_attribute is_inline_attribute e)
+let get_inline_attribute l =
+  fst (make_get_inline_attribute is_inline_attribute l)
+
+let add_inline_attribute expr loc attributes =
+  match expr, get_inline_attribute attributes with
+  | expr, Default_inline -> expr
+  | Lfunction({ attr } as funct), inline_attribute ->
+      begin match attr.inline with
+      | Default_inline -> ()
+      | Force_inline | Never_inline ->
+          Location.prerr_warning loc
+            (Warnings.Duplicated_attribute "inline")
+      end;
+      Lfunction { funct with attr = { inline = inline_attribute } }
+  | expr, (Force_inline | Never_inline) ->
+      Location.prerr_warning loc
+        (Warnings.Missplaced_attribute "inline");
+      expr
 
 (* Get the [@inlined] attibute payload (or default if not present).
    It also returns the expression without this attribute. This is
@@ -705,7 +721,7 @@ let get_inline_attribute e =
    have been removed by this function *)
 let get_inlined_attribute e =
   let attribute_value, exp_attributes =
-    make_get_inline_attribute is_inlined_attribute e
+    make_get_inline_attribute is_inlined_attribute e.exp_attributes
   in
   attribute_value, { e with exp_attributes }
 
@@ -791,7 +807,7 @@ and transl_exp0 e =
             let pl = push_defaults e.exp_loc [] pat_expr_list partial in
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
-      let attr = { inline = get_inline_attribute e } in
+      let attr = { inline = get_inline_attribute e.exp_attributes } in
       Lfunction{kind; params; body; attr}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
@@ -1191,8 +1207,9 @@ and transl_let rec_flag pat_expr_list body =
       let rec transl = function
         [] ->
           body
-      | {vb_pat=pat; vb_expr=expr} :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+      | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
+          let lam = add_inline_attribute (transl_exp expr) vb_loc attr in
+          Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1202,8 +1219,8 @@ and transl_let rec_flag pat_expr_list body =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
-      let transl_case {vb_pat=pat; vb_expr=expr} id =
-        let lam = transl_exp expr in
+      let transl_case {vb_pat=pat; vb_expr=expr; vb_attributes; vb_loc} id =
+        let lam = add_inline_attribute (transl_exp expr) vb_loc vb_attributes in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in
