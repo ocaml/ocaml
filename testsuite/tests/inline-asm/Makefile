@@ -13,7 +13,7 @@
 BASEDIR=../..
 
 BYTE_CASES=float_round output_params
-CASES=$(BYTE_CASES) comprehensive test_intrinsics
+CASES=$(BYTE_CASES) callback comprehensive test_intrinsics
 
 default: run-byte run-native compare-asm
 
@@ -34,7 +34,7 @@ include $(BASEDIR)/makefiles/Makefile.common
 %.byte$(EXE): %.ml %_stubs.o
 	@$(OCAMLC) -custom -o $@ $^
 
-%.native$(EXE): intrinsics.ml intrinsics_stubs.o %.ml
+%.native$(EXE): intrinsics.ml intrinsics_stubs.o %.ml %_stubs.o
 	@$(OCAMLOPT) -S -inline 20 -o $@ $^
 
 .exe.s:

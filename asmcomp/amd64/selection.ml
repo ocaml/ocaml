@@ -85,6 +85,7 @@ let r10    = phys_reg 10
 let r11    = phys_reg 11
 let r12    = phys_reg 8
 let r13    = phys_reg 9
+let rbp    = phys_reg 12
 let rxmm0  = phys_reg 100
 let rxmm1  = phys_reg 101
 let rxmm2  = phys_reg 102
@@ -207,6 +208,7 @@ method! asm_pseudoreg alt r =
   | Inline_asm_arch.B   -> rbx
   | Inline_asm_arch.C   -> rcx
   | Inline_asm_arch.D   -> rdx
+  | Inline_asm_arch.BP  -> rbp
   | Inline_asm_arch.SI  -> rsi
   | Inline_asm_arch.DI  -> rdi
   | Inline_asm_arch.R8  -> r8

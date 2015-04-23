@@ -299,8 +299,9 @@ let destroyed_at_oper = function
         | Inline_asm_arch.B   -> rbx
         | Inline_asm_arch.C   -> rcx
         | Inline_asm_arch.D   -> rdx
-        | Inline_asm_arch.SI   -> rsi
-        | Inline_asm_arch.DI   -> rdi
+        | Inline_asm_arch.BP  -> rbp
+        | Inline_asm_arch.SI  -> rsi
+        | Inline_asm_arch.DI  -> rdi
         | Inline_asm_arch.R8  -> r8
         | Inline_asm_arch.R9  -> r9
         | Inline_asm_arch.R10 -> r10

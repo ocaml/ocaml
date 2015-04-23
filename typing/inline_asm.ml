@@ -98,9 +98,9 @@ let parse_template ~nargs template =
       | '%', '=' ->
           let acc = if i = 0 then acc else Emit_string (String.sub s 0 i) :: acc in
           loop (Emit_unique :: acc) (String.sub s (i + 2) (len - i - 2)) 0
-      | '%', 'f' ->
+      | '%', 'c' when len > i + 11 && String.sub s (i + 1) 11 = "call_return" ->
           let acc = if i = 0 then acc else Emit_string (String.sub s 0 i) :: acc in
-          loop (Record_frame :: acc) (String.sub s (i + 2) (len - i - 2)) 0
+          loop (Record_frame :: acc) (String.sub s (i + 12) (len - i - 12)) 0
       | '%', ( 'B' | 'L' | 'Q' | 'S' | 'T' | 'W' | 'b' | 'h' | 'w' | 'k' | 'q' | 't'
              | 'x' as c)
         when len > i + 1 && s.[i + 2] >= '0' && s.[i + 2] <= '9' ->
