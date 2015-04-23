@@ -1196,12 +1196,13 @@ type unboxed_number_kind =
   | Undetermined
 
 let rec is_unboxed_number e =
-  (* Given unboxed_number_kind from two branches of the code, returns the resulting
-     unboxed_number_kind *)
+  (* Given unboxed_number_kind from two branches of the code, returns the
+     resulting unboxed_number_kind *)
   let join k1 e =
     let k2 = is_unboxed_number e in
-    (* We take the safest approach that Boxed_float and Boxed_integer can be returned only
-       if both branches return it, or if one of the branches is undetermined *)
+    (* We take the safest approach that Boxed_float and Boxed_integer can be
+       returned only if both branches return it, or if one of the branches is
+       undetermined *)
     match k1, k2 with
     | Boxed_float, Boxed_float -> Boxed_float
     | Boxed_integer bi1, Boxed_integer bi2 when bi1 = bi2 -> Boxed_integer bi1
@@ -1209,8 +1210,10 @@ let rec is_unboxed_number e =
     | _, _ -> No_unboxing
   in
   match e with
-    Uconst(Uconst_ref(_, Uconst_float _)) ->
-      Boxed_float
+    Uconst(Uconst_ref(_, Uconst_float _)) -> Boxed_float
+  | Uconst(Uconst_ref(_, Uconst_int32 _)) -> Boxed_integer Pint32
+  | Uconst(Uconst_ref(_, Uconst_int64 _)) -> Boxed_integer Pint64
+  | Uconst(Uconst_ref(_, Uconst_nativeint _)) -> Boxed_integer Pnativeint
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
           Pccall p -> if p.prim_native_float then Boxed_float else No_unboxing
