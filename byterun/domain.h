@@ -18,6 +18,7 @@ struct domain {
   /* FIXME: represent current stack here */
 #else
   value* current_stack;
+  value* parent_stack;
 #endif
 
   char** young_ptr;
