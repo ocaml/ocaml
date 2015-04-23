@@ -70,6 +70,7 @@ type t =
   | Expect_tailcall                         (* 50 *)
   | Missplaced_attribute of string          (* 51 *)
   | Duplicated_attribute of string          (* 52 *)
+  | Inlining_impossible of string             (* 53 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -131,9 +132,10 @@ let number = function
   | Expect_tailcall -> 50
   | Missplaced_attribute _ -> 51
   | Duplicated_attribute _ -> 52
+  | Inlining_impossible _ -> 53
 ;;
 
-let last_warning_number = 52
+let last_warning_number = 53
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -396,6 +398,8 @@ let message = function
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name
+  | Inlining_impossible reason ->
+      Printf.sprintf "Inlining impossible in this context: %s" reason
 ;;
 
 let nerrors = ref 0;;
@@ -491,7 +495,9 @@ let descriptions =
    48, "Implicit elimination of optional arguments.";
    49, "Absent cmi file when looking up module alias.";
    50, "Warning on non-tail calls if @tailcall present";
-   51, "Attribute cannot appear in this context"
+   51, "Attribute cannot appear in this context";
+   52, "Attribute used more than once on an expression";
+   53, "Inlining impossible";
   ]
 ;;
 

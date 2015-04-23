@@ -65,6 +65,7 @@ type t =
   | Expect_tailcall                         (* 50 *)
   | Missplaced_attribute of string          (* 51 *)
   | Duplicated_attribute of string          (* 52 *)
+  | Inlining_impossible of string           (* 53 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

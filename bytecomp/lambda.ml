@@ -161,17 +161,26 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type inline_attribute =
+  | Force_inline (* [@inline] or [@inline force] *)
+  | Never_inline (* [@inline never] *)
+  | Default_inline (* no [@inline] attribute *)
+
 type apply_info = {
   apply_loc : Location.t;
   apply_should_be_tailcall : bool; (* true if [@tailcall] was specified *)
+  apply_inlined : inline_attribute; (* specified with [@inlined] attribute *)
 }
 
-let mk_apply_info ?(tailcall=false) loc =
+let mk_apply_info ?(tailcall=false) ?(inlined_attribute=Default_inline) loc =
   {apply_loc=loc;
-   apply_should_be_tailcall=tailcall; }
+   apply_should_be_tailcall=tailcall;
+   apply_inlined=inlined_attribute;}
 
 let no_apply_info =
-  {apply_loc=Location.none; apply_should_be_tailcall=false;}
+  {apply_loc=Location.none;
+   apply_should_be_tailcall=false;
+   apply_inlined=Default_inline;}
 
 type function_kind = Curried | Tupled
 
@@ -180,11 +189,6 @@ type let_kind = Strict | Alias | StrictOpt | Variable
 type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
-
-type inline_attribute =
-  | Force_inline
-  | Never_inline
-  | Default_inline
 
 type function_attribute = {
   inline : inline_attribute;
@@ -216,7 +220,7 @@ and lfunction =
   { kind: function_kind;
     params: Ident.t list;
     body: lambda;
-    attr: function_attribute; }
+    attr: function_attribute; } (* specified with [@inline] attribute *)
 
 and lambda_switch =
   { sw_numconsts: int;

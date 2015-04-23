@@ -255,19 +255,26 @@ let function_attribute ppf { inline } =
   | Force_inline -> fprintf ppf "force_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
 
+let apply_tailcall_attribute ppf tailcall =
+  if tailcall then
+    fprintf ppf " @@tailcall"
+
+let apply_inlined_attribute ppf = function
+  | Default_inline -> ()
+  | Force_inline -> fprintf ppf " force_inline"
+  | Never_inline -> fprintf ppf " never_inline"
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
-  | Lapply(lfun, largs, info) when info.apply_should_be_tailcall ->
+  | Lapply(lfun, largs, info) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a @@tailcall)@]" lam lfun lams largs
-  | Lapply(lfun, largs, _) ->
-      let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
+      fprintf ppf "@[<2>(apply@ %a%a%a%a)@]" lam lfun lams largs
+        apply_tailcall_attribute info.apply_should_be_tailcall
+        apply_inlined_attribute info.apply_inlined
   | Lfunction{kind; params; body; attr} ->
       let pr_params ppf params =
         match kind with

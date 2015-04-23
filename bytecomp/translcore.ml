@@ -653,51 +653,100 @@ let is_inline_attribute = function
   | {txt=("inline"|"ocaml.inline")}, _ -> true
   | _ -> false
 
-let get_inline_attribute e =
+let is_inlined_attribute = function
+  | {txt=("inlined"|"ocaml.inlined")}, _ -> true
+  | _ -> false
+
+(* the 'inline' and 'inlined' attributes can be used as
+   [@inline], [@inline never] or [@inline force].
+   [@inline] is equivalent to [@inline force] *)
+
+let make_get_inline_attribute is_attribute e =
   let warning txt = Warnings.Attribute_payload
-      (txt, "It must be either empty, 'force' or 'inline'")
+      (txt, "It must be either empty, 'force' or 'never'")
   in
-  match List.filter is_inline_attribute e.exp_attributes with
-  | [] -> Default_inline
-  | [({txt;loc}, payload)] -> begin
-      let open Parsetree in
-      match payload with
-      | PStr [] -> Force_inline
-      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
-          match pexp_desc with
-          | Pexp_ident { txt = Longident.Lident "never" } ->
-              Never_inline
-          | Pexp_ident { txt = Longident.Lident "force" } ->
-              Force_inline
-          | _ ->
-              Location.prerr_warning loc (warning txt);
-              Default_inline
-        end
-      | _ ->
-          Location.prerr_warning loc (warning txt);
-          Default_inline
-    end
-  | _ :: ({txt;loc}, _) :: _ ->
-      Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
-      Default_inline
+  let inline_attribute, exp_attributes =
+    List.partition is_attribute e.exp_attributes
+  in
+  let attribute_value =
+    match inline_attribute with
+    | [] -> Default_inline
+    | [({txt;loc}, payload)] -> begin
+        let open Parsetree in
+        match payload with
+        | PStr [] -> Force_inline
+        | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+            match pexp_desc with
+            | Pexp_ident { txt = Longident.Lident "never" } ->
+                Never_inline
+            | Pexp_ident { txt = Longident.Lident "force" } ->
+                Force_inline
+            | _ ->
+                Location.prerr_warning loc (warning txt);
+                Default_inline
+          end
+        | _ ->
+            Location.prerr_warning loc (warning txt);
+            Default_inline
+      end
+    | _ :: ({txt;loc}, _) :: _ ->
+        Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
+        Default_inline
+  in
+  attribute_value, exp_attributes
 
-let has_inline_attribute e =
-  List.exists is_inline_attribute e.exp_attributes
+let get_inline_attribute e =
+  fst (make_get_inline_attribute is_inline_attribute e)
 
-let has_tailcall_attribute e =
-  List.exists (fun ({txt},_) -> txt="tailcall") e.exp_attributes
+(* Get the [@inlined] attibute payload (or default if not present).
+   It also returns the expression without this attribute. This is
+   used to ensure that this expression is not misplaced: If it
+   appears on any expression, it is an error, otherwise it would
+   have been removed by this function *)
+let get_inlined_attribute e =
+  let attribute_value, exp_attributes =
+    make_get_inline_attribute is_inlined_attribute e
+  in
+  attribute_value, { e with exp_attributes }
 
-let rec transl_exp e =
-  let () =
-    let missplaced_inline_attr = Warnings.Missplaced_attribute "inline" in
-    if Warnings.is_active missplaced_inline_attr then (
+(* It also remove the attribute from the expression, like
+   get_inlined_attribute *)
+let get_tailcall_attribute e =
+  let is_tailcall_attribute = function
+    | {txt=("tailcall"|"ocaml.tailcall")}, _ -> true
+    | _ -> false
+  in
+  let tailcalls, exp_attributes =
+    List.partition is_tailcall_attribute e.exp_attributes
+  in
+  match tailcalls with
+  | [] -> false, e
+  | _ :: r ->
+      begin match r with
+      | [] -> ()
+      | ({txt;loc}, _) :: _ ->
+          Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
+      end;
+      true, { e with exp_attributes }
+
+let check_attribute e ({ txt; loc }, _) =
+  match txt with
+  | "inline" | "ocaml.inline" ->  begin
       match e.exp_desc with
       | Texp_function _ -> ()
-      | _ when has_inline_attribute e ->
-          Location.prerr_warning e.exp_loc missplaced_inline_attr
-      | _ -> ()
-    )
-  in
+      | _ ->
+          Location.prerr_warning loc
+            (Warnings.Missplaced_attribute txt)
+    end
+  | "inlined" | "ocaml.inlined"
+  | "tailcall" | "ocaml.tailcall" ->
+      (* Removed by the Texp_apply cases *)
+      Location.prerr_warning loc
+        (Warnings.Missplaced_attribute txt)
+  | _ -> ()
+
+let rec transl_exp e =
+  List.iter (check_attribute e) e.exp_attributes;
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
@@ -753,8 +802,11 @@ and transl_exp0 e =
         if args' = []
         then event_after e f
         else
-          let should_be_tailcall = has_tailcall_attribute funct in
-          event_after e (transl_apply ~should_be_tailcall f args' e.exp_loc)
+          let should_be_tailcall, funct = get_tailcall_attribute funct in
+          let inlined_attribute, funct = get_inlined_attribute funct in
+          let e = { e with exp_desc = Texp_apply(funct, oargs) } in
+          event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+                           f args' e.exp_loc)
       in
       let wrap0 f =
         if args' = [] then f else wrap f in
@@ -802,8 +854,11 @@ and transl_exp0 e =
             end
       end
   | Texp_apply(funct, oargs) ->
-      let should_be_tailcall = has_tailcall_attribute funct in
-      event_after e (transl_apply ~should_be_tailcall (transl_exp funct) oargs e.exp_loc)
+      let should_be_tailcall, funct = get_tailcall_attribute funct in
+      let inlined_attribute, funct = get_inlined_attribute funct in
+      let e = { e with exp_desc = Texp_apply(funct, oargs) } in
+      event_after e (transl_apply ~should_be_tailcall ~inlined_attribute
+                       (transl_exp funct) oargs e.exp_loc)
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
@@ -1043,7 +1098,7 @@ and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
     patl_expr_list
 
-and transl_apply ?(should_be_tailcall=false) lam sargs loc =
+and transl_apply ?(should_be_tailcall=false) ?inlined_attribute lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
@@ -1053,7 +1108,8 @@ and transl_apply ?(should_be_tailcall=false) lam sargs loc =
     | Lapply(lexp, largs, info) ->
         Lapply(lexp, largs @ args, {info with apply_loc=loc})
     | lexp ->
-        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall loc)
+        Lapply(lexp, args, mk_apply_info ~tailcall:should_be_tailcall
+                 ?inlined_attribute loc)
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->

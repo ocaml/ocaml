@@ -704,17 +704,23 @@ let rec is_pure = function
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
 
+let warning_if_forced_inline ~loc ~attribute warning =
+  if attribute = Force_inline then
+    Location.prerr_warning loc (Warnings.Inlining_impossible warning)
+
 (* Generate a direct application *)
 
-let direct_apply fundesc funct ufunct uargs =
+let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let app =
-    match fundesc.fun_inline with
-    | None ->
+    match fundesc.fun_inline, attribute with
+    | _, Never_inline | None, _ ->
+        warning_if_forced_inline ~loc ~attribute "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, Debuginfo.none)
-    | Some(params, body) ->
-        bind_params fundesc.fun_float_const_prop params app_args body in
+    | Some(params, body), _  ->
+        bind_params fundesc.fun_float_const_prop params app_args body
+  in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
      If the function is not closed, we evaluate ufunct as part of the
@@ -847,17 +853,17 @@ let rec close fenv cenv = function
 
     (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
        when fun_arity > nargs *)
-  | Lapply(funct, args, {apply_loc=loc}) ->
+  | Lapply(funct, args, {apply_loc=loc; apply_inlined=attribute}) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock(_, _), uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
-          let app = direct_apply fundesc funct ufunct uargs in
+          let app = direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
-          let app = direct_apply fundesc funct ufunct uargs in
+          let app = direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
@@ -886,15 +892,18 @@ let rec close fenv cenv = function
                attr = default_function_attribute})
         in
         let new_fun = iter first_args new_fun in
+        warning_if_forced_inline ~loc ~attribute "Partial application";
         (new_fun, approx)
 
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
           let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
-          (Ugeneric_apply(direct_apply fundesc funct ufunct first_args,
-                          rem_args, Debuginfo.none),
+          warning_if_forced_inline ~loc ~attribute "Over-application";
+          (Ugeneric_apply(direct_apply ~loc ~attribute fundesc funct ufunct
+                          first_args, rem_args, Debuginfo.none),
            Value_unknown)
       | ((ufunct, _), uargs) ->
+          warning_if_forced_inline ~loc ~attribute "Unknown function";
           (Ugeneric_apply(ufunct, uargs, Debuginfo.none), Value_unknown)
       end
   | Lsend(kind, met, obj, args, _) ->
