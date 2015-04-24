@@ -809,8 +809,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         bind "idx" arg1 (fun idx ->
           bind "bound" bound (fun bound ->
             let idxn = untag_int idx in
-            (* [offset = rem * bound + idx] with the appropriate handling of
-               tagged integers *)
+            (* [offset = rem * (tag_int bound) + idx] *)
             let offset = add_int (mul_int (decr_int rem) bound) idx in
             check_ba_bound bound idxn offset)) in
   (* The offset as an expression evaluating to int *)
