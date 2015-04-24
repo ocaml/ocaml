@@ -411,14 +411,27 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       then
         (* If the static exception is not used, we can drop the declaration *)
         body, r
-      else
-        let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
-        let env = List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
-            (E.set_sb sb env) vars in
-        let handler, r = loop env r handler in
-        let r = List.fold_left R.exit_scope r vars in
-        let r = R.exit_scope_catch r i in
-        Fstaticcatch (i, vars, body, handler, annot), ret r A.value_unknown
+      else begin
+        match body with
+        | Fstaticraise(j, args, _) ->
+            assert(Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j));
+            Format.printf "@.simplify static exception %a@.@."
+              Static_exception.print j;
+            let handler =
+              List.fold_left2 (fun body var arg ->
+                  Flambda.Flet(Not_assigned, var, arg, body, Expr_id.create ()))
+                handler vars args
+            in
+            loop env r handler
+        | _ ->
+            let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
+            let env = List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
+                (E.set_sb sb env) vars in
+            let handler, r = loop env r handler in
+            let r = List.fold_left R.exit_scope r vars in
+            let r = R.exit_scope_catch r i in
+            Fstaticcatch (i, vars, body, handler, annot), ret r A.value_unknown
+      end
   | Ftrywith(body, id, handler, annot) ->
       let body, r = loop env r body in
       let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
