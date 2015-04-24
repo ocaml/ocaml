@@ -791,13 +791,11 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
-      (* Avoid the costly binding if [idx] is not needed *)
       if unsafe then arg
       else
         bind "idx" arg (fun idx ->
           (* Load the untagged int bound for the given dimension *)
           let bound = Cop(Cload Word,[field_address b dim_ofs]) in
-          (* Untag the index to compare it with the bound *)
           let idxn = untag_int idx in
           check_ba_bound bound idxn idx)
   | arg1 :: argl ->
@@ -806,12 +804,10 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
       (* Load the untagged int bound for the given dimension *)
       let bound = Cop(Cload Word, [field_address b dim_ofs]) in
-      (* Avoid the costly bindings if [idx] and [bound] are not needed *)
       if unsafe then add_int (mul_int (decr_int rem) bound) arg1
       else
         bind "idx" arg1 (fun idx ->
           bind "bound" bound (fun bound ->
-            (* Untag the index to compare it with the bound *)
             let idxn = untag_int idx in
             (* [offset = rem * bound + idx] with the appropriate handling of
                tagged integers *)
