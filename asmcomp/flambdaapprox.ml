@@ -37,7 +37,8 @@ type descr =
 
 and value_offset =
   { fun_id : Closure_id.t;
-    set_of_closures : value_set_of_closures }
+    set_of_closures : value_set_of_closures;
+    set_of_closures_var : Variable.t option; }
 
 and value_set_of_closures =
   { ffunctions : Expr_id.t function_declarations;
@@ -302,6 +303,7 @@ module Import = struct
         in
         value_closure
           { fun_id;
+            set_of_closures_var = None;
             set_of_closures =
               { ffunctions = Compilenv.imported_closure closure_id;
                 bound_var;

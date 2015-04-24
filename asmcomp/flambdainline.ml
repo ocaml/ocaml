@@ -195,7 +195,7 @@ let transform_variable_in_closure_expression env r expr vc_closure
   | Value_bottom | Value_extern _ | Value_symbol _ ->
     assert false
 
-let transform_closure_expression r fu_closure closure_id rel annot =
+let transform_closure_expression env r fu_closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
@@ -208,23 +208,40 @@ let transform_closure_expression r fu_closure closure_id rel annot =
                            Printflambda.flambda fu_closure));
     closure_id
   in
-  match A.descr (R.approx r) with
-  | Value_set_of_closures set_of_closures
-  | Value_closure { A.set_of_closures } ->
+  let approx = R.approx r in
+  let make set_of_closures set_of_closures_var =
     let closure_id = subst_closure_id set_of_closures closure_id in
     let rel = Misc.may_map (subst_closure_id set_of_closures) rel in
     let ret_approx =
-      A.value_closure { fun_id = closure_id; set_of_closures }
+      A.value_closure { fun_id = closure_id; set_of_closures;
+                        set_of_closures_var = approx.var }
     in
     let closure =
       match rel with
       | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
         fu_closure
       | None | Some _ ->
-        Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel},
-            annot)
+          match set_of_closures_var with
+          | Some set_of_closures_var when E.present env set_of_closures_var ->
+              Fclosure ({fu_closure = Fvar (set_of_closures_var, Expr_id.create ());
+                         fu_fun = closure_id; fu_relative_to = None },
+                        annot)
+          | _ ->
+              Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel},
+                        annot)
+    in
+    let closure =
+      if E.present env (Closure_id.unwrap closure_id)
+      then Flambda.Fvar (Closure_id.unwrap closure_id, annot)
+      else closure
     in
     closure, ret r ret_approx
+  in
+  match A.descr approx with
+  | Value_set_of_closures set_of_closures ->
+      make set_of_closures None
+  | Value_closure { A.set_of_closures; set_of_closures_var } ->
+      make set_of_closures set_of_closures_var
   | Value_unresolved sym ->
     (* If the set_of_closure comes from a symbol that can't be recovered,
        we know that it comes from another compilation unit, hence it cannot
@@ -264,7 +281,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       transform_set_of_closures_expression env r set_of_closures annot
   | Fclosure (closure, annot) ->
       let flam, r = loop env r closure.fu_closure in
-      transform_closure_expression r flam closure.fu_fun
+      transform_closure_expression env r flam closure.fu_fun
           closure.fu_relative_to annot
   | Fvariable_in_closure (fenv_field, annot) as expr ->
       let vc_closure, r = loop env r fenv_field.vc_closure in
@@ -633,14 +650,14 @@ and loop_list env r l = match l with
    To handle that case, we first replace those symbols by the original
    variable.
 *)
-and transform_set_of_closures_expression env r cl annot =
+and transform_set_of_closures_expression original_env original_r cl annot =
   let ffuns =
-    Flambdasubst.rewrite_recursive_calls_with_symbols (E.sb env) cl.cl_fun
+    Flambdasubst.rewrite_recursive_calls_with_symbols (E.sb original_env) cl.cl_fun
         ~make_closure_symbol:Compilenv.closure_symbol
   in
   let fv = cl.cl_free_var in
 
-  let env = E.increase_closure_depth env in
+  let env = E.increase_closure_depth original_env in
   let cl_specialised_arg =
     Variable.Map.map
       (Flambdasubst.subst_var (E.sb env))
@@ -648,7 +665,7 @@ and transform_set_of_closures_expression env r cl annot =
   in
   let fv, r = Variable.Map.fold (fun id lam (fv,r) ->
       let lam, r = loop env r lam in
-      Variable.Map.add id (lam, R.approx r) fv, r) fv (Variable.Map.empty, r)
+      Variable.Map.add id (lam, R.approx r) fv, r) fv (Variable.Map.empty, original_r)
   in
   let environment_before_cleaning = env in
   (* Remove every variable binding from the environment.
@@ -696,6 +713,7 @@ and transform_set_of_closures_expression env r cl annot =
   let set_of_closures_env = Variable.Map.fold
       (fun id _ env -> E.add_approx id
           (A.value_closure { fun_id = Closure_id.wrap id;
+                             set_of_closures_var = None;
                              set_of_closures = internal_closure }) env)
       ffuns.funs env in
 
@@ -754,8 +772,12 @@ and transform_set_of_closures_expression env r cl annot =
 
   let closure = { internal_closure with ffunctions = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) ffuns.funs r in
-  Fset_of_closures ({cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
-             cl_specialised_arg}, annot),
+  let set_of_closures = Flambda.{
+      cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
+      cl_specialised_arg
+    }
+  in
+  Fset_of_closures (set_of_closures, annot),
   ret r (A.value_set_of_closures closure)
 
 (* Transform an flambda function application based on information provided

@@ -79,6 +79,7 @@ type descr =
 and value_offset = {
   fun_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
+  set_of_closures_var : Variable.t option;
 }
 
 and value_set_of_closures = {
