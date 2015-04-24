@@ -513,6 +513,9 @@ let lsl_const c n =
   if n = 0 then c
   else Cop(Clsl, [c; Cconst_int n])
 
+(* Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size. [ofs] is given as a
+   tagged int expression. *)
 let array_indexing log2size ptr ofs =
   match ofs with
     Cconst_int n ->
@@ -776,12 +779,15 @@ let bigarray_elt_size = function
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
 
+(* Produces a pointer to the element of the bigarray [b] on the position
+   [args].  [args] is given as a list of tagged int expressions, one per array
+   dimension. *)
 let bigarray_indexing unsafe elt_kind layout b args dbg =
-  let check_bound bound idx v =
+  let check_ba_bound bound idx v =
     Csequence(make_checkbound dbg [bound;idx], v) in
   (* Validates the given multidimensional offset against the array bounds and
      transforms it into a one dimensional offset.  The offsets are expressions
-     evaluating to int. *)
+     evaluating to tagged int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
@@ -789,26 +795,28 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
       if unsafe then arg
       else
         bind "idx" arg (fun idx ->
-          (* Load the nativeint bound for the given dimension *)
+          (* Load the untagged int bound for the given dimension *)
           let bound = Cop(Cload Word,[field_address b dim_ofs]) in
-          (* Transform the index to nativeint to compare it with the bound *)
+          (* Untag the index to compare it with the bound *)
           let idxn = untag_int idx in
-          check_bound bound idxn idx)
+          check_ba_bound bound idxn idx)
   | arg1 :: argl ->
       (* The remainder of the list is transformed into a one dimensional offset
          *)
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
-      (* Load the nativeint bound for the given dimension *)
+      (* Load the untagged int bound for the given dimension *)
       let bound = Cop(Cload Word, [field_address b dim_ofs]) in
       (* Avoid the costly bindings if [idx] and [bound] are not needed *)
       if unsafe then add_int (mul_int (decr_int rem) bound) arg1
       else
         bind "idx" arg1 (fun idx ->
           bind "bound" bound (fun bound ->
-            (* Transform the index to nativeint to compare it with the bound *)
+            (* Untag the index to compare it with the bound *)
             let idxn = untag_int idx in
-            check_bound bound idxn
-              (add_int (mul_int (decr_int rem) bound) idx))) in
+            (* [offset = rem * bound + idx] with the appropriate handling of
+               tagged integers *)
+            let offset = add_int (mul_int (decr_int rem) bound) idx in
+            check_ba_bound bound idxn offset)) in
   (* The offset as an expression evaluating to int *)
   let offset =
     match layout with
