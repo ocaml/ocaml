@@ -18,7 +18,8 @@ open Flambda
 type t = {
   current_compilation_unit : Symbol.Compilation_unit.t;
   current_unit_id : Ident.t;
-  symbol_for_global' : (Ident.t -> Symbol.t)
+  symbol_for_global' : (Ident.t -> Symbol.t);
+  exported_fields : int;
 }
 
 type env = {
@@ -387,7 +388,13 @@ let rec close t env = function
             nid ~name:"getglobalfield" ())
   | Lprim(Psetfield(i,_), [Lprim(Pgetglobal id, []); lam]) ->
       assert(Ident.same id t.current_unit_id);
-      Fprim(Psetglobalfield i, [close t env lam], Debuginfo.none,
+      let exported =
+        if i < t.exported_fields then
+          Exported
+        else
+          Not_exported
+      in
+      Fprim(Psetglobalfield (exported, i), [close t env lam], Debuginfo.none,
             nid ~name:"setglobalfield" ())
   | Lprim(Pgetglobal id, [])
     when not (Ident.is_predef_exn id) ->
@@ -574,12 +581,15 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
     block lets
 
 let lambda_to_flambda ~current_compilation_unit
-    ~symbol_for_global' lam =
+    ~symbol_for_global'
+    ~(exported_fields:int)
+    lam =
   let t =
     { current_compilation_unit;
       current_unit_id =
         Symbol.Compilation_unit.get_persistent_ident current_compilation_unit;
       symbol_for_global';
+      exported_fields;
     }
   in
   (* Strings are the only expressions that can't be duplicated without

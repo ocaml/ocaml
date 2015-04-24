@@ -774,9 +774,16 @@ let transl_store_phrases module_name str =
 let transl_store_implementation module_name (str, restr) =
   let s = !transl_store_subst in
   transl_store_subst := Ident.empty;
-  let r = transl_store_gen module_name (str, restr) false in
+  let size, lam = transl_store_gen module_name (str, restr) false in
   transl_store_subst := s;
-  r
+  let exported = match restr with
+    | Tcoerce_none -> size
+    | Tcoerce_structure (l, _) -> List.length l
+    | Tcoerce_functor _
+    | Tcoerce_primitive _
+    | Tcoerce_alias _ -> assert false
+  in
+  (size, exported), lam
 
 (* Compile a toplevel phrase *)
 

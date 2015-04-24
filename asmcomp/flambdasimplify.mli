@@ -67,3 +67,6 @@ val sequential_or
        and fact n unused = fact' n]
 *)
 val separate_unused_arguments_in_closures : Expr_id.t flambda -> Expr_id.t flambda
+
+(** Replace setglobalfield(false, n) by ignore if the global is unused *)
+val remove_unused_globals : Expr_id.t flambda -> Expr_id.t flambda

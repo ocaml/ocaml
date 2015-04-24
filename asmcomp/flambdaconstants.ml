@@ -230,7 +230,7 @@ module NotConstants(P:Param) = struct
       then register_implication ~in_nc:(Global i) ~implies_in_nc:curr
       else mark_curr curr
 
-    | Fprim(Lambda.Psetglobalfield i, [f], _, _) ->
+    | Fprim(Lambda.Psetglobalfield (_,i), [f], _, _) ->
       mark_curr curr;
       (* adds 'f in NC => global i in NC' *)
       mark_loop [Global i] f

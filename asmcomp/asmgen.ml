@@ -110,7 +110,7 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let flambda ppf (size, lam) =
+let flambda ppf (size, exported, lam) =
   let current_compilation_unit = Compilenv.current_unit () in
   let dump_and_check s flam =
     if !Clflags.dump_flambda
@@ -124,6 +124,7 @@ let flambda ppf (size, lam) =
     Flambdagen.lambda_to_flambda
       ~current_compilation_unit
       ~symbol_for_global':Compilenv.symbol_for_global'
+      ~exported_fields:exported
       lam in
   dump_and_check "flambdagen" flam;
   let rec loop rounds flam =
@@ -135,6 +136,7 @@ let flambda ppf (size, lam) =
       let flam = Flambdasimplify.lift_lets flam in
       let flam = Flambdasimplify.remove_unused_closure_variables flam in
       let flam = Flambdasimplify.separate_unused_arguments_in_closures flam in
+      let flam = Flambdasimplify.remove_unused_globals flam in
       let flam = Flambdainline.inline ~never_inline:true flam in
       let flam = Flambda_ref_to_variables.eliminate_ref flam in
       loop (rounds - 1) flam in
@@ -181,9 +183,9 @@ let compile_unit output_prefix asm_filename keep_asm obj_filename gen =
     remove_file obj_filename;
     raise exn
 
-let gen_implementation ?toplevel ppf (size, lam) =
+let gen_implementation ?toplevel ppf (size, exported, lam) =
   Emit.begin_assembly ();
-  let clambda = flambda ppf (size, lam) in
+  let clambda = flambda ppf (size, exported, lam) in
   (* Closure.intro size lam *)
   clambda
   ++ clambda_dump_if ppf
@@ -272,14 +274,14 @@ let gen_implementation ?toplevel ppf (size, lam) =
   Clambdagen.convert fl_sym
 *)
 
-let compile_implementation ?toplevel prefixname ppf (size, lam) =
+let compile_implementation ?toplevel prefixname ppf ((size, exported), lam) =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
   compile_unit prefixname asmfile !keep_asm_file (prefixname ^ ext_obj)
-    (fun () -> gen_implementation ?toplevel ppf (size, lam))
+    (fun () -> gen_implementation ?toplevel ppf (size, exported, lam))
 
 (* Error report *)
 

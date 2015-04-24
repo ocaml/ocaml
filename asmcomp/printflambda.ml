@@ -60,7 +60,11 @@ let rec lam ppf = function
   | Flet(str, id, arg, body,_) ->
       let rec letbody ul = match ul with
         | Flet(str, id, arg, body,_) ->
-            fprintf ppf "@ @[<2>%a@ %a@]" Variable.print id lam arg;
+            let str = match str with
+              | Assigned -> "*"
+              | Not_assigned -> ""
+            in
+            fprintf ppf "@ @[<2>%a%s@ %a@]" Variable.print id str lam arg;
             letbody body
         | _ -> ul in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Variable.print id lam arg;

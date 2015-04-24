@@ -91,10 +91,13 @@ let make_package_object ppf members targetobj targetname coercion =
         | PM_intf -> None
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
+  let size, lam =
+    Translmod.transl_store_package
+      components (Ident.create_persistent targetname) coercion
+  in
   Asmgen.compile_implementation
     (chop_extension_if_any objtemp) ppf
-    (Translmod.transl_store_package
-       components (Ident.create_persistent targetname) coercion);
+    ((size, size), lam);
   let objfiles =
     List.map
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)

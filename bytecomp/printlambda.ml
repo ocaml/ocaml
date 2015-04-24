@@ -111,7 +111,10 @@ let primitive ppf = function
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
   | Pgetglobalfield (id,i) -> fprintf ppf "global %a.%i" Ident.print id i
-  | Psetglobalfield i -> fprintf ppf "setglobalfield %i" i
+  | Psetglobalfield (Exported, i) ->
+      fprintf ppf "setglobalfield* %i" i
+  | Psetglobalfield (Not_exported, i) ->
+      fprintf ppf "setglobalfield %i" i
   | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n

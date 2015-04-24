@@ -384,7 +384,7 @@ module Conv(P:Param2) = struct
                                    (Compilenv.symbol_for_global id)), [], dbg)],
               dbg)
 
-    | Fprim(Psetglobalfield i, [arg], dbg, _) ->
+    | Fprim(Psetglobalfield (_ex, i), [arg], dbg, _) ->
         Uprim(Psetfield (i,false),
               [Uprim(Pgetglobal (Ident.create_persistent
                                    (Compilenv.make_symbol None)), [], dbg);

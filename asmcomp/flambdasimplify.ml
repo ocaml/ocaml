@@ -468,3 +468,22 @@ let separate_unused_arguments_in_closures tree =
     | e -> e
   in
   Flambdaiter.map aux tree
+
+let used_globals id tree =
+  let used = ref Ext_types.Int.Set.empty in
+  Flambdaiter.iter (function
+      | Fprim(Pgetglobalfield(modul, pos), _, _, _) when Ident.same id modul ->
+          used := Ext_types.Int.Set.add pos !used
+      | _ -> ()) tree;
+  !used
+
+let remove_unused_globals tree =
+  let id = Compilenv.current_unit_id () in
+  let used = used_globals id tree in
+  Flambdaiter.map (function
+      | Fprim(Psetglobalfield(Not_exported, pos), arg, dbg, attr)
+        when not (Ext_types.Int.Set.mem pos used) ->
+          Format.printf "removed global %i@." pos;
+          Fprim(Pignore, arg, dbg, attr)
+      | e -> e)
+    tree

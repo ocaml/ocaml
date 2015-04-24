@@ -58,5 +58,6 @@ val lambda_to_flambda
        unit testing witout relying on compilenv. As all those tests
        are currently disabled, this may not be necessary. *)
   -> symbol_for_global':(Ident.t -> Symbol.t)
+  -> exported_fields:int
   -> Lambda.lambda
   -> Expr_id.t Flambda.flambda

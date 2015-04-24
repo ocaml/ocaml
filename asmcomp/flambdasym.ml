@@ -574,10 +574,10 @@ module Conv(P:Param1) = struct
         else
           conv_approx env lam
 
-    | Fprim(Lambda.Psetglobalfield i, [arg], dbg, _) ->
+    | Fprim(Lambda.Psetglobalfield (ex, i), [arg], dbg, _) ->
         let uarg, approx = conv_approx env arg in
         add_global i approx;
-        Fprim(Lambda.Psetglobalfield i, [uarg], dbg, ()),
+        Fprim(Lambda.Psetglobalfield (ex, i), [uarg], dbg, ()),
         Value_unknown
 
     | Fprim(Lambda.Pmakeblock(tag, Asttypes.Immutable) as p, args, dbg, _) ->

@@ -353,10 +353,10 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           A.get_field i [A.really_import_approx (A.Import.import_global id)]
       in
       check_constant_result r expr approx
-  | Fprim(Psetglobalfield i, [arg], dbg, annot) as expr ->
+  | Fprim(Psetglobalfield (ex,i), [arg], dbg, annot) as expr ->
       let arg', r = loop env r arg in
       let expr : _ Flambda.t = if arg == arg' then expr
-        else Fprim(Psetglobalfield i, [arg'], dbg, annot) in
+        else Fprim(Psetglobalfield (ex, i), [arg'], dbg, annot) in
       let r = R.add_global r ~field_index:i ~approx:(R.approx r) in
       expr, ret r A.value_unknown
   | Fprim(Pfield i, [arg], dbg, annot) as expr ->
