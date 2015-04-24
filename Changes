@@ -191,6 +191,7 @@ Bug fixes:
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
 - PR#6680: Missing parentheses when printing polymorphic variant value in warning
+- PR#6686: Bug in [subst_boxed_number] (Jérémie Dimino, Mark Shinwell)
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
            type variable in place of a local abstract type
 - PR#6717: Pprintast does not print let-pattern attributes
@@ -201,6 +202,7 @@ Bug fixes:
   (Mark Shinwell and Jérémie Dimino)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
+- PR#6770: (duplicate of PR#6686)
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
 - PR#6787: Soundness bug with polymorphic variants
