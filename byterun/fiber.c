@@ -66,19 +66,20 @@ void caml_init_fibers ()
 
 #define Fiber_stack_wosize ((Stack_threshold / sizeof(value)) *2)
 
-value caml_handle(value body, value hval, value hexn, value heff)
+value caml_handle(value body, value hval, value hexn, value heff, intnat extra_args)
 {
   CAMLparam4(body, hval, hexn, heff);
   CAMLlocal1(new_stack);
   value old_stack;
   value *sp, *high;
 
-  /* Push the trapsp and parent stack */
+  /* Push the trapsp, parent stack and extra args */
   /* FIXME caml_trap_barrier_off? */
   sp = caml_extern_sp;
-  sp -= 2;
-  sp[0] = caml_parent_stack;
-  sp[1] = Val_long(caml_trap_sp_off);
+  sp -= 3;
+  sp[0] = Val_long(extra_args);
+  sp[1] = caml_parent_stack;
+  sp[2] = Val_long(caml_trap_sp_off);
   caml_extern_sp = sp;
 
   /* create a new stack */
@@ -135,17 +136,17 @@ value caml_perform(value effect)
   Init_field(cont, 1, Val_int(0));
 
   /* Set trapsp and parent stack */
-  caml_parent_stack = sp[0];
-  caml_trap_sp_off = Long_val(sp[1]);
+  caml_parent_stack = sp[1];
+  caml_trap_sp_off = Long_val(sp[2]);
 
   /* Complete the call frame */
-  sp[0] = effect;
-  sp[1] = cont;
+  sp[1] = effect;
+  sp[2] = cont;
 
   CAMLreturn(Stack_handle_effect(old_stack));
 }
 
-value caml_continue(value cont, value ret)
+value caml_continue(value cont, value ret, intnat extra_args)
 {
   CAMLparam1(ret);
   CAMLlocal2(old_stack, new_stack);
@@ -157,11 +158,12 @@ value caml_continue(value cont, value ret)
   /* Retrieve stack from continuation */
   new_stack = FieldImm(cont, 0);
 
-  /* Push the trapsp and parent stack */
+  /* Push the trapsp, parent stack and extra args */
   sp = caml_extern_sp;
-  sp -= 2;
-  sp[0] = caml_parent_stack;
-  sp[1] = Val_long(caml_trap_sp_off);
+  sp -= 3;
+  sp[0] = Val_long(extra_args);
+  sp[1] = caml_parent_stack;
+  sp[2] = Val_long(caml_trap_sp_off);
   caml_extern_sp = sp;
 
   /* Switch to the new stack */
@@ -183,6 +185,7 @@ value caml_finish(value ret)
   CAMLparam1(ret);
   value old_stack, new_stack;
   value *sp;
+  value extra_args_v;
 
   /* Switch to the parent stack */
   old_stack = save_stack();
@@ -192,12 +195,14 @@ value caml_finish(value ret)
   sp = caml_extern_sp;
 
   /* Set trapsp and parent stack */
-  caml_parent_stack = sp[0];
-  caml_trap_sp_off = Long_val(sp[1]);
+  extra_args_v = sp[0];
+  caml_parent_stack = sp[1];
+  caml_trap_sp_off = Long_val(sp[2]);
   sp += 1;
 
-  /* Complete the call frame */
-  sp[0] = ret;
+  /* Complete the call frame and replace extra_args */
+  sp[0] = extra_args_v;
+  sp[1] = ret;
 
   caml_extern_sp = sp;
 
@@ -209,6 +214,7 @@ value caml_finish_exception(value exn)
   CAMLparam1(exn);
   value old_stack, new_stack;
   value *sp;
+  value extra_args_v;
 
   /* Switch to the parent stack */
   old_stack = save_stack();
@@ -218,12 +224,15 @@ value caml_finish_exception(value exn)
   sp = caml_extern_sp;
 
   /* Set trapsp and parent stack */
-  caml_parent_stack = sp[0];
-  caml_trap_sp_off = Long_val(sp[1]);
+  extra_args_v = sp[0];
+  caml_parent_stack = sp[1];
+  caml_trap_sp_off = Long_val(sp[2]);
   sp += 1;
 
-  /* Complete the call frame */
-  sp[0] = exn;
+  /* Complete the call frame and replace extra_args */
+  sp[0] = extra_args_v;
+  sp[1] = exn;
+
   caml_extern_sp = sp;
 
   CAMLreturn(Stack_handle_exception(old_stack));

@@ -101,6 +101,9 @@ let instruction ppf = function
   | Kperform -> fprintf ppf "\tperform"
   | Kcontinue -> fprintf ppf "\tcontinue"
   | Kdiscontinue -> fprintf ppf "\tdiscontinue"
+  | Khandleterm n -> fprintf ppf "\thandleterm %i" n
+  | Kcontinueterm n -> fprintf ppf "\tcontinueterm %i" n
+  | Kdiscontinueterm n -> fprintf ppf "\tdiscontinueterm %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
                          ev.ev_loc.Location.loc_start.Lexing.pos_fname

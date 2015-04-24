@@ -56,6 +56,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
                         caml_last_return_address, caml_gc_regs);
 #else
   f(*(domain->current_stack), domain->current_stack);
+  f(*(domain->parent_stack), domain->parent_stack);
 #endif
   for (lr = *(domain->local_roots); lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){

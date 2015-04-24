@@ -396,6 +396,13 @@ let op_shapes = [
   opUGEINT, Nothing;
   opBULTINT, Uint_Disp;
   opBUGEINT, Uint_Disp;
+  opHANDLE, Nothing;
+  opPERFORM, Nothing;
+  opCONTINUE, Nothing;
+  opDISCONTINUE, Nothing;
+  opHANDLETERM, Uint;
+  opCONTINUETERM, Uint;
+  opDISCONTINUETERM, Uint;
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
