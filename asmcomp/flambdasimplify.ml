@@ -33,16 +33,26 @@ let lift_lets tree =
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
 let remove_unused_closure_variables tree =
-  let used_variable_within_closure =
+  let used_variable_within_closure,
+      used_closure_id =
     let used = ref Var_within_closure.Set.empty in
+    let used_fun = ref Closure_id.Set.empty in
     let aux (expr : _ Flambda.t) =
       match expr with
-      | Fvariable_in_closure({ vc_var }, _) ->
-         used := Var_within_closure.Set.add vc_var !used
+      | Fvariable_in_closure({ vc_var; vc_fun }, _) ->
+          used := Var_within_closure.Set.add vc_var !used;
+          used_fun := Closure_id.Set.add vc_fun !used_fun;
+      | Fclosure({ fu_fun; fu_relative_to }, _) ->
+          used_fun := Closure_id.Set.add fu_fun !used_fun;
+          begin match fu_relative_to with
+          | None -> ()
+          | Some fu_relative_to ->
+              used_fun := Closure_id.Set.add fu_relative_to !used_fun
+          end
       | e -> ()
     in
     Flambdaiter.iter aux tree;
-    !used
+    !used, !used_fun
   in
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
@@ -60,7 +70,18 @@ let remove_unused_closure_variables tree =
                used_variable_within_closure
              || not (Flambdaeffects.no_effects expr))
            cl_free_var in
-       Fset_of_closures ({ closure with cl_free_var }, eid)
+       let cl_fun =
+         { cl_fun with
+           funs = Variable.Map.filter (fun fun_id _ ->
+               if (not (Variable.Set.mem fun_id all_free_var
+                        || Closure_id.Set.mem (Closure_id.wrap fun_id)
+                          used_closure_id))
+               then Format.printf "remove_function %a@." Variable.print fun_id;
+               Variable.Set.mem fun_id all_free_var
+               || Closure_id.Set.mem (Closure_id.wrap fun_id)
+                 used_closure_id)
+               cl_fun.funs } in
+       Fset_of_closures ({ closure with cl_free_var; cl_fun }, eid)
     | e -> e
   in
   Flambdaiter.map aux tree
