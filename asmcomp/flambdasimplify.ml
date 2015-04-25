@@ -34,10 +34,10 @@ let lift_set_of_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
     | Fclosure({ fu_closure = Fset_of_closures(set, dset) } as closure, d) ->
-        let decl = Flambdautils.find_declaration closure.fu_fun set.cl_fun in
-        if not decl.stub then
-          expr
-        else
+        (* let decl = Flambdautils.find_declaration closure.fu_fun set.cl_fun in *)
+        (* if not decl.stub then *)
+        (*   expr *)
+        (* else *)
           (* If the function is a stub, we create an intermediate let to allow
              eliminating it *)
           let set_of_closures_var =
