@@ -1,0 +1,48 @@
+
+#         val pp : ('a, Format.formatter, unit) format -> 'a = <fun>
+module M : sig val x : string end
+module N : sig val x : string end
+#       Characters 17-40:
+  ..let open M and N in
+    x..
+Error: This grouped open introduces multiple definitions for the value name x (which is later used).
+       The value name x cannot be used without disambiguation.
+#     Characters 1-13:
+  open M and N
+  ^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the value name x (which is later used).
+       The value name x cannot be used without disambiguation.
+#     module T : sig type t = C end
+module U : sig type t = C end
+#       Characters 19-44:
+  ....let open T and U in
+      C...
+Error: This grouped open introduces multiple definitions for the constructor name C (which is later used).
+       The constructor name C cannot be used without disambiguation.
+#                     Characters 147-159:
+  open D and E
+  ^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the module name Nested (which is later used).
+       The module name Nested cannot be used without disambiguation.
+#           Characters 72-84:
+  open Z and I
+  ^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the type name t (which is later used).
+       The type name t cannot be used without disambiguation.
+#           Characters 88-100:
+  open O and A
+  ^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the class name c (which is later used).
+       The class name c cannot be used without disambiguation.
+#         Characters 102-116:
+  open Os and As
+  ^^^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the type name cs (which is later used).
+       The type name cs cannot be used without disambiguation.
+#           Characters 94-106:
+  open V and R
+  ^^^^^^^^^^^^
+Error: This grouped open introduces multiple definitions for the module type name S (which is later used).
+       The module type name S cannot be used without disambiguation.
+#           val which_x : string = "M.x"
+#     

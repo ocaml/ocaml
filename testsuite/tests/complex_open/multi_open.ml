@@ -1,29 +1,25 @@
 let sp = Printf.sprintf
-let not s  = sp "Module %s not opened" s
+let not s  = sp "Module %s was not opened" s
 let right s = sp "Module %s correctly opened" s
-let wrong child parent = sp "Wrong module %s: Nested Module %s.%s" child parent child
-let shadow x m = sp "Wrong variable %s: shadowed from %s" x m
-			    
+let nested name = sp "Nested module %s correctly opened" name
+			
 let x = not "M"
 and y = not "N"
 and z = not "L";;
 
 module M = struct
     let x = right "M"
-    let y = shadow "y" "M"
-    let z = shadow "z" "M"
-    module N = struct let y= wrong "N" "M" end
+    module N = struct let y= nested "M.N" end
   end;;
-	     
+	
 module N = struct
-    let z = shadow "z" "N"
     let y = right "N"
-    module L = struct let z= wrong "L" "N" end
+    module L = struct let z= nested "N.L" end
   end;;
-	     
+	
 module L = struct
     let z = right "L"
-    module M = struct let x= wrong "M" "L" end
+    module M = struct let x= nested "L.M" end
   end;;
 
 let pp = Printf.printf
@@ -35,7 +31,27 @@ let () =
   let open M[@local][@attribute] and N and L [@attribute] in
   test "Local" [x;y;z];;
 
-open! M[@one_attribute][@another] and N and L[@local] [@@item]
+(* Testing for shadowing warning *)
+[@@@ocaml.warning "+44" ]
 
+let which_x =
+  let x = not "M" in
+  pp "%s\n" x;
+  let open M and N in (* x is shadowed here *)
+  x;;
+
+let which_x =
+  let x = not "M" in
+  pp "%s\n" x;
+  let open! M and N in (* x is shadowed here but the warning is silenced *)
+  x;;
+
+open! M[@one_attribute][@another] and N and L[@local] [@@item]
 let () =
   test "Global" [x;y;z];;
+
+open! M and N and L
+let () =
+  test "Nested global" [x;y;z];;
+
+

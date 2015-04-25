@@ -89,7 +89,7 @@ let type_module =
 (* Forward declaration, to be filled in by Typemod.type_open *)
 
 let type_open =
-  ref (fun _ -> assert false)
+  ref (fun ?forbidden_names _ -> assert false)
 
 (* Forward declaration, to be filled in by Typemod.type_package *)
 
@@ -2879,8 +2879,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_open (ovf, oseq, e) ->
+      let forbidden_names = Env.Names.make () in
       let open_item (open_seq,new_env) (lid,attrs) =
-        let (path, new_env) = !type_open ovf ~from:env ~into:new_env sexp.pexp_loc lid in
+        let (path, new_env) = !type_open ~forbidden_names ovf ~from:env ~into:new_env sexp.pexp_loc lid in
+        Env.Names.incr_current_module forbidden_names;
         (path,lid,attrs):: open_seq, new_env in
       let (open_seq, new_env) = List.fold_left open_item ([],env) oseq in
       let exp = type_expect new_env e ty_expected in
