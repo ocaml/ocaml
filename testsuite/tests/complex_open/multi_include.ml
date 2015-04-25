@@ -20,34 +20,31 @@ module type S_XYZ =
 module M =
   struct
     let x = right "M"
-    let y = shadow "y" "M"
-    let z = shadow "z" "M"
   end
 module N =
   struct
     let y = right "N"
-    let z = shadow "z" "N"
   end
 module L =
 struct
   let z = right "L"
 end
-module Id ( M: S_XYZ) = struct let x =  M.x let y=M.y type t = int end
+module Id ( M: S_X ) = struct let x =  M.x end
 
 let pp = Printf.printf
 let test label l=
   pp "%s include:\n" label;
-  List.iter (pp "\t%s\n") l
+  List.iter (pp "\t%s\n") l;;
 
-module MNL = struct module Inner = struct include M and N and L end end
+module MNL = struct module Inner = struct include M and N and L end end;;
 
 let () =
   let module D = struct module I = struct include MNL end end in
-  test "Two-level nested" D.I.Inner.[x;y;z]
+  test "Two-level nested" D.I.Inner.[x;y;z];;
 
 let () =
   let module I : S_XYZ  = struct include  M[@local][@attribute] and N and L end in
-  test "Local" I.[x;y;z]
+  test "Local" I.[x;y;z];;
 
 let () =
   let module I : S_XYZ  =
@@ -55,8 +52,8 @@ let () =
       include Id(M) and N and L;;
       test "Nested_global" [x;y;z]
     end in
-  ()
+  ();;
 
-include Id(M)[@att] and N and L [@@item]
+include Id(M)[@att] and N and L [@@item];;
 let () =
-  test "Global" [x;y;z]
+  test "Global" [x;y;z];;

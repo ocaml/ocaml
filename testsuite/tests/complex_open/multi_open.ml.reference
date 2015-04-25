@@ -1,0 +1,30 @@
+
+#                 val sp : ('a, unit, string) format -> 'a = <fun>
+val not : string -> string = <fun>
+val right : string -> string = <fun>
+val wrong : string -> string -> string = <fun>
+val shadow : string -> string -> string = <fun>
+val x : string = "Module M not opened"
+val y : string = "Module N not opened"
+val z : string = "Module L not opened"
+#             module M :
+  sig
+    val x : string
+    val y : string
+    val z : string
+    module N : sig val y : string end
+  end
+#           module N :
+  sig val z : string val y : string module L : sig val z : string end end
+#         module L : sig val z : string module M : sig val x : string end end
+#         val pp : ('a, out_channel, unit) format -> 'a = <fun>
+val test : string -> string list -> unit = <fun>
+#       Local open:
+	Module M correctly opened
+	Module N correctly opened
+	Module L correctly opened
+#         Global open:
+	Module M correctly opened
+	Module N correctly opened
+	Module L correctly opened
+# 

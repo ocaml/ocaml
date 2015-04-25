@@ -399,14 +399,14 @@ and approx_sig env ssg =
           let (path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
-	  let include_sig (env, sg_list) smty =
+    let include_sig (env, sg_list) smty =
             let mty = approx_modtype env smty in
             let sg = Subst.signature Subst.identity
                      (extract_sig env smty.pmty_loc mty) in
             let newenv = Env.add_signature sg env in
             (newenv, sg :: sg_list) in
-	  let newenv, sg = List.fold_left include_sig (env,[]) sincl.pincl_mods in
-	  (List.concat @@ List.rev sg) @ approx_sig newenv srem
+    let newenv, sg = List.fold_left include_sig (env,[]) sincl.pincl_mods in
+    (List.concat @@ List.rev sg) @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
@@ -447,6 +447,8 @@ let check_recmod_typedecls env sdecls decls =
 module StringSet =
   Set.Make(struct type t = string let compare (x:t) y = compare x y end)
 
+module StringMap = Misc.StringMap
+
 let check cl loc set_ref name =
   if StringSet.mem name !set_ref
   then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
@@ -458,6 +460,7 @@ type names =
     modules: StringSet.t ref;
     modtypes: StringSet.t ref;
     typexts: StringSet.t ref;
+    values : int StringMap.t ref
   }
 
 let new_names () =
@@ -466,7 +469,11 @@ let new_names () =
     modules = ref StringSet.empty;
     modtypes = ref StringSet.empty;
     typexts = ref StringSet.empty;
+    values = ref StringMap.empty
   }
+
+let erase_value_map names =
+  names.values := StringMap.empty
 
 
 let check_name check names name = check names name.loc name.txt
@@ -475,13 +482,36 @@ let check_module names loc s = check "module" loc names.modules s
 let check_modtype names loc s = check "module type" loc names.modtypes s
 let check_typext names loc s = check "extension constructor" loc names.typexts s
 
+(* Uniqueness check of value binding is less strict in most situation. However uniquess of bindings accross modules must be
+enforced in grouped include and open (i.e. in open M and N,  M and N must not shadow each other bindings) *)
+let check_values current_module names loc name =
+  try
+    begin
+    let previous_binding_module = StringMap.find name !(names.values) in
+    if current_module = previous_binding_module then raise Not_found
+      else raise @@ Error(loc,Env.empty, Repeated_name("value",name) )
+    end
+  with Not_found -> names.values := StringMap.add name current_module !(names.values)
 
+(*
 let check_sig_item names loc = function
   | Sig_type(id, _, _) -> check_type names loc (Ident.name id)
   | Sig_module(id, _, _) -> check_module names loc (Ident.name id)
   | Sig_modtype(id, _) -> check_modtype names loc (Ident.name id)
   | Sig_typext(id, _, _) -> check_typext names loc (Ident.name id)
+  | _ -> ()*)
+
+let check_sig_item_with_values current_module names loc = function
+  | Sig_type(id, _, _) -> check_type names loc (Ident.name id)
+  | Sig_module(id, _, _) -> check_module names loc (Ident.name id)
+  | Sig_modtype(id, _) -> check_modtype names loc (Ident.name id)
+  | Sig_typext(id, _, _) -> check_typext names loc (Ident.name id)
+  | Sig_value(id, _) ->  check_values current_module names loc (Ident.name id)
   | _ -> ()
+
+
+(* Name collision checking tools for grouped open and include *)
+
 
 (* Simplify multiple specifications of a value or an extension in a signature.
    (Other signature components, e.g. types, modules, etc, are checked for
@@ -678,7 +708,7 @@ and transl_signature env sg =
             mksig (Tsig_open od) env loc :: trem,
             rem, final_env
         | Psig_include sincl ->
-	   let include_ (tmty_l, sg_l,env) smty =
+     let include_ (tmty_l, sg_l,pos,env) smty =
             let tmty =
               Builtin_attributes.with_warning_attribute sincl.pincl_attributes
                 (fun () -> transl_modtype env smty)
@@ -686,19 +716,20 @@ and transl_signature env sg =
             let mty = tmty.mty_type in
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
-            List.iter (check_sig_item names item.psig_loc) sg;
+            List.iter (check_sig_item_with_values pos names item.psig_loc) sg;
             let newenv = Env.add_signature sg env in
-	   				tmty::tmty_l, sg :: sg_l, newenv in
-			let rt_l, rsg_l, new_env = List.fold_left include_ ([],[],env) sincl.pincl_mods in
-			let t_l, sg_l = List.rev rt_l, List.rev rsg_l in
-	    let incl =
-      	{ incl_mods = t_l;
-        	incl_types = sg_l;
-         	incl_attributes = sincl.pincl_attributes;
+             tmty::tmty_l, sg :: sg_l, pos+1, newenv in
+      erase_value_map names;   
+      let rt_l, rsg_l, _, new_env = List.fold_left include_ ([],[],0,env) sincl.pincl_mods in
+      let t_l, sg_l = List.rev rt_l, List.rev rsg_l in
+      let incl =
+        { incl_mods = t_l;
+          incl_types = sg_l;
+           incl_attributes = sincl.pincl_attributes;
           incl_loc = sincl.pincl_loc;
         } in
-	   let (trem, rem, final_env) = transl_sig new_env srem  in
-	    mksig (Tsig_include incl) env loc :: trem, (List.concat sg_l) @ rem , final_env
+     let (trem, rem, final_env) = transl_sig new_env srem  in
+      mksig (Tsig_include incl) env loc :: trem, (List.concat sg_l) @ rem , final_env
         | Psig_class cl ->
             List.iter
               (fun {pci_name} -> check_name check_type names pci_name)
@@ -1425,7 +1456,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
              classes []),
         new_env
     | Pstr_include sincl ->
-       let include_ (modl_l, sg_l, env) smodl =
+       let include_ (modl_l, sg_l,pos, env) smodl =
         let modl =
           Builtin_attributes.with_warning_attribute sincl.pincl_attributes
             (fun () -> type_module true funct_body None env smodl)
@@ -1433,13 +1464,13 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
             (extract_sig_open env smodl.pmod_loc modl.mod_type) in
-        List.iter (check_sig_item names loc) sg;
+        List.iter (check_sig_item_with_values pos names loc) sg;
         let new_env = Env.add_signature sg env in
-        modl::modl_l, sg :: sg_l, new_env in
-    (* we add modules from the left to the right in the environment by reversing pincl_mods *)
-       	let rmodl_l, rsg_l, env = List.fold_left include_ ([],[],env) sincl.pincl_mods  in
-			 	let modl_l, sg_l = List.rev rmodl_l, List.rev rsg_l in
-       	let incl =
+        modl::modl_l, sg :: sg_l, pos + 1, new_env in
+        erase_value_map names;
+         let rmodl_l, rsg_l,_, env = List.fold_left include_ ([],[],0,env) sincl.pincl_mods  in
+         let modl_l, sg_l = List.rev rmodl_l, List.rev rsg_l in
+         let incl =
          { incl_mods = modl_l;
            incl_types = sg_l;
            incl_attributes = sincl.pincl_attributes;
@@ -1757,9 +1788,14 @@ let report_error ppf = function
            %a@]"
         longident lid Includemod.report_error explanation
   | Repeated_name(kind, name) ->
-      fprintf ppf
+      fprintf ppf (
+      if kind = "value" then  (* possible only in grouped include *)
         "@[Multiple definition of the %s name %s.@ \
-           Names must be unique in a given structure or signature.@]" kind name
+           Value names must be unique in a grouped include.@]" 
+      else
+        "@[Multiple definition of the %s name %s.@ \
+           Names must be unique in a given structure or signature.@]" 
+      ) kind name
   | Non_generalizable typ ->
       fprintf ppf
         "@[The type of this expression,@ %a,@ \

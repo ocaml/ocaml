@@ -6,36 +6,36 @@ let shadow x m = sp "Wrong variable %s: shadowed from %s" x m
 			    
 let x = not "M"
 and y = not "N"
-and z = not "L"
+and z = not "L";;
 
 module M = struct
     let x = right "M"
     let y = shadow "y" "M"
     let z = shadow "z" "M"
     module N = struct let y= wrong "N" "M" end
-  end
+  end;;
 	     
 module N = struct
     let z = shadow "z" "N"
     let y = right "N"
     module L = struct let z= wrong "L" "N" end
-  end
+  end;;
 	     
 module L = struct
     let z = right "L"
     module M = struct let x= wrong "M" "L" end
-  end
+  end;;
 
 let pp = Printf.printf
 let test global l=
   pp "%s open:\n" global;
-  List.iter (pp "\t%s\n") l
+  List.iter (pp "\t%s\n") l;;
 
 let () =
   let open M[@local][@attribute] and N and L [@attribute] in
-  test "Local" [x;y;z]
+  test "Local" [x;y;z];;
 
 open! M[@one_attribute][@another] and N and L[@local] [@@item]
 
 let () =
-  test "Global" [x;y;z]
+  test "Global" [x;y;z];;
