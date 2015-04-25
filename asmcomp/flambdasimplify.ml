@@ -30,6 +30,31 @@ let lift_lets tree =
   in
   Flambdaiter.map aux tree
 
+let lift_set_of_closures tree =
+  let aux (expr : _ Flambda.t) : _ Flambda.t =
+    match expr with
+    | Fclosure({ fu_closure = Fset_of_closures(set, dset) } as closure, d) ->
+        let decl = Flambdautils.find_declaration closure.fu_fun set.cl_fun in
+        if not decl.stub then
+          expr
+        else
+          (* If the function is a stub, we create an intermediate let to allow
+             eliminating it *)
+          let set_of_closures_var =
+            Variable.create
+              ~current_compilation_unit:(Compilenv.current_unit ())
+              "set_of_closures"
+          in
+          Flet(Not_assigned, set_of_closures_var,
+               Fset_of_closures(set, dset),
+               Fclosure({ closure with
+                          fu_closure = Fvar (set_of_closures_var, Expr_id.create ()) },
+                        d),
+               Expr_id.create ())
+    | e -> e
+  in
+  Flambdaiter.map aux tree
+
 (** A variable in a closure can either be used by the closure itself
     or by an inlined version of the function. *)
 let remove_unused_closure_variables tree =
