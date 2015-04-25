@@ -116,6 +116,7 @@ value caml_perform(value effect)
   CAMLlocal2(old_stack, new_stack);
   value cont;
   value *sp;
+  struct domain* self;
 
   /* push the trapsp */
   sp = caml_extern_sp;
@@ -131,9 +132,10 @@ value caml_perform(value effect)
   sp = caml_extern_sp;
 
   /* Create the continuation */
+  self = caml_domain_self();
   cont = caml_alloc_small(2, 0);
   Init_field(cont, 0, old_stack);
-  Init_field(cont, 1, Val_int(0));
+  Init_field(cont, 1, Val_int(self->id));
 
   /* Set trapsp and parent stack */
   caml_parent_stack = sp[1];
@@ -146,17 +148,60 @@ value caml_perform(value effect)
   CAMLreturn(Stack_handle_effect(old_stack));
 }
 
+struct transfer_req {
+  value cont;
+  int target;
+};
+
+static void transfer_continuation(struct domain* self, void *reqp)
+{
+  struct transfer_req *req = reqp;
+  value cont = req->cont;
+  int target_id = req->target;
+  int owner_id = Long_val(FieldImm(cont, 1));
+  value stack;
+
+  if(owner_id == self->id) {
+    stack = caml_promote(self, FieldImm(cont, 0));
+    caml_modify_field(cont, 0, stack);
+    Op_val(cont)[1] = Val_int(target_id);
+  }
+}
+
+static value use_continuation(value cont)
+{
+  struct domain *self, *owner;
+  int self_id, owner_id;
+  struct transfer_req req;
+
+  owner_id = Int_val(FieldImm(cont, 1));
+
+  self = caml_domain_self();
+  self_id = self->id;
+
+  while(owner_id != self_id) {
+    if(owner_id == -1) caml_invalid_argument("continuation already used");
+
+    owner = caml_domain_of_id(owner_id);
+    req.cont = cont;
+    req.target = self_id;
+    caml_domain_rpc(owner, &transfer_continuation, &req);
+
+    owner_id = Int_val(FieldImm(cont, 1));
+  }
+
+  Op_val(cont)[1] = Val_int(-1);
+  return FieldImm(cont, 0);
+}
+
 value caml_continue(value cont, value ret, intnat extra_args)
 {
   CAMLparam1(ret);
   CAMLlocal2(old_stack, new_stack);
   value *sp;
 
-  /* Check continuation is unused (should use bias to avoid sync in common case) */
-  if(!caml_atomic_cas_field(cont, 1, Val_int(0), Val_int(1))) abort(); /* FIXME */
-
   /* Retrieve stack from continuation */
-  new_stack = FieldImm(cont, 0);
+  new_stack = use_continuation(cont);
 
   /* Push the trapsp, parent stack and extra args */
   sp = caml_extern_sp;

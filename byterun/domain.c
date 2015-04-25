@@ -321,6 +321,10 @@ struct domain* caml_owner_of_young_block(value v) {
   return &all_domains[heap_id].state;
 }
 
+struct domain* caml_domain_of_id(int id)
+{
+  return &all_domains[id].state;
+}
 
 CAMLprim value caml_ml_domain_id(value unit)
 {

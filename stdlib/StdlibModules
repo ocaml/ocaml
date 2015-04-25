@@ -32,6 +32,7 @@ STDLIB_MODULES=\
   char \
   complex \
   digest \
+  domain \
   effects \
   filename \
   format \

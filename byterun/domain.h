@@ -61,7 +61,9 @@ struct domain* caml_random_domain();
 
 struct domain* caml_owner_of_young_block(value);
 
-void caml_domain_rpc(struct domain*, 
+struct domain* caml_domain_of_id(int);
+
+void caml_domain_rpc(struct domain*,
                      domain_rpc_handler, void*);
 
 #endif /* CAML_DOMAIN_H */
