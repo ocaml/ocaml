@@ -411,7 +411,9 @@ let nid () = Expr_id.create ()
 
 let remove_params unused (fun_decl: _ Flambda.function_declaration) =
   let unused_params, used_params = List.partition (fun v -> Variable.Set.mem v unused) fun_decl.params in
-  let unused_params = List.filter (fun v -> Variable.Set.mem v fun_decl.free_variables) unused_params in
+  let unused_params = List.filter (fun v ->
+      Format.printf "remove %a@." Variable.print v;
+      Variable.Set.mem v fun_decl.free_variables) unused_params in
   let body = List.fold_left (fun body var ->
       Flambda.Flet(Not_assigned,
            var,
