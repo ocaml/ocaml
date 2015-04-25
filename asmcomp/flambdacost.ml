@@ -231,7 +231,7 @@ let print_benefit ppf b =
     b.remove_prim
     b.remove_branch
 
-let benefit_factor = 4
+let benefit_factor = 1
 
 let evaluate_benefit b =
   benefit_factor *
