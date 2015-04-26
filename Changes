@@ -106,6 +106,7 @@ Bug fixes:
 - PR#6752: Extensible variant types and scope escaping
 
 Features wishes:
+- PR#4714: List.cons
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#6167: OCAMLPARAM support for disabling PIC generation ("pic=0")
   (Gabor Pali)

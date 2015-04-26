@@ -27,6 +27,11 @@
 val length : 'a list -> int
 (** Return the length (number of elements) of the given list. *)
 
+val cons : 'a -> 'a list -> 'a list
+(** [cons x xs] is [x :: xs]
+    @since 4.03.0
+*)
+
 val hd : 'a list -> 'a
 (** Return the first element of the given list. Raise
    [Failure "hd"] if the list is empty. *)
