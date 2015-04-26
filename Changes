@@ -212,6 +212,8 @@ Bug fixes:
   (Gabriel Scherer, report by Damien Doligez)
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - PR#6817: GADT exhaustiveness breakage with modules
+- PR#6824: fix buffer sharing on partial application of Format.asprintf
+  (Gabriel Scherer, report by Alain Frisch)
 - PR#6836: Assertion failure using -short-paths
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
 - PR#6842: export Typemod.modtype_of_package
