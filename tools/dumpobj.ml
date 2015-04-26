@@ -320,6 +320,11 @@ let op_shapes = [
   opGETFIELD2, Nothing;
   opGETFIELD3, Nothing;
   opGETFIELD, Uint;
+  opGETMUTABLEFIELD0, Nothing;
+  opGETMUTABLEFIELD1, Nothing;
+  opGETMUTABLEFIELD2, Nothing;
+  opGETMUTABLEFIELD3, Nothing;
+  opGETMUTABLEFIELD, Uint;
   opGETFLOATFIELD, Uint;
   opSETFIELD0, Nothing;
   opSETFIELD1, Nothing;
@@ -391,6 +396,13 @@ let op_shapes = [
   opUGEINT, Nothing;
   opBULTINT, Uint_Disp;
   opBUGEINT, Uint_Disp;
+  opHANDLE, Nothing;
+  opPERFORM, Nothing;
+  opCONTINUE, Nothing;
+  opDISCONTINUE, Nothing;
+  opHANDLETERM, Uint;
+  opCONTINUETERM, Uint;
+  opDISCONTINUETERM, Uint;
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;

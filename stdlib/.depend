@@ -85,6 +85,8 @@ complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.cmx : string.cmx char.cmx bytes.cmx digest.cmi
+effects.cmo : effects.cmi
+effects.cmx : effects.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -211,6 +213,8 @@ complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.p.cmx : string.p.cmx char.p.cmx bytes.p.cmx digest.cmi
+effects.cmo : effects.cmi
+effects.p.cmx : effects.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buffer.p.cmx \

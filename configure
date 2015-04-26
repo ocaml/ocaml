@@ -1725,6 +1725,12 @@ echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
 fi
+case "$target" in
+    *-apple-darwin*)
+      echo "BYTECAMLRUN=\$(ROOTDIR)/byterun/libcamlrun.a" >> Makefile;;
+    *)
+      echo "BYTECAMLRUN=" >> Makefile;;
+esac
 
 
 rm -f tst hasgot.c

@@ -226,6 +226,8 @@ let emit_instr = function
       else (out opMAKEBLOCK; out_int n; out_int t)
   | Kgetfield n ->
       if n < 4 then out(opGETFIELD0 + n) else (out opGETFIELD; out_int n)
+  | Kgetmutablefield n ->
+      if n < 4 then out(opGETMUTABLEFIELD0 + n) else (out opGETMUTABLEFIELD; out_int n)
   | Ksetfield n ->
       if n < 4 then out(opSETFIELD0 + n) else (out opSETFIELD; out_int n)
   | Kmakefloatblock(n) ->
@@ -274,7 +276,13 @@ let emit_instr = function
   | Kgetpubmet tag -> out opGETPUBMET; out_int tag; out_int 0
   | Kgetdynmet -> out opGETDYNMET
   | Kevent ev -> record_event ev
-  | Kswapstack -> out opSWAPSTACK
+  | Khandle -> out opHANDLE
+  | Kperform -> out opPERFORM
+  | Kcontinue -> out opCONTINUE
+  | Kdiscontinue -> out opDISCONTINUE
+  | Khandleterm n -> out opHANDLETERM; out_int n
+  | Kcontinueterm n -> out opCONTINUETERM; out_int n
+  | Kdiscontinueterm n -> out opDISCONTINUETERM; out_int n
   | Kstop -> out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
