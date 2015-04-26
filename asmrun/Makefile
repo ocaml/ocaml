@@ -37,7 +37,7 @@ all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
-	ar rc libasmrun.a $(OBJS)
+	$(ARCMD) rc libasmrun.a $(OBJS)
 	$(RANLIB) libasmrun.a
 
 all-noruntimed:
@@ -48,7 +48,7 @@ all-runtimed: libasmrund.a
 
 libasmrund.a: $(DOBJS)
 	rm -f libasmrund.a
-	ar rc libasmrund.a $(DOBJS)
+	$(ARCMD) rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
 
 all-noprof:
@@ -57,7 +57,7 @@ all-prof: libasmrunp.a
 
 libasmrunp.a: $(POBJS)
 	rm -f libasmrunp.a
-	ar rc libasmrunp.a $(POBJS)
+	$(ARCMD) rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
