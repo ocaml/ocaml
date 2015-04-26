@@ -58,7 +58,7 @@ expr:
   | expr ';' expr
   | 'match' expr 'with' pattern-matching
   | 'function' pattern-matching
-  | 'fun' multiple-matching
+  | 'fun' {{ parameter }} '->' expr
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | 'new' class-path
@@ -84,9 +84,6 @@ argument:
 pattern-matching:
     [ '|' ] pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
-;
-multiple-matching:
-    {{ parameter }} ['when' expr] '->' expr
 ;
 let-binding:
     pattern '=' expr
@@ -288,7 +285,7 @@ If the matching fails, the exception "Match_failure" is raised.
 \subsubsection*{Guards in pattern-matchings}
 
 \ikwd{when\@\texttt{when}}
-The cases of a pattern matching (in the @"function"@, @"fun"@, @"match"@ and
+The cases of a pattern matching (in the @"function"@, @"match"@ and
 @"try"@ constructs) can include guard expressions, which are
 arbitrary boolean expressions that must evaluate to "true" for the
 match case to be selected. Guards occur just before the @"->"@ token and
