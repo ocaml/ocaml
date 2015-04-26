@@ -304,15 +304,16 @@ let comp_primitive p sz args =
   | Psetglobal id -> Ksetglobal id
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
-  | Pfield n -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Pfield(n, ptr, Immutable) -> Kgetfield n
+  | Pfield(n, ptr, Mutable) -> Kgetmutablefield n
+  | Psetfield(n, ptr, mut) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield n -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
-  | Pswapstack ->
-     check_stack (sz + 3);
-     Kswapstack
+  | Pperform ->
+      check_stack (sz + 2);
+      Kperform
   | Pnegint -> Knegint
   | Paddint -> Kaddint
   | Psubint -> Ksubint
@@ -631,6 +632,30 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
+  | Lprim(Phandle, args) ->
+      let nargs = List.length args - 1 in
+      if is_tailcall cont then
+        comp_args env args sz
+          (Khandleterm(sz + nargs) :: discard_dead_code cont)
+      else
+        comp_args env args sz (Khandle :: cont)
+  | Lprim(Pcontinue, args) ->
+      let nargs = List.length args - 1 in
+      check_stack (sz + nargs + 2);
+      if is_tailcall cont then
+        comp_args env args sz
+          (Kcontinueterm(sz + nargs) :: discard_dead_code cont)
+      else
+        comp_args env args sz (Kcontinue :: cont)
+  | Lprim(Pdiscontinue, args) ->
+      let nargs = List.length args - 1 in
+      check_stack (sz + nargs + 2);
+      if is_tailcall cont then
+        comp_args env args sz
+          (Kdiscontinueterm(sz + nargs) :: discard_dead_code cont)
+      else
+        comp_args env args sz (Kdiscontinue :: cont)
+
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
       let p = Pintcomp (commute_comparison c)

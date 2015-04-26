@@ -83,7 +83,7 @@ let rec apply_coercion strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield pos,[Lvar id]) in
+        let get_field pos = Lprim(Pfield(pos, true, Immutable),[Lvar id]) in
         let lam =
           Lprim(Pmakeblock(0, Immutable),
                 List.map (apply_coercion_field get_field) pos_cc_list)
@@ -447,7 +447,7 @@ and transl_structure fields cc rootpath = function
         [] ->
           transl_structure newfields cc rootpath rem
       | id :: ids ->
-          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
+          Llet(Alias, id, Lprim(Pfield(pos, true, Immutable), [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
@@ -573,7 +573,7 @@ let transl_store_subst = ref Ident.empty
 
 let nat_toplevel_name id =
   try match Ident.find_same id !transl_store_subst with
-    | Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])]) -> (glob,pos)
+    | Lprim(Pfield(pos, _, _), [Lprim(Pgetglobal glob, [])]) -> (glob,pos)
     | _ -> raise Not_found
   with Not_found ->
     fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
@@ -664,7 +664,7 @@ let transl_store_structure glob map prims str =
       let rec store_idents pos = function
         [] -> transl_store rootpath (add_idents true ids subst) rem
       | id :: idl ->
-          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
+          Llet(Alias, id, Lprim(Pfield(pos, true, Immutable), [Lvar mid]),
                Lsequence(store_ident id, store_idents (pos + 1) idl)) in
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
@@ -679,7 +679,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
+      Lprim(Psetfield(pos, true, Immutable), [Lprim(Pgetglobal glob, []); init_val])
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
@@ -691,7 +691,8 @@ let transl_store_structure glob map prims str =
       let (pos, cc) = Ident.find_same id map in
       match cc with
         Tcoerce_none ->
-          Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+          Ident.add id (Lprim(Pfield(pos, true, Immutable),
+                              [Lprim(Pgetglobal glob, [])])) subst
       | _ ->
           if may_coerce then subst else assert false
     with Not_found ->
@@ -701,7 +702,7 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, false),
+    Lsequence(Lprim(Psetfield(pos, true, Immutable),
                     [Lprim(Pgetglobal glob, []);
                      transl_primitive Location.none prim]),
               cont)
@@ -793,13 +794,13 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
-  Lapply(Lprim(Pfield toploop_getvalue_pos,
+  Lapply(Lprim(Pfield(toploop_getvalue_pos, true, Immutable),
                  [Lprim(Pgetglobal toploop_ident, [])]),
          [Lconst(Const_base(Const_string (toplevel_name id, None)))],
          Location.none)
 
 let toploop_setvalue id lam =
-  Lapply(Lprim(Pfield toploop_setvalue_pos,
+  Lapply(Lprim(Pfield(toploop_setvalue_pos, true, Immutable),
                  [Lprim(Pgetglobal toploop_ident, [])]),
          [Lconst(Const_base(Const_string (toplevel_name id, None))); lam],
          Location.none)
@@ -861,7 +862,8 @@ let transl_toplevel_item item =
         [] ->
           lambda_unit
       | id :: ids ->
-          Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
+          Lsequence(toploop_setvalue id
+                      (Lprim(Pfield(pos, true, Immutable), [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
   | Tstr_modtype _
@@ -915,7 +917,7 @@ let transl_store_package component_names target_name coercion =
       (List.length component_names,
        make_sequence
          (fun pos id ->
-           Lprim(Psetfield(pos, false),
+           Lprim(Psetfield(pos, true, Immutable),
                  [Lprim(Pgetglobal target_name, []);
                   get_component id]))
          0 component_names)
@@ -928,9 +930,9 @@ let transl_store_package component_names target_name coercion =
        Llet (Strict, blk, apply_coercion Strict coercion components,
              make_sequence
                (fun pos id ->
-                 Lprim(Psetfield(pos, false),
+                 Lprim(Psetfield(pos, true, Immutable),
                        [Lprim(Pgetglobal target_name, []);
-                        Lprim(Pfield pos, [Lvar blk])]))
+                        Lprim(Pfield(pos, true, Immutable), [Lvar blk])]))
                0 pos_cc_list))
   (*
               (* ignore id_pos_list as the ids are already bound *)

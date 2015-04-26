@@ -53,10 +53,12 @@ void caml_disasm_instr(code_t pc)
   case GRAB: case PUSHGETGLOBAL: case GETGLOBAL: case SETGLOBAL:
   case PUSHATOM: case ATOM: case MAKEBLOCK1: case MAKEBLOCK2:
   case MAKEBLOCK3: case MAKEFLOATBLOCK:
-  case GETFIELD: case SETFIELD: case GETFLOATFIELD: case SETFLOATFIELD:
+  case GETFIELD: case GETMUTABLEFIELD: case SETFIELD:
+  case GETFLOATFIELD: case SETFLOATFIELD:
   case BRANCH: case BRANCHIF: case BRANCHIFNOT: case PUSHTRAP:
   case CONSTINT: case PUSHCONSTINT: case OFFSETINT: case OFFSETREF:
   case OFFSETCLOSURE: case PUSHOFFSETCLOSURE:
+  case HANDLETERM: case CONTINUETERM: case DISCONTINUETERM:
     snprintf(buf, sizeof(buf), "%s %d\n", opbuf, pc[0]); break;
     /* Instructions with two operands */
   case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:

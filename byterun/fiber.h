@@ -8,6 +8,7 @@
 
 
 CAMLextern __thread value caml_current_stack;
+CAMLextern __thread value caml_parent_stack;
 CAMLextern __thread value * caml_stack_high;
 CAMLextern __thread value * caml_stack_threshold;
 CAMLextern __thread value * caml_extern_sp;
@@ -17,7 +18,11 @@ CAMLextern __thread intnat caml_extra_args;
 CAMLextern __thread int caml_c_call_args;
 CAMLextern __thread code_t caml_saved_pc;
 
-value caml_swap_stack(value);
+value caml_handle(value body, value hval, value heff, value hexn, intnat extra_args);
+value caml_perform(value effect);
+value caml_continue(value cont, value ret, intnat extra_args);
+value caml_finish(value ret);
+value caml_finish_exception(value exn);
 
 struct caml_runqueue;
 
