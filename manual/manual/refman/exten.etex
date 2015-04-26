@@ -458,19 +458,28 @@ be used in combination with functors.
      end
 \end{verbatim}
 
-Polymorphic variant types can be refined in two ways, either to allow
-the addition of new constructors, or to allow the disparition of
-declared constructors. The second case corresponds to private variant
-types (one cannot create a value of the private type), while the first
-case requires default cases in pattern-matching to handle addition.
+A polymorphic variant type [t], for example
 \begin{verbatim}
    type t = [ `A of int | `B of bool ]
-   type u = private [< t > `A ]
-   type v = private [> t ]
 \end{verbatim}
-With type "u", it is possible to create values of the form "(`A n)",
-but not "(`B b)". With type "v", construction is not restricted but
-pattern-matching must have a default case.
+can be refined in two ways. A definition [u] may add new field to [t],
+and the declaration
+\begin{verbatim}
+  type u = private [> t]
+\end{verbatim}
+will keep those new fields abstract. Construction of values of type
+[u] is possible using the known variants of [t], but any
+pattern-matching will require a default case to handle the potential
+extra fields. Dually, a declaration [u] may restrict the fields of [t]
+through abstraction: the declaration
+\begin{verbatim}
+  type v = private [< t > `A]
+\end{verbatim}
+corresponds to private variant types. One cannot create a value of the
+private type [v], except using the constructors that are explicitly
+listed as present, "(`A n)" in this example; yet, when
+patter-matching on a [v], one should assume that any of the
+constructors of [t] could be present.
 
 Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
