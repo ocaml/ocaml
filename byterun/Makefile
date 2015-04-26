@@ -34,11 +34,11 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 		  prims.o libcamlrund.a $(BYTECCLIBS)
 
 libcamlrun.a: $(OBJS)
-	ar rc libcamlrun.a $(OBJS)
+	$(ARCMD) rc libcamlrun.a $(OBJS)
 	$(RANLIB) libcamlrun.a
 
 libcamlrund.a: $(DOBJS)
-	ar rc libcamlrund.a $(DOBJS)
+	$(ARCMD) rc libcamlrund.a $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
 libcamlrun_shared.so: $(PICOBJS)
