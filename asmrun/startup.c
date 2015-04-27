@@ -49,7 +49,7 @@ uintnat caml_lifetime_tracking = 0;
    now 16 = 128k
 */
 uintnat caml_lifetime_shift = 16;
-uintnat caml_allocation_profiling = 0;
+uintnat caml_allocation_profiling = 1;
 
 /* Initialize the atom table and the static data and code area limits. */
 
@@ -145,7 +145,7 @@ static void parse_camlrunparam(void)
       case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
-      case 'T': caml_allocation_profiling = 1; caml_lifetime_tracking = 0; break;
+      case 't': caml_allocation_profiling = 0; caml_lifetime_tracking = 0; break;
       case 'L': caml_allocation_profiling = 1; caml_lifetime_tracking = 1; break;
       case 'I': scanmult (opt, &caml_lifetime_shift); break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
