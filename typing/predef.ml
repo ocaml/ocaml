@@ -33,6 +33,8 @@ and ident_float = ident_create "float"
 and ident_bool = ident_create "bool"
 and ident_unit = ident_create "unit"
 and ident_exn = ident_create "exn"
+and ident_eff = ident_create "eff"
+and ident_continuation = ident_create "continuation"
 and ident_array = ident_create "array"
 and ident_list = ident_create "list"
 and ident_option = ident_create "option"
@@ -49,6 +51,8 @@ and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
 and path_exn = Pident ident_exn
+and path_eff = Pident ident_eff
+and path_continuation = Pident ident_continuation
 and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_option = Pident ident_option
@@ -65,6 +69,9 @@ and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
 and type_exn = newgenty (Tconstr(path_exn, [], ref Mnil))
+and type_eff t = newgenty (Tconstr(path_eff, [t], ref Mnil))
+and type_continuation t1 t2 =
+  newgenty (Tconstr(path_continuation, [t1; t2], ref Mnil))
 and type_array t = newgenty (Tconstr(path_array, [t], ref Mnil))
 and type_list t = newgenty (Tconstr(path_list, [t], ref Mnil))
 and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
@@ -131,6 +138,20 @@ let common_initial_env add_type add_extension empty_env =
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
+  and decl_eff =
+    let tvar = newgenvar() in
+    {decl_abstr with
+     type_params = [tvar];
+     type_arity = 1;
+     type_variance = [Variance.full];
+     type_kind = Type_open}
+  and decl_continuation =
+    let tvar1 = newgenvar() in
+    let tvar2 = newgenvar() in
+    {decl_abstr with
+     type_params = [tvar1; tvar2];
+     type_arity = 2;
+     type_variance = [Variance.contravariant; Variance.covariant]}
   and decl_array =
     let tvar = newgenvar() in
     {decl_abstr with
@@ -194,13 +215,15 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_list decl_list (
   add_type ident_array decl_array (
   add_type ident_exn decl_exn (
+  add_type ident_eff decl_eff (
+  add_type ident_continuation decl_continuation (
   add_type ident_unit decl_unit (
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in

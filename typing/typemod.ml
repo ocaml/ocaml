@@ -599,6 +599,18 @@ and transl_signature env sg =
             (if shadowed then rem else
                Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem),
             final_env
+        | Psig_effect seff ->
+            let (ext, newenv) = Typedecl.transl_effect env seff in
+            let (trem, rem, final_env) = transl_sig newenv srem in
+            let shadowed =
+              List.exists
+                (Ident.equal ext.ext_id)
+                (get_extension_constructors rem)
+            in
+            mksig (Tsig_effect ext) env loc :: trem,
+            (if shadowed then rem else
+               Sig_typext(ext.ext_id, ext.ext_type, Text_effect) :: rem),
+            final_env
         | Psig_module pmd ->
             check_name "module" module_names pmd.pmd_name;
             let tmty = transl_modtype env pmd.pmd_type in
@@ -1256,6 +1268,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let (ext, newenv) = Typedecl.transl_exception env sext in
         Tstr_exception ext,
         [Sig_typext(ext.ext_id, ext.ext_type, Text_exception)],
+        newenv
+    | Pstr_effect seff ->
+        let (ext, newenv) = Typedecl.transl_effect env seff in
+        Tstr_effect ext,
+        [Sig_typext(ext.ext_id, ext.ext_type, Text_effect)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;

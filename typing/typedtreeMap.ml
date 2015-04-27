@@ -98,9 +98,10 @@ module MakeMap(Map : MapArgument) = struct
   and map_bindings rec_flag list =
     List.map map_binding list
 
-  and map_case {c_lhs; c_guard; c_rhs} =
+  and map_case {c_lhs; c_cont; c_guard; c_rhs} =
     {
      c_lhs = map_pattern c_lhs;
+     c_cont = c_cont;
      c_guard = may_map map_expression c_guard;
      c_rhs = map_expression c_rhs;
     }
@@ -123,6 +124,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_typext (map_type_extension tyext)
         | Tstr_exception ext ->
           Tstr_exception (map_extension_constructor ext)
+        | Tstr_effect ext ->
+          Tstr_effect (map_extension_constructor ext)
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -274,17 +277,19 @@ module MakeMap(Map : MapArgument) = struct
                         in
                         (label, expo, optional)
                       ) list )
-        | Texp_match (exp, list1, list2, partial) ->
+        | Texp_match (exp, list1, list2, list3, partial) ->
           Texp_match (
             map_expression exp,
             map_cases list1,
             map_cases list2,
+            map_cases list3,
             partial
           )
-        | Texp_try (exp, list) ->
+        | Texp_try (exp, list1, list2) ->
           Texp_try (
             map_expression exp,
-            map_cases list
+            map_cases list1,
+            map_cases list2
           )
         | Texp_tuple list ->
           Texp_tuple (List.map map_expression list)
@@ -413,6 +418,8 @@ module MakeMap(Map : MapArgument) = struct
           Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
           Tsig_exception (map_extension_constructor ext)
+        | Tsig_effect ext ->
+          Tsig_effect (map_extension_constructor ext)
         | Tsig_module md ->
           Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->

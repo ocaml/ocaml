@@ -317,6 +317,7 @@ let mkctf_attrs d attrs =
 %token DOT
 %token DOTDOT
 %token DOWNTO
+%token EFFECT
 %token ELSE
 %token END
 %token EOF
@@ -648,6 +649,8 @@ structure_item:
       { mkstr(Pstr_typext $2) }
   | EXCEPTION str_exception_declaration
       { mkstr(Pstr_exception $2) }
+  | EFFECT effect_declaration
+      { mkstr(Pstr_effect $2) }
   | MODULE module_binding
       { mkstr(Pstr_module $2) }
   | MODULE REC module_bindings
@@ -735,6 +738,8 @@ signature_item:
       { mksig(Psig_typext $2) }
   | EXCEPTION sig_exception_declaration
       { mksig(Psig_exception $2) }
+  | EFFECT effect_constructor_declaration
+      { mksig(Psig_effect $2) }
   | MODULE UIDENT module_declaration post_item_attributes
       { mksig(Psig_module (Md.mk (mkrhs $2 2)
                              $3 ~attrs:$4 ~loc:(symbol_rloc()))) }
@@ -1460,6 +1465,8 @@ pattern:
       { mkpat(Ppat_lazy $2) }
   | EXCEPTION pattern %prec prec_constr_appl
       { mkpat(Ppat_exception $2) }
+  | EFFECT simple_pattern simple_pattern
+      { mkpat(Ppat_effect($2, $3)) }
   | pattern attribute
       { Pat.attr $1 $2 }
 ;
@@ -1657,6 +1664,26 @@ sig_exception_declaration:
         {ext with pext_attributes = ext.pext_attributes @ $2}
       }
 ;
+
+effect_declaration:
+  | effect_constructor_declaration      { $1 }
+  | effect_constructor_rebind           { $1 }
+;
+effect_constructor_declaration:
+  | constr_ident attributes COLON core_type_list MINUSGREATER simple_core_type
+      post_item_attributes
+      { Te.effect_decl (mkrhs $1 1) $6 ~args:(List.rev $4)
+          ~loc:(symbol_rloc()) ~attrs:($7 @ $2) }
+  | constr_ident attributes COLON simple_core_type post_item_attributes
+      { Te.effect_decl (mkrhs $1 1) $4
+          ~loc:(symbol_rloc()) ~attrs:($5 @ $2) }
+;
+effect_constructor_rebind:
+  | constr_ident attributes EQUAL constr_longident post_item_attributes
+      { Te.effect_rebind (mkrhs $1 1) (mkrhs $4 4)
+          ~loc:(symbol_rloc()) ~attrs:($5 @ $2) }
+;
+
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }

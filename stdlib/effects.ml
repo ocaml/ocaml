@@ -1,20 +1,16 @@
-type 'a effect = ..
-
-type ('a, 'b) continuation
-
-external perform : 'a effect -> 'a = "%perform"
+external perform : 'a eff -> 'a = "%perform"
 
 type ('b,'c) handler =
-   { effect: 'a. 'a effect -> ('a, 'c) continuation -> 'c;
+   { eff: 'a. 'a eff -> ('a, 'c) continuation -> 'c;
      exn: exn -> 'c;
      return: 'b -> 'c; }
 
 external handle_raw : ('a -> 'b) -> ('b -> 'c) -> (exn -> 'c) ->
-                      ('d effect -> ('d, 'c) continuation -> 'c) -> 'c = "%handle"
+                      ('d eff -> ('d, 'c) continuation -> 'c) -> 'c = "%handle"
 
 
-let handle {effect; exn; return} f x =
-  handle_raw (fun () -> f x) return exn effect
+let handle {eff; exn; return} f x =
+  handle_raw (fun () -> f x) return exn eff
 
 external continue: ('a, 'b) continuation -> 'a -> 'b = "%continue"
 

@@ -531,13 +531,14 @@ let rec push_defaults loc bindings cases partial =
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function(l, pl,partial)} as exp}] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
-      [{c_lhs=pat; c_guard=None;
+      [{c_lhs=pat; c_cont=None; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (binds :: bindings) [{c_lhs=pat;c_guard=None;c_rhs=e2}]
+      push_defaults loc (binds :: bindings)
+                    [{c_lhs=pat;c_cont=None;c_guard=None;c_rhs=e2}]
                     partial
   | [case] ->
       let exp =
@@ -559,11 +560,11 @@ let rec push_defaults loc bindings cases partial =
                            val_attributes = [];
                            Types.val_loc = Location.none;
                           })},
-             cases, [], partial) }
+             cases, [], [], partial) }
       in
       push_defaults loc bindings
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
-          c_guard=None; c_rhs=exp}]
+          c_cont=None; c_guard=None; c_rhs=exp}]
         Total
   | _ ->
       cases
@@ -730,12 +731,16 @@ and transl_exp0 e =
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
-  | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
-    transl_match e arg pat_expr_list exn_pat_expr_list partial
-  | Texp_try(body, pat_expr_list) ->
-      let id = name_pattern "exn" pat_expr_list in
+  | Texp_match(arg, caselist, exn_caselist, [], partial) ->
+    transl_match e arg caselist exn_caselist partial
+  | Texp_match(arg, caselist, exn_caselist, eff_caselist, partial) ->
+    transl_handler e arg (Some (caselist, partial)) exn_caselist eff_caselist
+  | Texp_try(body, exn_caselist, []) ->
+      let id = name_pattern "exn" exn_caselist in
       Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
+               Matching.for_trywith (Lvar id) (transl_cases_try exn_caselist))
+  | Texp_try(body, exn_caselist, eff_caselist) ->
+    transl_handler e body None exn_caselist eff_caselist
   | Texp_tuple el ->
       let ll = transl_list el in
       begin try
@@ -931,16 +936,22 @@ and transl_list expr_list =
 
 and transl_guard guard rhs =
   let expr = event_before rhs (transl_exp rhs) in
-  match guard with
-  | None -> expr
-  | Some cond ->
-      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+    match guard with
+    | None -> expr
+    | Some cond ->
+        event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
 
-and transl_case {c_lhs; c_guard; c_rhs} =
-  c_lhs, transl_guard c_guard c_rhs
+and transl_cont cont c_cont body =
+  match cont, c_cont with
+  | Some id1, Some id2 -> Llet(Alias, id2, Lvar id1, body)
+  | None, None -> body
+  | _ -> assert false
 
-and transl_cases cases =
-  List.map transl_case cases
+and transl_case ?cont {c_lhs; c_cont; c_guard; c_rhs} =
+  c_lhs, transl_cont cont c_cont (transl_guard c_guard c_rhs)
+
+and transl_cases ?cont cases =
+  List.map (transl_case ?cont) cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
   match c_lhs.pat_desc with
@@ -1167,6 +1178,38 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
+
+and transl_handler e body val_caselist exn_caselist eff_caselist =
+  let val_fun =
+    match val_caselist with
+    | None ->
+        let param = Ident.create "param" in
+          Lfunction (Curried, [param], Lvar param)
+    | Some (val_caselist, partial) ->
+        let val_cases = transl_cases val_caselist in
+        let param = name_pattern "param" val_caselist in
+          Lfunction(Curried, [param],
+           Matching.for_function e.exp_loc None
+             (Lvar param) val_cases partial)
+  in
+  let exn_fun =
+    let exn_cases = transl_cases exn_caselist in
+    let param = name_pattern "exn" exn_caselist in
+      Lfunction(Curried, [param],
+       Matching.for_trywith (Lvar param) exn_cases)
+  in
+  let eff_fun =
+    let param = name_pattern "eff" eff_caselist in
+    let cont = Ident.create "k" in
+    let eff_cases = transl_cases ~cont eff_caselist in
+      Lfunction(Curried, [param; cont],
+        Matching.for_handler (Lvar param) (Lvar cont) eff_cases)
+  in
+  let body_fun =
+    let param = Ident.create "param" in
+      Lfunction (Curried, [param], transl_exp body)
+  in
+    Lprim(Phandle, [body_fun; val_fun; exn_fun; eff_fun])
 
 (* Wrapper for class compilation *)
 

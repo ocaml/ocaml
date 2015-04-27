@@ -75,8 +75,9 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of label * case list * partial
   | Texp_apply of expression * (label * expression option * optional) list
-  | Texp_match of expression * case list * case list * partial
-  | Texp_try of expression * case list
+  | Texp_match of
+      expression * case list * case list * case list * partial
+  | Texp_try of expression * case list * case list
   | Texp_tuple of expression list
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
@@ -112,6 +113,7 @@ and meth =
 and case =
     {
      c_lhs: pattern;
+     c_cont: Ident.t option;
      c_guard: expression option;
      c_rhs: expression;
     }
@@ -212,6 +214,7 @@ and structure_item_desc =
   | Tstr_type of type_declaration list
   | Tstr_typext of type_extension
   | Tstr_exception of extension_constructor
+  | Tstr_effect of extension_constructor
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
@@ -278,6 +281,7 @@ and signature_item_desc =
   | Tsig_type of type_declaration list
   | Tsig_typext of type_extension
   | Tsig_exception of extension_constructor
+  | Tsig_effect of extension_constructor
   | Tsig_module of module_declaration
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
