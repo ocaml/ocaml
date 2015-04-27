@@ -181,6 +181,8 @@ val backtrace_slots : raw_backtrace -> backtrace_slot array option
     debug information ([-g])
     - the program is a bytecode program that has not been linked with
     debug information enabled ([ocamlc -g])
+
+    @since 4.02.0
 *)
 
 type location = {
@@ -247,6 +249,8 @@ type raw_backtrace_slot
     elements are equal, then they represent the same source location
     (the converse is not necessarily true in presence of inlining,
     for example).
+
+    @since 4.02.0
 *)
 
 val raw_backtrace_length : raw_backtrace -> int

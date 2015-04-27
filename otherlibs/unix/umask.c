@@ -13,7 +13,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_umask(value perm)

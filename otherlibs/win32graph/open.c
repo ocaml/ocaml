@@ -13,10 +13,10 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#include "mlvalues.h"
-#include "fail.h"
+#include "caml/mlvalues.h"
+#include "caml/fail.h"
 #include "libgraph.h"
-#include "callback.h"
+#include "caml/callback.h"
 #include <windows.h>
 
 static value gr_reset(void);

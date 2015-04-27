@@ -277,7 +277,9 @@ installopt:
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKEREC) installopt); fi
 	if test -n "$(WITH_OCAMLBUILD)"; then (cd ocamlbuild; $(MAKE) installopt); \
 	   else :; fi
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i installopt; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i installopt || exit $$?; \
+	done
 	if test -f ocamlopt.opt ; then $(MAKEREC) installoptopt; fi
 	cd tools; $(MAKE) installopt
 
@@ -463,8 +465,8 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
-bytecomp/opcodes.ml: byterun/instruct.h
-	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/instruct.h | \
+bytecomp/opcodes.ml: byterun/caml/instruct.h
+	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/caml/instruct.h | \
 	gawk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
@@ -477,9 +479,9 @@ beforedepend:: bytecomp/opcodes.ml
 byterun/primitives:
 	cd byterun ; $(MAKEREC) primitives
 
-bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
+bytecomp/runtimedef.ml: byterun/primitives byterun/caml/fail.h
 	(echo 'let builtin_exceptions = [|'; \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/caml/fail.h | \
 	 sed -e '$$s/;$$//'; \
 	 echo '|]'; \
 	 echo 'let builtin_primitives = [|'; \
@@ -659,15 +661,25 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i all; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i all || exit $$?; \
+	done
 otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i allopt; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i allopt || exit $$?; \
+	done
 partialclean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i partialclean; done
+	for i in $(OTHERLIBRARIES); \
+	  do $(MAKEREC) -C otherlibs/$$i partialclean || exit $$?; \
+	done
 clean::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i clean; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i clean || exit $$?; \
+	done
 alldepend::
-	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i depend; done
+	for i in $(OTHERLIBRARIES); do \
+	  $(MAKEREC) -C otherlibs/$$i depend || exit $$?; \
+	done
 
 # The replay debugger
 
@@ -729,6 +741,7 @@ alldepend:: depend
 
 distclean:
 	$(MAKE) clean
+	rm -f asmrun/.depend.nt byterun/.depend.nt
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader boot/ocamlyacc \
 	      boot/*.cm* boot/libcamlrun.a
 	rm -f config/Makefile config/m.h config/s.h

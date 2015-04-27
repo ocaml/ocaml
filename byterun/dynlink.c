@@ -18,18 +18,19 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include "alloc.h"
-#include "dynlink.h"
-#include "fail.h"
-#include "mlvalues.h"
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
-#include "prims.h"
+#include "caml/alloc.h"
+#include "caml/dynlink.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
+#include "caml/prims.h"
+#include "caml/signals.h"
 
 #ifndef NATIVE_CODE
 
@@ -119,7 +120,9 @@ static void open_shared_lib(char * name)
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
   caml_gc_message(0x100, "Loading shared library %s\n",
                   (uintnat) realname);
+  caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
+  caml_leave_blocking_section();
   if (handle == NULL)
     caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
                           "Reason: %s\n", caml_dlerror());
@@ -202,10 +205,15 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
 {
   void * handle;
   value result;
+  char * p;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   (uintnat) String_val(filename));
-  handle = caml_dlopen(String_val(filename), Int_val(mode), 1);
+  p = caml_strdup(String_val(filename));
+  caml_enter_blocking_section();
+  handle = caml_dlopen(p, Int_val(mode), 1);
+  caml_leave_blocking_section();
+  caml_stat_free(p);
   if (handle == NULL) caml_failwith(caml_dlerror());
   result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = handle;

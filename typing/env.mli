@@ -37,9 +37,11 @@ type type_descriptions =
     constructor_description list * label_description list
 
 (* For short-paths *)
+type iter_cont
 val iter_types:
     (Path.t -> Path.t * (type_declaration * type_descriptions) -> unit) ->
-    t -> unit
+    t -> iter_cont
+val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
@@ -189,6 +191,7 @@ type error =
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
   | Missing_module of Location.t * Path.t * Path.t
+  | Illegal_value_name of Location.t * string
 
 exception Error of error
 
@@ -256,3 +259,4 @@ val fold_cltypes:
 
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
+val check_value_name: string -> Location.t -> unit

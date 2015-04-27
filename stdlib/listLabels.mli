@@ -50,7 +50,7 @@ val append : 'a list -> 'a list -> 'a list
    operator is not tail-recursive either. *)
 
 val rev_append : 'a list -> 'a list -> 'a list
-(** [List.rev_append l1 l2] reverses [l1] and concatenates it to [l2].
+(** [ListLabels.rev_append l1 l2] reverses [l1] and concatenates it to [l2].
    This is equivalent to {!ListLabels.rev}[ l1 @ l2], but [rev_append] is
    tail-recursive and more efficient. *)
 
@@ -69,40 +69,40 @@ val flatten : 'a list list -> 'a list
 
 
 val iter : f:('a -> unit) -> 'a list -> unit
-(** [List.iter f [a1; ...; an]] applies function [f] in turn to
+(** [ListLabels.iter f [a1; ...; an]] applies function [f] in turn to
    [a1; ...; an]. It is equivalent to
    [begin f a1; f a2; ...; f an; () end]. *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
-(** Same as {!List.iter}, but the function is applied to the index of
+(** Same as {!ListLabels.iter}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.00.0
 *)
 
 val map : f:('a -> 'b) -> 'a list -> 'b list
-(** [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
+(** [ListLabels.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
    with the results returned by [f].  Not tail-recursive. *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
-(** Same as {!List.map}, but the function is applied to the index of
+(** Same as {!ListLabels.map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.00.0
 *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
-(** [List.rev_map f l] gives the same result as
+(** [ListLabels.rev_map f l] gives the same result as
    {!ListLabels.rev}[ (]{!ListLabels.map}[ f l)], but is tail-recursive and
    more efficient. *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
-(** [List.fold_left f a [b1; ...; bn]] is
+(** [ListLabels.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
 
 val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
-(** [List.fold_right f [a1; ...; an] b] is
+(** [ListLabels.fold_right f [a1; ...; an] b] is
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 
@@ -110,32 +110,32 @@ val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
-(** [List.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
+(** [ListLabels.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
    [f a1 b1; ...; f an bn].
    Raise [Invalid_argument] if the two lists have
    different lengths. *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [List.map2 f [a1; ...; an] [b1; ...; bn]] is
+(** [ListLabels.map2 f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
    Raise [Invalid_argument] if the two lists have
    different lengths.  Not tail-recursive. *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [List.rev_map2 f l1 l2] gives the same result as
+(** [ListLabels.rev_map2 f l1 l2] gives the same result as
    {!ListLabels.rev}[ (]{!ListLabels.map2}[ f l1 l2)], but is tail-recursive and
    more efficient. *)
 
 val fold_left2 :
   f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
-(** [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
+(** [ListLabels.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
    [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
    Raise [Invalid_argument] if the two lists have
    different lengths. *)
 
 val fold_right2 :
   f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
-(** [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
+(** [ListLabels.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
    [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
    Raise [Invalid_argument] if the two lists have
    different lengths.  Not tail-recursive. *)
@@ -259,7 +259,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    a complete specification).  For example,
    {!Pervasives.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
-   [List.sort] is guaranteed to run in constant heap space
+   [ListLabels.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
 
@@ -277,8 +277,8 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort} or {!List.stable_sort}, whichever is faster
-    on typical input. *)
+(** Same as {!ListLabels.sort} or {!ListLabels.stable_sort}, whichever is
+    faster on typical input. *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:

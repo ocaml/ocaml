@@ -594,7 +594,8 @@ val print_string : string -> unit
 (** Print a string on standard output. *)
 
 val print_bytes : bytes -> unit
-(** Print a byte sequence on standard output. *)
+(** Print a byte sequence on standard output.
+   @since 4.02.0 *)
 
 val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
@@ -621,7 +622,8 @@ val prerr_string : string -> unit
 (** Print a string on standard error. *)
 
 val prerr_bytes : bytes -> unit
-(** Print a byte sequence on standard error. *)
+(** Print a byte sequence on standard error.
+   @since 4.02.0 *)
 
 val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)
@@ -708,7 +710,8 @@ val output_string : out_channel -> string -> unit
 (** Write the string on the given output channel. *)
 
 val output_bytes : out_channel -> bytes -> unit
-(** Write the byte sequence on the given output channel. *)
+(** Write the byte sequence on the given output channel.
+   @since 4.02.0 *)
 
 val output : out_channel -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
@@ -718,7 +721,8 @@ val output : out_channel -> bytes -> int -> int -> unit
 
 val output_substring : out_channel -> string -> int -> int -> unit
 (** Same as [output] but take a string as argument instead of
-   a byte sequence. *)
+   a byte sequence.
+   @since 4.02.0 *)
 
 val output_byte : out_channel -> int -> unit
 (** Write one 8-bit integer (as the single character with that code)
@@ -838,7 +842,8 @@ val really_input_string : in_channel -> int -> string
 (** [really_input_string ic len] reads [len] characters from channel [ic]
    and returns them in a new string.
    Raise [End_of_file] if the end of file is reached before [len]
-   characters have been read. *)
+   characters have been read.
+   @since 4.02.0 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Pervasives.input_char}, but return the 8-bit integer representing

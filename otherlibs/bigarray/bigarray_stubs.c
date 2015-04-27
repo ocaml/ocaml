@@ -14,14 +14,14 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
-#include "alloc.h"
+#include "caml/alloc.h"
 #include "bigarray.h"
-#include "custom.h"
-#include "fail.h"
-#include "intext.h"
-#include "hash.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/intext.h"
+#include "caml/hash.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 #define int8 caml_ba_int8
 #define uint8 caml_ba_uint8

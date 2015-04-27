@@ -15,19 +15,19 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "compact.h"
-#include "custom.h"
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "weak.h"
+#include "caml/compact.h"
+#include "caml/custom.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/weak.h"
 
 #if defined (NATIVE_CODE) && defined (NO_NAKED_POINTERS)
 #define NATIVE_CODE_AND_NO_NAKED_POINTERS
@@ -60,6 +60,8 @@ static value *weak_prev;
 #ifdef DEBUG
 static unsigned long major_gc_counter = 0;
 #endif
+
+void (*caml_major_gc_hook)(void) = NULL;
 
 static void realloc_gray_vals (void)
 {
@@ -147,6 +149,7 @@ static void mark_slice (intnat work)
   int marking_closure = 0;
 #endif
 
+  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
@@ -309,6 +312,7 @@ static void mark_slice (intnat work)
         limit = chunk + Chunk_size (chunk);
         work = 0;
         caml_fl_size_at_phase_change = caml_fl_cur_size;
+        if (caml_major_gc_hook) (*caml_major_gc_hook)();
       }
         break;
       default: Assert (0);
@@ -316,6 +320,7 @@ static void mark_slice (intnat work)
     }
   }
   gray_vals_cur = gray_vals_ptr;
+  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 #define MAJOR_WORK_SAMPLES 10000
@@ -394,6 +399,7 @@ static void sweep_slice (intnat work)
     now = Profinfo_now;
   }
 
+  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (caml_gc_sweep_hp < limit){
@@ -444,6 +450,7 @@ static void sweep_slice (intnat work)
   }
   add_major_work_stat (dark_words, blue_words, white_words,
                        end_of_chunk, end_of_sweep);
+  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 /* The main entry point for the GC.  Called after each minor GC.

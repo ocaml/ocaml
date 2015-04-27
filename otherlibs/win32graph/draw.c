@@ -12,12 +12,12 @@
 /***********************************************************************/
 
 #include <math.h>
-#include "mlvalues.h"
-#include "alloc.h"
-#include "fail.h"
+#include "caml/mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
 #include "libgraph.h"
-#include "custom.h"
-#include "memory.h"
+#include "caml/custom.h"
+#include "caml/memory.h"
 
 HDC gcMetaFile;
 int grdisplay_mode;

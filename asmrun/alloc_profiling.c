@@ -35,13 +35,13 @@
 #include <limits.h>
 #include <math.h>
 
-#include "alloc.h"
-#include "gc.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "mlvalues.h"
-#include "signals.h"
+#include "caml/alloc.h"
+#include "caml/gc.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 int ensure_alloc_profiling_dot_o_is_included = 42;
 

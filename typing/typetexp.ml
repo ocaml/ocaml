@@ -240,6 +240,7 @@ let find_class env loc lid =
   r
 
 let find_value env loc lid =
+  Env.check_value_name (Longident.last lid) loc;
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in

@@ -169,9 +169,9 @@ val f4 : id -> int * bool = <fun>
 #           class c : object method m : #id -> int * bool end
 #             class id2 : object method id : 'a -> 'a method mono : int -> int end
 #   val app : int * bool = (1, true)
-#   Characters 4-25:
+#   Characters 0-25:
   type 'a foo = 'a foo list
-      ^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation foo is cyclic
 #     class ['a] bar : 'a -> object  end
 #   type 'a foo = 'a foo bar
@@ -271,9 +271,9 @@ Error: The universal type variable 'a cannot be generalized:
 type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
-#     Characters 20-25:
+#     Characters 15-25:
   type t = u and u = t;;
-       ^^^^^
+  ^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 #       class ['a] a : object constraint 'a = [> `A of 'a a ] end
 type t = [ `A of t a ]
@@ -301,9 +301,9 @@ Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
 and 'a v = 'a u t constraint 'a = g
-#     Characters 38-58:
+#     Characters 34-58:
   type 'a u = < m : 'a v > and 'a v = 'a list u;;
-      ^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of v, type 'a list u should be 'a u
 #       type 'a t = 'a
 type 'a u = A of 'a t
@@ -346,9 +346,9 @@ Characters 21-24:
                        ^^^
 Warning 11: this match case is unused.
 - : int * [< `B ] -> int = <fun>
-#       Characters 69-135:
+#       Characters 64-135:
   type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type
        ([> `B of 'a ], 'a) b as 'a
@@ -640,9 +640,9 @@ Error: This field value has type unit -> unit which is less general than
 #       Exception: Pervasives.Exit.
 #   Exception: Pervasives.Exit.
 #   Exception: Pervasives.Exit.
-#       Characters 20-44:
+#       Characters 16-44:
   type 'x t = < f : 'y. 'y t >;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'y t should be 'x t
 #                   val using_match : bool -> int * ('a -> 'a) = <fun>
 #   - : ('a -> 'a) * ('b -> 'b) = (<fun>, <fun>)

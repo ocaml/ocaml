@@ -17,8 +17,8 @@
 /* <include ../config/m.h> */
 /* <include ../config/s.h> */
 /* <private> */
-#include "../config/m.h"
-#include "../config/s.h"
+#include "../../config/m.h"
+#include "../../config/s.h"
 /* </private> */
 
 #ifndef CAML_NAME_SPACE

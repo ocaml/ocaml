@@ -12,7 +12,7 @@
 /***********************************************************************/
 
 #include "libgraph.h"
-#include <alloc.h>
+#include <caml/alloc.h>
 
 XFontStruct * caml_gr_font = NULL;
 

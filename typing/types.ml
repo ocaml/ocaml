@@ -297,9 +297,9 @@ and modtype_declaration =
   }
 
 and rec_status =
-    Trec_not                            (* not recursive *)
+    Trec_not                            (* first in a nonrecursive group *)
   | Trec_first                          (* first in a recursive group *)
-  | Trec_next                           (* not first in a recursive group *)
+  | Trec_next                           (* not first in a recursive/nonrecursive group *)
 
 and ext_status =
     Text_first                     (* first constructor of an extension *)

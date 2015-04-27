@@ -21,8 +21,8 @@
 /***********************************************************************/
 
 #include <assert.h>
-#include "fail.h"
-#include "mlvalues.h"
+#include "caml/fail.h"
+#include "caml/mlvalues.h"
 
 int ensure_alloc_profiling_dot_o_is_included = 42;
 

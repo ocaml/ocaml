@@ -18,14 +18,14 @@
 
 #include <string.h>
 
-#include "config.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "memory.h"
-#include "major_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
+#include "caml/config.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/memory.h"
+#include "caml/major_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
 
 /* The free-list is kept sorted by increasing addresses.
    This makes the merging of adjacent free blocks possible.

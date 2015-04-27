@@ -13,11 +13,11 @@
 
 /* Registration of global memory roots */
 
-#include "memory.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "globroots.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/globroots.h"
 
 /* The sets of global memory roots are represented as skip lists
    (see William Pugh, "Skip lists: a probabilistic alternative to

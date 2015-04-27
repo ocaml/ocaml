@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <fail.h>
-#include <mlvalues.h>
+#include <caml/fail.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>

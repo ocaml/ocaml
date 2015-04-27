@@ -18,3 +18,5 @@ CMO_FILES+="misc.cmo"
 
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
+
+BYTECODE_ONLY=true

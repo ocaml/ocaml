@@ -16,10 +16,10 @@
 /* The interface of this file is in "mlvalues.h" (for [caml_hash_variant])
    and in "hash.h" (for the other exported functions). */
 
-#include "mlvalues.h"
-#include "custom.h"
-#include "memory.h"
-#include "hash.h"
+#include "caml/mlvalues.h"
+#include "caml/custom.h"
+#include "caml/memory.h"
+#include "caml/hash.h"
 
 /* The new implementation, based on MurmurHash 3,
      http://code.google.com/p/smhasher/  */

@@ -113,8 +113,8 @@ type control =
        - [0x020] Change of GC parameters.
        - [0x040] Computation of major GC slice size.
        - [0x080] Calling of finalisation functions.
-       - [0x100] Bytecode executable search at start-up.
-       - [0x200] Computation of compaction triggering condition.
+       - [0x100] Bytecode executable and shared library search at start-up.
+       - [0x200] Computation of compaction-triggering condition.
        Default: 0. *)
 
     mutable max_overhead : int;
@@ -221,9 +221,10 @@ val finalise : ('a -> unit) -> 'a -> unit
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
    as expected:
-   - [ let v = ... in Gc.finalise (fun x -> ...) v ]
+   - [ let v = ... in Gc.finalise (fun x -> ... v ...) v ]
 
-   Instead you should write:
+   Instead you should make sure that [v] is not in the closure of
+   the finalisation function by writing:
    - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
 
 

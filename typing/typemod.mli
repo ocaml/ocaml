@@ -35,8 +35,12 @@ val check_nongen_schemes:
 val type_open_:
         ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
-
+val modtype_of_package:
+        Env.t -> Location.t ->
+        Path.t -> Longident.t list -> type_expr list -> module_type
 val simplify_signature: signature -> signature
+
+val path_of_module : Typedtree.module_expr -> Path.t option
 
 val save_signature:
   string -> Typedtree.signature -> string -> string ->

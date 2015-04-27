@@ -37,7 +37,7 @@ all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
-	ar rc libasmrun.a $(OBJS)
+	$(ARCMD) rc libasmrun.a $(OBJS)
 	$(RANLIB) libasmrun.a
 
 all-noruntimed:
@@ -48,7 +48,7 @@ all-runtimed: libasmrund.a
 
 libasmrund.a: $(DOBJS)
 	rm -f libasmrund.a
-	ar rc libasmrund.a $(DOBJS)
+	$(ARCMD) rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
 
 all-noprof:
@@ -57,7 +57,7 @@ all-prof: libasmrunp.a
 
 libasmrunp.a: $(POBJS)
 	rm -f libasmrunp.a
-	ar rc libasmrunp.a $(POBJS)
+	$(ARCMD) rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
@@ -173,33 +173,27 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 clean::
 	rm -f $(LINKEDFILES)
 
-.SUFFIXES: .S .d.o .p.o
-
-.S.o:
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S || \
+%.o: %.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $< || \
 	{ echo "If your assembler produced syntax errors, it is probably";\
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
           exit 2; }
 
-.S.p.o:
-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $*.p.o $*.S
+%.p.o: %.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $@ $<
 
-.c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm -f $*.d.c
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) -o $@ $<
 
-.c.p.o:
-	ln -s -f $*.c $*.p.c
-	$(CC) -c $(PFLAGS) $*.p.c
-	rm -f $*.p.c
+%.p.o: %.c
+	$(CC) -c $(PFLAGS) -o $@ $<
 
-.s.o:
-	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s
+%.o: %.s
+	$(ASPP) -DSYS_$(SYSTEM) -o $@ $<
 
-.s.p.o:
-	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
+%.p.o: %.s
+	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $@ $<
 
 clean::
 	rm -f *.o *.a *~
@@ -207,6 +201,6 @@ clean::
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
+	gcc -MM $(FLAGS) -DPROFILING *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend

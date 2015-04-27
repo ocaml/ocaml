@@ -419,7 +419,10 @@ and print_out_sig_item ppf =
         name !out_module_type mty
   | Osig_type(td, rs) ->
         print_out_type_decl
-          (if rs = Orec_next then "and" else "type")
+          (match rs with
+           | Orec_not   -> "type nonrec"
+           | Orec_first -> "type"
+           | Orec_next  -> "and")
           ppf td
   | Osig_value (name, ty, prims) ->
       let kwd = if prims = [] then "val" else "external" in

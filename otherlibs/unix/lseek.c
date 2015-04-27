@@ -13,10 +13,10 @@
 
 #include <errno.h>
 #include <sys/types.h>
-#include <mlvalues.h>
-#include <alloc.h>
-#include <io.h>
-#include <signals.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/io.h>
+#include <caml/signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UNISTD

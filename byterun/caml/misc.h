@@ -59,6 +59,17 @@ typedef char * addr;
 #define CAMLweakdef
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* GC timing hooks. These can be assigned by the user. The hook functions
+   must not allocate or change the heap in any way. */
+typedef void (*caml_timing_hook) (void);
+extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
+extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
+extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+
 /* Assertions */
 
 #ifdef DEBUG
@@ -151,5 +162,9 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #endif
 
 /* </private> */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAML_MISC_H */
