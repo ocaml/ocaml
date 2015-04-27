@@ -17,6 +17,9 @@ Compilers:
   incrementally (Jacques Garrigue)
 - PR#6642: replace $CAMLORIGIN in -ccopt with the path to cma or cmxa
   (Peter Zotov, Gabriel Scherer, review by Damien Doligez)
+- PR#6797: new option -output-complete-obj
+  to output an object file with included runtime and autolink libraries
+  (Peter Zotov)
 - GPR#159: Better locations for structure/signature items
   (Leo White)
 

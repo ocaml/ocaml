@@ -214,7 +214,12 @@ let mk_open f =
   "-open", Arg.String f, "<module>  Opens the module <module> before typing"
 
 let mk_output_obj f =
-  "-output-obj", Arg.Unit f, " Output a C object file instead of an executable"
+  "-output-obj", Arg.Unit f, " Output an object file instead of an executable"
+;;
+
+let mk_output_complete_obj f =
+  "-output-complete-obj", Arg.Unit f,
+  " Output an object file, including runtime, instead of an executable"
 ;;
 
 let mk_p f =
@@ -521,6 +526,7 @@ module type Compiler_options = sig
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -668,6 +674,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
@@ -783,6 +790,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
     mk_pp F._pp;
