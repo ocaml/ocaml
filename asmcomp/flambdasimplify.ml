@@ -98,10 +98,6 @@ let remove_unused_closure_variables tree =
        let cl_fun =
          { cl_fun with
            funs = Variable.Map.filter (fun fun_id _ ->
-               if (not (Variable.Set.mem fun_id all_free_var
-                        || Closure_id.Set.mem (Closure_id.wrap fun_id)
-                          used_closure_id))
-               then Format.printf "remove_function %a@." Variable.print fun_id;
                Variable.Set.mem fun_id all_free_var
                || Closure_id.Set.mem (Closure_id.wrap fun_id)
                  used_closure_id)
@@ -412,7 +408,6 @@ let nid () = Expr_id.create ()
 let remove_params unused (fun_decl: _ Flambda.function_declaration) =
   let unused_params, used_params = List.partition (fun v -> Variable.Set.mem v unused) fun_decl.params in
   let unused_params = List.filter (fun v ->
-      Format.printf "remove %a@." Variable.print v;
       Variable.Set.mem v fun_decl.free_variables) unused_params in
   let body = List.fold_left (fun body var ->
       Flambda.Flet(Not_assigned,
@@ -531,7 +526,6 @@ let remove_unused_globals tree =
   Flambdaiter.map (function
       | Fprim(Psetglobalfield(Not_exported, pos), arg, dbg, attr)
         when not (Ext_types.Int.Set.mem pos used) ->
-          Format.printf "removed global %i@." pos;
           Fprim(Pignore, arg, dbg, attr)
       | e -> e)
     tree

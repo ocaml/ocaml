@@ -432,8 +432,6 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
         match body with
         | Fstaticraise(j, args, _) ->
             assert(Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j));
-            Format.printf "@.simplify static exception %a@.@."
-              Static_exception.print j;
             let handler =
               List.fold_left2 (fun body var arg ->
                   Flambda.Flet(Not_assigned, var, arg, body, Expr_id.create ()))
