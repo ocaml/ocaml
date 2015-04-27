@@ -592,7 +592,7 @@ module Conv(P:Param1) = struct
           let sym = add_constant block ex in
           Fsymbol(sym, ()), Value_symbol sym
 
-    | Fprim(Lambda.Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) as expr
+    | Fprim(Lambda.Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _)
       when env.toplevel ->
         let args, _approxs = conv_list_approx env args in
         let block = Fprim(p, args, dbg, ()) in
