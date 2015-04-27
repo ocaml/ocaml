@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*                 Mark Shinwell, Jane Street Europe                   *)
 (*                                                                     *)
-(*  Copyright 2013, Jane Street Holding                                *)
+(*  Copyright 2013--2015, Jane Street Group, LLC                       *)
 (*                                                                     *)
 (*  Licensed under the Apache License, Version 2.0 (the "License");    *)
 (*  you may not use this file except in compliance with the License.   *)
@@ -20,82 +20,11 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* Access to the allocation profiler from OCaml programs.
-
-   To use the allocation profiling you should:
-   - compile for native code;
-   - add "-allocation-profiling" to the ocamlopt command line;
-   - set OCAMLRUNPARAM to include the T character before running your
-     program, e.g.
-        $ OCAMLRUNPARAM=T ./myocamlprogram
-*)
-
-(* Note: The following functions are not currently supported except
-   on Linux systems.
-
-        where_was_value_allocated
-        where_was_value_allocated_address_only
-
-   In other words, use the [Heap_snapshot] or [Global] modules if
-   not running on Linux, for the moment.
-*)
-
-module Source_location : sig
-  (* A value of type [t] identifies a point in a program's source code. *)
-  type t
-
-  val filename : t -> string option
-  val function_name : t -> string option
-  val line_number : t -> int option
-
-  val to_string : t -> string
-end
-
-type t = [
-  | `Not_boxed
-  | `Unknown
-  | `At_address of Int64.t
-  | `At_source_location of Source_location.t
-  | `Between_source_locations of
-    Source_location.t option * Int64.t * Source_location.t option
-]
-
-(* [where_was_value_allocated v] attempts to determine the source
-   location at which the value [v] was allocated.  If the source location
-   cannot be determined, but the virtual memory address of the allocation
-   point is known, that address will be returned instead.  The location
-   of some values may be completely unknown.  If [v] is not a boxed
-   (allocated) value then [`Not_boxed] will be returned.
-
-   This function can resolve source locations even for values allocated
-   outside OCaml code (for example in C bindings).
-
-   Upon the first call to this function it will block for a short time
-   whilst it reads part of the current program's executable from disk.
-   The executable should not be changed on disk whilst the program is
-   running if it makes use of this function.
-
-   This function is thread safe, although, if it is called from another
-   thread whilst in progress reading the executable file then it may
-   return [`At_address] instead of [`At_source_location] or
-   [`Between_source_locations] during that period.
-*)
-val where_was_value_allocated : 'a -> t
-
-(* [where_was_value_allocated_address_only] is like
-   [where_was_value_allocated], except that it does not access the
-   program's executable on disk, and does not resolve addresses to
-   source locations.  It runs in (short) constant time.  It is
-   thread safe. *)
-val where_was_value_allocated_address_only : 'a
-  -> [ `Not_boxed | `Unknown | `At_address of Int64.t ]
-
-(* [to_string t] produces a human-readable representation of [t]. *)
-val to_string : t -> string
+(* Access to the allocation profiler from OCaml programs. *)
 
 module Heap_snapshot : sig
   (* This module contains profiling functions that work on snapshots
-     of the Caml heap.
+     of the OCaml heap.
 
      All of these functions cause a minor garbage collection
      accompanied by the usual associated slice of major collection.
@@ -106,10 +35,16 @@ module Heap_snapshot : sig
      in order to show, for each block in the major heap, where it was
      allocated.  For example:
        decode-major-heap.sh profile-output-file executable-file
+
+     [dump_num_unaccounted_for] should be set to a positive number if it
+     is suspected that some values have not been correctly instrumented.
+     This will cause more detailed information to be printed about some
+     number of values (up to the specified limit) in the output file.
   *)
   val dump_allocators_of_major_heap_blocks
-     : filename:string
-    -> sample_strings:int
+     : ?dump_num_unaccounted_for:int
+    -> filename:string
+    -> unit
     -> unit
 
   (* [dump_heapgraph] writes two files that may be decoded using
@@ -159,8 +94,20 @@ module Global : sig
   val reset_allocations_by_address : unit -> unit
 end
 
+
 (* The following is only for the internal use of the OCaml system.
    User code should use the functions provided above. *)
+module Source_location : sig
+  (* A value of type [t] identifies a point in a program's source code. *)
+  type t
+
+  val filename : t -> string option
+  val function_name : t -> string option
+  val line_number : t -> int option
+
+  val to_string : t -> string
+end
+
 module Source_location_map : sig
   type t
   val create_from_dwarf_then_stuff_into_elf_section_exn : executable:string
@@ -173,5 +120,62 @@ module Source_location_map : sig
        | `Between of Source_location.t option * Source_location.t option] option
 end
 
+(* *** The following is currently not supported. ***
+
+
+
 (* CR mshinwell: enhance functionality to permit discovery of _when_
    a value was allocated. *)
+
+
+(* Note: The following functions are not currently supported except
+   on Linux systems.
+
+        where_was_value_allocated
+        where_was_value_allocated_address_only
+
+   In other words, use the [Heap_snapshot] or [Global] modules if
+   not running on Linux, for the moment.
+*)
+
+type t = [
+  | `Not_boxed
+  | `Unknown
+  | `At_address of Int64.t
+  | `At_source_location of Source_location.t
+  | `Between_source_locations of
+    Source_location.t option * Int64.t * Source_location.t option
+]
+
+(* [where_was_value_allocated v] attempts to determine the source
+   location at which the value [v] was allocated.  If the source location
+   cannot be determined, but the virtual memory address of the allocation
+   point is known, that address will be returned instead.  The location
+   of some values may be completely unknown.  If [v] is not a boxed
+   (allocated) value then [`Not_boxed] will be returned.
+
+   This function can resolve source locations even for values allocated
+   outside OCaml code (for example in C bindings).
+
+   Upon the first call to this function it will block for a short time
+   whilst it reads part of the current program's executable from disk.
+   The executable should not be changed on disk whilst the program is
+   running if it makes use of this function.
+
+   This function is thread safe, although, if it is called from another
+   thread whilst in progress reading the executable file then it may
+   return [`At_address] instead of [`At_source_location] or
+   [`Between_source_locations] during that period.
+*)
+val where_was_value_allocated : 'a -> t
+
+(* [where_was_value_allocated_address_only] is like
+   [where_was_value_allocated], except that it does not access the
+   program's executable on disk, and does not resolve addresses to
+   source locations.  It runs in (short) constant time.  It is
+   thread safe. *)
+val where_was_value_allocated_address_only : 'a
+  -> [ `Not_boxed | `Unknown | `At_address of Int64.t ]
+(* [to_string t] produces a human-readable representation of [t]. *)
+val to_string : t -> string
+*)

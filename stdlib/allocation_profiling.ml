@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*                 Mark Shinwell, Jane Street Europe                   *)
 (*                                                                     *)
-(*  Copyright 2013, Jane Street Holding                                *)
+(*  Copyright 2013--2015, Jane Street Group, LLC                       *)
 (*                                                                     *)
 (*  Licensed under the Apache License, Version 2.0 (the "License");    *)
 (*  you may not use this file except in compliance with the License.   *)
@@ -127,6 +127,7 @@ module Source_location_map = struct
         Some (`Between (nearest_below_loc, nearest_above_loc))
 end
 
+(*
 type t = [
   | `Not_boxed
   | `Unknown
@@ -135,6 +136,7 @@ type t = [
   | `Between_source_locations of
     Source_location.t option * Int64.t * Source_location.t option
 ]
+*)
 
 let source_location_map =
   let source_location_map = ref `Not_tried in
@@ -201,10 +203,14 @@ let to_string = function
 module Heap_snapshot = struct
   external dump_allocators_of_major_heap_blocks
      : filename:string
-    -> sample_strings:int
+    -> dump_num_unaccounted_for:int
     -> unit
     = "caml_allocation_profiling_only_works_for_native_code"
       "caml_dump_allocators_of_major_heap_blocks_from_ocaml"
+
+  let dump_allocators_of_major_heap_blocks ?(dump_num_unaccounted_for = 0)
+        ~filename () =
+    dump_allocators_of_major_heap_blocks ~filename ~dump_num_unaccounted_for
 
   external forget_where_values_were_allocated : unit -> unit
     = "caml_allocation_profiling_only_works_for_native_code"
