@@ -711,7 +711,7 @@ let add_inline_attribute expr loc attributes =
       Lfunction { funct with attr = { inline = inline_attribute } }
   | expr, (Always_inline | Never_inline) ->
       Location.prerr_warning loc
-        (Warnings.Missplaced_attribute "inline");
+        (Warnings.Misplaced_attribute "inline");
       expr
 
 (* Get the [@inlined] attibute payload (or default if not present).
@@ -752,13 +752,13 @@ let check_attribute e ({ txt; loc }, _) =
       | Texp_function _ -> ()
       | _ ->
           Location.prerr_warning loc
-            (Warnings.Missplaced_attribute txt)
+            (Warnings.Misplaced_attribute txt)
     end
   | "inlined" | "ocaml.inlined"
   | "tailcall" | "ocaml.tailcall" ->
       (* Removed by the Texp_apply cases *)
       Location.prerr_warning loc
-        (Warnings.Missplaced_attribute txt)
+        (Warnings.Misplaced_attribute txt)
   | _ -> ()
 
 let rec transl_exp e =

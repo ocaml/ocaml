@@ -68,9 +68,9 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
   | Expect_tailcall                         (* 50 *)
-  | Missplaced_attribute of string          (* 51 *)
+  | Misplaced_attribute of string           (* 51 *)
   | Duplicated_attribute of string          (* 52 *)
-  | Inlining_impossible of string             (* 53 *)
+  | Inlining_impossible of string           (* 53 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -130,7 +130,7 @@ let number = function
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
   | Expect_tailcall -> 50
-  | Missplaced_attribute _ -> 51
+  | Misplaced_attribute _ -> 51
   | Duplicated_attribute _ -> 52
   | Inlining_impossible _ -> 53
 ;;
@@ -394,7 +394,7 @@ let message = function
       "no cmi file was found in path for module " ^ s
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
-  | Missplaced_attribute attr_name ->
+  | Misplaced_attribute attr_name ->
       Printf.sprintf "the %S attribute cannot appear in this context" attr_name
   | Duplicated_attribute attr_name ->
       Printf.sprintf "the %S attribute is used more than once on this expression" attr_name

@@ -63,7 +63,7 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
   | Expect_tailcall                         (* 50 *)
-  | Missplaced_attribute of string          (* 51 *)
+  | Misplaced_attribute of string           (* 51 *)
   | Duplicated_attribute of string          (* 52 *)
   | Inlining_impossible of string           (* 53 *)
 ;;
