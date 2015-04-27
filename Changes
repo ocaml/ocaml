@@ -121,6 +121,8 @@ Bug fixes:
   (user 'algoriddle')
 - allow android build with pthreads support (since SDK r10c)
   (Peter Zotov)
+- GPR#171: allow custom warning printers / catchers
+  (Benjamin Canou, review by Damien Doligez)
 
 OCaml 4.02.1:
 -------------

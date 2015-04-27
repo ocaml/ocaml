@@ -72,9 +72,7 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> int;;
-  (* returns the number of newlines in the printed string *)
-
+val print : formatter -> t -> unit;;
 
 exception Errors of int;;
 
