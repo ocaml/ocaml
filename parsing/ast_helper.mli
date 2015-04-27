@@ -80,6 +80,7 @@ module Pat:
     val lazy_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
     val unpack: ?loc:loc -> ?attrs:attrs -> str -> pattern
     val exception_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
+    val effect_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern -> pattern
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
   end
 
@@ -167,6 +168,12 @@ module Te:
 
     val decl: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> ?res:core_type -> str -> extension_constructor
     val rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> extension_constructor
+
+    val effect_constructor: ?loc:loc -> ?attrs:attrs -> str -> effect_constructor_kind -> effect_constructor
+
+    val effect_decl: ?loc:loc -> ?attrs:attrs -> ?args:core_type list -> str -> core_type -> effect_constructor
+    val effect_rebind: ?loc:loc -> ?attrs:attrs -> str -> lid -> effect_constructor
+
   end
 
 (** {2 Module language} *)
@@ -212,6 +219,7 @@ module Sig:
     val type_: ?loc:loc -> type_declaration list -> signature_item
     val type_extension: ?loc:loc -> type_extension -> signature_item
     val exception_: ?loc:loc -> extension_constructor -> signature_item
+    val effect_: ?loc:loc -> effect_constructor -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
@@ -234,6 +242,7 @@ module Str:
     val type_: ?loc:loc -> type_declaration list -> structure_item
     val type_extension: ?loc:loc -> type_extension -> structure_item
     val exception_: ?loc:loc -> extension_constructor -> structure_item
+    val effect_: ?loc:loc -> effect_constructor -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item

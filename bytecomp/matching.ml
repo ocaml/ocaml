@@ -2985,10 +2985,19 @@ let partial_function loc () =
 let for_function loc repr param pat_act_list partial =
   compile_matching loc repr (partial_function loc) param pat_act_list partial
 
-(* In the following two cases, exhaustiveness info is not available! *)
+(* In the following three cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
   compile_matching Location.none None
     (fun () -> Lprim(Praise Raise_reraise, [param]))
+    param pat_act_list Partial
+
+let for_handler param cont pat_act_list =
+  let id = Ident.create "exn" in
+  let delegate =
+    Ltrywith(Lprim(Pcontinue, [cont; Lprim(Pperform, [param])]), id,
+               Lprim(Pdiscontinue, [cont; (Lvar id)]))
+  in
+  compile_matching Location.none None (fun () -> delegate)
     param pat_act_list Partial
 
 let for_let loc param pat body =
