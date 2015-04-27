@@ -43,6 +43,10 @@ class printer :
       Format.formatter -> Asttypes.direction_flag -> unit
     method directive_argument :
       Format.formatter -> Parsetree.directive_argument -> unit
+    method effect_constructor :
+      Format.formatter -> Parsetree.effect_constructor -> unit
+    method effect_declaration :
+      Format.formatter -> Parsetree.effect_constructor -> unit
     method exception_declaration :
       Format.formatter -> Parsetree.extension_constructor -> unit
     method expression : Format.formatter -> Parsetree.expression -> unit

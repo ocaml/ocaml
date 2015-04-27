@@ -153,6 +153,8 @@ val extract_concrete_typedecl:
 
 val enforce_constraints: Env.t -> type_expr -> unit
 
+val get_new_abstract_name : string -> string
+
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit

@@ -87,6 +87,12 @@ let add_extension_constructor bv ext =
         List.iter (add_type bv) args; Misc.may (add_type bv) rty
     | Pext_rebind lid -> add bv lid
 
+let add_effect_constructor bv eff =
+  match eff.peff_kind with
+      Peff_decl(args, rty) ->
+        List.iter (add_type bv) args; add_type bv rty
+    | Peff_rebind lid -> add bv lid
+
 let add_type_extension bv te =
   add bv te.ptyext_path;
   List.iter (add_extension_constructor bv) te.ptyext_constructors
@@ -137,6 +143,7 @@ let rec add_pattern bv pat =
   | Ppat_lazy p -> add_pattern bv p
   | Ppat_unpack id -> pattern_bv := StringSet.add id.txt !pattern_bv
   | Ppat_exception p -> add_pattern bv p
+  | Ppat_effect(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_extension _ -> ()
 
 let add_pattern bv pat =
@@ -245,6 +252,8 @@ and add_sig_item bv item =
       add_type_extension bv te; bv
   | Psig_exception pext ->
       add_extension_constructor bv pext; bv
+  | Psig_effect peff ->
+      add_effect_constructor bv peff; bv
   | Psig_module pmd ->
       add_modtype bv pmd.pmd_type; StringSet.add pmd.pmd_name.txt bv
   | Psig_recmodule decls ->
@@ -305,6 +314,8 @@ and add_struct_item bv item =
       bv
   | Pstr_exception pext ->
       add_extension_constructor bv pext; bv
+  | Pstr_effect peff ->
+      add_effect_constructor bv peff; bv
   | Pstr_module x ->
       add_module bv x.pmb_expr; StringSet.add x.pmb_name.txt bv
   | Pstr_recmodule bindings ->

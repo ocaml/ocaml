@@ -289,15 +289,17 @@ and expression i ppf x =
       line i ppf "Pexp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l1, l2, partial) ->
+  | Texp_match (e, l1, l2, l3, partial) ->
       line i ppf "Pexp_match\n";
       expression i ppf e;
       list i case ppf l1;
       list i case ppf l2;
-  | Texp_try (e, l) ->
+      list i case ppf l3;
+  | Texp_try (e, l1, l2) ->
       line i ppf "Pexp_try\n";
       expression i ppf e;
-      list i case ppf l;
+      list i case ppf l1;
+      list i case ppf l2;
   | Texp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
@@ -622,6 +624,9 @@ and signature_item i ppf x =
   | Tsig_exception ext ->
       line i ppf "Psig_exception\n";
       extension_constructor i ppf ext
+  | Tsig_effect ext ->
+      line i ppf "Psig_effect\n";
+      extension_constructor i ppf ext
   | Tsig_module md ->
       line i ppf "Psig_module \"%a\"\n" fmt_ident md.md_id;
       attributes i ppf md.md_attributes;
@@ -727,6 +732,9 @@ and structure_item i ppf x =
       type_extension i ppf te
   | Tstr_exception ext ->
       line i ppf "Pstr_exception\n";
+      extension_constructor i ppf ext;
+  | Tstr_effect ext ->
+      line i ppf "Pstr_effect\n";
       extension_constructor i ppf ext;
   | Tstr_module x ->
       line i ppf "Pstr_module\n";

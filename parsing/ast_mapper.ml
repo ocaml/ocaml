@@ -40,6 +40,8 @@ type mapper = {
   class_type_field: mapper -> class_type_field -> class_type_field;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
+  effect_constructor: mapper -> effect_constructor
+                         -> effect_constructor;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
@@ -166,6 +168,23 @@ module T = struct
       ~loc:(sub.location sub pext_loc)
       ~attrs:(sub.attributes sub pext_attributes)
 
+  let map_effect_constructor_kind sub = function
+      Peff_decl(ctl, cto) ->
+        Peff_decl(List.map (sub.typ sub) ctl, sub.typ sub cto)
+    | Peff_rebind li ->
+        Peff_rebind (map_loc sub li)
+
+  let map_effect_constructor sub
+      {peff_name;
+       peff_kind;
+       peff_loc;
+       peff_attributes} =
+    Te.effect_constructor
+      (map_loc sub peff_name)
+      (map_effect_constructor_kind sub peff_kind)
+      ~loc:(sub.location sub peff_loc)
+      ~attrs:(sub.attributes sub peff_attributes)
+
 end
 
 module CT = struct
@@ -239,6 +258,7 @@ module MT = struct
     | Psig_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Psig_effect ed -> effect_ ~loc (sub.effect_constructor sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
@@ -287,6 +307,7 @@ module M = struct
     | Pstr_type l -> type_ ~loc (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Pstr_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Pstr_effect ed -> effect_ ~loc (sub.effect_constructor sub ed)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
     | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
@@ -401,6 +422,7 @@ module P = struct
     | Ppat_lazy p -> lazy_ ~loc ~attrs (sub.pat sub p)
     | Ppat_unpack s -> unpack ~loc ~attrs (map_loc sub s)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
+    | Ppat_effect(p1, p2) -> effect_ ~loc ~attrs (sub.pat sub p1) (sub.pat sub p2)
     | Ppat_extension x -> extension ~loc ~attrs (sub.extension sub x)
 end
 
@@ -495,6 +517,7 @@ let default_mapper =
     typ = T.map;
     type_extension = T.map_type_extension;
     extension_constructor = T.map_extension_constructor;
+    effect_constructor = T.map_effect_constructor;
     value_description =
       (fun this {pval_name; pval_type; pval_prim; pval_loc;
                  pval_attributes} ->

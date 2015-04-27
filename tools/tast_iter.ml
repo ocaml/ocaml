@@ -25,6 +25,7 @@ let structure_item sub x =
   | Tstr_type list -> List.iter (sub # type_declaration) list
   | Tstr_typext te -> sub # type_extension te
   | Tstr_exception ext -> sub # extension_constructor ext
+  | Tstr_effect ext -> sub # extension_constructor ext
   | Tstr_module mb -> sub # module_binding mb
   | Tstr_recmodule list -> List.iter (sub # module_binding) list
   | Tstr_modtype mtd -> opt (sub # module_type) mtd.mtd_type
@@ -112,13 +113,15 @@ let expression sub exp =
   | Texp_apply (exp, list) ->
       sub # expression exp;
       List.iter (fun (_, expo, _) -> opt (sub # expression) expo) list
-  | Texp_match (exp, cases, exn_cases, _) ->
+  | Texp_match (exp, cases, exn_cases, eff_cases, _) ->
       sub # expression exp;
       sub # cases cases;
-      sub # cases exn_cases
-  | Texp_try (exp, cases) ->
+      sub # cases exn_cases;
+      sub # cases eff_cases
+  | Texp_try (exp, cases, eff_cases) ->
       sub # expression exp;
-      sub # cases cases
+      sub # cases cases;
+      sub # cases eff_cases
   | Texp_tuple list ->
       List.iter (sub # expression) list
   | Texp_construct (_, _, args) ->
@@ -184,6 +187,8 @@ let signature_item sub item =
   | Tsig_typext te ->
       sub # type_extension te
   | Tsig_exception ext ->
+      sub # extension_constructor ext
+  | Tsig_effect ext ->
       sub # extension_constructor ext
   | Tsig_module md ->
       sub # module_type md.md_type

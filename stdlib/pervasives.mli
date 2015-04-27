@@ -44,6 +44,39 @@ exception Exit
     provided for use in your programs. *)
 
 
+(** {6 Effects} *)
+
+(** [perform e] performs an effect [e].
+
+    @raises Unhandled if there is no active handler. *)
+external perform : 'a eff -> 'a = "%perform"
+
+(** [continue k x] resumes the continuation [k] by passing [x] to [k].
+
+    @raise Invalid_argument if the continuation has already been
+    resumed. *)
+external continue: ('a, 'b) continuation -> 'a -> 'b = "%continue"
+
+(** [discontinue k e] resumes the continuation [k] by raising the
+    exception [e] in [k].
+
+    @raise Invalid_argument if the continuation has already been
+    resumed. *)
+external discontinue: ('a, 'b) continuation -> exn -> 'b = "%discontinue"
+
+(** [delegate e k] is semantically equivalent to:
+
+    {[
+      match perform e with
+      | v -> continue k v
+      | exception e -> discontinue k e
+    ]}
+
+    but it can be implemented directly more efficiently and is a
+    very common case: it is what you should do with effects that
+    you don't handle. *)
+val delegate: 'a eff -> ('a, 'b) continuation -> 'b
+
 (** {6 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"

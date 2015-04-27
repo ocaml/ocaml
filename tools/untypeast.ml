@@ -60,6 +60,8 @@ and untype_structure_item item =
         Pstr_typext (untype_type_extension tyext)
     | Tstr_exception ext ->
         Pstr_exception (untype_extension_constructor ext)
+    | Tstr_effect ext ->
+        Pstr_effect (untype_effect_constructor ext)
     | Tstr_module mb ->
         Pstr_module (untype_module_binding mb)
     | Tstr_recmodule list ->
@@ -175,6 +177,25 @@ and untype_extension_constructor ext =
     pext_attributes = ext.ext_attributes;
   }
 
+and untype_effect_constructor ext =
+  {
+    peff_name = ext.ext_name;
+    peff_kind = (match ext.ext_kind with
+      | Text_decl (_, None) -> assert false
+      | Text_decl (args, Some ret_type) ->
+          let uret_type = untype_core_type ret_type in
+          let uret =
+            match uret_type.ptyp_desc with
+            | Ptyp_constr(_, [ret]) -> ret
+            | _ -> assert false
+          in
+            Peff_decl (List.map untype_core_type args, uret)
+      | Text_rebind (_p, lid) -> Peff_rebind lid
+    );
+    peff_loc = ext.ext_loc;
+    peff_attributes = ext.ext_attributes;
+  }
+
 and untype_pattern pat =
   let desc =
   match pat with
@@ -247,6 +268,27 @@ and untype_case {c_lhs; c_guard; c_rhs} =
    pc_rhs = untype_expression c_rhs;
   }
 
+and untype_exception_case c =
+  let uc = untype_case c in
+  let pat =
+    { uc.pc_lhs with ppat_desc = Ppat_exception uc.pc_lhs }
+  in
+    { uc with pc_lhs = pat }
+
+and untype_effect_case c =
+  let uc = untype_case c in
+  let cont =
+    match c.c_cont with
+    | Some id ->
+        let name = Location.mknoloc (Ident.name id) in
+          Pat.mk (Ppat_var name)
+    | None -> Pat.mk Ppat_any
+  in
+  let pat =
+    { uc.pc_lhs with ppat_desc = Ppat_effect(uc.pc_lhs, cont) }
+  in
+    { uc with pc_lhs = pat }
+
 and untype_binding {vb_pat; vb_expr; vb_attributes; vb_loc} =
   {
     pvb_pat = untype_pattern vb_pat;
@@ -277,20 +319,19 @@ and untype_expression exp =
                 None -> list
               | Some exp -> (label, untype_expression exp) :: list
           ) list [])
-    | Texp_match (exp, cases, exn_cases, _) ->
-      let merged_cases = untype_cases cases
-        @ List.map
-          (fun c ->
-            let uc = untype_case c in
-            let pat = { uc.pc_lhs
-                        with ppat_desc = Ppat_exception uc.pc_lhs }
-            in
-            { uc with pc_lhs = pat })
-          exn_cases
-      in
-      Pexp_match (untype_expression exp, merged_cases)
-    | Texp_try (exp, cases) ->
-        Pexp_try (untype_expression exp, untype_cases cases)
+    | Texp_match (exp, cases, exn_cases, eff_cases, _) ->
+        let merged_cases =
+          untype_cases cases
+          @ List.map untype_exception_case exn_cases
+          @ List.map untype_effect_case eff_cases
+        in
+          Pexp_match (untype_expression exp, merged_cases)
+    | Texp_try (exp, cases, eff_cases) ->
+        let merged_cases =
+          untype_cases cases
+          @ List.map untype_effect_case eff_cases
+        in
+          Pexp_try (untype_expression exp, merged_cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map untype_expression list)
     | Texp_construct (lid, _, args) ->
@@ -373,6 +414,8 @@ and untype_signature_item item =
         Psig_typext (untype_type_extension tyext)
     | Tsig_exception ext ->
         Psig_exception (untype_extension_constructor ext)
+    | Tsig_effect ext ->
+        Psig_effect (untype_effect_constructor ext)
     | Tsig_module md ->
         Psig_module {pmd_name = md.md_name;
                      pmd_type = untype_module_type md.md_type;
