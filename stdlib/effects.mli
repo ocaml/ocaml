@@ -1,19 +1,11 @@
-(** Type to represent effects, where ['a] is the return type of
-    the effect. *)
-type 'a effect = ..
-
 (** [perform e] performs an effect [e].
 
     @raises Unhandled if there is no active handler. *)
-val perform : 'a effect -> 'a
-
-(** Type to represent single-shot continuations waiting for an
-    ['a], which will return a [b']. *)
-type ('a, 'b) continuation
+val perform : 'a eff -> 'a
 
 (** Type to represent effect handlers which return ['b]. *)
 type ('b,'c) handler =
-   { effect: 'a. 'a effect -> ('a, 'c) continuation -> 'c;
+   { eff: 'a. 'a eff -> ('a, 'c) continuation -> 'c;
      exn: exn -> 'c;
      return: 'b -> 'c; }
 
@@ -44,4 +36,4 @@ val discontinue: ('a, 'b) continuation -> exn -> 'b
     but it can be implemented directly more efficiently and is a
     very common case: it is what you should do with effects that
     you don't handle. *)
-val delegate: 'a effect -> ('a, 'b) continuation -> 'b
+val delegate: 'a eff -> ('a, 'b) continuation -> 'b

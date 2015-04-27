@@ -36,6 +36,19 @@ let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
 
+(* Effects *)
+
+external perform : 'a eff -> 'a = "%perform"
+
+external continue: ('a, 'b) continuation -> 'a -> 'b = "%continue"
+
+external discontinue: ('a, 'b) continuation -> exn -> 'b = "%discontinue"
+
+let delegate e k =
+  match perform e with
+  | v -> continue k v
+  | exception e -> discontinue k e
+
 (* Composition operators *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
