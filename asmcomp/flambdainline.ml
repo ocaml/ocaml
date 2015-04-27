@@ -437,6 +437,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
                   Flambda.Flet(Not_assigned, var, arg, body, Expr_id.create ()))
                 handler vars args
             in
+            let r = R.exit_scope_catch r i in
             loop env r handler
         | _ ->
             let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
