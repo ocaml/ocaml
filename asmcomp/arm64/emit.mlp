@@ -866,7 +866,7 @@ let rec emit_all i =
 let emit_profile() = ()   (* TODO *)
 (*
   match Config.system with
-    "linux_eabi" | "linux_eabihf" ->
+    "linux_eabi" | "linux_eabihf" | "netbsd" ->
       `	push	\{lr}\n`;
       `	{emit_call "__gnu_mcount_nc"}\n`
   | _ -> ()

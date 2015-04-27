@@ -778,6 +778,7 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-haiku*)           natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
     arm*-*-freebsd*)              natdynlink=true;;
+    earm*-*-netbsd*)               natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
   esac
 fi
@@ -831,6 +832,8 @@ case "$target" in
   armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
   armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
   armv6*-*-freebsd*)            arch=arm; model=armv6; system=freebsd;;
+  earmv6*-*-netbsd*)		arch=arm; model=armv6; system=netbsd;;
+  earmv7*-*-netbsd*)		arch=arm; model=armv7; system=netbsd;;
   armv5te*-*-linux-gnueabi)     arch=arm; model=armv5te; system=linux_eabi;;
   armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
   arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
@@ -935,6 +938,7 @@ case "$arch,$system" in
   amd64,openbsd) profiling='prof';;
   amd64,freebsd) profiling='prof';;
   amd64,netbsd) profiling='prof';;
+  arm,netbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
   power,elf) profiling='prof';;

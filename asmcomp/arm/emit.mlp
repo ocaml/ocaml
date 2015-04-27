@@ -820,7 +820,7 @@ let rec emit_all ninstr i =
 
 let emit_profile() =
   match Config.system with
-    "linux_eabi" | "linux_eabihf" ->
+    "linux_eabi" | "linux_eabihf" | "netbsd" ->
       `	push	\{lr}\n`;
       `	{emit_call "__gnu_mcount_nc"}\n`
   | _ -> ()
@@ -947,7 +947,7 @@ let end_assembly () =
   `	.type	{emit_symbol lbl}, %object\n`;
   `	.size	{emit_symbol lbl}, .-{emit_symbol lbl}\n`;
   begin match Config.system with
-    "linux_eabihf" | "linux_eabi" ->
+    "linux_eabihf" | "linux_eabi" | "netbsd" ->
       (* Mark stack as non-executable *)
       `	.section	.note.GNU-stack,\"\",%progbits\n`
   | _ -> ()

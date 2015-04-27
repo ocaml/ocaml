@@ -22,7 +22,7 @@ type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 let abi =
   match Config.system with
     "linux_eabi" | "freebsd" -> EABI
-  | "linux_eabihf" -> EABI_HF
+  | "linux_eabihf" | "netbsd" -> EABI_HF
   | _ -> assert false
 
 let string_of_arch = function
