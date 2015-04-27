@@ -339,7 +339,7 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if !pic_code then begin
+  if !Clflags.pic_code then begin
     let lbl_pic = new_label() in
     let lbl_got = gotrel_literal lbl_pic in
     let lbl_sym = symbol_literal s in
