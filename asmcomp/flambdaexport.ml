@@ -30,6 +30,7 @@ type _ boxed_int =
 
 type descr =
   | Value_block of tag * approx array
+  | Value_mutable_block of tag * int
   | Value_int of int
   | Value_constptr of int
   | Value_float of float
@@ -131,6 +132,7 @@ let print_approx ppf export =
     | Value_int i -> pp_print_int ppf i
     | Value_constptr i -> fprintf ppf "%ip" i
     | Value_block (tag, fields) -> fprintf ppf "[%i:%a]" tag print_fields fields
+    | Value_mutable_block (tag, size) -> fprintf ppf "[mutable %i:%i]" tag size
     | Value_closure {fun_id; closure} ->
       fprintf ppf "(function %a, %a)" Closure_id.print fun_id print_closure closure
     | Value_set_of_closures closure ->
@@ -262,6 +264,8 @@ let import_descr_for_pack units pack = function
     Value_closure {fun_id; closure = import_closure units pack closure}
   | Value_set_of_closures closure ->
     Value_set_of_closures (import_closure units pack closure)
+  | Value_mutable_block (tag, size) ->
+    Value_mutable_block (tag, size)
 
 let import_code_for_pack units pack expr =
   Flambdaiter.map (function

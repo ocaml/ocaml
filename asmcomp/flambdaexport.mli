@@ -29,7 +29,8 @@ type _ boxed_int =
   | Nativeint : nativeint boxed_int
 
 type descr =
-    Value_block of tag * approx array
+  | Value_block of tag * approx array
+  | Value_mutable_block of tag * int
   | Value_int of int
   | Value_constptr of int
   | Value_float of float

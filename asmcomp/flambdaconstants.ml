@@ -63,6 +63,7 @@ module type Param = sig
   val expr : t Flambda.flambda
   val for_clambda : bool
   val compilation_unit : Compilation_unit.t
+  val toplevel : bool
 end
 
 module NotConstants(P:Param) = struct
@@ -127,23 +128,23 @@ module NotConstants(P:Param) = struct
      It can be empty when no constraint can be added like in the toplevel
      expression or in the body of a function.
   *)
-  let rec mark_loop (curr:dep list) = function
+  let rec mark_loop ~toplevel (curr:dep list) = function
 
     | Flet(str, id, lam, body, _) ->
       if str = Assigned then mark_curr [Var id];
-      mark_loop [Var id] lam;
+      mark_loop ~toplevel [Var id] lam;
       (* adds 'id in NC => curr in NC'
          This is not really necessary, but compiling this correctly is
          trickier than eliminating that earlier. *)
       register_implication ~in_nc:(Var id) ~implies_in_nc:curr;
-      mark_loop curr body
+      mark_loop ~toplevel curr body
 
     | Fletrec(defs, body, _) ->
       List.iter (fun (id,def) ->
-          mark_loop [Var id] def;
+          mark_loop ~toplevel [Var id] def;
           (* adds 'id in NC => curr in NC' same remark as let case *)
           register_implication ~in_nc:(Var id) ~implies_in_nc:curr) defs;
-      mark_loop curr body
+      mark_loop ~toplevel curr body
 
     | Fvar (id,_) ->
       (* adds 'id in NC => curr in NC' *)
@@ -161,13 +162,13 @@ module NotConstants(P:Param) = struct
       register_implication ~in_nc:(Closure funcs.ident) ~implies_in_nc:curr;
       (* a closure is constant if its free variables are constants. *)
       Variable.Map.iter (fun inner_id lam ->
-        mark_loop [Closure funcs.ident; Var inner_id] lam) fv;
+        mark_loop ~toplevel [Closure funcs.ident; Var inner_id] lam) fv;
       Variable.Map.iter (fun fun_id ffunc ->
         (* for each function f in a closure c 'c in NC => f' *)
         register_implication ~in_nc:(Closure funcs.ident) ~implies_in_nc:[Var fun_id];
         (* function parameters are in NC *)
         List.iter (fun id -> mark_curr [Var id]) ffunc.params;
-        mark_loop [] ffunc.body) funcs.funs
+        mark_loop ~toplevel:false [] ffunc.body) funcs.funs
 
     | Fconst _ -> ()
 
@@ -195,21 +196,30 @@ module NotConstants(P:Param) = struct
     (* Constant constructors: those expressions are constant if all their parameters are:
        - makeblock is compiled to a constant block
        - offset is compiled to a pointer inside a constant closure.
-         See Cmmgen for the details *)
+         See Cmmgen for the details
+
+       makeblock(Mutable) can be a 'constant' if it is allocated at toplevel: if this
+       expression is evaluated only once. This is only allowed when for_clambda, i.e.
+       when we are checking wether a variable can be statically allocated.
+    *)
 
     | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg, _) ->
-      List.iter (mark_loop curr) args
+      List.iter (mark_loop ~toplevel curr) args
+
+    | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
+      when for_clambda && toplevel ->
+      List.iter (mark_loop ~toplevel curr) args
 
     | Fclosure ({fu_closure; fu_fun; _}, _) ->
       if Closure_id.in_compilation_unit compilation_unit fu_fun
-      then mark_loop curr fu_closure
+      then mark_loop ~toplevel curr fu_closure
       else mark_curr curr
 
     | Fvariable_in_closure ({vc_closure = f1; _},_)
     | Fprim(Lambda.Pfield _, [f1], _, _) ->
       if for_clambda
       then mark_curr curr;
-      mark_loop curr f1
+      mark_loop ~toplevel curr f1
 
     | Fprim(Lambda.Pgetglobalfield(id,i), [], _, _) ->
       (* adds 'global i in NC => curr in NC' *)
@@ -233,7 +243,7 @@ module NotConstants(P:Param) = struct
     | Fprim(Lambda.Psetglobalfield (_,i), [f], _, _) ->
       mark_curr curr;
       (* adds 'f in NC => global i in NC' *)
-      mark_loop [Global i] f
+      mark_loop ~toplevel [Global i] f
 
     (* Not constant cases: we mark directly 'curr in NC' and mark
        bound variables as in NC also *)
@@ -242,71 +252,77 @@ module NotConstants(P:Param) = struct
       (* the assigned is also not constant *)
       mark_curr [Var id];
       mark_curr curr;
-      mark_loop [] f1
+      mark_loop ~toplevel [] f1
 
     | Ftrywith (f1,id,f2,_) ->
       mark_curr [Var id];
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2
 
     | Fstaticcatch (_,ids,f1,f2,_) ->
       List.iter (fun id -> mark_curr [Var id]) ids;
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2
+      (* If recursive staticcatch is introduced: this becomes
+         ~toplevel:false *)
 
-    | Ffor (id,f1,f2,_,f3,_) ->
+    | Ffor (id,f1,f2,_,body,_) ->
       mark_curr [Var id];
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2;
-      mark_loop [] f3
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      mark_loop ~toplevel:false [] body
 
-    | Fsequence (f1,f2,_)
-    | Fwhile (f1,f2,_) ->
+    | Fsequence (f1,f2,_) ->
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2
+
+    | Fwhile (f1,body,_) ->
+      mark_curr curr;
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel:false [] body
 
     | Fifthenelse (f1,f2,f3,_) ->
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2;
-      mark_loop [] f3
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      mark_loop ~toplevel [] f3
 
     | Fstaticraise (_,l,_)
     | Fprim (_,l,_,_) ->
       mark_curr curr;
-      List.iter (mark_loop []) l
+      List.iter (mark_loop ~toplevel []) l
 
     | Fapply ({ap_function = f1; ap_arg = fl; _ },_) ->
       mark_curr curr;
-      mark_loop [] f1;
-      List.iter (mark_loop []) fl
+      mark_loop ~toplevel [] f1;
+      List.iter (mark_loop ~toplevel []) fl
 
     | Fswitch (arg,sw,_) ->
       mark_curr curr;
-      mark_loop [] arg;
-      List.iter (fun (_,l) -> mark_loop [] l) sw.fs_consts;
-      List.iter (fun (_,l) -> mark_loop [] l) sw.fs_blocks;
-      Misc.may (fun l -> mark_loop [] l) sw.fs_failaction
+      mark_loop ~toplevel [] arg;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.fs_consts;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.fs_blocks;
+      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.fs_failaction
 
     | Fstringswitch (arg,sw,def,_) ->
       mark_curr curr;
-      mark_loop [] arg;
-      List.iter (fun (_,l) -> mark_loop [] l) sw;
-      Misc.may (fun l -> mark_loop [] l) def
+      mark_loop ~toplevel [] arg;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
+      Misc.may (fun l -> mark_loop ~toplevel [] l) def
 
     | Fsend (_,f1,f2,fl,_,_) ->
       mark_curr curr;
-      mark_loop [] f1;
-      mark_loop [] f2;
-      List.iter (mark_loop []) fl
+      mark_loop ~toplevel [] f1;
+      mark_loop ~toplevel [] f2;
+      List.iter (mark_loop ~toplevel []) fl
 
     | Fevent (f1, _, _) ->
       mark_curr curr;
-      mark_loop [] f1;
+      mark_loop ~toplevel [] f1;
 
     | Funreachable _ ->
       mark_curr curr
@@ -340,7 +356,7 @@ module NotConstants(P:Param) = struct
     done
 
   let res =
-    mark_loop [] P.expr;
+    mark_loop ~toplevel:P.toplevel [] P.expr;
     propagate ();
     { not_constant_id = !variables;
       not_constant_closure = !closures; }
@@ -354,6 +370,7 @@ let not_constants (type a) ~for_clambda ~compilation_unit
     let expr = expr
     let for_clambda = for_clambda
     let compilation_unit = compilation_unit
+    let toplevel = true
   end in
   let module A = NotConstants(P) in
   A.res

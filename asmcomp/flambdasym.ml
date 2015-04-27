@@ -189,14 +189,16 @@ module Conv(P:Param1) = struct
   type env =
     { sb : unit flambda Variable.Map.t; (* substitution *)
       cm : Symbol.t Variable.Map.t; (* variables associated to constants *)
-      approx : approx Variable.Map.t }
+      approx : approx Variable.Map.t;
+      toplevel : bool }
 
   let infos = init_infos ()
 
   let empty_env =
     { sb = Variable.Map.empty;
       cm = Variable.Map.empty;
-      approx = Variable.Map.empty }
+      approx = Variable.Map.empty;
+      toplevel = false }
 
   let canonical_symbol s = canonical_symbol s infos
   let set_symbol_alias s1 s2 =
@@ -590,6 +592,17 @@ module Conv(P:Param1) = struct
           let sym = add_constant block ex in
           Fsymbol(sym, ()), Value_symbol sym
 
+    | Fprim(Lambda.Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) as expr
+      when env.toplevel ->
+        let args, _approxs = conv_list_approx env args in
+        let block = Fprim(p, args, dbg, ()) in
+        let ex = new_descr (Value_mutable_block (tag, List.length args)) in
+        if not (List.for_all is_simple_constant args)
+        then block, Value_id ex
+        else
+          let sym = add_constant block ex in
+          Fsymbol(sym, ()), Value_symbol sym
+
     | Fprim(Lambda.Pfield i, [arg], dbg, _) ->
         let block, block_approx = conv_approx env arg in
         let approx = match get_descr block_approx with
@@ -708,6 +721,7 @@ module Conv(P:Param1) = struct
       (* inside the body of the function, we cannot access variables
          declared outside, so take a clean substitution table. *)
       let env = { env with sb = Variable.Map.empty } in
+      let env = { env with toplevel = false } in
 
       (* add informations about currently defined functions to
          allow direct call *)
@@ -801,7 +815,7 @@ module Conv(P:Param1) = struct
     | _ -> Not_const
 
 
-  let expr = conv empty_env P.expr
+  let expr = conv { empty_env with toplevel = true } P.expr
 
 end
 
@@ -863,6 +877,8 @@ module Prepare(P:Param2) = struct
         Value_closure { offset with closure = (aux_closure offset.closure) }
     | Value_set_of_closures clos ->
         Value_set_of_closures (aux_closure clos)
+    | Value_mutable_block (tag, size) ->
+        Value_mutable_block (tag, size)
 
   and aux_closure clos =
     { closure_id = clos.closure_id;

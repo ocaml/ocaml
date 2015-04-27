@@ -248,11 +248,13 @@ module Conv(P:Param2) = struct
 
   type env =
     { subst : ulambda Variable.Map.t;
-      var : Ident.t Variable.Map.t }
+      var : Ident.t Variable.Map.t;
+      toplevel : bool }
 
   let empty_env =
     { subst = Variable.Map.empty;
-      var = Variable.Map.empty }
+      var = Variable.Map.empty;
+      toplevel = false }
 
   let add_sb id subst env =
     { env with subst = Variable.Map.add id subst env.subst }
@@ -399,6 +401,18 @@ module Conv(P:Param2) = struct
         | Some l ->
             let cst = Uconst_block (tag,l) in
             let lbl = structured_constant_label expected_symbol ~shared:true cst in
+            Uconst(Uconst_ref (lbl, Some (cst)))
+        end
+
+    | Fprim(Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) when
+        env.toplevel ->
+        let args = conv_list env args in
+        begin match constant_list args with
+        | None ->
+            Uprim(p, args, dbg)
+        | Some l ->
+            let cst = Uconst_block (tag,l) in
+            let lbl = structured_constant_label expected_symbol ~shared:false cst in
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
@@ -713,11 +727,11 @@ module Conv(P:Param2) = struct
     in
     List.fold_left (fun acc sym ->
         let lam = SymbolMap.find sym P.constants in
-        let ulam = conv empty_env ~expected_symbol:sym lam in
+        let ulam = conv { empty_env with toplevel = true } ~expected_symbol:sym lam in
         SymbolMap.add sym (structured_constant_for_symbol sym ulam) acc)
       SymbolMap.empty sorted_symbols
 
-  let res = conv empty_env P.expr
+  let res = conv { empty_env with toplevel = true } P.expr
 
 end
 
