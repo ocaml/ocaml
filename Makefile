@@ -495,6 +495,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
+	    -e 's|%%TARGET_WORD_SIZE%%|$(TARGET_WORD_SIZE)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::

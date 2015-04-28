@@ -42,6 +42,7 @@ TOOLCHAIN=msvc
 # cross-compiling or not so setting them to the same value is what matters.
 HOST=msvc
 TARGET=$(HOST)
+TARGET_WORD_SIZE=32
 
 CCOMPTYPE=msvc
 O=obj

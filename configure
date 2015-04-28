@@ -506,9 +506,11 @@ if test "$?" -eq 0; then
   case "$3" in
     4) inf "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h
+       target_word_size=32
        arch64=false;;
     8) inf "Wow! A 64 bit architecture!"
        echo "#define ARCH_SIXTYFOUR" >> m.h
+       target_word_size=64
        arch64=true;;
     *) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
            "OCaml won't run on this architecture.";;
@@ -519,10 +521,12 @@ else
     i686-*-mingw*|armv*-*) inf "OK, this is a regular 32 bit architecture."
                    echo "#undef ARCH_SIXTYFOUR" >> m.h
                    set 4 4 4 2 8
+                   target_word_size=32
                    arch64=false;;
     x86_64-*-mingw*|arm64-*) inf "Wow! A 64 bit architecture!"
                      echo "#define ARCH_SIXTYFOUR" >> m.h
                      set 4 4 8 2 8
+                     target_word_size=64
                      arch64=true;;
     *) err "Since datatype sizes cannot be guessed when cross-compiling,\n" \
            "a hardcoded list is used but your architecture isn't known yet.\n" \
@@ -1752,6 +1756,7 @@ echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
+echo "TARGET_WORD_SIZE=$target_word_size" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile

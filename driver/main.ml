@@ -140,7 +140,21 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
+let sanity() =
+  (* For cross-compilers: check whether the host compiler has the same
+     Sys.word_size as the target arch.
+     This check is better done in the configure script, but is difficult
+     to do there, because we only have the host ocamlrun at this point.
+   *)
+  let host_word_size = Sys.word_size in
+  if host_word_size <> target_word_size then
+    fatal "Build error of the cross compiler: The word size of the host \
+           architecture does not match the word size of the target \
+           architecture";
+  ()
+
 let main () =
+  sanity();
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;

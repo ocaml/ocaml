@@ -47,6 +47,7 @@ TOOLCHAIN=mingw
 
 ### Toolchain prefix
 TARGET=i686-w64-mingw32
+TARGET_WORD_SIZE=32
 HOST=i686-w64-mingw32
 
 TOOLPREF=$(TARGET)-
