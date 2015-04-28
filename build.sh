@@ -9,7 +9,7 @@ arch=armv7
 # valid for phone: armv6, armv7, armv7s, arm64
 # valid for simulator: i386, x86_64
 
-sdk=8.1
+sdk=8.3
 
 
 export PLT="/Applications/Xcode.app/Contents/Developer/Platforms/${platform}.platform"
