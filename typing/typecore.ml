@@ -4066,7 +4066,7 @@ let report_error env ppf = function
         "@[Exception patterns must be at the top level of a match case.@]"
   | Effect_pattern_below_toplevel ->
       fprintf ppf
-        "@[Exception patterns must be at the top level of a match case.@]"
+        "@[Effect patterns must be at the top level of a match case.@]"
   | Invalid_continuation_pattern ->
       fprintf ppf
         "@[Invalid continuation pattern: only variables and _ are allowed .@]"
