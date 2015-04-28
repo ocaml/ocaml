@@ -1,4 +1,4 @@
-/* The following defs are from cross-fixup-arm-macosx-s.h: */
+/* The following defs are from cross-fixup-arm64-macosx-s.h: */
 #define POSIX_SIGNALS
 #define HAS_C99_FLOAT_OPS
 #define HAS_GETRUSAGE
