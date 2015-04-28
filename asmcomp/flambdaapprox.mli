@@ -70,6 +70,8 @@ type descr =
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_offset
+  | Value_string of Flambdaexport.value_string
+  | Value_float_array of int (* size *)
   | Value_unknown
   | Value_bottom
   | Value_extern of Flambdaexport.ExportId.t

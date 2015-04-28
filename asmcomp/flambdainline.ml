@@ -190,6 +190,7 @@ let transform_variable_in_closure_expression env r expr vc_closure
       Printflambda.flambda vc_closure
       Printflambda.flambda fenv_field.vc_closure;
     assert false
+  | Value_string _ | Value_float_array _
   | Value_block _ | Value_int _ | Value_constptr _
   | Value_float _ | A.Value_boxed_int _ | Value_set_of_closures _
   | Value_bottom | Value_extern _ | Value_symbol _ ->
@@ -251,6 +252,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
       ret r (A.value_unresolved sym)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
   | A.Value_boxed_int _ | Value_unknown | Value_bottom | Value_extern _
+  | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Format.printf "%a@.%a@." Closure_id.print closure_id
       Printflambda.flambda fu_closure;

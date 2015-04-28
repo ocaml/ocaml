@@ -28,14 +28,20 @@ type _ boxed_int =
   | Int64 : int64 boxed_int
   | Nativeint : nativeint boxed_int
 
+type value_string = {
+  contents : string option; (* None if unknown or mutable *)
+  size : int;
+}
+
 type descr =
   | Value_block of tag * approx array
   | Value_mutable_block of tag * int
   | Value_int of int
   | Value_constptr of int
   | Value_float of float
+  | Value_float_array of int
   | Value_boxed_int : 'a boxed_int * 'a -> descr
-  | Value_string
+  | Value_string of value_string
   | Value_closure of value_offset
   | Value_set_of_closures of value_closure
 

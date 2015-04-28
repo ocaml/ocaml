@@ -114,6 +114,10 @@ let const_int_expr expr n eid =
   if Flambdaeffects.no_effects expr
   then A.make_const_int n eid
   else expr, A.value_int n
+let const_char_expr expr c eid =
+  if Flambdaeffects.no_effects expr
+  then A.make_const_int (Char.code c) eid
+  else expr, A.value_int (Char.code c)
 let const_ptr_expr expr n eid =
   if Flambdaeffects.no_effects expr
   then A.make_const_ptr n eid
@@ -401,6 +405,18 @@ let primitive (p : Lambda.primitive) (args, approxs) expr : _ Flambda.t * A.t =
     | [A.Value_boxed_int(A.Int64, n1); Value_int n2] ->
       Simplify_boxed_int64.simplify_binop_int p Int64 expr n1 n2 eid
     | [Value_block _] when p = Pisint -> const_bool_expr expr false eid
+    | [Value_string { size }] when p = Pstringlength ->
+        Printf.printf "\nstring length\n\n%!";
+        const_int_expr expr size eid
+    | [Value_string { size; contents = Some s };
+       (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
+        begin match p with
+        | Pstringrefu
+        | Pstringrefs ->
+            Printf.printf "\nstring get\n\n%!";
+            const_char_expr expr s.[x] eid
+        | _ -> expr, A.value_unknown
+        end
     | _ -> expr, A.value_unknown
 
 let rename_var var =

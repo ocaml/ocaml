@@ -29,6 +29,8 @@ type descr =
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
   | Value_closure of value_offset
+  | Value_string of Flambdaexport.value_string
+  | Value_float_array of int (* size *)
   | Value_unknown
   | Value_bottom
   | Value_extern of Flambdaexport.ExportId.t
@@ -76,6 +78,20 @@ let rec print_descr ppf = function
   | Value_unresolved sym ->
     Format.fprintf ppf "(unresolved %a)" Symbol.print sym
   | Value_float f -> Format.pp_print_float ppf f
+  | Value_string { contents; size } -> begin
+      match contents with
+      | None ->
+          Format.fprintf ppf "string %i" size
+      | Some s ->
+          let s =
+            if size > 10
+            then String.sub s 0 8 ^ "..."
+            else s
+          in
+          Format.fprintf ppf "string %i %S" size s
+    end
+  | Value_float_array size ->
+      Format.fprintf ppf "float_array %i" size
   | Value_boxed_int (t, i) ->
     match t with
     | Int32 -> Format.fprintf ppf "%li" i
@@ -101,6 +117,9 @@ let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some sym }
 let value_bottom = approx Value_bottom
 let value_unresolved sym = approx (Value_unresolved sym)
 
+let value_string size contents = approx (Value_string {size; contents })
+let value_float_array size = approx (Value_float_array size)
+
 let make_const_int n eid =
   Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
 let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
@@ -119,7 +138,7 @@ let const_approx = function
       begin match const with
       | Const_int i -> value_int i
       | Const_char c -> value_int (Char.code c)
-      | Const_string _ -> value_unknown
+      | Const_string (s,_) -> value_string (String.length s) None
       | Const_float s -> value_float (float_of_string s)
       | Const_int32 i -> value_boxed_int Int32 i
       | Const_int64 i -> value_boxed_int Int64 i
@@ -127,8 +146,10 @@ let const_approx = function
       end
   | Fconst_pointer i -> value_constptr i
   | Fconst_float f -> value_float f
-  | Fconst_float_array _ -> value_unknown
-  | Fconst_immstring _ -> value_unknown
+  | Fconst_float_array a ->
+      value_float_array (List.length a)
+  | Fconst_immstring s ->
+      value_string (String.length s) (Some s)
 
 let check_constant_result (lam : 'a flambda) approx =
   if Flambdaeffects.no_effects lam then
@@ -143,6 +164,7 @@ let check_constant_result (lam : 'a flambda) approx =
       make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
       Fsymbol(sym, Flambdautils.data_at_toplevel_node lam), approx
+    | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
       lam, approx
@@ -165,6 +187,7 @@ let known t =
   match t.descr with
   | Value_unresolved _
   | Value_unknown -> false
+  | Value_string _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_constptr _
   | Value_set_of_closures _ | Value_closure _ | Value_extern _
   | Value_float _ | Value_boxed_int _ | Value_symbol _ -> true
@@ -172,14 +195,17 @@ let known t =
 let useful t =
   match t.descr with
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
+  | Value_string _ | Value_float_array _
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
   | Value_symbol _ -> true
 
 let is_certainly_immutable t =
   match t.descr with
+  | Value_string { contents = Some _ }
   | Value_block _ | Value_int _ | Value_constptr _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ -> true
+  | Value_string { contents = None } | Value_float_array _
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
@@ -191,12 +217,25 @@ let get_field i = function
       if i >= 0 && i < Array.length fields
       then fields.(i)
       else value_unknown
-    | Value_int _ | Value_constptr _ | Value_float _ | Value_boxed_int _
+    | Value_bottom
+    | Value_int _ | Value_constptr _ ->
+        (* Something seriously wrong is happening: either the user is doing something
+           exceptionnaly unsafe, or it is an unreachable branch:
+           We consider this is unreachable and mark the result as it *)
+        value_bottom
+    | Value_float_array _ ->
+        (* float_arrays are immutable *)
+        value_unknown
+    | Value_string _ | Value_float _ | Value_boxed_int _  (* The user is doing something unsafe *)
     | Value_set_of_closures _ | Value_closure _
-    | Value_unknown | Value_bottom
-    | Value_symbol _ | Value_extern _ ->
-      value_unknown
+    (* This is used by CamlinternalMod... *)
+    | Value_symbol _ | Value_extern _
+      (* Should have been resolved *)
+    | Value_unknown ->
+        value_unknown
     | Value_unresolved sym ->
+        (* We don't know anything, but we must remember that it comes
+           from another compilation unit in case it contained a closure *)
       value_unresolved sym
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
@@ -291,8 +330,9 @@ module Import = struct
       | Value_int i -> value_int i
       | Value_constptr i -> value_constptr i
       | Value_float f -> value_float f
+      | Value_float_array size -> value_float_array size
       | Value_boxed_int (t,i) -> value_boxed_int t i
-      | Value_string -> value_unknown
+      | Value_string { size; contents } -> value_string size contents
       | Value_mutable_block _ -> value_unknown
       | Value_block (tag, fields) ->
           value_block (tag, Array.map import_approx fields)
