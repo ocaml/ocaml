@@ -24,6 +24,8 @@ external swapnative : nativeint -> nativeint = "%bswap_native"
 let lift_lets tree =
   let rec aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
+    | Fsequence(Flet(str, v, def, body, d1), seq, dseq) ->
+        Flet(str, v, def, Fsequence( aux body, seq, dseq), d1)
     | Flet(str1, v1, Flet(str2, v2, def2, body2, d2), body1, d1) ->
         Flet(str2, v2, def2, aux (Flet(str1, v1, body2, body1, d1)), d2)
     | e -> e
