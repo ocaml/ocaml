@@ -132,6 +132,7 @@ value * caml_gc_regs;
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 static link * caml_dyn_globals = NULL;
+static link * caml_dyn_globals_scanned = NULL;
 
 void caml_register_dyn_global(void *v) {
   caml_dyn_globals = cons((void*) v,caml_dyn_globals);
@@ -170,11 +171,13 @@ void caml_oldify_local_roots (void)
 
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
+    if (caml_dyn_globals_scanned == lnk) break;
     glob = (value) lnk->data;
     for (j = 0; j < Wosize_val(glob); j++){
       Oldify (&Field (glob, j));
     }
   }
+  caml_dyn_globals_scanned = caml_dyn_globals;
 
   /* The stack and local roots */
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
