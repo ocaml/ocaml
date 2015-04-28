@@ -8,6 +8,7 @@ let fx = new_var "x"
 let test_equal l f =
   let fl =
     Flambdagen.lambda_to_flambda
+      ~exported_fields:0
       ~current_compilation_unit:compilation_unit
       ~symbol_for_global':(fun _ -> assert false) l in
   equal f fl
