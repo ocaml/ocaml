@@ -38,7 +38,7 @@ let compat_names =
   )
 
 let ual_names =
-  ("vabs.f64", "vnmul.f64", "vmla.f64", "vnmla.f64", "vmls.f64", "vnmls.f64",
+  ("vabs.f64", "vnmul.f64", "vmla.f64", "vmls.f64", "vnmls.f64", "vnmla.f64",
    "vmov.f64", "vstr.64",   "vldr.64",  "vmov.f64",  "vldr.32",  "vcvt.f64.f32",
    "vcvt.f32.f64", "vstr.f32", "vneg.f64", "vsqrt.f64", "vadd.f64", "vsub.f64",
    "vmul.f64", "vdiv.f64"
