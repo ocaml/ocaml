@@ -38,7 +38,8 @@ module CstMap =
 type structured_constants =
   {
     strcst_shared: string CstMap.t;
-    strcst_all: (string * Clambda.ustructured_constant) list;
+    strcst_all: (string * Asttypes.mutable_flag *
+                 Clambda.ustructured_constant) list;
   }
 
 let structured_constants_empty  =
@@ -246,7 +247,8 @@ let new_const_symbol () =
 let snapshot () = !structured_constants
 let backtrack s = structured_constants := s
 
-let new_structured_constant cst ~shared =
+let new_structured_constant ?(mutability=Asttypes.Immutable) cst ~shared =
+  assert(not (mutability = Asttypes.Mutable && shared));
   let {strcst_shared; strcst_all} = !structured_constants in
   if shared then
     try
@@ -256,7 +258,7 @@ let new_structured_constant cst ~shared =
       structured_constants :=
         {
           strcst_shared = CstMap.add cst lbl strcst_shared;
-          strcst_all = (lbl, cst) :: strcst_all;
+          strcst_all = (lbl, mutability, cst) :: strcst_all;
         };
       lbl
   else
@@ -264,17 +266,27 @@ let new_structured_constant cst ~shared =
     structured_constants :=
       {
         strcst_shared;
-        strcst_all = (lbl, cst) :: strcst_all;
+        strcst_all = (lbl, mutability, cst) :: strcst_all;
       };
     lbl
 
 let add_exported_constant s =
   Hashtbl.replace exported_constants s ()
 
+type structured_constant = {
+  label : string;
+  exported : bool;
+  mutability : Asttypes.mutable_flag;
+  value : Clambda.ustructured_constant;
+}
+
 let structured_constants () =
   List.map
-    (fun (lbl, cst) ->
-       (lbl, Hashtbl.mem exported_constants lbl, cst)
+    (fun (lbl, mutability, cst) ->
+       { label = lbl;
+         exported = Hashtbl.mem exported_constants lbl;
+         mutability;
+         value = cst }
     ) (!structured_constants).strcst_all
 
 (* Error report *)
