@@ -218,16 +218,19 @@ int caml_page_table_remove(int kind, void * start, void * end)
 
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
-   [request] must be a multiple of [Page_size].
-   [caml_alloc_for_heap] returns NULL if the request cannot be satisfied.
-   The returned pointer is a hp, but the header must be initialized by
-   the caller.
+   [request] will be rounded up to some implementation-dependent size.
+   The caller must use [Chunk_size] on the result to recover the actual
+   size.
+   Return NULL if the request cannot be satisfied. The returned pointer
+   is a hp, but the header (and the contents) must be initialized by the
+   caller.
 */
 char *caml_alloc_for_heap (asize_t request)
 {
   char *mem;
   void *block;
-                                              Assert (request % Page_size == 0);
+
+  request = ((request + Page_size - 1) >> Page_log) << Page_log;
   mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
                              sizeof (heap_chunk_head), &block);
   if (mem == NULL) return NULL;
@@ -308,13 +311,13 @@ static char *expand_heap (mlsize_t request)
 
   Assert (request <= Max_wosize);
   over_request = request + request / 100 * caml_percent_free;
-  malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (over_request));
+  malloc_request = caml_clip_heap_chunk_size (Bhsize_wosize (over_request));
   mem = caml_alloc_for_heap (malloc_request);
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
   }
-  remain = malloc_request;
+  remain = Chunk_size (mem);
   prev = hp = mem;
   /* FIXME find a way to do this with a call to caml_make_free_blocks */
   while (Wosize_bhsize (remain) > Max_wosize){

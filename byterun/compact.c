@@ -429,7 +429,7 @@ void caml_compact_heap (void)
   live = Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size;
   target_words = live + caml_percent_free * (live / 100 + 1)
                  + Wsize_bsize (Page_size);
-  target_size = caml_round_heap_chunk_size (Bsize_wsize (target_words));
+  target_size = caml_clip_heap_chunk_size (Bsize_wsize (target_words));
   if (target_size < caml_stat_heap_size / 2){
     char *chunk;
 

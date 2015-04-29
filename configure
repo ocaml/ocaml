@@ -47,6 +47,7 @@ with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
+with_mmap_heap=true
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -158,6 +159,8 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -no-mmap-heap|--no-mmap-heap)
+        with_mmap_heap=false;;
     *) err "Unknown option \"$1\".";;
   esac
   shift
@@ -1646,6 +1649,19 @@ fi
 
 if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
+fi
+
+# Check for mmap support for contiguous heap
+
+if ! $with_mmap_heap; then
+    echo "mmap heap support: disabled by command-line option -no-mmap-heap"
+elif ! $arch64; then
+    echo "mmap heap support: not available on 32-bit architectures"
+elif sh ./runtest mmap.c; then
+    echo "#define MMAP_HEAP" >> s.h
+    echo "mmap heap support: supported"
+else
+    echo "mmap heap support: not available"
 fi
 
 # Final twiddling of compiler options to work around known bugs
