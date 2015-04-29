@@ -2370,6 +2370,17 @@ let emit_all_constants cont =
   constant_closures := [];
   !c
 
+(* Build the table of mutable structured constants *)
+
+let emit_mutable_globals_table ~glob ~symbols cont =
+  let table_symbol = Compilenv.make_symbol (Some "mutable_globals") in
+  Cdata(Cglobal_symbol table_symbol ::
+        Cdefine_symbol table_symbol ::
+        Csymbol_address glob ::
+        List.map (fun s -> Csymbol_address s) symbols @
+        [Cint 0n])
+  :: cont
+
 (* Translate a compilation unit *)
 
 let compunit size ulam =
@@ -2381,6 +2392,7 @@ let compunit size ulam =
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
+  let c4 = emit_mutable_globals_table ~glob ~symbols:[] c3 in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -2392,7 +2404,7 @@ let compunit size ulam =
   in
   Cdata ([Cint(black_block_header 0 size);
          Cglobal_symbol glob;
-         Cdefine_symbol glob] @ space) :: c3
+         Cdefine_symbol glob] @ space) :: c4
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
@@ -2723,7 +2735,7 @@ let cint_zero = Cint 0n
 
 let global_table namelist =
   let mksym name =
-    Csymbol_address (Compilenv.make_symbol ~unitname:name None)
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "mutable_globals"))
   in
   Cdata(Cglobal_symbol "caml_globals" ::
         Cdefine_symbol "caml_globals" ::

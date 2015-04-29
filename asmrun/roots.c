@@ -153,7 +153,7 @@ void caml_oldify_local_roots (void)
 #else
   unsigned short * p;
 #endif
-  value glob;
+  value * glob;
   value * root;
   struct caml__roots_block *lr;
   link *lnk;
@@ -162,9 +162,10 @@ void caml_oldify_local_roots (void)
   for (i = caml_globals_scanned;
        i <= caml_globals_inited && caml_globals[i] != 0;
        i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++){
-      Oldify (&Field (glob, j));
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        Oldify (&Field (*glob, j));
+      }
     }
   }
   caml_globals_scanned = caml_globals_inited;
@@ -172,9 +173,10 @@ void caml_oldify_local_roots (void)
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
     if (caml_dyn_globals_scanned == lnk) break;
-    glob = (value) lnk->data;
-    for (j = 0; j < Wosize_val(glob); j++){
-      Oldify (&Field (glob, j));
+    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        Oldify (&Field (*glob, j));
+      }
     }
   }
   caml_dyn_globals_scanned = caml_dyn_globals;
@@ -256,21 +258,23 @@ void caml_darken_all_roots (void)
 void caml_do_roots (scanning_action f)
 {
   int i, j;
-  value glob;
+  value * glob;
   link *lnk;
 
   /* The global roots */
   for (i = 0; caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++)
-      f (Field (glob, j), &Field (glob, j));
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++)
+        f (Field (*glob, j), &Field (*glob, j));
+    }
   }
 
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
-    glob = (value) lnk->data;
-    for (j = 0; j < Wosize_val(glob); j++){
-      f (Field (glob, j), &Field (glob, j));
+    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f (Field (*glob, j), &Field (*glob, j));
+      }
     }
   }
 
