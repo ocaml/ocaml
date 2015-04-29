@@ -267,6 +267,12 @@ let make_const_natint n = make_const_ref (Uconst_nativeint n)
 let make_const_int32 n = make_const_ref (Uconst_int32 n)
 let make_const_int64 n = make_const_ref (Uconst_int64 n)
 
+(* Maintain the nesting depth for functions *)
+
+let loop_nesting_depth = ref 0
+let function_nesting_depth = ref 0
+let excessive_function_nesting_depth = 5
+
 (* The [fpc] parameter is true if constant propagation of
    floating-point computations is allowed *)
 
@@ -467,6 +473,28 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
+  (* Mutable block construction: if the block is allocated at toplevel
+     (i.e. function_nesting_depth = 0 && loop_nesting_depth = 0) then
+     this expression will be evaluated only once, so it is correct
+     to share 'every' allocations. *)
+  | Pmakeblock(tag, Mutable), _, _
+    when !function_nesting_depth = 0 && !loop_nesting_depth = 0 ->
+      let field = function
+        | Value_const c -> c
+        | _ -> raise Exit
+      in
+      begin try
+        let cst = Uconst_mutable_block (tag, List.map field approxs) in
+        let name =
+          Compilenv.new_structured_constant cst
+            ~shared:false ~mutability:Asttypes.Mutable
+          (* A mutable value must not be hasconsed (shared = false), and must
+             be traversed by the GC (mutablility = Mutable) *)
+        in
+        make_const (Uconst_ref (name, cst))
+      with Exit ->
+        (Uprim(p, args, dbg), Value_unknown)
+      end
   (* Field access *)
   | Pfield n, _, [ Value_const(Uconst_ref(_, Uconst_block(_, l))) ]
     when n < List.length l ->
@@ -634,12 +662,17 @@ let rec substitute fpc sb ulam =
       end
   | Usequence(u1, u2) ->
       Usequence(substitute fpc sb u1, substitute fpc sb u2)
-  | Uwhile(u1, u2) ->
-      Uwhile(substitute fpc sb u1, substitute fpc sb u2)
-  | Ufor(id, u1, u2, dir, u3) ->
+  | Uwhile(cond, body) ->
+      incr loop_nesting_depth;
+      let body = substitute fpc sb body in
+      decr loop_nesting_depth;
+      Uwhile(substitute fpc sb cond, body)
+  | Ufor(id, u1, u2, dir, body) ->
       let id' = Ident.rename id in
-      Ufor(id', substitute fpc sb u1, substitute fpc sb u2, dir,
-           substitute fpc (Tbl.add id (Uvar id') sb) u3)
+      incr loop_nesting_depth;
+      let body = substitute fpc (Tbl.add id (Uvar id') sb) body in
+      decr loop_nesting_depth;
+      Ufor(id', substitute fpc sb u1, substitute fpc sb u2, dir, body)
   | Uassign(id, u) ->
       let id' =
         try
@@ -757,11 +790,6 @@ let sequence_constant_expr lam ulam1 (ulam2, approx2 as res2) =
 (* Maintain the approximation of the global structure being defined *)
 
 let global_approx = ref([||] : value_approximation array)
-
-(* Maintain the nesting depth for functions *)
-
-let function_nesting_depth = ref 0
-let excessive_function_nesting_depth = 5
 
 (* Decorate clambda term with debug information *)
 
@@ -1038,12 +1066,16 @@ let rec close fenv cenv = function
       (Usequence(ulam1, ulam2), approx)
   | Lwhile(cond, body) ->
       let (ucond, _) = close fenv cenv cond in
+      incr loop_nesting_depth;
       let (ubody, _) = close fenv cenv body in
+      decr loop_nesting_depth;
       (Uwhile(ucond, ubody), Value_unknown)
   | Lfor(id, lo, hi, dir, body) ->
       let (ulo, _) = close fenv cenv lo in
       let (uhi, _) = close fenv cenv hi in
+      incr loop_nesting_depth;
       let (ubody, _) = close fenv cenv body in
+      decr loop_nesting_depth;
       (Ufor(id, ulo, uhi, dir, ubody), Value_unknown)
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
@@ -1276,7 +1308,7 @@ let collect_exported_structured_constants a =
         structured_constant c
     | Uconst_int _ | Uconst_ptr _ -> ()
   and structured_constant = function
-    | Uconst_block (_, ul) -> List.iter const ul
+    | Uconst_block (_, ul) | Uconst_mutable_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _
     | Uconst_int64 _ | Uconst_nativeint _
     | Uconst_float_array _ | Uconst_string _ -> ()
@@ -1324,6 +1356,7 @@ let intro size lam =
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, approx) = close Tbl.empty Tbl.empty lam in
+  assert(!loop_nesting_depth = 0);
   if !Clflags.opaque
   then Compilenv.set_global_approx(Value_unknown)
   else collect_exported_structured_constants (Value_tuple !global_approx);
