@@ -633,10 +633,10 @@ static void transfer_mutex(struct domain* self, void *reqp)
   struct mutex_transfer_req *req = reqp;
   value mutex = req->mutex;
   int target_id = req->target;
-  int owner_id = Int_val(FieldImm(mutex, 1));
+  int owner_id = Int_val(Field(mutex, 1));
 
   if(owner_id == self->id) {
-    if(FieldImm(mutex, 0) == Val_long(0)) {
+    if(Field(mutex, 0) == Val_long(0)) {
       caml_modify_field(mutex, 1, Val_int(target_id));
     }
   }
@@ -649,7 +649,7 @@ CAMLprim value caml_domain_lock(value mutex)
   int self_id, owner_id;
   struct mutex_transfer_req req;
 
-  owner_id = Int_val(FieldImm(mutex, 1));
+  owner_id = Int_val(Field(mutex, 1));
 
   self_id = domain_self->state.id;
 
@@ -659,7 +659,7 @@ CAMLprim value caml_domain_lock(value mutex)
     req.target = self_id;
     caml_domain_rpc(owner, &transfer_mutex, &req);
 
-    owner_id = Int_val(FieldImm(mutex, 1));
+    owner_id = Int_val(Field(mutex, 1));
   }
 
   caml_modify_field(mutex, 0, Val_long(1));
@@ -672,12 +672,13 @@ CAMLprim value caml_domain_unlock(value mutex)
   CAMLparam0();
   int self_id, owner_id;
 
-  owner_id = Int_val(FieldImm(mutex, 1));
+  owner_id = Int_val(Field(mutex, 1));
 
   self_id = domain_self->state.id;
 
   if(owner_id == self_id) {
     caml_modify_field(mutex, 0, Val_long(0));
+    check_rpc();
   }
 
   CAMLreturn(Val_long(0));
