@@ -18,6 +18,8 @@ type stuff = {
   mutable stuff : stuff option;
 }
 
+exception Stuff of stuff
+
 let () =
   let x0 = Gc.allocated_bytes () in
   let x1 = Gc.allocated_bytes () in
@@ -31,6 +33,7 @@ let () =
   let p1 = (v, v) in
   let g () = (snd p1, fst p1) in
   assert (g () == p1);
+  try raise (Stuff v) with Stuff _ -> ();
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
      (* check that we did not allocated anything between x1 and x2 *)

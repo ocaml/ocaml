@@ -58,10 +58,12 @@ let transl_extension_constructor env path ext =
   in
   match ext.ext_kind with
     Text_decl(args, ret) ->
-      Lprim(prim_set_oo_id,
-            [Lprim(Pmakeblock(Obj.object_tag, Mutable),
-                   [Lconst(Const_base(Const_string (name,None)));
-                    Lconst(Const_base(Const_int 0))])])
+      let id = Ident.create "set_oo_id" in
+      Llet(Strict, id,
+           Lprim(Pmakeblock(Obj.object_tag, Mutable),
+                 [Lconst(Const_base(Const_string (name,None)));
+                  Lconst(Const_base(Const_int 0))]),
+           Lsequence(Lprim(prim_set_oo_id, [Lvar id]), Lvar id))
   | Text_rebind(path, lid) ->
       transl_path ~loc:ext.ext_loc env path
 
