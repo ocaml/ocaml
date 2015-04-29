@@ -53,7 +53,7 @@ all: libvmthreads.a threads.cma stdlib.cma unix.cma
 allopt:
 
 libvmthreads.a: $(C_OBJS)
-	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
+	$(MKLIB) -o threads -oc vmthreads $(C_OBJS) $(BYTECAMLRUN)
 
 threads.cma: $(CAML_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)

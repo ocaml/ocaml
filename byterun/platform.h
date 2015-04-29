@@ -14,7 +14,9 @@ FIXME: This file should use C11 atomics if they are available.
 #endif
 */
 
-
+#if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__GNUC__)
 #define INLINE static inline
