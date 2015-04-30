@@ -404,6 +404,7 @@ module Conv(P:Param2) = struct
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
 
+(*  (* If global mutables are allowed: *)
     | Fprim(Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) when
         env.toplevel ->
         let args = conv_list env args in
@@ -415,6 +416,7 @@ module Conv(P:Param2) = struct
             let lbl = structured_constant_label expected_symbol ~shared:false cst in
             Uconst(Uconst_ref (lbl, Some (cst)))
         end
+*)
 
     | Fprim(p, args, dbg, _) ->
         Uprim(p, conv_list env args, dbg)

@@ -594,6 +594,7 @@ module Conv(P:Param1) = struct
           let sym = add_constant block ex in
           Fsymbol(sym, ()), Value_symbol sym
 
+(*  (* If global mutables are allowed: *)
     | Fprim(Lambda.Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _)
       when env.toplevel ->
         let args, _approxs = conv_list_approx env args in
@@ -604,6 +605,7 @@ module Conv(P:Param1) = struct
         else
           let sym = add_constant block ex in
           Fsymbol(sym, ()), Value_symbol sym
+*)
 
     | Fprim(Lambda.Pfield i, [arg], dbg, _) ->
         let block, block_approx = conv_approx env arg in

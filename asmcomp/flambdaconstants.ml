@@ -206,9 +206,11 @@ module NotConstants(P:Param) = struct
     | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg, _) ->
       List.iter (mark_loop ~toplevel curr) args
 
+(*  (* If global mutables are allowed: *)
     | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
       when for_clambda && toplevel ->
       List.iter (mark_loop ~toplevel curr) args
+*)
 
     | Fclosure ({fu_closure; fu_fun; _}, _) ->
       if Closure_id.in_compilation_unit compilation_unit fu_fun
