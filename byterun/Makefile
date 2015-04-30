@@ -58,9 +58,9 @@ clean::
 	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $< -o $@
 
 depend : prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
-	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) *.c > .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	-$(CC) -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 
 include .depend

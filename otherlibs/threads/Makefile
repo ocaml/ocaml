@@ -123,7 +123,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
+	$(CC) -MM $(CFLAGS) *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

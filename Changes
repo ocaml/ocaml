@@ -932,6 +932,7 @@ Feature wishes:
   (Benedikt Meurer)
 - PR#5243: improve the ocamlbuild API documentation in signatures.mli
   (Christophe Troestler)
+- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#5546: moving a function into an internal module slows down its use
   (Alain Frisch, report by Fabrice Le Fessant)
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM

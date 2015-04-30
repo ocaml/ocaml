@@ -106,7 +106,7 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: $(GENFILES)
-	-gcc -MM -I../../byterun *.c > .depend
+	-$(CC) -MM -I../../byterun *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
