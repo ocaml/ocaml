@@ -104,6 +104,7 @@ Bug fixes:
 - PR#6770: (duplicate of PR#6686)
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
+- PR#6779: Cross-compilers cannot link bytecode using custom primitives
 - PR#6787: Soundness bug with polymorphic variants
 - PR#6790: otherlibs should be built with -g
 - PR#6791: "%s@[", "%s@{" regression in Scanf
