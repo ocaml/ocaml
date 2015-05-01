@@ -341,6 +341,12 @@ let check_consistency ps =
 
 (* Reading persistent structures from .cmi files *)
 
+let save_pers_struct crc ps =
+  let modname = ps.ps_name in
+  Hashtbl.add persistent_structures modname (Some ps);
+  Consistbl.set crc_units modname crc ps.ps_filename;
+  add_import modname
+
 let read_pers_struct modname filename =
   let cmi = read_cmi filename in
   let name = cmi.cmi_name in
@@ -382,6 +388,10 @@ let find_pers_struct ?(check=true) name =
     | Some None -> raise Not_found
     | Some (Some sg) -> sg
     | None ->
+       (* PR#6843: record the weak dependency ([add_import]) even if
+          the [find_in_path_uncap] call below fails to find the .cmi,
+          to help make builds more deterministic. *)
+        add_import name;
         let filename =
           try find_in_path_uncap !load_path (name ^ ".cmi")
           with Not_found ->
@@ -1685,9 +1695,7 @@ let save_signature_with_imports sg modname filename imports =
         ps_flags = cmi.cmi_flags;
         ps_crcs_checked = false;
       } in
-    Hashtbl.add persistent_structures modname (Some ps);
-    Consistbl.set crc_units modname crc filename;
-    add_import modname;
+    save_pers_struct crc ps;
     sg
   with exn ->
     close_out oc;
