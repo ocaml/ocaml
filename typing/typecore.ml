@@ -2001,7 +2001,7 @@ and type_expect_ ?in_function env sexp ty_expected =
                 if List.length provided_ltys > List.length expected_ltys then begin
                   Format.fprintf ppf "@[The function%a is applied to too many arguments.@]" show_func_name ();
                 end else begin
-                  Format.fprintf ppf "@[The function%a cannote be applied to the arguments provided.@]" show_func_name ();
+                  Format.fprintf ppf "@[The function%a cannot be applied to the arguments provided.@]" show_func_name ();
                 end;
                 Format.fprintf ppf "@.@.%s" (message_for_application_error_easytype (strings_of_type_list expected_ltys) (strings_of_type_list provided_ltys));
                 (* Note: classic inline version
