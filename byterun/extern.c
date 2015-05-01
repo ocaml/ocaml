@@ -409,7 +409,7 @@ static void extern_rec(value v)
       if (tag < 16) {
         Write(PREFIX_SMALL_BLOCK + tag);
       } else {
-        writecode32(CODE_BLOCK32, hd);
+        writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
       }
       goto next_item;
     }
@@ -504,12 +504,13 @@ static void extern_rec(value v)
     }
     default: {
       value field0;
+      header_t hd_erased = Hd_no_profinfo(hd);
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
-      } else if (hd >= ((uintnat)1 << 32)) {
+      } else if (hd_erased >= ((uintnat)1 << 32)) {
         /* Is this case useful?  The overflow check in extern_value will fail.*/
-        writecode64(CODE_BLOCK64, Whitehd_hd (hd));
+        writecode64(CODE_BLOCK64, Whitehd_hd (hd_erased));
 #endif
       } else {
 #ifdef ARCH_SIXTYFOUR
@@ -517,7 +518,7 @@ static void extern_rec(value v)
           extern_failwith("output_value: array cannot be read back on "
                           "32-bit platform");
 #endif
-        writecode32(CODE_BLOCK32, Whitehd_hd (hd));
+        writecode32(CODE_BLOCK32, Whitehd_hd (hd_erased));
       }
       size_32 += 1 + sz;
       size_64 += 1 + sz;
