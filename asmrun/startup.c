@@ -49,7 +49,7 @@ uintnat caml_lifetime_tracking = 0;
    now 16 = 128k
 */
 uintnat caml_lifetime_shift = 16;
-uintnat caml_allocation_profiling = 1;
+uintnat caml_allocation_profiling = 0;
 
 /* Initialize the atom table and the static data and code area limits. */
 
