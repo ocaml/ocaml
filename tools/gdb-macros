@@ -129,7 +129,7 @@ define camlheap
     set $found = 0
     while $chunk != 0 && ! $found
       set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
-      if $arg0 >= $chunk && $arg0 < $chunk + $chunk_size
+      if $arg0 > $chunk && $arg0 <= $chunk + $chunk_size
         printf "OLD"
         set $found = 1
       end
@@ -247,12 +247,69 @@ end
 
 # displays the list of heap chunks
 define camlchunks
-  set $chunk = caml_heap_start
+  set $chunk = * (unsigned long *) &caml_heap_start
   while $chunk != 0
     set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
     set $chunk_alloc = * (unsigned long *) ($chunk - 3 * $camlwordsize)
     printf "chunk: addr = %#x .. %#x", $chunk, $chunk + $chunk_size
     printf "  (size = %#x; alloc = %#x)\n", $chunk_size, $chunk_alloc
     set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
+  end
+end
+
+# walk the heap and launch command `camlvisitfun` on each block
+# the variables `$hp` `$val` `$hd` `$tag` `$color` and `$size`
+# are set before calling `camlvisitfun`
+# `camlvisitfun` can set `$camlvisitstop` to stop the iteration
+
+define camlvisit
+  set $cvchunk = * (unsigned long *) &caml_heap_start
+  set $camlvisitstop = 0
+  while $cvchunk != 0 && ! $camlvisitstop
+    set $cvchunk_size = * (unsigned long *) ($cvchunk - 2 * $camlwordsize)
+    set $cvhp = $cvchunk
+    while $cvhp < $cvchunk + $cvchunk_size && !$camlvisitstop
+      set $hp = $cvhp
+      set $val = $hp + $camlwordsize
+      set $hd = * (unsigned long *) $hp
+      set $tag = $hd & 0xFF
+      set $color = ($hd >> 8) & 3
+      set $cvsize = $hd >> 10
+      set $size = $cvsize
+      camlvisitfun
+      set $cvhp = $cvhp + (($cvsize + 1) * $camlwordsize)
+    end
+    set $cvchunk = * (unsigned long *) ($cvchunk - $camlwordsize)
+  end
+end
+
+define caml_cv_check_fl0
+  if $hp == * (unsigned long *) &caml_heap_start
+    set $flcheck_prev = ((unsigned long) &sentinels + 16)
+  end
+  if $color == 2 && $size > 5
+    if $val != * (unsigned long *) $flcheck_prev
+      printf "free-list: missing link %#x -> %#x\n", $flcheck_prev, $val
+      set $camlvisitstop = 1
+    end
+    set $flcheck_prev = $val
+  end
+end
+
+define caml_check_fl
+  set $listsize = $arg0
+  set $blueseen = $listsize == 0
+  set $val = * (unsigned long *) ((long) &sentinels + 16 + 32 * $listsize)
+  while $val != 0
+    printf "%#x\n", $val
+    set $hd = * (unsigned long *) ($val - 8)
+    set $color = ($hd >> 8) & 3
+    if $blueseen && $color != 2
+      printf "non-blue block at address %#x\n", $val
+      loop_break
+    else
+      set $blueseen = 1
+    end
+    set $val = * (unsigned long *) $val
   end
 end
