@@ -471,7 +471,7 @@ FUNCTION(G(caml_start_program))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial entry point is G(caml_program) */
-        leaq    GCALL(caml_program)(%rip), %r12
+        LEA_VAR(caml_program, %r12)
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */
@@ -636,7 +636,7 @@ CFI_STARTPROC
         movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
         movq    C_ARG_2, %rax      /* first argument */
         movq    C_ARG_3, %rbx      /* second argument */
-        leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
+        LEA_VAR(caml_apply2, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
@@ -649,13 +649,13 @@ CFI_STARTPROC
         movq    C_ARG_3, %rbx      /* second argument */
         movq    C_ARG_1, %rsi      /* closure */
         movq    C_ARG_4, %rdi      /* third argument */
-        leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
+        LEA_VAR(caml_apply3, %r12) /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
-        leaq    GCALL(caml_array_bound_error)(%rip), %rax
+        LEA_VAR(caml_array_bound_error, %rax)
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
 
