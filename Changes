@@ -176,10 +176,6 @@ OCamlbuild:
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
 
-Tools:
-- PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
-  (Peter Zotov)
-
 Bug fixes:
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
@@ -221,7 +217,6 @@ Bug fixes:
   (Gabriel Scherer, report by Alain Frisch)
 - PR#6836: Assertion failure using -short-paths
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
-- PR#6842: export Typemod.modtype_of_package
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
 - GPR#143: fix getsockopt behaviour for boolean socket options
@@ -231,6 +226,13 @@ Bug fixes:
 - allow android build with pthreads support (since SDK r10c)
   (Peter Zotov)
 
+Feature wishes:
+- PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
+  (Peter Zotov)
+- PR#6693: also build libasmrun_shared.so and lib{asm,caml}run_pic.a
+  (Peter Zotov, review by Mark Shinwell)
+- PR#6842: export Typemod.modtype_of_package
+  (Jacques Garrigue, request by Jun Furuse)
 
 OCaml 4.02.1:
 -------------

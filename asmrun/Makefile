@@ -19,6 +19,7 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
+PICFLAGS=$(FLAGS) -O $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
@@ -32,8 +33,9 @@ ASMOBJS=$(ARCH).o
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
+PICOBJS=$(COBJS:.o=.pic.o) $(ASMOBJS:.o=.pic.o)
 
-all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
+all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING) all-$(SHARED)
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -60,13 +62,26 @@ libasmrunp.a: $(POBJS)
 	$(ARCMD) rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
+all-noshared:
+
+all-shared: libasmrun_pic.a libasmrun_shared.so
+
+libasmrun_pic.a: $(PICOBJS)
+	rm -f libasmrun_pic.a
+	ar rc libasmrun_pic.a $(PICOBJS)
+	$(RANLIB) libasmrun_pic.a
+
+libasmrun_shared.so: $(PICOBJS)
+	$(MKDLL) -o libasmrun_shared.so $(PICOBJS) $(NATIVECCLIBS)
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-default install-$(RUNTIMED) install-$(PROFILING)
+install: install-default install-$(RUNTIMED) install-$(PROFILING) install-$(SHARED)
 
 install-default:
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
+.PHONY: install-default
 
 install-noruntimed:
 .PHONY: install-noruntimed
@@ -79,10 +94,21 @@ install-runtimed:
 install-noprof:
 	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
 	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
+.PHONY: install-noprof
 
 install-prof:
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+.PHONY: install-prof
+
+install-noshared:
+.PHONY: install-noshared
+
+install-shared:
+	cp libasmrun_pic.a $(INSTALL_LIBDIR)/libasmrun_pic.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
+.PHONY: install-prof
 
 power-bsd_elf.S: power-elf.S
 	cp power-elf.S power-bsd_elf.S
@@ -183,17 +209,26 @@ clean::
 %.p.o: %.S
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $@ $<
 
+%.pic.o: %.S
+	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(SHAREDCCCOMPOPTS) -o $@ $<
+
 %.d.o: %.c
 	$(CC) -c $(DFLAGS) -o $@ $<
 
 %.p.o: %.c
 	$(CC) -c $(PFLAGS) -o $@ $<
 
+%.pic.o: %.c
+	$(CC) -c $(PICFLAGS) -o $@ $<
+
 %.o: %.s
 	$(ASPP) -DSYS_$(SYSTEM) -o $@ $<
 
 %.p.o: %.s
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $@ $<
+
+%.pic.o: %.s
+	$(ASPP) -DSYS_$(SYSTEM) $(SHAREDCCCOMPOPTS) -o $@ $<
 
 clean::
 	rm -f *.o *.a *~
