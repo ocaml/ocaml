@@ -1736,6 +1736,11 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+if $shared_libraries_supported; then
+  echo "SHARED=shared" >>Makefile
+else
+  echo "SHARED=noshared" >>Makefile
+fi
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
