@@ -47,6 +47,11 @@ Libraries:
 - PR#6285: Add support for nanosecond precision in Unix.stat()
   (Jérémie Dimino, report by user 'gfxmonk')
 
+Tools:
+- PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
+  (Peter Zotov)
+- GPR#139: more versatile specification of locations of .annot
+
 Runtime:
 - PR#6675: GC hooks
   (Damien Doligez and Roshan James)
@@ -114,6 +119,7 @@ Bug fixes:
 - PR#6831: Build breaks for -aspp gcc on solaris-like OSs
 - PR#6836: Assertion failure using -short-paths
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
+- PR#6842: export Typemod.modtype_of_package
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
 - GPR#143: fix getsockopt behaviour for boolean socket options
@@ -124,16 +130,6 @@ Bug fixes:
   (Peter Zotov)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
-
-Feature wishes:
-- PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
-  (Peter Zotov)
-- PR#6693: also build libasmrun_shared.so and lib{asm,caml}run_pic.a
-  (Peter Zotov, review by Mark Shinwell)
-- PR#6842: export Typemod.modtype_of_package
-  (Jacques Garrigue, request by Jun Furuse)
-- GPR#139: more versatile specification of locations of .annot
-  (Christophe Troestler, review by Damien Doligez)
 
 OCaml 4.02.1:
 -------------
