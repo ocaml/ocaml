@@ -159,6 +159,8 @@ Compilers:
   incrementally (Jacques Garrigue)
 - PR#6642: replace $CAMLORIGIN in -ccopt with the path to cma or cmxa
   (Peter Zotov, Gabriel Scherer, review by Damien Doligez)
+- GPR#159: Better locations for structure/signature items
+  (Leo White)
 
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
