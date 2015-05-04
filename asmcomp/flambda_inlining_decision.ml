@@ -272,7 +272,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                 Flambdacost.Whether_sufficient_benefit.create body
                   ~probably_a_functor:false
                   (R.benefit r_inlined)
-                  inline_threshold
+                  (Can_inline 0)
               in
               let keep_unrolled_version =
                 if Flambdacost.Whether_sufficient_benefit.evaluate wsb then begin
