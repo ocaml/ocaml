@@ -406,7 +406,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr : _ Flambda.t * A.t =
       Simplify_boxed_int64.simplify_binop_int p Int64 expr n1 n2 eid
     | [Value_block _] when p = Pisint -> const_bool_expr expr false eid
     | [Value_string { size }] when p = Pstringlength ->
-        Printf.printf "\nstring length\n\n%!";
         const_int_expr expr size eid
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
