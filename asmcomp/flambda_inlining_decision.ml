@@ -84,6 +84,7 @@ let inline_non_recursive
       E.note_entering_closure env ~closure_id:fun_id
         ~where:Inline_by_copying_function_body
     in
+    let env = E.inlining_level_up env in
     loop env r body
   end else begin
     (* The function is not sufficiently good by itself, but may become if
