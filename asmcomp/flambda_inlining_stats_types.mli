@@ -28,12 +28,15 @@ module Inlined : sig
 end
 
 module Decision : sig
+  type level_exceeded =
+    | Level_exceeded of bool
+
   type t =
     | Function_obviously_too_large
     | Inlined of Inlined.t
     | Tried of Inlined.t
     | Did_not_try_copying_decl of Tried_unrolling.t
-    | Can_inline_but_tried_nothing
+    | Can_inline_but_tried_nothing of level_exceeded
 
   val to_string : t -> string
 end

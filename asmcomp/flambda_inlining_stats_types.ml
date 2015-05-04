@@ -41,12 +41,16 @@ module Inlined = struct
 end
 
 module Decision = struct
+
+  type level_exceeded =
+    | Level_exceeded of bool
+
   type t =
     | Function_obviously_too_large
     | Inlined of Inlined.t
     | Tried of Inlined.t
     | Did_not_try_copying_decl of Tried_unrolling.t
-    | Can_inline_but_tried_nothing
+    | Can_inline_but_tried_nothing of level_exceeded
 
   let to_string = function
     | Function_obviously_too_large -> "function obviously too large"
@@ -57,7 +61,11 @@ module Decision = struct
     | Did_not_try_copying_decl tried ->
       Printf.sprintf "did not try copying decl (%s)"
         (Tried_unrolling.to_string tried)
-    | Can_inline_but_tried_nothing -> "can inline, but tried nothing"
+    | Can_inline_but_tried_nothing (Level_exceeded b) ->
+        if b then
+          "can inline, but tried nothing, too deep into inlining"
+        else
+          "can inline, but tried nothing"
 end
 
 type where_entering_closure =

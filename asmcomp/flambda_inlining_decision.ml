@@ -251,6 +251,10 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
           ~no_transformation
           ~probably_a_functor
           ~args ~loop
+      else if E.inlining_level env > max_level then begin
+        record_decision (Can_inline_but_tried_nothing (Level_exceeded true));
+        no_transformation ()
+      end
       else if recursive then
         let tried_unrolling = ref false in
         let unrolling_result =
@@ -342,7 +346,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
             no_transformation ()
           end
       else begin
-        record_decision Can_inline_but_tried_nothing;
+        record_decision (Can_inline_but_tried_nothing (Level_exceeded false));
         no_transformation ()
       end
   in
