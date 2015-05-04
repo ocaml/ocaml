@@ -132,7 +132,8 @@ version.h : ../VERSION ../tools/make-version-header.sh
 	../tools/make-version-header.sh ../VERSION > version.h
 
 clean ::
-	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
+	rm -f ocamlrun$(EXE) ocamlrund$(EXE) ocamlruni$(EXE)
+	rm -f *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
 	rm -f version.h
 .PHONY: clean
