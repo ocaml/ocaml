@@ -432,8 +432,12 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
         body, r
       else begin
         match body with
-        | Fstaticraise(j, args, _) ->
-            assert(Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j));
+        | Fstaticraise(j, args, _) when
+            Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j) ->
+            (* This is usualy true, since whe checked that the static
+               exception was used. The only case where it can be false
+               Is when an argument can raise. This could be avoided if
+               all arguments where guaranted to be variables. *)
             let handler =
               List.fold_left2 (fun body var arg ->
                   Flambda.Flet(Not_assigned, var, arg, body, Expr_id.create ()))
