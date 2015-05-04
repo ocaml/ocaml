@@ -169,9 +169,11 @@ CAMLexport char * caml_strconcat(int n, ...)
 }
 
 #ifdef CAML_INSTR
-/* Timers for GC latency profiling (experimental, Linux-only) */
+/* Timers for profiling GC and allocation (experimental, Linux-only) */
 
 #include <limits.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
 intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
