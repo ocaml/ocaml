@@ -1032,7 +1032,10 @@ let inline ~never_inline tree =
     else
       R.create ()
   in
+  let stats = !Clflags.inlining_stats in
+  if never_inline then Clflags.inlining_stats := false;
   let result, r = loop (E.empty ~never_inline:false) r tree in
+  Clflags.inlining_stats := stats;
   if not (Variable.Set.is_empty (R.used_variables r))
   then begin
     Format.printf "remaining variables: %a@.%a@."
