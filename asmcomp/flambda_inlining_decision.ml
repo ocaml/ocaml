@@ -7,6 +7,7 @@ module U = Flambdautils
 
 let is_probably_a_functor env clos approxs =
   E.at_toplevel env &&
+  not (E.is_inside_branch env) &&
     List.for_all A.known approxs &&
     Variable.Set.is_empty (U.recursive_functions clos)
 

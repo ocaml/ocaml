@@ -475,6 +475,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           let r = R.map_benefit r Flambdacost.remove_branch in
           Flambdaeffects.sequence arg ifso annot, r
       | _ ->
+          let env = E.inside_branch env in
           let ifso, r = loop env r ifso in
           let ifso_approx = R.approx r in
           let ifnot, r = loop env r ifnot in
@@ -488,6 +489,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       Flambdaeffects.sequence lam1 lam2 annot, r
   | Fwhile(cond, body, annot) ->
       let cond, r = loop env r cond in
+      let env = E.inside_loop env in
       let body, r = loop env r body in
       Fwhile(cond, body, annot), ret r A.value_unknown
   | Fsend(kind, met, obj, args, dbg, annot) ->
@@ -500,6 +502,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let hi, r = loop env r hi in
       let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
       let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
+      let env = E.inside_loop env in
       let body, r = loop env r body in
       let r = R.exit_scope r id in
       Ffor(id, lo, hi, dir, body, annot), ret r A.value_unknown
@@ -544,6 +547,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           let r = R.map_benefit r Flambdacost.remove_branch in
           Flambdaeffects.sequence arg lam annot, r
       | _ ->
+          let env = E.inside_branch env in
           let f (i,v) (acc, r) =
             let approx = R.approx r in
             let lam, r = loop env r v in

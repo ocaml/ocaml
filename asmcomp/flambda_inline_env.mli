@@ -36,6 +36,11 @@ val at_toplevel : t -> bool
 (** Not inside a closure declaration.
     Toplevel code is the one evaluated when the compilation unit is loaded *)
 
+val is_inside_branch : t -> bool
+
+val inside_branch : t -> t
+val inside_loop : t -> t
+
 val set_sb : Flambdasubst.t -> t -> t
 
 val increase_closure_depth : t -> t

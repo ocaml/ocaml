@@ -7,6 +7,8 @@ type t = {
   (* The functions currently being declared: used to avoid inlining
      recursively *)
   inlining_level : int;
+  inside_branch : bool;
+  inside_loop : bool;
   (* Number of times "inline" has been called recursively *)
   sb : Flambdasubst.t;
   never_inline : bool ;
@@ -19,6 +21,8 @@ let empty ~never_inline =
   { env_approx = Variable.Map.empty;
     current_functions = Set_of_closures_id.Set.empty;
     inlining_level = 0;
+    inside_branch = false;
+    inside_loop = false;
     sb = Flambdasubst.empty;
     never_inline;
     possible_unrolls = !Clflags.unroll;
@@ -71,6 +75,14 @@ let inside_set_of_closures_declaration closure_id env =
 
 let at_toplevel env =
   env.closure_depth = 0
+
+let is_inside_branch env = env.inside_branch
+
+let inside_branch env =
+  { env with inside_branch = true }
+
+let inside_loop env =
+  { env with inside_loop = true }
 
 let set_sb sb env =
   { env with sb; }
