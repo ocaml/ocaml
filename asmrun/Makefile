@@ -21,7 +21,8 @@ DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 PICFLAGS=$(FLAGS) -O $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
 
-COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
+COBJS=startup_aux.o startup.o \
+  main.o fail.o roots.o globroots.o signals.o signals_asm.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
@@ -121,6 +122,8 @@ power.p.o: power-$(SYSTEM).o
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
+startup_aux.c: ../byterun/startup_aux.c
+	ln -s ../byterun/startup_aux.c startup_aux.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
 freelist.c: ../byterun/freelist.c

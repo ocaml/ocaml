@@ -512,7 +512,7 @@ stat.o: stat.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
  ../../byterun/caml/minor_gc.h ../../byterun/caml/alloc.h \
  ../../byterun/caml/signals.h ../../byterun/caml/io.h unixsupport.h \
- cst2constr.h
+ cst2constr.h nanosecond_stat.h
 strofaddr.o: strofaddr.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/compatibility.h ../../byterun/caml/config.h \
  ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
