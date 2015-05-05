@@ -449,6 +449,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
             let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
             let env = List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
                 (E.set_sb sb env) vars in
+            let env = E.inside_branch env in
             let handler, r = loop env r handler in
             let r = List.fold_left R.exit_scope r vars in
             let r = R.exit_scope_catch r i in
@@ -458,6 +459,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let body, r = loop env r body in
       let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
       let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
+      let env = E.inside_branch env in
       let handler, r = loop env r handler in
       let r = R.exit_scope r id in
       Ftrywith(body, id, handler, annot), ret r A.value_unknown
