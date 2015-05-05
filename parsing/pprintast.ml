@@ -1270,18 +1270,23 @@ class printer  ()= object(self:'self)
       | Some y -> pp f "@;%a" self#core_type y
     in
     let constructor_declaration f pcd =
-      match pcd.pcd_res with
-      | None ->
+      match pcd.pcd_args, pcd.pcd_res with
+      | _, None ->
           pp f "|@;%s%a%a" pcd.pcd_name.txt
              (fun f -> function
               | [] -> ()
               | l -> pp f "@;of@;%a" (self#list self#core_type1 ~sep:"*@;") l)
              pcd.pcd_args
              self#attributes pcd.pcd_attributes
-      | Some x ->
+      | [], Some x ->
           pp f "|@;%s:@;%a%a" pcd.pcd_name.txt
-             (self#list self#core_type1 ~sep:"@;->@;") (pcd.pcd_args@[x])
+             self#core_type1 x
              self#attributes pcd.pcd_attributes
+      | args, Some x ->
+          pp f "|@;%s:@;%a@;->@;%a%a" pcd.pcd_name.txt
+            (self#list self#core_type1 ~sep:"*@;") args
+            self#core_type1 x
+            self#attributes pcd.pcd_attributes
     in
     let label_declaration f pld =
       pp f "@[<2>%a%s:@;%a%a;@]"
