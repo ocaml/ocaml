@@ -58,6 +58,9 @@ Runtime:
 - PR#6078: Release the runtime system when calling caml_dlopen
   (Jérémie Dimino)
 
+Build system:
+- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+  
 Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
@@ -70,6 +73,8 @@ Bug fixes:
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
 - PR#6573: extern "C" for systhreads/threads.h
   (Mickaël Delahaye)
+- PR#6575: Array.init evaluates callback although it should not do so
+  (Alain Frisch, report by Gerd Stolpmann)
 - PR#6607: The manual doesn't mention 0x200 flag for OCAMLRUNPARAM=v
   (Alain Frisch)
 - PR#6616: allow meaningful use of -use-runtime without -custom.
@@ -131,6 +136,7 @@ Bug fixes:
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
 
+
 OCaml 4.02.1:
 -------------
 (Changes that can break existing programs are marked with a "*")
@@ -182,8 +188,6 @@ Standard library:
   (Jacques Garrigue, report by Mark Shinwell)
 - PR#6572: Fatal error with recursive modules
   (Jacques Garrigue, report by Quentin Stievenart)
-- PR#6575: Array.init evaluates callback although it should not do so
-  (Alain Frisch, report by Gerd Stolpmann)
 - PR#6578: Recursive module containing alias causes Segmentation fault
   (Jacques Garrigue)
 - PR#6581: Some bugs in generative functors
@@ -935,7 +939,6 @@ Feature wishes:
   (Benedikt Meurer)
 - PR#5243: improve the ocamlbuild API documentation in signatures.mli
   (Christophe Troestler)
-- PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#5546: moving a function into an internal module slows down its use
   (Alain Frisch, report by Fabrice Le Fessant)
 - PR#5597: add instruction trace option 't' to OCAMLRUNPARAM
