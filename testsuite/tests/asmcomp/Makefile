@@ -47,7 +47,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
 
-MLCASES=rebinding optargs staticalloc local_exception
+MLCASES=rebinding optargs staticalloc
+# local_exception
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
