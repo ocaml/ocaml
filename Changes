@@ -52,6 +52,9 @@ Standard library:
   (Hugo Heuzard)
 * Filename: Optional ?perms argument to open_temp_file
   (Daniel Bünzli, review by Jacques-Pascal Deplaix)
+- PR#6645, GPR#174: Guarantee that Set.add, Set.remove, Set.filter
+  return the original set if no change is required (Alain Frisch,
+  Mohamed Iguernelala)
 
 Type system:
 - PR#5545: Type annotations on methods cannot control the choice of abbreviation
@@ -60,8 +63,6 @@ Type system:
   In theory this may be incompatible is some corner cases defining a module
   type through inference, but no breakage known on published code.
 - PR#6593: Functor application in tests/basic-modules fails after commit 15405
-- PR#6645: Guarantee that Set.add doesn't allocate and returns the original
-  set if the added element is already in the set
 
 Toplevel and debugger:
 - PR#6468: toplevel now supports backtraces if invoked with OCAMLRUNPARAM=b
