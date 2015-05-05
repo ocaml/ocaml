@@ -94,6 +94,7 @@ Bug fixes:
   (Damien Doligez, report by Jun Furuse)
 - PR#6526: ocamllex warning: unescaped newline in comment string
   (Damien Doligez, report by user 'dhekir')
+- PR#6341: ocamldoc -colorize-code adds spurious <br> tags to <pre> blocks
 - PR#6560: Wrong failure message for {Int32,Int64,NativeInt}.of_string
   (Maxime Dénès and Gabriel Scherer)
 - PR#6648: show_module should indicate its elision
