@@ -419,6 +419,7 @@ CAMLexport void caml_startup_code(
   caml_start_code = code;
   caml_code_size = code_size;
   caml_init_code_fragments();
+  caml_init_debug_info();
   if (caml_debugger_in_use) {
     int len, i;
     len = code_size / sizeof(opcode_t);
