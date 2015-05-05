@@ -1313,7 +1313,7 @@ class printer  ()= object(self:'self)
     let constraints f =
       self#list ~first:"@ "
         (fun f (ct1,ct2,_) ->
-           pp f "@[<hov2>constraint@ %a@ =@ %a@]"
+           pp f "@[<hov2> constraint@ %a@ =@ %a@]"
               self#core_type ct1 self#core_type ct2)
         f x.ptype_cstrs
     in
