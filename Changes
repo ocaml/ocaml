@@ -87,6 +87,8 @@ Bug fixes:
 - PR#6658: cross-compiler: version check not working on OS X
 - PR#6665: Failure of tests/asmcomp on sparc
   (Stéphane Glondu)
+- PR#6667: wrong implementation of %bswap16 on ARM64
+  (Xavier Leroy)
 - PR#6669: fix 4.02 regression in toplevel printing of lazy values
   (Leo White, review by Gabriel Scherer)
 - PR#6671: Windows: environment variable 'TZ' affects Unix.gettimeofday
