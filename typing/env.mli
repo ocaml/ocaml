@@ -147,6 +147,7 @@ val reset_cache_toplevel: unit -> unit
 
 (* Remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
+val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
 
