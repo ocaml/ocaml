@@ -482,24 +482,6 @@ fi
 
 echo "CAMLRUN=$CAMLRUN" >> Makefile
 
-# Same holds for ocamlyacc.
-if test x"$target" != x"$host"; then
-  if ! sh ./searchpath ocamlyacc; then
-    err "Cross-compilation requires an ocamlyacc binary."
-  else
-    ocamlyacc 2>/dev/null
-    if test "$?" -ne 1; then
-      err "While you have an ocamlyacc binary, it cannot be executed successfully."
-    else
-      CAMLYACC="ocamlyacc"
-    fi
-  fi
-else
-  CAMLYACC=`cd ../.. && pwd`/boot/ocamlyacc
-fi
-
-echo "CAMLYACC=$CAMLYACC" >> Makefile
-
 # Check the sizes of data types
 # OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
 # a 64-bit integer type

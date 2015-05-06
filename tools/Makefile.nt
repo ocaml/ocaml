@@ -18,8 +18,7 @@ OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=misc.cmo config.cmo clflags.cmo ccomp.cmo
 
 ocamlmktop: $(OCAMLMKTOP)
-	$(CAMLC) $(LINKFLAGS) -use-runtime $(CAMLRUN) -o ocamlmktop \
-	         $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
+	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
 
 install::
 	cp ocamlmktop $(INSTALL_BINDIR)/ocamlmktop$(EXE)

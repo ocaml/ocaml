@@ -15,11 +15,12 @@ include ../config/Makefile
 # Various commands and dir
 ##########################
 ROOTDIR   = ..
-OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib \
-                       -use-runtime $(CAMLRUN)
-OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
+OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLYACC = $(ROOTDIR)/yacc/ocamlyacc
 OCAMLLIB  = $(LIBDIR)
 OCAMLBIN  = $(BINDIR)
 
@@ -232,10 +233,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
-	$(CAMLYACC) -v $<
+	$(OCAMLYACC) -v $<
 
 .mly.mli:
-	$(CAMLYACC) -v $<
+	$(OCAMLYACC) -v $<
 
 # Installation targets
 ######################
@@ -342,8 +343,8 @@ clean:: dummy
 	@rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 depend::
-	$(CAMLYACC) odoc_text_parser.mly
-	$(CAMLYACC) odoc_parser.mly
+	$(OCAMLYACC) odoc_text_parser.mly
+	$(OCAMLYACC) odoc_parser.mly
 	$(OCAMLLEX) odoc_text_lexer.mll
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll

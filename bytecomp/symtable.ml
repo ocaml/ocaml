@@ -148,7 +148,6 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)
-  (* Note that -use-prims takes precedence over -use-runtime. see PR#6266 *)
   if String.length !Clflags.use_prims > 0 then begin
       let ic = open_in !Clflags.use_prims in
       try

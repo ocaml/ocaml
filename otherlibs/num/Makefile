@@ -32,6 +32,6 @@ bng.$(O): bng.h bng_digit.c \
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

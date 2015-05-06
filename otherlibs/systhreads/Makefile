@@ -14,11 +14,11 @@
 include ../../config/Makefile
 
 ROOTDIR=../..
-CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
+CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
+CAMLOPT=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 
 BYTECODE_C_OBJS=st_stubs_b.o
@@ -107,6 +107,6 @@ installopt:
 
 depend: $(GENFILES)
 	-$(CC) -MM -I../../byterun *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
