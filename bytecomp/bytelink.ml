@@ -573,7 +573,10 @@ let link ppf objfiles output_name =
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
-    let c_file = basename ^ ".c"
+    let c_file =
+      if !Clflags.output_complete_object
+      then Filename.temp_file "camlobj" ".c"
+      else basename ^ ".c"
     and obj_file =
       if !Clflags.output_complete_object
       then Filename.temp_file "camlobj" Config.ext_obj
