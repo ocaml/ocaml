@@ -11,13 +11,16 @@
 #########################################################################
 
 # The lexer generator
-CAMLC=../boot/ocamlrun ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
-CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib
+include ../config/Makefile
+
+CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot \
+      -use-runtime $(CAMLRUN)
+CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -safe-string
-CAMLYACC=../boot/ocamlyacc
+LINKFLAGS=
 YACCFLAGS=-v
-CAMLLEX=../boot/ocamlrun ../boot/ocamllex
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
@@ -27,7 +30,8 @@ all: ocamllex
 allopt: ocamllex.opt
 
 ocamllex: $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -use-prims ../byterun/primitives \
+	  -compat-32 -o ocamllex $(OBJS)
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)

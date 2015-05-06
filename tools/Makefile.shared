@@ -12,8 +12,7 @@
 
 include ../config/Makefile
 
-CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -use-runtime $(CAMLRUN)
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
@@ -42,7 +41,8 @@ CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   ccomp.cmo ast_mapper.cmo pparse.cmo compenv.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
+	$(CAMLC) $(LINKFLAGS) -use-prims ../byterun/primitives -compat-32 \
+           -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
@@ -165,7 +165,7 @@ ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
 
 addlabels: addlabels.cmo
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
-		$(ADDLABELS_IMPORTS) addlabels.cmo
+	        $(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
 #	cp addlabels $(INSTALL_LIBDIR)

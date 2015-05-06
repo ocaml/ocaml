@@ -18,7 +18,6 @@ include $(ROOTDIR)/config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CAMLRUN=$(ROOTDIR)/boot/ocamlrun
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string $(EXTRACAMLFLAGS)
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
