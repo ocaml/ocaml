@@ -103,6 +103,8 @@ Bug fixes:
   (Benoît Vaugon, report by Vassili Karpov)
 - PR#6749: ocamlopt returns n for (n mod 1) instead of 0
   (Mark Shinwell and Jérémie Dimino)
+- PR#6753: Num.quo_num and Num.mod_num incorrect for some negative arguments
+  (Xavier Leroy)
 - PR#6758: Ocamldoc "analyse_module: parsetree and typedtree don't match"
 - PR#6759: big_int_of_string incorrectly parses some hexa literals
   (Damien Doligez, report by Pierre-yves Strub)
