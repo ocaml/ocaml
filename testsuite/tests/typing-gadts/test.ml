@@ -157,6 +157,13 @@ module Normal_constrs = struct
   let f = function A -> 1 | B -> 2
 end;;
 
+module PR6849 = struct
+  type 'a t = Foo : int t
+
+  let f : int -> int = function
+      Foo -> 5
+end;;
+
 type _ t = Int : int t ;;
 
 let ky x y = ignore (x = y); x ;;

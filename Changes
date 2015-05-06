@@ -131,6 +131,7 @@ Bug fixes:
 - PR#6842: export Typemod.modtype_of_package
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
+- PR#6849: Inverted pattern unification error
 - PR#6857: __MODULE__ doesn't give the current module with -o
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
