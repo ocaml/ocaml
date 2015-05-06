@@ -932,6 +932,8 @@ case "$arch,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='prof';;
   amd64,openbsd) profiling='prof';;
+  amd64,freebsd) profiling='prof';;
+  amd64,netbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
   power,elf) profiling='prof';;
