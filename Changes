@@ -112,6 +112,8 @@ Bug fixes:
 - PR#6763: #show with -short-paths doesn't select shortest type paths
 - PR#6768: Typechecker overflow the stack on cyclic type
 - PR#6770: (duplicate of PR#6686)
+- PR#6772: asmrun/signals_asm.c doesn't compile on NetBSD/i386
+  (Kenji Tokudome)
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
 - PR#6779: Cross-compilers cannot link bytecode using custom primitives

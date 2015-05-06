@@ -152,14 +152,24 @@
 
 #elif defined(TARGET_i386) && defined(SYS_bsd_elf)
 
- #define DECLARE_SIGNAL_HANDLER(name) \
- static void name(int sig, siginfo_t * info, struct sigcontext * context)
+ #if defined (__NetBSD__)
+  #include <ucontext.h>
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, ucontext_t * context)
+ #else
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, struct sigcontext * context)
+ #endif
 
  #define SET_SIGACT(sigact,name) \
  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
  sigact.sa_flags = SA_SIGINFO
 
- #define CONTEXT_PC (context->sc_eip)
+ #if defined (__NetBSD__)
+  #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #else
+  #define CONTEXT_PC (context->sc_eip)
+ #endif
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, BSD */
