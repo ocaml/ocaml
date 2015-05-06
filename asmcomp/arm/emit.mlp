@@ -852,8 +852,10 @@ let fundecl fundecl =
   let n = frame_size() in
   if n > 0 then begin
     ignore(emit_stack_adjustment (-n));
-    if !contains_calls then
+    if !contains_calls then begin
+      cfi_offset ~reg:14 (* lr *) ~offset:(-4);
       `	str	lr, [sp, #{emit_int(n - 4)}]\n`
+    end
   end;
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 fundecl.fun_body;

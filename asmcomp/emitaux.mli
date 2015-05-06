@@ -56,3 +56,4 @@ val is_generic_function: string -> bool
 val cfi_startproc : unit -> unit
 val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit
+val cfi_offset : reg:int -> offset:int -> unit
