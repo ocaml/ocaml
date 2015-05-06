@@ -128,6 +128,7 @@ Bug fixes:
 - PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
   (Gabriel Scherer, report by Damien Doligez)
 - PR#6799: include guards missing for unixsupport.h and other files
+- PR#6810: Improve documentation of Bigarray.Genarray.map_file
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
 - PR#6817: GADT exhaustiveness breakage with modules
 - PR#6824: fix buffer sharing on partial application of Format.asprintf
