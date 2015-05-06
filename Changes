@@ -46,6 +46,7 @@ Libraries:
   (Damien Doligez, report by Berke Durak)
 - PR#6285: Add support for nanosecond precision in Unix.stat()
   (Jérémie Dimino, report by user 'gfxmonk')
+- PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
 
 Tools:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
