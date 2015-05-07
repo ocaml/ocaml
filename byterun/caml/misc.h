@@ -41,7 +41,7 @@ typedef char * addr;
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
   #define Noreturn __attribute__ ((noreturn))
-#elif __MSC_VER >= 1500
+#elif _MSC_VER >= 1500
   #define Noreturn __declspec(noreturn)
 #else
   #define Noreturn
