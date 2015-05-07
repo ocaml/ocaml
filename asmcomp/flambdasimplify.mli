@@ -31,8 +31,9 @@ val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
 val primitive
    : Lambda.primitive
   -> (Expr_id.t flambda list * (Flambdaapprox.t list))
-  -> 'a flambda
-  -> 'a flambda * Flambdaapprox.t
+  -> Expr_id.t flambda
+  -> Debuginfo.t
+  -> Expr_id.t flambda * Flambdaapprox.t
 
 (** Simplify a sequential logical "arg1 AND arg2" expression. *)
 val sequential_and

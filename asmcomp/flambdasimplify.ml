@@ -306,7 +306,7 @@ module Simplify_boxed_int64 = Simplify_boxed_integer_operator (struct
   let kind = Lambda.Pint64
 end)
 
-let primitive (p : Lambda.primitive) (args, approxs) expr : _ Flambda.t * A.t =
+let primitive (p : Lambda.primitive) (args, approxs) expr dbg : _ Flambda.t * A.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
