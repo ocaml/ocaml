@@ -322,10 +322,6 @@ module NotConstants(P:Param) = struct
       mark_loop ~toplevel [] f2;
       List.iter (mark_loop ~toplevel []) fl
 
-    | Fevent (f1, _, _) ->
-      mark_curr curr;
-      mark_loop ~toplevel [] f1;
-
     | Funreachable _ ->
       mark_curr curr
 

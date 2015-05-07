@@ -36,7 +36,7 @@ let every_used_identifier_is_bound flam =
     | Fvariable_in_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       -> ()
   in
   let rec loop env = function
@@ -69,7 +69,7 @@ let every_used_identifier_is_bound flam =
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Fsend _ | Funreachable _
       as exp ->
         check env exp;
         Flambdaiter.apply_on_subexpressions (loop env) exp
@@ -134,7 +134,7 @@ let no_identifier_bound_multiple_times flam =
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Fsend _ | Funreachable _
       -> ()
   in
   try
@@ -170,7 +170,7 @@ let every_bound_variable_is_from_current_compilation_unit
     | Fvariable_in_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Fsend _ | Funreachable _
       -> ()
   in
   try
@@ -202,7 +202,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
     | Fvariable_in_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       as exp ->
         check env exp;
         Flambdaiter.apply_on_subexpressions (loop env) exp
@@ -289,7 +289,7 @@ let used_closure_id flam =
     | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       -> ()
   in
   Flambdaiter.iter f flam;

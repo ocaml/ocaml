@@ -452,8 +452,6 @@ module Conv(P:Param2) = struct
        Uunreachable
     (* Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
 
-    | Fevent _ -> assert false
-
   and conv_switch env cases num_keys default =
     let num_keys =
       if Ext_types.Int.Set.cardinal num_keys = 0

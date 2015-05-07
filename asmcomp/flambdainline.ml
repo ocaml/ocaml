@@ -601,7 +601,6 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       in
       Fstringswitch(arg, sw, def, annot), ret r A.value_unknown
   | Funreachable _ -> tree, ret r A.value_bottom
-  | Fevent _ -> assert false
 
 and loop_list env r l = match l with
   | [] -> [], [], r

@@ -21,8 +21,7 @@ let apply_on_subexpressions f = function
 
   | Fassign (_,f1,_)
   | Fclosure({fu_closure = f1},_)
-  | Fvariable_in_closure({vc_closure = f1},_)
-  | Fevent (f1,_,_) ->
+  | Fvariable_in_closure({vc_closure = f1},_) ->
     f f1
 
   | Flet ( _, _, f1, f2,_)
@@ -68,8 +67,7 @@ let subexpressions = function
 
   | Fassign (_,f1,_)
   | Fclosure({fu_closure = f1},_)
-  | Fvariable_in_closure({vc_closure = f1},_)
-  | Fevent (f1,_,_) ->
+  | Fvariable_in_closure({vc_closure = f1},_) ->
       [f1]
 
   | Flet ( _, _, f1, f2,_)
@@ -119,8 +117,7 @@ let iter_general ~toplevel f t =
 
     | Fassign (_,f1,_)
     | Fclosure({fu_closure = f1},_)
-    | Fvariable_in_closure({vc_closure = f1},_)
-    | Fevent (f1,_,_)  ->
+    | Fvariable_in_closure({vc_closure = f1},_) ->
       aux f1
 
     | Flet ( _, _, f1, f2,_)
@@ -178,7 +175,7 @@ let iter_on_closures f t =
     | Fvariable_in_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fstringswitch _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       -> ()
   in
   iter aux t
@@ -273,9 +270,6 @@ let map_general ~toplevel f tree =
           let def = Misc.may_map aux def in
           Fstringswitch(arg, sw, def, annot)
 
-      | Fevent (lam, ev, annot) ->
-          let lam = aux lam in
-          Fevent (lam, ev, annot)
       | Funreachable _ -> tree
     in
     f exp
@@ -446,10 +440,6 @@ let fold_subexpressions f acc = function
       let acc, vc_closure = f acc Variable.Set.empty clos.vc_closure in
       acc, Fvariable_in_closure({clos with vc_closure},d)
 
-  | Fevent (flam,e,d) ->
-      let acc, flam = f acc Variable.Set.empty flam in
-      acc, Fevent (flam,e,d)
-
   | ( Fsymbol _
     | Fvar _
     | Fconst _
@@ -569,6 +559,5 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
     | Fassign(id, lam, v) ->
         Fassign(id, mapper lam, f v)
     | Funreachable v -> Funreachable (f v)
-    | Fevent(lam, ev, v) -> Fevent(mapper lam, ev, f v)
   and list_mapper l = List.map mapper l in
   mapper tree

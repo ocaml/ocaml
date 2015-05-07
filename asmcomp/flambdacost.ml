@@ -114,7 +114,6 @@ let lambda_smaller' lam ~than:threshold =
         size := !size + 8;
         lambda_size met; lambda_size obj; lambda_list_size args
     | Funreachable _ -> ()
-    | Fevent _ -> assert false
   and lambda_list_size l = List.iter lambda_size l in
   try
     lambda_size lam;
@@ -202,7 +201,6 @@ let remove_code lam b =
     | Fsend _
       -> b := remove_call !b
 
-    | Fevent _
     | Flet _
     | Fletrec _
     | Funreachable _

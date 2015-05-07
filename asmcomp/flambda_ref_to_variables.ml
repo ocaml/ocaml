@@ -34,7 +34,7 @@ let directly_used_variables tree =
     | Fvariable_in_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _ as exp ->
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
         Flambdaiter.apply_on_subexpressions loop exp in
   loop tree;
   !set
@@ -115,7 +115,7 @@ let eliminate_ref lam =
     | Fprim _ | Fswitch _ | Fstringswitch _
     | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Fevent _ | Funreachable _ as exp ->
+    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
         exp
   in
   Flambdaiter.map aux lam

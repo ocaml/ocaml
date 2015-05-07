@@ -63,7 +63,6 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
   | Fwhile(_,_,data)
   | Ffor(_,_,_,_,_,data)
   | Fassign(_,_,data)
-  | Fevent(_,_,data)
   | Funreachable data -> data
 
 let description_of_toplevel_node (expr : _ Flambda.t) =
@@ -92,7 +91,6 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Fwhile(cond, body,data) -> "while"
   | Ffor(id, lo, hi, dir, body,data) -> "for"
   | Fassign(id, lam,data) -> "assign"
-  | Fevent(lam, ev, data) -> "event"
   | Funreachable _ -> "unreachable"
 
 let recursive_functions ({ funs } : _ Flambda.function_declarations) =
@@ -201,8 +199,6 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
   | Fsend _, _ | _, Fsend _ -> false
   | Funreachable _, Funreachable _ -> true
-  | Funreachable _, _ | _, Funreachable _ -> false
-  | Fevent _, Fevent _ -> false
 
 and sameclosure c1 c2 =
   samelist Variable.equal c1.params c2.params &&

@@ -130,8 +130,6 @@ type 'a flambda =
   | Fassign of Variable.t * 'a flambda * 'a
   | Fsend of Lambda.meth_kind * 'a flambda * 'a flambda * 'a flambda list *
              Debuginfo.t * 'a
-  | Fevent of 'a flambda * Lambda.lambda_event * 'a
-      (** Only with -g in bytecode. *)
   | Funreachable of 'a
       (** Represents code that has been proved to be unreachable. *)
 
