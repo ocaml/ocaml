@@ -24,11 +24,8 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then begin
-    let opref = output_prefix name in
-    Compile.implementation ppf name opref;
-    objfiles := (opref ^ ".cmo") :: !objfiles
-  end
+  || Filename.check_suffix name ".mlt" then
+    process_implementation_file ppf name
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
     Compile.interface ppf name opref;
