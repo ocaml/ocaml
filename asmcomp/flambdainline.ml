@@ -223,15 +223,28 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
         fu_closure
       | None | Some _ ->
           match set_of_closures_var with
-          | Some set_of_closures_var when E.present env set_of_closures_var ->
+          | Some set_of_closures_var when E.present env set_of_closures_var -> begin
+              let fu_relative_to =
+                (* We may not have direct access to the set of closures. In that case,
+                   This is still an relative closure, but it avoid maintaining
+                   fu_closure alive if possible. *)
+                match (E.find set_of_closures_var env).descr with
+                | Value_set_of_closures _ -> None
+                | Value_closure { fun_id } -> Some fun_id
+                | _ -> assert false
+                  (* If the set of closure is in the environment we know its value *)
+              in
               Fclosure ({fu_closure = Fvar (set_of_closures_var, Expr_id.create ());
-                         fu_fun = closure_id; fu_relative_to = None },
+                         fu_fun = closure_id; fu_relative_to },
                         annot)
+            end
           | _ ->
               Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel},
                         annot)
     in
     let closure =
+      (* If the function is recursive, and we are refering to another closure
+         from the same set: we can find it directly through its variable *)
       if E.present env (Closure_id.unwrap closure_id)
       then Flambda.Fvar (Closure_id.unwrap closure_id, annot)
       else closure
