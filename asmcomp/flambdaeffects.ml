@@ -15,6 +15,11 @@ open Abstract_identifiers
 open Flambda
 
 let no_effects_prim = function
+  | Pccall { prim_name =
+               ( "caml_format_float" | "caml_format_int" |
+                 "caml_int32_format" | "caml_nativeint_format" |
+                 "caml_int64_format" ) } ->
+      true
   | Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets
   | Parraysetu _ | Parraysets _ | Pbigarrayset _
