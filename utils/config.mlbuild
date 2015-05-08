@@ -98,6 +98,7 @@ let ext_dll = C.ext_dll
 
 let host = C.host
 let target = C.target
+let target_word_size = C.target_word_size
 
 let default_executable_name =
   match Sys.os_type with
@@ -110,6 +111,7 @@ let systhread_supported = C.systhread_support;;
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
+  let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
   p "version" version;
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
@@ -136,6 +138,7 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_int "target_word_size" target_word_size;
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
   p "cmo_magic_number" cmo_magic_number;
