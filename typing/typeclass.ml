@@ -944,7 +944,7 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial pat.pat_loc
+        Typecore.check_partial val_env pat.pat_type pat.pat_loc
           [{c_lhs=pat;
             c_guard=None;
             c_rhs = (* Dummy expression *)

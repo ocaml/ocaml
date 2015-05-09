@@ -141,6 +141,7 @@ Bug fixes:
   (Leo White, Gabriel Scherer)
 - PR#6849: Inverted pattern unification error
 - PR#6857: __MODULE__ doesn't give the current module with -o
+- PR#6862: Exhaustiveness check wrong for class constructor arguments
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind

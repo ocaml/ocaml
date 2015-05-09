@@ -91,6 +91,12 @@ module Exhaustive =
   end
 ;;
 
+module PR6862 = struct
+  class c (Some x) = object method x : int = x end
+  type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
+  class d (Just x) = object method x : int = x end
+end;;
+
 module Existential_escape =
   struct
     type _ t = C : int -> int t
