@@ -61,7 +61,9 @@ let x_p_dll = "%.p"-.-ext_dll;;
 (* -output-obj targets *)
 let x_byte_c = "%.byte.c";;
 let x_byte_o = "%.byte"-.-ext_obj;;
+let x_byte_so = "%.byte"-.-ext_dll;;
 let x_native_o = "%.native"-.-ext_obj;;
+let x_native_so = "%.native"-.-ext_dll;;
 
 rule "target files"
   ~dep:"%.itarget"
@@ -221,6 +223,15 @@ rule "ocaml: cmo* -> byte.c"
   ~dep:"%.cmo"
   (Ocaml_compiler.byte_output_obj "%.cmo" x_byte_c);;
 
+rule "ocaml: cmo* -> byte.(so|dll|dylib)"
+  ~prod:x_byte_so
+  ~dep:"%.cmo"
+  ~doc:"The foo.byte.so target, or foo.byte.dll under Windows, \
+  or foo.byte.dylib under Mac OS X will produce a shared library file
+  by passing the -output-obj and -cclib -shared options \
+  to the OCaml compiler. See also foo.native.{so,dll,dylib}."
+  (Ocaml_compiler.byte_output_shared "%.cmo" x_byte_so);;
+
 rule "ocaml: p.cmx* & p.o* -> p.native"
   ~prod:"%.p.native"
   ~deps:["%.p.cmx"; x_p_o]
@@ -238,6 +249,11 @@ rule "ocaml: cmx* & o* -> native.(o|obj)"
   ~prod:x_native_o
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_output_obj "%.cmx" x_native_o);;
+
+rule "ocaml: cmx* & o* -> native.(so|dll|dylib)"
+  ~prod:x_native_so
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_output_shared "%.cmx" x_native_so);;
 
 rule "ocaml: mllib & d.cmo* -> d.cma"
   ~prod:"%.d.cma"
@@ -636,6 +652,8 @@ let () =
     (fun param -> S [A "-open"; A param]);
   pflag ["ocaml"; "compile"] "open"
     (fun param -> S [A "-open"; A param]);
+  pflag ["ocaml"; "link"] "runtime_variant"
+    (fun param -> S [A "-runtime-variant"; A param]);
   ()
 
 let camlp4_flags camlp4s =
@@ -690,6 +708,7 @@ flag ["c";     "debug"; "compile"] (A "-g");
 flag ["c";     "debug"; "link"] (A "-g");
 flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
+flag ["ocaml"; "link"; "output_shared"] & (S[A"-cclib"; A"-shared"]);;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "annot"; "pack"] (A "-annot");;
