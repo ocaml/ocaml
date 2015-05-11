@@ -325,7 +325,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (7);
+  res = caml_alloc_tuple (8);
   Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
@@ -337,6 +337,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 5, Val_long (0));
 #endif
   Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
+  Store_field (res, 7, Val_long (caml_major_window));                   /* w */
   CAMLreturn (res);
 }
 
@@ -408,6 +409,15 @@ CAMLprim value caml_gc_set(value v)
   if (oldpolicy != caml_allocation_policy){
     caml_gc_message (0x20, "New allocation policy: %d\n",
                      caml_allocation_policy);
+  }
+
+  if (Wosize_val (v) >= 8){
+    int old_window = caml_major_window;
+    caml_set_major_window (norm_window (Long_val (Field (v, 7))));
+    if (old_window != caml_major_window){
+      caml_gc_message (0x20, "New smoothing window size: %d\n",
+                       caml_major_window);
+    }
   }
 
     /* Minor heap size comes last because it will trigger a minor collection

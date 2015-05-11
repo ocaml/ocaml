@@ -571,7 +571,7 @@ void caml_major_collection_slice (intnat howmuch)
   }else{
     /* forced GC slice: do work and add it to the credit */
     if (howmuch == 0){
-      /* automatic setting: size of next slice
+      /* automatic setting: size of next bucket
          we do not use the current bucket, as it may be empty */
       int i = caml_major_ring_index + 1;
       if (i >= caml_major_window) i = 0;
@@ -741,4 +741,20 @@ void caml_init_major_heap (asize_t heap_size)
   caml_allocated_words = 0;
   caml_extra_heap_resources = 0.0;
   for (i = 0; i < Max_major_window; i++) caml_major_ring[i] = 0.0;
+}
+
+void caml_set_major_window (int w){
+  uintnat total = 0;
+  int i;
+  if (w == caml_major_window) return;
+  CAMLassert (w <= Max_major_window);
+  /* Collect the current work-to-do from the buckets. */
+  for (i = 0; i < caml_major_window; i++){
+    total += caml_major_ring[i];
+  }
+  /* Redistribute to the new buckets. */
+  for (i = 0; i < w; i++){
+    caml_major_ring[i] = total / w;
+  }
+  caml_major_window = w;
 }
