@@ -14,13 +14,15 @@
 # FIXME reduce redundancy by including ../Makefile
 
 include ../../config/Makefile
+CAMLRUN ?= ../../boot/ocamlrun
+CAMLYACC ?= ../../boot/ocamlyacc
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 ROOTDIR=../..
-CAMLC=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string
 
 C_OBJS=scheduler.o
@@ -124,6 +126,6 @@ installopt:
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

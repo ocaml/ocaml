@@ -12,6 +12,8 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 CC=$(BYTECC)
 
@@ -56,7 +58,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
 	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
@@ -72,6 +74,10 @@ install:: install-$(RUNTIMED)
 install-noruntimed:
 .PHONY: install-noruntimed
 
+# TODO: when cross-compiling, do not install ocamlrund
+# it doesn't hurt to install it, but it's useless and might be confusing
+# because it's an executable for the target machine, while we're installing
+# binaries for the host.
 install-runtimed:
 	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
 	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
