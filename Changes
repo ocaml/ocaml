@@ -150,6 +150,8 @@ Bug fixes:
   (Peter Zotov)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
+- Misplaced assertion in major_gc.c for no-naked-pointers mode
+  (Stephen Dolan, Mark Shinwell)
 
 Feature wishes:
 - PR#6641: add -g, -ocamlcflags, -ocamloptflags options to ocamlmklib
