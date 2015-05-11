@@ -12,14 +12,17 @@
 #########################################################################
 
 include ../config/Makefile
-RUNTIME=../boot/ocamlrun
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
+TARGET_BINDIR ?= $(BINDIR)
+
 COMPILER=../ocamlc
-CAMLC=$(RUNTIME) $(COMPILER)
+CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
           -safe-string
 OPTCOMPILER=../ocamlopt
-CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
+CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
@@ -37,19 +40,20 @@ OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
-all: stdlib.cma std_exit.cmo camlheader camlheader_ur
+all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install: install-$(RUNTIMED)
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader_ur \
 	  $(INSTALL_LIBDIR)
+	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
 
 install-noruntimed:
 .PHONY: install-noruntimed
 
-install-runtimed: camlheaderd
-	cp camlheaderd $(INSTALL_LIBDIR)
+install-runtimed: target_camlheaderd
+	cp target_camlheaderd $(INSTALL_LIBDIR)/camlheaderd
 .PHONY: install-runtimed
 
 stdlib.cma: $(OBJS)
@@ -65,7 +69,7 @@ clean::
 	rm -f sys.ml
 
 clean::
-	rm -f camlheader camlheader_ur camlheaderd
+	rm -f camlheader target_camlheader camlheader_ur target_camlheaderd
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 

@@ -11,8 +11,9 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex

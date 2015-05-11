@@ -16,6 +16,7 @@
 configure_options="$*"
 prefix=/usr/local
 bindir=''
+target_bindir=''
 libdir=''
 mandir=''
 manext=1
@@ -92,6 +93,8 @@ while : ; do
         prefix=$2; shift;;
     -bindir|--bindir)
         bindir=$2; shift;;
+    -target-bindir|--target-bindir)
+        target_bindir="$2"; shift;;
     -libdir|--libdir)
         libdir=$2; shift;;
     -mandir|--mandir)
@@ -237,17 +240,23 @@ else
 fi
 inf "Configuring for target $target ..."
 
+if [ x"$host" = x"$target" ]; then
+  cross_compiler=false
+else
+  cross_compiler=true
+fi
+
 # Do we have gcc?
 
 if test -z "$ccoption"; then
   if sh ./searchpath "${TOOLPREF}gcc"; then
     cc="${TOOLPREF}gcc"
   else
-    if test x"$host" = x"$target"; then
-      cc="cc"
-    else
+    if $cross_compiler; then
       err "No cross-compiler found for ${target}.\n" \
           "It should be named ${TOOLPREF}gcc and be in the PATH."
+    else
+      cc="cc"
     fi
   fi
 else
@@ -448,7 +457,7 @@ case $? in
   1) err "The C compiler $cc is not ANSI-compliant.\n" \
          "You need an ANSI C compiler to build OCaml.";;
   *)
-     if test x"$host" != x"$target"; then
+     if $cross_compiler; then
        wrn "Unable to compile the test program.\n" \
            "This failure is expected for cross-compilation:\n" \
            "we will assume the C compiler is ANSI-compliant."
@@ -458,9 +467,9 @@ case $? in
      fi;;
 esac
 
-# Determine which ocamlrun executable to use; for cross-compilation, a native
-# "ocamlrun" executable must be available on the system.
-if test x"$target" != x"$host"; then
+# For cross-compilation, we need a host-based ocamlrun and ocamlyacc,
+# and the user must specify the target BINDIR
+if $cross_compiler; then
   if ! sh ./searchpath ocamlrun; then
     err "Cross-compilation requires an ocaml runtime environment\n" \
         "(the ocamlrun binary). Moreover, its version must be the same\n" \
@@ -473,14 +482,28 @@ if test x"$target" != x"$host"; then
           "($ocaml_system_version) doesn't match the version of these sources\n" \
           "($ocaml_source_version)."
     else
-      CAMLRUN="ocamlrun"
+      echo "CAMLRUN=`./searchpath -p ocamlrun`" >> Makefile
     fi
   fi
-else
-  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
-fi
 
-echo "CAMLRUN=$CAMLRUN" >> Makefile
+  if ! sh ./searchpath ocamlyacc; then
+    err "Cross-compilation requires an ocamlyacc binary."
+  else
+    ocamlyacc 2>/dev/null
+    if test "$?" -ne 1; then
+      err "While you have an ocamlyacc binary, it cannot be executed successfully."
+    else
+      echo "CAMLYACC=`./searchpath -p ocamlyacc`" >> Makefile
+    fi
+  fi
+
+  if [ -z "$target_bindir" ]; then
+    err "Cross-compilation requires -target-bindir."
+  else
+    echo "TARGET_BINDIR=$target_bindir" >> Makefile
+  fi
+fi # cross-compiler
+
 
 # Check the sizes of data types
 # OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
@@ -975,7 +998,8 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
-      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      inf "We won't use it, though, because it's on the target platform " \
+          "it would be used and windows doesn't support it."
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;

@@ -13,18 +13,18 @@
 # The main Makefile
 
 include config/Makefile
+CAMLRUN ?= boot/ocamlrun
+CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLC=$(CAMLRUN) boot/ocamlc -nostdlib -I boot
+CAMLOPT=$(CAMLRUN) ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
 COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot $(INCLUDES)
 LINKFLAGS=
-CAMLYACC=boot/ocamlyacc
 YACCFLAGS=
-CAMLLEX=boot/ocamlrun boot/ocamllex
-CAMLDEP=boot/ocamlrun tools/ocamldep
+CAMLLEX=$(CAMLRUN) boot/ocamllex
+CAMLDEP=$(CAMLRUN) tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/ocamlrun
 
 OCAMLBUILDBYTE=$(WITH_OCAMLBUILD:=.byte)
 OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
@@ -552,7 +552,7 @@ beforedepend:: asmcomp/scheduling.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: $(ASMCOMP_EMIT) tools/cvt_emit
-	boot/ocamlrun tools/cvt_emit < $(ASMCOMP_EMIT) > asmcomp/emit.ml
+	$(CAMLRUN) tools/cvt_emit < $(ASMCOMP_EMIT) > asmcomp/emit.ml
 
 partialclean::
 	rm -f asmcomp/emit.ml
@@ -605,7 +605,7 @@ alldepend::
 library:
 	cd stdlib ; $(MAKEREC) all
 library-cross:
-	cd stdlib ; $(MAKEREC) RUNTIME=../byterun/ocamlrun all
+	cd stdlib ; $(MAKEREC) CAMLRUN=../byterun/ocamlrun all
 libraryopt:
 	cd stdlib ; $(MAKEREC) allopt
 partialclean::

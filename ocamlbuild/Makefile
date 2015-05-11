@@ -11,13 +11,14 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 ROOTDIR   = ..
-OCAMLRUN  = $(ROOTDIR)/boot/ocamlrun
-OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
-OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+OCAMLDEP  = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+OCAMLLEX  = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CP        = cp
 COMPFLAGS= -warn-error A -w L -w R -w Z -I ../otherlibs/$(UNIXLIB) -safe-string
 LINKFLAGS= -I ../otherlibs/$(UNIXLIB)
