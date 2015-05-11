@@ -516,14 +516,35 @@ let separate_unused_arguments (set_of_closures : _ Flambda.fset_of_closures) =
         cl_specialised_arg; }
   end
 
+(* Spliting is not always beneficial. For instance when a function
+   is only indirectly called, suppressing unused arguments does not
+   benefit, and introduce an useless intermediate call *)
+let candidate_for_spliting_for_unused_arguments
+    (fun_decl : _ Flambda.function_declarations) =
+  let no_recursive_functions =
+    Variable.Set.is_empty
+      (Flambdautils.recursive_functions fun_decl)
+  in
+  let number_of_non_stub_functions =
+    Variable.Map.cardinal
+      (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
+         fun_decl.funs)
+  in
+  (not no_recursive_functions) ||
+  (number_of_non_stub_functions > 1)
+
 let separate_unused_arguments_in_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
     | Fset_of_closures (set_of_closures, eid) -> begin
-        match separate_unused_arguments set_of_closures with
-        | None -> expr
-        | Some set_of_closures ->
-            Fset_of_closures (set_of_closures, eid)
+        if candidate_for_spliting_for_unused_arguments
+            set_of_closures.cl_fun then
+          match separate_unused_arguments set_of_closures with
+          | None -> expr
+          | Some set_of_closures ->
+              Fset_of_closures (set_of_closures, eid)
+        else
+          expr
       end
     | e -> e
   in
