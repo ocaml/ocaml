@@ -62,6 +62,7 @@ module type Compiler_options =  sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit

@@ -304,6 +304,9 @@ Recognize file names ending with
 as interface files (instead of the default .mli).
 .TP
 .B \-keep-locs
+Keep documentation strings in generated .cmi files.
+.TP
+.B \-keep-locs
 Keep locations in generated .cmi files.
 .TP
 .B \-labels

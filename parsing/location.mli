@@ -29,11 +29,14 @@ type t = {
 
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)
-val in_file : string -> t;;
+
+val in_file : string -> t
 (** Return an empty ghost range located in a given file. *)
+
 val init : Lexing.lexbuf -> string -> unit
 (** Set the file name and line number of the [lexbuf] to be the start
     of the named file. *)
+
 val curr : Lexing.lexbuf -> t
 (** Get the location of the current token from the [lexbuf]. *)
 

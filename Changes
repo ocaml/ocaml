@@ -22,6 +22,7 @@ Compilers:
   (Peter Zotov)
 - GPR#159: Better locations for structure/signature items
   (Leo White)
+- GPR#149: Attach documentation comments to parse tree (Leo White)
 
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer

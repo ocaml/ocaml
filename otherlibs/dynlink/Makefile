@@ -34,7 +34,7 @@ COMPILEROBJS=\
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
   ../../parsing/asttypes.cmi \
   ../../parsing/location.cmo ../../parsing/longident.cmo \
-  ../../parsing/ast_helper.cmo \
+  ../../parsing/docstrings.cmo ../../parsing/ast_helper.cmo \
   ../../parsing/ast_mapper.cmo \
   ../../typing/ident.cmo ../../typing/path.cmo \
   ../../typing/primitive.cmo ../../typing/types.cmo \

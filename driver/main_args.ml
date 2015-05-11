@@ -126,6 +126,10 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_keep_docs f =
+  "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
+;;
+
 let mk_keep_locs f =
   "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
 ;;
@@ -521,6 +525,7 @@ module type Compiler_options = sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
@@ -659,6 +664,7 @@ struct
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_intf_suffix_2 F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
@@ -776,6 +782,7 @@ struct
     mk_inline F._inline;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
