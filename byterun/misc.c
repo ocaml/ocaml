@@ -212,7 +212,7 @@ void CAML_INSTR_ATEXIT (void)
     if (name[0] == '+'){
       mode = "a";
       name = name + 1;
-    }else if (name [0] == '>'){
+    }else if (name [0] == '>' || name[0] == '-'){
       mode = "w";
       name = name + 1;
     }
