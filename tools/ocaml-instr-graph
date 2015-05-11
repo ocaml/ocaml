@@ -12,17 +12,20 @@
 #                                                                       #
 #########################################################################
 
-# Use this script on OCAML_INSTR_FILE file
+# Use this script on OCAML_INSTR_FILE files
 
-# usage: ocaml-instr-graph file [options]
-# options:
-# -d names   plot the data for names (default major,minor,coll,dispatch)
-# -t title   set the graph's title
-# -m n       clip the values to n (default 1G)
-# -rt n      set the range for times to 0..n
-# -rn n      set the range for counts to 0..n
-# -from t    start at time t
-# -to t      stop at time t
+usage () {
+    echo 'usage: ocaml-instr-graph file [options]'
+    echo '  options:'
+    echo '  -d names   plot the data for names (default major,minor,coll,dispatch)'
+    echo '  -t title   set the graph title'
+    echo '  -m n       clip the values to n (default 1G)'
+    echo '  -rt n      set the range for times to 0..n'
+    echo '  -rn n      set the range for counts to 0..n'
+    echo '  -from t    start at time t'
+    echo '  -to t      stop at time t'
+    echo '  -help      display this help message and exit'
+}
 
 datafile=
 curves=,
@@ -43,6 +46,7 @@ while [[ $# > 0 ]]; do
         -rn) rangen="set y2range [0:$2]"; shift 2;;
         -from) from=$2; shift 2;;
         -to) to=$2; shift 2;;
+        -help) usage; exit 0;;
         *) datafile=$1; shift 1;;
     esac
 done
@@ -66,7 +70,11 @@ awk -v curves="$curves" -v clip=$max -v tmpfile="$tmpfile" -v from=$from \
     if (time < from || time >= to) return;
     if (index(curves, "," filename ",") != 0){
       gsub (/\//,":",filename);
-      point = ($3 - $2) / 1000;
+      if (filename ~ /#/){
+        point = $3;
+      }else{
+        point = ($3 - $2) / 1000;
+      }
       if (point > clip) point = clip;
       printf ("%.6f %.3f\n", time, point) >> tmpfile "-" filename;
     }

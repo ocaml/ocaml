@@ -169,9 +169,11 @@ CAMLexport char * caml_strconcat(int n, ...)
 }
 
 #ifdef CAML_INSTR
-/* Timers for GC latency profiling (experimental, Linux-only) */
+/* Timers for profiling GC and allocation (experimental, Linux-only) */
 
 #include <limits.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
 intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
@@ -210,7 +212,7 @@ void CAML_INSTR_ATEXIT (void)
     if (name[0] == '+'){
       mode = "a";
       name = name + 1;
-    }else if (name [0] == '>'){
+    }else if (name [0] == '>' || name[0] == '-'){
       mode = "w";
       name = name + 1;
     }

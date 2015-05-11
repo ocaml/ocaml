@@ -310,6 +310,10 @@ void caml_empty_minor_heap (void)
 #endif
 }
 
+#ifdef CAML_INSTR
+extern uintnat caml_instr_alloc_jump;
+#endif
+
 /* Do a minor collection or a slice of major collection, call finalisation
    functions, etc.
    Leave enough room in the minor heap to allocate at least one object.
@@ -317,9 +321,12 @@ void caml_empty_minor_heap (void)
 CAMLexport void caml_gc_dispatch (void)
 {
   value *trigger = caml_young_trigger; /* save old value of trigger */
-
+#ifdef CAML_INSTR
   CAML_INSTR_SETUP(tmr, "dispatch");
   CAML_INSTR_TIME (tmr, "overhead");
+  CAML_INSTR_INT ("alloc/jump#", caml_instr_alloc_jump);
+  caml_instr_alloc_jump = 0;
+#endif
 
   if (trigger == caml_young_alloc_start || caml_requested_minor_gc){
     /* The minor heap is full, we must do a minor collection. */
