@@ -773,22 +773,6 @@ let lookup proj1 proj2 lid env =
   | Lapply(l1, l2) ->
       raise Not_found
 
-let lookup_simple proj1 proj2 lid env =
-  match lid with
-    Lident s ->
-      EnvTbl.find_name s (proj1 env)
-  | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' desc with
-        Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in
-          data
-      | Functor_comps f ->
-          raise Not_found
-      end
-  | Lapply(l1, l2) ->
-      raise Not_found
-
 let lookup_all_simple proj1 proj2 shadow lid env =
   match lid with
     Lident s ->
