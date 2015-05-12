@@ -68,6 +68,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _make_runtime = option "-make-runtime"
   let _no_alias_deps = option "-no-alias-deps"
   let _no_app_funct = option "-no-app-funct"
+  let _no_check_prims = option "-no-check-prims"
   let _noassert = option "-noassert"
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"

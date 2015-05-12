@@ -20,6 +20,7 @@ Compilers:
 - PR#6797: new option -output-complete-obj
   to output an object file with included runtime and autolink libraries
   (Peter Zotov)
+- PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
 - GPR#159: Better locations for structure/signature items
   (Leo White)
 - GPR#149: Attach documentation comments to parse tree (Leo White)
