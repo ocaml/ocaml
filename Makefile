@@ -288,6 +288,33 @@ base.opt:
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
+# cross-compile support
+
+cross-all:
+	$(MAKE) cross-boot
+	$(MAKE) all
+
+cross-opt: cross-all
+	$(MAKE) CAMLRUN="boot/ocamlrun" opt
+
+cross-boot:
+	if ! ocamlc; then \
+	    echo "No host compiler found in PATH" >&2; exit 1; \
+	fi
+	rm -f boot/*
+	for cmd in ocamlc ocamldep ocamllex ocamlrun ocamlyacc; do \
+	    ln -s `which $$cmd` boot/; \
+	done
+	hostlib="$$(ocamlc -where)" && \
+	files="$$(cd "$$hostlib" && ls stdlib.cma std_exit.cmo *.cmi)" && \
+	for file in $$files; do \
+	    ln -sf "$$hostlib"/$$file boot/; \
+	done
+	echo "#!`which ocamlrun`" > boot/camlheader
+	rm -f byterun/ocamlrun
+	ln -s ../boot/ocamlrun byterun/
+
+
 # Installation
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
@@ -314,7 +341,7 @@ install:
 	  dllunix.so dllgraphics.so dllstr.so
 	cd byterun; $(MAKE) install
 	cp ocamlc $(INSTALL_BINDIR)/ocamlc$(EXE)
-	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE)
+	cp ocaml $(INSTALL_BINDIR)/ocaml$(EXE) || true   # not for cross comp
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(INSTALL_BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(INSTALL_BINDIR)/ocamlyacc$(EXE)
@@ -468,6 +495,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
 	    -e 's|%%HOST%%|$(HOST)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
+	    -e 's|%%TARGET_WORD_SIZE%%|$(TARGET_WORD_SIZE)|' \
 	    utils/config.mlp > utils/config.ml
 
 partialclean::
@@ -629,7 +657,7 @@ beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
 	cd tools; \
-	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
+	$(MAKE) CAMLRUN="../$(CAMLRUN)" CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
 
 # The "expunge" utility
 
@@ -715,7 +743,7 @@ ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
 	cd tools; $(MAKE) all
 
 ocamltoolsopt: ocamlopt
-	cd tools; $(MAKE) opt
+	cd tools; $(MAKE) CAMLRUN="../$(CAMLRUN)" opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx
@@ -756,7 +784,7 @@ otherlibraries: ocamltools
 
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
+	  (cd otherlibs/$$i; $(MAKE) CAMLRUN=../../$(CAMLRUN) allopt) || exit $$?; \
 	done
 
 partialclean::
@@ -864,5 +892,6 @@ distclean:
 .PHONY: ocamltoolsopt.opt ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
 .PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
+.PHONY: cross-all cross-opt cross-boot
 
 include .depend

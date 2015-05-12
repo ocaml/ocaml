@@ -231,7 +231,10 @@ inf "Configuring for host $host ..."
 
 if test -n "$target_type"; then
   target="$target_type"
-  TOOLPREF="${target}-"
+  case "$host" in
+      *-darwin*) TOOLPREF="" ;;       # gcc conventions not used on Mac
+      *)         TOOLPREF="${target}-";;
+  esac
 else
   target="$host"
 fi
@@ -445,8 +448,14 @@ export cc cclibs verbose
 sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ANSI-compliant." ;;
-  1) err "The C compiler $cc is not ANSI-compliant.\n" \
-         "You need an ANSI C compiler to build OCaml.";;
+  1) if test x"$host" != x"$target"; then
+       wrn "The C compiler $cc is not ANSI-compliant.\n" \
+           "This failure may occur for cross-compilation:\n" \
+           "we will nevertheless assume the C compiler is ANSI-compliant."
+      else
+        err "The C compiler $cc is not ANSI-compliant.\n" \
+            "You need an ANSI C compiler to build OCaml."
+      fi;;
   *)
      if test x"$host" != x"$target"; then
        wrn "Unable to compile the test program.\n" \
@@ -460,6 +469,9 @@ esac
 
 # Determine which ocamlrun executable to use; for cross-compilation, a native
 # "ocamlrun" executable must be available on the system.
+# FIXME: Also, it is required that an n=32/64 bit target compiler is built
+# with an n bit host ocamlrun (where it affects the nativeint size). This is
+# non-trivial to check here unless we had something like "ocamlrun -word-size".
 if test x"$target" != x"$host"; then
   if ! sh ./searchpath ocamlrun; then
     err "Cross-compilation requires an ocaml runtime environment\n" \
@@ -467,7 +479,7 @@ if test x"$target" != x"$host"; then
         "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
   else
     ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`
-    ocaml_source_version=`sed -n '1 s/\([0-9\.]*\).*/\1/ p' < ../../VERSION`
+    ocaml_source_version=`sed -n -e '1 s/\([0-9.]*\).*/\1/ p' < ../../VERSION`
     if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
       err "While you have an ocaml runtime environment, its version\n" \
           "($ocaml_system_version) doesn't match the version of these sources\n" \
@@ -499,9 +511,11 @@ if test "$?" -eq 0; then
   case "$3" in
     4) inf "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h
+       target_word_size=32
        arch64=false;;
     8) inf "Wow! A 64 bit architecture!"
        echo "#define ARCH_SIXTYFOUR" >> m.h
+       target_word_size=64
        arch64=true;;
     *) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
            "OCaml won't run on this architecture.";;
@@ -509,13 +523,15 @@ if test "$?" -eq 0; then
 else
   # For cross-compilation, runtest always fails: add special handling.
   case "$target" in
-    i686-*-mingw*) inf "OK, this is a regular 32 bit architecture."
+    i686-*-mingw*|armv*-*) inf "OK, this is a regular 32 bit architecture."
                    echo "#undef ARCH_SIXTYFOUR" >> m.h
                    set 4 4 4 2 8
+                   target_word_size=32
                    arch64=false;;
-    x86_64-*-mingw*) inf "Wow! A 64 bit architecture!"
+    x86_64-*-mingw*|arm64-*) inf "Wow! A 64 bit architecture!"
                      echo "#define ARCH_SIXTYFOUR" >> m.h
                      set 4 4 8 2 8
+                     target_word_size=64
                      arch64=true;;
     *) err "Since datatype sizes cannot be guessed when cross-compiling,\n" \
            "a hardcoded list is used but your architecture isn't known yet.\n" \
@@ -553,7 +569,7 @@ case $? in
   2) err "This architecture seems to be neither big endian nor little endian.\n" \
          "OCaml won't run on this architecture.";;
   *) case $target in
-       *-*-mingw*) inf "This is a little-endian architecture."
+       *-*-mingw*|*-darwin*) inf "This is a little-endian architecture."
                    echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
        *) wrn "Something went wrong during endianness determination.\n" \
               "You will have to figure out endianness yourself (option ARCH_BIG_ENDIAN in m.h).";;
@@ -636,7 +652,8 @@ case $? in
          "semantics, will use software emulation."
      echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
   *) case $target in
-       *-*-mingw*) inf "Native division and modulus have round-towards-zero" \
+       *-*-mingw*|*-darwin*)
+                   inf "Native division and modulus have round-towards-zero" \
                        "semantics, will use them."
                    echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
        *) wrn "Something went wrong while checking native division and modulus"\
@@ -836,6 +853,10 @@ case "$target" in
   armv5*-*-linux-gnueabi)       arch=arm; model=armv5; system=linux_eabi;;
   arm*-*-linux-gnueabi)         arch=arm; system=linux_eabi;;
   arm*-*-openbsd*)              arch=arm; system=bsd;;
+  armv6-*-darwin*)              arch=arm; model=armv6; system=macosx;;
+  armv7-*-darwin*)              arch=arm; model=armv7; system=macosx;;
+  armv7s-*-darwin*)             arch=arm; model=armv7s; system=macosx;;
+  arm64-*-darwin*|aarch64-*-darwin*) arch=arm64; system=macosx;;
   zaurus*-*-openbsd*)           arch=arm; system=bsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
@@ -1677,6 +1698,19 @@ case "$buggycc" in
     nativecccompopts="$nativecccompopts -fomit-frame-pointer";;
 esac
 
+# Maybe there is a fixup for cross compilation
+
+if test x"$host" != x"$target"; then
+  if [ -f ../cross-fixup-$arch-$system-s.h ]; then
+    inf "Fixing up configure results with cross-fixup-$arch-$system-s.h"
+    cat ../cross-fixup-$arch-$system-s.h >>s.h
+  fi
+  if [ -f ../cross-fixup-$arch-$system-m.h ]; then
+    inf "Fixing up configure results with cross-fixup-$arch-$system-m.h"
+    cat ../cross-fixup-$arch-$system-m.h >>m.h
+  fi
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1749,6 +1783,7 @@ echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "TARGET=$target" >> Makefile
+echo "TARGET_WORD_SIZE=$target_word_size" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile

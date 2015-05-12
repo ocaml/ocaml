@@ -1,0 +1,78 @@
+======================================================================
+OCaml on iOS
+======================================================================
+
+There is now support for iOS, both in 32 bit and 64 bit mode. The resulting
+compiler is a cross-compiler, running on the Mac and emitting ARM code.
+
+
+++++++++++++
+How to build
+++++++++++++
+
+First, you need a host compiler, i.e. a "normal" OCaml compiler for the 
+Mac. As of now, the word size of the host compiler must be identical to 
+the word size of the target. Also, the OCaml version must be identical.
+
+   Remark: you can configure a 32 bit host compiler with
+   ./configure -host "i386-apple-darwin" -cc "gcc -arch i386 -m32" \
+      -as "as -arch i386" -aspp "gcc -arch i386 -m32 -c"
+
+   (see INSTALL)
+
+As of now, it is sufficient when the host provides "ocamlrun". This command
+should be in your PATH (but the other drivers, ocamlc etc., can of course
+also remain in PATH, although unused), and it will even be used after
+installation (the cross-compiler is not self-contained).
+
+Second, check your iOS SDK. Just run
+
+$ ls /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS/Developer/SDKs/
+
+E.g. if this lists "8.1.sdk" you have version 8.1. You can install SDKs from
+the Xcode UI.
+
+Finally, there is a driver script cross-ios-build.sh running "configure" and
+"make" in the right way (as this is a little bit complicated). You can call
+it as
+
+sdk="8.1" ./cross-ios-build.sh -prefix /whereever
+
+i.e. arguments are passed down to "configure". The following environment
+variables are additionally understood:
+
+ - sdk: the SDK version
+ - arch: the CPU architecture -
+   for iOS devices: armv6, armv7, armv7s, arm64
+   for the simulator: i386, x86_64
+ - platform: whether the build is for the device or the simulator,
+   "iPhoneOS" or "iPhoneSimulator".
+
+After calling cross-ios-build.sh, you still need to run "make install".
+
+++++++++++++
+What you get
+++++++++++++
+
+(1) Bytecode compiler: ocamlc works and is connected with a runtime for
+the target. This means you can in particular use "ocamlc -output-obj"
+to create C output with embedded bytecode. Also, libcamlrun.a is provided.
+
+(2) Native-code compiler: ocamlopt works and generates assembly code for
+the target. You can create C objects with "ocamlopt -output-obj".
+The runtime libasmrun.a is provided.
+
+The native-code compiler for 32 bit targets generates PIE code by default.
+This enables that the loader can freely choose a start address, and
+that address space layout randomization is in effect. The code is minimally
+slower, however. You can disable PIE with the ocamlopt sitch -fno-PIE.
+(Note that PIC is not supported, as there are no shared libraries on iOS.)
+
+For arm64 there is no non-PIE code anyway.
+
+Note that there is no ocamlc.opt/ocamlopt.opt.
+
+
+
+The iOS Porting Team <ios@camlcity.org>,
+Mark Hayden, Jeffrey Scofield and Gerd Stolpmann

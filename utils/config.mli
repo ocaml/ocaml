@@ -125,5 +125,9 @@ val host : string
 
 val target : string
         (* Whether the compiler is a cross-compiler *)
+val target_word_size : int
+        (* the word size of the target; can be different from Sys.word_size
+           which refers to the host in a cross-compiler
+         *)
 
 val print_config : out_channel -> unit;;
