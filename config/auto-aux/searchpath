@@ -15,9 +15,18 @@
 
 # Find a program in the path
 
+doprint=false
+case $1 in
+    -p) shift; doprint=true;;
+    *) ;;
+esac
+
 IFS=':'
 for dir in $PATH; do
   if test -z "$dir"; then dir=.; fi
-  if test -f $dir/$1; then exit 0; fi
+  if test -f $dir/$1 -a -x $dir/$1; then
+      if $doprint; then echo "$dir/$1"; fi
+      exit 0
+  fi
 done
 exit 1

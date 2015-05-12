@@ -12,12 +12,14 @@
 #########################################################################
 
 include ../../config/Makefile
+CAMLRUN ?= ../../boot/ocamlrun
+CAMLYACC ?= ../../boot/ocamlyacc
 
 # Compilation options
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
+CAMLC=$(CAMLRUN) ../../ocamlc -I ../../stdlib -I ../win32unix
+CAMLOPT=$(CAMLRUN) ../../ocamlopt -I ../../stdlib -I ../win32unix
 COMPFLAGS=-w +33 -warn-error A -g
-MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
 CFLAGS=-I../../byterun $(EXTRACFLAGS)
 
 CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
@@ -32,7 +34,7 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).cmxs $(CMIFILES)
 
 $(LIBNAME).cma: $(CAMLOBJS)
-	$(MKLIB) -o $(LIBNAME) -ocamlc "../../boot/ocamlrun ../../ocamlc" \
+	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLRUN) ../../ocamlc" \
 	         -linkall $(CAMLOBJS) $(LINKOPTS)
 
 lib$(LIBNAME).$(A): $(COBJS)
@@ -46,7 +48,7 @@ st_stubs_b.$(O): st_stubs.c st_win32.h
 
 $(LIBNAME).cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(MKLIB) -o $(LIBNAME)nat \
-	         -ocamlopt "../../boot/ocamlrun ../../ocamlopt" -linkall \
+	         -ocamlopt "$(CAMLRUN) ../../ocamlopt" -linkall \
 	         $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
 	mv $(LIBNAME)nat.cmxa $(LIBNAME).cmxa
 	mv $(LIBNAME)nat.$(A) $(LIBNAME).$(A)
