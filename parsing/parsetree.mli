@@ -213,9 +213,11 @@ and expression_desc =
          *)
   | Pexp_constant of constant
         (* 1, 'a', "true", 1.0, 1l, 1L, 1n *)
-  | Pexp_let of rec_flag * value_binding list * expression
-        (* let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
-           let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
+  | Pexp_let of rec_flag * bool * value_binding list * expression
+        (* let P1 = E1 and ... and Pn = EN in E       (Nonrecursive, false)
+           let rec P1 = E1 and ... and Pn = EN in E   (Recursive, false)
+           lazy let  ... in E                         (Nonrecursive, true)
+           lazy let rec ... in E                      (Recursive, true)
          *)
   | Pexp_function of case list
         (* function P1 -> E1 | ... | Pn -> En *)

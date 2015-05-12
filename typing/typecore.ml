@@ -68,6 +68,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Lazy_let_complex_pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -143,7 +144,7 @@ let iter_expression f e =
     | Pexp_function pel -> List.iter case pel
     | Pexp_fun (_, eo, _, e) -> may expr eo; expr e
     | Pexp_apply (e, lel) -> expr e; List.iter (fun (_, e) -> expr e) lel
-    | Pexp_let (_, pel, e) ->  expr e; List.iter binding pel
+    | Pexp_let (_, _, pel, e) ->  expr e; List.iter binding pel
     | Pexp_match (e, pel)
     | Pexp_try (e, pel) -> expr e; List.iter case pel
     | Pexp_array el
@@ -1288,13 +1289,13 @@ let rec iter3 f lst1 lst2 lst3 =
   | _ ->
       assert false
 
-let add_pattern_variables ?check ?check_as env =
+let add_pattern_variables ?(lazy_flag = false) ?check ?check_as env =
   let pv = get_ref pattern_variables in
   (List.fold_right
      (fun (id, ty, name, loc, as_var) env ->
        let check = if as_var then check_as else check in
        Env.add_value ?check id
-         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+         {val_type = ty; val_kind = if lazy_flag then Val_lazy else Val_reg; Types.val_loc = loc;
           val_attributes = [];
          } env
      )
@@ -1311,11 +1312,11 @@ let type_pattern ~lev env spat scope expected_ty =
       ~check_as:(fun s -> Warnings.Unused_var s) in
   (pat, new_env, get_ref pattern_force, unpacks)
 
-let type_pattern_list env spatl scope expected_tys allow =
+let type_pattern_list env ~lazy_flag spatl scope expected_tys allow =
   reset_pattern scope allow;
   let new_env = ref env in
   let patl = List.map2 (type_pat new_env) spatl expected_tys in
-  let new_env, unpacks = add_pattern_variables !new_env in
+  let new_env, unpacks = add_pattern_variables ~lazy_flag !new_env in
   (patl, new_env, get_ref pattern_force, unpacks)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
@@ -1403,7 +1404,7 @@ let force_delayed_checks () =
 
 let rec final_subexpression sexp =
   match sexp.pexp_desc with
-    Pexp_let (_, _, e)
+    Pexp_let (_, _, _, e)
   | Pexp_sequence (_, e)
   | Pexp_try (e, _)
   | Pexp_ifthenelse (_, e, _)
@@ -1530,7 +1531,7 @@ let rec approx_type env sty =
 
 let rec type_approx env sexp =
   match sexp.pexp_desc with
-    Pexp_let (_, _, e) -> type_approx env e
+    Pexp_let (_, _, _, e) -> type_approx env e
   | Pexp_fun (p, _, _, e) ->
       let ty = if is_optional p then type_option (newvar ()) else newvar () in
       newty (Tarrow(p, ty, type_approx env e, Cok))
@@ -1783,6 +1784,21 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
   | Pexp_ident lid ->
       begin
         let (path, desc) = Typetexp.find_value env loc lid.txt in
+        if desc.val_kind = Val_lazy then
+          let id =
+            match path with
+            | Path.Pident id -> id
+            | _ -> assert false (* only local bindings can be lazy *)
+          in
+          let env = Env.add_value id {desc with val_kind = Val_reg} env in
+          let open Ast_helper.Exp in
+          let e =
+            apply ~loc (ident ~loc (mknoloc (Longident.parse "Lazy.force")))
+              [Nolabel, sexp]
+          in
+          type_expect ?in_function ~recarg env e ty_expected
+        else begin
+
         if !Clflags.annotations then begin
           let dloc = desc.Types.val_loc in
           let annot =
@@ -1826,6 +1842,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_type = instance env desc.val_type;
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
+        end
       end
   | Pexp_constant(Const_string (str, _) as cst) -> (
     (* Terrible hack for format strings *)
@@ -1860,7 +1877,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_type = type_constant cst;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_let(Nonrecursive,
+  | Pexp_let(Nonrecursive, false (*non lazy*),
              [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody)
     when contains_gadt env spat ->
     (* TODO: allow non-empty attributes? *)
@@ -1868,7 +1885,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         {sexp with
          pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected
-  | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
+  | Pexp_let(rec_flag, lazy_flag, spat_sexp_list, sbody) ->
       let scp =
         match sexp.pexp_attributes, rec_flag with
         | [{txt="#default"},_], _ -> None
@@ -1876,7 +1893,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
       let (pat_exp_list, new_env, unpacks) =
-        type_let env rec_flag spat_sexp_list scp true in
+        type_let ~lazy_flag env rec_flag spat_sexp_list scp true in
       let body =
         type_expect new_env (wrap_unpacks sbody unpacks) ty_expected in
       re {
@@ -1909,7 +1926,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       in
       let pat = Pat.var ~loc (mknoloc "*opt*") in
       let body =
-        Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+        Exp.let_ ~loc Nonrecursive false ~attrs:[mknoloc "#default",PStr []]
           [Vb.mk spat smatch] sbody
       in
       type_function ?in_function loc sexp.pexp_attributes env ty_expected
@@ -3622,6 +3639,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 
 and type_let ?(check = fun s -> Warnings.Unused_var s)
              ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+             ?(lazy_flag = false)
     env rec_flag spat_sexp_list scope allow =
   let open Ast_helper in
   begin_def();
@@ -3636,6 +3654,19 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         false
   in
   let check = if is_fake_let then check_strict else check in
+
+  let lazify pvb =
+    match pvb.pvb_pat.ppat_desc with
+    | Ppat_var _ ->
+        let sexp = pvb.pvb_expr in
+        {pvb with pvb_expr = Ast_helper.Exp.lazy_ ~loc:sexp.pexp_loc sexp}
+    | _ ->
+        raise(Error(pvb.pvb_expr.pexp_loc, env,
+                    Lazy_let_complex_pattern))
+  in
+  let spat_sexp_list =
+    if lazy_flag then List.map lazify spat_sexp_list else spat_sexp_list
+  in
 
   let spatl =
     List.map
@@ -3654,7 +3685,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) =
-    type_pattern_list env spatl scope nvs allow in
+    type_pattern_list env ~lazy_flag spatl scope nvs allow in
   let is_recursive = (rec_flag = Recursive) in
   (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
@@ -4079,6 +4110,9 @@ let report_error env ppf = function
       fprintf ppf
         "@[This form is not allowed as the type of the inlined record could \
          escape.@]"
+  | Lazy_let_complex_pattern ->
+      fprintf ppf "Lazy let-binding can only have simple patterns."
+
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

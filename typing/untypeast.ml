@@ -347,7 +347,7 @@ let expression sub exp =
       Texp_ident (_path, lid, _) -> Pexp_ident (map_loc sub lid)
     | Texp_constant cst -> Pexp_constant cst
     | Texp_let (rec_flag, list, exp) ->
-        Pexp_let (rec_flag,
+        Pexp_let (rec_flag, false,
           List.map (sub.value_binding sub) list,
           sub.expr sub exp)
 

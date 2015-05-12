@@ -531,10 +531,11 @@ class printer  ()= object(self:'self)
     | Pexp_try (e, l) ->
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]" (* "try@;@[<2>%a@]@\nwith@\n%a"*)
           self#reset#expression e  self#case_list l
-    | Pexp_let (rf, l, e) ->
+    | Pexp_let (rf, lf, l, e) ->
         (* pp f "@[<2>let %a%a in@;<1 -2>%a@]" (\*no identation here, a new line*\) *)
         (*   self#rec_flag rf *)
-        pp f "@[<2>%a in@;<1 -2>%a@]"
+        pp f "@[<2>%s%a in@;<1 -2>%a@]"
+          (if lf then "lazy " else "")
           self#reset#bindings (rf,l)
           self#expression e
     | Pexp_apply (e, l) ->

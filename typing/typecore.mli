@@ -113,6 +113,7 @@ type error =
   | No_value_clauses
   | Exception_pattern_below_toplevel
   | Inlined_record_escape
+  | Lazy_let_complex_pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
