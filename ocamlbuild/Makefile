@@ -138,13 +138,14 @@ ocamlbuild_pack.cmx: $(PACK_CMX)
 
 ocamlbuild_config.ml: ../config/Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
-         echo 'let libdir = "$(LIBDIR)"'; \
-         echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let a = "$(A)"'; \
-         echo 'let o = "$(O)"'; \
-         echo 'let so = "$(SO)"'; \
-         echo 'let exe = "$(EXE)"'; \
-        ) > ocamlbuild_config.ml
+	 echo 'let libdir = "$(LIBDIR)"'; \
+	 echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
+	 echo 'let a = "$(A)"'; \
+	 echo 'let o = "$(O)"'; \
+	 echo 'let so = "$(SO)"'; \
+	 echo 'let ext_dll = "$(EXT_DLL)"'; \
+	 echo 'let exe = "$(EXE)"'; \
+	) > ocamlbuild_config.ml
 clean::
 	rm -f ocamlbuild_config.ml
 beforedepend:: ocamlbuild_config.ml

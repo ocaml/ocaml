@@ -70,6 +70,7 @@ Bug fixes:
   (Damien Doligez, report by Rolf Rolles)
 - PR#5395: OCamlbuild mishandles relative symlinks and include paths
   (Damien Doligez, report by Didier Le Botlan)
+- PR#5822: wrong value of Options.ext_dll on windows
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid
