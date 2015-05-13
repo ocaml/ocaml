@@ -179,6 +179,11 @@ OCamlbuild:
   (Peter Zotov)
 - PR#6720: pass -g to C compilers when tag 'debug' is set
   (Peter Zotov, Gabriel Scherer)
+- PR#6733: add .byte.so and .native.so targets to pass
+  -output-obj -cclib -shared.
+  (Peter Zotov)
+- PR#6733: "runtime_variant(X)" to pass -runtime-variant X option.
+  (Peter Zotov)
 - PR#6774: new menhir-specific flags "only_tokens" and "external_tokens(Foo)"
   (François Pottier)
 
@@ -225,6 +230,8 @@ Bug fixes:
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
+- PR#6849: Inverted pattern unification error
+- PR#6862: Exhaustiveness check wrong for class constructor arguments
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
