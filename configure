@@ -1654,14 +1654,14 @@ fi
 # Check for mmap support for contiguous heap
 
 if ! $with_mmap_heap; then
-    echo "mmap heap support: disabled by command-line option -no-mmap-heap"
+    inf "mmap heap support: disabled by command-line option -no-mmap-heap"
 elif ! $arch64; then
-    echo "mmap heap support: not available on 32-bit architectures"
+    inf "mmap heap support: not available on 32-bit architectures"
 elif sh ./runtest mmap.c; then
     echo "#define MMAP_HEAP" >> s.h
-    echo "mmap heap support: supported"
+    inf "mmap heap support: supported"
 else
-    echo "mmap heap support: not available"
+    inf "mmap heap support: not available"
 fi
 
 # Final twiddling of compiler options to work around known bugs

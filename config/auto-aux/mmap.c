@@ -16,7 +16,7 @@ int main (int argc, char *argv[]){
     perror ("mmap (reserve)");
     return 3;
   }
-  printf ("reserve = %p\n", reserve);
+  /*printf ("reserve = %p\n", reserve);*/
   /* check exclusion */
   block = mmap (reserve, huge_page_size, PROT_READ | PROT_WRITE,
                 MAP_PRIVATE | MAP_ANONYMOUS,
@@ -25,7 +25,7 @@ int main (int argc, char *argv[]){
     perror ("mmap (block)");
     return 3;
   }
-  printf ("block = %p\n", block);
+  /*printf ("block = %p\n", block);*/
   if (block == reserve){
     fprintf (stderr, "exclusion failed\n");
     return 3;
@@ -43,7 +43,7 @@ int main (int argc, char *argv[]){
     perror ("mmap (block)");
     return 3;
   }
-  printf ("block = %p\n", block);
+  /*printf ("block = %p\n", block);*/
   if (block != reserve){
     fprintf (stderr, "override failed\n");
     return 3;

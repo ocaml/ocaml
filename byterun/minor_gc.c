@@ -80,7 +80,20 @@ void caml_set_minor_heap_size (asize_t size)
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
     caml_minor_collection ();
   }
-                                    Assert (caml_young_ptr == caml_young_end);
+  CAMLassert (caml_young_ptr == caml_young_end);
+
+#ifdef MMAP_HEAP
+
+
+ todo: check length, shorten or lengthen as appropriate
+
+  if (caml_young_start != NULL){
+    (void) mmap (caml_young_start, caml_young_end - caml_young_start,
+                 PROT_NONE,
+                 MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
+                 -1, 0);
+  }
+#else
   new_heap = caml_aligned_malloc(size, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + size) != 0)
@@ -90,6 +103,7 @@ void caml_set_minor_heap_size (asize_t size)
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
     free (caml_young_base);
   }
+#endif
   caml_young_base = new_heap_base;
   caml_young_start = new_heap;
   caml_young_end = new_heap + size;

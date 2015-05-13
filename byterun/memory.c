@@ -216,6 +216,46 @@ int caml_page_table_remove(int kind, void * start, void * end)
   return 0;
 }
 
+#ifdef MMAP_HEAP
+
+#include <sys/mman.h>
+
+#define HUGE_PAGE_SIZE_LOG 22
+#define HUGE_PAGE_SIZE (1<<HUGE_PAGE_SIZE_LOG)
+#define ROUND_HUGE_PAGE(x) \
+  ((x) + HUGE_PAGE_SIZE - 1) << HUGE_PAGE_SIZE_LOG << HUGE_PAGE_SIZE_LOG
+static void *heap_end = NULL;
+
+char *caml_alloc_for_heap (asize_t request)
+{
+  uintnat size = ROUND_HUGE_PAGE (sizeof (heap_chunk_head) + request);
+  void *block;
+  char *mem;
+
+  if (heap_end == NULL) heap_end = (void *) caml_heap_start;
+  block = mmap (heap_end, size, PROT_READ | PROT_WRITE,
+                MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (block == MAP_FAILED) return NULL;
+  heap_end = (char *) block + size;
+  mem = (char *) block + sizeof (chunk_head);
+  Chunk_size (mem) = size - sizeof (chunk_head);
+  Chunk_block (mem) = block;
+  return mem;
+}
+
+void caml_free_for_heap (char *mem)
+{
+  char *block;
+
+  CAMLassert (mem + Chunk_size (mem) == heap_end);
+  heap_end = mem - sizeof (chunk_head);
+  block = mmap (heap_end, Chunk_size (mem) + sizeof (chunk_head), PROT_NONE,
+                MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
+                -1, 0);
+  CAMLassert (block == heap_end);
+}
+
+#else
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
    [request] will be rounded up to some implementation-dependent size.
@@ -247,6 +287,7 @@ void caml_free_for_heap (char *mem)
 {
   free (Chunk_block (mem));
 }
+#endif /* MMAP_HEAP */
 
 /* Take a chunk of memory as argument, which must be the result of a
    call to [caml_alloc_for_heap], and insert it into the heap chaining.
