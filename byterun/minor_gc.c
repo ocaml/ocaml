@@ -290,14 +290,22 @@ void caml_empty_minor_heap (void)
 #endif
 }
 
+#ifdef CAML_INSTR
+extern uintnat caml_instr_alloc_jump;
+#endif
+
 /* Do a minor collection and a slice of major collection, call finalisation
    functions, etc.
    Leave the minor heap empty.
 */
 CAMLexport void caml_minor_collection (void)
 {
+#ifdef CAML_INSTR
   CAML_INSTR_SETUP(tmr, "coll");
   CAML_INSTR_TIME (tmr, "overhead");
+  CAML_INSTR_INT ("alloc/jump#", caml_instr_alloc_jump);
+  caml_instr_alloc_jump = 0;
+#endif
 
   caml_empty_minor_heap ();
   CAML_INSTR_TIME (tmr, "coll/minor");
