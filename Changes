@@ -168,6 +168,8 @@ Feature wishes:
   (Jacques Garrigue, request by Jun Furuse)
 - GPR#139: more versatile specification of locations of .annot
   (Christophe Troestler, review by Damien Doligez)
+- GPR#157: store the path of cmos inside debug section at link time
+  (Hugo Heuzard, review by Damien Doligez)
 
 OCaml 4.02.1:
 -------------
