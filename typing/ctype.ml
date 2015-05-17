@@ -1651,10 +1651,11 @@ exception Occur
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
+  let occur_ok = !Clflags.recursive_types && is_contractive env ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        if List.memq ty visited || !Clflags.recursive_types then raise Occur;
+        if occur_ok || List.memq ty visited then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head try_expand_once env ty in
@@ -1665,15 +1666,15 @@ let rec occur_rec env visited ty0 ty =
         match ty'.desc with
           Tobject _ | Tvariant _ -> ()
         | _ ->
-            if not !Clflags.recursive_types then
+            if not (!Clflags.recursive_types && is_contractive env ty') then
               iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        if not !Clflags.recursive_types then raise Occur
+        if not occur_ok then raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
-      if not !Clflags.recursive_types then
+      if not occur_ok then
         iter_type_expr (occur_rec env visited ty0) ty
 
 let type_changed = ref false (* trace possible changes to the studied type *)

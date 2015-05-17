@@ -232,6 +232,7 @@ Bug fixes:
   (Leo White, Gabriel Scherer)
 - PR#6849: Inverted pattern unification error
 - PR#6862: Exhaustiveness check wrong for class constructor arguments
+- PR#6870: Unsoundness when -rectypes fails to detect non-contractive type    
 - PR#6872: Type-directed propagation fails to disambiguate variants
            that are also exception constructors    
 - GPR#143: fix getsockopt behaviour for boolean socket options
