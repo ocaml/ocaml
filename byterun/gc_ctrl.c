@@ -19,6 +19,7 @@
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
+#include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -318,6 +319,11 @@ CAMLprim value caml_gc_counters(value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_gc_huge_fallback_count (value v)
+{
+  return Val_long (caml_huge_fallback_count);
+}
+
 CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
@@ -502,11 +508,6 @@ uintnat caml_normalize_heap_increment (uintnat i)
   return ((i + Page_size - 1) >> Page_log) << Page_log;
 }
 
-#ifdef MMAP_HEAP
-#include <sys/mman.h>
-#define HEAP_ZONE_SIZE (1 << 40)
-#endif
-
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
                    uintnat percent_m)
@@ -515,15 +516,9 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   CAML_INSTR_INIT ();
-#ifdef MMAP_HEAP
-  caml_heap_start = mmap (NULL, HEAP_ZONE_SIZE, PROT_NONE,
-                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-                          -1, 0);
-  if (caml_heap_start == MAP_FAILED){
+  if (caml_init_alloc_for_heap () != 0){
     caml_fatal_error ("cannot initialize heap: mmap failed");
   }
-  caml_young_ptr = caml_young_end = caml_heap_start + HEAP_ZONE_SIZE;
-#endif
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }

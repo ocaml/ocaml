@@ -25,6 +25,12 @@
 #include "mlvalues.h"
 #include "signals.h"
 
+int caml_huge_fallback_count = 0;
+/* Number of times that mmapping big pages fails and we fell back to small
+   pages. This counter is available to the program through
+   [Gc.huge_fallback_count].
+*/
+
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
 /* Page table management */
@@ -216,29 +222,57 @@ int caml_page_table_remove(int kind, void * start, void * end)
   return 0;
 }
 
-#ifdef MMAP_HEAP
 
-#include <sys/mman.h>
+#ifdef MMAP_INTERVAL
 
-#define HUGE_PAGE_SIZE_LOG 22
-#define HUGE_PAGE_SIZE (1<<HUGE_PAGE_SIZE_LOG)
-#define ROUND_HUGE_PAGE(x) \
-  ((x) + HUGE_PAGE_SIZE - 1) << HUGE_PAGE_SIZE_LOG << HUGE_PAGE_SIZE_LOG
-static void *heap_end = NULL;
+static void *raw_heap_start = NULL, *raw_heap_end = NULL;
+
+void *caml_mmap_heap (void *addr, size_t length, int prot, int flags)
+{
+  void *result;
+  result = mmap (addr, length, prot,
+                 flags | MAP_PRIVATE | MAP_ANONYMOUS | Huge_pages_flag,
+                 -1, 0);
+#ifdef HAS_HUGE_PAGES
+  if (result == MAP_FAILED){
+    result = mmap (addr, length, prot,
+                   flags | MAP_PRIVATE | MAP_ANONYMOUS,
+                   -1, 0);
+    if (result != MAP_FAILED) ++caml_huge_fallback_count;
+  }
+#endif
+  return result;
+}
+
+int caml_init_alloc_for_heap (void)
+{
+  char *block;
+
+  block = caml_mmap_heap (NULL, HEAP_INTERVAL_SIZE, PROT_NONE, MAP_NORESERVE);
+  if (block == MAP_FAILED) return -1;
+  raw_heap_start = raw_heap_end = block;
+  caml_young_end = block + HEAP_INTERVAL_SIZE;
+  caml_young_start = caml_young_ptr = caml_young_end;
+  return 0;
+}
 
 char *caml_alloc_for_heap (asize_t request)
 {
-  uintnat size = ROUND_HUGE_PAGE (sizeof (heap_chunk_head) + request);
+  uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
   void *block;
   char *mem;
 
-  if (heap_end == NULL) heap_end = (void *) caml_heap_start;
-  block = mmap (heap_end, size, PROT_READ | PROT_WRITE,
-                MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  CAMLassert (raw_heap_end != NULL);
+  if ((char *) raw_heap_end + size > raw_heap_start + HEAP_INTERVAL_SIZE / 2){
+    /* No room for growing heap. */
+    return NULL;
+  }
+  block = caml_mmap_heap (raw_heap_end, size, PROT_READ | PROT_WRITE,
+                          MAP_FIXED);
   if (block == MAP_FAILED) return NULL;
-  heap_end = (char *) block + size;
-  mem = (char *) block + sizeof (chunk_head);
-  Chunk_size (mem) = size - sizeof (chunk_head);
+  raw_heap_end = (char *) block + size;
+  mem = (char *) block + sizeof (heap_chunk_head);
+  Chunk_size (mem) = size - sizeof (heap_chunk_head);
   Chunk_block (mem) = block;
   return mem;
 }
@@ -247,15 +281,72 @@ void caml_free_for_heap (char *mem)
 {
   char *block;
 
-  CAMLassert (mem + Chunk_size (mem) == heap_end);
-  heap_end = mem - sizeof (chunk_head);
-  block = mmap (heap_end, Chunk_size (mem) + sizeof (chunk_head), PROT_NONE,
-                MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-                -1, 0);
-  CAMLassert (block == heap_end);
+  CAMLassert (mem + Chunk_size (mem) == raw_heap_end);
+  raw_heap_end = mem - sizeof (heap_chunk_head);
+  block = caml_mmap_heap (raw_heap_end,
+                          Chunk_size (mem) + sizeof (heap_chunk_head),
+                          PROT_NONE, MAP_FIXED | MAP_NORESERVE);
+  CAMLassert (block == raw_heap_end);
 }
 
-#else
+/* Reduce the size of a heap chunk. This chunk must be the last one. */
+void caml_shrink_chunk (char *chunk, uintnat req_bsz)
+{
+  uintnat old_size = Chunk_size (chunk) + sizeof (heap_chunk_head);
+  uintnat new_size = Round_mmap_size (req_bsz + sizeof (heap_chunk_head));
+  void *block;
+
+  CAMLassert (chunk + Chunk_size (chunk) == raw_heap_end);
+  CAMLassert (new_size <= old_size);
+  if (new_size < old_size){
+    uintnat diff = old_size - new_size;
+    raw_heap_end -= diff;
+    block = caml_mmap_heap (raw_heap_end, diff, PROT_NONE,
+                            MAP_FIXED | MAP_NORESERVE);
+    CAMLassert (block == raw_heap_end);
+    Chunk_size (chunk) = new_size - sizeof (heap_chunk_head);
+    caml_stat_heap_size -= diff;
+  }
+}
+
+#elif defined(MMAP_HUGE_PAGES)
+
+int caml_init_alloc_for_heap (void)
+{
+  return 0;
+}
+
+char *caml_alloc_for_heap (asize_t request)
+{
+  uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
+  void *block;
+  char *mem;
+  block = mmap (NULL, size, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+  if (block == MAP_FAILED) return NULL;
+  mem = (char *) block + sizeof (heap_chunk_head);
+  Chunk_size (mem) = size - sizeof (heap_chunk_head);
+  Chunk_block (mem) = block;
+  return mem;
+}
+
+void caml_free_for_heap (char *mem)
+{
+  munmap (Chunk_block (mem), Chunk_size (mem) + sizeof (heap_chunk_head));
+}
+
+#else /* neither MMAP_INTERVAL nor MMAP_HUGE_PAGES */
+
+/* Initialize the [alloc_for_heap] system.
+   This function must be called exactly once, and it must be called
+   before the first call to [alloc_for_heap].
+   It returns 0 on success and -1 on failure.
+*/
+int caml_init_alloc_for_heap (void)
+{
+  return 0;
+}
+
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
    [request] will be rounded up to some implementation-dependent size.
@@ -287,7 +378,7 @@ void caml_free_for_heap (char *mem)
 {
   free (Chunk_block (mem));
 }
-#endif /* MMAP_HEAP */
+#endif /* MMAP_INTERVAL or MMAP_HUGE_PAGES or none */
 
 /* Take a chunk of memory as argument, which must be the result of a
    call to [caml_alloc_for_heap], and insert it into the heap chaining.
@@ -302,10 +393,9 @@ void caml_free_for_heap (char *mem)
 */
 int caml_add_to_heap (char *m)
 {
-                                     Assert (Chunk_size (m) % Page_size == 0);
 #ifdef DEBUG
   /* Should check the contents of the block. */
-#endif /* debug */
+#endif /* DEBUG */
 
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
                    (caml_stat_heap_size + Chunk_size (m)) / 1024);

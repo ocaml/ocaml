@@ -43,11 +43,14 @@ CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
-char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
-void caml_free_for_heap (char *mem);
-int caml_add_to_heap (char *mem);
-color_t caml_allocation_color (void *hp);
+CAMLextern int caml_init_alloc_for_heap (void);
+CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
+CAMLextern void caml_free_for_heap (char *mem);
+CAMLextern int caml_add_to_heap (char *mem);
+CAMLextern color_t caml_allocation_color (void *hp);
 
+CAMLextern int caml_huge_fallback_count;
+  
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
 /* <private> */
@@ -81,10 +84,46 @@ CAMLextern unsigned char * caml_page_table[Pagetable1_size];
 
 #endif
 
-#define Is_in_value_area(a) \
+#ifdef MMAP_INTERVAL
+
+#include <sys/mman.h>
+
+#ifdef HAS_HUGE_PAGES
+#define Huge_pages_flag MAP_HUGETLB
+#define Heap_page_size HUGE_PAGE_SIZE
+#else
+#define Huge_pages_flag 0
+#define Heap_page_size (4 * 1024)
+#endif
+
+#define HEAP_INTERVAL_SIZE (2LL * 1024 * 1024 * 1024 * 1024)
+#define Is_in_heap_or_young(a)                                          \
+  ((uintnat) ((char *) (a) - caml_heap_start) < HEAP_INTERVAL_SIZE)
+#define Is_in_heap(a)                                                   \
+  ((uintnat) ((char *) (a) - caml_heap_start) < HEAP_INTERVAL_SIZE/2)
+#define Is_in_value_area(a)                                             \
+  (Is_in_heap_or_young(a)                                               \
+   || (Classify_addr(a) & (In_heap | In_young | In_static_data)))
+
+void *caml_mmap_heap (void *addr, size_t length, int prot, int flags);
+  
+#else
+
+#ifdef MMAP_HUGE_PAGES
+#include <sys/mman.h>
+#define Heap_page_size HUGE_PAGE_SIZE
+#endif
+  
+#define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
 #define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
+
+#endif
+
+#define Round_mmap_size(x)                                              \
+  (((x) + (Heap_page_size - 1)) & ~ (Heap_page_size - 1))
+
 
 int caml_page_table_add(int kind, void * start, void * end);
 int caml_page_table_remove(int kind, void * start, void * end);

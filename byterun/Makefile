@@ -16,10 +16,15 @@ include Makefile.common
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(IFLEXDIR) -Werror
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR)
 IFLAGS=$(CFLAGS) -DCAML_INSTR
+HFLAGS=$(CFLAGS) -DMMAP_HUGE_PAGES
+MFLAGS=$(DFLAGS) -DMMAP_INTERVAL
+  #FIXME ^^^^^^ debug
 
 OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 IOBJS=$(OBJS:.o=.i.o)
+HOBJS=$(OBJS:.o=.h.o)
+MOBJS=$(OBJS:.o=.m.o) instrtrace.m.o
 PICOBJS=$(OBJS:.o=.pic.o)
 
 SHARED_LIBS_TMP=$(SUPPORTS_SHARED_LIBRARIES:%false=)
@@ -38,6 +43,12 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 ocamlruni$(EXE): prims.o libcamlruni.a
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
+ocamlrunh$(EXE): prims.o libcamlrunh.a
+	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
+
+ocamlrunm$(EXE): prims.o libcamlrunm.a
+	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
+
 libcamlrun.a: $(OBJS)
 	ar rc libcamlrun.a $(OBJS)
 	$(RANLIB) libcamlrun.a
@@ -47,6 +58,14 @@ libcamlrund.a: $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
 libcamlruni.a: $(IOBJS)
+	ar rc $@ $^
+	$(RANLIB) $@
+
+libcamlrunh.a: $(HOBJS)
+	ar rc $@ $^
+	$(RANLIB) $@
+
+libcamlrunm.a: $(MOBJS)
 	ar rc $@ $^
 	$(RANLIB) $@
 
@@ -69,6 +88,12 @@ clean::
 
 %.i.o: %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
+
+%.h.o: %.c
+	$(CC) -c $(HFLAGS) -o $@ $<
+
+%.m.o: %.c
+	$(CC) -c $(MFLAGS) -o $@ $<
 
 .c.pic.o:
 	ln -s -f $*.c $*.pic.c
