@@ -66,10 +66,10 @@ type ('a, 'b) precision =
 type prec_option = int option
 
 (* see the Custom format combinator *)
-type ('a, 'b, 'c, 'd) custom_arity =
-  | Custom_zero : ('a, 'b, 'a, 'b) custom_arity
-  | Custom_succ : ('a, 'b, 'c, 'd) custom_arity ->
-    ('a, 'b, 'x -> 'c, 'x -> 'd) custom_arity
+type ('a, 'b, 'c) custom_arity =
+  | Custom_zero : ('a, string, 'a) custom_arity
+  | Custom_succ : ('a, 'b, 'c) custom_arity ->
+    ('a, 'x -> 'b, 'x -> 'c) custom_arity
 
 (***)
 
@@ -450,7 +450,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
      ]}
   *)
   | Custom :
-      ('c, 'a, 'x, 'y) custom_arity * ('b -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      ('a, 'x, 'y) custom_arity * (unit -> 'x) * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('y, 'b, 'c, 'd, 'e, 'f) fmt
 
   (* end of a format specification *)
