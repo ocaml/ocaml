@@ -94,3 +94,7 @@ external get : unit -> control = "caml_gc_get"
 external set : control -> unit = "caml_gc_set"
 (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
+
+external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+(** Return the number of times we tried to map huge pages and had to fall
+    back to small pages. *)

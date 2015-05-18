@@ -20,6 +20,7 @@
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
+#include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -320,6 +321,11 @@ CAMLprim value caml_gc_counters(value v)
   CAMLreturn (res);
 }
 
+CAMLprim value caml_gc_huge_fallback_count (value v)
+{
+  return Val_long (caml_huge_fallback_count);
+}
+
 CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
@@ -554,6 +560,9 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
     Bsize_wsize (caml_normalize_heap_increment (major_size));
 
   CAML_INSTR_INIT ();
+  if (caml_init_alloc_for_heap () != 0){
+    caml_fatal_error ("cannot initialize heap: mmap failed");
+  }
   if (caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size)){
     caml_fatal_error ("OCaml runtime error: cannot initialize page table\n");
   }

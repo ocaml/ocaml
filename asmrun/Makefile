@@ -19,6 +19,8 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 IFLAGS=$(FLAGS) -DCAML_INSTR
+HFLAGS=$(FLAGS) -DMMAP_HUGE_PAGES
+MFLAGS=$(FLAGS) -DMMAP_INTERVAL
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
@@ -33,12 +35,22 @@ ASMOBJS=$(ARCH).o
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 IOBJS=$(COBJS:.o=.i.o) $(ASMOBJS)
+HOBJS=$(COBJS:.o=.h.o) $(ASMOBJS)
+MOBJS=$(COBJS:.o=.m.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
 all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
 
 ifeq "$(RUNTIMEI)" "true"
 all: libasmruni.a
+endif
+
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+all: libasmrunh.a
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+all: libasmrunm.a
 endif
 
 libasmrun.a: $(OBJS)
@@ -62,6 +74,16 @@ libasmruni.a: $(IOBJS)
 	ar rc $@ $^
 	$(RANLIB) $@
 
+libasmrunh.a: $(HOBJS)
+	rm -f $@
+	ar rc $@ $^
+	$(RANLIB) $@
+
+libasmrunm.a: $(MOBJS)
+	rm -f $@
+	ar rc $@ $^
+	$(RANLIB) $@
+
 all-noprof:
 
 all-prof: libasmrunp.a
@@ -77,6 +99,14 @@ install: install-default install-$(RUNTIMED) install-$(PROFILING)
 
 ifeq "$(RUNTIMEI)" "true"
 install: install-runtimei
+endif
+
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+install: install-runtimeh
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+install: install-runtimem
 endif
 
 install-default:
@@ -95,6 +125,16 @@ install-runtimei:
 	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
 .PHONY: install-runtimei
+
+install-runtimeh:
+	cp libasmrunh.a $(INSTALL_LIBDIR)/libasmrunh.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunh.a
+.PHONY: install-runtimeh
+
+install-runtimem:
+	cp libasmrunm.a $(INSTALL_LIBDIR)/libasmrunm.a
+	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunm.a
+.PHONY: install-runtimem
 
 install-noprof:
 	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
@@ -212,6 +252,12 @@ clean::
 
 %.i.o : %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
+
+%.h.o : %.c
+	$(CC) -c $(HFLAGS) -o $@ $<
+
+%.m.o : %.c
+	$(CC) -c $(MFLAGS) -o $@ $<
 
 .c.p.o:
 	ln -s -f $*.c $*.p.c

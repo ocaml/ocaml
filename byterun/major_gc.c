@@ -670,23 +670,12 @@ void caml_finish_major_cycle (void)
   caml_allocated_words = 0;
 }
 
-/* Make sure the request is at least Heap_chunk_min and round it up
-   to a multiple of the page size.
+/* Call this function to make sure [request] is greater than or equal
+   to both [Heap_chunk_min] and the current heap increment.
 */
-static asize_t clip_heap_chunk_size (asize_t request)
+asize_t caml_clip_heap_chunk_size (asize_t bsz)
 {
-  if (request < Bsize_wsize (Heap_chunk_min)){
-    request = Bsize_wsize (Heap_chunk_min);
-  }
-  return ((request + Page_size - 1) >> Page_log) << Page_log;
-}
-
-/* Compute the heap increment, make sure the request is at least that big,
-   then call clip_heap_chunk_size, then make sure the result is >= request.
-*/
-asize_t caml_round_heap_chunk_size (asize_t request)
-{
-  asize_t result = request;
+  asize_t result = bsz;
   uintnat incr;
 
   /* Compute the heap increment as a byte size. */
@@ -699,11 +688,8 @@ asize_t caml_round_heap_chunk_size (asize_t request)
   if (result < incr){
     result = incr;
   }
-  result = clip_heap_chunk_size (result);
-
-  if (result < request){
-    caml_raise_out_of_memory ();
-    return 0; /* not reached */
+  if (result < Bsize_wsize (Heap_chunk_min)){
+    result = Bsize_wsize (Heap_chunk_min);
   }
   return result;
 }
@@ -712,14 +698,16 @@ void caml_init_major_heap (asize_t heap_size)
 {
   int i;
 
-  caml_stat_heap_size = clip_heap_chunk_size (heap_size);
+  caml_stat_heap_size = caml_clip_heap_chunk_size (heap_size);
   caml_stat_top_heap_size = caml_stat_heap_size;
   Assert (caml_stat_heap_size % Page_size == 0);
   caml_heap_start = (char *) caml_alloc_for_heap (caml_stat_heap_size);
   if (caml_heap_start == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (caml_heap_start) = NULL;
+  caml_stat_heap_size = Chunk_size (caml_heap_start);
   caml_stat_heap_chunks = 1;
+  caml_stat_top_heap_size = caml_stat_heap_size;
 
   if (caml_page_table_add(In_heap, caml_heap_start,
                           caml_heap_start + caml_stat_heap_size) != 0) {

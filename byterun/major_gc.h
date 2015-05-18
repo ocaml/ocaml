@@ -57,7 +57,7 @@ double caml_major_work_credit;
 extern double caml_gc_clock;
 
 void caml_init_major_heap (asize_t);           /* size in bytes */
-asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */
+asize_t caml_clip_heap_chunk_size (asize_t bsz);
 void caml_darken (value, value *);
 void caml_major_collection_slice (intnat);
 void major_collection (void);
