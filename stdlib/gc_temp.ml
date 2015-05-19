@@ -82,3 +82,7 @@ external get : unit -> control = "caml_gc_get"
 external set : control -> unit = "caml_gc_set"
 (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
+
+
+external runtime_variant : unit -> string = "caml_runtime_variant"
+external runtime_parameters : unit -> string = "caml_runtime_parameters"
