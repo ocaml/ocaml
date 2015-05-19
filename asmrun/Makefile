@@ -119,6 +119,9 @@ power.o: power-$(SYSTEM).o
 power.p.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.p.o
 
+power.pic.o: power-$(SYSTEM).pic.o
+	cp power-$(SYSTEM).pic.o power.pic.o
+
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
 misc.c: ../byterun/misc.c
