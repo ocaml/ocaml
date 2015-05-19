@@ -65,6 +65,10 @@ Build system:
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
 - PR#6266: Cross compilation for iOs, Android etc
 
+Installation procedure:
+- Update instructions for x86-64 PIC mode and POWER architecture builds
+  (Mark Shinwell)
+
 Bug fixes:
 - PR#5271: Location.prerr_warning is hard-coded to use Format.err_formatter
   (Damien Doligez, report by Rolf Rolles)
