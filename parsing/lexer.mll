@@ -456,6 +456,7 @@ rule token = parse
   | ","  { COMMA }
   | "->" { MINUSGREATER }
   | "."  { DOT }
+  | ".!"  { DOTBANG }
   | ".." { DOTDOT }
   | ":"  { COLON }
   | "::" { COLONCOLON }
