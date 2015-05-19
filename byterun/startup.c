@@ -366,6 +366,10 @@ CAMLexport void caml_main(char **argv)
   caml_verb_gc = 0xBF;
 #endif
   parse_camlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+
   pos = 0;
 
   /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
