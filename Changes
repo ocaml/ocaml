@@ -148,6 +148,8 @@ Bug fixes:
 - PR#6849: Inverted pattern unification error
 - PR#6857: __MODULE__ doesn't give the current module with -o
 - PR#6862: Exhaustiveness check wrong for class constructor arguments
+- PR#6869: Improve comment on [Hashtbl.hash_param]
+  (Mark Shinwell, report by Jun Furuse)
 - PR#6870: Unsoundness when -rectypes fails to detect non-contractive type    
 - PR#6872: Type-directed propagation fails to disambiguate variants
            that are also exception constructors    
