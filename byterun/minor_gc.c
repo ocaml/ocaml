@@ -438,7 +438,6 @@ void caml_empty_minor_heap (void)
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     caml_young_ptr = caml_young_end;
-    caml_update_young_limit((uintnat)caml_young_start);
     clear_table (&caml_remembered_set.ref);
     caml_addrmap_clear(&caml_remembered_set.promotion);
     caml_addrmap_clear(&caml_remembered_set.promotion_rev);

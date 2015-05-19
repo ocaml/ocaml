@@ -40,7 +40,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
-  utils/consistbl.cmo
+  utils/consistbl.cmo utils/domainstate.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/ast_helper.cmo \
@@ -471,10 +471,16 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%TARGET%%|$(TARGET)|' \
 	    utils/config.mlp > utils/config.ml
 
-partialclean::
-	rm -f utils/config.ml
+utils/domainstate.ml: utils/domainstate.ml.c byterun/domain_state.tbl
+	$(CPP) -I byterun utils/domainstate.ml.c > utils/domainstate.ml
 
-beforedepend:: utils/config.ml
+utils/domainstate.mli: utils/domainstate.ml byterun/domain_state.tbl
+	$(CPP) -I byterun utils/domainstate.mli.c > utils/domainstate.mli
+
+partialclean::
+	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
+
+beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 # The parser
 
