@@ -13,7 +13,7 @@
      | Tvar var, tb -> 2
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-(Tbool, Tvar _)
+(Tbool, Tvar Zero)
 val f : ('env, 'a) typ -> ('env, 'a) typ -> int = <fun>
 #   Exception: Match_failure ("//toplevel//", 9, 1).
 # 

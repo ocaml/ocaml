@@ -65,6 +65,43 @@ module PR6862 :
     type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
     class d : int opt -> object method x : int end
   end
+#         module Exhaustive2 :
+  sig type _ t = Int : int t val f : bool t option -> unit end
+#           module PR6220 :
+  sig
+    type 'a t = I : int t | F : float t
+    val f : int t -> int
+    val g : int t -> int
+  end
+#                 module PR6403 :
+  sig
+    type (_, _) eq = Refl : ('a, 'a) eq
+    type empty = { bottom : 'a. 'a; }
+    type ('a, 'b) sum = Left of 'a | Right of 'b
+    val notequal : ((int, bool) eq, empty) sum -> empty
+  end
+#                             module PR6437 :
+  sig
+    type ('a, 'b) ctx =
+        Nil : (unit, unit) ctx
+      | Cons : ('a, 'b) ctx -> ('a * unit, 'b * unit) ctx
+    type 'a var = O : ('a * unit) var | S : 'a var -> ('a * unit) var
+    val f : ('g1, 'g2) ctx * 'g1 var -> 'g2 var
+  end
+#                     Characters 175-221:
+  ....match x with
+      | String s -> print_endline s.................
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+Any
+module PR6801 :
+  sig
+    type _ value =
+        String : string -> string value
+      | Float : float -> float value
+      | Any
+    val print_string_value : string value -> unit
+  end
 #               Characters 118-119:
       let eval (D x) = x
                        ^
@@ -73,7 +110,7 @@ Error: This expression has type a#2 t but an expression was expected of type
        The type constructor a#2 would escape its scope
 #               module Rectype :
   sig type (_, _) t = C : ('a, 'a) t val f : ('s, 's * 's) t -> unit end
-#                         Characters 178-186:
+#                         Characters 180-188:
           | (IntLit _ | BoolLit _) -> ()
              ^^^^^^^^
 Error: This pattern matches values of type int t
@@ -265,7 +302,7 @@ val f : 'a ty -> 'a t -> int = <fun>
     | TA, D z -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-(TE TC, D [|  |])
+(TE TC, D [| 0. |])
 val f : 'a ty -> 'a t -> int = <fun>
 #                   Characters 147-154:
     | D [|1.0|], TE TC -> 14
@@ -287,7 +324,7 @@ Error: This pattern matches values of type 'a array
     | {left=TA; right=D z} -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-{left=TE TC; right=D [|  |]}
+{left=TE TC; right=D [| 0. |]}
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 #           module M : sig type 'a t val eq : ('a t, 'b t) eq end
@@ -309,14 +346,14 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < foo : int >
-       Type ex#17 = < bar : int; .. > is not compatible with type <  > 
+       Type ex#25 = < bar : int; .. > is not compatible with type <  > 
        The second object type has no method bar
 #         Characters 98-99:
     (x:<foo:int;bar:int>)
      ^
 Error: This expression has type t = < foo : int; .. >
        but an expression was expected of type < bar : int; foo : int >
-       Type ex#19 = < bar : int; .. > is not compatible with type
+       Type ex#27 = < bar : int; .. > is not compatible with type
          < bar : int > 
        The first object type has an abstract row, it cannot be closed
 #         Characters 98-99:
@@ -324,7 +361,7 @@ Error: This expression has type t = < foo : int; .. >
      ^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
-       The type constructor ex#22 would escape its scope
+       The type constructor ex#30 would escape its scope
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a = <fun>
 #         val g : 'a -> 'a int_foo -> 'a int_bar -> 'a * int * int = <fun>
 #       type 'a ty = Int : int -> int ty

@@ -13,6 +13,6 @@
     | Succ (Succ (Succ (Succ Zero))) -> "4"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-Succ (Succ (Succ (Succ (Succ _))))
+Succ (Succ (Succ (Succ (Succ Zero))))
 val f : aux -> string = <fun>
 # 

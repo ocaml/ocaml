@@ -51,6 +51,11 @@ val set_args_erase_mutable : pattern -> pattern list -> pattern list
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
     pattern -> constructor_tag list -> constructor_description  list
+val ppat_of_type :
+    Env.t -> type_expr ->
+    Parsetree.pattern *
+    (string, constructor_description) Hashtbl.t *
+    (string, label_description) Hashtbl.t
 
 val pressure_variants: Env.t -> pattern list -> unit
 val check_partial_gadt:
