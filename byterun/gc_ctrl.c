@@ -12,6 +12,7 @@
 /***********************************************************************/
 
 #include "alloc.h"
+#include "backtrace.h"
 #include "compact.h"
 #include "custom.h"
 #include "finalise.h"
@@ -533,4 +534,54 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   }
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
+}
+
+
+/* FIXME After the startup_aux.c unification, move these functions there. */
+
+CAMLprim value caml_runtime_variant (value unit)
+{
+  CAMLassert (unit == Val_unit);
+#if defined (DEBUG)
+  return caml_copy_string ("d");
+#elif defined (CAML_INSTR)
+  return caml_copy_string ("i");
+#else
+  return caml_copy_string ("");
+#endif
+}
+
+extern int caml_parser_trace;
+extern int caml_trace_flag;   /* FIXME change "_flag" to "_level" */
+
+CAMLprim value caml_runtime_parameters (value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return caml_alloc_sprintf
+    ("a=%d,%s,i=%lu,"
+#ifndef NATIVE_CODE
+     "l=%lu,"
+#endif
+     "o=%lu,O=%lu,p=%d,s=%lu,"
+#ifdef DEBUG
+     "t=%d,"
+#endif
+     "v=%lu",
+     /* a */ caml_allocation_policy,
+     /* b */ caml_backtrace_active ? "b" : "",   /* FIXME simplify with new parsing */
+     /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
+     /* i */ caml_major_heap_increment,
+#ifndef NATIVE_CODE
+     /* l */ caml_max_stack_size,
+#endif
+     /* o */ caml_percent_free,
+     /* O */ caml_percent_max,
+     /* p */ caml_parser_trace,
+     /* R */ /* missing */
+     /* s */ caml_minor_heap_size,
+#ifdef DEBUG
+     /* t */ caml_trace_flag,
+#endif
+     /* v */ caml_verb_gc
+     );
 }
