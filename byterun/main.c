@@ -26,8 +26,6 @@ CAMLextern void caml_expand_command_line (int *, char ***);
 
 int main(int argc, char **argv)
 {
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
 #if 0
   {
     int i;
@@ -45,7 +43,6 @@ int main(int argc, char **argv)
     caml_gc_message (-1, "### CAMLRUNPARAM=%s\n", cp == NULL ? "" : cp);
     caml_gc_message (-1, "### working dir: %s\n", getcwd (NULL, 0));
   }
-#endif
 #endif
 #ifdef _WIN32
   /* Expand wildcards and diversions in command line */
