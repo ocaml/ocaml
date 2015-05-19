@@ -89,6 +89,8 @@ Bug fixes:
   (Peter Zotov)
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
+- PR#6630: Failure of tests/prim-bigstring/{big,}string.ml on big-endian
+  architectures (Pierre Chambart, testing by Mark Shinwell)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
 - PR#6652: ocamlbuild -clean does not print a newline after output
