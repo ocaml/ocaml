@@ -206,7 +206,7 @@ void CAML_INSTR_ATEXIT (void)
     char *name = fname;
 
     if (name[0] == '@'){
-      snprintf (buf, 1000, "%s.%d", name + 1, getpid ());
+      snprintf (buf, sizeof(buf), "%s.%d", name + 1, getpid ());
       name = buf;
     }
     if (name[0] == '+'){

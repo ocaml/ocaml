@@ -86,3 +86,6 @@ external set : control -> unit = "caml_gc_set"
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall
     back to small pages. *)
+
+external runtime_variant : unit -> string = "caml_runtime_variant"
+external runtime_parameters : unit -> string = "caml_runtime_parameters"
