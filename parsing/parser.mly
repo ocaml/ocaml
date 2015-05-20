@@ -1856,8 +1856,13 @@ label_declaration:
 label_declaration_semi:
     mutable_flag label COLON poly_type_no_attr attributes SEMI attributes
       {
+       let info =
+         match rhs_info 5 with
+         | Some _ as info_before_semi -> info_before_semi
+         | None -> symbol_info ()
+       in
        Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:($5 @ $7)
-         ~loc:(symbol_rloc()) ~info:(symbol_info ())
+         ~loc:(symbol_rloc()) ~info
       }
 ;
 
