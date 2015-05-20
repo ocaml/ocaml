@@ -106,6 +106,7 @@ CAMLextern unsigned char * caml_page_table[Pagetable1_size];
    || (Classify_addr(a) & (In_heap | In_young | In_static_data)))
 
 void *caml_mmap_heap (void *addr, size_t length, int prot, int flags);
+void caml_shrink_chunk (char *chunk, uintnat req_bsz);
   
 #else
 
