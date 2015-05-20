@@ -68,8 +68,8 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp ocamlrunm$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)   # FIXME m
-	cp libcamlrunm.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A) # FIXME m
+	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
 	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
 	  else mkdir $(INSTALL_LIBDIR)/caml; fi

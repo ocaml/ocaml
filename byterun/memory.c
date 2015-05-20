@@ -263,7 +263,8 @@ char *caml_alloc_for_heap (asize_t request)
   char *mem;
 
   CAMLassert (raw_heap_end != NULL);
-  if ((char *) raw_heap_end + size > raw_heap_start + HEAP_INTERVAL_SIZE / 2){
+  if ((char *) raw_heap_end + size
+      > (char *) raw_heap_start + HEAP_INTERVAL_SIZE / 2){
     /* No room for growing heap. */
     return NULL;
   }

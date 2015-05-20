@@ -417,7 +417,7 @@ void caml_compact_heap (void)
     uintnat head_size = sizeof (heap_chunk_head);
     while (ch != NULL){
       Chunk_size (caml_heap_start) += Chunk_size (ch) + head_size;
-      hp = & (((heap_chunk_head *) ch)[-1]);
+      hp = (value *) & (((heap_chunk_head *) ch)[-1]);
       ch = Chunk_next (ch);
       Hd_hp (hp) = Make_header (Wosize_bhsize (head_size), Abstract_tag,
                                 Caml_white);
