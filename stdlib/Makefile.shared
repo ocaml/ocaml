@@ -47,6 +47,14 @@ ifeq "$(RUNTIMEI)" "true"
 all: camlheaderi
 endif
 
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+all: camlheaderh
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+all: camlheaderm
+endif
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install::
@@ -61,6 +69,16 @@ endif
 ifeq "$(RUNTIMEI)" "true"
 install::
 	cp camlheaderi $(INSTALL_LIBDIR)
+endif
+
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+install::
+	cp camlheaderh $(INSTALL_LIBDIR)
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+install::
+	cp camlheaderm $(INSTALL_LIBDIR)
 endif
 
 stdlib.cma: $(OBJS)
