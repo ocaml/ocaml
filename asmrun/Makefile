@@ -73,36 +73,31 @@ libasmrunp.a: $(POBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-default install-$(RUNTIMED) install-$(PROFILING)
-
-ifeq "$(RUNTIMEI)" "true"
-install: install-runtimei
-endif
-
-install-default:
+install::
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
 
-install-noruntimed:
-.PHONY: install-noruntimed
-
-install-runtimed:
+ifeq "$(RUNTIMED)" "runtimed"
+install::
 	cp libasmrund.a $(INSTALL_LIBDIR)/libasmrund.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrund.a
-.PHONY: install-runtimed
+endif
 
-install-runtimei:
+ifeq "$(RUNTIMEI)" "true"
+install::
 	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
-.PHONY: install-runtimei
+endif
 
-install-noprof:
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
-	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
-
-install-prof:
+ifeq "$(PROFILING)" "prof"
+install::
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+else
+install::
+	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
+	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
+endif
 
 power-bsd_elf.S: power-elf.S
 	cp power-elf.S power-bsd_elf.S
