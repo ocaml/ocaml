@@ -95,54 +95,43 @@ libasmrunp.a: $(POBJS)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-default install-$(RUNTIMED) install-$(PROFILING)
-
-ifeq "$(RUNTIMEI)" "true"
-install: install-runtimei
-endif
-
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-install: install-runtimeh
-endif
-
-ifeq "$(MMAP_INTERVAL)" "true"
-install: install-runtimem
-endif
-
-install-default:
+install::
 	cp libasmrun.a $(INSTALL_LIBDIR)/libasmrun.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrun.a
 
-install-noruntimed:
-.PHONY: install-noruntimed
-
-install-runtimed:
+ifeq "$(RUNTIMED)" "runtimed"
+install::
 	cp libasmrund.a $(INSTALL_LIBDIR)/libasmrund.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrund.a
-.PHONY: install-runtimed
+endif
 
-install-runtimei:
+ifeq "$(RUNTIMEI)" "true"
+install::
 	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
-.PHONY: install-runtimei
+endif
 
-install-runtimeh:
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+install::
 	cp libasmrunh.a $(INSTALL_LIBDIR)/libasmrunh.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunh.a
-.PHONY: install-runtimeh
+endif
 
-install-runtimem:
+ifeq "$(MMAP_INTERVAL)" "true"
+install::
 	cp libasmrunm.a $(INSTALL_LIBDIR)/libasmrunm.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunm.a
-.PHONY: install-runtimem
+endif
 
-install-noprof:
-	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
-	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
-
-install-prof:
+ifeq "$(PROFILING)" "prof"
+install::
 	cp libasmrunp.a $(INSTALL_LIBDIR)/libasmrunp.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunp.a
+else
+install::
+	rm -f $(INSTALL_LIBDIR)/libasmrunp.a
+	ln -s libasmrun.a $(INSTALL_LIBDIR)/libasmrunp.a
+endif
 
 power-bsd_elf.S: power-elf.S
 	cp power-elf.S power-bsd_elf.S
