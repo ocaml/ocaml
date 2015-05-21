@@ -23,7 +23,7 @@ OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 IOBJS=$(OBJS:.o=.i.o)
 HOBJS=$(OBJS:.o=.h.o)
-MOBJS=$(OBJS:.o=.m.o) instrtrace.m.o
+MOBJS=$(OBJS:.o=.m.o)
 PICOBJS=$(OBJS:.o=.pic.o)
 
 SHARED_LIBS_TMP=$(SUPPORTS_SHARED_LIBRARIES:%false=)
@@ -78,7 +78,7 @@ install::
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.o .i.o .pic.o
+.SUFFIXES: .d.o .i.o .h.o .m.o .pic.o
 
 .c.d.o:
 	ln -s -f $*.c $*.d.c
