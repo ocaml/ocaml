@@ -706,11 +706,12 @@ let pat_of_constr ex_pat cstr =
    Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
                    cstr, omegas cstr.cstr_arity)}
 
+let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
+
 let rec orify_many = function
 | [] -> assert false
 | [x] -> x
-| x :: xs ->
-    make_pat (Tpat_or (x, orify_many xs, None)) x.pat_type x.pat_env
+| x :: xs -> orify x (orify_many xs)
 
 let pat_of_constrs ex_pat cstrs =
   if cstrs = [] then raise Empty else
@@ -1726,11 +1727,8 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
         let v =
           match pred with
           | Some pred ->
+              if false then Some u else
               let (pattern,constrs,labels) = Conv.conv u in
-(*              Hashtbl.iter (fun s (path, _) ->
-                Printf.fprintf stderr "CONV: %s -> %s \n%!" s (Path.name path))
-                constrs
-              ; *)
               pred constrs labels pattern
           | None -> Some u
         in

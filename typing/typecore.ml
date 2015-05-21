@@ -466,8 +466,8 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, vars p2_vs)))
-      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, vars p1_vs)))
+      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, [])))
+      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, [])))
       | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
           let err =
             if Ident.name x < Ident.name y
@@ -916,11 +916,6 @@ let unify_head_only loc env ty constr =
 
 (* Typing of patterns *)
 
-(* type_pat does not generate local constraints inside or patterns *)
-type type_pat_mode =
-  | Normal
-  | Inside_or
-
 (* Remember current state for backtracking.
    No variable information, as we only backtrack on
    patterns without variables (cf. assert statements). *)
@@ -937,13 +932,22 @@ let set_state s env =
   Ctype.set_levels s.levels;
   env := s.env
 
+(* type_pat does not generate local constraints inside or patterns *)
+type type_pat_mode =
+  | Normal
+  | Splitting_or   (* splitting an or-pattern *)
+  | Inside_or      (* inside a non-split or-pattern *)
+
+exception Need_backtrack
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
 (* constrs <> None => called from parmatch: backtrack on or-patterns
    labels <> None => explode Ppat_any for gadts *)
 let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
-  let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode) ?(env=env) =
+  let mode' = if mode = Splitting_or then Normal else mode in
+  let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode') ?(env=env) =
     type_pat ~constrs ~labels ~no_existentials ~mode ~env in
   let loc = sp.ppat_loc in
   let rp k x : pattern = if constrs = None then k (rp x) else k x in
@@ -958,8 +962,9 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       in
       if labels <> None then
         let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
-	if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any
-	else type_pat ~constrs:(Some constrs) ~labels:None sp expected_ty k
+	if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
+        if mode = Inside_or then raise Need_backtrack else
+        type_pat ~constrs:(Some constrs) ~labels:None sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
       assert (constrs = None);
@@ -1063,7 +1068,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
             Some (p0, p, true)
         with Not_found -> None
       in
-      let constrs =
+      let candidates =
         match lid.txt, constrs with
           Longident.Lident s, Some constrs when Hashtbl.mem constrs s ->
             [Hashtbl.find constrs s, (fun () -> ())]
@@ -1076,8 +1081,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       in
       let constr =
         wrap_disambiguate "This variant pattern is expected to have" expected_ty
-          (Constructor.disambiguate lid !env opath ~check_lk) constrs
+          (Constructor.disambiguate lid !env opath ~check_lk) candidates
       in
+      if constr.cstr_generalized && constrs <> None && mode = Inside_or
+      then raise Need_backtrack;
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       Typetexp.check_deprecated loc constr.cstr_attributes constr.cstr_name;
       if no_existentials && constr.cstr_existentials <> [] then
@@ -1104,7 +1111,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
       let (ty_args, ty_res) =
         instance_constructor ~in_pattern:(env, get_newtype_level ()) constr
       in
-      if constr.cstr_generalized && mode = Normal then
+      if constr.cstr_generalized && mode <> Inside_or then
         unify_pat_types_gadt loc env ty_res expected_ty
       else
         unify_pat_types loc !env ty_res expected_ty;
@@ -1219,31 +1226,40 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty k =
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
-      if constrs <> None &&
-        match sp1.ppat_desc, sp2.ppat_desc with
-          Ppat_constant _, _ | _, Ppat_constant _ -> false
-        | _ -> true
-      then
-        let state = save_state env in
-        try type_pat sp1 expected_ty k with exn when exn <> Exit ->
+      let state = save_state env in
+      begin match
+        if mode = Splitting_or then raise Need_backtrack;
+        let initial_pattern_variables = !pattern_variables in
+        let p1 =
+          try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
+          with Need_backtrack -> None in
+        let p1_variables = !pattern_variables in
+        pattern_variables := initial_pattern_variables;
+        let p2 =
+          try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
+          with Need_backtrack -> None in
+        let p2_variables = !pattern_variables in
+        match p1, p2 with
+          None, None -> raise Need_backtrack
+        | Some p, None | None, Some p -> p (* no variables in this case *)
+        | Some p1, Some p2 ->
+        let alpha_env =
+          enter_orpat_variables loc !env p1_variables p2_variables in
+        pattern_variables := p1_variables;
+        { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
+          pat_loc = loc; pat_extra=[];
+          pat_type = expected_ty;
+          pat_attributes = sp.ppat_attributes;
+          pat_env = !env }
+      with
+        p -> rp k p
+      | exception Need_backtrack when mode <> Inside_or ->
+          assert (constrs <> None);
           set_state state env;
-          type_pat sp2 expected_ty k
-      else
-      let initial_pattern_variables = !pattern_variables in
-      let p1 = type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x) in
-      let p1_variables = !pattern_variables in
-      pattern_variables := initial_pattern_variables;
-      let p2 = type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x) in
-      let p2_variables = !pattern_variables in
-      let alpha_env =
-        enter_orpat_variables loc !env p1_variables p2_variables in
-      pattern_variables := p1_variables;
-      rp k {
-        pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-        pat_loc = loc; pat_extra=[];
-        pat_type = expected_ty;
-        pat_attributes = sp.ppat_attributes;
-        pat_env = !env }
+          try type_pat ~mode:Splitting_or sp1 expected_ty k with Error _ ->
+            set_state state env;
+            type_pat ~mode:Splitting_or sp2 expected_ty k
+      end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
       unify_pat_types loc !env (instance_def (Predef.type_lazy_t nv))
@@ -1315,18 +1331,19 @@ let type_pat ?(allow_existentials=false) ?constrs ?labels
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
 let partial_pred ~lev env expected_ty constrs labels p =
-  let snap = snapshot () in
+  let env = ref env in
+  let state = save_state env in
   try
     reset_pattern None true;
     let typed_p =
       type_pat ~allow_existentials:true ~lev
-        ~constrs ~labels (ref env) p expected_ty
+        ~constrs ~labels env p expected_ty
     in
-    backtrack snap;
+    set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with _ ->
-    backtrack snap;
+  with Error _ ->
+    set_state state env;
     None
 
 let check_partial ?(lev=get_current_level ()) env expected_ty =

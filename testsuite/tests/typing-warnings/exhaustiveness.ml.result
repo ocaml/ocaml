@@ -1,0 +1,16 @@
+
+#       Characters 58-110:
+  ........function
+      None, None -> 1
+    | Some _, Some _ -> 2..
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+((Some _, None)|(None, Some _))
+val f : 'a option * 'b option -> int = <fun>
+#                       type _ t = A : int t | B : bool t | C : char t | D : float t
+type (_, _, _, _) u = U : (int, int, int, int) u
+type v = E | F | G
+val f :
+  'a t * 'b t * 'c t * 'd t * 'e t * 'f t * 'g t * v * ('a, 'b, 'c, 'd) u *
+  ('e, 'f, 'g, 'g) u -> int = <fun>
+# 
