@@ -433,11 +433,19 @@ let simplify_lets lam =
   | Lapply(Lfunction(Curried, params, body), args, _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
-  | Lapply(Lfunction(Tupled, params, body), [Lprim(Pmakeblock _, args)], _)
+  | Lapply(Lfunction(Tupled, params, body),
+           [Lprim(Pmakeblock _, args)], _)
     when optimize && List.length params = List.length args ->
       simplif (beta_reduce params body args)
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
-  | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
+  | Lfunction(kind, params, l) ->
+      begin match simplif l with
+        Lfunction(Curried, params', body)
+        when kind = Curried && optimize ->
+          Lfunction(kind, params @ params', body)
+      | body ->
+          Lfunction(kind, params, body)
+      end
   | Llet(str, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
