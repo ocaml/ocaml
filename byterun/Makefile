@@ -78,12 +78,10 @@ install::
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.o .i.o .pic.o
+.SUFFIXES: .d.o .i.o .h.o .m.o .pic.o
 
-.c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm $*.d.c
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) -o $@ $<
 
 %.i.o: %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
@@ -100,7 +98,7 @@ clean::
 	rm $*.pic.c
 
 clean::
-	rm -f *.pic.c *.d.c
+	rm -f *.pic.c
 
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend

@@ -57,36 +57,28 @@ endif
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-$(RUNTIMED)
+install::
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
 	  $(INSTALL_LIBDIR)
 
-install-noruntimed:
-.PHONY: install-noruntimed
-
-install-runtimed: camlheaderd
+ifeq "$(RUNTIMED)" "runtimed"
+install::
 	cp camlheaderd $(INSTALL_LIBDIR)
-.PHONY: install-runtimed
+endif
 
 ifeq "$(RUNTIMEI)" "true"
-install: install-runtimei
-install-runtimei:
+install::
 	cp camlheaderi $(INSTALL_LIBDIR)
-.PHONY: install-runtimei
 endif
 
 ifeq "$(MMAP_HUGE_PAGES)" "true"
-install: install-runtimeh
-install-runtimeh:
+install::
 	cp camlheaderh $(INSTALL_LIBDIR)
-.PHONY: install-runtimeh
 endif
 
 ifeq "$(MMAP_INTERVAL)" "true"
-install: install-runtimem
-install-runtimem:
+install::
 	cp camlheaderm $(INSTALL_LIBDIR)
-.PHONY: install-runtimem
 endif
 
 stdlib.cma: $(OBJS)
