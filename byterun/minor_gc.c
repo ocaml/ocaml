@@ -123,8 +123,8 @@ void caml_set_minor_heap_size (asize_t bsz)
   }
 #endif
   caml_young_base = new_heap_base;
-  caml_young_start = (value *) new_heap;
-  caml_young_end = (value *) (new_heap + bsz);
+  caml_young_start = new_heap;
+  caml_young_end = new_heap + bsz;
   caml_young_limit = caml_young_start;
   caml_young_ptr = caml_young_end;
   caml_minor_heap_size = bsz;
