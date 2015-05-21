@@ -39,6 +39,22 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
+ifeq "$(RUNTIMED)" "runtimed"
+all: camlheaderd
+endif
+
+ifeq "$(RUNTIMEI)" "true"
+all: camlheaderi
+endif
+
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+all: camlheaderh
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+all: camlheaderm
+endif
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install: install-$(RUNTIMED)
@@ -57,6 +73,20 @@ install: install-runtimei
 install-runtimei:
 	cp camlheaderi $(INSTALL_LIBDIR)
 .PHONY: install-runtimei
+endif
+
+ifeq "$(MMAP_HUGE_PAGES)" "true"
+install: install-runtimeh
+install-runtimeh:
+	cp camlheaderh $(INSTALL_LIBDIR)
+.PHONY: install-runtimeh
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+install: install-runtimem
+install-runtimem:
+	cp camlheaderm $(INSTALL_LIBDIR)
+.PHONY: install-runtimem
 endif
 
 stdlib.cma: $(OBJS)

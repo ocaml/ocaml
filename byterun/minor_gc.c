@@ -96,7 +96,7 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  value *new_heap;
+  char *new_heap;
   void *new_heap_base;
 
   Assert (size >= Bsize_wsize(Minor_heap_min));
