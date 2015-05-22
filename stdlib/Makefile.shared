@@ -118,6 +118,7 @@ $(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
 	rm -f *~
+	rm -f camlheader*
 
 include .depend
 
