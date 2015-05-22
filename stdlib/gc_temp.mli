@@ -94,10 +94,12 @@ external get : unit -> control = "caml_gc_get"
 external set : control -> unit = "caml_gc_set"
 (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
-(*
+
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
 (** Return the number of times we tried to map huge pages and had to fall
-    back to small pages. *)
+    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
+    @since 4.03.0
+*)
 
 
 (* Additional functions for [Sys] *)
@@ -114,4 +116,3 @@ external runtime_parameters : unit -> string = "caml_runtime_parameters"
     as the contents of the OCAMLRUNPARAM environment variable.
    @since 4.03.0
 *) (* FIXME move to [Sys] *)
-*)
