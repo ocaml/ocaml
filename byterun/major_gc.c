@@ -703,7 +703,7 @@ void caml_init_major_heap (asize_t heap_size)
   Assert (caml_stat_heap_size % Page_size == 0);
   caml_heap_start = (char *) caml_alloc_for_heap (caml_stat_heap_size);
   if (caml_heap_start == NULL)
-    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: cannot allocate initial major heap.\n");
   Chunk_next (caml_heap_start) = NULL;
   caml_stat_heap_size = Chunk_size (caml_heap_start);
   caml_stat_heap_chunks = 1;
@@ -711,8 +711,8 @@ void caml_init_major_heap (asize_t heap_size)
 
   if (caml_page_table_add(In_heap, caml_heap_start,
                           caml_heap_start + caml_stat_heap_size) != 0) {
-    caml_fatal_error ("Fatal error: not enough memory "
-                      "for the initial page table.\n");
+    caml_fatal_error ("Fatal error: cannot allocate "
+                      "initial page table.\n");
   }
 
   caml_fl_init_merge ();

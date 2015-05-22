@@ -124,7 +124,7 @@ void caml_set_minor_heap_size (asize_t bsz)
                               MAP_FIXED);
       if (block != new_heap){
         if (minor_heap_mapped_bsz == 0){
-          caml_fatal_error ("cannot initialize minor heap: mmap failed");
+          caml_fatal_error ("cannot initialize minor heap: mmap failed\n");
         }else{
           caml_raise_out_of_memory ();
         }
