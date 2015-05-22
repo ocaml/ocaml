@@ -19,7 +19,6 @@ FLAGS=-I../byterun -DCAML_NAME_SPACE -DNATIVE_CODE \
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 IFLAGS=$(FLAGS) -DCAML_INSTR
-HFLAGS=$(FLAGS) -DMMAP_HUGE_PAGES
 MFLAGS=$(FLAGS) -DMMAP_INTERVAL
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
@@ -35,7 +34,6 @@ ASMOBJS=$(ARCH).o
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 IOBJS=$(COBJS:.o=.i.o) $(ASMOBJS)
-HOBJS=$(COBJS:.o=.h.o) $(ASMOBJS)
 MOBJS=$(COBJS:.o=.m.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
@@ -43,10 +41,6 @@ all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
 
 ifeq "$(RUNTIMEI)" "true"
 all: libasmruni.a
-endif
-
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-all: libasmrunh.a
 endif
 
 ifeq "$(MMAP_INTERVAL)" "true"
@@ -70,11 +64,6 @@ libasmrund.a: $(DOBJS)
 	$(RANLIB) libasmrund.a
 
 libasmruni.a: $(IOBJS)
-	rm -f $@
-	ar rc $@ $^
-	$(RANLIB) $@
-
-libasmrunh.a: $(HOBJS)
 	rm -f $@
 	ar rc $@ $^
 	$(RANLIB) $@
@@ -109,12 +98,6 @@ ifeq "$(RUNTIMEI)" "true"
 install::
 	cp libasmruni.a $(INSTALL_LIBDIR)/libasmruni.a
 	cd $(INSTALL_LIBDIR); $(RANLIB) libasmruni.a
-endif
-
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-install::
-	cp libasmrunh.a $(INSTALL_LIBDIR)/libasmrunh.a
-	cd $(INSTALL_LIBDIR); $(RANLIB) libasmrunh.a
 endif
 
 ifeq "$(MMAP_INTERVAL)" "true"
@@ -242,9 +225,6 @@ clean::
 %.i.o : %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
 
-%.h.o : %.c
-	$(CC) -c $(HFLAGS) -o $@ $<
-
 %.m.o : %.c
 	$(CC) -c $(MFLAGS) -o $@ $<
 
@@ -266,6 +246,7 @@ depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	gcc -MM $(FLAGS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
+	gcc -MM $(FLAGS) -DMMAP_INTERVAL *.c | sed -e 's/\.o/.i.o/' >> .depend
 	gcc -MM $(FLAGS) *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend

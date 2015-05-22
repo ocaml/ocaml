@@ -31,6 +31,12 @@ int caml_huge_fallback_count = 0;
    [Gc.huge_fallback_count].
 */
 
+uintnat caml_use_huge_pages = 0;
+/* True iff the program allocates heap chunks by mmapping huge pages.
+   This is set when parsing [OCAMLRUNPARAM] and must stay constant
+   after that.
+*/
+
 extern uintnat caml_percent_free;                   /* major_gc.c */
 
 /* Page table management */
@@ -230,17 +236,21 @@ static void *raw_heap_start = NULL, *raw_heap_end = NULL;
 void *caml_mmap_heap (void *addr, size_t length, int prot, int flags)
 {
   void *result;
-  result = mmap (addr, length, prot,
-                 flags | MAP_PRIVATE | MAP_ANONYMOUS | Huge_pages_flag,
-                 -1, 0);
+  /* First try to allocate huge pages. */
 #ifdef HAS_HUGE_PAGES
-  if (result == MAP_FAILED){
+  result = mmap (addr, length, prot,
+                 flags | MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
+                 -1, 0);
+#else
+  result = MAP_FAILED;
+#endif
+  /* Then fall back to normal pages unless the user required huge pages. */
+  if (result == MAP_FAILED && !caml_use_huge_pages){
     result = mmap (addr, length, prot,
                    flags | MAP_PRIVATE | MAP_ANONYMOUS,
                    -1, 0);
     if (result != MAP_FAILED) ++caml_huge_fallback_count;
   }
-#endif
   return result;
 }
 
@@ -310,33 +320,7 @@ void caml_shrink_chunk (char *chunk, uintnat req_bsz)
   }
 }
 
-#elif defined(MMAP_HUGE_PAGES)
-
-int caml_init_alloc_for_heap (void)
-{
-  return 0;
-}
-
-char *caml_alloc_for_heap (asize_t request)
-{
-  uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
-  void *block;
-  char *mem;
-  block = mmap (NULL, size, PROT_READ | PROT_WRITE,
-                MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-  if (block == MAP_FAILED) return NULL;
-  mem = (char *) block + sizeof (heap_chunk_head);
-  Chunk_size (mem) = size - sizeof (heap_chunk_head);
-  Chunk_block (mem) = block;
-  return mem;
-}
-
-void caml_free_for_heap (char *mem)
-{
-  munmap (Chunk_block (mem), Chunk_size (mem) + sizeof (heap_chunk_head));
-}
-
-#else /* neither MMAP_INTERVAL nor MMAP_HUGE_PAGES */
+#else /* MMAP_INTERVAL */
 
 /* Initialize the [alloc_for_heap] system.
    This function must be called exactly once, and it must be called
@@ -359,17 +343,34 @@ int caml_init_alloc_for_heap (void)
 */
 char *caml_alloc_for_heap (asize_t request)
 {
-  char *mem;
-  void *block;
+  if (caml_use_huge_pages){
+#ifdef HAS_HUGE_PAGES
+    uintnat size = Round_mmap_size (sizeof (heap_chunk_head) + request);
+    void *block;
+    char *mem;
+    block = mmap (NULL, size, PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    if (block == MAP_FAILED) return NULL;
+    mem = (char *) block + sizeof (heap_chunk_head);
+    Chunk_size (mem) = size - sizeof (heap_chunk_head);
+    Chunk_block (mem) = block;
+    return mem;
+#else
+    return NULL;
+#endif
+  }else{
+    char *mem;
+    void *block;
 
-  request = ((request + Page_size - 1) >> Page_log) << Page_log;
-  mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
-                             sizeof (heap_chunk_head), &block);
-  if (mem == NULL) return NULL;
-  mem += sizeof (heap_chunk_head);
-  Chunk_size (mem) = request;
-  Chunk_block (mem) = block;
-  return mem;
+    request = ((request + Page_size - 1) >> Page_log) << Page_log;
+    mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
+                               sizeof (heap_chunk_head), &block);
+    if (mem == NULL) return NULL;
+    mem += sizeof (heap_chunk_head);
+    Chunk_size (mem) = request;
+    Chunk_block (mem) = block;
+    return mem;
+  }
 }
 
 /* Use this function to free a block allocated with [caml_alloc_for_heap]
@@ -377,9 +378,17 @@ char *caml_alloc_for_heap (asize_t request)
 */
 void caml_free_for_heap (char *mem)
 {
-  free (Chunk_block (mem));
+  if (caml_use_huge_pages){
+#ifdef HAS_HUGE_PAGES
+    munmap (Chunk_block (mem), Chunk_size (mem) + sizeof (heap_chunk_head));
+#else
+    CAMLassert (0);
+#endif
+  }else{
+    free (Chunk_block (mem));
+  }
 }
-#endif /* MMAP_INTERVAL or MMAP_HUGE_PAGES or none */
+#endif /* MMAP_INTERVAL */
 
 /* Take a chunk of memory as argument, which must be the result of a
    call to [caml_alloc_for_heap], and insert it into the heap chaining.

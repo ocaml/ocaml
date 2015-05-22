@@ -47,10 +47,6 @@ ifeq "$(RUNTIMEI)" "true"
 all: camlheaderi
 endif
 
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-all: camlheaderh
-endif
-
 ifeq "$(MMAP_INTERVAL)" "true"
 all: camlheaderm
 endif
@@ -71,11 +67,6 @@ install::
 	cp camlheaderi $(INSTALL_LIBDIR)
 endif
 
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-install::
-	cp camlheaderh $(INSTALL_LIBDIR)
-endif
-
 ifeq "$(MMAP_INTERVAL)" "true"
 install::
 	cp camlheaderm $(INSTALL_LIBDIR)
@@ -94,7 +85,7 @@ clean::
 	rm -f sys.ml
 
 clean::
-	rm -f camlheader camlheader_ur camlheaderd
+	rm -f camlheader camlheader_ur camlheader[dim]
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 

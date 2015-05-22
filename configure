@@ -47,7 +47,6 @@ with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
-with_huge_pages=false
 with_mmap_interval=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -160,9 +159,6 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
-    -with-huge-pages|--with-huge-pages)
-          # Compile a runtime variant that uses huge pages for the heap.
-        with_huge_pages=true;;
     -with-mmap-interval|--with-mmap-interval)
           # Compile a runtime variant that allocates a contiguous heap.
         with_mmap_interval=true;;
@@ -1667,16 +1663,6 @@ else
     has_huge_pages=false
 fi
 
-mmap_huge_pages=false
-if $with_huge_pages; then
-    if $has_huge_pages; then
-        mmap_huge_pages=true
-        inf "use huge page for heap: supported"
-    else
-        err "use huge pages for heap: not supported"
-    fi
-fi
-
 mmap_interval=false
 if $with_mmap_interval; then
     if sh ./runtest mmap-interval.c; then
@@ -1758,7 +1744,6 @@ echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
 echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
-echo "MMAP_HUGE_PAGES=$mmap_huge_pages" >>Makefile
 echo "MMAP_INTERVAL=$mmap_interval" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
@@ -1850,10 +1835,6 @@ fi
 
 if $with_instrumented_runtime; then
   inf "Instrumented runtime will be compiled and installed"
-fi
-
-if $mmap_huge_pages; then
-  inf "Runtime with huge pages will be compiled and installed"
 fi
 
 if $mmap_interval; then

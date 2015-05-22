@@ -16,13 +16,11 @@ include Makefile.common
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(IFLEXDIR)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS) $(IFLEXDIR)
 IFLAGS=$(CFLAGS) -DCAML_INSTR
-HFLAGS=$(CFLAGS) -DMMAP_HUGE_PAGES
 MFLAGS=$(CFLAGS) -DMMAP_INTERVAL
 
 OBJS=$(COMMONOBJS) $(UNIX_OR_WIN32).o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 IOBJS=$(OBJS:.o=.i.o)
-HOBJS=$(OBJS:.o=.h.o)
 MOBJS=$(OBJS:.o=.m.o)
 PICOBJS=$(OBJS:.o=.pic.o)
 
@@ -42,9 +40,6 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 ocamlruni$(EXE): prims.o libcamlruni.a
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
-ocamlrunh$(EXE): prims.o libcamlrunh.a
-	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
-
 ocamlrunm$(EXE): prims.o libcamlrunm.a
 	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(BYTECCLIBS)
 
@@ -57,10 +52,6 @@ libcamlrund.a: $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
 libcamlruni.a: $(IOBJS)
-	ar rc $@ $^
-	$(RANLIB) $@
-
-libcamlrunh.a: $(HOBJS)
 	ar rc $@ $^
 	$(RANLIB) $@
 
@@ -78,16 +69,13 @@ install::
 clean::
 	rm -f libcamlrun_shared.so
 
-.SUFFIXES: .d.o .i.o .h.o .m.o .pic.o
+.SUFFIXES: .d.o .pic.o
 
 %.d.o: %.c
 	$(CC) -c $(DFLAGS) -o $@ $<
 
 %.i.o: %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
-
-%.h.o: %.c
-	$(CC) -c $(HFLAGS) -o $@ $<
 
 %.m.o: %.c
 	$(CC) -c $(MFLAGS) -o $@ $<
@@ -103,7 +91,10 @@ clean::
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
-	-gcc -MM $(BYTECCCOMPOPTS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' >> .depend
+	-gcc -MM $(BYTECCCOMPOPTS) -DCAML_INSTR *.c | sed -e 's/\.o/.i.o/' \
+	     >> .depend
+	-gcc -MM $(BYTECCCOMPOPTS) -DMMAP_INTERVAL *.c | sed -e 's/\.o/.i.o/' \
+	     >> .depend
 	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 

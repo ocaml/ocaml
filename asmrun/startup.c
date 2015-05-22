@@ -36,6 +36,7 @@
 #endif
 
 extern int caml_parser_trace;
+
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 
@@ -128,6 +129,7 @@ static void parse_camlrunparam(void)
       case 's': scanmult (opt, &minor_heap_init); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'h': scanmult (opt, &heap_size_init); break;
+      case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;

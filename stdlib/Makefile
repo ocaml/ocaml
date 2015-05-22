@@ -80,17 +80,6 @@ camlheaderi: header.c ../config/Makefile
 	  mv tmpheader$(EXE) camlheaderi; \
 	fi
 
-camlheaderh: header.c ../config/Makefile
-	if $(SHARPBANGSCRIPTS); then \
-	  echo '#!$(BINDIR)/ocamlrunh' > camlheaderh; \
-	else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrunh"' \
-	            header.c -o tmpheader$(EXE) && \
-	  strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheaderh; \
-	fi
-
 camlheaderm: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
 	  echo '#!$(BINDIR)/ocamlrunm' > camlheaderm; \
