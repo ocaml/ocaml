@@ -29,4 +29,6 @@ val f : [< `A | `B ] -> int = <fun>
 Error: This pattern matches values of type [? `C ]
        but a pattern was expected which matches values of type [ `A | `B ]
        The second variant type does not allow tag(s) `C
-# 
+#     val revapply : 'a -> ('a -> 'b) -> 'b = <fun>
+#       val f : 'a -> [< `Foo ] -> 'a = <fun>
+#   
