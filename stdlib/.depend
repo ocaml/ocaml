@@ -14,6 +14,8 @@ char.cmi :
 complex.cmi :
 digest.cmi :
 filename.cmi :
+floatArrayLabels.cmi :
+floatArray.cmi :
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmi :
 genlex.cmi : stream.cmi
@@ -40,8 +42,8 @@ scanf.cmi : pervasives.cmi
 set.cmi :
 sort.cmi :
 stack.cmi :
-stdLabels.cmi : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
-    arrayLabels.cmi floatArrayLabels.cmi
+stdLabels.cmi : stringLabels.cmi listLabels.cmi floatArrayLabels.cmi \
+    bytesLabels.cmi arrayLabels.cmi
 stream.cmi :
 stringLabels.cmi :
 string.cmi :
@@ -91,8 +93,8 @@ filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
     filename.cmi
 floatArrayLabels.cmo : floatArray.cmi floatArrayLabels.cmi
 floatArrayLabels.cmx : floatArray.cmx floatArrayLabels.cmi
-floatArray.cmo : floatArray.cmi
-floatArray.cmx : floatArray.cmi
+floatArray.cmo : list.cmi array.cmi floatArray.cmi
+floatArray.cmx : list.cmx array.cmx floatArray.cmi
 format.cmo : string.cmi pervasives.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi buffer.cmi format.cmi
 format.cmx : string.cmx pervasives.cmx camlinternalFormatBasics.cmx \
@@ -163,10 +165,10 @@ stack.cmo : list.cmi stack.cmi
 stack.cmx : list.cmx stack.cmi
 std_exit.cmo :
 std_exit.cmx :
-stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
-    arrayLabels.cmi floatArrayLabels.cmi stdLabels.cmi
-stdLabels.cmx : stringLabels.cmx listLabels.cmx bytesLabels.cmx \
-    arrayLabels.cmx floatArrayLabels.cmx stdLabels.cmi
+stdLabels.cmo : stringLabels.cmi listLabels.cmi floatArrayLabels.cmi \
+    bytesLabels.cmi arrayLabels.cmi stdLabels.cmi
+stdLabels.cmx : stringLabels.cmx listLabels.cmx floatArrayLabels.cmx \
+    bytesLabels.cmx arrayLabels.cmx stdLabels.cmi
 stream.cmo : string.cmi obj.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.cmx : string.cmx obj.cmx list.cmx lazy.cmx bytes.cmx stream.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
@@ -221,8 +223,8 @@ filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buf
     filename.cmi
 floatArrayLabels.cmo : floatArray.cmi floatArrayLabels.cmi
 floatArrayLabels.p.cmx : floatArray.p.cmx floatArrayLabels.cmi
-floatArray.cmo : floatArray.cmi
-floatArray.p.cmx : floatArray.cmi
+floatArray.cmo : list.cmi array.cmi floatArray.cmi
+floatArray.p.cmx : list.p.cmx array.p.cmx floatArray.cmi
 format.cmo : string.cmi pervasives.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi buffer.cmi format.cmi
 format.p.cmx : string.p.cmx pervasives.p.cmx camlinternalFormatBasics.p.cmx \
@@ -293,10 +295,10 @@ stack.cmo : list.cmi stack.cmi
 stack.p.cmx : list.p.cmx stack.cmi
 std_exit.cmo :
 std_exit.p.cmx :
-stdLabels.cmo : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
-    arrayLabels.cmi floatArrayLabels.cmi stdLabels.cmi
-stdLabels.p.cmx : stringLabels.p.cmx listLabels.p.cmx bytesLabels.p.cmx \
-    arrayLabels.p.cmx floatArrayLabels.cmx stdLabels.cmi
+stdLabels.cmo : stringLabels.cmi listLabels.cmi floatArrayLabels.cmi \
+    bytesLabels.cmi arrayLabels.cmi stdLabels.cmi
+stdLabels.p.cmx : stringLabels.p.cmx listLabels.p.cmx floatArrayLabels.p.cmx \
+    bytesLabels.p.cmx arrayLabels.p.cmx stdLabels.cmi
 stream.cmo : string.cmi obj.cmi list.cmi lazy.cmi bytes.cmi stream.cmi
 stream.p.cmx : string.p.cmx obj.p.cmx list.p.cmx lazy.p.cmx bytes.p.cmx stream.cmi
 stringLabels.cmo : string.cmi stringLabels.cmi
