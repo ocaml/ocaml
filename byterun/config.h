@@ -139,7 +139,11 @@ typedef uint64 uintnat;
 /* An entire minor heap must fit inside one region
    of size 1 << Minor_heap_align_bits, which determines
    the maximum size of the heap */
+#if SIZEOF_PTR  <= 4
+#define Minor_heap_align_bits 20
+#else
 #define Minor_heap_align_bits 24
+#endif
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144

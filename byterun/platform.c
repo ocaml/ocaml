@@ -41,13 +41,13 @@ void caml_plat_event_trigger(caml_plat_event* e)
 #define Is_power_2(align) \
   ((align) != 0 && ((align) & ((align) - 1)) == 0)
 
-static asize_t round_up(asize_t size, asize_t align) {
+static uintnat round_up(uintnat size, uintnat align) {
   Assert(Is_power_2(align));
   return (size + align - 1) & ~(align - 1);
 }
 
 
-asize_t caml_mem_round_up_pages(asize_t size)
+uintnat caml_mem_round_up_pages(uintnat size)
 {
   return round_up(size, sysconf(_SC_PAGESIZE));
 }
