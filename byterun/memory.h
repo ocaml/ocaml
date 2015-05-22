@@ -84,18 +84,23 @@ CAMLextern unsigned char * caml_page_table[Pagetable1_size];
 
 #endif
 
+
+extern uintnat caml_use_huge_pages;
+
+#if defined (HAS_HUGE_PAGES) || defined (MMAP_INTERVAL)
+  #include <sys/mman.h>
+  #ifdef HAS_HUGE_PAGES
+    #define Heap_page_size HUGE_PAGE_SIZE
+  #else
+    #define Heap_page_size (4 * 1024)
+  #endif
+  #define Round_mmap_size(x)                                      \
+    (((x) + (Heap_page_size - 1)) & ~ (Heap_page_size - 1))
+#endif
+
 #ifdef MMAP_INTERVAL
 
 #include <sys/mman.h>
-
-#ifdef HAS_HUGE_PAGES
-#define Huge_pages_flag MAP_HUGETLB
-#define Heap_page_size HUGE_PAGE_SIZE
-#else
-#define Huge_pages_flag 0
-#define Heap_page_size (4 * 1024)
-#endif
-
 #define HEAP_INTERVAL_SIZE (2LL * 1024 * 1024 * 1024 * 1024)
 #define Is_in_heap_or_young(a)                                          \
   ((uintnat) ((char *) (a) - caml_heap_start) < HEAP_INTERVAL_SIZE)
@@ -104,26 +109,17 @@ CAMLextern unsigned char * caml_page_table[Pagetable1_size];
 #define Is_in_value_area(a)                                             \
   (Is_in_heap_or_young(a)                                               \
    || (Classify_addr(a) & (In_heap | In_young | In_static_data)))
-
 void *caml_mmap_heap (void *addr, size_t length, int prot, int flags);
 void caml_shrink_chunk (char *chunk, uintnat req_bsz);
   
-#else
-
-#ifdef MMAP_HUGE_PAGES
-#include <sys/mman.h>
-#define Heap_page_size HUGE_PAGE_SIZE
-#endif
+#else /* MMAP_INTERVAL */
   
 #define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
 #define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
 
-#endif
-
-#define Round_mmap_size(x)                                              \
-  (((x) + (Heap_page_size - 1)) & ~ (Heap_page_size - 1))
+#endif /* MMAP_INTERVAL */
 
 
 int caml_page_table_add(int kind, void * start, void * end);

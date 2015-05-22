@@ -571,7 +571,7 @@ CAMLprim value caml_runtime_parameters (value unit)
 {
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,%s,i=%lu,"
+    ("a=%d,%s,H=%lu,i=%lu,"
 #ifndef NATIVE_CODE
      "l=%lu,"
 #endif
@@ -583,6 +583,7 @@ CAMLprim value caml_runtime_parameters (value unit)
      /* a */ caml_allocation_policy,
      /* b */ caml_backtrace_active ? "b" : "",   /* FIXME simplify with new parsing */
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
+     /* H */ caml_use_huge_pages,
      /* i */ caml_major_heap_increment,
 #ifndef NATIVE_CODE
      /* l */ caml_max_stack_size,

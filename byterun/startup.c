@@ -311,6 +311,7 @@ static void parse_camlrunparam(void)
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'h': scanmult (opt, &heap_size_init); break;
+      case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;

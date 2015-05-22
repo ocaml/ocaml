@@ -49,10 +49,6 @@ ifeq "$(RUNTIMEI)" "true"
 all:: ocamlruni$(EXE) libcamlruni.$(A)
 endif
 
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-all:: ocamlrunh$(EXE) libcamlrunh.$(A)
-endif
-
 ifeq "$(MMAP_INTERVAL)" "true"
 all:: ocamlrunm$(EXE) libcamlrunm.$(A)
 endif
@@ -93,12 +89,6 @@ ifeq "$(RUNTIMEI)" "true"
 install::
 	cp ocamlruni$(EXE) $(INSTALL_BINDIR)/ocamlruni$(EXE)
 	cp libcamlruni.$(A) $(INSTALL_LIBDIR)/libcamlruni.$(A)
-endif
-
-ifeq "$(MMAP_HUGE_PAGES)" "true"
-install::
-	cp ocamlrunh$(EXE) $(INSTALL_BINDIR)/ocamlrunh$(EXE)
-	cp libcamlrunh.$(A) $(INSTALL_LIBDIR)/libcamlrunh.$(A)
 endif
 
 ifeq "$(MMAP_INTERVAL)" "true"
