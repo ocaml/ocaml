@@ -1,6 +1,6 @@
-let foo ~bar = () (* one label *)
+let foo ~bar = ignore bar (* one label *)
 
-let bar ~foo ~baz = () (* two labels *)
+let bar ~foo ~baz = ignore (foo, baz) (* two labels *)
 
-let _ = foo 2
-let _ = bar 4 2
+let () = foo 2
+let () = bar 4 2
