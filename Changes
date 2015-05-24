@@ -23,6 +23,8 @@ Language features:
 Compilers:
 - PR#6501: harden the native-code generator against certain uses of "%identity"
   (Xavier Leroy, report by Antoine Miné).
+- PR#6636: add --version option
+  (Peter Zotov)
 - improve type-specialization of unapplied primitives
   (Frédéric Bour, review by Gabriel Scherer)
 - PR#6737: fix Typedtree attributes on (fun x -> body) expressions
