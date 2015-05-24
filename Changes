@@ -128,6 +128,8 @@ Features wishes:
   (Simon Cruanes)
 * PR#6816: reject integer and float literals followed by alphanum
   (Hugo Heuzard)
+- PR#6876: improve warning 6 by listing the omitted labels.
+  (Eyyüb Sari)
 - GPR#111: `(f [@taillcall]) x y` warns if `f x y` is not a tail-call
   (Simon Cruanes)
 - GPR#118: ocamldep -allow-approx: fallback to a lexer-based approximation
