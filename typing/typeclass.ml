@@ -1004,7 +1004,11 @@ and class_expr cl_num val_env met_env scl =
         List.for_all (fun (l,_) -> l = Nolabel) sargs &&
         List.exists (fun l -> l <> Nolabel) labels &&
         begin
-          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          Location.prerr_warning
+	    cl.cl_loc
+	    (Warnings.Labels_omitted
+	       (List.map Printtyp.string_of_label
+			 (List.filter ((<>) Nolabel) labels)));
           true
         end
       in

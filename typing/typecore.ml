@@ -3273,7 +3273,11 @@ and type_application env funct sargs =
       List.length labels = List.length sargs &&
       List.for_all (fun (l,_) -> l = Nolabel) sargs &&
       List.exists (fun l -> l <> Nolabel) labels &&
-      (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+      (Location.prerr_warning
+	 funct.exp_loc
+	 (Warnings.Labels_omitted
+	    (List.map Printtyp.string_of_label
+		      (List.filter ((<>) Nolabel) labels)));
        true)
     end
   in
