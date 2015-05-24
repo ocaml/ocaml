@@ -512,6 +512,19 @@ scope. Also, this can make the code easier to read (the open statement is
 closer to where it is used) and to refactor (because the code
 fragment is more self-contained).
 
+\paragraph{Local opens for delimited expressions} (Introduced in OCaml 4.02)
+
+\begin{syntax}
+expr:
+       ...
+     | module-path '.[' expr ']'
+     | module-path '.[|' expr '|]'
+     | module-path '.{' expr '}'
+     | module-path '.{<' expr '>}'
+\end{syntax}
+
+When the body of a local open expression is delimited by @'[' ']'@,  @'[|' '|]'@,  @'{' '}'@, or @'{<' '>}'@, the parentheses can be omitted.  For example, @module-path'.['expr']'@ is equivalent to @module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is equivalent to @module-path'.([|' expr '|])'@.
+
 \section{Record notations}
 
 (Introduced in OCaml 3.12)
