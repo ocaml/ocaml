@@ -263,9 +263,8 @@ let message = function
   | Labels_omitted [] -> assert false
   | Labels_omitted [l] ->
      "label " ^ l ^ " was omitted in the application of this function."
-  | Labels_omitted (l :: ls) ->
-     "labels " ^
-       List.fold_left (fun a b -> a ^ ", " ^ b) l ls ^
+  | Labels_omitted ls ->
+     "labels " ^ String.concat ", " ls ^
        " were omitted in the application of this function." 
   | Method_override [lab] ->
       "the method " ^ lab ^ " is overridden."
