@@ -9,21 +9,25 @@ Language features:
   It is also possible to use '#' as part of these extra symbols
   (for instance ##, or #+#); this is rejected by the type-checker,
   but can be used e.g. by ppx rewriters.
+  (Alain Frisch, request by Gabriel Radanne)
 * PR#6016: add a "nonrec" keyword for type declarations
   (Jérémie Dimino)
 
 Compilers:
 - PR#6600: make -short-paths faster by building the printing map
-  incrementally (Jacques Garrigue)
+  incrementally
+  (Jacques Garrigue)
 - PR#6642: replace $CAMLORIGIN in -ccopt with the path to cma or cmxa
   (Peter Zotov, Gabriel Scherer, review by Damien Doligez)
 - PR#6797: new option -output-complete-obj
   to output an object file with included runtime and autolink libraries
   (Peter Zotov)
 - PR#6845: -no-check-prims to tell ocamlc not to check primitives in runtime
+  (Alain Frisch)
 - GPR#159: Better locations for structure/signature items
   (Leo White)
-- GPR#149: Attach documentation comments to parse tree (Leo White)
+- GPR#149: Attach documentation comments to parse tree
+  (Leo White)
 
 Toplevel and debugger:
 - PR#5958: generalized polymorphic #install_printer
@@ -54,6 +58,7 @@ Libraries:
 - PR#6285: Add support for nanosecond precision in Unix.stat()
   (Jérémie Dimino, report by user 'gfxmonk')
 - PR#6834: Add Obj.{first,last}_non_constant_constructor_tag
+  (Mark Shinwell, request by Gabriel Scherer)
 
 Runtime:
 - PR#6675: GC hooks
@@ -63,7 +68,9 @@ Runtime:
 
 Build system:
 - PR#5418 (comments) : generate dependencies with $(CC) instead of gcc
+  (Damien Doligez and Michael Grünewald)
 - PR#6266: Cross compilation for iOs, Android etc
+  (Peter Zotov, review by Damien Doligez and Mark Shinwell)
 
 Installation procedure:
 - Update instructions for x86-64 PIC mode and POWER architecture builds
@@ -75,14 +82,17 @@ Bug fixes:
 - PR#5395: OCamlbuild mishandles relative symlinks and include paths
   (Damien Doligez, report by Didier Le Botlan)
 - PR#5822: wrong value of Options.ext_dll on windows
+  (Damien Doligez and user 'daweil')
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
-  (Gabriel Scherer)
+  (Gabriel Scherer, request by the Coq team)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid
   header name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
 - PR#6281: Graphics window does not acknowledge second click (double click)
+  (user 'kygron')
 - PR#6490: incorrect backtraces in gdb on AArch64.  Also fixes incorrect
-  backtraces on 32-bit ARM.  (Mark Shinwell)
+  backtraces on 32-bit ARM.
+  (Mark Shinwell)
 - PR#6573: extern "C" for systhreads/threads.h
   (Mickaël Delahaye)
 - PR#6575: Array.init evaluates callback although it should not do so
@@ -94,11 +104,14 @@ Bug fixes:
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
 - PR#6630: Failure of tests/prim-bigstring/{big,}string.ml on big-endian
-  architectures (Pierre Chambart, testing by Mark Shinwell)
+  architectures
+  (Pierre Chambart, testing by Mark Shinwell)
 - PR#6640: ocamlbuild: wrong "unused tag" warning on "precious"
   (report by user 'william')
 - PR#6652: ocamlbuild -clean does not print a newline after output
+  (Damien Doligez, report by Andi McClure)
 - PR#6658: cross-compiler: version check not working on OS X
+  (Gerd Stolpmann)
 - PR#6665: Failure of tests/asmcomp on sparc
   (Stéphane Glondu)
 - PR#6667: wrong implementation of %bswap16 on ARM64
@@ -108,9 +121,12 @@ Bug fixes:
 - PR#6671: Windows: environment variable 'TZ' affects Unix.gettimeofday
   (Mickael Delahaye and Damien Doligez)
 - PR#6680: Missing parens when printing polymorphic variant value in warning
-- PR#6686: Bug in [subst_boxed_number] (Jérémie Dimino, Mark Shinwell)
+  (Jacques Garrigue and Gabriel Scherer, report by Philippe Veber)
+- PR#6686: Bug in [subst_boxed_number]
+  (Jérémie Dimino, Mark Shinwell)
 - PR#6690: Uncaught exception (Not_found) with (wrong) wildcard or unification
-           type variable in place of a local abstract type
+  type variable in place of a local abstract type
+  (Jacques Garrigue, report by Mikhail Mandrykin)
 - PR#6693 (part two): Incorrect relocation types in x86-64 runtime system
   (Peter Zotov, review by Jacques-Henri Jourdan, Xavier Leroy and Mark Shinwell)
 - PR#6717: Pprintast does not print let-pattern attributes
@@ -118,47 +134,67 @@ Bug fixes:
 - PR#6727: Printf.sprintf "%F" misbehavior
   (Benoît Vaugon, report by Vassili Karpov)
 - PR#6747: ocamlobjinfo: missing symbol caml_plugin_header due to underscore
+  (Damien Doligez, Maverick Woo)
 - PR#6749: ocamlopt returns n for (n mod 1) instead of 0
   (Mark Shinwell and Jérémie Dimino)
 - PR#6753: Num.quo_num and Num.mod_num incorrect for some negative arguments
   (Xavier Leroy)
 - PR#6758: Ocamldoc "analyse_module: parsetree and typedtree don't match"
+  (Damien Doligez, report by user 'maro')
 - PR#6759: big_int_of_string incorrectly parses some hexa literals
   (Damien Doligez, report by Pierre-yves Strub)
 - PR#6763: #show with -short-paths doesn't select shortest type paths
+  (Jacques Garrigue, report by David Sheets)
 - PR#6768: Typechecker overflow the stack on cyclic type
-- PR#6770: (duplicate of PR#6686)
+  (Jacques Garrigue, report by user 'darktenaibre')
 - PR#6772: asmrun/signals_asm.c doesn't compile on NetBSD/i386
   (Kenji Tokudome)
 - PR#6775: Digest.file leaks file descriptor on error
   (Valentin Gatien-Baron)
 - PR#6779: Cross-compilers cannot link bytecode using custom primitives
+  (Damien Doligez, request by Peter Zotov)
 - PR#6787: Soundness bug with polymorphic variants
+  (Jacques Garrigue, with help from Leo White and Grégoire Henry,
+   report by Michael O'Connor)
 - PR#6790: otherlibs should be built with -g
+  (Damien Doligez, report by Peter Zotov)
 - PR#6791: "%s@[", "%s@{" regression in Scanf
   (Benoît Vaugon)
 - PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
   (Gabriel Scherer, report by Damien Doligez)
 - PR#6799: include guards missing for unixsupport.h and other files
+  (user 'aha')
 - PR#6810: Improve documentation of Bigarray.Genarray.map_file
+  (Mark Shinwell and Daniel Bünzli)
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
+  (Jacques Garrigue, report by Valentin Gatien-Baron)
 - PR#6817: GADT exhaustiveness breakage with modules
+  (Leo White, report by Pierre Chambart)
 - PR#6824: fix buffer sharing on partial application of Format.asprintf
   (Gabriel Scherer, report by Alain Frisch)
 - PR#6831: Build breaks for -aspp gcc on solaris-like OSs
+  (user 'JT')
 - PR#6836: Assertion failure using -short-paths
+  (Jacques Garrigue, report by David Sheets)
 - PR#6837: Build profiling libraries on FreeBSD and NetBSD x86-64
+  (Mark Shinwell, report by Michael Grünewald)
 - PR#6841: Changing compilation unit name with -o breaks ocamldebug
+  (Jacques Garrigue, report by Jordan Walke)
 - PR#6843: record weak dependencies even when the .cmi is missing
   (Leo White, Gabriel Scherer)
 - PR#6849: Inverted pattern unification error
+  (Jacques Garrigue, report by Leo White)
 - PR#6857: __MODULE__ doesn't give the current module with -o
+  (Jacques Garrigue, report by Valentin Gatien-Baron)
 - PR#6862: Exhaustiveness check wrong for class constructor arguments
+  (Jacques Garrigue)
 - PR#6869: Improve comment on [Hashtbl.hash_param]
   (Mark Shinwell, report by Jun Furuse)
-- PR#6870: Unsoundness when -rectypes fails to detect non-contractive type    
+- PR#6870: Unsoundness when -rectypes fails to detect non-contractive type
+  (Jacques Garrigue, report by Stephen Dolan)
 - PR#6872: Type-directed propagation fails to disambiguate variants
-           that are also exception constructors    
+  that are also exception constructors
+  (Jacques Garrigue, report by Romain Beauxis)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - ocamlbuild on cygwin cannot find ocamlfind
