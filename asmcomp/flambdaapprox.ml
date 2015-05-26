@@ -383,8 +383,9 @@ module Import = struct
     else
       let symbol_id_map =
         (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
-      try import_ex (SymbolMap.find sym symbol_id_map) with
-      | Not_found ->
+      match import_ex (SymbolMap.find sym symbol_id_map) with
+      | approx -> { approx with symbol = Some sym }
+      | exception Not_found ->
         if not (SymbolTbl.mem reported_missing_symbols sym)
         then begin
           SymbolTbl.add reported_missing_symbols sym ();
