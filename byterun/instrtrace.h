@@ -16,6 +16,7 @@
 #ifndef _instrtrace_
 #define _instrtrace_
 
+#include <stdio.h>
 
 #include "mlvalues.h"
 #include "misc.h"
