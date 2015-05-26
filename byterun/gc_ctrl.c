@@ -19,6 +19,7 @@
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
+#include "instrtrace.h"
 #include "major_gc.h"
 #include "minor_gc.h"
 #include "misc.h"
@@ -552,7 +553,6 @@ CAMLprim value caml_runtime_variant (value unit)
 }
 
 extern int caml_parser_trace;
-extern int caml_trace_flag;   /* FIXME change "_flag" to "_level" */
 
 CAMLprim value caml_runtime_parameters (value unit)
 {
@@ -563,12 +563,12 @@ CAMLprim value caml_runtime_parameters (value unit)
      "l=%lu,"
 #endif
      "o=%lu,O=%lu,p=%d,s=%lu,"
-#ifdef DEBUG
+#if defined(DEBUG) && ! defined(NATIVE_CODE)
      "t=%d,"
 #endif
      "v=%lu",
      /* a */ caml_allocation_policy,
-     /* b */ caml_backtrace_active ? "b" : "",   /* FIXME simplify with new parsing */
+     /* b */ caml_backtrace_active ? "b=1" : "",   /* FIXME simplify with new parsing */
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
      /* i */ caml_major_heap_increment,
 #ifndef NATIVE_CODE
@@ -579,7 +579,7 @@ CAMLprim value caml_runtime_parameters (value unit)
      /* p */ caml_parser_trace,
      /* R */ /* missing */
      /* s */ caml_minor_heap_size,
-#ifdef DEBUG
+#if defined(DEBUG) && ! defined(NATIVE_CODE)
      /* t */ caml_trace_flag,
 #endif
      /* v */ caml_verb_gc
