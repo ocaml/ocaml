@@ -88,6 +88,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Bad_immediate_attribute
 
 exception Error of Location.t * error
 

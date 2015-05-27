@@ -63,6 +63,9 @@ Language features:
 * GPR#234: allow "[]" as a user-defined constructor. Demand parenthesis
   around "::" when using "::" as user-defined constructor.
   (Runhang Li, review by Damien Doligez)
+- GPR#188: accept [@@immediate] attribute on type declarations to mark types
+  that are represented at runtime by an integer
+  (Will Crichton, reviewed by Leo White)
 
 Compilers:
 - PR#4080, PR#6537, PR#5333: fix stack overflow in the compiler when -pack'ing

@@ -124,6 +124,7 @@ type type_mismatch =
   | Field_names of int * Ident.t * Ident.t
   | Field_missing of bool * Ident.t
   | Record_representation of bool
+  | Immediate
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
@@ -150,6 +151,7 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
         (if b then second else first) decl
         "uses unboxed float representation"
+  | Immediate -> pr "%s is not an immediate type" first
 
 let report_type_mismatch first second decl ppf =
   List.iter
@@ -254,9 +256,18 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     | (_, _) -> [Kind]
   in
   if err <> [] then err else
-  let abstr =
-    decl2.type_private = Private ||
-    decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  let abstr = decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  (* If attempt to assign a non-immediate type (e.g. string) to a type that
+   * must be immediate, then we error *)
+  let err =
+    if abstr &&
+       not decl1.type_immediate &&
+       decl2.type_immediate then
+      [Immediate]
+    else []
+  in
+  if err <> [] then err else
+  let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.(is_Tvar (repr ty))) in
   if List.for_all2

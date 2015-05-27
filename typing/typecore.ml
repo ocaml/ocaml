@@ -2820,6 +2820,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         type_newtype_level = Some (level, level);
         type_loc = loc;
         type_attributes = [];
+        type_immediate = false;
       }
       in
       Ident.set_current_time ty.level;

@@ -500,6 +500,9 @@ and print_out_type_decl kwd ppf td =
     Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> ()
   in
+  let print_immediate ppf =
+    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+  in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
@@ -517,10 +520,11 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t@]"
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t@]"
     print_name_params
     print_out_tkind ty
     print_constraints
+    print_immediate
 
 and print_out_constr ppf (name, tyl,ret_type_opt) =
   match ret_type_opt with
