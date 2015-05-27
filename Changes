@@ -1,3 +1,10 @@
+OCaml 4.02.1-instr
+------------------
+
+Bug fix:
+- Misplaced assertion in major_gc.c for no-naked-pointers mode
+  (Stephen Dolan, Mark Shinwell)
+
 OCaml 4.02.1:
 -------------
 (Changes that can break existing programs are marked with a "*")
