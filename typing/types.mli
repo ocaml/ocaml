@@ -133,6 +133,7 @@ type type_declaration =
     (* definition level * expansion level *)
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
+    type_immediate: bool; (* true iff type should not be a pointer *)
   }
 
 and type_kind =

@@ -1164,6 +1164,7 @@ let dummy =
     type_private = Public; type_manifest = None; type_variance = [];
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let hide_rec_items = function
