@@ -96,7 +96,7 @@ static void realloc_gray_vals (void)
 void caml_darken (value v, value *p /* not used */)
 {
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
-  if (Is_block (v) && Wosize_val (v) > 0) {
+  if (Is_block (v) && !Is_young (v) && Wosize_val (v) > 0) {
     /* We insist that naked pointers to outside the heap point to things that
        look like values with headers coloured black.  This isn't always
        strictly necessary but is essential in certain cases---in particular
@@ -194,6 +194,7 @@ static void mark_slice (intnat work)
           child = Field (v, i);
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
           if (Is_block (child)
+                && ! Is_young (child)
                 && Wosize_val (child) > 0  /* Atoms never need to be marked. */
                 /* Closure blocks contain code pointers at offsets that cannot
                    be reliably determined, so we always use the page table when
