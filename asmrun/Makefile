@@ -217,10 +217,8 @@ clean::
 .S.p.o:
 	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
-.c.d.o:
-	ln -s -f $*.c $*.d.c
-	$(CC) -c $(DFLAGS) $*.d.c
-	rm -f $*.d.c
+%.d.o: %.c
+	$(CC) -c $(DFLAGS) -o $@ $<
 
 %.i.o : %.c
 	$(CC) -c $(IFLAGS) -o $@ $<
@@ -240,7 +238,7 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
 
 clean::
-	rm -f *.o *.a *.d.c *.p.c *~
+	rm -f *.o *.a *.p.c *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
 	-gcc -MM $(FLAGS) *.c > .depend
