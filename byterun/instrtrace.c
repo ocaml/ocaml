@@ -19,6 +19,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "instrtrace.h"
 #include "instruct.h"
 #include "misc.h"
 #include "mlvalues.h"
