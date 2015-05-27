@@ -1128,6 +1128,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
+    type_immediate = false;
   }
 
 let instance_constructor ?in_pattern cstr =
@@ -4401,6 +4402,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
+      type_immediate = decl.type_immediate;
     }
   with Not_found ->
     clear_hash ();

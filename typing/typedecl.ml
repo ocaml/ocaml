@@ -51,6 +51,12 @@ open Typedtree
 
 exception Error of Location.t * error
 
+(* Check if a type declaration from the AST indicates it is immediate *)
+let is_immediate sdecl =
+  List.exists
+    (fun (loc, _) -> loc.txt = "immediate")
+    sdecl.ptype_attributes
+
 (* Enter all declared types in the environment as abstract types *)
 
 let enter_type env sdecl id =
@@ -67,6 +73,7 @@ let enter_type env sdecl id =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
+      type_immediate = is_immediate sdecl;
     }
   in
   Env.add_type ~check:true id decl env
@@ -298,6 +305,7 @@ let transl_declaration env sdecl id =
         type_newtype_level = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
+        type_immediate = is_immediate sdecl;
       } in
 
   (* Check constraints *)
@@ -322,6 +330,7 @@ let transl_declaration env sdecl id =
         if Ctype.cyclic_abbrev env id ty then
           raise(Error(sdecl.ptype_loc, Recursive_abbrev sdecl.ptype_name.txt));
     end;
+
     {
       typ_id = id;
       typ_name = sdecl.ptype_name;
@@ -1442,6 +1451,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
+      type_immediate = is_immediate sdecl;
     }
   in
   begin match row_path with None -> ()
@@ -1486,6 +1496,7 @@ let abstract_type_decl arity =
       type_newtype_level = None;
       type_loc = Location.none;
       type_attributes = [];
+      type_immediate = false;
      } in
   Ctype.end_def();
   generalize_decl decl;

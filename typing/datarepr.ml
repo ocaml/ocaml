@@ -76,6 +76,7 @@ let constructor_args cd_args cd_res path rep =
           type_newtype_level = None;
           type_loc = Location.none;
           type_attributes = [];
+          type_immediate = false;
         }
       in
       existentials,

@@ -102,6 +102,7 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
+   type_immediate = false;
   }
 
 let cstr id args =

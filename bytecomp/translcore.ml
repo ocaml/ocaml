@@ -545,7 +545,7 @@ let rec name_pattern default = function
 
 type binding =
   | Bind_value of value_binding list
-  | Bind_module of Ident.t * string loc * module_expr 
+  | Bind_module of Ident.t * string loc * module_expr
 
 let rec push_defaults loc bindings cases partial =
   match cases with
