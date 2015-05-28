@@ -412,10 +412,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg : _ Flambda.t * A.
         begin match p with
         | Pstringrefu
         | Pstringrefs ->
-            Printf.printf "\nstring get\n\n%!";
             const_char_expr expr s.[x] eid
         | _ -> expr, A.value_unknown
         end
+    | [Value_string { size; contents = None };
+       (Value_int x | Value_constptr x)]
+      when x >= 0 && x < size && p = Pstringrefs ->
+        Flambda.Fprim(Pstringrefu, args, dbg, eid),
+        A.value_unknown
     | _ -> expr, A.value_unknown
 
 let rename_var var =
