@@ -1,4 +1,4 @@
-(* Not for correctness testing, but verifies performance boost with immediates *)
+(* Verifies ascribing to immediate type in signature works, also tests performance *)
 
 module Foo : sig type t val x : t ref end = struct
   type t = int
