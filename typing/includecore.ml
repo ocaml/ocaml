@@ -256,9 +256,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
         else [Constraint]
   in
   if err <> [] then err else
-  let abstr =
-    decl2.type_private = Private ||
-    decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  let abstr = decl2.type_kind = Type_abstract && decl2.type_manifest = None in
   (* If attempt to assign a non-immediate type (e.g. string) to a type that
    * must be immediate, then we error *)
   let err =
@@ -269,6 +267,7 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
     else []
   in
   if err <> [] then err else
+  let abstr = abstr || decl2.type_private = Private in
   let opn = decl2.type_kind = Type_open && decl2.type_manifest = None in
   let constrained ty = not (Btype.(is_Tvar (repr ty))) in
   if List.for_all2
