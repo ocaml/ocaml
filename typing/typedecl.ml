@@ -1474,6 +1474,12 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_immediate = false;
     }
   in
+  let has_attribute =
+    List.exists
+      (fun (loc, _) -> loc.txt = "immediate")
+      decl.type_attributes
+  in
+  let decl = {decl with type_immediate = (compute_immediacy env decl has_attribute)} in
   begin match row_path with None -> ()
   | Some p -> set_fixed_row env sdecl.ptype_loc p decl
   end;
