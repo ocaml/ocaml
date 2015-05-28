@@ -1061,6 +1061,12 @@ let inline ~never_inline tree =
       Printflambda.flambda result
   end;
   assert (Variable.Set.is_empty (R.used_variables r));
+  if not (Static_exception.Set.is_empty (R.used_staticfail r))
+  then begin
+    Format.printf "remaining variables: %a@.%a@."
+      Static_exception.Set.print (R.used_staticfail r)
+      Printflambda.flambda result
+  end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
     Format.printf "benefit:@ %a@."
