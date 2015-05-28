@@ -162,7 +162,7 @@ let flambda ppf (size, exported, lam) =
       Flambdacheck.check ~current_compilation_unit
         ~flambdasym:true ~cmxfile:true lam)
     const;
-  Clambdagen.convert fl_sym
+  fl_sym
 
 let compile_unit output_prefix asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
@@ -187,9 +187,8 @@ let compile_unit output_prefix asm_filename keep_asm obj_filename gen =
 
 let gen_implementation ?toplevel ppf (size, exported, lam) =
   Emit.begin_assembly ();
-  let clambda = flambda ppf (size, exported, lam) in
-  (* Closure.intro size lam *)
-  clambda
+  flambda ppf (size, exported, lam)
+  ++ Clambdagen.convert
   ++ clambda_dump_if ppf
   ++ Cmmgen.compunit size
   ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
