@@ -46,16 +46,26 @@ type error =
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
   | Val_in_structure
+  | Bad_immediate_attribute
 
 open Typedtree
 
 exception Error of Location.t * error
 
-(* Check if a type declaration from the AST indicates it is immediate *)
-let is_immediate sdecl =
-  List.exists
-    (fun (loc, _) -> loc.txt = "immediate")
-    sdecl.ptype_attributes
+(* Checks if a type declaration is immediate, erroring if marked as such but cannot be *)
+
+let compute_immediacy env tdecl required =
+  let is_immediate =
+    match (tdecl.type_kind, tdecl.type_manifest) with
+    | (Type_variant (_ :: _ as cstrs), _) ->
+      not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
+    | (Type_abstract, Some(typ)) ->
+      not (Ctype.maybe_pointer_type env typ)
+    | (Type_abstract, None) -> required
+    | _ -> false
+  in
+  if not is_immediate && required then raise (Error (tdecl.type_loc, Bad_immediate_attribute));
+  is_immediate
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -73,7 +83,7 @@ let enter_type env sdecl id =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = is_immediate sdecl;
+      type_immediate = false;
     }
   in
   Env.add_type ~check:true id decl env
@@ -305,8 +315,16 @@ let transl_declaration env sdecl id =
         type_newtype_level = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
-        type_immediate = is_immediate sdecl;
+        type_immediate = false;
       } in
+
+    let has_attribute =
+      List.exists
+        (fun (loc, _) -> loc.txt = "immediate")
+        decl.type_attributes
+    in
+
+    let decl = {decl with type_immediate = (compute_immediacy env decl has_attribute)} in
 
   (* Check constraints *)
     List.iter
@@ -1451,7 +1469,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = is_immediate sdecl;
+      type_immediate = false;
     }
   in
   begin match row_path with None -> ()
@@ -1725,6 +1743,11 @@ let report_error ppf = function
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
+  | Bad_immediate_attribute ->
+      fprintf ppf "@[%s@ %s@]"
+        "Types marked with the immediate attribute must be"
+        "non-pointer types like int or bool"
+
 
 let () =
   Location.register_error_of_exn

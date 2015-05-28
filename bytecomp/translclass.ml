@@ -53,11 +53,11 @@ let transl_meth_list lst =
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
+  let kind = if Ctype.maybe_pointer expr then Paddrarray else Pintarray in
   Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
 
 let copy_inst_var obj id expr templ offset =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
+  let kind = if Ctype.maybe_pointer expr then Paddrarray else Pintarray in
   let id' = Ident.create (Ident.name id) in
   Llet(Strict, id', Lprim (Pidentity, [Lvar id]),
   Lprim(Parraysetu kind,
