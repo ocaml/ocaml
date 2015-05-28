@@ -189,7 +189,7 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_type ident_int64 decl_abstr_imm (
+  add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr_imm (
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
