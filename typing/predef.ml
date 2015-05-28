@@ -105,6 +105,8 @@ let decl_abstr =
    type_immediate = false;
   }
 
+let decl_abstr_imm = {decl_abstr with type_immediate = true}
+
 let cstr id args =
   {
     cd_id = id;
@@ -124,10 +126,12 @@ and ident_some = ident_create "Some"
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
+     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
+     type_immediate = true}
   and decl_unit =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []])}
+     type_kind = Type_variant([cstr ident_void []]);
+     type_immediate = true}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
@@ -185,8 +189,8 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_type ident_int64 decl_abstr (
-  add_type ident_int32 decl_abstr (
+  add_type ident_int64 decl_abstr_imm (
+  add_type ident_int32 decl_abstr_imm (
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
@@ -197,8 +201,8 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr (
-  add_type ident_int decl_abstr (
+  add_type ident_char decl_abstr_imm (
+  add_type ident_int decl_abstr_imm (
     empty_env))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =

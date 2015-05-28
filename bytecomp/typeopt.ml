@@ -33,31 +33,6 @@ let is_base_type env ty base_ty_path =
 let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
-let maybe_pointer_type env typ =
-  match scrape env typ with
-  | Tconstr(p, args, abbrev) ->
-      not (Path.same p Predef.path_int) &&
-      not (Path.same p Predef.path_char) &&
-      begin
-        (* If the type is explicitly marked as immediate, then it cannot be a pointer *)
-        let type_decl = Env.find_type p env in
-        not type_decl.type_immediate
-      end &&
-      begin try
-        match Env.find_type p env with
-        | {type_kind = Type_variant []} -> true (* type exn *)
-        | {type_kind = Type_variant cstrs} ->
-            List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
-        | _ -> true
-      with Not_found -> true
-        (* This can happen due to e.g. missing -I options,
-           causing some .cmi files to be unavailable.
-           Maybe we should emit a warning. *)
-      end
-  | _ -> true
-
-let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
-
 let array_element_kind env ty =
   match scrape env ty with
   | Tvar _ | Tunivar _ ->
