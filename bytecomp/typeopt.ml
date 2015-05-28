@@ -17,24 +17,23 @@ open Types
 open Typedtree
 open Lambda
 
-let scrape env ty =
-  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
-
 let is_function_type env ty =
-  match scrape env ty with
+  match Ctype.scrape env ty with
   | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
   | _ -> None
 
 let is_base_type env ty base_ty_path =
-  match scrape env ty with
+  match Ctype.scrape env ty with
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
 let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
+let maybe_pointer exp = Ctype.maybe_pointer_type exp.Typedtree.exp_env exp.Typedtree.exp_type
+
 let array_element_kind env ty =
-  match scrape env ty with
+  match Ctype.scrape env ty with
   | Tvar _ | Tunivar _ ->
       Pgenarray
   | Tconstr(p, args, abbrev) ->
@@ -69,7 +68,7 @@ let array_element_kind env ty =
       Paddrarray
 
 let array_type_kind env ty =
-  match scrape env ty with
+  match Ctype.scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
       array_element_kind env elt_ty
@@ -82,7 +81,7 @@ let array_kind exp = array_type_kind exp.exp_env exp.exp_type
 let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
-  match scrape env ty with
+  match Ctype.scrape env ty with
   | Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
     when Ident.name mod_id = "Bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
@@ -108,7 +107,7 @@ let layout_table =
    "fortran_layout", Pbigarray_fortran_layout]
 
 let bigarray_type_kind_and_layout env typ =
-  match scrape env typ with
+  match Ctype.scrape env typ with
   | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
       (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
        bigarray_decode_type env layout_type layout_table
