@@ -4531,20 +4531,11 @@ let maybe_pointer_type env typ =
    match scrape env typ with
   | Tconstr(p, args, abbrev) ->
     begin try
-      (* The relevant types (int, bool) are already defined to have
-       * type_immediate = true in predef.ml so we need not check those here *)
       let type_decl = Env.find_type p env in
-      not type_decl.type_immediate &&
-      (match type_decl.type_kind with
-       | Type_variant [] -> true (* type exn *)
-       | Type_variant cstrs ->
-         List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs
-       | _ -> true)
+      not type_decl.type_immediate
     with Not_found -> true
     (* This can happen due to e.g. missing -I options,
        causing some .cmi files to be unavailable.
        Maybe we should emit a warning. *)
     end
   | _ -> true
-
-let maybe_pointer exp = maybe_pointer_type exp.Typedtree.exp_env exp.Typedtree.exp_type
