@@ -259,6 +259,8 @@ let type_declarations ?(equality = false) env name decl1 id decl2 =
   let abstr =
     decl2.type_private = Private ||
     decl2.type_kind = Type_abstract && decl2.type_manifest = None in
+  (* If attempt to assign a non-immediate type (e.g. string) to a type that
+   * must be immediate, then we error *)
   let err =
     if abstr &&
        not decl1.type_immediate &&

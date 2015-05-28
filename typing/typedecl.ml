@@ -58,13 +58,15 @@ let compute_immediacy env tdecl required =
   let is_immediate =
     match (tdecl.type_kind, tdecl.type_manifest) with
     | (Type_variant (_ :: _ as cstrs), _) ->
+      (* Same logic as maybe_pointer_type *)
       not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
     | (Type_abstract, Some(typ)) ->
       not (Ctype.maybe_pointer_type env typ)
     | (Type_abstract, None) -> required
     | _ -> false
   in
-  if not is_immediate && required then raise (Error (tdecl.type_loc, Bad_immediate_attribute));
+  if not is_immediate && required then
+    raise (Error (tdecl.type_loc, Bad_immediate_attribute));
   is_immediate
 
 (* Enter all declared types in the environment as abstract types *)
