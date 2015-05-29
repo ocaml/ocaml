@@ -460,9 +460,12 @@ void caml_compact_heap (void)
                  + Wsize_bsize (Page_size);
   target_size = caml_clip_heap_chunk_size (Bsize_wsize (target_words));
 
-#if defined (HAS_HUGE_PAGES)                                    \
-    && (defined (MMAP_INTERVAL) || defined (MMAP_HUGE_PAGES))
+#ifdef HAS_HUGE_PAGES
+  #ifdef MMAP_INTERVAL
   if (caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #else
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #endif
 #endif
 
   if (target_size < caml_stat_heap_size / 2){
@@ -523,11 +526,15 @@ void caml_compact_heap_maybe (void)
   float fw, fp;
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
-#if defined (HAS_HUGE_PAGES) \
-    && (defined (MMAP_INTERVAL) || defined (MMAP_HUGE_PAGES))
-  if (caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
-#endif
   if (caml_stat_major_collections < 3) return;
+
+#ifdef HAS_HUGE_PAGES
+  #ifdef MMAP_INTERVAL
+  if (caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #else
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #endif
+#endif
 
   fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_size;
