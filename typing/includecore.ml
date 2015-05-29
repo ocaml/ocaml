@@ -151,7 +151,7 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
         (if b then second else first) decl
         "uses unboxed float representation"
-  | Immediate -> pr "Immediacy does not agree"
+  | Immediate -> pr "%s is not an immediate type" first
 
 let report_type_mismatch first second decl ppf =
   List.iter

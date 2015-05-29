@@ -52,23 +52,6 @@ open Typedtree
 
 exception Error of Location.t * error
 
-(* Checks if a type declaration is immediate, erroring if marked as such but cannot be *)
-
-let compute_immediacy env tdecl required =
-  let is_immediate =
-    match (tdecl.type_kind, tdecl.type_manifest) with
-    | (Type_variant (_ :: _ as cstrs), _) ->
-      (* Same logic as maybe_pointer_type *)
-      not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
-    | (Type_abstract, Some(typ)) ->
-      not (Ctype.maybe_pointer_type env typ)
-    | (Type_abstract, None) -> required
-    | _ -> false
-  in
-  if not is_immediate && required then
-    raise (Error (tdecl.type_loc, Bad_immediate_attribute));
-  is_immediate
-
 (* Enter all declared types in the environment as abstract types *)
 
 let enter_type env sdecl id =
@@ -319,14 +302,6 @@ let transl_declaration env sdecl id =
         type_attributes = sdecl.ptype_attributes;
         type_immediate = false;
       } in
-
-    let has_attribute =
-      List.exists
-        (fun (loc, _) -> loc.txt = "immediate")
-        decl.type_attributes
-    in
-
-    let decl = {decl with type_immediate = (compute_immediacy env decl has_attribute)} in
 
   (* Check constraints *)
     List.iter
@@ -939,6 +914,49 @@ let rec compute_variance_fixpoint env decls required variances =
 let init_variance (id, decl) =
   List.map (fun _ -> Variance.null) decl.type_params
 
+(* Checks if a type declaration is immediate, erroring if marked as such but cannot be *)
+
+let init_immediacy (id, decl) =
+  List.exists
+    (fun (loc, _) -> loc.txt = "immediate")
+    decl.type_attributes
+
+let compute_immediacy env tdecl required =
+  let is_immediate =
+    match (tdecl.type_kind, tdecl.type_manifest) with
+    | (Type_variant (_ :: _ as cstrs), _) ->
+      (* Same logic as maybe_pointer_type *)
+      not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
+    | (Type_abstract, Some(typ)) ->
+      not (Ctype.maybe_pointer_type env typ)
+    | (Type_abstract, None) -> required
+    | _ -> false
+  in
+  if not is_immediate && required then
+    raise (Error (tdecl.type_loc, Bad_immediate_attribute));
+  is_immediate
+
+let rec compute_immediacy_fixpoint env decls immediacies =
+  let new_decls =
+    List.map2
+      (fun (id, decl) immediacy -> id, {decl with type_immediate = immediacy})
+      decls immediacies
+  in
+  let new_env =
+    List.fold_right
+      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      new_decls env
+  in
+  let new_immediacies =
+    List.map
+      (fun (id, decl) -> compute_immediacy env decl decl.type_immediate)
+      new_decls
+  in
+  if new_immediacies <> immediacies then
+    compute_immediacy_fixpoint env decls new_immediacies
+  else
+    new_decls, new_env
+
 let add_injectivity =
   List.map
     (function
@@ -1140,6 +1158,9 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
+  in
+  let final_decls, final_env =
+    compute_immediacy_fixpoint final_env final_decls (List.map init_immediacy final_decls)
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
@@ -1474,12 +1495,6 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_immediate = false;
     }
   in
-  let has_attribute =
-    List.exists
-      (fun (loc, _) -> loc.txt = "immediate")
-      decl.type_attributes
-  in
-  let decl = {decl with type_immediate = (compute_immediacy env decl has_attribute)} in
   begin match row_path with None -> ()
   | Some p -> set_fixed_row env sdecl.ptype_loc p decl
   end;

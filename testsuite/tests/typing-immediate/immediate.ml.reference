@@ -1,7 +1,14 @@
 
-#                       module A : sig type t type s = t type r = s end
+#                               module A :
+  sig
+    type t [@@immediate]
+    type s = t [@@immediate]
+    type r = s [@@immediate]
+    type p = q [@@immediate]
+    and q = int [@@immediate]
+  end
 #         module Foo : sig type t val x : t ref end
-#         module Bar : sig type t val x : t ref end
+#         module Bar : sig type t [@@immediate] val x : t ref end
 #       val test : (unit -> 'a) -> float = <fun>
 #         val test_foo : unit -> unit = <fun>
 #         val test_bar : unit -> unit = <fun>
@@ -23,10 +30,15 @@ Error: Signature mismatch:
        Modules do not match:
          sig type t = string end
        is not included in
-         sig type t end
+         sig type t [@@immediate] end
        Type declarations do not match:
          type t = string
        is not included in
-         type t
-       Immediacy does not agree.
+         type t [@@immediate]
+       the first is not an immediate type.
+#           Characters 85-109:
+    type t = s [@@immediate]
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be
+       non-pointer types like int or bool
 # 
