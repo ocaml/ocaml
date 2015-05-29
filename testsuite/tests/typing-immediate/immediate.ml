@@ -15,6 +15,12 @@ module A = struct
   and q = int
 end;;
 
+(* Valid using with constraints *)
+module type X = sig type t end
+module Y = struct type t = int end
+module Z = ((Y : X with type t = int) : sig type t [@@immediate] end)
+
+(* Practical usage over modules *)
 module Foo : sig type t val x : t ref end = struct
   type t = int
   let x = ref 0

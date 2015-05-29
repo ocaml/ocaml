@@ -325,7 +325,6 @@ let transl_declaration env sdecl id =
         if Ctype.cyclic_abbrev env id ty then
           raise(Error(sdecl.ptype_loc, Recursive_abbrev sdecl.ptype_name.txt));
     end;
-
     {
       typ_id = id;
       typ_name = sdecl.ptype_name;
@@ -876,46 +875,6 @@ let is_sharp id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
-let rec compute_variance_fixpoint env decls required variances =
-  let new_decls =
-    List.map2
-      (fun (id, decl) variance -> id, {decl with type_variance = variance})
-      decls variances
-  in
-  let new_env =
-    List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
-      new_decls env
-  in
-  let new_variances =
-    List.map2
-      (fun (id, decl) -> compute_variance_decl new_env false decl)
-      new_decls required
-  in
-  let new_variances =
-    List.map2 (List.map2 Variance.union) new_variances variances in
-  if new_variances <> variances then
-    compute_variance_fixpoint env decls required new_variances
-  else begin
-    (* List.iter (fun (id, decl) ->
-      Printf.eprintf "%s:" (Ident.name id);
-      List.iter (fun (v : Variance.t) ->
-        Printf.eprintf " %x" (Obj.magic v : int))
-        decl.type_variance;
-      prerr_endline "")
-      new_decls; *)
-    List.iter2
-      (fun (id, decl) req -> if not (is_sharp id) then
-        ignore (compute_variance_decl new_env true decl req))
-      new_decls required;
-    new_decls, new_env
-  end
-
-let init_variance (id, decl) =
-  List.map (fun _ -> Variance.null) decl.type_params
-
-(* Checks if a type declaration is immediate, erroring if marked as such but cannot be *)
-
 let marked_as_immediate decl =
   List.exists
     (fun (loc, _) -> loc.txt = "immediate")
@@ -931,32 +890,56 @@ let compute_immediacy env tdecl =
   | (Type_abstract, None) -> marked_as_immediate tdecl
   | _ -> false
 
-let rec compute_immediacy_fixpoint env decls immediacies =
+(* Computes the fixpoint for the variance and immediacy of type declarations *)
+
+let rec compute_properties_fixpoint env decls required variances immediacies =
   let new_decls =
     List.map2
-      (fun (id, decl) immediacy -> id, {decl with type_immediate = immediacy})
-      decls immediacies
+      (fun (id, decl) (variance, immediacy) ->
+         id, {decl with type_variance = variance; type_immediate = immediacy})
+      decls (List.combine variances immediacies)
   in
   let new_env =
     List.fold_right
       (fun (id, decl) env -> Env.add_type ~check:true id decl env)
       new_decls env
   in
+  let new_variances =
+    List.map2
+      (fun (id, decl) -> compute_variance_decl new_env false decl)
+      new_decls required
+  in
+  let new_variances =
+    List.map2 (List.map2 Variance.union) new_variances variances in
   let new_immediacies =
     List.map
-      (fun (id, decl) -> compute_immediacy env decl)
+      (fun (id, decl) -> compute_immediacy new_env decl)
       new_decls
   in
-  if new_immediacies <> immediacies then
-    compute_immediacy_fixpoint env decls new_immediacies
+  if new_variances <> variances || new_immediacies <> immediacies then
+    compute_properties_fixpoint env decls required new_variances new_immediacies
   else begin
+    (* List.iter (fun (id, decl) ->
+      Printf.eprintf "%s:" (Ident.name id);
+      List.iter (fun (v : Variance.t) ->
+        Printf.eprintf " %x" (Obj.magic v : int))
+        decl.type_variance;
+      prerr_endline "")
+      new_decls; *)
     List.iter (fun (_, decl) ->
       if (marked_as_immediate decl) && (not decl.type_immediate) then
         raise (Error (decl.type_loc, Bad_immediate_attribute))
       else ())
       new_decls;
+    List.iter2
+      (fun (id, decl) req -> if not (is_sharp id) then
+        ignore (compute_variance_decl new_env true decl req))
+      new_decls required;
     new_decls, new_env
   end
+
+let init_variance (id, decl) =
+  List.map (fun _ -> Variance.null) decl.type_params
 
 let add_injectivity =
   List.map
@@ -976,8 +959,11 @@ let compute_variance_decls env cldecls =
         (add_injectivity variance, ci.ci_loc) :: req)
       cldecls ([],[])
   in
-  let variances = List.map init_variance decls in
-  let (decls, _) = compute_variance_fixpoint env decls required variances in
+  let (decls, _) =
+    compute_properties_fixpoint env decls required
+      (List.map init_variance decls)
+      (List.map (fun _ -> false) decls)
+  in
   List.map2
     (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
       let variance = decl.type_variance in
@@ -1158,10 +1144,9 @@ let transl_type_decl env rec_flag sdecl_list =
       sdecl_list
   in
   let final_decls, final_env =
-    compute_variance_fixpoint env decls required (List.map init_variance decls)
-  in
-  let final_decls, final_env =
-    compute_immediacy_fixpoint final_env final_decls (List.map (fun _ -> false) final_decls)
+    compute_properties_fixpoint env decls required
+      (List.map init_variance decls)
+      (List.map (fun _ -> false) decls)
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
@@ -1503,10 +1488,12 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
   let decl = name_recursion sdecl id decl in
-  let decl =
-    {decl with type_variance =
-     compute_variance_decl env true decl
-       (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)} in
+  let type_variance =
+    compute_variance_decl env true decl
+      (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)
+  in
+  let type_immediate = compute_immediacy env decl in
+  let decl = {decl with type_variance; type_immediate} in
   Ctype.end_def();
   generalize_decl decl;
   {
