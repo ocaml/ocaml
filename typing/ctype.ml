@@ -4525,7 +4525,7 @@ let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
 
 let maybe_pointer_type env typ =
-   match (repr (expand_head_opt env (correct_levels typ))).desc with
+   match (repr (expand_head_opt env (correct_levels typ))).desc (*(repr typ).desc*) with
   | Tconstr(p, args, abbrev) ->
     begin try
       let type_decl = Env.find_type p env in
