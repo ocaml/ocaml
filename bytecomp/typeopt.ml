@@ -33,7 +33,8 @@ let is_base_type env ty base_ty_path =
 let has_base_type exp base_ty_path =
   is_base_type exp.exp_env exp.exp_type base_ty_path
 
-let maybe_pointer exp = Ctype.maybe_pointer_type exp.Typedtree.exp_env exp.Typedtree.exp_type
+let maybe_pointer exp =
+  Ctype.maybe_pointer_type exp.Typedtree.exp_env exp.Typedtree.exp_type
 
 let array_element_kind env ty =
   match scrape env ty with
