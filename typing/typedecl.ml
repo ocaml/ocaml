@@ -916,25 +916,20 @@ let init_variance (id, decl) =
 
 (* Checks if a type declaration is immediate, erroring if marked as such but cannot be *)
 
-let init_immediacy (id, decl) =
+let marked_as_immediate decl =
   List.exists
     (fun (loc, _) -> loc.txt = "immediate")
     decl.type_attributes
 
-let compute_immediacy env tdecl required =
-  let is_immediate =
-    match (tdecl.type_kind, tdecl.type_manifest) with
-    | (Type_variant (_ :: _ as cstrs), _) ->
-      (* Same logic as maybe_pointer_type *)
-      not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
-    | (Type_abstract, Some(typ)) ->
-      not (Ctype.maybe_pointer_type env typ)
-    | (Type_abstract, None) -> required
-    | _ -> false
-  in
-  if not is_immediate && required then
-    raise (Error (tdecl.type_loc, Bad_immediate_attribute));
-  is_immediate
+let compute_immediacy env tdecl =
+  match (tdecl.type_kind, tdecl.type_manifest) with
+  | (Type_variant (_ :: _ as cstrs), _) ->
+    (* Same logic as maybe_pointer_type *)
+    not (List.exists (fun c -> c.Types.cd_args <> Cstr_tuple []) cstrs)
+  | (Type_abstract, Some(typ)) ->
+    not (Ctype.maybe_pointer_type env typ)
+  | (Type_abstract, None) -> marked_as_immediate tdecl
+  | _ -> false
 
 let rec compute_immediacy_fixpoint env decls immediacies =
   let new_decls =
@@ -949,13 +944,19 @@ let rec compute_immediacy_fixpoint env decls immediacies =
   in
   let new_immediacies =
     List.map
-      (fun (id, decl) -> compute_immediacy env decl decl.type_immediate)
+      (fun (id, decl) -> compute_immediacy env decl)
       new_decls
   in
   if new_immediacies <> immediacies then
     compute_immediacy_fixpoint env decls new_immediacies
-  else
+  else begin
+    List.iter (fun (_, decl) ->
+      if (marked_as_immediate decl) && (not decl.type_immediate) then
+        raise (Error (decl.type_loc, Bad_immediate_attribute))
+      else ())
+      new_decls;
     new_decls, new_env
+  end
 
 let add_injectivity =
   List.map
@@ -1160,7 +1161,7 @@ let transl_type_decl env rec_flag sdecl_list =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in
   let final_decls, final_env =
-    compute_immediacy_fixpoint final_env final_decls (List.map init_immediacy final_decls)
+    compute_immediacy_fixpoint final_env final_decls (List.map (fun _ -> false) final_decls)
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
