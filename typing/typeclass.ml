@@ -1216,7 +1216,7 @@ let temp_abbrev loc env id arity =
        type_newtype_level = None;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
-       type_immediate = false; (* will change if attrs are preserved *)
+       type_immediate = false;
       }
       env
   in

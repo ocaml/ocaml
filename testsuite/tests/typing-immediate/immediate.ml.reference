@@ -7,7 +7,10 @@
     type p = q [@@immediate]
     and q = int [@@immediate]
   end
-#         module Foo : sig type t val x : t ref end
+#                     module type X = sig type t end
+module Y : sig type t = int [@@immediate] end
+module Z : sig type t [@@immediate] end
+module Foo : sig type t val x : t ref end
 #         module Bar : sig type t [@@immediate] val x : t ref end
 #       val test : (unit -> 'a) -> float = <fun>
 #         val test_foo : unit -> unit = <fun>
