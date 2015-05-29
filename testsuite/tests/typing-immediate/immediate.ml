@@ -9,6 +9,10 @@ module A = struct
 
   (* Again, valid alias even without tag *)
   type r = s
+
+  (* Mutually recursive declarations work as well *)
+  type p = q [@@immediate]
+  and q = int
 end;;
 
 module Foo : sig type t val x : t ref end = struct
@@ -56,4 +60,10 @@ end;;
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
 module D : sig type t [@@immediate] end = struct
   type t = string
+end;;
+
+(* Can't use a non-immediate type even if mutually recursive *)
+module E = struct
+  type t = s [@@immediate]
+  and s = string
 end;;

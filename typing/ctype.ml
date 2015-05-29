@@ -4524,11 +4524,8 @@ let rec collapse_conj env visited ty =
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
 
-let scrape env ty =
-  (repr (expand_head_opt env (correct_levels ty))).desc
-
 let maybe_pointer_type env typ =
-   match scrape env typ with
+   match (repr (expand_head_opt env (correct_levels typ))).desc with
   | Tconstr(p, args, abbrev) ->
     begin try
       let type_decl = Env.find_type p env in

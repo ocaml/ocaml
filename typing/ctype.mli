@@ -273,7 +273,6 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
 val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 
-val scrape : Env.t -> Types.type_expr -> Types.type_desc
 val maybe_pointer_type : Env.t -> type_expr -> bool
         (* True if type is possibly pointer, false if definitely not a pointer *)
 
