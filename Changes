@@ -83,14 +83,14 @@ Bug fixes:
 - PR#5395: OCamlbuild mishandles relative symlinks and include paths
   (Damien Doligez, report by Didier Le Botlan)
 - PR#5822: wrong value of Options.ext_dll on windows
-  (Damien Doligez and user 'daweil')
+  (Damien Doligez and Daniel Weil)
 - PR#5836, PR#6684: printing lazy values in ocamldebug may segfault
   (Gabriel Scherer, request by the Coq team)
 - PR#5887: move the byterun/*.h headers to byterun/caml/*.h to avoid
   header name clashes
   (Jérôme Vouillon and Adrien Nader and Peter Zotov)
 - PR#6281: Graphics window does not acknowledge second click (double click)
-  (user 'kygron')
+  (Kyle Headley)
 - PR#6490: incorrect backtraces in gdb on AArch64.  Also fixes incorrect
   backtraces on 32-bit ARM.
   (Mark Shinwell)
@@ -105,7 +105,7 @@ Bug fixes:
 - PR#6617: allow android build with pthreads support (since SDK r10c)
   (Peter Zotov)
 - PR#6626: ocamlbuild on cygwin cannot find ocamlfind
-  (user 'algoriddle')
+  (Gergely Szilvasy)
 - PR#6628: Configure script rejects legitimate arguments
   (Michael Grünewald, Damien Doligez)
 - PR#6630: Failure of tests/prim-bigstring/{big,}string.ml on big-endian
@@ -168,7 +168,7 @@ Bug fixes:
 - PR#6793: ocamlbuild passes nonsensical "-ocamlc ..." commands to menhir
   (Gabriel Scherer, report by Damien Doligez)
 - PR#6799: include guards missing for unixsupport.h and other files
-  (user 'aha')
+  (Andreas Hauptmann)
 - PR#6810: Improve documentation of Bigarray.Genarray.map_file
   (Mark Shinwell and Daniel Bünzli)
 - PR#6812: -short-paths and -no-alias-deps can create inconsistent assumptions
@@ -178,7 +178,7 @@ Bug fixes:
 - PR#6824: fix buffer sharing on partial application of Format.asprintf
   (Gabriel Scherer, report by Alain Frisch)
 - PR#6831: Build breaks for -aspp gcc on solaris-like OSs
-  (user 'JT')
+  (John Tibble)
 - PR#6836: Assertion failure using -short-paths
   (Jacques Garrigue, report by David Sheets)
 - PR#6837: Build profiling libraries on FreeBSD and NetBSD x86-64
@@ -200,8 +200,8 @@ Bug fixes:
 - PR#6872: Type-directed propagation fails to disambiguate variants
   that are also exception constructors
   (Jacques Garrigue, report by Romain Beauxis)
-- PR#6879: Wrong optimization of 1 mod n (Mark Shinwell, report by
-  (Jean-Christophe Filliâtre)
+- PR#6879: Wrong optimization of 1 mod n
+  (Mark Shinwell, report by Jean-Christophe Filliâtre)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - Misplaced assertion in major_gc.c for no-naked-pointers mode
@@ -273,6 +273,8 @@ Standard library:
   (Jacques Garrigue, report by Mark Shinwell)
 - PR#6572: Fatal error with recursive modules
   (Jacques Garrigue, report by Quentin Stievenart)
+- PR#6575: Array.init evaluates callback although it should not do so
+  (Alain Frisch, report by Gerd Stolpmann)
 - PR#6578: Recursive module containing alias causes Segmentation fault
   (Jacques Garrigue)
 - PR#6581: Some bugs in generative functors
@@ -583,7 +585,7 @@ Features wishes:
 - PR#4855: 'camlp4 -I +dir' accepted, dir is relative to 'camlp4 -where'
   (Jun Furuse and Hongbo Zhang, report by Dmitry Grebeniuk)
 - PR#5201: ocamlbuild: add --norc to the bash invocation to help performances
-  (user 'daweil')
+  (Daniel Weil)
 - PR#5650: Camlp4FoldGenerator doesn't handle well "abstract" types
   (Hongbo Zhang)
 - PR#5808: allow simple patterns, not just identifiers, in "let p : t = ..."
