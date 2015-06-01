@@ -1,3 +1,6 @@
+module type S = sig type t [@@immediate] end;;
+module F (M : S) : S = M;;
+
 (* VALID DECLARATIONS *)
 
 module A = struct
@@ -16,9 +19,13 @@ module A = struct
 end;;
 
 (* Valid using with constraints *)
-module type X = sig type t end
-module Y = struct type t = int end
-module Z = ((Y : X with type t = int) : sig type t [@@immediate] end)
+module type X = sig type t end;;
+module Y = struct type t = int end;;
+module Z = ((Y : X with type t = int) : sig type t [@@immediate] end);;
+
+(* Valid using an explicit signature *)
+module M_valid : S = struct type t = int end;;
+module FM_valid = F (struct type t = int end);;
 
 (* Practical usage over modules *)
 module Foo : sig type t val x : t ref end = struct
@@ -67,6 +74,10 @@ end;;
 module D : sig type t [@@immediate] end = struct
   type t = string
 end;;
+
+(* Same as above but with explicit signature *)
+module M_invalid : S = struct type t = string end;;
+module FM_invalid = F (struct type t = string end);;
 
 (* Can't use a non-immediate type even if mutually recursive *)
 module E = struct

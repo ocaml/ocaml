@@ -1,5 +1,7 @@
 
-#                               module A :
+# module type S = sig type t [@@immediate] end
+# module F : functor (M : S) -> S
+#                                 module A :
   sig
     type t [@@immediate]
     type s = t [@@immediate]
@@ -7,10 +9,12 @@
     type p = q [@@immediate]
     and q = int [@@immediate]
   end
-#                     module type X = sig type t end
-module Y : sig type t = int [@@immediate] end
-module Z : sig type t [@@immediate] end
-module Foo : sig type t val x : t ref end
+#     module type X = sig type t end
+# module Y : sig type t = int [@@immediate] end
+# module Z : sig type t [@@immediate] end
+#     module M_valid : S
+# module FM_valid : S
+#           module Foo : sig type t val x : t ref end
 #         module Bar : sig type t [@@immediate] val x : t ref end
 #       val test : (unit -> 'a) -> float = <fun>
 #         val test_foo : unit -> unit = <fun>
@@ -34,6 +38,26 @@ Error: Signature mismatch:
          sig type t = string end
        is not included in
          sig type t [@@immediate] end
+       Type declarations do not match:
+         type t = string
+       is not included in
+         type t [@@immediate]
+       the first is not an immediate type.
+#     Characters 72-98:
+  module M_invalid : S = struct type t = string end;;
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match: sig type t = string end is not included in S
+       Type declarations do not match:
+         type t = string
+       is not included in
+         type t [@@immediate]
+       the first is not an immediate type.
+# Characters 23-49:
+  module FM_invalid = F (struct type t = string end);;
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match: sig type t = string end is not included in S
        Type declarations do not match:
          type t = string
        is not included in
