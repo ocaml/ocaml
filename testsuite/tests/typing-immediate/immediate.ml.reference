@@ -5,12 +5,12 @@
   sig
     type t [@@immediate]
     type s = t [@@immediate]
-    type r = s [@@immediate]
+    type r = s
     type p = q [@@immediate]
-    and q = int [@@immediate]
+    and q = int
   end
 #     module type X = sig type t end
-# module Y : sig type t = int [@@immediate] end
+# module Y : sig type t = int end
 # module Z : sig type t [@@immediate] end
 #     module M_valid : S
 # module FM_valid : S
