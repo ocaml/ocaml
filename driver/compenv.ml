@@ -225,6 +225,10 @@ let read_OCAMLPARAM ppf position =
                                         "non-integer parameter for \"unroll\""))
         end
 
+      | "functor-heuristics" ->
+        if !native_code then
+          set "functor-heuristics" [ functor_heuristics ] v
+
       | "intf-suffix" -> Config.interface_suffix := v
 
       | "I" -> begin

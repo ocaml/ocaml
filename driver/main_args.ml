@@ -125,6 +125,10 @@ let mk_unroll f =
   "-unroll", Arg.Int f, "<n>  Set maximal number of times a function can be unrolled"
 ;;
 
+let mk_no_functor_heuristics f =
+  "-no-functor-heuristics", Arg.Unit f, " Disable the heuristics that force toplevel function applications to be inlined"
+;;
+
 let mk_intf f =
   "-intf", Arg.String f, "<file>  Compile <file> as a .mli file"
 ;;
@@ -586,6 +590,7 @@ module type Optcommon_options = sig
   val _inlining_stats : unit -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
+  val _no_functor_heuristics : unit -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
@@ -792,6 +797,7 @@ struct
     mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
+    mk_no_functor_heuristics F._no_functor_heuristics;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_keep_locs F._keep_locs;
@@ -870,6 +876,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_inlining_stats F._inlining_stats;
     mk_rounds F._rounds;
     mk_unroll F._unroll;
+    mk_no_functor_heuristics F._no_functor_heuristics;
     mk_labels F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;

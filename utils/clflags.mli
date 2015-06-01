@@ -88,6 +88,7 @@ val inline_threshold : int ref
 val inlining_stats : bool ref
 val simplify_rounds : int ref
 val unroll : int ref
+val functor_heuristics : bool ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list

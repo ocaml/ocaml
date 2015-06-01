@@ -91,6 +91,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inlining_stats () = inlining_stats := true
   let _rounds n = simplify_rounds := n
   let _unroll n = unroll := n
+  let _no_functor_heuristics () = functor_heuristics := false
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_locs = set keep_locs

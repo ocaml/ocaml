@@ -6,6 +6,7 @@ module R = Flambda_inline_result
 module U = Flambdautils
 
 let is_probably_a_functor env clos approxs =
+  !Clflags.functor_heuristics &&
   E.at_toplevel env &&
   not (E.is_inside_branch env) &&
     List.for_all A.known approxs &&

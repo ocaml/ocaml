@@ -117,6 +117,7 @@ module type Optcommon_options = sig
   val _inlining_stats : unit -> unit
   val _rounds : int -> unit
   val _unroll : int -> unit
+  val _no_functor_heuristics : unit -> unit
 
   val _dclambda : unit -> unit
   val _dcmm : unit -> unit
