@@ -291,3 +291,7 @@ val exn_slot_name: exn -> string
 
     @since 4.02.0
 *)
+
+type retloc
+external return_location : unit -> retloc = "%retloc"
+val decode_return_location : retloc -> (string * int * int) option
