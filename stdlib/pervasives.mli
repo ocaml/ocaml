@@ -174,7 +174,7 @@ external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler. *)
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
-(** [__POS_OF__ expr] returns a pair [(expr,loc)], where [loc] is a
+(** [__POS_OF__ expr] returns a pair [(loc,expr)], where [loc] is a
     tuple [(file,lnum,cnum,enum)] corresponding to the location at
     which the expression [expr] appears in the file currently being
     parsed by the compiler. [file] is the current filename, [lnum] the
