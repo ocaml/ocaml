@@ -40,7 +40,7 @@ char * default_runtime_path = RUNTIME_NAME;
 #define SEEK_END 2
 #endif
 
-#ifndef __CYGWIN32__
+#ifndef __CYGWIN__
 
 /* Normal Unix search path function */
 

@@ -202,6 +202,8 @@ Bug fixes:
   (Jacques Garrigue, report by Romain Beauxis)
 - PR#6879: Wrong optimization of 1 mod n
   (Mark Shinwell, report by Jean-Christophe Filliâtre)
+- PR#6884: The __CYGWIN32__ #define should be replaced with __CYGWIN__
+  (Adrien Nader)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - Misplaced assertion in major_gc.c for no-naked-pointers mode
