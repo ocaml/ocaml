@@ -944,8 +944,9 @@ and transl_guard guard rhs =
 and transl_cont cont c_cont body =
   match cont, c_cont with
   | Some id1, Some id2 -> Llet(Alias, id2, Lvar id1, body)
-  | None, None -> body
-  | _ -> assert false
+  | None, None
+  | Some _, None -> body
+  | None, Some _ -> assert false
 
 and transl_case ?cont {c_lhs; c_cont; c_guard; c_rhs} =
   c_lhs, transl_cont cont c_cont (transl_guard c_guard c_rhs)
