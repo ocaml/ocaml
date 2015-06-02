@@ -89,6 +89,10 @@ val inlining_stats : bool ref
 val simplify_rounds : int ref
 val unroll : int ref
 val functor_heuristics : bool ref
+val inline_call_cost : int ref
+val inline_alloc_cost : int ref
+val inline_prim_cost : int ref
+val inline_branch_cost : int ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list

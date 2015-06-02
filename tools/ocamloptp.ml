@@ -62,6 +62,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inlining_stats = option "-inlining-stats"
   let _rounds n = option_with_int "-rounds" n
   let _unroll n = option_with_int "-unroll" n
+  let _inline_call_cost n = option_with_int "-inline-call-cost" n
+  let _inline_alloc_cost n = option_with_int "-inline-alloc-cost" n
+  let _inline_prim_cost n = option_with_int "-inline-prim-cost" n
+  let _inline_branch_cost n = option_with_int "-inline-branch-cost" n
   let _no_functor_heuristics = option "-no-functor-heuristics"
   let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s

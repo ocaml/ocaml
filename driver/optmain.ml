@@ -92,6 +92,10 @@ module Options = Main_args.Make_optcomp_options (struct
   let _rounds n = simplify_rounds := n
   let _unroll n = unroll := n
   let _no_functor_heuristics () = functor_heuristics := false
+  let _inline_call_cost n = inline_call_cost := n
+  let _inline_alloc_cost n = inline_alloc_cost := n
+  let _inline_prim_cost n = inline_prim_cost := n
+  let _inline_branch_cost n = inline_branch_cost := n
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_locs = set keep_locs

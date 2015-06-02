@@ -213,13 +213,11 @@ let remove_code lam b =
   Flambdaiter.iter_toplevel f lam;
   !b
 
-(* let add_branch_benefit  *)
-
 (* Arbitrarily chosen bonus for different improvements *)
-let remove_call_bonus = 5
-let remove_alloc_bonus = 10
-let remove_prim_bonus = 3
-let remove_branch_bonus = 10
+let remove_call_bonus () = !Clflags.inline_call_cost
+let remove_alloc_bonus () = !Clflags.inline_alloc_cost
+let remove_prim_bonus () = !Clflags.inline_prim_cost
+let remove_branch_bonus () = !Clflags.inline_branch_cost
 
 let print_benefit ppf b =
   Format.fprintf ppf "@[remove_call: %i@ remove_alloc: %i@ \
@@ -233,10 +231,10 @@ let benefit_factor = 1
 
 let evaluate_benefit b =
   benefit_factor *
-  (b.remove_call * remove_call_bonus
-   + b.remove_alloc * remove_alloc_bonus
-   + b.remove_prim * remove_prim_bonus
-   + b.remove_branch * remove_branch_bonus)
+  (b.remove_call * remove_call_bonus ()
+   + b.remove_alloc * remove_alloc_bonus ()
+   + b.remove_prim * remove_prim_bonus ()
+   + b.remove_branch * remove_branch_bonus ())
 
 module Whether_sufficient_benefit = struct
   type maybe_inline = {
