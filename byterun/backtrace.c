@@ -500,3 +500,15 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   }
   CAMLreturn(res);
 }
+
+/* Turn encoded retaddr into eventual location information */
+CAMLprim value caml_decode_retaddr(value retaddr)
+{
+  CAMLparam1(retaddr);
+  CAMLlocal1(result);
+
+  /* Fixme, not hard to implement */
+  result = Val_unit;
+
+  CAMLreturn(result);
+}

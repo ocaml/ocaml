@@ -383,3 +383,50 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
   CAMLreturn(res);
 }
+
+/* Turn encoded retaddr into eventual location information */
+CAMLprim value caml_decode_retaddr(value retaddr)
+{
+  CAMLparam1(retaddr);
+  CAMLlocal3(result, block, fname);
+
+  frame_descr *d;
+  uintnat h;
+  struct loc_info li;
+
+  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
+
+  if (Is_long(retaddr) && retaddr > 1)
+  {
+    /* Find the descriptor corresponding to the return address */
+    h = Hash_retaddr(retaddr);
+    while(1) {
+      d = caml_frame_descriptors[h];
+      if (d == NULL) break;
+
+      /* The | 1 is a hack to store retaddr as a ocaml int,
+       * but we don't expect two frame descriptors to be spaced by less than 1 */
+      if ((d->retaddr | 1) == retaddr) break;
+      h = (h+1) & caml_frame_descriptors_mask;
+    }
+
+    if (d != NULL)
+      extract_location_info(d, &li);
+
+    if (d != NULL && li.loc_valid) {
+      fname = caml_copy_string(li.loc_filename);
+      block = caml_alloc_small(3, 0);
+      Field(block, 0) = fname;
+      Field(block, 1) = Val_int(li.loc_lnum);
+      Field(block, 2) = Val_int(li.loc_startchr);
+      result = caml_alloc_small(1, 0);
+      Field(result, 0) = block;
+    } else {
+      result = Val_unit;
+    }
+  }
+  else
+    result = retaddr;
+
+  CAMLreturn(result);
+}
