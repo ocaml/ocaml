@@ -54,6 +54,7 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
+  | Iretloc
 
 type instruction =
   { desc: instruction_desc;
