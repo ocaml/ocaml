@@ -138,10 +138,12 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dlambda = set dump_lambda
   let _dflambda = set dump_flambda
   let _dinstr = set dump_instr
+  let _dtimings = set print_timings
   let anonymous = anonymous
 end)
 
 let main () =
+  Timings.start All;
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;
@@ -191,6 +193,8 @@ let main () =
       Bytelink.link ppf (get_objfiles ()) target;
       Warnings.check_fatal ();
     end;
+    Timings.stop All;
+    if !Clflags.print_timings then Timings.print Format.std_formatter;
     exit 0
   with x ->
     Location.report_exception ppf x;

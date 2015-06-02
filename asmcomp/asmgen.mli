@@ -14,6 +14,7 @@
 
 val compile_implementation :
     ?toplevel:(string -> bool) ->
+    sourcefile:string ->
     string -> Format.formatter -> (int * int) * Lambda.lambda -> unit
 val compile_phrase :
     Format.formatter -> Cmm.phrase -> unit
@@ -24,6 +25,7 @@ val report_error: Format.formatter -> error -> unit
 
 
 val compile_unit:
+  sourcefile:string ->
   string(*prefixname*) ->
   string(*asm file*) -> bool(*keep asm*) ->
   string(*obj file*) -> (unit -> unit) -> unit

@@ -123,3 +123,5 @@ let inline_call_cost = ref 5           (* -inline-call-cost *)
 let inline_alloc_cost = ref 10         (* -inline-alloc-cost *)
 let inline_prim_cost = ref 3           (* -inline-prim-cost *)
 let inline_branch_cost = ref 10        (* -inline-branch-cost *)
+
+let print_timings = ref false          (* -timings *)

@@ -38,7 +38,7 @@ OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
-UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
+UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo utils/timings.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo utils/ext_types.cmo \
   utils/sort_connected_components.cmo

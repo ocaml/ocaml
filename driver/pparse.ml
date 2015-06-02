@@ -125,6 +125,7 @@ let apply_rewriters ?restore ~tool_name magic ast =
 exception Outdated_version
 
 let file ppf ~tool_name inputfile parse_fun ast_magic =
+  Timings.(start (Parsing inputfile));
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -157,6 +158,7 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
+  Timings.(stop (Parsing inputfile));
   apply_rewriters ~restore:false ~tool_name ast_magic ast
 
 let report_error ppf = function
