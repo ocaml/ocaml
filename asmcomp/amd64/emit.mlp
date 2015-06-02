@@ -433,6 +433,9 @@ let emit_instr fallthrough i =
         else `	subq	${emit_int(n)}, %rsp\n`;
         cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
+    | Lop(Iretloc) ->
+        `	movq {emit_int (frame_size()-8)}(%rsp), {emit_reg i.res.(0)}\n`;
+        `	or	$1, {emit_reg i.res.(0)}\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
