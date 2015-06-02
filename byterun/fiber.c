@@ -148,23 +148,23 @@ value caml_perform(value effect)
   CAMLreturn(Stack_handle_effect(old_stack));
 }
 
-struct transfer_req {
+struct cont_transfer_req {
   value cont;
   int target;
 };
 
 static void transfer_continuation(struct domain* self, void *reqp)
 {
-  struct transfer_req *req = reqp;
+  struct cont_transfer_req *req = reqp;
   value cont = req->cont;
   int target_id = req->target;
-  int owner_id = Long_val(FieldImm(cont, 1));
+  int owner_id = Int_val(Field(cont, 1));
   value stack;
 
   if(owner_id == self->id) {
-    stack = caml_promote(self, FieldImm(cont, 0));
+    stack = caml_promote(self, Field(cont, 0));
     caml_modify_field(cont, 0, stack);
-    Op_val(cont)[1] = Val_int(target_id);
+    caml_modify_field(cont, 1, Val_int(target_id));
   }
 }
 
@@ -172,9 +172,9 @@ static value use_continuation(value cont)
 {
   struct domain *self, *owner;
   int self_id, owner_id;
-  struct transfer_req req;
+  struct cont_transfer_req req;
 
-  owner_id = Int_val(FieldImm(cont, 1));
+  owner_id = Int_val(Field(cont, 1));
 
   self = caml_domain_self();
   self_id = self->id;
@@ -187,11 +187,11 @@ static value use_continuation(value cont)
     req.target = self_id;
     caml_domain_rpc(owner, &transfer_continuation, &req);
 
-    owner_id = Int_val(FieldImm(cont, 1));
+    owner_id = Int_val(Field(cont, 1));
   }
 
-  Op_val(cont)[1] = Val_int(-1);
-  return FieldImm(cont, 0);
+  caml_modify_field(cont, 1, Val_int(-1));
+  return Field(cont, 0);
 }
 
 value caml_continue(value cont, value ret, intnat extra_args)

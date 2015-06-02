@@ -46,8 +46,8 @@ typedef struct dom_internal dom_internal;
 
 
 /* possible values of domain->rpc_request */
-enum { RPC_IDLE = 0, 
-       RPC_REQUEST_INITIALISING = 1, 
+enum { RPC_IDLE = 0,
+       RPC_REQUEST_INITIALISING = 1,
        RPC_REQUEST_SENT = 2 };
 
 #define Max_domains (1 << Minor_heap_sel_bits)
@@ -530,11 +530,11 @@ static void handle_rpc(dom_internal* target)
 
     Assert(atomic_load_acq(&target->rpc_request) == RPC_REQUEST_SENT);
 
-    {     
+    {
       domain_rpc_handler rpc_handler = target->rpc_handler;
       void* rpc_data = target->rpc_data;
       atomic_uintnat* rpc_completion_signal = target->rpc_completion_signal;
-      
+
       /* we have a copy of the request, it is now safe for other domains to overwrite it */
       atomic_store_rel(&target->rpc_request, RPC_IDLE);
       /* handle the request */
@@ -610,4 +610,76 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
     check_rpc(); /* must keep handling RPCs while waiting for this one */
     cpu_relax();
   }
+}
+
+CAMLprim value caml_domain_mutex(value unit)
+{
+  CAMLparam0();
+
+  value mutex = caml_alloc_small(2, 0);
+  Init_field(mutex, 0, Val_long(0));
+  Init_field(mutex, 1, Val_int(domain_self->state.id));
+
+  CAMLreturn(mutex);
+}
+
+struct mutex_transfer_req {
+  value mutex;
+  int target;
+};
+
+static void transfer_mutex(struct domain* self, void *reqp)
+{
+  struct mutex_transfer_req *req = reqp;
+  value mutex = req->mutex;
+  int target_id = req->target;
+  int owner_id = Int_val(Field(mutex, 1));
+
+  if(owner_id == self->id) {
+    if(Field(mutex, 0) == Val_long(0)) {
+      caml_modify_field(mutex, 1, Val_int(target_id));
+    }
+  }
+}
+
+CAMLprim value caml_domain_lock(value mutex)
+{
+  CAMLparam0();
+  struct domain *owner;
+  int self_id, owner_id;
+  struct mutex_transfer_req req;
+
+  owner_id = Int_val(Field(mutex, 1));
+
+  self_id = domain_self->state.id;
+
+  while(owner_id != self_id) {
+    owner = &all_domains[owner_id].state;
+    req.mutex = mutex;
+    req.target = self_id;
+    caml_domain_rpc(owner, &transfer_mutex, &req);
+
+    owner_id = Int_val(Field(mutex, 1));
+  }
+
+  caml_modify_field(mutex, 0, Val_long(1));
+
+  CAMLreturn(Val_long(0));
+}
+
+CAMLprim value caml_domain_unlock(value mutex)
+{
+  CAMLparam0();
+  int self_id, owner_id;
+
+  owner_id = Int_val(Field(mutex, 1));
+
+  self_id = domain_self->state.id;
+
+  if(owner_id == self_id) {
+    caml_modify_field(mutex, 0, Val_long(0));
+    check_rpc();
+  }
+
+  CAMLreturn(Val_long(0));
 }
