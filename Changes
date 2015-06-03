@@ -206,6 +206,8 @@ Bug fixes:
   (Adrien Nader)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
+- GPR#190: typo in pervasives
+  (Guillaume Bury)
 - Misplaced assertion in major_gc.c for no-naked-pointers mode
   (Stephen Dolan, Mark Shinwell)
 
