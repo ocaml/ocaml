@@ -179,6 +179,7 @@ module CT = struct
   let map sub {pcty_loc = loc; pcty_desc = desc; pcty_attributes = attrs} =
     let open Cty in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcty_constr (lid, tys) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tys)
@@ -191,6 +192,7 @@ module CT = struct
     =
     let open Ctf in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pctf_inherit ct -> inherit_ ~loc ~attrs (sub.class_type sub ct)
     | Pctf_val (s, m, v, t) -> val_ ~loc ~attrs s m v (sub.typ sub t)
