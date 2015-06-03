@@ -22,8 +22,6 @@ type part =
   | Cmm of file
   | Compile_phrases of file
 
-type duration = float
-
 let timings : (part, float * float option) Hashtbl.t = Hashtbl.create 20
 let reset () = Hashtbl.clear timings
 

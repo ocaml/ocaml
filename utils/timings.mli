@@ -25,15 +25,34 @@ type part =
   | Cmm of file
   | Compile_phrases of file
 
-type duration
-
 val reset : unit -> unit
+(** erase all recorded times *)
 
-val get : part -> duration option
+val get : part -> float option
+(** returns the runtime in seconds of a completed part *)
+
 val start : part -> unit
-val stop : part -> unit
+(** Mark the beginning of a section *)
+
 val start_id : part -> 'a -> 'a
+(** Behave like [start] but is the identity on the second argument.
+    Usefull for introducing timings in patterns like
+    [ function1
+      ++ start_id some_part
+      ++ function2
+      ++ stop_id some_part
+      ...]
+*)
+
+val stop : part -> unit
+(** Mark the end of a section. It is an error to call stop without
+    having called start earlier *)
+
 val stop_id : part -> 'a -> 'a
+(** Behave like [stop] but is the identity in the second argument *)
+
 val time : part -> ('a -> 'b) -> 'a -> 'b
+(** [time part f arg] Record the runtime of [f arg] *)
 
 val print : Format.formatter -> unit
+(** Prints all recorded timings to the formatter. *)
