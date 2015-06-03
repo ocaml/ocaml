@@ -279,6 +279,8 @@ Bug fixes:
 - PR#6872: Type-directed propagation fails to disambiguate variants
   that are also exception constructors
   (Jacques Garrigue, report by Romain Beauxis)
+- PR#6886: -no-alias-deps allows to build self-referential compilation units
+  (Jacques Garrigue, report by sliquister)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 
