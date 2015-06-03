@@ -590,7 +590,7 @@ CAMLprim value caml_runtime_parameters (value unit)
      /* O */ caml_percent_max,
      /* p */ caml_parser_trace,
      /* R */ /* missing */
-     /* s */ caml_minor_heap_size,
+     /* s */ Wsize_bsize (caml_minor_heap_size),
 #if defined(DEBUG) && ! defined(NATIVE_CODE)
      /* t */ caml_trace_flag,
 #endif
