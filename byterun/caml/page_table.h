@@ -43,13 +43,18 @@ CAMLextern unsigned char * caml_page_table[Pagetable1_size];
 
 #endif
 
+int caml_page_table_add(int kind, void * start, void * end);
+int caml_page_table_remove(int kind, void * start, void * end);
+int caml_page_table_initialize(mlsize_t bytesize);
+
+/* External code should only use the following four macros.
+
+   The code above may change in the future in incompatible ways. */
+
 #define Is_in_value_area(a) \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
 #define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
-
-int caml_page_table_add(int kind, void * start, void * end);
-int caml_page_table_remove(int kind, void * start, void * end);
-int caml_page_table_initialize(mlsize_t bytesize);
+#define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
 
 #endif
