@@ -204,6 +204,8 @@ Bug fixes:
   (Mark Shinwell, report by Jean-Christophe Filliâtre)
 - PR#6884: The __CYGWIN32__ #define should be replaced with __CYGWIN__
   (Adrien Nader)
+- PR#6886: -no-alias-deps allows to build self-referential compilation units
+  (Jacques Garrigue, report by sliquister)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - GPR#190: typo in pervasives
