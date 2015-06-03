@@ -417,6 +417,7 @@ module CE = struct
   let map sub {pcl_loc = loc; pcl_desc = desc; pcl_attributes = attrs} =
     let open Cl in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcl_constr (lid, tys) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tys)
@@ -444,6 +445,7 @@ module CE = struct
   let map_field sub {pcf_desc = desc; pcf_loc = loc; pcf_attributes = attrs} =
     let open Cf in
     let loc = sub.location sub loc in
+    let attrs = sub.attributes sub attrs in
     match desc with
     | Pcf_inherit (o, ce, s) -> inherit_ ~loc ~attrs o (sub.class_expr sub ce) s
     | Pcf_val (s, m, k) -> val_ ~loc ~attrs (map_loc sub s) m (map_kind sub k)
