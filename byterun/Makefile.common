@@ -33,9 +33,9 @@ PRIMS=\
   dynlink.c backtrace.c
 
 PUBLIC_INCLUDES=\
-  alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
-  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
-  version.h
+  alloc.h callback.h config.h custom.h fail.h gc.h hash.h intext.h \
+  memory.h misc.h mlvalues.h page_table.h printexc.h signals.h \
+  compatibility.h version.h
 
 
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)
