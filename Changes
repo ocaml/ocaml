@@ -206,6 +206,8 @@ Bug fixes:
   (Adrien Nader)
 - PR#6886: -no-alias-deps allows to build self-referential compilation units
   (Jacques Garrigue, report by Valentin Gatien-Baron)
+- PR#6889: ast_mapper fails to rewrite class attributes
+  (Sébastien Briais)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - GPR#190: typo in pervasives
