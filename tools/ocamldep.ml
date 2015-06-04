@@ -28,6 +28,7 @@ let sort_files = ref false
 let all_dependencies = ref false
 let one_line = ref false
 let files = ref []
+let allow_approximation = ref false
 
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
@@ -221,6 +222,53 @@ let report_err exn =
 
 let tool_name = "ocamldep"
 
+let rec lexical_approximation lexbuf =
+  (* Approximation when a file can't be parsed.
+     Heuristic:
+     - first component of any path starting with an uppercase character is a
+       dependency.
+     - always skip the token after a dot, unless dot is preceded by a
+       lower-case identifier
+     - always skip the token after a backquote
+  *)
+  try
+    let rec process after_lident lexbuf =
+      match Lexer.token lexbuf with
+      | Parser.UIDENT name ->
+          Depend.free_structure_names :=
+            Depend.StringSet.add name !Depend.free_structure_names;
+          process false lexbuf
+      | Parser.LIDENT _ -> process true lexbuf
+      | Parser.DOT when after_lident -> process false lexbuf
+      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.EOF -> ()
+      | _ -> process false lexbuf
+    and skip_one lexbuf =
+      match Lexer.token lexbuf with
+      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.EOF -> ()
+      | _ -> process false lexbuf
+
+    in
+    process false lexbuf
+  with Lexer.Error _ -> lexical_approximation lexbuf
+
+let read_and_approximate inputfile =
+  error_occurred := false;
+  let ic = open_in_bin inputfile in
+  try
+    seek_in ic 0;
+    Location.input_name := inputfile;
+    let lexbuf = Lexing.from_channel ic in
+    Location.init lexbuf inputfile;
+    lexical_approximation lexbuf;
+    close_in ic;
+    !Depend.free_structure_names
+  with exn ->
+    close_in ic;
+    report_err exn;
+    !Depend.free_structure_names
+
 let read_parse_and_extract parse_function extract_function magic source_file =
   Depend.free_structure_names := Depend.StringSet.empty;
   try
@@ -241,9 +289,12 @@ let read_parse_and_extract parse_function extract_function magic source_file =
       Pparse.remove_preprocessed input_file;
       raise x
     end
-  with x ->
+  with x -> begin
     report_err x;
-    Depend.StringSet.empty
+    if not !allow_approximation
+    then Depend.StringSet.empty
+    else read_and_approximate source_file
+  end
 
 let ml_file_dependencies source_file =
   let parse_use_file_as_impl lexbuf =
@@ -431,6 +482,8 @@ let _ =
         "<f>  Process <f> as a .ml file";
      "-intf", Arg.String (file_dependencies_as MLI),
         "<f>  Process <f> as a .mli file";
+     "-allow-approx", Arg.Set allow_approximation,
+        " Fallback to a lexer-based approximation on unparseable files.";
      "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
         "<e>  Consider <e> as a synonym of the .ml extension";
      "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),

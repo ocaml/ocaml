@@ -81,7 +81,7 @@ let num_of_prim name =
   try
     find_numtable !c_prim_table name
   with Not_found ->
-    if !Clflags.custom_runtime then
+    if !Clflags.custom_runtime || !Clflags.no_check_prims then
       enter_numtable c_prim_table name
     else begin
       let symb =

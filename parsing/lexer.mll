@@ -25,6 +25,7 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
   | Literal_overflow of string
+  | Invalid_literal of string
 ;;
 
 exception Error of error * Location.t;;
@@ -248,6 +249,8 @@ let report_error ppf = function
   | Literal_overflow ty ->
       fprintf ppf "Integer literal exceeds the range of representable \
                    integers of type %s" ty
+  | Invalid_literal s ->
+      fprintf ppf "Invalid literal %s" s
 
 let () =
   Location.register_error_of_exn
@@ -350,6 +353,8 @@ rule token = parse
           NATIVEINT (cvt_nativeint_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
+  | (float_literal | int_literal) identchar+
+      { raise (Error(Invalid_literal (Lexing.lexeme lexbuf), Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
         is_in_string := true;

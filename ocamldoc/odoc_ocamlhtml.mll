@@ -37,7 +37,6 @@ let base_escape_strings = [
 
 let pre_escape_strings = [
   (" ", "&nbsp;") ;
-  ("\n", "<br>\n") ;
   ("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") ;
   ]
 

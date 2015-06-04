@@ -294,6 +294,7 @@ let extract_concrete_record env ty =
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
     (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
+  | (p0, p, {type_kind=Type_open}) -> (p0, p, [])
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
@@ -906,7 +907,7 @@ let unify_head_only loc env ty constr =
   | Tconstr(p,args,m) ->
       ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
       enforce_constraints env ty_res;
-      unify_pat_types loc env ty ty_res
+      unify_pat_types loc env ty_res ty
   | _ -> assert false
 
 (* Typing of patterns *)
@@ -1275,6 +1276,9 @@ let partial_pred ~lev env expected_ty constrs labels p =
     backtrack snap;
     None
 
+let check_partial ?(lev=get_current_level ()) env expected_ty =
+  Parmatch.check_partial_gadt (partial_pred ~lev env expected_ty)
+
 let rec iter3 f lst1 lst2 lst3 =
   match lst1,lst2,lst3 with
   | x1::xs1,x2::xs2,x3::xs3 ->
@@ -1637,7 +1641,7 @@ let create_package_type loc env (p, l) =
    let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       Exp.letmodule ~loc:sexp.pexp_loc
+       Exp.letmodule ~loc:sexp.pexp_loc ~attrs:[mknoloc "#modulepat",PStr []]
          name
          (Mod.unpack ~loc
             (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt) name.loc)))
@@ -3269,7 +3273,11 @@ and type_application env funct sargs =
       List.length labels = List.length sargs &&
       List.for_all (fun (l,_) -> l = Nolabel) sargs &&
       List.exists (fun l -> l <> Nolabel) labels &&
-      (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+      (Location.prerr_warning
+	 funct.exp_loc
+	 (Warnings.Labels_omitted
+	    (List.map Printtyp.string_of_label
+		      (List.filter ((<>) Nolabel) labels)));
        true)
     end
   in
@@ -3599,7 +3607,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   end;
   let partial =
     if partial_flag then
-      Parmatch.check_partial_gadt (partial_pred ~lev env ty_arg) loc cases
+      check_partial ~lev env ty_arg loc cases
     else
       Partial
   in
@@ -3782,7 +3790,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     Location.prerr_warning (List.hd spat_sexp_list).pvb_pat.ppat_loc
       Warnings.Unused_rec_flag;
   List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [case pat exp]))
+    (fun pat exp ->
+      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
     pat_list exp_list;
   end_def();
   List.iter2

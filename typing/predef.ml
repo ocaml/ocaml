@@ -28,7 +28,7 @@ let ident_create_predef_exn = wrap Ident.create_predef_exn
 
 let ident_int = ident_create "int"
 and ident_char = ident_create "char"
-and ident_string = ident_create "string"
+and ident_bytes = ident_create "bytes"
 and ident_float = ident_create "float"
 and ident_bool = ident_create "bool"
 and ident_unit = ident_create "unit"
@@ -40,11 +40,11 @@ and ident_nativeint = ident_create "nativeint"
 and ident_int32 = ident_create "int32"
 and ident_int64 = ident_create "int64"
 and ident_lazy_t = ident_create "lazy_t"
-and ident_bytes = ident_create "bytes"
+and ident_string = ident_create "string"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
-and path_string = Pident ident_string
+and path_bytes = Pident ident_bytes
 and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
@@ -56,11 +56,11 @@ and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
-and path_bytes = Pident ident_bytes
+and path_string = Pident ident_string
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
-and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
+and type_bytes = newgenty (Tconstr(path_bytes, [], ref Mnil))
 and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
@@ -72,7 +72,7 @@ and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
-and type_bytes = newgenty (Tconstr(path_bytes, [], ref Mnil))
+and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
 
 let ident_match_failure = ident_create_predef_exn "Match_failure"
 and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"

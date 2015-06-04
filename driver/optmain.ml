@@ -15,7 +15,9 @@ open Clflags
 open Compenv
 
 let process_interface_file ppf name =
-  Optcompile.interface ppf name (output_prefix name)
+  let opref = output_prefix name in
+  Optcompile.interface ppf name opref;
+  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
@@ -28,11 +30,8 @@ let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then
     process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then begin
-    let opref = output_prefix name in
-    Optcompile.interface ppf name opref;
-    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-  end
+  else if Filename.check_suffix name !Config.interface_suffix then
+    process_interface_file ppf name
   else if Filename.check_suffix name ".cmx" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ".cmxa" then begin

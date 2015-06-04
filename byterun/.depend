@@ -9,11 +9,11 @@ array.o: array.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/freelist.h caml/minor_gc.h caml/misc.h caml/mlvalues.h
 backtrace.o: backtrace.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/mlvalues.h caml/config.h \
- caml/misc.h caml/alloc.h caml/mlvalues.h caml/io.h caml/instruct.h \
- caml/intext.h caml/io.h caml/exec.h caml/fix_code.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup.h \
- caml/exec.h caml/stacks.h caml/memory.h caml/sys.h caml/backtrace.h \
- caml/fail.h
+ caml/misc.h caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h \
+ caml/instruct.h caml/intext.h caml/io.h caml/exec.h caml/fix_code.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
+ caml/backtrace.h caml/fail.h
 callback.o: callback.c caml/callback.h caml/compatibility.h \
  caml/mlvalues.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/misc.h caml/fail.h caml/memory.h caml/gc.h \
@@ -44,7 +44,7 @@ dynlink.o: dynlink.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/dynlink.h caml/fail.h caml/mlvalues.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
- caml/misc.h caml/osdeps.h caml/prims.h
+ caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
 extern.o: extern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
@@ -101,11 +101,12 @@ intern.o: intern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/misc.h caml/reverse.h
 interp.o: interp.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
- caml/mlvalues.h caml/backtrace.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/fix_code.h caml/instrtrace.h caml/instruct.h \
- caml/interp.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/signals.h caml/stacks.h caml/memory.h caml/jumptbl.h
+ caml/mlvalues.h caml/backtrace.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/freelist.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/stacks.h caml/memory.h \
+ caml/startup_aux.h caml/jumptbl.h
 ints.o: ints.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/intext.h caml/io.h \
@@ -167,8 +168,8 @@ prims.o: prims.c caml/mlvalues.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/misc.h caml/prims.h
 printexc.o: printexc.c caml/backtrace.h caml/mlvalues.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
- caml/../../config/s.h caml/misc.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
 roots.o: roots.c caml/finalise.h caml/roots.h caml/misc.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/memory.h caml/gc.h caml/mlvalues.h \
@@ -189,16 +190,21 @@ stacks.o: stacks.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/fail.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/misc.h caml/mlvalues.h caml/stacks.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h
+startup_aux.o: startup_aux.c caml/backtrace.h caml/mlvalues.h \
+ caml/compatibility.h caml/config.h caml/../../config/m.h \
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup_aux.h
 startup.o: startup.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/backtrace.h caml/callback.h \
- caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h caml/fail.h \
- caml/fix_code.h caml/freelist.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/io.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h caml/printexc.h \
- caml/reverse.h caml/signals.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/startup.h caml/exec.h caml/version.h
+ caml/config.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
+ caml/callback.h caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h \
+ caml/fail.h caml/fix_code.h caml/freelist.h caml/gc_ctrl.h \
+ caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h caml/io.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/stacks.h \
+ caml/memory.h caml/sys.h caml/startup.h caml/startup_aux.h \
+ caml/version.h
 str.o: str.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h caml/fail.h \
  caml/mlvalues.h caml/misc.h
@@ -234,11 +240,11 @@ array.d.o: array.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/freelist.h caml/minor_gc.h caml/misc.h caml/mlvalues.h
 backtrace.d.o: backtrace.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/mlvalues.h caml/config.h \
- caml/misc.h caml/alloc.h caml/mlvalues.h caml/io.h caml/instruct.h \
- caml/intext.h caml/io.h caml/exec.h caml/fix_code.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup.h \
- caml/exec.h caml/stacks.h caml/memory.h caml/sys.h caml/backtrace.h \
- caml/fail.h
+ caml/misc.h caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h \
+ caml/instruct.h caml/intext.h caml/io.h caml/exec.h caml/fix_code.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
+ caml/backtrace.h caml/fail.h
 callback.d.o: callback.c caml/callback.h caml/compatibility.h \
  caml/mlvalues.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/misc.h caml/fail.h caml/memory.h caml/gc.h \
@@ -269,7 +275,7 @@ dynlink.d.o: dynlink.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/dynlink.h caml/fail.h caml/mlvalues.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
- caml/misc.h caml/osdeps.h caml/prims.h
+ caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
 extern.d.o: extern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
@@ -321,7 +327,7 @@ instrtrace.d.o: instrtrace.c caml/instruct.h caml/misc.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/mlvalues.h caml/misc.h caml/opnames.h \
  caml/prims.h caml/stacks.h caml/mlvalues.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/freelist.h caml/minor_gc.h
+ caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup_aux.h
 intern.d.o: intern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/callback.h caml/custom.h caml/fail.h caml/gc.h \
@@ -330,11 +336,12 @@ intern.d.o: intern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/misc.h caml/reverse.h
 interp.d.o: interp.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
- caml/mlvalues.h caml/backtrace.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/fix_code.h caml/instrtrace.h caml/instruct.h \
- caml/interp.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/signals.h caml/stacks.h caml/memory.h
+ caml/mlvalues.h caml/backtrace.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/freelist.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/stacks.h caml/memory.h \
+ caml/startup_aux.h
 ints.d.o: ints.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/intext.h caml/io.h \
@@ -396,8 +403,8 @@ prims.d.o: prims.c caml/mlvalues.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/misc.h caml/prims.h
 printexc.d.o: printexc.c caml/backtrace.h caml/mlvalues.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
- caml/../../config/s.h caml/misc.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
 roots.d.o: roots.c caml/finalise.h caml/roots.h caml/misc.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/memory.h caml/gc.h caml/mlvalues.h \
@@ -418,16 +425,21 @@ stacks.d.o: stacks.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/fail.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/misc.h caml/mlvalues.h caml/stacks.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h
+startup_aux.d.o: startup_aux.c caml/backtrace.h caml/mlvalues.h \
+ caml/compatibility.h caml/config.h caml/../../config/m.h \
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup_aux.h
 startup.d.o: startup.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/backtrace.h caml/callback.h \
- caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h caml/fail.h \
- caml/fix_code.h caml/freelist.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/io.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h caml/printexc.h \
- caml/reverse.h caml/signals.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/startup.h caml/exec.h caml/version.h
+ caml/config.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
+ caml/callback.h caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h \
+ caml/fail.h caml/fix_code.h caml/freelist.h caml/gc_ctrl.h \
+ caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h caml/io.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/stacks.h \
+ caml/memory.h caml/sys.h caml/startup.h caml/startup_aux.h \
+ caml/version.h
 str.d.o: str.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h caml/fail.h \
  caml/mlvalues.h caml/misc.h
@@ -463,11 +475,11 @@ array.pic.o: array.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/freelist.h caml/minor_gc.h caml/misc.h caml/mlvalues.h
 backtrace.pic.o: backtrace.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/mlvalues.h caml/config.h \
- caml/misc.h caml/alloc.h caml/mlvalues.h caml/io.h caml/instruct.h \
- caml/intext.h caml/io.h caml/exec.h caml/fix_code.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup.h \
- caml/exec.h caml/stacks.h caml/memory.h caml/sys.h caml/backtrace.h \
- caml/fail.h
+ caml/misc.h caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h \
+ caml/instruct.h caml/intext.h caml/io.h caml/exec.h caml/fix_code.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/startup.h caml/exec.h caml/stacks.h caml/memory.h caml/sys.h \
+ caml/backtrace.h caml/fail.h
 callback.pic.o: callback.c caml/callback.h caml/compatibility.h \
  caml/mlvalues.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/misc.h caml/fail.h caml/memory.h caml/gc.h \
@@ -498,7 +510,7 @@ dynlink.pic.o: dynlink.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/dynlink.h caml/fail.h caml/mlvalues.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
- caml/misc.h caml/osdeps.h caml/prims.h
+ caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
 extern.pic.o: extern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/gc.h caml/intext.h \
@@ -555,11 +567,12 @@ intern.pic.o: intern.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/misc.h caml/reverse.h
 interp.pic.o: interp.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
- caml/mlvalues.h caml/backtrace.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/fix_code.h caml/instrtrace.h caml/instruct.h \
- caml/interp.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h \
- caml/signals.h caml/stacks.h caml/memory.h caml/jumptbl.h
+ caml/mlvalues.h caml/backtrace.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/freelist.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/stacks.h caml/memory.h \
+ caml/startup_aux.h caml/jumptbl.h
 ints.pic.o: ints.c caml/alloc.h caml/compatibility.h caml/misc.h \
  caml/config.h caml/../../config/m.h caml/../../config/s.h \
  caml/mlvalues.h caml/custom.h caml/fail.h caml/intext.h caml/io.h \
@@ -621,8 +634,8 @@ prims.pic.o: prims.c caml/mlvalues.h caml/compatibility.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/misc.h caml/prims.h
 printexc.pic.o: printexc.c caml/backtrace.h caml/mlvalues.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
- caml/../../config/s.h caml/misc.h caml/callback.h caml/debugger.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/callback.h \
+ caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h caml/printexc.h
 roots.pic.o: roots.c caml/finalise.h caml/roots.h caml/misc.h \
  caml/compatibility.h caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/memory.h caml/gc.h caml/mlvalues.h \
@@ -643,16 +656,21 @@ stacks.pic.o: stacks.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/fail.h caml/misc.h \
  caml/config.h caml/mlvalues.h caml/misc.h caml/mlvalues.h caml/stacks.h \
  caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h
+startup_aux.pic.o: startup_aux.c caml/backtrace.h caml/mlvalues.h \
+ caml/compatibility.h caml/config.h caml/../../config/m.h \
+ caml/../../config/s.h caml/misc.h caml/exec.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/startup_aux.h
 startup.pic.o: startup.c caml/config.h caml/../../config/m.h \
  caml/../../config/s.h caml/compatibility.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/backtrace.h caml/callback.h \
- caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h caml/fail.h \
- caml/fix_code.h caml/freelist.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/io.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h caml/printexc.h \
- caml/reverse.h caml/signals.h caml/stacks.h caml/memory.h caml/sys.h \
- caml/startup.h caml/exec.h caml/version.h
+ caml/config.h caml/mlvalues.h caml/backtrace.h caml/exec.h \
+ caml/callback.h caml/custom.h caml/debugger.h caml/dynlink.h caml/exec.h \
+ caml/fail.h caml/fix_code.h caml/freelist.h caml/gc_ctrl.h \
+ caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h caml/io.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/stacks.h \
+ caml/memory.h caml/sys.h caml/startup.h caml/startup_aux.h \
+ caml/version.h
 str.pic.o: str.c caml/alloc.h caml/compatibility.h caml/misc.h caml/config.h \
  caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h caml/fail.h \
  caml/mlvalues.h caml/misc.h

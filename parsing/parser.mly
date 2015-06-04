@@ -295,6 +295,90 @@ let mkcf_attrs d attrs =
 let mkctf_attrs d attrs =
   Ctf.mk ~loc:(symbol_rloc()) ~attrs d
 
+let add_nonrec rf attrs pos =
+  match rf with
+  | Recursive -> attrs
+  | Nonrecursive ->
+      let name = { txt = "nonrec"; loc = rhs_loc pos } in
+        (name, PStr []) :: attrs
+
+type let_binding =
+  { lb_pattern: pattern;
+    lb_expression: expression;
+    lb_attributes: attributes;
+    lb_loc: Location.t; }
+
+type let_bindings =
+  { lbs_bindings: let_binding list;
+    lbs_rec: rec_flag;
+    lbs_extension: string Asttypes.loc option;
+    lbs_attributes: attributes;
+    lbs_loc: Location.t }
+
+let mklb (p, e) attrs =
+  { lb_pattern = p;
+    lb_expression = e;
+    lb_attributes = attrs;
+    lb_loc = symbol_rloc (); }
+
+let mklbs (ext, attrs) rf lb =
+  { lbs_bindings = [lb];
+    lbs_rec = rf;
+    lbs_extension = ext ;
+    lbs_attributes = attrs;
+    lbs_loc = symbol_rloc (); }
+
+let addlb lbs lb =
+  { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
+
+let val_of_let_bindings lbs =
+  match lbs.lbs_bindings with
+  | [ {lb_pattern = { ppat_desc = Ppat_any; ppat_loc = _ }; _} as lb ] ->
+      let exp = wrap_exp_attrs lb.lb_expression
+                  (lbs.lbs_extension, lbs.lbs_attributes) in
+      mkstr (Pstr_eval (exp, lb.lb_attributes))
+  | bindings ->
+      let bindings =
+        List.map
+          (fun lb ->
+             Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
+               lb.lb_pattern lb.lb_expression)
+          bindings
+      in
+      let str = mkstr(Pstr_value(lbs.lbs_rec, List.rev bindings)) in
+      if lbs.lbs_attributes <> [] then
+        raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
+      match lbs.lbs_extension with
+      | None -> str
+      | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
+
+let expr_of_let_bindings lbs body =
+  let bindings =
+    List.map
+      (fun lb ->
+         if lb.lb_attributes <> [] then
+           raise Syntaxerr.(Error(Not_expecting(lb.lb_loc, "item attribute")));
+         Vb.mk ~loc:lb.lb_loc lb.lb_pattern lb.lb_expression)
+      lbs.lbs_bindings
+  in
+    mkexp_attrs (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
+      (lbs.lbs_extension, lbs.lbs_attributes)
+
+let class_of_let_bindings lbs body =
+  let bindings =
+    List.map
+      (fun lb ->
+         if lb.lb_attributes <> [] then
+           raise Syntaxerr.(Error(Not_expecting(lb.lb_loc, "item attribute")));
+         Vb.mk ~loc:lb.lb_loc lb.lb_pattern lb.lb_expression)
+      lbs.lbs_bindings
+  in
+    if lbs.lbs_extension <> None then
+      raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "extension")));
+    if lbs.lbs_attributes <> [] then
+      raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
+    mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
+
 %}
 
 /* Tokens */
@@ -631,58 +715,39 @@ structure_tail:
   | structure_item structure_tail { $1 :: $2 }
 ;
 structure_item:
-    LET ext_attributes rec_flag let_bindings
-      {
-        match $4 with
-          [ {pvb_pat = { ppat_desc = Ppat_any; ppat_loc = _ };
-             pvb_expr = exp; pvb_attributes = attrs}] ->
-            let exp = wrap_exp_attrs exp $2 in
-            mkstr(Pstr_eval (exp, attrs))
-        | l ->
-            let str = mkstr(Pstr_value($3, List.rev l)) in
-            let (ext, attrs) = $2 in
-            if attrs <> [] then not_expecting 2 "attribute";
-            match ext with
-            | None -> str
-            | Some id -> ghstr (Pstr_extension((id, PStr [str]), []))
-      }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-    post_item_attributes
-      { mkstr
-          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
-                             ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()))) }
-  | VAL val_ident COLON core_type post_item_attributes
-      { mkstr
-          (Pstr_primitive (Val.mk (mkrhs $2 2) $4
-                             ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | TYPE nonrec_flag type_declarations
-      { mkstr(Pstr_type ($2, List.rev $3) ) }
-  | TYPE nonrec_flag str_type_extension
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        mkstr(Pstr_typext $3) }
-  | EXCEPTION str_exception_declaration
-      { mkstr(Pstr_exception $2) }
-  | MODULE module_binding
-      { mkstr(Pstr_module $2) }
-  | MODULE REC module_bindings
-      { mkstr(Pstr_recmodule(List.rev $3)) }
-  | MODULE TYPE ident post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
-                              ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mkstr(Pstr_modtype (Mtd.mk (mkrhs $3 3)
-                              ~typ:$5 ~attrs:$6 ~loc:(symbol_rloc()))) }
+    let_bindings
+      { val_of_let_bindings $1 }
+  | primitive_declaration
+      { mkstr (Pstr_primitive $1) }
+  | value_description
+      { mkstr (Pstr_primitive $1) }
+  | type_declarations
+      { let (nr, l) = $1 in mkstr(Pstr_type (nr, List.rev l)) }
+  | str_type_extension
+      { mkstr(Pstr_typext $1) }
+  | str_exception_declaration
+      { mkstr(Pstr_exception $1) }
+  | module_binding
+      { mkstr(Pstr_module $1) }
+  | rec_module_bindings
+      { mkstr(Pstr_recmodule(List.rev $1)) }
+  | module_type_declaration
+      { mkstr(Pstr_modtype $1) }
   | open_statement { mkstr(Pstr_open $1) }
-  | CLASS class_declarations
-      { mkstr(Pstr_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $3)) }
-  | INCLUDE module_expr post_item_attributes
-      { mkstr(Pstr_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
+  | class_declarations
+      { mkstr(Pstr_class (List.rev $1)) }
+  | class_type_declarations
+      { mkstr(Pstr_class_type (List.rev $1)) }
+  | str_include_statement
+      { mkstr(Pstr_include $1) }
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, $2)) }
   | floating_attribute
       { mkstr(Pstr_attribute $1) }
+;
+str_include_statement:
+    INCLUDE module_expr post_item_attributes
+      { Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()) }
 ;
 module_binding_body:
     EQUAL module_expr
@@ -692,13 +757,21 @@ module_binding_body:
   | functor_arg module_binding_body
       { mkmod(Pmod_functor(fst $1, snd $1, $2)) }
 ;
-module_bindings:
-    module_binding                        { [$1] }
-  | module_bindings AND module_binding    { $3 :: $1 }
-;
 module_binding:
-    UIDENT module_binding_body post_item_attributes
-    { Mb.mk (mkrhs $1 1) $2 ~attrs:$3 ~loc:(symbol_rloc ()) }
+    MODULE UIDENT module_binding_body post_item_attributes
+      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4 ~loc:(symbol_rloc ()) }
+;
+rec_module_bindings:
+    rec_module_binding                            { [$1] }
+  | rec_module_bindings and_module_binding        { $2 :: $1 }
+;
+rec_module_binding:
+    MODULE REC UIDENT module_binding_body post_item_attributes
+      { Mb.mk (mkrhs $3 3) $4 ~attrs:$5 ~loc:(symbol_rloc ()) }
+;
+and_module_binding:
+    AND UIDENT module_binding_body post_item_attributes
+      { Mb.mk (mkrhs $2 2) $3 ~attrs:$4 ~loc:(symbol_rloc ()) }
 ;
 
 /* Module types */
@@ -735,47 +808,32 @@ signature:
   | signature_item signature { $1 :: $2 }
 ;
 signature_item:
-    VAL val_ident COLON core_type post_item_attributes
-      { mksig(Psig_value
-                (Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()))) }
-  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-    post_item_attributes
-      { mksig(Psig_value
-                (Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7
-                   ~loc:(symbol_rloc()))) }
-  | TYPE nonrec_flag type_declarations
-      { mksig(Psig_type ($2, List.rev $3)) }
-  | TYPE nonrec_flag sig_type_extension
-      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
-        mksig(Psig_typext $3) }
-  | EXCEPTION sig_exception_declaration
-      { mksig(Psig_exception $2) }
-  | MODULE UIDENT module_declaration post_item_attributes
-      { mksig(Psig_module (Md.mk (mkrhs $2 2)
-                             $3 ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE UIDENT EQUAL mod_longident post_item_attributes
-      { mksig(Psig_module (Md.mk (mkrhs $2 2)
-                             (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4))
-                             ~attrs:$5
-                             ~loc:(symbol_rloc())
-                          )) }
-  | MODULE REC module_rec_declarations
-      { mksig(Psig_recmodule (List.rev $3)) }
-  | MODULE TYPE ident post_item_attributes
-      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3)
-                              ~attrs:$4 ~loc:(symbol_rloc()))) }
-  | MODULE TYPE ident EQUAL module_type post_item_attributes
-      { mksig(Psig_modtype (Mtd.mk (mkrhs $3 3) ~typ:$5
-                              ~loc:(symbol_rloc())
-                              ~attrs:$6)) }
+    value_description
+      { mksig(Psig_value $1) }
+  | primitive_declaration
+      { mksig(Psig_value $1) }
+  | type_declarations
+      { let (nr, l) = $1 in mksig(Psig_type (nr, List.rev l)) }
+  | sig_type_extension
+      { mksig(Psig_typext $1) }
+  | sig_exception_declaration
+      { mksig(Psig_exception $1) }
+  | module_declaration
+      { mksig(Psig_module $1) }
+  | module_alias
+      { mksig(Psig_module $1) }
+  | rec_module_declarations
+      { mksig(Psig_recmodule (List.rev $1)) }
+  | module_type_declaration
+      { mksig(Psig_modtype $1) }
   | open_statement
       { mksig(Psig_open $1) }
-  | INCLUDE module_type post_item_attributes %prec below_WITH
-      { mksig(Psig_include (Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()))) }
-  | CLASS class_descriptions
-      { mksig(Psig_class (List.rev $2)) }
-  | CLASS TYPE class_type_declarations
-      { mksig(Psig_class_type (List.rev $3)) }
+  | sig_include_statement
+      { mksig(Psig_include $1) }
+  | class_descriptions
+      { mksig(Psig_class (List.rev $1)) }
+  | class_type_declarations
+      { mksig(Psig_class_type (List.rev $1)) }
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, $2)) }
   | floating_attribute
@@ -785,37 +843,65 @@ open_statement:
   | OPEN override_flag mod_longident post_item_attributes
       { Opn.mk (mkrhs $3 3) ~override:$2 ~attrs:$4 ~loc:(symbol_rloc()) }
 ;
-module_declaration:
+sig_include_statement:
+    INCLUDE module_type post_item_attributes %prec below_WITH
+      { Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()) }
+;
+module_declaration_body:
     COLON module_type
       { $2 }
-  | LPAREN UIDENT COLON module_type RPAREN module_declaration
+  | LPAREN UIDENT COLON module_type RPAREN module_declaration_body
       { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
-  | LPAREN RPAREN module_declaration
+  | LPAREN RPAREN module_declaration_body
       { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
 ;
-module_rec_declarations:
-    module_rec_declaration                              { [$1] }
-  | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
+module_declaration:
+    MODULE UIDENT module_declaration_body post_item_attributes
+      { Md.mk (mkrhs $2 2) $3 ~attrs:$4 ~loc:(symbol_rloc()) }
 ;
-module_rec_declaration:
-    UIDENT COLON module_type post_item_attributes
-    { Md.mk (mkrhs $1 1) $3 ~attrs:$4 ~loc:(symbol_rloc()) }
+module_alias:
+    MODULE UIDENT EQUAL mod_longident post_item_attributes
+      { Md.mk (mkrhs $2 2)
+          (Mty.alias ~loc:(rhs_loc 4) (mkrhs $4 4))
+          ~attrs:$5 ~loc:(symbol_rloc()) }
 ;
-
+rec_module_declarations:
+    rec_module_declaration                          { [$1] }
+  | rec_module_declarations and_module_declaration  { $2 :: $1 }
+;
+rec_module_declaration:
+    MODULE REC UIDENT COLON module_type post_item_attributes
+      { Md.mk (mkrhs $3 3) $5 ~attrs:$6 ~loc:(symbol_rloc()) }
+;
+and_module_declaration:
+    AND UIDENT COLON module_type post_item_attributes
+      { Md.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()) }
+;
+module_type_declaration_body:
+    /* empty */               { None }
+  | EQUAL module_type         { Some $2 }
+;
+module_type_declaration:
+    MODULE TYPE ident module_type_declaration_body post_item_attributes
+      { Mtd.mk (mkrhs $3 3) ?typ:$4 ~loc:(symbol_rloc()) ~attrs:$5 }
+;
 /* Class expressions */
 
 class_declarations:
-    class_declarations AND class_declaration    { $3 :: $1 }
-  | class_declaration                           { [$1] }
+    class_declaration                           { [$1] }
+  | class_declarations and_class_declaration    { $2 :: $1 }
 ;
 class_declaration:
-    virtual_flag class_type_parameters LIDENT class_fun_binding
+    CLASS virtual_flag class_type_parameters LIDENT class_fun_binding
     post_item_attributes
-      {
-       Ci.mk (mkrhs $3 3) $4
-         ~virt:$1 ~params:$2
-         ~attrs:$5 ~loc:(symbol_rloc ())
-      }
+      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3
+         ~attrs:$6 ~loc:(symbol_rloc ()) }
+;
+and_class_declaration:
+    AND virtual_flag class_type_parameters LIDENT class_fun_binding
+    post_item_attributes
+      { Ci.mk (mkrhs $4 4) $5 ~virt:$2 ~params:$3
+         ~attrs:$6 ~loc:(symbol_rloc ()) }
 ;
 class_fun_binding:
     EQUAL class_expr
@@ -842,8 +928,8 @@ class_expr:
       { $2 }
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
-  | LET rec_flag let_bindings_no_attrs IN class_expr
-      { mkclass(Pcl_let ($2, List.rev $3, $5)) }
+  | let_bindings IN class_expr
+      { class_of_let_bindings $1 $3 }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
@@ -1018,30 +1104,36 @@ constrain_field:
         core_type EQUAL core_type          { $1, $3 }
 ;
 class_descriptions:
-    class_descriptions AND class_description    { $3 :: $1 }
-  | class_description                           { [$1] }
+    class_description                           { [$1] }
+  | class_descriptions and_class_description    { $2 :: $1 }
 ;
 class_description:
-    virtual_flag class_type_parameters LIDENT COLON class_type
+    CLASS virtual_flag class_type_parameters LIDENT COLON class_type
     post_item_attributes
-      {
-       Ci.mk (mkrhs $3 3) $5
-         ~virt:$1 ~params:$2
-         ~attrs:$6 ~loc:(symbol_rloc ())
-      }
+      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
+         ~attrs:$7 ~loc:(symbol_rloc ()) }
+;
+and_class_description:
+    AND virtual_flag class_type_parameters LIDENT COLON class_type
+    post_item_attributes
+      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
+         ~attrs:$7 ~loc:(symbol_rloc ()) }
 ;
 class_type_declarations:
-    class_type_declarations AND class_type_declaration  { $3 :: $1 }
-  | class_type_declaration                              { [$1] }
+    class_type_declaration                              { [$1] }
+  | class_type_declarations and_class_type_declaration  { $2 :: $1 }
 ;
 class_type_declaration:
-    virtual_flag class_type_parameters LIDENT EQUAL class_signature
-    post_item_attributes
-      {
-       Ci.mk (mkrhs $3 3) $5
-         ~virt:$1 ~params:$2
-         ~attrs:$6 ~loc:(symbol_rloc ())
-      }
+    CLASS TYPE virtual_flag class_type_parameters LIDENT EQUAL
+    class_signature post_item_attributes
+      { Ci.mk (mkrhs $5 5) $7 ~virt:$3 ~params:$4
+         ~attrs:$8 ~loc:(symbol_rloc ()) }
+;
+and_class_type_declaration:
+    AND virtual_flag class_type_parameters LIDENT EQUAL
+    class_signature post_item_attributes
+      { Ci.mk (mkrhs $4 4) $6 ~virt:$2 ~params:$3
+         ~attrs:$7 ~loc:(symbol_rloc ()) }
 ;
 
 /* Core expressions */
@@ -1097,8 +1189,8 @@ expr:
       { $1 }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
-  | LET ext_attributes rec_flag let_bindings_no_attrs IN seq_expr
-      { mkexp_attrs (Pexp_let($3, List.rev $4, $6)) $2 }
+  | let_bindings IN seq_expr
+      { expr_of_let_bindings $1 $3 }
   | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
       { mkexp_attrs (Pexp_letmodule(mkrhs $4 4, $5, $7)) $3 }
   | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
@@ -1228,6 +1320,9 @@ simple_expr:
       { mkexp(Pexp_field($1, mkrhs $3 3)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
+  | mod_longident DOT LPAREN RPAREN
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+			mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1262,6 +1357,8 @@ simple_expr:
       { mkexp (Pexp_array []) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array(List.rev $4)))) }
+  | mod_longident DOT LBRACKETBAR BARRBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp(Pexp_array []))) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" 3 "|]" 6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
@@ -1271,6 +1368,9 @@ simple_expr:
   | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp = reloc_exp (mktailexp (rhs_loc 6) (List.rev $4)) in
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
+  | mod_longident DOT LBRACKET RBRACKET
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1,
+                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
@@ -1287,6 +1387,8 @@ simple_expr:
       { mkexp (Pexp_override [])}
   | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override $4)))}
+  | mod_longident DOT LBRACELESS GREATERRBRACE
+      { mkexp(Pexp_open(Fresh, mkrhs $1 1, mkexp (Pexp_override [])))}
   | mod_longident DOT LBRACELESS field_expr_list error
       { unclosed "{<" 3 ">}" 6 }
   | simple_expr SHARP label
@@ -1334,32 +1436,11 @@ label_expr:
 label_ident:
     LIDENT   { ($1, mkexp(Pexp_ident(mkrhs (Lident $1) 1))) }
 ;
-let_bindings:
-    let_binding                                 { [$1] }
-  | let_bindings AND let_binding                { $3 :: $1 }
-;
-let_bindings_no_attrs:
-   let_bindings {
-     let l = $1 in
-     List.iter
-       (fun vb ->
-          if vb.pvb_attributes <> [] then
-            raise Syntaxerr.(Error(Not_expecting(vb.pvb_loc,"item attribute")))
-       )
-       l;
-     l
-   }
-
 lident_list:
     LIDENT                            { [$1] }
   | LIDENT lident_list                { $1 :: $2 }
 ;
-let_binding:
-    let_binding_ post_item_attributes {
-      let (p, e) = $1 in Vb.mk ~loc:(symbol_rloc()) ~attrs:$2 p e
-    }
-;
-let_binding_:
+let_binding_body:
     val_ident fun_binding
       { (mkpatvar $1 1, $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
@@ -1373,6 +1454,18 @@ let_binding_:
       { ($1, $3) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
       { (ghpat(Ppat_constraint($1, $3)), $5) }
+;
+let_bindings:
+    let_binding                                 { $1 }
+  | let_bindings and_let_binding                { addlb $1 $2 }
+;
+let_binding:
+    LET ext_attributes rec_flag let_binding_body post_item_attributes
+      { mklbs $2 $3 (mklb $4 $5) }
+;
+and_let_binding:
+    AND let_binding_body post_item_attributes
+      { mklb $2 $3 }
 ;
 fun_binding:
     strict_binding
@@ -1560,27 +1653,47 @@ lbl_pattern:
       { (mkrhs $1 1, pat_of_label $1 1) }
 ;
 
+/* Value descriptions */
+
+value_description:
+    VAL val_ident COLON core_type post_item_attributes
+      { Val.mk (mkrhs $2 2) $4 ~attrs:$5 ~loc:(symbol_rloc()) }
+;
+
 /* Primitive declarations */
 
-primitive_declaration:
+primitive_declaration_body:
     STRING                                      { [fst $1] }
-  | STRING primitive_declaration                { fst $1 :: $2 }
+  | STRING primitive_declaration_body           { fst $1 :: $2 }
+;
+primitive_declaration:
+    EXTERNAL val_ident COLON core_type EQUAL primitive_declaration_body
+    post_item_attributes
+      { Val.mk (mkrhs $2 2) $4 ~prim:$6 ~attrs:$7 ~loc:(symbol_rloc ()) }
 ;
 
 /* Type declarations */
 
 type_declarations:
-    type_declaration                            { [$1] }
-  | type_declarations AND type_declaration      { $3 :: $1 }
+    type_declaration
+      { let (nonrec_flag, ty) = $1 in (nonrec_flag, [ty]) }
+  | type_declarations and_type_declaration
+      { let (nonrec_flag, tys) = $1 in (nonrec_flag, $2 :: tys) }
 ;
 
 type_declaration:
-    optional_type_parameters LIDENT type_kind constraints post_item_attributes
-      { let (kind, priv, manifest) = $3 in
-        Type.mk (mkrhs $2 2)
-          ~params:$1 ~cstrs:(List.rev $4)
-          ~kind ~priv ?manifest ~attrs:$5 ~loc:(symbol_rloc())
-       }
+    TYPE nonrec_flag optional_type_parameters LIDENT type_kind constraints
+    post_item_attributes
+      { let (kind, priv, manifest) = $5 in
+          ($2, Type.mk (mkrhs $4 4) ~params:$3 ~cstrs:(List.rev $6) ~kind
+                 ~priv ?manifest ~attrs:$7 ~loc:(symbol_rloc ())) }
+;
+and_type_declaration:
+    AND optional_type_parameters LIDENT type_kind constraints
+    post_item_attributes
+      { let (kind, priv, manifest) = $4 in
+          Type.mk (mkrhs $3 3) ~params:$2 ~cstrs:(List.rev $5)
+            ~kind ~priv ?manifest ~attrs:$6 ~loc:(symbol_rloc ()) }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
@@ -1597,18 +1710,16 @@ type_kind:
       { (Ptype_variant(List.rev $2), Public, None) }
   | EQUAL PRIVATE constructor_declarations
       { (Ptype_variant(List.rev $3), Private, None) }
-  | EQUAL private_flag BAR constructor_declarations
-      { (Ptype_variant(List.rev $4), $2, None) }
   | EQUAL DOTDOT
       { (Ptype_open, Public, None) }
-  | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $4), $2, None) }
-  | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $6), $4, Some $2) }
+  | EQUAL private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $4, $2, None) }
+  | EQUAL core_type EQUAL private_flag constructor_declarations
+      { (Ptype_variant(List.rev $5), $4, Some $2) }
   | EQUAL core_type EQUAL DOTDOT
       { (Ptype_open, Public, Some $2) }
-  | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $6), $4, Some $2) }
+  | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $6, $4, Some $2) }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
@@ -1649,8 +1760,9 @@ type_parameter_list:
   | type_parameter_list COMMA type_parameter    { $3 :: $1 }
 ;
 constructor_declarations:
-    constructor_declaration                     { [$1] }
-  | constructor_declarations BAR constructor_declaration { $3 :: $1 }
+    constructor_declaration                              { [$1] }
+  | bar_constructor_declaration                          { [$1] }
+  | constructor_declarations bar_constructor_declaration { $2 :: $1 }
 ;
 constructor_declaration:
   | constr_ident generalized_constructor_arguments attributes
@@ -1659,24 +1771,26 @@ constructor_declaration:
        Type.constructor (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3
       }
 ;
-str_exception_declaration:
-  | extension_constructor_declaration post_item_attributes
+bar_constructor_declaration:
+  | BAR constr_ident generalized_constructor_arguments attributes
       {
-        let ext = $1 in
-        {ext with pext_attributes = ext.pext_attributes @ $2}
-      }
-  | extension_constructor_rebind post_item_attributes
-      {
-        let ext = $1 in
-        {ext with pext_attributes = ext.pext_attributes @ $2}
+       let args,res = $3 in
+       Type.constructor (mkrhs $2 2) ~args ?res ~loc:(symbol_rloc()) ~attrs:$4
       }
 ;
+str_exception_declaration:
+  | sig_exception_declaration                    { $1 }
+  | EXCEPTION constr_ident EQUAL constr_longident attributes
+    post_item_attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4)
+          ~loc:(symbol_rloc()) ~attrs:($5 @ $6) }
+;
 sig_exception_declaration:
-  | extension_constructor_declaration post_item_attributes
-      {
-        let ext = $1 in
-        {ext with pext_attributes = ext.pext_attributes @ $2}
-      }
+  | EXCEPTION constr_ident generalized_constructor_arguments attributes
+    post_item_attributes
+      { let args, res = $3 in
+          Te.decl (mkrhs $2 2) ~args ?res
+            ~loc:(symbol_rloc()) ~attrs:($4 @ $5) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
@@ -1689,14 +1803,21 @@ generalized_constructor_arguments:
 
 constructor_arguments:
   | core_type_list_no_attr { Pcstr_tuple (List.rev $1) }
-  | LBRACE label_declarations opt_semi RBRACE { Pcstr_record (List.rev $2) }
+  | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
     label_declaration                           { [$1] }
-  | label_declarations SEMI label_declaration   { $3 :: $1 }
+  | label_declaration_semi                      { [$1] }
+  | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
 label_declaration:
     mutable_flag label COLON poly_type_no_attr attributes
+      {
+       Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
+      }
+;
+label_declaration_semi:
+    mutable_flag label COLON poly_type_no_attr attributes SEMI
       {
        Type.field (mkrhs $2 2) $4 ~mut:$1 ~attrs:$5 ~loc:(symbol_rloc())
       }
@@ -1705,38 +1826,50 @@ label_declaration:
 /* Type Extensions */
 
 str_type_extension:
-  optional_type_parameters type_longident
-  PLUSEQ private_flag opt_bar str_extension_constructors post_item_attributes
-      { Te.mk (mkrhs $2 2) (List.rev $6)
-          ~params:$1 ~priv:$4 ~attrs:$7 }
+  TYPE nonrec_flag optional_type_parameters type_longident
+  PLUSEQ private_flag str_extension_constructors post_item_attributes
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6 ~attrs:$8 }
 ;
 sig_type_extension:
-  optional_type_parameters type_longident
-  PLUSEQ private_flag opt_bar sig_extension_constructors post_item_attributes
-      { Te.mk (mkrhs $2 2) (List.rev $6)
-          ~params:$1 ~priv:$4 ~attrs:$7 }
+  TYPE nonrec_flag optional_type_parameters type_longident
+  PLUSEQ private_flag sig_extension_constructors post_item_attributes
+      { if $2 <> Recursive then not_expecting 2 "nonrec flag";
+        Te.mk (mkrhs $4 4) (List.rev $7) ~params:$3 ~priv:$6 ~attrs:$8 }
 ;
 str_extension_constructors:
     extension_constructor_declaration                     { [$1] }
+  | bar_extension_constructor_declaration                 { [$1] }
   | extension_constructor_rebind                          { [$1] }
-  | str_extension_constructors BAR extension_constructor_declaration
-      { $3 :: $1 }
-  | str_extension_constructors BAR extension_constructor_rebind
-      { $3 :: $1 }
+  | bar_extension_constructor_rebind                      { [$1] }
+  | str_extension_constructors bar_extension_constructor_declaration
+      { $2 :: $1 }
+  | str_extension_constructors bar_extension_constructor_rebind
+      { $2 :: $1 }
 ;
 sig_extension_constructors:
     extension_constructor_declaration                     { [$1] }
-  | sig_extension_constructors BAR extension_constructor_declaration
-      { $3 :: $1 }
+  | bar_extension_constructor_declaration                 { [$1] }
+  | sig_extension_constructors bar_extension_constructor_declaration
+      { $2 :: $1 }
 ;
 extension_constructor_declaration:
   | constr_ident generalized_constructor_arguments attributes
       { let args, res = $2 in
         Te.decl (mkrhs $1 1) ~args ?res ~loc:(symbol_rloc()) ~attrs:$3 }
 ;
+bar_extension_constructor_declaration:
+  | BAR constr_ident generalized_constructor_arguments attributes
+      { let args, res = $3 in
+        Te.decl (mkrhs $2 2) ~args ?res ~loc:(symbol_rloc()) ~attrs:$4 }
+;
 extension_constructor_rebind:
   | constr_ident EQUAL constr_longident attributes
       { Te.rebind (mkrhs $1 1) (mkrhs $3 3) ~loc:(symbol_rloc()) ~attrs:$4 }
+;
+bar_extension_constructor_rebind:
+  | BAR constr_ident EQUAL constr_longident attributes
+      { Te.rebind (mkrhs $2 2) (mkrhs $4 4) ~loc:(symbol_rloc()) ~attrs:$5 }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
