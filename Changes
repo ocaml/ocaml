@@ -228,6 +228,8 @@ Feature wishes:
   (Christophe Troestler, review by Damien Doligez)
 - GPR#157: store the path of cmos inside debug section at link time
   (Hugo Heuzard, review by Damien Doligez)
+- GPR#191: Making gc.h and some part of memory.h public
+  (Thomas Refis)
 
 OCaml 4.02.1 (14 Oct 2014):
 ---------------------------
