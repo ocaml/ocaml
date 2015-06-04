@@ -69,8 +69,7 @@ void caml_init_fibers ()
 value caml_handle(value body, value hval, value hexn, value heff, intnat extra_args)
 {
   CAMLparam4(body, hval, hexn, heff);
-  CAMLlocal1(new_stack);
-  value old_stack;
+  CAMLlocal2(old_stack, new_stack);
   value *sp, *high;
 
   /* Push the trapsp, parent stack and extra args */
@@ -113,8 +112,7 @@ value caml_handle(value body, value hval, value hexn, value heff, intnat extra_a
 value caml_perform(value effect)
 {
   CAMLparam1(effect);
-  CAMLlocal2(old_stack, new_stack);
-  value cont;
+  CAMLlocal3(cont, old_stack, new_stack);
   value *sp;
   struct domain* self;
 
@@ -129,8 +127,6 @@ value caml_perform(value effect)
   new_stack = caml_parent_stack;
   load_stack(new_stack);
 
-  sp = caml_extern_sp;
-
   /* Create the continuation */
   self = caml_domain_self();
   cont = caml_alloc_small(2, 0);
@@ -138,6 +134,7 @@ value caml_perform(value effect)
   Init_field(cont, 1, Val_int(self->id));
 
   /* Set trapsp and parent stack */
+  sp = caml_extern_sp;
   caml_parent_stack = sp[1];
   caml_trap_sp_off = Long_val(sp[2]);
 
@@ -196,7 +193,7 @@ static value use_continuation(value cont)
 
 value caml_continue(value cont, value ret, intnat extra_args)
 {
-  CAMLparam1(ret);
+  CAMLparam2(cont,ret);
   CAMLlocal2(old_stack, new_stack);
   value *sp;
 
@@ -228,7 +225,7 @@ value caml_continue(value cont, value ret, intnat extra_args)
 value caml_finish(value ret)
 {
   CAMLparam1(ret);
-  value old_stack, new_stack;
+  CAMLlocal2(old_stack, new_stack);
   value *sp;
   value extra_args_v;
 
@@ -257,7 +254,7 @@ value caml_finish(value ret)
 value caml_finish_exception(value exn)
 {
   CAMLparam1(exn);
-  value old_stack, new_stack;
+  CAMLlocal2(old_stack, new_stack);
   value *sp;
   value extra_args_v;
 
