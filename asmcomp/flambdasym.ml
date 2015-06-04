@@ -61,7 +61,7 @@ let functions not_constants expr =
 let list_used_variable_withing_closure expr =
   let used = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
-    | Fvariable_in_closure({ vc_var },_) ->
+    | Fvar_within_closure({ vc_var },_) ->
         used := Var_within_closure.Set.add vc_var !used
     | e -> ()
   in
@@ -462,7 +462,7 @@ module Conv(P:Param1) = struct
           Fclosure({ fu_closure = ulam; fu_fun = id; fu_relative_to = rel },()),
           approx
 
-    | Fvariable_in_closure({vc_closure = lam;vc_var = env_var;vc_fun = env_fun_id}, _) as expr ->
+    | Fvar_within_closure({vc_closure = lam;vc_var = env_var;vc_fun = env_fun_id}, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         let approx = match get_descr fun_approx with
           | Some (Value_closure { closure = { bound_var } }) ->
@@ -485,7 +485,7 @@ module Conv(P:Param1) = struct
                 Printflambda.flambda expr
                 Printflambda.flambda ulam;
               assert false in
-        Fvariable_in_closure({vc_closure = ulam;vc_var = env_var;vc_fun = env_fun_id}, ()),
+        Fvar_within_closure({vc_closure = ulam;vc_var = env_var;vc_fun = env_fun_id}, ()),
         approx
 
     (* | Fapply({ap_function = *)

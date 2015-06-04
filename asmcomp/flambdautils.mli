@@ -71,7 +71,7 @@ type sharing_key
 val make_key : 'a Flambda.flambda -> sharing_key option
 
 (* Fold over the variables bound by a given closure, at the same time
-   creating [Fvariable_in_closure] expressions to access them. *)
+   creating [Fvar_within_closure] expressions to access them. *)
 val fold_over_exprs_for_variables_bound_by_closure
    : fun_id:Closure_id.t
   -> clos_id:Variable.t

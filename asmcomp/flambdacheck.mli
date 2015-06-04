@@ -56,7 +56,7 @@ val every_used_function_from_current_compilation_unit_is_declared :
   Closure_id.Set.t counter_example
 (* Test only run when flambdasym is false *)
 
-val every_used_variable_in_closure_from_current_compilation_unit_is_declared :
+val every_used_var_within_closure_from_current_compilation_unit_is_declared :
   current_compilation_unit:Compilation_unit.t -> 'a flambda ->
   Var_within_closure.Set.t counter_example
 

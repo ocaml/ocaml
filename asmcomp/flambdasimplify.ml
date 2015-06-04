@@ -66,7 +66,7 @@ let remove_unused_closure_variables tree =
     let used_fun = ref Closure_id.Set.empty in
     let aux (expr : _ Flambda.t) =
       match expr with
-      | Fvariable_in_closure({ vc_var; vc_fun }, _) ->
+      | Fvar_within_closure({ vc_var; vc_fun }, _) ->
           used := Var_within_closure.Set.add vc_var !used;
           used_fun := Closure_id.Set.add vc_fun !used_fun;
       | Fclosure({ fu_fun; fu_relative_to }, _) ->

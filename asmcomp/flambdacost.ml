@@ -71,7 +71,7 @@ let lambda_smaller' lam ~than:threshold =
         Variable.Map.iter (fun _ ffun -> lambda_size ffun.body) ffuns.funs
     | Fclosure({ fu_closure = lam }, _) ->
         incr size; lambda_size lam
-    | Fvariable_in_closure({ vc_closure }, _) ->
+    | Fvar_within_closure({ vc_closure }, _) ->
         incr size; lambda_size vc_closure
     | Flet(id, _, lam, body, _) ->
         lambda_size lam; lambda_size body
@@ -184,7 +184,7 @@ let remove_code lam b =
 
     | Fprim _
     | Fclosure _
-    | Fvariable_in_closure _
+    | Fvar_within_closure _
     | Fassign _ ->
         b := remove_prim !b
 

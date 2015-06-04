@@ -55,7 +55,7 @@ let rec no_effects = function
       Variable.Map.for_all (fun id def -> no_effects def) cl_free_var
   | Fclosure({ fu_closure = lam }, _) ->
       no_effects lam
-  | Fvariable_in_closure({ vc_closure }, _) ->
+  | Fvar_within_closure({ vc_closure }, _) ->
       no_effects vc_closure
 
   | Fifthenelse (cond, ifso, ifnot, _) ->

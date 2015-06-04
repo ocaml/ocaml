@@ -33,7 +33,7 @@ let every_used_identifier_is_bound flam =
         Variable.Map.iter (fun _ id -> test id env) cl_specialised_arg
 
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _ | Flet _ | Fletrec _
+    | Fvar_within_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
@@ -66,7 +66,7 @@ let every_used_identifier_is_bound flam =
 
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _
+    | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
@@ -131,7 +131,7 @@ let no_identifier_bound_multiple_times flam =
 
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _
+    | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
@@ -167,7 +167,7 @@ let every_bound_variable_is_from_current_compilation_unit
 
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _
+    | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
@@ -199,7 +199,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
     | Flet (Not_assigned, _, _, _, _)
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _ | Fletrec _
+    | Fvar_within_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
@@ -281,7 +281,7 @@ let used_closure_id flam =
          | None -> ()
          | Some rel ->
              used := Closure_id.Set.add fu_fun !used)
-    | Fvariable_in_closure ({vc_fun},_) ->
+    | Fvar_within_closure ({vc_fun},_) ->
         used := Closure_id.Set.add vc_fun !used
 
     | Fassign _ | Fvar _ | Fset_of_closures _
@@ -298,7 +298,7 @@ let used_closure_id flam =
 let used_var_within_closure flam =
   let used = ref Var_within_closure.Set.empty in
   let f = function
-    | Fvariable_in_closure ({vc_var},_) ->
+    | Fvar_within_closure ({vc_var},_) ->
         used := Var_within_closure.Set.add vc_var !used
     | _ -> ()
   in
@@ -319,7 +319,7 @@ let every_used_function_from_current_compilation_unit_is_declared
   then No_counter_example
   else Counter_example counter_examples
 
-let every_used_variable_in_closure_from_current_compilation_unit_is_declared
+let every_used_var_within_closure_from_current_compilation_unit_is_declared
     ~current_compilation_unit flam =
   let declared, _ = declared_var_within_closure flam in
   let used = used_var_within_closure flam in
@@ -441,7 +441,7 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
 
   if not flambdasym
   then
-    test (every_used_variable_in_closure_from_current_compilation_unit_is_declared
+    test (every_used_var_within_closure_from_current_compilation_unit_is_declared
             ~current_compilation_unit flam)
       "variables %a from the current compilation unit are used but \
        not declared"

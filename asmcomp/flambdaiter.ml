@@ -21,7 +21,7 @@ let apply_on_subexpressions f = function
 
   | Fassign (_,f1,_)
   | Fclosure({fu_closure = f1},_)
-  | Fvariable_in_closure({vc_closure = f1},_) ->
+  | Fvar_within_closure({vc_closure = f1},_) ->
     f f1
 
   | Flet ( _, _, f1, f2,_)
@@ -67,7 +67,7 @@ let subexpressions = function
 
   | Fassign (_,f1,_)
   | Fclosure({fu_closure = f1},_)
-  | Fvariable_in_closure({vc_closure = f1},_) ->
+  | Fvar_within_closure({vc_closure = f1},_) ->
       [f1]
 
   | Flet ( _, _, f1, f2,_)
@@ -117,7 +117,7 @@ let iter_general ~toplevel f t =
 
     | Fassign (_,f1,_)
     | Fclosure({fu_closure = f1},_)
-    | Fvariable_in_closure({vc_closure = f1},_) ->
+    | Fvar_within_closure({vc_closure = f1},_) ->
       aux f1
 
     | Flet ( _, _, f1, f2,_)
@@ -172,7 +172,7 @@ let iter_on_closures f t =
         f clos data
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _ | Flet _ | Fletrec _
+    | Fvar_within_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fstringswitch _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
@@ -206,8 +206,8 @@ let map_general ~toplevel f tree =
       | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
           Fclosure ({ fu_closure = aux fu_closure;
                        fu_fun; fu_relative_to}, annot)
-      | Fvariable_in_closure (vc, annot) ->
-          Fvariable_in_closure ({ vc with vc_closure = aux vc.vc_closure }, annot)
+      | Fvar_within_closure (vc, annot) ->
+          Fvar_within_closure ({ vc with vc_closure = aux vc.vc_closure }, annot)
       | Flet(str, id, lam, body, annot) ->
           let lam = aux lam in
           let body = aux body in
@@ -436,9 +436,9 @@ let fold_subexpressions f acc = function
       let acc, fu_closure = f acc Variable.Set.empty clos.fu_closure in
       acc, Fclosure({clos with fu_closure},d)
 
-  | Fvariable_in_closure(clos,d) ->
+  | Fvar_within_closure(clos,d) ->
       let acc, vc_closure = f acc Variable.Set.empty clos.vc_closure in
-      acc, Fvariable_in_closure({clos with vc_closure},d)
+      acc, Fvar_within_closure({clos with vc_closure},d)
 
   | ( Fsymbol _
     | Fvar _
@@ -526,8 +526,8 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
     | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, v) ->
         Fclosure ({ fu_closure = mapper fu_closure;
                      fu_fun; fu_relative_to}, f v)
-    | Fvariable_in_closure (vc, v) ->
-        Fvariable_in_closure ({ vc with vc_closure = mapper vc.vc_closure }, f v)
+    | Fvar_within_closure (vc, v) ->
+        Fvar_within_closure ({ vc with vc_closure = mapper vc.vc_closure }, f v)
     | Fswitch(arg, sw, v) ->
         let aux l = List.map (fun (i,v) -> i, mapper v) l in
         let sw = { sw with

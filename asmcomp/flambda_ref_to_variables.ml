@@ -31,7 +31,7 @@ let directly_used_variables tree =
         loop e
     | Fset_of_closures _ | Flet _ | Fassign _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _ | Fletrec _
+    | Fvar_within_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
@@ -111,7 +111,7 @@ let eliminate_ref lam =
     | Fset_of_closures _ | Flet _
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
-    | Fvariable_in_closure _ | Fletrec _
+    | Fvar_within_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _
     | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _

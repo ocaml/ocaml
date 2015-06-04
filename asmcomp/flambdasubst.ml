@@ -241,7 +241,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     try Closure_id.Map.find closure_id t.ffs_fun
     with Not_found -> closure_id
 
-  let subst_variable_in_closure t var_in_closure =
+  let subst_var_within_closure t var_in_closure =
     try Var_within_closure.Map.find var_in_closure t.ffs_fv
     with Not_found -> var_in_closure
 end

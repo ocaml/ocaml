@@ -122,7 +122,7 @@ let populate_closure_approximations
 
    [closure.a] being a notation for:
 
-     [Fvariable_in_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
+     [Fvar_within_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
 
    If [f] is inlined later, the resulting code will be
 
@@ -135,18 +135,18 @@ let populate_closure_approximations
    This information must be carried from the declaration to the use.
 
    If the function is declared outside of the alpha renamed part, there is
-   no need for renaming in the [Ffunction] and [Fvariable_in_closure].
+   no need for renaming in the [Ffunction] and [Fvar_within_closure].
    This is not usualy the case, except when the closure declaration is a
    symbol.
 
-   What ensures that This information is available at [Fvariable_in_closure]
+   What ensures that This information is available at [Fvar_within_closure]
    point is that those constructions can only be introduced by inlining,
    which requires those same informations. For this to still be valid,
    other transformation must avoid transforming the information flow in
    a way that the inline function can't propagate it.
 *)
-let transform_variable_in_closure_expression env r expr vc_closure
-      (fenv_field : _ Flambda.fvariable_in_closure) annot
+let transform_var_within_closure_expression env r expr vc_closure
+      (fenv_field : _ Flambda.fvar_within_closure) annot
       : _ Flambda.t * R.t =
   match A.descr (R.approx r) with
   | Value_closure { set_of_closures; fun_id } ->
@@ -154,7 +154,7 @@ let transform_variable_in_closure_expression env r expr vc_closure
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
     in
     let env_var =
-      AR.subst_variable_in_closure set_of_closures.ffunction_sb
+      AR.subst_var_within_closure set_of_closures.ffunction_sb
           fenv_field.vc_var
     in
     let env_fun_id =
@@ -172,19 +172,19 @@ let transform_variable_in_closure_expression env r expr vc_closure
     let expr : _ Flambda.t =
       if vc_closure == fenv_field.vc_closure
       then expr (* if the argument didn't change, the names didn't also *)
-      else Fvariable_in_closure ({ vc_closure; vc_fun = env_fun_id;
+      else Fvar_within_closure ({ vc_closure; vc_fun = env_fun_id;
                                    vc_var = env_var }, annot) in
     check_var_and_constant_result env r expr approx
   | Value_unresolved sym ->
     (* This value comes from a symbol for which we couldn't find any
        information. This tells us that this function couldn't have been
        renamed. So we can keep it unchanged *)
-    Fvariable_in_closure ({ fenv_field with vc_closure }, annot),
+    Fvar_within_closure ({ fenv_field with vc_closure }, annot),
     ret r (A.value_unresolved sym)
   | Value_unknown ->
     (* We must have the correct approximation of the value to ensure
        we take account of all alpha-renamings. *)
-    Format.printf "[Fvariable_in_closure] without suitable \
+    Format.printf "[Fvar_within_closure] without suitable \
                    approximation : %a@.%a@.%a@."
       Printflambda.flambda expr
       Printflambda.flambda vc_closure
@@ -298,9 +298,9 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let flam, r = loop env r closure.fu_closure in
       transform_closure_expression env r flam closure.fu_fun
           closure.fu_relative_to annot
-  | Fvariable_in_closure (fenv_field, annot) as expr ->
+  | Fvar_within_closure (fenv_field, annot) as expr ->
       let vc_closure, r = loop env r fenv_field.vc_closure in
-      transform_variable_in_closure_expression env r expr vc_closure
+      transform_var_within_closure_expression env r expr vc_closure
           fenv_field annot
   | Flet(str, id, lam, body, annot) ->
       (* The different cases for rewriting [Flet] are, if the original code

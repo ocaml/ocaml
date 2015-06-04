@@ -57,9 +57,9 @@ open Abstract_identifiers
                     fu_relative_to = Some id_g } ]}
 
     After closure conversion an inlining pass is performed.  This may
-    introduce [Fvariable_in_closure] expressions to represent accesses (from
+    introduce [Fvar_within_closure] expressions to represent accesses (from
     the body of inlined functions) to variables bound by closures.  Some of
-    these [Fvariable_in_closure] expressions may survive in the tree after
+    these [Fvar_within_closure] expressions may survive in the tree after
     inlining has finished.
 
     Other features of this intermediate language are:
@@ -107,10 +107,11 @@ type 'a flambda =
   | Fconst of const * 'a
   | Fapply of 'a fapply * 'a
   | Fset_of_closures of 'a fset_of_closures * 'a
-  | Fclosure of 'a ffunction * 'a
+  | Fclosure of 'a fclosure * 'a
   (* CR mshinwell for pchambart: rename to [Fvar_within_closure] to match
-     [Var_within_closure]? *)
-  | Fvariable_in_closure of 'a fvariable_in_closure * 'a
+     [Var_within_closure]?
+     XCR pchambda: done *)
+  | Fvar_within_closure of 'a fvar_within_closure * 'a
   | Flet of let_kind * Variable.t * 'a flambda * 'a flambda * 'a
   | Fletrec of (Variable.t * 'a flambda) list * 'a flambda * 'a
   | Fprim of Lambda.primitive * 'a flambda list * Debuginfo.t * 'a
@@ -206,7 +207,7 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
-and 'a ffunction = {
+and 'a fclosure = {
   (* CR mshinwell: The [fu_closure] field is confusing.  Can we get this to
      have a variant type?  Not sure *)
   fu_closure : 'a flambda;
@@ -216,7 +217,7 @@ and 'a ffunction = {
       [Fclosure]) closure value rather than a set of closures. *)
 }
 
-and 'a fvariable_in_closure = {
+and 'a fvar_within_closure = {
   (** [vc_closure] must yield a closure rather than a set of closures. *)
   vc_closure : 'a flambda;
   vc_fun : Closure_id.t;

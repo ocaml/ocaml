@@ -49,7 +49,7 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
   | Fletrec(_,_,data)
   | Fset_of_closures(_,data)
   | Fclosure(_,data)
-  | Fvariable_in_closure(_,data)
+  | Fvar_within_closure(_,data)
   | Fapply(_,data)
   | Fswitch(_,_,data)
   | Fstringswitch(_,_,_,data)
@@ -77,7 +77,7 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Fletrec(defs, body,data) -> "letrec"
   | Fset_of_closures(_,data) -> "set_of_closures"
   | Fclosure(_,data) -> "closure"
-  | Fvariable_in_closure(_,data) -> "variable_in_closure"
+  | Fvar_within_closure(_,data) -> "var_within_closure"
   | Fapply(_,data) -> "apply"
   | Fswitch(arg, sw,data) -> "switch"
   | Fstringswitch(arg, cases, default, data) -> "stringswitch"
@@ -147,11 +147,11 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Closure_id.equal f1.fu_fun f1.fu_fun &&
       sameoption Closure_id.equal f1.fu_relative_to f1.fu_relative_to
   | Fclosure _, _ | _, Fclosure _ -> false
-  | Fvariable_in_closure (v1, _), Fvariable_in_closure (v2, _) ->
+  | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
       same v1.vc_closure v2.vc_closure &&
       Closure_id.equal v1.vc_fun v2.vc_fun &&
       Var_within_closure.equal v1.vc_var v2.vc_var
-  | Fvariable_in_closure _, _ | _, Fvariable_in_closure _ -> false
+  | Fvar_within_closure _, _ | _, Fvar_within_closure _ -> false
   | Flet (k1, v1, a1, b1, _), Flet (k2, v2, a2, b2, _) ->
       k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2
   | Flet _, _ | _, Flet _ -> false
@@ -227,7 +227,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : _ Flambda.t =
-        Fvariable_in_closure
+        Fvar_within_closure
           ({ vc_closure = Fvar (clos_id, Expr_id.create ());
              vc_fun = fun_id;
              vc_var = Var_within_closure.wrap var;

@@ -64,7 +64,7 @@ val rewrite_recursive_calls_with_symbols
 
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
   (* Tables used for identifiers substitution in
-     Fclosure ("ids of closures") and Fvariable_in_closure ("bound vars
+     Fclosure ("ids of closures") and Fvar_within_closure ("bound vars
      of closures") constructions.
      This information is propagated bottom up. This is
      populated when inlining a function containing a closure
@@ -73,7 +73,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
      For instance,
        [let f x =
           let g y = ... x ... in
-          ... g.x ...           (Fvariable_in_closure x)
+          ... g.x ...           (Fvar_within_closure x)
           ... g 1 ...           (FApply (Fclosure g ...))
           ]
      if f is inlined g is renamed. The approximation of g will
@@ -91,7 +91,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
     'a Variable.Map.t * 'b Flambda.function_declarations * subst * t
 
   val subst_closure_id : t -> Closure_id.t -> Closure_id.t
-  val subst_variable_in_closure :
+  val subst_var_within_closure :
     t ->
     Var_within_closure.t ->
     Var_within_closure.t

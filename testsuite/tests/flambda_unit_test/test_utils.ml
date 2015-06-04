@@ -270,7 +270,7 @@ let rec equal env t1 t2 = match t1, t2 with
     | Ffor _ | Fset_of_closures _ | Fclosure _ | Fapply _), _ ->
       false
 
-  | (Fassign _ | Fletrec _ | Fvariable_in_closure _
+  | (Fassign _ | Fletrec _ | Fvar_within_closure _
     | Fstringswitch _
     | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fsequence _
@@ -278,8 +278,6 @@ let rec equal env t1 t2 = match t1, t2 with
       let e = Format.asprintf "equal: Not implemented %a"
           Printflambda.flambda t1 in
       failwith e
-
-  | Fevent _, _  -> false
 
 and equal_list env l1 l2 =
   List.length l1 = List.length l2 &&

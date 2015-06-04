@@ -267,7 +267,7 @@ let equal_boxed_int (type t1) (type t2)
    be created in each branch, leading to incompatible description.
    And we must never make the descrition for a function less
    precise that it used to be: its information are needed for
-   rewriting [Fvariable_in_closure] and [Fclosure] constructions
+   rewriting [Fvar_within_closure] and [Fclosure] constructions
    in [Flambdainline.loop]
 *)
 let rec meet_descr d1 d2 = match d1, d2 with
