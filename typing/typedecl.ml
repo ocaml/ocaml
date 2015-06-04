@@ -1351,22 +1351,25 @@ let transl_exception env sext =
     ext, newenv
 
 (** Extracts types of function argument infos to be used by inline asm. *)
-let inline_asm_args ty =
+let inline_asm_args env ty =
   let open Types in
-  let get_atomic_type path =
-    match Path.last path with
-      "float"     -> `Float
-    | "int"       -> `Int
-    | "int32"     -> `Int32
-    | "int64"     -> `Int64
-    | "nativeint" -> `Nativeint
-    | "m128d"     -> `M128d
-    | "m128i"     -> `M128i
-    | "m256d"     -> `M256d
-    | "m256i"     -> `M256i
-    | _           -> `Addr (* we'll treat everything else as pointer *)
-  in
-  let get_type = function
+  let rec get_atomic_type path =
+    try
+      let _, manifest, _ = Env.find_type_expansion path env in
+      get_type manifest.desc
+    with Not_found ->
+      match Path.name path with
+        "float"     -> `Float
+      | "int"       -> `Int
+      | "int32"     -> `Int32
+      | "int64"     -> `Int64
+      | "nativeint" -> `Nativeint
+      | "m128d"     -> `M128d
+      | "m128i"     -> `M128i
+      | "m256d"     -> `M256d
+      | "m256i"     -> `M256i
+      | _           -> `Addr (* we'll treat everything else as pointer *)
+  and get_type = function
       Tconstr(path, exprs, _) ->
         begin match Path.last path with
         | "unit" -> `Unit
@@ -1385,10 +1388,24 @@ let inline_asm_args ty =
   in
   let rec get_types acc ty =
     match ty.desc with
-      Tarrow(_, t1, t2, _) -> get_types (get_type t1.desc :: acc) t2
+      Tarrow(_, t1, t2, _) ->
+        get_types (get_type t1.desc :: acc) t2
     | t -> List.rev (get_type t :: acc)
   in
-  get_types [] ty
+  let types = get_types [] ty in
+  Printf.printf "%s\n%!" (String.concat " " (List.map (function
+      `Addr      -> "addr"
+    | `Float     -> "float"
+    | `Int       -> "int"
+    | `Int32     -> "int32"
+    | `Int64     -> "int64"
+    | `M128d     -> "m128d"
+    | `M128i     -> "m128i"
+    | `M256d     -> "m256d"
+    | `M256i     -> "m256i"
+    | `Nativeint -> "nativeint"
+    | `Unit      -> "unit") types));
+  types
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1407,7 +1424,7 @@ let transl_value_decl env loc valdecl =
         match decl with
           "%asm" :: decl ->
             begin try
-              let inline_asm = Inline_asm.parse (inline_asm_args ty) decl in
+              let inline_asm = Inline_asm.parse (inline_asm_args env ty) decl in
               {prim_name = ""; prim_arity = arity; prim_alloc = true;
                prim_native_name = ""; prim_native_float = false;
                prim_asm = Some inline_asm}
