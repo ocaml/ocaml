@@ -81,6 +81,10 @@ int caml_page_table_lookup(void * addr)
 {
   uintnat h, e;
 
+#ifdef MMAP_INTERVAL
+  if (Is_in_heap (addr)) return In_heap;
+  if (Is_in_heap_or_young (addr)) return In_young;
+#endif
   h = Hash(Page(addr));
   /* The first hit is almost always successful, so optimize for this case */
   e = caml_page_table.entries[h];
