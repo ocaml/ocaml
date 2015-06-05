@@ -33,19 +33,10 @@
 #define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 
-#ifdef NATIVE_CODE
-#define Is_in_code_area(pc) \
- (    ((char *)(pc) >= caml_code_area_start && \
-       (char *)(pc) <= caml_code_area_end)     \
-   || ((char *)(pc) >= &caml_system__code_begin && \
-       (char *)(pc) <= &caml_system__code_end)     \
-   || (Classify_addr(pc) & In_code_area) )
-#else
 #define Is_in_code_area(pc) \
  (    ((char *)(pc) >= caml_code_area_start && \
        (char *)(pc) <= caml_code_area_end)     \
    || (Classify_addr(pc) & In_code_area) )
-#endif /* NATIVE_CODE */
 
 
 /***********************************************************************/
@@ -53,9 +44,6 @@
 
 extern char *caml_young_start, *caml_young_end;
 extern char * caml_code_area_start, * caml_code_area_end;
-#ifdef NATIVE_CODE
-extern char caml_system__code_begin, caml_system__code_end;
-#endif
 
 #define Not_in_heap 0
 #define In_heap 1

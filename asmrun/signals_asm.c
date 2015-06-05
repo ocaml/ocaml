@@ -19,7 +19,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
-#include "caml/address_class.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
@@ -44,6 +43,18 @@ extern signal_handler caml_win32_signal(int sig, signal_handler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 extern void caml_win32_overflow_detection();
 #endif
+
+extern char * caml_code_area_start, * caml_code_area_end;
+extern char caml_system__code_begin, caml_system__code_end;
+
+/* Do not use the macro from address_class.h here. */
+#undef Is_in_code_area
+#define Is_in_code_area(pc) \
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+|| ((char *)(pc) >= &caml_system__code_begin && \
+    (char *)(pc) <= &caml_system__code_end)     \
+|| (Classify_addr(pc) & In_code_area) )
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to OCaml code.
