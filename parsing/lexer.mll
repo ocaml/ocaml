@@ -708,13 +708,17 @@ and skip_sharp_bang = parse
             set_pre_extra_docstrings pre_pos (List.rev a)
         | Before(a, f, b), (NoLine | NewLine) ->
             set_post_docstrings post_pos (List.rev a);
-            set_post_extra_docstrings post_pos (List.rev b);
+            set_post_extra_docstrings post_pos
+              (List.rev_append f (List.rev b));
             set_floating_docstrings pre_pos (List.rev f);
             set_pre_extra_docstrings pre_pos (List.rev a);
             set_pre_docstrings pre_pos b
         | Before(a, f, b), BlankLine ->
             set_post_docstrings post_pos (List.rev a);
-            set_floating_docstrings pre_pos (List.rev_append f (List.rev b));
+            set_post_extra_docstrings post_pos
+              (List.rev_append f (List.rev b));
+            set_floating_docstrings pre_pos
+              (List.rev_append f (List.rev b));
             set_pre_extra_docstrings pre_pos (List.rev a)
     in
     let rec loop lines docs lexbuf =
