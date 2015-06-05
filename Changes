@@ -208,6 +208,8 @@ Bug fixes:
   (Jacques Garrigue, report by Valentin Gatien-Baron)
 - PR#6889: ast_mapper fails to rewrite class attributes
   (Sébastien Briais)
+- PR#6893: ocamlbuild:  "tag not used" warning when using (p)dep
+  (Gabriel Scherer, report by Christiano Haesbaert)
 - GPR#143: fix getsockopt behaviour for boolean socket options
   (Anil Madhavapeddy and Andrew Ray)
 - GPR#190: typo in pervasives

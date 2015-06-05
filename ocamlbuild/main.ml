@@ -205,7 +205,14 @@ let proceed () =
     raise Exit_silently
   end;
 
-  let all_tags = Tags.union builtin_useful_tags (Flags.get_used_tags ()) in
+  let all_tags =
+    let builtin = builtin_useful_tags in
+    let used_in_flags = Flags.get_used_tags () in
+    let used_in_deps =
+      List.fold_left (fun acc (tags, _deps) -> Tags.union acc tags)
+        Tags.empty (Command.list_all_deps ())
+    in
+    Tags.union builtin (Tags.union used_in_flags used_in_deps) in
   Configuration.check_tags_usage all_tags;
 
   Digest_cache.init ();
