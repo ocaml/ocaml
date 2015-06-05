@@ -780,7 +780,8 @@ structure_item:
 ;
 str_include_statement:
     INCLUDE module_expr post_item_attributes
-      { Incl.mk $2 ~attrs:$3 ~loc:(symbol_rloc()) }
+      { Incl.mk $2 ~attrs:$3
+                ~loc:(symbol_rloc()) ~docs:(symbol_docs ()) }
 ;
 module_binding_body:
     EQUAL module_expr
