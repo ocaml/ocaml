@@ -31,7 +31,8 @@ PRIMS=\
   dynlink.c backtrace.c
 
 PUBLIC_INCLUDES=\
-  alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
+  address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
+  hash.h intext.h \
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
   version.h
 

@@ -147,6 +147,8 @@ Features wishes:
   (Yaron Minsky)
 - GPR#171: allow custom warning printers / catchers
   (Benjamin Canou, review by Damien Doligez)
+- GPR#191: Making gc.h and some part of memory.h public
+  (Thomas Refis)
 
 OCaml 4.02.2:
 -------------
