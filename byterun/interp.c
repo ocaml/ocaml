@@ -1077,7 +1077,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
-        accu = Val_int((typ) accu tst (typ) *sp++); Next;
+      accu = Val_int((typ) accu tst (typ) *sp++); Next;
 
     Integer_comparison(intnat,NEQ, !=)
     Integer_comparison(intnat,LTINT, <)
