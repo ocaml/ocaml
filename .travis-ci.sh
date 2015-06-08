@@ -18,7 +18,7 @@
 #esac
 
 case $XARCH in
-x86_64)
+x86_64|i386)
   ./configure
   make world
   ;;
