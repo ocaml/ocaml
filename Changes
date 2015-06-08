@@ -19,6 +19,7 @@ Language features:
 - GPR#88: allow field punning in object copying expressions:
     {< x; y; >} is sugar for {< x = x; y = y; >}
   (Jeremy Yallop)
+- PR#5528: inline records for constructor arguments (Alain Frisch)
 
 Compilers:
 - PR#6475: accept -o in ocamlc when compiling C files
