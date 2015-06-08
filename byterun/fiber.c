@@ -69,7 +69,8 @@ void caml_init_fibers ()
 value caml_handle(value body, value hval, value hexn, value heff, intnat extra_args)
 {
   CAMLparam4(body, hval, hexn, heff);
-  CAMLlocal2(old_stack, new_stack);
+  CAMLlocal1(new_stack);
+  value old_stack;
   value *sp, *high;
 
   /* Push the trapsp, parent stack and extra args */
@@ -112,7 +113,8 @@ value caml_handle(value body, value hval, value hexn, value heff, intnat extra_a
 value caml_perform(value effect)
 {
   CAMLparam1(effect);
-  CAMLlocal3(cont, old_stack, new_stack);
+  CAMLlocal2(old_stack, new_stack);
+  value cont;
   value *sp;
   struct domain* self;
 
@@ -193,7 +195,7 @@ static value use_continuation(value cont)
 
 value caml_continue(value cont, value ret, intnat extra_args)
 {
-  CAMLparam2(cont,ret);
+  CAMLparam1(ret);
   CAMLlocal2(old_stack, new_stack);
   value *sp;
 
@@ -225,7 +227,7 @@ value caml_continue(value cont, value ret, intnat extra_args)
 value caml_finish(value ret)
 {
   CAMLparam1(ret);
-  CAMLlocal2(old_stack, new_stack);
+  value old_stack, new_stack;
   value *sp;
   value extra_args_v;
 
