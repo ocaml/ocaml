@@ -2,3 +2,4 @@ language: c
 script: bash -ex .travis-ci.sh
 env:
    - XARCH=x86_64
+   - XARCH=i386
