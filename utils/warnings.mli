@@ -18,7 +18,7 @@ type t =
   | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
-  | Labels_omitted                          (*  6 *)
+  | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)

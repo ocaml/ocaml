@@ -441,7 +441,7 @@ let rec find_module_descr path env =
         let (p, desc) = EnvTbl.find_same id env.components
         in desc
       with Not_found ->
-        if Ident.persistent id
+        if Ident.persistent id && not (Ident.name id = !current_unit)
         then (find_pers_struct (Ident.name id)).ps_comps
         else raise Not_found
       end
@@ -550,7 +550,7 @@ let find_module ~alias path env =
         let (p, data) = EnvTbl.find_same id env.modules
         in data
       with Not_found ->
-        if Ident.persistent id then
+        if Ident.persistent id && not (Ident.name id = !current_unit) then
           let ps = find_pers_struct (Ident.name id) in
           md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found
@@ -767,22 +767,6 @@ let lookup proj1 proj2 lid env =
         Structure_comps c ->
           let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
-      | Functor_comps f ->
-          raise Not_found
-      end
-  | Lapply(l1, l2) ->
-      raise Not_found
-
-let lookup_simple proj1 proj2 lid env =
-  match lid with
-    Lident s ->
-      EnvTbl.find_name s (proj1 env)
-  | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr l env in
-      begin match EnvLazy.force !components_of_module_maker' desc with
-        Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in
-          data
       | Functor_comps f ->
           raise Not_found
       end

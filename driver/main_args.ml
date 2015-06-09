@@ -319,6 +319,10 @@ let mk_version f =
   "-version", Arg.Unit f, " Print version and exit"
 ;;
 
+let mk__version f =
+  "--version", Arg.Unit f, " Print version and exit"
+;;
+
 let mk_vmthread f =
   "-vmthread", Arg.Unit f,
   " Generate code that supports the threads library with VM-level\n\
@@ -693,6 +697,7 @@ struct
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
+    mk__version F._version;
     mk_vmthread F._vmthread;
     mk_vnum F._vnum;
     mk_w F._w;
@@ -739,6 +744,7 @@ struct
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
+    mk__version F._version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -809,6 +815,7 @@ struct
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
+    mk__version F._version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -870,6 +877,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_unsafe F._unsafe;
     mk_unsafe_string F._unsafe_string;
     mk_version F._version;
+    mk__version F._version;
     mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -928,6 +936,7 @@ struct
     mk_v F._v;
     mk_verbose F._verbose;
     mk_version F._version;
+    mk__version F._version;
     mk_vmthread F._vmthread;
     mk_vnum F._vnum;
     mk_w F._w;

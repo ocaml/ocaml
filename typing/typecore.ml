@@ -294,6 +294,7 @@ let extract_concrete_record env ty =
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl env ty with
     (p0, p, {type_kind=Type_variant cstrs}) -> (p0, p, cstrs)
+  | (p0, p, {type_kind=Type_open}) -> (p0, p, [])
   | _ -> raise Not_found
 
 let extract_label_names sexp env ty =
@@ -1640,7 +1641,7 @@ let create_package_type loc env (p, l) =
    let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       Exp.letmodule ~loc:sexp.pexp_loc
+       Exp.letmodule ~loc:sexp.pexp_loc ~attrs:[mknoloc "#modulepat",PStr []]
          name
          (Mod.unpack ~loc
             (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt) name.loc)))
@@ -3272,7 +3273,11 @@ and type_application env funct sargs =
       List.length labels = List.length sargs &&
       List.for_all (fun (l,_) -> l = Nolabel) sargs &&
       List.exists (fun l -> l <> Nolabel) labels &&
-      (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+      (Location.prerr_warning
+	 funct.exp_loc
+	 (Warnings.Labels_omitted
+	    (List.map Printtyp.string_of_label
+		      (List.filter ((<>) Nolabel) labels)));
        true)
     end
   in
