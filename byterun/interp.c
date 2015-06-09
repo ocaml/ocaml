@@ -1060,11 +1060,25 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(ASRINT):
       accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
+    Instruct(EQ): {
+      if (Is_long (accu) || Is_long(*sp)) {
+        accu = Val_int((intnat) accu == (intnat) *sp++);
+        Next;
+      }
+      if (Is_promoted_hd(Hd_val(accu)) && Is_young(accu))
+        accu = caml_addrmap_lookup(&caml_remembered_set.promotion, accu);
+      value v2 = *(value*)sp;
+      if (Is_promoted_hd(Hd_val(v2)) && Is_young(v2))
+        v2 = caml_addrmap_lookup(&caml_remembered_set.promotion, v2);
+      accu = Val_int((intnat) accu == (intnat) v2);
+      sp++;
+      Next;
+    }
+
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
       accu = Val_int((typ) accu tst (typ) *sp++); Next;
 
-    Integer_comparison(intnat,EQ, ==)
     Integer_comparison(intnat,NEQ, !=)
     Integer_comparison(intnat,LTINT, <)
     Integer_comparison(intnat,LEINT, <=)
