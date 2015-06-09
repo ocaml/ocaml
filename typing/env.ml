@@ -441,7 +441,7 @@ let rec find_module_descr path env =
         let (p, desc) = EnvTbl.find_same id env.components
         in desc
       with Not_found ->
-        if Ident.persistent id
+        if Ident.persistent id && not (Ident.name id = !current_unit)
         then (find_pers_struct (Ident.name id)).ps_comps
         else raise Not_found
       end
@@ -550,7 +550,7 @@ let find_module ~alias path env =
         let (p, data) = EnvTbl.find_same id env.modules
         in data
       with Not_found ->
-        if Ident.persistent id then
+        if Ident.persistent id && not (Ident.name id = !current_unit) then
           let ps = find_pers_struct (Ident.name id) in
           md (Mty_signature(Lazy.force ps.ps_sig))
         else raise Not_found

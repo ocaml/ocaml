@@ -156,7 +156,7 @@ define camlint
 end
 
 define camlblock
-  printf "%#lx: ", $arg0
+  printf "%#lx: ", $arg0 - $camlwordsize
   camlheap $arg0
   printf " "
   camlheader $arg0
@@ -185,6 +185,7 @@ define camlblock
   end
 
   if $tag == 249
+    printf "... infix header, displaying enclosing block:\n"
     set $mybaseaddr = $arg0 - $camlwordsize * $mysize
     camlblock $mybaseaddr
     # reset $tag, which was clobbered by the recursive call (yuck)
@@ -214,7 +215,9 @@ define camlblock
     if $count < $mysize
       printf "... truncated ...\n"
     end
-  end    
+  end
+  printf "next block head: %#lx   value: %#lx\n", \
+         $arg0 + $camlwordsize * $mysize, $arg0 + $camlwordsize * ($mysize+1)
 end
 
 # displays an OCaml value
@@ -251,8 +254,8 @@ define camlchunks
   while $chunk != 0
     set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
     set $chunk_alloc = * (unsigned long *) ($chunk - 3 * $camlwordsize)
-    printf "chunk: addr = %#x .. %#x", $chunk, $chunk + $chunk_size
-    printf "  (size = %#x; alloc = %#x)\n", $chunk_size, $chunk_alloc
+    printf "chunk: addr = %#lx .. %#lx", $chunk, $chunk + $chunk_size
+    printf "  (size = %#lx; alloc = %#lx)\n", $chunk_size, $chunk_alloc
     set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
   end
 end
