@@ -14,11 +14,15 @@
 let pr x = Printf.printf "%s\n%!" x
 
 let f x =
-  ignore (pr "f");
+  ignore (pr "3 (f)");
   fun y -> ()
 
 let g x y = ()
 
 let () =
-  (* f (pr "1") (pr "2"); *) (* TO fix ? *)
-  g (pr "3") (pr "4")
+  f (pr "2") (pr "1");
+  g (pr "5") (pr "4")
+
+let () =
+  let a = pr "6" and b = pr "7" in
+  ()

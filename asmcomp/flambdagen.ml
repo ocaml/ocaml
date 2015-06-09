@@ -311,12 +311,7 @@ let rec close t env = function
           fu_relative_to = None },
         nid ~name:"function" ())
   | Lapply(funct, args, loc) ->
-      Fapply(
-        { ap_function = close t env funct;
-          ap_arg = close_list t env args;
-          ap_kind = Indirect;
-          ap_dbg = Debuginfo.none },
-        nid ~name:"apply" ())
+      lift_apply_construction_to_variables t ~env ~funct ~args
   | Lletrec(defs, body) ->
       let env =
         List.fold_right
@@ -567,7 +562,10 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
   let block_fields, lets =
     List.fold_right (fun lam (block, lets) ->
         match close t env lam with
-        | Fvar (v, _) as e -> e::block, lets
+        | Fvar (v, _) as e ->
+          (* Assumes that e is an immutable variable.
+             otherwise this may change the evaluation order *)
+          e::block, lets
         | expr ->
           let v = fresh_variable t "block_field" in
           Fvar (v, nid ())::block, (v, expr)::lets)
@@ -579,6 +577,32 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
   List.fold_left (fun body (v, expr) ->
       Flet(Not_assigned, v, expr, body, nid ()))
     block lets
+
+(* enfoce right to left evaluation order of function arguments *)
+and lift_apply_construction_to_variables t ~env ~funct ~args =
+  let apply_args, lets =
+    List.fold_right (fun lam (args, lets) ->
+        match close t env lam with
+        | Fvar (v, _) as e ->
+          (* Assumes that e is an immutable variable.
+             otherwise this may change the evaluation order *)
+          e::args, lets
+        | expr ->
+          let v = fresh_variable t "apply_arg" in
+          Fvar (v, nid ())::args, (v, expr)::lets)
+      args ([],[])
+  in
+  let apply =
+      Fapply(
+        { ap_function = close t env funct;
+          ap_arg = apply_args;
+          ap_kind = Indirect;
+          ap_dbg = Debuginfo.none },
+        nid ~name:"apply" ())
+  in
+  List.fold_left (fun body (v, expr) ->
+      Flet(Not_assigned, v, expr, body, nid ()))
+    apply lets
 
 let lambda_to_flambda ~current_compilation_unit
     ~symbol_for_global'
