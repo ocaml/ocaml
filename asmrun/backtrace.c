@@ -80,7 +80,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     h = Hash_retaddr(*pc);
     while (1) {
       d = caml_frame_descriptors[h];
-      if (d == 0) return NULL; /* can happen if some code compiled without -g */
+      if (d == NULL) return NULL; /* happens if some code compiled without -g */
       if (d->retaddr == *pc) break;
       h = (h+1) & caml_frame_descriptors_mask;
     }
