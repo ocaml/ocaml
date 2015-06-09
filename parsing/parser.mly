@@ -379,6 +379,33 @@ let class_of_let_bindings lbs body =
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "attributes")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
+(* compile "if <let_bindings> then <then_expr> else <else_expr>"
+   into a regular pattern match *)
+let mkiflet bindings then_expr else_expr =
+  begin match bindings.lbs_rec with
+    | Recursive ->
+       raise Syntaxerr.(Error(Not_expecting(bindings.lbs_loc, "recursive bindings in 'if let'")))
+    | Nonrecursive -> ()
+  end;
+  let else_expr = match else_expr with
+    | Some e -> e
+    | None -> ghunit ()
+  in
+  let case_then, expr = match bindings.lbs_bindings with
+    | [] -> assert false
+    | [lb] ->
+        (* single let binding *)
+        {pc_lhs=lb.lb_pattern; pc_guard=None; pc_rhs=then_expr }, lb.lb_expression
+    | lbs ->
+        (* multiple bindings: use a tuple *)
+        let patterns, exprs = List.split
+          (List.map (fun lb -> lb.lb_pattern, lb.lb_expression) lbs)
+        in
+        {pc_lhs=mkpat(Ppat_tuple patterns); pc_guard=None; pc_rhs=then_expr},
+          Exp.mk ~loc:bindings.lbs_loc (Pexp_tuple exprs)
+  and case_else = {pc_lhs=mkpat Ppat_any; pc_guard=None; pc_rhs=else_expr } in
+  Exp.mk ~loc:bindings.lbs_loc (Pexp_match(expr, [case_then; case_else]))
+
 %}
 
 /* Tokens */
@@ -1218,6 +1245,10 @@ expr:
       { mkexp_attrs(Pexp_ifthenelse($3, $5, Some $7)) $2 }
   | IF ext_attributes seq_expr THEN expr
       { mkexp_attrs (Pexp_ifthenelse($3, $5, None)) $2 }
+  | IF ext_attributes let_bindings THEN expr
+      { mkiflet $3 $5 None }
+  | IF ext_attributes let_bindings THEN expr ELSE expr
+      { mkiflet $3 $5 (Some $7) }
   | WHILE ext_attributes seq_expr DO seq_expr DONE
       { mkexp_attrs (Pexp_while($3, $5)) $2 }
   | FOR ext_attributes pattern EQUAL seq_expr direction_flag seq_expr DO
