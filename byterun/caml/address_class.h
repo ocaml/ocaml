@@ -38,6 +38,7 @@
        (char *)(pc) <= caml_code_area_end)     \
    || (Classify_addr(pc) & In_code_area) )
 
+#define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
 
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
