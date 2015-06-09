@@ -1060,7 +1060,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(ASRINT):
       accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
-    Instruct(EQ): {
+    Instruct(OEQ): {
       if (Is_long (accu) || Is_long(*sp)) {
         accu = Val_int((intnat) accu == (intnat) *sp++);
         Next;
@@ -1079,6 +1079,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(opname): \
       accu = Val_int((typ) accu tst (typ) *sp++); Next;
 
+    Integer_comparison(intnat,EQ, ==)
     Integer_comparison(intnat,NEQ, !=)
     Integer_comparison(intnat,LTINT, <)
     Integer_comparison(intnat,LEINT, <=)

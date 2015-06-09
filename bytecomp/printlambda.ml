@@ -145,6 +145,7 @@ let primitive ppf = function
   | Plslint -> fprintf ppf "lsl"
   | Plsrint -> fprintf ppf "lsr"
   | Pasrint -> fprintf ppf "asr"
+  | Pobjcomp -> fprintf ppf "==o"
   | Pintcomp(Ceq) -> fprintf ppf "=="
   | Pintcomp(Cneq) -> fprintf ppf "!="
   | Pintcomp(Clt) -> fprintf ppf "<"
