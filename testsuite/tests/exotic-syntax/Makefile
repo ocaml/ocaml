@@ -13,5 +13,5 @@
 BASEDIR=../..
 MAIN_MODULE=exotic
 
-include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
