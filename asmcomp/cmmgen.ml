@@ -661,6 +661,17 @@ let rec expr_size env = function
 
 let apply_function n =
   Compilenv.need_apply_fun n; "caml_apply" ^ string_of_int n
+
+(* Just call the function if this is a non-partial application.
+   Otherwise, emit a call to caml_apply. *)
+let call_apply_function arity all_args clos dbg =
+  Cifthenelse(
+    Cop(Ccmpi Ceq, [get_field clos 1; int_const arity]),
+    Cop(Capply(typ_addr, dbg),
+      get_field clos 2 :: all_args),
+    Cop(Capply(typ_addr, dbg),
+       Cconst_symbol(apply_function arity) :: all_args))
+
 let curry_function n =
   Compilenv.need_curry_fun n;
   if n >= 0
@@ -1364,18 +1375,20 @@ let rec transl = function
         Cop(Capply(typ_addr, dbg), [get_field clos 0; transl arg; clos]))
   | Ugeneric_apply(clos, args, dbg) ->
       let arity = List.length args in
-      let cargs = Cconst_symbol(apply_function arity) ::
-        List.map transl (args @ [clos]) in
-      Cop(Capply(typ_addr, dbg), cargs)
+      bind "fun" (transl clos) (fun clos ->
+        let args = List.map transl args in
+        let all_args = args @ [clos] in
+        (* Just call the function if this is a non-partial application.
+           Otherwise, emit a call to caml_apply. *)
+        call_apply_function arity all_args clos dbg)
   | Usend(kind, met, obj, args, dbg) ->
       let call_met obj args clos =
         if args = [] then
           Cop(Capply(typ_addr, dbg), [get_field clos 0;obj;clos])
         else
           let arity = List.length args + 1 in
-          let cargs = Cconst_symbol(apply_function arity) :: obj ::
-            (List.map transl args) @ [clos] in
-          Cop(Capply(typ_addr, dbg), cargs)
+          let all_args = obj :: (List.map transl args) @ [clos] in
+          call_apply_function arity all_args clos dbg
       in
       bind "obj" (transl obj) (fun obj ->
         match kind, args with
@@ -2446,13 +2459,11 @@ let cache_public_method meths tag cache =
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
-       (if (= clos.arity N)
-         (app clos.direct a1 ... aN clos)
-         (let (clos1 (app clos.code a1 clos)
-               clos2 (app clos1.code a2 clos)
-               ...
-               closN-1 (app closN-2.code aN-1 closN-2))
-           (app closN-1.code aN closN-1))))
+       (let (clos1 (app clos.code a1 clos)
+             clos2 (app clos1.code a2 clos)
+             ...
+             closN-1 (app closN-2.code aN-1 closN-2))
+         (app closN-1.code aN closN-1)))
 *)
 
 let apply_function_body arity =
@@ -2471,14 +2482,7 @@ let apply_function_body arity =
            app_fun newclos (n+1))
     end in
   let args = Array.to_list arg in
-  let all_args = args @ [clos] in
-  (args, clos,
-   if arity = 1 then app_fun clos 0 else
-   Cifthenelse(
-   Cop(Ccmpi Ceq, [get_field (Cvar clos) 1; int_const arity]),
-   Cop(Capply(typ_addr, Debuginfo.none),
-       get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
-   app_fun clos 0))
+  (args, clos, app_fun clos 0)
 
 let send_function arity =
   let (args, clos', body) = apply_function_body (1+arity) in
