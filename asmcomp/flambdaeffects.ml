@@ -94,4 +94,13 @@ let rec no_effects = function
   | Funreachable _ -> true
 
 let sequence l1 l2 annot =
-  if no_effects l1 then l2 else Fsequence (l1, l2, annot)
+  if no_effects l1 then
+    l2
+  else match l2 with
+    | Fconst((Fconst_pointer 0 | Fconst_base (Asttypes.Const_int 0)), _) ->
+        Flambda.Fprim(Pignore, [l1], Debuginfo.none, annot)
+    | _ -> match l1 with
+      | Fprim(Pignore, [arg], _, _) ->
+          Fsequence (arg, l2, annot)
+      | _ ->
+          Fsequence (l1, l2, annot)

@@ -311,6 +311,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg : _ Flambda.t * A.
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
     expr, A.value_block(tag, Array.of_list approxs)
+  | Pignore -> begin
+      let eid = Flambdautils.data_at_toplevel_node expr in
+      match args, A.descrs approxs with
+      | [arg], [(Value_int 0 | Value_constptr 0)] ->
+          const_ptr_expr arg 0 eid
+      | _ ->
+          const_ptr_expr expr 0 eid
+    end
   | _ ->
     let eid = Flambdautils.data_at_toplevel_node expr in
     match A.descrs approxs with
