@@ -55,7 +55,7 @@ val iter : ('a -> unit) -> 'a t -> unit
    bottom of the stack. The stack itself is unchanged. *)
 
 val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
-(** [fold f accu s] is equivalent to [List.fold_left f accu l] where
-    [l] is the list of elements of [s], from top to bottom.
-    The stack is unchanged.
+(** [fold f accu s] is [(f (... (f (f accu x1) x2) ...) xn)]
+    where [x1] is the top of the stack, [x2] the second element,
+    and [xn] the bottom element. The stack is unchanged.
     @since 4.03 *)
