@@ -200,6 +200,9 @@ Bug fixes:
 - PR#6872: Type-directed propagation fails to disambiguate variants
   that are also exception constructors
   (Jacques Garrigue, report by Romain Beauxis)
+- PR#6878: AArch64 backend generates invalid asm: conditional branch
+  out of range (Mark Shinwell, report by Richard Jones, testing by Richard
+  Jones and Xavier Leroy, code review by Xavier Leroy and Thomas Refis)
 - PR#6879: Wrong optimization of 1 mod n
   (Mark Shinwell, report by Jean-Christophe Filliâtre)
 - PR#6884: The __CYGWIN32__ #define should be replaced with __CYGWIN__
