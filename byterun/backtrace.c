@@ -505,10 +505,41 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 CAMLprim value caml_decode_retaddr(value retaddr)
 {
   CAMLparam1(retaddr);
-  CAMLlocal1(result);
+  CAMLlocal3(result, block, fname);
+  struct loc_info li;
 
-  /* Fixme, not hard to implement */
-  result = Val_unit;
+  read_debug_info();
+  if (events == NULL)
+    caml_failwith(read_debug_info_error);
 
+  extract_location_info(Codet_Val(retaddr), &li);
+
+  if (li.loc_valid) {
+    fname = caml_copy_string(li.loc_filename);
+
+    block = caml_alloc_small(3, 0);
+    Field(block, 0) = fname;
+    Field(block, 1) = Val_int(li.loc_lnum);
+    Field(block, 2) = Val_int(li.loc_startchr);
+
+    result = caml_alloc_small(1, 0);
+    Field(result, 0) = block;
+
+  } else {
+    result = Val_unit;
+  }
   CAMLreturn(result);
+}
+
+/* Get retaddr */
+CAMLprim value caml_retloc(value unit)
+{
+  CAMLparam1(unit);
+
+  /* caml_extern_sp is the immediate caller, go back one step */
+  value *sp = caml_extern_sp;
+  value *trsp = caml_trapsp;
+  code_t p = caml_next_frame_pointer(&sp, &trsp);
+
+  CAMLreturn(Val_Codet(p));
 }
