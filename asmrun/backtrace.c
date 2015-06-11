@@ -392,7 +392,7 @@ CAMLprim value caml_decode_retaddr(value retaddr)
 
   frame_descr *d;
   uintnat h;
-  struct loc_info li;
+  struct caml_loc_info li;
 
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
 
