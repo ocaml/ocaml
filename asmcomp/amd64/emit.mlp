@@ -38,6 +38,8 @@ let fastcode_flag = ref true
 
 let stack_offset = ref 0
 
+let frame_offset = if fp then 16 else 8 
+
 (* Layout of the stack frame *)
 
 let frame_required () =
@@ -46,8 +48,7 @@ let frame_required () =
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
     let sz =
-      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
-      + (if fp then 8 else 0) )
+      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + frame_offset)
     in Misc.align sz 16
   end else
     !stack_offset + 8
@@ -326,7 +327,7 @@ let emit_float_test cmp neg arg lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    let n = frame_size() - frame_offset in
     `	addq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset (-n);
     if fp then begin
@@ -434,7 +435,7 @@ let emit_instr fallthrough i =
         cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
     | Lop(Iretloc) ->
-        `	movq {emit_int (frame_size()-8)}(%rsp), {emit_reg i.res.(0)}\n`;
+        `	movq {emit_int (frame_size() - frame_offset)}(%rsp), {emit_reg i.res.(0)}\n`;
         `	or	$1, {emit_reg i.res.(0)}\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
@@ -740,7 +741,7 @@ let fundecl fundecl =
   end;
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
+    let n = frame_size() - frame_offset in
     `	subq	${emit_int n}, %rsp\n`;
     cfi_adjust_cfa_offset n;
   end;
