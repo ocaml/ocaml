@@ -84,6 +84,7 @@ let operation = function
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
+  | Cretaddr -> "retaddr"
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

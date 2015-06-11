@@ -355,6 +355,11 @@ let rec emit_instr i dslot =
     | Lop(Istackoffset n) ->
         `	add	%sp, {emit_int (-n)}, %sp\n`;
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+        if !contains_calls 
+        then let n = frame_size() in
+             `	ld	[%sp + {emit_int(n - 4 + 96)}], {emit_reg i.res.(0)}\n`
+        else `	mov %o7, {emit_reg i.res.(0)}\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
@@ -611,6 +616,7 @@ let is_one_instr i =
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
       | Iconst_int n | Iconst_blockheader n -> is_native_immediate n
       | Istackoffset _ -> true
+      | Iretaddr -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
       | Istore(_, Iindexed n, _) -> i.arg.(0).typ <> Float && is_immediate n
       | Iintop(op) -> is_one_instr_op op

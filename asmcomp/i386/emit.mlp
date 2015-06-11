@@ -30,6 +30,8 @@ let fastcode_flag = ref true
 
 let stack_offset = ref 0
 
+let frame_offset = 4
+
 (* Layout of the stack frame *)
 
 let frame_size () =                     (* includes return address *)
@@ -311,7 +313,7 @@ let output_test_zero arg =
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue f =
-  let n = frame_size() - 4 in
+  let n = frame_size() - frame_offset in
   if n > 0 then
   begin
     `	addl	${emit_int n}, %esp\n`;
@@ -526,6 +528,8 @@ let emit_instr fallthrough i =
         else `	subl	${emit_int(n)}, %esp\n`;
         cfi_adjust_cfa_offset n;
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+      `	movl {emit_int (frame_size() - frame_offset)}(%esp), {emit_reg i.res.(0)}\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
@@ -925,7 +929,7 @@ let fundecl fundecl =
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
   if !Clflags.gprofile then emit_profile();
-  let n = frame_size() - 4 in
+  let n = frame_size() - frame_offset in
   if n > 0 then
   begin
     `	subl	${emit_int n}, %esp\n`;

@@ -1559,6 +1559,9 @@ and transl_prim_1 p arg dbg =
       transl arg
   | Pignore ->
       return_unit(remove_unit (transl arg))
+  | Pretloc ->
+      Csequence (transl arg, Cop (Cor, [Cop (Cretaddr, []); Cconst_int 1]))
+
   (* Heap operations *)
   | Pfield n ->
       get_field (transl arg) n

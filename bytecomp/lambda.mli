@@ -123,6 +123,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Get return address or location *)
+  | Pretloc
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

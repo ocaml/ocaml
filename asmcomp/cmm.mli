@@ -67,6 +67,7 @@ type operation =
   | Ccmpf of comparison
   | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
+  | Cretaddr
 
 type expression =
     Cconst_int of int

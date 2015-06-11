@@ -500,3 +500,48 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   }
   CAMLreturn(res);
 }
+
+/* Turn encoded retaddr into eventual location information */
+CAMLprim value caml_decode_retaddr(value retaddr)
+{
+  CAMLparam1(retaddr);
+  CAMLlocal3(result, block, fname);
+  struct loc_info li;
+
+  read_debug_info();
+  if (events == NULL)
+    result = Val_unit;
+  else
+  {
+    extract_location_info(Codet_Val(retaddr), &li);
+
+    if (li.loc_valid) {
+      fname = caml_copy_string(li.loc_filename);
+
+      block = caml_alloc_small(3, 0);
+      Field(block, 0) = fname;
+      Field(block, 1) = Val_int(li.loc_lnum);
+      Field(block, 2) = Val_int(li.loc_startchr);
+
+      result = caml_alloc_small(1, 0);
+      Field(result, 0) = block;
+
+    } else {
+      result = Val_unit;
+    }
+  }
+  CAMLreturn(result);
+}
+
+/* Get return address */
+CAMLprim value caml_get_retaddr(value unit)
+{
+  CAMLparam1(unit);
+
+  /* caml_extern_sp is the immediate caller, go back one step */
+  value *sp = caml_extern_sp;
+  value *trsp = caml_trapsp;
+  code_t p = caml_next_frame_pointer(&sp, &trsp);
+
+  CAMLreturn(Val_Codet(p));
+}
