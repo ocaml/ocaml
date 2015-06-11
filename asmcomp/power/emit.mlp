@@ -350,6 +350,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iextcall(s, true)) -> 3
     | Lop(Iextcall(s, false)) -> if pic_externals then 4 else 1
     | Lop(Istackoffset n) -> 1
+    | Lop(Iretaddr) -> 1
     | Lop(Iload(chunk, addr)) ->
       if chunk = Byte_signed
       then load_store_size addr + 1
@@ -494,6 +495,11 @@ let rec emit_instr i dslot =
     | Lop(Istackoffset n) ->
         `	addi	{emit_gpr 1}, {emit_gpr 1}, {emit_int (-n)}\n`;
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+        if !contains_calls 
+        then let n = frame_size() in
+             `	{emit_string lg}	{emit_reg i.res.(0)}, {emit_int(n - size_addr)}({emit_gpr 1})\n`
+        else `	mflr	{emit_reg i.res.(0)}\n`
     | Lop(Iload(chunk, addr)) ->
         let loadinstr =
           match chunk with

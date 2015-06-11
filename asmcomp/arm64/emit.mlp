@@ -598,6 +598,8 @@ let emit_instr i =
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+        `	mov {emit_reg i.res.(0)}, lr\n`
     | Lop(Iload(size, addr)) ->
         let dst = i.res.(0) in
         let base =
