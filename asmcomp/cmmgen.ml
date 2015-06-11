@@ -1560,7 +1560,7 @@ and transl_prim_1 p arg dbg =
   | Pignore ->
       return_unit(remove_unit (transl arg))
   | Pretloc ->
-      Cop(Cretloc, [])
+      Cop(Cretaddr, [])
   (* Heap operations *)
   | Pfield n ->
       get_field (transl arg) n
