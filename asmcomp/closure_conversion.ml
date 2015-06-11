@@ -46,22 +46,6 @@ let empty_env = {
   static_exceptions = Ext_types.Int.Map.empty;
 }
 
-let rec add_debug_info ev flam =
-  match ev.lev_kind with
-  | Lev_after _ ->
-    begin match flam with
-      | Fapply(ap,v) ->
-        Fapply({ ap with ap_dbg = Debuginfo.from_call ev}, v)
-      | Fprim(p, args, dinfo, v) ->
-        Fprim(p, args, Debuginfo.from_call ev, v)
-      | Fsend(kind, flam1, flam2, args, dinfo, v) ->
-        Fsend(kind, flam1, flam2, args, Debuginfo.from_call ev, v)
-      | Fsequence(flam1, flam2, v) ->
-        Fsequence(flam1, add_debug_info ev flam2, v)
-      | _ -> flam
-    end
-  | _ -> flam
-
 let nid = Expr_id.create
 
 let fresh_variable t name =
@@ -266,13 +250,30 @@ let tupled_function_call_stub t id original_params tuplified_version =
     dbg = Debuginfo.none;
   }
 
+(* Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
+let rec add_debug_info ev flam =
+  match ev.lev_kind with
+  | Lev_after _ ->
+    begin match flam with
+    | Fapply (ap, v) ->
+      Fapply ({ ap with ap_dbg = Debuginfo.from_call ev}, v)
+    | Fprim (p, args, _dinfo, v) ->
+      Fprim (p, args, Debuginfo.from_call ev, v)
+    | Fsend (kind, flam1, flam2, args, _dinfo, v) ->
+      Fsend (kind, flam1, flam2, args, Debuginfo.from_call ev, v)
+    | Fsequence (flam1, flam2, v) ->
+      Fsequence (flam1, add_debug_info ev flam2, v)
+    | _ -> flam
+    end
+  | _ -> flam
+
 let rec close_const = function
   | Const_base c -> Fconst (Fconst_base c, nid ~name:"cst" ())
   | Const_pointer c -> Fconst (Fconst_pointer c, nid ~name:"cstptr" ())
   | Const_immstring c -> Fconst (Fconst_immstring c, nid ~name:"immstring" ())
   | Const_float_array c -> Fconst (Fconst_float_array c, nid ~name:"float" ())
   | Const_block (tag, l) ->
-    Fprim (Pmakeblock(tag, Asttypes.Immutable),
+    Fprim (Pmakeblock (tag, Asttypes.Immutable),
       List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
 
 let rec close t env = function
