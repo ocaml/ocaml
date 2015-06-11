@@ -10,10 +10,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Misc
-open Lambda
 open Abstract_identifiers
-open Flambda
 
 (* Naming conventions used in this module:
    - All variable names containing "id" or "ident" are of type [Ident.t] or
@@ -28,6 +25,8 @@ open Flambda
   constructions [Pgetglobal], [Pgetglobalfield] and [Psetglobalfield].
   These constructions also appear in [Flambda.t].
 *)
+
+module IdentSet = Lambda.IdentSet
 
 type t = {
   current_compilation_unit : Symbol.Compilation_unit.t;
@@ -83,7 +82,7 @@ end = struct
   let find_var t id =
     try Ident.find_same id t.variables
     with Not_found ->
-      fatal_error ("Closure_conversion.Env.find_var: var "
+      Misc.fatal_error ("Closure_conversion.Env.find_var: var "
         ^ Ident.unique_name id)
 
   let add_static_exception t st_exn fresh_st_exn =
@@ -94,7 +93,7 @@ end = struct
   let find_static_exception t st_exn =
     try Ext_types.Int.Map.find st_exn t.static_exceptions
     with Not_found ->
-      fatal_error ("Closure_conversion.Env.find_static_exception: exn "
+      Misc.fatal_error ("Closure_conversion.Env.find_static_exception: exn "
         ^ string_of_int st_exn)
 end
 
@@ -109,21 +108,21 @@ module Function_decls : sig
     val create
        : let_rec_ident:Ident.t option
       -> closure_bound_var:Variable.t
-      -> kind:function_kind
+      -> kind:Lambda.function_kind
       -> params:Ident.t list
-      -> body:lambda
+      -> body:Lambda.lambda
       -> t
 
     val let_rec_ident : t -> Ident.t
     val closure_bound_var : t -> Variable.t
-    val kind : t -> function_kind
+    val kind : t -> Lambda.function_kind
     val params : t -> Ident.t list
-    val body : t -> lambda
+    val body : t -> Lambda.lambda
 
     (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
        with default optionnal arguments. Otherwise it is [Some body], where
        [body] is the body of the wrapper. *)
-    val primitive_wrapper : t -> lambda option
+    val primitive_wrapper : t -> Lambda.lambda option
 
     (* Like [used_idents_by_function], but for just one function. *)
     val used_idents : t -> IdentSet.t
@@ -165,9 +164,9 @@ end = struct
     type t = {
       let_rec_ident : Ident.t;
       closure_bound_var : Variable.t;
-      kind : function_kind;
+      kind : Lambda.function_kind;
       params : Ident.t list;
-      body : lambda;
+      body : Lambda.lambda;
     }
 
     let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body =
@@ -241,15 +240,16 @@ module Function_decl = Function_decls.Function_decl
 (* Generate a wrapper ("stub") function that accepts a tuple argument and
    calls another function with (curried) arguments extracted in the obvious
    manner from the tuple. *)
-let tupled_function_call_stub t id original_params tuplified_version =
+let tupled_function_call_stub t id original_params tuplified_version
+      : _ Flambda.function_declaration =
   let tuple_param =
     rename_var t ~append:"tupled_stub_param" tuplified_version
   in
   let params = List.map (fun p -> rename_var t p) original_params in
-  let call =
+  let call : _ Flambda.t =
     Fapply ({
         ap_function = Fvar (tuplified_version, nid ());
-        ap_arg = List.map (fun p' -> Fvar (p', nid ())) params;
+        ap_arg = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
         ap_kind = Direct (Closure_id.wrap tuplified_version);
         ap_dbg = Debuginfo.none;
       },
@@ -257,11 +257,11 @@ let tupled_function_call_stub t id original_params tuplified_version =
   in
   let _, body =
     List.fold_left (fun (pos, body) param ->
-        let lam =
+        let lam : _ Flambda.t =
           Fprim (Pfield pos, [Fvar (tuple_param, nid ())],
             Debuginfo.none, nid ())
         in
-        pos + 1, Flet (Not_assigned, param, lam, body, nid ()))
+        pos + 1, Flambda.Flet (Not_assigned, param, lam, body, nid ()))
       (0, call) params
   in
   { stub = true;
@@ -272,7 +272,8 @@ let tupled_function_call_stub t id original_params tuplified_version =
   }
 
 (* Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
-let rec add_debug_info ev flam =
+let rec add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
+      : _ Flambda.t =
   match ev.lev_kind with
   | Lev_after _ ->
     begin match flam with
@@ -288,7 +289,8 @@ let rec add_debug_info ev flam =
     end
   | _ -> flam
 
-let rec close_const = function
+let rec close_const (const : Lambda.structured_constant) : _ Flambda.t =
+  match const with
   | Const_base c -> Fconst (Fconst_base c, nid ~name:"cst" ())
   | Const_pointer c -> Fconst (Fconst_pointer c, nid ~name:"cstptr" ())
   | Const_immstring c -> Fconst (Fconst_immstring c, nid ~name:"immstring" ())
@@ -297,13 +299,14 @@ let rec close_const = function
     Fprim (Pmakeblock (tag, Asttypes.Immutable),
       List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
 
-let rec close t env = function
+let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
+  match lam with
   | Lvar id ->
       let var = Env.find_var env id in
       Fvar (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
   | Lconst cst -> close_const cst
   | Llet(let_kind, id, lam, body) ->
-      let let_kind =
+      let let_kind : Flambda.let_kind =
         match let_kind with
         | Variable -> Assigned
         | Strict | Alias | StrictOpt -> Not_assigned
@@ -339,7 +342,7 @@ let rec close t env = function
       let function_declarations =
         (* Identify any bindings in the [let rec] that are functions. *)
         List.map (function
-            | (let_rec_ident, Lfunction(kind, params, body)) ->
+            | (let_rec_ident, Lambda.Lfunction(kind, params, body)) ->
                 let closure_bound_var = create_var t let_rec_ident in
                 let function_declaration =
                   Function_decl.create ~let_rec_ident:(Some let_rec_ident)
@@ -376,13 +379,13 @@ let rec close t env = function
                 let let_rec_ident = Function_decl.let_rec_ident decl in
                 let closure_bound_var = Function_decl.closure_bound_var decl in
                 let let_bound_var = Env.find_var env let_rec_ident in
-                Flet(Not_assigned, let_bound_var,
+                ((Flet(Not_assigned, let_bound_var,
                      Fclosure(
                        { fu_closure = Fvar (set_of_closures_var, nid ());
                          fu_fun = Closure_id.wrap closure_bound_var;
                          fu_relative_to = None },
                        nid ()),
-                     body, nid ()))
+                     body, nid ())) : _ Flambda.t))
               (close t env body) function_declarations in
           Flet(Not_assigned, set_of_closures_var, set_of_closures,
                body, nid ~name:"closure_letrec" ())
@@ -402,7 +405,7 @@ let rec close t env = function
             nid ~name:"getglobalfield" ())
   | Lprim(Psetfield(i,_), [Lprim(Pgetglobal id, []); lam]) ->
       assert(Ident.same id t.current_unit_id);
-      let exported =
+      let exported : Lambda.exported =
         if i < t.exported_fields then
           Exported
         else
@@ -466,10 +469,11 @@ let rec close t env = function
   | Lifused _ ->
       assert false
 
-(* Perform closure conversion on a set of function declarations.  (The set
-   will often only contain a single function; the only case where it cannot
-   is for "let rec".) *)
-and close_functions t external_env function_declarations =
+(* Perform closure conversion on a set of function declarations, returning a
+   set-of-closures node.  (The set will often only contain a single function;
+   the only case where it cannot is for "let rec".) *)
+and close_functions t external_env function_declarations
+      : _ Flambda.t =
   let closure_env_without_parameters =
     Function_decls.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
@@ -513,7 +517,9 @@ and close_functions t external_env function_declarations =
     let params = List.map (Env.find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
-    let fun_decl = { stub; params; dbg; free_variables; body; } in
+    let fun_decl : _ Flambda.function_declaration =
+      { stub; params; dbg; free_variables; body; }
+    in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
@@ -524,7 +530,7 @@ and close_functions t external_env function_declarations =
       Variable.Map.add tuplified_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
-  let fun_decls =
+  let fun_decls : _ Flambda.function_declarations =
     { ident = Set_of_closures_id.create t.current_compilation_unit;
       funs =
         List.fold_left close_one_function Variable.Map.empty
@@ -535,14 +541,15 @@ and close_functions t external_env function_declarations =
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
      a single block with tag [Closure_tag].) *)
-  let set_of_closures =
+  let set_of_closures : _ Flambda.fset_of_closures =
     { cl_fun = fun_decls;
       cl_free_var =
         IdentSet.fold
           (fun id map ->
              let internal_var = Env.find_var closure_env_without_parameters id in
              let external_var = Env.find_var external_env id in
-             Variable.Map.add internal_var (Fvar (external_var, nid ())) map)
+             Variable.Map.add internal_var
+               (Flambda.Fvar (external_var, nid ())) map)
           all_free_idents Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty;
     }
@@ -585,18 +592,18 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
 *)
 and lift_block_construction_to_variables t ~env ~primitive ~args =
   let block_fields, lets = lifting_helper t ~env ~args ~name:"block_field" in
-  let block =
+  let block : _ Flambda.t =
     Fprim (primitive, block_fields, Debuginfo.none, nid ~name:"block" ())
   in
   List.fold_left (fun body (v, expr) ->
-      Flet(Not_assigned, v, expr, body, nid ()))
+      Flambda.Flet (Not_assigned, v, expr, body, nid ()))
     block lets
 
 (* Enforce right-to-left evaluation of function arguments by lifting the
    expressions computing the arguments into [let]s. *)
 and lift_apply_construction_to_variables t ~env ~funct ~args =
   let apply_args, lets = lifting_helper t ~env ~args ~name:"apply_arg" in
-  let apply =
+  let apply : _ Flambda.t =
     Fapply ({
         ap_function = close t env funct;
         ap_arg = apply_args;
@@ -606,7 +613,7 @@ and lift_apply_construction_to_variables t ~env ~funct ~args =
       nid ~name:"apply" ())
   in
   List.fold_left (fun body (v, expr) ->
-      Flet(Not_assigned, v, expr, body, nid ()))
+      Flambda.Flet (Not_assigned, v, expr, body, nid ()))
     apply lets
 
 and lifting_helper t ~env ~args ~name =
