@@ -14,7 +14,7 @@ type t = {
   never_inline : bool ;
   possible_unrolls : int;
   closure_depth : int;
-  inlining_stats_closure_stack : Flambda_inlining_stats.Closure_stack.t;
+  inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
 }
 
 let empty ~never_inline =
@@ -28,7 +28,7 @@ let empty ~never_inline =
     possible_unrolls = !Clflags.unroll;
     closure_depth = 0;
     inlining_stats_closure_stack =
-      Flambda_inlining_stats.Closure_stack.create ();
+      Inlining_stats.Closure_stack.create ();
   }
 
 let local env =
@@ -106,7 +106,7 @@ let never_inline t = t.never_inline
 let note_entering_closure t ~closure_id ~where =
   { t with
     inlining_stats_closure_stack =
-      Flambda_inlining_stats.Closure_stack.note_entering_closure
+      Inlining_stats.Closure_stack.note_entering_closure
         t.inlining_stats_closure_stack ~closure_id ~where;
   }
 let inlining_stats_closure_stack t = t.inlining_stats_closure_stack

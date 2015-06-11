@@ -1,8 +1,8 @@
 open Abstract_identifiers
 
 module A = Flambdaapprox
-module E = Flambda_inline_env
-module R = Flambda_inline_result
+module E = Inlining_env
+module R = Inlining_result
 module U = Flambdautils
 
 let is_probably_a_functor env clos approxs =
@@ -29,7 +29,7 @@ let inline_non_recursive
     ~inline_by_copying_function_body
     ~env ~r ~clos ~ funct ~fun_id
     ~(func : 'a Flambda.function_declaration)
-    ~(record_decision : Flambda_inlining_stats_types.Decision.t -> unit)
+    ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~inline_threshold
     ~direct_apply
     ~no_transformation
@@ -137,7 +137,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       E.inlining_stats_closure_stack (E.note_entering_closure env
           ~closure_id:fun_id ~where:Inlining_decision)
     in
-    Flambda_inlining_stats.record_decision ~closure_stack ~debuginfo:ap_dbg
+    Inlining_stats.record_decision ~closure_stack ~debuginfo:ap_dbg
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =

@@ -14,8 +14,8 @@ open Abstract_identifiers
 open Flambdautils
 
 module A = Flambdaapprox
-module E = Flambda_inline_env
-module R = Flambda_inline_result
+module E = Inlining_env
+module R = Inlining_result
 let ret = R.set_approx
 
 let new_var name =
@@ -751,7 +751,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
         set_of_closures_env in
 
     let closure_env =
-      if Flambda_inlining_decision.should_inline_inside_declaration ffun then
+      if Inlining_decision.should_inline_inside_declaration ffun then
         closure_env
       else
         E.set_never_inline closure_env
@@ -855,7 +855,7 @@ and transform_application_expression env r (funct, fapprox)
 
 and direct_apply env r clos funct fun_id func closure
       args_with_approxs ap_dbg eid =
-  Flambda_inlining_decision.inlining_decision_for_call_site
+  Inlining_decision.inlining_decision_for_call_site
     ~env ~r ~clos ~funct ~fun_id ~func ~closure ~args_with_approxs ~ap_dbg ~eid
     ~inline_by_copying_function_body ~inline_by_copying_function_declaration
     ~loop

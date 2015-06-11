@@ -5,7 +5,7 @@ let vim_trailer = "vim:fdm=expr:filetype=plain:\
 
 module Closure_stack = struct
   type t
-    = (Closure_id.t * Flambda_inlining_stats_types.where_entering_closure) list
+    = (Closure_id.t * Inlining_stats_types.where_entering_closure) list
 
   let create () = []
 
@@ -71,7 +71,7 @@ end
 
 let decisions :
   (Line_number_then_time.t
-      * (Closure_stack.t * Flambda_inlining_stats_types.Decision.t)) list
+      * (Closure_stack.t * Inlining_stats_types.Decision.t)) list
     Closure_id.Tbl.t = Closure_id.Tbl.create 42
 
 let record_decision decision ~closure_stack ~debuginfo =
@@ -106,7 +106,7 @@ let really_save_then_forget_decisions ~output_prefix =
           Printf.fprintf out_channel "  %5d: (%5d) " line time;
           Closure_stack.save closure_stack ~out_channel;
           Printf.fprintf out_channel ": %s\n"
-            (Flambda_inlining_stats_types.Decision.to_string decision))
+            (Inlining_stats_types.Decision.to_string decision))
         bucket;
       Printf.fprintf out_channel "\n") decisions;
   Printf.fprintf out_channel "# %s\n" vim_trailer;

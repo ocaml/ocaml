@@ -64,5 +64,5 @@ let find_global t ~field_index =
   try IntMap.find field_index t.globals with
   | Not_found ->
     Misc.fatal_error (Format.asprintf
-        "Flambda_inline_result.find_global: couldn't find global %i@."
+        "Inlining_result.find_global: couldn't find global %i@."
           field_index)

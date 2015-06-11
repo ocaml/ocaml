@@ -171,7 +171,7 @@ let compile_unit ~sourcefile output_prefix asm_filename keep_asm obj_filename ge
     if create_asm then Emitaux.output_channel := open_out asm_filename;
     begin try
       gen ();
-      Flambda_inlining_stats.save_then_forget_decisions ~output_prefix;
+      Inlining_stats.save_then_forget_decisions ~output_prefix;
       if create_asm then close_out !Emitaux.output_channel;
     with exn when create_asm ->
       close_out !Emitaux.output_channel;

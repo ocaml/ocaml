@@ -7,8 +7,8 @@ open Abstract_identifiers
 (* CR mshinwell: improve some of the label names to avoid confusion, e.g.
    [clos] vs. [closure]; [func] vs. [funct]. *)
 val inlining_decision_for_call_site
-   : env:Flambda_inline_env.t
-  -> r:Flambda_inline_result.t
+   : env:Inlining_env.t
+  -> r:Inlining_result.t
   -> clos:'a Flambda.function_declarations
   -> funct:Expr_id.t Flambda.t
   -> fun_id:Closure_id.t
@@ -18,17 +18,17 @@ val inlining_decision_for_call_site
   -> ap_dbg:Debuginfo.t
   -> eid:Expr_id.t
   -> inline_by_copying_function_body:(
-         env:Flambda_inline_env.t
-      -> r:Flambda_inline_result.t
+         env:Inlining_env.t
+      -> r:Inlining_result.t
       -> clos:'a Flambda.function_declarations
       -> lfunc:Expr_id.t Flambda.t
       -> fun_id:Closure_id.t
       -> func:'a Flambda.function_declaration
       -> args:Expr_id.t Flambda.t list
-      -> Expr_id.t Flambda.t * Flambda_inline_result.t)
+      -> Expr_id.t Flambda.t * Inlining_result.t)
   -> inline_by_copying_function_declaration:(
-         env:Flambda_inline_env.t
-      -> r:Flambda_inline_result.t
+         env:Inlining_env.t
+      -> r:Inlining_result.t
       -> funct:Expr_id.t Flambda.t
       -> clos:'a Flambda.function_declarations
       -> fun_id:Closure_id.t
@@ -37,13 +37,13 @@ val inlining_decision_for_call_site
       -> unchanging_params:Variable.Set.t
       -> specialised_args:Variable.Set.t
       -> ap_dbg:Debuginfo.t
-      -> (Expr_id.t Flambda.t * Flambda_inline_result.t) option)
+      -> (Expr_id.t Flambda.t * Inlining_result.t) option)
   -> loop:(
-      Flambda_inline_env.t
-      -> Flambda_inline_result.t
+      Inlining_env.t
+      -> Inlining_result.t
       -> Expr_id.t Flambda.t
-      -> Expr_id.t Flambda.t * Flambda_inline_result.t)
-  -> Expr_id.t Flambda.t * Flambda_inline_result.t
+      -> Expr_id.t Flambda.t * Inlining_result.t)
+  -> Expr_id.t Flambda.t * Inlining_result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body
    may be subject to inlining immediately, thus changing the declaration.

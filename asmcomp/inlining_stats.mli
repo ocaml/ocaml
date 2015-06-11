@@ -8,12 +8,12 @@ module Closure_stack : sig
   val note_entering_closure
      : t
     -> closure_id:Closure_id.t
-    -> where:Flambda_inlining_stats_types.where_entering_closure
+    -> where:Inlining_stats_types.where_entering_closure
     -> t
 end
 
 val record_decision
-   : Flambda_inlining_stats_types.Decision.t
+   : Inlining_stats_types.Decision.t
   -> closure_stack:Closure_stack.t
   -> debuginfo:Debuginfo.t
   -> unit
