@@ -10,9 +10,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Generation of [Flambda] intermediate language code from [Lambda] code.
+(* Generation of [Flambda] intermediate language code from [Lambda] code
+   by performing a form of closure conversion.
 
-   The main transformation performed in this pass is closure conversion.
    Function declarations (which may bind one or more variables identifying
    functions, possibly with mutual recursion) are transformed to
    [Fset_of_closures] expressions.  [Fclosure] expressions are then used to
@@ -21,7 +21,8 @@
    actual runtime layout of the closures; this is handled when [Flambda] code
    is translated to [Clambda] code.
 
-   This pass also performs the following transformations.
+   The following transformations are also performed during closure
+   conversion:
    - Constant blocks are converted to applications of the [Pmakeblock]
      primitive.
    - [Levent] debugging event nodes are removed and the information within
@@ -43,20 +44,10 @@
 
 open Abstract_identifiers
 
-(* CXR mshinwell for pchambart: Why is the [current_unit_id] not inside
-   the type [compilation_unit]?
-   pchambart: It is, I removed the argument. In bytecode the compilation unit
-     was a dummy argument.
-*)
 val lambda_to_flambda
    : current_compilation_unit:Symbol.Compilation_unit.t
-  (* CR mshinwell for pchambart: Can we remove the ' on this label name?
-     pchambart: this reflects the name of the Compilenv.symbol_for_global'
-       function. Compilenv.symbol_for_global is the same function
-       returning a string (which is probably not well named)
-       This argument is not strictly necessary, but it is usefull for
-       unit testing witout relying on compilenv. As all those tests
-       are currently disabled, this may not be necessary. *)
+  (* [symbol_for_global'] in the [Compilenv] sense.  Useful for unit
+     testing without relying on [Compilenv]. *)
   -> symbol_for_global':(Ident.t -> Symbol.t)
   -> exported_fields:int
   -> Lambda.lambda

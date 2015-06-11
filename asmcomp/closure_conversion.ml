@@ -68,7 +68,7 @@ let add_vars ids vars env = List.fold_right2 add_var ids vars env
 let find_var env id =
   try Ident.find_same id env.variables
   with Not_found ->
-    fatal_error ("Flambdagen.close: var " ^ Ident.unique_name id)
+    fatal_error ("Closure_conversion.find_var: var " ^ Ident.unique_name id)
 
 let add_static_exception st_exn fresh_st_exn env =
   { env with
@@ -78,7 +78,8 @@ let add_static_exception st_exn fresh_st_exn env =
 let find_static_exception env st_exn =
   try Ext_types.Int.Map.find st_exn env.static_exceptions
   with Not_found ->
-    fatal_error ("Flambdagen.close: exn " ^ string_of_int st_exn)
+    fatal_error ("Closure_conversion.find_static_exception: exn "
+      ^ string_of_int st_exn)
 
 (* Naming conventions:
    All variable names containing "id" or "ident" are of type [Ident.t] or are

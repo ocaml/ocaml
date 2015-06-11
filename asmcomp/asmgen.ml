@@ -121,7 +121,7 @@ let flambda ppf (size, exported, lam) =
         Printflambda.flambda flam;
       raise e in
   let flam =
-    Flambdagen.lambda_to_flambda
+    Closure_conversion.lambda_to_flambda
       ~current_compilation_unit
       ~symbol_for_global':Compilenv.symbol_for_global'
       ~exported_fields:exported

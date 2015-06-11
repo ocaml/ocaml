@@ -110,7 +110,7 @@ ASMCOMP=\
   asmcomp/flambdautils.cmo asmcomp/printflambda.cmo \
   asmcomp/flambdacheck.cmo \
   asmcomp/flambdaconstants.cmo \
-  asmcomp/flambdagen.cmo \
+  asmcomp/closure_conversion.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/flambdaeffects.cmo \
