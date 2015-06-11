@@ -36,19 +36,7 @@ type t = {
   exported_fields : int;
 }
 
-type env = {
-  variables : Variable.t Ident.tbl;
-  static_exceptions : Static_exception.t Ext_types.Int.Map.t;
-}
-
-let empty_env = {
-  variables = Ident.empty;
-  static_exceptions = Ext_types.Int.Map.empty;
-}
-
-let nid = Expr_id.create
-
-let fresh_variable t name =
+let fresh_variable t ~name =
   Variable.create name ~current_compilation_unit:t.current_compilation_unit
 
 let create_var t id =
@@ -60,24 +48,55 @@ let rename_var t ?append var =
   let new_var = Variable.rename ~current_compilation_unit ?append var in
   new_var
 
-let add_var id var env = { env with variables = Ident.add id var env.variables }
-let add_vars ids vars env = List.fold_right2 add_var ids vars env
+let nid = Expr_id.create
 
-let find_var env id =
-  try Ident.find_same id env.variables
-  with Not_found ->
-    fatal_error ("Closure_conversion.find_var: var " ^ Ident.unique_name id)
+module Env : sig
+  (* Used to remember which [Variable.t] values correspond to which
+     [Ident.t] values during closure conversion, and similarly for
+     static exception identifiers. *)
 
-let add_static_exception st_exn fresh_st_exn env =
-  { env with
-    static_exceptions =
-      Ext_types.Int.Map.add st_exn fresh_st_exn env.static_exceptions }
+  type t
 
-let find_static_exception env st_exn =
-  try Ext_types.Int.Map.find st_exn env.static_exceptions
-  with Not_found ->
-    fatal_error ("Closure_conversion.find_static_exception: exn "
-      ^ string_of_int st_exn)
+  val empty : t
+
+  val add_var : t -> Ident.t -> Variable.t -> t
+  val add_vars : t -> Ident.t list -> Variable.t list -> t
+
+  val find_var : t -> Ident.t -> Variable.t
+
+  val add_static_exception : t -> int -> Static_exception.t -> t
+  val find_static_exception : t -> int -> Static_exception.t
+end = struct
+  type t = {
+    variables : Variable.t Ident.tbl;
+    static_exceptions : Static_exception.t Ext_types.Int.Map.t;
+  }
+
+  let empty = {
+    variables = Ident.empty;
+    static_exceptions = Ext_types.Int.Map.empty;
+  }
+
+  let add_var t id var = { t with variables = Ident.add id var t.variables }
+  let add_vars t ids vars = List.fold_left2 add_var t ids vars
+
+  let find_var t id =
+    try Ident.find_same id t.variables
+    with Not_found ->
+      fatal_error ("Closure_conversion.Env.find_var: var "
+        ^ Ident.unique_name id)
+
+  let add_static_exception t st_exn fresh_st_exn =
+    { t with
+      static_exceptions =
+        Ext_types.Int.Map.add st_exn fresh_st_exn t.static_exceptions }
+
+  let find_static_exception t st_exn =
+    try Ext_types.Int.Map.find st_exn t.static_exceptions
+    with Not_found ->
+      fatal_error ("Closure_conversion.Env.find_static_exception: exn "
+        ^ string_of_int st_exn)
+end
 
 module Function_decls : sig
   (* Used to represent information about a set of function declarations
@@ -140,7 +159,7 @@ module Function_decls : sig
   val closure_env_without_parameters
      : t
     -> create_var:(Ident.t -> Variable.t)
-    -> env
+    -> Env.t
 end = struct
   module Function_decl = struct
     type t = {
@@ -209,12 +228,12 @@ end = struct
     let closure_env =
       (* For "let rec"-bound functions. *)
       List.fold_right (fun t env ->
-          add_var (Function_decl.let_rec_ident t)
-            (Function_decl.closure_bound_var t) env)
-        t empty_env
+          Env.add_var env (Function_decl.let_rec_ident t)
+            (Function_decl.closure_bound_var t))
+        t Env.empty
     in
     (* For free variables. *)
-    IdentSet.fold (fun id env -> add_var id (create_var id) env)
+    IdentSet.fold (fun id env -> Env.add_var env id (create_var id))
       (all_free_idents t) closure_env
 end
 module Function_decl = Function_decls.Function_decl
@@ -280,7 +299,7 @@ let rec close_const = function
 
 let rec close t env = function
   | Lvar id ->
-      let var = find_var env id in
+      let var = Env.find_var env id in
       Fvar (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
   | Lconst cst -> close_const cst
   | Llet(let_kind, id, lam, body) ->
@@ -291,7 +310,7 @@ let rec close t env = function
       in
       let var = create_var t id in
       Flet(let_kind, var, close_let_bound_expression t var env lam,
-           close t (add_var id var env) body, nid ~name:"let" ())
+           close t (Env.add_var env id var) body, nid ~name:"let" ())
   | Lfunction(kind, params, body) ->
       let closure_bound_var =
         let name = match body with
@@ -315,7 +334,7 @@ let rec close t env = function
   | Lletrec(defs, body) ->
       let env =
         List.fold_right
-          (fun (id,  _) env -> add_var id (create_var t id) env)
+          (fun (id,  _) env -> Env.add_var env id (create_var t id))
           defs env in
       let function_declarations =
         (* Identify any bindings in the [let rec] that are functions. *)
@@ -337,7 +356,7 @@ let rec close t env = function
           let flambda_defs =
             List.map
               (fun (id, def) ->
-                 let var = find_var env id in
+                 let var = Env.find_var env id in
                  let expr =
                    close_let_bound_expression t ~let_rec_ident:id var env def
                  in
@@ -356,7 +375,7 @@ let rec close t env = function
             List.fold_left (fun body decl ->
                 let let_rec_ident = Function_decl.let_rec_ident decl in
                 let closure_bound_var = Function_decl.closure_bound_var decl in
-                let let_bound_var = find_var env let_rec_ident in
+                let let_bound_var = Env.find_var env let_rec_ident in
                 Flet(Not_assigned, let_bound_var,
                      Fclosure(
                        { fu_closure = Fvar (set_of_closures_var, nid ());
@@ -417,17 +436,17 @@ let rec close t env = function
         Misc.may_map (close t env) def,
         nid ~name:"stringswitch" ())
   | Lstaticraise (i, args) ->
-      Fstaticraise (find_static_exception env i, close_list t env args, nid ())
+      Fstaticraise (Env.find_static_exception env i, close_list t env args, nid ())
   | Lstaticcatch(body, (i, ids), handler) ->
       let st_exn = Static_exception.create () in
-      let env = add_static_exception i st_exn env in
+      let env = Env.add_static_exception env i st_exn in
       let vars = List.map (create_var t) ids in
       Fstaticcatch (st_exn, vars,
-                    close t env body, close t (add_vars ids vars env) handler,
+                    close t env body, close t (Env.add_vars env ids vars) handler,
                     nid ())
   | Ltrywith(body, id, handler) ->
       let var = create_var t id in
-      Ftrywith(close t env body, var, close t (add_var id var env) handler,
+      Ftrywith(close t env body, var, close t (Env.add_var env id var) handler,
         nid ())
   | Lifthenelse(arg, ifso, ifnot) ->
       Fifthenelse(close t env arg, close t env ifso, close t env ifnot,
@@ -439,9 +458,9 @@ let rec close t env = function
   | Lfor(id, lo, hi, dir, body) ->
       let var = create_var t id in
       Ffor(var, close t env lo, close t env hi, dir,
-           close t (add_var id var env) body, nid ())
+           close t (Env.add_var env id var) body, nid ())
   | Lassign(id, lam) ->
-      Fassign(find_var env id, close t env lam, nid ())
+      Fassign(Env.find_var env id, close t env lam, nid ())
   | Levent(lam, ev) ->
       add_debug_info ev (close t env lam)
   | Lifused _ ->
@@ -473,12 +492,12 @@ and close_functions t external_env function_declarations =
        This induces a renaming on [Function_decl.used_idents]; the results of
        that renaming are stored in [free_variables]. *)
     let closure_env =
-      List.fold_right (fun id env -> add_var id (create_var t id) env)
+      List.fold_right (fun id env -> Env.add_var env id (create_var t id))
         params closure_env_without_parameters
     in
     let free_variables =
       IdentSet.fold
-        (fun id set -> Variable.Set.add (find_var closure_env id) set)
+        (fun id set -> Variable.Set.add (Env.find_var closure_env id) set)
         (Function_decl.used_idents decl)
         Variable.Set.empty
     in
@@ -491,7 +510,7 @@ and close_functions t external_env function_declarations =
       | None -> false, body
       | Some wrapper_body -> true, wrapper_body
     in
-    let params = List.map (find_var closure_env) params in
+    let params = List.map (Env.find_var closure_env) params in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
     let fun_decl = { stub; params; dbg; free_variables; body; } in
@@ -521,8 +540,8 @@ and close_functions t external_env function_declarations =
       cl_free_var =
         IdentSet.fold
           (fun id map ->
-             let internal_var = find_var closure_env_without_parameters id in
-             let external_var = find_var external_env id in
+             let internal_var = Env.find_var closure_env_without_parameters id in
+             let external_var = Env.find_var external_env id in
              Variable.Map.add internal_var (Fvar (external_var, nid ())) map)
           all_free_idents Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty;
@@ -622,5 +641,5 @@ let lambda_to_flambda ~current_compilation_unit
      There is no runtime cost to this transformation: strings are
      constants and will not appear in closures. *)
   let lam = Lift_strings.lift_strings_to_toplevel lam in
-  let flam = close t empty_env lam in
+  let flam = close t Env.empty lam in
   flam
