@@ -79,34 +79,42 @@ let find_static_exception env st_exn =
     fatal_error ("Closure_conversion.find_static_exception: exn "
       ^ string_of_int st_exn)
 
-module Function_decl : sig
-  (* A value of type [t] is used to represent a declaration of a *single*
-     function during closure conversion. *)
-  (* CR mshinwell: Maybe this isn't quite the right abstraction.  The "t list"
-     business seems slightly dubious. *)
-  type t
+module Function_decls : sig
+  (* Used to represent information about a set of function declarations
+     during closure conversion.  (The only case in which such a set may
+     contain more than one declaration is when processing "let rec".) *)
 
-  val create
-     : let_rec_ident:Ident.t option
-    -> closure_bound_var:Variable.t
-    -> kind:function_kind
-    -> params:Ident.t list
-    -> body:lambda
-    -> t
+  module Function_decl : sig
+    type t
 
-  val let_rec_ident : t -> Ident.t
-  val closure_bound_var : t -> Variable.t
-  val kind : t -> function_kind
-  val params : t -> Ident.t list
-  val body : t -> lambda
+    val create
+       : let_rec_ident:Ident.t option
+      -> closure_bound_var:Variable.t
+      -> kind:function_kind
+      -> params:Ident.t list
+      -> body:lambda
+      -> t
 
-  (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
-     with default optionnal arguments. Otherwise it is [Some body], where
-     [body] is the body of the wrapper. *)
-  val primitive_wrapper : t -> lambda option
+    val let_rec_ident : t -> Ident.t
+    val closure_bound_var : t -> Variable.t
+    val kind : t -> function_kind
+    val params : t -> Ident.t list
+    val body : t -> lambda
 
-  (* CXR mshinwell for pchambart: Please check these comments
-     pchambart: checked and ok *)
+    (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
+       with default optionnal arguments. Otherwise it is [Some body], where
+       [body] is the body of the wrapper. *)
+    val primitive_wrapper : t -> lambda option
+
+    (* Like [used_idents_by_function], but for just one function. *)
+    val used_idents : t -> IdentSet.t
+  end
+
+  type t = Function_decl.t list
+
+  val create : Function_decl.t list -> t
+  val to_list : t -> Function_decl.t list
+
   (* CR mshinwell for pchambart: Should improve the name of this function.
      How about "free_variables_in_body"?
      pchambart: I wanted to avoid mixing 'ident' and 'var' names. This one
@@ -117,14 +125,11 @@ module Function_decl : sig
   *)
   (* All identifiers free in the bodies of the given function declarations,
      indexed by the identifiers corresponding to the functions themselves. *)
-  val used_idents_by_function : t list -> IdentSet.t Variable.Map.t
-
-  (* Like [used_idents_by_function], but for just one function. *)
-  val used_idents : t -> IdentSet.t
+  val used_idents_by_function : t -> IdentSet.t Variable.Map.t
 
   (* All identifiers free in the given function declarations after the binding
      of parameters and function identifiers has been performed. *)
-  val all_free_idents : t list -> IdentSet.t
+  val all_free_idents : t -> IdentSet.t
 
   (* A map from identifiers to their corresponding [Variable.t]s whose domain
      is the set of all identifiers free in the bodies of the declarations that
@@ -133,89 +138,86 @@ module Function_decl : sig
      This function creates new [Variable.t] values for everything except the
      function identifiers by using the supplied [create_var] function. *)
   val closure_env_without_parameters
-     : t list
+     : t
     -> create_var:(Ident.t -> Variable.t)
     -> env
 end = struct
-  type t = {
-    (* CXR mshinwell for pchambart: maybe the name [rec_ident] is misleading.
-       What about if it is a simultaneous binding but not recursive?
-       Maybe it should be called "let_rec_ident".
-       pchambart: it's a better name, approved and applied *)
-    let_rec_ident : Ident.t;
-    closure_bound_var : Variable.t;
-    kind : function_kind;
-    params : Ident.t list;
-    body : lambda;
-  }
-
-  let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body =
-    let let_rec_ident =
-      match let_rec_ident with
-      | None ->
-        (* CXR mshinwell for pchambart: Can this be called something other than
-           "dummy"?
-           pchambart: it is now "unnamed_function" *)
-        Ident.create "unnamed_function"
-      | Some let_rec_ident -> let_rec_ident
-    in
-    { let_rec_ident;
-      closure_bound_var;
-      kind;
-      params;
-      body;
+  module Function_decl = struct
+    type t = {
+      let_rec_ident : Ident.t;
+      closure_bound_var : Variable.t;
+      kind : function_kind;
+      params : Ident.t list;
+      body : lambda;
     }
 
-  let let_rec_ident t = t.let_rec_ident
-  let closure_bound_var t = t.closure_bound_var
-  let kind t = t.kind
-  let params t = t.params
-  let body t = t.body
+    let create ~let_rec_ident ~closure_bound_var ~kind ~params ~body =
+      let let_rec_ident =
+        match let_rec_ident with
+        | None -> Ident.create "unnamed_function"
+        | Some let_rec_ident -> let_rec_ident
+      in
+      { let_rec_ident;
+        closure_bound_var;
+        kind;
+        params;
+        body;
+      }
 
-  (* CR-someday mshinwell: eliminate "*stub*" *)
-  let primitive_wrapper t =
-    match t.body with
-    | Lprim (Pccall { Primitive.prim_name = "*stub*" }, [body]) -> Some body
-    | _ -> None
+    let let_rec_ident t = t.let_rec_ident
+    let closure_bound_var t = t.closure_bound_var
+    let kind t = t.kind
+    let params t = t.params
+    let body t = t.body
+    let used_idents t = Lambda.free_variables t.body
+
+    (* CR-someday mshinwell: eliminate "*stub*" *)
+    let primitive_wrapper t =
+      match t.body with
+      | Lprim (Pccall { Primitive.prim_name = "*stub*" }, [body]) -> Some body
+      | _ -> None
+  end
+
+  type t = Function_decl.t list
+
+  let create t = t
+  let to_list t = t
 
   (* All identifiers of simultaneously-defined functions in [ts]. *)
-  let let_rec_idents ts =
-    List.map (fun t -> t.let_rec_ident) ts
+  let let_rec_idents t = List.map Function_decl.let_rec_ident t
 
   (* All parameters of functions in [ts]. *)
-  let all_params ts =
-    List.concat (List.map (fun t -> t.params) ts)
+  let all_params t = List.concat (List.map Function_decl.params t)
 
-  let used_idents_by_function ts =
-    List.fold_right
-      (fun { closure_bound_var; body; } map ->
-         Variable.Map.add closure_bound_var (Lambda.free_variables body) map)
-      ts Variable.Map.empty
+  let used_idents_by_function t =
+    List.fold_right (fun decl map ->
+        Variable.Map.add (Function_decl.closure_bound_var decl)
+          (Function_decl.used_idents decl) map)
+      t Variable.Map.empty
 
-  let all_used_idents ts =
+  let all_used_idents t =
     Variable.Map.fold (fun _ -> IdentSet.union)
-      (used_idents_by_function ts) IdentSet.empty
-
-  let used_idents t =
-    Lambda.free_variables t.body
+      (used_idents_by_function t) IdentSet.empty
 
   let set_diff (from : IdentSet.t) (idents : Ident.t list) =
     List.fold_right IdentSet.remove idents from
 
-  let all_free_idents ts =
-    set_diff (set_diff (all_used_idents ts) (all_params ts)) (let_rec_idents ts)
+  let all_free_idents t =
+    set_diff (set_diff (all_used_idents t) (all_params t)) (let_rec_idents t)
 
-  let closure_env_without_parameters ts ~create_var =
-    empty_env
-    (* add recursive functions *)
-    |> List.fold_right
-      (fun t env -> add_var t.let_rec_ident t.closure_bound_var env)
-      ts
-    (* add free variables *)
-    |> IdentSet.fold
-      (fun id env -> add_var id (create_var id) env)
-      (all_free_idents ts)
+  let closure_env_without_parameters t ~create_var =
+    let closure_env =
+      (* For "let rec"-bound functions. *)
+      List.fold_right (fun t env ->
+          add_var (Function_decl.let_rec_ident t)
+            (Function_decl.closure_bound_var t) env)
+        t empty_env
+    in
+    (* For free variables. *)
+    IdentSet.fold (fun id env -> add_var id (create_var id) env)
+      (all_free_idents t) closure_env
 end
+module Function_decl = Function_decls.Function_decl
 
 (* Generate a wrapper ("stub") function that accepts a tuple argument and
    calls another function with (curried) arguments extracted in the obvious
@@ -302,8 +304,9 @@ let rec close t env = function
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
           ~params ~body
       in
+      let decls = Function_decls.create [decl] in
       Fclosure(
-        { fu_closure = close_functions t env [decl];
+        { fu_closure = close_functions t env decls;
           fu_fun = Closure_id.wrap closure_bound_var;
           fu_relative_to = None },
         nid ~name:"function" ())
@@ -344,7 +347,10 @@ let rec close t env = function
       | Some function_declarations ->
           (* When all the bindings are functions, we build a single set of
              closures for all the functions. *)
-          let set_of_closures = close_functions t env function_declarations in
+          let set_of_closures =
+            close_functions t env
+              (Function_decls.create function_declarations)
+          in
           let set_of_closures_var = fresh_variable t "set_of_closures" in
           let body =
             List.fold_left (fun body decl ->
@@ -446,11 +452,11 @@ let rec close t env = function
    is for "let rec".) *)
 and close_functions t external_env function_declarations =
   let closure_env_without_parameters =
-    Function_decl.closure_env_without_parameters function_declarations
+    Function_decls.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
   in
   let all_free_idents =
-    Function_decl.all_free_idents function_declarations
+    Function_decls.all_free_idents function_declarations
   in
   let close_one_function map decl =
     let body = Function_decl.body decl in
@@ -462,10 +468,10 @@ and close_functions t external_env function_declarations =
       | _ -> Debuginfo.none
     in
     let params = Function_decl.params decl in
-    (* Create fresh variables for the elements of the closure (i.e. the
-       free variables of the body, minus the parameters).  This induces a
-       renaming on [Function_decl.used_idents]; the results of that renaming
-       are stored in [free_variables]. *)
+    (* Create fresh variables for the elements of the closure (cf.
+       the comment on [Function_decl.closure_env_without_parameters], above).
+       This induces a renaming on [Function_decl.used_idents]; the results of
+       that renaming are stored in [free_variables]. *)
     let closure_env =
       List.fold_right (fun id env -> add_var id (create_var t id) env)
         params closure_env_without_parameters
@@ -476,7 +482,7 @@ and close_functions t external_env function_declarations =
         (Function_decl.used_idents decl)
         Variable.Set.empty
     in
-    (* If the function is the wrapper for a function with optional
+    (* If the function is the wrapper for a function with an optional
        argument with a default value, make sure it always gets inlined.
        CR-someday pchambart: eta-expansion wrapper for a primitive are
        not marked as stub but certainly should *)
@@ -503,7 +509,7 @@ and close_functions t external_env function_declarations =
     { ident = Set_of_closures_id.create t.current_compilation_unit;
       funs =
         List.fold_left close_one_function Variable.Map.empty
-          function_declarations;
+          (Function_decls.to_list function_declarations);
       compilation_unit = t.current_compilation_unit;
     }
   in
@@ -517,7 +523,7 @@ and close_functions t external_env function_declarations =
           (fun id map ->
              let internal_var = find_var closure_env_without_parameters id in
              let external_var = find_var external_env id in
-             Variable.Map.add internal_var (Fvar(external_var, nid ())) map)
+             Variable.Map.add internal_var (Fvar (external_var, nid ())) map)
           all_free_idents Variable.Map.empty;
       cl_specialised_arg = Variable.Map.empty;
     }
