@@ -32,6 +32,8 @@ let fastcode_flag = ref true
 
 let stack_offset = ref 0
 
+let frame_offset = 4
+
 let frame_size () =                     (* includes return address *)
   !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
 
@@ -272,7 +274,7 @@ let output_test_zero arg =
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue () =
-  let n = frame_size() - 4 in
+  let n = frame_size() - frame_offset in
   if n > 0 then `	add    esp, {emit_int n}\n`
 
 (* Determine if the given register is the top of the floating-point stack *)
@@ -462,6 +464,9 @@ let emit_instr i =
         then `	sub	esp, {emit_int n}\n`
         else `	add	esp, {emit_int(-n)}\n`;
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+        let ofs = frame_size() - frame_offset in
+        `	mov {emit_reg i.res.(0)}, DWORD PTR {emit_int ofs}(%esp)\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
@@ -776,7 +781,7 @@ let fundecl fundecl =
   emit_align 4;
   `	PUBLIC	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  let n = frame_size() - 4 in
+  let n = frame_size() - frame_offset in
   if n > 0 then
     `	sub	esp, {emit_int n}\n`;
   `{emit_label !tailrec_entry_point}:\n`;

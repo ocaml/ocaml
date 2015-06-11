@@ -474,6 +474,8 @@ let emit_instr i =
         let ninstr = emit_stack_adjustment (-n) in
         stack_offset := !stack_offset + n;
         ninstr
+    | Lop(Iretaddr) ->
+        `	mov {emit_reg i.res.(0)}, lr\n`
     | Lop(Iload(Single, addr)) when !fpu >= VFPv2 ->
         `	flds	s14, {emit_addressing addr i.arg 0}\n`;
         `	fcvtds	{emit_reg i.res.(0)}, s14\n`; 2

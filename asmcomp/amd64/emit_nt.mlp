@@ -31,6 +31,8 @@ let fastcode_flag = ref true
 
 let stack_offset = ref 0
 
+let frame_offset = 8
+
 (* Layout of the stack frame *)
 
 let frame_required () =
@@ -316,7 +318,7 @@ let emit_float_test cmp neg arg lbl =
 
 let output_epilogue () =
   if frame_required() then begin
-    let n = frame_size() - 8 in
+    let n = frame_size() - frame_offset in
     `	add	rsp, {emit_int n}\n`
   end
 
@@ -420,6 +422,9 @@ let emit_instr fallthrough i =
         then `	add	rsp, {emit_int(-n)}\n`
         else `	sub	rsp, {emit_int(n)}\n`;
         stack_offset := !stack_offset + n
+    | Lop(Iretaddr) ->
+        let ofs = frame_size() - frame_offset in
+        `	movq {emit_reg i.res.(0)}, QWORD PTR {emit_int ofs}[rsp]\n`
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
@@ -679,7 +684,7 @@ let fundecl fundecl =
   `	PUBLIC	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if frame_required() then begin
-    let n = frame_size() - 8 in
+    let n = frame_size() - frame_offset in
     `	sub	rsp, {emit_int n}\n`
   end;
   `{emit_label !tailrec_entry_point}:\n`;
