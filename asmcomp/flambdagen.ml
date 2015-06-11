@@ -80,17 +80,6 @@ let find_static_exception env st_exn =
   with Not_found ->
     fatal_error ("Flambdagen.close: exn " ^ string_of_int st_exn)
 
-(* CR mshinwell for pchambart: We should establish conventions for various
-   kinds of identifier and make sure that we stick to them everywhere.  Some
-   that come to mind: "function identifier" or something (the [f] in
-   [let f x = ...], "closure bound var", etc
-
-   pchambart: There is already a minimal convention of ident/var
-     all names containing "ident" refer to content of type [Ident.t], hence
-       comming from the Lambda
-     all names containing "var" refer to content of type [Variable.t], hence
-       already converted in Flambdautils.
- *)
 (* Naming conventions:
    All variable names containing "id" or "ident" are of type [Ident.t] or are
      collections of [Ident.t]. Those refer to identifiers for the type
@@ -103,9 +92,7 @@ let find_static_exception env st_exn =
   the module identifiers appearing in the constructions [Pgetglobal],
   [Pgetglobalfield] and [Psetglobalfield]. Those constructions also appear in
   [Flambda.flambda].
-
 *)
-
 
 module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
@@ -245,39 +232,47 @@ end = struct
       (all_free_idents ts)
 end
 
+(* Generate a wrapper ("stub") function that accepts a tuple argument and
+   calls another function with (curried) arguments extracted in the obvious
+   manner from the tuple. *)
 let tupled_function_call_stub t id original_params tuplified_version =
-  (* CXR mshinwell for pchambart: This should carry the name of the original
-     variable (for debugging information output).
-     pchambart: it now carries the name of the function. *)
-  let tuple_param = rename_var t ~append:"tupled_stub_param" tuplified_version in
+  let tuple_param =
+    rename_var t ~append:"tupled_stub_param" tuplified_version
+  in
   let params = List.map (fun p -> rename_var t p) original_params in
-  let call = Fapply(
-      { ap_function = Fvar(tuplified_version,nid ());
-        ap_arg = List.map (fun p' -> Fvar(p',nid ())) params;
+  let call =
+    Fapply ({
+        ap_function = Fvar (tuplified_version, nid ());
+        ap_arg = List.map (fun p' -> Fvar (p', nid ())) params;
         ap_kind = Direct (Closure_id.wrap tuplified_version);
-        ap_dbg = Debuginfo.none },
-      nid ()) in
+        ap_dbg = Debuginfo.none;
+      },
+      nid ())
+  in
   let _, body =
-    List.fold_left (fun (pos,body) param ->
-        let lam = Fprim(Pfield pos, [Fvar(tuple_param, nid ())],
-                        Debuginfo.none, nid ()) in
-        pos+1,
-        Flet(Not_assigned,param,lam,body,nid ()))
-      (0,call) params in
+    List.fold_left (fun (pos, body) param ->
+        let lam =
+          Fprim (Pfield pos, [Fvar (tuple_param, nid ())],
+            Debuginfo.none, nid ())
+        in
+        pos + 1, Flet (Not_assigned, param, lam, body, nid ()))
+      (0, call) params
+  in
   { stub = true;
     params = [tuple_param];
-    free_variables = Variable.Set.of_list [tuple_param;tuplified_version];
+    free_variables = Variable.Set.of_list [tuple_param; tuplified_version];
     body;
-    dbg = Debuginfo.none }
+    dbg = Debuginfo.none;
+  }
 
 let rec close_const = function
-  | Const_base c -> Fconst(Fconst_base c, nid ~name:"cst" ())
-  | Const_pointer c -> Fconst(Fconst_pointer c, nid ~name:"cstptr" ())
-  | Const_immstring c -> Fconst(Fconst_immstring c, nid ~name:"immstring" ())
-  | Const_float_array c -> Fconst(Fconst_float_array c, nid ~name:"float" ())
+  | Const_base c -> Fconst (Fconst_base c, nid ~name:"cst" ())
+  | Const_pointer c -> Fconst (Fconst_pointer c, nid ~name:"cstptr" ())
+  | Const_immstring c -> Fconst (Fconst_immstring c, nid ~name:"immstring" ())
+  | Const_float_array c -> Fconst (Fconst_float_array c, nid ~name:"float" ())
   | Const_block (tag, l) ->
-      Fprim(Pmakeblock(tag, Asttypes.Immutable),
-            List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
+    Fprim (Pmakeblock(tag, Asttypes.Immutable),
+      List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
 
 let rec close t env = function
   | Lvar id ->
@@ -519,29 +514,22 @@ and close_functions t external_env function_declarations =
 
 and close_list t sb l = List.map (close t sb) l
 
-(* CR mshinwell for pchambart: I know this name was taken from the existing
-   code, but I think we should rename it.  It doesn't adequately express
-   what's going on.
-   pchambart: I can't find a name that describe what it does, I just could find one
-   that describe when to use it. *)
-(* A special case for let bound functions to provide. In that case we have a
-   meaningfull name to give them.
-   If it is was let rec, we have another information: the [let_rec_ident] that
-   allows to find recursive calls. Otherwise, the [let_rec_ident] would have
-   appeared in the variables bound by the closure. *)
+(* Ensure that [let] and [let rec]-bound functions have appropriate names. *)
 and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
-  | Lfunction(kind, params, body) ->
-      let closure_bound_var = rename_var t let_bound_var in
-      let decl =
-        Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params ~body
-      in
-      Fclosure(
-        { fu_closure = close_functions t env [decl];
-          fu_fun = Closure_id.wrap closure_bound_var;
-          fu_relative_to = None },
-        nid ~name:"function" ())
+  | Lfunction (kind, params, body) ->
+    let closure_bound_var = rename_var t let_bound_var in
+    let decl =
+      Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
+        ~body
+    in
+    Fclosure ({
+        fu_closure = close_functions t env [decl];
+        fu_fun = Closure_id.wrap closure_bound_var;
+        fu_relative_to = None;
+      },
+      nid ~name:"function" ())
   | lam ->
-      close t env lam
+    close t env lam
 
 (* Transform a [Pmakeblock] operation, that allocates and fills a new block,
    to a sequence of [let]s.  The aim is to then eliminate the allocation of
@@ -559,18 +547,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
    A more general solution would be to convert completely to ANF.
 *)
 and lift_block_construction_to_variables t ~env ~primitive ~args =
-  let block_fields, lets =
-    List.fold_right (fun lam (block, lets) ->
-        match close t env lam with
-        | Fvar (v, _) as e ->
-          (* Assumes that e is an immutable variable.
-             otherwise this may change the evaluation order *)
-          e::block, lets
-        | expr ->
-          let v = fresh_variable t "block_field" in
-          Fvar (v, nid ())::block, (v, expr)::lets)
-      args ([],[])
-  in
+  let block_fields, lets = lifting_helper t ~env ~args ~name:"block_field" in
   let block =
     Fprim (primitive, block_fields, Debuginfo.none, nid ~name:"block" ())
   in
@@ -578,31 +555,36 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
       Flet(Not_assigned, v, expr, body, nid ()))
     block lets
 
-(* enfoce right to left evaluation order of function arguments *)
+(* Enforce right-to-left evaluation of function arguments by lifting the
+   expressions computing the arguments into [let]s. *)
 and lift_apply_construction_to_variables t ~env ~funct ~args =
-  let apply_args, lets =
-    List.fold_right (fun lam (args, lets) ->
-        match close t env lam with
-        | Fvar (v, _) as e ->
-          (* Assumes that e is an immutable variable.
-             otherwise this may change the evaluation order *)
-          e::args, lets
-        | expr ->
-          let v = fresh_variable t "apply_arg" in
-          Fvar (v, nid ())::args, (v, expr)::lets)
-      args ([],[])
-  in
+  let apply_args, lets = lifting_helper t ~env ~args ~name:"apply_arg" in
   let apply =
-      Fapply(
-        { ap_function = close t env funct;
-          ap_arg = apply_args;
-          ap_kind = Indirect;
-          ap_dbg = Debuginfo.none },
-        nid ~name:"apply" ())
+    Fapply ({
+        ap_function = close t env funct;
+        ap_arg = apply_args;
+        ap_kind = Indirect;
+        ap_dbg = Debuginfo.none;
+      },
+      nid ~name:"apply" ())
   in
   List.fold_left (fun body (v, expr) ->
       Flet(Not_assigned, v, expr, body, nid ()))
     apply lets
+
+and lifting_helper t ~env ~args ~name =
+  List.fold_right (fun lam (args, lets) ->
+      match close t env lam with
+      | Fvar (v, _) as e ->
+        (* Assumes that [v] is an immutable variable, otherwise this may
+           change the evaluation order. *)
+        (* CR mshinwell for pchambart: Please justify why [v] is always
+           immutable. *)
+        e::args, lets
+      | expr ->
+        let v = fresh_variable t name in
+        Fvar (v, nid ())::args, (v, expr)::lets)
+    args ([], [])
 
 let lambda_to_flambda ~current_compilation_unit
     ~symbol_for_global'
@@ -617,10 +599,10 @@ let lambda_to_flambda ~current_compilation_unit
     }
   in
   (* Strings are the only expressions that can't be duplicated without
-     changing the semantics. So we lift them to toplevel to avoid
+     changing the semantics.  So we lift them to the toplevel to avoid
      having to handle special cases later.
      There is no runtime cost to this transformation: strings are
-     constants, they will not appear in the closures *)
+     constants and will not appear in closures. *)
   let lam = Lift_strings.lift_strings_to_toplevel lam in
   let flam = close t empty_env lam in
   flam
