@@ -329,9 +329,6 @@ let rec close t env = function
       in
       begin match Misc.some_if_all_elements_are_some function_declarations with
       | None ->
-          (* CR mshinwell for pchambart: add comment mirroring the one
-             below.
-             pchambart: I'm not sure there is much more to say for that case. *)
           (* If a branch is not a function we build a letrec expression
              where every function has its own closure. *)
           let flambda_defs =
@@ -444,6 +441,9 @@ let rec close t env = function
   | Lifused _ ->
       assert false
 
+(* Perform closure conversion on a set of function declarations.  (The set
+   will often only contain a single function; the only case where it cannot
+   is for "let rec".) *)
 and close_functions t external_env function_declarations =
   let closure_env_without_parameters =
     Function_decl.closure_env_without_parameters function_declarations
@@ -454,9 +454,13 @@ and close_functions t external_env function_declarations =
   in
   let close_one_function map decl =
     let body = Function_decl.body decl in
-    let dbg = match body with
-      | Levent (_,({lev_kind=Lev_function} as ev)) -> Debuginfo.from_call ev
-      | _ -> Debuginfo.none in
+    let dbg =
+      (* Move any debugging event that may exist at the start of the function
+         body onto the function declaration itself. *)
+      match body with
+      | Levent (_, ({lev_kind = Lev_function} as ev)) -> Debuginfo.from_call ev
+      | _ -> Debuginfo.none
+    in
     let params = Function_decl.params decl in
     (* Create fresh variables for the elements of the closure (i.e. the
        free variables of the body, minus the parameters).  This induces a
@@ -472,8 +476,8 @@ and close_functions t external_env function_declarations =
         (Function_decl.used_idents decl)
         Variable.Set.empty
     in
-    (* If the function is the wrapper for a function with optionnal
-       argument with a default value, make sure it always gets inlined
+    (* If the function is the wrapper for a function with optional
+       argument with a default value, make sure it always gets inlined.
        CR-someday pchambart: eta-expansion wrapper for a primitive are
        not marked as stub but certainly should *)
     let stub, body =
@@ -486,23 +490,27 @@ and close_functions t external_env function_declarations =
     let body = close t closure_env body in
     let fun_decl = { stub; params; dbg; free_variables; body; } in
     match Function_decl.kind decl with
-    | Curried ->
-        Variable.Map.add closure_bound_var fun_decl map
+    | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
-        let tuplified_version = rename_var t closure_bound_var in
-        let generic_function_stub =
-          tupled_function_call_stub t closure_bound_var params tuplified_version
-        in
-        Variable.Map.add tuplified_version fun_decl
-          (Variable.Map.add closure_bound_var generic_function_stub map)
+      let tuplified_version = rename_var t closure_bound_var in
+      let generic_function_stub =
+        tupled_function_call_stub t closure_bound_var params tuplified_version
+      in
+      Variable.Map.add tuplified_version fun_decl
+        (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let fun_decls =
     { ident = Set_of_closures_id.create t.current_compilation_unit;
       funs =
         List.fold_left close_one_function Variable.Map.empty
           function_declarations;
-      compilation_unit = t.current_compilation_unit } in
-  let closure =
+      compilation_unit = t.current_compilation_unit;
+    }
+  in
+  (* The closed representation of a set of functions is a "set of closures".
+     (For avoidance of doubt, the runtime representation of the *whole set* is
+     a single block with tag [Closure_tag].) *)
+  let set_of_closures =
     { cl_fun = fun_decls;
       cl_free_var =
         IdentSet.fold
@@ -511,8 +519,10 @@ and close_functions t external_env function_declarations =
              let external_var = find_var external_env id in
              Variable.Map.add internal_var (Fvar(external_var, nid ())) map)
           all_free_idents Variable.Map.empty;
-      cl_specialised_arg = Variable.Map.empty } in
-  Fset_of_closures (closure, nid ())
+      cl_specialised_arg = Variable.Map.empty;
+    }
+  in
+  Fset_of_closures (set_of_closures, nid ())
 
 and close_list t sb l = List.map (close t sb) l
 
