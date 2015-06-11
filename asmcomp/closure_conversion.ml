@@ -15,6 +15,20 @@ open Lambda
 open Abstract_identifiers
 open Flambda
 
+(* Naming conventions used in this module:
+   - All variable names containing "id" or "ident" are of type [Ident.t] or
+     are collections of [Ident.t].  These refer to identifiers for the type
+     [Lambda.lambda], i.e. before closure conversion.
+   - All variable names containing "var" are of type [Variable.t] or are
+     collections of [Variable.t].  These refer to identifiers for the
+     type [Flambda.t], i.e. after closure conversion.
+
+  There is one exception: some [Ident.t] values refer to variables of
+  [Lambda.lambda].  These are the module identifiers appearing in the
+  constructions [Pgetglobal], [Pgetglobalfield] and [Psetglobalfield].
+  These constructions also appear in [Flambda.t].
+*)
+
 type t = {
   current_compilation_unit : Symbol.Compilation_unit.t;
   current_unit_id : Ident.t;
@@ -80,20 +94,6 @@ let find_static_exception env st_exn =
   with Not_found ->
     fatal_error ("Closure_conversion.find_static_exception: exn "
       ^ string_of_int st_exn)
-
-(* Naming conventions:
-   All variable names containing "id" or "ident" are of type [Ident.t] or are
-     collections of [Ident.t]. Those refer to identifiers for the type
-     [Lambda.lamba], i.e. before closure conversion.
-   All variable names containing "var" are of type [Variable.t] or are
-     collections of [Variable.t]. Those refer to identifiers for the
-     type [Flambda.flambda], i.e. after closure conversion.
-
-  There is an exception to the [Ident.t] refering to variables of [Lambda.t]:
-  the module identifiers appearing in the constructions [Pgetglobal],
-  [Pgetglobalfield] and [Psetglobalfield]. Those constructions also appear in
-  [Flambda.flambda].
-*)
 
 module Function_decl : sig
   (* A value of type [t] is used to represent a declaration of a *single*
