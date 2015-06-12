@@ -13,11 +13,11 @@
 
 #include <string.h>
 
-#include "alloc.h"
-#include "custom.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
+#include "caml/alloc.h"
+#include "caml/custom.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 CAMLexport value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size,

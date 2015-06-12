@@ -202,6 +202,10 @@ let () = Btype.print_raw := raw_type_expr
 
 type param_subst = Id | Nth of int | Map of int list
 
+let is_nth = function
+    Nth _ -> true
+  | _ -> false
+
 let compose l1 = function
   | Id -> Map l1
   | Map l2 -> Map (List.map (List.nth l1) l2)
@@ -216,6 +220,8 @@ let apply_subst s1 tyl =
 type best_path = Paths of Path.t list | Best of Path.t
 
 let printing_env = ref Env.empty
+let printing_depth = ref 0
+let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
 let printing_pers = ref Concr.empty
 module Path2 = struct
@@ -232,7 +238,7 @@ module Path2 = struct
     | _ -> Pervasives.compare p1 p2
 end
 module PathMap = Map.Make(Path2)
-let printing_map = ref (Lazy.from_val PathMap.empty)
+let printing_map = ref PathMap.empty
 
 let same_type t t' = repr t == repr t'
 
@@ -287,24 +293,24 @@ let set_printing_env env =
     (* printf "Reset printing_map@."; *)
     printing_old := env;
     printing_pers := Env.used_persistent ();
-    printing_map := lazy begin
-      (* printf "Recompute printing_map.@."; *)
-      let map = ref PathMap.empty in
+    printing_map := PathMap.empty;
+    printing_depth := 0;
+    (* printf "Recompute printing_map.@."; *)
+    let cont =
       Env.iter_types
         (fun p (p', decl) ->
           let (p1, s1) = normalize_type_path env p' ~cache:true in
           (* Format.eprintf "%a -> %a = %a@." path p path p' path p1 *)
           if s1 = Id then
           try
-            let r = PathMap.find p1 !map in
+            let r = PathMap.find p1 !printing_map in
             match !r with
               Paths l -> r := Paths (p :: l)
-            | Best _  -> assert false
+            | Best p' -> r := Paths [p; p'] (* assert false *)
           with Not_found ->
-            map := PathMap.add p1 (ref (Paths [p])) !map)
-        env;
-      !map
-    end
+            printing_map := PathMap.add p1 (ref (Paths [p])) !printing_map)
+        env in
+    printing_cont := [cont];
   end
 
 let wrap_printing_env env f =
@@ -347,10 +353,14 @@ let best_type_path p =
   then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
-    let p'' =
-      try get_best_path (PathMap.find  p' (Lazy.force !printing_map))
-      with Not_found -> p'
-    in
+    let get_path () = get_best_path (PathMap.find  p' !printing_map) in
+    while !printing_cont <> [] &&
+      try ignore (get_path ()); false with Not_found -> true
+    do
+      printing_cont := List.map snd (Env.run_iter_cont !printing_cont);
+      incr printing_depth;
+    done;
+    let p'' = try get_path () with Not_found -> p' in
     (* Format.eprintf "%a = %a -> %a@." path p path p' path p''; *)
     (p'', s)
 
@@ -437,7 +447,7 @@ let aliasable ty =
   match ty.desc with
     Tvar _ | Tunivar _ | Tpoly _ -> false
   | Tconstr (p, _, _) ->
-      (match best_type_path p with (_, Nth _) -> false | _ -> true)
+      not (is_nth (snd (best_type_path p)))
   | _ -> true
 
 let namable_row row =
@@ -556,12 +566,10 @@ let rec tree_of_typexp sch ty =
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
     | Tconstr(p, tyl, abbrev) ->
-        begin match best_type_path p with
-          (_, Nth n) -> tree_of_typexp sch (List.nth tyl n)
-        | (p', s) ->
-            let tyl' = apply_subst s tyl in
-            Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
-        end
+        let p', s = best_type_path p in
+        let tyl' = apply_subst s tyl in
+        if is_nth s then tree_of_typexp sch (List.hd tyl') else
+        Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -580,17 +588,22 @@ let rec tree_of_typexp sch ty =
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
             let (p', s) = best_type_path p in
-            assert (s = Id);
             let id = tree_of_path p' in
-            let args = tree_of_typlist sch tyl in
+            let args = tree_of_typlist sch (apply_subst s tyl) in
             if row.row_closed && all_present then
-              Otyp_constr (id, args)
+              if is_nth s then List.hd args else Otyp_constr (id, args)
             else
               let non_gen = is_non_gen sch px in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_name(id, args),
-                            row.row_closed, tags)
+              let inh =
+                match args with
+                  [Otyp_constr (i, a)] when is_nth s -> Ovar_name (i, a)
+                | _ ->
+                    (* fallback case, should change outcometree... *)
+                    Ovar_name (tree_of_path p, tree_of_typlist sch tyl)
+              in
+              Otyp_variant (non_gen, inh, row.row_closed, tags)
         | _ ->
             let non_gen =
               not (row.row_closed && all_present) && is_non_gen sch px in
@@ -1136,7 +1149,7 @@ let dummy =
 
 let hide_rec_items = function
   | Sig_type(id, decl, rs) ::rem
-    when rs <> Trec_next && not !Clflags.real_paths ->
+    when rs = Trec_first && not !Clflags.real_paths ->
       let rec get_ids = function
           Sig_type (id, _, Trec_next) :: rem ->
             id :: get_ids rem
@@ -1165,15 +1178,17 @@ let rec tree_of_modtype = function
       Omty_alias (tree_of_path p)
 
 and tree_of_signature sg =
-  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env) sg
+  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
 
-and tree_of_signature_rec env' = function
+and tree_of_signature_rec env' in_type_group = function
     [] -> []
   | item :: rem ->
-      begin match item with
-        Sig_type (_, _, rs) when rs <> Trec_next -> ()
-      | _ -> set_printing_env env'
-      end;
+      let in_type_group =
+        match in_type_group, item with
+          true, Sig_type (_, _, Trec_next) -> true
+        | _, Sig_type (_, _, (Trec_not | Trec_first)) -> set_printing_env env'; true
+        | _ -> set_printing_env env'; false
+      in
       let (sg, rem) = filter_rem_sig item rem in
       let trees =
         match item with
@@ -1197,7 +1212,7 @@ and tree_of_signature_rec env' = function
             [tree_of_cltype_declaration id decl rs]
       in
       let env' = Env.add_signature (item :: sg) env' in
-      trees @ tree_of_signature_rec env' rem
+      trees @ tree_of_signature_rec env' in_type_group rem
 
 and tree_of_modtype_declaration id decl =
   let mty =

@@ -101,7 +101,9 @@ let show_documentation = ref false
 let recursive = ref false
 let ext_lib = ref Ocamlbuild_config.a
 let ext_obj = ref Ocamlbuild_config.o
-let ext_dll = ref Ocamlbuild_config.so
+let ext_dll =
+  let s = Ocamlbuild_config.ext_dll in
+  ref (String.sub s 1 (String.length s - 1))
 let exe = ref Ocamlbuild_config.exe
 
 let targets_internal = ref []
@@ -238,8 +240,7 @@ let spec = ref (
    "-ocamlyacc", set_cmd ocamlyacc, "<command> Set the ocamlyacc tool";
    "-menhir", set_cmd ocamlyacc, "<command> Set the menhir tool (use it after -use-menhir)";
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";
-   (* Not set since we perhaps want to replace ocamlmklib *)
-   (* "-ocamlmklib", set_cmd ocamlmklib, "<command> Set the ocamlmklib tool"; *)
+   "-ocamlmklib", set_cmd ocamlmklib, "<command> Set the ocamlmklib tool";
    "-ocamlmktop", set_cmd ocamlmktop, "<command> Set the ocamlmktop tool";
    "-ocamlrun", set_cmd ocamlrun, "<command> Set the ocamlrun tool";
 
@@ -316,6 +317,7 @@ let init () =
       "ocamlopt", ocamlopt;
       "ocamldep", ocamldep;
       "ocamldoc", ocamldoc;
+      "ocamlmklib", ocamlmklib;
       "ocamlmktop", ocamlmktop;
     ]
   end;

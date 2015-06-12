@@ -84,6 +84,12 @@ let rec readlink x =
   if sys_file_exists x then
     try
       let y = readlinkcmd x in
+      let y =
+        if Filename.is_relative y then
+          Filename.concat (Filename.dirname x) y
+        else
+          y
+      in
       if (lstat y).stat_file_kind = FK_dir then raise Link_to_directories_not_supported else y
     with Failure(_) -> raise Not_a_link
   else raise No_such_file

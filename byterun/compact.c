@@ -13,16 +13,17 @@
 
 #include <string.h>
 
-#include "config.h"
-#include "finalise.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "weak.h"
+#include "caml/address_class.h"
+#include "caml/config.h"
+#include "caml/finalise.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/weak.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
@@ -58,7 +59,7 @@ static void invert_pointer_at (word *p)
 
   /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
      inverted pointer for an infix header (with Ecolor == 2). */
-  if (Ecolor (q) == 0 && (Classify_addr (q) & In_heap)){
+  if (Ecolor (q) == 0 && Is_in_heap (q)){
     switch (Ecolor (Hd_val (q))){
     case 0:
     case 3: /* Pointer or header: insert in inverted list. */

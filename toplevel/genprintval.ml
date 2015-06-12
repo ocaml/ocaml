@@ -37,11 +37,25 @@ module type EVALPATH =
     val same_value: valu -> valu -> bool
   end
 
+type ('a, 'b) gen_printer =
+  | Zero of 'b
+  | Succ of ('a -> ('a, 'b) gen_printer)
+
 module type S =
   sig
     type t
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
+    val install_generic_printer :
+           Path.t -> Path.t ->
+           (int -> (int -> t -> Outcometree.out_value,
+                    t -> Outcometree.out_value) gen_printer) ->
+           unit
+    val install_generic_printer' :
+           Path.t -> Path.t ->
+           (formatter -> t -> unit,
+            formatter -> t -> unit) gen_printer ->
+           unit
     val remove_printer : Path.t -> unit
     val outval_of_untyped_exception : t -> Outcometree.out_value
     val outval_of_value :
@@ -50,8 +64,12 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
-module ObjTbl = Hashtbl.Make(struct
-        type t = Obj.t
+module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
+
+    type t = O.t
+
+    module ObjTbl = Hashtbl.Make(struct
+        type t = O.t
         let equal = (==)
         let hash x =
           try
@@ -59,9 +77,6 @@ module ObjTbl = Hashtbl.Make(struct
           with exn -> 0
       end)
 
-module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
-
-    type t = O.t
 
     (* Given an exception value, we cannot recover its type,
        hence we cannot print its arguments in general.
@@ -104,46 +119,73 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     (* The user-defined printers. Also used for some builtin types. *)
 
+    type printer =
+      | Simple of Types.type_expr * (O.t -> Outcometree.out_value)
+      | Generic of Path.t * (int -> (int -> O.t -> Outcometree.out_value,
+                                     O.t -> Outcometree.out_value) gen_printer)
+
     let printers = ref ([
-      Pident(Ident.create "print_int"), Predef.type_int,
-        (fun x -> Oval_int (O.obj x : int));
-      Pident(Ident.create "print_float"), Predef.type_float,
-        (fun x -> Oval_float (O.obj x : float));
-      Pident(Ident.create "print_char"), Predef.type_char,
-        (fun x -> Oval_char (O.obj x : char));
-      Pident(Ident.create "print_string"), Predef.type_string,
-        (fun x -> Oval_string (O.obj x : string));
-      Pident(Ident.create "print_int32"), Predef.type_int32,
-        (fun x -> Oval_int32 (O.obj x : int32));
-      Pident(Ident.create "print_nativeint"), Predef.type_nativeint,
-        (fun x -> Oval_nativeint (O.obj x : nativeint));
-      Pident(Ident.create "print_int64"), Predef.type_int64,
-        (fun x -> Oval_int64 (O.obj x : int64))
-    ] : (Path.t * type_expr * (O.t -> Outcometree.out_value)) list)
+      ( Pident(Ident.create "print_int"),
+        Simple (Predef.type_int,
+                (fun x -> Oval_int (O.obj x : int))) );
+      ( Pident(Ident.create "print_float"),
+        Simple (Predef.type_float,
+                (fun x -> Oval_float (O.obj x : float))) );
+      ( Pident(Ident.create "print_char"),
+        Simple (Predef.type_char,
+                (fun x -> Oval_char (O.obj x : char))) );
+      ( Pident(Ident.create "print_string"),
+        Simple (Predef.type_string,
+                (fun x -> Oval_string (O.obj x : string))) );
+      ( Pident(Ident.create "print_int32"),
+        Simple (Predef.type_int32,
+                (fun x -> Oval_int32 (O.obj x : int32))) );
+      ( Pident(Ident.create "print_nativeint"),
+        Simple (Predef.type_nativeint,
+                (fun x -> Oval_nativeint (O.obj x : nativeint))) );
+      ( Pident(Ident.create "print_int64"),
+        Simple (Predef.type_int64,
+                (fun x -> Oval_int64 (O.obj x : int64)) ))
+    ] : (Path.t * printer) list)
+
+    let exn_printer ppf path =
+      fprintf ppf "<printer %a raised an exception>" Printtyp.path path
+
+    let out_exn path =
+      Oval_printer (fun ppf -> exn_printer ppf path)
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn ppf obj with
-        | exn ->
-           fprintf ppf "<printer %a raised an exception>" Printtyp.path path in
+        try fn ppf obj with exn -> exn_printer ppf path in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
-      printers := (path, ty, printer) :: !printers
+      printers := (path, Simple (ty, printer)) :: !printers
+
+    let install_generic_printer function_path constr_path fn =
+      printers := (function_path, Generic (constr_path, fn))  :: !printers
+
+    let install_generic_printer' function_path ty_path fn =
+      let rec build gp depth =
+        match gp with
+        | Zero fn ->
+            let out_printer obj =
+              let printer ppf =
+                try fn ppf obj with _ -> exn_printer ppf function_path in
+              Oval_printer printer in
+            Zero out_printer
+        | Succ fn ->
+            let print_val fn_arg =
+              let print_arg ppf o =
+                !Oprint.out_value ppf (fn_arg (depth+1) o) in
+              build (fn print_arg) depth in
+            Succ print_val in
+      printers := (function_path, Generic (ty_path, build fn)) :: !printers
 
     let remove_printer path =
       let rec remove = function
       | [] -> raise Not_found
-      | (p, ty, fn as printer) :: rem ->
+      | ((p, _) as printer) :: rem ->
           if Path.same p path then rem else printer :: remove rem in
       printers := remove !printers
-
-    let find_printer env ty =
-      let rec find = function
-      | [] -> raise Not_found
-      | (name, sch, printer) :: remainder ->
-          if Ctype.moregeneral env false sch ty
-          then printer
-          else find remainder
-      in find !printers
 
     (* Print a constructor or label, giving it the same prefix as the type
        it comes from. Attempt to omit the prefix if the type comes from
@@ -184,8 +226,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let nested_values = ObjTbl.create 8 in
       let nest_gen err f depth obj ty =
-        let repr = Obj.repr obj in
-        if not (Obj.is_block repr) then
+        let repr = obj in
+        if not (O.is_block repr) then
           f depth obj ty
         else
           if ObjTbl.mem nested_values repr then
@@ -205,7 +247,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
         else begin
         try
-          find_printer env ty obj
+          find_printer depth env ty obj
         with Not_found ->
           match (Ctype.repr ty).desc with
           | Tvar _ | Tunivar _ ->
@@ -258,12 +300,58 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Oval_array []
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
-              if Lazy.is_val (O.obj obj)
-              then let v =
-                     nest tree_of_val depth (Lazy.force (O.obj obj)) ty_arg
-                   in
-                     Oval_constr (Oide_ident "lazy", [v])
-              else Oval_stuff "<lazy>"
+             let obj_tag = O.tag obj in
+             (* Lazy values are represented in three possible ways:
+
+                1. a lazy thunk that is not yet forced has tag
+                   Obj.lazy_tag
+
+                2. a lazy thunk that has just been forced has tag
+                   Obj.forward_tag; its first field is the forced
+                   result, which we can print
+
+                3. when the GC moves a forced trunk with forward_tag,
+                   or when a thunk is directly created from a value,
+                   we get a third representation where the value is
+                   directly exposed, without the Obj.forward_tag
+                   (if its own tag is not ambiguous, that is neither
+                   lazy_tag nor forward_tag)
+
+                Note that using Lazy.is_val and Lazy.force would be
+                unsafe, because they use the Obj.* functions rather
+                than the O.* functions of the functor argument, and
+                would thus crash if called from the toplevel
+                (debugger/printval instantiates Genprintval.Make with
+                an Obj module talking over a socket).
+              *)
+             if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
+             else begin
+                 let forced_obj =
+                   if obj_tag = Obj.forward_tag then O.field obj 0 else obj
+                 in
+                 (* calling oneself recursively on forced_obj risks
+                    having a false positive for cycle detection;
+                    indeed, in case (3) above, the value is stored
+                    as-is instead of being wrapped in a forward
+                    pointer. It means that, for (lazy "foo"), we have
+                      forced_obj == obj
+                    and it is easy to wrongly print (lazy <cycle>) in such
+                    a case (PR#6669).
+
+                    Unfortunately, there is a corner-case that *is*
+                    a real cycle: using -rectypes one can define
+                      let rec x = lazy x
+                    which creates a Forward_tagged block that points to
+                    itself. For this reason, we still "nest"
+                    (detect head cycles) on forward tags.
+                  *)
+                 let v =
+                   if obj_tag = Obj.forward_tag
+                   then nest tree_of_val depth forced_obj ty_arg
+                   else      tree_of_val depth forced_obj ty_arg
+                 in
+                 Oval_constr (Oide_ident "lazy", [v])
+               end
           | Tconstr(path, ty_list, _) -> begin
               try
                 let decl = Env.find_type path env in
@@ -415,6 +503,35 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             outval_of_untyped_exception bucket
         | None ->
             Oval_stuff "<extension>"
+
+    and find_printer depth env ty =
+      let rec find = function
+      | [] -> raise Not_found
+      | (name, Simple (sch, printer)) :: remainder ->
+          if Ctype.moregeneral env false sch ty
+          then printer
+          else find remainder
+      | (name, Generic (path, fn)) :: remainder ->
+          begin match (Ctype.expand_head env ty).desc with
+          | Tconstr (p, args, _) when Path.same p path ->
+              begin try apply_generic_printer path (fn depth) args
+              with _ -> (fun obj -> out_exn path) end
+          | _ -> find remainder end in
+      find !printers
+
+    and apply_generic_printer path printer args =
+      match (printer, args) with
+      | (Zero fn, []) -> (fun (obj : O.t)-> try fn obj with _ -> out_exn path)
+      | (Succ fn, arg :: args) ->
+          let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
+          apply_generic_printer path printer args
+      | _ ->
+          (fun obj ->
+            let printer ppf =
+              fprintf ppf "<internal error: incorrect arity for '%a'>"
+                Printtyp.path path in
+            Oval_printer printer)
+
 
     in nest tree_of_val max_depth obj ty
 

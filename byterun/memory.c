@@ -13,17 +13,18 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "fail.h"
-#include "freelist.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "major_gc.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "signals.h"
+#include "caml/address_class.h"
+#include "caml/fail.h"
+#include "caml/freelist.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/major_gc.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 extern uintnat caml_percent_free;                   /* major_gc.c */
 

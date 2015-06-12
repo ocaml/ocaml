@@ -13,10 +13,10 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#include "mlvalues.h"
-#include "fail.h"
+#include "caml/mlvalues.h"
+#include "caml/fail.h"
 #include "libgraph.h"
-#include "callback.h"
+#include "caml/callback.h"
 #include <windows.h>
 
 static value gr_reset(void);
@@ -112,7 +112,7 @@ int DoRegisterClass(void)
         WNDCLASS wc;
 
         memset(&wc,0,sizeof(WNDCLASS));
-        wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS|CS_OWNDC ;
+        wc.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC ;
         wc.lpfnWndProc = (WNDPROC)GraphicsWndProc;
         wc.hInstance = hInst;
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);

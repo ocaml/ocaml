@@ -11,8 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
-#include <fail.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
 #include "unixsupport.h"
 #include <windows.h>
 

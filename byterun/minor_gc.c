@@ -12,19 +12,19 @@
 /***********************************************************************/
 
 #include <string.h>
-#include "config.h"
-#include "fail.h"
-#include "finalise.h"
-#include "gc.h"
-#include "gc_ctrl.h"
-#include "major_gc.h"
-#include "memory.h"
-#include "minor_gc.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "roots.h"
-#include "signals.h"
-#include "weak.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/finalise.h"
+#include "caml/gc.h"
+#include "caml/gc_ctrl.h"
+#include "caml/major_gc.h"
+#include "caml/memory.h"
+#include "caml/minor_gc.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/roots.h"
+#include "caml/signals.h"
+#include "caml/weak.h"
 
 asize_t caml_minor_heap_size;
 static void *caml_young_base = NULL;
@@ -226,8 +226,11 @@ void caml_oldify_mopup (void)
 void caml_empty_minor_heap (void)
 {
   value **r;
+  uintnat prev_alloc_words;
 
   if (caml_young_ptr != caml_young_end){
+    if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
@@ -252,8 +255,11 @@ void caml_empty_minor_heap (void)
     clear_table (&caml_weak_ref_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
+    caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
+    ++ caml_stat_minor_collections;
+    caml_final_empty_young ();
+    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }
-  caml_final_empty_young ();
 #ifdef DEBUG
   {
     value *p;
@@ -271,16 +277,14 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_minor_collection (void)
 {
-  intnat prev_alloc_words = caml_allocated_words;
-
   caml_empty_minor_heap ();
 
-  caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
-  ++ caml_stat_minor_collections;
   caml_major_collection_slice (0);
   caml_force_major_slice = 0;
 
+  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   caml_final_do_calls ();
+  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
 
   caml_empty_minor_heap ();
 }

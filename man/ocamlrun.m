@@ -193,6 +193,9 @@ Calling of finalisation functions.
 Startup messages (loading the bytecode executable file, resolving
 shared libraries).
 
+.BR 0x200
+Computation of compaction-triggering condition.
+
 The multiplier is
 .BR k ,
 .BR M ,\ or

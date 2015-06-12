@@ -349,10 +349,10 @@ let mod_int c1 c2 dbg =
     (c1, Cconst_int 0) ->
       Csequence(c1, Cop(Craise (Raise_regular, dbg),
                         [Cconst_symbol "caml_exn_Division_by_zero"]))
-  | (c1, Cconst_int 1) ->
-      c1
-  | (Cconst_int(0 | 1) as c1, c2) ->
-      Csequence(c2, c1)
+  | (c1, Cconst_int (1 | (-1))) ->
+      Csequence(c1, Cconst_int 0)
+  | (Cconst_int 0, c2) ->
+      Csequence(c2, Cconst_int 0)
   | (Cconst_int n1, Cconst_int n2) ->
       Cconst_int (n1 mod n2)
   | (c1, (Cconst_int n as c2)) when n <> min_int ->
@@ -1254,13 +1254,21 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
           Cassign(id, subst arg)
     | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload chunk, [Cvar id]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && box_offset = 0
-        then Cvar unboxed_id
-        else e
+      if not (Ident.same id boxed_id) then e
+      else if chunk = box_chunk && box_offset = 0 then
+        Cvar unboxed_id
+      else begin
+        need_boxed := true;
+        e
+      end
     | Cop(Cload chunk, [Cop(Cadda, [Cvar id; Cconst_int ofs])]) as e ->
-        if Ident.same id boxed_id && chunk = box_chunk && ofs = box_offset
-        then Cvar unboxed_id
-        else e
+      if not (Ident.same id boxed_id) then e
+      else if chunk = box_chunk && ofs = box_offset then
+        Cvar unboxed_id
+      else begin
+        need_boxed := true;
+        e
+      end
     | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
@@ -1270,7 +1278,10 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id box_chunk box_offset exp =
     | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
     | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
-    | e -> e in
+    | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
+    | Cconst_pointer _ | Cconst_natpointer _
+    | Cconst_blockheader _ as e -> e
+  in
   let res = subst exp in
   (res, !need_boxed, !assigned)
 

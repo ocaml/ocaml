@@ -14,11 +14,11 @@
 /* To initialize and resize the stacks */
 
 #include <string.h>
-#include "config.h"
-#include "fail.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "stacks.h"
+#include "caml/config.h"
+#include "caml/fail.h"
+#include "caml/misc.h"
+#include "caml/mlvalues.h"
+#include "caml/stacks.h"
 
 CAMLexport value * caml_stack_low;
 CAMLexport value * caml_stack_high;

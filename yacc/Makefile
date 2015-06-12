@@ -15,7 +15,7 @@
 include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-O -DNDEBUG $(BYTECCCOMPOPTS)
+CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
 
 OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
   skeleton.o symtab.o verbose.o warshall.o

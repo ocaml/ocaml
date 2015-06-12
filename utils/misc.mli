@@ -42,6 +42,8 @@ val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
+val find_in_path_rel: string list -> string -> string
+        (* Search a relative file in a list of directories. *)
 val find_in_path_uncap: string list -> string -> string
         (* Same, but search also for uncapitalized name, i.e.
            if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
@@ -98,6 +100,10 @@ val search_substring: string -> string -> int -> int
            occurrence of string [pat] in string [str].  Search starts
            at offset [start] in [str].  Raise [Not_found] if [pat]
            does not occur. *)
+
+val replace_substring: before:string -> after:string -> string -> string
+        (* [search_substring ~before ~after str] replaces all occurences
+           of [before] with [after] in [str] and returns the resulting string. *)
 
 val rev_split_words: string -> string list
         (* [rev_split_words s] splits [s] in blank-separated words, and return

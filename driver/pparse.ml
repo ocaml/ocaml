@@ -20,10 +20,7 @@ exception Error of error
 
 (* Optionally preprocess a source file *)
 
-let preprocess sourcefile =
-  match !Clflags.preprocessor with
-    None -> sourcefile
-  | Some pp ->
+let call_external_preprocessor sourcefile pp =
       let tmpfile = Filename.temp_file "ocamlpp" "" in
       let comm = Printf.sprintf "%s %s > %s"
                                 pp (Filename.quote sourcefile) tmpfile
@@ -34,10 +31,20 @@ let preprocess sourcefile =
       end;
       tmpfile
 
+let preprocess sourcefile =
+  match !Clflags.preprocessor with
+    None -> sourcefile
+  | Some pp -> call_external_preprocessor sourcefile pp
+
+
 let remove_preprocessed inputfile =
   match !Clflags.preprocessor with
     None -> ()
   | Some _ -> Misc.remove_file inputfile
+
+
+(* Note: some of the functions here should go to Ast_mapper instead,
+   which would encapsulate the "binary AST" protocol. *)
 
 let write_ast magic ast =
   let fn = Filename.temp_file "camlppx" "" in
@@ -87,47 +94,40 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
-let apply_rewriters ~tool_name magic ast =
-  let ctx = Ast_mapper.ppx_context ~tool_name () in
+let rewrite magic ast ppxs =
+  read_ast magic
+    (List.fold_left (apply_rewriter magic) (write_ast magic ast)
+       (List.rev ppxs))
+
+let apply_rewriters_str ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      let ast =
-        if magic = Config.ast_impl_magic_number
-        then Obj.magic (Ast_helper.Str.attribute ctx :: (Obj.magic ast))
-        else Obj.magic (Ast_helper.Sig.attribute ctx :: (Obj.magic ast))
-      in
-      let fn =
-        List.fold_left (apply_rewriter magic) (write_ast magic ast)
-          (List.rev ppxs)
-      in
-      let ast = read_ast magic fn in
-      let open Parsetree in
-      if magic = Config.ast_impl_magic_number then
-        let ast =
-          match Obj.magic ast with
-          | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, _)}
-            :: items ->
-              items
-          | items -> items
-        in
-        Obj.magic ast
-      else
-        let ast =
-          match Obj.magic ast with
-          | {psig_desc = Psig_attribute({Location.txt = "ocaml.ppx.context"}, _)}
-            :: items ->
-              items
-          | items -> items
-        in
-        Obj.magic ast
+      let ast = Ast_mapper.add_ppx_context_str ~tool_name ast in
+      let ast = rewrite Config.ast_impl_magic_number ast ppxs in
+      Ast_mapper.drop_ppx_context_str ~restore ast
 
+let apply_rewriters_sig ?(restore = true) ~tool_name ast =
+  match !Clflags.all_ppx with
+  | [] -> ast
+  | ppxs ->
+      let ast = Ast_mapper.add_ppx_context_sig ~tool_name ast in
+      let ast = rewrite Config.ast_intf_magic_number ast ppxs in
+      Ast_mapper.drop_ppx_context_sig ~restore ast
+
+let apply_rewriters ?restore ~tool_name magic ast =
+  if magic = Config.ast_impl_magic_number then
+    Obj.magic (apply_rewriters_str ?restore ~tool_name (Obj.magic ast))
+  else if magic = Config.ast_intf_magic_number then
+    Obj.magic (apply_rewriters_sig ?restore ~tool_name (Obj.magic ast))
+  else
+    assert false
 
 (* Parse a file or get a dumped syntax tree from it *)
 
 exception Outdated_version
 
-let file ppf ~tool_name inputfile parse_fun ast_magic =
+let open_and_check_magic inputfile ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -141,6 +141,10 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
         Misc.fatal_error "OCaml and preprocessor have incompatible versions"
     | _ -> false
   in
+  (ic, is_ast_file)
+
+let file ppf ~tool_name inputfile parse_fun ast_magic =
+  let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
     try
       if is_ast_file then begin
@@ -160,7 +164,8 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ~tool_name ast_magic ast
+  apply_rewriters ~restore:false ~tool_name ast_magic ast
+
 
 let report_error ppf = function
   | CannotRun cmd ->

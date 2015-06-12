@@ -49,7 +49,7 @@ run:
 
 main$(EXE): api.cmx main.cmx
 	@$(OCAMLOPT) -thread -o main$(EXE) -linkall unix.cmxa threads.cmxa \
-	             dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
+	             dynlink.cmxa api.cmx main.cmx
 
 main_ext$(EXE): api.cmx main.cmx factorial.$(O)
 	@$(OCAMLOPT) -o main_ext$(EXE) dynlink.cmxa api.cmx main.cmx \
@@ -102,13 +102,10 @@ mypack.cmx: packed1.cmx
 mylib.cmxa: plugin.cmx plugin2.cmx
 	@$(OCAMLOPT) $(COMPFLAGS) -a -o mylib.cmxa plugin.cmx plugin2.cmx
 
-factorial.$(O): factorial.c caml
-	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I -ccopt . \
+factorial.$(O): factorial.c
+	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I \
+	             -ccopt $(TOPDIR)/byterun/caml \
 	             factorial.c
-
-caml:
-	@mkdir -p caml || :
-	@cp $(TOPDIR)/byterun/*.h caml/
 
 .PHONY: promote
 promote:
@@ -120,6 +117,5 @@ clean: defaultclean
 	@rm -f *.a *.lib
 	@rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
 	@rm -f marshal.data
-	@rm -rf caml
 
 include $(BASEDIR)/makefiles/Makefile.common

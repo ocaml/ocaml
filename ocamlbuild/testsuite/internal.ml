@@ -160,6 +160,13 @@ let () = test "OutputObj"
   ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\""]
   ~targets:("hello.byte.o",["hello.byte.c";"hello.native.o"]) ();;
 
+let () = test "OutputShared"
+  ~options:[`no_ocamlfind]
+  ~description:"output_shared targets for native and bytecode (PR #6733)"
+  ~tree:[T.f "hello.ml" ~content:"print_endline \"Hello, World!\"";
+         T.f "_tags" ~content:"<*.so>: runtime_variant(_pic)"]
+  ~targets:("hello.byte.so",["hello.native.so"]) ();;
+
 let () = test "StrictSequenceFlag"
   ~options:[`no_ocamlfind; `quiet]
   ~description:"strict_sequence tag"
@@ -302,5 +309,16 @@ let () = test "OpenTag"
   ]
   ~matching:[M.f "test.byte"]
   ~targets:("test.byte",[]) ();;
+
+let () = test "OpenDependencies"
+  ~description:"Test dependency computation for the new -open feature (PR#6584)"
+  ~options:[`no_ocamlfind]
+  ~tree:[
+    T.f "a.ml" ~content:"let x = 1";
+    T.f "b.ml" ~content:"print_int x; print_newline ()";
+    T.f "_tags" ~content: "<b.*>: open(A)";
+  ]
+  ~matching:[M.f "b.byte"]
+  ~targets:("b.byte",[]) ();;
 
 run ~root:"_test_internal";;

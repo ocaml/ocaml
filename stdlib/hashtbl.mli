@@ -345,7 +345,9 @@ val hash_param : int -> int -> 'a -> int
    hashing. Hashing performs a breadth-first, left-to-right traversal
    of the structure [x], stopping after [meaningful] meaningful nodes
    were encountered, or [total] nodes (meaningful or not) were
-   encountered. Meaningful nodes are: integers; floating-point
+   encountered.  If [total] as specified by the user exceeds a certain
+   value, currently 256, then it is capped to that value.
+   Meaningful nodes are: integers; floating-point
    numbers; strings; characters; booleans; and constant
    constructors. Larger values of [meaningful] and [total] means that
    more nodes are taken into account to compute the final hash value,

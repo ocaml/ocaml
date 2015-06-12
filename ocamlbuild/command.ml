@@ -125,7 +125,7 @@ let virtual_solver virtual_command =
 
 (* On Windows, we need to also check for the ".exe" version of the file. *)
 let file_or_exe_exists file =
-  sys_file_exists file || (Sys.os_type = "Win32" && sys_file_exists (file ^ ".exe"))
+  sys_file_exists file || ((Sys.win32 || Sys.cygwin) && sys_file_exists (file ^ ".exe"))
 
 let search_in_path cmd =
   (* Try to find [cmd] in path [path]. *)
@@ -392,6 +392,9 @@ let dep tags deps = set_deps_of_tags (Tags.of_list tags) deps
 let pdep tags ptag deps =
   Param_tags.declare ptag
     (fun param -> dep (Param_tags.make ptag param :: tags) (deps param))
+
+let list_all_deps () =
+  !all_deps_of_tags
 
 (*
 let to_string_for_digest x =

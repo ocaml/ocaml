@@ -11,7 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include "misc.h"
+#ifndef CAML_SOCKETADDR_H
+#define CAML_SOCKETADDR_H
+
+#include "caml/misc.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -33,6 +36,10 @@ typedef socklen_t socklen_param_type;
 typedef int socklen_param_type;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void get_sockaddr (value mladdr,
                           union sock_addr_union * addr /*out*/,
                           socklen_param_type * addr_len /*out*/);
@@ -45,3 +52,9 @@ CAMLexport value alloc_inet_addr (struct in_addr * inaddr);
 CAMLexport value alloc_inet6_addr (struct in6_addr * inaddr);
 #define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CAML_SOCKETADDR_H */

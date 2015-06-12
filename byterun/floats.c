@@ -11,20 +11,20 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* The interface of this file is in "mlvalues.h" and "alloc.h" */
+/* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "fail.h"
-#include "memory.h"
-#include "mlvalues.h"
-#include "misc.h"
-#include "reverse.h"
-#include "stacks.h"
+#include "caml/alloc.h"
+#include "caml/fail.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/misc.h"
+#include "caml/reverse.h"
+#include "caml/stacks.h"
 
 #ifdef _MSC_VER
 #include <float.h>
@@ -150,6 +150,7 @@ CAMLprim value caml_float_of_string(value vs)
  error:
   if (buf != parse_buffer) caml_stat_free(buf);
   caml_failwith("float_of_string");
+  return Val_unit; /* not reached */
 }
 
 CAMLprim value caml_int_of_float(value f)
@@ -452,7 +453,8 @@ enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 CAMLprim value caml_classify_float(value vd)
 {
   /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
-#if defined(fpclassify) && !defined(__CYGWIN32__) && !defined(__MINGW32__)
+  /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
+#if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
   switch (fpclassify(Double_val(vd))) {
   case FP_NAN:
     return Val_int(FP_nan);

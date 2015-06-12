@@ -12,6 +12,8 @@
 #########################################################################
 
 include ../config/Makefile
+CAMLRUN ?= ../boot/ocamlrun
+CAMLYACC ?= ../boot/ocamlyacc
 
 CC=$(BYTECC)
 
@@ -31,7 +33,8 @@ PRIMS=\
   dynlink.c backtrace.c
 
 PUBLIC_INCLUDES=\
-  alloc.h callback.h config.h custom.h fail.h hash.h intext.h \
+  address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
+  hash.h intext.h \
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h \
   version.h
 
@@ -56,13 +59,13 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp ocamlrun$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
+	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
 	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
 	  else mkdir $(INSTALL_LIBDIR)/caml; fi
 	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header $$i > $(INSTALL_LIBDIR)/caml/$$i; \
+	  sed -f ../tools/cleanup-header caml/$$i > $(INSTALL_LIBDIR)/caml/$$i; \
 	done
 	cp ld.conf $(INSTALL_LIBDIR)/ld.conf
 .PHONY: install
@@ -72,6 +75,10 @@ install:: install-$(RUNTIMED)
 install-noruntimed:
 .PHONY: install-noruntimed
 
+# TODO: when cross-compiling, do not install ocamlrund
+# it doesn't hurt to install it, but it's useless and might be confusing
+# because it's an executable for the target machine, while we're installing
+# binaries for the host.
 install-runtimed:
 	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
 	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
@@ -96,8 +103,8 @@ primitives : $(PRIMS)
 	  | sort | uniq > primitives
 
 prims.c : primitives
-	(echo '#include "mlvalues.h"'; \
-	 echo '#include "prims.h"'; \
+	(echo '#include "caml/mlvalues.h"'; \
+	 echo '#include "caml/prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	&,/' primitives; \
@@ -106,23 +113,23 @@ prims.c : primitives
 	 sed -e 's/.*/	"&",/' primitives; \
 	 echo '	 0 };') > prims.c
 
-opnames.h : instruct.h
+caml/opnames.h : caml/instruct.h
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' instruct.h > opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h > caml/opnames.h
 
-# jumptbl.h is required only if you have GCC 2.0 or later
-jumptbl.h : instruct.h
+# caml/jumptbl.h is required only if you have GCC 2.0 or later
+caml/jumptbl.h : caml/instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
-	       -e '/^}/q' instruct.h > jumptbl.h
+	       -e '/^}/q' caml/instruct.h > caml/jumptbl.h
 
-version.h : ../VERSION ../tools/make-version-header.sh
-	../tools/make-version-header.sh ../VERSION > version.h
+caml/version.h : ../VERSION ../tools/make-version-header.sh
+	../tools/make-version-header.sh ../VERSION > caml/version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
-	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
-	rm -f version.h
+	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h ld.conf
+	rm -f caml/version.h
 .PHONY: clean

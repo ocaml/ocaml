@@ -62,6 +62,7 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
+  | Bad_docstring of bool                   (* 50 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -72,9 +73,7 @@ val is_error : t -> bool;;
 val defaults_w : string;;
 val defaults_warn_error : string;;
 
-val print : formatter -> t -> int;;
-  (* returns the number of newlines in the printed string *)
-
+val print : formatter -> t -> unit;;
 
 exception Errors of int;;
 

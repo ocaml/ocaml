@@ -640,7 +640,7 @@ and signature_item i ppf x =
   | Psig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
-  | Psig_type (l) ->
+  | Psig_type l ->
       line i ppf "Psig_type\n";
       list i type_declaration ppf l;
   | Psig_typext te ->
@@ -875,7 +875,7 @@ and directive_argument i ppf x =
   match x with
   | Pdir_none -> line i ppf "Pdir_none\n"
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
-  | Pdir_int (i) -> line i ppf "Pdir_int %d\n" i;
+  | Pdir_int (n) -> line i ppf "Pdir_int %d\n" n;
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
 ;;

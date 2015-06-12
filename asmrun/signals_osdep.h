@@ -66,18 +66,7 @@
 #elif defined(TARGET_arm) && (defined(SYS_linux_eabi) \
       || defined(SYS_linux_eabihf))
 
-  #if defined(__ANDROID__)
-    // The Android NDK does not have sys/ucontext.h yet.
-    typedef struct ucontext {
-      uint32_t uc_flags;
-      struct ucontext *uc_link;
-      stack_t uc_stack;
-      struct sigcontext uc_mcontext;
-      // Other fields omitted...
-    } ucontext_t;
-  #else
-    #include <sys/ucontext.h>
-  #endif
+  #include <sys/ucontext.h>
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, siginfo_t * info, ucontext_t * context)
@@ -130,6 +119,22 @@
   #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
+/****************** AMD64, OpenBSD */
+
+#elif defined(TARGET_amd64) && defined (SYS_openbsd)
+
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, struct sigcontext * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (context->sc_rip)
+ #define CONTEXT_EXCEPTION_POINTER (context->sc_r14)
+ #define CONTEXT_YOUNG_PTR (context->sc_r15)
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
 /****************** I386, Linux */
 
 #elif defined(TARGET_i386) && defined(SYS_linux_elf)
@@ -142,6 +147,30 @@
      sigact.sa_flags = 0
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) context.cr2)
+
+/****************** I386, BSD_ELF */
+
+#elif defined(TARGET_i386) && defined(SYS_bsd_elf)
+
+ #if defined (__NetBSD__)
+  #include <ucontext.h>
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, ucontext_t * context)
+ #else
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, struct sigcontext * context)
+ #endif
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #if defined (__NetBSD__)
+  #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #else
+  #define CONTEXT_PC (context->sc_eip)
+ #endif
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, BSD */
 

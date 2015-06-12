@@ -147,39 +147,55 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 external __LOC__ : string = "%loc_LOC"
 (** [__LOC__] returns the location at which this expression appears in
     the file currently being parsed by the compiler, with the standard
-    error format of OCaml: "File %S, line %d, characters %d-%d" *)
+    error format of OCaml: "File %S, line %d, characters %d-%d".
+    @since 4.02.0
+ *)
 external __FILE__ : string = "%loc_FILE"
 (** [__FILE__] returns the name of the file currently being
-    parsed by the compiler. *)
+    parsed by the compiler.
+    @since 4.02.0
+*)
 external __LINE__ : int = "%loc_LINE"
 (** [__LINE__] returns the line number at which this expression
-    appears in the file currently being parsed by the compiler. *)
+    appears in the file currently being parsed by the compiler.
+    @since 4.02.0
+ *)
 external __MODULE__ : string = "%loc_MODULE"
 (** [__MODULE__] returns the module name of the file being
-    parsed by the compiler. *)
+    parsed by the compiler.
+    @since 4.02.0
+ *)
 external __POS__ : string * int * int * int = "%loc_POS"
 (** [__POS__] returns a tuple [(file,lnum,cnum,enum)], corresponding
     to the location at which this expression appears in the file
     currently being parsed by the compiler. [file] is the current
     filename, [lnum] the line number, [cnum] the character position in
-    the line and [enum] the last character position in the line. *)
+    the line and [enum] the last character position in the line.
+    @since 4.02.0
+ *)
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 (** [__LOC_OF__ expr] returns a pair [(loc, expr)] where [loc] is the
     location of [expr] in the file currently being parsed by the
     compiler, with the standard error format of OCaml: "File %S, line
-    %d, characters %d-%d" *)
+    %d, characters %d-%d".
+    @since 4.02.0
+ *)
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 (** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
-    currently being parsed by the compiler. *)
+    currently being parsed by the compiler.
+    @since 4.02.0
+ *)
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
-(** [__POS_OF__ expr] returns a pair [(expr,loc)], where [loc] is a
+(** [__POS_OF__ expr] returns a pair [(loc,expr)], where [loc] is a
     tuple [(file,lnum,cnum,enum)] corresponding to the location at
     which the expression [expr] appears in the file currently being
     parsed by the compiler. [file] is the current filename, [lnum] the
     line number, [cnum] the character position in the line and [enum]
-    the last character position in the line. *)
+    the last character position in the line.
+    @since 4.02.0
+ *)
 
 (** {6 Composition operators} *)
 
@@ -594,7 +610,8 @@ val print_string : string -> unit
 (** Print a string on standard output. *)
 
 val print_bytes : bytes -> unit
-(** Print a byte sequence on standard output. *)
+(** Print a byte sequence on standard output.
+   @since 4.02.0 *)
 
 val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
@@ -621,7 +638,8 @@ val prerr_string : string -> unit
 (** Print a string on standard error. *)
 
 val prerr_bytes : bytes -> unit
-(** Print a byte sequence on standard error. *)
+(** Print a byte sequence on standard error.
+   @since 4.02.0 *)
 
 val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)
@@ -708,7 +726,8 @@ val output_string : out_channel -> string -> unit
 (** Write the string on the given output channel. *)
 
 val output_bytes : out_channel -> bytes -> unit
-(** Write the byte sequence on the given output channel. *)
+(** Write the byte sequence on the given output channel.
+   @since 4.02.0 *)
 
 val output : out_channel -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
@@ -718,7 +737,8 @@ val output : out_channel -> bytes -> int -> int -> unit
 
 val output_substring : out_channel -> string -> int -> int -> unit
 (** Same as [output] but take a string as argument instead of
-   a byte sequence. *)
+   a byte sequence.
+   @since 4.02.0 *)
 
 val output_byte : out_channel -> int -> unit
 (** Write one 8-bit integer (as the single character with that code)
@@ -838,7 +858,8 @@ val really_input_string : in_channel -> int -> string
 (** [really_input_string ic len] reads [len] characters from channel [ic]
    and returns them in a new string.
    Raise [End_of_file] if the end of file is reached before [len]
-   characters have been read. *)
+   characters have been read.
+   @since 4.02.0 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Pervasives.input_char}, but return the 8-bit integer representing

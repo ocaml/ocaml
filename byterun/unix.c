@@ -22,9 +22,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "config.h"
+#include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
-#ifdef __CYGWIN32__
+#ifdef __CYGWIN__
 #include "flexdll.h"
 #else
 #include <dlfcn.h>
@@ -38,9 +38,9 @@
 #else
 #include <sys/dir.h>
 #endif
-#include "memory.h"
-#include "misc.h"
-#include "osdeps.h"
+#include "caml/memory.h"
+#include "caml/misc.h"
+#include "caml/osdeps.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -86,7 +86,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   return caml_strdup(name);
 }
 
-#ifdef __CYGWIN32__
+#ifdef __CYGWIN__
 
 /* Cygwin needs special treatment because of the implicit ".exe" at the
    end of executable file names */
@@ -137,7 +137,7 @@ char * caml_search_exe_in_path(char * name)
 
   caml_ext_table_init(&path, 8);
   tofree = caml_decompose_path(&path, getenv("PATH"));
-#ifndef __CYGWIN32__
+#ifndef __CYGWIN__
   res = caml_search_in_path(&path, name);
 #else
   res = cygwin_search_exe_in_path(&path, name);
@@ -159,7 +159,7 @@ char * caml_search_dll_in_path(struct ext_table * path, char * name)
 }
 
 #ifdef SUPPORT_DYNAMIC_LINKING
-#ifdef __CYGWIN32__
+#ifdef __CYGWIN__
 /* Use flexdll */
 
 void * caml_dlopen(char * libname, int for_execution, int global)

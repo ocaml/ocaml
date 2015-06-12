@@ -16,6 +16,7 @@
 configure_options="$*"
 prefix=/usr/local
 bindir=''
+target_bindir=''
 libdir=''
 mandir=''
 manext=1
@@ -77,17 +78,13 @@ wrn() {
 }
 
 err() {
-  printf "[ERROR!]%b\n" "$*" 1>&3
+  printf "[ERROR!] %b\n" "$*" 1>&3
   exit 2
 }
 
 exec 3>&1
 
 # Parse command-line arguments
-
-if echo "$configure_options" | grep -q -e '--\?[a-zA-Z0-9-]\+='; then
-  err "Arguments to this script look like '-prefix /foo/bar', not '-prefix=/foo/bar' (note the '=')."
-fi
 
 while : ; do
   case "$1" in
@@ -96,6 +93,8 @@ while : ; do
         prefix=$2; shift;;
     -bindir|--bindir)
         bindir=$2; shift;;
+    -target-bindir|--target-bindir)
+        target_bindir="$2"; shift;;
     -libdir|--libdir)
         libdir=$2; shift;;
     -mandir|--mandir)
@@ -155,7 +154,12 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
-    *) err "Unknown option \"$1\".";;
+    *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
+         err "configure expects arguments of the form '-prefix /foo/bar'," \
+             "not '-prefix=/foo/bar' (note the '=')."
+       else
+         err "Unknown option \"$1\"."
+       fi;;
   esac
   shift
 done
@@ -236,17 +240,23 @@ else
 fi
 inf "Configuring for target $target ..."
 
+if [ x"$host" = x"$target" ]; then
+  cross_compiler=false
+else
+  cross_compiler=true
+fi
+
 # Do we have gcc?
 
 if test -z "$ccoption"; then
   if sh ./searchpath "${TOOLPREF}gcc"; then
     cc="${TOOLPREF}gcc"
   else
-    if test x"$host" = x"$target"; then
-      cc="cc"
-    else
+    if $cross_compiler; then
       err "No cross-compiler found for ${target}.\n" \
           "It should be named ${TOOLPREF}gcc and be in the PATH."
+    else
+      cc="cc"
     fi
   fi
 else
@@ -333,6 +343,10 @@ case "$bytecc,$target" in
     echo "#ifndef __PIC__" >> m.h
     echo "#  define ARCH_CODE32" >> m.h
     echo "#endif" >> m.h;;
+  *,*-*-haiku*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    # No -lm library
+    mathlib="";;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
@@ -370,10 +384,15 @@ case "$bytecc,$target" in
   *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   *gcc*,*-*-cygwin*)
+    case $target in
+      i686-*) flavor=cygwin;;
+      x86_64-*) flavor=cygwin64;;
+      *) err "unknown cygwin variant";;
+    esac
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $with_sharedlibs = yes; then
-      flexlink="flexlink -chain cygwin -merge-manifest -stack 16777216"
+      flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | dos2unix`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
@@ -438,7 +457,7 @@ case $? in
   1) err "The C compiler $cc is not ANSI-compliant.\n" \
          "You need an ANSI C compiler to build OCaml.";;
   *)
-     if test x"$host" != x"$target"; then
+     if $cross_compiler; then
        wrn "Unable to compile the test program.\n" \
            "This failure is expected for cross-compilation:\n" \
            "we will assume the C compiler is ANSI-compliant."
@@ -448,29 +467,43 @@ case $? in
      fi;;
 esac
 
-# Determine which ocamlrun executable to use; for cross-compilation, a native
-# "ocamlrun" executable must be available on the system.
-if test x"$target" != x"$host"; then
+# For cross-compilation, we need a host-based ocamlrun and ocamlyacc,
+# and the user must specify the target BINDIR
+if $cross_compiler; then
   if ! sh ./searchpath ocamlrun; then
     err "Cross-compilation requires an ocaml runtime environment\n" \
         "(the ocamlrun binary). Moreover, its version must be the same\n" \
         "as the one you're trying to build (`cut -f1 -d+ < ../../VERSION`)."
   else
-    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]\+\).*/\1/'`
-    ocaml_source_version=`sed -n '1 s/\([0-9\.]\+\).*/\1/ p' < ../../VERSION`
+    ocaml_system_version=`ocamlrun -version | sed 's/[^0-9]*\([0-9.]*\).*/\1/'`
+    ocaml_source_version=`sed -n '1 s/\([0-9\.]*\).*/\1/ p' < ../../VERSION`
     if test x"$ocaml_system_version" != x"$ocaml_source_version"; then
       err "While you have an ocaml runtime environment, its version\n" \
           "($ocaml_system_version) doesn't match the version of these sources\n" \
           "($ocaml_source_version)."
     else
-      CAMLRUN="ocamlrun"
+      echo "CAMLRUN=`./searchpath -p ocamlrun`" >> Makefile
     fi
   fi
-else
-  CAMLRUN=`cd ../.. && pwd`/boot/ocamlrun
-fi
 
-echo "CAMLRUN=$CAMLRUN" >> Makefile
+  if ! sh ./searchpath ocamlyacc; then
+    err "Cross-compilation requires an ocamlyacc binary."
+  else
+    ocamlyacc 2>/dev/null
+    if test "$?" -ne 1; then
+      err "While you have an ocamlyacc binary, it cannot be executed successfully."
+    else
+      echo "CAMLYACC=`./searchpath -p ocamlyacc`" >> Makefile
+    fi
+  fi
+
+  if [ -z "$target_bindir" ]; then
+    err "Cross-compilation requires -target-bindir."
+  else
+    echo "TARGET_BINDIR=$target_bindir" >> Makefile
+  fi
+fi # cross-compiler
+
 
 # Check the sizes of data types
 # OCaml needs a 32 or 64 bit architecture, a 32-bit integer type and
@@ -655,7 +688,7 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -767,6 +800,7 @@ if test $with_sharedlibs = "yes"; then
     i[3456]86-*-netbsd*)          natdynlink=true;;
     x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
+    i[3456]86-*-haiku*)           natdynlink=true;;
     arm*-*-linux*)                natdynlink=true;;
     arm*-*-freebsd*)              natdynlink=true;;
     aarch64-*-linux*)             natdynlink=true;;
@@ -799,6 +833,7 @@ case "$target" in
                                 else
                                   arch=i386; system=solaris
                                 fi;;
+  i[3456]86-*-haiku*)           arch=i386; system=beos;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
   i[3456]86-*-darwin*)          if $arch64; then
@@ -875,7 +910,7 @@ esac
 asppprofflags='-DPROFILING'
 
 case "$arch,$system" in
-  amd64,macosx)   if ./searchpath clang; then
+  amd64,macosx)   if sh ./searchpath clang; then
                       as='clang -arch x86_64 -c'
                       aspp='clang -arch x86_64 -c'
                     else
@@ -920,6 +955,8 @@ case "$arch,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='prof';;
   amd64,openbsd) profiling='prof';;
+  amd64,freebsd) profiling='prof';;
+  amd64,netbsd) profiling='prof';;
   amd64,gnu) profiling='prof';;
   arm,linux*) profiling='prof';;
   power,elf) profiling='prof';;
@@ -961,7 +998,8 @@ if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
           "under Cygwin"
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *-*-mingw*)
-      inf "We won't use it, though, because it's on the target platform it would be used and windows doesn't support it."
+      inf "We won't use it, though, because it's on the target platform " \
+          "it would be used and windows doesn't support it."
       echo "SHARPBANGSCRIPTS=false" >> Makefile;;
     *)
       echo "SHARPBANGSCRIPTS=true" >> Makefile;;
@@ -1046,9 +1084,15 @@ if sh ./hasgot socket socketpair bind listen accept connect; then
   inf "You have BSD sockets."
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
-elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
+elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect
+then
   inf "You have BSD sockets (with libraries '-lnsl -lsocket')"
   cclibs="$cclibs -lnsl -lsocket"
+  echo "#define HAS_SOCKETS" >> s.h
+  has_sockets=yes
+elif sh ./hasgot -lnetwork socket socketpair bind listen accept connect; then
+  echo "You have BSD sockets (with library '-lnetwork')"
+  cclibs="$cclibs -lnetwork"
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
 else
@@ -1286,6 +1330,15 @@ if sh ./hasgot pwrite; then
   echo "#define HAS_PWRITE" >> s.h
 fi
 
+nanosecond_stat=none
+for i in 1 2 3; do
+  if sh ./trycompile -DHAS_NANOSECOND_STAT=$i nanosecond_stat.c; then nanosecond_stat=$i; break; fi
+done
+if test $nanosecond_stat != "none"; then
+  inf "stat() supports nanosecond precision."
+  echo "#define HAS_NANOSECOND_STAT $nanosecond_stat" >> s.h
+fi
+
 nargs=none
 for i in 5 6; do
   if sh ./trycompile -DNUM_ARGS=${i} gethostbyname.c; then nargs=$i; break; fi
@@ -1309,6 +1362,11 @@ if sh ./hasgot mkstemp; then
   echo "#define HAS_MKSTEMP" >> s.h
 fi
 
+if sh ./hasgot nice; then
+  inf "nice() found"
+  echo "#define HAS_NICE" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1324,7 +1382,8 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx)
+  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
+  |amd64,openbsd|i386,bsd_elf)
     inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
@@ -1360,10 +1419,12 @@ if test "$pthread_wanted" = "yes"; then
                    pthread_caml_link="-cclib -pthread";;
     *-*-openbsd*)  pthread_link="-pthread"
                    pthread_caml_link="-cclib -pthread";;
+    *-*-haiku*)    pthread_link=""
+                   pthread_caml_link="";;
     *)             pthread_link="-lpthread"
                    pthread_caml_link="-cclib -lpthread";;
   esac
-  if ./hasgot -i pthread.h $pthread_link pthread_self; then
+  if sh ./hasgot -i pthread.h $pthread_link pthread_self; then
     inf "POSIX threads library supported."
     systhread_support=true
     otherlibraries="$otherlibraries systhreads"
@@ -1390,7 +1451,8 @@ if test "$pthread_wanted" = "yes"; then
 else
   pthread_link=""
 fi
-echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
+echo "PTHREAD_LINK=$pthread_link" >> Makefile
+echo "PTHREAD_CAML_LINK=$pthread_caml_link" >> Makefile
 
 # Determine if the bytecode thread library is supported
 
@@ -1553,7 +1615,7 @@ if test "x11_include" != "not found"; then
   if test "$x11_include" = "-I/usr/include"; then
     x11_include=""
   fi
-  if ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
+  if sh ./hasgot $x11_include $x11_link -i X11/Xlib.h XrmInitialize; then
     inf "X11 works"
   else
     wrn "Cannot compile X11 program."
@@ -1581,8 +1643,8 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h && \
-   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
+if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
+   sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
   inf "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
@@ -1624,6 +1686,12 @@ if $no_naked_pointers; then
   echo "#define NO_NAKED_POINTERS" >> m.h
 fi
 
+# Add Unix-style optimization flag
+bytecccompopts="-O $bytecccompopts"
+dllcccompopts="-O $dllcccompopts"
+nativecccompopts="-O $nativecccompopts"
+sharedcccompopts="-O $sharedcccompopts"
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1652,8 +1720,8 @@ SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
 ### How to build a static library
-MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
+#ml let mklib out files opts = Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s" out opts files out;;
 EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
@@ -1694,6 +1762,11 @@ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
 echo "RUNTIMED=${debugruntime}" >>Makefile
+if $shared_libraries_supported; then
+  echo "SHARED=shared" >>Makefile
+else
+  echo "SHARED=noshared" >>Makefile
+fi
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile

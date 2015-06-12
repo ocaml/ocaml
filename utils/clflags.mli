@@ -23,8 +23,10 @@ val debug : bool ref
 val fast : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
+val no_check_prims : bool ref
 val bytecode_compatible_32 : bool ref
 val output_c_object : bool ref
+val output_complete_object : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
@@ -91,6 +93,7 @@ val shared : bool ref
 val dlcode : bool ref
 val runtime_variant : string ref
 val force_slash : bool ref
+val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref

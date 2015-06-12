@@ -21,6 +21,8 @@ let source_extensions = [".ml"]
 (*** Conversion function. ***)
 
 let source_of_module pos mdle =
+  let pos_fname = pos.Lexing.pos_fname in
+  if Sys.file_exists pos_fname then pos_fname else
   let is_submodule m m' =
     let len' = String.length m' in
     try
@@ -50,10 +52,10 @@ let source_of_module pos mdle =
           try find_in_path_uncap path (innermost_module ^ ext)
           with Not_found -> loop exts
     in loop source_extensions
-  else   if Filename.is_implicit fname then
-    find_in_path path fname
-  else
-    fname
+  else if Filename.is_relative fname then
+    find_in_path_rel path fname
+  else if Sys.file_exists fname then fname
+  else raise Not_found
 
 (*** Buffer cache ***)
 

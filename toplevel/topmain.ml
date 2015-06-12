@@ -41,6 +41,7 @@ let file_argument name =
       let newargs = Array.sub Sys.argv !Arg.current
                               (Array.length Sys.argv - !Arg.current)
       in
+      Compenv.readenv ppf Before_link;
       if prepare ppf && Toploop.run_script ppf name newargs
       then exit 0
       else exit 2

@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-#include <mlvalues.h>
+#include <caml/mlvalues.h>
 #include "unixsupport.h"
 #include <mswsock.h>   // for SO_OPENTYPE and SO_SYNCHRONOUS_NONALERT
 

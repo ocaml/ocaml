@@ -153,7 +153,12 @@ linking with this library automatically adds back the
 options as if they had been provided on the
 command line, unless the
 .B \-noautolink
-option is given.
+option is given. Additionally, a substring
+.B $CAMLORIGIN
+inside a
+.BR \ \-ccopt
+options will be replaced by the full path to the .cma library,
+excluding the filename.
 .TP
 .B \-absname
 Show absolute filenames in error messages.
@@ -260,9 +265,9 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I\ +camlp4
+.B \-I\ +compiler-libs
 adds the subdirectory
-.B camlp4
+.B compiler-libs
 of the standard library to the search path.
 .TP
 .BI \-impl \ filename
@@ -297,6 +302,9 @@ as an interface file, even if its extension is not .mli.
 Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
+.TP
+.B \-keep-locs
+Keep documentation strings in generated .cmi files.
 .TP
 .B \-keep-locs
 Keep locations in generated .cmi files.
@@ -457,8 +465,9 @@ errors, the intermediate file is deleted afterwards.
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
-The format of the input and output of the preprocessor
-are not yet documented.
+The module
+.BR Ast_mapper (3)
+implements the external interface of a preprocessor.
 .TP
 .B \-principal
 Check information path during type-checking, to make sure that all
@@ -594,7 +603,8 @@ compiling your program with later versions of OCaml when they add new
 warnings or modify existing warnings.
 
 The default setting is
-.B \-warn\-error\ -a (all warnings are non-fatal).
+.B \-warn\-error \-a
+(all warnings are non-fatal).
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

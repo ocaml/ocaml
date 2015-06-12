@@ -10,6 +10,9 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* ATTENTION ! When you add or modify a parsing or typing option, do not forget
+  to update ocamldoc options too, in odoc_args.ml. *)
+
 module type Common_options = sig
   val _absname : unit -> unit
   val _easy_type_errors : unit -> unit
@@ -60,11 +63,13 @@ module type Compiler_options =  sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -86,6 +91,7 @@ module type Bytecomp_options = sig
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
+  val _no_check_prims : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -153,6 +159,22 @@ module type Opttop_options = sig
   val _stdin : unit -> unit
 end;;
 
+module type Ocamldoc_options =  sig
+  include Common_options
+  val _impl : string -> unit
+  val _intf : string -> unit
+  val _intf_suffix : string -> unit
+  val _pp : string -> unit
+  val _principal : unit -> unit
+  val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
+  val _short_paths : unit -> unit
+  val _thread : unit -> unit
+  val _v : unit -> unit
+  val _verbose : unit -> unit
+  val _vmthread : unit -> unit
+end
+
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list
 end;;
@@ -161,3 +183,4 @@ module Make_bytecomp_options (F : Bytecomp_options) : Arg_list;;
 module Make_bytetop_options (F : Bytetop_options) : Arg_list;;
 module Make_optcomp_options (F : Optcomp_options) : Arg_list;;
 module Make_opttop_options (F : Opttop_options) : Arg_list;;
+module Make_ocamldoc_options (F : Ocamldoc_options) : Arg_list;;

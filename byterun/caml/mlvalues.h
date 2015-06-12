@@ -296,10 +296,10 @@ CAMLextern header_t caml_atom_table[];
 
 extern value caml_global_data;
 
+CAMLextern value caml_set_oo_id(value obj);
+
 #ifdef __cplusplus
 }
 #endif
-
-CAMLextern value caml_set_oo_id(value obj);
 
 #endif /* CAML_MLVALUES_H */

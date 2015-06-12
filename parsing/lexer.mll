@@ -63,6 +63,7 @@ let keyword_table =
     "module", MODULE;
     "mutable", MUTABLE;
     "new", NEW;
+    "nonrec", NONREC;
     "object", OBJECT;
     "of", OF;
     "open", OPEN;
@@ -131,6 +132,16 @@ let in_comment () = !comment_start_loc <> [];;
 let is_in_string = ref false
 let in_string () = !is_in_string
 let print_warnings = ref true
+
+let with_comment_buffer comment lexbuf =
+  let start_loc = Location.curr lexbuf  in
+  comment_start_loc := [start_loc];
+  reset_string_buffer ();
+  let end_loc = comment lexbuf in
+  let s = get_stored_string () in
+  reset_string_buffer ();
+  let loc = { start_loc with Location.loc_end = end_loc.Location.loc_end } in
+  s, loc
 
 (* To translate escape sequences *)
 
@@ -218,12 +229,25 @@ let update_loc lexbuf file line absolute chars =
 
 let preprocessor = ref None
 
+let escaped_newlines = ref false
+
 (* Warn about Latin-1 characters used in idents *)
 
 let warn_latin1 lexbuf =
   Location.prerr_warning (Location.curr lexbuf)
     (Warnings.Deprecated "ISO-Latin1 characters in identifiers")
 ;;
+
+let comment_list = ref []
+
+let add_comment com =
+  comment_list := com :: !comment_list
+
+let add_docstring_comment ds =
+  let com = (Docstrings.docstring_body ds, Docstrings.docstring_loc ds) in
+    add_comment com
+
+let comments () = List.rev !comment_list
 
 (* Error report *)
 
@@ -287,19 +311,14 @@ let float_literal =
 
 rule token = parse
   | "\\" newline {
-      match !preprocessor with
-      | None ->
+      if not !escaped_newlines then
         raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
-                     Location.curr lexbuf))
-      | Some _ ->
-        update_loc lexbuf None 1 false 0;
-        token lexbuf }
+                     Location.curr lexbuf));
+      update_loc lexbuf None 1 false 0;
+      token lexbuf }
   | newline
       { update_loc lexbuf None 1 false 0;
-        match !preprocessor with
-        | None -> token lexbuf
-        | Some _ -> EOL
-      }
+        EOL }
   | blank +
       { token lexbuf }
   | "_"
@@ -386,26 +405,27 @@ rule token = parse
         raise (Error(Illegal_escape esc, Location.curr lexbuf))
       }
   | "(*"
-      { let start_loc = Location.curr lexbuf  in
-        comment_start_loc := [start_loc];
-        reset_string_buffer ();
-        let end_loc = comment lexbuf in
-        let s = get_stored_string () in
-        reset_string_buffer ();
-        COMMENT (s, { start_loc with
-                      Location.loc_end = end_loc.Location.loc_end })
-      }
+      { let s, loc = with_comment_buffer comment lexbuf in
+        COMMENT (s, loc) }
+  | "(**"
+      { let s, loc = with_comment_buffer comment lexbuf in
+        DOCSTRING (Docstrings.docstring s loc) }
+  | "(**" ('*'+) as stars
+      { let s, loc =
+          with_comment_buffer
+            (fun lexbuf ->
+               store_string ("*" ^ stars);
+               comment lexbuf)
+            lexbuf
+        in
+        COMMENT (s, loc) }
   | "(*)"
-      { let loc = Location.curr lexbuf  in
-        if !print_warnings then
-          Location.prerr_warning loc Warnings.Comment_start;
-        comment_start_loc := [loc];
-        reset_string_buffer ();
-        let end_loc = comment lexbuf in
-        let s = get_stored_string () in
-        reset_string_buffer ();
-        COMMENT (s, { loc with Location.loc_end = end_loc.Location.loc_end })
-      }
+      { if !print_warnings then
+          Location.prerr_warning (Location.curr lexbuf) Warnings.Comment_start;
+        let s, loc = with_comment_buffer comment lexbuf in
+        COMMENT (s, loc) }
+  | "(*" ('*'*) as stars "*)"
+      { COMMENT (stars, Location.curr lexbuf) }
   | "*)"
       { let loc = Location.curr lexbuf in
         Location.prerr_warning loc Warnings.Comment_not_end;
@@ -483,6 +503,8 @@ rule token = parse
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | '#' (symbolchar | '#') +
+            { SHARPOP(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
@@ -654,24 +676,98 @@ and skip_sharp_bang = parse
     | None -> token lexbuf
     | Some (_init, preprocess) -> preprocess token lexbuf
 
-  let last_comments = ref []
-  let rec token lexbuf =
-    match token_with_comments lexbuf with
-        COMMENT (s, comment_loc) ->
-          last_comments := (s, comment_loc) :: !last_comments;
-          token lexbuf
-      | tok -> tok
-  let comments () = List.rev !last_comments
+  type newline_state =
+    | NoLine (* There have been no blank lines yet. *)
+    | NewLine
+        (* There have been no blank lines, and the previous
+           token was a newline. *)
+    | BlankLine (* There have been blank lines. *)
+
+  type doc_state =
+    | Initial  (* There have been no docstrings yet *)
+    | After of docstring list
+        (* There have been docstrings, none of which were
+           preceeded by a blank line *)
+    | Before of docstring list * docstring list * docstring list
+        (* There have been docstrings, some of which were
+           preceeded by a blank line *)
+
+  and docstring = Docstrings.docstring
+
+  let token lexbuf =
+    let post_pos = lexeme_end_p lexbuf in
+    let attach lines docs pre_pos =
+      let open Docstrings in
+        match docs, lines with
+        | Initial, _ -> ()
+        | After a, (NoLine | NewLine) ->
+            set_post_docstrings post_pos (List.rev a);
+            set_pre_docstrings pre_pos a;
+        | After a, BlankLine ->
+            set_post_docstrings post_pos (List.rev a);
+            set_pre_extra_docstrings pre_pos (List.rev a)
+        | Before(a, f, b), (NoLine | NewLine) ->
+            set_post_docstrings post_pos (List.rev a);
+            set_post_extra_docstrings post_pos
+              (List.rev_append f (List.rev b));
+            set_floating_docstrings pre_pos (List.rev f);
+            set_pre_extra_docstrings pre_pos (List.rev a);
+            set_pre_docstrings pre_pos b
+        | Before(a, f, b), BlankLine ->
+            set_post_docstrings post_pos (List.rev a);
+            set_post_extra_docstrings post_pos
+              (List.rev_append f (List.rev b));
+            set_floating_docstrings pre_pos
+              (List.rev_append f (List.rev b));
+            set_pre_extra_docstrings pre_pos (List.rev a)
+    in
+    let rec loop lines docs lexbuf =
+      match token_with_comments lexbuf with
+      | COMMENT (s, loc) ->
+          add_comment (s, loc);
+          let lines' =
+            match lines with
+            | NoLine -> NoLine
+            | NewLine -> NoLine
+            | BlankLine -> BlankLine
+          in
+          loop lines' docs lexbuf
+      | EOL ->
+          let lines' =
+            match lines with
+            | NoLine -> NewLine
+            | NewLine -> BlankLine
+            | BlankLine -> BlankLine
+          in
+          loop lines' docs lexbuf
+      | DOCSTRING doc ->
+          add_docstring_comment doc;
+          let docs' =
+            match docs, lines with
+            | Initial, (NoLine | NewLine) -> After [doc]
+            | Initial, BlankLine -> Before([], [], [doc])
+            | After a, (NoLine | NewLine) -> After (doc :: a)
+            | After a, BlankLine -> Before (a, [], [doc])
+            | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
+            | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
+          in
+          loop NoLine docs' lexbuf
+      | tok ->
+          attach lines docs (lexeme_start_p lexbuf);
+          tok
+    in
+      loop NoLine Initial lexbuf
 
   let init () =
     is_in_string := false;
-    last_comments := [];
     comment_start_loc := [];
+    comment_list := [];
     match !preprocessor with
     | None -> ()
     | Some (init, _preprocess) -> init ()
 
   let set_preprocessor init preprocess =
+    escaped_newlines := true;
     preprocessor := Some (init, preprocess)
 
 }

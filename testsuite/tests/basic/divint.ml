@@ -74,6 +74,7 @@ let do_test divisor (df: nativeint -> nativeint) (mf: nativeint -> nativeint) =
 end
 
 let _ =
+  printf "1 int\n"; WithInt.do_test 1 (fun x -> x / 1)(fun x -> x mod 1);
   printf "2 int\n"; WithInt.do_test 2 (fun x -> x / 2)(fun x -> x mod 2);
   printf "3 int\n"; WithInt.do_test 3 (fun x -> x / 3)(fun x -> x mod 3);
   printf "4 int\n"; WithInt.do_test 4 (fun x -> x / 4)(fun x -> x mod 4);
@@ -88,9 +89,11 @@ let _ =
   printf "55 int\n"; WithInt.do_test 55 (fun x -> x / 55)(fun x -> x mod 55);
   printf "125 int\n"; WithInt.do_test 125 (fun x -> x / 125)(fun x -> x mod 125);
   printf "625 int\n"; WithInt.do_test 625 (fun x -> x / 625)(fun x -> x mod 625);
+  printf "-1 int\n"; WithInt.do_test (-1) (fun x -> x / (-1))(fun x -> x mod (-1));
   printf "-2 int\n"; WithInt.do_test (-2) (fun x -> x / (-2))(fun x -> x mod (-2));
   printf "-3 int\n"; WithInt.do_test (-3) (fun x -> x / (-3))(fun x -> x mod (-3));
 
+  printf "1 nat\n"; WithNat.do_test 1 (fun x -> Nativeint.div x 1n)(fun x -> Nativeint.rem x 1n);
   printf "2 nat\n"; WithNat.do_test 2 (fun x -> Nativeint.div x 2n)(fun x -> Nativeint.rem x 2n);
   printf "3 nat\n"; WithNat.do_test 3 (fun x -> Nativeint.div x 3n)(fun x -> Nativeint.rem x 3n);
   printf "4 nat\n"; WithNat.do_test 4 (fun x -> Nativeint.div x 4n)(fun x -> Nativeint.rem x 4n);
@@ -105,8 +108,12 @@ let _ =
   printf "55 nat\n"; WithNat.do_test 55 (fun x -> Nativeint.div x 55n)(fun x -> Nativeint.rem x 55n);
   printf "125 nat\n"; WithNat.do_test 125 (fun x -> Nativeint.div x 125n)(fun x -> Nativeint.rem x 125n);
   printf "625 nat\n"; WithNat.do_test 625 (fun x -> Nativeint.div x 625n)(fun x -> Nativeint.rem x 625n);
+  printf "-1 nat\n"; WithNat.do_test (-1) (fun x -> Nativeint.div x (-1n))(fun x -> Nativeint.rem x (-1n));
   printf "-2 nat\n"; WithNat.do_test (-2) (fun x -> Nativeint.div x (-2n))(fun x -> Nativeint.rem x (-2n));
   printf "-3 nat\n"; WithNat.do_test (-3) (fun x -> Nativeint.div x (-3n))(fun x -> Nativeint.rem x (-3n));
 
   if !error then printf "TEST FAILED.\n" else printf "Test passed.\n"
 
+(* PR#6879 *)
+let f n = assert (1 mod n = 0)
+let () = f 1

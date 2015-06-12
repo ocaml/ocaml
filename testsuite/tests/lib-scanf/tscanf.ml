@@ -1268,7 +1268,12 @@ sscanf "Hello \n" "%s%s%_1[ ]\n" (fun s1 s2 ->
  sscanf "Hello\nWorld!" "%s\n%s%!" (fun s1 s2 ->
       s1 = "Hello" && s2 = "World!") &&
  sscanf "Hello\nWorld!" "%s\n%s@!%!" (fun s1 s2 ->
-      s1 = "Hello" && s2 = "World")
+      s1 = "Hello" && s2 = "World") &&
+ (* PR#6791 *)
+ sscanf "Hello{foo}" "%s@{%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "foo}") &&
+ sscanf "Hello[foo]" "%s@[%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "foo]")
 ;;
 
 test (test52 ())
@@ -1439,6 +1444,8 @@ let test58 () =
 test (test58 ())
 ;;
 
+(* skip test number "59" which is commented below *)
+let () = test (true);;
 (*
 let test59 () =
 ;;
@@ -1470,3 +1477,15 @@ let scan_record scan_field ib =
 let scan_field ib =
   bscanf ib "%s = %[^;]" (fun finame ficont -> finame, ficont);;
 *)
+
+(* testing formats that do not consume their input *)
+let test60 () =
+  sscanf "abc" "%0c%0c%c%n" (fun c1 c2 c3 n ->
+    c1 = 'a' && c2 = 'a' && c3 = 'a' && n = 1)
+  &&
+  sscanf "abc" "%0s%s" (fun s1 s2 -> s1 = "" && s2 = "abc")
+  &&
+  sscanf "abc" "%1s%s" (fun s1 s2 -> s1 = "a" && s2 = "bc")
+;;
+
+test (test60 ());

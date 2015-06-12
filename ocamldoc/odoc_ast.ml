@@ -1181,8 +1181,7 @@ module Analyser =
 
       | Parsetree.Pstr_type name_typedecl_list ->
           (* of (string * type_declaration) list *)
-          (* we start by extending the environment *)
-          let new_env =
+          let extended_env =
             List.fold_left
               (fun acc_env {Parsetree.ptype_name = { txt = name }} ->
                 let complete_name = Name.concat current_module_name name in
@@ -1190,6 +1189,16 @@ module Analyser =
               )
               env
               name_typedecl_list
+          in
+          let env =
+            let is_nonrec =
+              List.exists
+                (fun td ->
+                   List.exists (fun (n, _) -> n.txt = "nonrec")
+                     td.Parsetree.ptype_attributes)
+                name_typedecl_list
+            in
+            if is_nonrec then env else extended_env
           in
           let rec f ?(first=false) maybe_more_acc last_pos name_type_decl_list =
             match name_type_decl_list with
@@ -1220,7 +1229,7 @@ module Analyser =
                       get_comments_in_module last_pos loc_start
                   in
                   let kind = Sig.get_type_kind
-                    new_env name_comment_list
+                    env name_comment_list
                     tt_type_decl.Types.type_kind
                   in
                   let new_end = loc_end + maybe_more in
@@ -1232,7 +1241,7 @@ module Analyser =
                       List.map2
                        (fun p v ->
                          let (co, cn) = Types.Variance.get_upper v in
-                         (Odoc_env.subst_type new_env p, co, cn))
+                         (Odoc_env.subst_type env p, co, cn))
                        tt_type_decl.Types.type_params
                        tt_type_decl.Types.type_variance ;
                       ty_kind = kind ;
@@ -1241,7 +1250,7 @@ module Analyser =
                         (match tt_type_decl.Types.type_manifest with
                            None -> None
                          | Some t ->
-                           Some (Sig.manifest_structure new_env name_comment_list t));
+                           Some (Sig.manifest_structure env name_comment_list t));
                       ty_loc = { loc_impl = Some loc ; loc_inter = None } ;
                       ty_code =
                       (
@@ -1262,7 +1271,7 @@ module Analyser =
                   (maybe_more3, ele_comments @ ((Element_type t) :: eles))
             in
             let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
-            (maybe_more, new_env, eles)
+            (maybe_more, extended_env, eles)
 
       | Parsetree.Pstr_typext tyext ->
           (* we get the extension declaration in the typed tree *)
@@ -1709,7 +1718,11 @@ module Analyser =
       }
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
-        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _)) ->
+        (Parsetree.Pmod_ident longident, Typedtree.Tmod_ident (path, _))
+        | (Parsetree.Pmod_ident longident,
+           Typedtree.Tmod_constraint
+             ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
+          ->
           let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
                                                 ma_module = None ; } }
@@ -1859,6 +1872,7 @@ module Analyser =
           (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
           (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
           (*DEBUG*)  | Parsetree.Pmod_unpack _ -> "Pmod_unpack"
+          (*DEBUG*)  | Parsetree.Pmod_extension _ -> "Pmod_extension"
           (*DEBUG*)in
           (*DEBUG*)let s_typed =
           (*DEBUG*)  match typedtree with

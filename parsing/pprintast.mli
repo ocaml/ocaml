@@ -80,6 +80,7 @@ class printer :
     method payload : Format.formatter -> Parsetree.payload -> unit
     method private_flag : Format.formatter -> Asttypes.private_flag -> unit
     method rec_flag : Format.formatter -> Asttypes.rec_flag -> unit
+    method nonrec_flag : Format.formatter -> Asttypes.rec_flag -> unit
 
     method reset : 'b
     method reset_semi : 'b

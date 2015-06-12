@@ -1029,9 +1029,11 @@ fun k fmt -> match fmt with
   | Flush rest                       -> take_format_readers k rest
   | String_literal (_, rest)         -> take_format_readers k rest
   | Char_literal (_, rest)           -> take_format_readers k rest
+  | Custom (_, _, rest)              -> take_format_readers k rest
 
   | Scan_char_set (_, _, rest)       -> take_format_readers k rest
   | Scan_get_counter (_, rest)       -> take_format_readers k rest
+  | Scan_next_char rest              -> take_format_readers k rest
 
   | Formatting_lit (_, rest)         -> take_format_readers k rest
   | Formatting_gen (Open_tag (Format (fmt, _)), rest) -> take_format_readers k (concat_fmt fmt rest)
@@ -1067,6 +1069,7 @@ fun k fmtty fmt -> match fmtty with
   | Bool_ty rest                -> take_fmtty_format_readers k rest fmt
   | Alpha_ty rest               -> take_fmtty_format_readers k rest fmt
   | Theta_ty rest               -> take_fmtty_format_readers k rest fmt
+  | Any_ty rest                 -> take_fmtty_format_readers k rest fmt
   | Format_arg_ty (_, rest)     -> take_fmtty_format_readers k rest fmt
   | End_of_fmtty                -> take_format_readers k fmt
   | Format_subst_ty (ty1, ty2, rest) ->
@@ -1096,6 +1099,7 @@ fun k ign fmt -> match ign with
   | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
   | Ignored_scan_char_set _         -> take_format_readers k fmt
   | Ignored_scan_get_counter _      -> take_format_readers k fmt
+  | Ignored_scan_next_char          -> take_format_readers k fmt
 
 (******************************************************************************)
                           (* Generic scanning *)
@@ -1123,6 +1127,12 @@ fun ib fmt readers -> match fmt with
     let scan width _ ib = scan_string (Some stp) width ib in
     let str_rest = String_literal (str, rest) in
     pad_prec_scanf ib str_rest readers pad No_precision scan token_string
+  | String (pad, Formatting_gen (Open_tag (Format (fmt', _)), rest)) ->
+    let scan width _ ib = scan_string (Some '{') width ib in
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
+  | String (pad, Formatting_gen (Open_box (Format (fmt', _)), rest)) ->
+    let scan width _ ib = scan_string (Some '[') width ib in
+    pad_prec_scanf ib (concat_fmt fmt' rest) readers pad No_precision scan token_string
   | String (pad, rest) ->
     let scan width _ ib = scan_string None width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_string
@@ -1161,6 +1171,8 @@ fun ib fmt readers -> match fmt with
     invalid_arg "scanf: bad conversion \"%a\""
   | Theta _ ->
     invalid_arg "scanf: bad conversion \"%t\""
+  | Custom _ ->
+    invalid_arg "scanf: bad conversion \"%?\" (custom converter)"
   | Reader fmt_rest ->
     let Cons (reader, readers_rest) = readers in
     let x = reader ib in
@@ -1225,6 +1237,9 @@ fun ib fmt readers -> match fmt with
   | Scan_get_counter (counter, rest) ->
     let count = get_counter ib counter in
     Cons (count, make_scanf ib rest readers)
+  | Scan_next_char rest ->
+    let c = Scanning.checked_peek_char ib in
+    Cons (c, make_scanf ib rest readers)
 
   | Formatting_lit (formatting_lit, rest) ->
     String.iter (check_char ib) (string_of_formatting_lit formatting_lit);

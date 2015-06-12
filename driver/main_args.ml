@@ -131,6 +131,10 @@ let mk_intf_suffix_2 f =
   "-intf_suffix", Arg.String f, "<string>  (deprecated) same as -intf-suffix"
 ;;
 
+let mk_keep_docs f =
+  "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
+;;
+
 let mk_keep_locs f =
   "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
 ;;
@@ -163,6 +167,10 @@ let mk_no_alias_deps f =
 
 let mk_no_app_funct f =
   "-no-app-funct", Arg.Unit f, " Deactivate applicative functors"
+;;
+
+let mk_no_check_prims f =
+  "-no-check-prims", Arg.Unit f, " Do not check runtime for primitives"
 ;;
 
 let mk_no_float_const_prop f =
@@ -220,7 +228,12 @@ let mk_open f =
 ;;
 
 let mk_output_obj f =
-  "-output-obj", Arg.Unit f, " Output a C object file instead of an executable"
+  "-output-obj", Arg.Unit f, " Output an object file instead of an executable"
+;;
+
+let mk_output_complete_obj f =
+  "-output-complete-obj", Arg.Unit f,
+  " Output an object file, including runtime, instead of an executable"
 ;;
 
 let mk_p f =
@@ -508,7 +521,7 @@ module type Common_options = sig
   val anonymous : string -> unit
 end;;
 
-module type Compiler_options =  sig
+module type Compiler_options = sig
   val _a : unit -> unit
   val _annot : unit -> unit
   val _binannot : unit -> unit
@@ -523,11 +536,13 @@ module type Compiler_options =  sig
   val _impl : string -> unit
   val _intf : string -> unit
   val _intf_suffix : string -> unit
+  val _keep_docs : unit -> unit
   val _keep_locs : unit -> unit
   val _linkall : unit -> unit
   val _noautolink : unit -> unit
   val _o : string -> unit
   val _output_obj : unit -> unit
+  val _output_complete_obj : unit -> unit
   val _pack : unit -> unit
   val _pp : string -> unit
   val _principal : unit -> unit
@@ -548,6 +563,7 @@ module type Bytecomp_options = sig
   include Compiler_options
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
+  val _no_check_prims : unit -> unit
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _make_runtime : unit -> unit
@@ -615,6 +631,22 @@ module type Opttop_options = sig
   val _stdin : unit -> unit
 end;;
 
+module type Ocamldoc_options = sig
+  include Common_options
+  val _impl : string -> unit
+  val _intf : string -> unit
+  val _intf_suffix : string -> unit
+  val _pp : string -> unit
+  val _principal : unit -> unit
+  val _rectypes : unit -> unit
+  val _safe_string : unit -> unit
+  val _short_paths : unit -> unit
+  val _thread : unit -> unit
+  val _v : unit -> unit
+  val _verbose : unit -> unit
+  val _vmthread : unit -> unit
+end;;
+
 module type Arg_list = sig
     val list : (string * Arg.spec * string) list
 end;;
@@ -633,6 +665,7 @@ struct
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
+    mk_custom F._no_check_prims;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
@@ -645,6 +678,7 @@ struct
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
     mk_intf_suffix_2 F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
@@ -653,6 +687,7 @@ struct
     mk_modern F._labels;
     mk_no_alias_deps F._no_alias_deps;
     mk_no_app_funct F._no_app_funct;
+    mk_no_check_prims F._no_check_prims;
     mk_noassert F._noassert;
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
@@ -660,6 +695,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
@@ -763,6 +799,7 @@ struct
     mk_inline F._inline;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
+    mk_keep_docs F._keep_docs;
     mk_keep_locs F._keep_locs;
     mk_labels F._labels;
     mk_linkall F._linkall;
@@ -777,6 +814,7 @@ struct
     mk_o F._o;
     mk_open F._open;
     mk_output_obj F._output_obj;
+    mk_output_complete_obj F._output_complete_obj;
     mk_p F._p;
     mk_pack_opt F._pack;
     mk_pp F._pp;
@@ -883,5 +921,42 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dscheduling F._dscheduling;
     mk_dlinear F._dlinear;
     mk_dstartup F._dstartup;
+  ]
+end;;
+
+module Make_ocamldoc_options (F : Ocamldoc_options) =
+struct
+  let list = [
+    mk_absname F._absname;
+    mk_I F._I;
+    mk_impl F._impl;
+    mk_intf F._intf;
+    mk_intf_suffix F._intf_suffix;
+    mk_intf_suffix_2 F._intf_suffix;
+    mk_labels F._labels;
+    mk_modern F._labels;
+    mk_no_alias_deps F._no_alias_deps;
+    mk_no_app_funct F._no_app_funct;
+    mk_noassert F._noassert;
+    mk_nolabels F._nolabels;
+    mk_nostdlib F._nostdlib;
+    mk_open F._open;
+    mk_pp F._pp;
+    mk_ppx F._ppx;
+    mk_principal F._principal;
+    mk_rectypes F._rectypes;
+    mk_safe_string F._safe_string;
+    mk_short_paths F._short_paths;
+    mk_strict_sequence F._strict_sequence;
+    mk_strict_formats F._strict_formats;
+    mk_thread F._thread;
+    mk_unsafe_string F._unsafe_string;
+    mk_v F._v;
+    mk_verbose F._verbose;
+    mk_version F._version;
+    mk_vmthread F._vmthread;
+    mk_vnum F._vnum;
+    mk_w F._w;
+    mk__ F.anonymous;
   ]
 end;;

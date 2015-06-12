@@ -24,7 +24,7 @@ ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
 	         $(EXTRALIBS) libcamlrun.$(A)
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \
+	$(MKEXE) -o ocamlrund$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) \
 	         $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
 
 libcamlrun.$(A): $(OBJS)
@@ -33,21 +33,20 @@ libcamlrun.$(A): $(OBJS)
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,libcamlrund.$(A),$(DOBJS))
 
-.SUFFIXES: .$(O) .$(DBGO)
-
-.c.$(O):
+%.$(O): %.c
 	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
 
-.c.$(DBGO):
-	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c $<
-	mv $*.$(O) $*.$(DBGO)
+%.$(DBGO): %.c
+	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c -o $@ $<
 
 .depend.nt: .depend
 	rm -f .depend.win32
-	echo "win32.o: win32.c fail.h compatibility.h \\" >> .depend.win32
-	echo " misc.h config.h ../config/m.h ../config/s.h \\" >> .depend.win32
-	echo " mlvalues.h memory.h gc.h major_gc.h \\" >> .depend.win32
-	echo " freelist.h minor_gc.h osdeps.h signals.h" >> .depend.win32
+	echo "win32.o: win32.c \\" >> .depend.win32
+	echo " caml/fail.h caml/compatibility.h caml/misc.h \\" >> .depend.win32
+	echo " caml/config.h ../config/m.h ../config/s.h \\" >> .depend.win32
+	echo " caml/mlvalues.h caml/memory.h caml/gc.h \\" >> .depend.win32
+	echo " caml/major_gc.h caml/freelist.h caml/minor_gc.h \\" >> .depend.win32
+	echo " caml/osdeps.h caml/signals.h" >> .depend.win32
 	cat .depend >> .depend.win32
 	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(O) \1.$$(DBGO):/' \
 	    .depend.win32 > .depend.nt
