@@ -197,6 +197,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
   let _intf_suffix s = Config.interface_suffix := s
   let _labels = unset Clflags.classic
+  let _easy_type_errors () = Clflags.easy_type_errors := true; Clflags.strict_sequence := true
   let _no_alias_deps = set Clflags.transparent_modules
   let _no_app_funct = unset Clflags.applicative_functors
   let _noassert = set Clflags.noassert
