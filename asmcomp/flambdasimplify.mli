@@ -32,30 +32,30 @@ val remove_unused_closure_variables
     information. *)
 val primitive
    : Lambda.primitive
-  -> (Expr_id.t Flambda.t list * (Flambdaapprox.t list))
+  -> (Expr_id.t Flambda.t list * (Simple_value_approx.t list))
   -> Expr_id.t Flambda.t
   -> Debuginfo.t
-  -> Expr_id.t Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
+  -> Expr_id.t Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (** Simplify a sequential logical "arg1 AND arg2" expression. *)
 val sequential_and
    : arg1:'a Flambda.t
-  -> arg1_approx:Flambdaapprox.t
+  -> arg1_approx:Simple_value_approx.t
   -> arg2:'a Flambda.t
-  -> arg2_approx:Flambdaapprox.t
+  -> arg2_approx:Simple_value_approx.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
+  -> 'a Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (** Like [sequential_and], but for "arg1 OR arg2". *)
 val sequential_or
    : arg1:'a Flambda.t
-  -> arg1_approx:Flambdaapprox.t
+  -> arg1_approx:Simple_value_approx.t
   -> arg2:'a Flambda.t
-  -> arg2_approx:Flambdaapprox.t
+  -> arg2_approx:Simple_value_approx.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
+  -> 'a Flambda.t * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (** Introduce a stub function to avoid depending on unused arguments.
 

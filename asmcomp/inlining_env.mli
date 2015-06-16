@@ -11,7 +11,7 @@ val inlining_level_up : t -> t
    used by the inlining heuristics to decide wether to continue.
    Unconditionnaly inlined does not take this into account. *)
 
-val find : Variable.t -> t -> Flambdaapprox.t
+val find : Variable.t -> t -> Simple_value_approx.t
 (* Recover informations about the potential values of a variable.
    Fails if no information was present in the environment *)
 
@@ -22,7 +22,7 @@ val activate_substitution : t -> t
    will be alpha renamed *)
 val disactivate_substitution : t -> t
 
-val add_approx : Variable.t -> Flambdaapprox.t -> t -> t
+val add_approx : Variable.t -> Simple_value_approx.t -> t -> t
 
 val clear_approx : Variable.t -> t -> t
 (* Explicitely record the fact that this variable does not carry any

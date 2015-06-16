@@ -12,7 +12,7 @@
 
 open Abstract_identifiers
 
-module A = Flambdaapprox
+module A = Simple_value_approx
 module C = Inlining_cost
 
 external swap16 : int -> int = "%bswap16"

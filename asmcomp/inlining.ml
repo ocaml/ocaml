@@ -13,7 +13,7 @@
 open Abstract_identifiers
 open Flambdautils
 
-module A = Flambdaapprox
+module A = Simple_value_approx
 module E = Inlining_env
 module R = Inlining_result
 let ret = R.set_approx

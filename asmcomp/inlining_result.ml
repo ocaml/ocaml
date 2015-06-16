@@ -3,8 +3,8 @@ open Abstract_identifiers
 module IntMap = Ext_types.Int.Map
 
 type t =
-  { approx : Flambdaapprox.t;
-    globals : Flambdaapprox.t IntMap.t;
+  { approx : Simple_value_approx.t;
+    globals : Simple_value_approx.t IntMap.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
     inlining_threshold : Inlining_cost.inlining_threshold;
@@ -12,7 +12,7 @@ type t =
   }
 
 let create () =
-  { approx = Flambdaapprox.value_unknown;
+  { approx = Simple_value_approx.value_unknown;
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;

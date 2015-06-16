@@ -114,7 +114,7 @@ ASMCOMP=\
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/effect_analysis.cmo \
-  asmcomp/flambdaapprox.cmo \
+  asmcomp/simple_value_approx.cmo \
   asmcomp/inlining_cost.cmo \
   asmcomp/flambdasimplify.cmo \
   asmcomp/inlining_stats_types.cmo \

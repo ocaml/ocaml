@@ -1,8 +1,8 @@
 open Abstract_identifiers
-open Flambdaapprox
+open Simple_value_approx
 
 type t = {
-  env_approx : Flambdaapprox.t Variable.Map.t;
+  env_approx : Simple_value_approx.t Variable.Map.t;
   current_functions : Set_of_closures_id.Set.t;
   (* The functions currently being declared: used to avoid inlining
      recursively *)

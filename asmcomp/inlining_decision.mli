@@ -13,8 +13,8 @@ val inlining_decision_for_call_site
   -> funct:Expr_id.t Flambda.t
   -> fun_id:Closure_id.t
   -> func:'a Flambda.function_declaration
-  -> closure:Flambdaapprox.value_set_of_closures
-  -> args_with_approxs:((Expr_id.t Flambda.t list) * (Flambdaapprox.t list))
+  -> closure:Simple_value_approx.value_set_of_closures
+  -> args_with_approxs:((Expr_id.t Flambda.t list) * (Simple_value_approx.t list))
   -> ap_dbg:Debuginfo.t
   -> eid:Expr_id.t
   -> inline_by_copying_function_body:(
@@ -33,7 +33,7 @@ val inlining_decision_for_call_site
       -> clos:'a Flambda.function_declarations
       -> fun_id:Closure_id.t
       -> func:'a Flambda.function_declaration
-      -> args_with_approxs:(Expr_id.t Flambda.t list) * (Flambdaapprox.t list)
+      -> args_with_approxs:(Expr_id.t Flambda.t list) * (Simple_value_approx.t list)
       -> unchanging_params:Variable.Set.t
       -> specialised_args:Variable.Set.t
       -> ap_dbg:Debuginfo.t

@@ -6,8 +6,8 @@ type t
 
 val create : unit -> t
 
-val approx : t -> Flambdaapprox.t
-val set_approx : t -> Flambdaapprox.t -> t
+val approx : t -> Simple_value_approx.t
+val set_approx : t -> Simple_value_approx.t -> t
 
 val use_var : t -> Variable.t -> t
 val set_used_variables : t -> Variable.Set.t -> t
@@ -27,5 +27,5 @@ val clear_benefit : t -> t
 val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
 val inlining_threshold : t -> Inlining_cost.inlining_threshold
 
-val add_global : t -> field_index:int -> approx:Flambdaapprox.t -> t
-val find_global : t -> field_index:int -> Flambdaapprox.t
+val add_global : t -> field_index:int -> approx:Simple_value_approx.t -> t
+val find_global : t -> field_index:int -> Simple_value_approx.t
