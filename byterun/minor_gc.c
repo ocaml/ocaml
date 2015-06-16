@@ -260,8 +260,8 @@ void caml_empty_minor_heap (void)
   uintnat prev_alloc_words;
 
   if (caml_young_ptr != caml_young_end){
-    CAML_INSTR_SETUP (tmr, "minor");
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
@@ -292,11 +292,11 @@ void caml_empty_minor_heap (void)
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
-    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
     CAML_INSTR_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
+    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }
 #ifdef DEBUG
   {
@@ -332,9 +332,7 @@ CAMLexport void caml_minor_collection (void)
   CAML_INSTR_TIME (tmr, "coll/major");
   caml_force_major_slice = 0;
 
-  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   caml_final_do_calls ();
-  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
   CAML_INSTR_TIME (tmr, "coll/finalizers");
 
   if (caml_young_ptr != caml_young_end){
