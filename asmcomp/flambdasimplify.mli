@@ -33,7 +33,7 @@ val primitive
   -> (Expr_id.t flambda list * (Flambdaapprox.t list))
   -> Expr_id.t flambda
   -> Debuginfo.t
-  -> Expr_id.t flambda * Flambdaapprox.t
+  -> Expr_id.t flambda * Flambdaapprox.t * Flambdacost.benefit
 
 (** Simplify a sequential logical "arg1 AND arg2" expression. *)
 val sequential_and

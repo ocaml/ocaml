@@ -181,6 +181,8 @@ let remove_code lam b =
     | Fset_of_closures _
     | Fprim ((Pmakearray _ | Pmakeblock _ | Pduprecord _),_,_,_) ->
         b := remove_alloc !b
+    (* CR: chambart: should we consider that boxed integer and float
+       operations are allocations ? *)
 
     | Fprim _
     | Fclosure _
