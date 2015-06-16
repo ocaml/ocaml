@@ -635,7 +635,15 @@ and lifting_helper t ~env ~args ~name =
         (* Assumes that [v] is an immutable variable, otherwise this may
            change the evaluation order. *)
         (* CR mshinwell for pchambart: Please justify why [v] is always
-           immutable. *)
+           immutable.
+           CR pchambart for mshinwell: My bad, this is not the case. I was
+           convinced i did remove the reference to variable optimisation from
+           Simplif.simplif and this is not the case (this is better done by
+           Ref_to_variables).
+           We could either remove the optimisation in Simplif in case of native code
+           and add an assert requiring that no mutable variables here (in the Let case)
+           or get rid of this one that will be done in the end by the first inlining
+           pass. *)
         e::args, lets
       | expr ->
         let v = fresh_variable t name in
