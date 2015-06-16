@@ -11,7 +11,7 @@ module Copying_body : sig
   type t =
     | Unconditionally
     | Decl_local_to_application
-    | Evaluated of Flambdacost.Whether_sufficient_benefit.t
+    | Evaluated of Inlining_cost.Whether_sufficient_benefit.t
 
   val to_string : t -> string
 end
@@ -20,9 +20,9 @@ module Inlined : sig
   type t =
     | Copying_body of Copying_body.t
     | Copying_body_with_subfunctions of Copying_body.t
-    | Unrolled of Flambdacost.Whether_sufficient_benefit.t
+    | Unrolled of Inlining_cost.Whether_sufficient_benefit.t
     | Copying_decl of
-        Tried_unrolling.t * Flambdacost.Whether_sufficient_benefit.t
+        Tried_unrolling.t * Inlining_cost.Whether_sufficient_benefit.t
 
   val to_string : t -> string
 end

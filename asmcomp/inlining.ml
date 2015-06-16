@@ -33,9 +33,9 @@ let check_var_and_constant_result env r original_lam approx =
   let r = match lam with
     | Fvar(var,_) ->
         R.map_benefit (R.use_var r var)
-          (Flambdacost.remove_code original_lam)
+          (Inlining_cost.Benefit.remove_code original_lam)
     | Fconst _ ->
-        R.map_benefit r (Flambdacost.remove_code original_lam)
+        R.map_benefit r (Inlining_cost.Benefit.remove_code original_lam)
     | _ -> r
   in
   lam, r
@@ -343,7 +343,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
            I should find a nice pattern to allow to do that elsewhere
            without too much syntactic noise. *)
         else if Flambdaeffects.no_effects lam then
-          let r = R.map_benefit r (Flambdacost.remove_code lam) in
+          let r = R.map_benefit r (Inlining_cost.Benefit.remove_code lam) in
           body, r
         else
           Fsequence(lam, body, annot),
@@ -421,7 +421,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let expr, approx, simplify_benefit =
         simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
       in
-      expr, ret (R.map_benefit r (Flambdacost.benefit_union simplify_benefit))
+      expr, ret (R.map_benefit r (Inlining_cost.Benefit.(+) simplify_benefit))
         approx
   | Fprim ((Psequand | Psequor), _, _, _) ->
     Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
@@ -485,13 +485,13 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       | Value_constptr 0 ->
           (* constant false, keep ifnot *)
           let ifnot, r = loop env r ifnot in
-          let r = R.map_benefit r Flambdacost.remove_branch in
+          let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
           Flambdaeffects.sequence arg ifnot annot, r
       | Value_constptr _
       | Value_block _ ->
           (* constant true, keep ifso *)
           let ifso, r = loop env r ifso in
-          let r = R.map_benefit r Flambdacost.remove_branch in
+          let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
           Flambdaeffects.sequence arg ifso annot, r
       | _ ->
           let env = E.inside_branch env in
@@ -557,13 +557,13 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           let lam = try List.assoc i sw.fs_consts with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
-          let r = R.map_benefit r Flambdacost.remove_branch in
+          let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
           Flambdaeffects.sequence arg lam annot, r
       | Value_block(tag,_) ->
           let lam = try List.assoc tag sw.fs_blocks with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
-          let r = R.map_benefit r Flambdacost.remove_branch in
+          let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
           Flambdaeffects.sequence arg lam annot, r
       | _ ->
           let env = E.inside_branch env in
@@ -932,7 +932,7 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
        f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
 *)
 and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
-  let r = R.map_benefit r Flambdacost.remove_call in
+  let r = R.map_benefit r Inlining_cost.Benefit.remove_call in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_body" in
   (* Assign fresh names for the function's parameters and rewrite the body to use
@@ -1046,7 +1046,7 @@ let debug_benefit =
 let inline ~never_inline tree =
   let r =
     if never_inline then
-      R.set_inline_threshold (R.create ()) Flambdacost.Never_inline
+      R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
     else
       R.create ()
   in
@@ -1070,5 +1070,5 @@ let inline ~never_inline tree =
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
     Format.printf "benefit:@ %a@."
-      Flambdacost.print_benefit (R.benefit r);
+      Inlining_cost.Benefit.print (R.benefit r);
   result

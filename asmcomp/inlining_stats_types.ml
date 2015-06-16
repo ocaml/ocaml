@@ -1,4 +1,4 @@
-module Wsb = Flambdacost.Whether_sufficient_benefit
+module Wsb = Inlining_cost.Whether_sufficient_benefit
 
 module Tried_unrolling = struct
   type t =

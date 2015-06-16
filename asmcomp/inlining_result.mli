@@ -20,12 +20,12 @@ val used_staticfail : t -> Static_exception.Set.t
 
 val exit_scope_catch : t -> Static_exception.t -> t
 
-val map_benefit : t -> (Flambdacost.benefit -> Flambdacost.benefit) -> t
-val benefit : t -> Flambdacost.benefit
+val map_benefit : t -> (Inlining_cost.Benefit.t -> Inlining_cost.Benefit.t) -> t
+val benefit : t -> Inlining_cost.Benefit.t
 val clear_benefit : t -> t
 
-val set_inline_threshold : t -> Flambdacost.inline_threshold -> t
-val inline_threshold : t -> Flambdacost.inline_threshold
+val set_inlining_threshold : t -> Inlining_cost.inlining_threshold -> t
+val inlining_threshold : t -> Inlining_cost.inlining_threshold
 
 val add_global : t -> field_index:int -> approx:Flambdaapprox.t -> t
 val find_global : t -> field_index:int -> Flambdaapprox.t

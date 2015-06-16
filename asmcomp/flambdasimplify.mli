@@ -43,7 +43,7 @@ val sequential_and
   -> arg2_approx:Flambdaapprox.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a flambda * Flambdaapprox.t * Flambdacost.benefit
+  -> 'a flambda * Flambdaapprox.t * Inlining_cost.Benefit.t
 
 (** Like [sequential_and], but for "arg1 OR arg2". *)
 val sequential_or
@@ -53,7 +53,7 @@ val sequential_or
   -> arg2_approx:Flambdaapprox.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a flambda * Flambdaapprox.t * Flambdacost.benefit
+  -> 'a flambda * Flambdaapprox.t * Inlining_cost.Benefit.t
 
 (** Introduce a stub function to avoid depending on unused arguments.
 

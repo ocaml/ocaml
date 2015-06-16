@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                OCaml                                   *)
 (*                                                                        *)
-(*                      Pierre Chambart (OCamlPro)                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
 (*   Copyright 2015 Institut National de Recherche en Informatique et     *)

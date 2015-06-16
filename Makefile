@@ -115,7 +115,7 @@ ASMCOMP=\
   asmcomp/compilenv.cmo \
   asmcomp/flambdaeffects.cmo \
   asmcomp/flambdaapprox.cmo \
-  asmcomp/flambdacost.cmo \
+  asmcomp/inlining_cost.cmo \
   asmcomp/flambdasimplify.cmo \
   asmcomp/inlining_stats_types.cmo \
   asmcomp/inlining_stats.cmo \
@@ -123,7 +123,7 @@ ASMCOMP=\
   asmcomp/inlining_result.cmo \
   asmcomp/inlining_decision.cmo \
   asmcomp/inlining.cmo \
-  asmcomp/flambda_ref_to_variables.cmo \
+  asmcomp/ref_to_variables.cmo \
   asmcomp/flambdasym.cmo \
   asmcomp/clambdagen.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \

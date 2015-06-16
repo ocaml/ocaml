@@ -7,8 +7,8 @@ type t =
     globals : Flambdaapprox.t IntMap.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
-    inline_threshold : Flambdacost.inline_threshold;
-    benefit : Flambdacost.benefit;
+    inlining_threshold : Inlining_cost.inlining_threshold;
+    benefit : Inlining_cost.Benefit.t;
   }
 
 let create () =
@@ -16,10 +16,10 @@ let create () =
     globals = IntMap.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;
-    inline_threshold =
+    inlining_threshold =
       (* CR pchambart: Add a warning if this is too big *)
-      Flambdacost.Can_inline !Clflags.inline_threshold;
-    benefit = Flambdacost.no_benefit;
+      Inlining_cost.Can_inline_if_no_larger_than !Clflags.inline_threshold;
+    benefit = Inlining_cost.Benefit.zero;
   }
 
 let approx t = t.approx
@@ -50,12 +50,12 @@ let map_benefit t f =
 let benefit t = t.benefit
 
 let clear_benefit t =
-  { t with benefit = Flambdacost.no_benefit }
+  { t with benefit = Inlining_cost.Benefit.zero; }
 
-let set_inline_threshold t inline_threshold =
-  { t with inline_threshold }
+let set_inlining_threshold t inlining_threshold =
+  { t with inlining_threshold }
 
-let inline_threshold t = t.inline_threshold
+let inlining_threshold t = t.inlining_threshold
 
 let add_global t ~field_index ~approx =
   { t with globals = IntMap.add field_index approx t.globals }
