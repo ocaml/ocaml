@@ -56,13 +56,8 @@ endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) \
       -init $(OTOPDIR)/testsuite/lib/empty
-ifneq (${PPX_BISECT_OPT},)
-OCAMLC=$(OTOPDIR)/ocamlc.opt $(CUSTOM) $(OCFLAGS)
-OCAMLOPT=$(OTOPDIR)/ocamlopt.opt $(OCFLAGS)
-else
 OCAMLC=$(OCAMLRUN) $(OTOPDIR)/ocamlc $(CUSTOM) $(OCFLAGS)
 OCAMLOPT=$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS)
-endif
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \

@@ -1,12 +1,22 @@
 
 .PHONY: clean run report
 
+PARAM=CAMLOPT=ocamlopt.opt CAMLC=ocamlc.opt CAMLRUN=ocamlrun CAMLYACC=ocamlyacc CAMLLEX=ocamllex
+prepare:
+	${MAKE} ${PARAM} -C tools cvt_emit
+	${MAKE} runtime
+	${MAKE} runtimeopt
+	${MAKE} ${PARAM} ocamlc.opt
+	${MAKE} ${PARAM} ocamlopt.opt
+	${MAKE} ${PARAM} -C stdlib all COMPILER=
+	${MAKE} ${PARAM} -C stdlib allopt COMPILER=
+
 clean:
 	-rm -f testsuite/tests/*/coverage*.out
 	-rm -rf testsuite/tests/coverage
 
 run:
-	BISECT_FILE=coverage make -C testsuite all
+	BISECT_FILE=coverage make -C testsuite all OCAMLC='$$(OTOPDIR)/ocamlc.opt $$(CUSTOM) $$(OCFLAGS)' OCAMLOPT='$$(OTOPDIR)/ocamlopt.opt $$(OCFLAGS)' OCAMLRUN=ocamlrun
 
 report:
 	bisect-report -html testsuite/coverage testsuite/tests/*/coverage*.out
