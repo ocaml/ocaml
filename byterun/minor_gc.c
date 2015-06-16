@@ -261,8 +261,8 @@ void caml_empty_minor_heap (void)
   uintnat prev_alloc_words;
 
   if (caml_young_ptr != caml_young_alloc_end){
-    CAML_INSTR_SETUP (tmr, "minor");
     if (caml_minor_gc_begin_hook != NULL) (*caml_minor_gc_begin_hook) ();
+    CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
@@ -294,11 +294,11 @@ void caml_empty_minor_heap (void)
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
-    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
     CAML_INSTR_TIME (tmr, "minor/finalized");
     caml_stat_promoted_words += caml_allocated_words - prev_alloc_words;
     CAML_INSTR_INT ("minor/promoted#", caml_allocated_words - prev_alloc_words);
     ++ caml_stat_minor_collections;
+    if (caml_minor_gc_end_hook != NULL) (*caml_minor_gc_end_hook) ();
   }
 #ifdef DEBUG
   {
@@ -330,11 +330,12 @@ CAMLexport void caml_gc_dispatch (void)
 
   if (trigger == caml_young_alloc_start || caml_requested_minor_gc){
     /* The minor heap is full, we must do a minor collection. */
-    caml_empty_minor_heap ();
-    if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
+    /* reset the pointers first because the end hooks might allocate */
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
     caml_young_limit = caml_young_trigger;
+    caml_empty_minor_heap ();
+    if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/minor");
 
     caml_final_do_calls ();
@@ -343,20 +344,20 @@ CAMLexport void caml_gc_dispatch (void)
     if (caml_young_ptr - caml_young_alloc_start < Max_young_whsize){
       /* The finalizers have filled up the minor heap, we must do
          a second minor collection. */
-      caml_empty_minor_heap ();
-      if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
       caml_requested_minor_gc = 0;
       caml_young_trigger = caml_young_alloc_mid;
       caml_young_limit = caml_young_trigger;
+      caml_empty_minor_heap ();
+      if (caml_gc_phase == Phase_idle) caml_major_collection_slice (-1);
       CAML_INSTR_TIME (tmr, "dispatch/finalizers_minor");
     }
   }
   if (trigger != caml_young_alloc_start || caml_requested_major_slice){
     /* The minor heap is half-full, do a major GC slice. */
-    caml_major_collection_slice (-1);
     caml_requested_major_slice = 0;
     caml_young_trigger = caml_young_alloc_start;
     caml_young_limit = caml_young_trigger;
+    caml_major_collection_slice (-1);
     CAML_INSTR_TIME (tmr, "dispatch/major");
   }
 }

@@ -166,8 +166,11 @@ static void mark_slice (intnat work)
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   int marking_closure = 0;
 #endif
+#ifdef CAML_INSTR
+  int slice_fields = 0;
+  int slice_pointers = 0;
+#endif
 
-  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Marking %ld words\n", work);
   caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
@@ -190,6 +193,7 @@ static void mark_slice (intnat work)
       if (Tag_hd (hd) < No_scan_tag){
         end = (size - start < work) ? size : (start + work);
         CAMLassert (end > start);
+        INSTR (slice_fields += end - start;)
         INSTR (if (size - end > 0)
                  CAML_INSTR_INT ("major/mark/slice/remain", size - end);)
         for (i = start; i < end; i++){
@@ -205,6 +209,7 @@ static void mark_slice (intnat work)
 #else
           if (Is_block (child) && Is_in_heap (child)) {
 #endif
+            INSTR (++ slice_pointers;)
             chd = Hd_val (child);
             if (Tag_hd (chd) == Forward_tag){
               value f = Forward_val (child);
@@ -386,7 +391,8 @@ static void mark_slice (intnat work)
   gray_vals_cur = gray_vals_ptr;
   current_value = v;
   current_index = start;
-  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
+  INSTR (CAML_INSTR_INT ("major/mark/slice/fields#", slice_fields);)
+  INSTR (CAML_INSTR_INT ("major/mark/slice/pointers#", slice_pointers);)
 }
 
 static void sweep_slice (intnat work)
@@ -394,7 +400,6 @@ static void sweep_slice (intnat work)
   char *hp;
   header_t hd;
 
-  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (caml_gc_sweep_hp < limit){
@@ -433,7 +438,6 @@ static void sweep_slice (intnat work)
       }
     }
   }
-  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 #ifdef CAML_INSTR
@@ -524,6 +528,7 @@ void caml_major_collection_slice (intnat howmuch)
      This slice will either mark MS words or sweep SS words.
   */
 
+  if (caml_major_slice_begin_hook != NULL) (*caml_major_slice_begin_hook) ();
   CAML_INSTR_SETUP (tmr, "major");
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
@@ -658,6 +663,7 @@ void caml_major_collection_slice (intnat howmuch)
   caml_allocated_words = 0;
   caml_dependent_allocated = 0;
   caml_extra_heap_resources = 0.0;
+  if (caml_major_slice_end_hook != NULL) (*caml_major_slice_end_hook) ();
 }
 
 /* This does not call [caml_compact_heap_maybe] because the estimates of
