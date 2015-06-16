@@ -219,66 +219,45 @@ module Benefit = struct
 end
 
 module Whether_sufficient_benefit = struct
-  type maybe_inline = {
+  type t = {
     benefit : Benefit.t;
     probably_a_functor : bool;
-    inlining_threshold : inlining_threshold;
-    evaluated_size : int;
+    original_size : int;
+    new_size : int;
     evaluated_benefit : int;
-    evaluated_threshold : int;
   }
 
-  type t =
-    | Do_not_inline
-    | Maybe_inline of maybe_inline
+  let create ~original lam benefit ~probably_a_functor =
+    match lambda_smaller' lam ~than:max_int, lambda_smaller' original ~than:max_int with
+    | Some new_size, Some original_size ->
+      let evaluated_benefit = Benefit.evaluate benefit in
+      {
+        benefit; probably_a_functor; original_size;
+        new_size; evaluated_benefit;
+      }
+    | _, _ ->
+      (* There is no way that an expression of size max_int could fit in memory *)
+      assert false
 
-  let create ?original lam benefit ~probably_a_functor
-        (inlining_threshold : inlining_threshold) =
-    match inlining_threshold with
-    | Never_inline -> Do_not_inline
-    | Can_inline_if_no_larger_than threshold ->
-      match lambda_smaller' lam ~than:max_int with
-      | None -> Do_not_inline
-      | Some evaluated_size ->
-        let evaluated_threshold =
-          match original with
-          | None -> threshold
-          | Some original ->
-            match lambda_smaller' lam ~than:max_int with
-            | None -> threshold
-            | Some size -> threshold + evaluated_size
-        in
-        let evaluated_benefit = Benefit.evaluate benefit in
-        Maybe_inline {
-          benefit; inlining_threshold; probably_a_functor;
-          evaluated_size; evaluated_benefit; evaluated_threshold;
-        }
-
-  let evaluate = function
-    | Do_not_inline -> false
-    | Maybe_inline maybe ->
-      if maybe.probably_a_functor then
-        true
-      else
-        maybe.evaluated_size - maybe.evaluated_benefit
-            <= maybe.evaluated_threshold
+  let evaluate t =
+    if t.probably_a_functor then
+      true
+    else
+      t.new_size - t.evaluated_benefit
+      <= t.original_size
 
   let to_string t =
-    match t with
-    | Do_not_inline -> "do-not-inline"
-    | Maybe_inline maybe ->
       Printf.sprintf "{benefit={call=%d,alloc=%d,prim=%i,branch=%i},\
-                      thresh=%s,eval_size=%d,eval_benefit=%d,\
-                      eval_thresh=%d,functor=%b}=%s"
-        maybe.benefit.remove_call
-        maybe.benefit.remove_alloc
-        maybe.benefit.remove_prim
-        maybe.benefit.remove_branch
-        (match maybe.inlining_threshold with
-          | Never_inline -> "N" | Can_inline_if_no_larger_than i -> string_of_int i)
-        maybe.evaluated_size
-        maybe.evaluated_benefit
-        maybe.evaluated_threshold
-        maybe.probably_a_functor
+                      orig_size=%d,new_size=%d,eval_size=%d,eval_benefit=%d,\
+                      functor=%b}=%s"
+        t.benefit.remove_call
+        t.benefit.remove_alloc
+        t.benefit.remove_prim
+        t.benefit.remove_branch
+        t.original_size
+        t.new_size
+        (t.original_size - t.new_size)
+        t.evaluated_benefit
+        t.probably_a_functor
         (if evaluate t then "yes" else "no")
 end

@@ -71,11 +71,10 @@ module Whether_sufficient_benefit : sig
   type t
 
   val create
-     : ?original:_ Flambda.flambda
+     : original:_ Flambda.flambda
     -> _ Flambda.flambda
     -> Benefit.t
     -> probably_a_functor:bool
-    -> inlining_threshold
     -> t
 
   val evaluate : t -> bool

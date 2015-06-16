@@ -63,7 +63,6 @@ let inline_non_recursive
           body
           ~probably_a_functor
           (R.benefit r_inlined)
-          (Can_inline_if_no_larger_than 0)
       in
       if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
         record_decision (Inlined (Copying_body (Evaluated wsb)));
@@ -100,7 +99,6 @@ let inline_non_recursive
           body
           ~probably_a_functor
           (R.benefit r_inlined)
-          (Can_inline_if_no_larger_than 0)
       in
       if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
         record_decision (Inlined (Copying_body_with_subfunctions (Evaluated wsb)));
@@ -271,9 +269,9 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
               tried_unrolling := true;
               let wsb =
                 Inlining_cost.Whether_sufficient_benefit.create body
+                  ~original:(fst (no_transformation()))
                   ~probably_a_functor:false
                   (R.benefit r_inlined)
-                  (Can_inline_if_no_larger_than 0)
               in
               let keep_unrolled_version =
                 if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
@@ -320,7 +318,6 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
                     expr
                     ~probably_a_functor:false
                     (R.benefit r_inlined)
-                    inlining_threshold
                 in
                 let keep_inlined_version =
                   if Inlining_cost.Whether_sufficient_benefit.evaluate wsb then begin
