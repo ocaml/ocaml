@@ -218,6 +218,10 @@ let read_one_param ppf position name v =
       if !native_code then
         set "functor-heuristics" [ functor_heuristics ] v
 
+  | "inlining-stats" ->
+      if !native_code then
+        set "inlining-stats" [ inlining_stats ] v
+
   | "intf-suffix" -> Config.interface_suffix := v
 
   | "I" -> begin
