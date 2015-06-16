@@ -1,7 +1,7 @@
 
 .PHONY: clean run report
 
-PARAM=CAMLOPT=ocamlopt.opt CAMLC=ocamlc.opt CAMLRUN=ocamlrun CAMLYACC=ocamlyacc CAMLLEX=ocamllex
+PARAM=CAMLOPT=ocamlopt.opt CAMLC=ocamlc.opt CAMLRUN=ocamlrun CAMLYACC=ocamlyacc CAMLLEX=ocamllex OCAMLC=ocamlc OCAMLOPT=ocamlopt OCAMLRUN=ocamlrun MKLIB=ocamlmklib
 prepare:
 	${MAKE} ${PARAM} -C tools cvt_emit
 	${MAKE} runtime
@@ -10,6 +10,8 @@ prepare:
 	${MAKE} ${PARAM} ocamlopt.opt
 	${MAKE} ${PARAM} -C stdlib all COMPILER=
 	${MAKE} ${PARAM} -C stdlib allopt COMPILER=
+	${MAKE} ${PARAM} otherlibraries
+	${MAKE} ${PARAM} otherlibrariesopt
 
 clean:
 	-rm -f testsuite/tests/*/coverage*.out
