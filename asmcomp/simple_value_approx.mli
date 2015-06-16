@@ -87,7 +87,7 @@ and value_offset = {
 }
 
 and value_set_of_closures = {
-  ffunctions : Expr_id.t Flambda.function_declarations;
+  function_decls : Expr_id.t Flambda.function_declarations;
   bound_var : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
@@ -129,8 +129,6 @@ val value_float : float -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
 val value_closure : value_offset -> t
-(* CXR mshinwell for pchambart: update name of [value_unoffseted_closure]
-   pchambart: done *)
 val value_set_of_closures : value_set_of_closures -> t
 val value_block : tag * t array -> t
 val value_extern : Flambdaexport.ExportId.t -> t

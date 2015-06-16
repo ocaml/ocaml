@@ -202,7 +202,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
   in
   let subst_closure_id (closure : A.value_set_of_closures) closure_id =
     let closure_id = AR.subst_closure_id closure.ffunction_sb closure_id in
-    (try ignore (find_declaration closure_id closure.ffunctions)
+    (try ignore (find_declaration closure_id closure.function_decls)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
                            Closure_id.print closure_id
@@ -721,7 +721,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
 
   (* we use the previous closure for evaluating the functions *)
   let internal_closure : A.value_set_of_closures =
-    { ffunctions = ffuns;
+    { function_decls = ffuns;
       bound_var = Variable.Map.fold (fun id (_,desc) map ->
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
@@ -794,7 +794,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
 
   let unchanging_params = Flambdautils.unchanging_params_in_recursion ffuns in
 
-  let closure = { internal_closure with ffunctions = ffuns; unchanging_params } in
+  let closure = { internal_closure with function_decls = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) ffuns.funs r in
   let set_of_closures = Flambda.{
       cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
@@ -825,7 +825,7 @@ and transform_application_expression env r (funct, fapprox)
   in
   match fapprox.descr with
   | Value_closure { fun_id; set_of_closures } ->
-      let clos = set_of_closures.ffunctions in
+      let clos = set_of_closures.function_decls in
       let func =
         try find_declaration fun_id clos with
         | Not_found ->

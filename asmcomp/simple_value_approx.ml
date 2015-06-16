@@ -43,7 +43,7 @@ and value_offset =
     set_of_closures_var : Variable.t option; }
 
 and value_set_of_closures =
-  { ffunctions : Expr_id.t function_declarations;
+  { function_decls : Expr_id.t function_declarations;
     bound_var : t Var_within_closure.Map.t;
     unchanging_params : Variable.Set.t;
     specialised_args : Variable.Set.t;
@@ -72,7 +72,7 @@ let rec print_descr ppf = function
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
   | Value_closure { fun_id } ->
     Format.fprintf ppf "(fun:@ %a)" Closure_id.print fun_id
-  | Value_set_of_closures { ffunctions = { funs } } ->
+  | Value_set_of_closures { function_decls = { funs } } ->
     Format.fprintf ppf "(set_of_closures:@ %a)"
       (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
   | Value_unresolved sym ->
@@ -346,7 +346,7 @@ module Import = struct
           { fun_id;
             set_of_closures_var = None;
             set_of_closures =
-              { ffunctions = Compilenv.imported_closure closure_id;
+              { function_decls = Compilenv.imported_closure closure_id;
                 bound_var;
                 unchanging_params = unchanging_params;
                 specialised_args = Variable.Set.empty;
@@ -361,7 +361,7 @@ module Import = struct
           | Not_found -> assert false
         in
         value_set_of_closures
-          { ffunctions = Compilenv.imported_closure closure_id;
+          { function_decls = Compilenv.imported_closure closure_id;
             bound_var;
             unchanging_params = unchanging_params;
             specialised_args = Variable.Set.empty;
