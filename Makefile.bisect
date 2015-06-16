@@ -1,0 +1,12 @@
+
+.PHONY: clean run report
+
+clean:
+	-rm -f testsuite/tests/*/coverage*.out
+	-rm -rf testsuite/tests/coverage
+
+run:
+	BISECT_FILE=coverage make -C testsuite all
+
+report:
+	bisect-report -html testsuite/coverage testsuite/tests/*/coverage*.out

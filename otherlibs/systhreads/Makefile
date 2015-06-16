@@ -71,6 +71,7 @@ partialclean:
 
 clean: partialclean
 	rm -f *.o *.a *.so
+	rm -f *.out
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)

@@ -6,7 +6,7 @@
 /*.obj
 /*.lib
 /*.dll
-/*.cm[ioxat]
+/*.cm[ioxatp]
 /*.cmx[as]
 /*.cmti
 /*.annot
@@ -38,7 +38,7 @@
 /asmcomp/*.obj
 /asmcomp/*.lib
 /asmcomp/*.dll
-/asmcomp/*.cm[ioxat]
+/asmcomp/*.cm[ioxatp]
 /asmcomp/*.cmx[as]
 /asmcomp/*.cmti
 /asmcomp/*.annot
@@ -64,7 +64,7 @@
 /asmcomp/amd64/*.a
 /asmcomp/amd64/*.so
 /asmcomp/amd64/*.obj
-/asmcomp/amd64/*.cm[ioxat]
+/asmcomp/amd64/*.cm[ioxatp]
 /asmcomp/amd64/*.cmx[as]
 /asmcomp/amd64/*.cmti
 /asmcomp/amd64/*.annot
@@ -84,7 +84,7 @@
 /asmrun/*.obj
 /asmrun/*.lib
 /asmrun/*.dll
-/asmrun/*.cm[ioxat]
+/asmrun/*.cm[ioxatp]
 /asmrun/*.cmx[as]
 /asmrun/*.cmti
 /asmrun/*.annot
@@ -144,7 +144,7 @@
 /boot/*.obj
 /boot/*.lib
 /boot/*.dll
-/boot/*.cm[ioxat]
+/boot/*.cm[ioxatp]
 /boot/*.cmx[as]
 /boot/*.cmti
 /boot/*.annot
@@ -171,7 +171,7 @@
 /bytecomp/*.obj
 /bytecomp/*.lib
 /bytecomp/*.dll
-/bytecomp/*.cm[ioxat]
+/bytecomp/*.cm[ioxatp]
 /bytecomp/*.cmx[as]
 /bytecomp/*.cmti
 /bytecomp/*.annot
@@ -229,7 +229,7 @@
 /config/*.obj
 /config/*.lib
 /config/*.dll
-/config/*.cm[ioxat]
+/config/*.cm[ioxatp]
 /config/*.cmx[as]
 /config/*.cmti
 /config/*.annot
@@ -296,7 +296,7 @@
 /driver/*.obj
 /driver/*.lib
 /driver/*.dll
-/driver/*.cm[ioxat]
+/driver/*.cm[ioxatp]
 /driver/*.cmx[as]
 /driver/*.cmti
 /driver/*.annot
@@ -317,7 +317,7 @@
 /emacs/*.obj
 /emacs/*.lib
 /emacs/*.dll
-/emacs/*.cm[ioxat]
+/emacs/*.cm[ioxatp]
 /emacs/*.cmx[as]
 /emacs/*.cmti
 /emacs/*.annot
@@ -346,7 +346,7 @@
 /lex/*.obj
 /lex/*.lib
 /lex/*.dll
-/lex/*.cm[ioxat]
+/lex/*.cm[ioxatp]
 /lex/*.cmx[as]
 /lex/*.cmti
 /lex/*.annot
@@ -373,7 +373,7 @@
 /ocamlbuild/*.obj
 /ocamlbuild/*.lib
 /ocamlbuild/*.dll
-/ocamlbuild/*.cm[ioxat]
+/ocamlbuild/*.cm[ioxatp]
 /ocamlbuild/*.cmx[as]
 /ocamlbuild/*.cmti
 /ocamlbuild/*.annot
@@ -390,7 +390,7 @@
 /ocamldoc/*.obj
 /ocamldoc/*.lib
 /ocamldoc/*.dll
-/ocamldoc/*.cm[ioxat]
+/ocamldoc/*.cm[ioxatp]
 /ocamldoc/*.cmx[as]
 /ocamldoc/*.cmti
 /ocamldoc/*.annot
@@ -427,7 +427,7 @@
 /ocamldoc/generators/*.obj
 /ocamldoc/generators/*.lib
 /ocamldoc/generators/*.dll
-/ocamldoc/generators/*.cm[ioxat]
+/ocamldoc/generators/*.cm[ioxatp]
 /ocamldoc/generators/*.cmx[as]
 /ocamldoc/generators/*.cmti
 /ocamldoc/generators/*.annot
@@ -471,7 +471,7 @@
 /otherlibs/bigarray/*.obj
 /otherlibs/bigarray/*.lib
 /otherlibs/bigarray/*.dll
-/otherlibs/bigarray/*.cm[ioxat]
+/otherlibs/bigarray/*.cm[ioxatp]
 /otherlibs/bigarray/*.cmx[as]
 /otherlibs/bigarray/*.cmti
 /otherlibs/bigarray/*.annot
@@ -491,7 +491,7 @@
 /otherlibs/dynlink/*.obj
 /otherlibs/dynlink/*.lib
 /otherlibs/dynlink/*.dll
-/otherlibs/dynlink/*.cm[ioxat]
+/otherlibs/dynlink/*.cm[ioxatp]
 /otherlibs/dynlink/*.cmx[as]
 /otherlibs/dynlink/*.cmti
 /otherlibs/dynlink/*.annot
@@ -512,7 +512,7 @@
 /otherlibs/graph/*.obj
 /otherlibs/graph/*.lib
 /otherlibs/graph/*.dll
-/otherlibs/graph/*.cm[ioxat]
+/otherlibs/graph/*.cm[ioxatp]
 /otherlibs/graph/*.cmx[as]
 /otherlibs/graph/*.cmti
 /otherlibs/graph/*.annot
@@ -533,7 +533,7 @@
 /otherlibs/num/*.obj
 /otherlibs/num/*.lib
 /otherlibs/num/*.dll
-/otherlibs/num/*.cm[ioxat]
+/otherlibs/num/*.cm[ioxatp]
 /otherlibs/num/*.cmx[as]
 /otherlibs/num/*.cmti
 /otherlibs/num/*.annot
@@ -553,7 +553,7 @@
 /otherlibs/str/*.obj
 /otherlibs/str/*.lib
 /otherlibs/str/*.dll
-/otherlibs/str/*.cm[ioxat]
+/otherlibs/str/*.cm[ioxatp]
 /otherlibs/str/*.cmx[as]
 /otherlibs/str/*.cmti
 /otherlibs/str/*.annot
@@ -573,7 +573,7 @@
 /otherlibs/systhreads/*.obj
 /otherlibs/systhreads/*.lib
 /otherlibs/systhreads/*.dll
-/otherlibs/systhreads/*.cm[ioxat]
+/otherlibs/systhreads/*.cm[ioxatp]
 /otherlibs/systhreads/*.cmx[as]
 /otherlibs/systhreads/*.cmti
 /otherlibs/systhreads/*.annot
@@ -594,7 +594,7 @@
 /otherlibs/threads/*.obj
 /otherlibs/threads/*.lib
 /otherlibs/threads/*.dll
-/otherlibs/threads/*.cm[ioxat]
+/otherlibs/threads/*.cm[ioxatp]
 /otherlibs/threads/*.cmx[as]
 /otherlibs/threads/*.cmti
 /otherlibs/threads/*.annot
@@ -618,7 +618,7 @@
 /otherlibs/unix/*.obj
 /otherlibs/unix/*.lib
 /otherlibs/unix/*.dll
-/otherlibs/unix/*.cm[ioxat]
+/otherlibs/unix/*.cm[ioxatp]
 /otherlibs/unix/*.cmx[as]
 /otherlibs/unix/*.cmti
 /otherlibs/unix/*.annot
@@ -639,7 +639,7 @@
 /otherlibs/win32graph/*.obj
 /otherlibs/win32graph/*.lib
 /otherlibs/win32graph/*.dll
-/otherlibs/win32graph/*.cm[ioxat]
+/otherlibs/win32graph/*.cm[ioxatp]
 /otherlibs/win32graph/*.cmx[as]
 /otherlibs/win32graph/*.cmti
 /otherlibs/win32graph/*.annot
@@ -661,7 +661,7 @@
 /otherlibs/win32unix/*.obj
 /otherlibs/win32unix/*.lib
 /otherlibs/win32unix/*.dll
-/otherlibs/win32unix/*.cm[ioxat]
+/otherlibs/win32unix/*.cm[ioxatp]
 /otherlibs/win32unix/*.cmx[as]
 /otherlibs/win32unix/*.cmti
 /otherlibs/win32unix/*.annot
@@ -710,7 +710,7 @@
 /parsing/*.obj
 /parsing/*.lib
 /parsing/*.dll
-/parsing/*.cm[ioxat]
+/parsing/*.cm[ioxatp]
 /parsing/*.cmx[as]
 /parsing/*.cmti
 /parsing/*.annot
@@ -740,7 +740,7 @@
 /stdlib/*.obj
 /stdlib/*.lib
 /stdlib/*.dll
-/stdlib/*.cm[ioxat]
+/stdlib/*.cm[ioxatp]
 /stdlib/*.cmx[as]
 /stdlib/*.cmti
 /stdlib/*.annot
@@ -783,7 +783,7 @@
 /testsuite/external/*.obj
 /testsuite/external/*.lib
 /testsuite/external/*.dll
-/testsuite/external/*.cm[ioxat]
+/testsuite/external/*.cm[ioxatp]
 /testsuite/external/*.cmx[as]
 /testsuite/external/*.cmti
 /testsuite/external/*.annot
@@ -1031,7 +1031,7 @@
 /testsuite/lib/*.so
 /testsuite/lib/*.obj
 /testsuite/lib/*.dll
-/testsuite/lib/*.cm[ioxat]
+/testsuite/lib/*.cm[ioxatp]
 /testsuite/lib/*.cmx[as]
 /testsuite/lib/*.cmti
 /testsuite/lib/*.annot
@@ -1077,7 +1077,7 @@
 /testsuite/tests/asmcomp/*.obj
 /testsuite/tests/asmcomp/*.lib
 /testsuite/tests/asmcomp/*.dll
-/testsuite/tests/asmcomp/*.cm[ioxat]
+/testsuite/tests/asmcomp/*.cm[ioxatp]
 /testsuite/tests/asmcomp/*.cmx[as]
 /testsuite/tests/asmcomp/*.cmti
 /testsuite/tests/asmcomp/*.annot
@@ -1105,7 +1105,7 @@
 /testsuite/tests/backtrace/*.obj
 /testsuite/tests/backtrace/*.lib
 /testsuite/tests/backtrace/*.dll
-/testsuite/tests/backtrace/*.cm[ioxat]
+/testsuite/tests/backtrace/*.cm[ioxatp]
 /testsuite/tests/backtrace/*.cmx[as]
 /testsuite/tests/backtrace/*.cmti
 /testsuite/tests/backtrace/*.annot
@@ -1143,7 +1143,7 @@
 /testsuite/tests/basic-float/*.obj
 /testsuite/tests/basic-float/*.lib
 /testsuite/tests/basic-float/*.dll
-/testsuite/tests/basic-float/*.cm[ioxat]
+/testsuite/tests/basic-float/*.cm[ioxatp]
 /testsuite/tests/basic-float/*.cmx[as]
 /testsuite/tests/basic-float/*.cmti
 /testsuite/tests/basic-float/*.annot
@@ -1164,7 +1164,7 @@
 /testsuite/tests/basic-io/*.obj
 /testsuite/tests/basic-io/*.lib
 /testsuite/tests/basic-io/*.dll
-/testsuite/tests/basic-io/*.cm[ioxat]
+/testsuite/tests/basic-io/*.cm[ioxatp]
 /testsuite/tests/basic-io/*.cmx[as]
 /testsuite/tests/basic-io/*.cmti
 /testsuite/tests/basic-io/*.annot
@@ -1185,7 +1185,7 @@
 /testsuite/tests/basic-io-2/*.obj
 /testsuite/tests/basic-io-2/*.lib
 /testsuite/tests/basic-io-2/*.dll
-/testsuite/tests/basic-io-2/*.cm[ioxat]
+/testsuite/tests/basic-io-2/*.cm[ioxatp]
 /testsuite/tests/basic-io-2/*.cmx[as]
 /testsuite/tests/basic-io-2/*.cmti
 /testsuite/tests/basic-io-2/*.annot
@@ -1206,7 +1206,7 @@
 /testsuite/tests/basic-manyargs/*.obj
 /testsuite/tests/basic-manyargs/*.lib
 /testsuite/tests/basic-manyargs/*.dll
-/testsuite/tests/basic-manyargs/*.cm[ioxat]
+/testsuite/tests/basic-manyargs/*.cm[ioxatp]
 /testsuite/tests/basic-manyargs/*.cmx[as]
 /testsuite/tests/basic-manyargs/*.cmti
 /testsuite/tests/basic-manyargs/*.annot
@@ -1227,7 +1227,7 @@
 /testsuite/tests/basic-modules/*.obj
 /testsuite/tests/basic-modules/*.lib
 /testsuite/tests/basic-modules/*.dll
-/testsuite/tests/basic-modules/*.cm[ioxat]
+/testsuite/tests/basic-modules/*.cm[ioxatp]
 /testsuite/tests/basic-modules/*.cmx[as]
 /testsuite/tests/basic-modules/*.cmti
 /testsuite/tests/basic-modules/*.annot
@@ -1265,7 +1265,7 @@
 /testsuite/tests/basic-multdef/*.obj
 /testsuite/tests/basic-multdef/*.lib
 /testsuite/tests/basic-multdef/*.dll
-/testsuite/tests/basic-multdef/*.cm[ioxat]
+/testsuite/tests/basic-multdef/*.cm[ioxatp]
 /testsuite/tests/basic-multdef/*.cmx[as]
 /testsuite/tests/basic-multdef/*.cmti
 /testsuite/tests/basic-multdef/*.annot
@@ -1286,7 +1286,7 @@
 /testsuite/tests/basic-private/*.obj
 /testsuite/tests/basic-private/*.lib
 /testsuite/tests/basic-private/*.dll
-/testsuite/tests/basic-private/*.cm[ioxat]
+/testsuite/tests/basic-private/*.cm[ioxatp]
 /testsuite/tests/basic-private/*.cmx[as]
 /testsuite/tests/basic-private/*.cmti
 /testsuite/tests/basic-private/*.annot
@@ -1324,7 +1324,7 @@
 /testsuite/tests/embedded/*.obj
 /testsuite/tests/embedded/*.lib
 /testsuite/tests/embedded/*.dll
-/testsuite/tests/embedded/*.cm[ioxat]
+/testsuite/tests/embedded/*.cm[ioxatp]
 /testsuite/tests/embedded/*.cmx[as]
 /testsuite/tests/embedded/*.cmti
 /testsuite/tests/embedded/*.annot
@@ -1346,7 +1346,7 @@
 /testsuite/tests/exotic-syntax/*.obj
 /testsuite/tests/exotic-syntax/*.lib
 /testsuite/tests/exotic-syntax/*.dll
-/testsuite/tests/exotic-syntax/*.cm[ioxat]
+/testsuite/tests/exotic-syntax/*.cm[ioxatp]
 /testsuite/tests/exotic-syntax/*.cmx[as]
 /testsuite/tests/exotic-syntax/*.cmti
 /testsuite/tests/exotic-syntax/*.annot
@@ -1367,7 +1367,7 @@
 /testsuite/tests/formats-transition/*.obj
 /testsuite/tests/formats-transition/*.lib
 /testsuite/tests/formats-transition/*.dll
-/testsuite/tests/formats-transition/*.cm[ioxat]
+/testsuite/tests/formats-transition/*.cm[ioxatp]
 /testsuite/tests/formats-transition/*.cmx[as]
 /testsuite/tests/formats-transition/*.cmti
 /testsuite/tests/formats-transition/*.annot
@@ -1388,7 +1388,7 @@
 /testsuite/tests/gc-roots/*.obj
 /testsuite/tests/gc-roots/*.lib
 /testsuite/tests/gc-roots/*.dll
-/testsuite/tests/gc-roots/*.cm[ioxat]
+/testsuite/tests/gc-roots/*.cm[ioxatp]
 /testsuite/tests/gc-roots/*.cmx[as]
 /testsuite/tests/gc-roots/*.cmti
 /testsuite/tests/gc-roots/*.annot
@@ -1426,7 +1426,7 @@
 /testsuite/tests/lib-bigarray/*.obj
 /testsuite/tests/lib-bigarray/*.lib
 /testsuite/tests/lib-bigarray/*.dll
-/testsuite/tests/lib-bigarray/*.cm[ioxat]
+/testsuite/tests/lib-bigarray/*.cm[ioxatp]
 /testsuite/tests/lib-bigarray/*.cmx[as]
 /testsuite/tests/lib-bigarray/*.cmti
 /testsuite/tests/lib-bigarray/*.annot
@@ -1460,7 +1460,7 @@
 /testsuite/tests/lib-digest/*.obj
 /testsuite/tests/lib-digest/*.lib
 /testsuite/tests/lib-digest/*.dll
-/testsuite/tests/lib-digest/*.cm[ioxat]
+/testsuite/tests/lib-digest/*.cm[ioxatp]
 /testsuite/tests/lib-digest/*.cmx[as]
 /testsuite/tests/lib-digest/*.cmti
 /testsuite/tests/lib-digest/*.annot
@@ -1481,7 +1481,7 @@
 /testsuite/tests/lib-dynlink-bytecode/*.obj
 /testsuite/tests/lib-dynlink-bytecode/*.lib
 /testsuite/tests/lib-dynlink-bytecode/*.dll
-/testsuite/tests/lib-dynlink-bytecode/*.cm[ioxat]
+/testsuite/tests/lib-dynlink-bytecode/*.cm[ioxatp]
 /testsuite/tests/lib-dynlink-bytecode/*.cmx[as]
 /testsuite/tests/lib-dynlink-bytecode/*.cmti
 /testsuite/tests/lib-dynlink-bytecode/*.annot
@@ -1508,7 +1508,7 @@
 /testsuite/tests/lib-dynlink-csharp/*.obj
 /testsuite/tests/lib-dynlink-csharp/*.lib
 /testsuite/tests/lib-dynlink-csharp/*.dll
-/testsuite/tests/lib-dynlink-csharp/*.cm[ioxat]
+/testsuite/tests/lib-dynlink-csharp/*.cm[ioxatp]
 /testsuite/tests/lib-dynlink-csharp/*.cmx[as]
 /testsuite/tests/lib-dynlink-csharp/*.cmti
 /testsuite/tests/lib-dynlink-csharp/*.annot
@@ -1529,7 +1529,7 @@
 /testsuite/tests/lib-dynlink-native/*.obj
 /testsuite/tests/lib-dynlink-native/*.lib
 /testsuite/tests/lib-dynlink-native/*.dll
-/testsuite/tests/lib-dynlink-native/*.cm[ioxat]
+/testsuite/tests/lib-dynlink-native/*.cm[ioxatp]
 /testsuite/tests/lib-dynlink-native/*.cmx[as]
 /testsuite/tests/lib-dynlink-native/*.cmti
 /testsuite/tests/lib-dynlink-native/*.annot
@@ -1557,7 +1557,7 @@
 /testsuite/tests/lib-dynlink-native/sub/*.obj
 /testsuite/tests/lib-dynlink-native/sub/*.lib
 /testsuite/tests/lib-dynlink-native/sub/*.dll
-/testsuite/tests/lib-dynlink-native/sub/*.cm[ioxat]
+/testsuite/tests/lib-dynlink-native/sub/*.cm[ioxatp]
 /testsuite/tests/lib-dynlink-native/sub/*.cmx[as]
 /testsuite/tests/lib-dynlink-native/sub/*.cmti
 /testsuite/tests/lib-dynlink-native/sub/*.annot
@@ -1578,7 +1578,7 @@
 /testsuite/tests/lib-format/*.obj
 /testsuite/tests/lib-format/*.lib
 /testsuite/tests/lib-format/*.dll
-/testsuite/tests/lib-format/*.cm[ioxat]
+/testsuite/tests/lib-format/*.cm[ioxatp]
 /testsuite/tests/lib-format/*.cmx[as]
 /testsuite/tests/lib-format/*.cmti
 /testsuite/tests/lib-format/*.annot
@@ -1616,7 +1616,7 @@
 /testsuite/tests/lib-marshal/*.obj
 /testsuite/tests/lib-marshal/*.lib
 /testsuite/tests/lib-marshal/*.dll
-/testsuite/tests/lib-marshal/*.cm[ioxat]
+/testsuite/tests/lib-marshal/*.cm[ioxatp]
 /testsuite/tests/lib-marshal/*.cmx[as]
 /testsuite/tests/lib-marshal/*.cmti
 /testsuite/tests/lib-marshal/*.annot
@@ -1637,7 +1637,7 @@
 /testsuite/tests/lib-num/*.obj
 /testsuite/tests/lib-num/*.lib
 /testsuite/tests/lib-num/*.dll
-/testsuite/tests/lib-num/*.cm[ioxat]
+/testsuite/tests/lib-num/*.cm[ioxatp]
 /testsuite/tests/lib-num/*.cmx[as]
 /testsuite/tests/lib-num/*.cmti
 /testsuite/tests/lib-num/*.annot
@@ -1675,7 +1675,7 @@
 /testsuite/tests/lib-printf/*.obj
 /testsuite/tests/lib-printf/*.lib
 /testsuite/tests/lib-printf/*.dll
-/testsuite/tests/lib-printf/*.cm[ioxat]
+/testsuite/tests/lib-printf/*.cm[ioxatp]
 /testsuite/tests/lib-printf/*.cmx[as]
 /testsuite/tests/lib-printf/*.cmti
 /testsuite/tests/lib-printf/*.annot
@@ -1696,7 +1696,7 @@
 /testsuite/tests/lib-random/*.obj
 /testsuite/tests/lib-random/*.lib
 /testsuite/tests/lib-random/*.dll
-/testsuite/tests/lib-random/*.cm[ioxat]
+/testsuite/tests/lib-random/*.cm[ioxatp]
 /testsuite/tests/lib-random/*.cmx[as]
 /testsuite/tests/lib-random/*.cmti
 /testsuite/tests/lib-random/*.annot
@@ -1717,7 +1717,7 @@
 /testsuite/tests/lib-scanf/*.obj
 /testsuite/tests/lib-scanf/*.lib
 /testsuite/tests/lib-scanf/*.dll
-/testsuite/tests/lib-scanf/*.cm[ioxat]
+/testsuite/tests/lib-scanf/*.cm[ioxatp]
 /testsuite/tests/lib-scanf/*.cmx[as]
 /testsuite/tests/lib-scanf/*.cmti
 /testsuite/tests/lib-scanf/*.annot
@@ -1739,7 +1739,7 @@
 /testsuite/tests/lib-scanf-2/*.obj
 /testsuite/tests/lib-scanf-2/*.lib
 /testsuite/tests/lib-scanf-2/*.dll
-/testsuite/tests/lib-scanf-2/*.cm[ioxat]
+/testsuite/tests/lib-scanf-2/*.cm[ioxatp]
 /testsuite/tests/lib-scanf-2/*.cmx[as]
 /testsuite/tests/lib-scanf-2/*.cmti
 /testsuite/tests/lib-scanf-2/*.annot
@@ -1846,7 +1846,7 @@
 /testsuite/tests/match-exception/*.obj
 /testsuite/tests/match-exception/*.lib
 /testsuite/tests/match-exception/*.dll
-/testsuite/tests/match-exception/*.cm[ioxat]
+/testsuite/tests/match-exception/*.cm[ioxatp]
 /testsuite/tests/match-exception/*.cmx[as]
 /testsuite/tests/match-exception/*.cmti
 /testsuite/tests/match-exception/*.annot
@@ -1867,7 +1867,7 @@
 /testsuite/tests/match-exception-warnings/*.obj
 /testsuite/tests/match-exception-warnings/*.lib
 /testsuite/tests/match-exception-warnings/*.dll
-/testsuite/tests/match-exception-warnings/*.cm[ioxat]
+/testsuite/tests/match-exception-warnings/*.cm[ioxatp]
 /testsuite/tests/match-exception-warnings/*.cmx[as]
 /testsuite/tests/match-exception-warnings/*.cmti
 /testsuite/tests/match-exception-warnings/*.annot
@@ -1905,7 +1905,7 @@
 /testsuite/tests/misc-kb/*.obj
 /testsuite/tests/misc-kb/*.lib
 /testsuite/tests/misc-kb/*.dll
-/testsuite/tests/misc-kb/*.cm[ioxat]
+/testsuite/tests/misc-kb/*.cm[ioxatp]
 /testsuite/tests/misc-kb/*.cmx[as]
 /testsuite/tests/misc-kb/*.cmti
 /testsuite/tests/misc-kb/*.annot
@@ -1943,7 +1943,7 @@
 /testsuite/tests/ppx-attributes/*.obj
 /testsuite/tests/ppx-attributes/*.lib
 /testsuite/tests/ppx-attributes/*.dll
-/testsuite/tests/ppx-attributes/*.cm[ioxat]
+/testsuite/tests/ppx-attributes/*.cm[ioxatp]
 /testsuite/tests/ppx-attributes/*.cmx[as]
 /testsuite/tests/ppx-attributes/*.cmti
 /testsuite/tests/ppx-attributes/*.annot
@@ -1964,7 +1964,7 @@
 /testsuite/tests/prim-bigstring/*.obj
 /testsuite/tests/prim-bigstring/*.lib
 /testsuite/tests/prim-bigstring/*.dll
-/testsuite/tests/prim-bigstring/*.cm[ioxat]
+/testsuite/tests/prim-bigstring/*.cm[ioxatp]
 /testsuite/tests/prim-bigstring/*.cmx[as]
 /testsuite/tests/prim-bigstring/*.cmti
 /testsuite/tests/prim-bigstring/*.annot
@@ -1983,7 +1983,7 @@
 /testsuite/tests/prim-bswap/*.a
 /testsuite/tests/prim-bswap/*.so
 /testsuite/tests/prim-bswap/*.obj
-/testsuite/tests/prim-bswap/*.cm[ioxat]
+/testsuite/tests/prim-bswap/*.cm[ioxatp]
 /testsuite/tests/prim-bswap/*.cmx[as]
 /testsuite/tests/prim-bswap/*.cmti
 /testsuite/tests/prim-bswap/*.annot
@@ -2037,7 +2037,7 @@
 /testsuite/tests/regression/pr5233/*.obj
 /testsuite/tests/regression/pr5233/*.lib
 /testsuite/tests/regression/pr5233/*.dll
-/testsuite/tests/regression/pr5233/*.cm[ioxat]
+/testsuite/tests/regression/pr5233/*.cm[ioxatp]
 /testsuite/tests/regression/pr5233/*.cmx[as]
 /testsuite/tests/regression/pr5233/*.cmti
 /testsuite/tests/regression/pr5233/*.annot
@@ -2058,7 +2058,7 @@
 /testsuite/tests/regression/pr5757/*.obj
 /testsuite/tests/regression/pr5757/*.lib
 /testsuite/tests/regression/pr5757/*.dll
-/testsuite/tests/regression/pr5757/*.cm[ioxat]
+/testsuite/tests/regression/pr5757/*.cm[ioxatp]
 /testsuite/tests/regression/pr5757/*.cmx[as]
 /testsuite/tests/regression/pr5757/*.cmti
 /testsuite/tests/regression/pr5757/*.annot
@@ -2079,7 +2079,7 @@
 /testsuite/tests/regression/pr6024/*.obj
 /testsuite/tests/regression/pr6024/*.lib
 /testsuite/tests/regression/pr6024/*.dll
-/testsuite/tests/regression/pr6024/*.cm[ioxat]
+/testsuite/tests/regression/pr6024/*.cm[ioxatp]
 /testsuite/tests/regression/pr6024/*.cmx[as]
 /testsuite/tests/regression/pr6024/*.cmti
 /testsuite/tests/regression/pr6024/*.annot
@@ -2100,7 +2100,7 @@
 /testsuite/tests/runtime-errors/*.obj
 /testsuite/tests/runtime-errors/*.lib
 /testsuite/tests/runtime-errors/*.dll
-/testsuite/tests/runtime-errors/*.cm[ioxat]
+/testsuite/tests/runtime-errors/*.cm[ioxatp]
 /testsuite/tests/runtime-errors/*.cmx[as]
 /testsuite/tests/runtime-errors/*.cmti
 /testsuite/tests/runtime-errors/*.annot
@@ -2122,7 +2122,7 @@
 /testsuite/tests/tool-debugger/*.obj
 /testsuite/tests/tool-debugger/*.lib
 /testsuite/tests/tool-debugger/*.dll
-/testsuite/tests/tool-debugger/*.cm[ioxat]
+/testsuite/tests/tool-debugger/*.cm[ioxatp]
 /testsuite/tests/tool-debugger/*.cmx[as]
 /testsuite/tests/tool-debugger/*.cmti
 /testsuite/tests/tool-debugger/*.annot
@@ -2144,7 +2144,7 @@
 /testsuite/tests/tool-debugger/basic/*.obj
 /testsuite/tests/tool-debugger/basic/*.lib
 /testsuite/tests/tool-debugger/basic/*.dll
-/testsuite/tests/tool-debugger/basic/*.cm[ioxat]
+/testsuite/tests/tool-debugger/basic/*.cm[ioxatp]
 /testsuite/tests/tool-debugger/basic/*.cmx[as]
 /testsuite/tests/tool-debugger/basic/*.cmti
 /testsuite/tests/tool-debugger/basic/*.annot
@@ -2166,7 +2166,7 @@
 /testsuite/tests/tool-debugger/find-artifacts/*.obj
 /testsuite/tests/tool-debugger/find-artifacts/*.lib
 /testsuite/tests/tool-debugger/find-artifacts/*.dll
-/testsuite/tests/tool-debugger/find-artifacts/*.cm[ioxat]
+/testsuite/tests/tool-debugger/find-artifacts/*.cm[ioxatp]
 /testsuite/tests/tool-debugger/find-artifacts/*.cmx[as]
 /testsuite/tests/tool-debugger/find-artifacts/*.cmti
 /testsuite/tests/tool-debugger/find-artifacts/*.annot
@@ -2189,7 +2189,7 @@
 /testsuite/tests/tool-debugger/no_debug_event/*.obj
 /testsuite/tests/tool-debugger/no_debug_event/*.lib
 /testsuite/tests/tool-debugger/no_debug_event/*.dll
-/testsuite/tests/tool-debugger/no_debug_event/*.cm[ioxat]
+/testsuite/tests/tool-debugger/no_debug_event/*.cm[ioxatp]
 /testsuite/tests/tool-debugger/no_debug_event/*.cmx[as]
 /testsuite/tests/tool-debugger/no_debug_event/*.cmti
 /testsuite/tests/tool-debugger/no_debug_event/*.annot
@@ -2214,7 +2214,7 @@
 /testsuite/tests/tool-lexyacc/*.obj
 /testsuite/tests/tool-lexyacc/*.lib
 /testsuite/tests/tool-lexyacc/*.dll
-/testsuite/tests/tool-lexyacc/*.cm[ioxat]
+/testsuite/tests/tool-lexyacc/*.cm[ioxatp]
 /testsuite/tests/tool-lexyacc/*.cmx[as]
 /testsuite/tests/tool-lexyacc/*.cmti
 /testsuite/tests/tool-lexyacc/*.annot
@@ -2271,7 +2271,7 @@
 /testsuite/tests/tool-toplevel/*.obj
 /testsuite/tests/tool-toplevel/*.lib
 /testsuite/tests/tool-toplevel/*.dll
-/testsuite/tests/tool-toplevel/*.cm[ioxat]
+/testsuite/tests/tool-toplevel/*.cm[ioxatp]
 /testsuite/tests/tool-toplevel/*.cmx[as]
 /testsuite/tests/tool-toplevel/*.cmti
 /testsuite/tests/tool-toplevel/*.annot
@@ -2292,7 +2292,7 @@
 /testsuite/tests/translprim/*.obj
 /testsuite/tests/translprim/*.lib
 /testsuite/tests/translprim/*.dll
-/testsuite/tests/translprim/*.cm[ioxat]
+/testsuite/tests/translprim/*.cm[ioxatp]
 /testsuite/tests/translprim/*.cmx[as]
 /testsuite/tests/translprim/*.cmti
 /testsuite/tests/translprim/*.annot
@@ -2313,7 +2313,7 @@
 /testsuite/tests/typing-extensions/*.obj
 /testsuite/tests/typing-extensions/*.lib
 /testsuite/tests/typing-extensions/*.dll
-/testsuite/tests/typing-extensions/*.cm[ioxat]
+/testsuite/tests/typing-extensions/*.cm[ioxatp]
 /testsuite/tests/typing-extensions/*.cmx[as]
 /testsuite/tests/typing-extensions/*.cmti
 /testsuite/tests/typing-extensions/*.annot
@@ -2334,7 +2334,7 @@
 /testsuite/tests/typing-fstclassmod/*.obj
 /testsuite/tests/typing-fstclassmod/*.lib
 /testsuite/tests/typing-fstclassmod/*.dll
-/testsuite/tests/typing-fstclassmod/*.cm[ioxat]
+/testsuite/tests/typing-fstclassmod/*.cm[ioxatp]
 /testsuite/tests/typing-fstclassmod/*.cmx[as]
 /testsuite/tests/typing-fstclassmod/*.cmti
 /testsuite/tests/typing-fstclassmod/*.annot
@@ -2578,7 +2578,7 @@
 /testsuite/tests/typing-recordarg/*.obj
 /testsuite/tests/typing-recordarg/*.lib
 /testsuite/tests/typing-recordarg/*.dll
-/testsuite/tests/typing-recordarg/*.cm[ioxat]
+/testsuite/tests/typing-recordarg/*.cm[ioxatp]
 /testsuite/tests/typing-recordarg/*.cmx[as]
 /testsuite/tests/typing-recordarg/*.cmti
 /testsuite/tests/typing-recordarg/*.annot
@@ -2597,7 +2597,7 @@
 /testsuite/tests/typing-short-paths/*.a
 /testsuite/tests/typing-short-paths/*.so
 /testsuite/tests/typing-short-paths/*.obj
-/testsuite/tests/typing-short-paths/*.cm[ioxat]
+/testsuite/tests/typing-short-paths/*.cm[ioxatp]
 /testsuite/tests/typing-short-paths/*.cmx[as]
 /testsuite/tests/typing-short-paths/*.cmti
 /testsuite/tests/typing-short-paths/*.annot
@@ -2663,7 +2663,7 @@
 /testsuite/tests/typing-warnings/*.a
 /testsuite/tests/typing-warnings/*.so
 /testsuite/tests/typing-warnings/*.obj
-/testsuite/tests/typing-warnings/*.cm[ioxat]
+/testsuite/tests/typing-warnings/*.cm[ioxatp]
 /testsuite/tests/typing-warnings/*.cmx[as]
 /testsuite/tests/typing-warnings/*.cmti
 /testsuite/tests/typing-warnings/*.annot
@@ -2681,7 +2681,7 @@
 /testsuite/tests/utils/*.a
 /testsuite/tests/utils/*.so
 /testsuite/tests/utils/*.obj
-/testsuite/tests/utils/*.cm[ioxat]
+/testsuite/tests/utils/*.cm[ioxatp]
 /testsuite/tests/utils/*.cmx[as]
 /testsuite/tests/utils/*.cmti
 /testsuite/tests/utils/*.annot
@@ -2701,7 +2701,7 @@
 /testsuite/tests/warnings/*.obj
 /testsuite/tests/warnings/*.lib
 /testsuite/tests/warnings/*.dll
-/testsuite/tests/warnings/*.cm[ioxat]
+/testsuite/tests/warnings/*.cm[ioxatp]
 /testsuite/tests/warnings/*.cmx[as]
 /testsuite/tests/warnings/*.cmti
 /testsuite/tests/warnings/*.annot
@@ -2722,7 +2722,7 @@
 /tools/*.obj
 /tools/*.lib
 /tools/*.dll
-/tools/*.cm[ioxat]
+/tools/*.cm[ioxatp]
 /tools/*.cmx[as]
 /tools/*.cmti
 /tools/*.annot
@@ -2792,7 +2792,7 @@
 /typing/*.so
 /typing/*.obj
 /typing/*.dll
-/typing/*.cm[ioxat]
+/typing/*.cm[ioxatp]
 /typing/*.cmx[as]
 /typing/*.cmti
 /typing/*.annot
@@ -2811,7 +2811,7 @@
 /utils/*.so
 /utils/*.obj
 /utils/*.dll
-/utils/*.cm[ioxat]
+/utils/*.cm[ioxatp]
 /utils/*.cmx[as]
 /utils/*.cmti
 /utils/*.annot
@@ -2845,3 +2845,8 @@
 /yacc/ocamlyacc.exe
 /yacc/version.h
 /yacc/.gdb_history
+
+## Bisect
+/*.cmp
+*.out
+/testsuite/coverage

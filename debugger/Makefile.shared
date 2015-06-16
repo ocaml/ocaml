@@ -83,7 +83,7 @@ OBJS=\
 all: ocamldebug$(EXE)
 
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall ${BISECT_CMA} $(OTHEROBJS) $(OBJS)
 
 install:
 	cp ocamldebug$(EXE) $(INSTALL_BINDIR)/ocamldebug$(EXE)
