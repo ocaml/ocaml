@@ -1,16 +1,16 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-open Flambda
 open Abstract_identifiers
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an
@@ -21,39 +21,41 @@ open Abstract_identifiers
     which is then clearly just:
       <expr>
 *)
-val lift_lets : Expr_id.t flambda -> Expr_id.t flambda
+val lift_lets : Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 
 (** Eliminate variables bound by a given closure that are not required. *)
-val remove_unused_closure_variables : Expr_id.t flambda -> Expr_id.t flambda
+val remove_unused_closure_variables
+   : Expr_id.t Flambda.t
+  -> Expr_id.t Flambda.t
 
 (** Simplifies an application of a primitive based on approximation
     information. *)
 val primitive
    : Lambda.primitive
-  -> (Expr_id.t flambda list * (Flambdaapprox.t list))
-  -> Expr_id.t flambda
+  -> (Expr_id.t Flambda.t list * (Flambdaapprox.t list))
+  -> Expr_id.t Flambda.t
   -> Debuginfo.t
-  -> Expr_id.t flambda * Flambdaapprox.t * Flambdacost.benefit
+  -> Expr_id.t Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
 
 (** Simplify a sequential logical "arg1 AND arg2" expression. *)
 val sequential_and
-   : arg1:'a flambda
+   : arg1:'a Flambda.t
   -> arg1_approx:Flambdaapprox.t
-  -> arg2:'a flambda
+  -> arg2:'a Flambda.t
   -> arg2_approx:Flambdaapprox.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a flambda * Flambdaapprox.t * Inlining_cost.Benefit.t
+  -> 'a Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
 
 (** Like [sequential_and], but for "arg1 OR arg2". *)
 val sequential_or
-   : arg1:'a flambda
+   : arg1:'a Flambda.t
   -> arg1_approx:Flambdaapprox.t
-  -> arg2:'a flambda
+  -> arg2:'a Flambda.t
   -> arg2_approx:Flambdaapprox.t
   -> dbg:Debuginfo.t
   -> annot:'a
-  -> 'a flambda * Flambdaapprox.t * Inlining_cost.Benefit.t
+  -> 'a Flambda.t * Flambdaapprox.t * Inlining_cost.Benefit.t
 
 (** Introduce a stub function to avoid depending on unused arguments.
 
@@ -67,9 +69,11 @@ val sequential_or
          else n * fact (n-1) unused
        and fact n unused = fact' n]
 *)
-val separate_unused_arguments_in_closures : Expr_id.t flambda -> Expr_id.t flambda
+val separate_unused_arguments_in_closures
+   : Expr_id.t Flambda.t
+  -> Expr_id.t Flambda.t
 
-val lift_set_of_closures : Expr_id.t flambda -> Expr_id.t flambda
+val lift_set_of_closures : Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 
 (** Replace setglobalfield(false, n) by ignore if the global is unused *)
-val remove_unused_globals : Expr_id.t flambda -> Expr_id.t flambda
+val remove_unused_globals : Expr_id.t Flambda.t -> Expr_id.t Flambda.t

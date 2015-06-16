@@ -429,7 +429,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       let (args', approxs, r) = loop_list env r args in
       let expr = if args' == args then expr else Fprim(p, args', dbg, annot) in
       let expr, approx, benefit = Flambdasimplify.primitive p (args', approxs) expr dbg in
-      let r = R.map_benefit r (Flambdacost.benefit_union benefit) in
+      let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
       expr, ret r approx
   | Fstaticraise(i, args, annot) ->
       let i = Flambdasubst.sb_exn (E.sb env) i in

@@ -113,30 +113,30 @@ let remove_unused_closure_variables tree =
 let const_int_expr expr n eid =
   if Flambdaeffects.no_effects expr then
     let (new_expr, approx) = A.make_const_int n eid in
-    new_expr, approx, C.remove_code expr C.no_benefit
-  else expr, A.value_int n, C.no_benefit
+    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  else expr, A.value_int n, C.Benefit.zero
 let const_char_expr expr c eid =
   if Flambdaeffects.no_effects expr then
     let (new_expr, approx) = A.make_const_int (Char.code c) eid in
-    new_expr, approx, C.remove_code expr C.no_benefit
-  else expr, A.value_int (Char.code c), C.no_benefit
+    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  else expr, A.value_int (Char.code c), C.Benefit.zero
 let const_ptr_expr expr n eid =
   if Flambdaeffects.no_effects expr then
     let (new_expr, approx) = A.make_const_ptr n eid in
-    new_expr, approx, C.remove_code expr C.no_benefit
-  else expr, A.value_constptr n, C.no_benefit
+    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  else expr, A.value_constptr n, C.Benefit.zero
 let const_bool_expr expr b eid =
   const_ptr_expr expr (if b then 1 else 0) eid
 let const_float_expr expr f eid =
   if Flambdaeffects.no_effects expr then
     let (new_expr, approx) = A.make_const_float f eid in
-    new_expr, approx, C.remove_code expr C.no_benefit
-  else expr, A.value_float f, C.no_benefit
+    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  else expr, A.value_float f, C.Benefit.zero
 let const_boxed_int_expr expr t i eid =
   if Flambdaeffects.no_effects expr then
     let (new_expr, approx) = A.make_const_boxed_int t i eid in
-    new_expr, approx, C.remove_code expr C.no_benefit
-  else expr, A.value_boxed_int t i, C.no_benefit
+    new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
+  else expr, A.value_boxed_int t i, C.Benefit.zero
 
 let const_comparison_expr expr cmp x y eid =
   let open Lambda in
@@ -260,7 +260,7 @@ end) = struct
     | Pcvtbint (kind, Pint64) when kind = I.kind -> eval_conv A.Int64 I.to_int64
     | Pnegbint kind when kind = I.kind -> eval I.neg
     | Pbbswap kind when kind = I.kind -> eval I.swap
-    | _ -> expr, A.value_unknown, C.no_benefit
+    | _ -> expr, A.value_unknown, C.Benefit.zero
 
   let simplify_binop (p : Lambda.primitive) (kind : I.t A.boxed_int)
         expr (n1 : I.t) (n2 : I.t) eid =
@@ -277,7 +277,7 @@ end) = struct
     | Pxorbint kind when kind = I.kind -> eval I.logxor
     | Pbintcomp (kind, c) when kind = I.kind ->
       const_comparison_expr expr c n1 n2 eid
-    | _ -> expr, A.value_unknown, C.no_benefit
+    | _ -> expr, A.value_unknown, C.Benefit.zero
 
   let simplify_binop_int (p : Lambda.primitive) (kind : I.t A.boxed_int)
         expr (n1 : I.t) (n2 : int) eid =
@@ -287,7 +287,7 @@ end) = struct
     | Plslbint kind when kind = I.kind && precond -> eval I.shift_left
     | Plsrbint kind when kind = I.kind && precond -> eval I.shift_right_logical
     | Pasrbint kind when kind = I.kind && precond -> eval I.shift_right
-    | _ -> expr, A.value_unknown, C.no_benefit
+    | _ -> expr, A.value_unknown, C.Benefit.zero
 end
 
 module Simplify_boxed_nativeint = Simplify_boxed_integer_operator (struct
@@ -313,11 +313,11 @@ module Simplify_boxed_int64 = Simplify_boxed_integer_operator (struct
 end)
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg
-  : _ Flambda.t * A.t * Flambdacost.benefit =
+  : _ Flambda.t * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
-    expr, A.value_block(tag, Array.of_list approxs), C.no_benefit
+    expr, A.value_block(tag, Array.of_list approxs), C.Benefit.zero
   | Pignore -> begin
       let eid = Flambdautils.data_at_toplevel_node expr in
       match args, A.descrs approxs with
@@ -343,7 +343,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
         const_boxed_int_expr expr Int32 (Int32.of_int x) eid
       | Pbintofint Pint64 ->
         const_boxed_int_expr expr Int64 (Int64.of_int x) eid
-      | _ -> expr, A.value_unknown, C.no_benefit
+      | _ -> expr, A.value_unknown, C.Benefit.zero
       end
     | [(Value_int x | Value_constptr x); (Value_int y | Value_constptr y)] ->
       let shift_precond = 0 <= y && y < 8 * Arch.size_int in
@@ -362,7 +362,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
       | Pintcomp cmp -> const_comparison_expr expr cmp x y eid
       | Pisout -> const_bool_expr expr (y > x || y < 0) eid
       (* [Psequand] and [Psequor] have special simplification rules, above. *)
-      | _ -> expr, A.value_unknown, C.no_benefit
+      | _ -> expr, A.value_unknown, C.Benefit.zero
       end
     | [Value_constptr x] ->
       begin match p with
@@ -382,14 +382,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
         | Ostype_win32 -> const_bool_expr expr (Sys.os_type = "Win32") eid
         | Ostype_cygwin -> const_bool_expr expr (Sys.os_type = "Cygwin") eid
         end
-      | _ -> expr, A.value_unknown, C.no_benefit
+      | _ -> expr, A.value_unknown, C.Benefit.zero
       end
     | [Value_float x] when fpc ->
       begin match p with
       | Pintoffloat -> const_int_expr expr (int_of_float x) eid
       | Pnegfloat -> const_float_expr expr (-. x) eid
       | Pabsfloat -> const_float_expr expr (abs_float x) eid
-      | _ -> expr, A.value_unknown, C.no_benefit
+      | _ -> expr, A.value_unknown, C.Benefit.zero
       end
     | [Value_float n1; Value_float n2] when fpc ->
       begin match p with
@@ -398,7 +398,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
       | Pmulfloat -> const_float_expr expr (n1 *. n2) eid
       | Pdivfloat -> const_float_expr expr (n1 /. n2) eid
       | Pfloatcomp c  -> const_comparison_expr expr c n1 n2 eid
-      | _ -> expr, A.value_unknown, C.no_benefit
+      | _ -> expr, A.value_unknown, C.Benefit.zero
       end
     | [A.Value_boxed_int(A.Nativeint, n)] ->
       Simplify_boxed_nativeint.simplify_unop p Nativeint expr n eid
@@ -428,15 +428,15 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
         | Pstringrefu
         | Pstringrefs ->
             const_char_expr expr s.[x] eid
-        | _ -> expr, A.value_unknown, C.no_benefit
+        | _ -> expr, A.value_unknown, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
       when x >= 0 && x < size && p = Pstringrefs ->
         Flambda.Fprim(Pstringrefu, args, dbg, eid),
         A.value_unknown,
-        C.no_benefit (* we improved it, but there is no way to account for that *)
-    | _ -> expr, A.value_unknown, C.no_benefit
+        C.Benefit.zero (* we improved it, but there is no way to account for that *)
+    | _ -> expr, A.value_unknown, C.Benefit.zero
 
 let rename_var var =
   Variable.rename ~current_compilation_unit:(Compilenv.current_unit ()) var

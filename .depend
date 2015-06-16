@@ -965,11 +965,11 @@ asmcomp/flambdautils.cmx : asmcomp/symbol.cmx utils/misc.cmx \
     asmcomp/abstract_identifiers.cmx asmcomp/flambdautils.cmi
 asmcomp/inlining_cost.cmo : typing/primitive.cmi utils/misc.cmi \
     bytecomp/lambda.cmi asmcomp/flambdaiter.cmi asmcomp/flambda.cmi \
-    utils/clflags.cmi parsing/asttypes.cmi asmcomp/abstract_identifiers.cmi \
+    utils/clflags.cmi asmcomp/abstract_identifiers.cmi \
     asmcomp/inlining_cost.cmi
 asmcomp/inlining_cost.cmx : typing/primitive.cmx utils/misc.cmx \
     bytecomp/lambda.cmx asmcomp/flambdaiter.cmx asmcomp/flambda.cmi \
-    utils/clflags.cmx parsing/asttypes.cmi asmcomp/abstract_identifiers.cmx \
+    utils/clflags.cmx asmcomp/abstract_identifiers.cmx \
     asmcomp/inlining_cost.cmi
 asmcomp/inlining_decision.cmo : asmcomp/inlining_stats_types.cmi \
     asmcomp/inlining_stats.cmi asmcomp/inlining_result.cmi \
