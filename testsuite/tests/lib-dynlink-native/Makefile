@@ -115,7 +115,7 @@ promote:
 clean: defaultclean
 	@rm -f result *.so *.o *.cm* main main_ext *.exe *.s *.asm *.obj
 	@rm -f *.a *.lib
-	@rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
+	@rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj sub/*.out
 	@rm -f marshal.data
 
 include $(BASEDIR)/makefiles/Makefile.common

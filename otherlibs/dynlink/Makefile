@@ -69,7 +69,7 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 	rm -f dynlink.mlopt
 
 extract_crc: dynlink.cma extract_crc.cmo
-	$(OCAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
+	$(OCAMLC) $(COMPFLAGS) -o extract_crc ${BISECT_CMA} dynlink.cma extract_crc.cmo
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
@@ -88,6 +88,7 @@ partialclean:
 
 clean: partialclean
 	rm -f *.$(A) *.$(O) *.so *.dll dynlink.mlopt
+	rm -f *.out
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

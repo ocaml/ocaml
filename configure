@@ -48,6 +48,8 @@ with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
+with_bisect_byte=false
+with_bisect_opt=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -153,6 +155,13 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -with-bisect)
+        with_bisect_byte=true
+        with_bisect_opt=true;;
+    -with-bisect-byte)
+        with_bisect_byte=true;;
+    -with-bisect-opt)
+        with_bisect_opt=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1726,6 +1735,18 @@ echo "TARGET=$target" >> Makefile
 echo "HOST=$host" >> Makefile
 if [ "$ostype" = Cygwin ]; then
   echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
+fi
+
+if [ "${with_bisect_byte}" = true ] || [ "${with_bisect_opt}" = true ]; then
+    echo 'BISECT_DIR=${PREFIX}/lib/bisect_ppx' >> Makefile
+    if [ "${with_bisect_byte}" = true ]; then
+        echo 'BISECT_CMA=${BISECT_DIR}/bisect.cma' >> Makefile
+        echo 'PPX_BISECT=-I ${BISECT_DIR} -ppx ${BISECT_DIR}/bisect_ppx.byte' >> Makefile
+    fi
+    if [ "${with_bisect_opt}" = true ]; then
+        echo 'BISECT_CMXA=${BISECT_DIR}/bisect.cmxa' >> Makefile
+        echo 'PPX_BISECT_OPT=-I ${BISECT_DIR} -ppx ${BISECT_DIR}/bisect_ppx.byte' >> Makefile
+    fi
 fi
 
 

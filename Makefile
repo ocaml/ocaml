@@ -439,6 +439,7 @@ partialclean::
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
+	   ${BISECT_CMA} \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 
 # The native-code compiler
@@ -450,6 +451,7 @@ partialclean::
 
 ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
+	  ${BISECT_CMA} \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
 
 partialclean::
@@ -465,6 +467,7 @@ partialclean::
 ocaml: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
        compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp \
+	  ${BISECT_CMA} \
 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
@@ -559,6 +562,7 @@ partialclean::
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
+          ${BISECT_CMXA} \
 	  compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
 	  $(BYTESTART:.cmo=.cmx) -cclib "$(BYTECCLIBS)"
 
@@ -575,6 +579,7 @@ partialclean::
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
+	   ${BISECT_CMXA} \
 	   compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	   $(OPTSTART:.cmo=.cmx)
 
@@ -683,7 +688,8 @@ tools/cvt_emit: tools/cvt_emit.mll
 
 expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
-	$(CAMLC) $(LINKFLAGS) -o expunge compilerlibs/ocamlcommon.cma \
+	$(CAMLC) $(LINKFLAGS) -o expunge \
+		 ${BISECT_CMA} compilerlibs/ocamlcommon.cma \
 	         compilerlibs/ocamlbytecomp.cma toplevel/expunge.cmo
 
 partialclean::
@@ -873,18 +879,20 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) ${PPX_BISECT} -c $<
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) ${PPX_BISECT_OPT} -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \
-	  do rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
+	  do rm -f $$d/*.cm[ioxtp] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
+	rm -f bisect*.out
+	rm -f asmcomp/*/*.cmp
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \

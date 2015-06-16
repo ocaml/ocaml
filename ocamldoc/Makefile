@@ -76,7 +76,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
+COMPFLAGS=$(INCLUDES) -warn-error A-51 -safe-string
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -173,11 +173,11 @@ debug:
 	$(MAKE) OCAMLPP=""
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
+	$(OCAMLC) -o $@ -linkall ${BISECT_CMA} unix.cma str.cma dynlink.cma \
 	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
 	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
+	$(OCAMLOPT) -o $@ -linkall ${BISECT_CMXA} unix.cmxa str.cmxa dynlink.cmxa \
 	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
 	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
