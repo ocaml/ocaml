@@ -154,11 +154,11 @@ let transform_var_within_closure_expression env r expr vc_closure
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
     in
     let env_var =
-      AR.subst_var_within_closure set_of_closures.ffunction_sb
+      AR.subst_var_within_closure set_of_closures.alpha_renaming
           fenv_field.vc_var
     in
     let env_fun_id =
-      AR.subst_closure_id set_of_closures.ffunction_sb fenv_field.vc_fun
+      AR.subst_closure_id set_of_closures.alpha_renaming fenv_field.vc_fun
     in
     assert(Closure_id.equal env_fun_id fun_id);
     let approx =
@@ -201,7 +201,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
   let subst_closure_id (closure : A.value_set_of_closures) closure_id =
-    let closure_id = AR.subst_closure_id closure.ffunction_sb closure_id in
+    let closure_id = AR.subst_closure_id closure.alpha_renaming closure_id in
     (try ignore (find_declaration closure_id closure.function_decls)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
@@ -700,7 +700,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  let fv, ffuns, sb, ffunction_sb =
+  let fv, ffuns, sb, alpha_renaming =
     AR.subst_function_declarations_and_free_variables (E.sb env) fv ffuns
   in
   let env = E.set_sb sb env in
@@ -727,7 +727,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
           fv Var_within_closure.Map.empty;
       unchanging_params = Variable.Set.empty;
       specialised_args = Variable.Map.keys cl_specialised_arg;
-      ffunction_sb;
+      alpha_renaming;
     }
   in
 

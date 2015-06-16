@@ -47,7 +47,7 @@ and value_set_of_closures =
     bound_var : t Var_within_closure.Map.t;
     unchanging_params : Variable.Set.t;
     specialised_args : Variable.Set.t;
-    ffunction_sb :
+    alpha_renaming :
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
   }
 
@@ -350,7 +350,7 @@ module Import = struct
                 bound_var;
                 unchanging_params = unchanging_params;
                 specialised_args = Variable.Set.empty;
-                ffunction_sb =
+                alpha_renaming =
                   Flambdasubst.
                   Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty;
               } }
@@ -365,7 +365,7 @@ module Import = struct
             bound_var;
             unchanging_params = unchanging_params;
             specialised_args = Variable.Set.empty;
-            ffunction_sb =
+            alpha_renaming =
               Flambdasubst.
               Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty; }
     with Not_found ->
