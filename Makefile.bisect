@@ -1,24 +1,38 @@
 
 .PHONY: clean run report
 
-PARAM=CAMLOPT=ocamlopt.opt CAMLC=ocamlc.opt CAMLRUN=ocamlrun CAMLYACC=ocamlyacc CAMLLEX=ocamllex OCAMLC=ocamlc OCAMLOPT=ocamlopt OCAMLRUN=ocamlrun MKLIB=ocamlmklib
+BUILD_PARAM= \
+  CAMLC=ocamlc.opt \
+  OCAMLC=ocamlc.opt \
+  CAMLOPT=ocamlopt.opt \
+  OCAMLOPT=ocamlopt.opt \
+  CAMLRUN=ocamlrun \
+  OCAMLRUN=ocamlrun \
+  CAMLYACC=ocamlyacc \
+  CAMLLEX=ocamllex \
+  MKLIB=ocamlmklib
+
+TEST_PARAM= \
+  BISECT_FILE=coverage \
+  OCAMLC='$$(OTOPDIR)/ocamlc.opt $$(CUSTOM)' \
+  OCAMLOPT='$$(OTOPDIR)/ocamlopt.opt' \
+  OCAMLYACC='ocamlyacc' \
+  OCAMLLEX='ocamllex' \
+  OCAMLDOC='ocamldoc' \
+  OCAMLMKLIB='ocamlmklib -ocamlc $$(OTOPDIR)/ocamlc.opt -ocamlopt $$(OTOPDIR)/ocamlopt.opt' \
+  OCAMLRUN='ocamlrun'
+
 prepare:
-	${MAKE} ${PARAM} -C tools cvt_emit
-	${MAKE} runtime
-	${MAKE} runtimeopt
-	${MAKE} ${PARAM} ocamlc.opt
-	${MAKE} ${PARAM} ocamlopt.opt
-	${MAKE} ${PARAM} -C stdlib all COMPILER=
-	${MAKE} ${PARAM} -C stdlib allopt COMPILER=
-	${MAKE} ${PARAM} otherlibraries
-	${MAKE} ${PARAM} otherlibrariesopt
+	${MAKE} ${BUILD_PARAM} -C tools cvt_emit
+	${MAKE} ${BUILD_PARAM} ocamlc.opt
+	${MAKE} ${BUILD_PARAM} ocamlopt.opt
 
 clean:
 	-rm -f testsuite/tests/*/coverage*.out
 	-rm -rf testsuite/tests/coverage
 
 run:
-	BISECT_FILE=coverage make -C testsuite all OCAMLC='$$(OTOPDIR)/ocamlc.opt $$(CUSTOM) $$(OCFLAGS)' OCAMLOPT='$$(OTOPDIR)/ocamlopt.opt $$(OCFLAGS)' OCAMLRUN=ocamlrun
+	make ${TEST_PARAM} -C testsuite all
 
 report:
 	bisect-report -html testsuite/coverage testsuite/tests/*/coverage*.out
