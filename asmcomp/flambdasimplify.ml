@@ -317,6 +317,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag, Asttypes.Immutable) ->
+    let tag = Simple_value_approx.Tag.create_exn tag in
     expr, A.value_block(tag, Array.of_list approxs), C.Benefit.zero
   | Pignore -> begin
       let eid = Flambdautils.data_at_toplevel_node expr in

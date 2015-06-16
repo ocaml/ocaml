@@ -17,7 +17,12 @@
 
 open Abstract_identifiers
 
-type tag = int
+module Tag : sig
+  type t
+
+  val create_exn : int -> t
+  val to_int : t -> int
+end
 
 type 'a boxed_int = 'a Flambdaexport.boxed_int =
   | Int32 : int32 boxed_int
@@ -65,7 +70,7 @@ type 'a boxed_int = 'a Flambdaexport.boxed_int =
 *)
 
 type descr =
-  | Value_block of tag * t array
+  | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
   | Value_float of float
@@ -130,7 +135,7 @@ val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
 val value_closure : value_closure -> t
 val value_set_of_closures : value_set_of_closures -> t
-val value_block : tag * t array -> t
+val value_block : Tag.t * t array -> t
 val value_extern : Flambdaexport.ExportId.t -> t
 val value_symbol : Symbol.t -> t
 val value_bottom : t
@@ -140,11 +145,11 @@ val const_approx : Flambda.const -> t
 
 val print_approx : Format.formatter -> t -> unit
 
-val make_const_int : int -> 'a -> 'a Flambda.flambda * t
-val make_const_ptr : int -> 'a -> 'a Flambda.flambda * t
-val make_const_bool : bool -> 'a -> 'a Flambda.flambda * t
-val make_const_float : float -> 'a -> 'a Flambda.flambda * t
-val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.flambda * t
+val make_const_int : int -> 'a -> 'a Flambda.t * t
+val make_const_ptr : int -> 'a -> 'a Flambda.t * t
+val make_const_bool : bool -> 'a -> 'a Flambda.t * t
+val make_const_float : float -> 'a -> 'a Flambda.t * t
+val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.t * t
 
 val meet : t -> t -> t
 
@@ -162,15 +167,15 @@ val useful : t -> bool
 val is_certainly_immutable : t -> bool
 
 val check_constant_result
-   : Expr_id.t Flambda.flambda
+   : Expr_id.t Flambda.t
   -> t
-  -> Expr_id.t Flambda.flambda * t
+  -> Expr_id.t Flambda.t * t
 
 val check_var_and_constant_result
    : is_present_in_env:(Variable.t -> bool)
-  -> Expr_id.t Flambda.flambda
+  -> Expr_id.t Flambda.t
   -> t
-  -> Expr_id.t Flambda.flambda * t
+  -> Expr_id.t Flambda.t * t
 
 val get_field : int -> t list -> t
 
@@ -188,9 +193,9 @@ val really_import_approx : t -> t
    be made more generic?  If not maybe move back into Flambdainline *)
 val which_function_parameters_can_we_specialize
    : params:Variable.t list
-  -> args:'a Flambda.flambda list
+  -> args:'a Flambda.t list
   -> approximations_of_args:t list
   -> unchanging_params:Variable.Set.t
   -> Variable.t Variable.Map.t
     * (Variable.t list)
-    * ((Variable.t * 'a Flambda.flambda) list)
+    * ((Variable.t * 'a Flambda.t) list)

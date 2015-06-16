@@ -561,6 +561,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
           Effect_analysis.sequence arg lam annot, r
       | Value_block(tag,_) ->
+          let tag = Simple_value_approx.Tag.to_int tag in
           let lam = try List.assoc tag sw.fs_blocks with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in

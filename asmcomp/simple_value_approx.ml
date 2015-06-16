@@ -1,20 +1,29 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-open Symbol
 open Abstract_identifiers
-open Flambda
 
-type tag = int
+module Tag = struct
+  type t = int
+
+  let create_exn tag =
+    if tag < 0 || tag > 255 then
+      Misc.fatal_error (Printf.sprintf "Tag.create_exn %d" tag)
+    else
+      tag
+
+  let to_int t = t
+end
 
 type 'a boxed_int = 'a Flambdaexport.boxed_int =
   | Int32 : int32 boxed_int
@@ -22,7 +31,7 @@ type 'a boxed_int = 'a Flambdaexport.boxed_int =
   | Nativeint : nativeint boxed_int
 
 type descr =
-  | Value_block of tag * t array
+  | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
   | Value_float of float
@@ -40,10 +49,11 @@ type descr =
 and value_closure =
   { fun_id : Closure_id.t;
     set_of_closures : value_set_of_closures;
-    set_of_closures_var : Variable.t option; }
+    set_of_closures_var : Variable.t option;
+  }
 
 and value_set_of_closures =
-  { function_decls : Expr_id.t function_declarations;
+  { function_decls : Expr_id.t Flambda.function_declarations;
     bound_var : t Var_within_closure.Map.t;
     unchanging_params : Variable.Set.t;
     specialised_args : Variable.Set.t;
@@ -65,7 +75,7 @@ let rec print_descr ppf = function
   | Value_block (tag,fields) ->
     let p ppf fields =
       Array.iter (fun v -> Format.fprintf ppf "%a@ " print_approx v) fields in
-    Format.fprintf ppf "[%i:@ @[<1>%a@]]" tag p fields
+    Format.fprintf ppf "[%i:@ @[<1>%a@]]" (Tag.to_int tag) p fields
   | Value_unknown -> Format.fprintf ppf "?"
   | Value_bottom -> Format.fprintf ppf "bottom"
   | Value_extern id -> Format.fprintf ppf "_%a_" Flambdaexport.ExportId.print id
@@ -120,38 +130,46 @@ let value_unresolved sym = approx (Value_unresolved sym)
 let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
-let make_const_int n eid =
+let make_const_int n eid : _ Flambda.t * t =
   Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
-let make_const_ptr n eid = Fconst(Fconst_pointer n,eid), value_constptr n
-let make_const_bool b eid = make_const_ptr (if b then 1 else 0) eid
-let make_const_float f eid = Fconst(Fconst_float f,eid), value_float f
-let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid =
-  let c = match t with
-    | Int32 -> Asttypes.Const_int32 i
-    | Int64 -> Asttypes.Const_int64 i
-    | Nativeint -> Asttypes.Const_nativeint i in
-  Fconst(Fconst_base c,eid), value_boxed_int t i
 
-let const_approx = function
+let make_const_ptr n eid : _ Flambda.t * t =
+  Fconst(Fconst_pointer n,eid), value_constptr n
+
+let make_const_bool b eid : _ Flambda.t * t =
+  make_const_ptr (if b then 1 else 0) eid
+
+let make_const_float f eid : _ Flambda.t * t =
+  Fconst(Fconst_float f,eid), value_float f
+
+let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
+      : _ Flambda.t * t =
+  let c : Asttypes.constant =
+    match t with
+    | Int32 -> Const_int32 i
+    | Int64 -> Const_int64 i
+    | Nativeint -> Const_nativeint i
+  in
+  Fconst (Fconst_base c, eid), value_boxed_int t i
+
+let const_approx (flam : Flambda.const) =
+  match flam with
   | Fconst_base const ->
-      let open Asttypes in
-      begin match const with
-      | Const_int i -> value_int i
-      | Const_char c -> value_int (Char.code c)
-      | Const_string (s,_) -> value_string (String.length s) None
-      | Const_float s -> value_float (float_of_string s)
-      | Const_int32 i -> value_boxed_int Int32 i
-      | Const_int64 i -> value_boxed_int Int64 i
-      | Const_nativeint i -> value_boxed_int Nativeint i
-      end
+    begin match const with
+    | Const_int i -> value_int i
+    | Const_char c -> value_int (Char.code c)
+    | Const_string (s,_) -> value_string (String.length s) None
+    | Const_float s -> value_float (float_of_string s)
+    | Const_int32 i -> value_boxed_int Int32 i
+    | Const_int64 i -> value_boxed_int Int64 i
+    | Const_nativeint i -> value_boxed_int Nativeint i
+    end
   | Fconst_pointer i -> value_constptr i
   | Fconst_float f -> value_float f
-  | Fconst_float_array a ->
-      value_float_array (List.length a)
-  | Fconst_immstring s ->
-      value_string (String.length s) (Some s)
+  | Fconst_float_array a -> value_float_array (List.length a)
+  | Fconst_immstring s -> value_string (String.length s) (Some s)
 
-let check_constant_result (lam : 'a flambda) approx =
+let check_constant_result (lam : _ Flambda.t) approx =
   if Effect_analysis.no_effects lam then
     match approx.descr with
     | Value_int n ->
@@ -163,7 +181,7 @@ let check_constant_result (lam : 'a flambda) approx =
     | Value_boxed_int (t,i) ->
       make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
-      Fsymbol(sym, Flambdautils.data_at_toplevel_node lam), approx
+      Fsymbol (sym, Flambdautils.data_at_toplevel_node lam), approx
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -172,14 +190,15 @@ let check_constant_result (lam : 'a flambda) approx =
     lam, approx
 
 let check_var_and_constant_result ~is_present_in_env lam approx =
-  let res = match approx.var with
+  let res : _ Flambda.t =
+    match approx.var with
     | Some var when is_present_in_env var ->
-        Fvar(var, Flambdautils.data_at_toplevel_node lam)
+      Fvar(var, Flambdautils.data_at_toplevel_node lam)
     | _ ->
-        match approx.symbol with
-        | Some sym ->
-            Fsymbol(sym, Flambdautils.data_at_toplevel_node lam)
-        | None -> lam
+      match approx.symbol with
+      | Some sym ->
+          Fsymbol(sym, Flambdautils.data_at_toplevel_node lam)
+      | None -> lam
   in
   check_constant_result res approx
 
@@ -213,7 +232,7 @@ let get_field i = function
   | [] | _ :: _ :: _ -> assert false
   | [{descr}] ->
     match descr with
-    | Value_block (tag, fields) ->
+    | Value_block (_tag, fields) ->
       if i >= 0 && i < Array.length fields
       then fields.(i)
       else value_unknown
@@ -317,21 +336,22 @@ and meet a1 a2 =
 (** Import external approx *)
 
 module Import = struct
-  open Flambdaexport
+  module SymbolTbl = Symbol.SymbolTbl
+  module SymbolMap = Symbol.SymbolMap
 
   let reported_missing_symbols = SymbolTbl.create 0
 
   let rec import_ex ex : t =
-
-    ignore(Compilenv.approx_for_global (ExportId.unit ex));
-
+    let (_ : Flambdaexport.exported) =
+      Compilenv.approx_for_global (Flambdaexport.ExportId.unit ex)
+    in
     let ex_info = Compilenv.approx_env () in
-    try match find_description ex ex_info with
+    try match Flambdaexport.find_description ex ex_info with
       | Value_int i -> value_int i
       | Value_constptr i -> value_constptr i
       | Value_float f -> value_float f
       | Value_float_array size -> value_float_array size
-      | Value_boxed_int (t,i) -> value_boxed_int t i
+      | Flambdaexport.Value_boxed_int (t,i) -> value_boxed_int t i
       | Value_string { size; contents } -> value_string size contents
       | Value_mutable_block _ -> value_unknown
       | Value_block (tag, fields) ->
@@ -392,7 +412,8 @@ module Import = struct
           Location.prerr_warning (Location.in_file "some_file")
             (Warnings.Missing_symbol_information
                (Format.asprintf "%a" Symbol.print sym,
-                Format.asprintf "%a" Compilation_unit.print sym.Symbol.sym_unit));
+                Format.asprintf "%a" Symbol.Compilation_unit.print
+                  sym.Symbol.sym_unit));
         end;
         value_unresolved sym
 
@@ -425,7 +446,7 @@ let which_function_parameters_can_we_specialize ~params ~args
         (* If the argument expression is not a variable, we declare a new one.
            This is needed for adding arguments to cl_specialised_arg which
            requires a variable *)
-        match arg with
+        match (arg : _ Flambda.t) with
         | Fvar (var,_) ->
             var, args_decl
         | _ ->
