@@ -71,7 +71,7 @@ type descr =
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
-  | Value_closure of value_offset
+  | Value_closure of value_closure
   | Value_string of Flambdaexport.value_string
   | Value_float_array of int (* size *)
   | Value_unknown
@@ -80,7 +80,7 @@ type descr =
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
-and value_offset = {
+and value_closure = {
   fun_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
   set_of_closures_var : Variable.t option;
@@ -128,7 +128,7 @@ val value_int : int -> t
 val value_float : float -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
-val value_closure : value_offset -> t
+val value_closure : value_closure -> t
 val value_set_of_closures : value_set_of_closures -> t
 val value_block : tag * t array -> t
 val value_extern : Flambdaexport.ExportId.t -> t
