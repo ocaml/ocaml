@@ -32,7 +32,7 @@ clean:
 	-rm -rf testsuite/tests/coverage
 
 run:
-	make ${TEST_PARAM} -C testsuite all
+	make ${TEST_PARAM} -C testsuite all || true
 
 report:
 	bisect-report -html testsuite/coverage testsuite/tests/*/coverage*.out
