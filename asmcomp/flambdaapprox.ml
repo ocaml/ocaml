@@ -152,7 +152,7 @@ let const_approx = function
       value_string (String.length s) (Some s)
 
 let check_constant_result (lam : 'a flambda) approx =
-  if Flambdaeffects.no_effects lam then
+  if Effect_analysis.no_effects lam then
     match approx.descr with
     | Value_int n ->
       make_const_int n (Flambdautils.data_at_toplevel_node lam)

@@ -342,7 +342,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
            seem as important as for the let.
            I should find a nice pattern to allow to do that elsewhere
            without too much syntactic noise. *)
-        else if Flambdaeffects.no_effects lam then
+        else if Effect_analysis.no_effects lam then
           let r = R.map_benefit r (Inlining_cost.Benefit.remove_code lam) in
           body, r
         else
@@ -487,13 +487,13 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           (* constant false, keep ifnot *)
           let ifnot, r = loop env r ifnot in
           let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
-          Flambdaeffects.sequence arg ifnot annot, r
+          Effect_analysis.sequence arg ifnot annot, r
       | Value_constptr _
       | Value_block _ ->
           (* constant true, keep ifso *)
           let ifso, r = loop env r ifso in
           let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
-          Flambdaeffects.sequence arg ifso annot, r
+          Effect_analysis.sequence arg ifso annot, r
       | _ ->
           let env = E.inside_branch env in
           let ifso, r = loop env r ifso in
@@ -506,7 +506,7 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
   | Fsequence(lam1, lam2, annot) ->
       let lam1, r = loop env r lam1 in
       let lam2, r = loop env r lam2 in
-      Flambdaeffects.sequence lam1 lam2 annot, r
+      Effect_analysis.sequence lam1 lam2 annot, r
   | Fwhile(cond, body, annot) ->
       let cond, r = loop env r cond in
       let env = E.inside_loop env in
@@ -559,13 +559,13 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
           let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
-          Flambdaeffects.sequence arg lam annot, r
+          Effect_analysis.sequence arg lam annot, r
       | Value_block(tag,_) ->
           let lam = try List.assoc tag sw.fs_blocks with
             | Not_found -> get_failaction () in
           let lam, r = loop env r lam in
           let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
-          Flambdaeffects.sequence arg lam annot, r
+          Effect_analysis.sequence arg lam annot, r
       | _ ->
           let env = E.inside_branch env in
           let f (i,v) (acc, r) =

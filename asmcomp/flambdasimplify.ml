@@ -95,7 +95,7 @@ let remove_unused_closure_variables tree =
              Variable.Set.mem id all_free_var
              || Var_within_closure.Set.mem (Var_within_closure.wrap id)
                used_variable_within_closure
-             || not (Flambdaeffects.no_effects expr))
+             || not (Effect_analysis.no_effects expr))
            cl_free_var in
        let cl_fun =
          { cl_fun with
@@ -111,29 +111,29 @@ let remove_unused_closure_variables tree =
 
 (* CR mshinwell: rename [eid] and/or [annot] to be consistent *)
 let const_int_expr expr n eid =
-  if Flambdaeffects.no_effects expr then
+  if Effect_analysis.no_effects expr then
     let (new_expr, approx) = A.make_const_int n eid in
     new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
   else expr, A.value_int n, C.Benefit.zero
 let const_char_expr expr c eid =
-  if Flambdaeffects.no_effects expr then
+  if Effect_analysis.no_effects expr then
     let (new_expr, approx) = A.make_const_int (Char.code c) eid in
     new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
   else expr, A.value_int (Char.code c), C.Benefit.zero
 let const_ptr_expr expr n eid =
-  if Flambdaeffects.no_effects expr then
+  if Effect_analysis.no_effects expr then
     let (new_expr, approx) = A.make_const_ptr n eid in
     new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
   else expr, A.value_constptr n, C.Benefit.zero
 let const_bool_expr expr b eid =
   const_ptr_expr expr (if b then 1 else 0) eid
 let const_float_expr expr f eid =
-  if Flambdaeffects.no_effects expr then
+  if Effect_analysis.no_effects expr then
     let (new_expr, approx) = A.make_const_float f eid in
     new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
   else expr, A.value_float f, C.Benefit.zero
 let const_boxed_int_expr expr t i eid =
-  if Flambdaeffects.no_effects expr then
+  if Effect_analysis.no_effects expr then
     let (new_expr, approx) = A.make_const_boxed_int t i eid in
     new_expr, approx, C.Benefit.remove_code expr C.Benefit.zero
   else expr, A.value_boxed_int t i, C.Benefit.zero
@@ -159,8 +159,8 @@ end) = struct
      (a) value approximations; and (b) side effect analysis. *)
   let sequential_op ~arg1 ~(arg1_approx : A.t) ~arg2 ~(arg2_approx : A.t)
         ~dbg ~annot =
-    let arg1_no_effects = Flambdaeffects.no_effects arg1 in
-    let arg2_no_effects = Flambdaeffects.no_effects arg2 in
+    let arg1_no_effects = Effect_analysis.no_effects arg1 in
+    let arg2_no_effects = Effect_analysis.no_effects arg2 in
     let arg2_annot = Flambdautils.data_at_toplevel_node arg2 in
     let module B = C.Benefit in
     let completely_eliminated () : _ Flambda.t * A.t * B.t =

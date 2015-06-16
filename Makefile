@@ -109,11 +109,11 @@ ASMCOMP=\
   asmcomp/flambdasubst.cmo \
   asmcomp/flambdautils.cmo asmcomp/printflambda.cmo \
   asmcomp/flambdacheck.cmo \
-  asmcomp/flambdaconstants.cmo \
+  asmcomp/inconstant_idents.cmo \
   asmcomp/closure_conversion.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
-  asmcomp/flambdaeffects.cmo \
+  asmcomp/effect_analysis.cmo \
   asmcomp/flambdaapprox.cmo \
   asmcomp/inlining_cost.cmo \
   asmcomp/flambdasimplify.cmo \
