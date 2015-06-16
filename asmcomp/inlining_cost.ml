@@ -176,6 +176,8 @@ module Benefit = struct
       | Fset_of_closures _
       | Fprim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _, _) ->
         b := remove_alloc !b
+        (* CR pchambart: should we consider that boxed integer and float
+           operations are allocations ? *)
       | Fprim _ | Fclosure _ | Fvar_within_closure _ | Fassign _ ->
         b := remove_prim !b
       | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Ftrywith _
