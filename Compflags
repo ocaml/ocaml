@@ -1,0 +1,47 @@
+#!/bin/sh
+#########################################################################
+#                                                                       #
+#                                OCaml                                  #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                    Mark Shinwell, Jane Street Europe                  #
+#                                                                       #
+#   Copyright 2004, 2015 Institut National de Recherche en Informatique #
+#   et en Automatique.  All rights reserved.  This file is distributed  #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+case $1 in
+    asmcomp/abstract_identifiers.* \
+  | asmcomp/clambdagen.* \
+  | asmcomp/closure_conversion.* \
+  | asmcomp/effect_analysis.* \
+  | asmcomp/flambdacheck.* \
+  | asmcomp/flambdaexport.* \
+  | asmcomp/flambdaiter.* \
+  | asmcomp/flambda.* \
+  | asmcomp/flambdasimplify.* \
+  | asmcomp/flambdasubst.* \
+  | asmcomp/flambdasym.* \
+  | asmcomp/flambdautils.* \
+  | asmcomp/inconstant_idents.* \
+  | asmcomp/inlining_cost.* \
+  | asmcomp/inlining_decision.* \
+  | asmcomp/inlining_env.* \
+  | asmcomp/inlining.* \
+  | asmcomp/inlining_result.* \
+  | asmcomp/inlining_stats.* \
+  | asmcomp/inlining_stats_types.* \
+  | asmcomp/invariant_params.* \
+  | asmcomp/printflambda.* \
+  | asmcomp/ref_to_variables.* \
+  | asmcomp/simple_value_approx.* \
+  | asmcomp/symbol.*)
+    # More aggressive "unused identifier" warnings for Flambda passes.
+    # Also suppress "label ... defined in both ..." for record types, since
+    # it is of no consequence.
+    echo '-w +K+27-30'
+    ;;
+esac

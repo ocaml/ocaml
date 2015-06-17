@@ -1025,7 +1025,7 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
   loop (E.activate_substitution env) r
     (Flet (Immutable, clos_id, lfunc, expr, Expr_id.create ()))
 
-(* Inlining of recursive function (s) yields a copy of the functions'
+(* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
    a direct application of the new body.
    Note: the function really does need to be recursive (but possibly only via
