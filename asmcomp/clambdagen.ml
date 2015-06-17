@@ -79,8 +79,8 @@ let structured_constant_label expected_symbol ~shared cst =
 
 module type Param1 = sig
   type t
-  val expr : t flambda
-  val constants : t flambda SymbolMap.t
+  val expr : t Flambda.t
+  val constants : t Flambda.t SymbolMap.t
 end
 
 module Offsets(P:Param1) = struct
@@ -88,7 +88,7 @@ module Offsets(P:Param1) = struct
   module Storer =
     Switch.Store
       (struct
-        type t = P.t flambda
+        type t = P.t Flambda.t
         type key = Flambdautils.sharing_key
         let make_key = Flambdautils.make_key
       end)
@@ -168,7 +168,7 @@ module Conv(P:Param2) = struct
   module Storer =
     Switch.Store
       (struct
-        type t = P.t flambda
+        type t = P.t Flambda.t
         type key = Flambdautils.sharing_key
         let make_key = Flambdautils.make_key
       end)
@@ -730,8 +730,8 @@ module Conv(P:Param2) = struct
 end
 
 let convert (type a)
-    ((expr:a flambda),
-     (constants:a flambda SymbolMap.t),
+    ((expr:a Flambda.t),
+     (constants:a Flambda.t SymbolMap.t),
      exported) =
   let closures = list_closures expr constants in
   let module P1 = struct

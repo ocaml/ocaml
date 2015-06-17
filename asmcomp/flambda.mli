@@ -69,7 +69,7 @@
       using values of type [call_kind].
 
     - Nodes making up an expression in the language may be annotated with
-      arbitrary values (the ['a] in [type 'a flambda]).
+      arbitrary values (the ['a] in [type 'a Flambda.t]).
 
     - "Structured constants" built from the constructors in type [const]
       are not explicitly represented.  Instead, they are converted into

@@ -85,7 +85,7 @@ type infos =
   { global : (int, approx) Hashtbl.t;
     ex_table : descr EidMap.t ref;
     ex_symbol_id : ExportId.t SymbolMap.t ref;
-    constants : unit flambda SymbolTbl.t;
+    constants : unit Flambda.t SymbolTbl.t;
     symbol_alias : Symbol.t SymbolTbl.t }
 
 let init_infos () =
@@ -154,7 +154,7 @@ module Conv(P:Param1) = struct
   let is_constant id = not (Variable.Set.mem id not_constants.Inconstant_idents.not_constant_id)
 
   type env =
-    { sb : unit flambda Variable.Map.t; (* substitution *)
+    { sb : unit Flambda.t Variable.Map.t; (* substitution *)
       cm : Symbol.t Variable.Map.t; (* variables associated to constants *)
       approx : approx Variable.Map.t;
       toplevel : bool }
@@ -246,7 +246,7 @@ module Conv(P:Param1) = struct
   let unit_approx () = Value_id (new_descr (Value_constptr 0))
 
   let rec conv env expr = fst (conv_approx env expr)
-  and conv_approx (env : env) : P.t flambda -> unit flambda * approx = function
+  and conv_approx (env : env) : P.t Flambda.t -> unit Flambda.t * approx = function
     | Fvar (id,_) ->
         begin
           (* If the variable reference a constant, it is replaced by the
@@ -774,7 +774,7 @@ module Conv(P:Param1) = struct
     | Fsymbol _ -> true
     | _ -> false
 
-  and constant_symbol : unit flambda -> const_sym = function
+  and constant_symbol : unit Flambda.t -> const_sym = function
     | Fsymbol(sym, ()) ->
         Lbl sym
     | Fconst(_, ()) ->
@@ -793,7 +793,7 @@ end
 module type Param2 = sig
   include Param1
   val infos : infos
-  val expr : unit flambda
+  val expr : unit Flambda.t
 end
 
 module Prepare(P:Param2) = struct
