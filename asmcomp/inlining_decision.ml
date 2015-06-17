@@ -1,3 +1,16 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
+
 open Abstract_identifiers
 
 module A = Simple_value_approx
@@ -23,7 +36,6 @@ let should_inline_function_known_to_be_recursive
     && List.exists2 (fun id approx ->
           A.useful approx && Variable.Set.mem id unchanging_params)
         func.params approxs
-
 
 let inline_non_recursive
     ~inline_by_copying_function_body
@@ -120,7 +132,6 @@ let inline_non_recursive
       no_transformation ()
     end
   end
-
 
 let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       ~(func : 'a Flambda.function_declaration)

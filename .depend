@@ -668,8 +668,12 @@ asmcomp/flambdautils.cmi : asmcomp/flambda.cmi \
 asmcomp/inconstant_idents.cmi : asmcomp/symbol.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi
 asmcomp/inlining_cost.cmi : asmcomp/flambda.cmi
-asmcomp/inlining_decision.cmi : asmcomp/simple_value_approx.cmi \
+asmcomp/inlining_decision_intf.cmi : asmcomp/simple_value_approx.cmi \
     asmcomp/inlining_result.cmi asmcomp/inlining_env.cmi asmcomp/flambda.cmi \
+    bytecomp/debuginfo.cmi asmcomp/abstract_identifiers.cmi
+asmcomp/inlining_decision.cmi : asmcomp/simple_value_approx.cmi \
+    asmcomp/inlining_result.cmi asmcomp/inlining_env.cmi \
+    asmcomp/inlining_decision_intf.cmi asmcomp/flambda.cmi \
     bytecomp/debuginfo.cmi asmcomp/abstract_identifiers.cmi
 asmcomp/inlining_env.cmi : asmcomp/simple_value_approx.cmi \
     asmcomp/inlining_stats_types.cmi asmcomp/inlining_stats.cmi \
