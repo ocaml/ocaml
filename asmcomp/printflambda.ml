@@ -91,13 +91,13 @@ let rec lam ppf = function
           (fun (n, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
              fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
-          sw.fs_consts;
+          sw.consts;
         List.iter
           (fun (n, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
              fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
-          sw.fs_blocks ;
-        begin match sw.fs_failaction with
+          sw.blocks ;
+        begin match sw.failaction with
         | None  -> ()
         | Some l ->
             if !spc then fprintf ppf "@ " else spc := true;
@@ -105,9 +105,9 @@ let rec lam ppf = function
         end in
       fprintf ppf
         "@[<1>(%s(%i,%i) %a@ @[<v 0>%a@])@]"
-        (match sw.fs_failaction with None -> "switch*" | _ -> "switch")
-        (Int.Set.cardinal sw.fs_numconsts)
-        (Int.Set.cardinal sw.fs_numblocks)
+        (match sw.failaction with None -> "switch*" | _ -> "switch")
+        (Int.Set.cardinal sw.numconsts)
+        (Int.Set.cardinal sw.numblocks)
         lam larg switch sw
   | Fstringswitch(arg, cases, default, _) ->
       let switch ppf cases =

@@ -82,10 +82,10 @@ let lambda_smaller' lam ~than:threshold =
       lambda_list_size args
     | Fswitch (lam, sw, _) ->
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
-      aux sw.fs_consts; aux sw.fs_blocks;
+      aux sw.consts; aux sw.blocks;
       lambda_size lam;
-      List.iter (fun (_, lam) -> lambda_size lam) sw.fs_consts;
-      List.iter (fun (_, lam) -> lambda_size lam) sw.fs_blocks
+      List.iter (fun (_, lam) -> lambda_size lam) sw.consts;
+      List.iter (fun (_, lam) -> lambda_size lam) sw.blocks
     | Fstringswitch (lam, sw, def, _) ->
       lambda_size lam;
       List.iter (fun (_, lam) ->

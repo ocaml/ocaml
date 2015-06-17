@@ -439,11 +439,11 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Ext_types.IntSet.zero_to_n in
     Fswitch (close t env arg,
-      { fs_numconsts = zero_to_n (sw.sw_numconsts - 1);
-        fs_consts = List.map aux sw.sw_consts;
-        fs_numblocks = zero_to_n (sw.sw_numblocks - 1);
-        fs_blocks = List.map aux sw.sw_blocks;
-        fs_failaction = Misc.may_map (close t env) sw.sw_failaction;
+      { numconsts = zero_to_n (sw.sw_numconsts - 1);
+        consts = List.map aux sw.sw_consts;
+        numblocks = zero_to_n (sw.sw_numblocks - 1);
+        blocks = List.map aux sw.sw_blocks;
+        failaction = Misc.may_map (close t env) sw.sw_failaction;
       },
       nid ~name:"switch" ())
   | Lstringswitch (arg, sw, def) ->

@@ -48,9 +48,9 @@ let rec no_effects (flam : _ Flambda.t) =
   | Fswitch (lam, sw, _) ->
     let aux (_, lam) = no_effects lam in
     no_effects lam
-      && List.for_all aux sw.fs_blocks
-      && List.for_all aux sw.fs_consts
-      && Misc.may_default no_effects sw.fs_failaction true
+      && List.for_all aux sw.blocks
+      && List.for_all aux sw.consts
+      && Misc.may_default no_effects sw.failaction true
   | Fstringswitch (lam, sw, def, _) ->
     no_effects lam
       && List.for_all (fun (_, lam) -> no_effects lam) sw

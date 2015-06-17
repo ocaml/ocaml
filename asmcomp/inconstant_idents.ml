@@ -306,9 +306,9 @@ module NotConstants(P:Param) = struct
     | Fswitch (arg,sw,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] arg;
-      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.fs_consts;
-      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.fs_blocks;
-      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.fs_failaction
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
+      List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
+      Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
 
     | Fstringswitch (arg,sw,def,_) ->
       mark_curr curr;

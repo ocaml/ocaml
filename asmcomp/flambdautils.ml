@@ -206,11 +206,11 @@ and samebinding (v1, c1) (v2, c2) =
 
 and sameswitch fs1 fs2 =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
-  fs1.fs_numconsts = fs2.fs_numconsts &&
-  fs1.fs_numblocks = fs2.fs_numblocks &&
-  samelist samecase fs1.fs_consts fs2.fs_consts &&
-  samelist samecase fs1.fs_blocks fs2.fs_blocks &&
-  sameoption same fs1.fs_failaction fs2.fs_failaction
+  fs1.numconsts = fs2.numconsts &&
+  fs1.numblocks = fs2.numblocks &&
+  samelist samecase fs1.consts fs2.consts &&
+  samelist samecase fs1.blocks fs2.blocks &&
+  sameoption same fs1.failaction fs2.failaction
 
 let can_be_merged = same
 

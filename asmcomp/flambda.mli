@@ -211,9 +211,9 @@ and 'a var_within_closure = {
 }
 
 and 'a switch = {  (** Equivalent to the similar type in [Lambda]. *)
-  fs_numconsts : Ext_types.Int.Set.t; (** Integer cases *)
-  fs_consts : (int * 'a t) list; (** Integer cases *)
-  fs_numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
-  fs_blocks : (int * 'a t) list; (** Tag block cases *)
-  fs_failaction : 'a t option; (** Action to take if none matched *)
+  numconsts : Ext_types.Int.Set.t; (** Integer cases *)
+  consts : (int * 'a t) list; (** Integer cases *)
+  numblocks : Ext_types.Int.Set.t; (** Number of tag block cases *)
+  blocks : (int * 'a t) list; (** Tag block cases *)
+  failaction : 'a t option; (** Action to take if none matched *)
 }

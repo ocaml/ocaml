@@ -586,7 +586,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
                 match v with       This match is unreachable
                 | Float f -> ...]
        *)
-      match sw.fs_failaction with
+      match sw.failaction with
       | None -> Funreachable (Expr_id.create ())
       | Some f -> f
     in
@@ -594,7 +594,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     | Value_int i
     | Value_constptr i ->
       let lam =
-        try List.assoc i sw.fs_consts
+        try List.assoc i sw.consts
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
@@ -603,7 +603,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     | Value_block (tag, _) ->
       let tag = Simple_value_approx.Tag.to_int tag in
       let lam =
-        try List.assoc tag sw.fs_blocks
+        try List.assoc tag sw.blocks
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
@@ -617,17 +617,17 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         ((i, lam)::acc, R.set_approx r (A.meet (R.approx r) approx))
       in
       let r = R.set_approx r A.value_bottom in
-      let fs_consts, r = List.fold_right f sw.fs_consts ([], r) in
-      let fs_blocks, r = List.fold_right f sw.fs_blocks ([], r) in
-      let fs_failaction, r =
-        match sw.fs_failaction with
+      let consts, r = List.fold_right f sw.consts ([], r) in
+      let blocks, r = List.fold_right f sw.blocks ([], r) in
+      let failaction, r =
+        match sw.failaction with
         | None -> None, r
         | Some l ->
           let approx = R.approx r in
           let l, r = loop env r l in
           Some l, R.set_approx r (A.meet (R.approx r) approx)
       in
-      let sw = { sw with fs_failaction; fs_consts; fs_blocks; } in
+      let sw = { sw with failaction; consts; blocks; } in
       Fswitch (arg, sw, annot), r
     end
   | Fstringswitch (arg, sw, def, annot) ->

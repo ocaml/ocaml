@@ -49,9 +49,9 @@ let apply_on_subexpressions f = function
     f body
   | Fswitch (arg,sw,_) ->
     f arg;
-    List.iter (fun (_,l) -> f l) sw.fs_consts;
-    List.iter (fun (_,l) -> f l) sw.fs_blocks;
-    Misc.may f sw.fs_failaction
+    List.iter (fun (_,l) -> f l) sw.consts;
+    List.iter (fun (_,l) -> f l) sw.blocks;
+    Misc.may f sw.failaction
   | Fstringswitch (arg,sw,def,_) ->
     f arg;
     List.iter (fun (_,l) -> f l) sw;
@@ -95,9 +95,9 @@ let subexpressions = function
       body :: (List.map snd defs)
 
   | Fswitch (arg,sw,_) ->
-      let l = List.fold_left (fun l (_,v) -> v :: l) [arg] sw.fs_consts in
-      let l = List.fold_left (fun l (_,v) -> v :: l) l sw.fs_blocks in
-      Misc.may_fold (fun f1 l -> f1 :: l) sw.fs_failaction l
+      let l = List.fold_left (fun l (_,v) -> v :: l) [arg] sw.consts in
+      let l = List.fold_left (fun l (_,v) -> v :: l) l sw.blocks in
+      Misc.may_fold (fun f1 l -> f1 :: l) sw.failaction l
 
   | Fstringswitch (arg,sw,def,_) ->
       let l = List.fold_left (fun l (_,v) -> v :: l) [arg] sw in
@@ -148,9 +148,9 @@ let iter_general ~toplevel f t =
       aux body
     | Fswitch (arg,sw,_) ->
       aux arg;
-      List.iter (fun (_,l) -> aux l) sw.fs_consts;
-      List.iter (fun (_,l) -> aux l) sw.fs_blocks;
-      Misc.may aux sw.fs_failaction
+      List.iter (fun (_,l) -> aux l) sw.consts;
+      List.iter (fun (_,l) -> aux l) sw.blocks;
+      Misc.may aux sw.failaction
     | Fstringswitch (arg,sw,def,_) ->
       aux arg;
       List.iter (fun (_,l) -> aux l) sw;
@@ -260,9 +260,9 @@ let map_general ~toplevel f tree =
           let arg = aux arg in
           let sw =
             { sw with
-              fs_failaction = Misc.may_map aux sw.fs_failaction;
-              fs_consts = List.map (fun (i,v) -> i, aux v) sw.fs_consts;
-              fs_blocks = List.map (fun (i,v) -> i, aux v) sw.fs_blocks; } in
+              failaction = Misc.may_map aux sw.failaction;
+              consts = List.map (fun (i,v) -> i, aux v) sw.consts;
+              blocks = List.map (fun (i,v) -> i, aux v) sw.blocks; } in
           Fswitch(arg, sw, annot)
       | Fstringswitch(arg, sw, def, annot) ->
           let arg = aux arg in
@@ -350,25 +350,25 @@ let fold_subexpressions f acc = function
       acc, Fset_of_closures({ closure with cl_fun; cl_free_var }, d)
 
   | Fswitch (arg,
-             { fs_numconsts; fs_consts; fs_numblocks;
-               fs_blocks; fs_failaction }, d) ->
+             { numconsts; consts; numblocks;
+               blocks; failaction }, d) ->
       let acc, arg = f acc Variable.Set.empty arg in
       let aux (i,flam) (acc, l) =
         let acc, flam = f acc Variable.Set.empty flam in
         acc, (i,flam) :: l
       in
-      let acc, fs_consts = List.fold_right aux fs_consts (acc,[]) in
-      let acc, fs_blocks = List.fold_right aux fs_blocks (acc,[]) in
-      let acc, fs_failaction =
-        match fs_failaction with
+      let acc, consts = List.fold_right aux consts (acc,[]) in
+      let acc, blocks = List.fold_right aux blocks (acc,[]) in
+      let acc, failaction =
+        match failaction with
         | None -> acc, None
         | Some flam ->
             let acc, flam = f acc Variable.Set.empty flam in
             acc, Some flam in
       acc,
       Fswitch (arg,
-               { fs_numconsts; fs_consts; fs_numblocks;
-                 fs_blocks; fs_failaction }, d)
+               { numconsts; consts; numblocks;
+                 blocks; failaction }, d)
 
   | Fstringswitch (arg, sw, def, d) ->
       let acc, arg = f acc Variable.Set.empty arg in
@@ -531,9 +531,9 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
     | Fswitch(arg, sw, v) ->
         let aux l = List.map (fun (i,v) -> i, mapper v) l in
         let sw = { sw with
-                   fs_consts = aux sw.fs_consts;
-                   fs_blocks = aux sw.fs_blocks;
-                   fs_failaction = Misc.may_map mapper sw.fs_failaction } in
+                   consts = aux sw.consts;
+                   blocks = aux sw.blocks;
+                   failaction = Misc.may_map mapper sw.failaction } in
         Fswitch(mapper arg, sw, f v)
     | Fstringswitch (arg, sw, def, v) ->
         let sw = List.map (fun (i,v) -> i, mapper v) sw in

@@ -514,9 +514,9 @@ module Conv(P:Param1) = struct
     | Fswitch(arg, sw, _) ->
         Fswitch(conv env arg,
                 { sw with
-                  fs_consts = List.map (fun (i,lam) -> i, conv env lam) sw.fs_consts;
-                  fs_blocks = List.map (fun (i,lam) -> i, conv env lam) sw.fs_blocks;
-                  fs_failaction = may_map (conv env) sw.fs_failaction }, ()),
+                  consts = List.map (fun (i,lam) -> i, conv env lam) sw.consts;
+                  blocks = List.map (fun (i,lam) -> i, conv env lam) sw.blocks;
+                  failaction = may_map (conv env) sw.failaction }, ()),
         Value_unknown
 
     | Fstringswitch(arg, sw, def, _) ->
