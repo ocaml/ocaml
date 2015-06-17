@@ -137,7 +137,6 @@ and 'a apply = {
 and 'a set_of_closures = {
   cl_fun : 'a function_declarations;
   cl_free_var : 'a t Variable.Map.t;
-  cl_specialised_arg : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration. For instance, supposing all call sites of f
       are represented in this example,
@@ -175,6 +174,7 @@ and 'a set_of_closures = {
       Note that it is usualy not correct to erase this information if the
       argument is used.
   *)
+  cl_specialised_arg : Variable.t Variable.Map.t;
 }
 
 and 'a function_declarations = {
@@ -186,15 +186,15 @@ and 'a function_declarations = {
 and 'a function_declaration = {
   params : Variable.t list;
   body : 'a t;
-  free_variables : Variable.Set.t;
   (** All variables free in the *body* of the function.  For example, a
       variable that is bound as one of the function's parameters will still
       be included in this set.  This field is present as an optimization. *)
-  stub : bool;
+  free_variables : Variable.Set.t;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
       convention.  For instance indirect calls to tuplified functions must go
       through a stub.  Stubs will be unconditionally inlined. *)
+  stub : bool;
   dbg : Debuginfo.t;
 }
 
@@ -203,9 +203,9 @@ and 'a closure = {
      have a variant type?  Not sure *)
   fu_closure : 'a t;
   fu_fun : Closure_id.t;
-  fu_relative_to : Closure_id.t option;
   (** For use when applying [Fclosure] to an existing (that is to say,
       [Fclosure]) closure value rather than a set of closures. *)
+  fu_relative_to : Closure_id.t option;
 }
 
 and 'a var_within_closure = {
