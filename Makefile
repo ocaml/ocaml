@@ -107,7 +107,9 @@ ASMCOMP=\
   asmcomp/symbol.cmo asmcomp/abstract_identifiers.cmo \
   asmcomp/flambdaiter.cmo \
   asmcomp/flambdasubst.cmo \
-  asmcomp/flambdautils.cmo asmcomp/printflambda.cmo \
+  asmcomp/flambdautils.cmo \
+  asmcomp/invariant_params.cmo \
+  asmcomp/printflambda.cmo \
   asmcomp/flambdacheck.cmo \
   asmcomp/inconstant_idents.cmo \
   asmcomp/closure_conversion.cmo \

@@ -149,7 +149,7 @@ let transform_var_within_closure_expression env r expr vc_closure
       (fenv_field : _ Flambda.fvar_within_closure) annot
       : _ Flambda.t * R.t =
   match A.descr (R.approx r) with
-  | Value_closure { set_of_closures; fun_id } ->
+  | Value_closure { set_of_closures; closure_id } ->
     let module AR =
       Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
     in
@@ -157,22 +157,22 @@ let transform_var_within_closure_expression env r expr vc_closure
       AR.subst_var_within_closure set_of_closures.alpha_renaming
           fenv_field.vc_var
     in
-    let env_fun_id =
+    let env_closure_id =
       AR.subst_closure_id set_of_closures.alpha_renaming fenv_field.vc_fun
     in
-    assert(Closure_id.equal env_fun_id fun_id);
+    assert (Closure_id.equal env_closure_id closure_id);
     let approx =
       try Var_within_closure.Map.find env_var set_of_closures.bound_var with
       | Not_found ->
         Format.printf "no field %a in closure %a@ %a@."
           Var_within_closure.print env_var
-          Closure_id.print env_fun_id
+          Closure_id.print env_closure_id
           Printflambda.flambda vc_closure;
         assert false in
     let expr : _ Flambda.t =
       if vc_closure == fenv_field.vc_closure
       then expr (* if the argument didn't change, the names didn't also *)
-      else Fvar_within_closure ({ vc_closure; vc_fun = env_fun_id;
+      else Fvar_within_closure ({ vc_closure; vc_fun = env_closure_id;
                                    vc_var = env_var }, annot) in
     check_var_and_constant_result env r expr approx
   | Value_unresolved sym ->
@@ -214,7 +214,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
     let closure_id = subst_closure_id set_of_closures closure_id in
     let rel = Misc.may_map (subst_closure_id set_of_closures) rel in
     let ret_approx =
-      A.value_closure { fun_id = closure_id; set_of_closures;
+      A.value_closure { closure_id; set_of_closures;
                         set_of_closures_var = approx.var }
     in
     let closure =
@@ -230,7 +230,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
                    fu_closure alive if possible. *)
                 match (E.find set_of_closures_var env).descr with
                 | Value_set_of_closures _ -> None
-                | Value_closure { fun_id } -> Some fun_id
+                | Value_closure { closure_id } -> Some closure_id
                 | _ -> assert false
                   (* If the set of closure is in the environment we know its value *)
               in
@@ -737,7 +737,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
      the set of closures. *)
   let set_of_closures_env = Variable.Map.fold
       (fun id _ env -> E.add_approx id
-          (A.value_closure { fun_id = Closure_id.wrap id;
+          (A.value_closure { closure_id = Closure_id.wrap id;
                              set_of_closures_var = None;
                              set_of_closures = internal_closure }) env)
       ffuns.funs env in
@@ -793,7 +793,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   let r = Variable.Map.fold (fun _id' v acc -> R.use_var acc v) cl_specialised_arg r in
   let ffuns = { ffuns with funs } in
 
-  let unchanging_params = Flambdautils.unchanging_params_in_recursion ffuns in
+  let unchanging_params = Invariant_params.unchanging_params_in_recursion ffuns in
 
   let closure = { internal_closure with function_decls = ffuns; unchanging_params } in
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) ffuns.funs r in
@@ -825,40 +825,40 @@ and transform_application_expression env r (funct, fapprox)
       ret r A.value_unknown
   in
   match fapprox.descr with
-  | Value_closure { fun_id; set_of_closures } ->
+  | Value_closure { closure_id; set_of_closures } ->
       let clos = set_of_closures.function_decls in
       let func =
-        try find_declaration fun_id clos with
+        try find_declaration closure_id clos with
         | Not_found ->
             Format.printf "approximation references non-existent closure %a@."
-                Closure_id.print fun_id;
+                Closure_id.print closure_id;
             assert false
       in
       let nargs = List.length args in
       let arity = function_arity func in
       if nargs = arity then
-        direct_apply env r clos funct fun_id func set_of_closures
+        direct_apply env r clos funct closure_id func set_of_closures
           (args, approxs) dbg eid
       else if nargs > arity then
         let h_args, q_args = Misc.split_at arity args in
         let h_approxs, _q_approxs = Misc.split_at arity approxs in
         let expr, r =
-          direct_apply env r clos funct fun_id func set_of_closures
+          direct_apply env r clos funct closure_id func set_of_closures
             (h_args,h_approxs) dbg (Expr_id.create ())
         in
         loop env r (Fapply({ ap_function = expr; ap_arg = q_args;
                              ap_kind = Indirect; ap_dbg = dbg}, eid))
       else if nargs > 0 && nargs < arity then
-        let partial_fun = partial_apply funct fun_id func args dbg in
+        let partial_fun = partial_apply funct closure_id func args dbg in
         loop env r partial_fun
       else
         no_transformation ()
   | _ -> no_transformation ()
 
-and direct_apply env r clos funct fun_id func closure
+and direct_apply env r clos funct closure_id func closure
       args_with_approxs ap_dbg eid =
   Inlining_decision.inlining_decision_for_call_site
-    ~env ~r ~clos ~funct ~fun_id ~func ~closure ~args_with_approxs ~ap_dbg ~eid
+    ~env ~r ~clos ~funct ~fun_id:closure_id ~func ~closure ~args_with_approxs ~ap_dbg ~eid
     ~inline_by_copying_function_body ~inline_by_copying_function_declaration
     ~loop
 and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =

@@ -47,7 +47,7 @@ type descr =
   | Value_unresolved of Symbol.t
 
 and value_closure =
-  { fun_id : Closure_id.t;
+  { closure_id : Closure_id.t;
     set_of_closures : value_set_of_closures;
     set_of_closures_var : Variable.t option;
   }
@@ -80,8 +80,8 @@ let rec print_descr ppf = function
   | Value_bottom -> Format.fprintf ppf "bottom"
   | Value_extern id -> Format.fprintf ppf "_%a_" Flambdaexport.ExportId.print id
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
-  | Value_closure { fun_id } ->
-    Format.fprintf ppf "(fun:@ %a)" Closure_id.print fun_id
+  | Value_closure { closure_id } ->
+    Format.fprintf ppf "(fun:@ %a)" Closure_id.print closure_id
   | Value_set_of_closures { function_decls = { funs } } ->
     Format.fprintf ppf "(set_of_closures:@ %a)"
       (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
@@ -363,7 +363,7 @@ module Import = struct
           | Not_found -> assert false
         in
         value_closure
-          { fun_id;
+          { closure_id = fun_id;
             set_of_closures_var = None;
             set_of_closures =
               { function_decls = Compilenv.imported_closure closure_id;

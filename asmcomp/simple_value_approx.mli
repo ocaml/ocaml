@@ -86,7 +86,7 @@ type descr =
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
 and value_closure = {
-  fun_id : Closure_id.t;
+  closure_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
   set_of_closures_var : Variable.t option;
 }
