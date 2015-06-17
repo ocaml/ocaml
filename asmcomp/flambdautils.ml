@@ -24,8 +24,8 @@ let find_declaration_variable cf ({ funs } : _ Flambda.function_declarations) =
   then raise Not_found
   else var
 
-let find_free_variable cv ({ cl_free_var } : _ Flambda.set_of_closures) =
-  Variable.Map.find (Var_within_closure.unwrap cv) cl_free_var
+let find_free_variable cv ({ free_vars } : _ Flambda.set_of_closures) =
+  Variable.Map.find (Var_within_closure.unwrap cv) free_vars
 
 (* utility functions *)
 
@@ -132,11 +132,11 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fapply(a1, _), Fapply(a2, _) ->
       a1.kind = a2.kind &&
       same a1.func a2.func &&
-      samelist same a1.arg a2.arg
+      samelist same a1.args a2.args
   | Fapply _, _ | _, Fapply _ -> false
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
-      Variable.Map.equal sameclosure c1.cl_fun.funs c2.cl_fun.funs &&
-      Variable.Map.equal same c1.cl_free_var c2.cl_free_var &&
+      Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
+      Variable.Map.equal same c1.free_vars c2.free_vars &&
       Variable.Map.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
@@ -263,11 +263,11 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   Fclosure
     ({ closure =
          Fset_of_closures
-           ({ cl_fun =
+           ({ function_decls =
                 { ident = Set_of_closures_id.create current_unit;
                   funs = Variable.Map.singleton id function_declaration;
                   compilation_unit = current_unit };
-              cl_free_var = fv';
+              free_vars = fv';
               cl_specialised_arg = Variable.Map.empty },
             Expr_id.create ());
        closure_id = Closure_id.wrap id;

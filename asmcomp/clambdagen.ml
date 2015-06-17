@@ -27,7 +27,7 @@ type ('a,'b) declaration_position =
 let list_closures expr constants =
   let closures = ref Closure_id.Map.empty in
   let aux expr = match expr with
-    | Fset_of_closures ({ cl_fun = functs; }, _) ->
+    | Fset_of_closures ({ function_decls = functs; }, _) ->
         let add off_id _ map =
           Closure_id.Map.add
             (Closure_id.wrap off_id)
@@ -101,7 +101,7 @@ module Offsets(P:Param1) = struct
   let fv_offset_table = ref Var_within_closure.Map.empty
 
   let rec iter = function
-    | Fset_of_closures({cl_fun = funct; cl_free_var = fv}, _) ->
+    | Fset_of_closures({function_decls = funct; free_vars = fv}, _) ->
         iter_closure funct fv
     | _ -> ()
 
@@ -298,7 +298,7 @@ module Conv(P:Param2) = struct
         let udefs = List.map (fun (id,def) -> id, conv env def) defs in
         Uletrec(udefs, conv env body)
 
-    | Fset_of_closures({ cl_fun = funct; cl_free_var = fv }, _) ->
+    | Fset_of_closures({ function_decls = funct; free_vars = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
     | Fclosure({ closure = lam; closure_id = id; relative_to = rel }, _) ->
@@ -321,12 +321,10 @@ module Conv(P:Param2) = struct
         let pos = var_offset - fun_offset in
         Uprim(Pfield pos, [ulam], Debuginfo.none)
 
-    | Fapply({ func = funct; arg = args;
-               kind = Direct direct_func; dbg = dbg }, _) ->
+    | Fapply({ func = funct; args; kind = Direct direct_func; dbg = dbg }, _) ->
         conv_direct_apply (conv env funct) args direct_func dbg env
 
-    | Fapply({ func = funct; arg = args;
-               kind = Indirect; dbg = dbg }, _) ->
+    | Fapply({ func = funct; args; kind = Indirect; dbg = dbg }, _) ->
         (* the closure parameter of the function is added by cmmgen, but
            it already appears in the list of parameters of the clambda
            function for generic calls. Notice that for direct calls it is

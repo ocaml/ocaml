@@ -60,10 +60,10 @@ let lambda_smaller' lam ~than:threshold =
     | Fconst (Fconst_base ( Const_string _ ), _) ->
       assert false
       (* should be moved out by a previous pass: see [List_string] *)
-    | Fapply ({ func = fn; arg = args; kind = direct }, _) ->
+    | Fapply ({ func = fn; args; kind = direct }, _) ->
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost; lambda_size fn; lambda_list_size args
-    | Fset_of_closures ({ cl_fun = ffuns; cl_free_var = fv }, _) ->
+    | Fset_of_closures ({ function_decls = ffuns; free_vars = fv }, _) ->
       Variable.Map.iter (fun _ -> lambda_size) fv;
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)

@@ -248,7 +248,7 @@ let tupled_function_call_stub t original_params tuplified_version
   let call : _ Flambda.t =
     Fapply ({
         func = Fvar (tuplified_version, nid ());
-        arg = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
+        args = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
         kind = Direct (Closure_id.wrap tuplified_version);
         dbg = Debuginfo.none;
       },
@@ -552,8 +552,8 @@ and close_functions t external_env function_declarations
      (For avoidance of doubt, the runtime representation of the *whole set* is
      a single block with tag [Closure_tag].) *)
   let set_of_closures : _ Flambda.set_of_closures =
-    { cl_fun = fun_decls;
-      cl_free_var =
+    { function_decls = fun_decls;
+      free_vars =
         IdentSet.fold
           (fun id map ->
              let internal_var = Env.find_var closure_env_without_parameters id in
@@ -616,7 +616,7 @@ and lift_apply_construction_to_variables t ~env ~funct ~args =
   let apply : _ Flambda.t =
     Fapply ({
         func = close t env funct;
-        arg = apply_args;
+        args = apply_args;
         kind = Indirect;
         dbg = Debuginfo.none;
       },

@@ -316,8 +316,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
-  | Fapply ({ func = funct; arg = args;
-              kind = _; dbg = dbg }, annot) ->
+  | Fapply ({ func = funct; args; kind = _; dbg = dbg }, annot) ->
     let funct, r = loop env r funct in
     let fapprox = R.approx r in
     let args, approxs, r = loop_list env r args in
@@ -723,9 +722,9 @@ and loop_list env r l = match l with
 and transform_set_of_closures_expression original_env original_r cl annot =
   let ffuns =
     Flambdasubst.rewrite_recursive_calls_with_symbols (E.sb original_env)
-      cl.cl_fun ~make_closure_symbol:Compilenv.closure_symbol
+      cl.function_decls ~make_closure_symbol:Compilenv.closure_symbol
   in
-  let fv = cl.cl_free_var in
+  let fv = cl.free_vars in
   let env = E.increase_closure_depth original_env in
   let cl_specialised_arg =
     Variable.Map.map
@@ -838,7 +837,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   in
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) ffuns.funs r in
   let set_of_closures = Flambda.{
-      cl_fun = ffuns; cl_free_var = Variable.Map.map fst fv;
+      function_decls = ffuns; free_vars = Variable.Map.map fst fv;
       cl_specialised_arg
     }
   in
@@ -860,8 +859,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
 and transform_application_expression env r (funct, fapprox)
       (args, approxs) dbg eid =
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({func = funct; arg = args;
-               kind = Indirect; dbg = dbg}, eid),
+    Fapply ({func = funct; args; kind = Indirect; dbg = dbg}, eid),
       ret r A.value_unknown
   in
   match fapprox.descr with
@@ -886,7 +884,7 @@ and transform_application_expression env r (funct, fapprox)
         direct_apply env r clos funct closure_id func set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
-      loop env r (Fapply ({ func = expr; arg = q_args;
+      loop env r (Fapply ({ func = expr; args = q_args;
                            kind = Indirect; dbg = dbg}, eid))
     else if nargs > 0 && nargs < arity then
       let partial_fun = partial_apply funct closure_id func args dbg in
@@ -919,7 +917,7 @@ and partial_apply funct fun_id func args dbg : _ Flambda.t =
   let expr : _ Flambda.t =
     Fapply ({
       func = Fvar (funct_id, Expr_id.create ());
-      arg = call_args;
+      args = call_args;
       kind = Direct fun_id;
       dbg;
     }, Expr_id.create ())
@@ -1060,14 +1058,14 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
       { func =
           Fclosure (
             { closure = Fset_of_closures (
-                { cl_fun = clos;
-                  cl_free_var = fv;
+                { function_decls = clos;
+                  free_vars = fv;
                   cl_specialised_arg = spec_args;
                 }, Expr_id.create ());
               closure_id = fun_id;
               relative_to = None;
             }, Expr_id.create ());
-        arg =
+        args =
           List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
         kind = Direct fun_id;
         dbg;

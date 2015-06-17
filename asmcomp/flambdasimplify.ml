@@ -36,7 +36,7 @@ let lift_set_of_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
     | Fclosure({ closure = Fset_of_closures(set, dset) } as closure, d) ->
-        let decl = Flambdautils.find_declaration closure.closure_id set.cl_fun in
+        let decl = Flambdautils.find_declaration closure.closure_id set.function_decls in
         if not decl.stub then
           expr
         else
@@ -83,28 +83,28 @@ let remove_unused_closure_variables tree =
   in
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fset_of_closures ({ cl_fun; cl_free_var } as closure, eid) ->
+    | Fset_of_closures ({ function_decls; free_vars } as closure, eid) ->
        let all_free_var =
          Variable.Map.fold
            (fun _ { Flambda. free_variables } acc ->
              Variable.Set.union free_variables acc)
-           cl_fun.funs
+           function_decls.funs
            Variable.Set.empty in
-       let cl_free_var =
+       let free_vars =
          Variable.Map.filter (fun id expr ->
              Variable.Set.mem id all_free_var
              || Var_within_closure.Set.mem (Var_within_closure.wrap id)
                used_variable_within_closure
              || not (Effect_analysis.no_effects expr))
-           cl_free_var in
-       let cl_fun =
-         { cl_fun with
+           free_vars in
+       let function_decls =
+         { function_decls with
            funs = Variable.Map.filter (fun fun_id _ ->
                Variable.Set.mem fun_id all_free_var
                || Closure_id.Set.mem (Closure_id.wrap fun_id)
                  used_closure_id)
-               cl_fun.funs } in
-       Fset_of_closures ({ closure with cl_free_var; cl_fun }, eid)
+               function_decls.funs } in
+       Fset_of_closures ({ closure with free_vars; function_decls }, eid)
     | e -> e
   in
   Flambdaiter.map aux tree
@@ -467,17 +467,17 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
 
 let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   let renamed = rename_var var in
-  let args = List.map (fun var -> var, rename_var var) fun_decl.params in
-  let arg =
+  let args' = List.map (fun var -> var, rename_var var) fun_decl.params in
+  let args =
     List.map (fun (_, var) -> Flambda.Fvar(var, nid ()))
-      (List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args)
+      (List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args')
   in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
   let dbg = fun_decl.dbg in
   let body : _ Flambda.t =
     Fapply(
       { func = Fvar(renamed, nid ());
-        arg;
+        args;
         kind;
         dbg },
       nid ())
@@ -486,10 +486,10 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
     List.fold_left
       (fun set (_, renamed_arg) -> Variable.Set.add renamed_arg set)
       (Variable.Set.singleton renamed)
-      args
+      args'
   in
   let decl : _ Flambda.function_declaration = {
-    params = List.map snd args;
+    params = List.map snd args';
     body;
     free_variables;
     stub = true;
@@ -499,7 +499,7 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   decl, renamed
 
 let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
-  let decl = set_of_closures.cl_fun in
+  let decl = set_of_closures.function_decls in
   let unused = Invariant_params.unused_arguments decl in
   let non_stub_arguments =
     Variable.Map.fold (fun _ (decl : _ Flambda.function_declaration) acc ->
@@ -533,7 +533,7 @@ let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
     in
     Some
       { set_of_closures with
-        cl_fun = { decl with funs };
+        function_decls = { decl with funs };
         cl_specialised_arg; }
   end
 
@@ -559,7 +559,7 @@ let separate_unused_arguments_in_closures tree =
     match expr with
     | Fset_of_closures (set_of_closures, eid) -> begin
         if candidate_for_spliting_for_unused_arguments
-            set_of_closures.cl_fun then
+            set_of_closures.function_decls then
           match separate_unused_arguments set_of_closures with
           | None -> expr
           | Some set_of_closures ->

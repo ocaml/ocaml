@@ -150,7 +150,7 @@ module NotConstants(P:Param) = struct
       (* adds 'id in NC => curr in NC' *)
       register_implication ~in_nc:(Var id) ~implies_in_nc:curr
 
-    | Fset_of_closures ({ cl_fun = funcs ; cl_free_var = fv; cl_specialised_arg },_) ->
+    | Fset_of_closures ({ function_decls = funcs ; free_vars = fv; cl_specialised_arg },_) ->
 
       (* If a function in the closure is specialised, do not consider
          it constant *)
@@ -298,7 +298,7 @@ module NotConstants(P:Param) = struct
       mark_curr curr;
       List.iter (mark_loop ~toplevel []) l
 
-    | Fapply ({func = f1; arg = fl; _ },_) ->
+    | Fapply ({func = f1; args = fl; _ },_) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       List.iter (mark_loop ~toplevel []) fl

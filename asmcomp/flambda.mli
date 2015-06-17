@@ -124,14 +124,14 @@ and 'a flambda = 'a t
 
 and 'a apply = {
   func : 'a t;
-  arg : 'a t list;
+  args : 'a t list;
   kind : call_kind;
   dbg : Debuginfo.t;
 }
 
 and 'a set_of_closures = {
-  cl_fun : 'a function_declarations;
-  cl_free_var : 'a t Variable.Map.t;
+  function_decls : 'a function_declarations;
+  free_vars : 'a t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration. For instance, supposing all call sites of f
       are represented in this example,
