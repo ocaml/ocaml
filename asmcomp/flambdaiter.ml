@@ -1,19 +1,20 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Abstract_identifiers
-open Flambda
 
-let apply_on_subexpressions f = function
+let apply_on_subexpressions f (flam : _ Flambda.t) =
+  match flam with
   | Fsymbol _
   | Fvar _
   | Fconst _
@@ -43,7 +44,9 @@ let apply_on_subexpressions f = function
     List.iter f (func::args)
   | Fset_of_closures ({function_decls;free_vars},_) ->
     Variable.Map.iter (fun _ v -> f v) free_vars;
-    Variable.Map.iter (fun _ ffun -> f ffun.body) function_decls.funs
+    Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
+        f ffun.body)
+      function_decls.funs
   | Fletrec (defs, body,_) ->
     List.iter (fun (_,l) -> f l) defs;
     f body
@@ -59,7 +62,8 @@ let apply_on_subexpressions f = function
   | Fsend (_,f1,f2,fl,_,_) ->
     List.iter f (f1::f2::fl)
 
-let subexpressions = function
+let subexpressions (flam : _ Flambda.t) =
+  match flam with
   | Fsymbol _
   | Fvar _
   | Fconst _
@@ -89,7 +93,9 @@ let subexpressions = function
 
   | Fset_of_closures ({function_decls;free_vars},_) ->
       let l = Variable.Map.fold (fun _ v l -> v :: l) free_vars [] in
-      Variable.Map.fold (fun _ f l -> f.body :: l) function_decls.funs l
+      Variable.Map.fold (fun _ (f : _ Flambda.function_declaration) l ->
+          f.body :: l)
+        function_decls.funs l
 
   | Fletrec (defs, body,_) ->
       body :: (List.map snd defs)
@@ -106,9 +112,8 @@ let subexpressions = function
   | Fsend (_,f1,f2,fl,_,_) ->
       (f1::f2::fl)
 
-
 let iter_general ~toplevel f t =
-  let rec aux t =
+  let rec aux (t : _ Flambda.t) =
     f t;
     match t with
     | Fsymbol _
@@ -140,8 +145,11 @@ let iter_general ~toplevel f t =
 
     | Fset_of_closures ({function_decls = funcs; free_vars = fv},_) ->
       Variable.Map.iter (fun _ v -> aux v) fv;
-      if not toplevel
-      then Variable.Map.iter (fun _ ffun -> aux ffun.body) funcs.funs
+      if not toplevel then begin
+        Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
+            aux ffun.body)
+          funcs.funs
+      end
 
     | Fletrec (defs, body,_) ->
       List.iter (fun (_,l) -> aux l) defs;
@@ -167,7 +175,8 @@ let iter f t = iter_general ~toplevel:false f t
 let iter_toplevel f t = iter_general ~toplevel:true f t
 
 let iter_on_closures f t =
-  let aux = function
+  let aux (flam : _ Flambda.t) =
+    match flam with
     | Fset_of_closures (clos,data) ->
         f clos data
     | Fassign _ | Fvar _
@@ -181,7 +190,7 @@ let iter_on_closures f t =
   iter aux t
 
 let map_general ~toplevel f tree =
-  let rec aux tree =
+  let rec aux (tree : _ Flambda.t) =
     let exp = match tree with
       | Fsymbol _ -> tree
       | Fvar _ -> tree
@@ -198,7 +207,8 @@ let map_general ~toplevel f tree =
             else
               { function_decls with
                 funs = Variable.Map.map
-                    (fun ffun -> { ffun with body = aux ffun.body })
+                    (fun (ffun : _ Flambda.function_declaration) ->
+                      { ffun with body = aux ffun.body })
                     function_decls.funs } in
           Fset_of_closures ({ function_decls;
                       free_vars = Variable.Map.map aux free_vars;
@@ -279,7 +289,8 @@ let map_general ~toplevel f tree =
 let map f tree = map_general ~toplevel:false f tree
 let map_toplevel f tree = map_general ~toplevel:true f tree
 
-let expression_free_variables = function
+let expression_free_variables (flam : _ Flambda.t) =
+  match flam with
   | Fvar (id,_) -> Variable.Set.singleton id
   | Fassign (id,_,_) -> Variable.Set.singleton id
   | Fset_of_closures ({free_vars; specialised_args},_) ->
@@ -287,13 +298,15 @@ let expression_free_variables = function
       Variable.Map.fold (fun _ expr set ->
           (* HACK:
              This is not needed, but it avoids moving lets inside free_vars *)
-          match expr with
+          match (expr : _ Flambda.t) with
           | Fvar(var, _) -> Variable.Set.add var set
           | _ -> set)
         free_vars set
   | _ -> Variable.Set.empty
 
-let fold_subexpressions f acc = function
+let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
+      : acc * _ Flambda.t =
+  match flam with
   | Ftrywith(body,id,handler,d) ->
       let acc, body = f acc Variable.Set.empty body in
       let acc, handler = f acc (Variable.Set.singleton id) handler in
@@ -335,7 +348,8 @@ let fold_subexpressions f acc = function
 
   | Fset_of_closures ({ function_decls; free_vars } as closure, d) ->
       let acc, funs =
-        Variable.Map.fold (fun v fun_decl (acc, funs) ->
+        Variable.Map.fold
+          (fun v (fun_decl : _ Flambda.function_declaration) (acc, funs) ->
             let acc, body = f acc fun_decl.free_variables fun_decl.body in
             acc, Variable.Map.add v { fun_decl with body } funs)
           function_decls.funs (acc, Variable.Map.empty)
@@ -446,7 +460,8 @@ let fold_subexpressions f acc = function
     | Funreachable _) as e ->
       acc, e
 
-let subexpression_bound_variables = function
+let subexpression_bound_variables (flam : _ Flambda.t) =
+  match flam with
   | Ftrywith(body,id,handler,_) ->
       [Variable.Set.singleton id, handler;
        Variable.Set.empty, body]
@@ -469,7 +484,7 @@ let subexpression_bound_variables = function
         List.map (fun (_, def) -> Variable.Set.empty, def)
           (Variable.Map.bindings free_vars) in
       let funs =
-        List.map (fun (_, fun_def) ->
+        List.map (fun (_, (fun_def : _ Flambda.function_declaration)) ->
             fun_def.free_variables, fun_def.body)
           (Variable.Map.bindings function_decls.funs)in
       funs @ free_vars
@@ -481,7 +496,8 @@ let free_variables tree =
   let bound = ref Variable.Set.empty in
   let add id =
     if not (Variable.Set.mem id !free) then free := Variable.Set.add id !free in
-  let aux = function
+  let aux (flam : _ Flambda.t) =
+    match flam with
     | Fvar (id,_) -> add id
     | Fassign (id,_,_) -> add id
     | Fset_of_closures ({specialised_args},_) ->
@@ -499,8 +515,9 @@ let free_variables tree =
   iter_toplevel aux tree;
   Variable.Set.diff !free !bound
 
-let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
-  let rec mapper : t1 flambda -> t2 flambda = function
+let map_data (type t1) (type t2) (f:t1 -> t2)
+      (tree:t1 Flambda.t) : t2 Flambda.t =
+  let rec mapper : t1 Flambda.t -> t2 Flambda.t = function
     | Fsymbol (sym, v) -> Fsymbol (sym, f v)
     | Fvar (id, v) -> Fvar (id, f v)
     | Fconst (cst, v) -> Fconst (cst, f v)
@@ -518,7 +535,8 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
         let function_decls =
           { function_decls with
             funs = Variable.Map.map
-                (fun ffun -> { ffun with body = mapper ffun.body })
+                (fun (ffun : _ Flambda.function_declaration) ->
+                  { ffun with body = mapper ffun.body })
                 function_decls.funs } in
         Fset_of_closures ({ function_decls;
                     free_vars = Variable.Map.map mapper free_vars;

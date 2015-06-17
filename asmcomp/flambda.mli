@@ -1,14 +1,15 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Intermediate language used to perform closure conversion and inlining.
 
@@ -119,8 +120,6 @@ type 'a t =
   | Fassign of Variable.t * 'a t * 'a
   | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
   | Funreachable of 'a  (** Represents code proved unreachable. *)
-
-and 'a flambda = 'a t
 
 and 'a apply = {
   func : 'a t;
