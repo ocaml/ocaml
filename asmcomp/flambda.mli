@@ -192,7 +192,11 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
-(** Selection of one closure from a set of closures. *)
+(** Selection of one closure from either:
+    (a) a set of closures;
+    (b) one closure that has already been selected from a set of closures.
+        This enables us to move between individual closures in one runtime
+        closure block. *)
 and 'a select_closure = {
   set_of_closures : 'a t;
   closure_id : Closure_id.t;
