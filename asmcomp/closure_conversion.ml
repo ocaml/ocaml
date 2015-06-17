@@ -477,8 +477,12 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       close t (Env.add_var env id var) body, nid ())
   | Lassign (id, lam) -> Fassign (Env.find_var env id, close t env lam, nid ())
   | Levent (lam, ev) -> add_debug_info ev (close t env lam)
-  (* CR mshinwell for pchambart: What is [Lifused] and why is this
-     [assert false]? *)
+  (* XCR mshinwell for pchambart: What is [Lifused] and why is this
+     [assert false]?
+     pchambart: [Lifused] is used to mark that this expression should be alive
+     only if an identifier is. Every uses should have been removed by
+     [Simplif.simplify_lets], either by replacing by the inner expression, or
+     by completely removing it (replacing by unit) *)
   | Lifused _ -> assert false
 
 (* Perform closure conversion on a set of function declarations, returning a
