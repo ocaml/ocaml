@@ -55,7 +55,7 @@ end
 module Closure_id : sig
   (** An identifier, unique across the whole program (not just one compilation
       unit), that identifies a closure within a particular set of closures
-      (viz. [Fclosure]). *)
+      (viz. [Fselect_closure]). *)
 
   type t
   include Identifiable with type t := t

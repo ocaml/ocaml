@@ -46,7 +46,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
     | Fvar_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
         set_fun := Closure_id.Set.add env_fun_id !set_fun;
         set_fv := Var_within_closure.Set.add env_var !set_fv;
-    | Fclosure({closure_id = id; relative_to = rel}, _) ->
+    | Fselect_closure({closure_id = id; relative_to = rel}, _) ->
         let set = match rel with
           | None -> !set_fun
           | Some rel -> Closure_id.Set.add rel !set_fun in
@@ -301,7 +301,7 @@ module Conv(P:Param2) = struct
     | Fset_of_closures({ function_decls = funct; free_vars = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
-    | Fclosure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
+    | Fselect_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
         let ulam = conv env lam in
         let offset = get_fun_offset id in
         let relative_offset = match rel with

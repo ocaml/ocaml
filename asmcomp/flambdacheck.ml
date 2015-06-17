@@ -30,7 +30,7 @@ let every_used_identifier_is_bound flam =
     | Fset_of_closures({specialised_args},_) ->
         Variable.Map.iter (fun _ id -> test id env) specialised_args
 
-    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _ | Flet _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
@@ -63,7 +63,7 @@ let every_used_identifier_is_bound flam =
         loop (Variable.Set.add id env) handler
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -128,7 +128,7 @@ let no_identifier_bound_multiple_times flam =
         add_and_check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -164,7 +164,7 @@ let every_bound_variable_is_from_current_compilation_unit
         check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
@@ -196,7 +196,7 @@ let no_assign_on_variable_of_kind_Immutable flam =
 
     | Flet (Immutable, _, _, _, _)
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
@@ -273,7 +273,7 @@ let no_closure_id_is_bound_multiple_times flam =
 let used_closure_id flam =
   let used = ref Closure_id.Set.empty in
   let f = function
-    | Fclosure ({closure_id;relative_to},_) ->
+    | Fselect_closure ({closure_id;relative_to},_) ->
         used := Closure_id.Set.add closure_id !used;
         (match relative_to with
          | None -> ()

@@ -68,7 +68,7 @@ let lambda_smaller' lam ~than:threshold =
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
-    | Fclosure ({ set_of_closures }, _) ->
+    | Fselect_closure ({ set_of_closures }, _) ->
       incr size; lambda_size set_of_closures
     | Fvar_within_closure ({ closure }, _) ->
       incr size; lambda_size closure
@@ -178,7 +178,7 @@ module Benefit = struct
         b := remove_alloc !b
         (* CR pchambart: should we consider that boxed integer and float
            operations are allocations ? *)
-      | Fprim _ | Fclosure _ | Fvar_within_closure _ | Fassign _ ->
+      | Fprim _ | Fselect_closure _ | Fvar_within_closure _ | Fassign _ ->
         b := remove_prim !b
       | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Ftrywith _
       | Fifthenelse _ | Fwhile _ | Ffor _ ->

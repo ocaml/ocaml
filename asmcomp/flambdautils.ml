@@ -48,7 +48,7 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
   | Flet(_,_,_,_,data)
   | Fletrec(_,_,data)
   | Fset_of_closures(_,data)
-  | Fclosure(_,data)
+  | Fselect_closure(_,data)
   | Fvar_within_closure(_,data)
   | Fapply(_,data)
   | Fswitch(_,_,data)
@@ -73,7 +73,7 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Flet (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
   | Fletrec _ -> "letrec"
   | Fset_of_closures _ -> "set_of_closures"
-  | Fclosure _ -> "closure"
+  | Fselect_closure _ -> "closure"
   | Fvar_within_closure _ -> "var_within_closure"
   | Fapply _ -> "apply"
   | Fswitch _ -> "switch"
@@ -139,11 +139,11 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Variable.Map.equal same c1.free_vars c2.free_vars &&
       Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
-  | Fclosure (f1, _), Fclosure (f2, _) ->
+  | Fselect_closure (f1, _), Fselect_closure (f2, _) ->
       same f1.set_of_closures f2.set_of_closures &&
       Closure_id.equal f1.closure_id f1.closure_id &&
       sameoption Closure_id.equal f1.relative_to f1.relative_to
-  | Fclosure _, _ | _, Fclosure _ -> false
+  | Fselect_closure _, _ | _, Fselect_closure _ -> false
   | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
       same v1.closure v2.closure &&
       Closure_id.equal v1.closure_id v2.closure_id &&
@@ -260,7 +260,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
   let current_unit = Symbol.Compilation_unit.get_current_exn () in
-  Fclosure
+  Fselect_closure
     ({ set_of_closures =
          Fset_of_closures
            ({ function_decls =

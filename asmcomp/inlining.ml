@@ -265,14 +265,14 @@ let transform_closure_expression env r closure closure_id rel annot =
                  always know its value approximation. *)
               assert false
           in
-          Fclosure ({
+          Fselect_closure ({
               set_of_closures = Fvar (set_of_closures_var, Expr_id.create ());
               closure_id = closure_id;
               relative_to;
             },
             annot)
         | _ ->
-          Fclosure ({set_of_closures = closure; closure_id = closure_id;
+          Fselect_closure ({set_of_closures = closure; closure_id = closure_id;
               relative_to = rel},
             annot)
     in
@@ -295,7 +295,7 @@ let transform_closure_expression env r closure closure_id rel annot =
        we know that it comes from another compilation unit, hence it cannot
        have been transformed during this rewriting.  So it is safe to keep
        the expression unchanged. *)
-    Fclosure ({set_of_closures = closure; closure_id = closure_id;
+    Fselect_closure ({set_of_closures = closure; closure_id = closure_id;
                relative_to = rel}, annot),
       ret r (A.value_unresolved sym)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
@@ -327,7 +327,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       dbg annot
   | Fset_of_closures (set_of_closures, annot) ->
     transform_set_of_closures_expression env r set_of_closures annot
-  | Fclosure (closure, annot) ->
+  | Fselect_closure (closure, annot) ->
     let flam, r = loop env r closure.set_of_closures in
     transform_closure_expression env r flam closure.closure_id
       closure.relative_to annot
@@ -1010,7 +1010,7 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
   let expr =
     Variable.Map.fold (fun id _ expr ->
         Flambda.Flet (Immutable, id,
-          Fclosure (
+          Fselect_closure (
             { set_of_closures = Fvar (clos_id, Expr_id.create ());
               closure_id = Closure_id.wrap id;
               relative_to = Some fun_id;
@@ -1059,7 +1059,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
   let duplicated_application : _ Flambda.t =
     Fapply (
       { func =
-          Fclosure (
+          Fselect_closure (
             { set_of_closures = Fset_of_closures (
                 { function_decls = clos;
                   free_vars = fv;

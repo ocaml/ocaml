@@ -2326,7 +2326,7 @@ let emit_constant_closure symb fundecls clos_vars cont =
     [] ->
       (* This should probably not happen has dead code normaly have been
          eliminated, and a closure cannot be accessed without going through
-         a Fclosure, hence depending on the function. *)
+         a Fselect_closure, hence depending on the function. *)
       assert(clos_vars = []);
       cdefine_symbol symb @
       List.fold_right emit_constant clos_vars cont

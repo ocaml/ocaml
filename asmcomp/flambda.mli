@@ -19,7 +19,7 @@
 
     The usual case of a function declared on its own will produce a
     [Fset_of_closures] containing a single closure.  The closure itself may
-    be accessed using [Fclosure] and specifies which variables (by name, not
+    be accessed using [Fselect_closure] and specifies which variables (by name, not
     by any numeric offset) are free in the corresponding function definition.
     Occurrences of these free variables in the body appear as the usual
     [Fvar] expressions.
@@ -27,7 +27,7 @@
     For the case of multiple functions defined together, possibly mutually
     recursive, a [Fset_of_closures] value will be generated containing
     one closure per function.  Each closure may be accessed again using
-    [Fclosure], specifying which function's closure is desired.
+    [Fselect_closure], specifying which function's closure is desired.
 
     As an example, the flambda representation of:
 
@@ -38,20 +38,20 @@
     the same name in the source text):
 
       {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet(f, Fclosure { closure = closure; closure_id = id_f },
-              Flet(g, Fclosure { closure = closure; closure_id = id_g },
+              Flet(f, Fselect_closure { closure = closure; closure_id = id_f },
+              Flet(g, Fselect_closure { closure = closure; closure_id = id_g },
               ...)))]}
 
-    One can also use [Fclosure] to move between closures in the same set of
+    One can also use [Fselect_closure] to move between closures in the same set of
     closures.  For example for [f] and [g] as above, represented together as a
-    set of closures, we might apply [Fclosure] to extract the closure for [g],
-    and later decide to use [Fclosure] again on this value (not on the set of
+    set of closures, we might apply [Fselect_closure] to extract the closure for [g],
+    and later decide to use [Fselect_closure] again on this value (not on the set of
     closures) to access the closure for [f].  This is used when inlining
     mutually-recursive functions as a means of avoiding having to keep around
     a value corresponding to the whole set of closures.  For example,
     continuing from the example above:
 
-      {[ Fclosure { closure = Fvar g; closure_id = id_f;
+      {[ Fselect_closure { closure = Fvar g; closure_id = id_f;
                     relative_to = Some id_g } ]}
 
     After closure conversion an inlining pass is performed.  This may
@@ -102,7 +102,7 @@ type 'a t =
   | Fconst of const * 'a
   | Fapply of 'a apply * 'a
   | Fset_of_closures of 'a set_of_closures * 'a
-  | Fclosure of 'a closure * 'a
+  | Fselect_closure of 'a select_closure * 'a
   | Fvar_within_closure of 'a var_within_closure * 'a
   | Flet of let_kind * Variable.t * 'a t * 'a t * 'a
   | Fletrec of (Variable.t * 'a t) list * 'a t * 'a
@@ -193,11 +193,11 @@ and 'a function_declaration = {
 }
 
 (** Selection of one closure from a set of closures. *)
-and 'a closure = {
+and 'a select_closure = {
   set_of_closures : 'a t;
   closure_id : Closure_id.t;
-  (** For use when applying [Fclosure] to an existing (that is to say,
-      [Fclosure]) closure value rather than a set of closures. *)
+  (** For use when applying [Fselect_closure] to an existing (that is to say,
+      [Fselect_closure]) closure value rather than a set of closures. *)
   relative_to : Closure_id.t option;
 }
 

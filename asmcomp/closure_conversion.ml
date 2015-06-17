@@ -332,7 +332,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
         ~params ~body
     in
     let decls = Function_decls.create [decl] in
-    Fclosure ({
+    Fselect_closure ({
         set_of_closures = close_functions t env decls;
         closure_id = Closure_id.wrap closure_bound_var;
         relative_to = None },
@@ -376,10 +376,10 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
             let closure_bound_var = Function_decl.closure_bound_var decl in
             let let_bound_var = Env.find_var env let_rec_ident in
             (* Inside the body of the [let], each function is referred to by
-               an [Fclosure] expression, which projects from the set of
+               an [Fselect_closure] expression, which projects from the set of
                closures. *)
             ((Flet (Immutable, let_bound_var,
-              Fclosure ({
+              Fselect_closure ({
                   set_of_closures = Fvar (set_of_closures_var, nid ());
                   closure_id = Closure_id.wrap closure_bound_var;
                   relative_to = None;
@@ -576,7 +576,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
         ~body
     in
-    Fclosure ({
+    Fselect_closure ({
         set_of_closures = close_functions t env [decl];
         closure_id = Closure_id.wrap closure_bound_var;
         relative_to = None;

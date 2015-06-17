@@ -35,7 +35,7 @@ let lift_lets tree =
 let lift_set_of_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fclosure({ set_of_closures = Fset_of_closures(set, dset) } as closure, d) ->
+    | Fselect_closure({ set_of_closures = Fset_of_closures(set, dset) } as closure, d) ->
         let decl = Flambdautils.find_declaration closure.closure_id set.function_decls in
         if not decl.stub then
           expr
@@ -49,7 +49,7 @@ let lift_set_of_closures tree =
           in
           Flet(Immutable, set_of_closures_var,
                Fset_of_closures(set, dset),
-               Fclosure({ closure with
+               Fselect_closure({ closure with
                           set_of_closures =
                             Fvar (set_of_closures_var, Expr_id.create ()) },
                         d),
@@ -70,7 +70,7 @@ let remove_unused_closure_variables tree =
       | Fvar_within_closure({ var; closure_id }, _) ->
           used := Var_within_closure.Set.add var !used;
           used_fun := Closure_id.Set.add closure_id !used_fun;
-      | Fclosure({ closure_id; relative_to }, _) ->
+      | Fselect_closure({ closure_id; relative_to }, _) ->
           used_fun := Closure_id.Set.add closure_id !used_fun;
           begin match relative_to with
           | None -> ()

@@ -15,7 +15,7 @@
 
    Function declarations (which may bind one or more variables identifying
    functions, possibly with mutual recursion) are transformed to
-   [Fset_of_closures] expressions.  [Fclosure] expressions are then used to
+   [Fset_of_closures] expressions.  [Fselect_closure] expressions are then used to
    select a closure for a particular function from a [Fset_of_closures]
    expression.  The [Fset_of_closures] expressions say nothing about the
    actual runtime layout of the closures; this is handled when [Flambda] code
