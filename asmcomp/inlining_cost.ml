@@ -228,15 +228,18 @@ module Whether_sufficient_benefit = struct
   }
 
   let create ~original lam benefit ~probably_a_functor =
-    match lambda_smaller' lam ~than:max_int, lambda_smaller' original ~than:max_int with
+    match
+      lambda_smaller' lam ~than:max_int,
+      lambda_smaller' original ~than:max_int
+    with
     | Some new_size, Some original_size ->
       let evaluated_benefit = Benefit.evaluate benefit in
-      {
-        benefit; probably_a_functor; original_size;
+      { benefit; probably_a_functor; original_size;
         new_size; evaluated_benefit;
       }
     | _, _ ->
-      (* There is no way that an expression of size max_int could fit in memory *)
+      (* There is no way that an expression of size max_int could fit in
+         memory. *)
       assert false
 
   let evaluate t =
