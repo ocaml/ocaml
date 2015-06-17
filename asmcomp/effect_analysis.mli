@@ -1,16 +1,22 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Simple effectful test, should be replaced by call to Purity module *)
+(* Simple side effect analysis. *)
+
+(* CR-someday pchambart: Replace by call to [Purity] module.
+   mshinwell: Where is the [Purity] module? *)
+(* Conservative approximation as to whether a given Flambda expression has
+   any side effects. *)
 val no_effects : _ Flambda.flambda -> bool
 
 (* [sequence e1 e2 annot] produces a sequence expression running [e1] then
