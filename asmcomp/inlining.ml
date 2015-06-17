@@ -1104,19 +1104,20 @@ let inline ~never_inline tree =
   if never_inline then Clflags.inlining_stats := false;
   let result, r = loop (E.empty ~never_inline:false) r tree in
   Clflags.inlining_stats := stats;
-  (* CR mshinwell for pchambart: Should these be fatal errors? *)
+  (* XCR mshinwell for pchambart: Should these be fatal errors?
+     pchambart: They should and they are now. *)
   if not (Variable.Set.is_empty (R.used_variables r))
   then begin
-    Format.printf "remaining variables: %a@.%a@."
+    Misc.fatal_error (Format.asprintf "remaining variables: %a@.%a@."
       Variable.Set.print (R.used_variables r)
-      Printflambda.flambda result
+      Printflambda.flambda result)
   end;
   assert (Variable.Set.is_empty (R.used_variables r));
   if not (Static_exception.Set.is_empty (R.used_staticfail r))
   then begin
-    Format.printf "remaining variables: %a@.%a@."
+    Misc.fatal_error (Format.asprintf "remaining static exceptions: %a@.%a@."
       Static_exception.Set.print (R.used_staticfail r)
-      Printflambda.flambda result
+      Printflambda.flambda result)
   end;
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
