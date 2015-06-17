@@ -29,10 +29,10 @@ let rec lam ppf = function
       let direct = match kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
   | Fselect_closure({set_of_closures;closure_id;relative_to = None},_) ->
-      fprintf ppf "@[<2>(closure@ %a@ %a)@]" Closure_id.print closure_id
+      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]" Closure_id.print closure_id
         lam set_of_closures
   | Fselect_closure({set_of_closures;closure_id;relative_to = Some rel},_) ->
-      fprintf ppf "@[<2>(closure_relative@ %a - %a@ %a)@]"
+      fprintf ppf "@[<2>(select_closure_relative@ %a - %a@ %a)@]"
         Closure_id.print closure_id Closure_id.print rel lam set_of_closures
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
