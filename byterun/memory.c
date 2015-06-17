@@ -235,6 +235,25 @@ int caml_page_table_remove(int kind, void * start, void * end)
 
 #ifdef MMAP_INTERVAL
 
+/* The contiguous heap, an idea due to Jacques-Henri Jourdan:
+
+   We use mmap to carve out a sizeable interval of addresses
+   (2 terabytes, which we reserve but do not map) for the heaps,
+   then we allocate heap chunks inside this space (still with mmap).
+   This guarantees that all heap addresses are within this interval,
+   and nothing else can be located in that interval. Then
+   [Is_in_heap] becomes a subtraction and comparison, instead of
+   a hash table access. Likewise with Is_in_heap_or_young. These
+   macros are used so often (especially in [modify]) that we get
+   a 5% improvement in speed for some OCaml programs.
+
+   As far as I know, this trick cannot be done in Windows because
+   there is no way to reserve an interval of addresses without
+   mapping it.
+
+   Of course, this only works on 64-bit machines.
+*/
+
 static void *raw_heap_start = NULL, *raw_heap_end = NULL;
 
 void *caml_mmap_heap (void *addr, size_t length, int prot, int flags)
