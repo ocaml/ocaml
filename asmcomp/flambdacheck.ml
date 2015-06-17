@@ -273,12 +273,12 @@ let no_closure_id_is_bound_multiple_times flam =
 let used_closure_id flam =
   let used = ref Closure_id.Set.empty in
   let f = function
-    | Fclosure ({fu_fun;fu_relative_to},_) ->
-        used := Closure_id.Set.add fu_fun !used;
-        (match fu_relative_to with
+    | Fclosure ({closure_id;relative_to},_) ->
+        used := Closure_id.Set.add closure_id !used;
+        (match relative_to with
          | None -> ()
          | Some _rel ->
-             used := Closure_id.Set.add fu_fun !used)
+             used := Closure_id.Set.add closure_id !used)
     | Fvar_within_closure ({closure_id},_) ->
         used := Closure_id.Set.add closure_id !used
 

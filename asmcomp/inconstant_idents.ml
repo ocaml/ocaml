@@ -212,9 +212,9 @@ module NotConstants(P:Param) = struct
       List.iter (mark_loop ~toplevel curr) args
 *)
 
-    | Fclosure ({fu_closure; fu_fun; _}, _) ->
-      if Closure_id.in_compilation_unit compilation_unit fu_fun
-      then mark_loop ~toplevel curr fu_closure
+    | Fclosure ({closure; closure_id; _}, _) ->
+      if Closure_id.in_compilation_unit compilation_unit closure_id
+      then mark_loop ~toplevel curr closure
       else mark_curr curr
 
     | Fvar_within_closure ({closure = f1; _},_)

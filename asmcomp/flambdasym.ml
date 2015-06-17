@@ -397,7 +397,7 @@ module Conv(P:Param1) = struct
         let args_approx = Variable.Map.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
-    | Fclosure({ fu_closure = lam; fu_fun = id; fu_relative_to = rel }, _) as expr ->
+    | Fclosure({ closure = lam; closure_id = id; relative_to = rel }, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         if is_local_function_constant id
         then
@@ -426,7 +426,7 @@ module Conv(P:Param1) = struct
                   Printflambda.flambda expr;
                 assert false
           in
-          Fclosure({ fu_closure = ulam; fu_fun = id; fu_relative_to = rel },()),
+          Fclosure({ closure = ulam; closure_id = id; relative_to = rel },()),
           approx
 
     | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
@@ -456,11 +456,11 @@ module Conv(P:Param1) = struct
         approx
 
     (* | Fapply({ap_function = *)
-    (*             Fclosure ({fu_closure = Fset_of_closures ({ cl_fun = ffuns; *)
+    (*             Fclosure ({closure = Fset_of_closures ({ cl_fun = ffuns; *)
     (*                                                  cl_free_var = fv; *)
     (*                                                  cl_specialised_arg }, _); *)
-    (*                         fu_fun = off; *)
-    (*                         fu_relative_to = (None as rel)}, _); *)
+    (*                         closure_id = off; *)
+    (*                         relative_to = (None as rel)}, _); *)
     (*           ap_arg = args; *)
     (*           ap_kind = Direct direc; *)
     (*           ap_dbg = dbg}, _) -> *)
@@ -481,9 +481,9 @@ module Conv(P:Param1) = struct
     (*     in *)
 
     (*     Fapply({ap_function = *)
-    (*               Fclosure ({fu_closure = uffuns; *)
-    (*                           fu_fun = off; *)
-    (*                           fu_relative_to = rel}, ()); *)
+    (*               Fclosure ({closure = uffuns; *)
+    (*                           closure_id = off; *)
+    (*                           relative_to = rel}, ()); *)
     (*             ap_arg = uargs; *)
     (*             ap_kind = Direct direc; *)
     (*             ap_dbg = dbg}, ()), *)

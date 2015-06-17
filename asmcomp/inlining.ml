@@ -222,18 +222,18 @@ let transform_var_within_closure_expression env r expr closure
   | Value_bottom | Value_extern _ | Value_symbol _ ->
     assert false
 
-let transform_closure_expression env r fu_closure closure_id rel annot =
+let transform_closure_expression env r closure closure_id rel annot =
   let module AR =
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
   in
-  let subst_closure_id (closure : A.value_set_of_closures) closure_id =
-    let closure_id = AR.subst_closure_id closure.alpha_renaming closure_id in
+  let subst_closure_id (closure' : A.value_set_of_closures) closure_id =
+    let closure_id = AR.subst_closure_id closure'.alpha_renaming closure_id in
     begin try
-      ignore (Flambdautils.find_declaration closure_id closure.function_decls)
+      ignore (Flambdautils.find_declaration closure_id closure'.function_decls)
     with Not_found ->
       Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
         Closure_id.print closure_id
-        Printflambda.flambda fu_closure)
+        Printflambda.flambda closure)
     end;
     closure_id
   in
@@ -248,14 +248,14 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
     let closure =
       match rel with
       | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
-        fu_closure
+        closure
       | None | Some _ ->
         match set_of_closures_var with
         | Some set_of_closures_var when E.present env set_of_closures_var ->
-          let fu_relative_to =
+          let relative_to =
             (* We may not have direct access to the set of closures. In that
                case, this is still a relative closure, but it avoids
-               maintaining fu_closure alive if possible. *)
+               maintaining closure alive if possible. *)
             match (E.find set_of_closures_var env).descr with
             | Value_set_of_closures _ -> None
             | Value_closure { closure_id } -> Some closure_id
@@ -265,13 +265,13 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
               assert false
           in
           Fclosure ({
-              fu_closure = Fvar (set_of_closures_var, Expr_id.create ());
-              fu_fun = closure_id;
-              fu_relative_to;
+              closure = Fvar (set_of_closures_var, Expr_id.create ());
+              closure_id = closure_id;
+              relative_to;
             },
             annot)
         | _ ->
-          Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel},
+          Fclosure ({closure; closure_id = closure_id; relative_to = rel},
             annot)
     in
     let closure =
@@ -293,14 +293,14 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
        we know that it comes from another compilation unit, hence it cannot
        have been transformed during this rewriting.  So it is safe to keep
        the expression unchanged. *)
-    Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
+    Fclosure ({closure; closure_id = closure_id; relative_to = rel}, annot),
       ret r (A.value_unresolved sym)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
   | A.Value_boxed_int _ | Value_unknown | Value_bottom | Value_extern _
   | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Format.printf "%a@.%a@." Closure_id.print closure_id
-      Printflambda.flambda fu_closure;
+      Printflambda.flambda closure;
     assert false
 
 let rec loop env r tree =
@@ -326,9 +326,9 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   | Fset_of_closures (set_of_closures, annot) ->
     transform_set_of_closures_expression env r set_of_closures annot
   | Fclosure (closure, annot) ->
-    let flam, r = loop env r closure.fu_closure in
-    transform_closure_expression env r flam closure.fu_fun
-      closure.fu_relative_to annot
+    let flam, r = loop env r closure.closure in
+    transform_closure_expression env r flam closure.closure_id
+      closure.relative_to annot
   | Fvar_within_closure (fenv_field, annot) as expr ->
     let closure, r = loop env r fenv_field.closure in
     transform_var_within_closure_expression env r expr closure
@@ -1010,9 +1010,9 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
     Variable.Map.fold (fun id _ expr ->
         Flambda.Flet (Immutable, id,
           Fclosure (
-            { fu_closure = Fvar (clos_id, Expr_id.create ());
-              fu_fun = Closure_id.wrap id;
-              fu_relative_to = Some fun_id;
+            { closure = Fvar (clos_id, Expr_id.create ());
+              closure_id = Closure_id.wrap id;
+              relative_to = Some fun_id;
             }, Expr_id.create ()),
           expr, Expr_id.create ()))
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
@@ -1059,13 +1059,13 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
     Fapply (
       { ap_function =
           Fclosure (
-            { fu_closure = Fset_of_closures (
+            { closure = Fset_of_closures (
                 { cl_fun = clos;
                   cl_free_var = fv;
                   cl_specialised_arg = spec_args;
                 }, Expr_id.create ());
-              fu_fun = fun_id;
-              fu_relative_to = None;
+              closure_id = fun_id;
+              relative_to = None;
             }, Expr_id.create ());
         ap_arg =
           List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;

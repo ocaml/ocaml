@@ -333,9 +333,9 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     in
     let decls = Function_decls.create [decl] in
     Fclosure ({
-        fu_closure = close_functions t env decls;
-        fu_fun = Closure_id.wrap closure_bound_var;
-        fu_relative_to = None },
+        closure = close_functions t env decls;
+        closure_id = Closure_id.wrap closure_bound_var;
+        relative_to = None },
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
@@ -380,9 +380,9 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fclosure ({
-                  fu_closure = Fvar (set_of_closures_var, nid ());
-                  fu_fun = Closure_id.wrap closure_bound_var;
-                  fu_relative_to = None;
+                  closure = Fvar (set_of_closures_var, nid ());
+                  closure_id = Closure_id.wrap closure_bound_var;
+                  relative_to = None;
                 },
                 nid ()),
               body, nid ())) : _ Flambda.t))
@@ -577,9 +577,9 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
         ~body
     in
     Fclosure ({
-        fu_closure = close_functions t env [decl];
-        fu_fun = Closure_id.wrap closure_bound_var;
-        fu_relative_to = None;
+        closure = close_functions t env [decl];
+        closure_id = Closure_id.wrap closure_bound_var;
+        relative_to = None;
       },
       nid ~name:"function" ())
   | lam ->

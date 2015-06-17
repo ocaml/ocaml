@@ -20,7 +20,7 @@ let apply_on_subexpressions f = function
   | Funreachable _ -> ()
 
   | Fassign (_,f1,_)
-  | Fclosure({fu_closure = f1},_)
+  | Fclosure({closure = f1},_)
   | Fvar_within_closure({closure = f1},_) ->
     f f1
 
@@ -66,7 +66,7 @@ let subexpressions = function
   | Funreachable _ -> []
 
   | Fassign (_,f1,_)
-  | Fclosure({fu_closure = f1},_)
+  | Fclosure({closure = f1},_)
   | Fvar_within_closure({closure = f1},_) ->
       [f1]
 
@@ -116,7 +116,7 @@ let iter_general ~toplevel f t =
     | Fconst _ -> ()
 
     | Fassign (_,f1,_)
-    | Fclosure({fu_closure = f1},_)
+    | Fclosure({closure = f1},_)
     | Fvar_within_closure({closure = f1},_) ->
       aux f1
 
@@ -203,9 +203,9 @@ let map_general ~toplevel f tree =
           Fset_of_closures ({ cl_fun;
                       cl_free_var = Variable.Map.map aux cl_free_var;
                       cl_specialised_arg }, annot)
-      | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, annot) ->
-          Fclosure ({ fu_closure = aux fu_closure;
-                       fu_fun; fu_relative_to}, annot)
+      | Fclosure ({ closure; closure_id; relative_to}, annot) ->
+          Fclosure ({ closure = aux closure;
+                       closure_id; relative_to}, annot)
       | Fvar_within_closure (vc, annot) ->
           Fvar_within_closure ({ vc with closure = aux vc.closure }, annot)
       | Flet(str, id, lam, body, annot) ->
@@ -433,8 +433,8 @@ let fold_subexpressions f acc = function
       acc, Fassign (v,flam,d)
 
   | Fclosure(clos,d) ->
-      let acc, fu_closure = f acc Variable.Set.empty clos.fu_closure in
-      acc, Fclosure({clos with fu_closure},d)
+      let acc, closure = f acc Variable.Set.empty clos.closure in
+      acc, Fclosure({clos with closure},d)
 
   | Fvar_within_closure(clos,d) ->
       let acc, closure = f acc Variable.Set.empty clos.closure in
@@ -523,9 +523,9 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
         Fset_of_closures ({ cl_fun;
                     cl_free_var = Variable.Map.map mapper cl_free_var;
                     cl_specialised_arg }, f v)
-    | Fclosure ({ fu_closure; fu_fun; fu_relative_to}, v) ->
-        Fclosure ({ fu_closure = mapper fu_closure;
-                     fu_fun; fu_relative_to}, f v)
+    | Fclosure ({ closure; closure_id; relative_to}, v) ->
+        Fclosure ({ closure = mapper closure;
+                     closure_id; relative_to}, f v)
     | Fvar_within_closure (vc, v) ->
         Fvar_within_closure ({ vc with closure = mapper vc.closure }, f v)
     | Fswitch(arg, sw, v) ->

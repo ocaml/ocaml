@@ -35,8 +35,8 @@ let lift_lets tree =
 let lift_set_of_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fclosure({ fu_closure = Fset_of_closures(set, dset) } as closure, d) ->
-        let decl = Flambdautils.find_declaration closure.fu_fun set.cl_fun in
+    | Fclosure({ closure = Fset_of_closures(set, dset) } as closure, d) ->
+        let decl = Flambdautils.find_declaration closure.closure_id set.cl_fun in
         if not decl.stub then
           expr
         else
@@ -50,7 +50,7 @@ let lift_set_of_closures tree =
           Flet(Immutable, set_of_closures_var,
                Fset_of_closures(set, dset),
                Fclosure({ closure with
-                          fu_closure = Fvar (set_of_closures_var, Expr_id.create ()) },
+                          closure = Fvar (set_of_closures_var, Expr_id.create ()) },
                         d),
                Expr_id.create ())
     | e -> e
@@ -69,12 +69,12 @@ let remove_unused_closure_variables tree =
       | Fvar_within_closure({ var; closure_id }, _) ->
           used := Var_within_closure.Set.add var !used;
           used_fun := Closure_id.Set.add closure_id !used_fun;
-      | Fclosure({ fu_fun; fu_relative_to }, _) ->
-          used_fun := Closure_id.Set.add fu_fun !used_fun;
-          begin match fu_relative_to with
+      | Fclosure({ closure_id; relative_to }, _) ->
+          used_fun := Closure_id.Set.add closure_id !used_fun;
+          begin match relative_to with
           | None -> ()
-          | Some fu_relative_to ->
-              used_fun := Closure_id.Set.add fu_relative_to !used_fun
+          | Some relative_to ->
+              used_fun := Closure_id.Set.add relative_to !used_fun
           end
       | _ -> ()
     in

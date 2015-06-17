@@ -28,11 +28,11 @@ let rec lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let direct = match ap_kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam ap_function lams ap_arg
-  | Fclosure({fu_closure;fu_fun;fu_relative_to = None},_) ->
-      fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_id.print fu_fun lam fu_closure
-  | Fclosure({fu_closure;fu_fun;fu_relative_to = Some rel},_) ->
+  | Fclosure({closure;closure_id;relative_to = None},_) ->
+      fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_id.print closure_id lam closure
+  | Fclosure({closure;closure_id;relative_to = Some rel},_) ->
       fprintf ppf "@[<2>(function_relative@ %a - %a@ %a)@]"
-        Closure_id.print fu_fun Closure_id.print rel lam fu_closure
+        Closure_id.print closure_id Closure_id.print rel lam closure
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Var_within_closure.print var Closure_id.print closure_id lam closure

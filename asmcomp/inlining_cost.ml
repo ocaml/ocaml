@@ -68,7 +68,7 @@ let lambda_smaller' lam ~than:threshold =
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
-    | Fclosure ({ fu_closure = lam }, _) ->
+    | Fclosure ({ closure = lam }, _) ->
       incr size; lambda_size lam
     | Fvar_within_closure ({ closure }, _) ->
       incr size; lambda_size closure

@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Abstract_identifiers
-
 (** Intermediate language used to perform closure conversion and inlining.
 
     Closure conversion starts with [Lambda] code.  The conversion transforms
@@ -39,8 +37,8 @@ open Abstract_identifiers
     the same name in the source text):
 
       {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet(f, Fclosure { fu_closure = closure; fu_fun = id_f },
-              Flet(g, Fclosure { fu_closure = closure; fu_fun = id_g },
+              Flet(f, Fclosure { closure = closure; closure_id = id_f },
+              Flet(g, Fclosure { closure = closure; closure_id = id_g },
               ...)))]}
 
     One can also use [Fclosure] to move between closures in the same set of
@@ -52,8 +50,8 @@ open Abstract_identifiers
     a value corresponding to the whole set of closures.  For example,
     continuing from the example above:
 
-      {[ Fclosure { fu_closure = Fvar g; fu_fun = id_f;
-                    fu_relative_to = Some id_g } ]}
+      {[ Fclosure { closure = Fvar g; closure_id = id_f;
+                    relative_to = Some id_g } ]}
 
     After closure conversion an inlining pass is performed.  This may
     introduce [Fvar_within_closure] expressions to represent accesses (from
@@ -76,6 +74,8 @@ open Abstract_identifiers
       are not explicitly represented.  Instead, they are converted into
       expressions such as: [Fprim (Pmakeblock(...), ...)].
 *)
+
+open Abstract_identifiers
 
 type let_kind =
   | Immutable
@@ -194,13 +194,13 @@ and 'a function_declaration = {
 }
 
 and 'a closure = {
-  (* CR mshinwell: The [fu_closure] field is confusing.  Can we get this to
+  (* CR mshinwell: The [closure] field is confusing.  Can we get this to
      have a variant type?  Not sure *)
-  fu_closure : 'a t;
-  fu_fun : Closure_id.t;
+  closure : 'a t;
+  closure_id : Closure_id.t;
   (** For use when applying [Fclosure] to an existing (that is to say,
       [Fclosure]) closure value rather than a set of closures. *)
-  fu_relative_to : Closure_id.t option;
+  relative_to : Closure_id.t option;
 }
 
 and 'a var_within_closure = {

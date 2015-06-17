@@ -140,9 +140,9 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Variable.Map.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
-      same f1.fu_closure f2.fu_closure &&
-      Closure_id.equal f1.fu_fun f1.fu_fun &&
-      sameoption Closure_id.equal f1.fu_relative_to f1.fu_relative_to
+      same f1.closure f2.closure &&
+      Closure_id.equal f1.closure_id f1.closure_id &&
+      sameoption Closure_id.equal f1.relative_to f1.relative_to
   | Fclosure _, _ | _, Fclosure _ -> false
   | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
       same v1.closure v2.closure &&
@@ -261,7 +261,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       Variable.Map.empty in
   let current_unit = Symbol.Compilation_unit.get_current_exn () in
   Fclosure
-    ({ fu_closure =
+    ({ closure =
          Fset_of_closures
            ({ cl_fun =
                 { ident = Set_of_closures_id.create current_unit;
@@ -270,6 +270,6 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
               cl_free_var = fv';
               cl_specialised_arg = Variable.Map.empty },
             Expr_id.create ());
-       fu_fun = Closure_id.wrap id;
-       fu_relative_to = None},
+       closure_id = Closure_id.wrap id;
+       relative_to = None},
      Expr_id.create ())

@@ -178,7 +178,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
      This is true if the function is directly an argument of the
      apply construction. *)
   let direct_apply = match funct with
-    | Fclosure ({ fu_closure = Fset_of_closures _ }, _) -> true
+    | Fclosure ({ closure = Fset_of_closures _ }, _) -> true
     | _ -> false in
   let inlining_threshold = R.inlining_threshold r in
   let fun_var = U.find_declaration_variable fun_id clos in
