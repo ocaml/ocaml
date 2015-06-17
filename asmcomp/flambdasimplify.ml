@@ -468,18 +468,18 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
 let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   let renamed = rename_var var in
   let args = List.map (fun var -> var, rename_var var) fun_decl.params in
-  let ap_arg =
+  let arg =
     List.map (fun (_, var) -> Flambda.Fvar(var, nid ()))
       (List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args)
   in
-  let ap_kind = Flambda.Direct (Closure_id.wrap renamed) in
-  let ap_dbg = fun_decl.dbg in
+  let kind = Flambda.Direct (Closure_id.wrap renamed) in
+  let dbg = fun_decl.dbg in
   let body : _ Flambda.t =
     Fapply(
-      { ap_function = Fvar(renamed, nid ());
-        ap_arg;
-        ap_kind;
-        ap_dbg },
+      { func = Fvar(renamed, nid ());
+        arg;
+        kind;
+        dbg },
       nid ())
   in
   let free_variables =

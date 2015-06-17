@@ -123,10 +123,10 @@ type 'a t =
 and 'a flambda = 'a t
 
 and 'a apply = {
-  ap_function : 'a t;
-  ap_arg : 'a t list;
-  ap_kind : call_kind;
-  ap_dbg : Debuginfo.t;
+  func : 'a t;
+  arg : 'a t list;
+  kind : call_kind;
+  dbg : Debuginfo.t;
 }
 
 and 'a set_of_closures = {

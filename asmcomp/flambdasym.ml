@@ -455,15 +455,15 @@ module Conv(P:Param1) = struct
         Fvar_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
 
-    (* | Fapply({ap_function = *)
+    (* | Fapply({func = *)
     (*             Fclosure ({closure = Fset_of_closures ({ cl_fun = ffuns; *)
     (*                                                  cl_free_var = fv; *)
     (*                                                  cl_specialised_arg }, _); *)
     (*                         closure_id = off; *)
     (*                         relative_to = (None as rel)}, _); *)
-    (*           ap_arg = args; *)
-    (*           ap_kind = Direct direc; *)
-    (*           ap_dbg = dbg}, _) -> *)
+    (*           arg = args; *)
+    (*           kind = Direct direc; *)
+    (*           dbg = dbg}, _) -> *)
     (*     assert (Closure_id.equal off direc); *)
     (*     let uargs, args_approx = conv_list_approx env args in *)
     (*     let func = *)
@@ -480,16 +480,16 @@ module Conv(P:Param1) = struct
     (*       | _ -> Value_unknown *)
     (*     in *)
 
-    (*     Fapply({ap_function = *)
+    (*     Fapply({func = *)
     (*               Fclosure ({closure = uffuns; *)
     (*                           closure_id = off; *)
     (*                           relative_to = rel}, ()); *)
-    (*             ap_arg = uargs; *)
-    (*             ap_kind = Direct direc; *)
-    (*             ap_dbg = dbg}, ()), *)
+    (*             arg = uargs; *)
+    (*             kind = Direct direc; *)
+    (*             dbg = dbg}, ()), *)
     (*     approx *)
 
-    | Fapply({ap_function = funct; ap_arg = args; ap_kind = direct; ap_dbg = dbg}, _) ->
+    | Fapply({func = funct; arg = args; kind = direct; dbg = dbg}, _) ->
         let ufunct, fun_approx = conv_approx env funct in
         let direct = match direct with
           | Direct _ -> direct
@@ -506,9 +506,9 @@ module Conv(P:Param1) = struct
               Closure_id.Map.find fun_id results
           | _ -> Value_unknown
         in
-        Fapply({ap_function = ufunct; ap_arg = conv_list env args;
-                ap_kind = direct;
-                ap_dbg = dbg}, ()),
+        Fapply({func = ufunct; arg = conv_list env args;
+                kind = direct;
+                dbg = dbg}, ()),
         approx
 
     | Fswitch(arg, sw, _) ->

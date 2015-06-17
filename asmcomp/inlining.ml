@@ -316,8 +316,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
-  | Fapply ({ ap_function = funct; ap_arg = args;
-              ap_kind = _; ap_dbg = dbg }, annot) ->
+  | Fapply ({ func = funct; arg = args;
+              kind = _; dbg = dbg }, annot) ->
     let funct, r = loop env r funct in
     let fapprox = R.approx r in
     let args, approxs, r = loop_list env r args in
@@ -860,8 +860,8 @@ and transform_set_of_closures_expression original_env original_r cl annot =
 and transform_application_expression env r (funct, fapprox)
       (args, approxs) dbg eid =
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({ap_function = funct; ap_arg = args;
-               ap_kind = Indirect; ap_dbg = dbg}, eid),
+    Fapply ({func = funct; arg = args;
+               kind = Indirect; dbg = dbg}, eid),
       ret r A.value_unknown
   in
   match fapprox.descr with
@@ -886,8 +886,8 @@ and transform_application_expression env r (funct, fapprox)
         direct_apply env r clos funct closure_id func set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
-      loop env r (Fapply ({ ap_function = expr; ap_arg = q_args;
-                           ap_kind = Indirect; ap_dbg = dbg}, eid))
+      loop env r (Fapply ({ func = expr; arg = q_args;
+                           kind = Indirect; dbg = dbg}, eid))
     else if nargs > 0 && nargs < arity then
       let partial_fun = partial_apply funct closure_id func args dbg in
       loop env r partial_fun
@@ -896,13 +896,13 @@ and transform_application_expression env r (funct, fapprox)
   | _ -> no_transformation ()
 
 and direct_apply env r clos funct closure_id func closure
-      args_with_approxs ap_dbg eid =
+      args_with_approxs dbg eid =
   Inlining_decision.inlining_decision_for_call_site ~env ~r ~clos ~funct
-    ~fun_id:closure_id ~func ~closure ~args_with_approxs ~ap_dbg ~eid
+    ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg ~eid
     ~inline_by_copying_function_body ~inline_by_copying_function_declaration
     ~loop
 
-and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
+and partial_apply funct fun_id func args dbg : _ Flambda.t =
   let arity = Flambdautils.function_arity func in
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
@@ -918,10 +918,10 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
   let new_fun_id = new_var "partial_fun" in
   let expr : _ Flambda.t =
     Fapply ({
-      ap_function = Fvar (funct_id, Expr_id.create ());
-      ap_arg = call_args;
-      ap_kind = Direct fun_id;
-      ap_dbg;
+      func = Fvar (funct_id, Expr_id.create ());
+      arg = call_args;
+      kind = Direct fun_id;
+      dbg;
     }, Expr_id.create ())
   in
   let closures =
@@ -1032,7 +1032,7 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
    non-recursive] is not sufficient.
 *)
 and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
-    ~args_with_approxs ~unchanging_params ~specialised_args ~ap_dbg =
+    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg =
   let args, approxs = args_with_approxs in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_declaration" in
@@ -1057,7 +1057,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
      the arguments. *)
   let duplicated_application : _ Flambda.t =
     Fapply (
-      { ap_function =
+      { func =
           Fclosure (
             { closure = Fset_of_closures (
                 { cl_fun = clos;
@@ -1067,10 +1067,10 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
               closure_id = fun_id;
               relative_to = None;
             }, Expr_id.create ());
-        ap_arg =
+        arg =
           List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
-        ap_kind = Direct fun_id;
-        ap_dbg;
+        kind = Direct fun_id;
+        dbg;
       }, Expr_id.create ())
   in
   (* Now we bind the variables that will hold the arguments from the original

@@ -130,9 +130,9 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
     end
   | Fconst _, _ | _, Fconst _ -> false
   | Fapply(a1, _), Fapply(a2, _) ->
-      a1.ap_kind = a2.ap_kind &&
-      same a1.ap_function a2.ap_function &&
-      samelist same a1.ap_arg a2.ap_arg
+      a1.kind = a2.kind &&
+      same a1.func a2.func &&
+      samelist same a1.arg a2.arg
   | Fapply _, _ | _, Fapply _ -> false
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
       Variable.Map.equal sameclosure c1.cl_fun.funs c2.cl_fun.funs &&

@@ -321,12 +321,12 @@ module Conv(P:Param2) = struct
         let pos = var_offset - fun_offset in
         Uprim(Pfield pos, [ulam], Debuginfo.none)
 
-    | Fapply({ ap_function = funct; ap_arg = args;
-               ap_kind = Direct direct_func; ap_dbg = dbg }, _) ->
+    | Fapply({ func = funct; arg = args;
+               kind = Direct direct_func; dbg = dbg }, _) ->
         conv_direct_apply (conv env funct) args direct_func dbg env
 
-    | Fapply({ ap_function = funct; ap_arg = args;
-               ap_kind = Indirect; ap_dbg = dbg }, _) ->
+    | Fapply({ func = funct; arg = args;
+               kind = Indirect; dbg = dbg }, _) ->
         (* the closure parameter of the function is added by cmmgen, but
            it already appears in the list of parameters of the clambda
            function for generic calls. Notice that for direct calls it is

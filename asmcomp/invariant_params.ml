@@ -189,8 +189,8 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   let rec loop ~caller (expr : _ Flambda.t) =
     match expr with
     | Fvar (var,_) -> test_escape var
-    | Fapply ({ ap_function = Fvar(callee,_); ap_arg }, _) ->
-        let num_args = List.length ap_arg in
+    | Fapply ({ func = Fvar(callee,_); arg }, _) ->
+        let num_args = List.length arg in
         for callee_pos = num_args to (arity callee) - 1 do
           match find_callee_arg ~callee ~callee_pos with
           | None -> ()
@@ -200,8 +200,8 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
         done;
         List.iteri (fun callee_pos arg ->
             check_argument ~caller ~callee ~callee_pos arg)
-          ap_arg;
-        List.iter (loop ~caller) ap_arg
+          arg;
+        List.iter (loop ~caller) arg
     | e ->
         Flambdaiter.apply_on_subexpressions (loop ~caller) e
   in
@@ -265,7 +265,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
   let rec loop (expr : _ Flambda.t) =
     match expr with
     | Fvar (var,_) -> used_variable var
-    | Fapply ({ ap_function; ap_arg; ap_kind = Direct callee }, _) ->
+    | Fapply ({ func; arg; kind = Direct callee }, _) ->
         List.iteri (fun callee_pos arg ->
             match arg with
             | Flambda.Fvar (var, _) -> begin
@@ -276,8 +276,8 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
                       used_variable var
               end
             | _ -> loop arg)
-          ap_arg;
-        loop ap_function
+          arg;
+        loop func
     | e ->
         Flambdaiter.apply_on_subexpressions loop e
   in

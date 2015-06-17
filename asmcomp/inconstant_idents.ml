@@ -298,7 +298,7 @@ module NotConstants(P:Param) = struct
       mark_curr curr;
       List.iter (mark_loop ~toplevel []) l
 
-    | Fapply ({ap_function = f1; ap_arg = fl; _ },_) ->
+    | Fapply ({func = f1; arg = fl; _ },_) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       List.iter (mark_loop ~toplevel []) fl

@@ -136,7 +136,7 @@ let inline_non_recursive
 let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       ~(func : 'a Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
-      ~args_with_approxs ~ap_dbg ~eid
+      ~args_with_approxs ~dbg ~eid
       ~inline_by_copying_function_body
       ~inline_by_copying_function_declaration
       ~loop =
@@ -145,12 +145,12 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
       E.inlining_stats_closure_stack (E.note_entering_closure env
           ~closure_id:fun_id ~where:Inlining_decision)
     in
-    Inlining_stats.record_decision ~closure_stack ~debuginfo:ap_dbg
+    Inlining_stats.record_decision ~closure_stack ~debuginfo:dbg
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({ap_function = funct; ap_arg = args;
-             ap_kind = Direct fun_id; ap_dbg}, eid),
+    Fapply ({func = funct; arg = args;
+             kind = Direct fun_id; dbg}, eid),
     R.set_approx r A.value_unknown
   in
   let max_level = 3 in
@@ -317,7 +317,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
               inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~funct ~clos ~fun_id ~func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
-                ~specialised_args:closure.specialised_args ~ap_dbg
+                ~specialised_args:closure.specialised_args ~dbg
             in
             match copied_function_declaration with
             | Some (expr, r_inlined) ->

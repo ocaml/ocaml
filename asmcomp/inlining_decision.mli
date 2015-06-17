@@ -30,7 +30,7 @@ val inlining_decision_for_call_site
   -> closure:Simple_value_approx.value_set_of_closures
   -> args_with_approxs:
       ((Expr_id.t Flambda.t list) * (Simple_value_approx.t list))
-  -> ap_dbg:Debuginfo.t
+  -> dbg:Debuginfo.t
   -> eid:Expr_id.t
   -> inline_by_copying_function_body:'a by_copying_function_body
   -> inline_by_copying_function_declaration:'a by_copying_function_declaration

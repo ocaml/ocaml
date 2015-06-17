@@ -34,7 +34,7 @@ type 'a by_copying_function_declaration =
       (Expr_id.t Flambda.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
-  -> ap_dbg:Debuginfo.t
+  -> dbg:Debuginfo.t
   -> (Expr_id.t Flambda.t * Inlining_result.t) option
 
 type loop =

@@ -23,11 +23,11 @@ let rec lam ppf = function
       Variable.print ppf id
   | Fconst (cst,_) ->
       const ppf cst
-  | Fapply({ap_function; ap_arg; ap_kind},_) ->
+  | Fapply({func; arg; kind},_) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      let direct = match ap_kind with Indirect -> "" | Direct _ -> "*" in
-      fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam ap_function lams ap_arg
+      let direct = match kind with Indirect -> "" | Direct _ -> "*" in
+      fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams arg
   | Fclosure({closure;closure_id;relative_to = None},_) ->
       fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_id.print closure_id lam closure
   | Fclosure({closure;closure_id;relative_to = Some rel},_) ->

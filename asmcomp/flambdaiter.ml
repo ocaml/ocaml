@@ -39,8 +39,8 @@ let apply_on_subexpressions f = function
   | Fprim (_,l,_,_) ->
     List.iter f l
 
-  | Fapply ({ap_function;ap_arg},_) ->
-    List.iter f (ap_function::ap_arg)
+  | Fapply ({func;arg},_) ->
+    List.iter f (func::arg)
   | Fset_of_closures ({cl_fun;cl_free_var},_) ->
     Variable.Map.iter (fun _ v -> f v) cl_free_var;
     Variable.Map.iter (fun _ ffun -> f ffun.body) cl_fun.funs
@@ -84,8 +84,8 @@ let subexpressions = function
   | Fstaticraise (_,l,_)
   | Fprim (_,l,_,_) -> l
 
-  | Fapply ({ap_function;ap_arg},_) ->
-      (ap_function::ap_arg)
+  | Fapply ({func;arg},_) ->
+      (func::arg)
 
   | Fset_of_closures ({cl_fun;cl_free_var},_) ->
       let l = Variable.Map.fold (fun _ v l -> v :: l) cl_free_var [] in
@@ -135,7 +135,7 @@ let iter_general ~toplevel f t =
     | Fprim (_,l,_,_) ->
       iter_list l
 
-    | Fapply ({ap_function = f1; ap_arg = fl},_) ->
+    | Fapply ({func = f1; arg = fl},_) ->
       iter_list (f1::fl)
 
     | Fset_of_closures ({cl_fun = funcs; cl_free_var = fv},_) ->
@@ -186,10 +186,10 @@ let map_general ~toplevel f tree =
       | Fsymbol _ -> tree
       | Fvar _ -> tree
       | Fconst _ -> tree
-      | Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, annot) ->
-          Fapply ({ ap_function = aux ap_function;
-                    ap_arg = List.map aux ap_arg;
-                    ap_kind; ap_dbg }, annot)
+      | Fapply ({ func; arg; kind; dbg }, annot) ->
+          Fapply ({ func = aux func;
+                    arg = List.map aux arg;
+                    kind; dbg }, annot)
       | Fset_of_closures ({ cl_fun; cl_free_var;
                     cl_specialised_arg },annot) ->
           let cl_fun =
@@ -385,14 +385,14 @@ let fold_subexpressions f acc = function
             acc, Some def in
       acc, Fstringswitch (arg, sw, def, d)
 
-  | Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, d) ->
-      let acc, ap_function = f acc Variable.Set.empty ap_function in
-      let acc, ap_arg =
+  | Fapply ({ func; arg; kind; dbg }, d) ->
+      let acc, func = f acc Variable.Set.empty func in
+      let acc, arg =
         List.fold_right
           (fun arg (acc, l) ->
              let acc, arg = f acc Variable.Set.empty arg in
-             acc, arg :: l) ap_arg (acc,[]) in
-      acc, Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, d)
+             acc, arg :: l) arg (acc,[]) in
+      acc, Fapply ({ func; arg; kind; dbg }, d)
 
   | Fsend (kind, e1, e2, args, dbg, d) ->
       let acc, args =
@@ -509,10 +509,10 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
     | Fletrec(defs, body, v) ->
         let defs = List.map (fun (id,def) -> (id, mapper def)) defs in
         Fletrec( defs, mapper body, f v)
-    | Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, v) ->
-        Fapply ({ ap_function = mapper ap_function;
-                  ap_arg = list_mapper ap_arg;
-                  ap_kind; ap_dbg }, f v)
+    | Fapply ({ func; arg; kind; dbg }, v) ->
+        Fapply ({ func = mapper func;
+                  arg = list_mapper arg;
+                  kind; dbg }, f v)
     | Fset_of_closures ({ cl_fun; cl_free_var;
                   cl_specialised_arg }, v) ->
         let cl_fun =

@@ -247,10 +247,10 @@ let tupled_function_call_stub t original_params tuplified_version
   let params = List.map (fun p -> rename_var t p) original_params in
   let call : _ Flambda.t =
     Fapply ({
-        ap_function = Fvar (tuplified_version, nid ());
-        ap_arg = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
-        ap_kind = Direct (Closure_id.wrap tuplified_version);
-        ap_dbg = Debuginfo.none;
+        func = Fvar (tuplified_version, nid ());
+        arg = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
+        kind = Direct (Closure_id.wrap tuplified_version);
+        dbg = Debuginfo.none;
       },
       nid ())
   in
@@ -277,7 +277,7 @@ let rec add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
   | Lev_after _ ->
     begin match flam with
     | Fapply (ap, v) ->
-      Fapply ({ ap with ap_dbg = Debuginfo.from_call ev}, v)
+      Fapply ({ ap with dbg = Debuginfo.from_call ev}, v)
     | Fprim (p, args, _dinfo, v) ->
       Fprim (p, args, Debuginfo.from_call ev, v)
     | Fsend (kind, flam1, flam2, args, _dinfo, v) ->
@@ -615,10 +615,10 @@ and lift_apply_construction_to_variables t ~env ~funct ~args =
   let apply_args, lets = lifting_helper t ~env ~args ~name:"apply_arg" in
   let apply : _ Flambda.t =
     Fapply ({
-        ap_function = close t env funct;
-        ap_arg = apply_args;
-        ap_kind = Indirect;
-        ap_dbg = Debuginfo.none;
+        func = close t env funct;
+        arg = apply_args;
+        kind = Indirect;
+        dbg = Debuginfo.none;
       },
       nid ~name:"apply" ())
   in
