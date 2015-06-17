@@ -393,7 +393,7 @@ module Conv(P:Param1) = struct
 
     | Fset_of_closures ({ function_decls = funct;
                   free_vars = fv;
-                  cl_specialised_arg = spec_arg }, _) ->
+                  specialised_args = spec_arg }, _) ->
         let args_approx = Variable.Map.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
@@ -458,7 +458,7 @@ module Conv(P:Param1) = struct
     (* | Fapply({func = *)
     (*             Fclosure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
     (*                                                  free_vars = fv; *)
-    (*                                                  cl_specialised_arg }, _); *)
+    (*                                                  specialised_args }, _); *)
     (*                         closure_id = off; *)
     (*                         relative_to = (None as rel)}, _); *)
     (*           arg = args; *)
@@ -472,8 +472,8 @@ module Conv(P:Param1) = struct
     (*     assert(List.length uargs = List.length func.params); *)
     (*     let args_approx = *)
     (*       List.fold_right2 Variable.Map.add func.params args_approx Variable.Map.empty *)
-    (*       |> Variable.Map.filter (fun var _ -> Variable.Map.mem var cl_specialised_arg) in *)
-    (*     let uffuns, fun_approx = conv_closure env ffuns args_approx cl_specialised_arg fv in *)
+    (*       |> Variable.Map.filter (fun var _ -> Variable.Map.mem var specialised_args) in *)
+    (*     let uffuns, fun_approx = conv_closure env ffuns args_approx specialised_args fv in *)
     (*     let approx = match get_descr fun_approx with *)
     (*       | Some(Value_closure { fun_id; closure = { results } }) -> *)
     (*           Closure_id.Map.find fun_id results *)
@@ -756,7 +756,7 @@ module Conv(P:Param1) = struct
       let expr =
         Fset_of_closures ({ function_decls = ufunct;
                     free_vars = used_fv;
-                    cl_specialised_arg = spec_arg }, ()) in
+                    specialised_args = spec_arg }, ()) in
       if Set_of_closures_id.Set.mem ufunct.ident P.constant_closures
       then
         let sym = add_constant expr closure_ex_id in

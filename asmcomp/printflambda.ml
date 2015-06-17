@@ -36,7 +36,7 @@ let rec lam ppf = function
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Var_within_closure.print var Closure_id.print closure_id lam closure
-  | Fset_of_closures({function_decls;free_vars;cl_specialised_arg},_) ->
+  | Fset_of_closures({function_decls;free_vars;specialised_args},_) ->
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in
       let funs ppf =
@@ -56,7 +56,7 @@ let rec lam ppf = function
         end
       in
       fprintf ppf "@[<2>(closure%a %a%a)@]" funs function_decls.funs lams
-        free_vars spec cl_specialised_arg
+        free_vars spec specialised_args
   | Flet(_str, id, arg, body,_) ->
       let rec letbody ul = match ul with
         | Flet(str, id, arg, body,_) ->

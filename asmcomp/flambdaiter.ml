@@ -191,7 +191,7 @@ let map_general ~toplevel f tree =
                     args = List.map aux args;
                     kind; dbg }, annot)
       | Fset_of_closures ({ function_decls; free_vars;
-                    cl_specialised_arg },annot) ->
+                    specialised_args },annot) ->
           let function_decls =
             if toplevel
             then function_decls
@@ -202,7 +202,7 @@ let map_general ~toplevel f tree =
                     function_decls.funs } in
           Fset_of_closures ({ function_decls;
                       free_vars = Variable.Map.map aux free_vars;
-                      cl_specialised_arg }, annot)
+                      specialised_args }, annot)
       | Fclosure ({ closure; closure_id; relative_to}, annot) ->
           Fclosure ({ closure = aux closure;
                        closure_id; relative_to}, annot)
@@ -282,8 +282,8 @@ let map_toplevel f tree = map_general ~toplevel:true f tree
 let expression_free_variables = function
   | Fvar (id,_) -> Variable.Set.singleton id
   | Fassign (id,_,_) -> Variable.Set.singleton id
-  | Fset_of_closures ({free_vars; cl_specialised_arg},_) ->
-      let set = Variable.Map.keys (Variable.Map.revert cl_specialised_arg) in
+  | Fset_of_closures ({free_vars; specialised_args},_) ->
+      let set = Variable.Map.keys (Variable.Map.revert specialised_args) in
       Variable.Map.fold (fun _ expr set ->
           (* HACK:
              This is not needed, but it avoids moving lets inside free_vars *)
@@ -484,8 +484,8 @@ let free_variables tree =
   let aux = function
     | Fvar (id,_) -> add id
     | Fassign (id,_,_) -> add id
-    | Fset_of_closures ({cl_specialised_arg},_) ->
-        Variable.Map.iter (fun _ id -> add id) cl_specialised_arg
+    | Fset_of_closures ({specialised_args},_) ->
+        Variable.Map.iter (fun _ id -> add id) specialised_args
     | Ftrywith(_,id,_,_)
     | Ffor(id, _, _, _, _, _)
     | Flet ( _, id, _, _,_) ->
@@ -514,7 +514,7 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
                   args = list_mapper args;
                   kind; dbg }, f v)
     | Fset_of_closures ({ function_decls; free_vars;
-                  cl_specialised_arg }, v) ->
+                  specialised_args }, v) ->
         let function_decls =
           { function_decls with
             funs = Variable.Map.map
@@ -522,7 +522,7 @@ let map_data (type t1) (type t2) (f:t1 -> t2) (tree:t1 flambda) : t2 flambda =
                 function_decls.funs } in
         Fset_of_closures ({ function_decls;
                     free_vars = Variable.Map.map mapper free_vars;
-                    cl_specialised_arg }, f v)
+                    specialised_args }, f v)
     | Fclosure ({ closure; closure_id; relative_to}, v) ->
         Fclosure ({ closure = mapper closure;
                      closure_id; relative_to}, f v)

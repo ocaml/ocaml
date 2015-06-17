@@ -137,7 +137,7 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
       Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
       Variable.Map.equal same c1.free_vars c2.free_vars &&
-      Variable.Map.equal Variable.equal c1.cl_specialised_arg c2.cl_specialised_arg
+      Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
       same f1.closure f2.closure &&
@@ -268,7 +268,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
                   funs = Variable.Map.singleton id function_declaration;
                   compilation_unit = current_unit };
               free_vars = fv';
-              cl_specialised_arg = Variable.Map.empty },
+              specialised_args = Variable.Map.empty },
             Expr_id.create ());
        closure_id = Closure_id.wrap id;
        relative_to = None},

@@ -561,7 +561,7 @@ and close_functions t external_env function_declarations
              Variable.Map.add internal_var
                (Flambda.Fvar (external_var, nid ())) map)
           all_free_idents Variable.Map.empty;
-      cl_specialised_arg = Variable.Map.empty;
+      specialised_args = Variable.Map.empty;
     }
   in
   Fset_of_closures (set_of_closures, nid ())

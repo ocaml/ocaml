@@ -47,7 +47,7 @@ let which_function_parameters_can_we_specialize ~params ~args
   List.fold_right2 (fun (id, arg) approx (spec_args, args, args_decl) ->
       let new_id, args_decl =
         (* If the argument expression is not a variable, we declare a new one.
-           This is needed for adding arguments to cl_specialised_arg which
+           This is needed for adding arguments to specialised_args which
            requires a variable *)
         match (arg : _ Flambda.t) with
         | Fvar (var, _) -> var, args_decl
@@ -674,7 +674,7 @@ and loop_list env r l = match l with
    * The approximation of the free variables
    * An explicitely unknown approximation for function parameters,
      except for those where it is known to be safe: those present in the
-     [cl_specialised_arg] set.
+     [specialised_args] set.
    * An approximation for the closures in the set. It contains the code of
      the functions before rewriting.
 
@@ -726,10 +726,10 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   in
   let fv = cl.free_vars in
   let env = E.increase_closure_depth original_env in
-  let cl_specialised_arg =
+  let specialised_args =
     Variable.Map.map
       (Flambdasubst.subst_var (E.sb env))
-      cl.cl_specialised_arg
+      cl.specialised_args
   in
   let fv, r = Variable.Map.fold (fun id lam (fv, r) ->
       let lam, r = loop env r lam in
@@ -749,15 +749,15 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   in
   let env = E.set_sb sb env in
   let apply_substitution = Flambdasubst.subst_var (E.sb env) in
-  let cl_specialised_arg =
-    Variable.Map.map_keys apply_substitution cl_specialised_arg
+  let specialised_args =
+    Variable.Map.map_keys apply_substitution specialised_args
   in
   let parameter_approximations =
     (* The approximation of arguments that are known to be always the same *)
     Variable.Map.map_keys apply_substitution
       (Variable.Map.map (fun id ->
           E.find id environment_before_cleaning)
-        cl_specialised_arg)
+        specialised_args)
   in
   let env = E.enter_set_of_closures_declaration ffuns.ident env in
   (* we use the previous closure for evaluating the functions *)
@@ -767,7 +767,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
           fv Var_within_closure.Map.empty;
       unchanging_params = Variable.Set.empty;
-      specialised_args = Variable.Map.keys cl_specialised_arg;
+      specialised_args = Variable.Map.keys specialised_args;
       alpha_renaming;
     }
   in
@@ -819,14 +819,14 @@ and transform_set_of_closures_expression original_env original_r cl annot =
     Variable.Map.fold rewrite_function
       ffuns.funs (Variable.Map.empty, Variable.Set.empty, r) in
   (* Parameters that are not used by the function may have any corresponding
-     specialised arguments removed from [cl_specialised_arg]. *)
-  let cl_specialised_arg = Variable.Map.filter
+     specialised arguments removed from [specialised_args]. *)
+  let specialised_args = Variable.Map.filter
       (fun id _ -> Variable.Set.mem id used_params)
-      cl_specialised_arg
+      specialised_args
   in
   let r =
     Variable.Map.fold (fun _id' v acc -> R.use_var acc v)
-      cl_specialised_arg r
+      specialised_args r
   in
   let ffuns = { ffuns with funs } in
   let unchanging_params =
@@ -838,7 +838,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
   let r = Variable.Map.fold (fun id _ r -> R.exit_scope r id) ffuns.funs r in
   let set_of_closures = Flambda.{
       function_decls = ffuns; free_vars = Variable.Map.map fst fv;
-      cl_specialised_arg
+      specialised_args
     }
   in
   Fset_of_closures (set_of_closures, annot),
@@ -1060,7 +1060,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
             { closure = Fset_of_closures (
                 { function_decls = clos;
                   free_vars = fv;
-                  cl_specialised_arg = spec_args;
+                  specialised_args = spec_args;
                 }, Expr_id.create ());
               closure_id = fun_id;
               relative_to = None;

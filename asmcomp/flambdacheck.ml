@@ -27,8 +27,8 @@ let every_used_identifier_is_bound flam =
   let check env = function
     | Fassign(id,_,_)
     | Fvar(id,_) -> test id env
-    | Fset_of_closures({cl_specialised_arg},_) ->
-        Variable.Map.iter (fun _ id -> test id env) cl_specialised_arg
+    | Fset_of_closures({specialised_args},_) ->
+        Variable.Map.iter (fun _ id -> test id env) specialised_args
 
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvar_within_closure _ | Flet _ | Fletrec _

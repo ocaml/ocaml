@@ -143,8 +143,8 @@ let toplevel_substitution sb tree =
     | Fassign (id,e,d) -> Fassign (sb id,e,d)
     | Fset_of_closures (cl,d) ->
         Fset_of_closures ({cl with
-                   cl_specialised_arg =
-                     Variable.Map.map sb cl.cl_specialised_arg},
+                   specialised_args =
+                     Variable.Map.map sb cl.specialised_args},
                   d)
     | e -> e
   in

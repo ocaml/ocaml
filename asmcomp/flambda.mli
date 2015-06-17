@@ -164,12 +164,12 @@ and 'a set_of_closures = {
              | [] -> []
              | h :: t -> f h :: map f t in
            map succ l]
-      with map having [f] -> [succ] in his [cl_specialised_arg] field.
+      with map having [f] -> [succ] in his [specialised_args] field.
 
       Note that it is usualy not correct to erase this information if the
       argument is used.
   *)
-  cl_specialised_arg : Variable.t Variable.Map.t;
+  specialised_args : Variable.t Variable.Map.t;
 }
 
 and 'a function_declarations = {
