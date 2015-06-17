@@ -125,10 +125,10 @@ let populate_closure_approximations
  *)
 
 (* Transform an expression denoting an access to a variable bound in
-   a closure.  Variables in the closure ([fenv_field.vc_closure]) may
+   a closure.  Variables in the closure ([fenv_field.closure]) may
    have been alpha-renamed since [expr] was constructed; as such, we
    must ensure the same happens to [expr].  The renaming information is
-   contained within the approximation deduced from [vc_closure] (as
+   contained within the approximation deduced from [closure] (as
    such, that approximation *must* identify which closure it is).
 
    For instance in some imaginary syntax for flambda:
@@ -148,7 +148,7 @@ let populate_closure_approximations
 
    [closure.a] being a notation for:
 
-     [Fvar_within_closure{vc_closure = closure; vc_fun = g; vc_var = a}]
+     [Fvar_within_closure{closure = closure; closure_id = g; var = a}]
 
    If [f] is inlined later, the resulting code will be
 
@@ -171,8 +171,8 @@ let populate_closure_approximations
    other transformation must avoid transforming the information flow in
    a way that the inline function can't propagate it.
 *)
-let transform_var_within_closure_expression env r expr vc_closure
-      (fenv_field : _ Flambda.fvar_within_closure) annot
+let transform_var_within_closure_expression env r expr closure
+      (fenv_field : _ Flambda.var_within_closure) annot
       : _ Flambda.t * R.t =
   match A.descr (R.approx r) with
   | Value_closure { set_of_closures; closure_id } ->
@@ -181,10 +181,10 @@ let transform_var_within_closure_expression env r expr vc_closure
     in
     let env_var =
       AR.subst_var_within_closure set_of_closures.alpha_renaming
-          fenv_field.vc_var
+          fenv_field.var
     in
     let env_closure_id =
-      AR.subst_closure_id set_of_closures.alpha_renaming fenv_field.vc_fun
+      AR.subst_closure_id set_of_closures.alpha_renaming fenv_field.closure_id
     in
     assert (Closure_id.equal env_closure_id closure_id);
     let approx =
@@ -193,19 +193,19 @@ let transform_var_within_closure_expression env r expr vc_closure
         Format.printf "no field %a in closure %a@ %a@."
           Var_within_closure.print env_var
           Closure_id.print env_closure_id
-          Printflambda.flambda vc_closure;
+          Printflambda.flambda closure;
         assert false in
     let expr : _ Flambda.t =
-      if vc_closure == fenv_field.vc_closure
+      if closure == fenv_field.closure
       then expr (* if the argument didn't change, the names didn't also *)
-      else Fvar_within_closure ({ vc_closure; vc_fun = env_closure_id;
-                                   vc_var = env_var }, annot) in
+      else Fvar_within_closure ({ closure; closure_id = env_closure_id;
+                                   var = env_var }, annot) in
     check_var_and_constant_result env r expr approx
   | Value_unresolved sym ->
     (* This value comes from a symbol for which we couldn't find any
        information.  This tells us that this function couldn't have been
        renamed.  So we can keep it unchanged. *)
-    Fvar_within_closure ({ fenv_field with vc_closure }, annot),
+    Fvar_within_closure ({ fenv_field with closure }, annot),
     ret r (A.value_unresolved sym)
   | Value_unknown ->
     (* We must have the correct approximation of the value to ensure
@@ -213,8 +213,8 @@ let transform_var_within_closure_expression env r expr vc_closure
     Format.printf "[Fvar_within_closure] without suitable \
                    approximation : %a@.%a@.%a@."
       Printflambda.flambda expr
-      Printflambda.flambda vc_closure
-      Printflambda.flambda fenv_field.vc_closure;
+      Printflambda.flambda closure
+      Printflambda.flambda fenv_field.closure;
     assert false
   | Value_string _ | Value_float_array _
   | Value_block _ | Value_int _ | Value_constptr _
@@ -330,8 +330,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     transform_closure_expression env r flam closure.fu_fun
       closure.fu_relative_to annot
   | Fvar_within_closure (fenv_field, annot) as expr ->
-    let vc_closure, r = loop env r fenv_field.vc_closure in
-    transform_var_within_closure_expression env r expr vc_closure
+    let closure, r = loop env r fenv_field.closure in
+    transform_var_within_closure_expression env r expr closure
       fenv_field annot
   | Flet (str, id, lam, body, annot) ->
     (* The different cases for rewriting [Flet] are, if the original code

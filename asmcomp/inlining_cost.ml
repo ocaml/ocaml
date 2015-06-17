@@ -70,8 +70,8 @@ let lambda_smaller' lam ~than:threshold =
         ffuns.funs
     | Fclosure ({ fu_closure = lam }, _) ->
       incr size; lambda_size lam
-    | Fvar_within_closure ({ vc_closure }, _) ->
-      incr size; lambda_size vc_closure
+    | Fvar_within_closure ({ closure }, _) ->
+      incr size; lambda_size closure
     | Flet (_, _, lam, body, _) ->
       lambda_size lam; lambda_size body
     | Fletrec (bindings, body, _) ->

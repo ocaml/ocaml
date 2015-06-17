@@ -60,7 +60,7 @@ type constant_result = {
 
 module type Param = sig
   type t
-  val expr : t Flambda.flambda
+  val expr : t Flambda.t
   val for_clambda : bool
   val compilation_unit : Compilation_unit.t
   val toplevel : bool
@@ -217,7 +217,7 @@ module NotConstants(P:Param) = struct
       then mark_loop ~toplevel curr fu_closure
       else mark_curr curr
 
-    | Fvar_within_closure ({vc_closure = f1; _},_)
+    | Fvar_within_closure ({closure = f1; _},_)
     | Fprim(Lambda.Pfield _, [f1], _, _) ->
       if for_clambda
       then mark_curr curr;
@@ -362,7 +362,7 @@ module NotConstants(P:Param) = struct
 end
 
 let not_constants (type a) ~for_clambda ~compilation_unit
-    (expr:a Flambda.flambda) =
+    (expr:a Flambda.t) =
   let module P = struct
     type t = a
     let expr = expr

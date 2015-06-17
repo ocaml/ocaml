@@ -51,4 +51,4 @@ val lambda_to_flambda
   -> symbol_for_global':(Ident.t -> Symbol.t)
   -> exported_fields:int
   -> Lambda.lambda
-  -> Expr_id.t Flambda.flambda
+  -> Expr_id.t Flambda.t

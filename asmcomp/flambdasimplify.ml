@@ -66,9 +66,9 @@ let remove_unused_closure_variables tree =
     let used_fun = ref Closure_id.Set.empty in
     let aux (expr : _ Flambda.t) =
       match expr with
-      | Fvar_within_closure({ vc_var; vc_fun }, _) ->
-          used := Var_within_closure.Set.add vc_var !used;
-          used_fun := Closure_id.Set.add vc_fun !used_fun;
+      | Fvar_within_closure({ var; closure_id }, _) ->
+          used := Var_within_closure.Set.add var !used;
+          used_fun := Closure_id.Set.add closure_id !used_fun;
       | Fclosure({ fu_fun; fu_relative_to }, _) ->
           used_fun := Closure_id.Set.add fu_fun !used_fun;
           begin match fu_relative_to with
@@ -474,7 +474,7 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   in
   let ap_kind = Flambda.Direct (Closure_id.wrap renamed) in
   let ap_dbg = fun_decl.dbg in
-  let body : _ Flambda.flambda =
+  let body : _ Flambda.t =
     Fapply(
       { ap_function = Fvar(renamed, nid ());
         ap_arg;
@@ -498,7 +498,7 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   in
   decl, renamed
 
-let separate_unused_arguments (set_of_closures : _ Flambda.fset_of_closures) =
+let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
   let decl = set_of_closures.cl_fun in
   let unused = Invariant_params.unused_arguments decl in
   let non_stub_arguments =

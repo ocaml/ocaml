@@ -43,7 +43,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
   let set_fun = ref Closure_id.Set.empty in
   let set_fv = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
-    | Fvar_within_closure({vc_var = env_var; vc_fun = env_fun_id}, _) ->
+    | Fvar_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
         set_fun := Closure_id.Set.add env_fun_id !set_fun;
         set_fv := Var_within_closure.Set.add env_var !set_fv;
     | Fclosure({fu_fun = id; fu_relative_to = rel}, _) ->
@@ -314,7 +314,7 @@ module Conv(P:Param2) = struct
            that a closure is not offseted (Cmmgen.expr_size) *)
         else Uoffset(ulam, relative_offset)
 
-    | Fvar_within_closure({vc_closure = lam;vc_var = env_var;vc_fun = env_fun_id}, _) ->
+    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) ->
         let ulam = conv env lam in
         let fun_offset = get_fun_offset env_fun_id in
         let var_offset = get_fv_offset env_var in

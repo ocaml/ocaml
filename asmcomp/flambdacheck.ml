@@ -279,8 +279,8 @@ let used_closure_id flam =
          | None -> ()
          | Some _rel ->
              used := Closure_id.Set.add fu_fun !used)
-    | Fvar_within_closure ({vc_fun},_) ->
-        used := Closure_id.Set.add vc_fun !used
+    | Fvar_within_closure ({closure_id},_) ->
+        used := Closure_id.Set.add closure_id !used
 
     | Fassign _ | Fvar _ | Fset_of_closures _
     | Fsymbol _ | Fconst _ | Fapply _
@@ -296,8 +296,8 @@ let used_closure_id flam =
 let used_var_within_closure flam =
   let used = ref Var_within_closure.Set.empty in
   let f = function
-    | Fvar_within_closure ({vc_var},_) ->
-        used := Var_within_closure.Set.add vc_var !used
+    | Fvar_within_closure ({var},_) ->
+        used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
   Flambdaiter.iter f flam;

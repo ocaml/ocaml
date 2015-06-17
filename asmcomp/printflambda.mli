@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-val flambda : Format.formatter -> 'a Flambda.flambda -> unit
+val flambda : Format.formatter -> 'a Flambda.t -> unit
 
 val function_declarations :
   Format.formatter -> 'a Flambda.function_declarations -> unit

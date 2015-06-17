@@ -551,7 +551,7 @@ and close_functions t external_env function_declarations
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
      a single block with tag [Closure_tag].) *)
-  let set_of_closures : _ Flambda.fset_of_closures =
+  let set_of_closures : _ Flambda.set_of_closures =
     { cl_fun = fun_decls;
       cl_free_var =
         IdentSet.fold

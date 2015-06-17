@@ -59,7 +59,7 @@ module Benefit : sig
   val remove_prim : t -> t
   val remove_branch : t -> t
 
-  val remove_code : _ Flambda.flambda -> t -> t
+  val remove_code : _ Flambda.t -> t -> t
 
   val print : Format.formatter -> t -> unit
 end
@@ -71,8 +71,8 @@ module Whether_sufficient_benefit : sig
   type t
 
   val create
-     : original:_ Flambda.flambda
-    -> _ Flambda.flambda
+     : original:_ Flambda.t
+    -> _ Flambda.t
     -> Benefit.t
     -> probably_a_functor:bool
     -> t

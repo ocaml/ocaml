@@ -61,8 +61,8 @@ let functions expr =
 let list_used_variable_withing_closure expr =
   let used = ref Var_within_closure.Set.empty in
   let aux expr = match expr with
-    | Fvar_within_closure({ vc_var },_) ->
-        used := Var_within_closure.Set.add vc_var !used
+    | Fvar_within_closure({ var },_) ->
+        used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
   Flambdaiter.iter aux expr;
@@ -70,7 +70,7 @@ let list_used_variable_withing_closure expr =
 
 module type Param1 = sig
   type t
-  val expr : t Flambda.flambda
+  val expr : t Flambda.t
   val not_constants : Inconstant_idents.constant_result
   val constant_closures : Set_of_closures_id.Set.t
 end
@@ -429,7 +429,7 @@ module Conv(P:Param1) = struct
           Fclosure({ fu_closure = ulam; fu_fun = id; fu_relative_to = rel },()),
           approx
 
-    | Fvar_within_closure({vc_closure = lam;vc_var = env_var;vc_fun = env_fun_id}, _) as expr ->
+    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         let approx = match get_descr fun_approx with
           | Some (Value_closure { closure = { bound_var } }) ->
@@ -452,7 +452,7 @@ module Conv(P:Param1) = struct
                 Printflambda.flambda expr
                 Printflambda.flambda ulam;
               assert false in
-        Fvar_within_closure({vc_closure = ulam;vc_var = env_var;vc_fun = env_fun_id}, ()),
+        Fvar_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
 
     (* | Fapply({ap_function = *)
@@ -902,7 +902,7 @@ module Prepare(P:Param2) = struct
 
 end
 
-let convert (type a) ~compilation_unit (expr:a Flambda.flambda) =
+let convert (type a) ~compilation_unit (expr:a Flambda.t) =
   let not_constants = Inconstant_idents.not_constants ~compilation_unit ~for_clambda:true expr in
   let constant_closures = constant_closures not_constants expr in
   let module P1 = struct

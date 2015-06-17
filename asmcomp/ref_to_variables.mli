@@ -12,5 +12,5 @@
 
 (* Transform [let]-bound mutable records into variables *)
 val eliminate_ref
-   : Abstract_identifiers.Expr_id.t Flambda.flambda
-  -> Abstract_identifiers.Expr_id.t Flambda.flambda
+   : Abstract_identifiers.Expr_id.t Flambda.t
+  -> Abstract_identifiers.Expr_id.t Flambda.t

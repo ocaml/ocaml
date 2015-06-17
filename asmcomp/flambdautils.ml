@@ -24,7 +24,7 @@ let find_declaration_variable cf ({ funs } : _ Flambda.function_declarations) =
   then raise Not_found
   else var
 
-let find_free_variable cv ({ cl_free_var } : _ Flambda.fset_of_closures) =
+let find_free_variable cv ({ cl_free_var } : _ Flambda.set_of_closures) =
   Variable.Map.find (Var_within_closure.unwrap cv) cl_free_var
 
 (* utility functions *)
@@ -145,9 +145,9 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       sameoption Closure_id.equal f1.fu_relative_to f1.fu_relative_to
   | Fclosure _, _ | _, Fclosure _ -> false
   | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
-      same v1.vc_closure v2.vc_closure &&
-      Closure_id.equal v1.vc_fun v2.vc_fun &&
-      Var_within_closure.equal v1.vc_var v2.vc_var
+      same v1.closure v2.closure &&
+      Closure_id.equal v1.closure_id v2.closure_id &&
+      Var_within_closure.equal v1.var v2.var
   | Fvar_within_closure _, _ | _, Fvar_within_closure _ -> false
   | Flet (k1, v1, a1, b1, _), Flet (k2, v2, a2, b2, _) ->
       k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2
@@ -225,9 +225,9 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
   Variable.Set.fold (fun var acc ->
       let expr : _ Flambda.t =
         Fvar_within_closure
-          ({ vc_closure = Fvar (clos_id, Expr_id.create ());
-             vc_fun = fun_id;
-             vc_var = Var_within_closure.wrap var;
+          ({ closure = Fvar (clos_id, Expr_id.create ());
+             closure_id = fun_id;
+             var = Var_within_closure.wrap var;
            },
            Expr_id.create ())
       in

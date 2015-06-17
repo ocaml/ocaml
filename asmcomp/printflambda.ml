@@ -33,9 +33,9 @@ let rec lam ppf = function
   | Fclosure({fu_closure;fu_fun;fu_relative_to = Some rel},_) ->
       fprintf ppf "@[<2>(function_relative@ %a - %a@ %a)@]"
         Closure_id.print fu_fun Closure_id.print rel lam fu_closure
-  | Fvar_within_closure({vc_closure;vc_fun;vc_var},_) ->
+  | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
-        Var_within_closure.print vc_var Closure_id.print vc_fun lam vc_closure
+        Var_within_closure.print var Closure_id.print closure_id lam closure
   | Fset_of_closures({cl_fun;cl_free_var;cl_specialised_arg},_) ->
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in
