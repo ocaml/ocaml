@@ -541,7 +541,7 @@ and close_functions t external_env function_declarations
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let fun_decls : _ Flambda.function_declarations =
-    { ident = Set_of_closures_id.create t.current_compilation_unit;
+    { set_of_closures_id = Set_of_closures_id.create t.current_compilation_unit;
       funs =
         List.fold_left close_one_function Variable.Map.empty
           (Function_decls.to_list function_declarations);

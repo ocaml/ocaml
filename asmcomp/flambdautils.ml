@@ -264,7 +264,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
     ({ closure =
          Fset_of_closures
            ({ function_decls =
-                { ident = Set_of_closures_id.create current_unit;
+                { set_of_closures_id = Set_of_closures_id.create current_unit;
                   funs = Variable.Map.singleton id function_declaration;
                   compilation_unit = current_unit };
               free_vars = fv';

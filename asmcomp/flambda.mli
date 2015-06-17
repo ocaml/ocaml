@@ -172,7 +172,7 @@ and 'a set_of_closures = {
 }
 
 and 'a function_declarations = {
-  ident : Set_of_closures_id.t;
+  set_of_closures_id : Set_of_closures_id.t;
   funs : 'a function_declaration Variable.Map.t;
   compilation_unit : Symbol.Compilation_unit.t;
 }

@@ -157,15 +157,15 @@ module NotConstants(P:Param) = struct
       Variable.Map.iter (fun _ id ->
             register_implication
               ~in_nc:(Var id)
-              ~implies_in_nc:[Closure funcs.ident]) specialised_args;
+              ~implies_in_nc:[Closure funcs.set_of_closures_id]) specialised_args;
       (* adds 'funcs in NC => curr in NC' *)
-      register_implication ~in_nc:(Closure funcs.ident) ~implies_in_nc:curr;
+      register_implication ~in_nc:(Closure funcs.set_of_closures_id) ~implies_in_nc:curr;
       (* a closure is constant if its free variables are constants. *)
       Variable.Map.iter (fun inner_id lam ->
-        mark_loop ~toplevel [Closure funcs.ident; Var inner_id] lam) fv;
+        mark_loop ~toplevel [Closure funcs.set_of_closures_id; Var inner_id] lam) fv;
       Variable.Map.iter (fun fun_id ffunc ->
         (* for each function f in a closure c 'c in NC => f' *)
-        register_implication ~in_nc:(Closure funcs.ident) ~implies_in_nc:[Var fun_id];
+        register_implication ~in_nc:(Closure funcs.set_of_closures_id) ~implies_in_nc:[Var fun_id];
         (* function parameters are in NC *)
         List.iter (fun id -> mark_curr [Var id]) ffunc.params;
         mark_loop ~toplevel:false [] ffunc.body) funcs.funs

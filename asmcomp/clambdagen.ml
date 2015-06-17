@@ -224,20 +224,20 @@ module Conv(P:Param2) = struct
 
   let is_function_constant cf =
     match function_declaration_position cf with
-    | Local { ident } ->
-        Set_of_closures_id.Set.mem ident P.constant_closures
-    | External { ident } ->
-        Set_of_closures_id.Set.mem ident ex_constant_closures
+    | Local { set_of_closures_id } ->
+        Set_of_closures_id.Set.mem set_of_closures_id P.constant_closures
+    | External { set_of_closures_id } ->
+        Set_of_closures_id.Set.mem set_of_closures_id ex_constant_closures
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
                        Closure_id.print cf)
 
   let is_closure_constant fid =
     match functions_declaration_position fid with
-    | Local { ident } ->
-        Set_of_closures_id.Set.mem ident P.constant_closures
-    | External { ident } ->
-        Set_of_closures_id.Set.mem ident ex_constant_closures
+    | Local { set_of_closures_id } ->
+        Set_of_closures_id.Set.mem set_of_closures_id P.constant_closures
+    | External { set_of_closures_id } ->
+        Set_of_closures_id.Set.mem set_of_closures_id ex_constant_closures
     | Not_declared ->
         fatal_error (Format.asprintf "missing closure %a"
                        Set_of_closures_id.print fid)
@@ -539,7 +539,7 @@ module Conv(P:Param2) = struct
 
     let funct = Variable.Map.bindings functs.funs in
     let fv = Variable.Map.bindings fv in
-    let closed = is_closure_constant functs.ident in
+    let closed = is_closure_constant functs.set_of_closures_id in
 
     (* the environment variable used for non constant closures *)
     let env_var = Ident.create "env" in

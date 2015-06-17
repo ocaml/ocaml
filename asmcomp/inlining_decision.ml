@@ -30,7 +30,7 @@ let should_inline_function_known_to_be_recursive
       ~(clos : 'a Flambda.function_declarations)
       ~env ~(closure : A.value_set_of_closures) ~approxs ~unchanging_params =
   assert (List.length func.params = List.length approxs);
-  (not (E.inside_set_of_closures_declaration clos.ident env))
+  (not (E.inside_set_of_closures_declaration clos.set_of_closures_id env))
     && (not (Variable.Set.is_empty closure.unchanging_params))
     && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
     && List.exists2 (fun id approx ->
@@ -265,7 +265,7 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
         let tried_unrolling = ref false in
         let unrolling_result =
           if E.unrolling_allowed env && E.inlining_level env <= max_level then
-            if E.inside_set_of_closures_declaration clos.ident env then
+            if E.inside_set_of_closures_declaration clos.set_of_closures_id env then
               (* Self unrolling *)
               None
             else begin

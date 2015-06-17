@@ -228,7 +228,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
             funs, subst)
           ffuns.funs (Variable.Map.empty, subst) in
       let current_unit = Compilation_unit.get_current_exn () in
-      { ident = Set_of_closures_id.create current_unit;
+      { set_of_closures_id = Set_of_closures_id.create current_unit;
         compilation_unit = current_unit;
         funs }, Active subst, t
 

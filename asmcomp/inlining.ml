@@ -759,7 +759,7 @@ and transform_set_of_closures_expression original_env original_r cl annot =
           E.find id environment_before_cleaning)
         specialised_args)
   in
-  let env = E.enter_set_of_closures_declaration ffuns.ident env in
+  let env = E.enter_set_of_closures_declaration ffuns.set_of_closures_id env in
   (* we use the previous closure for evaluating the functions *)
   let internal_closure : A.value_set_of_closures =
     { function_decls = ffuns;
