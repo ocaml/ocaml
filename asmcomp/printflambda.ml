@@ -28,11 +28,12 @@ let rec lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let direct = match kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
-  | Fclosure({closure;closure_id;relative_to = None},_) ->
-      fprintf ppf "@[<2>(function@ %a@ %a)@]" Closure_id.print closure_id lam closure
-  | Fclosure({closure;closure_id;relative_to = Some rel},_) ->
-      fprintf ppf "@[<2>(function_relative@ %a - %a@ %a)@]"
-        Closure_id.print closure_id Closure_id.print rel lam closure
+  | Fclosure({set_of_closures;closure_id;relative_to = None},_) ->
+      fprintf ppf "@[<2>(closure@ %a@ %a)@]" Closure_id.print closure_id
+        lam set_of_closures
+  | Fclosure({set_of_closures;closure_id;relative_to = Some rel},_) ->
+      fprintf ppf "@[<2>(closure_relative@ %a - %a@ %a)@]"
+        Closure_id.print closure_id Closure_id.print rel lam set_of_closures
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Var_within_closure.print var Closure_id.print closure_id lam closure
@@ -55,7 +56,7 @@ let rec lam ppf = function
             spec_args
         end
       in
-      fprintf ppf "@[<2>(closure%a %a%a)@]" funs function_decls.funs lams
+      fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs lams
         free_vars spec specialised_args
   | Flet(_str, id, arg, body,_) ->
       let rec letbody ul = match ul with

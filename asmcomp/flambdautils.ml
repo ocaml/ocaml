@@ -140,7 +140,7 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fclosure (f1, _), Fclosure (f2, _) ->
-      same f1.closure f2.closure &&
+      same f1.set_of_closures f2.set_of_closures &&
       Closure_id.equal f1.closure_id f1.closure_id &&
       sameoption Closure_id.equal f1.relative_to f1.relative_to
   | Fclosure _, _ | _, Fclosure _ -> false
@@ -261,7 +261,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       Variable.Map.empty in
   let current_unit = Symbol.Compilation_unit.get_current_exn () in
   Fclosure
-    ({ closure =
+    ({ set_of_closures =
          Fset_of_closures
            ({ function_decls =
                 { set_of_closures_id = Set_of_closures_id.create current_unit;

@@ -192,10 +192,9 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
+(** Selection of one closure from a set of closures. *)
 and 'a closure = {
-  (* CR mshinwell: The [closure] field is confusing.  Can we get this to
-     have a variant type?  Not sure *)
-  closure : 'a t;
+  set_of_closures : 'a t;
   closure_id : Closure_id.t;
   (** For use when applying [Fclosure] to an existing (that is to say,
       [Fclosure]) closure value rather than a set of closures. *)

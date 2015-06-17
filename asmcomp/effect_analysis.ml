@@ -41,7 +41,7 @@ let rec no_effects (flam : _ Flambda.t) =
     no_effects_prim p && List.for_all no_effects args
   | Fset_of_closures ({ free_vars }, _) ->
     Variable.Map.for_all (fun _id def -> no_effects def) free_vars
-  | Fclosure ({ closure = lam }, _) -> no_effects lam
+  | Fclosure ({ set_of_closures }, _) -> no_effects set_of_closures
   | Fvar_within_closure ({ closure }, _) -> no_effects closure
   | Fifthenelse (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot

@@ -35,7 +35,7 @@ let lift_lets tree =
 let lift_set_of_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fclosure({ closure = Fset_of_closures(set, dset) } as closure, d) ->
+    | Fclosure({ set_of_closures = Fset_of_closures(set, dset) } as closure, d) ->
         let decl = Flambdautils.find_declaration closure.closure_id set.function_decls in
         if not decl.stub then
           expr
@@ -50,7 +50,8 @@ let lift_set_of_closures tree =
           Flet(Immutable, set_of_closures_var,
                Fset_of_closures(set, dset),
                Fclosure({ closure with
-                          closure = Fvar (set_of_closures_var, Expr_id.create ()) },
+                          set_of_closures =
+                            Fvar (set_of_closures_var, Expr_id.create ()) },
                         d),
                Expr_id.create ())
     | e -> e

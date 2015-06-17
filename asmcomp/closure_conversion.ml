@@ -333,7 +333,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     in
     let decls = Function_decls.create [decl] in
     Fclosure ({
-        closure = close_functions t env decls;
+        set_of_closures = close_functions t env decls;
         closure_id = Closure_id.wrap closure_bound_var;
         relative_to = None },
       nid ~name:"function" ())
@@ -380,7 +380,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fclosure ({
-                  closure = Fvar (set_of_closures_var, nid ());
+                  set_of_closures = Fvar (set_of_closures_var, nid ());
                   closure_id = Closure_id.wrap closure_bound_var;
                   relative_to = None;
                 },
@@ -577,7 +577,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
         ~body
     in
     Fclosure ({
-        closure = close_functions t env [decl];
+        set_of_closures = close_functions t env [decl];
         closure_id = Closure_id.wrap closure_bound_var;
         relative_to = None;
       },

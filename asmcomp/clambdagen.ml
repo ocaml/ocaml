@@ -301,7 +301,7 @@ module Conv(P:Param2) = struct
     | Fset_of_closures({ function_decls = funct; free_vars = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
-    | Fclosure({ closure = lam; closure_id = id; relative_to = rel }, _) ->
+    | Fclosure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
         let ulam = conv env lam in
         let offset = get_fun_offset id in
         let relative_offset = match rel with
