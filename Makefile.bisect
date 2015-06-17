@@ -22,6 +22,20 @@ TEST_PARAM= \
   OCAMLMKLIB='ocamlmklib -ocamlc $$(OTOPDIR)/ocamlc.opt -ocamlopt $$(OTOPDIR)/ocamlopt.opt' \
   OCAMLRUN='ocamlrun'
 
+LIB=$(ocamlfind printconf destdir)/ocaml-bisect
+
+GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+GIT_COMMIT=$(shell git rev-parse --short HEAD)
+
+TITLE :=OCaml compiler coverage while running the testsuite
+ifneq (${GIT_COMMIT},)
+ifeq (${GIT_BRANCH},)
+TITLE+= (${GIT_COMMIT})
+else
+TITLE+= (${GIT_BRANCH} - ${GIT_COMMIT})
+endif
+endif
+
 prepare:
 	${MAKE} ${BUILD_PARAM} -C tools cvt_emit
 	${MAKE} ${BUILD_PARAM} ocamlc.opt
@@ -35,4 +49,17 @@ run:
 	make ${TEST_PARAM} -C testsuite all || true
 
 report:
-	bisect-report -html testsuite/coverage testsuite/tests/*/coverage*.out
+	bisect-report -title "${TITLE}" -html testsuite/coverage testsuite/tests/*/coverage*.out
+
+install-report:
+	mkdir -p "${LIB}"
+	cp -r testsuite/coverage "${LIB}/coverage"
+	cp testsuite/_log "${LIB}/testsuite.log"
+
+uninstall-report:
+	rm -rf testsuite/coverage "${LIB}/coverage"
+	rm -rf testsuite/_log "${LIB}/testsuite.log"
+
+upload:
+	rsync -avz --delete testsuite/coverage www-data@http.ocp:/var/www/flambda.ocamlpro.com/
+	rsync -avz --delete testsuite/_log www-data@http.ocp:/var/www/flambda.ocamlpro.com/testsuite.log
