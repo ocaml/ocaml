@@ -36,11 +36,9 @@ let rec no_effects (flam : _ Flambda.t) =
   | Fvar _ | Fsymbol _ | Fconst _ -> true
   | Flet (_, _, def, body, _) -> no_effects def && no_effects body
   | Fletrec (defs, body, _) ->
-    no_effects body
-      && List.for_all (fun (_, def) -> no_effects def) defs
+    no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
   | Fprim (p, args, _, _) ->
-    no_effects_prim p
-      && List.for_all no_effects args
+    no_effects_prim p && List.for_all no_effects args
   | Fset_of_closures ({ cl_free_var }, _) ->
     Variable.Map.for_all (fun _id def -> no_effects def) cl_free_var
   | Fclosure ({ fu_closure = lam }, _) -> no_effects lam
