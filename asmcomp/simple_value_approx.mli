@@ -69,7 +69,33 @@ type 'a boxed_int = 'a Flambdaexport.boxed_int =
    can't prove it and needs to keep it.
 *)
 
-type descr =
+(** A value of type [t] corresponds to an approximation of a value.
+    Such approximations are deduced at particular points in an expression
+    tree, but may subsequently be propagated to other locations.
+
+    At the point at which an approximation is built for some value [v], we can
+    construct a set of variables (call the set [S]) that are known to alias the
+    same value [v].  Each member of [S] will have the same or a more precise
+    [descr] field in its approximation relative to the approximation for [v].
+    (An increase in precision may currently be introduced for pattern
+    matches.)  If [S] is non-empty then it is guaranteed that there is a
+    unique member of [S] that was declared in a scope further out ("earlier")
+    than all other members of [S].  If such a member exists then it is
+    recorded in the [var] field.  Otherwise [var] is [None].
+
+    Analogous to the construction of the set [S], we can construct a set [T]
+    consisting of all symbols that are known to alias the value whose
+    approximation is being constructed.  If [T] is non-empty then the
+    [symbol] field is set to some member of [T]; it does not matter which
+    one.  (There is no notion of scope for symbols.)
+*)
+type t = {
+  descr : descr;
+  var : Variable.t option;
+  symbol : Symbol.t option;
+}
+
+and descr = private
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
@@ -99,32 +125,6 @@ and value_set_of_closures = {
   alpha_renaming :
     Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
 }
-
-and t = {
-  descr : descr;
-  var : Variable.t option;
-  symbol : Symbol.t option;
-}
-(** A value of type [t] corresponds to an approximation of a value.
-    Such approximations are deduced at particular points in an expression
-    tree, but may subsequently be propagated to other locations.
-
-    At the point at which an approximation is built for some value [v], we can
-    construct a set of variables (call the set [S]) that are known to alias the
-    same value [v].  Each member of [S] will have the same or a more precise
-    [descr] field in its approximation relative to the approximation for [v].
-    (An increase in precision may currently be introduced for pattern
-    matches.)  If [S] is non-empty then it is guaranteed that there is a
-    unique member of [S] that was declared in a scope further out ("earlier")
-    than all other members of [S].  If such a member exists then it is
-    recorded in the [var] field.  Otherwise [var] is [None].
-
-    Analogous to the construction of the set [S], we can construct a set [T]
-    consisting of all symbols that are known to alias the value whose
-    approximation is being constructed.  If [T] is non-empty then the
-    [symbol] field is set to some member of [T]; it does not matter which
-    one.  (There is no notion of scope for symbols.)
-*)
 
 (** Smart constructors *)
 
@@ -188,14 +188,3 @@ module Import : sig
 end
 
 val really_import_approx : t -> t
-
-(* CR mshinwell for mshinwell: think about this function some more---can it
-   be made more generic?  If not maybe move back into Flambdainline *)
-val which_function_parameters_can_we_specialize
-   : params:Variable.t list
-  -> args:'a Flambda.t list
-  -> approximations_of_args:t list
-  -> unchanging_params:Variable.Set.t
-  -> Variable.t Variable.Map.t
-    * (Variable.t list)
-    * ((Variable.t * 'a Flambda.t) list)
