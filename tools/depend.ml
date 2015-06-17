@@ -154,7 +154,7 @@ let rec add_expr bv exp =
   match exp.pexp_desc with
     Pexp_ident l -> add bv l
   | Pexp_constant _ -> ()
-  | Pexp_let(rf, pel, e) ->
+  | Pexp_let(rf, _lf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
   | Pexp_fun (_, opte, p, e) ->
       add_opt add_expr bv opte; add_expr (add_pattern bv p) e
