@@ -230,7 +230,7 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
   in
   let subst_closure_id (closure : A.value_set_of_closures) closure_id =
     let closure_id = AR.subst_closure_id closure.alpha_renaming closure_id in
-    (try ignore (find_declaration closure_id closure.function_decls)
+    (try ignore (Flambdautils.find_declaration closure_id closure.function_decls)
      with Not_found ->
        Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
                            Closure_id.print closure_id
@@ -856,14 +856,14 @@ and transform_application_expression env r (funct, fapprox)
   | Value_closure { closure_id; set_of_closures } ->
       let clos = set_of_closures.function_decls in
       let func =
-        try find_declaration closure_id clos with
+        try Flambdautils.find_declaration closure_id clos with
         | Not_found ->
             Format.printf "approximation references non-existent closure %a@."
                 Closure_id.print closure_id;
             assert false
       in
       let nargs = List.length args in
-      let arity = function_arity func in
+      let arity = Flambdautils.function_arity func in
       if nargs = arity then
         direct_apply env r clos funct closure_id func set_of_closures
           (args, approxs) dbg eid
@@ -890,7 +890,7 @@ and direct_apply env r clos funct closure_id func closure
     ~inline_by_copying_function_body ~inline_by_copying_function_declaration
     ~loop
 and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
-  let arity = function_arity func in
+  let arity = Flambdautils.function_arity func in
   let remaining_args = arity - (List.length args) in
   assert(remaining_args > 0);
   let param_sb = List.map (fun id -> Flambdasubst.freshen_var id) func.params in
@@ -909,7 +909,9 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
       ap_dbg;
     }, Expr_id.create ())
   in
-  let closures = make_closure_declaration new_fun_id expr remaining_args in
+  let closures =
+    Flambdautils.make_closure_declaration new_fun_id expr remaining_args
+  in
   let with_args = List.fold_right (fun (id', arg) expr ->
       Flambda.Flet(Not_assigned, id', arg, expr, Expr_id.create ()))
     applied_args closures
@@ -980,8 +982,9 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
-    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init:bindings_for_params_around_body ~f:(fun ~acc:body ~var ~expr ->
+    Flambdautils.fold_over_exprs_for_variables_bound_by_closure ~fun_id
+      ~clos_id ~clos ~init:bindings_for_params_around_body
+      ~f:(fun ~acc:body ~var ~expr ->
         Flambda.Flet (Not_assigned, var, expr, body, Expr_id.create ()))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
@@ -1018,8 +1021,8 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_declaration" in
   let fv =
-    fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init:Variable.Map.empty
+    Flambdautils.fold_over_exprs_for_variables_bound_by_closure ~fun_id
+      ~clos_id ~clos ~init:Variable.Map.empty
       ~f:(fun ~acc ~var ~expr -> Variable.Map.add var expr acc)
   in
   let spec_args, args, args_decl =
