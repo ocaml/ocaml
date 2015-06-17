@@ -165,7 +165,7 @@ let populate_closure_approximations
    This is not usualy the case, except when the closure declaration is a
    symbol.
 
-   What ensures that This information is available at [Fvar_within_closure]
+   What ensures that this information is available at [Fvar_within_closure]
    point is that those constructions can only be introduced by inlining,
    which requires those same informations. For this to still be valid,
    other transformation must avoid transforming the information flow in
@@ -203,8 +203,8 @@ let transform_var_within_closure_expression env r expr vc_closure
     check_var_and_constant_result env r expr approx
   | Value_unresolved sym ->
     (* This value comes from a symbol for which we couldn't find any
-       information. This tells us that this function couldn't have been
-       renamed. So we can keep it unchanged *)
+       information.  This tells us that this function couldn't have been
+       renamed.  So we can keep it unchanged. *)
     Fvar_within_closure ({ fenv_field with vc_closure }, annot),
     ret r (A.value_unresolved sym)
   | Value_unknown ->
@@ -271,8 +271,8 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
             annot)
     in
     let closure =
-      (* If the function is recursive, and we are refering to another closure
-         from the same set: we can find it directly through its variable *)
+      (* If the function is recursive and we are referring to another closure
+         from the same set, we can find it directly through its variable. *)
       if E.present env (Closure_id.unwrap closure_id)
       then Flambda.Fvar (Closure_id.unwrap closure_id, annot)
       else closure
@@ -285,10 +285,10 @@ let transform_closure_expression env r fu_closure closure_id rel annot =
   | Value_closure { A.set_of_closures; set_of_closures_var } ->
     make set_of_closures set_of_closures_var
   | Value_unresolved sym ->
-    (* If the set_of_closure comes from a symbol that can't be recovered,
+    (* If the set of closures comes from a symbol that can't be resolved,
        we know that it comes from another compilation unit, hence it cannot
-       have been transformed during this rewriting. So it is safe to keep
-       this expression unchanged. *)
+       have been transformed during this rewriting.  So it is safe to keep
+       the expression unchanged. *)
     Fclosure ({fu_closure; fu_fun = closure_id; fu_relative_to = rel}, annot),
       ret r (A.value_unresolved sym)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
@@ -303,8 +303,7 @@ let rec loop env r tree =
   let f, r = loop_direct env r tree in
   f, ret r (A.really_import_approx (R.approx r))
 
-and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
-      : 'a Flambda.t * R.t =
+and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   match tree with
   | Fsymbol (sym, _annot) ->
     check_constant_result r tree (A.Import.import_symbol sym)
@@ -449,15 +448,17 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
     let expr, approx, simplify_benefit =
       simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
     in
-    expr, ret (R.map_benefit r (Inlining_cost.Benefit. (+) simplify_benefit))
+    expr, ret (R.map_benefit r (Inlining_cost.Benefit.(+) simplify_benefit))
       approx
   | Fprim ( (Psequand | Psequor), _, _, _) ->
     Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
   | Fprim (p, args, dbg, annot) as expr ->
     let (args', approxs, r) = loop_list env r args in
     let expr = if args' == args then expr else Fprim (p, args', dbg, annot) in
-    let expr, approx, benefit = Flambdasimplify.primitive p (args', approxs) expr dbg in
-    let r = R.map_benefit r (Inlining_cost.Benefit. (+) benefit) in
+    let expr, approx, benefit =
+      Flambdasimplify.primitive p (args', approxs) expr dbg
+    in
+    let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
     expr, ret r approx
   | Fstaticraise (i, args, annot) ->
     let i = Flambdasubst.sb_exn (E.sb env) i in
@@ -476,10 +477,10 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
       match body with
       | Fstaticraise (j, args, _) when
           Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j) ->
-          (* This is usualy true, since whe checked that the static
-             exception was used. The only case where it can be false
-             Is when an argument can raise. This could be avoided if
-             all arguments where guaranted to be variables. *)
+          (* This is usually true, since whe checked that the static
+             exception was used.  The only case where it can be false
+             is when an argument can raise.  This could be avoided if
+             all arguments where guaranteed to be variables. *)
           let handler =
             List.fold_left2 (fun body var arg ->
                 Flambda.Flet (Not_assigned, var, arg, body, Expr_id.create ()))
@@ -489,8 +490,10 @@ and loop_direct (env : E.t) (r : R.t) (tree : 'a Flambda.t)
           loop env r handler
       | _ ->
           let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
-          let env = List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
-              (E.set_sb sb env) vars in
+          let env =
+            List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
+              (E.set_sb sb env) vars
+          in
           let env = E.inside_branch env in
           let handler, r = loop env r handler in
           let r = List.fold_left R.exit_scope r vars in
