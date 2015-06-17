@@ -61,8 +61,8 @@ let rec lam ppf = function
       let rec letbody ul = match ul with
         | Flet(str, id, arg, body,_) ->
             let str = match str with
-              | Assigned -> "*"
-              | Not_assigned -> ""
+              | Mutable -> "*"
+              | Immutable -> ""
             in
             fprintf ppf "@ @[<2>%a%s@ %a@]" Variable.print id str lam arg;
             letbody body

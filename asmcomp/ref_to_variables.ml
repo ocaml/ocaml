@@ -42,7 +42,7 @@ let directly_used_variables tree =
 let variables_containing_ref lam =
   let map = ref Variable.Map.empty in
   let aux = function
-    | Flet(Not_assigned, v,
+    | Flet(Immutable, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
         map := Variable.Map.add v (List.length l) !map
     | _ -> ()
@@ -71,7 +71,7 @@ let eliminate_ref lam =
   in
 
   let aux = function
-    | Flet(Not_assigned, v,
+    | Flet(Immutable, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
       when convertible_variable v ->
         let _, expr =
@@ -80,7 +80,7 @@ let eliminate_ref lam =
               | None -> assert false
               | Some (var, _) ->
                   field+1,
-                  Flet(Assigned, var, init, body, Expr_id.create ()))
+                  Flet(Mutable, var, init, body, Expr_id.create ()))
             (0,body) inits in
         expr
     | Fprim(Pfield field, [Fvar (v,d)], _, _)

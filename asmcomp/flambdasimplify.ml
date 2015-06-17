@@ -47,7 +47,7 @@ let lift_set_of_closures tree =
               ~current_compilation_unit:(Compilenv.current_unit ())
               "set_of_closures"
           in
-          Flet(Not_assigned, set_of_closures_var,
+          Flet(Immutable, set_of_closures_var,
                Fset_of_closures(set, dset),
                Fclosure({ closure with
                           fu_closure = Fvar (set_of_closures_var, Expr_id.create ()) },
@@ -448,7 +448,7 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
   let unused_params = List.filter (fun v ->
       Variable.Set.mem v fun_decl.free_variables) unused_params in
   let body = List.fold_left (fun body var ->
-      Flambda.Flet(Not_assigned,
+      Flambda.Flet(Immutable,
            var,
            Fconst(Fconst_pointer 0, nid ()),
            body,

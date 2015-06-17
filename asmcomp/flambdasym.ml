@@ -315,24 +315,24 @@ module Conv(P:Param1) = struct
     | Flet(str, id, lam, body, _) ->
         let lam, approx = conv_approx env lam in
         let env =
-          if is_constant id || str = Not_assigned
+          if is_constant id || str = Immutable
           then add_approx id approx env
           else add_approx id Value_unknown env
         in
         begin match is_constant id, constant_symbol lam, str with
-        | _, _, Assigned
+        | _, _, Mutable
         | false, (Not_const | No_lbl | Const_closure), _ ->
             let ubody, body_approx = conv_approx env body in
             Flet(str, id, lam, ubody, ()), body_approx
-        | true, No_lbl, Not_assigned ->
+        | true, No_lbl, Immutable ->
             (* no label: the value is an integer: substitute it *)
             conv_approx (add_sb id lam env) body
-        | _, Lbl lbl, Not_assigned ->
+        | _, Lbl lbl, Immutable ->
             (* label: the value is a block: reference it *)
             conv_approx (add_cm id lbl env) body
-        | true, Const_closure, Not_assigned ->
+        | true, Const_closure, Immutable ->
             conv_approx env body
-        | true, Not_const, Not_assigned ->
+        | true, Not_const, Immutable ->
             Format.eprintf "%a@.%a" Variable.print id
               Printflambda.flambda lam;
             assert false

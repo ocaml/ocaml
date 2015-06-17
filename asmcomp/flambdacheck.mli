@@ -37,7 +37,7 @@ val every_bound_variable_is_from_current_compilation_unit :
   current_compilation_unit:Compilation_unit.t -> 'a flambda ->
   Variable.t counter_example
 
-val no_assign_on_variable_of_kind_Not_assigned :
+val no_assign_on_variable_of_kind_Immutable :
   'a flambda -> Variable.t counter_example
 
 val no_var_within_closure_is_bound_multiple_times :

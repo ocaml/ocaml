@@ -177,7 +177,7 @@ let every_bound_variable_is_from_current_compilation_unit
   with Counter_example_id var ->
     Counter_example var
 
-let no_assign_on_variable_of_kind_Not_assigned flam =
+let no_assign_on_variable_of_kind_Immutable flam =
   let test var env =
     if not (Variable.Set.mem var env)
     then raise (Counter_example_id var) in
@@ -186,7 +186,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
     | _ -> ()
   in
   let rec loop env = function
-    | Flet(Assigned,id,def,body,_) ->
+    | Flet(Mutable,id,def,body,_) ->
         loop env def;
         loop (Variable.Set.add id env) body
     | Fset_of_closures ({cl_fun;cl_free_var},_) ->
@@ -194,7 +194,7 @@ let no_assign_on_variable_of_kind_Not_assigned flam =
         let env = Variable.Set.empty in
         Variable.Map.iter (fun _ { body } -> loop env body) cl_fun.funs
 
-    | Flet (Not_assigned, _, _, _, _)
+    | Flet (Immutable, _, _, _, _)
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fclosure _
     | Fvar_within_closure _ | Fletrec _
@@ -413,8 +413,8 @@ let check ~current_compilation_unit ?(flambdasym=false) ?(cmxfile=false) flam =
     "bound variable %a is attributed to another compilation unit"
     Variable.print;
 
-  test (no_assign_on_variable_of_kind_Not_assigned flam)
-    "variable %a of kind Not_assigned is assigned" Variable.print;
+  test (no_assign_on_variable_of_kind_Immutable flam)
+    "variable %a of kind Immutable is assigned" Variable.print;
 
   test (no_var_within_closure_is_bound_multiple_times flam)
     "variable within closure %a bound multiple times"

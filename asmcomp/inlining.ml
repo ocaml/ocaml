@@ -348,10 +348,10 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let def_used_var = R.used_variables r in
     let body_env =
       match str with
-      | Assigned ->
+      | Mutable ->
        (* If the variable is mutable, we don't propagate anything about it. *)
        E.clear_approx id env
-      | Not_assigned -> E.add_approx id (R.approx r) env
+      | Immutable -> E.add_approx id (R.approx r) env
     in
     (* To distinguish variables used by the body and the declaration,
        [body] is rewritten without the set of used variables from
@@ -490,7 +490,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
            all arguments where guaranteed to be variables. *)
         let handler =
           List.fold_left2 (fun body var arg ->
-              Flambda.Flet (Not_assigned, var, arg, body, Expr_id.create ()))
+              Flambda.Flet (Immutable, var, arg, body, Expr_id.create ()))
             handler vars args
         in
         let r = R.exit_scope_catch r i in
@@ -928,10 +928,10 @@ and partial_apply funct fun_id func args ap_dbg : _ Flambda.t =
     Flambdautils.make_closure_declaration new_fun_id expr remaining_args
   in
   let with_args = List.fold_right (fun (id', arg) expr ->
-      Flambda.Flet (Not_assigned, id', arg, expr, Expr_id.create ()))
+      Flambda.Flet (Immutable, id', arg, expr, Expr_id.create ()))
     applied_args closures
   in
-  Flet (Not_assigned, funct_id, funct, with_args, Expr_id.create ())
+  Flet (Immutable, funct_id, funct, with_args, Expr_id.create ())
 
 (* Inline a function by substituting its body (which may be subject to further
    transformation) at a call site.  The function's declaration is not copied.
@@ -993,7 +993,7 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     List.fold_left2 (fun body id arg ->
-        Flambda.Flet (Not_assigned, id, arg, body,
+        Flambda.Flet (Immutable, id, arg, body,
           Expr_id.create ~name:"inline arg" ()))
       body subst_params args
   in
@@ -1002,13 +1002,13 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
     Flambdautils.fold_over_exprs_for_variables_bound_by_closure ~fun_id
       ~clos_id ~clos ~init:bindings_for_params_around_body
       ~f:(fun ~acc:body ~var ~expr ->
-        Flambda.Flet (Not_assigned, var, expr, body, Expr_id.create ()))
+        Flambda.Flet (Immutable, var, expr, body, Expr_id.create ()))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
      introduced by the whole set of closures. *)
   let expr =
     Variable.Map.fold (fun id _ expr ->
-        Flambda.Flet (Not_assigned, id,
+        Flambda.Flet (Immutable, id,
           Fclosure (
             { fu_closure = Fvar (clos_id, Expr_id.create ());
               fu_fun = Closure_id.wrap id;
@@ -1022,7 +1022,7 @@ and inline_by_copying_function_body ~env ~r ~clos ~lfunc ~fun_id ~func ~args =
       ~where:Inline_by_copying_function_body
   in
   loop (E.activate_substitution env) r
-    (Flet (Not_assigned, clos_id, lfunc, expr, Expr_id.create ()))
+    (Flet (Immutable, clos_id, lfunc, expr, Expr_id.create ()))
 
 (* Inlining of recursive function (s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
@@ -1076,9 +1076,9 @@ and inline_by_copying_function_declaration ~env ~r ~funct ~clos ~fun_id ~func
   (* Now we bind the variables that will hold the arguments from the original
      application, together with the set-of-closures identifier. *)
   let expr : _ Flambda.t =
-    Flet (Not_assigned, clos_id, funct,
+    Flet (Immutable, clos_id, funct,
       List.fold_left (fun expr (id, arg) ->
-          Flambda.Flet (Not_assigned, id, arg, expr, Expr_id.create ()))
+          Flambda.Flet (Immutable, id, arg, expr, Expr_id.create ()))
         duplicated_application args_decl,
       Expr_id.create ())
   in

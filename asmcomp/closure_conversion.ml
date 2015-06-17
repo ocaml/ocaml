@@ -260,7 +260,7 @@ let tupled_function_call_stub t original_params tuplified_version
           Fprim (Pfield pos, [Fvar (tuple_param, nid ())],
             Debuginfo.none, nid ())
         in
-        pos + 1, Flambda.Flet (Not_assigned, param, lam, body, nid ()))
+        pos + 1, Flambda.Flet (Immutable, param, lam, body, nid ()))
       (0, call) params
   in
   { stub = true;  (* force the function to be inlined *)
@@ -309,8 +309,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Llet (let_kind, id, lam, body) ->
     let let_kind : Flambda.let_kind =
       match let_kind with
-      | Variable -> Assigned
-      | Strict | Alias | StrictOpt -> Not_assigned
+      | Variable -> Mutable
+      | Strict | Alias | StrictOpt -> Immutable
     in
     let var = create_var t id in
     let lam = close_let_bound_expression t var env lam in
@@ -378,7 +378,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
             (* Inside the body of the [let], each function is referred to by
                an [Fclosure] expression, which projects from the set of
                closures. *)
-            ((Flet (Not_assigned, let_bound_var,
+            ((Flet (Immutable, let_bound_var,
               Fclosure ({
                   fu_closure = Fvar (set_of_closures_var, nid ());
                   fu_fun = Closure_id.wrap closure_bound_var;
@@ -388,7 +388,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
               body, nid ())) : _ Flambda.t))
           (close t env body) function_declarations
       in
-      Flet (Not_assigned, set_of_closures_var, set_of_closures,
+      Flet (Immutable, set_of_closures_var, set_of_closures,
         body, nid ~name:"closure_letrec" ())
     | None ->
       (* If the condition above is not satisfied, we build an [Fletrec]
@@ -606,7 +606,7 @@ and lift_block_construction_to_variables t ~env ~primitive ~args =
     Fprim (primitive, block_fields, Debuginfo.none, nid ~name:"block" ())
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Flet (Not_assigned, v, expr, body, nid ()))
+      Flambda.Flet (Immutable, v, expr, body, nid ()))
     block lets
 
 (* Enforce right-to-left evaluation of function arguments by lifting the
@@ -623,7 +623,7 @@ and lift_apply_construction_to_variables t ~env ~funct ~args =
       nid ~name:"apply" ())
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Flet (Not_assigned, v, expr, body, nid ()))
+      Flambda.Flet (Immutable, v, expr, body, nid ()))
     apply lets
 
 and lifting_helper t ~env ~args ~name =
