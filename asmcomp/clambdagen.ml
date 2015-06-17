@@ -27,13 +27,13 @@ type ('a,'b) declaration_position =
 let list_closures expr constants =
   let closures = ref Closure_id.Map.empty in
   let aux expr = match expr with
-    | Fset_of_closures({ cl_fun = functs; cl_free_var = fv }, data) ->
+    | Fset_of_closures ({ cl_fun = functs; }, _) ->
         let add off_id _ map =
           Closure_id.Map.add
             (Closure_id.wrap off_id)
             functs map in
         closures := Variable.Map.fold add functs.funs !closures;
-    | e -> ()
+    | _ -> ()
   in
   Flambdaiter.iter aux expr;
   SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
@@ -51,7 +51,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
           | None -> !set_fun
           | Some rel -> Closure_id.Set.add rel !set_fun in
         set_fun := Closure_id.Set.add id set;
-    | e -> ()
+    | _ -> ()
   in
   Flambdaiter.iter aux expr;
   SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
@@ -177,7 +177,6 @@ module Conv(P:Param2) = struct
      inside a closure *)
   let fun_offset_table = P.fun_offset_table
   let fv_offset_table = P.fv_offset_table
-  let closures = P.closures
 
   (* offsets of functions and free variables in closures comming from
      a linked module *)
@@ -191,9 +190,6 @@ module Conv(P:Param2) = struct
     (Compilenv.approx_env ()).Flambdaexport.ex_functions
   let ex_constant_closures =
     (Compilenv.approx_env ()).Flambdaexport.ex_constant_closures
-
-  let is_current_unit unit =
-    Compilation_unit.equal (Compilenv.current_unit ()) unit
 
   let get_fun_offset off =
     try
@@ -291,7 +287,7 @@ module Conv(P:Param2) = struct
     | Fconst (cst,_) ->
         Uconst (conv_const expected_symbol cst)
 
-    | Flet(str, var, lam, body, _) ->
+    | Flet (_, var, lam, body, _) ->
         let id, env_body = add_unique_ident var env in
         Ulet(id, conv env lam, conv env_body body)
 
@@ -370,13 +366,13 @@ module Conv(P:Param2) = struct
             conv env expr
         end
 
-    | Fstringswitch(arg, sw, def, d) ->
+    | Fstringswitch(arg, sw, def, _) ->
         let arg = conv env arg in
         let sw = List.map (fun (s, e) -> s, conv env e) sw in
         let def = Misc.may_map (conv env) def in
         Ustringswitch(arg, sw, def)
 
-    | Fprim(Pgetglobal id, l, dbg, _) ->
+    | Fprim(Pgetglobal _, _, _, _) ->
         assert false
 
     | Fprim(Pgetglobalfield(id,i), l, dbg, _) ->
@@ -646,7 +642,7 @@ module Conv(P:Param2) = struct
         str ~shared:true (Uconst_int64 x)
     | Fconst_base (Const_nativeint x) ->
         str ~shared:true (Uconst_nativeint x)
-    | Fconst_base (Const_string (s,o)) ->
+    | Fconst_base (Const_string (s, _)) ->
         str ~shared:false (Uconst_string s)
     | Fconst_float_array c ->
         (* constant float arrays are really immutable *)
@@ -769,8 +765,7 @@ let convert (type a)
       ex_offset_fv = add_ext_offset_fv fv_offset_table }
   in
   Compilenv.set_export_info export;
-  SymbolMap.iter
-    (fun sym cst ->
+  SymbolMap.iter (fun sym _cst ->
        let lbl = string_of_linkage_name sym.sym_label in
        Compilenv.add_exported_constant lbl)
     C.constants;

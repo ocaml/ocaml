@@ -67,30 +67,27 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
 
 let description_of_toplevel_node (expr : _ Flambda.t) =
   match expr with
-  | Fsymbol (sym,_) ->
-      Format.asprintf "%%%a" Symbol.print sym
-  | Fvar (id,data) ->
-      Format.asprintf "var %a" Variable.print id
-  | Fconst (cst,data) -> "const"
-  | Flet(str, id, lam, body,data) ->
-      Format.asprintf "let %a" Variable.print id
-  | Fletrec(defs, body,data) -> "letrec"
-  | Fset_of_closures(_,data) -> "set_of_closures"
-  | Fclosure(_,data) -> "closure"
-  | Fvar_within_closure(_,data) -> "var_within_closure"
-  | Fapply(_,data) -> "apply"
-  | Fswitch(arg, sw,data) -> "switch"
-  | Fstringswitch(arg, cases, default, data) -> "stringswitch"
-  | Fsend(kind, met, obj, args, _,data) -> "send"
-  | Fprim(_, args, _,data) -> "prim"
-  | Fstaticraise (i, args,data) -> "staticraise"
-  | Fstaticcatch (i, vars, body, handler,data) -> "catch"
-  | Ftrywith(body, id, handler,data) -> "trywith"
-  | Fifthenelse(arg, ifso, ifnot,data) -> "if"
-  | Fsequence(lam1, lam2,data) -> "seq"
-  | Fwhile(cond, body,data) -> "while"
-  | Ffor(id, lo, hi, dir, body,data) -> "for"
-  | Fassign(id, lam,data) -> "assign"
+  | Fsymbol (sym, _) -> Format.asprintf "%%%a" Symbol.print sym
+  | Fvar (id, _) -> Format.asprintf "var %a" Variable.print id
+  | Fconst _ -> "const"
+  | Flet (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Fletrec _ -> "letrec"
+  | Fset_of_closures _ -> "set_of_closures"
+  | Fclosure _ -> "closure"
+  | Fvar_within_closure _ -> "var_within_closure"
+  | Fapply _ -> "apply"
+  | Fswitch _ -> "switch"
+  | Fstringswitch _ -> "stringswitch"
+  | Fsend _ -> "send"
+  | Fprim _ -> "prim"
+  | Fstaticraise  _ -> "staticraise"
+  | Fstaticcatch  _ -> "catch"
+  | Ftrywith _ -> "trywith"
+  | Fifthenelse _ -> "if"
+  | Fsequence _ -> "seq"
+  | Fwhile _ -> "while"
+  | Ffor _ -> "for"
+  | Fassign _ -> "assign"
   | Funreachable _ -> "unreachable"
 
 let recursive_functions ({ funs } : _ Flambda.function_declarations) =

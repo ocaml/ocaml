@@ -37,7 +37,7 @@ let empty = Inactive
 
 let new_substitution = function
   | Inactive -> Inactive
-  | Active t -> Active empty_tbl
+  | Active _ -> Active empty_tbl
 
 let activate = function
   | Inactive -> Active empty_tbl
@@ -200,7 +200,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
     match subst with
     | Inactive -> ffuns, subst, t
     | Active subst ->
-      let subst_ffunction fun_id ffun subst =
+      let subst_ffunction _fun_id ffun subst =
         let params, subst = active_new_subst_ids' subst ffun.params in
         let free_variables =
           Variable.Set.fold (fun id set ->
@@ -216,7 +216,7 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
         }, subst
       in
       let subst, t =
-        Variable.Map.fold (fun orig_id ffun (subst, t) ->
+        Variable.Map.fold (fun orig_id _ffun (subst, t) ->
             let _id, subst, t = new_subst_fun t orig_id subst in
             subst, t)
           ffuns.funs (subst,t) in

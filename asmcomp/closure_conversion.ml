@@ -134,18 +134,6 @@ module Function_decls : sig
   val create : Function_decl.t list -> t
   val to_list : t -> Function_decl.t list
 
-  (* CR mshinwell for pchambart: Should improve the name of this function.
-     How about "free_variables_in_body"?
-     pchambart: I wanted to avoid mixing 'ident' and 'var' names. This one
-       returns sets of idents. I'm not sure but maybe "free_idents_in_body"
-       isn't too strange.
-       Also "free_variables_in_body" would suggest that we look at a
-       single function. maybe a plural ?
-  *)
-  (* All identifiers free in the bodies of the given function declarations,
-     indexed by the identifiers corresponding to the functions themselves. *)
-  val used_idents_by_function : t -> IdentSet.t Variable.Map.t
-
   (* All identifiers free in the given function declarations after the binding
      of parameters and function identifiers has been performed. *)
   val all_free_idents : t -> IdentSet.t
@@ -208,6 +196,16 @@ end = struct
   (* All parameters of functions in [ts]. *)
   let all_params t = List.concat (List.map Function_decl.params t)
 
+  (* CR mshinwell for pchambart: Should improve the name of this function.
+     How about "free_variables_in_body"?
+     pchambart: I wanted to avoid mixing 'ident' and 'var' names. This one
+       returns sets of idents. I'm not sure but maybe "free_idents_in_body"
+       isn't too strange.
+       Also "free_variables_in_body" would suggest that we look at a
+       single function. maybe a plural ?
+  *)
+  (* All identifiers free in the bodies of the given function declarations,
+     indexed by the identifiers corresponding to the functions themselves. *)
   let used_idents_by_function t =
     List.fold_right (fun decl map ->
         Variable.Map.add (Function_decl.closure_bound_var decl)
@@ -241,7 +239,7 @@ module Function_decl = Function_decls.Function_decl
 (* Generate a wrapper ("stub") function that accepts a tuple argument and
    calls another function with (curried) arguments extracted in the obvious
    manner from the tuple. *)
-let tupled_function_call_stub t id original_params tuplified_version
+let tupled_function_call_stub t original_params tuplified_version
       : _ Flambda.function_declaration =
   let tuple_param =
     rename_var t ~append:"tupled_stub_param" tuplified_version
@@ -537,7 +535,7 @@ and close_functions t external_env function_declarations
     | Tupled ->
       let tuplified_version = rename_var t closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub t closure_bound_var params tuplified_version
+        tupled_function_call_stub t params tuplified_version
       in
       Variable.Map.add tuplified_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
@@ -631,12 +629,12 @@ and lift_apply_construction_to_variables t ~env ~funct ~args =
 and lifting_helper t ~env ~args ~name =
   List.fold_right (fun lam (args, lets) ->
       match close t env lam with
-      | Fvar (v, _) as e ->
+      | Fvar (_v, _) as e ->
         (* Assumes that [v] is an immutable variable, otherwise this may
            change the evaluation order. *)
-        (* CR mshinwell for pchambart: Please justify why [v] is always
+        (* XCR mshinwell for pchambart: Please justify why [v] is always
            immutable.
-           CR pchambart for mshinwell: My bad, this is not the case. I was
+           pchambart: My bad, this is not the case. I was
            convinced i did remove the reference to variable optimisation from
            Simplif.simplif and this is not the case (this is better done by
            Ref_to_variables).

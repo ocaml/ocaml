@@ -9,7 +9,7 @@ module Closure_stack = struct
 
   let create () = []
 
-  let compare t1 t2 =
+  let _compare t1 t2 =
     match t1, t2 with
     | (id1, _)::_, (id2, _)::_ ->
       let (_ : string) = Format.flush_str_formatter () in
@@ -33,7 +33,7 @@ module Closure_stack = struct
     | hd::tl -> (fst hd), tl
 
   let save t ~out_channel =
-    let print_elt (closure_id, where) =
+    let print_elt (closure_id, _where) =
       let output =
         let current_unit = Compilenv.current_unit () in
         if Closure_id.in_compilation_unit current_unit closure_id then

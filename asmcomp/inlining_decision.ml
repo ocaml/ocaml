@@ -30,7 +30,6 @@ let inline_non_recursive
     ~env ~r ~clos ~ funct ~fun_id
     ~(func : 'a Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
-    ~inlining_threshold
     ~direct_apply
     ~no_transformation
     ~probably_a_functor
@@ -244,7 +243,6 @@ let inlining_decision_for_call_site ~env ~r ~clos ~funct ~fun_id
           ~inline_by_copying_function_body
           ~env ~r ~clos ~funct ~fun_id ~func
           ~record_decision
-          ~inlining_threshold
           ~direct_apply
           ~no_transformation
           ~probably_a_functor

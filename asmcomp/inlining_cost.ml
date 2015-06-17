@@ -18,19 +18,19 @@ open Abstract_identifiers
 let prim_size (prim : Lambda.primitive) args =
   match prim with
   | Pidentity -> 0
-  | Pgetglobal id -> 1
-  | Psetglobal id -> 1
-  | Pmakeblock (tag, mut) -> 5 + List.length args
-  | Pfield f -> 1
-  | Psetfield (f, isptr) -> if isptr then 4 else 1
-  | Pfloatfield f -> 1
-  | Psetfloatfield f -> 1
+  | Pgetglobal _ -> 1
+  | Psetglobal _ -> 1
+  | Pmakeblock _ -> 5 + List.length args
+  | Pfield _ -> 1
+  | Psetfield (_, isptr) -> if isptr then 4 else 1
+  | Pfloatfield _ -> 1
+  | Psetfloatfield _ -> 1
   | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.Primitive.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
-  | Pmakearray kind -> 5 + List.length args
+  | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
   | Parraysetu kind -> if kind = Pgenarray then 16 else 4
@@ -72,7 +72,7 @@ let lambda_smaller' lam ~than:threshold =
       incr size; lambda_size lam
     | Fvar_within_closure ({ vc_closure }, _) ->
       incr size; lambda_size vc_closure
-    | Flet (id, _, lam, body, _) ->
+    | Flet (_, _, lam, body, _) ->
       lambda_size lam; lambda_size body
     | Fletrec (bindings, body, _) ->
       List.iter (fun (_, lam) -> lambda_size lam) bindings;
@@ -96,7 +96,7 @@ let lambda_smaller' lam ~than:threshold =
     | Fstaticraise (_, args, _) -> lambda_list_size args
     | Fstaticcatch (_, _, body, handler, _) ->
       incr size; lambda_size body; lambda_size handler
-    | Ftrywith (body, id, handler, _) ->
+    | Ftrywith (body, _, handler, _) ->
       size := !size + 8; lambda_size body; lambda_size handler
     | Fifthenelse (cond, ifso, ifnot, _) ->
       size := !size + 2;
@@ -105,9 +105,9 @@ let lambda_smaller' lam ~than:threshold =
       lambda_size lam1; lambda_size lam2
     | Fwhile (cond, body, _) ->
       size := !size + 2; lambda_size cond; lambda_size body
-    | Ffor (id, low, high, dir, body, _) ->
+    | Ffor (_, low, high, _, body, _) ->
       size := !size + 4; lambda_size low; lambda_size high; lambda_size body
-    | Fassign (id, lam, _) ->
+    | Fassign (_, lam, _) ->
       incr size;  lambda_size lam
     | Fsend (_, met, obj, args, _, _) ->
       size := !size + 8;

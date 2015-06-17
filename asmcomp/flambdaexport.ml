@@ -96,7 +96,7 @@ let find_description eid ex = find_ex_value eid ex.ex_values
 
 let eidmap_disjoint_union m1 m2 =
   Compilation_unit.Map.merge
-    (fun id x y -> match x, y with
+    (fun _id x y -> match x, y with
        | None, None -> None
        | None, Some v
        | Some v, None -> Some v

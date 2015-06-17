@@ -14,8 +14,6 @@ open Symbol
 open Abstract_identifiers
 open Flambda
 
-let fatal_error_f fmt = Printf.kprintf Misc.fatal_error fmt
-
 type 'a counter_example =
   | No_counter_example
   | Counter_example of 'a
@@ -56,7 +54,7 @@ let every_used_identifier_is_bound flam =
     | Ffor (id, lo, hi, _, body, _) ->
         loop env lo; loop env hi;
         loop (Variable.Set.add id env) body
-    | Fstaticcatch (i, vars, body, handler,_) ->
+    | Fstaticcatch (_i, vars, body, handler,_) ->
         loop env body;
         let env = List.fold_right Variable.Set.add vars env in
         loop env handler
@@ -222,7 +220,7 @@ let declared_var_within_closure flam =
     then bound_multiple_times := Some var;
     bound := Var_within_closure.Set.add var !bound
   in
-  let f {cl_fun;cl_free_var} _ =
+  let f {cl_free_var} _ =
     Variable.Map.iter (fun id _ ->
         let var = Var_within_closure.wrap id in
         add_and_check var) cl_free_var
@@ -279,7 +277,7 @@ let used_closure_id flam =
         used := Closure_id.Set.add fu_fun !used;
         (match fu_relative_to with
          | None -> ()
-         | Some rel ->
+         | Some _rel ->
              used := Closure_id.Set.add fu_fun !used)
     | Fvar_within_closure ({vc_fun},_) ->
         used := Closure_id.Set.add vc_fun !used
@@ -361,7 +359,7 @@ let every_static_exception_is_caught flam =
 let every_static_exception_is_caught_at_a_single_position flam =
   let caught = ref Static_exception.Set.empty in
   let f = function
-    | Fstaticcatch (i, _, body, handler,_) ->
+    | Fstaticcatch (i, _, _body, _handler,_) ->
         if Static_exception.Set.mem i !caught
         then raise (Counter_example_se i);
         caught := Static_exception.Set.add i !caught

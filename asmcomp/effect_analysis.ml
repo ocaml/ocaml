@@ -52,7 +52,7 @@ let rec no_effects = function
       no_effects_prim p &&
       List.for_all no_effects args
   | Fset_of_closures ({ cl_free_var }, _) ->
-      Variable.Map.for_all (fun id def -> no_effects def) cl_free_var
+      Variable.Map.for_all (fun _id def -> no_effects def) cl_free_var
   | Fclosure({ fu_closure = lam }, _) ->
       no_effects lam
   | Fvar_within_closure({ vc_closure }, _) ->

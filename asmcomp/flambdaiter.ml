@@ -184,8 +184,8 @@ let map_general ~toplevel f tree =
   let rec aux tree =
     let exp = match tree with
       | Fsymbol _ -> tree
-      | Fvar (id,annot) -> tree
-      | Fconst (cst,annot) -> tree
+      | Fvar _ -> tree
+      | Fconst _ -> tree
       | Fapply ({ ap_function; ap_arg; ap_kind; ap_dbg }, annot) ->
           Fapply ({ ap_function = aux ap_function;
                     ap_arg = List.map aux ap_arg;

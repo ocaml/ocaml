@@ -57,7 +57,7 @@ let rec lam ppf = function
       in
       fprintf ppf "@[<2>(closure%a %a%a)@]" funs cl_fun.funs lams
         cl_free_var spec cl_specialised_arg
-  | Flet(str, id, arg, body,_) ->
+  | Flet(_str, id, arg, body,_) ->
       let rec letbody ul = match ul with
         | Flet(str, id, arg, body,_) ->
             let str = match str with

@@ -42,12 +42,11 @@ val new_subst_ids' :
   Variable.t list ->
   Variable.t list * t
 
-val subst_var : t -> Variable.t -> Variable.t
 (** [subst_var subst var] apply the substitution [subst] to [var].
     If no substitution is registered for [var] it is returned unchanged. *)
+val subst_var : t -> Variable.t -> Variable.t
 
 val freshen_var : Variable.t -> Variable.t
-val subst_var : t -> Variable.t -> Variable.t
 
 val rewrite_recursive_calls_with_symbols
    : t

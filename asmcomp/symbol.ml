@@ -55,8 +55,6 @@ module Compilation_unit = struct
   let get_persistent_ident cu = Ident.create_persistent cu.id
   let get_linkage_name cu = cu.linkage_name
 
-  let name x = x.id
-
   let current = ref None
   let set_current t = current := Some t
   let get_current () = !current

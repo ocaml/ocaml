@@ -281,7 +281,7 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
     | e ->
         Flambdaiter.apply_on_subexpressions loop e
   in
-  Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
+  Variable.Map.iter (fun _caller (decl : _ Flambda.function_declaration) ->
       loop decl.body)
     decls.funs;
   let arguments = Variable.Map.fold (fun _ decl acc ->

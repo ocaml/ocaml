@@ -881,13 +881,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) ${PPX_BISECT} -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT} -c $<
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) ${PPX_BISECT_OPT} -c $<
+	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT_OPT} -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \

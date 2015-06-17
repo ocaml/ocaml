@@ -50,11 +50,6 @@ let variables_containing_ref lam =
   Flambdaiter.iter aux lam;
   !map
 
-let rec interval x y =
-  if x > y
-  then []
-  else x :: (interval (x+1) y)
-
 let eliminate_ref lam =
   let directly_used_variables = directly_used_variables lam in
   let convertible_variables =
@@ -63,7 +58,7 @@ let eliminate_ref lam =
       (variables_containing_ref lam)
   in
   let convertible_variables =
-    Variable.Map.mapi (fun v size -> Array.init size (fun i -> rename_var v))
+    Variable.Map.mapi (fun v size -> Array.init size (fun _ -> rename_var v))
       convertible_variables in
   let convertible_variable v = Variable.Map.mem v convertible_variables in
 
@@ -77,7 +72,7 @@ let eliminate_ref lam =
 
   let aux = function
     | Flet(Not_assigned, v,
-           Fprim(Pmakeblock(0, Asttypes.Mutable), inits, dbg, d1), body, d2)
+           Fprim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
       when convertible_variable v ->
         let _, expr =
           List.fold_left (fun (field,body) init ->
@@ -103,7 +98,7 @@ let eliminate_ref lam =
               Fassign(var, Fprim(Poffsetint delta, [Fvar (var,d1)], dbg, d2),
                       Expr_id.create ())
             else Funreachable d1)
-    | Fprim(Psetfield(field, _), [Fvar (v,d1); e], dbg, d2)
+    | Fprim(Psetfield(field, _), [Fvar (v,d1); e], _, d2)
       when convertible_variable v ->
         (match get_variable v field with
          | None -> Funreachable d1

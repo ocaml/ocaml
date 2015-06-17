@@ -76,7 +76,7 @@ let remove_unused_closure_variables tree =
           | Some fu_relative_to ->
               used_fun := Closure_id.Set.add fu_relative_to !used_fun
           end
-      | e -> ()
+      | _ -> ()
     in
     Flambdaiter.iter aux tree;
     !used, !used_fun
@@ -175,7 +175,7 @@ end) = struct
         completely_eliminated ()
       else
         arg1, arg1_approx, B.remove_branch (B.remove_code arg2 B.zero)
-    | (Value_int n | Value_constptr n) -> (* when not the absorbing element *)
+    | (Value_int _ | Value_constptr _) -> (* when not the absorbing element *)
       if arg1_no_effects then
         arg2, arg2_approx, B.remove_branch (B.remove_code arg1 B.zero)
       else
