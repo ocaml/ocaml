@@ -1,20 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Transform let-bound references into variables *)
-
-open Lambda
 open Abstract_identifiers
-open Flambda
 
 let rename_var var =
   Variable.rename var
@@ -22,27 +19,27 @@ let rename_var var =
 
 let directly_used_variables tree =
   let set = ref Variable.Set.empty in
-  let rec loop = function
-    | Fvar (v, _) ->
-        set := Variable.Set.add v !set
+  let rec loop (flam : _ Flambda.t) =
+    match flam with
+    | Fvar (v, _) -> set := Variable.Set.add v !set
     | Fprim(Pfield _, [Fvar _], _, _)
-    | Fprim(Poffsetref _, [Fvar _], _, _) ->
-        ()
-    | Fprim(Psetfield(_, _), [Fvar _; e], _, _) ->
-        loop e
+    | Fprim(Poffsetref _, [Fvar _], _, _) -> ()
+    | Fprim(Psetfield(_, _), [Fvar _; e], _, _) -> loop e
     | Fset_of_closures _ | Flet _ | Fassign _
     | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
-        Flambdaiter.apply_on_subexpressions loop exp in
+      Flambdaiter.apply_on_subexpressions loop exp
+  in
   loop tree;
   !set
 
 let variables_containing_ref lam =
   let map = ref Variable.Map.empty in
-  let aux = function
+  let aux (flam : _ Flambda.t) =
+    match flam with
     | Flet(Immutable, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
         map := Variable.Map.add v (List.length l) !map
@@ -71,7 +68,8 @@ let eliminate_ref lam =
     else Some (arr.(field), Array.length arr)
   in
 
-  let aux = function
+  let aux (flam : _ Flambda.t) =
+    match flam with
     | Flet(Immutable, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
       when convertible_variable v ->
@@ -80,8 +78,9 @@ let eliminate_ref lam =
               match get_variable v field with
               | None -> assert false
               | Some (var, _) ->
-                  field+1,
-                  Flet(Mutable, var, init, body, Expr_id.create ()))
+                field+1,
+                  ((Flet(Mutable, var, init, body, Expr_id.create ()))
+                    : _ Flambda.t))
             (0,body) inits in
         expr
     | Fprim(Pfield field, [Fvar (v,d)], _, _)
