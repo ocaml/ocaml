@@ -2,15 +2,14 @@
 (*                                                                        *)
 (*                                OCaml                                   *)
 (*                                                                        *)
-(*                      Pierre Chambart (OCamlPro)                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
-
-(* Detection of not constant values *)
 
 (* This cannot be done in a single recursive pass due to expressions like:
 
@@ -48,10 +47,10 @@
    - the second propagates the implications
 *)
 
-open Ext_types
-open Symbol
 open Abstract_identifiers
-open Flambda
+
+module Compilation_unit = Symbol.Compilation_unit
+module Int = Ext_types.Int
 
 type constant_result = {
   not_constant_id : Variable.Set.t;
@@ -128,8 +127,8 @@ module NotConstants(P:Param) = struct
      It can be empty when no constraint can be added like in the toplevel
      expression or in the body of a function.
   *)
-  let rec mark_loop ~toplevel (curr:dep list) = function
-
+  let rec mark_loop ~toplevel (curr:dep list) (flam : _ Flambda.t) =
+    match flam with
     | Flet(str, id, lam, body, _) ->
       if str = Mutable then mark_curr [Var id];
       mark_loop ~toplevel [Var id] lam;
@@ -163,7 +162,7 @@ module NotConstants(P:Param) = struct
       (* a closure is constant if its free variables are constants. *)
       Variable.Map.iter (fun inner_id lam ->
         mark_loop ~toplevel [Closure funcs.set_of_closures_id; Var inner_id] lam) fv;
-      Variable.Map.iter (fun fun_id ffunc ->
+      Variable.Map.iter (fun fun_id (ffunc : _ Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)
         register_implication ~in_nc:(Closure funcs.set_of_closures_id) ~implies_in_nc:[Var fun_id];
         (* function parameters are in NC *)
