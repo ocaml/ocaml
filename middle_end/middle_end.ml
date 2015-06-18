@@ -24,9 +24,17 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   in
   let module Backend = (val backend : Backend_intf.S) in
   let flam =
-    Closure_conversion.lambda_to_flambda lam
+    (* Strings are the only expressions that can't be duplicated without
+       changing the semantics.  So we lift them to the toplevel to avoid
+       having to handle special cases later.
+       There is no runtime cost to this transformation: strings are
+       constants and will not appear in closures. *)
+    Lift_strings.lift_strings_to_toplevel lam
+    |> Closure_conversion.lambda_to_flambda
       ~symbol_for_global':Backend.symbol_for_global'
       ~exported_fields
+    |> Lift_code.lift_apply_construction_to_variables
+    |> Lift_code.lift_block_construction_to_variables
   in
   dump_and_check "flambdagen" flam;
   let rec loop rounds flam =

@@ -392,8 +392,8 @@ let message = function
       "Assignment on non-mutable value"
   | Missing_symbol_information (symbol, unit) ->
       Printf.sprintf
-        "No information found for the symbol %s, preventing potential optimisation.\n\
-         Some .cmx or .cmxa file is probably missing. It can usualy be solved by adding a -I arguments"
+        "No information found for the symbol %s, potentially inhibiting optimisation.\n\
+         A .cmx or .cmxa file is probably missing.  Check the -I arguments given to the compiler."
         symbol
 ;;
 

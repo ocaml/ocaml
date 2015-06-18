@@ -340,7 +340,13 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
-    lift_apply_construction_to_variables t ~env ~funct ~args
+    Fapply ({
+        func = close t env funct;
+        args = close_list t env args;
+        kind = Indirect;
+        dbg = Debuginfo.none;
+      },
+      nid ~name:"apply" ())
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->
@@ -432,8 +438,6 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
     Fsymbol (symbol, nid ~name:"external_global" ())
-  | Lprim (Pmakeblock _ as primitive, args) ->
-    lift_block_construction_to_variables t ~env ~primitive ~args
   | Lprim (p, args) ->
     Fprim (p, close_list t env args, Debuginfo.none, nid ~name:"prim" ())
   | Lswitch (arg, sw) ->
@@ -591,69 +595,6 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
   | lam ->
     close t env lam
 
-(* Transform a [Pmakeblock] operation, that allocates and fills a new block,
-   to a sequence of [let]s.  The aim is to then eliminate the allocation of
-   the block, so long as it does not escape.  For example,
-
-     Pmakeblock [expr_0; ...; expr_n]
-
-   is transformed to:
-
-     let x_0 = expr_0 in
-     ...
-     let x_n = expr_n in
-     Pmakeblock [x_0; ...; x_n]
-
-   A more general solution would be to convert completely to ANF.
-*)
-and lift_block_construction_to_variables t ~env ~primitive ~args =
-  let block_fields, lets = lifting_helper t ~env ~args ~name:"block_field" in
-  let block : _ Flambda.t =
-    Fprim (primitive, block_fields, Debuginfo.none, nid ~name:"block" ())
-  in
-  List.fold_left (fun body (v, expr) ->
-      Flambda.Flet (Immutable, v, expr, body, nid ()))
-    block lets
-
-(* Enforce right-to-left evaluation of function arguments by lifting the
-   expressions computing the arguments into [let]s. *)
-and lift_apply_construction_to_variables t ~env ~funct ~args =
-  let apply_args, lets = lifting_helper t ~env ~args ~name:"apply_arg" in
-  let apply : _ Flambda.t =
-    Fapply ({
-        func = close t env funct;
-        args = apply_args;
-        kind = Indirect;
-        dbg = Debuginfo.none;
-      },
-      nid ~name:"apply" ())
-  in
-  List.fold_left (fun body (v, expr) ->
-      Flambda.Flet (Immutable, v, expr, body, nid ()))
-    apply lets
-
-and lifting_helper t ~env ~args ~name =
-  List.fold_right (fun lam (args, lets) ->
-      match close t env lam with
-      | Fvar (_v, _) as e ->
-        (* Assumes that [v] is an immutable variable, otherwise this may
-           change the evaluation order. *)
-        (* XCR mshinwell for pchambart: Please justify why [v] is always
-           immutable.
-           pchambart: My bad, this is not the case. I was
-           convinced i did remove the reference to variable optimisation from
-           Simplif.simplif and this is not the case (this is better done by
-           Ref_to_variables).
-           We could either remove the optimisation in Simplif in case of native code
-           and add an assert requiring that no mutable variables here (in the Let case)
-           or get rid of this one that will be done in the end by the first inlining
-           pass. *)
-        e::args, lets
-      | expr ->
-        let v = fresh_variable t name in
-        Fvar (v, nid ())::args, (v, expr)::lets)
-    args ([], [])
-
 let lambda_to_flambda ~symbol_for_global' ~(exported_fields:int) lam =
   let t =
     { current_unit_id =
@@ -663,11 +604,5 @@ let lambda_to_flambda ~symbol_for_global' ~(exported_fields:int) lam =
       exported_fields;
     }
   in
-  (* Strings are the only expressions that can't be duplicated without
-     changing the semantics.  So we lift them to the toplevel to avoid
-     having to handle special cases later.
-     There is no runtime cost to this transformation: strings are
-     constants and will not appear in closures. *)
-  let lam = Lift_strings.lift_strings_to_toplevel lam in
   let flam = close t Env.empty lam in
   flam

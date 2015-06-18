@@ -23,8 +23,8 @@
 
    The following transformations are also performed during closure
    conversion:
-   - Constant blocks are converted to applications of the [Pmakeblock]
-     primitive.
+   - Constant blocks (by which is meant things wrapped in [Lambda.Const_block])
+     are converted to applications of the [Pmakeblock] primitive.
    - [Levent] debugging event nodes are removed and the information within
      them attached to function, method and [raise] calls.
    - Access to global fields of the current compilation unit (of the form
@@ -38,8 +38,6 @@
        and f (x, y) = internal_f x y  (* [f] is marked as a stub function *)
    - The [Pdirapply] and [Prevapply] application primitives are removed and
      converted to normal [Flambda] application nodes.
-   - String constants are lifted to the toplevel to avoid special cases later
-     (duplicating them may change the semantics of the program).
 *)
 
 open Abstract_identifiers
