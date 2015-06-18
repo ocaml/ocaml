@@ -451,8 +451,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let arg2_approx = (R.approx r) in
     let simplifier =
       match primitive with
-      | Psequand -> Flambdasimplify.sequential_and
-      | Psequor -> Flambdasimplify.sequential_or
+      | Psequand -> Simplify_sequential_logical_ops.sequential_and
+      | Psequor -> Simplify_sequential_logical_ops.sequential_or
       | _ -> assert false
     in
     let expr, approx, simplify_benefit =
@@ -466,7 +466,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let (args', approxs, r) = loop_list env r args in
     let expr = if args' == args then expr else Fprim (p, args', dbg, annot) in
     let expr, approx, benefit =
-      Flambdasimplify.primitive p (args', approxs) expr dbg
+      Simplify_primitives.primitive p (args', approxs) expr dbg
     in
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
     expr, ret r approx

@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell for mshinwell: this comment needs updating to reflect
+   name changes (e.g. "closure -> set_of_closures"). *)
 (** Intermediate language used to perform closure conversion and inlining.
 
     Closure conversion starts with [Lambda] code.  The conversion transforms

@@ -119,6 +119,13 @@ ASMCOMP=\
   asmcomp/simple_value_approx.cmo \
   asmcomp/inlining_cost.cmo \
   asmcomp/flambdasimplify.cmo \
+  asmcomp/lift_code.cmo \
+  asmcomp/remove_unused_arguments.cmo \
+  asmcomp/remove_unused_closure_vars.cmo \
+  asmcomp/remove_unused_globals.cmo \
+  asmcomp/simplify_sequential_logical_ops.cmo \
+  asmcomp/simplify_boxed_integer_ops.cmo \
+  asmcomp/simplify_primitives.cmo \
   asmcomp/inlining_stats_types.cmo \
   asmcomp/inlining_stats.cmo \
   asmcomp/inlining_env.cmo \

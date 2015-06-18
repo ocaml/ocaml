@@ -88,7 +88,7 @@ let inline_non_recursive
     (* The function is sufficiently beneficial to be inlined by itself
        so we keep it and we continue for potential inlining below *)
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) (R.benefit r_inlined)) in
-    let body = Flambdasimplify.lift_lets body in
+    let body = Lift_code.lift_lets body in
     let env =
       E.note_entering_closure env ~closure_id:fun_id
         ~where:Inline_by_copying_function_body

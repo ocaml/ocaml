@@ -130,16 +130,24 @@ let flambda ppf (size, exported, lam) =
   let rec loop rounds flam =
     if rounds <= 0 then flam
     else
-      let flam = Flambdasimplify.lift_lets flam in
-      let flam = Flambdasimplify.remove_unused_closure_variables flam in
+      let flam = Lift_code.lift_lets flam in
+      let flam =
+        Remove_unused_closure_vars.remove_unused_closure_variables flam
+      in
       let flam = Inlining.inline ~never_inline:false flam in
-      let flam = Flambdasimplify.lift_lets flam in
-      let flam = Flambdasimplify.remove_unused_closure_variables flam in
-      let flam = Flambdasimplify.separate_unused_arguments_in_closures flam in
-      let flam = Flambdasimplify.lift_set_of_closures flam in
-      let flam = Flambdasimplify.remove_unused_globals flam in
+      let flam = Lift_code.lift_lets flam in
+      let flam =
+        Remove_unused_closure_vars.remove_unused_closure_variables flam
+      in
+      let flam =
+        Remove_unused_arguments.separate_unused_arguments_in_closures flam
+      in
+      let flam = Lift_code.lift_set_of_closures flam in
+      let flam = Remove_unused_globals.remove_unused_globals flam in
       let flam = Inlining.inline ~never_inline:true flam in
-      let flam = Flambdasimplify.remove_unused_closure_variables flam in
+      let flam =
+        Remove_unused_closure_vars.remove_unused_closure_variables flam
+      in
       let flam = Ref_to_variables.eliminate_ref flam in
       loop (rounds - 1) flam in
   let flam = loop !Clflags.simplify_rounds flam in
