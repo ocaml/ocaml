@@ -1,22 +1,24 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
-open Format
-open Ext_types
 open Abstract_identifiers
-open Flambda
 
-let rec lam ppf = function
+let fprintf = Format.fprintf
+module Int = Ext_types.Int
+
+let rec lam ppf (flam : _ Flambda.t) =
+  match flam with
   | Fsymbol (symbol,_) ->
       Symbol.print ppf symbol
   | Fvar (id,_) ->
@@ -41,7 +43,7 @@ let rec lam ppf = function
       let idents ppf =
         List.iter (fprintf ppf "@ %a" Variable.print) in
       let funs ppf =
-        Variable.Map.iter (fun var f ->
+        Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
             fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
               Variable.print var idents f.params lam f.body) in
       let lams ppf =
@@ -59,7 +61,8 @@ let rec lam ppf = function
       fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs lams
         free_vars spec specialised_args
   | Flet(_str, id, arg, body,_) ->
-      let rec letbody ul = match ul with
+      let rec letbody (ul : _ Flambda.t) =
+        match ul with
         | Flet(str, id, arg, body,_) ->
             let str = match str with
               | Mutable -> "*"
@@ -67,7 +70,8 @@ let rec lam ppf = function
             in
             fprintf ppf "@ @[<2>%a%s@ %a@]" Variable.print id str lam arg;
             letbody body
-        | _ -> ul in
+        | _ -> ul
+      in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Variable.print id lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
@@ -86,7 +90,7 @@ let rec lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
   | Fswitch(larg, sw,_) ->
-      let switch ppf sw =
+      let switch ppf (sw : _ Flambda.switch) =
         let spc = ref false in
         List.iter
           (fun (n, l) ->
@@ -189,11 +193,11 @@ and const ppf c = let open Asttypes in match c with
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
-let function_declarations ppf fd =
+let function_declarations ppf (fd : _ Flambda.function_declarations) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
   let funs ppf =
-    Variable.Map.iter (fun var f ->
+    Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
         fprintf ppf "@ (fun@ %a@[<2>%a@]@ @[<2>%a@])"
           Variable.print var idents f.params lam f.body) in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
