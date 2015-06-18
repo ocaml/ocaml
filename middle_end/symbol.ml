@@ -49,7 +49,7 @@ module Compilation_unit = struct
   let create id linkage_name =
     { id; linkage_name }
 
-  let get_persistent_ident cu = Ident.create_persistent (Ident.name cu.id)
+  let get_persistent_ident cu = cu.id
   let get_linkage_name cu = cu.linkage_name
 
   let current = ref None
@@ -59,7 +59,7 @@ module Compilation_unit = struct
     match !current with
     | Some current -> current
     | None -> Misc.fatal_error "Compilation_unit.get_current_exn"
-  let get_current_id_exn () = (get_current_exn ()).id
+  let get_current_id_exn () = get_persistent_ident (get_current_exn ())
 end
 
 type symbol = { sym_unit : compilation_unit; sym_label : linkage_name }
