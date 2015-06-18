@@ -103,10 +103,10 @@ void caml_set_minor_heap_size (asize_t bsz)
   Assert (bsz % sizeof (value) == 0);
   if (caml_young_ptr != caml_young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
-    caml_empty_minor_heap ();
     caml_requested_minor_gc = 0;
     caml_young_trigger = caml_young_alloc_mid;
     caml_young_limit = caml_young_trigger;
+    caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
 #ifdef MMAP_INTERVAL
