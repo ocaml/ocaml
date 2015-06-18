@@ -7,6 +7,12 @@ ocamlrun
 ocamlrun.exe
 ocamlrund
 ocamlrund.exe
+ocamlruni
+ocamlruni.exe
+ocamlrunh
+ocamlrunh.exe
+ocamlrunm
+ocamlrunm.exe
 ld.conf
 interp.a.lst
 *.[sd]obj

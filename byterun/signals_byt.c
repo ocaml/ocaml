@@ -38,7 +38,10 @@ void caml_process_event(void)
 {
   void (*async_action)(void);
 
-  if (caml_force_major_slice) caml_minor_collection ();
+  if (caml_requested_major_slice || caml_requested_minor_gc){
+    CAML_INSTR_INT ("force_minor/process_event@", 1);
+    caml_gc_dispatch ();
+  }
                              /* FIXME should be [caml_check_urgent_gc] */
   caml_process_pending_signals();
   async_action = caml_async_action_hook;

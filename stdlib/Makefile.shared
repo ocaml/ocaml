@@ -25,14 +25,14 @@ CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
-OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
-  sort.cmo marshal.cmo obj.cmo \
+OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
+  sort.cmo marshal.cmo obj.cmo array.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
   buffer.cmo camlinternalFormat.cmo printf.cmo \
-  arg.cmo printexc.cmo gc.cmo \
+  arg.cmo printexc.cmo gc.cmo gc_temp.cmo \
   digest.cmo random.cmo hashtbl.cmo format.cmo scanf.cmo callback.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
@@ -42,19 +42,39 @@ OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
+ifeq "$(RUNTIMED)" "runtimed"
+all: camlheaderd
+endif
+
+ifeq "$(RUNTIMEI)" "true"
+all: camlheaderi
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+all: camlheaderm
+endif
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-$(RUNTIMED)
+install::
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader_ur \
 	  $(INSTALL_LIBDIR)
 	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
 
-install-noruntimed:
-.PHONY: install-noruntimed
+ifeq "$(RUNTIMED)" "runtimed"
+install::
+	cp target_camlheaderd $(INSTALL_LIBDIR)
+endif
 
-install-runtimed: target_camlheaderd
-	cp target_camlheaderd $(INSTALL_LIBDIR)/camlheaderd
-.PHONY: install-runtimed
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp target_camlheaderi $(INSTALL_LIBDIR)
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+install::
+	cp target_camlheaderm $(INSTALL_LIBDIR)
+endif
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
@@ -69,7 +89,7 @@ clean::
 	rm -f sys.ml
 
 clean::
-	rm -f camlheader target_camlheader camlheader_ur target_camlheaderd
+	rm -f camlheader target_camlheader camlheader_ur target_camlheader[dim]
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
@@ -102,6 +122,7 @@ $(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
 	rm -f *~
+	rm -f camlheader*
 
 include .depend
 

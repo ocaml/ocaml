@@ -33,11 +33,20 @@ let init l f =
   (* See #6575. We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
-   let res = create l (f 0) in
-   for i = 1 to pred l do
-     unsafe_set res i (f i)
-   done;
-   res
+    let f0 = f 0 in
+    let res =
+      if Obj.tag (Obj.repr f0) = Obj.double_tag
+      then create l f0
+      else begin
+        let res = create l (Obj.magic None) in
+        unsafe_set res 0 f0;
+        res
+      end
+    in
+    for i = 1 to pred l do
+      unsafe_set res i (f i)
+    done;
+    res
 
 let make_matrix sx sy init =
   let res = create sx [||] in

@@ -16,34 +16,46 @@
 #ifndef CAML_ADDRESS_CLASS_H
 #define CAML_ADDRESS_CLASS_H
 
+#include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
 
 /* Use the following macros to test an address for the different classes
    it might belong to. */
 
-#define Is_young(val) \
-  (Assert (Is_block (val)), \
-   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
+#ifdef MMAP_INTERVAL
+
+#define HEAP_INTERVAL_SIZE (2LL * 1024 * 1024 * 1024 * 1024)
+#define Is_in_heap(a)                                                   \
+  ((uintnat) ((char *) (a) - caml_heap_start) < HEAP_INTERVAL_SIZE/2)
+#define Is_in_heap_or_young(a)                                          \
+  ((uintnat) ((char *) (a) - caml_heap_start) < HEAP_INTERVAL_SIZE)
+#define Is_in_value_area(a)                                             \
+  (Is_in_heap_or_young(a)                                               \
+   || (Classify_addr(a) & (In_heap | In_young | In_static_data)))
+
+#else /* MMAP_INTERVAL */
 
 #define Is_in_heap(a) (Classify_addr(a) & In_heap)
-
 #define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
-
 #define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 
+#endif /* MMAP_INTERVAL */
+
+#define Is_young(val) \
+  (Assert (Is_block (val)), \
+   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
 #define Is_in_code_area(pc) \
  (    ((char *)(pc) >= caml_code_area_start && \
        (char *)(pc) <= caml_code_area_end)     \
    || (Classify_addr(pc) & In_code_area) )
-
 #define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
 
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
-extern char *caml_young_start, *caml_young_end;
+extern value *caml_young_start, *caml_young_end;
 extern char * caml_code_area_start, * caml_code_area_end;
 
 #define Not_in_heap 0

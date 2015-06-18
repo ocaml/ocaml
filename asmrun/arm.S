@@ -107,7 +107,7 @@ caml_call_gc:
     /* Store pointer to saved integer registers in caml_gc_regs */
         ldr     r12, =caml_gc_regs
         str     sp, [r12]
-    /* Save current allocation pointer for debugging purposes */
+    /* Save current allocation pointer (the GC needs it) */
         ldr     alloc_limit, =caml_young_ptr
         str     alloc_ptr, [alloc_limit]
     /* Save trap pointer in case an exception is raised during GC */
@@ -142,7 +142,8 @@ caml_alloc1:
         cmp     alloc_ptr, alloc_limit
         bcc     1f
         bx      lr
-1:  /* Record return address */
+1:      add     alloc_ptr, alloc_ptr, 8
+    /* Record return address */
         ldr     r7, =caml_last_return_address
         str     lr, [r7]
     /* Call GC (preserves r7) */
@@ -165,7 +166,8 @@ caml_alloc2:
         cmp     alloc_ptr, alloc_limit
         bcc     1f
         bx      lr
-1:  /* Record return address */
+1:      add     alloc_ptr, alloc_ptr, 12
+    /* Record return address */
         ldr     r7, =caml_last_return_address
         str     lr, [r7]
     /* Call GC (preserves r7) */
@@ -189,7 +191,8 @@ caml_alloc3:
         cmp     alloc_ptr, alloc_limit
         bcc     1f
         bx      lr
-1:  /* Record return address */
+1:      add     alloc_ptr, alloc_ptr, 16
+    /* Record return address */
         ldr     r7, =caml_last_return_address
         str     lr, [r7]
     /* Call GC (preserves r7) */
@@ -212,7 +215,8 @@ caml_allocN:
         cmp     alloc_ptr, alloc_limit
         bcc     1f
         bx      lr
-1:  /* Record return address */
+1:      add     alloc_ptr, alloc_ptr, r7
+    /* Record return address */
         ldr     r12, =caml_last_return_address
         str     lr, [r12]
     /* Call GC (preserves r7) */

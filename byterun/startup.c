@@ -230,6 +230,7 @@ static uintnat minor_heap_init = Minor_heap_def;
 static uintnat heap_chunk_init = Heap_chunk_def;
 static uintnat heap_size_init = Init_heap_def;
 static uintnat max_stack_init = Max_stack_def;
+static uintnat major_window_init = Major_window_def;
 
 /* Parse options on the command line */
 
@@ -311,6 +312,7 @@ static void parse_camlrunparam(void)
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'h': scanmult (opt, &heap_size_init); break;
+      case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
@@ -322,6 +324,7 @@ static void parse_camlrunparam(void)
       case 't': caml_trace_flag = 1; break;
 #endif
       case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'w': scanmult (opt, &major_window_init); break;
       }
     }
   }
@@ -363,9 +366,13 @@ CAMLexport void caml_main(char **argv)
   caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
-  caml_verb_gc = 0xBF;
+  caml_verb_gc = 0x3F;
 #endif
   parse_camlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+
   pos = 0;
 
   /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
@@ -401,7 +408,7 @@ CAMLexport void caml_main(char **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+                percent_free_init, max_percent_free_init, major_window_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
@@ -482,7 +489,7 @@ CAMLexport void caml_startup_code(
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+                percent_free_init, max_percent_free_init, major_window_init);
   caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */

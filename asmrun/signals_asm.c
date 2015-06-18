@@ -67,9 +67,11 @@ extern char caml_system__code_begin, caml_system__code_end;
 
 void caml_garbage_collection(void)
 {
-  caml_young_limit = caml_young_start;
-  if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
-    caml_minor_collection();
+  CAMLassert (caml_young_ptr >= caml_young_alloc_start);
+  caml_young_limit = caml_young_trigger;
+  if (caml_requested_major_slice || caml_requested_minor_gc ||
+      caml_young_ptr - caml_young_trigger < Max_young_whsize){
+    caml_gc_dispatch ();
   }
   caml_process_pending_signals();
 }
@@ -167,7 +169,7 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
   }
 #endif
   caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-  caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+  caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
   caml_bottom_of_stack = (char *) CONTEXT_SP;
   caml_last_return_address = (uintnat) CONTEXT_PC;
   caml_array_bound_error();
@@ -226,7 +228,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
     caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-    caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+    caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();
 #endif

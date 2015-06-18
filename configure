@@ -25,7 +25,7 @@ target_type=""
 ccoption=''
 asoption=''
 asppoption=''
-cclibs=''
+cclibs='-lrt'
 curseslibs=''
 mathlib='-lm'
 dllib=''
@@ -37,6 +37,7 @@ dl_defs=''
 verbose=no
 with_curses=yes
 debugruntime=noruntimed
+with_instrumented_runtime=false
 with_sharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
@@ -47,6 +48,7 @@ with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
+with_mmap_interval=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -142,6 +144,8 @@ while : ; do
         verbose=yes;;
     -with-debug-runtime|--with-debug-runtime)
         debugruntime=runtimed;;
+    -with-instrumented-runtime|--with-instrumented-runtime)
+        with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
         with_debugger="";;
     -no-ocamldoc|--no-ocamldoc)
@@ -154,6 +158,9 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -with-mmap-interval|--with-mmap-interval)
+          # Compile a runtime variant that allocates a contiguous heap.
+        with_mmap_interval=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1692,6 +1699,25 @@ dllcccompopts="-O $dllcccompopts"
 nativecccompopts="-O $nativecccompopts"
 sharedcccompopts="-O $sharedcccompopts"
 
+# Check for mmap support for huge pages and contiguous heap
+if sh ./runtest mmap-huge.c; then
+    has_huge_pages=true
+    echo "#define HAS_HUGE_PAGES" >>s.h
+    echo "#define HUGE_PAGE_SIZE (4 * 1024 * 1024)" >>s.h
+    inf "mmap supports huge pages"
+else
+    has_huge_pages=false
+fi
+mmap_interval=false
+if $with_mmap_interval; then
+    if sh ./runtest mmap-interval.c; then
+        mmap_interval=true
+        inf "mmap contiguous heap: supported"
+    else
+        err "mmap contiguous heap: not supported"
+    fi
+fi
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
@@ -1767,6 +1793,8 @@ if $shared_libraries_supported; then
 else
   echo "SHARED=noshared" >>Makefile
 fi
+echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
+echo "MMAP_INTERVAL=$mmap_interval" >>Makefile
 echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
 echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "WITH_OCAMLBUILD=${with_ocamlbuild}" >>Makefile
@@ -1853,6 +1881,14 @@ fi
 
 if test "$debugruntime" = "runtimed"; then
   inf "Debug runtime will be compiled and installed"
+fi
+
+if $with_instrumented_runtime; then
+  inf "Instrumented runtime will be compiled and installed"
+fi
+
+if $mmap_interval; then
+  inf "Runtime with contiguous heap will be compiled and installed"
 fi
 
 inf "Additional libraries supported:"

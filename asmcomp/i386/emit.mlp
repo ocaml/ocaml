@@ -572,11 +572,11 @@ let emit_instr fallthrough i =
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:	movl	{emit_symbol "caml_young_ptr"}, %eax\n`;
           `	subl	${emit_int n}, %eax\n`;
-          `	movl	%eax, {emit_symbol "caml_young_ptr"}\n`;
           `	cmpl	{emit_symbol "caml_young_limit"}, %eax\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;
+          `	movl	%eax, {emit_symbol "caml_young_ptr"}\n`;
           `	leal	4(%eax), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;

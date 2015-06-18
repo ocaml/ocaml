@@ -31,6 +31,8 @@ caml_system__code_begin:
         .globl  caml_call_gc
         .type   caml_call_gc, @function
 caml_call_gc:
+    /* adjust allocation pointer back to a valid value */
+        add     31, 31, 11
     /* Set up stack frame */
         stwu    1, -0x1A0(1)
     /* 0x1A0 = 4*32 (int regs) + 8*32 (float regs) + 32 (space for C call) */
@@ -43,7 +45,7 @@ caml_call_gc:
     /* Record pointer to register array */
         addi    0, 1, 8*32 + 32
         Storeglobal(0, caml_gc_regs, 11)
-    /* Save current allocation pointer for debugging purposes */
+    /* Save current allocation pointer (the GC needs it) */
         Storeglobal(31, caml_young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)

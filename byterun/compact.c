@@ -185,7 +185,7 @@ static void do_compaction (void)
     /* Invert roots first because the threads library needs some heap
        data structures to find its roots.  Fortunately, it doesn't need
        the headers (see above). */
-    caml_do_roots (invert_root);
+    caml_do_roots (invert_root, 1);
     caml_final_do_weak_roots (invert_root);
 
     ch = caml_heap_start;
@@ -398,8 +398,39 @@ uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 void caml_compact_heap (void)
 {
   uintnat target_words, target_size, live;
+  CAML_INSTR_SETUP(tmr, "compact");
+
+  CAMLassert (caml_young_ptr == caml_young_alloc_end);
+  CAMLassert (caml_ref_table.ptr == caml_ref_table.base);
+  CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.base);
+
+#ifdef MMAP_INTERVAL
+  /* If the heap is contiguous, we cannot do the recompaction trick
+     because it would make a hole in the heap.
+     Instead, we have a better trick: we can glue together all the
+     chunks (by turning the chunk headers into white objects) and
+     get a single-chunk heap before compaction, then truncate this
+     chunk after compaction (instead of recompacting).
+  */
+  {
+    void *ch = Chunk_next (caml_heap_start);
+    value *hp;
+    uintnat head_size = sizeof (heap_chunk_head);
+    while (ch != NULL){
+      Chunk_size (caml_heap_start) += Chunk_size (ch) + head_size;
+      hp = (value *) & (((heap_chunk_head *) ch)[-1]);
+      ch = Chunk_next (ch);
+      Hd_hp (hp) = Make_header (Wosize_bhsize (head_size), Abstract_tag,
+                                Caml_white);
+      caml_stat_heap_size += head_size;
+    }
+    Chunk_next (caml_heap_start) = NULL;
+    caml_stat_heap_chunks = 1;
+  }
+#endif /* MMAP_INTERVAL */
 
   do_compaction ();
+  CAML_INSTR_TIME (tmr, "compact/main");
   /* Compaction may fail to shrink the heap to a reasonable size
      because it deals in complete chunks: if a very large chunk
      is at the beginning of the heap, everything gets moved to
@@ -428,8 +459,30 @@ void caml_compact_heap (void)
   live = Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size;
   target_words = live + caml_percent_free * (live / 100 + 1)
                  + Wsize_bsize (Page_size);
-  target_size = caml_round_heap_chunk_size (Bsize_wsize (target_words));
+  target_size = caml_clip_heap_chunk_size (Bsize_wsize (target_words));
+
+#ifdef HAS_HUGE_PAGES
+  #ifdef MMAP_INTERVAL
+  if (caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #else
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #endif
+#endif
+
   if (target_size < caml_stat_heap_size / 2){
+#ifdef MMAP_INTERVAL
+    char *ch = caml_heap_start;
+    /* Truncate the block. */
+    caml_shrink_chunk (caml_heap_start, target_size);
+    /* Rebuild the free list (again). It will be only one block. */
+    caml_fl_reset ();
+    if (Chunk_size (ch) > Chunk_alloc (ch)){
+      caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
+                             Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1,
+                             Caml_white);
+    }
+#else /* MMAP_INTERVAL */
+    /* Recompact. */
     char *chunk;
 
     caml_gc_message (0x10, "Recompacting heap (target=%luk)\n",
@@ -456,6 +509,8 @@ void caml_compact_heap (void)
     Assert (caml_stat_heap_chunks == 1);
     Assert (Chunk_next (caml_heap_start) == NULL);
     Assert (caml_stat_heap_size == Chunk_size (chunk));
+    CAML_INSTR_TIME (tmr, "compact/recompact");
+#endif /* MMAP_INTERVAL */
   }
 }
 
@@ -474,6 +529,14 @@ void caml_compact_heap_maybe (void)
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
 
+#ifdef HAS_HUGE_PAGES
+  #ifdef MMAP_INTERVAL
+  if (caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #else
+  if (caml_use_huge_pages && caml_stat_heap_size <= HUGE_PAGE_SIZE) return;
+  #endif
+#endif
+
   fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_size;
 
@@ -491,9 +554,9 @@ void caml_compact_heap_maybe (void)
                    (uintnat) fp);
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_finish_major_cycle ();
 
-    /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = caml_fl_cur_size;
     fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
     caml_gc_message (0x200, "Measured overhead: %"

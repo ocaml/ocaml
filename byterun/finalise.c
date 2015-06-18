@@ -67,7 +67,7 @@ void caml_final_update (void)
   uintnat i, j, k;
   uintnat todo_count = 0;
 
-  Assert (young == old);
+  Assert (old <= young);
   for (i = 0; i < old; i++){
     Assert (Is_block (final_table[i].val));
     Assert (Is_in_heap (final_table[i].val));
@@ -123,7 +123,7 @@ void caml_final_do_calls (void)
   value res;
 
   if (running_finalisation_function) return;
-
+  if (caml_finalise_begin_hook != NULL) (*caml_finalise_begin_hook) ();
   if (to_do_hd != NULL){
     caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
     while (1){
@@ -144,6 +144,7 @@ void caml_final_do_calls (void)
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
   }
+  if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();
 }
 
 /* Call a scanning_action [f] on [x]. */
@@ -151,17 +152,15 @@ void caml_final_do_calls (void)
 
 /* Call [*f] on the closures of the finalisable set and
    the closures and values of the finalising set.
-   The recent set is empty.
-   This is called by the major GC and the compactor
-   through [caml_darken_all_roots].
+   This is called by the major GC through [caml_darken_all_roots].
 */
 void caml_final_do_strong_roots (scanning_action f)
 {
   uintnat i;
   struct to_do *todo;
 
-  Assert (old == young);
-  for (i = 0; i < old; i++) Call_action (f, final_table[i].fun);
+  Assert (old <= young);
+  for (i = 0; i < young; i++) Call_action (f, final_table[i].fun);
 
   for (todo = to_do_hd; todo != NULL; todo = todo->next){
     for (i = 0; i < todo->size; i++){
@@ -172,15 +171,14 @@ void caml_final_do_strong_roots (scanning_action f)
 }
 
 /* Call [*f] on the values of the finalisable set.
-   The recent set is empty.
    This is called directly by the compactor.
 */
 void caml_final_do_weak_roots (scanning_action f)
 {
   uintnat i;
 
-  Assert (old == young);
-  for (i = 0; i < old; i++) Call_action (f, final_table[i].val);
+  CAMLassert (old <= young);
+  for (i = 0; i < young; i++) Call_action (f, final_table[i].val);
 }
 
 /* Call [*f] on the closures and values of the recent set.
@@ -209,7 +207,8 @@ void caml_final_empty_young (void)
 /* Put (f,v) in the recent set. */
 CAMLprim value caml_final_register (value f, value v)
 {
-  if (!(Is_block (v) && Is_in_heap_or_young(v))) {
+  if (!(Is_block (v) && Is_in_heap_or_young(v)
+        && Tag_val (v) != Lazy_tag && Tag_val (v) != Forward_tag)) {
     caml_invalid_argument ("Gc.finalise");
   }
   Assert (old <= young);

@@ -36,6 +36,7 @@
 #endif
 
 extern int caml_parser_trace;
+
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 
@@ -90,6 +91,7 @@ static uintnat minor_heap_init = Minor_heap_def;
 static uintnat heap_chunk_init = Heap_chunk_def;
 static uintnat heap_size_init = Init_heap_def;
 static uintnat max_stack_init = Max_stack_def;
+static uintnat major_window_init = Major_window_def;
 
 /* Parse the CAMLRUNPARAM variable */
 /* The option letter for each runtime option is the first letter of the
@@ -127,10 +129,12 @@ static void parse_camlrunparam(void)
       case 's': scanmult (opt, &minor_heap_init); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'h': scanmult (opt, &heap_size_init); break;
+      case 'H': scanmult (opt, &caml_use_huge_pages); break;
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
+      case 'w': scanmult (opt, &major_window_init); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
@@ -167,13 +171,16 @@ void caml_main(char **argv)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_verb_gc = 63;
-#endif
   caml_top_of_stack = &tos;
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
   parse_camlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-                percent_free_init, max_percent_free_init);
+                percent_free_init, max_percent_free_init, major_window_init);
   init_atoms();
   caml_init_signals();
   caml_debugger_init (); /* force debugger.o stub to be linked */

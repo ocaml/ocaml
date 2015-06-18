@@ -2,6 +2,10 @@ camlheader
 target_camlheader
 camlheaderd
 target_camlheaderd
+camlheaderi
+target_camlheaderi
+camlheaderm
+target_camlheaderm
 camlheader_ur
 labelled-*
 caml

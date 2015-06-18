@@ -45,16 +45,19 @@ installopt-prof:
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
-camlheader target_camlheader camlheaderd target_camlheaderd camlheader_ur: \
+camlheader target_camlheader camlheader_ur \
+camlheaderd target_camlheaderd \
+camlheaderi target_camlheaderi \
+camlheaderm target_camlheaderm: \
   header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
-	  echo '#!$(BINDIR)/ocamlrun' > camlheader && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrun' > target_camlheader && \
-	  echo '#!$(BINDIR)/ocamlrund' > camlheaderd && \
-	  echo '#!$(TARGET_BINDIR)/ocamlrund' > target_camlheaderd && \
+	  for suff in '' d i m; do \
+	    echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
+	    echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff > target_camlheader$$suff; \
+	  done && \
 	  echo '#!' | tr -d '\012' > camlheader_ur; \
 	else \
-	  for suff in '' d; do \
+	  for suff in '' d i m; do \
 	    $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
 	              -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	              header.c -o tmpheader$(EXE) && \

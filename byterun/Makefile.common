@@ -48,6 +48,14 @@ all-noruntimed:
 all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
 .PHONY: all-runtimed
 
+ifeq "$(RUNTIMEI)" "true"
+all:: ocamlruni$(EXE) libcamlruni.$(A)
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+all:: ocamlrunm$(EXE) libcamlrunm.$(A)
+endif
+
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > ld.conf
 	echo "$(LIBDIR)" >> ld.conf
@@ -83,6 +91,18 @@ install-runtimed:
 	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
 	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
 .PHONY: install-runtimed
+
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocamlruni$(EXE) $(INSTALL_BINDIR)/ocamlruni$(EXE)
+	cp libcamlruni.$(A) $(INSTALL_LIBDIR)/libcamlruni.$(A)
+endif
+
+ifeq "$(MMAP_INTERVAL)" "true"
+install::
+	cp ocamlrunm$(EXE) $(INSTALL_BINDIR)/ocamlrunm$(EXE)
+	cp libcamlrunm.$(A) $(INSTALL_LIBDIR)/libcamlrunm.$(A)
+endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -129,7 +149,8 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 	../tools/make-version-header.sh ../VERSION > caml/version.h
 
 clean ::
-	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
+	rm -f ocamlrun$(EXE) ocamlrun[dim]$(EXE)
+	rm -f *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h ld.conf
 	rm -f caml/version.h
 .PHONY: clean

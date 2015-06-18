@@ -211,6 +211,8 @@
 /byterun/ocamlrun.exe
 /byterun/ocamlrund
 /byterun/ocamlrund.exe
+/byterun/ocamlruni
+/byterun/ocamlruni.exe
 /byterun/ld.conf
 /byterun/interp.a.lst
 /byterun/*.[sd]obj
@@ -754,6 +756,7 @@
 /stdlib/.DS_Store
 /stdlib/camlheader
 /stdlib/camlheaderd
+/stdlib/camlheaderi
 /stdlib/camlheader_ur
 /stdlib/labelled-*
 /stdlib/caml
