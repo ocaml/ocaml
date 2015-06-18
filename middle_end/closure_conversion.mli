@@ -2,9 +2,10 @@
 (*                                                                        *)
 (*                                OCaml                                   *)
 (*                                                                        *)
-(*                      Pierre Chambart (OCamlPro)                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
@@ -15,8 +16,8 @@
 
    Function declarations (which may bind one or more variables identifying
    functions, possibly with mutual recursion) are transformed to
-   [Fset_of_closures] expressions.  [Fselect_closure] expressions are then used to
-   select a closure for a particular function from a [Fset_of_closures]
+   [Fset_of_closures] expressions.  [Fselect_closure] expressions are then
+   used to select a closure for a particular function from a [Fset_of_closures]
    expression.  The [Fset_of_closures] expressions say nothing about the
    actual runtime layout of the closures; this is handled when [Flambda] code
    is translated to [Clambda] code.
