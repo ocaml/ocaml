@@ -244,13 +244,13 @@ int caml_page_table_remove(int kind, void * start, void * end)
    This guarantees that all heap addresses are within this interval,
    and nothing else can be located in that interval. Then
    [Is_in_heap] becomes a subtraction and comparison, instead of
-   a hash table access. Likewise with Is_in_heap_or_young. These
+   a hash table access. Likewise with [Is_in_heap_or_young]. These
    macros are used so often (especially in [modify]) that we get
-   a 5% improvement in speed for some OCaml programs.
+   a 5% to 10% improvement in speed for most OCaml programs.
 
-   As far as I know, this trick cannot be done in Windows because
-   there is no way to reserve an interval of addresses without
-   mapping it.
+   As far as I know, this trick cannot be done in Windows or MacOSX
+   because there is no way to reserve an interval of addresses
+   without mapping it.
 
    Of course, this only works on 64-bit machines.
 */
@@ -285,8 +285,7 @@ int caml_init_alloc_for_heap (void)
   block = caml_mmap_heap (NULL, HEAP_INTERVAL_SIZE, PROT_NONE, MAP_NORESERVE);
   if (block == MAP_FAILED) return -1;
   raw_heap_start = raw_heap_end = block;
-  caml_young_end = block + HEAP_INTERVAL_SIZE;
-  caml_young_start = caml_young_ptr = caml_young_end;
+  caml_young_start = caml_young_end = block + HEAP_INTERVAL_SIZE;
   return 0;
 }
 
