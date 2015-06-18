@@ -118,7 +118,7 @@ ASMCOMP=\
   asmcomp/effect_analysis.cmo \
   asmcomp/simple_value_approx.cmo \
   asmcomp/inlining_cost.cmo \
-  asmcomp/flambdasimplify.cmo \
+  asmcomp/simplify_common.cmo \
   asmcomp/lift_code.cmo \
   asmcomp/remove_unused_arguments.cmo \
   asmcomp/remove_unused_closure_vars.cmo \

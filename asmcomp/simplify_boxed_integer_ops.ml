@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module S = Flambdasimplify
+module S = Simplify_common
 
 (* Simplification of operations on boxed integers (nativeint, Int32, Int64). *)
 module Simplify_boxed_integer_operator (I : sig

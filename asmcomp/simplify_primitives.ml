@@ -14,7 +14,7 @@
 module A = Simple_value_approx
 module C = Inlining_cost
 module I = Simplify_boxed_integer_ops
-module S = Flambdasimplify
+module S = Simplify_common
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg
       : _ Flambda.t * A.t * Inlining_cost.Benefit.t =

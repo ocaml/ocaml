@@ -656,8 +656,6 @@ asmcomp/flambdaiter.cmi : asmcomp/flambda.cmi \
 asmcomp/flambda.cmi : asmcomp/symbol.cmi bytecomp/lambda.cmi \
     utils/ext_types.cmi bytecomp/debuginfo.cmi parsing/asttypes.cmi \
     asmcomp/abstract_identifiers.cmi
-asmcomp/flambdasimplify.cmi : asmcomp/simple_value_approx.cmi \
-    bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/flambda.cmi
 asmcomp/flambdasubst.cmi : asmcomp/symbol.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi
 asmcomp/flambdasym.cmi : asmcomp/symbol.cmi asmcomp/flambdaexport.cmi \
@@ -722,6 +720,8 @@ asmcomp/simplify_boxed_integer_ops_intf.cmi : \
     asmcomp/inlining_cost.cmi asmcomp/flambda.cmi
 asmcomp/simplify_boxed_integer_ops.cmi : \
     asmcomp/simplify_boxed_integer_ops_intf.cmi
+asmcomp/simplify_common.cmi : asmcomp/simple_value_approx.cmi \
+    bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/flambda.cmi
 asmcomp/simplify_primitives.cmi : asmcomp/simple_value_approx.cmi \
     bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/flambda.cmi \
     bytecomp/debuginfo.cmi asmcomp/abstract_identifiers.cmi
@@ -931,12 +931,6 @@ asmcomp/flambdaiter.cmo : utils/misc.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi asmcomp/flambdaiter.cmi
 asmcomp/flambdaiter.cmx : utils/misc.cmx asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmx asmcomp/flambdaiter.cmi
-asmcomp/flambdasimplify.cmo : asmcomp/simple_value_approx.cmi \
-    bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/effect_analysis.cmi \
-    asmcomp/flambdasimplify.cmi
-asmcomp/flambdasimplify.cmx : asmcomp/simple_value_approx.cmx \
-    bytecomp/lambda.cmx asmcomp/inlining_cost.cmx asmcomp/effect_analysis.cmx \
-    asmcomp/flambdasimplify.cmi
 asmcomp/flambdasubst.cmo : asmcomp/symbol.cmi utils/misc.cmi \
     asmcomp/flambdaiter.cmi asmcomp/flambda.cmi \
     asmcomp/abstract_identifiers.cmi asmcomp/flambdasubst.cmi
@@ -1177,26 +1171,32 @@ asmcomp/simple_value_approx.cmx : utils/warnings.cmx asmcomp/symbol.cmx \
     asmcomp/flambdaexport.cmx asmcomp/flambda.cmi asmcomp/effect_analysis.cmx \
     asmcomp/compilenv.cmx parsing/asttypes.cmi \
     asmcomp/abstract_identifiers.cmx asmcomp/simple_value_approx.cmi
-asmcomp/simplify_boxed_integer_ops.cmo : \
+asmcomp/simplify_boxed_integer_ops.cmo : asmcomp/simplify_common.cmi \
     asmcomp/simplify_boxed_integer_ops_intf.cmi \
     asmcomp/simple_value_approx.cmi bytecomp/lambda.cmi \
-    asmcomp/inlining_cost.cmi asmcomp/flambdasimplify.cmi asmcomp/arch.cmo \
+    asmcomp/inlining_cost.cmi asmcomp/arch.cmo \
     asmcomp/simplify_boxed_integer_ops.cmi
-asmcomp/simplify_boxed_integer_ops.cmx : \
+asmcomp/simplify_boxed_integer_ops.cmx : asmcomp/simplify_common.cmx \
     asmcomp/simplify_boxed_integer_ops_intf.cmi \
     asmcomp/simple_value_approx.cmx bytecomp/lambda.cmx \
-    asmcomp/inlining_cost.cmx asmcomp/flambdasimplify.cmx asmcomp/arch.cmx \
+    asmcomp/inlining_cost.cmx asmcomp/arch.cmx \
     asmcomp/simplify_boxed_integer_ops.cmi
-asmcomp/simplify_primitives.cmo : asmcomp/simplify_boxed_integer_ops.cmi \
-    asmcomp/simple_value_approx.cmi bytecomp/lambda.cmi \
-    asmcomp/inlining_cost.cmi asmcomp/flambdautils.cmi \
-    asmcomp/flambdasimplify.cmi asmcomp/flambda.cmi utils/clflags.cmi \
-    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/simplify_primitives.cmi
-asmcomp/simplify_primitives.cmx : asmcomp/simplify_boxed_integer_ops.cmx \
-    asmcomp/simple_value_approx.cmx bytecomp/lambda.cmx \
-    asmcomp/inlining_cost.cmx asmcomp/flambdautils.cmx \
-    asmcomp/flambdasimplify.cmx asmcomp/flambda.cmi utils/clflags.cmx \
-    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/simplify_primitives.cmi
+asmcomp/simplify_common.cmo : asmcomp/simple_value_approx.cmi \
+    bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/effect_analysis.cmi \
+    asmcomp/simplify_common.cmi
+asmcomp/simplify_common.cmx : asmcomp/simple_value_approx.cmx \
+    bytecomp/lambda.cmx asmcomp/inlining_cost.cmx asmcomp/effect_analysis.cmx \
+    asmcomp/simplify_common.cmi
+asmcomp/simplify_primitives.cmo : asmcomp/simplify_common.cmi \
+    asmcomp/simplify_boxed_integer_ops.cmi asmcomp/simple_value_approx.cmi \
+    bytecomp/lambda.cmi asmcomp/inlining_cost.cmi asmcomp/flambdautils.cmi \
+    asmcomp/flambda.cmi utils/clflags.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/simplify_primitives.cmi
+asmcomp/simplify_primitives.cmx : asmcomp/simplify_common.cmx \
+    asmcomp/simplify_boxed_integer_ops.cmx asmcomp/simple_value_approx.cmx \
+    bytecomp/lambda.cmx asmcomp/inlining_cost.cmx asmcomp/flambdautils.cmx \
+    asmcomp/flambda.cmi utils/clflags.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/simplify_primitives.cmi
 asmcomp/simplify_sequential_logical_ops.cmo : \
     asmcomp/simple_value_approx.cmi bytecomp/lambda.cmi \
     asmcomp/inlining_cost.cmi asmcomp/flambdautils.cmi asmcomp/flambda.cmi \
