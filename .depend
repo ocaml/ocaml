@@ -624,8 +624,8 @@ middle_end/abstract_identifiers.cmi : middle_end/symbol.cmi \
 middle_end/backend_intf.cmi : middle_end/symbol.cmi \
     middle_end/simple_value_approx.cmi typing/ident.cmi \
     middle_end/abstract_identifiers.cmi
-middle_end/closure_conversion.cmi : middle_end/symbol.cmi \
-    bytecomp/lambda.cmi typing/ident.cmi middle_end/flambda.cmi \
+middle_end/closure_conversion.cmi : bytecomp/lambda.cmi \
+    middle_end/flambda.cmi middle_end/backend_intf.cmi \
     middle_end/abstract_identifiers.cmi
 middle_end/effect_analysis.cmi : middle_end/flambda.cmi
 middle_end/flambdacheck.cmi : middle_end/symbol.cmi bytecomp/lambda.cmi \
@@ -701,14 +701,14 @@ middle_end/abstract_identifiers.cmx : middle_end/symbol.cmx \
     utils/ext_types.cmx middle_end/abstract_identifiers.cmi
 middle_end/closure_conversion.cmo : middle_end/symbol.cmi \
     typing/primitive.cmi utils/misc.cmi parsing/location.cmi \
-    bytecomp/lift_strings.cmi bytecomp/lambda.cmi typing/ident.cmi \
-    middle_end/flambda.cmi utils/ext_types.cmi bytecomp/debuginfo.cmi \
+    bytecomp/lambda.cmi typing/ident.cmi middle_end/flambda.cmi \
+    utils/ext_types.cmi bytecomp/debuginfo.cmi middle_end/backend_intf.cmi \
     parsing/asttypes.cmi middle_end/abstract_identifiers.cmi \
     middle_end/closure_conversion.cmi
 middle_end/closure_conversion.cmx : middle_end/symbol.cmx \
     typing/primitive.cmx utils/misc.cmx parsing/location.cmx \
-    bytecomp/lift_strings.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    middle_end/flambda.cmi utils/ext_types.cmx bytecomp/debuginfo.cmx \
+    bytecomp/lambda.cmx typing/ident.cmx middle_end/flambda.cmi \
+    utils/ext_types.cmx bytecomp/debuginfo.cmx middle_end/backend_intf.cmi \
     parsing/asttypes.cmi middle_end/abstract_identifiers.cmx \
     middle_end/closure_conversion.cmi
 middle_end/effect_analysis.cmo : utils/misc.cmi bytecomp/lambda.cmi \
@@ -841,18 +841,20 @@ middle_end/middle_end.cmo : utils/timings.cmi \
     middle_end/remove_unused_globals.cmi \
     middle_end/remove_unused_closure_vars.cmi \
     middle_end/remove_unused_arguments.cmi middle_end/ref_to_variables.cmi \
-    middle_end/printflambda.cmi middle_end/lift_code.cmi \
-    middle_end/inlining_stats.cmi middle_end/inlining.cmi \
-    middle_end/flambdacheck.cmi middle_end/closure_conversion.cmi \
-    utils/clflags.cmi middle_end/backend_intf.cmi middle_end/middle_end.cmi
+    middle_end/printflambda.cmi bytecomp/lift_strings.cmi \
+    middle_end/lift_code.cmi middle_end/inlining_stats.cmi \
+    middle_end/inlining.cmi middle_end/flambdacheck.cmi \
+    middle_end/closure_conversion.cmi utils/clflags.cmi \
+    middle_end/backend_intf.cmi middle_end/middle_end.cmi
 middle_end/middle_end.cmx : utils/timings.cmx \
     middle_end/remove_unused_globals.cmx \
     middle_end/remove_unused_closure_vars.cmx \
     middle_end/remove_unused_arguments.cmx middle_end/ref_to_variables.cmx \
-    middle_end/printflambda.cmx middle_end/lift_code.cmx \
-    middle_end/inlining_stats.cmx middle_end/inlining.cmx \
-    middle_end/flambdacheck.cmx middle_end/closure_conversion.cmx \
-    utils/clflags.cmx middle_end/backend_intf.cmi middle_end/middle_end.cmi
+    middle_end/printflambda.cmx bytecomp/lift_strings.cmx \
+    middle_end/lift_code.cmx middle_end/inlining_stats.cmx \
+    middle_end/inlining.cmx middle_end/flambdacheck.cmx \
+    middle_end/closure_conversion.cmx utils/clflags.cmx \
+    middle_end/backend_intf.cmi middle_end/middle_end.cmi
 middle_end/printflambda.cmo : middle_end/symbol.cmi bytecomp/printlambda.cmi \
     bytecomp/lambda.cmi middle_end/flambda.cmi utils/ext_types.cmi \
     parsing/asttypes.cmi middle_end/abstract_identifiers.cmi \

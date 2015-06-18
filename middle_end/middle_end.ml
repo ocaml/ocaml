@@ -22,17 +22,17 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
         Printflambda.flambda flam;
       raise e
   in
-  let module Backend = (val backend : Backend_intf.S) in
   let flam =
+    (* CR mshinwell for pchambart: I'm not sure this first sentence is
+       accurate.  I suppose we mean "the only constants" or something? *)
     (* Strings are the only expressions that can't be duplicated without
        changing the semantics.  So we lift them to the toplevel to avoid
        having to handle special cases later.
        There is no runtime cost to this transformation: strings are
        constants and will not appear in closures. *)
-    Lift_strings.lift_strings_to_toplevel lam
-    |> Closure_conversion.lambda_to_flambda
-      ~symbol_for_global':Backend.symbol_for_global'
-      ~exported_fields
+    lam
+    |> Lift_strings.lift_strings_to_toplevel
+    |> Closure_conversion.lambda_to_flambda ~backend ~exported_fields
     |> Lift_code.lift_apply_construction_to_variables
     |> Lift_code.lift_block_construction_to_variables
   in
@@ -40,26 +40,19 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
   let rec loop rounds flam =
     if rounds <= 0 then flam
     else
-      let flam = Lift_code.lift_lets flam in
-      let flam =
-        Remove_unused_closure_vars.remove_unused_closure_variables flam
-      in
-      let flam = Inlining.inline ~never_inline:false ~backend flam in
-      let flam = Lift_code.lift_lets flam in
-      let flam =
-        Remove_unused_closure_vars.remove_unused_closure_variables flam
-      in
-      let flam =
-        Remove_unused_arguments.separate_unused_arguments_in_closures flam
-      in
-      let flam = Lift_code.lift_set_of_closures flam in
-      let flam = Remove_unused_globals.remove_unused_globals flam in
-      let flam = Inlining.inline ~never_inline:true ~backend flam in
-      let flam =
-        Remove_unused_closure_vars.remove_unused_closure_variables flam
-      in
-      let flam = Ref_to_variables.eliminate_ref flam in
-      loop (rounds - 1) flam
+      flam
+      |> Lift_code.lift_lets
+      |> Remove_unused_closure_vars.remove_unused_closure_variables
+      |> Inlining.inline ~never_inline:false ~backend
+      |> Lift_code.lift_lets
+      |> Remove_unused_closure_vars.remove_unused_closure_variables
+      |> Remove_unused_arguments.separate_unused_arguments_in_closures
+      |> Lift_code.lift_set_of_closures
+      |> Remove_unused_globals.remove_unused_globals
+      |> Inlining.inline ~never_inline:true ~backend
+      |> Remove_unused_closure_vars.remove_unused_closure_variables
+      |> Ref_to_variables.eliminate_ref
+      |> loop (rounds - 1)
   in
   let flam = loop !Clflags.simplify_rounds flam in
   dump_and_check "flambdasimplify" flam;

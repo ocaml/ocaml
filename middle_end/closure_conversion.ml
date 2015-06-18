@@ -595,12 +595,13 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
   | lam ->
     close t env lam
 
-let lambda_to_flambda ~symbol_for_global' ~(exported_fields:int) lam =
+let lambda_to_flambda ~backend ~(exported_fields:int) lam =
+  let module Backend = (val backend : Backend_intf.S) in
   let t =
     { current_unit_id =
         Symbol.Compilation_unit.get_persistent_ident
           (Compilation_unit.get_current_exn ());
-      symbol_for_global';
+      symbol_for_global' = Backend.symbol_for_global';
       exported_fields;
     }
   in

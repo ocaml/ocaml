@@ -44,7 +44,7 @@
 open Abstract_identifiers
 
 val lambda_to_flambda
-   : symbol_for_global':(Ident.t -> Symbol.t)
+   : backend:(module Backend_intf.S)
   -> exported_fields:int
   -> Lambda.lambda
   -> Expr_id.t Flambda.t
