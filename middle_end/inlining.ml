@@ -682,8 +682,9 @@ and loop_list env r l = match l with
    * parameters
 
    The rewriting occur in a clean environment without any of the variables
-   defined outside reachable. This prevents the simplification of variable
-   access [check_var_and_constant_result] to occur on unsound cases.
+   defined outside reachable.  This helps increase robustness against accidental,
+   potentially unsound simplification of variable accesses by
+   [check_var_and_constant_result].
 
    The rewriting occurs in an environment filled with:
    * The approximation of the free variables
@@ -1119,8 +1120,6 @@ let inline ~never_inline ~backend tree =
   let env = E.empty ~never_inline:false ~backend in
   let result, r = loop env r tree in
   Clflags.inlining_stats := stats;
-  (* XCR mshinwell for pchambart: Should these be fatal errors?
-     pchambart: They should and they are now. *)
   if not (Variable.Set.is_empty (R.used_variables r))
   then begin
     Misc.fatal_error (Format.asprintf "remaining variables: %a@.%a@."
