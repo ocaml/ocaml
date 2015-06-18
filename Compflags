@@ -14,31 +14,31 @@
 #########################################################################
 
 case $1 in
-    asmcomp/abstract_identifiers.* \
+    middle_end/abstract_identifiers.* \
+  | middle_end/closure_conversion.* \
+  | middle_end/effect_analysis.* \
+  | middle_end/flambdacheck.* \
+  | middle_end/flambdaiter.* \
+  | middle_end/flambda.* \
+  | middle_end/flambdasimplify.* \
+  | middle_end/flambdasubst.* \
+  | middle_end/flambdautils.* \
+  | middle_end/inconstant_idents.* \
+  | middle_end/inlining_cost.* \
+  | middle_end/inlining_decision.* \
+  | middle_end/inlining_env.* \
+  | middle_end/inlining.* \
+  | middle_end/inlining_result.* \
+  | middle_end/inlining_stats.* \
+  | middle_end/inlining_stats_types.* \
+  | middle_end/invariant_params.* \
+  | middle_end/printflambda.* \
+  | middle_end/ref_to_variables.* \
+  | middle_end/simple_value_approx.* \
+  | middle_end/symbol.*\
   | asmcomp/clambdagen.* \
-  | asmcomp/closure_conversion.* \
-  | asmcomp/effect_analysis.* \
-  | asmcomp/flambdacheck.* \
   | asmcomp/flambdaexport.* \
-  | asmcomp/flambdaiter.* \
-  | asmcomp/flambda.* \
-  | asmcomp/flambdasimplify.* \
-  | asmcomp/flambdasubst.* \
-  | asmcomp/flambdasym.* \
-  | asmcomp/flambdautils.* \
-  | asmcomp/inconstant_idents.* \
-  | asmcomp/inlining_cost.* \
-  | asmcomp/inlining_decision.* \
-  | asmcomp/inlining_env.* \
-  | asmcomp/inlining.* \
-  | asmcomp/inlining_result.* \
-  | asmcomp/inlining_stats.* \
-  | asmcomp/inlining_stats_types.* \
-  | asmcomp/invariant_params.* \
-  | asmcomp/printflambda.* \
-  | asmcomp/ref_to_variables.* \
-  | asmcomp/simple_value_approx.* \
-  | asmcomp/symbol.*)
+  | asmcomp/flambdasym.*)
     # More aggressive "unused identifier" warnings for Flambda passes.
     # Also suppress "label ... defined in both ..." for record types, since
     # it is of no consequence.

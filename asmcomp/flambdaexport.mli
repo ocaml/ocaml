@@ -16,19 +16,18 @@ open Ext_types
 open Symbol
 open Abstract_identifiers
 
-module ExportId : UnitId with module Compilation_unit := Compilation_unit
 module EidSet : ExtSet with module M := ExportId
 module EidMap : ExtMap with module M := ExportId
 module EidTbl : ExtHashtbl with module M := ExportId
 
 type tag = int
 
-type _ boxed_int =
+type 'a boxed_int = 'a Simple_value_approx.boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int
   | Nativeint : nativeint boxed_int
 
-type value_string = {
+type value_string = Simple_value_approx.value_string = {
   contents : string option; (* None if unknown or mutable *)
   size : int;
 }

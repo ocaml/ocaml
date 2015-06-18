@@ -18,7 +18,8 @@ type part =
   | Transl of file
   | Generate of file
   | Assemble of file
-  | Flambda of file
+  | Flambda_middle_end of file
+  | Flambda_backend of file
   | Cmm of file
   | Compile_phrases of file
 
@@ -62,7 +63,8 @@ let part_name = function
   | Transl file -> Printf.sprintf "transl(%s)" file
   | Generate file -> Printf.sprintf "generate(%s)" file
   | Assemble file -> Printf.sprintf "assemble(%s)" file
-  | Flambda file -> Printf.sprintf "flambda(%s)" file
+  | Flambda_middle_end file -> Printf.sprintf "flambda-mid(%s)" file
+  | Flambda_backend file -> Printf.sprintf "flambda-back(%s)" file
   | Cmm file -> Printf.sprintf "cmm(%s)" file
   | Compile_phrases file -> Printf.sprintf "compile_phrases(%s)" file
 

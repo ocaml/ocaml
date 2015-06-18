@@ -15,5 +15,12 @@
 open Format
 
 val interface: formatter -> string -> string -> unit
-val implementation: formatter -> string -> string -> unit
+
+val implementation
+   : formatter
+  -> string
+  -> string
+  -> backend:(module Backend_intf.S)
+  -> unit
+
 val c_file: string -> unit

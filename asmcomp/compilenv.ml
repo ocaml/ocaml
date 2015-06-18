@@ -128,7 +128,7 @@ let reset ?packname name =
   Hashtbl.clear export_infos_table;
   let compilation_unit =
     Compilation_unit.create
-      (Ident.name !current_unit_id)
+      !current_unit_id
       (current_unit_linkage_name ())
   in
   Compilation_unit.set_current compilation_unit
@@ -239,10 +239,11 @@ let symbol_for_global id =
 
 let unit_for_global id =
   let sym_label = linkage_name (symbol_for_global id) in
-  Compilation_unit.create (Ident.name id) sym_label
+  Compilation_unit.create id sym_label
 
 let predefined_exception_compilation_unit =
-  Compilation_unit.create "__dummy__" (linkage_name "__dummy__")
+  Compilation_unit.create (Ident.create_persistent "__dummy__")
+    (linkage_name "__dummy__")
 
 let is_predefined_exception sym =
   Compilation_unit.equal

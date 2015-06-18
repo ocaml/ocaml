@@ -21,7 +21,8 @@ type part =
   | Transl of file
   | Generate of file
   | Assemble of file
-  | Flambda of file
+  | Flambda_middle_end of file
+  | Flambda_backend of file
   | Cmm of file
   | Compile_phrases of file
 

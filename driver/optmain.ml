@@ -14,12 +14,27 @@ open Config
 open Clflags
 open Compenv
 
+module Backend = struct
+  (* See backend_intf.mli. *)
+
+  let symbol_for_global' = Compilenv.symbol_for_global'
+  let closure_symbol = Compilenv.closure_symbol
+
+  let really_import_approx = Import_approx.really_import_approx
+  let import_global = Import_approx.import_global
+  let import_symbol = Import_approx.import_symbol
+
+  let size_int = Arch.size_int
+  let big_endian = Arch.big_endian
+end
+let backend = (module Backend : Backend_intf.S)
+
 let process_interface_file ppf name =
   Optcompile.interface ppf name (output_prefix name)
 
 let process_implementation_file ppf name =
   let opref = output_prefix name in
-  Optcompile.implementation ppf name opref;
+  Optcompile.implementation ppf name opref ~backend;
   objfiles := (opref ^ ".cmx") :: !objfiles
 
 let cmxa_present = ref false;;
@@ -191,7 +206,7 @@ let main () =
       Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ()) target;
+        (get_objfiles ()) target ~backend;
       Warnings.check_fatal ();
     end
     else if !shared then begin

@@ -35,8 +35,8 @@ OCAMLBUILDNATIVE=$(WITH_OCAMLBUILD:=.native)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
-	 -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end -I asmcomp \
+         -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo utils/timings.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -104,35 +104,9 @@ ASMCOMP=\
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
-  asmcomp/symbol.cmo asmcomp/abstract_identifiers.cmo \
-  asmcomp/flambdaiter.cmo \
-  asmcomp/flambdasubst.cmo \
-  asmcomp/flambdautils.cmo \
-  asmcomp/invariant_params.cmo \
-  asmcomp/printflambda.cmo \
-  asmcomp/flambdacheck.cmo \
-  asmcomp/inconstant_idents.cmo \
-  asmcomp/closure_conversion.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
-  asmcomp/effect_analysis.cmo \
-  asmcomp/simple_value_approx.cmo \
-  asmcomp/inlining_cost.cmo \
-  asmcomp/simplify_common.cmo \
-  asmcomp/lift_code.cmo \
-  asmcomp/remove_unused_arguments.cmo \
-  asmcomp/remove_unused_closure_vars.cmo \
-  asmcomp/remove_unused_globals.cmo \
-  asmcomp/simplify_sequential_logical_ops.cmo \
-  asmcomp/simplify_boxed_integer_ops.cmo \
-  asmcomp/simplify_primitives.cmo \
-  asmcomp/inlining_stats_types.cmo \
-  asmcomp/inlining_stats.cmo \
-  asmcomp/inlining_env.cmo \
-  asmcomp/inlining_result.cmo \
-  asmcomp/inlining_decision.cmo \
-  asmcomp/inlining.cmo \
-  asmcomp/ref_to_variables.cmo \
+  asmcomp/import_approx.cmo \
   asmcomp/flambdasym.cmo \
   asmcomp/clambdagen.cmo \
   asmcomp/strmatch.cmo asmcomp/cmmgen.cmo \
@@ -150,6 +124,37 @@ ASMCOMP=\
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 
+MIDDLE_END=\
+  middle_end/symbol.cmo \
+  middle_end/abstract_identifiers.cmo \
+  middle_end/flambdaiter.cmo \
+  middle_end/flambdasubst.cmo \
+  middle_end/flambdautils.cmo \
+  middle_end/invariant_params.cmo \
+  middle_end/printflambda.cmo \
+  middle_end/flambdacheck.cmo \
+  middle_end/inconstant_idents.cmo \
+  middle_end/closure_conversion.cmo \
+  middle_end/effect_analysis.cmo \
+  middle_end/simple_value_approx.cmo \
+  middle_end/inlining_cost.cmo \
+  middle_end/simplify_common.cmo \
+  middle_end/lift_code.cmo \
+  middle_end/remove_unused_arguments.cmo \
+  middle_end/remove_unused_closure_vars.cmo \
+  middle_end/remove_unused_globals.cmo \
+  middle_end/simplify_sequential_logical_ops.cmo \
+  middle_end/simplify_boxed_integer_ops.cmo \
+  middle_end/simplify_primitives.cmo \
+  middle_end/inlining_stats_types.cmo \
+  middle_end/inlining_stats.cmo \
+  middle_end/inlining_env.cmo \
+  middle_end/inlining_result.cmo \
+  middle_end/inlining_decision.cmo \
+  middle_end/inlining.cmo \
+  middle_end/ref_to_variables.cmo \
+  middle_end/middle_end.cmo
+
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
@@ -159,7 +164,7 @@ OPTSTART=driver/optmain.cmo
 
 TOPLEVELSTART=toplevel/topstart.cmo
 
-NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+NATTOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(MIDDLE_END) $(ASMCOMP) \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
@@ -399,6 +404,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(INSTALL_BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
+	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti $(INSTALL_COMPLIBDIR)
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti $(INSTALL_COMPLIBDIR)
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) $(INSTALL_COMPLIBDIR)
 	if test -n "$(WITH_OCAMLDOC)"; then (cd ocamldoc; $(MAKE) installopt); \
@@ -453,8 +459,8 @@ ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 
 # The native-code compiler
 
-compilerlibs/ocamloptcomp.cma: $(ASMCOMP)
-	$(CAMLC) -a -o $@ $(ASMCOMP)
+compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
+	$(CAMLC) -a -o $@ $(MIDDLE_END) $(ASMCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
@@ -580,8 +586,8 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
-compilerlibs/ocamloptcomp.cmxa: $(ASMCOMP:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(ASMCOMP:.cmo=.cmx)
+compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.a
 
@@ -595,7 +601,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 partialclean::
 	rm -f ocamlopt.opt
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx): ocamlopt
 
 # The numeric opcodes
 
@@ -897,14 +903,14 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` ${PPX_BISECT_OPT} -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \
+	for d in utils parsing typing bytecomp middle_end asmcomp driver toplevel tools; \
 	  do rm -f $$d/*.cm[ioxtp] $$d/*.cmti $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 	rm -f bisect*.out
 	rm -f asmcomp/*/*.cmp
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
+	(for d in utils parsing typing bytecomp middle_end asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 
