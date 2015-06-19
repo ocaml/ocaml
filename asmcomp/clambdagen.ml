@@ -718,7 +718,7 @@ module Conv(P:Param2) = struct
       List.flatten
         (List.map (function
              | Symbol_SCC.Has_loop l -> l
-             | No_loop v -> [v])
+             | Symbol_SCC.No_loop v -> [v])
             (List.rev
                (Array.to_list
                   (Symbol_SCC.connected_components_sorted_from_roots_to_leaf

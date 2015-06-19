@@ -151,6 +151,7 @@ let toplevel_substitution sb tree =
   Flambdaiter.map_toplevel aux tree
 
 module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
+  type inactive_or_active = t
 
   type t =
     { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
@@ -196,7 +197,8 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
 
       subst_free_vars must have been used to build off_sb
    *)
-  let ffuns_subst t subst (ffuns : _ Flambda.function_declarations) =
+  let ffuns_subst t (subst : inactive_or_active)
+        (ffuns : _ Flambda.function_declarations) =
     match subst with
     | Inactive -> ffuns, subst, t
     | Active subst ->
@@ -229,7 +231,8 @@ module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
             funs, subst)
           ffuns.funs (Variable.Map.empty, subst) in
       let current_unit = Compilation_unit.get_current_exn () in
-      { set_of_closures_id = Set_of_closures_id.create current_unit;
+      { Flambda.
+        set_of_closures_id = Set_of_closures_id.create current_unit;
         compilation_unit = current_unit;
         funs }, Active subst, t
 

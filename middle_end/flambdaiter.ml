@@ -189,7 +189,8 @@ let iter_on_closures f t =
 
 let map_general ~toplevel f tree =
   let rec aux (tree : _ Flambda.t) =
-    let exp = match tree with
+    let exp : _ Flambda.t =
+      match tree with
       | Fsymbol _ -> tree
       | Fvar _ -> tree
       | Fconst _ -> tree
@@ -199,7 +200,7 @@ let map_general ~toplevel f tree =
                     kind; dbg }, annot)
       | Fset_of_closures ({ function_decls; free_vars;
                     specialised_args },annot) ->
-          let function_decls =
+          let function_decls : _ Flambda.function_declarations =
             if toplevel
             then function_decls
             else

@@ -66,7 +66,7 @@ let eliminate_ref lam =
     else Some (arr.(field), Array.length arr)
   in
 
-  let aux (flam : _ Flambda.t) =
+  let aux (flam : _ Flambda.t) : _ Flambda.t =
     match flam with
     | Flet(Immutable, v,
            Fprim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
@@ -93,7 +93,7 @@ let eliminate_ref lam =
         | Some (var,size) ->
             if size = 1
             then
-              Fassign(var, Fprim(Poffsetint delta, [Fvar (var,d1)], dbg, d2),
+              Fassign(var, Fprim(Poffsetint delta, [Flambda.Fvar (var,d1)], dbg, d2),
                       Expr_id.create ())
             else Funreachable d1)
     | Fprim(Psetfield(field, _), [Fvar (v,d1); e], _, d2)

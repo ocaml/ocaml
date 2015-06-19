@@ -127,7 +127,7 @@ module NotConstants(P:Param) = struct
   let rec mark_loop ~toplevel (curr:dep list) (flam : _ Flambda.t) =
     match flam with
     | Flet(str, id, lam, body, _) ->
-      if str = Mutable then mark_curr [Var id];
+      if str = Flambda.Mutable then mark_curr [Var id];
       mark_loop ~toplevel [Var id] lam;
       (* adds 'id in NC => curr in NC'
          This is not really necessary, but compiling this correctly is

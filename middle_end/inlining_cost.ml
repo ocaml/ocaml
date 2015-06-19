@@ -29,11 +29,16 @@ let prim_size (prim : Lambda.primitive) args =
   | Pstringlength -> 5
   | Pstringrefs | Pstringsets -> 6
   | Pmakearray _ -> 5 + List.length args
-  | Parraylength kind -> if kind = Pgenarray then 6 else 2
-  | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
-  | Parraysetu kind -> if kind = Pgenarray then 16 else 4
-  | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
-  | Parraysets kind -> if kind = Pgenarray then 22 else 10
+  | Parraylength Pgenarray -> 6
+  | Parraylength _ -> 2
+  | Parrayrefu Pgenarray -> 12
+  | Parrayrefu _ -> 2
+  | Parraysetu Pgenarray -> 16
+  | Parraysetu _ -> 4
+  | Parrayrefs Pgenarray -> 18
+  | Parrayrefs _ -> 8
+  | Parraysets Pgenarray -> 22
+  | Parraysets _ -> 10
   | Pbittest -> 3
   | Pbigarrayref (_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset (_, ndims, _, _) -> 4 + ndims * 6

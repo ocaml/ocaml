@@ -160,7 +160,8 @@ let const_approx (flam : Flambda.const) =
   | Fconst_float_array a -> value_float_array (List.length a)
   | Fconst_immstring s -> value_string (String.length s) (Some s)
 
-let check_constant_result (lam : _ Flambda.t) approx =
+let check_constant_result (lam : _ Flambda.t) approx
+      : _ Flambda.t * t =
   if Effect_analysis.no_effects lam then
     match approx.descr with
     | Value_int n ->

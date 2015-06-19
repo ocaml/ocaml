@@ -255,7 +255,7 @@ let tupled_function_call_stub t original_params tuplified_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : _ Flambda.t =
-          Fprim (Pfield pos, [Fvar (tuple_param, nid ())],
+          Fprim (Pfield pos, [Flambda.Fvar (tuple_param, nid ())],
             Debuginfo.none, nid ())
         in
         pos + 1, Flambda.Flet (Immutable, param, lam, body, nid ()))
@@ -415,7 +415,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
   | Lprim (Prevapply loc, [arg; funct]) ->
-    close t env (Lapply (funct, [arg], loc))
+    close t env (Lambda.Lapply (funct, [arg], loc))
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     Fprim (Praise kind, [close t env arg], Debuginfo.from_raise event, nid ())
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
@@ -576,7 +576,9 @@ and close_functions t external_env function_declarations
 and close_list t sb l = List.map (close t sb) l
 
 (* Ensure that [let] and [let rec]-bound functions have appropriate names. *)
-and close_let_bound_expression t ?let_rec_ident let_bound_var env = function
+and close_let_bound_expression t ?let_rec_ident let_bound_var env
+      (lam : Lambda.lambda) : _ Flambda.t =
+  match lam with
   | Lfunction (kind, params, body) ->
     let closure_bound_var = rename_var t let_bound_var in
     let decl =

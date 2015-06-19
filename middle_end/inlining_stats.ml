@@ -64,7 +64,7 @@ module Line_number_then_time = struct
     | _ -> compare t1 t2
 
   let create ~debuginfo ~time = debuginfo, time
-  let line_number (t : t) = (fst t).dinfo_line
+  let line_number t = (fst t).Debuginfo.dinfo_line
 end
 
 let decisions :

@@ -196,14 +196,15 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fsend _, _ | _, Fsend _ -> false
   | Funreachable _, Funreachable _ -> true
 
-and sameclosure c1 c2 =
+and sameclosure (c1 : _ Flambda.function_declaration)
+      (c2 : _ Flambda.function_declaration) =
   Misc.samelist Variable.equal c1.params c2.params &&
   same c1.body c2.body
 
 and samebinding (v1, c1) (v2, c2) =
   Variable.equal v1 v2 && same c1 c2
 
-and sameswitch fs1 fs2 =
+and sameswitch (fs1 : _ Flambda.switch) (fs2 : _ Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
   fs1.numconsts = fs2.numconsts &&
   fs1.numblocks = fs2.numblocks &&

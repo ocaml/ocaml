@@ -637,7 +637,8 @@ module Conv(P:Param1) = struct
         Funreachable (),
         Value_unknown
 
-  and conv_closure env functs param_approxs spec_arg fv =
+  and conv_closure env (functs : _ Flambda.function_declarations)
+        param_approxs spec_arg fv =
     let closed =
       Set_of_closures_id.Set.mem functs.set_of_closures_id P.constant_closures
     in

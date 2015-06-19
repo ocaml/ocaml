@@ -168,7 +168,8 @@ let rec lam ppf (flam : _ Flambda.t) =
   | Funreachable _ ->
       fprintf ppf "unreachable"
 
-and sequence ppf ulam = match ulam with
+and sequence ppf (ulam : _ Flambda.t) =
+  match ulam with
   | Fsequence(l1, l2,_) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | _ -> lam ppf ulam

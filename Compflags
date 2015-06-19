@@ -42,6 +42,6 @@ case $1 in
     # More aggressive "unused identifier" warnings for Flambda passes.
     # Also suppress "label ... defined in both ..." for record types, since
     # it is of no consequence.
-    echo '-w +K+27-30'
+    echo '-w +K+27-30 -principal'
     ;;
 esac
