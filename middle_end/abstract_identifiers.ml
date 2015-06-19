@@ -13,8 +13,6 @@
 open Ext_types
 
 module Variable = struct
-  module Compilation_unit = Symbol.Compilation_unit
-
   module T = struct
     type t = {
       var_unit : Compilation_unit.t;

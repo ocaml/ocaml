@@ -17,8 +17,6 @@ module A = Simple_value_approx
 module E = Inlining_env
 module R = Inlining_result
 
-module Compilation_unit = Symbol.Compilation_unit
-
 let ret = R.set_approx
 
 let new_var name =

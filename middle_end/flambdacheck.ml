@@ -13,8 +13,6 @@
 
 open Abstract_identifiers
 
-module Compilation_unit = Symbol.Compilation_unit
-
 type 'a counter_example =
   | No_counter_example
   | Counter_example of 'a
