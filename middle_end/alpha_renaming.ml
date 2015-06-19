@@ -13,7 +13,7 @@
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
-  apply_static_exception : Static_exception.t Static_exception.Map.t;
+  sb_exn : Static_exception.t Static_exception.Map.t;
   (* Used to handle substitution sequences: we cannot call the substitution
      recursively because there can be name clashes. *)
   back_var : Variable.t list Variable.Map.t;
@@ -27,7 +27,7 @@ type subst = t
 
 let empty_tbl = {
   sb_var = Variable.Map.empty;
-  apply_static_exception = Static_exception.Map.empty;
+  sb_exn = Static_exception.Map.empty;
   back_var = Variable.Map.empty;
 }
 
@@ -57,7 +57,7 @@ let apply_static_exception t i =
   | Inactive ->
     i
   | Active t ->
-    try Static_exception.Map.find i t.apply_static_exception
+    try Static_exception.Map.find i t.sb_exn
     with Not_found -> i
 
 let add_static_exception t i =
@@ -65,10 +65,10 @@ let add_static_exception t i =
   | Inactive -> i, t
   | Active t ->
     let i' = Static_exception.create () in
-    let apply_static_exception =
-      Static_exception.Map.add i i' t.apply_static_exception
+    let sb_exn =
+      Static_exception.Map.add i i' t.sb_exn
     in
-    i', Active { t with apply_static_exception; }
+    i', Active { t with sb_exn; }
 
 let active_add_variable t id =
   let id' = Variable.freshen id in
@@ -233,7 +233,7 @@ end
 let apply_function_decls_and_free_vars t fv func_decls =
   let module I = Ids_and_bound_vars_of_closures in
   let fv, t, of_closures = I.subst_free_vars fv t in
-  let func_decls, t, of_closure =
+  let func_decls, t, of_closures =
     I.func_decls_subst of_closures t func_decls
   in
   fv, func_decls, t, of_closures

@@ -19,53 +19,10 @@ case $1 in
   | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \
   | asmcomp/import_approx.* \
-  | middle_end/backend_intf.* \
-  | middle_end/closure_conversion.* \
-  | middle_end/closure_element_intf.* \
-  | middle_end/closure_element.* \
-  | middle_end/closure_id.* \
-  | middle_end/compilation_unit.* \
-  | middle_end/effect_analysis.* \
-  | middle_end/export_id.* \
-  | middle_end/expr_id.* \
-  | middle_end/flambdacheck.* \
-  | middle_end/flambdaiter.* \
-  | middle_end/flambda.* \
-  | middle_end/flambdasubst.* \
-  | middle_end/flambdautils.* \
-  | middle_end/inconstant_idents.* \
-  | middle_end/inlining_cost.* \
-  | middle_end/inlining_decision_intf.* \
-  | middle_end/inlining_decision.* \
-  | middle_end/inlining_env.* \
-  | middle_end/inlining.* \
-  | middle_end/inlining_result.* \
-  | middle_end/inlining_stats.* \
-  | middle_end/inlining_stats_types.* \
-  | middle_end/invariant_params.* \
-  | middle_end/lift_code.* \
-  | middle_end/linkage_name.* \
-  | middle_end/middle_end.* \
-  | middle_end/printflambda.* \
-  | middle_end/ref_to_variables.* \
-  | middle_end/remove_unused_arguments.* \
-  | middle_end/remove_unused_closure_vars.* \
-  | middle_end/remove_unused_globals.* \
-  | middle_end/set_of_closures_id.* \
-  | middle_end/simple_value_approx.* \
-  | middle_end/simplify_boxed_integer_ops_intf.* \
-  | middle_end/simplify_boxed_integer_ops.* \
-  | middle_end/simplify_common.* \
-  | middle_end/simplify_primitives.* \
-  | middle_end/simplify_sequential_logical_ops.* \
-  | middle_end/static_exception.* \
-  | middle_end/symbol.* \
-  | middle_end/tag.* \
-  | middle_end/variable.* \
-  | middle_end/var_within_closure.*)
+  | middle_end/*)
     # Strict compilation options for Flambda passes.
     # Constructor/record field disambiguation is kept in check by
     # using -principal (which is also morally correct).
-    echo '-w +a-4-9-30-40-41-42 -principal -safe-string -strict-formats'
+    echo '-w +a-4-9+27-30-40-41-42 -principal -safe-string -strict-formats'
     ;;
 esac
