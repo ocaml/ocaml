@@ -111,8 +111,6 @@ let new_descr descr infos =
   id
 
 module Conv(P:Param1) = struct
-  open Flambdaexport
-
   let _functions, closures, ex_kept_arguments = functions P.expr
 
   (* functions comming from a linked module *)
@@ -213,14 +211,14 @@ module Conv(P:Param1) = struct
       in
       try
         let id = Symbol.Map.find sym export.ex_symbol_id in
-        let descr = find_description id export in
+        let descr = Flambdaexport.find_description id export in
         Some descr
       with
       | Not_found -> None
 
   let extern_id_descr ex =
     let export = Compilenv.approx_env () in
-    try Some (find_description ex export)
+    try Some (Flambdaexport.find_description ex export)
     with Not_found -> None
 
   let get_descr (approx : ET.approx) =
@@ -281,7 +279,7 @@ module Conv(P:Param1) = struct
         Value_symbol sym
 
     | Fconst (Fconst_base c as cst,_) ->
-        begin let open Asttypes in
+        begin
           match c with
           | Const_int i ->
               Fconst(cst, ()),
@@ -357,7 +355,6 @@ module Conv(P:Param1) = struct
 
         let env, consts = List.fold_left
             (fun (env, acc) (id, (def : _ Flambda.t)) ->
-               let open Asttypes in
                match def with
                | Fconst (( Fconst_pointer _
                          | Fconst_base
@@ -824,12 +821,10 @@ module type Param2 = sig
 end
 
 module Prepare(P:Param2) = struct
-  open P
-
   (*** Preparing export informations: Replacing every symbol by its
        canonical representant ***)
 
-  let canonical_symbol s = canonical_symbol s infos
+  let canonical_symbol s = canonical_symbol s P.infos
 
   (* Replace all symbols occurences by their representative *)
   let expr, constants =
@@ -844,8 +839,8 @@ module Prepare(P:Param2) = struct
       let sym' = canonical_symbol sym in
       Symbol.Map.add sym' (Flambdaiter.map use_canonical_symbols lam) map
     in
-    Flambdaiter.map use_canonical_symbols expr,
-    Symbol.Tbl.fold aux infos.constants Symbol.Map.empty
+    Flambdaiter.map use_canonical_symbols P.expr,
+    Symbol.Tbl.fold aux P.infos.constants Symbol.Map.empty
 
   let ex_functions =
     let ex_functions = ref Set_of_closures_id.Map.empty in
@@ -889,14 +884,14 @@ module Prepare(P:Param2) = struct
       results = Closure_id.Map.map canonical_approx clos.results;
     }
 
-  let new_descr descr = new_descr descr infos
+  let new_descr descr = new_descr descr P.infos
 
   (* build the approximation of the root module *)
   let root_id =
     let size_global =
-      1 + (Hashtbl.fold (fun k _ acc -> max k acc) infos.global (-1)) in
+      1 + (Hashtbl.fold (fun k _ acc -> max k acc) P.infos.global (-1)) in
     let fields = Array.init size_global (fun i ->
-        try canonical_approx (Hashtbl.find infos.global i) with
+        try canonical_approx (Hashtbl.find P.infos.global i) with
         | Not_found -> ET.Value_unknown) in
     new_descr (Value_block (Tag.zero,fields))
 
@@ -905,7 +900,7 @@ module Prepare(P:Param2) = struct
 
   (* replace symbol by their representative in value approximations *)
   let ex_values =
-    Export_id.Map.map canonical_descr !(infos.ex_table)
+    Export_id.Map.map canonical_descr !(P.infos.ex_table)
 
   (* build the symbol to id and id to symbol maps *)
   let module_symbol =
@@ -916,7 +911,7 @@ module Prepare(P:Param2) = struct
       let sym' = canonical_symbol sym in
       Symbol.Map.add sym' ex map
     in
-    Symbol.Map.fold aux !(infos.ex_symbol_id) Symbol.Map.empty
+    Symbol.Map.fold aux !(P.infos.ex_symbol_id) Symbol.Map.empty
 
   let ex_symbol_id =
     Symbol.Map.add module_symbol root_id
@@ -953,8 +948,8 @@ let convert (type a) ~compilation_unit (expr:a Flambda.t) =
   end in
   let module C2 = Prepare(P2) in
 
-  let export = let open Flambdaexport in
-    { empty_export with
+  let export : ET.exported =
+    { Flambdaexport.empty_export with
       ex_values = Flambdaexport.nest_eid_map C2.ex_values;
       ex_globals = Ident.Map.singleton
           (Compilenv.current_unit_id ()) C2.root_approx;

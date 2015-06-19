@@ -56,7 +56,7 @@ let nest_eid_map map =
 
 let print_approx ppf (export : ET.exported) =
   let values = export.ex_values in
-  let open Format in
+  let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
   let printed_set_of_closures = ref Set_of_closures_id.Set.empty in
   let rec print_approx ppf (approx : ET.approx) =
@@ -78,7 +78,7 @@ let print_approx ppf (export : ET.exported) =
     | Value_symbol sym -> Symbol.print ppf sym
   and print_descr ppf (descr : ET.descr) =
     match descr with
-    | Value_int i -> pp_print_int ppf i
+    | Value_int i -> Format.pp_print_int ppf i
     | Value_constptr i -> fprintf ppf "%ip" i
     | Value_block (tag, fields) ->
       fprintf ppf "[%a:%a]" Tag.print tag
@@ -135,9 +135,8 @@ let print_approx ppf (export : ET.exported) =
   Ident.Map.iter print_approxs export.ex_globals
 
 let print_symbols ppf (export : ET.exported) =
-  let open Format in
   let print_symbol eid sym =
-    fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
+    Format.fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
   Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
     export.ex_id_symbol
@@ -154,7 +153,7 @@ let print_offsets ppf (export : ET.exported) =
   Format.fprintf ppf "@]@ "
 
 let print_all ppf (export : ET.exported) =
-  let open Format in
+  let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
     print_approx export;
   fprintf ppf "id_symbol@ %a@.@."

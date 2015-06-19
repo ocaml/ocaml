@@ -642,7 +642,6 @@ module Conv(P:Param2) = struct
   and conv_list env l = List.map (conv env) l
 
   and conv_const expected_symbol (cst : Flambda.const) : Clambda.uconstant =
-    let open Asttypes in
     let str ~shared cst : Clambda.uconstant =
       let name = structured_constant_label expected_symbol ~shared cst in
       Uconst_ref (name, Some cst)
