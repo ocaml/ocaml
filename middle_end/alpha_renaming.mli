@@ -11,8 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Alpha renaming of variables and static exception identifiers. *)
+(** Alpha renaming of various identifiers. *)
 
+(** A table used for freshening variables and static exception identifiers. *)
 type t
 type subst = t
 
