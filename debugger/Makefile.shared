@@ -32,6 +32,7 @@ OTHEROBJS=\
   $(UNIXDIR)/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/consistbl.cmo ../utils/warnings.cmo \
+  ../utils/ext_types.cmo \
   ../parsing/location.cmo ../parsing/longident.cmo \
   ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
