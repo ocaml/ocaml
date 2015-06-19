@@ -140,6 +140,7 @@ MIDDLE_END=\
   middle_end/symbol.cmo \
   middle_end/flambdaiter.cmo \
   middle_end/flambdautils.cmo \
+  middle_end/find_recursive_functions.cmo \
   middle_end/alpha_renaming.cmo \
   middle_end/invariant_params.cmo \
   middle_end/printflambda.cmo \

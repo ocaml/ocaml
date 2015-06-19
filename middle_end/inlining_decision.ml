@@ -16,12 +16,13 @@ module E = Inlining_env
 module R = Inlining_result
 module U = Flambdautils
 
-let is_probably_a_functor env clos approxs =
-  !Clflags.functor_heuristics &&
-  E.at_toplevel env &&
-  not (E.is_inside_branch env) &&
-    List.for_all A.known approxs &&
-    Variable.Set.is_empty (U.recursive_functions clos)
+let is_probably_a_functor env func_decls approxs =
+  !Clflags.functor_heuristics
+    && E.at_toplevel env
+    && (not (E.is_inside_branch env))
+    && List.for_all A.known approxs
+    && Variable.Set.is_empty
+        (Find_recursive_functions.in_function_decls func_decls)
 
 let should_inline_function_known_to_be_recursive
       ~(func : 'a Flambda.function_declaration)
@@ -182,7 +183,10 @@ let inlining_decision_for_call_site ~env ~r
     | _ -> false in
   let inlining_threshold = R.inlining_threshold r in
   let fun_var = U.find_declaration_variable fun_id clos in
-  let recursive = Variable.Set.mem fun_var (U.recursive_functions clos) in
+  let recursive =
+    Variable.Set.mem fun_var
+      (Find_recursive_functions.in_function_decls clos)
+  in
   let probably_a_functor = is_probably_a_functor env clos approxs in
   let fun_cost =
     if unconditionally_inline || (direct_apply && not recursive)

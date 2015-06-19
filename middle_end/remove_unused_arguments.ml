@@ -119,18 +119,17 @@ let separate_unused_arguments (set_of_closures : _ Flambda.set_of_closures) =
    is only indirectly called, suppressing unused arguments does not
    benefit, and introduce an useless intermediate call *)
 let candidate_for_spliting_for_unused_arguments
-    (fun_decl : _ Flambda.function_declarations) =
+    (fun_decls : _ Flambda.function_declarations) =
   let no_recursive_functions =
     Variable.Set.is_empty
-      (Flambdautils.recursive_functions fun_decl)
+      (Find_recursive_functions.in_function_decls fun_decls)
   in
   let number_of_non_stub_functions =
     Variable.Map.cardinal
       (Variable.Map.filter (fun _ { Flambda.stub } -> not stub)
-         fun_decl.funs)
+         fun_decls.funs)
   in
-  (not no_recursive_functions) ||
-  (number_of_non_stub_functions > 1)
+  (not no_recursive_functions) || (number_of_non_stub_functions > 1)
 
 let separate_unused_arguments_in_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
