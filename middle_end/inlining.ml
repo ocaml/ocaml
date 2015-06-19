@@ -1011,7 +1011,7 @@ and inline_by_copying_function_body ~env ~r
   let subst_map =
     Variable.Map.of_list (List.combine func.params subst_params)
   in
-  let body = Alpha_renaming.toplevel_substitution subst_map func.body in
+  let body = Flambdautils.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =

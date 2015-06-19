@@ -29,14 +29,14 @@ val activate : t -> t
     empty active alpha renaming. *)
 val empty_preserving_activation_state : t -> t
 
-(** [add_variable subst var]
-    If [subst] is an active substitution:
-      It returns a fresh variable [new_var] and
-      adds [var] -> [new_var] to the substitution.
-      If a substitution [other_var] -> [var] or [symbol] -> [var] is present
-      in [subst], it will also add [other_var] -> [new_var] and
+(** [add_variable t var]
+    If [t] is active:
+      It returns a fresh variable [new_var] and adds [var] -> [new_var]
+      to the alpha renaming.
+      If a renaming [other_var] -> [var] or [symbol] -> [var] was already
+      present in [t], it will also add [other_var] -> [new_var] and
       [symbol] -> [new_var].
-    If [subst] is inactive, this is the identity.
+    If [t] is inactive, this is the identity.
 *)
 val add_variable : t -> Variable.t -> Variable.t * t
 
@@ -57,8 +57,8 @@ val add_variables
 (** As for [add_variable], but for static exception identifiers. *)
 val add_static_exception : t -> Static_exception.t -> Static_exception.t * t
 
-(** [apply_variable subst var] applies the substitution [subst] to [var].
-    If no substitution is registered for [var] it is returned unchanged. *)
+(** [apply_variable t var] applies the freshening [t] to [var].
+    If no renaming is specified in [t] for [var] it is returned unchanged. *)
 val apply_variable : t -> Variable.t -> Variable.t
 
 (** As for [apply_variable], but for static exception identifiers. *)
@@ -68,7 +68,7 @@ val apply_static_exception : t -> Static_exception.t -> Static_exception.t
     [Fsymbol] by the corresponding [Fvar]. This is used to recover
     the recursive call when importing code from another compilation unit.
 
-    If the substitution is inactive, this is the identity.
+    If the renaming is inactive, this is the identity.
 *)
 val rewrite_recursive_calls_with_symbols
    : t
@@ -116,8 +116,3 @@ val apply_function_decls_and_free_vars
   -> 'b Flambda.function_declarations
   -> 'a Variable.Map.t * 'b Flambda.function_declarations * t
     * Ids_and_bound_vars_of_closures.t
-
-val toplevel_substitution
-   : Variable.t Variable.Map.t
-  -> 'a Flambda.t
-  -> 'a Flambda.t

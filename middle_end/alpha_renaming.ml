@@ -135,21 +135,6 @@ let rewrite_recursive_calls_with_symbols t
     in
     { function_declarations with funs }
 
-let toplevel_substitution sb tree =
-  let sb v = try Variable.Map.find v sb with Not_found -> v in
-  let aux (flam : _ Flambda.t) : _ Flambda.t =
-    match flam with
-    | Fvar (id,e) -> Fvar (sb id,e)
-    | Fassign (id,e,d) -> Fassign (sb id,e,d)
-    | Fset_of_closures (cl,d) ->
-      Fset_of_closures ({cl with
-                 specialised_args =
-                   Variable.Map.map sb cl.specialised_args},
-                d)
-    | e -> e
-  in
-  Flambdaiter.map_toplevel aux tree
-
 module Ids_and_bound_vars_of_closures = struct
   type inactive_or_active = t
 
@@ -215,7 +200,7 @@ module Ids_and_bound_vars_of_closures = struct
           free_variables;
           params;
           (* keep code in sync with the closure *)
-          body = toplevel_substitution subst.sb_var ffun.body;
+          body = Flambdautils.toplevel_substitution subst.sb_var ffun.body;
         }, subst
       in
       let subst, t =

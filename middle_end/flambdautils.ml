@@ -216,9 +216,25 @@ let can_be_merged = same
 
 (* Sharing key TODO
    Not implemented yet: this avoids sharing anything *)
+(* CR mshinwell for pchambart: What is happening about this? *)
 
 type sharing_key = unit
 let make_key _ = None
+
+let toplevel_substitution sb tree =
+  let sb v = try Variable.Map.find v sb with Not_found -> v in
+  let aux (flam : _ Flambda.t) : _ Flambda.t =
+    match flam with
+    | Fvar (id,e) -> Fvar (sb id,e)
+    | Fassign (id,e,d) -> Fassign (sb id,e,d)
+    | Fset_of_closures (cl,d) ->
+      Fset_of_closures ({cl with
+                 specialised_args =
+                   Variable.Map.map sb cl.specialised_args},
+                d)
+    | e -> e
+  in
+  Flambdaiter.map_toplevel aux tree
 
 let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
@@ -244,7 +260,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
     Variable.Set.fold
       (fun id sb -> Variable.Map.add id (Variable.freshen id) sb)
       free_variables Variable.Map.empty in
-  let body = Alpha_renaming.toplevel_substitution sb body in
+  let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
   let function_declaration : _ Flambda.function_declaration =
     { stub = false;

@@ -88,3 +88,8 @@ val make_closure_declaration
   -> body:Expr_id.t Flambda.t
   -> params:Variable.t list
   -> Expr_id.t Flambda.t
+
+val toplevel_substitution
+   : Variable.t Variable.Map.t
+  -> 'a Flambda.t
+  -> 'a Flambda.t
