@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 let used_globals id tree =
   let used = ref Ext_types.Int.Set.empty in
   Flambdaiter.iter (function

@@ -11,18 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Introduce a stub function to avoid depending on unused arguments.
+(** An identifier, unique across the whole program, that identifies a
+    particular variable within a particular closure.  Only
+    [Fvar_within_closure], and not [Fvar], nodes are tagged with these
+    identifiers. *)
 
-    For instance, it turns
-      [let rec fact n unused =
-         if n = 0 then 1
-         else n * fact (n-1) unused]
-    into
-      [let rec fact' n =
-         if n = 0 then 1
-         else n * fact (n-1) unused
-       and fact n unused = fact' n]
-*)
-val separate_unused_arguments_in_closures
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+include Closure_element_intf.S

@@ -67,3 +67,5 @@ val iter: (t -> 'a -> unit) -> 'a tbl -> unit
 (* Idents for sharing keys *)
 
 val make_key_generator : unit -> (t -> t)
+
+include Ext_types.Identifiable with type t := t

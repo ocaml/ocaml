@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 
 (** Lift [let] bindings to attempt to increase the length of scopes, as an

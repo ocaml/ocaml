@@ -11,7 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
 open Inlining_decision_intf
 
 (* Examine a full application of a known closure to determine whether to

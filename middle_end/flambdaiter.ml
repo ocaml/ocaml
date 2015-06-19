@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 let apply_on_subexpressions f (flam : _ Flambda.t) =
   match flam with
   | Fsymbol _

@@ -233,3 +233,15 @@ let compare x y =
 
 let output oc id = output_string oc (unique_name id)
 let hash i = (Char.code i.name.[0]) lxor i.stamp
+
+module T = struct
+  type ident = t
+  type t = ident
+  let compare = compare
+  let output = output
+  let print = print
+  let hash = hash
+  let equal = equal
+end
+
+include Ext_types.Identifiable.Make (T)

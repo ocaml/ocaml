@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 (* Simple approximation of the space cost of a primitive. *)
 
 let prim_size (prim : Lambda.primitive) args =

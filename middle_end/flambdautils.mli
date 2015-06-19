@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Abstract_identifiers
-
 (** Intermediate language used to perform closure conversion and inlining.
     See flambdatypes.ml for documentation.
 *)

@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 (* Naming conventions used in this module:
    - All variable names containing "id" or "ident" are of type [Ident.t] or
      are collections of [Ident.t].  These refer to identifiers for the type

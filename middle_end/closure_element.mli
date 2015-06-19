@@ -11,18 +11,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Introduce a stub function to avoid depending on unused arguments.
+include Ext_types.Identifiable
 
-    For instance, it turns
-      [let rec fact n unused =
-         if n = 0 then 1
-         else n * fact (n-1) unused]
-    into
-      [let rec fact' n =
-         if n = 0 then 1
-         else n * fact (n-1) unused
-       and fact n unused = fact' n]
-*)
-val separate_unused_arguments_in_closures
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+val wrap : Variable.t -> t
+val unwrap : t -> Variable.t
+
+val in_compilation_unit : Compilation_unit.t -> t -> bool
+val get_compilation_unit : t -> Compilation_unit.t
+
+val unique_name : t -> string
+
+val output_full : out_channel -> t -> unit

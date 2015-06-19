@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 val apply_on_subexpressions : ('a Flambda.t -> unit) -> 'a Flambda.t -> unit
 
 val subexpressions : 'a Flambda.t -> 'a Flambda.t list

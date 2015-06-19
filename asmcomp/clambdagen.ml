@@ -12,7 +12,6 @@
 (**************************************************************************)
 
 open Misc
-open Abstract_identifiers
 open Lambda
 open Clambda
 open Flambda

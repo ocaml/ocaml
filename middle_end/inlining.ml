@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 module A = Simple_value_approx
 module E = Inlining_env
 module R = Inlining_result

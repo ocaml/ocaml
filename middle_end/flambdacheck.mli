@@ -10,8 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-open Abstract_identifiers
-
 val check : ?flambdasym:bool -> ?cmxfile:bool -> 'a Flambda.t -> unit
 (** Run all tests, raises Fatal_error if a test fails *)
 

@@ -10,8 +10,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 (* CR pchambart to pchambart: in fact partial application doesn't work because
    there are no 'known' partial application left: they are converted to
    applications new partial function declaration.

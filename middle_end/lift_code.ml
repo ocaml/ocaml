@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 module A = Simple_value_approx
 module C = Inlining_cost
 

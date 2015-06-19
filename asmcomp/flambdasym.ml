@@ -25,7 +25,6 @@ Then the tables needed to build the Flambdaexport.exported type are build.
 *)
 
 open Misc
-open Abstract_identifiers
 open Flambda
 open Flambdaexport_types
 open Flambdautils

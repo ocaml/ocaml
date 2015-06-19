@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type 'a counter_example =
   | No_counter_example
   | Counter_example of 'a

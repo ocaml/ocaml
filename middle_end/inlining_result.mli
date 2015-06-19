@@ -1,5 +1,3 @@
-open Abstract_identifiers
-
 module IntMap = Ext_types.Int.Map
 
 type t

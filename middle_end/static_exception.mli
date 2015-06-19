@@ -11,18 +11,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Introduce a stub function to avoid depending on unused arguments.
+(** An identifier that is used to label static exceptions.  Its
+    uniqueness properties are unspecified. *)
 
-    For instance, it turns
-      [let rec fact n unused =
-         if n = 0 then 1
-         else n * fact (n-1) unused]
-    into
-      [let rec fact' n =
-         if n = 0 then 1
-         else n * fact (n-1) unused
-       and fact n unused = fact' n]
-*)
-val separate_unused_arguments_in_closures
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+include Ext_types.Identifiable
+
+val create : unit -> t
+
+val to_int : t -> int

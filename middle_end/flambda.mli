@@ -78,8 +78,6 @@
       expressions such as: [Fprim (Pmakeblock(...), ...)].
 *)
 
-open Abstract_identifiers
-
 type let_kind =
   | Immutable
   | Mutable

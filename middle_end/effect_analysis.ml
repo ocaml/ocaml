@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 let no_effects_prim (prim : Lambda.primitive) =
   match prim with
   | Pccall { prim_name =

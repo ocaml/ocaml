@@ -20,4 +20,4 @@ val middle_end
   -> backend:(module Backend_intf.S)
   -> exported_fields:int
   -> Lambda.lambda
-  -> Abstract_identifiers.Expr_id.t Flambda.t
+  -> Expr_id.t Flambda.t

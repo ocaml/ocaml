@@ -1,5 +1,3 @@
-open Abstract_identifiers
-
 type t
 
 val empty

@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 (* CR mshinwell for lwhite: rename "unchanging" -> "invariant" *)
 
 (* [unchanging_params_in_recursion] calculates the set of parameters whose

@@ -11,18 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Introduce a stub function to avoid depending on unused arguments.
+include Ext_types.Int
 
-    For instance, it turns
-      [let rec fact n unused =
-         if n = 0 then 1
-         else n * fact (n-1) unused]
-    into
-      [let rec fact' n =
-         if n = 0 then 1
-         else n * fact (n-1) unused
-       and fact n unused = fact' n]
-*)
-val separate_unused_arguments_in_closures
-   : Expr_id.t Flambda.t
-  -> Expr_id.t Flambda.t
+let create () = Lambda.next_raise_count ()
+let to_int t = t

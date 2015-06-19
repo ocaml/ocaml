@@ -17,7 +17,6 @@
 open Config
 open Misc
 open Clambda
-open Abstract_identifiers
 open Cmx_format
 open Ext_types
 

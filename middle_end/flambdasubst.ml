@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
   sb_exn : Static_exception.t Static_exception.Map.t;

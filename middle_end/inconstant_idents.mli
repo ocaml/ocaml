@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type constant_result = {
   not_constant_id : Variable.Set.t;
   not_constant_closure : Set_of_closures_id.Set.t;

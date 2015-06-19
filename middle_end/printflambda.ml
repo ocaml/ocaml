@@ -12,8 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 let fprintf = Format.fprintf
 module Int = Ext_types.Int
 

@@ -11,8 +11,6 @@
 (***********************************************************************)
 
 open Misc
-open Abstract_identifiers
-
 (* access functions *)
 
 let find_declaration cf ({ funs } : _ Flambda.function_declarations) =
@@ -91,6 +89,9 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Funreachable _ -> "unreachable"
 
 let recursive_functions ({ funs } : _ Flambda.function_declarations) =
+  let module Variable_connected_components =
+    Sort_connected_components.Make (Variable)
+  in
   let function_variables = Variable.Map.keys funs in
   let directed_graph =
     Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->

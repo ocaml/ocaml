@@ -14,7 +14,6 @@
 
 (* Compilation environments for compilation units *)
 
-open Abstract_identifiers
 open Cmx_format
 
 val reset: ?packname:string -> string -> unit

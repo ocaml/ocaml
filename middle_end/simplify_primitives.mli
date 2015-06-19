@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 (** Simplifies an application of a primitive based on approximation
     information. *)
 val primitive

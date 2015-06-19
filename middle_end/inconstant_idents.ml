@@ -47,8 +47,6 @@
    - the second propagates the implications
 *)
 
-open Abstract_identifiers
-
 module Int = Ext_types.Int
 
 type constant_result = {

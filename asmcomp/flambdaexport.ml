@@ -11,7 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
 open Flambda
 open Flambdaexport_types
 

@@ -15,8 +15,6 @@
     This pass is designed for speed rather than accuracy; the performance
     is important since it is used heavily during inlining. *)
 
-open Abstract_identifiers
-
 type 'a boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int

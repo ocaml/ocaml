@@ -1,5 +1,3 @@
-open Abstract_identifiers
-
 module Closure_stack : sig
   type t
 

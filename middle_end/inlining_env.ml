@@ -1,4 +1,3 @@
-open Abstract_identifiers
 open Simple_value_approx
 
 type t = {

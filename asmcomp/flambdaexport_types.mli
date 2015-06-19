@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type value_string = Simple_value_approx.value_string = {
   contents : string option; (* None if unknown or mutable *)
   size : int;

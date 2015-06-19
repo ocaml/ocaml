@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 module A = Simple_value_approx
 
 let reexported_missing_symbols = Symbol.Tbl.create 0

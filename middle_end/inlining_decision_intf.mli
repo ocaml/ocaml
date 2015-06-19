@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Abstract_identifiers
-
 type 'a by_copying_function_body =
      env:Inlining_env.t
   -> r:Inlining_result.t

@@ -13,8 +13,6 @@
 
 (* Knowledge that the middle end needs about the backend. *)
 
-open Abstract_identifiers
-
 module type S = sig
   val symbol_for_global' : (Ident.t -> Symbol.t)
 
