@@ -13,7 +13,7 @@
 
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
-  sb_exn : Static_exception.t Static_exception.Map.t;
+  apply_static_exception : Static_exception.t Static_exception.Map.t;
   (* Used to handle substitution sequences: we cannot call the substitution
      recursively because there can be name clashes. *)
   back_var : Variable.t list Variable.Map.t;
@@ -27,13 +27,13 @@ type subst = t
 
 let empty_tbl = {
   sb_var = Variable.Map.empty;
-  sb_exn = Static_exception.Map.empty;
+  apply_static_exception = Static_exception.Map.empty;
   back_var = Variable.Map.empty;
 }
 
 let empty = Inactive
 
-let new_substitution = function
+let empty_preserving_activation_state = function
   | Inactive -> Inactive
   | Active _ -> Active empty_tbl
 
@@ -52,46 +52,49 @@ let rec add_sb_var sb id id' =
     Variable.Map.add id' (id :: l) sb.back_var in
   { sb with back_var }
 
-let sb_exn t i =
+let apply_static_exception t i =
   match t with
   | Inactive ->
-     i
+    i
   | Active t ->
-     try Static_exception.Map.find i t.sb_exn with Not_found -> i
+    try Static_exception.Map.find i t.apply_static_exception
+    with Not_found -> i
 
-let new_subst_exn t i =
+let add_static_exception t i =
   match t with
   | Inactive -> i, t
   | Active t ->
-     let i' = Static_exception.create () in
-     let sb_exn = Static_exception.Map.add i i' t.sb_exn in
-     i', Active { t with sb_exn; }
+    let i' = Static_exception.create () in
+    let apply_static_exception =
+      Static_exception.Map.add i i' t.apply_static_exception
+    in
+    i', Active { t with apply_static_exception; }
 
-let active_new_subst_id t id =
+let active_add_variable t id =
   let id' = Variable.freshen id in
   let t = add_sb_var t id id' in
   id', t
 
-let new_subst_id t id =
+let add_variable t id =
   match t with
   | Inactive -> id, t
   | Active t ->
-     let id', t = active_new_subst_id t id in
+     let id', t = active_add_variable t id in
      id', Active t
 
-let active_new_subst_ids' t ids =
+let active_add_variables' t ids =
   List.fold_right (fun id (ids, t) ->
-      let id', t = active_new_subst_id t id in
+      let id', t = active_add_variable t id in
       id' :: ids, t) ids ([], t)
 
-let new_subst_ids t defs =
-  List.fold_right (fun (id, lam) (defs, t) ->
-      let id', t = new_subst_id t id in
-      (id', lam) :: defs, t) defs ([], t)
+let add_variables t defs =
+  List.fold_right (fun (id, data) (defs, t) ->
+      let id', t = add_variable t id in
+      (id', data) :: defs, t) defs ([], t)
 
-let new_subst_ids' t ids =
+let add_variables' t ids =
   List.fold_right (fun id (ids, t) ->
-      let id', t = new_subst_id t id in
+      let id', t = add_variable t id in
       id' :: ids, t) ids ([], t)
 
 let active_find_var_exn t id =
@@ -100,12 +103,12 @@ let active_find_var_exn t id =
       Misc.fatal_error (Format.asprintf "find_var: can't find %a@."
           Variable.print id)
 
-let subst_var t var =
+let apply_variable t var =
   match t with
   | Inactive -> var
   | Active t ->
-     try Variable.Map.find var t.sb_var with
-     | Not_found -> var
+   try Variable.Map.find var t.sb_var with
+   | Not_found -> var
 
 let rewrite_recursive_calls_with_symbols t
       (function_declarations : _ Flambda.function_declarations)
@@ -118,7 +121,8 @@ let rewrite_recursive_calls_with_symbols t
         let sym = make_closure_symbol cf in
         Symbol.Map.add sym id map)
         function_declarations.funs Symbol.Map.empty in
-    let funs = Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
+    let funs =
+      Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
         let body =
           Flambdaiter.map_toplevel
             (function
@@ -138,10 +142,10 @@ let toplevel_substitution sb tree =
     | Fvar (id,e) -> Fvar (sb id,e)
     | Fassign (id,e,d) -> Fassign (sb id,e,d)
     | Fset_of_closures (cl,d) ->
-        Fset_of_closures ({cl with
-                   specialised_args =
-                     Variable.Map.map sb cl.specialised_args},
-                  d)
+      Fset_of_closures ({cl with
+                 specialised_args =
+                   Variable.Map.map sb cl.specialised_args},
+                d)
     | e -> e
   in
   Flambdaiter.map_toplevel aux tree
@@ -160,12 +164,12 @@ module Ids_and_bound_vars_of_closures = struct
     match subst with
     | Inactive -> id, subst, t
     | Active subst ->
-        let id' = Variable.freshen id in
-        let subst = add_sb_var subst id id' in
-        let off = Var_within_closure.wrap id in
-        let off' = Var_within_closure.wrap id' in
-        let off_sb = Var_within_closure.Map.add off off' t.ffs_fv in
-        id', Active subst, { t with ffs_fv = off_sb; }
+      let id' = Variable.freshen id in
+      let subst = add_sb_var subst id id' in
+      let off = Var_within_closure.wrap id in
+      let off' = Var_within_closure.wrap id' in
+      let off_sb = Var_within_closure.Map.add off off' t.ffs_fv in
+      id', Active subst, { t with ffs_fv = off_sb; }
 
   let new_subst_fun t id subst =
     let id' = Variable.freshen id in
@@ -200,7 +204,7 @@ module Ids_and_bound_vars_of_closures = struct
     | Active subst ->
       let subst_ffunction _fun_id (ffun : _ Flambda.function_declaration)
             subst =
-        let params, subst = active_new_subst_ids' subst ffun.params in
+        let params, subst = active_add_variables' subst ffun.params in
         let free_variables =
           Variable.Set.fold (fun id set ->
               Variable.Set.add (active_find_var_exn subst id) set)
@@ -232,16 +236,17 @@ module Ids_and_bound_vars_of_closures = struct
         compilation_unit = current_unit;
         funs }, Active subst, t
 
-  let subst_function_declarations_and_free_variables subst fv ffuns =
-    let fv, subst, t = subst_free_vars fv subst in
-    let ffuns, subst, t = ffuns_subst t subst ffuns in
-    fv, ffuns, subst, t
-
-  let subst_closure_id t closure_id =
+  let apply_closure_id t closure_id =
     try Closure_id.Map.find closure_id t.ffs_fun
     with Not_found -> closure_id
 
-  let subst_var_within_closure t var_in_closure =
+  let apply_var_within_closure t var_in_closure =
     try Var_within_closure.Map.find var_in_closure t.ffs_fv
     with Not_found -> var_in_closure
 end
+
+let apply_function_decls_and_free_vars t fv ffuns =
+  let module I = Ids_and_bound_vars_of_closures in
+  let fv, t, of_closures = I.subst_free_vars fv t in
+  let ffuns, t, of_closure = I.ffuns_subst of_closures t ffuns in
+  fv, ffuns, t, of_closures

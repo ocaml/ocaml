@@ -105,7 +105,7 @@ let populate_closure_approximations
        [let new_arg, r = loop env r arg]
    * generate fresh new identifiers (if subst.active is true) and
      add the substitution to the environment:
-       [let new_id, env = new_subst_id id env]
+       [let new_id, env = add_variable id env]
    * associate in the environment the approximation of values to
      identifiers:
        [let env = E.add_approx id (R.approx r) env]
@@ -180,11 +180,11 @@ let transform_var_within_closure_expression env r expr closure
       Alpha_renaming.Ids_and_bound_vars_of_closures
     in
     let env_var =
-      AR.subst_var_within_closure set_of_closures.alpha_renaming
+      AR.apply_var_within_closure set_of_closures.alpha_renaming
           fenv_field.var
     in
     let env_closure_id =
-      AR.subst_closure_id set_of_closures.alpha_renaming fenv_field.closure_id
+      AR.apply_closure_id set_of_closures.alpha_renaming fenv_field.closure_id
     in
     assert (Closure_id.equal env_closure_id closure_id);
     let approx =
@@ -228,8 +228,8 @@ let transform_closure_expression env r closure closure_id rel annot
   let module AR =
     Alpha_renaming.Ids_and_bound_vars_of_closures
   in
-  let subst_closure_id (closure' : A.value_set_of_closures) closure_id =
-    let closure_id = AR.subst_closure_id closure'.alpha_renaming closure_id in
+  let apply_closure_id (closure' : A.value_set_of_closures) closure_id =
+    let closure_id = AR.apply_closure_id closure'.alpha_renaming closure_id in
     begin try
       ignore (Flambdautils.find_declaration closure_id closure'.function_decls)
     with Not_found ->
@@ -241,8 +241,8 @@ let transform_closure_expression env r closure closure_id rel annot
   in
   let approx = R.approx r in
   let make set_of_closures set_of_closures_var : _ Flambda.t * R.t =
-    let closure_id = subst_closure_id set_of_closures closure_id in
-    let rel = Misc.may_map (subst_closure_id set_of_closures) rel in
+    let closure_id = apply_closure_id set_of_closures closure_id in
+    let rel = Misc.may_map (apply_closure_id set_of_closures) rel in
     let ret_approx =
       A.value_closure { closure_id; set_of_closures;
                         set_of_closures_var = approx.var }
@@ -318,7 +318,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     check_constant_result r tree (Backend.import_symbol sym)
   | Fvar (id, annot) ->
-    let id = Alpha_renaming.subst_var (E.sb env) id in
+    let id = Alpha_renaming.apply_variable (E.sb env) id in
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
@@ -348,7 +348,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
      *)
     let init_used_var = R.used_variables r in
     let lam, r = loop env r lam in
-    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.add_variable (E.sb env) id in
     let env = E.set_sb sb env in
     let def_used_var = R.used_variables r in
     let body_env =
@@ -389,7 +389,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     expr, R.exit_scope r id
   | Fletrec (defs, body, annot) ->
-    let defs, sb = Alpha_renaming.new_subst_ids (E.sb env) defs in
+    let defs, sb = Alpha_renaming.add_variables (E.sb env) defs in
     let env = E.set_sb sb env in
     let def_env =
       List.fold_left (fun env_acc (id, _lam) ->
@@ -482,12 +482,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
     expr, ret r approx
   | Fstaticraise (i, args, annot) ->
-    let i = Alpha_renaming.sb_exn (E.sb env) i in
+    let i = Alpha_renaming.apply_static_exception (E.sb env) i in
     let args, _, r = loop_list env r args in
     let r = R.use_staticfail r i in
     Fstaticraise (i, args, annot), ret r A.value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
-    let i, sb = Alpha_renaming.new_subst_exn (E.sb env) i in
+    let i, sb = Alpha_renaming.add_static_exception (E.sb env) i in
     let env = E.set_sb sb env in
     let body, r = loop env r body in
     if not (Static_exception.Set.mem i (R.used_staticfail r)) then
@@ -496,7 +496,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     else begin
       match (body : _ Flambda.t) with
       | Fstaticraise (j, args, _) when
-          Static_exception.equal i (Alpha_renaming.sb_exn (E.sb env) j) ->
+          Static_exception.equal i (Alpha_renaming.apply_static_exception (E.sb env) j) ->
         (* This is usually true, since whe checked that the static
            exception was used.  The only case where it can be false
            is when an argument can raise.  This could be avoided if
@@ -509,7 +509,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let r = R.exit_scope_catch r i in
         loop env r handler
       | _ ->
-        let vars, sb = Alpha_renaming.new_subst_ids' (E.sb env) vars in
+        let vars, sb = Alpha_renaming.add_variables' (E.sb env) vars in
         let env =
           List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
             (E.set_sb sb env) vars
@@ -522,7 +522,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     end
   | Ftrywith (body, id, handler, annot) ->
     let body, r = loop env r body in
-    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.add_variable (E.sb env) id in
     let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
     let env = E.inside_branch env in
     let handler, r = loop env r handler in
@@ -570,7 +570,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   | Ffor (id, lo, hi, dir, body, annot) ->
     let lo, r = loop env r lo in
     let hi, r = loop env r hi in
-    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.add_variable (E.sb env) id in
     let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
     let env = E.inside_loop env in
     let body, r = loop env r body in
@@ -578,7 +578,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     Ffor (id, lo, hi, dir, body, annot), ret r A.value_unknown
   | Fassign (id, lam, annot) ->
     let lam, r = loop env r lam in
-    let id = Alpha_renaming.subst_var (E.sb env) id in
+    let id = Alpha_renaming.apply_variable (E.sb env) id in
     let r = R.use_var r id in
     Fassign (id, lam, annot), ret r A.value_unknown
   | Fswitch (arg, sw, annot) ->
@@ -697,7 +697,7 @@ and loop_list env r l = match l with
    allow marking recursives calls as direct and in some cases, allow
    inlining of one closure from the set inside another one. For this to
    be correct an alpha renaming is first applied on the expressions by
-   [subst_function_declarations_and_free_variables].
+   [apply_function_decls_and_free_vars].
 
    For instance when rewriting the declaration
 
@@ -745,7 +745,7 @@ and transform_set_of_closures_expression original_env original_r
   let env = E.increase_closure_depth original_env in
   let specialised_args =
     Variable.Map.map
-      (Alpha_renaming.subst_var (E.sb env))
+      (Alpha_renaming.apply_variable (E.sb env))
       cl.specialised_args
   in
   let fv, r = Variable.Map.fold (fun id lam (fv, r) ->
@@ -762,10 +762,10 @@ and transform_set_of_closures_expression original_env original_r
     Alpha_renaming.Ids_and_bound_vars_of_closures
   in
   let fv, ffuns, sb, alpha_renaming =
-    AR.subst_function_declarations_and_free_variables (E.sb env) fv ffuns
+    Alpha_renaming.apply_function_decls_and_free_vars (E.sb env) fv ffuns
   in
   let env = E.set_sb sb env in
-  let apply_substitution = Alpha_renaming.subst_var (E.sb env) in
+  let apply_substitution = Alpha_renaming.apply_variable (E.sb env) in
   let specialised_args =
     Variable.Map.map_keys apply_substitution specialised_args
   in

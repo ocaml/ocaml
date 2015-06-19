@@ -48,7 +48,7 @@ let backend t = t.backend
 let local env =
   { env with
     env_approx = Variable.Map.empty;
-    sb = Alpha_renaming.new_substitution env.sb;
+    sb = Alpha_renaming.empty_preserving_activation_state env.sb;
   }
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
