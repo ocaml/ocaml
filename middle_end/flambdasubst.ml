@@ -13,9 +13,6 @@
 
 open Abstract_identifiers
 
-module Compilation_unit = Compilation_unit
-module SymbolMap = Symbol.SymbolMap
-
 type tbl = {
   sb_var : Variable.t Variable.Map.t;
   sb_exn : Static_exception.t Static_exception.Map.t;
@@ -125,14 +122,14 @@ let rewrite_recursive_calls_with_symbols t
     let closure_symbols = Variable.Map.fold (fun id _ map ->
         let cf = Closure_id.wrap id in
         let sym = make_closure_symbol cf in
-        SymbolMap.add sym id map)
-        function_declarations.funs SymbolMap.empty in
+        Symbol.Map.add sym id map)
+        function_declarations.funs Symbol.Map.empty in
     let funs = Variable.Map.map (fun (ffun : _ Flambda.function_declaration) ->
         let body =
           Flambdaiter.map_toplevel
             (function
-              | Fsymbol (sym,_) when SymbolMap.mem sym closure_symbols ->
-                Fvar(SymbolMap.find sym closure_symbols,Expr_id.create ())
+              | Fsymbol (sym,_) when Symbol.Map.mem sym closure_symbols ->
+                Fvar(Symbol.Map.find sym closure_symbols,Expr_id.create ())
               | e -> e)
             ffun.body in
         { ffun with body })

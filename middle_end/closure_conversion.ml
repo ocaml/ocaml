@@ -27,7 +27,6 @@ open Abstract_identifiers
   These constructions also appear in [Flambda.t].
 *)
 
-module Compilation_unit = Compilation_unit
 module IdentSet = Lambda.IdentSet
 
 type t = {

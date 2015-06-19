@@ -49,7 +49,6 @@
 
 open Abstract_identifiers
 
-module Compilation_unit = Compilation_unit
 module Int = Ext_types.Int
 
 type constant_result = {
