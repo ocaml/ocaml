@@ -139,11 +139,13 @@ module Ids_and_bound_vars_of_closures = struct
   type inactive_or_active = t
 
   type t =
-    { ffs_fv : Var_within_closure.t Var_within_closure.Map.t;
-      ffs_fun : Closure_id.t Closure_id.Map.t }
+    { vars_within_closure : Var_within_closure.t Var_within_closure.Map.t;
+      closure_id : Closure_id.t Closure_id.Map.t }
 
   let empty =
-    { ffs_fv = Var_within_closure.Map.empty; ffs_fun = Closure_id.Map.empty }
+    { vars_within_closure = Var_within_closure.Map.empty;
+      closure_id = Closure_id.Map.empty;
+    }
 
   let new_subst_fv t id subst =
     match subst with
@@ -153,16 +155,16 @@ module Ids_and_bound_vars_of_closures = struct
       let subst = add_sb_var subst id id' in
       let off = Var_within_closure.wrap id in
       let off' = Var_within_closure.wrap id' in
-      let off_sb = Var_within_closure.Map.add off off' t.ffs_fv in
-      id', Active subst, { t with ffs_fv = off_sb; }
+      let off_sb = Var_within_closure.Map.add off off' t.vars_within_closure in
+      id', Active subst, { t with vars_within_closure = off_sb; }
 
   let new_subst_fun t id subst =
     let id' = Variable.freshen id in
     let subst = add_sb_var subst id id' in
     let off = Closure_id.wrap id in
     let off' = Closure_id.wrap id' in
-    let off_sb = Closure_id.Map.add off off' t.ffs_fun in
-    id', subst, { t with ffs_fun = off_sb; }
+    let off_sb = Closure_id.Map.add off off' t.closure_id in
+    id', subst, { t with closure_id = off_sb; }
 
   (** Returns :
       * The map of new_identifiers -> expression
@@ -222,11 +224,11 @@ module Ids_and_bound_vars_of_closures = struct
         funs }, Active subst, t
 
   let apply_closure_id t closure_id =
-    try Closure_id.Map.find closure_id t.ffs_fun
+    try Closure_id.Map.find closure_id t.closure_id
     with Not_found -> closure_id
 
   let apply_var_within_closure t var_in_closure =
-    try Var_within_closure.Map.find var_in_closure t.ffs_fv
+    try Var_within_closure.Map.find var_in_closure t.vars_within_closure
     with Not_found -> var_in_closure
 end
 
