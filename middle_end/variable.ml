@@ -61,6 +61,9 @@ let rename ~current_compilation_unit ?append t =
     ident;
   }
 
+let freshen t =
+  rename t ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+
 let in_compilation_unit cu t =
   Compilation_unit.equal cu t.compilation_unit
 

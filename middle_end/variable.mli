@@ -27,7 +27,9 @@ val create : current_compilation_unit:Compilation_unit.t -> string -> t
 
 val unwrap : t -> Ident.t (* For bytecode debugger only *)
 val unique_ident : t -> Ident.t (* For clambdagen only *)
-  (* Should we propagate Variable.t into clambda ??? *)
+(* CR-someday pchambart: Should we propagate Variable.t into clambda ??? *)
+
+val freshen : t -> t
 
 val rename : current_compilation_unit:Compilation_unit.t ->
   ?append:string -> t -> t

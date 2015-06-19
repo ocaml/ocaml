@@ -67,12 +67,8 @@ let new_subst_exn t i =
      let sb_exn = Static_exception.Map.add i i' t.sb_exn in
      i', Active { t with sb_exn; }
 
-let freshen_var var =
-  Variable.rename var
-    ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-
 let active_new_subst_id t id =
-  let id' = freshen_var id in
+  let id' = Variable.freshen id in
   let t = add_sb_var t id id' in
   id', t
 
@@ -164,7 +160,7 @@ module Ids_and_bound_vars_of_closures = struct
     match subst with
     | Inactive -> id, subst, t
     | Active subst ->
-        let id' = freshen_var id in
+        let id' = Variable.freshen id in
         let subst = add_sb_var subst id id' in
         let off = Var_within_closure.wrap id in
         let off' = Var_within_closure.wrap id' in
@@ -172,7 +168,7 @@ module Ids_and_bound_vars_of_closures = struct
         id', Active subst, { t with ffs_fv = off_sb; }
 
   let new_subst_fun t id subst =
-    let id' = freshen_var id in
+    let id' = Variable.freshen id in
     let subst = add_sb_var subst id id' in
     let off = Closure_id.wrap id in
     let off' = Closure_id.wrap id' in

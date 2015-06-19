@@ -45,8 +45,6 @@ val new_subst_ids' :
     If no substitution is registered for [var] it is returned unchanged. *)
 val subst_var : t -> Variable.t -> Variable.t
 
-val freshen_var : Variable.t -> Variable.t
-
 val rewrite_recursive_calls_with_symbols
    : t
   -> Expr_id.t Flambda.function_declarations

@@ -52,7 +52,7 @@ let which_function_parameters_can_we_specialize ~params ~args
         match (arg : _ Flambda.t) with
         | Fvar (var, _) -> var, args_decl
         | _ ->
-          let new_id = Alpha_renaming.freshen_var id in
+          let new_id = Variable.freshen id in
           let args_decl = (new_id, arg) :: args_decl in
           new_id, args_decl
       in
@@ -927,7 +927,7 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
   let param_sb =
-    List.map (fun id -> Alpha_renaming.freshen_var id) func.params
+    List.map (fun id -> Variable.freshen id) func.params
   in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
@@ -1007,7 +1007,7 @@ and inline_by_copying_function_body ~env ~r
   let clos_id = new_var "inline_by_copying_function_body" in
   (* Assign fresh names for the function's parameters and rewrite the body to
      use these new names. *)
-  let subst_params = List.map Alpha_renaming.freshen_var func.params in
+  let subst_params = List.map Variable.freshen func.params in
   let subst_map =
     Variable.Map.of_list (List.combine func.params subst_params)
   in

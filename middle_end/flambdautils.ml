@@ -242,7 +242,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   end;
   let sb =
     Variable.Set.fold
-      (fun id sb -> Variable.Map.add id (Alpha_renaming.freshen_var id) sb)
+      (fun id sb -> Variable.Map.add id (Variable.freshen id) sb)
       free_variables Variable.Map.empty in
   let body = Alpha_renaming.toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
