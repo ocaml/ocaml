@@ -125,6 +125,9 @@ ASMCOMP=\
   driver/opterrors.cmo driver/optcompile.cmo
 
 MIDDLE_END=\
+  middle_end/linkage_name.cmo \
+  middle_end/compilation_unit.cmo \
+  middle_end/export_id.cmo \
   middle_end/symbol.cmo \
   middle_end/abstract_identifiers.cmo \
   middle_end/flambdaiter.cmo \
