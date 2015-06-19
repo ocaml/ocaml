@@ -201,6 +201,7 @@ READ_CMT= \
           ../utils/consistbl.cmo \
           ../utils/config.cmo \
           ../utils/clflags.cmo \
+	  ../utils/ext_types.cmo \
           ../parsing/location.cmo \
           ../parsing/longident.cmo \
           ../parsing/lexer.cmo \
@@ -248,7 +249,7 @@ DUMPOBJ=opnames.cmo dumpobj.cmo
 dumpobj: $(DUMPOBJ)
 	$(CAMLC) $(LINKFLAGS) -o dumpobj \
 	         ${BISECT_CMA} \
-	         misc.cmo tbl.cmo config.cmo ident.cmo \
+	         misc.cmo tbl.cmo config.cmo ext_types.cmo ident.cmo \
 	         opcodes.cmo bytesections.cmo $(DUMPOBJ)
 
 clean::
