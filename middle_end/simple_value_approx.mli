@@ -112,7 +112,7 @@ and descr = private
   | Value_float_array of int (* size *)
   | Value_unknown
   | Value_bottom
-  | Value_extern of Symbol.ExportId.t
+  | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
@@ -143,7 +143,7 @@ val value_constptr : int -> t
 val value_closure : value_closure -> t
 val value_set_of_closures : value_set_of_closures -> t
 val value_block : Tag.t * t array -> t
-val value_extern : Symbol.ExportId.t -> t
+val value_extern : Export_id.t -> t
 val value_symbol : Symbol.t -> t
 val value_bottom : t
 val value_unresolved : Symbol.t -> t

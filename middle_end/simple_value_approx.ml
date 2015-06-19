@@ -47,7 +47,7 @@ type descr =
   | Value_float_array of int (* size *)
   | Value_unknown
   | Value_bottom
-  | Value_extern of Symbol.ExportId.t
+  | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t
 
@@ -83,7 +83,7 @@ let rec print_descr ppf = function
     Format.fprintf ppf "[%i:@ @[<1>%a@]]" (Tag.to_int tag) p fields
   | Value_unknown -> Format.fprintf ppf "?"
   | Value_bottom -> Format.fprintf ppf "bottom"
-  | Value_extern id -> Format.fprintf ppf "_%a_" Symbol.ExportId.print id
+  | Value_extern id -> Format.fprintf ppf "_%a_" Export_id.print id
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
   | Value_closure { closure_id } ->
     Format.fprintf ppf "(fun:@ %a)" Closure_id.print closure_id
@@ -301,7 +301,7 @@ let rec meet_descr d1 d2 = match d1, d2 with
       d1
   | Value_symbol s1, Value_symbol s2 when Symbol.equal s1 s2 ->
       d1
-  | Value_extern e1, Value_extern e2 when Symbol.ExportId.equal e1 e2 ->
+  | Value_extern e1, Value_extern e2 when Export_id.equal e1 e2 ->
       d1
   | Value_float i, Value_float j when i = j ->
       d1

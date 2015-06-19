@@ -88,7 +88,7 @@ type const_sym =
 type infos =
   { global : (int, approx) Hashtbl.t;
     ex_table : descr EidMap.t ref;
-    ex_symbol_id : ExportId.t SymbolMap.t ref;
+    ex_symbol_id : Export_id.t SymbolMap.t ref;
     constants : unit Flambda.t SymbolTbl.t;
     symbol_alias : Symbol.t SymbolTbl.t }
 
@@ -109,7 +109,7 @@ let rec canonical_symbol s infos =
   with Not_found -> s
 
 let new_descr descr infos =
-  let id = ExportId.create (Compilenv.current_unit ()) in
+  let id = Export_id.create (Compilenv.current_unit ()) in
   infos.ex_table := EidMap.add id descr !(infos.ex_table);
   id
 

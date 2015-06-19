@@ -18,7 +18,7 @@ module A = Simple_value_approx
 let reexported_missing_symbols = SymbolTbl.create 0
 
 let rec import_ex ex =
-  ignore (Compilenv.approx_for_global (Symbol.ExportId.unit ex));
+  ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
   try match Flambdaexport.find_description ex ex_info with
     | Value_int i -> A.value_int i

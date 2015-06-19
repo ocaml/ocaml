@@ -16,9 +16,9 @@ open Ext_types
 open Symbol
 open Abstract_identifiers
 
-module EidSet : ExtSet with module M := ExportId
-module EidMap : ExtMap with module M := ExportId
-module EidTbl : ExtHashtbl with module M := ExportId
+module EidSet : ExtSet with module M := Export_id
+module EidMap : ExtMap with module M := Export_id
+module EidTbl : ExtHashtbl with module M := Export_id
 
 type tag = int
 
@@ -55,7 +55,7 @@ and value_closure =
 
 and approx =
     Value_unknown
-  | Value_id of ExportId.t
+  | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
 type exported = {
@@ -70,7 +70,7 @@ type exported = {
       module identifier, but packs contains multiple ones. *)
 
   ex_id_symbol : Symbol.t EidMap.t Compilation_unit.Map.t;
-  ex_symbol_id : ExportId.t SymbolMap.t;
+  ex_symbol_id : Export_id.t SymbolMap.t;
   (** Associates symbols and values *)
 
   ex_offset_fun : int Closure_id.Map.t;
@@ -101,7 +101,7 @@ val import_for_pack :
 val clear_import_state : unit -> unit
 (** Drops the state after importing several units in the same pack. *)
 
-val find_description : ExportId.t -> exported -> descr
+val find_description : Export_id.t -> exported -> descr
 
 val nest_eid_map : 'a EidMap.t -> 'a EidMap.t Compilation_unit.Map.t
 

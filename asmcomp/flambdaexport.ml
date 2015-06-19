@@ -15,9 +15,9 @@ open Symbol
 open Abstract_identifiers
 open Flambda
 
-module EidMap = ExtMap(ExportId)
-module EidSet = ExtSet(ExportId)
-module EidTbl = ExtHashtbl(ExportId)
+module EidMap = ExtMap(Export_id)
+module EidSet = ExtSet(Export_id)
+module EidTbl = ExtHashtbl(Export_id)
 
 type tag = int
 
@@ -54,7 +54,7 @@ and value_closure =
 
 and approx =
   | Value_unknown
-  | Value_id of ExportId.t
+  | Value_id of Export_id.t
   | Value_symbol of Symbol.t
 
 type exported = {
@@ -63,7 +63,7 @@ type exported = {
   ex_values : descr EidMap.t Compilation_unit.Map.t;
   ex_globals : approx Ident.Map.t;
   ex_id_symbol : Symbol.t EidMap.t Compilation_unit.Map.t;
-  ex_symbol_id : ExportId.t SymbolMap.t;
+  ex_symbol_id : Export_id.t SymbolMap.t;
   ex_offset_fun : int Closure_id.Map.t;
   ex_offset_fv : int Var_within_closure.Map.t;
   ex_constants : SymbolSet.t;
@@ -86,7 +86,7 @@ let empty_export = {
 }
 
 let find_ex_value eid map =
-  let unit = ExportId.unit eid in
+  let unit = Export_id.unit eid in
   let unit_map = Compilation_unit.Map.find unit map in
   EidMap.find eid unit_map
 
@@ -104,7 +104,7 @@ let eidmap_disjoint_union m1 m2 =
 
 let nest_eid_map map =
   let add_map eid v map =
-    let unit = ExportId.unit eid in
+    let unit = Export_id.unit eid in
     let m = try Compilation_unit.Map.find unit map
       with Not_found -> EidMap.empty in
     Compilation_unit.Map.add unit (EidMap.add eid v m) map
@@ -120,17 +120,17 @@ let print_approx ppf export =
     | Value_unknown -> fprintf ppf "?"
     | Value_id id ->
       if EidSet.mem id !printed
-      then fprintf ppf "(%a: _)" ExportId.print id
+      then fprintf ppf "(%a: _)" Export_id.print id
       else
         (try
            let descr = find_ex_value id values in
            printed := EidSet.add id !printed;
            fprintf ppf "(%a: %a)"
-             ExportId.print id
+             Export_id.print id
              print_descr descr
          with Not_found ->
            fprintf ppf "(%a: Not available)"
-             ExportId.print id)
+             Export_id.print id)
     | Value_symbol sym -> Symbol.print ppf sym
   and print_descr ppf = function
     | Value_int i -> pp_print_int ppf i
@@ -186,7 +186,7 @@ let print_approx ppf export =
 let print_symbols ppf export =
   let open Format in
   let print_symbol eid sym =
-    fprintf ppf "%a -> %a@." Symbol.print sym ExportId.print eid
+    fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
    Compilation_unit.Map.iter (fun _ -> EidMap.iter print_symbol) export.ex_id_symbol
 
@@ -208,7 +208,7 @@ let print_all ppf export =
   fprintf ppf "id_symbol@ %a@.@."
     (Compilation_unit.Map.print (EidMap.print Symbol.print)) export.ex_id_symbol;
   fprintf ppf "symbol_id@ %a@.@."
-    (SymbolMap.print ExportId.print) export.ex_symbol_id;
+    (SymbolMap.print Export_id.print) export.ex_symbol_id;
   fprintf ppf "constants@ %a@.@."
     SymbolSet.print export.ex_constants;
   fprintf ppf "functions@ %a@.@."
@@ -242,11 +242,11 @@ let rename_id_state = EidTbl.create 100
 let import_eid_for_pack units pack id =
   try EidTbl.find rename_id_state id
   with Not_found ->
-    let unit_id = ExportId.unit id in
+    let unit_id = Export_id.unit id in
     let id' =
       if Compilation_unit.Set.mem unit_id units
       then
-        ExportId.create ?name:(ExportId.name id) pack
+        Export_id.create ?name:(Export_id.name id) pack
       else id in
     EidTbl.add rename_id_state id id';
     id'
