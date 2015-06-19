@@ -483,6 +483,7 @@ let class_of_let_bindings lbs body =
 %token RPAREN
 %token SEMI
 %token SEMISEMI
+%token BACKSLASH
 %token SHARP
 %token <string> SHARPOP
 %token SIG
@@ -655,6 +656,12 @@ functor_args:
       { $2 :: $1 }
   | functor_arg
       { [ $1 ] }
+;
+
+fun_:
+    FUN { "fun" }
+  | BACKSLASH { "fun" }
+
 ;
 
 module_expr:
@@ -924,7 +931,7 @@ class_fun_def:
 class_expr:
     class_simple_expr
       { $1 }
-  | FUN class_fun_def
+  | fun_ class_fun_def
       { $2 }
   | class_simple_expr simple_labeled_expr_list
       { mkclass(Pcl_apply($1, List.rev $2)) }
@@ -1197,10 +1204,10 @@ expr:
       { mkexp_attrs (Pexp_open($3, mkrhs $5 5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
       { mkexp_attrs (Pexp_function(List.rev $4)) $2 }
-  | FUN ext_attributes labeled_simple_pattern fun_def
+  | fun_ ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
-  | FUN ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
+  | fun_ ext_attributes LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp_attrs (Pexp_newtype($5, $7)) $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
@@ -2303,7 +2310,7 @@ single_attr_id:
   | EXTERNAL { "external" }
   | FALSE { "false" }
   | FOR { "for" }
-  | FUN { "fun" }
+  | fun_ { "fun" }
   | FUNCTION { "function" }
   | FUNCTOR { "functor" }
   | IF { "if" }
