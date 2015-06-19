@@ -21,7 +21,7 @@ type t = {
   inside_branch : bool;
   inside_loop : bool;
   (* Number of times "inline" has been called recursively *)
-  sb : Alpha_renaming.t;
+  sb : Freshening.t;
   never_inline : bool ;
   possible_unrolls : int;
   closure_depth : int;
@@ -35,7 +35,7 @@ let empty ~never_inline ~backend =
     inlining_level = 0;
     inside_branch = false;
     inside_loop = false;
-    sb = Alpha_renaming.empty;
+    sb = Freshening.empty;
     never_inline;
     possible_unrolls = !Clflags.unroll;
     closure_depth = 0;
@@ -48,7 +48,7 @@ let backend t = t.backend
 let local env =
   { env with
     env_approx = Variable.Map.empty;
-    sb = Alpha_renaming.empty_preserving_activation_state env.sb;
+    sb = Freshening.empty_preserving_activation_state env.sb;
   }
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
@@ -62,9 +62,9 @@ let find id env =
 let present env var = Variable.Map.mem var env.env_approx
 
 let activate_substitution env =
-  { env with sb = Alpha_renaming.activate env.sb }
+  { env with sb = Freshening.activate env.sb }
 let disactivate_substitution env =
-  { env with sb = Alpha_renaming.empty }
+  { env with sb = Freshening.empty }
 
 let add_approx id (approx : Simple_value_approx.t) env =
   let approx =

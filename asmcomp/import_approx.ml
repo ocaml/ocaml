@@ -43,7 +43,7 @@ let rec import_ex ex =
               unchanging_params = unchanging_params;
               specialised_args = Variable.Set.empty;
               alpha_renaming =
-                Alpha_renaming.
+                Freshening.
                 Ids_and_bound_vars_of_closures.empty;
             } }
     | Value_set_of_closures { set_of_closures_id; bound_var } ->
@@ -58,7 +58,7 @@ let rec import_ex ex =
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
           alpha_renaming =
-            Alpha_renaming.
+            Freshening.
             Ids_and_bound_vars_of_closures.empty; }
   with Not_found ->
     A.value_unknown
