@@ -20,7 +20,7 @@ end) = struct
   module C = Inlining_cost
 
   let sequential_op ~arg1 ~(arg1_approx : A.t) ~arg2 ~(arg2_approx : A.t)
-        ~dbg ~annot =
+        ~dbg ~annot : _ Flambda.t * A.t * C.Benefit.t =
     let arg1_no_effects = Effect_analysis.no_effects arg1 in
     let arg2_no_effects = Effect_analysis.no_effects arg2 in
     let arg2_annot = Flambdautils.data_at_toplevel_node arg2 in

@@ -127,9 +127,10 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     | [A.Value_boxed_int(A.Int64, n1); Value_int n2] ->
       I.Simplify_boxed_int64.simplify_binop_int p Int64 expr n1 n2 eid
         ~size_int
-    | [Value_block _] when p = Pisint -> S.const_bool_expr expr false eid
-    | [Value_string { size }] when p = Pstringlength ->
-        S.const_int_expr expr size eid
+    | [Value_block _] when p = Lambda.Pisint ->
+      S.const_bool_expr expr false eid
+    | [Value_string { size }] when p = Lambda.Pstringlength ->
+      S.const_int_expr expr size eid
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
         begin match p with
@@ -140,7 +141,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         end
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
-      when x >= 0 && x < size && p = Pstringrefs ->
+      when x >= 0 && x < size && p = Lambda.Pstringrefs ->
         Flambda.Fprim(Pstringrefu, args, dbg, eid),
         A.value_unknown,
         (* we improved it, but there is no way to account for that: *)
