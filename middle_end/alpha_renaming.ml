@@ -136,8 +136,6 @@ let rewrite_recursive_calls_with_symbols t
     { function_declarations with funs }
 
 module Ids_and_bound_vars_of_closures = struct
-  type inactive_or_active = t
-
   type t =
     { vars_within_closure : Var_within_closure.t Var_within_closure.Map.t;
       closure_id : Closure_id.t Closure_id.Map.t }
@@ -184,8 +182,7 @@ module Ids_and_bound_vars_of_closures = struct
 
       subst_free_vars must have been used to build off_sb
    *)
-  let ffuns_subst t (subst : inactive_or_active)
-        (ffuns : _ Flambda.function_declarations) =
+  let ffuns_subst t (subst : subst) (ffuns : _ Flambda.function_declarations) =
     match subst with
     | Inactive -> ffuns, subst, t
     | Active subst ->
