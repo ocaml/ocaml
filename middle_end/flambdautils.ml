@@ -259,7 +259,7 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
         Variable.Map.add id' (Flambda.Fvar(id,Expr_id.create ())) fv')
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty in
-  let current_unit = Symbol.Compilation_unit.get_current_exn () in
+  let current_unit = Compilation_unit.get_current_exn () in
   Fselect_closure
     ({ set_of_closures =
          Fset_of_closures

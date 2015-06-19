@@ -90,7 +90,7 @@ let import_symbol sym =
         Location.prerr_warning (Location.in_file "some_file")
           (Warnings.Missing_symbol_information
              (Format.asprintf "%a" Symbol.print sym,
-              Format.asprintf "%a" Symbol.Compilation_unit.print
+              Format.asprintf "%a" Compilation_unit.print
                 sym.Symbol.sym_unit));
       end;
       A.value_unresolved sym

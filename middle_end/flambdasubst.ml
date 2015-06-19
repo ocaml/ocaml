@@ -13,7 +13,7 @@
 
 open Abstract_identifiers
 
-module Compilation_unit = Symbol.Compilation_unit
+module Compilation_unit = Compilation_unit
 module SymbolMap = Symbol.SymbolMap
 
 type tbl = {

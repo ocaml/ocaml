@@ -41,7 +41,7 @@ val no_closure_id_is_bound_multiple_times :
   'a Flambda.t -> Closure_id.t counter_example
 
 val every_declared_closure_is_from_current_compilation_unit :
-  'a Flambda.t -> Symbol.Compilation_unit.t counter_example
+  'a Flambda.t -> Compilation_unit.t counter_example
 (* Test only run when flambdasym is false *)
 
 val every_used_function_from_current_compilation_unit_is_declared :

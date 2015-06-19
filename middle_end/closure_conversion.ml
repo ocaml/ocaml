@@ -27,7 +27,7 @@ open Abstract_identifiers
   These constructions also appear in [Flambda.t].
 *)
 
-module Compilation_unit = Symbol.Compilation_unit
+module Compilation_unit = Compilation_unit
 module IdentSet = Lambda.IdentSet
 
 type t = {
@@ -599,7 +599,7 @@ let lambda_to_flambda ~backend ~(exported_fields:int) lam =
   let module Backend = (val backend : Backend_intf.S) in
   let t =
     { current_unit_id =
-        Symbol.Compilation_unit.get_persistent_ident
+        Compilation_unit.get_persistent_ident
           (Compilation_unit.get_current_exn ());
       symbol_for_global' = Backend.symbol_for_global';
       exported_fields;

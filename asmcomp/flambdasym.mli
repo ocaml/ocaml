@@ -15,7 +15,7 @@
     flambda is not suitable for any other transformations *)
 
 val convert
-   : compilation_unit:Symbol.Compilation_unit.t
+   : compilation_unit:Compilation_unit.t
   -> 'a Flambda.t
   -> unit Flambda.t
        * unit Flambda.t Symbol.SymbolMap.t

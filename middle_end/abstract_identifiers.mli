@@ -28,16 +28,16 @@ module Variable : sig
   type t
   include Identifiable with type t := t
 
-  val create : current_compilation_unit:Symbol.Compilation_unit.t -> string -> t
+  val create : current_compilation_unit:Compilation_unit.t -> string -> t
 
   val unwrap : t -> Ident.t (* For bytecode debugger only *)
   val unique_ident : t -> Ident.t (* For clambdagen only *)
     (* Should we propagate Variable.t into clambda ??? *)
 
-  val rename : current_compilation_unit:Symbol.Compilation_unit.t ->
+  val rename : current_compilation_unit:Compilation_unit.t ->
     ?append:string -> t -> t
 
-  val in_compilation_unit : Symbol.Compilation_unit.t -> t -> bool
+  val in_compilation_unit : Compilation_unit.t -> t -> bool
 
   val unique_name : t -> string
 end
@@ -49,7 +49,7 @@ module Set_of_closures_id : sig
   type t
   include Identifiable with type t := t
 
-  val create : ?name:string -> Symbol.Compilation_unit.t -> t
+  val create : ?name:string -> Compilation_unit.t -> t
 end
 
 module Closure_id : sig
@@ -63,8 +63,8 @@ module Closure_id : sig
   val wrap : Variable.t -> t
   val unwrap : t -> Variable.t
 
-  val in_compilation_unit : Symbol.Compilation_unit.t -> t -> bool
-  val get_compilation_unit : t -> Symbol.Compilation_unit.t
+  val in_compilation_unit : Compilation_unit.t -> t -> bool
+  val get_compilation_unit : t -> Compilation_unit.t
 
   val unique_name : t -> string
 
@@ -83,7 +83,7 @@ module Var_within_closure : sig
   val wrap : Variable.t -> t
   val unwrap : t -> Variable.t
 
-  val in_compilation_unit : Symbol.Compilation_unit.t -> t -> bool
+  val in_compilation_unit : Compilation_unit.t -> t -> bool
 
   val unique_name : t -> string
 end

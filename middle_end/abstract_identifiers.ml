@@ -84,7 +84,7 @@ end
 
 module Set_of_closures_id = struct
   module Id : Id = Id(struct end)
-  module T = UnitId(Id)(Symbol.Compilation_unit)
+  module T = UnitId(Id)(Compilation_unit)
 
   include T
   include Identifiable.Make(T)

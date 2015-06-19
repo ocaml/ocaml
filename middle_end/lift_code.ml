@@ -42,7 +42,7 @@ let lift_set_of_closures tree =
           let set_of_closures_var =
             Variable.create
               ~current_compilation_unit:
-                (Symbol.Compilation_unit.get_current_exn ())
+                (Compilation_unit.get_current_exn ())
               "set_of_closures"
           in
           Flet(Immutable, set_of_closures_var,
@@ -77,7 +77,7 @@ let lifting_helper exprs ~create_body ~name =
         | expr ->
           let v =
             Variable.create name ~current_compilation_unit:
-                (Symbol.Compilation_unit.get_current_exn ())
+                (Compilation_unit.get_current_exn ())
           in
           ((Fvar (v, Expr_id.create ())) : _ Flambda.t)::exprs,
             (v, expr)::lets)
