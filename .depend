@@ -674,7 +674,7 @@ middle_end/inlining.cmi : middle_end/flambda.cmi middle_end/expr_id.cmi \
     middle_end/backend_intf.cmi
 middle_end/inlining_result.cmi : middle_end/variable.cmi \
     middle_end/static_exception.cmi middle_end/simple_value_approx.cmi \
-    middle_end/inlining_cost.cmi utils/ext_types.cmi
+    middle_end/inlining_cost.cmi
 middle_end/inlining_stats.cmi : middle_end/inlining_stats_types.cmi \
     bytecomp/debuginfo.cmi middle_end/closure_id.cmi
 middle_end/inlining_stats_types.cmi : middle_end/inlining_cost.cmi
@@ -793,7 +793,7 @@ middle_end/flambdautils.cmo : middle_end/variable.cmi \
     middle_end/flambdasubst.cmi middle_end/flambdaiter.cmi \
     middle_end/flambda.cmi middle_end/expr_id.cmi bytecomp/debuginfo.cmi \
     middle_end/compilation_unit.cmi middle_end/closure_id.cmi \
-    parsing/asttypes.cmi middle_end/flambdautils.cmi
+    middle_end/flambdautils.cmi
 middle_end/flambdautils.cmx : middle_end/variable.cmx \
     middle_end/var_within_closure.cmx middle_end/symbol.cmx \
     middle_end/static_exception.cmx utils/sort_connected_components.cmx \
@@ -801,7 +801,7 @@ middle_end/flambdautils.cmx : middle_end/variable.cmx \
     middle_end/flambdasubst.cmx middle_end/flambdaiter.cmx \
     middle_end/flambda.cmi middle_end/expr_id.cmx bytecomp/debuginfo.cmx \
     middle_end/compilation_unit.cmx middle_end/closure_id.cmx \
-    parsing/asttypes.cmi middle_end/flambdautils.cmi
+    middle_end/flambdautils.cmi
 middle_end/inconstant_idents.cmo : middle_end/variable.cmi \
     middle_end/set_of_closures_id.cmi utils/misc.cmi bytecomp/lambda.cmi \
     typing/ident.cmi middle_end/flambda.cmi utils/ext_types.cmi \

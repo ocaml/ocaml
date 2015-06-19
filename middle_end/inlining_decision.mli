@@ -11,8 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Inlining_decision_intf
-
 (* Examine a full application of a known closure to determine whether to
    inline.  Then, if inlining is desired, perform inlining using the
    supplied helper functions [inline_by_copying_function_body] and
@@ -31,9 +29,11 @@ val inlining_decision_for_call_site
       ((Expr_id.t Flambda.t list) * (Simple_value_approx.t list))
   -> dbg:Debuginfo.t
   -> eid:Expr_id.t
-  -> inline_by_copying_function_body:'a by_copying_function_body
-  -> inline_by_copying_function_declaration:'a by_copying_function_declaration
-  -> loop:loop
+  -> inline_by_copying_function_body:
+      'a Inlining_decision_intf.by_copying_function_body
+  -> inline_by_copying_function_declaration:
+      'a Inlining_decision_intf.by_copying_function_declaration
+  -> loop:Inlining_decision_intf.loop
   -> Expr_id.t Flambda.t * Inlining_result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body

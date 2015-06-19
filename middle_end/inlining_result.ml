@@ -1,8 +1,21 @@
-module IntMap = Ext_types.Int.Map
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
+
+module Int = Ext_types.Int
 
 type t =
   { approx : Simple_value_approx.t;
-    globals : Simple_value_approx.t IntMap.t;
+    globals : Simple_value_approx.t Int.Map.t;
     used_variables : Variable.Set.t;
     used_staticfail : Static_exception.Set.t;
     inlining_threshold : Inlining_cost.inlining_threshold;
@@ -11,7 +24,7 @@ type t =
 
 let create () =
   { approx = Simple_value_approx.value_unknown;
-    globals = IntMap.empty;
+    globals = Int.Map.empty;
     used_variables = Variable.Set.empty;
     used_staticfail = Static_exception.Set.empty;
     inlining_threshold =
@@ -56,10 +69,10 @@ let set_inlining_threshold t inlining_threshold =
 let inlining_threshold t = t.inlining_threshold
 
 let add_global t ~field_index ~approx =
-  { t with globals = IntMap.add field_index approx t.globals }
+  { t with globals = Int.Map.add field_index approx t.globals }
 
 let find_global t ~field_index =
-  try IntMap.find field_index t.globals with
+  try Int.Map.find field_index t.globals with
   | Not_found ->
     Misc.fatal_error (Format.asprintf
         "Inlining_result.find_global: couldn't find global %i@."

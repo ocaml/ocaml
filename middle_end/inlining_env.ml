@@ -1,4 +1,15 @@
-open Simple_value_approx
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 type t = {
   backend : (module Backend_intf.S);
@@ -55,7 +66,7 @@ let activate_substitution env =
 let disactivate_substitution env =
   { env with sb = Flambdasubst.empty }
 
-let add_approx id approx env =
+let add_approx id (approx : Simple_value_approx.t) env =
   let approx =
     match approx.var with
     | Some var when present env var ->
@@ -66,7 +77,10 @@ let add_approx id approx env =
   { env with env_approx = Variable.Map.add id approx env.env_approx }
 
 let clear_approx id env =
-  { env with env_approx = Variable.Map.add id value_unknown env.env_approx }
+  let env_approx =
+    Variable.Map.add id Simple_value_approx.value_unknown env.env_approx
+  in
+  { env with env_approx; }
 
 let enter_set_of_closures_declaration ident env =
   { env with

@@ -173,7 +173,8 @@ and sequence ppf ulam = match ulam with
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | _ -> lam ppf ulam
 
-and const ppf c = let open Asttypes in match c with
+and const ppf (c : Flambda.const) =
+  match c with
   | Fconst_base(Const_int n) -> fprintf ppf "%i" n
   | Fconst_base(Const_char c) -> fprintf ppf "%C" c
   | Fconst_base(Const_string (s,_)) -> fprintf ppf "%S" s
