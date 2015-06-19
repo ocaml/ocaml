@@ -29,7 +29,7 @@ val new_subst_id : t -> Variable.t -> Variable.t * t
       adds [var] -> [new_var] to the substitution.
       If a substitution [other_var] -> [var] or [symbol] -> [var] is present
       in [subst], it will also add [other_var] -> [new_var] and
-      [symbo] -> [new_var].
+      [symbol] -> [new_var].
     If [subst] is inactive, this is the identity.
 *)
 val new_subst_ids :
@@ -53,7 +53,7 @@ val rewrite_recursive_calls_with_symbols
   -> make_closure_symbol:(Closure_id.t -> Symbol.t)
   -> Expr_id.t Flambda.function_declarations
 
-(** Replace recursive access to the closures in the set through
+(** Replace recursive accesses to the closures in the set through
     [Fsymbol] by the corresponding [Fvar]. This is used to recover
     the recursive call when importing code from another compilation unit.
 
@@ -61,7 +61,7 @@ val rewrite_recursive_calls_with_symbols
  *)
 
 module Ids_and_bound_vars_of_closures : sig
-  (* Tables used for identifiers substitution in
+  (* Tables used for identifier substitution in
      Fselect_closure ("ids of closures") and Fvar_within_closure ("bound vars
      of closures") constructions.
      This information is propagated bottom up. This is
@@ -72,10 +72,10 @@ module Ids_and_bound_vars_of_closures : sig
        [let f x =
           let g y = ... x ... in
           ... g.x ...           (Fvar_within_closure x)
-          ... g 1 ...           (FApply (Fselect_closure g ...))
+          ... g 1 ...           (Fapply (Fselect_closure g ...))
           ]
      if f is inlined g is renamed. The approximation of g will
-     cary this table such that later the access to the field x
+     carry this table such that later the access to the field x
      of g and selection of g in the closure can be substituted.
    *)
 
