@@ -105,7 +105,8 @@ value caml_startup_exn(char **argv)
   char * exe_name, * proc_self_exe;
   char tos;
 
-  caml_stat_create_pool();
+  if (!caml_startup_aux())
+    return Val_unit;
 
 #ifdef WITH_SPACETIME
   caml_spacetime_initialize();

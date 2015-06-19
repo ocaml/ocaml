@@ -33,6 +33,10 @@ extern uintnat caml_trace_level;
 
 extern void caml_parse_ocamlrunparam (void);
 
+/* Common entry point to caml_startup.
+   Returns 0 if the runtime is already initialized. */
+extern int caml_startup_aux (void);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_STARTUP_AUX_H */
