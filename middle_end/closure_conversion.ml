@@ -38,7 +38,7 @@ let fresh_variable _t ~name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let create_var t id =
-  let var = fresh_variable t (Ident.name id) in
+  let var = fresh_variable t ~name:(Ident.name id) in
   var
 
 let rename_var _t ?append var =
@@ -323,7 +323,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
           Format.asprintf "anon-fn[%a]" Location.print_compact lev_loc
         | _ -> "anon-fn"
       in
-      fresh_variable t name
+      fresh_variable t ~name
     in
     let decl =
       Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
@@ -370,7 +370,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
          eliminate the [let rec] construction, instead producing a normal
          [Flet] that binds a set of closures containing all of the functions.
       *)
-      let set_of_closures_var = fresh_variable t "set_of_closures" in
+      let set_of_closures_var = fresh_variable t ~name:"set_of_closures" in
       let set_of_closures =
         close_functions t env (Function_decls.create function_declarations)
       in

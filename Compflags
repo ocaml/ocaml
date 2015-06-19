@@ -16,7 +16,9 @@
 case $1 in
     asmcomp/clambdagen.* \
   | asmcomp/flambdaexport.* \
+  | asmcomp/flambdaexport_types.* \
   | asmcomp/flambdasym.* \
+  | asmcomp/import_approx.* \
   | middle_end/backend_intf.* \
   | middle_end/closure_conversion.* \
   | middle_end/closure_element_intf.* \
@@ -61,12 +63,9 @@ case $1 in
   | middle_end/tag.* \
   | middle_end/variable.* \
   | middle_end/var_within_closure.*)
-    # - More aggressive "unused identifier" warnings for Flambda passes.
-    # - Suppress "label ... defined in both ..." for record types, since
-    #   it is of no consequence.
-    # - Turn on -principal, since it is morally correct, and helps to
-    #   catch constructor-disambiguation uses that might not be
-    #   future-proof against future typechecker changes.
-    echo '-w +K+27-30 -principal'
+    # Strict compilation options for Flambda passes.
+    # Constructor/record field disambiguation is kept in check by
+    # using -principal (which is also morally correct).
+    echo '-w +a-4-9-30-40-41-42 -principal -safe-string -strict-formats'
     ;;
 esac

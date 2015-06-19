@@ -104,6 +104,7 @@ ASMCOMP=\
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
+  asmcomp/flambdaexport_types.cmo \
   asmcomp/flambdaexport.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/import_approx.cmo \

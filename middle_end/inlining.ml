@@ -945,7 +945,8 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
     }, Expr_id.create ())
   in
   let closures =
-    Flambdautils.make_closure_declaration new_fun_id expr remaining_args
+    Flambdautils.make_closure_declaration ~id:new_fun_id
+      ~body:expr ~params:remaining_args
   in
   let with_args = List.fold_right (fun (id', arg) expr ->
       Flambda.Flet (Immutable, id', arg, expr, Expr_id.create ()))
