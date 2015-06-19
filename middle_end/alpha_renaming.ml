@@ -182,38 +182,39 @@ module Ids_and_bound_vars_of_closures = struct
 
       subst_free_vars must have been used to build off_sb
    *)
-  let ffuns_subst t (subst : subst) (ffuns : _ Flambda.function_declarations) =
+  let func_decls_subst t (subst : subst)
+        (func_decls : _ Flambda.function_declarations) =
     match subst with
-    | Inactive -> ffuns, subst, t
+    | Inactive -> func_decls, subst, t
     | Active subst ->
-      let subst_ffunction _fun_id (ffun : _ Flambda.function_declaration)
+      let subst_func_declction _fun_id (func_decl : _ Flambda.function_declaration)
             subst =
-        let params, subst = active_add_variables' subst ffun.params in
+        let params, subst = active_add_variables' subst func_decl.params in
         let free_variables =
           Variable.Set.fold (fun id set ->
               Variable.Set.add (active_find_var_exn subst id) set)
-            ffun.free_variables Variable.Set.empty in
+            func_decl.free_variables Variable.Set.empty in
         (* It is not a problem to share the substitution of parameter
            names between function: There should be no clash *)
-        { ffun with
+        { func_decl with
           free_variables;
           params;
           (* keep code in sync with the closure *)
-          body = Flambdautils.toplevel_substitution subst.sb_var ffun.body;
+          body = Flambdautils.toplevel_substitution subst.sb_var func_decl.body;
         }, subst
       in
       let subst, t =
-        Variable.Map.fold (fun orig_id _ffun (subst, t) ->
+        Variable.Map.fold (fun orig_id _func_decl (subst, t) ->
             let _id, subst, t = new_subst_fun t orig_id subst in
             subst, t)
-          ffuns.funs (subst,t) in
+          func_decls.funs (subst,t) in
       let funs, subst =
-        Variable.Map.fold (fun orig_id ffun (funs, subst) ->
-            let ffun, subst = subst_ffunction orig_id ffun subst in
+        Variable.Map.fold (fun orig_id func_decl (funs, subst) ->
+            let func_decl, subst = subst_func_declction orig_id func_decl subst in
             let id = active_find_var_exn subst orig_id in
-            let funs = Variable.Map.add id ffun funs in
+            let funs = Variable.Map.add id func_decl funs in
             funs, subst)
-          ffuns.funs (Variable.Map.empty, subst) in
+          func_decls.funs (Variable.Map.empty, subst) in
       let current_unit = Compilation_unit.get_current_exn () in
       { Flambda.
         set_of_closures_id = Set_of_closures_id.create current_unit;
@@ -229,8 +230,10 @@ module Ids_and_bound_vars_of_closures = struct
     with Not_found -> var_in_closure
 end
 
-let apply_function_decls_and_free_vars t fv ffuns =
+let apply_function_decls_and_free_vars t fv func_decls =
   let module I = Ids_and_bound_vars_of_closures in
   let fv, t, of_closures = I.subst_free_vars fv t in
-  let ffuns, t, of_closure = I.ffuns_subst of_closures t ffuns in
-  fv, ffuns, t, of_closures
+  let func_decls, t, of_closure =
+    I.func_decls_subst of_closures t func_decls
+  in
+  fv, func_decls, t, of_closures
