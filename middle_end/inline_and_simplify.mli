@@ -24,7 +24,7 @@
     - some constants are propagated
     - some dead code is eliminated.
 *)
-val inline
+val run
    : never_inline:bool
   -> backend:(module Backend_intf.S)
   -> Expr_id.t Flambda.t

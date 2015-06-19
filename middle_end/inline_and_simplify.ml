@@ -1119,7 +1119,7 @@ let debug_benefit =
   try ignore (Sys.getenv "BENEFIT"); true
   with _ -> false
 
-let inline ~never_inline ~backend tree =
+let run ~never_inline ~backend tree =
   let r =
     if never_inline then
       R.set_inlining_threshold (R.create ()) Inlining_cost.Never_inline
