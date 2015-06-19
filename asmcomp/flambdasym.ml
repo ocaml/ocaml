@@ -19,13 +19,12 @@ Transform an expression to prepare conversion to clambda
 - build value approximations for export
 
 During symbol assignment, some alias can be created (when building let rec for instance).
-They are replaced by their cannonical representent in the Prepare functor application.
+They are replaced by their canonical representent in the Prepare functor application.
 
 Then the tables needed to build the Flambdaexport.exported type are build.
 *)
 
 open Misc
-open Symbol
 open Abstract_identifiers
 open Flambda
 open Flambdaexport
@@ -87,30 +86,30 @@ type const_sym =
 
 type infos =
   { global : (int, approx) Hashtbl.t;
-    ex_table : descr EidMap.t ref;
-    ex_symbol_id : Export_id.t SymbolMap.t ref;
-    constants : unit Flambda.t SymbolTbl.t;
-    symbol_alias : Symbol.t SymbolTbl.t }
+    ex_table : descr Export_id.Map.t ref;
+    ex_symbol_id : Export_id.t Symbol.Map.t ref;
+    constants : unit Flambda.t Symbol.Tbl.t;
+    symbol_alias : Symbol.t Symbol.Tbl.t }
 
 let init_infos () =
   { global = Hashtbl.create 10;
-    ex_table = ref EidMap.empty;
-    ex_symbol_id = ref SymbolMap.empty;
-    constants = SymbolTbl.create 10;
-    symbol_alias = SymbolTbl.create 10 }
+    ex_table = ref Export_id.Map.empty;
+    ex_symbol_id = ref Symbol.Map.empty;
+    constants = Symbol.Tbl.create 10;
+    symbol_alias = Symbol.Tbl.create 10 }
 
 let rec canonical_symbol s infos =
   try
-    let s' = SymbolTbl.find infos.symbol_alias s in
+    let s' = Symbol.Tbl.find infos.symbol_alias s in
     let s'' = canonical_symbol s' infos in
     if s' != s''
-    then SymbolTbl.replace infos.symbol_alias s s'';
+    then Symbol.Tbl.replace infos.symbol_alias s s'';
     s''
   with Not_found -> s
 
 let new_descr descr infos =
   let id = Export_id.create (Compilenv.current_unit ()) in
-  infos.ex_table := EidMap.add id descr !(infos.ex_table);
+  infos.ex_table := Export_id.Map.add id descr !(infos.ex_table);
   id
 
 module Conv(P:Param1) = struct
@@ -176,7 +175,7 @@ module Conv(P:Param1) = struct
     let s1' = canonical_symbol s1 in
     let s2' = canonical_symbol s2 in
     if s1' <> s2'
-    then SymbolTbl.add infos.symbol_alias s1' s2'
+    then Symbol.Tbl.add infos.symbol_alias s1' s2'
 
   let add_sb id subst env =
     { env with sb = Variable.Map.add id subst env.sb }
@@ -207,9 +206,11 @@ module Conv(P:Param1) = struct
     if Compilenv.is_predefined_exception sym
     then None
     else
-      let export = Compilenv.approx_for_global sym.sym_unit in
+      let export =
+        Compilenv.approx_for_global (Symbol.compilation_unit sym)
+      in
       try
-        let id = SymbolMap.find sym export.ex_symbol_id in
+        let id = Symbol.Map.find sym export.ex_symbol_id in
         let descr = find_description id export in
         Some descr
       with
@@ -224,25 +225,25 @@ module Conv(P:Param1) = struct
     match approx with
     | Value_unknown -> None
     | Value_id ex ->
-        (try Some (EidMap.find ex !(infos.ex_table)) with
+        (try Some (Export_id.Map.find ex !(infos.ex_table)) with
          | Not_found ->
              extern_id_descr ex)
     | Value_symbol sym ->
         try
-          let ex = SymbolMap.find sym !(infos.ex_symbol_id) in
-          Some (EidMap.find ex !(infos.ex_table))
+          let ex = Symbol.Map.find sym !(infos.ex_symbol_id) in
+          Some (Export_id.Map.find ex !(infos.ex_table))
         with Not_found ->
           extern_symbol_descr sym
 
   let add_symbol sym id =
-    infos.ex_symbol_id := SymbolMap.add sym id !(infos.ex_symbol_id)
+    infos.ex_symbol_id := Symbol.Map.add sym id !(infos.ex_symbol_id)
 
   let symbol_id sym =
-    try Some (SymbolMap.find sym !(infos.ex_symbol_id)) with Not_found -> None
+    try Some (Symbol.Map.find sym !(infos.ex_symbol_id)) with Not_found -> None
 
   let add_constant lam ex_id =
     let sym = Compilenv.new_const_symbol' () in
-    SymbolTbl.add infos.constants sym lam;
+    Symbol.Tbl.add infos.constants sym lam;
     add_symbol sym ex_id;
     sym
 
@@ -805,7 +806,7 @@ module Prepare(P:Param2) = struct
   open P
 
   (*** Preparing export informations: Replacing every symbol by its
-       cannonical representant ***)
+       canonical representant ***)
 
   let canonical_symbol s = canonical_symbol s infos
 
@@ -819,10 +820,10 @@ module Prepare(P:Param2) = struct
       | expr -> expr in
     let aux sym lam map =
       let sym' = canonical_symbol sym in
-      SymbolMap.add sym' (Flambdaiter.map use_canonical_symbols lam) map
+      Symbol.Map.add sym' (Flambdaiter.map use_canonical_symbols lam) map
     in
     Flambdaiter.map use_canonical_symbols expr,
-    SymbolTbl.fold aux infos.constants SymbolMap.empty
+    Symbol.Tbl.fold aux infos.constants Symbol.Map.empty
 
   let ex_functions =
     let ex_functions = ref Set_of_closures_id.Map.empty in
@@ -830,7 +831,7 @@ module Prepare(P:Param2) = struct
       ex_functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !ex_functions
     in
     Flambdaiter.iter_on_closures aux expr;
-    SymbolMap.iter (fun _ -> Flambdaiter.iter_on_closures aux) constants;
+    Symbol.Map.iter (fun _ -> Flambdaiter.iter_on_closures aux) constants;
     !ex_functions
 
   (* Preparing export informations *)
@@ -878,7 +879,7 @@ module Prepare(P:Param2) = struct
 
   (* replace symbol by their representative in value approximations *)
   let ex_values =
-    EidMap.map canonical_descr !(infos.ex_table)
+    Export_id.Map.map canonical_descr !(infos.ex_table)
 
   (* build the symbol to id and id to symbol maps *)
   let module_symbol =
@@ -887,16 +888,16 @@ module Prepare(P:Param2) = struct
   let ex_symbol_id =
     let aux sym ex map =
       let sym' = canonical_symbol sym in
-      SymbolMap.add sym' ex map
+      Symbol.Map.add sym' ex map
     in
-    SymbolMap.fold aux !(infos.ex_symbol_id) SymbolMap.empty
+    Symbol.Map.fold aux !(infos.ex_symbol_id) Symbol.Map.empty
 
   let ex_symbol_id =
-    SymbolMap.add module_symbol root_id
+    Symbol.Map.add module_symbol root_id
       ex_symbol_id
   let ex_id_symbol =
-    SymbolMap.fold (fun sym id map -> EidMap.add id sym map)
-      ex_symbol_id EidMap.empty
+    Symbol.Map.fold (fun sym id map -> Export_id.Map.add id sym map)
+      ex_symbol_id Export_id.Map.empty
 
   let ex_functions_off =
     let aux_fun ffunctions off_id _ map =

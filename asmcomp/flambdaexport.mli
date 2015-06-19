@@ -2,23 +2,19 @@
 (*                                                                        *)
 (*                                OCaml                                   *)
 (*                                                                        *)
-(*                      Pierre Chambart (OCamlPro)                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
 (*   under the terms of the Q Public License version 1.0.                 *)
 (*                                                                        *)
 (**************************************************************************)
 
-(** Exported informations about a compilation unit *)
+(** Exported information (that is to say, information written into a .cmx
+    file) about a compilation unit. *)
 
-open Ext_types
-open Symbol
 open Abstract_identifiers
-
-module EidSet : ExtSet with module M := Export_id
-module EidMap : ExtMap with module M := Export_id
-module EidTbl : ExtHashtbl with module M := Export_id
 
 type tag = int
 
@@ -63,21 +59,21 @@ type exported = {
   (** Code of exported functions indexed by function identifier *)
   ex_functions_off : unit Flambda.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by offset identifier *)
-  ex_values : descr EidMap.t Compilation_unit.Map.t;
+  ex_values : descr Export_id.Map.t Compilation_unit.Map.t;
   (** Structure of exported values  *)
   ex_globals : approx Ident.Map.t;
   (** Global variables provided by the unit: usualy only the top-level
       module identifier, but packs contains multiple ones. *)
 
-  ex_id_symbol : Symbol.t EidMap.t Compilation_unit.Map.t;
-  ex_symbol_id : Export_id.t SymbolMap.t;
+  ex_id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
+  ex_symbol_id : Export_id.t Symbol.Map.t;
   (** Associates symbols and values *)
 
   ex_offset_fun : int Closure_id.Map.t;
   (** Positions of function pointers in their closures *)
   ex_offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures *)
-  ex_constants : SymbolSet.t;
+  ex_constants : Symbol.Set.t;
   (** Symbols that are effectively constants (the top-level module is
       not always a constant for instance) *)
   ex_constant_closures : Set_of_closures_id.Set.t;
@@ -103,7 +99,7 @@ val clear_import_state : unit -> unit
 
 val find_description : Export_id.t -> exported -> descr
 
-val nest_eid_map : 'a EidMap.t -> 'a EidMap.t Compilation_unit.Map.t
+val nest_eid_map : 'a Export_id.Map.t -> 'a Export_id.Map.t Compilation_unit.Map.t
 
 (**/**)
 (* debug printing functions *)

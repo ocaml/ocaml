@@ -12,3 +12,6 @@
 (**************************************************************************)
 
 include Ext_types.Identifiable
+
+val create : string -> t
+val to_string : t -> string

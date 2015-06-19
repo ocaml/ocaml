@@ -1,23 +1,23 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                     Pierre Chambart, OCamlPro                       *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
-open Symbol
 open Abstract_identifiers
 open Lambda
 open Clambda
 open Flambda
 
-module Symbol_SCC = Sort_connected_components.Make(Symbol_Identifiable)
+module Symbol_SCC = Sort_connected_components.Make (Symbol)
 
 type ('a,'b) declaration_position =
   | Local of 'a
@@ -36,7 +36,7 @@ let list_closures expr constants =
     | _ -> ()
   in
   Flambdaiter.iter aux expr;
-  SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
+  Symbol.Map.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
   !closures
 
 let reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants =
@@ -54,7 +54,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
     | _ -> ()
   in
   Flambdaiter.iter aux expr;
-  SymbolMap.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
+  Symbol.Map.iter (fun _ flam -> Flambdaiter.iter aux flam) constants;
   let f extern_map offset new_map =
     try
       Closure_id.Map.add offset (Closure_id.Map.find offset extern_map) new_map
@@ -74,13 +74,13 @@ let structured_constant_label expected_symbol ~shared cst =
   | None ->
       Compilenv.new_structured_constant cst ~shared
   | Some sym ->
-      let lbl = string_of_linkage_name sym.sym_label in
+      let lbl = Linkage_name.to_string (Symbol.label sym) in
       Compilenv.add_structured_constant lbl cst ~shared
 
 module type Param1 = sig
   type t
   val expr : t Flambda.t
-  val constants : t Flambda.t SymbolMap.t
+  val constants : t Flambda.t Symbol.Map.t
 end
 
 module Offsets(P:Param1) = struct
@@ -144,7 +144,7 @@ module Offsets(P:Param1) = struct
   let res =
     let run flam = Flambdaiter.iter_toplevel iter flam in
     run P.expr;
-    SymbolMap.iter (fun _ -> run) P.constants;
+    Symbol.Map.iter (fun _ -> run) P.constants;
     !fun_offset_table, !fv_offset_table
 
 end
@@ -279,7 +279,10 @@ module Conv(P:Param2) = struct
         end
 
     | Fsymbol (sym,_) ->
-        let lbl = Compilenv.cannonical_symbol (string_of_linkage_name sym.sym_label) in
+        let lbl =
+          Compilenv.canonical_symbol
+            (Linkage_name.to_string (Symbol.label sym))
+        in
         Uconst (Uconst_ref
                   (* Should delay the conversion a bit more *)
                   (lbl, None))
@@ -550,7 +553,7 @@ module Conv(P:Param2) = struct
           Compilenv.new_const_symbol ()
       | Some sym ->
           (* should delay conversion *)
-          string_of_linkage_name sym.sym_label
+          Linkage_name.to_string (Symbol.label sym)
     in
 
     let fv_ulam = List.map (fun (id,lam) -> id,conv env lam) fv in
@@ -667,19 +670,22 @@ module Conv(P:Param2) = struct
 
   let structured_constant_for_symbol sym = function
     | Uconst(Uconst_ref (lbl', Some cst)) ->
-        let lbl = Compilenv.cannonical_symbol (string_of_linkage_name sym.sym_label) in
-        assert(lbl = Compilenv.cannonical_symbol lbl');
+        let lbl =
+          Compilenv.canonical_symbol
+            (Linkage_name.to_string (Symbol.label sym))
+        in
+        assert(lbl = Compilenv.canonical_symbol lbl');
         cst
     (* | Uconst(Uconst_ref(None, Some cst)) -> cst *)
     | _ -> assert false
 
   let symbol_dependency existing expr =
-    let r = ref SymbolSet.empty in
+    let r = ref Symbol.Set.empty in
     Flambdaiter.iter
       (function
         | Fsymbol (sym,_) ->
-            if SymbolMap.mem sym existing
-            then r := SymbolSet.add sym !r
+            if Symbol.Map.mem sym existing
+            then r := Symbol.Set.add sym !r
         | _ -> ())
       expr;
     !r
@@ -706,7 +712,7 @@ module Conv(P:Param2) = struct
 
   let constants =
     let symbol_dependency_map =
-      SymbolMap.map (fun expr -> symbol_dependency P.constants expr)
+      Symbol.Map.map (fun expr -> symbol_dependency P.constants expr)
         P.constants
     in
     let sorted_symbols =
@@ -720,10 +726,10 @@ module Conv(P:Param2) = struct
                      symbol_dependency_map))))
     in
     List.fold_left (fun acc sym ->
-        let lam = SymbolMap.find sym P.constants in
+        let lam = Symbol.Map.find sym P.constants in
         let ulam = conv { empty_env with toplevel = true } ~expected_symbol:sym lam in
-        SymbolMap.add sym (structured_constant_for_symbol sym ulam) acc)
-      SymbolMap.empty sorted_symbols
+        Symbol.Map.add sym (structured_constant_for_symbol sym ulam) acc)
+      Symbol.Map.empty sorted_symbols
 
   let res = conv { empty_env with toplevel = true } P.expr
 
@@ -731,7 +737,7 @@ end
 
 let convert (type a)
     ((expr:a Flambda.t),
-     (constants:a Flambda.t SymbolMap.t),
+     (constants:a Flambda.t Symbol.Map.t),
      exported) =
   let closures = list_closures expr constants in
   let module P1 = struct
@@ -763,8 +769,8 @@ let convert (type a)
       ex_offset_fv = add_ext_offset_fv fv_offset_table }
   in
   Compilenv.set_export_info export;
-  SymbolMap.iter (fun sym _cst ->
-       let lbl = string_of_linkage_name sym.sym_label in
+  Symbol.Map.iter (fun sym _cst ->
+       let lbl = Linkage_name.to_string (Symbol.label sym) in
        Compilenv.add_exported_constant lbl)
     C.constants;
   C.res

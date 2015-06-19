@@ -990,8 +990,8 @@ asmcomp/cmx_format.cmi : asmcomp/flambdaexport.cmi asmcomp/clambda.cmi
 asmcomp/codegen.cmi : asmcomp/cmm.cmi
 asmcomp/coloring.cmi :
 asmcomp/comballoc.cmi : asmcomp/mach.cmi
-asmcomp/compilenv.cmi : middle_end/symbol.cmi typing/ident.cmi \
-    asmcomp/flambdaexport.cmi middle_end/flambda.cmi \
+asmcomp/compilenv.cmi : middle_end/symbol.cmi middle_end/linkage_name.cmi \
+    typing/ident.cmi asmcomp/flambdaexport.cmi middle_end/flambda.cmi \
     middle_end/compilation_unit.cmi asmcomp/cmx_format.cmi \
     asmcomp/clambda.cmi middle_end/abstract_identifiers.cmi
 asmcomp/CSEgen.cmi : asmcomp/mach.cmi
@@ -1000,7 +1000,7 @@ asmcomp/emitaux.cmi : bytecomp/debuginfo.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
 asmcomp/flambdaexport.cmi : middle_end/symbol.cmi \
     middle_end/simple_value_approx.cmi typing/ident.cmi \
-    middle_end/flambda.cmi utils/ext_types.cmi middle_end/export_id.cmi \
+    middle_end/flambda.cmi middle_end/export_id.cmi \
     middle_end/compilation_unit.cmi middle_end/abstract_identifiers.cmi
 asmcomp/flambdasym.cmi : middle_end/symbol.cmi asmcomp/flambdaexport.cmi \
     middle_end/flambda.cmi middle_end/compilation_unit.cmi
@@ -1093,15 +1093,17 @@ asmcomp/asmpackager.cmx : typing/typemod.cmx bytecomp/translmod.cmx \
     asmcomp/cmx_format.cmi utils/clflags.cmx utils/ccomp.cmx \
     asmcomp/asmlink.cmx asmcomp/asmgen.cmx asmcomp/asmpackager.cmi
 asmcomp/clambdagen.cmo : middle_end/symbol.cmi bytecomp/switch.cmi \
-    utils/sort_connected_components.cmi utils/misc.cmi bytecomp/lambda.cmi \
-    typing/ident.cmi middle_end/flambdautils.cmi middle_end/flambdaiter.cmi \
+    utils/sort_connected_components.cmi utils/misc.cmi \
+    middle_end/linkage_name.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    middle_end/flambdautils.cmi middle_end/flambdaiter.cmi \
     asmcomp/flambdaexport.cmi middle_end/flambda.cmi utils/ext_types.cmi \
     bytecomp/debuginfo.cmi asmcomp/compilenv.cmi asmcomp/clambda.cmi \
     parsing/asttypes.cmi middle_end/abstract_identifiers.cmi \
     asmcomp/clambdagen.cmi
 asmcomp/clambdagen.cmx : middle_end/symbol.cmx bytecomp/switch.cmx \
-    utils/sort_connected_components.cmx utils/misc.cmx bytecomp/lambda.cmx \
-    typing/ident.cmx middle_end/flambdautils.cmx middle_end/flambdaiter.cmx \
+    utils/sort_connected_components.cmx utils/misc.cmx \
+    middle_end/linkage_name.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    middle_end/flambdautils.cmx middle_end/flambdaiter.cmx \
     asmcomp/flambdaexport.cmx middle_end/flambda.cmi utils/ext_types.cmx \
     bytecomp/debuginfo.cmx asmcomp/compilenv.cmx asmcomp/clambda.cmx \
     parsing/asttypes.cmi middle_end/abstract_identifiers.cmx \
@@ -1143,17 +1145,19 @@ asmcomp/comballoc.cmo : asmcomp/reg.cmi asmcomp/mach.cmi utils/config.cmi \
 asmcomp/comballoc.cmx : asmcomp/reg.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/arch.cmx asmcomp/comballoc.cmi
 asmcomp/compilenv.cmo : middle_end/symbol.cmi utils/misc.cmi \
-    parsing/location.cmi typing/ident.cmi middle_end/flambdaiter.cmi \
-    asmcomp/flambdaexport.cmi middle_end/flambda.cmi utils/ext_types.cmi \
-    typing/env.cmi utils/config.cmi middle_end/compilation_unit.cmi \
-    asmcomp/cmx_format.cmi asmcomp/clambda.cmi \
-    middle_end/abstract_identifiers.cmi asmcomp/compilenv.cmi
+    parsing/location.cmi middle_end/linkage_name.cmi typing/ident.cmi \
+    middle_end/flambdaiter.cmi asmcomp/flambdaexport.cmi \
+    middle_end/flambda.cmi utils/ext_types.cmi typing/env.cmi \
+    utils/config.cmi middle_end/compilation_unit.cmi asmcomp/cmx_format.cmi \
+    asmcomp/clambda.cmi middle_end/abstract_identifiers.cmi \
+    asmcomp/compilenv.cmi
 asmcomp/compilenv.cmx : middle_end/symbol.cmx utils/misc.cmx \
-    parsing/location.cmx typing/ident.cmx middle_end/flambdaiter.cmx \
-    asmcomp/flambdaexport.cmx middle_end/flambda.cmi utils/ext_types.cmx \
-    typing/env.cmx utils/config.cmx middle_end/compilation_unit.cmx \
-    asmcomp/cmx_format.cmi asmcomp/clambda.cmx \
-    middle_end/abstract_identifiers.cmx asmcomp/compilenv.cmi
+    parsing/location.cmx middle_end/linkage_name.cmx typing/ident.cmx \
+    middle_end/flambdaiter.cmx asmcomp/flambdaexport.cmx \
+    middle_end/flambda.cmi utils/ext_types.cmx typing/env.cmx \
+    utils/config.cmx middle_end/compilation_unit.cmx asmcomp/cmx_format.cmi \
+    asmcomp/clambda.cmx middle_end/abstract_identifiers.cmx \
+    asmcomp/compilenv.cmi
 asmcomp/CSEgen.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/CSEgen.cmi
 asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
@@ -1183,15 +1187,13 @@ asmcomp/emit.cmx : asmcomp/x86_proc.cmx asmcomp/x86_masm.cmx \
 asmcomp/flambdaexport.cmo : middle_end/symbol.cmi \
     middle_end/simple_value_approx.cmi middle_end/printflambda.cmi \
     typing/ident.cmi middle_end/flambdaiter.cmi middle_end/flambda.cmi \
-    utils/ext_types.cmi middle_end/export_id.cmi \
-    middle_end/compilation_unit.cmi middle_end/abstract_identifiers.cmi \
-    asmcomp/flambdaexport.cmi
+    middle_end/export_id.cmi middle_end/compilation_unit.cmi \
+    middle_end/abstract_identifiers.cmi asmcomp/flambdaexport.cmi
 asmcomp/flambdaexport.cmx : middle_end/symbol.cmx \
     middle_end/simple_value_approx.cmx middle_end/printflambda.cmx \
     typing/ident.cmx middle_end/flambdaiter.cmx middle_end/flambda.cmi \
-    utils/ext_types.cmx middle_end/export_id.cmx \
-    middle_end/compilation_unit.cmx middle_end/abstract_identifiers.cmx \
-    asmcomp/flambdaexport.cmi
+    middle_end/export_id.cmx middle_end/compilation_unit.cmx \
+    middle_end/abstract_identifiers.cmx asmcomp/flambdaexport.cmi
 asmcomp/flambdasym.cmo : middle_end/symbol.cmi middle_end/printflambda.cmi \
     utils/misc.cmi bytecomp/lambda.cmi middle_end/invariant_params.cmi \
     middle_end/inconstant_idents.cmi typing/ident.cmi \

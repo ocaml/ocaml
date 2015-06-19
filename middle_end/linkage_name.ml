@@ -20,3 +20,6 @@ end
 
 include T
 include Ext_types.Identifiable.Make (T)
+
+let create t = t
+let to_string t = t

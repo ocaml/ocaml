@@ -15,7 +15,7 @@ open Abstract_identifiers
 
 module A = Simple_value_approx
 
-let reexported_missing_symbols = SymbolTbl.create 0
+let reexported_missing_symbols = Symbol.Tbl.create 0
 
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
@@ -77,7 +77,8 @@ let import_symbol sym =
     A.value_unknown
   else
     let symbol_id_map =
-      (Compilenv.approx_for_global sym.sym_unit).ex_symbol_id in
+      let global = Symbol.compilation_unit sym in
+      (Compilenv.approx_for_global global).ex_symbol_id in
     match import_ex (Symbol.Map.find sym symbol_id_map) with
     | approx -> { approx with symbol = Some sym }
     | exception Not_found ->
@@ -88,7 +89,7 @@ let import_symbol sym =
           (Warnings.Missing_symbol_information
              (Format.asprintf "%a" Symbol.print sym,
               Format.asprintf "%a" Compilation_unit.print
-                sym.Symbol.sym_unit));
+                (Symbol.compilation_unit sym)));
       end;
       A.value_unresolved sym
 

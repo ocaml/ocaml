@@ -1,21 +1,22 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compilation environments for compilation units *)
 
 open Config
 open Misc
 open Clambda
-open Symbol
 open Abstract_identifiers
 open Cmx_format
 open Ext_types
@@ -104,8 +105,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   | Some id -> prefix ^ "__" ^ id
 
 let current_unit_linkage_name () =
-  linkage_name
-    (make_symbol ~unitname:current_unit.ui_symbol None)
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
@@ -238,27 +238,24 @@ let symbol_for_global id =
   end
 
 let unit_for_global id =
-  let sym_label = linkage_name (symbol_for_global id) in
+  let sym_label = Linkage_name.create (symbol_for_global id) in
   Compilation_unit.create id sym_label
 
 let predefined_exception_compilation_unit =
   Compilation_unit.create (Ident.create_persistent "__dummy__")
-    (linkage_name "__dummy__")
+    (Linkage_name.create "__dummy__")
 
 let is_predefined_exception sym =
   Compilation_unit.equal
     predefined_exception_compilation_unit
-    sym.sym_unit
+    (Symbol.compilation_unit sym)
 
 let symbol_for_global' id =
-  let open Symbol in
-  let sym_label = linkage_name (symbol_for_global id) in
+  let sym_label = Linkage_name.create (symbol_for_global id) in
   if Ident.is_predef_exn id then
-    { sym_unit = predefined_exception_compilation_unit;
-      sym_label }
+    Symbol.create predefined_exception_compilation_unit sym_label
   else
-    { sym_unit = unit_for_global id;
-      sym_label }
+    Symbol.create (unit_for_global id) sym_label
 
 (* Register the approximation of the module being compiled *)
 
@@ -321,8 +318,7 @@ let save_unit_info filename =
   write_unit_info current_unit filename
 
 let current_unit_linkage_name () =
-  linkage_name
-    (make_symbol ~unitname:current_unit.ui_symbol None)
+  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
 let current_unit () =
   match Compilation_unit.get_current () with
@@ -330,8 +326,7 @@ let current_unit () =
   | None -> Misc.fatal_error "Compilenv.current_unit"
 
 let current_unit_symbol () =
-  { sym_unit = current_unit ();
-    sym_label = current_unit_linkage_name () }
+  Symbol.create (current_unit ()) (current_unit_linkage_name ())
 
 let const_label = ref 0
 
@@ -381,7 +376,7 @@ let add_structured_constant lbl cst ~shared =
   structured_constants := res;
   name
 
-let cannonical_symbol lbl =
+let canonical_symbol lbl =
   try StringMap.find lbl (!structured_constants).strcst_original
   with Not_found -> lbl
 
@@ -434,9 +429,7 @@ let structured_constants () =
     ) structured_constants.strcst_all
 
 let new_const_symbol' () =
-  let sym_label = new_const_symbol () in
-  { sym_unit = current_unit ();
-    sym_label = linkage_name sym_label }
+  Symbol.create (current_unit ()) (Linkage_name.create (new_const_symbol ()))
 
 let concat_symbol unitname id =
   unitname ^ "__" ^ id
@@ -444,24 +437,22 @@ let concat_symbol unitname id =
 let closure_symbol fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in
   let unitname =
-    Symbol.string_of_linkage_name
-      (Compilation_unit.get_linkage_name compilation_unit) in
-  { Symbol.sym_unit = compilation_unit;
-    sym_label =
-      linkage_name
-        (concat_symbol unitname
-           ((Closure_id.unique_name fv) ^ "_closure")) }
+    Linkage_name.to_string (Compilation_unit.get_linkage_name compilation_unit)
+  in
+  let linkage_name =
+    concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
+  in
+  Symbol.create compilation_unit (Linkage_name.create linkage_name)
 
 let function_label fv =
-  let open Symbol in
   let compilation_unit = Closure_id.get_compilation_unit fv in
   let unitname =
-    string_of_linkage_name
-      (Compilation_unit.get_linkage_name compilation_unit) in
+    Linkage_name.to_string
+      (Compilation_unit.get_linkage_name compilation_unit)
+  in
   (concat_symbol unitname (Closure_id.unique_name fv))
 
 let imported_closure =
-  let open Symbol in
   let open Flambda in
   let import_closure clos =
 
@@ -470,14 +461,14 @@ let imported_closure =
         (fun id _ acc ->
            let fun_id = Closure_id.wrap id in
            let sym = closure_symbol fun_id in
-           SymbolMap.add sym id acc)
-        clos.funs SymbolMap.empty in
+           Symbol.Map.add sym id acc)
+        clos.funs Symbol.Map.empty in
 
     let sym_map = orig_var_map clos in
 
     let f = function
       | Fsymbol (sym, ()) as e ->
-          (try Fvar(SymbolMap.find sym sym_map,()) with
+          (try Fvar(Symbol.Map.find sym sym_map,()) with
            | Not_found -> e)
       | e -> e in
 

@@ -1,18 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compilation environments for compilation units *)
 
-open Symbol
 open Abstract_identifiers
 open Cmx_format
 
@@ -27,7 +28,7 @@ val current_unit_infos: unit -> unit_infos
 
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
-val current_unit_linkage_name: unit -> linkage_name
+val current_unit_linkage_name: unit -> Linkage_name.t
         (* Return the linkage_name of the unit being compiled *)
 val current_unit_id: unit -> Ident.t
         (* Return the id of the unit being compiled *)
@@ -97,7 +98,7 @@ val add_structured_constant:
   string -> Clambda.ustructured_constant ->
   shared:bool ->
   string
-val cannonical_symbol: string -> string
+val canonical_symbol: string -> string
 
 val structured_constants:
   unit -> ((string * bool) list * Clambda.ustructured_constant) list
