@@ -23,13 +23,23 @@ extern char * format_result(int n);
 int main(int argc, char ** argv)
 {
   printf("Initializing OCaml code...\n");
+
+  /* Initializing the runtime twice, to check that it's possible to
+     make nested calls to caml_startup/caml_shutdown. */
 #ifdef NO_BYTECODE_FILE
+  caml_startup(argv);
   caml_startup(argv);
 #else
   caml_main(argv);
+  caml_main(argv);
 #endif
+
   printf("Back in C code...\n");
   printf("Computing fib(20)...\n");
   printf("%s\n", format_result(fib(20)));
+
+  caml_shutdown();
+  caml_shutdown();
+
   return 0;
 }
