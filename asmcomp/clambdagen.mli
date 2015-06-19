@@ -22,5 +22,5 @@
 *)
 val convert
    : 'a Flambda.t * 'a Flambda.t Symbol.Map.t
-       * Flambdaexport.exported
+       * Flambdaexport_types.exported
   -> Clambda.ulambda

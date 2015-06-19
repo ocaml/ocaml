@@ -31,7 +31,7 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 let export_infos_table =
-  (Hashtbl.create 10 : (string, Flambdaexport.exported) Hashtbl.t)
+  (Hashtbl.create 10 : (string, Flambdaexport_types.exported) Hashtbl.t)
 
 let imported_closure_table =
   (Set_of_closures_id.Tbl.create 10
@@ -483,7 +483,7 @@ let imported_closure =
           clos.funs } in
   let aux fun_id =
     let ex_info = approx_env () in
-    let closure = Set_of_closures_id.Map.find fun_id ex_info.Flambdaexport.ex_functions in
+    let closure = Set_of_closures_id.Map.find fun_id ex_info.Flambdaexport_types.ex_functions in
     let cl = import_closure closure in
     cl
   in

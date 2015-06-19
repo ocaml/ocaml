@@ -27,7 +27,7 @@ Then the tables needed to build the Flambdaexport.exported type are build.
 open Misc
 open Abstract_identifiers
 open Flambda
-open Flambdaexport
+open Flambdaexport_types
 open Flambdautils
 
 let all_closures expr =
@@ -119,7 +119,7 @@ module Conv(P:Param1) = struct
 
   (* functions comming from a linked module *)
   let ex_closures () =
-    (Compilenv.approx_env ()).Flambdaexport.ex_functions_off
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_functions_off
 
   let used_variable_withing_closure = list_used_variable_withing_closure P.expr
 
@@ -414,9 +414,9 @@ module Conv(P:Param1) = struct
           Value_symbol sym
         else
           let approx = match get_descr fun_approx with
-            | Some (Value_set_of_closures closure)
-            | Some (Value_closure { closure }) ->
-                let ex = new_descr (Value_closure { fun_id = id; closure }) in
+            | Some (Value_set_of_closures set_of_closures)
+            | Some (Value_closure { set_of_closures }) ->
+                let ex = new_descr (Value_closure { fun_id = id; set_of_closures }) in
                 Value_id ex
             | _ when not (Closure_id.in_compilation_unit
                             (Compilenv.current_unit ())
@@ -437,7 +437,7 @@ module Conv(P:Param1) = struct
     | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         let approx = match get_descr fun_approx with
-          | Some (Value_closure { closure = { bound_var } }) ->
+          | Some (Value_closure { set_of_closures = { bound_var } }) ->
               (try Var_within_closure.Map.find env_var bound_var with
                | Not_found ->
                    Format.printf "Wrong closure in env_field %a@.%a@."
@@ -448,7 +448,7 @@ module Conv(P:Param1) = struct
                           (Compilenv.current_unit ())
                           env_fun_id) ->
               (* If some cmx files are missing, the value could be unknown.
-                   Notice that this is valid only for something comming from
+                   Notice that this is valid only for something coming from
                    another compilation unit, otherwise this is a bug. *)
               Value_unknown
           | Some _ -> assert false
@@ -507,7 +507,7 @@ module Conv(P:Param1) = struct
             | _ -> Indirect
         in
         let approx = match get_descr fun_approx with
-          | Some(Value_closure { fun_id; closure = { results } }) ->
+          | Some(Value_closure { fun_id; set_of_closures = { results } }) ->
               Closure_id.Map.find fun_id results
           | _ -> Value_unknown
         in
@@ -559,6 +559,7 @@ module Conv(P:Param1) = struct
     | Fprim(Lambda.Pmakeblock(tag, Asttypes.Immutable) as p, args, dbg, _) ->
         let args, approxs = conv_list_approx env args in
         let block = Fprim(p, args, dbg, ()) in
+        let tag = Tag.create_exn tag in
         let ex = new_descr (Value_block (tag, Array.of_list approxs)) in
         if not (List.for_all is_simple_constant args)
         then block, Value_id ex
@@ -661,7 +662,7 @@ module Conv(P:Param1) = struct
         map Closure_id.Map.empty in
 
     let value_closure' =
-      { closure_id = functs.set_of_closures_id;
+      { set_of_closures_id = functs.set_of_closures_id;
         bound_var =
           Variable.Map.fold (fun off_id (_,approx) map ->
               let cv = Var_within_closure.wrap off_id in
@@ -705,7 +706,7 @@ module Conv(P:Param1) = struct
       let env =
         Variable.Map.fold (fun id _ env ->
             let fun_id = Closure_id.wrap id in
-            let desc = Value_closure { fun_id; closure = value_closure' } in
+            let desc = Value_closure { fun_id; set_of_closures = value_closure' } in
             let ex = new_descr desc in
             if closed then add_symbol (Compilenv.closure_symbol fun_id) ex;
             add_approx id (Value_id ex) env)
@@ -852,14 +853,14 @@ module Prepare(P:Param2) = struct
     | Value_float_array _
     | Value_boxed_int _ as v -> v
     | Value_closure offset ->
-        Value_closure { offset with closure = (aux_closure offset.closure) }
+        Value_closure { offset with set_of_closures = (aux_set_of_closures offset.set_of_closures) }
     | Value_set_of_closures clos ->
-        Value_set_of_closures (aux_closure clos)
+        Value_set_of_closures (aux_set_of_closures clos)
     | Value_mutable_block (tag, size) ->
         Value_mutable_block (tag, size)
 
-  and aux_closure clos =
-    { closure_id = clos.closure_id;
+  and aux_set_of_closures clos =
+    { set_of_closures_id = clos.set_of_closures_id;
       bound_var = Var_within_closure.Map.map canonical_approx clos.bound_var;
       results = Closure_id.Map.map canonical_approx clos.results }
 
@@ -872,7 +873,7 @@ module Prepare(P:Param2) = struct
     let fields = Array.init size_global (fun i ->
         try canonical_approx (Hashtbl.find infos.global i) with
         | Not_found -> Value_unknown) in
-    new_descr (Value_block (0,fields))
+    new_descr (Value_block (Tag.zero,fields))
 
   let root_approx =
     Value_id root_id

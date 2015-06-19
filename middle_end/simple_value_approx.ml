@@ -13,18 +13,6 @@
 
 open Abstract_identifiers
 
-module Tag = struct
-  type t = int
-
-  let create_exn tag =
-    if tag < 0 || tag > 255 then
-      Misc.fatal_error (Printf.sprintf "Tag.create_exn %d" tag)
-    else
-      tag
-
-  let to_int t = t
-end
-
 type 'a boxed_int =
   | Int32 : int32 boxed_int
   | Int64 : int64 boxed_int

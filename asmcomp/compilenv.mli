@@ -63,13 +63,14 @@ val set_global_approx: Clambda.value_approximation -> unit
 val record_global_approx_toplevel: unit -> unit
         (* Record the current approximation for the current toplevel phrase *)
 
-val set_export_info: Flambdaexport.exported -> unit
+val set_export_info: Flambdaexport_types.exported -> unit
         (* Record the informations of the unit being compiled *)
-val approx_env: unit -> Flambdaexport.exported
+val approx_env: unit -> Flambdaexport_types.exported
         (* Returns all the information loaded from extenal compilation units *)
-val approx_for_global: Compilation_unit.t -> Flambdaexport.exported
+val approx_for_global: Compilation_unit.t -> Flambdaexport_types.exported
         (* Loads the exported information declaring the compilation_unit *)
 
+(* CR mshinwell: rename to imported_set_of_closures *)
 val imported_closure
    : Set_of_closures_id.t
   -> Expr_id.t Flambda.function_declarations

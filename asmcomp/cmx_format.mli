@@ -1,14 +1,16 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2010 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                OCaml                                   *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   en Automatique.  All rights reserved.  This file is distributed      *)
+(*   under the terms of the Q Public License version 1.0.                 *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Format of .cmx, .cmxa and .cmxs files *)
 
@@ -33,7 +35,7 @@ type unit_infos =
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
-    mutable ui_export_info: Flambdaexport.exported;
+    mutable ui_export_info: Flambdaexport_types.exported;
     mutable ui_force_link: bool }               (* Always linked *)
 
 (* Each .a library has a matching .cmxa file that provides the following

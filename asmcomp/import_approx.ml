@@ -25,23 +25,22 @@ let rec import_ex ex =
     | Value_constptr i -> A.value_constptr i
     | Value_float f -> A.value_float f
     | Value_float_array size -> A.value_float_array size
-    | Flambdaexport.Value_boxed_int (t,i) -> A.value_boxed_int t i
+    | Flambdaexport_types.Value_boxed_int (t,i) -> A.value_boxed_int t i
     | Value_string { size; contents } -> A.value_string size contents
     | Value_mutable_block _ -> A.value_unknown
     | Value_block (tag, fields) ->
-      let tag = A.Tag.create_exn tag in
       A.value_block (tag, Array.map import_approx fields)
-    | Value_closure { fun_id; closure = { closure_id; bound_var } } ->
+    | Value_closure { fun_id; set_of_closures = { set_of_closures_id; bound_var } } ->
       let bound_var = Var_within_closure.Map.map import_approx bound_var in
       let unchanging_params =
-        try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
+        try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments with
         | Not_found -> assert false
       in
       A.value_closure
         { closure_id = fun_id;
           set_of_closures_var = None;
           set_of_closures =
-            { function_decls = Compilenv.imported_closure closure_id;
+            { function_decls = Compilenv.imported_closure set_of_closures_id;
               bound_var;
               unchanging_params = unchanging_params;
               specialised_args = Variable.Set.empty;
@@ -49,14 +48,14 @@ let rec import_ex ex =
                 Flambdasubst.
                 Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty;
             } }
-    | Value_set_of_closures { closure_id; bound_var } ->
+    | Value_set_of_closures { set_of_closures_id; bound_var } ->
       let bound_var = Var_within_closure.Map.map import_approx bound_var in
       let unchanging_params =
-        try Set_of_closures_id.Map.find closure_id ex_info.ex_kept_arguments with
+        try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments with
         | Not_found -> assert false
       in
       A.value_set_of_closures
-        { function_decls = Compilenv.imported_closure closure_id;
+        { function_decls = Compilenv.imported_closure set_of_closures_id;
           bound_var;
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
@@ -66,7 +65,7 @@ let rec import_ex ex =
   with Not_found ->
     A.value_unknown
 
-and import_approx (ap : Flambdaexport.approx) =
+and import_approx (ap : Flambdaexport_types.approx) =
   match ap with
   | Value_unknown -> A.value_unknown
   | Value_id ex -> A.value_extern ex

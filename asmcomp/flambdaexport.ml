@@ -13,58 +13,7 @@
 
 open Abstract_identifiers
 open Flambda
-
-type tag = int
-
-type 'a boxed_int = 'a Simple_value_approx.boxed_int =
-  | Int32 : int32 boxed_int
-  | Int64 : int64 boxed_int
-  | Nativeint : nativeint boxed_int
-
-type value_string = Simple_value_approx.value_string = {
-  contents : string option; (* None if unknown or mutable *)
-  size : int;
-}
-
-type descr =
-  | Value_block of tag * approx array
-  | Value_mutable_block of tag * int
-  | Value_int of int
-  | Value_constptr of int
-  | Value_float of float
-  | Value_float_array of int
-  | Value_boxed_int : 'a boxed_int * 'a -> descr
-  | Value_string of value_string
-  | Value_closure of value_offset
-  | Value_set_of_closures of value_closure
-
-and value_offset =
-  { fun_id : Closure_id.t;
-    closure : value_closure }
-
-and value_closure =
-  { closure_id : Set_of_closures_id.t;
-    bound_var : approx Var_within_closure.Map.t;
-    results : approx Closure_id.Map.t }
-
-and approx =
-  | Value_unknown
-  | Value_id of Export_id.t
-  | Value_symbol of Symbol.t
-
-type exported = {
-  ex_functions : unit function_declarations Set_of_closures_id.Map.t;
-  ex_functions_off : unit function_declarations Closure_id.Map.t;
-  ex_values : descr Export_id.Map.t Compilation_unit.Map.t;
-  ex_globals : approx Ident.Map.t;
-  ex_id_symbol : Symbol.t Export_id.Map.t Compilation_unit.Map.t;
-  ex_symbol_id : Export_id.t Symbol.Map.t;
-  ex_offset_fun : int Closure_id.Map.t;
-  ex_offset_fv : int Var_within_closure.Map.t;
-  ex_constants : Symbol.Set.t;
-  ex_constant_closures : Set_of_closures_id.Set.t;
-  ex_kept_arguments : Variable.Set.t Set_of_closures_id.Map.t;
-}
+open Flambdaexport_types
 
 let empty_export = {
   ex_functions = Set_of_closures_id.Map.empty;
@@ -110,7 +59,7 @@ let print_approx ppf export =
   let values = export.ex_values in
   let open Format in
   let printed = ref Export_id.Set.empty in
-  let printed_closure = ref Set_of_closures_id.Set.empty in
+  let printed_set_of_closures = ref Set_of_closures_id.Set.empty in
   let rec print_approx ppf = function
     | Value_unknown -> fprintf ppf "?"
     | Value_id id ->
@@ -130,12 +79,16 @@ let print_approx ppf export =
   and print_descr ppf = function
     | Value_int i -> pp_print_int ppf i
     | Value_constptr i -> fprintf ppf "%ip" i
-    | Value_block (tag, fields) -> fprintf ppf "[%i:%a]" tag print_fields fields
-    | Value_mutable_block (tag, size) -> fprintf ppf "[mutable %i:%i]" tag size
-    | Value_closure {fun_id; closure} ->
-      fprintf ppf "(function %a, %a)" Closure_id.print fun_id print_closure closure
-    | Value_set_of_closures closure ->
-      fprintf ppf "(ufunction %a)" print_closure closure
+    | Value_block (tag, fields) ->
+      fprintf ppf "[%a:%a]" Tag.print tag
+        print_fields fields
+    | Value_mutable_block (tag, size) ->
+      fprintf ppf "[mutable %a:%i]" Tag.print tag size
+    | Value_closure {fun_id; set_of_closures} ->
+      fprintf ppf "(closure %a, %a)" Closure_id.print fun_id
+        print_set_of_closures set_of_closures
+    | Value_set_of_closures set_of_closures ->
+      fprintf ppf "(set_of_closures %a)" print_set_of_closures set_of_closures
     | Value_string { contents; size } -> begin
         match contents with
         | None ->
@@ -152,19 +105,21 @@ let print_approx ppf export =
     | Value_float_array size ->
         Format.fprintf ppf "float_array %i" size
     | Value_boxed_int (t, i) ->
+      let module A = Simple_value_approx in
       match t with
-      | Int32 -> Format.fprintf ppf "%li" i
-      | Int64 -> Format.fprintf ppf "%Li" i
-      | Nativeint -> Format.fprintf ppf "%ni" i
+      | A.Int32 -> Format.fprintf ppf "%li" i
+      | A.Int64 -> Format.fprintf ppf "%Li" i
+      | A.Nativeint -> Format.fprintf ppf "%ni" i
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
-  and print_closure ppf { closure_id; bound_var } =
-    if Set_of_closures_id.Set.mem closure_id !printed_closure
-    then fprintf ppf "%a" Set_of_closures_id.print closure_id
+  and print_set_of_closures ppf { set_of_closures_id; bound_var } =
+    if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
+    then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
-      printed_closure := Set_of_closures_id.Set.add closure_id !printed_closure;
+      printed_set_of_closures
+        := Set_of_closures_id.Set.add set_of_closures_id !printed_set_of_closures;
       fprintf ppf "{%a: %a}"
-        Set_of_closures_id.print closure_id
+        Set_of_closures_id.print set_of_closures_id
         print_binding bound_var
     end
   and print_binding ppf bound_var =
@@ -183,7 +138,8 @@ let print_symbols ppf export =
   let print_symbol eid sym =
     fprintf ppf "%a -> %a@." Symbol.print sym Export_id.print eid
   in
-   Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol) export.ex_id_symbol
+  Compilation_unit.Map.iter (fun _ -> Export_id.Map.iter print_symbol)
+    export.ex_id_symbol
 
 let print_offsets ppf export =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
@@ -257,12 +213,14 @@ let import_approx_for_pack units pack = function
   | Value_id eid -> Value_id (import_eid_for_pack units pack eid)
   | Value_unknown -> Value_unknown
 
-let import_closure units pack closure =
-  { closure_id = closure.closure_id;
+let import_set_of_closures units pack set_of_closures =
+  { set_of_closures_id = set_of_closures.set_of_closures_id;
     bound_var =
-      Var_within_closure.Map.map (import_approx_for_pack units pack) closure.bound_var;
+      Var_within_closure.Map.map (import_approx_for_pack units pack)
+        set_of_closures.bound_var;
     results =
-      Closure_id.Map.map (import_approx_for_pack units pack) closure.results }
+      Closure_id.Map.map (import_approx_for_pack units pack)
+        set_of_closures.results }
 
 let import_descr_for_pack units pack = function
   | Value_int _
@@ -273,10 +231,13 @@ let import_descr_for_pack units pack = function
   | Value_boxed_int _ as desc -> desc
   | Value_block (tag, fields) ->
     Value_block (tag, Array.map (import_approx_for_pack units pack) fields)
-  | Value_closure {fun_id; closure} ->
-    Value_closure {fun_id; closure = import_closure units pack closure}
-  | Value_set_of_closures closure ->
-    Value_set_of_closures (import_closure units pack closure)
+  | Value_closure {fun_id; set_of_closures} ->
+    Value_closure {
+      fun_id;
+      set_of_closures = import_set_of_closures units pack set_of_closures;
+    }
+  | Value_set_of_closures set_of_closures ->
+    Value_set_of_closures (import_set_of_closures units pack set_of_closures)
   | Value_mutable_block (tag, size) ->
     Value_mutable_block (tag, size)
 

@@ -181,15 +181,15 @@ module Conv(P:Param2) = struct
   (* offsets of functions and free variables in closures comming from
      a linked module *)
   let extern_fun_offset_table =
-    (Compilenv.approx_env ()).Flambdaexport.ex_offset_fun
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_offset_fun
   let extern_fv_offset_table =
-    (Compilenv.approx_env ()).Flambdaexport.ex_offset_fv
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_offset_fv
   let ex_closures =
-    (Compilenv.approx_env ()).Flambdaexport.ex_functions_off
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_functions_off
   let ex_functions =
-    (Compilenv.approx_env ()).Flambdaexport.ex_functions
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_functions
   let ex_constant_closures =
-    (Compilenv.approx_env ()).Flambdaexport.ex_constant_closures
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_constant_closures
 
   let get_fun_offset off =
     try
@@ -744,29 +744,30 @@ let convert (type a)
     type t = a
     let expr = expr
     let constants = constants
-    let constant_closures = exported.Flambdaexport.ex_constant_closures
+    let constant_closures = exported.Flambdaexport_types.ex_constant_closures
   end in
   let fun_offset_table, fv_offset_table =
     let module O = Offsets(P1) in
     O.res
   in
   let extern_fun_offset_table =
-    (Compilenv.approx_env ()).Flambdaexport.ex_offset_fun in
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_offset_fun in
   let extern_fv_offset_table =
-    (Compilenv.approx_env ()).Flambdaexport.ex_offset_fv in
+    (Compilenv.approx_env ()).Flambdaexport_types.ex_offset_fv in
   let add_ext_offset_fun, add_ext_offset_fv =
     reexported_offset extern_fun_offset_table extern_fv_offset_table expr constants in
   let module P2 = struct include P1
     let fun_offset_table = fun_offset_table
     let fv_offset_table = fv_offset_table
     let closures = closures
-    let functions = exported.Flambdaexport.ex_functions
+    let functions = exported.Flambdaexport_types.ex_functions
   end in
   let module C = Conv(P2) in
-  let export = let open Flambdaexport in
+  let export : Flambdaexport_types.exported =
     { exported with
       ex_offset_fun = add_ext_offset_fun fun_offset_table;
-      ex_offset_fv = add_ext_offset_fv fv_offset_table }
+      ex_offset_fv = add_ext_offset_fv fv_offset_table;
+    }
   in
   Compilenv.set_export_info export;
   Symbol.Map.iter (fun sym _cst ->
