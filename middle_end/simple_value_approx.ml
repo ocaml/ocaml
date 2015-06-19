@@ -49,7 +49,7 @@ and value_set_of_closures =
     unchanging_params : Variable.Set.t;
     specialised_args : Variable.Set.t;
     alpha_renaming :
-      Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures.t;
+      Alpha_renaming.Ids_and_bound_vars_of_closures.t;
   }
 
 and t =

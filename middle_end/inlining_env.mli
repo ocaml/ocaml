@@ -57,7 +57,7 @@ val is_inside_branch : t -> bool
 val inside_branch : t -> t
 val inside_loop : t -> t
 
-val set_sb : Flambdasubst.t -> t -> t
+val set_sb : Alpha_renaming.t -> t -> t
 
 val increase_closure_depth : t -> t
 
@@ -68,7 +68,7 @@ val unrolling_allowed : t -> bool
 val inside_unrolled_function : t -> t
 
 val inlining_level : t -> int
-val sb : t -> Flambdasubst.t
+val sb : t -> Alpha_renaming.t
 val never_inline : t -> bool
 
 (* If collecting inlining statistics, record that the inliner is about to

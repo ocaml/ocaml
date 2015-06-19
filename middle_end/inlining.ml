@@ -52,7 +52,7 @@ let which_function_parameters_can_we_specialize ~params ~args
         match (arg : _ Flambda.t) with
         | Fvar (var, _) -> var, args_decl
         | _ ->
-          let new_id = Flambdasubst.freshen_var id in
+          let new_id = Alpha_renaming.freshen_var id in
           let args_decl = (new_id, arg) :: args_decl in
           new_id, args_decl
       in
@@ -177,7 +177,7 @@ let transform_var_within_closure_expression env r expr closure
   match A.descr (R.approx r) with
   | Value_closure { set_of_closures; closure_id } ->
     let module AR =
-      Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+      Alpha_renaming.Ids_and_bound_vars_of_closures
     in
     let env_var =
       AR.subst_var_within_closure set_of_closures.alpha_renaming
@@ -226,7 +226,7 @@ let transform_closure_expression env r closure closure_id rel annot
       : _ Flambda.t * R.t =
   (* CR mshinwell: rename [closure] to [set_of_closures] *)
   let module AR =
-    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+    Alpha_renaming.Ids_and_bound_vars_of_closures
   in
   let subst_closure_id (closure' : A.value_set_of_closures) closure_id =
     let closure_id = AR.subst_closure_id closure'.alpha_renaming closure_id in
@@ -318,7 +318,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     check_constant_result r tree (Backend.import_symbol sym)
   | Fvar (id, annot) ->
-    let id = Flambdasubst.subst_var (E.sb env) id in
+    let id = Alpha_renaming.subst_var (E.sb env) id in
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
@@ -348,7 +348,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
      *)
     let init_used_var = R.used_variables r in
     let lam, r = loop env r lam in
-    let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
     let env = E.set_sb sb env in
     let def_used_var = R.used_variables r in
     let body_env =
@@ -389,7 +389,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     expr, R.exit_scope r id
   | Fletrec (defs, body, annot) ->
-    let defs, sb = Flambdasubst.new_subst_ids (E.sb env) defs in
+    let defs, sb = Alpha_renaming.new_subst_ids (E.sb env) defs in
     let env = E.set_sb sb env in
     let def_env =
       List.fold_left (fun env_acc (id, _lam) ->
@@ -482,12 +482,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
     expr, ret r approx
   | Fstaticraise (i, args, annot) ->
-    let i = Flambdasubst.sb_exn (E.sb env) i in
+    let i = Alpha_renaming.sb_exn (E.sb env) i in
     let args, _, r = loop_list env r args in
     let r = R.use_staticfail r i in
     Fstaticraise (i, args, annot), ret r A.value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
-    let i, sb = Flambdasubst.new_subst_exn (E.sb env) i in
+    let i, sb = Alpha_renaming.new_subst_exn (E.sb env) i in
     let env = E.set_sb sb env in
     let body, r = loop env r body in
     if not (Static_exception.Set.mem i (R.used_staticfail r)) then
@@ -496,7 +496,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     else begin
       match (body : _ Flambda.t) with
       | Fstaticraise (j, args, _) when
-          Static_exception.equal i (Flambdasubst.sb_exn (E.sb env) j) ->
+          Static_exception.equal i (Alpha_renaming.sb_exn (E.sb env) j) ->
         (* This is usually true, since whe checked that the static
            exception was used.  The only case where it can be false
            is when an argument can raise.  This could be avoided if
@@ -509,7 +509,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let r = R.exit_scope_catch r i in
         loop env r handler
       | _ ->
-        let vars, sb = Flambdasubst.new_subst_ids' (E.sb env) vars in
+        let vars, sb = Alpha_renaming.new_subst_ids' (E.sb env) vars in
         let env =
           List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
             (E.set_sb sb env) vars
@@ -522,7 +522,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     end
   | Ftrywith (body, id, handler, annot) ->
     let body, r = loop env r body in
-    let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
     let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
     let env = E.inside_branch env in
     let handler, r = loop env r handler in
@@ -570,7 +570,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   | Ffor (id, lo, hi, dir, body, annot) ->
     let lo, r = loop env r lo in
     let hi, r = loop env r hi in
-    let id, sb = Flambdasubst.new_subst_id (E.sb env) id in
+    let id, sb = Alpha_renaming.new_subst_id (E.sb env) id in
     let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
     let env = E.inside_loop env in
     let body, r = loop env r body in
@@ -578,7 +578,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     Ffor (id, lo, hi, dir, body, annot), ret r A.value_unknown
   | Fassign (id, lam, annot) ->
     let lam, r = loop env r lam in
-    let id = Flambdasubst.subst_var (E.sb env) id in
+    let id = Alpha_renaming.subst_var (E.sb env) id in
     let r = R.use_var r id in
     Fassign (id, lam, annot), ret r A.value_unknown
   | Fswitch (arg, sw, annot) ->
@@ -738,14 +738,14 @@ and transform_set_of_closures_expression original_env original_r
       (cl : _ Flambda.set_of_closures) annot : _ Flambda.t * R.t =
   let module Backend = (val (E.backend original_env) : Backend_intf.S) in
   let ffuns =
-    Flambdasubst.rewrite_recursive_calls_with_symbols (E.sb original_env)
+    Alpha_renaming.rewrite_recursive_calls_with_symbols (E.sb original_env)
       cl.function_decls ~make_closure_symbol:Backend.closure_symbol
   in
   let fv = cl.free_vars in
   let env = E.increase_closure_depth original_env in
   let specialised_args =
     Variable.Map.map
-      (Flambdasubst.subst_var (E.sb env))
+      (Alpha_renaming.subst_var (E.sb env))
       cl.specialised_args
   in
   let fv, r = Variable.Map.fold (fun id lam (fv, r) ->
@@ -759,13 +759,13 @@ and transform_set_of_closures_expression original_env original_r
      concerning variable escaping their scope. *)
   let env = E.local env in
   let module AR =
-    Flambdasubst.Alpha_renaming_map_for_ids_and_bound_vars_of_closures
+    Alpha_renaming.Ids_and_bound_vars_of_closures
   in
   let fv, ffuns, sb, alpha_renaming =
     AR.subst_function_declarations_and_free_variables (E.sb env) fv ffuns
   in
   let env = E.set_sb sb env in
-  let apply_substitution = Flambdasubst.subst_var (E.sb env) in
+  let apply_substitution = Alpha_renaming.subst_var (E.sb env) in
   let specialised_args =
     Variable.Map.map_keys apply_substitution specialised_args
   in
@@ -927,7 +927,7 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
   let param_sb =
-    List.map (fun id -> Flambdasubst.freshen_var id) func.params
+    List.map (fun id -> Alpha_renaming.freshen_var id) func.params
   in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
@@ -1007,11 +1007,11 @@ and inline_by_copying_function_body ~env ~r
   let clos_id = new_var "inline_by_copying_function_body" in
   (* Assign fresh names for the function's parameters and rewrite the body to
      use these new names. *)
-  let subst_params = List.map Flambdasubst.freshen_var func.params in
+  let subst_params = List.map Alpha_renaming.freshen_var func.params in
   let subst_map =
     Variable.Map.of_list (List.combine func.params subst_params)
   in
-  let body = Flambdasubst.toplevel_substitution subst_map func.body in
+  let body = Alpha_renaming.toplevel_substitution subst_map func.body in
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =

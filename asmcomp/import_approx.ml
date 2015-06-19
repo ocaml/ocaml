@@ -43,8 +43,8 @@ let rec import_ex ex =
               unchanging_params = unchanging_params;
               specialised_args = Variable.Set.empty;
               alpha_renaming =
-                Flambdasubst.
-                Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty;
+                Alpha_renaming.
+                Ids_and_bound_vars_of_closures.empty;
             } }
     | Value_set_of_closures { set_of_closures_id; bound_var } ->
       let bound_var = Var_within_closure.Map.map import_approx bound_var in
@@ -58,8 +58,8 @@ let rec import_ex ex =
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
           alpha_renaming =
-            Flambdasubst.
-            Alpha_renaming_map_for_ids_and_bound_vars_of_closures.empty; }
+            Alpha_renaming.
+            Ids_and_bound_vars_of_closures.empty; }
   with Not_found ->
     A.value_unknown
 

@@ -59,7 +59,7 @@ val rewrite_recursive_calls_with_symbols
     If the substitution is inactive, this is the identity.
  *)
 
-module Alpha_renaming_map_for_ids_and_bound_vars_of_closures : sig
+module Ids_and_bound_vars_of_closures : sig
   (* Tables used for identifiers substitution in
      Fselect_closure ("ids of closures") and Fvar_within_closure ("bound vars
      of closures") constructions.

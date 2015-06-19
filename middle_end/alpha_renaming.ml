@@ -150,7 +150,7 @@ let toplevel_substitution sb tree =
   in
   Flambdaiter.map_toplevel aux tree
 
-module Alpha_renaming_map_for_ids_and_bound_vars_of_closures = struct
+module Ids_and_bound_vars_of_closures = struct
   type inactive_or_active = t
 
   type t =
