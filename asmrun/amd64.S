@@ -545,6 +545,20 @@ LBL(caml_c_call):
         jmp    *%rax
 CFI_ENDPROC
 
+/* Registers holding arguments of C functions. */
+
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
+#define C_ARG_1 %rcx
+#define C_ARG_2 %rdx
+#define C_ARG_3 %r8
+#define C_ARG_4 %r9
+#else
+#define C_ARG_1 %rdi
+#define C_ARG_2 %rsi
+#define C_ARG_3 %rdx
+#define C_ARG_4 %rcx
+#endif
+
 /* Start the OCaml program */
 
 FUNCTION(G(caml_start_program))
@@ -552,7 +566,7 @@ FUNCTION(G(caml_start_program))
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Load caml_young_ptr into r15 (was passed as an argument from C) */
-        movq    %rdi, %r15
+        movq    C_ARG_1, %r15
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
@@ -596,20 +610,6 @@ LBL(108):
         orq     $2, %rax
         jmp     LBL(109)
 CFI_ENDPROC
-
-/* Registers holding arguments of C functions. */
-
-#if defined(SYS_mingw64) || defined(SYS_cygwin)
-#define C_ARG_1 %rcx
-#define C_ARG_2 %rdx
-#define C_ARG_3 %r8
-#define C_ARG_4 %r9
-#else
-#define C_ARG_1 %rdi
-#define C_ARG_2 %rsi
-#define C_ARG_3 %rdx
-#define C_ARG_4 %rcx
-#endif
 
 /* Raise an exception from OCaml */
 
@@ -699,38 +699,41 @@ FUNCTION(G(caml_stack_overflow))
 
 /* Callback from C to OCaml */
 
-FUNCTION(G(caml_callback_exn))
+FUNCTION(G(caml_callback_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rbx      /* closure */
-        movq    C_ARG_2, %rax      /* argument */
+        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_2, %rbx      /* closure */
+        movq    C_ARG_3, %rax      /* argument */
         movq    0(%rbx), %r12      /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
-FUNCTION(G(caml_callback2_exn))
+FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %rdi      /* closure -- no op with Unix conventions */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
+        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_2, %rdi      /* closure */
+        movq    C_ARG_3, %rax      /* first argument */
+        movq    C_ARG_4, %rbx      /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC
 
-FUNCTION(G(caml_callback3_exn))
+FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_2, %rax      /* first argument */
-        movq    C_ARG_3, %rbx      /* second argument */
-        movq    C_ARG_1, %rsi      /* closure */
-        movq    C_ARG_4, %rdi      /* third argument */
+        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    0(C_ARG_3), %rax   /* first argument */
+        movq    8(C_ARG_3), %rbx   /* second argument */
+        movq    C_ARG_2, %rsi      /* closure */
+        movq    16(C_ARG_3), %rdi      /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
         jmp     LBL(caml_start_program)
 CFI_ENDPROC

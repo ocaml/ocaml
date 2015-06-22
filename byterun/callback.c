@@ -128,6 +128,28 @@ static void init_callback_code(void)
 {
 }
 
+value caml_callback_asm(char* young_ptr, value closure, value arg);
+value caml_callback2_asm(char* young_ptr, value closure, value arg1, value arg2);
+value caml_callback3_asm(char* young_ptr, value closure, value* args);
+
+CAMLexport value caml_callback_exn(value closure, value arg)
+{
+  return caml_callback_asm(caml_domain_state->young_ptr, closure, arg);
+}
+
+CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
+{
+  return caml_callback2_asm(caml_domain_state->young_ptr, closure, arg1, arg2);
+}
+
+CAMLexport value caml_callback3_exn(value closure,
+                                    value arg1, value arg2, value arg3)
+{
+  /* can only pass 4 args in registers on Windows, so we use an array */
+  value args[] = {arg1, arg2, arg3};
+  return caml_callback3_asm(caml_domain_state->young_ptr, closure, args);
+}
+
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
