@@ -114,14 +114,26 @@
 	movq    \src_reg, (8 * field_num)(%r11) ;  \
   .endm
 #include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+#define DOMAIN_STATE(field_num, c_type, name)    \
+  .macro test_caml_##name value:req ;            \
+	movq	%r15, %r11 ;                     \
+	andq	$MINOR_HEAP_PTR_MASK, %r11 ;     \
+	testq   \value, (8 * field_num)(%r11) ;  \
+  .endm
+#include "../byterun/domain_state.tbl"
 
-/* Load from the current domain state block.  Clobbers %r11. */
+/* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
         load_##var dstreg
 
 /* Store to the current domain state block.  Clobbers %r11. */
 #define STORE_TL_VAR(srcreg, var) \
         store_##var srcreg
+
+/* Test against a value in the current domain block.  Clobbers %r11. */
+#define TEST_TL_VAR(value, var) \
+        test_##var value
 
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 
@@ -566,7 +578,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
-        TESTL_VAR($1, caml_backtrace_active)
+        TEST_TL_VAR($1, caml_backtrace_active)
         jne     LBL(110)
         movq    %r14, %rsp
         popq    %r14
@@ -597,7 +609,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
-        TESTL_VAR($1, caml_backtrace_active)
+        TEST_TL_VAR($1, caml_backtrace_active)
         jne     LBL(111)
         movq    %r14, %rsp
         popq    %r14
@@ -608,7 +620,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
-        TESTL_VAR($1, caml_backtrace_active)
+        TEST_TL_VAR($1, caml_backtrace_active)
         jne     LBL(112)
         movq    C_ARG_1, %rax
         LOAD_TL_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
