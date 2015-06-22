@@ -72,7 +72,7 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  if (caml_domain_state->young_ptr != caml_young_end) caml_minor_collection ();
+  if (caml_domain_state->young_ptr != caml_domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
 
@@ -383,7 +383,7 @@ static void clean_stacks()
 */
 void caml_empty_minor_heap (void)
 {
-  uintnat minor_allocated_bytes = caml_young_end - caml_domain_state->young_ptr;
+  uintnat minor_allocated_bytes = caml_domain_state->young_end - caml_domain_state->young_ptr;
   unsigned rewritten = 0;
   struct caml_ref_entry *r;
 
@@ -434,9 +434,10 @@ void caml_empty_minor_heap (void)
     caml_addrmap_iter(&caml_remembered_set.promotion, unpin_promoted_object);
 
 
-    if (caml_domain_state->young_ptr < caml_young_start) caml_domain_state->young_ptr = caml_young_start;
+    if (caml_domain_state->young_ptr < caml_domain_state->young_start)
+      caml_domain_state->young_ptr = caml_domain_state->young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-    caml_domain_state->young_ptr = caml_young_end;
+    caml_domain_state->young_ptr = caml_domain_state->young_end;
     clear_table (&caml_remembered_set.ref);
     caml_addrmap_clear(&caml_remembered_set.promotion);
     caml_addrmap_clear(&caml_remembered_set.promotion_rev);
@@ -449,7 +450,8 @@ void caml_empty_minor_heap (void)
 #ifdef DEBUG
   {
     value *p;
-    for (p = (value *) caml_young_start; p < (value *) caml_young_end; ++p){
+    for (p = (value *) caml_domain_state->young_start;
+         p < (value *) caml_domain_state->young_end; ++p){
       *p = Debug_free_minor;
     }
     ++ minor_gc_counter;
