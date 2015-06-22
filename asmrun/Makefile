@@ -26,7 +26,7 @@ COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
   finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
   debugger.o meta.o dynlink.o addrmap.o domain.o platform.o \
-  eventlog.o params.o frame_descriptors.o
+  eventlog.o params.o frame_descriptors.o fiber.o
 
 ASMOBJS=$(ARCH).o
 
@@ -174,6 +174,8 @@ params.c: ../byterun/params.c
 	ln -s ../byterun/params.c params.c
 shared_heap.c: ../byterun/shared_heap.c
 	ln -s ../byterun/shared_heap.c shared_heap.c
+fiber.c: ../byterun/fiber.c
+	ln -s ../byterun/fiber.c fiber.c
 
 LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
