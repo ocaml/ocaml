@@ -481,7 +481,7 @@ let get_field base n =
   Cop(Cload Word, [field_address base n])
 
 let get_mut_field base n =
-  Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
+  Cop(Cextcall("caml_read_barrier", typ_addr, false,Debuginfo.none),
       [base; Cconst_int n])
 
 let set_addr_field base n newval =
@@ -548,8 +548,10 @@ let array_indexing log2size ptr ofs =
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2size - 1)]);
                    Cconst_int((-1) lsl (log2size - 1))])
 
+(* CR mshinwell: these caml_read_barrier things should all go through one
+   place *)
 let addr_array_ref arr ofs =
-  Cop(Cextcall("caml_get_field", typ_addr, false, Debuginfo.none),
+  Cop(Cextcall("caml_read_barrier", typ_addr, false, Debuginfo.none),
       [arr; untag_int ofs])
 let int_array_ref arr ofs =
   Cop(Cload Word, [array_indexing log2_size_addr arr ofs])
@@ -2522,7 +2524,7 @@ let send_function arity =
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
                 cache_public_method (Cvar meths) tag cache,
                 cached_pos),
-    Cop(Cextcall("caml_get_field", typ_addr, false,Debuginfo.none),
+    Cop(Cextcall("caml_read_barrier", typ_addr, false,Debuginfo.none),
         [Cvar meths;
          Cop(Casr, [Cop (Cadda, [Cvar real; Cconst_int(2*size_addr - 1)]);
                     Cconst_int log2_size_addr])]))))
