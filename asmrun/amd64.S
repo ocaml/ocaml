@@ -551,6 +551,8 @@ FUNCTION(G(caml_start_program))
        CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
+    /* Load caml_young_ptr into r15 (was passed as an argument from C) */
+        movq    %rdi, %r15
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
@@ -560,8 +562,7 @@ LBL(caml_start_program):
         PUSH_TL_VAR(caml_gc_regs)
         PUSH_TL_VAR(caml_last_return_address)
         PUSH_TL_VAR(caml_bottom_of_stack)
-    /* Setup alloc ptr and exception ptr */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
+    /* Setup exception ptr */
         LOAD_TL_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
         lea     LBL(108)(%rip), %r13
