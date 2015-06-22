@@ -99,12 +99,24 @@
         movq    GREL(dstlabel)(%rip), %r11 ; \
         movq    srcreg, (%r11)
 
+#define STORE_TL_VAR(srcreg,dstlabel) \
+        movq    GREL(dstlabel)(%rip), %r11 ; \
+        movq    srcreg, (%r11)
+
 #define STORE_VAR32(srcreg,dstlabel) \
+        movq    GREL(dstlabel)(%rip), %r11 ; \
+        movl    srcreg, (%r11)
+
+#define STORE_TL_VAR32(srcreg,dstlabel) \
         movq    GREL(dstlabel)(%rip), %r11 ; \
         movl    srcreg, (%r11)
 
 /* Load global [srclabel] in register [dstreg].  Clobbers %r11. */
 #define LOAD_VAR(srclabel,dstreg) \
+        movq    GREL(srclabel)(%rip), %r11 ; \
+        movq    (%r11), dstreg
+
+#define LOAD_TL_VAR(srclabel,dstreg) \
         movq    GREL(srclabel)(%rip), %r11 ; \
         movq    (%r11), dstreg
 
@@ -132,9 +144,9 @@
 #define RECORD_STACK_FRAME(OFFSET) \
         pushq   %r11 ; CFI_ADJUST(8); \
         movq    8+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_last_return_address) ; \
+        STORE_TL_VAR(%rax,caml_last_return_address) ; \
         leaq    16+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_bottom_of_stack) ; \
+        STORE_TL_VAR(%rax,caml_bottom_of_stack) ; \
         popq    %r11; CFI_ADJUST(-8)
 
 /* Load address of global [label] in register [dst]. */
@@ -148,10 +160,19 @@
 #define STORE_VAR(srcreg,dstlabel) \
         movq    srcreg, G(dstlabel)(%rip)
 
+#define STORE_TL_VAR(srcreg,dstlabel) \
+        movq    srcreg, G(dstlabel)(%rip)
+
 #define STORE_VAR32(srcreg,dstlabel) \
         movl    srcreg, G(dstlabel)(%rip)
 
+#define STORE_TL_VAR32(srcreg,dstlabel) \
+        movl    srcreg, G(dstlabel)(%rip)
+
 #define LOAD_VAR(srclabel,dstreg) \
+        movq    G(srclabel)(%rip), dstreg
+
+#define LOAD_TL_VAR(srclabel,dstreg) \
         movq    G(srclabel)(%rip), dstreg
 
 #define CMP_VAR(label,reg) \
@@ -168,9 +189,9 @@
 
 #define RECORD_STACK_FRAME(OFFSET) \
         movq    OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_last_return_address) ; \
+        STORE_TL_VAR(%rax,caml_last_return_address) ; \
         leaq    8+OFFSET(%rsp), %rax ; \
-        STORE_VAR(%rax,caml_bottom_of_stack)
+        STORE_TL_VAR(%rax,caml_bottom_of_stack)
 
 #define LEA_VAR(label,dst) \
         leaq    G(label)(%rip), dst
@@ -296,10 +317,10 @@ LBL(caml_call_gc):
         pushq   %rdi; CFI_ADJUST (8);
         pushq   %rbx; CFI_ADJUST (8);
         pushq   %rax; CFI_ADJUST (8);
-        STORE_VAR(%rsp, caml_gc_regs)
+        STORE_TL_VAR(%rsp, caml_gc_regs)
     /* Save caml_young_ptr, caml_exception_pointer */
-        STORE_VAR(%r15, caml_young_ptr)
-        STORE_VAR(%r14, caml_exception_pointer)
+        STORE_TL_VAR(%r15, caml_young_ptr)
+        STORE_TL_VAR(%r14, caml_exception_pointer)
     /* Save floating-point registers */
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp)
@@ -323,8 +344,8 @@ LBL(caml_call_gc):
         call    GCALL(caml_garbage_collection)
         CLEANUP_AFTER_C_CALL
     /* Restore caml_young_ptr, caml_exception_pointer */
-        LOAD_VAR(caml_young_ptr, %r15)
-        LOAD_VAR(caml_exception_pointer, %r14)
+        LOAD_TL_VAR(caml_young_ptr, %r15)
+        LOAD_TL_VAR(caml_exception_pointer, %r14)
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0
         movsd   1*8(%rsp), %xmm1
@@ -445,8 +466,8 @@ CFI_STARTPROC
 LBL(caml_c_call):
     /* Record lowest stack address and return address */
         popq    %r12; CFI_ADJUST(-8)
-        STORE_VAR(%r12, caml_last_return_address)
-        STORE_VAR(%rsp, caml_bottom_of_stack)
+        STORE_TL_VAR(%r12, caml_last_return_address)
+        STORE_TL_VAR(%rsp, caml_bottom_of_stack)
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
 #if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
@@ -456,8 +477,8 @@ LBL(caml_c_call):
         addq    $32768, %rsp
 #endif
     /* Make the exception handler and alloc ptr available to the C code */
-        STORE_VAR(%r15, caml_young_ptr)
-        STORE_VAR(%r14, caml_exception_pointer)
+        STORE_TL_VAR(%r15, caml_young_ptr)
+        STORE_TL_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
     /* No need to PREPARE_FOR_C_CALL since the caller already
        reserved the stack space if needed (cf. amd64/proc.ml) */
@@ -480,8 +501,8 @@ LBL(caml_start_program):
         PUSH_VAR(caml_last_return_address)
         PUSH_VAR(caml_bottom_of_stack)
     /* Setup alloc ptr and exception ptr */
-        LOAD_VAR(caml_young_ptr, %r15)
-        LOAD_VAR(caml_exception_pointer, %r14)
+        LOAD_TL_VAR(caml_young_ptr, %r15)
+        LOAD_TL_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
         lea     LBL(108)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
@@ -497,8 +518,8 @@ LBL(107):
         CFI_ADJUST(-16)
 LBL(109):
     /* Update alloc ptr and exception ptr */
-        STORE_VAR(%r15,caml_young_ptr)
-        STORE_VAR(%r14,caml_exception_pointer)
+        STORE_TL_VAR(%r15,caml_young_ptr)
+        STORE_TL_VAR(%r14,caml_exception_pointer)
     /* Pop the callback link, restoring the global variables */
         POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
@@ -539,7 +560,7 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
-        STORE_VAR32($0, caml_backtrace_pos)
+        STORE_TL_VAR32($0, caml_backtrace_pos)
 LBL(111):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
@@ -578,9 +599,9 @@ CFI_STARTPROC
         TESTL_VAR($1, caml_backtrace_active)
         jne     LBL(112)
         movq    C_ARG_1, %rax
-        LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
+        LOAD_TL_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
         popq    %r14                   /* Recover previous exception handler */
-        LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
+        LOAD_TL_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 LBL(112):
 #ifdef WITH_FRAME_POINTERS
@@ -588,18 +609,18 @@ LBL(112):
 #endif
         movq    C_ARG_1, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
-        LOAD_VAR(caml_last_return_address,C_ARG_2)   /* arg 2: pc of raise */
-        LOAD_VAR(caml_bottom_of_stack,C_ARG_3)       /* arg 3: sp of raise */
-        LOAD_VAR(caml_exception_pointer,C_ARG_4)     /* arg 4: sp of handler */
+        LOAD_TL_VAR(caml_last_return_address,C_ARG_2) /* arg 2: pc of raise */
+        LOAD_TL_VAR(caml_bottom_of_stack,C_ARG_3)     /* arg 3: sp of raise */
+        LOAD_TL_VAR(caml_exception_pointer,C_ARG_4)   /* arg 4: sp of handler */
 #ifndef WITH_FRAME_POINTERS
         subq    $8, %rsp              /* PR#5700: maintain stack alignment */
 #endif
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
-        LOAD_VAR(caml_exception_pointer,%rsp)
+        LOAD_TL_VAR(caml_exception_pointer,%rsp)
         popq    %r14                  /* Recover previous exception handler */
-        LOAD_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
+        LOAD_TL_VAR(caml_young_ptr,%r15) /* Reload alloc ptr */
         ret
 CFI_ENDPROC
 
