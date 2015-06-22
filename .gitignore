@@ -2736,6 +2736,8 @@
 /utils/.depend.nt
 /utils/.DS_Store
 /utils/config.ml
+/utils/domainstate.ml
+/utils/domainstate.mli
 
 # /yacc/
 /yacc/*.o
