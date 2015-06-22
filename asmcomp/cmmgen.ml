@@ -495,7 +495,7 @@ let set_float_field base n newval =
   Cop(Cstore Double_u, [float_field_address base n; newval])
 
 let init_field base n newval =
-  Cop(Cextcall("caml_init_field", typ_void, false, Debuginfo.none),
+  Cop(Cextcall("caml_initialize_field", typ_void, false, Debuginfo.none),
       [base; Cconst_int n; newval])
 
 let header ptr =
