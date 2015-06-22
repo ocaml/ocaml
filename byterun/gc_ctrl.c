@@ -23,6 +23,7 @@
 #include "mlvalues.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
+#include "frame_descriptors.h"
 #else
 #include "fiber.h"
 #endif
@@ -469,6 +470,9 @@ major_heap_size =
                caml_max_stack_size / 1024 * sizeof (value));
 
   caml_init_domains(caml_startup_params.minor_heap_init);
+  #ifdef NATIVE_CODE
+  caml_init_frame_descriptors();
+  #endif
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);
