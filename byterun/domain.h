@@ -2,6 +2,7 @@
 #define CAML_DOMAIN_H
 
 #include "mlvalues.h"
+#include "domain_state.h"
 
 struct domain {
   int id;
@@ -21,12 +22,9 @@ struct domain {
 #endif
 
   struct caml_domain_state* state;
-  char** young_end;
   value** mark_stack;
   int* mark_stack_count;
 };
-
-CAMLextern __thread char *caml_young_start, *caml_young_end;
 
 #define Caml_check_gc_interrupt(p) ((uintnat)(p) < caml_domain_state->young_limit)
 

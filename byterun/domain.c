@@ -62,7 +62,6 @@ static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
 
 CAMLexport __thread struct caml_domain_state* caml_domain_state;
-CAMLexport __thread char *caml_young_start = NULL, *caml_young_end = NULL;
 
 static __thread char domains_locked[Max_domains];
 
@@ -106,7 +105,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
 void caml_reallocate_minor_heap(asize_t size)
 {
-  Assert(caml_domain_state->young_ptr == caml_young_end);
+  Assert(caml_domain_state->young_ptr == caml_domain_state->young_end);
 
   /* free old minor heap.
      instead of unmapping the heap, we decommit it, so there's
@@ -127,9 +126,9 @@ void caml_reallocate_minor_heap(asize_t size)
 #endif
 
   caml_minor_heap_size = size;
-  caml_young_start = (char*)domain_self->minor_heap_area;
-  caml_young_end = (char*)(domain_self->minor_heap_area + size);
-  caml_domain_state->young_ptr = caml_young_end;
+  caml_domain_state->young_start = (char*)domain_self->minor_heap_area;
+  caml_domain_state->young_end = (char*)(domain_self->minor_heap_area + size);
+  caml_domain_state->young_ptr = caml_domain_state->young_end;
 }
 
 /* must be run on the domain's thread */
@@ -164,7 +163,8 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
       d->interrupt_word_address = young_limit;
       atomic_store_rel(young_limit, d->minor_heap_area);
     }
-    caml_young_start = caml_young_end = caml_domain_state->young_ptr = 0;
+    caml_domain_state->young_start = caml_domain_state->young_end =
+      caml_domain_state->young_ptr = 0;
 
     d->state.shared_heap = caml_init_shared_heap();
     caml_init_major_gc();
@@ -181,7 +181,6 @@ static void create_domain(uintnat initial_minor_heap_size, int is_main) {
     d->state.parent_stack = &caml_parent_stack;
 #endif
     d->state.state = caml_domain_state;
-    d->state.young_end = &caml_young_end;
     d->state.mark_stack = &caml_mark_stack;
     d->state.mark_stack_count = &caml_mark_stack_count;
   }

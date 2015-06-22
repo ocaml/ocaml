@@ -19,7 +19,6 @@
 #endif
 #include "config.h"
 #include "misc.h"
-#include "domain_state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,7 +67,6 @@ typedef uintnat mark_t;
 typedef struct atomic_uintnat {
   volatile uintnat val;
 } atomic_uintnat;
-
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
