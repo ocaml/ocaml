@@ -81,6 +81,7 @@ let load_symbol_addr s =
 let locate_domain_state () =
   let bits = Domainstate.minor_heap_align_bits in
   let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
+  (* CR mshinwell: could do (-1) lsl bits *)
   `andq	${emit_nativeint dom_mask}`
 
 let domain_field f =

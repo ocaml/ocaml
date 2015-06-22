@@ -90,6 +90,39 @@
 
 #endif
 
+/* Access to the current domain state block. */
+
+#define CAML_CONFIG_H_NO_TYPEDEFS
+#include "../byterun/config.h"
+#define MINOR_HEAP_PTR_MASK (0xffffffffffffffff << Minor_heap_align_bits)
+
+/* CR mshinwell: We should optimize the case where there are multiple
+   loads/stores in one go to the domain state block. */
+
+#define DOMAIN_STATE(field_num, c_type, name)            \
+  .macro load_caml_##name dest_reg:req ;                 \
+	movq	%r15, \dest_reg ;                        \
+	andq	$MINOR_HEAP_PTR_MASK, \dest_reg ;        \
+	movq    $(8 * field_num)(\dest_reg), \dest_reg ; \
+  .endm
+#include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+#define DOMAIN_STATE(field_num, c_type, name)      \
+  .macro store_caml_##name src_reg:req ;           \
+	movq	%r15, %r11 ;                       \
+	andq	$MINOR_HEAP_PTR_MASK, %r11 ;       \
+	movq    \src_reg, $(8 * field_num)(%r11) ; \
+  .endm
+#include "../byterun/domain_state.tbl"
+
+/* Load from the current domain state block.  Clobbers %r11. */
+#define LOAD_TL_VAR(var,dstreg) \
+        load_##var dstreg
+
+/* Store to the current domain state block.  Clobbers %r11. */
+#define STORE_TL_VAR(srcreg, var) \
+        store_##var srcreg
+
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 
 /* Position-independent operations on global variables. */
@@ -99,24 +132,12 @@
         movq    GREL(dstlabel)(%rip), %r11 ; \
         movq    srcreg, (%r11)
 
-#define STORE_TL_VAR(srcreg,dstlabel) \
-        movq    GREL(dstlabel)(%rip), %r11 ; \
-        movq    srcreg, (%r11)
-
 #define STORE_VAR32(srcreg,dstlabel) \
-        movq    GREL(dstlabel)(%rip), %r11 ; \
-        movl    srcreg, (%r11)
-
-#define STORE_TL_VAR32(srcreg,dstlabel) \
         movq    GREL(dstlabel)(%rip), %r11 ; \
         movl    srcreg, (%r11)
 
 /* Load global [srclabel] in register [dstreg].  Clobbers %r11. */
 #define LOAD_VAR(srclabel,dstreg) \
-        movq    GREL(srclabel)(%rip), %r11 ; \
-        movq    (%r11), dstreg
-
-#define LOAD_TL_VAR(srclabel,dstreg) \
         movq    GREL(srclabel)(%rip), %r11 ; \
         movq    (%r11), dstreg
 
@@ -160,19 +181,10 @@
 #define STORE_VAR(srcreg,dstlabel) \
         movq    srcreg, G(dstlabel)(%rip)
 
-#define STORE_TL_VAR(srcreg,dstlabel) \
-        movq    srcreg, G(dstlabel)(%rip)
-
 #define STORE_VAR32(srcreg,dstlabel) \
         movl    srcreg, G(dstlabel)(%rip)
 
-#define STORE_TL_VAR32(srcreg,dstlabel) \
-        movl    srcreg, G(dstlabel)(%rip)
-
 #define LOAD_VAR(srclabel,dstreg) \
-        movq    G(srclabel)(%rip), dstreg
-
-#define LOAD_TL_VAR(srclabel,dstreg) \
         movq    G(srclabel)(%rip), dstreg
 
 #define CMP_VAR(label,reg) \
@@ -560,7 +572,7 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
-        STORE_TL_VAR32($0, caml_backtrace_pos)
+        STORE_TL_VAR($0, caml_backtrace_pos)
 LBL(111):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
