@@ -234,7 +234,7 @@ let emit_debug_info dbg =
   end
 
 (* Emission of block headers immediately prior to function entry points *)
-
+ 
 let emit_block_header_for_closure ~word_directive ~comment_char
       ~function_entry_points_are_doubleword_aligned =
   if true (* Config.no_naked_pointers *) then begin
@@ -245,8 +245,8 @@ let emit_block_header_for_closure ~word_directive ~comment_char
          this will need to use a distinguished tag. *)
       (* CR mshinwell: factor this definition out from here and cmmgen.ml,
          and make sure it matches [Caml_black]. *)
-      let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8 in
-      Nativeint.logor caml_black (Nativeint.of_int Obj.abstract_tag)
+      let not_markable = Nativeint.shift_left (Nativeint.of_int 3) 8 in
+      Nativeint.logor not_markable (Nativeint.of_int Obj.abstract_tag)
     in
     (* The caller of [emit_block_header_for_closure] must ensure that we are
        already sufficiently aligned.  If that involved doubleword alignment,
