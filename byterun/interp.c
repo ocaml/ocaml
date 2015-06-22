@@ -883,13 +883,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(RERAISE):
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
-      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
+      if (caml_domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 1);
       goto raise_notrace;
 
     Instruct(RAISE):
     raise_exception:
       if (caml_trap_sp_off >= caml_trap_barrier_off) caml_debugger(TRAP_BARRIER);
-      if (caml_backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
+      if (caml_domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
       if (caml_trap_sp_off > 0) {
         if (caml_parent_stack == Val_long(0)) {
