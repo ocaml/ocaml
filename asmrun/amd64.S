@@ -122,6 +122,29 @@
 	testq   \value, (8 * field_num)(%r11) ;  \
   .endm
 #include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+#define DOMAIN_STATE(field_num, c_type, name)    \
+  .macro cmp_caml_##name reg:req ;               \
+	movq	%r15, %r11 ;                     \
+	andq	$MINOR_HEAP_PTR_MASK, %r11 ;     \
+        movq	(8 * field_num)(%r11), %r11 ;    \
+	cmpq    %r11, \reg ;                     \
+  .endm
+#include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+#define DOMAIN_STATE(field_num, c_type, name)    \
+  .macro push_caml_##name ;                      \
+	load_caml_##name %r11 ;                  \
+        pushq   %r11 ;                           \
+  .endm
+#include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+#define DOMAIN_STATE(field_num, c_type, name)    \
+  .macro pop_caml_##name ;                       \
+        popq    %r13 ;                           \
+        store_caml_##name %r13 ;                 \
+  .endm
+#include "../byterun/domain_state.tbl"
 
 /* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
@@ -134,6 +157,19 @@
 /* Test against a value in the current domain block.  Clobbers %r11. */
 #define TEST_TL_VAR(value, var) \
         test_##var value
+
+/* Compare against a value in the current domain block.  Clobbers %r11. */
+#define CMP_TL_VAR(var, reg) \
+        cmp_##var reg
+
+/* Push a value from the current domain block onto the stack.  Clobbers %r11. */
+#define PUSH_TL_VAR(var) \
+        push_##var
+
+/* Pop a value from the current domain block onto the stack.
+   Clobbers %r11 and %r13. */
+#define POP_TL_VAR(var) \
+        pop_##var
 
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 
@@ -413,7 +449,7 @@ FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):
         subq    $16, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        CMP_TL_VAR(caml_young_limit, %r15)
         jb      LBL(100)
         ret
 LBL(100):
@@ -430,7 +466,7 @@ FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
 LBL(caml_alloc2):
         subq    $24, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        CMP_TL_VAR(caml_young_limit, %r15)
         jb      LBL(101)
         ret
 LBL(101):
@@ -447,7 +483,7 @@ FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
 LBL(caml_alloc3):
         subq    $32, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        CMP_TL_VAR(caml_young_limit, %r15)
         jb      LBL(102)
         ret
 LBL(102):
@@ -465,7 +501,7 @@ CFI_STARTPROC
 LBL(caml_allocN):
         pushq   %rax; CFI_ADJUST(8)        /* save desired size */
         subq    %rax, %r15
-        CMP_VAR(caml_young_limit, %r15)
+        CMP_TL_VAR(caml_young_limit, %r15)
         jb      LBL(103)
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
@@ -521,9 +557,9 @@ FUNCTION(G(caml_start_program))
 LBL(caml_start_program):
     /* Build a callback link */
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
-        PUSH_VAR(caml_gc_regs)
-        PUSH_VAR(caml_last_return_address)
-        PUSH_VAR(caml_bottom_of_stack)
+        PUSH_TL_VAR(caml_gc_regs)
+        PUSH_TL_VAR(caml_last_return_address)
+        PUSH_TL_VAR(caml_bottom_of_stack)
     /* Setup alloc ptr and exception ptr */
         LOAD_TL_VAR(caml_young_ptr, %r15)
         LOAD_TL_VAR(caml_exception_pointer, %r14)
@@ -545,9 +581,9 @@ LBL(109):
         STORE_TL_VAR(%r15,caml_young_ptr)
         STORE_TL_VAR(%r14,caml_exception_pointer)
     /* Pop the callback link, restoring the global variables */
-        POP_VAR(caml_bottom_of_stack)
-        POP_VAR(caml_last_return_address)
-        POP_VAR(caml_gc_regs)
+        POP_TL_VAR(caml_bottom_of_stack)
+        POP_TL_VAR(caml_last_return_address)
+        POP_TL_VAR(caml_gc_regs)
         addq    $8, %rsp; CFI_ADJUST (-8);
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
