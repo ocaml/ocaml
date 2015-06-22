@@ -26,7 +26,7 @@
 #include "frame_descriptors.h"
 
 CAMLexport __thread int caml_backtrace_active = 0;
-CAMLexport __thread int caml_backtrace_pos = 0;
+CAMLexport __thread intnat caml_backtrace_pos = 0;
 CAMLexport __thread code_t * caml_backtrace_buffer = NULL;
 CAMLexport __thread caml_root caml_backtrace_last_exn;
 #define BACKTRACE_BUFFER_SIZE 1024
@@ -286,7 +286,7 @@ static void print_location(struct loc_info * li, int index)
 
 void caml_print_exception_backtrace(void)
 {
-  int i;
+  intnat i;
   struct loc_info li;
 
   for (i = 0; i < caml_backtrace_pos; i++) {
@@ -338,7 +338,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   }
   else {
     code_t saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
-    int saved_caml_backtrace_pos;
+    intnat saved_caml_backtrace_pos;
     intnat i;
 
     saved_caml_backtrace_pos = caml_backtrace_pos;

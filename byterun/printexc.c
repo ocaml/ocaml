@@ -106,7 +106,8 @@ static void default_fatal_uncaught_exception(value exn)
 {
   char * msg;
   value at_exit;
-  int saved_backtrace_active, saved_backtrace_pos;
+  int saved_backtrace_active;
+  intnat saved_backtrace_pos;
   int found_do_at_exit;
 
   /* Build a string representation of the exception */
