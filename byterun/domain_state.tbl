@@ -8,4 +8,4 @@ DOMAIN_STATE(5, char*, bottom_of_stack)
 DOMAIN_STATE(6, uintnat, last_return_address)
 DOMAIN_STATE(7, value*, gc_regs)
 DOMAIN_STATE(8, char*, exception_pointer)
-
+DOMAIN_STATE(9, int, backtrace_pos)
