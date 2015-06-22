@@ -103,7 +103,7 @@
   .macro load_caml_##name dest_reg:req ;                 \
 	movq	%r15, \dest_reg ;                        \
 	andq	$MINOR_HEAP_PTR_MASK, \dest_reg ;        \
-	movq    $(8 * field_num)(\dest_reg), \dest_reg ; \
+	movq    (8 * field_num)(\dest_reg), \dest_reg ;  \
   .endm
 #include "../byterun/domain_state.tbl"
 #undef DOMAIN_STATE
@@ -111,7 +111,7 @@
   .macro store_caml_##name src_reg:req ;           \
 	movq	%r15, %r11 ;                       \
 	andq	$MINOR_HEAP_PTR_MASK, %r11 ;       \
-	movq    \src_reg, $(8 * field_num)(%r11) ; \
+	movq    \src_reg, (8 * field_num)(%r11) ;  \
   .endm
 #include "../byterun/domain_state.tbl"
 
