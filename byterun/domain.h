@@ -20,7 +20,7 @@ struct domain {
   value* parent_stack;
 #endif
 
-  char** young_ptr;
+  struct caml_domain_state* state;
   char** young_end;
   value** mark_stack;
   int* mark_stack_count;
@@ -28,9 +28,7 @@ struct domain {
 
 CAMLextern __thread char *caml_young_start, *caml_young_end;
 
-#define Caml_get_young_limit() Caml_domain_state(Caml_young_limit)
-
-#define Caml_check_gc_interrupt(p) ((uintnat)(p) < Caml_get_young_limit())
+#define Caml_check_gc_interrupt(p) ((uintnat)(p) < caml_domain_state->young_limit)
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);

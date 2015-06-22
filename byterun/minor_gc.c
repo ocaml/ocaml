@@ -32,7 +32,6 @@
 #include "eventlog.h"
 
 asize_t __thread caml_minor_heap_size;
-CAMLexport __thread char *caml_young_ptr = NULL;
 
 CAMLexport __thread struct caml_remembered_set caml_remembered_set;
 
@@ -73,7 +72,7 @@ static void clear_table (struct caml_ref_table *tbl)
 /* size in bytes */
 void caml_set_minor_heap_size (asize_t size)
 {
-  if (caml_young_ptr != caml_young_end) caml_minor_collection ();
+  if (caml_domain_state->young_ptr != caml_young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
 
@@ -236,7 +235,7 @@ static void caml_oldify_one (value v, value *p)
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
-    Assert (Hp_val (v) >= caml_young_ptr);
+    Assert (Hp_val (v) >= caml_domain_state->young_ptr);
     hd = Hd_val (v);
     stat_live_bytes += Bhsize_hd(hd);
     if (Is_promoted_hd (hd)) {
@@ -384,7 +383,7 @@ static void clean_stacks()
 */
 void caml_empty_minor_heap (void)
 {
-  uintnat minor_allocated_bytes = caml_young_end - caml_young_ptr;
+  uintnat minor_allocated_bytes = caml_young_end - caml_domain_state->young_ptr;
   unsigned rewritten = 0;
   struct caml_ref_entry *r;
 
@@ -410,7 +409,7 @@ void caml_empty_minor_heap (void)
     for (r = caml_remembered_set.ref.base; r < caml_remembered_set.ref.ptr; r++){
       value v = Op_val(r->obj)[r->field];
       if (Is_block(v) && Is_young(v)) {
-        Assert (Hp_val (v) >= caml_young_ptr);
+        Assert (Hp_val (v) >= caml_domain_state->young_ptr);
         value vnew;
         header_t hd = Hd_val(v);
         // FIXME: call oldify_one here?
@@ -435,9 +434,9 @@ void caml_empty_minor_heap (void)
     caml_addrmap_iter(&caml_remembered_set.promotion, unpin_promoted_object);
 
 
-    if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
+    if (caml_domain_state->young_ptr < caml_young_start) caml_domain_state->young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-    caml_young_ptr = caml_young_end;
+    caml_domain_state->young_ptr = caml_young_end;
     clear_table (&caml_remembered_set.ref);
     caml_addrmap_clear(&caml_remembered_set.promotion);
     caml_addrmap_clear(&caml_remembered_set.promotion_rev);
