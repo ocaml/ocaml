@@ -723,6 +723,9 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
+  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
+    ~comment_char:'#'
+    ~function_entry_points_are_doubleword_aligned:true;
   if macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name

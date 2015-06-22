@@ -56,3 +56,9 @@ val is_generic_function: string -> bool
 val cfi_startproc : unit -> unit
 val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit
+
+val emit_block_header_for_closure
+   : word_directive:string
+  -> comment_char:char
+  -> function_entry_points_are_doubleword_aligned:bool
+  -> unit
