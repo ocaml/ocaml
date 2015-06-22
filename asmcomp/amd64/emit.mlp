@@ -78,6 +78,14 @@ let load_symbol_addr s =
   then `leaq	{emit_symbol s}(%rip)`
   else `movq	${emit_symbol s}`
 
+let locate_domain_state () =
+  let bits = Domainstate.minor_heap_align_bits in
+  let dom_mask = Nativeint.(lognot (sub (shift_left one bits) one)) in
+  `andq	${emit_nativeint dom_mask}`
+
+let domain_field f =
+  emit_int (Domainstate.idx_of_field f * 8)
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -468,12 +476,10 @@ let emit_instr fallthrough i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:	subq	${emit_int n}, %r15\n`;
-          if !Clflags.dlcode then begin
-            `	{load_symbol_addr "caml_young_limit"}, %rax\n`;
-            `	cmpq	(%rax), %r15\n`;
-          end else
-            `	cmpq	{emit_symbol "caml_young_limit"}(%rip), %r15\n`;
+          `{emit_label lbl_redo}:	movq	%r15, %rax\n`;
+          `	subq	${emit_int n}, %r15\n`;
+          `	{locate_domain_state ()}, %rax\n`;
+          `	cmpq	{domain_field Domainstate.Domain_young_limit}(%rax), %r15\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;

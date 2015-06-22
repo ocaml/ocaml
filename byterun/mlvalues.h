@@ -19,6 +19,7 @@
 #endif
 #include "config.h"
 #include "misc.h"
+#include "domain_state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -168,17 +169,18 @@ bits  63    10 9     8 7   0
 /* Fields are numbered from 0. */
 
 
-CAMLextern __thread char *caml_young_end, *caml_young_start;
+/* see domain.c */
+CAMLextern __thread uintnat* caml_tls_area;
 
 
 /* All values which are not blocks in the current domain's minor heap
-   differ from caml_young_start in at least one of the bits set in
+   differ from caml_tls_area in at least one of the bits set in
    Young_val_bitmask */
 #define Young_val_bitmask \
   ((uintnat)1 | ~(((uintnat)1 << Minor_heap_align_bits) - (uintnat)1))
 
 /* All values which are not blocks in any domain's minor heap differ
-   from caml_young_start in at least one of the bits set in
+   from caml_tls_area in at least one of the bits set in
    Minor_val_bitmask */
 #define Minor_val_bitmask \
   ((uintnat)1 | ~(((uintnat)1 << (Minor_heap_align_bits + Minor_heap_sel_bits)) - (uintnat)1))
@@ -188,17 +190,17 @@ CAMLextern __thread char *caml_young_end, *caml_young_start;
    Since the minor heap is allocated in one aligned block, this can be tested
    via bitmasking. */
 #define Is_young(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_young_start) & Young_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)caml_tls_area) & Young_val_bitmask) == 0)
 
 /* Is_minor(val) is true iff val is a block in any domain's minor heap. */
 #define Is_minor(val) \
-  ((((uintnat)(val) ^ (uintnat)caml_young_start) & Minor_val_bitmask) == 0)
+  ((((uintnat)(val) ^ (uintnat)caml_tls_area) & Minor_val_bitmask) == 0)
 
 /* Is_foreign(val) is true iff val is a block in another domain's minor heap.
    Since all minor heaps lie in one aligned block, this can be tested via
    more bitmasking. */
 #define Is_foreign(val) \
-  (((((uintnat)(val) ^ (uintnat)caml_young_start) - (1 << Minor_heap_align_bits)) & \
+  (((((uintnat)(val) ^ (uintnat)caml_tls_area) - (1 << Minor_heap_align_bits)) & \
     Minor_val_bitmask) == 0)
 
 

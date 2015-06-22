@@ -1,0 +1,3 @@
+DOMAIN_STATE(young_limit, 0)
+
+DOMAIN_STATE(tls_max, 1)
