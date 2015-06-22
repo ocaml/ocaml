@@ -73,7 +73,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, struct domain* domain)
 void caml_do_sampled_roots(scanning_action f, struct domain* domain)
 {
   /* look for roots on the minor heap */
-  value* p = (value*)(*domain->young_ptr);
+  value* p = (value*)(domain->state->young_ptr);
   value* end = (value*)(*domain->young_end);
   while (p < end) {
     value v = Val_hp(p);

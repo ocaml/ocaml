@@ -1,3 +1,2 @@
-DOMAIN_STATE(young_limit, 0)
-
-DOMAIN_STATE(tls_max, 1)
+DOMAIN_STATE(0, volatile uintnat, young_limit)
+DOMAIN_STATE(1, char*, young_ptr)
