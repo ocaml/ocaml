@@ -18,7 +18,6 @@
 #include "misc.h"
 #include "addrmap.h"
 
-CAMLextern __thread char *caml_young_ptr;
 extern __thread asize_t caml_minor_heap_size;
 
 struct caml_ref_entry {
