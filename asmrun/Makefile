@@ -21,7 +21,7 @@ DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  misc.o major_gc.o shared_heap.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
   finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o\
@@ -172,6 +172,8 @@ eventlog.c: ../byterun/eventlog.c
 	ln -s ../byterun/eventlog.c eventlog.c
 params.c: ../byterun/params.c
 	ln -s ../byterun/params.c params.c
+shared_heap.c: ../byterun/shared_heap.c
+	ln -s ../byterun/shared_heap.c shared_heap.c
 
 LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
