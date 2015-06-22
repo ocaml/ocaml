@@ -31,9 +31,7 @@
 #include "signals.h"
 #include "startup.h"
 
-#ifndef NATIVE_CODE
 uintnat caml_max_stack_size;
-#endif
 
 double caml_stat_minor_words = 0.0,
        caml_stat_promoted_words = 0.0,

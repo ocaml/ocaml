@@ -36,3 +36,5 @@ domain.c
 platform.c
 eventlog.c
 params.c
+shared_heap.c
+fiber.c
