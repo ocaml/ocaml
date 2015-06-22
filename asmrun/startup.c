@@ -94,7 +94,7 @@ void caml_main(char **argv)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  caml_top_of_stack = &tos;
+  caml_domain_state->top_of_stack = &tos;
   caml_init_gc ();
   init_segments();
   caml_init_signals();
