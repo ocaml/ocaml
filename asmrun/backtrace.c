@@ -336,11 +336,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   }
   else {
     code_t saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
-<<<<<<< HEAD
-    intnat saved_caml_backtrace_pos;
-=======
     intnat saved_backtrace_pos;
->>>>>>> 3892edd2d3e3481985aa9c05d66056f636546c33
     intnat i;
 
     saved_backtrace_pos = caml_domain_state->backtrace_pos;
