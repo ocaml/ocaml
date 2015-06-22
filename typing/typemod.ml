@@ -864,9 +864,9 @@ let check_nongen_scheme env str =
   match str.str_desc with
     Tstr_value(rec_flag, pat_exp_list) ->
       List.iter
-        (fun {vb_expr=exp} ->
-          if not (Ctype.closed_schema env exp.exp_type) then
-            raise(Error(exp.exp_loc, env, Non_generalizable exp.exp_type)))
+        (fun {vb_pat=pat; vb_loc} ->
+          if not (Ctype.closed_schema env pat.pat_type) then
+            raise(Error(vb_loc, env, Non_generalizable pat.pat_type)))
         pat_exp_list
   | Tstr_module {mb_expr=md;_} ->
       if not (closed_modtype env md.mod_type) then
