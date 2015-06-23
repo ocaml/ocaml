@@ -222,35 +222,161 @@ let transform_var_within_closure_expression env r expr closure
   | Value_bottom | Value_extern _ | Value_symbol _ ->
     assert false
 
-let transform_closure_expression env r closure closure_id rel annot
-      : _ Flambda.t * R.t =
-  (* CR mshinwell: rename [closure] to [set_of_closures] *)
-  let module I =
-    Freshening.Ids_and_bound_vars_of_closures
+type transform_select_closure_from = Ok | Unresolved of Symbol.t
+
+let transform_select_closure_from env r
+      (from : _ Flambda.select_closure_from) =
+  let from, r =
+    match from with
+    | From_variable (var, annot) ->
+      begin match loop env r (Fvar (var, annot)) with
+      | Fvar (var, annot), r -> From_variable (var, annot), r
+      | Fset_of_closures (set_of_closures, annot), r ->
+        From_set_of_closures (set_of_closures, annot), r
+      | Fselect_closure { select_closure_from }, r ->
+        select_closure_from, r
+      | expr, _r ->
+        Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
+            or Fselect_closure when expanding closure selection using \
+            From_variable: %a"
+          Printflambda.flambda expr)
+      end
+    | From_set_of_closures (set_of_closures, annot) ->
+      let set_of_closures, annot, r =
+        transform_set_of_closures_expression env r set_of_closures annot
+      in
+      From_set_of_closures (set_of_closures, annot), r
+    | From_select_closure (select_closure, annot) ->
+      let select_closure, annot, r =
+
+      in
+    | From_select_closure_relative (select_closure, annot) ->
+
+
+(* Simplify an expression that selects a closure from a set of closures. *)
+let transform_select_closure_expression env r
+      ~(select_closure : _ Flambda.select_closure)
+      ~annot : _ Flambda.t * R.t =
+  let from = select_closure.select_closure_from in
+  let closure_id_to_select = select_closure.closure_id in
+  let from, r = transform_select_closure_from env r from in
+  let rec check_approximation ... =
+    match A.descr r.approx with
+    | Value_unresolved _symbol ->
+      (* If the set of closures comes from a symbol that can't be resolved,
+         we know that it comes from another compilation unit, hence it cannot
+         have been transformed during this rewriting.  So it is safe to keep
+         the expression unchanged and to not freshen [closure_id_to_select].
+         We do check that [from] is [From_variable], because all other cases
+         should yield a non-unresolved approximation. *)
+      begin match from with
+      | From_variable _ -> from, closure_id_to_select, r
+      | From_set_of_closures _ | From_closure _ | From_closure_relative _ ->
+        Misc.fatal_error "Selection of closure from expression that has a \
+          [Value_unresolved] approximation but yet is not [From_variable]"
+      end
+    | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
+    | A.Value_boxed_int _ | Value_unknown | Value_bottom | Value_extern _
+    | Value_string _ | Value_float_array _ | Value_symbol _ ->
+      Misc.fatal_error (Format.sprintf
+        "Bad approximation for set of closures when selecting closure: %a@.%a@."
+          Closure_id.print closure_id Printflambda.flambda set_of_closures)
+    | Value_set_of_closures value_set_of_closures ->
+      (* Here and below, we know the approximation of the set of closures
+         from which we are selecting the closure.  In order to make the
+         selection, we may need to freshen the closure ID. *)
+      let closure_id_to_select =
+        freshen_and_check_closure_id value_set_of_closures closure_id_to_select
+      in
+      from, closure_id_to_select, r
+    | Value_closure
+        { value_set_of_closures; closure_id; set_of_closures_var } ->
+      match set_of_closures_var with
+      | Some 
   in
-  let apply_closure_id (closure' : A.value_set_of_closures) closure_id =
-    let closure_id = I.apply_closure_id closure'.alpha_renaming closure_id in
-    begin try
-      ignore (Flambdautils.find_declaration closure_id closure'.function_decls)
-    with Not_found ->
-      Misc.fatal_error (Format.asprintf "no function %a in the closure@ %a@."
-        Closure_id.print closure_id
-        Printflambda.flambda closure)
-    end;
-    closure_id
-  in
-  let approx = R.approx r in
-  let make set_of_closures set_of_closures_var : _ Flambda.t * R.t =
-    let closure_id = apply_closure_id set_of_closures closure_id in
-    let rel = Misc.may_map (apply_closure_id set_of_closures) rel in
+
+
+    let closure_id_to_select =
+      freshen_and_check_closure_id value_set_of_closures closure_id_to_select
+    in
+    if Closure_id.equal closure_id closure_id_to_select then
+      From_closure, closure_id, r
+    else
+      From_closure_relative closure_id, closure_id_to_select, r
+
+
+    match from with
+    | From_set_of_closures _ ->
+
+    | From_variable var ->
+
+    | From_closure closure_id
+        when Closure_id.equal closure_id closure_id_to_select ->
+      (* No-op: selection of the same closure from itself. *)
+      From_closure closure_id, r
+    | From_closure_relative (closure_id, relative_to) ->
+        when Closure_id.equal closure_id closure_id_to_select ->
+      (* A similar case, except that the closure being selected from was
+         itself selected relative to another. *)
+      From_closure_relative (closure_id, relative_to)
+    | From_closure closure_id ->
+      (* Selection of a closure from another closure.  We use
+         [From_closure_relative]; we don't need to keep any pointer to the
+         set of closures itself alive. *)
+      From_closure_relative (closure_id_to_select, closure_id)
+    | From_closure_relative (closure_id, relative_to) ->
+
+      From_closure_relative (
+
+
+
+
+
+      let relative_to_id =
+        freshen_and_check_closure_id r.approx relative_to
+      in
+      if Closure_id.equal closure_id relative_to_id then
+        (* This is a no-op: we're trying to obtain a closure from itself. *)
+        From_closure , closure_id, r
+      else
+        From_
+    | From_variable _
+    | From_set_of_closures _
+    | From_closure _ -> None
+
+    let relative_to_id =
+    in
+    match relative_to_id with
+    | Some _ | None ->
+
+
+
+
+  | Unresolved sym ->
+    (* CR mshinwell: Should we use [select_closure.select_closure_from]
+       instead? *)
+    select_closure_from, annot, r
+  | Ok closure_id ->
+
+
+
+loop env r select_closure.set_of_closures in
+  let closure_id = select_closure.closure_id in
+  let set_of_closures_approx = R.approx r in
+
+  let make set_of_closures ~set_of_closures_var : _ Flambda.t * R.t =
+    let closure_id = A.select_closure_id set_of_closures closure_id in
+    let relative_to = Misc.may_map (apply_closure_id set_of_closures) relative_to in
     let ret_approx =
-      A.value_closure { closure_id; set_of_closures;
-                        set_of_closures_var = approx.var }
+      A.value_closure
+        { closure_id; set_of_closures; set_of_closures_var = approx.var }
     in
     let closure : _ Flambda.t =
-      match rel with
-      | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
-        closure
+      match relative_to with
+(*
+-      | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
+-        closure
+*)
       | None | Some _ ->
         match set_of_closures_var with
         | Some set_of_closures_var when E.present env set_of_closures_var ->
@@ -288,15 +414,12 @@ let transform_closure_expression env r closure closure_id rel annot
   in
   match A.descr approx with
   | Value_set_of_closures set_of_closures ->
-    make set_of_closures None
+    make set_of_closures ~set_of_closures_var:None
   | Value_closure { A.set_of_closures; set_of_closures_var } ->
-    make set_of_closures set_of_closures_var
+    make set_of_closures ~set_of_closures_var
   | Value_unresolved sym ->
-    (* If the set of closures comes from a symbol that can't be resolved,
-       we know that it comes from another compilation unit, hence it cannot
-       have been transformed during this rewriting.  So it is safe to keep
-       the expression unchanged. *)
-    Fselect_closure ({set_of_closures = closure; closure_id = closure_id;
+    Fselect_closure (
+      { set_of_closures = closure; closure_id; relative_to; }
                relative_to = rel}, annot),
       ret r (A.value_unresolved sym)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
@@ -304,7 +427,7 @@ let transform_closure_expression env r closure closure_id rel annot
   | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Format.printf "%a@.%a@." Closure_id.print closure_id
-      Printflambda.flambda closure;
+      Printflambda.flambda set_of_closures;
     assert false
 
 let rec loop env r tree =
@@ -324,23 +447,24 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let id = Freshening.apply_variable (E.freshening env) id in
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
-  | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
-  | Fapply ({ func = funct; args; kind = _; dbg = dbg }, annot) ->
-    let funct, r = loop env r funct in
-    let fapprox = R.approx r in
-    let args, approxs, r = loop_list env r args in
-    transform_application_expression env r (funct, fapprox) (args, approxs)
-      dbg annot
+  | Fconst (cst, _) -> tree, ret r (A.const cst)
+  | Fapply ({ func; args; kind = _; dbg }, annot) ->
+    let func, r = loop env r func in
+    let func_approx = R.approx r in
+    let args, args_approxs, r = loop_list env r args in
+    transform_application_expression env r ~func ~func_approx
+      ~args ~args_approxs dbg annot
   | Fset_of_closures (set_of_closures, annot) ->
-    transform_set_of_closures_expression env r set_of_closures annot
-  | Fselect_closure (closure, annot) ->
-    let flam, r = loop env r closure.set_of_closures in
-    transform_closure_expression env r flam closure.closure_id
-      closure.relative_to annot
-  | Fvar_within_closure (fenv_field, annot) as expr ->
-    let closure, r = loop env r fenv_field.closure in
-    transform_var_within_closure_expression env r expr closure
-      fenv_field annot
+    let set_of_closures, annot, r =
+      transform_set_of_closures_expression env r set_of_closures annot
+    in
+    Fset_of_closures (set_of_closures, annot), r
+  | Fselect_closure (select_closure, annot) ->
+    transform_select_closure_expression env ~select_closure ~annot
+  | Fvar_within_closure (var_within_closure, annot) ->
+    let closure, r = loop env r var_within_closure.closure in
+    transform_var_within_closure_expression env r tree closure
+      var_within_closure annot
   | Flet (str, id, lam, body, annot) ->
     (* The different cases for rewriting [Flet] are, if the original code
        corresponds to [let id = lam in body],
@@ -864,8 +988,7 @@ and transform_set_of_closures_expression original_env original_r
       specialised_args
     }
   in
-  Fset_of_closures (set_of_closures, annot),
-    ret r (A.value_set_of_closures closure)
+  set_of_closures, annot, ret r (A.value_set_of_closures closure)
 
 (* Transform an flambda function application based on information provided
    by an approximation of the function being applied.
@@ -879,17 +1002,17 @@ and transform_set_of_closures_expression original_env original_r
    interesting case is that of a full application: we then consider whether
    the function can be inlined.  (See [direct_apply], below.)
 *)
-and transform_application_expression env r
-      (funct, (fapprox : Simple_value_approx.t))
-      (args, approxs) dbg eid =
+and transform_application_expression env r ~func
+      ~(func_approx : Simple_value_approx.t)
+      ~args ~args_approxs dbg eid =
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({func = funct; args; kind = Indirect; dbg = dbg}, eid),
+    Fapply ({ func; args; kind = Indirect; dbg }, eid),
       ret r A.value_unknown
   in
-  match fapprox.descr with
+  match func_approx.descr with
   | Value_closure { closure_id; set_of_closures } ->
     let clos = set_of_closures.function_decls in
-    let func =
+    let func_decl =
       try Flambdautils.find_declaration closure_id clos with
       | Not_found ->
         Format.printf "approximation references non-existent closure %a@."
@@ -897,21 +1020,21 @@ and transform_application_expression env r
         assert false
     in
     let nargs = List.length args in
-    let arity = Flambdautils.function_arity func in
+    let arity = Flambdautils.function_arity func_decl in
     if nargs = arity then
-      direct_apply env r clos funct closure_id func set_of_closures
-        (args, approxs) dbg eid
+      direct_apply env r clos func closure_id func_decl set_of_closures
+        (args, args_approxs) dbg eid
     else if nargs > arity then
       let h_args, q_args = Misc.split_at arity args in
-      let h_approxs, _q_approxs = Misc.split_at arity approxs in
+      let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
       let expr, r =
-        direct_apply env r clos funct closure_id func set_of_closures
+        direct_apply env r clos func closure_id func_decl set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
       loop env r (Flambda.Fapply ({ func = expr; args = q_args;
-                           kind = Indirect; dbg = dbg}, eid))
+                           kind = Indirect; dbg }, eid))
     else if nargs > 0 && nargs < arity then
-      let partial_fun = partial_apply funct closure_id func args dbg in
+      let partial_fun = partial_apply func closure_id func_decl args dbg in
       loop env r partial_fun
     else
       no_transformation ()

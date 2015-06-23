@@ -108,8 +108,8 @@ and descr = private
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
 and value_closure = {
+  value_set_of_closures : value_set_of_closures;
   closure_id : Closure_id.t;
-  set_of_closures : value_set_of_closures;
   set_of_closures_var : Variable.t option;
 }
 
@@ -118,8 +118,8 @@ and value_set_of_closures = {
   bound_var : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
-  alpha_renaming :
-    Freshening.Ids_and_bound_vars_of_closures.t;
+  (* Any freshening that has been applied to [function_decls]. *)
+  freshening : Freshening.Ids_and_bound_vars_of_closures.t;
 }
 
 (** Smart constructors *)
@@ -139,9 +139,7 @@ val value_symbol : Symbol.t -> t
 val value_bottom : t
 val value_unresolved : Symbol.t -> t
 
-val const_approx : Flambda.const -> t
-
-val print_approx : Format.formatter -> t -> unit
+val const : Flambda.const -> t
 
 val make_const_int : int -> 'a -> 'a Flambda.t * t
 val make_const_ptr : int -> 'a -> 'a Flambda.t * t
@@ -149,9 +147,12 @@ val make_const_bool : bool -> 'a -> 'a Flambda.t * t
 val make_const_float : float -> 'a -> 'a Flambda.t * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.t * t
 
-val meet : t -> t -> t
-
 val descr : t -> descr
+val descrs : t list -> descr list
+
+val print : Format.formatter -> t -> unit
+
+val meet : t -> t -> t
 
 (* An approximation is "known" iff it is not [Value_unknown]. *)
 val known : t -> bool
@@ -180,5 +181,3 @@ val simplify_using_env
   -> Expr_id.t Flambda.t * t
 
 val get_field : int -> t list -> t
-
-val descrs : t list -> descr list

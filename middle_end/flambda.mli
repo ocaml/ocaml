@@ -198,12 +198,15 @@ and 'a function_declaration = {
         This enables us to move between individual closures in one runtime
         closure block. *)
 and 'a select_closure = {
-  set_of_closures : 'a t;
+  from : 'a select_closure_from;
   closure_id : Closure_id.t;
-  (** For use when applying [Fselect_closure] to an existing (that is to say,
-      [Fselect_closure]) closure value rather than a set of closures. *)
-  relative_to : Closure_id.t option;
 }
+
+and 'a select_closure_from =
+  | From_variable of Variable.t
+  | From_set_of_closures of 'a set_of_closures
+  | From_closure
+  | From_closure_relative of Closure_id.t
 
 and 'a var_within_closure = {
   (** [closure] must yield a closure rather than a set of closures. *)

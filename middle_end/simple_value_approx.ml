@@ -65,7 +65,7 @@ let rec print_descr ppf = function
   | Value_constptr i -> Format.fprintf ppf "%ia" i
   | Value_block (tag,fields) ->
     let p ppf fields =
-      Array.iter (fun v -> Format.fprintf ppf "%a@ " print_approx v) fields in
+      Array.iter (fun v -> Format.fprintf ppf "%a@ " print v) fields in
     Format.fprintf ppf "[%i:@ @[<1>%a@]]" (Tag.to_int tag) p fields
   | Value_unknown -> Format.fprintf ppf "?"
   | Value_bottom -> Format.fprintf ppf "bottom"
@@ -99,7 +99,7 @@ let rec print_descr ppf = function
     | Int64 -> Format.fprintf ppf "%Li" i
     | Nativeint -> Format.fprintf ppf "%ni" i
 
-and print_approx ppf { descr } = print_descr ppf descr
+and print ppf { descr } = print_descr ppf descr
 
 (** Smart constructors *)
 
@@ -143,7 +143,7 @@ let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
   in
   Fconst (Fconst_base c, eid), value_boxed_int t i
 
-let const_approx (flam : Flambda.const) =
+let const (flam : Flambda.const) =
   match flam with
   | Fconst_base const ->
     begin match const with
@@ -322,3 +322,78 @@ and meet a1 a2 =
       { descr = meet_descr a1.descr a2.descr;
         var;
         symbol }
+
+(* Given a set-of-closures approximation and a closure ID, apply any
+   freshening specified in the approximation to the closure ID, and return
+   that new closure ID.  A fatal error is produced if the new closure ID
+   does not correspond to a function declaration in the given approximation. *)
+let freshen_and_check_closure_id value_set_of_closures closure_id =
+  let closure_id =
+    Freshening.Ids_and_bound_vars_of_closures.apply_closure_id
+      value_set_of_closures.alpha_renaming closure_id
+  in
+  try
+    ignore (Flambdautils.find_declaration closure_id
+      value_set_of_closures.function_decls);
+    closure_id
+  with Not_found ->
+    Misc.fatal_error (Format.asprintf
+      "Function %a not found in the closure@ %a@."
+      Closure_id.print closure_id
+      Printflambda.flambda value_set_of_closures)
+
+type ..._result =
+  | Unresolved
+
+
+let ... ~set_of_closures ~approx_of_set_of_closures closure_id relative_to =
+  let closure_id =
+    freshen_and_check_closure_id value_set_of_closures closure_id
+  in
+  let relative_to =
+    Misc.may_map (freshen_and_check_closure_id value_set_of_closures)
+      closure_id
+  in
+  let value_set_of_closures_and_var =
+    match descr approx_of_set_of_closures with
+    | Value_unresolved _ -> None
+    | Value_set_of_closures value_set_of_closures ->
+      Some (value_set_of_closures, None)
+    | Value_closure { value_set_of_closures; set_of_closures_var } ->
+      Some (value_set_of_closures, set_of_closures_var)
+    | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
+    | A.Value_boxed_int _ | Value_unknown | Value_bottom | Value_extern _
+    | Value_string _ | Value_float_array _ | Value_symbol _ ->
+      let msg =
+        Format.sprintf "Bad approximation for set of closures when \
+            selecting closure: %a@.%a@."
+          Closure_id.print closure_id Printflambda.flambda set_of_closures
+      in
+      Misc.fatal_error msg
+  in
+  match value_set_of_closures_and_var with
+  | None -> Unresolved
+  | Some (value_set_of_closures, set_of_closures_var) ->
+    match relative_to with
+    | Some relative_to_id when Closure_id.equal closure_id relative_to_id ->
+      Ok v
+
+
+    make set_of_closures ~set_of_closures_var:None
+
+
+  | Value_closure { A.set_of_closures; set_of_closures_var } ->
+
+
+    make set_of_closures ~set_of_closures_var
+
+
+  | Value_unresolved sym ->
+    (* If the set of closures comes from a symbol that can't be resolved,
+       we know that it comes from another compilation unit, hence it cannot
+       have been transformed during this rewriting.  So it is safe to keep
+       the expression unchanged. *)
+    Fselect_closure (
+      { set_of_closures = closure; closure_id; relative_to; }
+               relative_to = rel}, annot),
+      ret r (A.value_unresolved sym)

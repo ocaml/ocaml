@@ -333,7 +333,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     Fselect_closure ({
         set_of_closures = close_functions t env decls;
         closure_id = Closure_id.wrap closure_bound_var;
-        relative_to = None },
+      },
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
@@ -384,9 +384,9 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fselect_closure ({
-                  set_of_closures = Fvar (set_of_closures_var, nid ());
+                  set_of_closures =
+                    From_variable (set_of_closures_var, nid ());
                   closure_id = Closure_id.wrap closure_bound_var;
-                  relative_to = None;
                 },
                 nid ()),
               body, nid ())) : _ Flambda.t))
@@ -491,7 +491,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
    set-of-closures node.  (The set will often only contain a single function;
    the only case where it cannot is for "let rec".) *)
 and close_functions t external_env function_declarations
-      : _ Flambda.t =
+      : _ Flambda.select_closure_from =
   let closure_env_without_parameters =
     Function_decls.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
@@ -571,7 +571,7 @@ and close_functions t external_env function_declarations
       specialised_args = Variable.Map.empty;
     }
   in
-  Fset_of_closures (set_of_closures, nid ())
+  From_set_of_closures (set_of_closures, nid ())
 
 and close_list t sb l = List.map (close t sb) l
 
@@ -588,7 +588,6 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     Fselect_closure ({
         set_of_closures = close_functions t env [decl];
         closure_id = Closure_id.wrap closure_bound_var;
-        relative_to = None;
       },
       nid ~name:"function" ())
   | lam ->
