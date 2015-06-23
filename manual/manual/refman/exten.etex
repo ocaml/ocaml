@@ -1467,10 +1467,10 @@ constructors in type declarations:
 
 \begin{syntax}
 field-decl:
-          ['mutable'] field-name {attribute} ':' poly-typexpr
+          ['mutable'] field-name ':' poly-typexpr {attribute}
 ;
 constr-decl:
-          (constr-name || '()') {attribute} [ 'of' typexpr { '*' typexpr } ]
+          (constr-name || '()') [ 'of' typexpr { '*' typexpr } ] {attribute}
 ;
 \end{syntax}
 
