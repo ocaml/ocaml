@@ -76,10 +76,21 @@ Error: Signature mismatch:
           ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-_
-Matching over values of extensible variant types must include
-a wild card pattern in order to be exhaustive.
+*extension*
+Matching over values of extensible variant types (the *extension* above)
+must include a wild card pattern in order to be exhaustive.
 type foo = ..
 type foo += Foo
 val f : foo -> unit = <fun>
+#               Characters 44-96:
+  ........function
+    | [Foo] -> 1
+    | _::_::_ -> 3
+    | [] -> 2
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+*extension*::[]
+Matching over values of extensible variant types (the *extension* above)
+must include a wild card pattern in order to be exhaustive.
+val f : foo list -> int = <fun>
 # 
