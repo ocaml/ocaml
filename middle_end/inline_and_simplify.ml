@@ -15,6 +15,38 @@ module A = Simple_value_approx
 module E = Inlining_env
 module R = Inlining_result
 
+(* Two kinds of information are propagated during inlining and
+   simplification:
+   - [E.t] "environments", top-down, usually called "env";
+   - [R.t] "results", bottom-up approximately following the
+     evaluation order, usually called "r".
+   Along with the results come rewritten Flambda terms.
+
+   In general the pattern is to do a subset of these steps:
+   * recursive call of loop on the arguments with the original
+     environment:
+       [let new_arg, r = loop env r arg]
+   * generate fresh new identifiers (if subst.active is true) and
+     add the substitution to the environment:
+       [let new_id, env = add_variable id env]
+   * associate in the environment the approximation of values to
+     identifiers:
+       [let env = E.add_approx id (R.approx r) env]
+   * recursive call of loop on the body of the expression, using
+     the new environment
+   * mark used variables:
+       [let r = use_var r id]
+   * remove variable related bottom up informations:
+       [let r = exit_scope r id in]
+   * rebuild the expression according to the informations about
+     its content.
+   * associate its description to the returned value:
+       [ret r approx]
+   * replace the returned expression by a contant or a direct variable
+     acces (when possible):
+       [check_var_and_constant_result env r expr approx]
+ *)
+
 let ret = R.set_approx
 
 let new_var name =
@@ -90,39 +122,6 @@ let populate_closure_approximations
        E.add_approx id approx env)
       env function_declaration.params in
   env
-
-(* The main functions below iterate on an expression rewriting it and
-   propagating up an approximation of the value.
-
-   Two kinds of information are propagated during inlining:
-   - [E.t] "environments", top-down, usually called "env";
-   - [R.t] "results", bottom-up approximately following the
-     evaluation order, usually called "r".
-
-   In general the pattern is to do a subset of these steps:
-   * recursive call of loop on the arguments with the original
-     environment:
-       [let new_arg, r = loop env r arg]
-   * generate fresh new identifiers (if subst.active is true) and
-     add the substitution to the environment:
-       [let new_id, env = add_variable id env]
-   * associate in the environment the approximation of values to
-     identifiers:
-       [let env = E.add_approx id (R.approx r) env]
-   * recursive call of loop on the body of the expression, using
-     the new environment
-   * mark used variables:
-       [let r = use_var r id]
-   * remove variable related bottom up informations:
-       [let r = exit_scope r id in]
-   * rebuild the expression according to the informations about
-     its content.
-   * associate its description to the returned value:
-       [ret r approx]
-   * replace the returned expression by a contant or a direct variable
-     acces (when possible):
-       [check_var_and_constant_result env r expr approx]
- *)
 
 (* Transform an expression denoting an access to a variable bound in
    a closure.  Variables in the closure ([fenv_field.closure]) may
@@ -310,6 +309,9 @@ let transform_closure_expression env r closure closure_id rel annot
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
   let module Backend = (val (E.backend env) : Backend_intf.S) in
+  (* CR mshinwell for pchambart: This call to [really_import_approx] is
+     kind of confusing; it seems like some kind of catch-all.  What
+     exactly is happening here? *)
   f, ret r (Backend.really_import_approx (R.approx r))
 
 and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
