@@ -21,7 +21,7 @@ type t = {
   inside_branch : bool;
   inside_loop : bool;
   (* Number of times "inline" has been called recursively *)
-  sb : Freshening.t;
+  freshening : Freshening.t;
   never_inline : bool ;
   possible_unrolls : int;
   closure_depth : int;
@@ -35,7 +35,7 @@ let empty ~never_inline ~backend =
     inlining_level = 0;
     inside_branch = false;
     inside_loop = false;
-    sb = Freshening.empty;
+    freshening = Freshening.empty;
     never_inline;
     possible_unrolls = !Clflags.unroll;
     closure_depth = 0;
@@ -48,7 +48,7 @@ let backend t = t.backend
 let local env =
   { env with
     env_approx = Variable.Map.empty;
-    sb = Freshening.empty_preserving_activation_state env.sb;
+    freshening = Freshening.empty_preserving_activation_state env.freshening;
   }
 
 let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
@@ -61,10 +61,7 @@ let find id env =
 
 let present env var = Variable.Map.mem var env.env_approx
 
-let activate_substitution env =
-  { env with sb = Freshening.activate env.sb }
-let disactivate_substitution env =
-  { env with sb = Freshening.empty }
+let activate_freshening t = { t with freshening = Freshening.activate t.freshening }
 
 let add_approx id (approx : Simple_value_approx.t) env =
   let approx =
@@ -101,8 +98,8 @@ let inside_branch env =
 let inside_loop env =
   { env with inside_loop = true }
 
-let set_sb sb env =
-  { env with sb; }
+let set_freshening freshening env =
+  { env with freshening; }
 
 let increase_closure_depth env =
   { env with closure_depth = env.closure_depth + 1; }
@@ -117,7 +114,7 @@ let inside_unrolled_function env =
   { env with possible_unrolls = env.possible_unrolls - 1 }
 
 let inlining_level t = t.inlining_level
-let sb t = t.sb
+let freshening t = t.freshening
 let never_inline t = t.never_inline
 
 let note_entering_closure t ~closure_id ~where =

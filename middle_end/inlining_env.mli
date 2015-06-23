@@ -33,10 +33,9 @@ val find : Variable.t -> t -> Simple_value_approx.t
 
 val present : t -> Variable.t -> bool
 
-val activate_substitution : t -> t
-(* Every variables declaration in the code rewriten using this environment
-   will be alpha renamed *)
-val disactivate_substitution : t -> t
+(* Causes every bound variable in code rewritten using the given environment
+   to be freshened. *)
+val activate_freshening : t -> t
 
 val add_approx : Variable.t -> Simple_value_approx.t -> t -> t
 
@@ -57,7 +56,7 @@ val is_inside_branch : t -> bool
 val inside_branch : t -> t
 val inside_loop : t -> t
 
-val set_sb : Freshening.t -> t -> t
+val set_freshening : Freshening.t -> t -> t
 
 val increase_closure_depth : t -> t
 
@@ -68,7 +67,7 @@ val unrolling_allowed : t -> bool
 val inside_unrolled_function : t -> t
 
 val inlining_level : t -> int
-val sb : t -> Freshening.t
+val freshening : t -> Freshening.t
 val never_inline : t -> bool
 
 (* If collecting inlining statistics, record that the inliner is about to

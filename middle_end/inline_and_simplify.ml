@@ -320,7 +320,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let module Backend = (val (E.backend env) : Backend_intf.S) in
     check_constant_result r tree (Backend.import_symbol sym)
   | Fvar (id, annot) ->
-    let id = Freshening.apply_variable (E.sb env) id in
+    let id = Freshening.apply_variable (E.freshening env) id in
     let tree : _ Flambda.t = Fvar (id, annot) in
     check_var_and_constant_result env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const_approx cst)
@@ -350,8 +350,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
      *)
     let init_used_var = R.used_variables r in
     let lam, r = loop env r lam in
-    let id, sb = Freshening.add_variable (E.sb env) id in
-    let env = E.set_sb sb env in
+    let id, sb = Freshening.add_variable (E.freshening env) id in
+    let env = E.set_freshening sb env in
     let def_used_var = R.used_variables r in
     let body_env =
       match str with
@@ -391,8 +391,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     in
     expr, R.exit_scope r id
   | Fletrec (defs, body, annot) ->
-    let defs, sb = Freshening.add_variables (E.sb env) defs in
-    let env = E.set_sb sb env in
+    let defs, sb = Freshening.add_variables (E.freshening env) defs in
+    let env = E.set_freshening sb env in
     let def_env =
       List.fold_left (fun env_acc (id, _lam) ->
           E.add_approx id A.value_unknown env_acc)
@@ -484,13 +484,13 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
     expr, ret r approx
   | Fstaticraise (i, args, annot) ->
-    let i = Freshening.apply_static_exception (E.sb env) i in
+    let i = Freshening.apply_static_exception (E.freshening env) i in
     let args, _, r = loop_list env r args in
     let r = R.use_staticfail r i in
     Fstaticraise (i, args, annot), ret r A.value_bottom
   | Fstaticcatch (i, vars, body, handler, annot) ->
-    let i, sb = Freshening.add_static_exception (E.sb env) i in
-    let env = E.set_sb sb env in
+    let i, sb = Freshening.add_static_exception (E.freshening env) i in
+    let env = E.set_freshening sb env in
     let body, r = loop env r body in
     if not (Static_exception.Set.mem i (R.used_staticfail r)) then
       (* If the static exception is not used, we can drop the declaration *)
@@ -498,7 +498,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     else begin
       match (body : _ Flambda.t) with
       | Fstaticraise (j, args, _) when
-          Static_exception.equal i (Freshening.apply_static_exception (E.sb env) j) ->
+          Static_exception.equal i
+            (Freshening.apply_static_exception (E.freshening env) j) ->
         (* This is usually true, since whe checked that the static
            exception was used.  The only case where it can be false
            is when an argument can raise.  This could be avoided if
@@ -511,10 +512,10 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let r = R.exit_scope_catch r i in
         loop env r handler
       | _ ->
-        let vars, sb = Freshening.add_variables' (E.sb env) vars in
+        let vars, sb = Freshening.add_variables' (E.freshening env) vars in
         let env =
           List.fold_left (fun env id -> E.add_approx id A.value_unknown env)
-            (E.set_sb sb env) vars
+            (E.set_freshening sb env) vars
         in
         let env = E.inside_branch env in
         let handler, r = loop env r handler in
@@ -524,8 +525,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     end
   | Ftrywith (body, id, handler, annot) ->
     let body, r = loop env r body in
-    let id, sb = Freshening.add_variable (E.sb env) id in
-    let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
+    let id, sb = Freshening.add_variable (E.freshening env) id in
+    let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_branch env in
     let handler, r = loop env r handler in
     let r = R.exit_scope r id in
@@ -572,15 +573,15 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   | Ffor (id, lo, hi, dir, body, annot) ->
     let lo, r = loop env r lo in
     let hi, r = loop env r hi in
-    let id, sb = Freshening.add_variable (E.sb env) id in
-    let env = E.add_approx id A.value_unknown (E.set_sb sb env) in
+    let id, sb = Freshening.add_variable (E.freshening env) id in
+    let env = E.add_approx id A.value_unknown (E.set_freshening sb env) in
     let env = E.inside_loop env in
     let body, r = loop env r body in
     let r = R.exit_scope r id in
     Ffor (id, lo, hi, dir, body, annot), ret r A.value_unknown
   | Fassign (id, lam, annot) ->
     let lam, r = loop env r lam in
-    let id = Freshening.apply_variable (E.sb env) id in
+    let id = Freshening.apply_variable (E.freshening env) id in
     let r = R.use_var r id in
     Fassign (id, lam, annot), ret r A.value_unknown
   | Fswitch (arg, sw, annot) ->
@@ -740,14 +741,14 @@ and transform_set_of_closures_expression original_env original_r
       (cl : _ Flambda.set_of_closures) annot : _ Flambda.t * R.t =
   let module Backend = (val (E.backend original_env) : Backend_intf.S) in
   let ffuns =
-    Freshening.rewrite_recursive_calls_with_symbols (E.sb original_env)
+    Freshening.rewrite_recursive_calls_with_symbols (E.freshening original_env)
       cl.function_decls ~make_closure_symbol:Backend.closure_symbol
   in
   let fv = cl.free_vars in
   let env = E.increase_closure_depth original_env in
   let specialised_args =
     Variable.Map.map
-      (Freshening.apply_variable (E.sb env))
+      (Freshening.apply_variable (E.freshening env))
       cl.specialised_args
   in
   let fv, r = Variable.Map.fold (fun id lam (fv, r) ->
@@ -764,10 +765,10 @@ and transform_set_of_closures_expression original_env original_r
     Freshening.Ids_and_bound_vars_of_closures
   in
   let fv, ffuns, sb, alpha_renaming =
-    Freshening.apply_function_decls_and_free_vars (E.sb env) fv ffuns
+    Freshening.apply_function_decls_and_free_vars (E.freshening env) fv ffuns
   in
-  let env = E.set_sb sb env in
-  let apply_substitution = Freshening.apply_variable (E.sb env) in
+  let env = E.set_freshening sb env in
+  let apply_substitution = Freshening.apply_variable (E.freshening env) in
   let specialised_args =
     Variable.Map.map_keys apply_substitution specialised_args
   in
@@ -1046,7 +1047,7 @@ and inline_by_copying_function_body ~env ~r
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_body
   in
-  loop (E.activate_substitution env) r
+  loop (E.activate_freshening env) r
     (Flambda.Flet (Immutable, clos_id, lfunc, expr, Expr_id.create ()))
 
 (* Inlining of recursive function(s) yields a copy of the functions'
@@ -1114,7 +1115,7 @@ and inline_by_copying_function_declaration ~env ~r ~funct
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_declaration
   in
-  Some (loop (E.activate_substitution env) r expr)
+  Some (loop (E.activate_freshening env) r expr)
 
 (* CR mshinwell for pchambart: Change to a "-dinlining-benefit" option? *)
 let debug_benefit =
