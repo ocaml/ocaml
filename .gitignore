@@ -366,6 +366,27 @@
 /lex/ocamllex.opt
 /lex/parser.output
 
+# /middle_end/
+/middle_end/*.o
+/middle_end/*.a
+/middle_end/*.so
+/middle_end/*.obj
+/middle_end/*.lib
+/middle_end/*.dll
+/middle_end/*.cm[ioxatp]
+/middle_end/*.cmx[as]
+/middle_end/*.cmti
+/middle_end/*.annot
+/middle_end/*.result
+/middle_end/*.byte
+/middle_end/*.native
+/middle_end/program
+/middle_end/*.exe
+/middle_end/*.exe.manifest
+/middle_end/.depend
+/middle_end/.depend.nt
+/middle_end/.DS_Store
+
 # /ocamlbuild/
 /ocamlbuild/*.o
 /ocamlbuild/*.a
