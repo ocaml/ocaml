@@ -17,21 +17,15 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
     if !Clflags.dump_flambda
     then Format.fprintf ppf "%s:@ %a@." s Printflambda.flambda flam;
     try Flambdacheck.check flam
-    with e ->
-      Format.fprintf ppf "%a@."
-        Printflambda.flambda flam;
+    with e -> begin
+      Format.fprintf ppf "%a@." Printflambda.flambda flam;
       raise e
+    end
   in
   let flam =
-    (* CR mshinwell for pchambart: I'm not sure this first sentence is
-       accurate.  I suppose we mean "the only constants" or something? *)
-    (* Strings are the only expressions that can't be duplicated without
-       changing the semantics.  So we lift them to the toplevel to avoid
-       having to handle special cases later.
-       There is no runtime cost to this transformation: strings are
-       constants and will not appear in closures. *)
     lam
-    |> Lift_strings.lift_strings_to_toplevel
+    |> Eliminate_const_block.run
+    |> Lift_strings.run
     |> Closure_conversion.lambda_to_flambda ~backend ~exported_fields
     |> Lift_code.lift_apply_construction_to_variables
     |> Lift_code.lift_block_construction_to_variables

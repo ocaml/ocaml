@@ -71,7 +71,6 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
-  bytecomp/lift_strings.cmo \
   bytecomp/debuginfo.cmo \
   driver/pparse.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo
@@ -151,7 +150,9 @@ MIDDLE_END=\
   middle_end/simple_value_approx.cmo \
   middle_end/inlining_cost.cmo \
   middle_end/simplify_common.cmo \
+  middle_end/eliminate_const_block.cmo \
   middle_end/lift_code.cmo \
+  middle_end/lift_strings.cmo \
   middle_end/remove_unused_arguments.cmo \
   middle_end/remove_unused_closure_vars.cmo \
   middle_end/remove_unused_globals.cmo \

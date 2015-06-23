@@ -286,7 +286,7 @@ let rec add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
     end
   | _ -> flam
 
-let rec close_const (const : Lambda.structured_constant) : _ Flambda.t =
+let close_const (const : Lambda.structured_constant) : _ Flambda.t =
   (* CR-soon mshinwell: consider changing [name] arguments to be uniform
      with the constructor names *)
   match const with
@@ -294,9 +294,9 @@ let rec close_const (const : Lambda.structured_constant) : _ Flambda.t =
   | Const_pointer c -> Fconst (Fconst_pointer c, nid ~name:"cstptr" ())
   | Const_immstring c -> Fconst (Fconst_immstring c, nid ~name:"immstring" ())
   | Const_float_array c -> Fconst (Fconst_float_array c, nid ~name:"float" ())
-  | Const_block (tag, l) ->
-    Fprim (Pmakeblock (tag, Asttypes.Immutable),
-      List.map close_const l, Debuginfo.none, nid ~name:"cstblock" ())
+  | Const_block _ ->
+    Misc.fatal_error "Const_block should have been eliminated \
+        before closure conversion"
 
 let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   match lam with
