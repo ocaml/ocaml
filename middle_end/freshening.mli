@@ -11,28 +11,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Alpha renaming of various identifiers. *)
+(** Freshening of various identifiers. *)
 
 (** A table used for freshening variables and static exception identifiers. *)
 type t
 type subst = t
 
-(** The empty, inactive alpha renaming. *)
+(** The empty, inactive freshening. *)
 val empty : t
 
-(** Activate the alpha renaming.  Without activation, operations to request
+(** Activate the freshening.  Without activation, operations to request
     freshenings have no effect (cf. the documentation below for
     [add_variable]).  As such, the inactive renaming is unique. *)
 val activate : t -> t
 
-(** Given the inactive alpha renaming, return the same; otherwise, return an
-    empty active alpha renaming. *)
+(** Given the inactive freshening, return the same; otherwise, return an
+    empty active freshening. *)
 val empty_preserving_activation_state : t -> t
 
 (** [add_variable t var]
     If [t] is active:
       It returns a fresh variable [new_var] and adds [var] -> [new_var]
-      to the alpha renaming.
+      to the freshening.
       If a renaming [other_var] -> [var] or [symbol] -> [var] was already
       present in [t], it will also add [other_var] -> [new_var] and
       [symbol] -> [new_var].
