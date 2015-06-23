@@ -617,6 +617,7 @@ let is_one_instr i =
       | Iconst_int n | Iconst_blockheader n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iretaddr -> true
+      | Idescriptor _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
       | Istore(_, Iindexed n, _) -> i.arg.(0).typ <> Float && is_immediate n
       | Iintop(op) -> is_one_instr_op op

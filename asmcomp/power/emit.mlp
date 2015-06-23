@@ -351,6 +351,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iextcall(s, false)) -> if pic_externals then 4 else 1
     | Lop(Istackoffset n) -> 1
     | Lop(Iretaddr) -> 1
+    | Lop(Idescriptor _) -> 1
     | Lop(Iload(chunk, addr)) ->
       if chunk = Byte_signed
       then load_store_size addr + 1

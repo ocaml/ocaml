@@ -124,7 +124,7 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
   (* Get return address or location *)
-  | Pretloc
+  | Pgetcaller of Location.t option
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

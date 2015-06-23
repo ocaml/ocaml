@@ -166,7 +166,7 @@ let prim_size prim args =
   | Pbittest -> 3
   | Pbigarrayref(_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset(_, ndims, _, _) -> 4 + ndims * 6
-  | Pretloc -> 1
+  | Pgetcaller _ -> 1
   | _ -> 2 (* arithmetic and comparisons *)
 
 (* Very raw approximation of switch cost *)
@@ -566,17 +566,12 @@ let rec substitute loc fpc sb ulam =
            (fun (id, id', rhs) -> (id', substitute loc fpc sb' rhs))
            bindings1,
         substitute loc fpc sb' body)
-  | Uprim (Pretloc, _, _) when loc != Location.none ->
-      let {Lexing. pos_fname; pos_lnum; pos_cnum; pos_bol} = loc.Location.loc_start in
-      let const v = Uconst_ref (Compilenv.new_structured_constant ~shared:true v, v) in
-      Uconst (const (Uconst_block (0,  [const (Uconst_block (0, [
-          const (Uconst_string pos_fname);
-          Uconst_int pos_lnum;
-          Uconst_int (pos_cnum - pos_bol);
-        ]))])))
   | Uprim(p, args, dbg) ->
       let sargs =
         List.map (substitute loc fpc sb) args in
+      let p = match p with
+        | Pgetcaller None when loc <> Location.none -> Pgetcaller (Some loc)
+        | p -> p in
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res

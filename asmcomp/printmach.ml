@@ -141,6 +141,8 @@ let operation op arg ppf res =
       Arch.print_specific_operation reg op ppf arg
   | Iretaddr ->
       fprintf ppf "retaddr"
+  | Idescriptor dbg ->
+      fprintf ppf "descriptor%s" (Debuginfo.to_string dbg)
 
 let rec instr ppf i =
   if !print_live then begin

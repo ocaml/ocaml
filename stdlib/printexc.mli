@@ -294,14 +294,13 @@ val exn_slot_name: exn -> string
 
 (** {6 Code locations} *)
 
-type retloc
+type caller
 (** An abstract type representing a source location *)
 
-external return_location : unit -> retloc = "%retloc"
+external get_caller : unit -> caller = "%getcaller"
 (** The source location of the caller of the current function *)
 
-val decode_return_location : retloc -> (string * int * int) option
+val caller_slot : caller -> raw_backtrace_slot option
 (** Turn an abstract location into triplet [(filename, line, column)],
     if such information is available.
-    (the program has been compiled with -g, or the call-site that generated the
-    retloc value was inlined). *)
+    . *)

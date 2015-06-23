@@ -85,6 +85,7 @@ let operation = function
   | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
   | Cretaddr -> "retaddr"
+  | Cdescriptor dbg -> "descriptor" ^ (Debuginfo.to_string dbg)
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n

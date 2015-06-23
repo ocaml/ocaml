@@ -502,7 +502,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 }
 
 /* Turn encoded retaddr into eventual location information */
-CAMLprim value caml_decode_retaddr(value retaddr)
+CAMLprim value caml_caller_slot(value retaddr)
 {
   CAMLparam1(retaddr);
   CAMLlocal3(result, block, fname);

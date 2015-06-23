@@ -200,6 +200,7 @@ method class_of_operation op =
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
   | Iretaddr -> Op_pure
+  | Idescriptor _ -> Op_pure
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
 

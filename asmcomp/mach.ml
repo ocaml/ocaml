@@ -54,6 +54,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
   | Iretaddr
+  | Idescriptor of Debuginfo.t
 
 type instruction =
   { desc: instruction_desc;

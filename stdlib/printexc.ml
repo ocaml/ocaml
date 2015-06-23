@@ -294,7 +294,6 @@ let () =
   register_named_value "Printexc.handle_uncaught_exception"
     handle_uncaught_exception
 
-type retloc
-external return_location : unit -> retloc = "%retloc"
-external decode_return_location : retloc -> (string * int * int) option =
-  "caml_decode_retaddr"
+type caller
+external get_caller : unit -> caller = "%getcaller"
+external caller_slot : caller -> raw_backtrace_slot option = "caml_caller_slot"

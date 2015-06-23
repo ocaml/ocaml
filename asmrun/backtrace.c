@@ -384,11 +384,11 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   CAMLreturn(res);
 }
 
-/* Turn encoded retaddr into eventual location information */
-CAMLprim value caml_decode_retaddr(value retaddr)
+/* Turn encoded retaddr into a raw_backtrace_slot */
+CAMLprim value caml_caller_slot(value retaddr)
 {
   CAMLparam1(retaddr);
-  CAMLlocal3(result, block, fname);
+  CAMLlocal2(result, slot);
 
   frame_descr *d;
   uintnat h;
@@ -396,8 +396,7 @@ CAMLprim value caml_decode_retaddr(value retaddr)
 
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
 
-  if (Is_long(retaddr) && retaddr > 1)
-  {
+  if (Is_long(retaddr) && retaddr > 1) {
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -410,23 +409,16 @@ CAMLprim value caml_decode_retaddr(value retaddr)
       h = (h+1) & caml_frame_descriptors_mask;
     }
 
-    if (d != NULL)
-      extract_location_info(d, &li);
-
-    if (d != NULL && li.loc_valid) {
-      fname = caml_copy_string(li.loc_filename);
-      block = caml_alloc_small(3, 0);
-      Field(block, 0) = fname;
-      Field(block, 1) = Val_int(li.loc_lnum);
-      Field(block, 2) = Val_int(li.loc_startchr);
+    if (d != NULL) {
+      slot = Val_Descrptr(d);
       result = caml_alloc_small(1, 0);
-      Field(result, 0) = block;
+      Field(result, 0) = slot;
     } else {
       result = Val_unit;
     }
+  } else {
+    result = Val_unit;
   }
-  else
-    result = retaddr;
 
   CAMLreturn(result);
 }

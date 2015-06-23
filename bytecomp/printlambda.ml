@@ -238,7 +238,11 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
-  | Pretloc -> fprintf ppf "retloc"
+  | Pgetcaller None -> fprintf ppf "getcaller"
+  | Pgetcaller (Some loc) ->
+      let {Lexing. pos_fname; pos_lnum; pos_cnum; pos_bol} = loc.Location.loc_start in
+      fprintf ppf "inlined getcaller{%s:%d-%d}"
+        pos_fname pos_lnum (pos_cnum - pos_bol)
 
 let rec lam ppf = function
   | Lvar id ->
