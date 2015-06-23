@@ -12,6 +12,7 @@
 (**************************************************************************)
 
 module A = Simple_value_approx
+module B = Inlining_cost.Benefit
 module E = Inlining_env
 module R = Inlining_result
 
@@ -54,20 +55,20 @@ let new_var name =
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
 let check_constant_result r lam approx =
-  let lam, approx = A.check_constant_result lam approx in
+  let lam, approx = A.simplify approx lam in
   lam, R.set_approx r approx
 
 let check_var_and_constant_result env r original_lam approx =
   let lam, approx =
-    A.check_var_and_constant_result
-      ~is_present_in_env:(E.present env) original_lam approx in
+    A.simplify_using_env approx ~is_present_in_env:(E.present env) original_lam
+  in
   let r = ret r approx in
   let r = match lam with
     | Fvar (var, _) ->
       R.map_benefit (R.use_var r var)
-        (Inlining_cost.Benefit.remove_code original_lam)
+        (B.remove_code original_lam)
     | Fconst _ ->
-      R.map_benefit r (Inlining_cost.Benefit.remove_code original_lam)
+      R.map_benefit r (B.remove_code original_lam)
     | _ -> r
   in
   lam, r
@@ -381,7 +382,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
          I should find a nice pattern to allow to do that elsewhere
          without too much syntactic noise. *)
       else if Effect_analysis.no_effects lam then
-        let r = R.map_benefit r (Inlining_cost.Benefit.remove_code lam) in
+        let r = R.map_benefit r (B.remove_code lam) in
         body, r
       else
         Flambda.Fsequence (lam, body, annot),
@@ -455,22 +456,21 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     Fprim (p, block :: args, dbg, annot), ret r A.value_unknown
   | Fprim ((Psequand | Psequor) as primitive, [arg1; arg2], dbg, annot) ->
     let arg1, r = loop env r arg1 in
-    let arg1_approx = (R.approx r) in
+    let arg1_approx = R.approx r in
     let arg2, r = loop env r arg2 in
-    let arg2_approx = (R.approx r) in
+    let arg2_approx = R.approx r in
     let simplifier =
       match primitive with
       | Psequand -> Simplify_sequential_logical_ops.sequential_and
       | Psequor -> Simplify_sequential_logical_ops.sequential_or
       | _ -> assert false
     in
-    let expr, approx, simplify_benefit =
+    let expr, approx, simplification_benefit =
       simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
     in
-    expr, ret (R.map_benefit r (Inlining_cost.Benefit.(+) simplify_benefit))
-      approx
+    expr, ret (R.map_benefit r (B.(+) simplification_benefit)) approx
   | Fprim ((Psequand | Psequor), _, _, _) ->
-    Misc.fatal_error "Psequand or Psequor with wrong number of arguments"
+    Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Fprim (p, args, dbg, annot) as expr ->
     let (args', approxs, r) = loop_list env r args in
     let expr : _ Flambda.t =
@@ -481,7 +481,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       Simplify_primitives.primitive p (args', approxs) expr dbg
         ~size_int:Backend.size_int ~big_endian:Backend.big_endian
     in
-    let r = R.map_benefit r (Inlining_cost.Benefit.(+) benefit) in
+    let r = R.map_benefit r (B.(+) benefit) in
     expr, ret r approx
   | Fstaticraise (i, args, annot) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
@@ -540,12 +540,12 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     | Value_constptr 0 ->
       (* constant false, keep ifnot *)
       let ifnot, r = loop env r ifnot in
-      let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
+      let r = R.map_benefit r B.remove_branch in
       Effect_analysis.sequence arg ifnot annot, r
     | Value_constptr _ | Value_block _ ->
       (* constant true, keep ifso *)
       let ifso, r = loop env r ifso in
-      let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
+      let r = R.map_benefit r B.remove_branch in
       Effect_analysis.sequence arg ifso annot, r
     | _ ->
       let env = E.inside_branch env in
@@ -614,7 +614,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
-      let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
+      let r = R.map_benefit r B.remove_branch in
       Effect_analysis.sequence arg lam annot, r
     | Value_block (tag, _) ->
       let tag = Tag.to_int tag in
@@ -623,7 +623,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         with Not_found -> get_failaction ()
       in
       let lam, r = loop env r lam in
-      let r = R.map_benefit r Inlining_cost.Benefit.remove_branch in
+      let r = R.map_benefit r B.remove_branch in
       Effect_analysis.sequence arg lam annot, r
     | _ ->
       let env = E.inside_branch env in
@@ -1005,7 +1005,7 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
 and inline_by_copying_function_body ~env ~r
       ~(clos : _ Flambda.function_declarations) ~lfunc ~fun_id
       ~(func : _ Flambda.function_declaration) ~args =
-  let r = R.map_benefit r Inlining_cost.Benefit.remove_call in
+  let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_body" in
   (* Assign fresh names for the function's parameters and rewrite the body to
@@ -1150,5 +1150,5 @@ let run ~never_inline ~backend tree =
   assert (Static_exception.Set.is_empty (R.used_staticfail r));
   if debug_benefit then
     Format.printf "benefit:@ %a@."
-      Inlining_cost.Benefit.print (R.benefit r);
+      B.print (R.benefit r);
   result

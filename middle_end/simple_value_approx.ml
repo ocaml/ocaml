@@ -149,7 +149,7 @@ let const_approx (flam : Flambda.const) =
     begin match const with
     | Const_int i -> value_int i
     | Const_char c -> value_int (Char.code c)
-    | Const_string (s,_) -> value_string (String.length s) None
+    | Const_string (s, _) -> value_string (String.length s) None
     | Const_float s -> value_float (float_of_string s)
     | Const_int32 i -> value_boxed_int Int32 i
     | Const_int64 i -> value_boxed_int Int64 i
@@ -160,39 +160,37 @@ let const_approx (flam : Flambda.const) =
   | Fconst_float_array a -> value_float_array (List.length a)
   | Fconst_immstring s -> value_string (String.length s) (Some s)
 
-let check_constant_result (lam : _ Flambda.t) approx
-      : _ Flambda.t * t =
+let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
   if Effect_analysis.no_effects lam then
-    match approx.descr with
+    match t.descr with
     | Value_int n ->
       make_const_int n (Flambdautils.data_at_toplevel_node lam)
     | Value_constptr n ->
       make_const_ptr n (Flambdautils.data_at_toplevel_node lam)
     | Value_float f ->
       make_const_float f (Flambdautils.data_at_toplevel_node lam)
-    | Value_boxed_int (t,i) ->
+    | Value_boxed_int (t, i) ->
       make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
-      Fsymbol (sym, Flambdautils.data_at_toplevel_node lam), approx
+      Fsymbol (sym, Flambdautils.data_at_toplevel_node lam), t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
-      lam, approx
+      lam, t
   else
-    lam, approx
+    lam, t
 
-let check_var_and_constant_result ~is_present_in_env lam approx =
+let simplify_using_env t ~is_present_in_env lam =
   let res : _ Flambda.t =
-    match approx.var with
+    match t.var with
     | Some var when is_present_in_env var ->
-      Fvar(var, Flambdautils.data_at_toplevel_node lam)
+      Fvar (var, Flambdautils.data_at_toplevel_node lam)
     | _ ->
-      match approx.symbol with
-      | Some sym ->
-          Fsymbol(sym, Flambdautils.data_at_toplevel_node lam)
+      match t.symbol with
+      | Some sym -> Fsymbol (sym, Flambdautils.data_at_toplevel_node lam)
       | None -> lam
   in
-  check_constant_result res approx
+  simplify t res
 
 let known t =
   match t.descr with

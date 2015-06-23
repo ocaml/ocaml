@@ -164,15 +164,19 @@ val useful : t -> bool
    [Value_symbol] *)
 val is_certainly_immutable : t -> bool
 
-val check_constant_result
-   : Expr_id.t Flambda.t
-  -> t
-  -> Expr_id.t Flambda.t * t
+(** Given an expression and its approximation, attempt to simplify the
+    expression to a constant (with associated approximation), taking into
+    account whether the expression has any side effects. *)
+val simplify : t -> 'a Flambda.t -> 'a Flambda.t * t
 
-val check_var_and_constant_result
-   : is_present_in_env:(Variable.t -> bool)
+(** As for [simplify], but also enables us to simplify based on equalities
+    between variables.  The caller must provide a function that tells us
+    whether, if we simplify to a given variable, the value of that variable
+    will be accessible in the current environment. *)
+val simplify_using_env
+   : t
+  -> is_present_in_env:(Variable.t -> bool)
   -> Expr_id.t Flambda.t
-  -> t
   -> Expr_id.t Flambda.t * t
 
 val get_field : int -> t list -> t
