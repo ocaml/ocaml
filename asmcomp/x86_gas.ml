@@ -279,7 +279,7 @@ let print_line b = function
       bprintf b "\t.file\t%d\t\"%s\""
         file_num (X86_proc.string_of_string_literal file_name)
   | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
-  | Loc (file_num, line) -> bprintf b "\t.loc\t%d\t%d" file_num line
+  | Loc (file_num, line, col) -> bprintf b "\t.loc\t%d\t%d\t%d" file_num line col
   | Private_extern s -> bprintf b "\t.private_extern %s" s
   | Set (arg1, arg2) -> bprintf b "\t.set %s, %a" arg1 cst arg2
   | Size (s, c) -> bprintf b "\t.size %s,%a" s cst c
