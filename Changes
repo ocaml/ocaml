@@ -115,6 +115,8 @@ Bug fixes:
   (Damien Doligez)
 - PR#6874: Inefficient code generated for module function arguments
 - PR#6897: Bad error message for some pattern matching on extensible variants
+- PR#6899: Optional parameters and non generalizable type variables
+  (trefis and lpw25)
 
 Features wishes:
 - PR#4714: List.cons
