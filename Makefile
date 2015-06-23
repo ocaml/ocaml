@@ -295,7 +295,7 @@ cross-all:
 	$(MAKE) all
 
 cross-opt: cross-all
-	$(MAKE) CAMLRUN="boot/ocamlrun" opt
+	$(MAKE) opt
 
 cross-boot:
 	if ! ocamlc; then \
@@ -656,8 +656,8 @@ partialclean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools; \
-	$(MAKE) CAMLRUN="../$(CAMLRUN)" CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
+	cd tools && $(MAKE) cvt_emit
+ot necessary
 
 # The "expunge" utility
 
@@ -743,7 +743,7 @@ ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
 	cd tools; $(MAKE) all
 
 ocamltoolsopt: ocamlopt
-	cd tools; $(MAKE) CAMLRUN="../$(CAMLRUN)" opt
+	cd tools; $(MAKE) opt
 
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx
@@ -784,7 +784,7 @@ otherlibraries: ocamltools
 
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); do \
-	  (cd otherlibs/$$i; $(MAKE) CAMLRUN=../../$(CAMLRUN) allopt) || exit $$?; \
+	  (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
 	done
 
 partialclean::
