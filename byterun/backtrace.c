@@ -73,6 +73,7 @@ CAMLprim value caml_record_backtrace(value vflag)
     caml_backtrace_active = flag;
     caml_backtrace_pos = 0;
     if (flag) {
+      caml_backtrace_last_exn = Val_unit;
       caml_register_global_root(&caml_backtrace_last_exn);
     } else {
       caml_remove_global_root(&caml_backtrace_last_exn);
