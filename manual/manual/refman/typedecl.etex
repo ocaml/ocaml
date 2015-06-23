@@ -14,7 +14,7 @@ associated with the definition.
 
 \begin{syntax}
 type-definition:
-          'type' typedef { 'and' typedef }
+          'type' ['nonrec'] typedef { 'and' typedef }
 ;
 typedef:
           [type-params] typeconstr-name type-information
@@ -56,6 +56,11 @@ Type definitions are introduced by the "type" keyword, and
 consist in one or several simple definitions, possibly mutually
 recursive, separated by the "and" keyword. Each simple definition
 defines one type constructor.
+
+In a set of definitions, references in the type equation,
+representation or constraint to one of the type constructor name being
+defined is considered as recursive, unless "type" is followed by
+"nonrec". The "nonrec" keyword was introduced in OCaml 4.02.2.
 
 A simple definition consists in a lowercase identifier, possibly
 preceded by one or several type parameters, and followed by an
