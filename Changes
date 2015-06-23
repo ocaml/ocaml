@@ -117,6 +117,8 @@ Bug fixes:
 - PR#6897: Bad error message for some pattern matching on extensible variants
 - PR#6899: Optional parameters and non generalizable type variables
   (trefis and lpw25)
+- GPR#205: Clear caml_backtrace_last_exn before registering as root (report
+  and fix by Frederic Bour)
 
 Features wishes:
 - PR#4714: List.cons
