@@ -192,24 +192,23 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
-(** Selection of one closure from either:
-    (a) a set of closures;
-    (b) one closure that has already been selected from a set of closures.
-        This enables us to move between individual closures in one runtime
-        closure block. *)
 and 'a select_closure = {
   from : 'a select_closure_from;
   closure_id : Closure_id.t;
 }
 
+(* This type is split into two to avoid "assert false" in
+   inline_and_simplify.ml. *)
 and 'a select_closure_from =
   | From_set_of_closures of 'a set_of_closures
-  | From_other of select_closure_from_other
+  | From_closure of select_closure_from_another
 
-and select_closure_from_other =
-  | From_variable of Variable.t
-  | From_closure
-  | From_closure_relative of Closure_id.t
+and select_closure_from_another =
+  | Not_relative of Variable.t
+  (* [From_closure_relative] enables selection of one closure from another
+     within the same runtime closure block.  This avoids keeping a pointer
+     to the start of the set of closures live. *)
+  | Relative of Variable.t * Closure_id.t
 
 and 'a var_within_closure = {
   (** [closure] must yield a closure rather than a set of closures. *)

@@ -11,105 +11,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let apply_on_subexpressions f (flam : _ Flambda.t) =
-  match flam with
-  | Fsymbol _
-  | Fvar _
-  | Fconst _
-  | Funreachable _ -> ()
-
-  | Fassign (_,f1,_)
-  | Fselect_closure({set_of_closures = f1},_)
-  | Fvar_within_closure({closure = f1},_) ->
-    f f1
-
-  | Flet ( _, _, f1, f2,_)
-  | Ftrywith (f1,_,f2,_)
-  | Fsequence (f1,f2,_)
-  | Fwhile (f1,f2,_)
-  | Fstaticcatch (_,_,f1,f2,_) ->
-    f f1; f f2;
-
-  | Ffor (_,f1,f2,_,f3,_)
-  | Fifthenelse (f1,f2,f3,_) ->
-    f f1;f f2;f f3
-
-  | Fstaticraise (_,l,_)
-  | Fprim (_,l,_,_) ->
-    List.iter f l
-
-  | Fapply ({func;args},_) ->
-    List.iter f (func::args)
-  | Fset_of_closures ({function_decls;free_vars},_) ->
-    Variable.Map.iter (fun _ v -> f v) free_vars;
-    Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
-        f ffun.body)
-      function_decls.funs
-  | Fletrec (defs, body,_) ->
-    List.iter (fun (_,l) -> f l) defs;
-    f body
-  | Fswitch (arg,sw,_) ->
-    f arg;
-    List.iter (fun (_,l) -> f l) sw.consts;
-    List.iter (fun (_,l) -> f l) sw.blocks;
-    Misc.may f sw.failaction
-  | Fstringswitch (arg,sw,def,_) ->
-    f arg;
-    List.iter (fun (_,l) -> f l) sw;
-    Misc.may f def
-  | Fsend (_,f1,f2,fl,_,_) ->
-    List.iter f (f1::f2::fl)
-
-let subexpressions (flam : _ Flambda.t) =
-  match flam with
-  | Fsymbol _
-  | Fvar _
-  | Fconst _
-  | Funreachable _ -> []
-
-  | Fassign (_,f1,_)
-  | Fselect_closure({set_of_closures = f1},_)
-  | Fvar_within_closure({closure = f1},_) ->
-      [f1]
-
-  | Flet ( _, _, f1, f2,_)
-  | Ftrywith (f1,_,f2,_)
-  | Fsequence (f1,f2,_)
-  | Fwhile (f1,f2,_)
-  | Fstaticcatch (_,_,f1,f2,_) ->
-      [f1; f2]
-
-  | Ffor (_,f1,f2,_,f3,_)
-  | Fifthenelse (f1,f2,f3,_) ->
-      [f1; f2; f3]
-
-  | Fstaticraise (_,l,_)
-  | Fprim (_,l,_,_) -> l
-
-  | Fapply ({func;args},_) ->
-      (func::args)
-
-  | Fset_of_closures ({function_decls;free_vars},_) ->
-      let l = Variable.Map.fold (fun _ v l -> v :: l) free_vars [] in
-      Variable.Map.fold (fun _ (f : _ Flambda.function_declaration) l ->
-          f.body :: l)
-        function_decls.funs l
-
-  | Fletrec (defs, body,_) ->
-      body :: (List.map snd defs)
-
-  | Fswitch (arg,sw,_) ->
-      let l = List.fold_left (fun l (_,v) -> v :: l) [arg] sw.consts in
-      let l = List.fold_left (fun l (_,v) -> v :: l) l sw.blocks in
-      Misc.may_fold (fun f1 l -> f1 :: l) sw.failaction l
-
-  | Fstringswitch (arg,sw,def,_) ->
-      let l = List.fold_left (fun l (_,v) -> v :: l) [arg] sw in
-      Misc.may_fold (fun f1 l -> f1 :: l) def l
-
-  | Fsend (_,f1,f2,fl,_,_) ->
-      (f1::f2::fl)
-
 let iter_general ~toplevel f t =
   let rec aux (t : _ Flambda.t) =
     f t;
@@ -119,9 +20,14 @@ let iter_general ~toplevel f t =
     | Fconst _ -> ()
 
     | Fassign (_,f1,_)
-    | Fselect_closure({set_of_closures = f1},_)
     | Fvar_within_closure({closure = f1},_) ->
       aux f1
+
+    | Fselect_closure ({ from = From_set_of_closures set_of_closures; _ }, d) ->
+      aux (Flambda.Fset_of_closures (set_of_closures, d))
+    | Fselect_closure ({ from = From_closure (Not_relative var); _ }, d)
+    | Fselect_closure ({ from = From_closure (Relative (var, _)); _ }, d) ->
+      aux (Flambda.Fvar (var, d))
 
     | Flet ( _, _, f1, f2,_)
     | Ftrywith (f1,_,f2,_)
@@ -172,6 +78,10 @@ let iter_general ~toplevel f t =
 let iter f t = iter_general ~toplevel:false f t
 let iter_toplevel f t = iter_general ~toplevel:true f t
 
+(* CR mshinwell: should clarify why this doesn't go under
+   [Fselect_closure (From_set_of_closures ...)].  Even if the set of
+   closures must be in some Flambda tree, it might not actually be in the
+   subexpression passed to [iter_on_closures]. *)
 let iter_on_closures f t =
   let aux (flam : _ Flambda.t) =
     match flam with
@@ -212,9 +122,8 @@ let map_general ~toplevel f tree =
           Fset_of_closures ({ function_decls;
                       free_vars = Variable.Map.map aux free_vars;
                       specialised_args }, annot)
-      | Fselect_closure ({ set_of_closures; closure_id; relative_to}, annot) ->
-          Fselect_closure ({ set_of_closures = aux set_of_closures;
-                       closure_id; relative_to}, annot)
+      (* CR mshinwell for pchambart: Not sure if this next line is correct. *)
+      | Fselect_closure _ -> tree
       | Fvar_within_closure (vc, annot) ->
           Fvar_within_closure ({ vc with closure = aux vc.closure }, annot)
       | Flet(str, id, lam, body, annot) ->
@@ -303,6 +212,26 @@ let expression_free_variables (flam : _ Flambda.t) =
         free_vars set
   | _ -> Variable.Set.empty
 
+let fold_subexpressions_set_of_closures (type acc) f (acc : acc)
+      (({ function_decls; free_vars; _ } as set_of_closures) :
+        _ Flambda.set_of_closures)
+      : acc * _ Flambda.set_of_closures =
+  let acc, funs =
+    Variable.Map.fold
+      (fun v (fun_decl : _ Flambda.function_declaration) (acc, funs) ->
+        let acc, body = f acc fun_decl.free_variables fun_decl.body in
+        acc, Variable.Map.add v { fun_decl with body } funs)
+      function_decls.funs (acc, Variable.Map.empty)
+  in
+  let function_decls = { function_decls with funs } in
+  let acc, free_vars =
+    Variable.Map.fold (fun v flam (acc, free_vars) ->
+        let acc, flam = f acc Variable.Set.empty flam in
+        acc, Variable.Map.add v flam free_vars)
+      free_vars (acc, Variable.Map.empty)
+  in
+  acc, { set_of_closures with function_decls; free_vars; }
+
 let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
       : acc * _ Flambda.t =
   match flam with
@@ -345,22 +274,11 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
              acc, arg :: l) args (acc,[]) in
       acc, Fstaticraise (exn, args, d)
 
-  | Fset_of_closures ({ function_decls; free_vars } as closure, d) ->
-      let acc, funs =
-        Variable.Map.fold
-          (fun v (fun_decl : _ Flambda.function_declaration) (acc, funs) ->
-            let acc, body = f acc fun_decl.free_variables fun_decl.body in
-            acc, Variable.Map.add v { fun_decl with body } funs)
-          function_decls.funs (acc, Variable.Map.empty)
-      in
-      let function_decls = { function_decls with funs } in
-      let acc, free_vars =
-        Variable.Map.fold (fun v flam (acc, free_vars) ->
-            let acc, flam = f acc Variable.Set.empty flam in
-            acc, Variable.Map.add v flam free_vars)
-          free_vars (acc, Variable.Map.empty)
-      in
-      acc, Fset_of_closures({ closure with function_decls; free_vars }, d)
+  | Fset_of_closures (set_of_closures, d) ->
+    let acc, set_of_closures =
+      fold_subexpressions_set_of_closures f acc set_of_closures
+    in
+    acc, Fset_of_closures (set_of_closures, d)
 
   | Fswitch (arg,
              { numconsts; consts; numblocks;
@@ -445,19 +363,34 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
       let acc, flam = f acc Variable.Set.empty flam in
       acc, Fassign (v,flam,d)
 
-  | Fselect_closure(clos,d) ->
-      let acc, set_of_closures = f acc Variable.Set.empty clos.set_of_closures in
-      acc, Fselect_closure({clos with set_of_closures},d)
+  (* CR mshinwell for pchambart: This should match the old semantics, but we
+     should think about whether we need to actually do this. *)
+  | Fselect_closure ({ from = From_set_of_closures set_of_closures;
+        closure_id; }, d) ->
+    let acc, set_of_closures =
+      fold_subexpressions_set_of_closures f acc set_of_closures
+    in
+    acc, Fselect_closure ({ from = From_set_of_closures set_of_closures;
+        closure_id; }, d)
+  | Fselect_closure ({ from = From_closure (Not_relative _); _ }, _)
+  | Fselect_closure ({ from = From_closure (Relative _); _ }, _) ->
+    (* Same as the [Fvar] case, below. *)
+    acc, flam
 
   | Fvar_within_closure(clos,d) ->
       let acc, closure = f acc Variable.Set.empty clos.closure in
       acc, Fvar_within_closure({clos with closure},d)
 
-  | ( Fsymbol _
-    | Fvar _
-    | Fconst _
-    | Funreachable _) as e ->
-      acc, e
+  | Fsymbol _ | Fconst _ | Fvar _ | Funreachable _ -> acc, flam
+
+let subexpressions flam =
+  let subexpressions, (_ : _ Flambda.t) =
+    fold_subexpressions (fun acc _vars flam -> flam::acc, flam) [] flam
+  in
+  subexpressions
+
+let apply_on_subexpressions f flam =
+  List.iter f (subexpressions flam)
 
 let subexpression_bound_variables (flam : _ Flambda.t) =
   match flam with
@@ -516,7 +449,8 @@ let free_variables tree =
 
 let map_data (type t1) (type t2) (f:t1 -> t2)
       (tree:t1 Flambda.t) : t2 Flambda.t =
-  let rec mapper : t1 Flambda.t -> t2 Flambda.t = function
+  let rec mapper (t1 : t1 Flambda.t) : t2 Flambda.t =
+    match t1 with
     | Fsymbol (sym, v) -> Fsymbol (sym, f v)
     | Fvar (id, v) -> Fvar (id, f v)
     | Fconst (cst, v) -> Fconst (cst, f v)
@@ -540,9 +474,17 @@ let map_data (type t1) (type t2) (f:t1 -> t2)
         Fset_of_closures ({ function_decls;
                     free_vars = Variable.Map.map mapper free_vars;
                     specialised_args }, f v)
-    | Fselect_closure ({ set_of_closures; closure_id; relative_to}, v) ->
-        Fselect_closure ({ set_of_closures = mapper set_of_closures;
-                     closure_id; relative_to}, f v)
+    | Fselect_closure ({ from = From_set_of_closures set_of_closures;
+        closure_id; }, d) ->
+      begin match mapper (Flambda.Fset_of_closures (set_of_closures, d)) with
+      | Fset_of_closures (set_of_closures, d) ->
+        Fselect_closure ({
+          from = From_set_of_closures set_of_closures;
+          closure_id; }, d)
+      | _ -> assert false
+      end
+    | Fselect_closure ({ from = From_closure maybe_relative; closure_id; }, d) ->
+      Fselect_closure ({ from = From_closure maybe_relative; closure_id; }, f d)
     | Fvar_within_closure (vc, v) ->
         Fvar_within_closure ({ vc with closure = mapper vc.closure }, f v)
     | Fswitch(arg, sw, v) ->

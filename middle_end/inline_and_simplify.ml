@@ -222,42 +222,49 @@ let transform_var_within_closure_expression env r expr closure
   | Value_bottom | Value_extern _ | Value_symbol _ ->
     assert false
 
-let transform_select_closure_from env r
-      (from : _ Flambda.select_closure_from) =
+(* Simplify a description of the selection of one closure from a set of
+   closures or another closure. *)
+let transform_select_closure_from (type user_data) env r
+      (from : user_data Flambda.select_closure_from) ~annot:user_data
+      : _ Flambda.select_closure_from * R.t =
   match from with
-  | From_set_of_closures (set_of_closures, annot) ->
-    let set_of_closures, annot, r =
-      transform_set_of_closures_expression env r set_of_closures annot
+  | From_set_of_closures set_of_closures ->
+    let set_of_closures, r =
+      transform_set_of_closures_expression env r set_of_closures
     in
-    From_set_of_closures (set_of_closures, annot), r
-  | From_other from ->
-    let from =
-      match from with
-      | From_variable (var, annot) ->
-        begin match loop env r (Fvar (var, annot)) with
-        | Fvar (var, annot), r -> From_variable (var, annot), r
-        | Fset_of_closures (set_of_closures, annot), r ->
-          From_set_of_closures (set_of_closures, annot), r
-        | Fselect_closure { select_closure_from }, r ->
-          select_closure_from, r
-        | expr, _r ->
-          Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
-              or Fselect_closure when expanding closure selection using \
-              From_variable: %a"
-            Printflambda.flambda expr)
-        end
-      | From_select_closure (select_closure, annot) ->
-        let select_closure, annot, r =
+    From_set_of_closures set_of_closures, r
+  | From_closure (Not_relative var) ->
+    begin match loop env r (Fvar (var, annot)) with
+    | Fvar (var, _), r -> From_closure (Not_relative var), r
+    | Fset_of_closures (set_of_closures, _annot), r ->
+      From_set_of_closures set_of_closures, r
+    | Fselect_closure from -> from, r
+    | expr, _r ->
+      Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
+          or Fselect_closure when expanding closure selection using \
+          From_closure: %a"
+        Printflambda.flambda expr)
+    end
+  | From_closure (Relative (var, relative_to)) ->
+    begin match loop env r (Fvar (var, annot)) with
+    | Fvar (var, _), r -> From_closure (Relative (var, relative_to)), r
+    | Fset_of_closures (set_of_closures, _annot), r ->
+      (* The [relative_to] annotation is irrelevant here: we've got the
+         set of closures itself. *)
+      From_set_of_closures set_of_closures, r
+    | Fselect_closure from -> from, r
+    | expr, _r ->
+      Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
+          or Fselect_closure when expanding closure selection using \
+          From_closure: %a"
+        Printflambda.flambda expr)
+    end
 
-        in
-      | From_select_closure_relative (select_closure, annot) ->
-    in
-    From_other from, r
-
+(* That subset of simple value approximations that are valid for making
+   a closure selection. *)
 type resolved_approx_for_closure_selection =
   | Value_closure of A.value_closure
   | Value_set_of_closures of A.value_set_of_closures
-
 type valid_approx_for_closure_selection =
   | Unresolved
   | Resolved of resolved_approx_for_closure_selection
@@ -277,9 +284,9 @@ let valid_approx_for_closure_selection (approx : A.descr)
         A.print approx Printflambda.select_closure select_closure)
 
 (* Simplify an expression that selects a closure from a set of closures. *)
-let transform_select_closure_expression env r
-      ~(select_closure : _ Flambda.select_closure)
-      ~annot : _ Flambda.t * R.t =
+let transform_select_closure_expression (type user_data) env r
+      ~(select_closure : user_data Flambda.select_closure)
+      : user_data Flambda.select_closure_from * Closure_id.t * R.t =
   let from = select_closure.select_closure_from in
   let closure_id_to_select = select_closure.closure_id in
   let from, r = transform_select_closure_from env r from in
@@ -289,14 +296,13 @@ let transform_select_closure_expression env r
     (* If the set of closures comes from a symbol that can't be resolved,
        we know that it comes from another compilation unit, and selection
        via [closure_id_to_select] will still be valid.
-       We do check that [from] is [From_variable], because all other cases
+       We do check that [from] is [From_closure], because the other case
        should yield a non-unresolved approximation. *)
     begin match from with
-    | From_other From_variable _ -> from, closure_id_to_select, r
-    | From_set_of_closures _ | From_other From_closure _
-    | From_other From_closure_relative _ ->
+    | From_closure _ -> from, closure_id_to_select, r
+    | From_set_of_closures _
       Misc.fatal_error "Selection of closure from expression that has a \
-        [Value_unresolved] approximation but yet is not [From_variable]"
+        [Value_unresolved] approximation but yet is not [From_closure]"
     end
   | Resolved resolved_approx ->
     match from with
@@ -309,7 +315,7 @@ let transform_select_closure_expression env r
       (* CR mshinwell for pchambart: Do we need to apply the freshening
          to [closure_id_to_select]? *)
       from, closure_id_to_select, r
-    | From_other from ->
+    | From_closure from ->
       (* In these cases, we use approximation information to try to discover
          which set of closures is being selected from. *)
       let value_set_of_closures =
@@ -346,8 +352,9 @@ let transform_select_closure_expression env r
              got a [Value_closure] approximation, we have to generate a
              relative access, rather than an access to the set of closures. *)
           begin match (E.find set_of_closures_var env).descr with
-          | Value_set_of_closures _ -> From_variable set_of_closures_var
-          | Value_closure { closure_id; _ } -> From_closure_relative closure_id
+          | Value_set_of_closures _ -> Not_relative set_of_closures_var
+          | Value_closure { closure_id; _ } ->
+            Relative_to (set_of_closures_var, closure_id)
           | (Value_unresolved _ | Value_block _ | Value_int _
           | Value_constptr _ | Value_float _ | A.Value_boxed_int _
           | Value_unknown | Value_bottom | Value_extern _ | Value_string _
@@ -362,7 +369,7 @@ let transform_select_closure_expression env r
          relative to closure C, we can eliminate the relative access. *)
       let from =
         match from with
-        | From_closure_relative relative_to ->
+        | Relative (_var, relative_to) ->
           let relative_to =
             freshen_and_check_closure_id value_set_of_closures relative_to
           in
@@ -370,7 +377,7 @@ let transform_select_closure_expression env r
             From_closure
           else
             From_closure relative_to
-        | From_variable | From_closure _ -> from
+        | Not_relative -> false
       in
       (* Finally, if the function is recursive and we're referring to another
          closure from the same set, we can find that closure directly
@@ -378,11 +385,11 @@ let transform_select_closure_expression env r
       let from =
         let closure_id_to_select = Closure_id.unwrap closure_id_to_select in
         if E.present env closure_id_to_select then
-          From_variable closure_id_to_select
+          Not_relative closure_id_to_select
         else
           from
       in
-      From_other from, closure_id_to_select, r
+      From_closure from, closure_id_to_select, r
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
