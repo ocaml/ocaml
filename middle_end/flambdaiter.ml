@@ -25,10 +25,11 @@ let iter_general ~toplevel f t =
 
     | Fselect_closure ({ from = From_set_of_closures set_of_closures; _ }, d) ->
       aux (Flambda.Fset_of_closures (set_of_closures, d))
-    | Fselect_closure ({ from = From_closure (Not_relative var); _ }, d)
-    | Fselect_closure ({ from = From_closure (Relative (var, _)); _ }, d) ->
+    | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Not_relative var)); _ }, d)
+    | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Relative (var, _))); _ }, d) ->
       aux (Flambda.Fvar (var, d))
-
+    | Fselect_closure ({ from = From_closure_or_another_unit (From_another_unit symbol); _ }, d) ->
+      aux (Flambda.Fsymbol (symbol, d))
     | Flet ( _, _, f1, f2,_)
     | Ftrywith (f1,_,f2,_)
     | Fsequence (f1,f2,_)
@@ -372,9 +373,10 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
     in
     acc, Fselect_closure ({ from = From_set_of_closures set_of_closures;
         closure_id; }, d)
-  | Fselect_closure ({ from = From_closure (Not_relative _); _ }, _)
-  | Fselect_closure ({ from = From_closure (Relative _); _ }, _) ->
-    (* Same as the [Fvar] case, below. *)
+  | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Not_relative _)); _ }, _)
+  | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Relative _)); _ }, _)
+  | Fselect_closure ({ from = From_closure_or_another_unit (From_another_unit _); _ }, _) ->
+    (* Same as the [Fvar] and [Fsymbol] cases, below. *)
     acc, flam
 
   | Fvar_within_closure(clos,d) ->
@@ -483,8 +485,8 @@ let map_data (type t1) (type t2) (f:t1 -> t2)
           closure_id; }, d)
       | _ -> assert false
       end
-    | Fselect_closure ({ from = From_closure maybe_relative; closure_id; }, d) ->
-      Fselect_closure ({ from = From_closure maybe_relative; closure_id; }, f d)
+    | Fselect_closure ({ from = From_closure_or_another_unit from; closure_id; }, d) ->
+      Fselect_closure ({ from = From_closure_or_another_unit from; closure_id; }, f d)
     | Fvar_within_closure (vc, v) ->
         Fvar_within_closure ({ vc with closure = mapper vc.closure }, f v)
     | Fswitch(arg, sw, v) ->

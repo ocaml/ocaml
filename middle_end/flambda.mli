@@ -199,20 +199,37 @@ and 'a select_closure = {
 
 (* This type is split up to avoid "assert false" in inline_and_simplify.ml. *)
 and 'a select_closure_from =
-  | From_set_of_closures of 'a set_of_closures
-  | From_closure_or_another_unit of select_closure_from_closure_or_another_unit
+  (* Selection of a closure from a set of closures immediately manifest and
+     available in the expression. *)
+  | Manifest of 'a set_of_closures
+  (* Selection of a closure via another entity, such as a symbol or a
+     variable (see below). *)
+  | Indirect of select_closure_indirect
 
-and select_closure_from_closure_or_another_unit
-  (* Selection of a closure from another one (in the same compilation unit). *)
-  | From_closure of select_closure_relative
-  (* Selection of a closure from one in a different compilation unit. *)
+and select_closure_indirect =
+  (* Selection of a closure via a variable in the current compilation unit
+     (see below). *)
+  | From_closure_current_unit of select_closure_current_unit
+  (* Selection of a closure from some entity in a different compilation unit,
+     referenced by a symbol. *)
   | From_another_unit of Symbol.t
 
 and select_closure_relative =
+  (* [Not_relative] selects a closure from a variable bound either to a set of
+     closures or another closure.  The approximation of the variable may be
+     [Value_set_of_closures] or [Value_closure]. *)
   | Not_relative of Variable.t
-  (* [From_closure_relative] enables selection of one closure from another
-     within the same runtime closure block.  This avoids keeping a pointer
-     to the start of the set of closures live. *)
+(* Or:
+
+  | Not_relative_from_set_of_closures of Variable.t
+  | Not_relative_from_closure of Variable.t
+  | Relative_from_closure of Variable.t
+
+*)
+  (* [Relative] selects one closure from another within the same runtime
+     closure block.  This avoids keeping a pointer to the start of the set
+     of closures live.  The approximation of the variable will always be
+     [Value_closure] (not [Value_set_of_closures]). *)
   | Relative of Variable.t * Closure_id.t
 
 and 'a var_within_closure = {

@@ -454,7 +454,11 @@ module Conv(P:Param1) = struct
           in
           Fselect_closure (select_closure, ()), approx
         | From_closure (Not_relative var) ->
-          let 
+          ...
+        | From_closure (Relative (var, relative_to)) ->
+          ...
+        | From_another_unit symbol ->
+          ...
         end
 
     | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->

@@ -187,16 +187,23 @@ and same_select_closure (s1 : _ Flambda.select_closure)
     && begin match s1.from, s2.from with
       | From_set_of_closures s1, From_set_of_closures s2 ->
         same_set_of_closures s1 s2
-      | From_closure s1, From_closure s2 ->
+      | From_closure_or_another_unit s1, From_closure_or_another_unit s2 ->
         begin match s1, s2 with
-        | Not_relative v1, Not_relative v2 -> Variable.equal v1 v2
-        | Relative (v1, r1), Relative (v2, r2) ->
-          Variable.equal v1 v2 && Closure_id.equal r1 r2
-        | Not_relative _, Relative _
-        | Relative _, Not_relative _ -> false
+        | From_closure_current_unit s1, From_closure_current_unit s2 ->
+          begin match s1, s2 with
+          | Not_relative v1, Not_relative v2 -> Variable.equal v1 v2
+          | Relative (v1, r1), Relative (v2, r2) ->
+            Variable.equal v1 v2 && Closure_id.equal r1 r2
+          | Not_relative _, Relative _
+          | Relative _, Not_relative _ -> false
+          end
+        | From_another_unit sym1, From_another_unit sym2 ->
+          Symbol.equal sym1 sym2
+        | From_closure_current_unit _, From_another_unit _
+        | From_another_unit _, From_closure_current_unit _ -> false
         end
-      | From_set_of_closures _, From_closure _
-      | From_closure _, From_set_of_closures _ -> false
+      | From_set_of_closures _, From_closure_or_another_unit _
+      | From_closure_or_another_unit _, From_set_of_closures _ -> false
     end
 
 and samebinding (v1, c1) (v2, c2) =
