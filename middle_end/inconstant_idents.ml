@@ -146,25 +146,8 @@ module NotConstants(P:Param) = struct
       (* adds 'id in NC => curr in NC' *)
       register_implication ~in_nc:(Var id) ~implies_in_nc:curr
 
-    | Fset_of_closures ({ function_decls = funcs ; free_vars = fv; specialised_args },_) ->
-
-      (* If a function in the closure is specialised, do not consider
-         it constant *)
-      Variable.Map.iter (fun _ id ->
-            register_implication
-              ~in_nc:(Var id)
-              ~implies_in_nc:[Closure funcs.set_of_closures_id]) specialised_args;
-      (* adds 'funcs in NC => curr in NC' *)
-      register_implication ~in_nc:(Closure funcs.set_of_closures_id) ~implies_in_nc:curr;
-      (* a closure is constant if its free variables are constants. *)
-      Variable.Map.iter (fun inner_id lam ->
-        mark_loop ~toplevel [Closure funcs.set_of_closures_id; Var inner_id] lam) fv;
-      Variable.Map.iter (fun fun_id (ffunc : _ Flambda.function_declaration) ->
-        (* for each function f in a closure c 'c in NC => f' *)
-        register_implication ~in_nc:(Closure funcs.set_of_closures_id) ~implies_in_nc:[Var fun_id];
-        (* function parameters are in NC *)
-        List.iter (fun id -> mark_curr [Var id]) ffunc.params;
-        mark_loop ~toplevel:false [] ffunc.body) funcs.funs
+    | Fset_of_closures (set_of_closures, _) ->
+      mark_loop_set_of_closures ~toplevel curr set_of_closures
 
     | Fconst _ -> ()
 
@@ -208,10 +191,17 @@ module NotConstants(P:Param) = struct
       List.iter (mark_loop ~toplevel curr) args
 *)
 
-    | Fselect_closure ({set_of_closures; closure_id; _}, _) ->
-      if Closure_id.in_compilation_unit compilation_unit closure_id
-      then mark_loop ~toplevel curr set_of_closures
-      else mark_curr curr
+    | Fselect_closure ({ from; closure_id; }, _) ->
+      if Closure_id.in_compilation_unit compilation_unit closure_id then
+        match from with
+        | From_set_of_closures set_of_closures ->
+          mark_loop_set_of_closures ~toplevel curr set_of_closures
+        | From_closure (Not_relative var)
+        | From_closure (Relative (var, _)) ->
+          (* As for the [Fvar] case, above. *)
+          register_implication ~in_nc:(Var var) ~implies_in_nc:curr
+      else
+        mark_curr curr
 
     | Fvar_within_closure ({closure = f1; _},_)
     | Fprim(Lambda.Pfield _, [f1], _, _) ->
@@ -320,6 +310,33 @@ module NotConstants(P:Param) = struct
 
     | Funreachable _ ->
       mark_curr curr
+
+  and mark_loop_set_of_closures ~toplevel curr
+        { Flambda. function_decls; free_vars; specialised_args } =
+    (* If a function in the set of closures is specialised, do not consider
+       it constant. *)
+    (* CR mshinwell for pchambart: This needs more explanation. *)
+    Variable.Map.iter (fun _ id ->
+          register_implication
+            ~in_nc:(Var id)
+            ~implies_in_nc:[Closure function_decls.set_of_closures_id])
+        specialised_args;
+    (* adds 'function_decls in NC => curr in NC' *)
+    register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
+      ~implies_in_nc:curr;
+    (* a closure is constant if its free variables are constants. *)
+    Variable.Map.iter (fun inner_id lam ->
+        mark_loop ~toplevel
+          [Closure function_decls.set_of_closures_id; Var inner_id] lam)
+      free_vars;
+    Variable.Map.iter (fun fun_id (ffunc : _ Flambda.function_declaration) ->
+        (* for each function f in a closure c 'c in NC => f' *)
+        register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
+          ~implies_in_nc:[Var fun_id];
+        (* function parameters are in NC *)
+        List.iter (fun id -> mark_curr [Var id]) ffunc.params;
+        mark_loop ~toplevel:false [] ffunc.body)
+      function_decls.funs
 
   (* Second loop: propagates implications *)
   let propagate () =

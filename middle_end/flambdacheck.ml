@@ -281,12 +281,14 @@ let used_closure_id flam =
   let used = ref Closure_id.Set.empty in
   let f (flam : _ Flambda.t) =
     match flam with
-    | Fselect_closure ({closure_id;relative_to},_) ->
-        used := Closure_id.Set.add closure_id !used;
-        (match relative_to with
-         | None -> ()
-         | Some _rel ->
-             used := Closure_id.Set.add closure_id !used)
+    | Fselect_closure ({from; closure_id;},_) ->
+      used := Closure_id.Set.add closure_id !used;
+      begin match from with
+      | From_set_of_closures _
+      | From_closure (Not_relative _) -> ()
+      | From_closure (Relative (_, relative_to_id)) ->
+        used := Closure_id.Set.add relative_to_id !used
+      end
     | Fvar_within_closure ({closure_id},_) ->
         used := Closure_id.Set.add closure_id !used
 
