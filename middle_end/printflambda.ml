@@ -28,16 +28,8 @@ let rec lam ppf (flam : _ Flambda.t) =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let direct = match kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
-  | Fselect_closure({from = From_set_of_closures set_of_closures;closure_id}, _) ->
-      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]" Closure_id.print closure_id
-        print_set_of_closures set_of_closures
-  | Fselect_closure({from = From_closure (Relative (var, relative_to)); closure_id}, _) ->
-      fprintf ppf "@[<2>(select_closure_relative@ %a - %a@ %a)@]"
-        Closure_id.print closure_id Closure_id.print relative_to
-        Variable.print var
-  | Fselect_closure({from = From_closure (Not_relative var); closure_id}, _) ->
-      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]"
-        Closure_id.print closure_id Variable.print var
+  | Fselect_closure (select_closure, _) ->
+    print_select_closure ppf select_closure
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Var_within_closure.print var Closure_id.print closure_id lam closure
@@ -202,6 +194,19 @@ and const ppf (c : Flambda.const) =
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
+and print_select_closure ppf (select_closure : _ Flambda.select_closure) =
+  match select_closure with
+  | {from = From_set_of_closures set_of_closures;closure_id} ->
+      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]" Closure_id.print closure_id
+        print_set_of_closures set_of_closures
+  | {from = From_closure (Relative (var, relative_to)); closure_id} ->
+      fprintf ppf "@[<2>(select_closure_relative@ %a - %a@ %a)@]"
+        Closure_id.print closure_id Closure_id.print relative_to
+        Variable.print var
+  | {from = From_closure (Not_relative var); closure_id} ->
+      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]"
+        Closure_id.print closure_id Variable.print var
+
 let function_declarations ppf (fd : _ Flambda.function_declarations) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
@@ -211,5 +216,7 @@ let function_declarations ppf (fd : _ Flambda.function_declarations) =
           Variable.print var idents f.params lam f.body) in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
 
-let flambda ppf ulam =
-  fprintf ppf "%a@." lam ulam
+let flambda ppf flam =
+  fprintf ppf "%a@." lam flam
+
+let select_closure = print_select_closure

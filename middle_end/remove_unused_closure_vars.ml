@@ -23,16 +23,17 @@ let remove_unused_closure_variables tree =
     let used_fun = ref Closure_id.Set.empty in
     let aux (expr : _ Flambda.t) =
       match expr with
-      | Fvar_within_closure({ var; closure_id }, _) ->
-          used := Var_within_closure.Set.add var !used;
-          used_fun := Closure_id.Set.add closure_id !used_fun;
-      | Fselect_closure({ closure_id; relative_to }, _) ->
-          used_fun := Closure_id.Set.add closure_id !used_fun;
-          begin match relative_to with
-          | None -> ()
-          | Some relative_to ->
-              used_fun := Closure_id.Set.add relative_to !used_fun
-          end
+      | Fvar_within_closure ({ var; closure_id }, _) ->
+        used := Var_within_closure.Set.add var !used;
+        used_fun := Closure_id.Set.add closure_id !used_fun;
+      | Fselect_closure ({ from = From_set_of_closures _; closure_id; }, _)
+      | Fselect_closure ({ from = From_closure (Not_relative _);
+          closure_id; }, _) ->
+        used_fun := Closure_id.Set.add closure_id !used_fun
+      | Fselect_closure ({ from = From_closure (Relative (_, relative_to_id));
+          closure_id; }, _) ->
+        used_fun := Closure_id.Set.add closure_id !used_fun;
+        used_fun := Closure_id.Set.add relative_to_id !used_fun
       | _ -> ()
     in
     Flambdaiter.iter aux tree;
