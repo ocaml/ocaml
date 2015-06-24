@@ -845,11 +845,11 @@ and transform_select_closure_from env r (from : _ Flambda.select_closure_from)
 and transform_select_closure_expression env r
       ~(select_closure : _ Flambda.select_closure) ~annot
       : _ Flambda.select_closure * R.t =
-  let from = select_closure.select_closure_from in
+  let from = select_closure.from in
   let closure_id_to_select = select_closure.closure_id in
   let from, r = transform_select_closure_from env r from ~annot in
   let valid_approx =
-    valid_approx_for_closure_selection r.approx ~select_closure
+    valid_approx_for_closure_selection (R.approx r).descr ~select_closure
   in
   match valid_approx with
   | Unresolved ->
@@ -906,7 +906,7 @@ and transform_select_closure_expression env r
           | Some set_of_closures_var ->
             Some (set_of_closures_var, E.present env set_of_closures_var)
       in
-      let from =
+      let from : Flambda.select_closure_from_another =
         match set_of_closures_var_with_presence with
         | Some (set_of_closures_var, true) ->
           (* Check the approximation of [set_of_closures_var].  If it's only
@@ -915,35 +915,35 @@ and transform_select_closure_expression env r
           begin match (E.find set_of_closures_var env).descr with
           | Value_set_of_closures _ -> Not_relative set_of_closures_var
           | Value_closure { closure_id; _ } ->
-            Relative_to (set_of_closures_var, closure_id)
+            Relative (set_of_closures_var, closure_id)
           | (Value_unresolved _ | Value_block _ | Value_int _
           | Value_constptr _ | Value_float _ | A.Value_boxed_int _
           | Value_unknown | Value_bottom | Value_extern _ | Value_string _
           | Value_float_array _ | Value_symbol _) as descr ->
-            Misc.fatal_error (Format.sprintf "[set_of_closures_var] %a in \
+            Misc.fatal_errorf "[set_of_closures_var] %a in \
                 environment with bad approximation %a"
-              Variable.print set_of_closures_var A.print_descr descr)
+              Variable.print set_of_closures_var A.print_descr descr
           end
         | Some _ | None -> from
       in
       (* If the select-closure expression asked to select some closure C
          relative to closure C, we can eliminate the relative access. *)
-      let from =
+      let from : Flambda.select_closure_from_another =
         match from with
-        | Relative (_var, relative_to) ->
+        | Relative (set_of_closures_var, relative_to) ->
           let relative_to =
             A.freshen_and_check_closure_id value_set_of_closures relative_to
           in
           if Closure_id.equal closure_id_to_select relative_to then
-            From_closure
+            Not_relative set_of_closures_var
           else
-            From_closure relative_to
-        | Not_relative -> false
+            Relative (set_of_closures_var, relative_to)
+        | Not_relative _ -> from
       in
       (* Finally, if the function is recursive and we're referring to another
          closure from the same set, we can find that closure directly
          through the variable associated with the closure ID. *)
-      let from =
+      let from : Flambda.select_closure_from_another =
         let closure_id_to_select = Closure_id.unwrap closure_id_to_select in
         if E.present env closure_id_to_select then
           Not_relative closure_id_to_select
@@ -972,8 +972,8 @@ and transform_application_expression env r ~func
       ret r A.value_unknown
   in
   match func_approx.descr with
-  | Value_closure { closure_id; set_of_closures } ->
-    let clos = set_of_closures.function_decls in
+  | Value_closure { closure_id; value_set_of_closures } ->
+    let clos = value_set_of_closures.function_decls in
     let func_decl =
       try Flambdautils.find_declaration closure_id clos with
       | Not_found ->
@@ -984,13 +984,13 @@ and transform_application_expression env r ~func
     let nargs = List.length args in
     let arity = Flambdautils.function_arity func_decl in
     if nargs = arity then
-      direct_apply env r clos func closure_id func_decl set_of_closures
+      direct_apply env r clos func closure_id func_decl value_set_of_closures
         (args, args_approxs) dbg eid
     else if nargs > arity then
       let h_args, q_args = Misc.split_at arity args in
       let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
       let expr, r =
-        direct_apply env r clos func closure_id func_decl set_of_closures
+        direct_apply env r clos func closure_id func_decl value_set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
       loop env r (Flambda.Fapply ({ func = expr; args = q_args;
@@ -1121,9 +1121,8 @@ and inline_by_copying_function_body ~env ~r
     Variable.Map.fold (fun id _ expr ->
         Flambda.Flet (Immutable, id,
           Fselect_closure (
-            { set_of_closures = Fvar (clos_id, Expr_id.create ());
+            { from = From_closure (Relative (clos_id, fun_id));
               closure_id = Closure_id.wrap id;
-              relative_to = Some fun_id;
             }, Expr_id.create ()),
           expr, Expr_id.create ()))
       clos.funs bindings_for_vars_bound_by_closure_and_params_around_body
@@ -1173,13 +1172,12 @@ and inline_by_copying_function_declaration ~env ~r ~funct
     Fapply (
       { func =
           Fselect_closure (
-            { set_of_closures = Fset_of_closures (
+            { from = From_set_of_closures
                 { function_decls = clos;
                   free_vars = fv;
                   specialised_args = spec_args;
-                }, Expr_id.create ());
+                };
               closure_id = fun_id;
-              relative_to = None;
             }, Expr_id.create ());
         args =
           List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
