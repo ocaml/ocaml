@@ -37,14 +37,12 @@ let rec import_ex ex =
       A.value_closure
         { closure_id = fun_id;
           set_of_closures_var = None;
-          set_of_closures =
+          value_set_of_closures =
             { function_decls = Compilenv.imported_closure set_of_closures_id;
               bound_var;
               unchanging_params = unchanging_params;
               specialised_args = Variable.Set.empty;
-              alpha_renaming =
-                Freshening.
-                Ids_and_bound_vars_of_closures.empty;
+              freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
             } }
     | Value_set_of_closures { set_of_closures_id; bound_var } ->
       let bound_var = Var_within_closure.Map.map import_approx bound_var in
@@ -57,9 +55,7 @@ let rec import_ex ex =
           bound_var;
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
-          alpha_renaming =
-            Freshening.
-            Ids_and_bound_vars_of_closures.empty; }
+          freshening = Freshening.Ids_and_bound_vars_of_closures.empty; }
   with Not_found ->
     A.value_unknown
 

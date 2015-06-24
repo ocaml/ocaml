@@ -875,7 +875,7 @@ and transform_select_closure_expression env r
       (* CR mshinwell for pchambart: Do we need to apply the freshening
          to [closure_id_to_select]? *)
       { from; closure_id = closure_id_to_select; }, r
-    | From_closure from ->
+    | From_closure_or_another_unit from ->
       (* In these cases, we use approximation information to try to discover
          which set of closures is being selected from. *)
       let value_set_of_closures =
@@ -897,48 +897,62 @@ and transform_select_closure_expression env r
          only [Some] iff the variable is in scope?  It seems like maybe when
          we move back up scopes during rewriting, we could set these to
          [None]? *)
-      let set_of_closures_var_with_presence =
-        match resolved_approx with
-        | Value_set_of_closures _ -> None
-        | Value_closure { set_of_closures_var; _ } ->
+      let from : Flambda.select_closure_from_closure_or_another_unit =
+        let set_of_closures_var_with_presence =
+          let set_of_closures_var =
+            match resolved_approx with
+            | Value_set_of_closures _ -> None
+            | Value_closure { set_of_closures_var; _ } -> set_of_closures_var
+          in
           match set_of_closures_var with
           | None -> None
           | Some set_of_closures_var ->
             Some (set_of_closures_var, E.present env set_of_closures_var)
-      in
-      let from : Flambda.select_closure_from_another =
-        match set_of_closures_var_with_presence with
-        | Some (set_of_closures_var, true) ->
-          (* Check the approximation of [set_of_closures_var].  If it's only
-             got a [Value_closure] approximation, we have to generate a
-             relative access, rather than an access to the set of closures. *)
-          begin match (E.find set_of_closures_var env).descr with
-          | Value_set_of_closures _ -> Not_relative set_of_closures_var
-          | Value_closure { closure_id; _ } ->
-            Relative (set_of_closures_var, closure_id)
-          | (Value_unresolved _ | Value_block _ | Value_int _
-          | Value_constptr _ | Value_float _ | A.Value_boxed_int _
-          | Value_unknown | Value_bottom | Value_extern _ | Value_string _
-          | Value_float_array _ | Value_symbol _) as descr ->
-            Misc.fatal_errorf "[set_of_closures_var] %a in \
-                environment with bad approximation %a"
-              Variable.print set_of_closures_var A.print_descr descr
-          end
-        | Some _ | None -> from
+        in
+        match from with
+        | From_another_unit _ ->
+          (* When the expression being selected from is another unit, there
+             should never be a [set_of_closures_var] that is [Some]. *)
+          assert (set_of_closures_var_with_presence = None);
+          From_another_unit
+        | From_closure from ->
+          let from : Flambda.select_closure_from_another =
+            match set_of_closures_var_with_presence with
+            | Some (set_of_closures_var, true) ->
+              (* Check the approximation of [set_of_closures_var].  If it's
+                 only got a [Value_closure] approximation, we have to generate
+                 a relative access, rather than an access to the set of
+                 closures. *)
+              begin match (E.find set_of_closures_var env).descr with
+              | Value_set_of_closures _ ->
+                Not_relative set_of_closures_var
+              | Value_closure { closure_id; _ } ->
+                Relative (set_of_closures_var, closure_id)
+              | (Value_unresolved _ | Value_block _ | Value_int _
+              | Value_constptr _ | Value_float _ | A.Value_boxed_int _
+              | Value_unknown | Value_bottom | Value_extern _ | Value_string _
+              | Value_float_array _ | Value_symbol _) as descr ->
+                Misc.fatal_errorf "[set_of_closures_var] %a in \
+                    environment with bad approximation %a"
+                  Variable.print set_of_closures_var A.print_descr descr
+              end
+            | Some _ | None -> from
+          in
+          From_closure from
       in
       (* If the select-closure expression asked to select some closure C
          relative to closure C, we can eliminate the relative access. *)
       let from : Flambda.select_closure_from_another =
         match from with
-        | Relative (set_of_closures_var, relative_to) ->
+        | From_closure (Relative (set_of_closures_var, relative_to)) ->
           let relative_to =
             A.freshen_and_check_closure_id value_set_of_closures relative_to
           in
           if Closure_id.equal closure_id_to_select relative_to then
-            Not_relative set_of_closures_var
+            From_closure (Not_relative set_of_closures_var)
           else
-            Relative (set_of_closures_var, relative_to)
-        | Not_relative _ -> from
+            From_closure (Relative (set_of_closures_var, relative_to))
+        | From_closure (Not_relative _) | From_another_unit -> from
       in
       (* Finally, if the function is recursive and we're referring to another
          closure from the same set, we can find that closure directly
@@ -946,11 +960,11 @@ and transform_select_closure_expression env r
       let from : Flambda.select_closure_from_another =
         let closure_id_to_select = Closure_id.unwrap closure_id_to_select in
         if E.present env closure_id_to_select then
-          Not_relative closure_id_to_select
+          From_closure (Not_relative closure_id_to_select)
         else
           from
       in
-      { from = From_closure from; closure_id = closure_id_to_select; }, r
+      { from; closure_id = closure_id_to_select; }, r
 
 (* Transform an flambda function application based on information provided
    by an approximation of the function being applied.

@@ -197,13 +197,18 @@ and 'a select_closure = {
   closure_id : Closure_id.t;
 }
 
-(* This type is split into two to avoid "assert false" in
-   inline_and_simplify.ml. *)
+(* This type is split up to avoid "assert false" in inline_and_simplify.ml. *)
 and 'a select_closure_from =
   | From_set_of_closures of 'a set_of_closures
-  | From_closure of select_closure_from_another
+  | From_closure_or_another_unit of select_closure_from_closure_or_another_unit
 
-and select_closure_from_another =
+and select_closure_from_closure_or_another_unit
+  (* Selection of a closure from another one (in the same compilation unit). *)
+  | From_closure of select_closure_relative
+  (* Selection of a closure from one in a different compilation unit. *)
+  | From_another_unit of Symbol.t
+
+and select_closure_relative =
   | Not_relative of Variable.t
   (* [From_closure_relative] enables selection of one closure from another
      within the same runtime closure block.  This avoids keeping a pointer
