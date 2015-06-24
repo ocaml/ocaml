@@ -17,6 +17,13 @@ exception Fatal_error
 let fatal_error msg =
   prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
 
+let fatal_errorf fmt =
+  let (_ : string) = Format.flush_str_formatter () in
+  Format.kfprintf (fun ppf ->
+      fatal_error (Format.flush_str_formatter ()))
+    Format.str_formatter
+    fmt
+
 (* Exceptions *)
 
 let try_finally work cleanup =

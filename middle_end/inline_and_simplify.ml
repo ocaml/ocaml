@@ -190,11 +190,11 @@ let transform_var_within_closure_expression env r expr closure
     let approx =
       try Var_within_closure.Map.find env_var value_set_of_closures.bound_var with
       | Not_found ->
-        Format.printf "no field %a in closure %a@ %a@."
+        Misc.fatal_errorf "no field %a in closure %a@ %a@."
           Var_within_closure.print env_var
           Closure_id.print env_closure_id
-          Printflambda.flambda closure;
-        assert false in
+          Printflambda.flambda closure
+    in
     let expr : _ Flambda.t =
       if closure == fenv_field.closure
       then expr (* if the argument didn't change, the names didn't also *)
@@ -210,12 +210,11 @@ let transform_var_within_closure_expression env r expr closure
   | Value_unknown ->
     (* We must have the correct approximation of the value to ensure
        we take account of all alpha-renamings. *)
-    Format.printf "[Fvar_within_closure] without suitable \
-                   approximation : %a@.%a@.%a@."
+    Misc.fatal_errorf "[Fvar_within_closure] without suitable \
+        approximation : %a@.%a@.%a@."
       Printflambda.flambda expr
       Printflambda.flambda closure
-      Printflambda.flambda fenv_field.closure;
-    assert false
+      Printflambda.flambda fenv_field.closure
   | Value_string _ | Value_float_array _
   | Value_block _ | Value_int _ | Value_constptr _
   | Value_float _ | A.Value_boxed_int _ | Value_set_of_closures _
@@ -241,12 +240,9 @@ let valid_approx_for_closure_selection (descr : A.descr)
   | Value_block _ | Value_int _ | Value_constptr _ | Value_float _
   | A.Value_boxed_int _ | Value_unknown | Value_bottom | Value_extern _
   | Value_string _ | Value_float_array _ | Value_symbol _ ->
-    (* CR mshinwell: we must add [Misc.fatal_errorf] to avoid this
-       nonsense *)
-    Format.eprintf
-      "Bad approximation for set of closures when selecting closure: %a@.%a@."
-        A.print_descr descr Printflambda.select_closure select_closure;
-    assert false
+    Misc.fatal_errorf "Bad approximation for set of closures when \
+        selecting closure: %a@.%a@."
+      A.print_descr descr Printflambda.select_closure select_closure
 
 let rec loop env r tree =
   let f, r = loop_direct env r tree in
@@ -827,28 +823,22 @@ and transform_select_closure_from env r (from : _ Flambda.select_closure_from)
     in
     begin match rewritten with
     | Fvar (var, _) -> From_closure (Not_relative var), r
-    | Fset_of_closures (set_of_closures, _) ->
-      From_set_of_closures set_of_closures, r
-    | Fselect_closure (from, _) -> from, r
     | expr ->
-      Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
-          or Fselect_closure when expanding closure selection using \
-          From_closure: %a"
-        Printflambda.flambda expr)
+      Misc.fatal_errorf "Expected Fvar when expanding \
+          closure selection using From_closure: %a"
+        Printflambda.flambda expr
     end
   | From_closure (Relative (var, relative_to)) ->
-    begin match loop env r (Fvar (var, annot)) with
-    | Fvar (var, _), r -> From_closure (Relative (var, relative_to)), r
-    | Fset_of_closures (set_of_closures, _annot), r ->
-      (* The [relative_to] annotation is irrelevant here: we've got the
-         set of closures itself. *)
-      From_set_of_closures set_of_closures, r
-    | Fselect_closure from -> from, r
-    | expr, _r ->
-      Misc.fatal_error (Format.sprintf "Expected Fvar, Fset_of_closures \
+    let ((rewritten : _ Flambda.t), r) =
+      loop env r (Flambda.Fvar (var, annot))
+    in
+    begin match rewritten with
+    | Fvar (var, _) -> From_closure (Relative (var, relative_to)), r
+    | expr ->
+      Misc.fatal_errorf "Expected Fvar, Fset_of_closures \
           or Fselect_closure when expanding closure selection using \
           From_closure: %a"
-        Printflambda.flambda expr)
+        Printflambda.flambda expr
     end
 
 (* Simplify an expression that selects a closure from a set of closures. *)
