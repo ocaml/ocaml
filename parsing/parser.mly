@@ -2318,6 +2318,7 @@ single_attr_id:
   | MODULE { "module" }
   | MUTABLE { "mutable" }
   | NEW { "new" }
+  | NONREC { "nonrec" }
   | OBJECT { "object" }
   | OF { "of" }
   | OPEN { "open" }
