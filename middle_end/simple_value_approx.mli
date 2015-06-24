@@ -91,7 +91,7 @@ type t = {
   symbol : Symbol.t option;
 }
 
-and descr = private
+and descr =
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
@@ -182,3 +182,12 @@ val simplify_using_env
   -> Expr_id.t Flambda.t * t
 
 val get_field : int -> t list -> t
+
+(* Given a set-of-closures approximation and a closure ID, apply any
+   freshening specified by the approximation to the closure ID, and return
+   the resulting ID.  Causes a fatal error if the resulting closure ID does
+   not correspond to any function declaration in the approximation. *)
+val freshen_and_check_closure_id
+   : value_set_of_closures
+  -> Closure_id.t
+  -> Closure_id.t

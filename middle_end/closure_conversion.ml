@@ -331,7 +331,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     in
     let decls = Function_decls.create [decl] in
     Fselect_closure ({
-        set_of_closures = close_functions t env decls;
+        from = From_set_of_closures (fst (close_functions t env decls));
         closure_id = Closure_id.wrap closure_bound_var;
       },
       nid ~name:"function" ())
@@ -384,15 +384,15 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fselect_closure ({
-                  set_of_closures =
-                    From_variable (set_of_closures_var, nid ());
+                  from = From_closure (Not_relative set_of_closures_var);
                   closure_id = Closure_id.wrap closure_bound_var;
                 },
                 nid ()),
               body, nid ())) : _ Flambda.t))
           (close t env body) function_declarations
       in
-      Flet (Immutable, set_of_closures_var, set_of_closures,
+      Flet (Immutable, set_of_closures_var,
+        Fset_of_closures (fst set_of_closures, snd set_of_closures),
         body, nid ~name:"closure_letrec" ())
     | None ->
       (* If the condition above is not satisfied, we build an [Fletrec]
@@ -488,10 +488,10 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lifused _ -> assert false
 
 (* Perform closure conversion on a set of function declarations, returning a
-   set-of-closures node.  (The set will often only contain a single function;
+   set of closures.  (The set will often only contain a single function;
    the only case where it cannot is for "let rec".) *)
 and close_functions t external_env function_declarations
-      : _ Flambda.select_closure_from =
+      : _ Flambda.set_of_closures * Expr_id.t =
   let closure_env_without_parameters =
     Function_decls.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
@@ -571,7 +571,7 @@ and close_functions t external_env function_declarations
       specialised_args = Variable.Map.empty;
     }
   in
-  From_set_of_closures (set_of_closures, nid ())
+  set_of_closures, nid ()
 
 and close_list t sb l = List.map (close t sb) l
 
@@ -586,7 +586,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         ~body
     in
     Fselect_closure ({
-        set_of_closures = close_functions t env [decl];
+        from = From_set_of_closures (fst (close_functions t env [decl]));
         closure_id = Closure_id.wrap closure_bound_var;
       },
       nid ~name:"function" ())

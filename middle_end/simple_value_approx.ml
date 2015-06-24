@@ -21,7 +21,13 @@ type value_string = {
   size : int;
 }
 
-type descr =
+type t = {
+  descr : descr;
+  var : Variable.t option;
+  symbol : Symbol.t option;
+}
+
+and descr =
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
@@ -35,30 +41,28 @@ type descr =
   | Value_bottom
   | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
-  | Value_unresolved of Symbol.t
+  | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
-and value_closure =
-  { closure_id : Closure_id.t;
-    set_of_closures : value_set_of_closures;
-    set_of_closures_var : Variable.t option;
-  }
+and value_closure = {
+  value_set_of_closures : value_set_of_closures;
+  closure_id : Closure_id.t;
+  set_of_closures_var : Variable.t option;
+}
 
-and value_set_of_closures =
-  { function_decls : Expr_id.t Flambda.function_declarations;
-    bound_var : t Var_within_closure.Map.t;
-    unchanging_params : Variable.Set.t;
-    specialised_args : Variable.Set.t;
-    alpha_renaming :
-      Freshening.Ids_and_bound_vars_of_closures.t;
-  }
-
-and t =
-  { descr : descr;
-    var : Variable.t option;
-    symbol : Symbol.t option;
-  }
+and value_set_of_closures = {
+  function_decls : Expr_id.t Flambda.function_declarations;
+  bound_var : t Var_within_closure.Map.t;
+  unchanging_params : Variable.Set.t;
+  specialised_args : Variable.Set.t;
+  (* Any freshening that has been applied to [function_decls]. *)
+  freshening : Freshening.Ids_and_bound_vars_of_closures.t;
+}
 
 let descr t = t.descr
+
+let print_value_set_of_closures ppf { function_decls = { funs } } =
+  Format.fprintf ppf "(set_of_closures:@ %a)"
+    (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
 
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
@@ -73,9 +77,8 @@ let rec print_descr ppf = function
   | Value_symbol sym -> Format.fprintf ppf "%a" Symbol.print sym
   | Value_closure { closure_id } ->
     Format.fprintf ppf "(fun:@ %a)" Closure_id.print closure_id
-  | Value_set_of_closures { function_decls = { funs } } ->
-    Format.fprintf ppf "(set_of_closures:@ %a)"
-      (fun ppf -> Variable.Map.iter (fun id _ -> Variable.print ppf id)) funs
+  | Value_set_of_closures set_of_closures ->
+    print_value_set_of_closures ppf set_of_closures
   | Value_unresolved sym ->
     Format.fprintf ppf "(unresolved %a)" Symbol.print sym
   | Value_float f -> Format.pp_print_float ppf f
@@ -327,10 +330,11 @@ and meet a1 a2 =
    freshening specified in the approximation to the closure ID, and return
    that new closure ID.  A fatal error is produced if the new closure ID
    does not correspond to a function declaration in the given approximation. *)
-let freshen_and_check_closure_id value_set_of_closures closure_id =
+let freshen_and_check_closure_id
+      (value_set_of_closures : value_set_of_closures) closure_id =
   let closure_id =
     Freshening.Ids_and_bound_vars_of_closures.apply_closure_id
-      value_set_of_closures.alpha_renaming closure_id
+      value_set_of_closures.freshening closure_id
   in
   try
     ignore (Flambdautils.find_declaration closure_id
@@ -338,6 +342,7 @@ let freshen_and_check_closure_id value_set_of_closures closure_id =
     closure_id
   with Not_found ->
     Misc.fatal_error (Format.asprintf
-      "Function %a not found in the closure@ %a@."
+      "Function %a not found in the set of closures@ %a@.%a@."
       Closure_id.print closure_id
-      Printflambda.flambda value_set_of_closures)
+      print_value_set_of_closures value_set_of_closures
+      Printflambda.function_declarations value_set_of_closures.function_decls)

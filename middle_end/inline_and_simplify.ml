@@ -300,7 +300,7 @@ let transform_select_closure_expression (type user_data) env r
        should yield a non-unresolved approximation. *)
     begin match from with
     | From_closure _ -> from, closure_id_to_select, r
-    | From_set_of_closures _
+    | From_set_of_closures _ ->
       Misc.fatal_error "Selection of closure from expression that has a \
         [Value_unresolved] approximation but yet is not [From_closure]"
     end
@@ -327,7 +327,8 @@ let transform_select_closure_expression (type user_data) env r
          being selected and any closure ID to which the original
          select-closure expression said we should work relative to. *)
       let closure_id_to_select =
-        freshen_and_check_closure_id value_set_of_closures closure_id_to_select
+        A.freshen_and_check_closure_id value_set_of_closures
+          closure_id_to_select
       in
       (* If the approximation tells us that a variable is bound to the set of
          closures, then we can select a closure via that variable, so long as
@@ -371,7 +372,7 @@ let transform_select_closure_expression (type user_data) env r
         match from with
         | Relative (_var, relative_to) ->
           let relative_to =
-            freshen_and_check_closure_id value_set_of_closures relative_to
+            A.freshen_and_check_closure_id value_set_of_closures relative_to
           in
           if Closure_id.equal closure_id_to_select relative_to then
             From_closure

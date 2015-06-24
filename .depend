@@ -997,18 +997,18 @@ middle_end/set_of_closures_id.cmx : utils/ext_types.cmx \
     middle_end/compilation_unit.cmx middle_end/set_of_closures_id.cmi
 middle_end/simple_value_approx.cmo : middle_end/variable.cmi \
     middle_end/var_within_closure.cmi middle_end/tag.cmi \
-    middle_end/symbol.cmi middle_end/freshening.cmi \
-    middle_end/flambdautils.cmi middle_end/flambda.cmi middle_end/expr_id.cmi \
-    middle_end/export_id.cmi middle_end/effect_analysis.cmi \
-    middle_end/closure_id.cmi parsing/asttypes.cmi \
-    middle_end/simple_value_approx.cmi
+    middle_end/symbol.cmi middle_end/printflambda.cmi utils/misc.cmi \
+    middle_end/freshening.cmi middle_end/flambdautils.cmi \
+    middle_end/flambda.cmi middle_end/expr_id.cmi middle_end/export_id.cmi \
+    middle_end/effect_analysis.cmi middle_end/closure_id.cmi \
+    parsing/asttypes.cmi middle_end/simple_value_approx.cmi
 middle_end/simple_value_approx.cmx : middle_end/variable.cmx \
     middle_end/var_within_closure.cmx middle_end/tag.cmx \
-    middle_end/symbol.cmx middle_end/freshening.cmx \
-    middle_end/flambdautils.cmx middle_end/flambda.cmi middle_end/expr_id.cmx \
-    middle_end/export_id.cmx middle_end/effect_analysis.cmx \
-    middle_end/closure_id.cmx parsing/asttypes.cmi \
-    middle_end/simple_value_approx.cmi
+    middle_end/symbol.cmx middle_end/printflambda.cmx utils/misc.cmx \
+    middle_end/freshening.cmx middle_end/flambdautils.cmx \
+    middle_end/flambda.cmi middle_end/expr_id.cmx middle_end/export_id.cmx \
+    middle_end/effect_analysis.cmx middle_end/closure_id.cmx \
+    parsing/asttypes.cmi middle_end/simple_value_approx.cmi
 middle_end/simplify_boxed_integer_ops.cmo : middle_end/simplify_common.cmi \
     middle_end/simplify_boxed_integer_ops_intf.cmi \
     middle_end/simple_value_approx.cmi bytecomp/lambda.cmi \

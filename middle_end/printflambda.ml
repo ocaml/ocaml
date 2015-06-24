@@ -211,6 +211,5 @@ let function_declarations ppf (fd : _ Flambda.function_declarations) =
           Variable.print var idents f.params lam f.body) in
   fprintf ppf "@[<2>(%a)@]" funs fd.funs
 
-
 let flambda ppf ulam =
   fprintf ppf "%a@." lam ulam
