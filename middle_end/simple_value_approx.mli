@@ -151,6 +151,7 @@ val descr : t -> descr
 val descrs : t list -> descr list
 
 val print : Format.formatter -> t -> unit
+val print_descr : Format.formatter -> descr -> unit
 
 val meet : t -> t -> t
 

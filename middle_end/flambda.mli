@@ -203,8 +203,11 @@ and 'a select_closure = {
 }
 
 and 'a select_closure_from =
-  | From_variable of Variable.t
   | From_set_of_closures of 'a set_of_closures
+  | From_other of select_closure_from_other
+
+and select_closure_from_other =
+  | From_variable of Variable.t
   | From_closure
   | From_closure_relative of Closure_id.t
 
