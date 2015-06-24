@@ -112,14 +112,10 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Misc.samelist same a1.args a2.args
   | Fapply _, _ | _, Fapply _ -> false
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
-      Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
-      Variable.Map.equal same c1.free_vars c2.free_vars &&
-      Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
+    same_set_of_closures c1 c2
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
   | Fselect_closure (f1, _), Fselect_closure (f2, _) ->
-      same f1.set_of_closures f2.set_of_closures &&
-      Closure_id.equal f1.closure_id f1.closure_id &&
-      Misc.sameoption Closure_id.equal f1.relative_to f1.relative_to
+    same_select_closure f1 f2
   | Fselect_closure _, _ | _, Fselect_closure _ -> false
   | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
       same v1.closure v2.closure &&
@@ -178,6 +174,30 @@ and sameclosure (c1 : _ Flambda.function_declaration)
       (c2 : _ Flambda.function_declaration) =
   Misc.samelist Variable.equal c1.params c2.params &&
   same c1.body c2.body
+
+and same_set_of_closures (c1 : _ Flambda.set_of_closures)
+      (c2 : _ Flambda.set_of_closures) =
+  Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
+  Variable.Map.equal same c1.free_vars c2.free_vars &&
+  Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
+
+and same_select_closure (s1 : _ Flambda.select_closure)
+      (s2 : _ Flambda.select_closure) =
+  Closure_id.equal s1.closure_id s2.closure_id
+    && begin match s1.from, s2.from with
+      | From_set_of_closures s1, From_set_of_closures s2 ->
+        same_set_of_closures s1 s2
+      | From_closure s1, From_closure s2 ->
+        begin match s1, s2 with
+        | Not_relative v1, Not_relative v2 -> Variable.equal v1 v2
+        | Relative (v1, r1), Relative (v2, r2) ->
+          Variable.equal v1 v2 && Closure_id.equal r1 r2
+        | Not_relative _, Relative _
+        | Relative _, Not_relative _ -> false
+        end
+      | From_set_of_closures _, From_closure _
+      | From_closure _, From_set_of_closures _ -> false
+    end
 
 and samebinding (v1, c1) (v2, c2) =
   Variable.equal v1 v2 && same c1 c2
@@ -248,22 +268,23 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
       dbg = Debuginfo.none;
     }
   in
-  let fv' =
+  let free_vars =
     Variable.Map.fold (fun id id' fv' ->
         Variable.Map.add id' (Flambda.Fvar(id,Expr_id.create ())) fv')
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
-      Variable.Map.empty in
-  let current_unit = Compilation_unit.get_current_exn () in
-  Fselect_closure
-    ({ set_of_closures =
-         Fset_of_closures
-           ({ function_decls =
-                { set_of_closures_id = Set_of_closures_id.create current_unit;
-                  funs = Variable.Map.singleton id function_declaration;
-                  compilation_unit = current_unit };
-              free_vars = fv';
-              specialised_args = Variable.Map.empty },
-            Expr_id.create ());
-       closure_id = Closure_id.wrap id;
-       relative_to = None},
-     Expr_id.create ())
+      Variable.Map.empty
+  in
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  Fselect_closure ({
+      from = From_set_of_closures ({
+          function_decls = {
+            set_of_closures_id = Set_of_closures_id.create compilation_unit;
+            funs = Variable.Map.singleton id function_declaration;
+            compilation_unit;
+          };
+          free_vars;
+          specialised_args = Variable.Map.empty;
+        });
+      closure_id = Closure_id.wrap id;
+    },
+    Expr_id.create ())

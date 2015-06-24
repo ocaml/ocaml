@@ -28,36 +28,21 @@ let rec lam ppf (flam : _ Flambda.t) =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let direct = match kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
-  | Fselect_closure({set_of_closures;closure_id;relative_to = None},_) ->
+  | Fselect_closure({from = From_set_of_closures set_of_closures;closure_id}, _) ->
       fprintf ppf "@[<2>(select_closure@ %a@ %a)@]" Closure_id.print closure_id
-        lam set_of_closures
-  | Fselect_closure({set_of_closures;closure_id;relative_to = Some rel},_) ->
+        print_set_of_closures set_of_closures
+  | Fselect_closure({from = From_closure (Relative (var, relative_to)); closure_id}, _) ->
       fprintf ppf "@[<2>(select_closure_relative@ %a - %a@ %a)@]"
-        Closure_id.print closure_id Closure_id.print rel lam set_of_closures
+        Closure_id.print closure_id Closure_id.print relative_to
+        Variable.print var
+  | Fselect_closure({from = From_closure (Not_relative var); closure_id}, _) ->
+      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]"
+        Closure_id.print closure_id Variable.print var
   | Fvar_within_closure({closure;closure_id;var},_) ->
       fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
         Var_within_closure.print var Closure_id.print closure_id lam closure
-  | Fset_of_closures({function_decls;free_vars;specialised_args},_) ->
-      let idents ppf =
-        List.iter (fprintf ppf "@ %a" Variable.print) in
-      let funs ppf =
-        Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
-            fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
-              Variable.print var idents f.params lam f.body) in
-      let lams ppf =
-        Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
-                        Variable.print id lam v) in
-      let spec ppf spec_args =
-        if not (Variable.Map.is_empty spec_args)
-        then begin
-          fprintf ppf "@ with";
-          Variable.Map.iter (fun id id' -> fprintf ppf "@ %a <- %a"
-                          Variable.print id Variable.print id')
-            spec_args
-        end
-      in
-      fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs lams
-        free_vars spec specialised_args
+  | Fset_of_closures (set_of_closures, _) ->
+    print_set_of_closures ppf set_of_closures
   | Flet(_str, id, arg, body,_) ->
       let rec letbody (ul : _ Flambda.t) =
         match ul with
@@ -167,6 +152,30 @@ let rec lam ppf (flam : _ Flambda.t) =
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
   | Funreachable _ ->
       fprintf ppf "unreachable"
+
+and print_set_of_closures ppf (set_of_closures : _ Flambda.set_of_closures) =
+  match set_of_closures with
+  | { function_decls; free_vars; specialised_args} ->
+    let idents ppf =
+      List.iter (fprintf ppf "@ %a" Variable.print) in
+    let funs ppf =
+      Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
+          fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
+            Variable.print var idents f.params lam f.body) in
+    let lams ppf =
+      Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
+                      Variable.print id lam v) in
+    let spec ppf spec_args =
+      if not (Variable.Map.is_empty spec_args)
+      then begin
+        fprintf ppf "@ with";
+        Variable.Map.iter (fun id id' -> fprintf ppf "@ %a <- %a"
+                        Variable.print id Variable.print id')
+          spec_args
+      end
+    in
+    fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs lams
+      free_vars spec specialised_args
 
 and sequence ppf (ulam : _ Flambda.t) =
   match ulam with
