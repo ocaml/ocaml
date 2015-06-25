@@ -791,10 +791,8 @@ and transform_set_of_closures_expression original_env original_r
    variable associated with the closure ID. *)
 and reference_recursive_function_directly env closure_id annot =
   let closure_id = Closure_id.unwrap closure_id in
-  if E.present env closure_id then
-    Some (Fvar (closure_id, annot))
-  else
-    None
+  if E.present env closure_id then Some (Fvar (closure_id, annot))
+  else None
 
 (* Simplify an expression that projects a closure from a set of closures. *)
 and simplify_project_closure env r ~(project_closure : Flambda.project_closure)
@@ -819,7 +817,7 @@ and simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       | Some flam -> flam
       | None -> Fproject_closure { project_closure with closure_id; }
     in
-    flam, ret r set_of_closures_approx
+    flam, ret r ...
 
 and simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
@@ -844,19 +842,20 @@ and simplify_move_within_set_of_closures env r
         (* A variable bound to the set of closures is in scope, meaning we
            can rewrite the [Fmove_within_set_of_closures] to a
            [Fproject_closure]. *)
-        Fproject_closure ({
-          set_of_closures;
-          closure_id = move_to;
-        }), ret r ...
+        Fproject_closure ({ set_of_closures; closure_id = move_to; }, annot),
+          ret r ...
       | None ->
         (* The set of closures is not available in scope. *)
         let start_from = freshen move_within_set_of_closures.start_from in
         let flam =
-          if Closure_id.equal start_from move_to then begin
-            (* Moving from one closure to itself is a no-op. *)
+          if Closure_id.equal start_from move_to then
+            (* Moving from one closure to itself is a no-op.  We can return an
+               [Fvar] since we already have a variable bound to the closure. *)
             Fvar (move_within_set_of_closures.closure, annot)
           else
-            { move_within_set_of_closures with start_from; move_to; }
+            Fmove_within_set_of_closures (
+              { move_within_set_of_closures with start_from; move_to; },
+              annot)
         in
         flam, ret r ...
 
