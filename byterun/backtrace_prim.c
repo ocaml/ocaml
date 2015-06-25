@@ -383,7 +383,7 @@ void read_main_debug_info(struct debug_info *di)
   CAMLreturn0;
 }
 
-CAMLexport void caml_init_debug_info()
+CAMLexport void caml_init_debug_info(void)
 {
   caml_ext_table_init(&caml_debug_info, 1);
   caml_add_debug_info(caml_start_code, Val_long(caml_code_size), Val_unit);

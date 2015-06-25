@@ -117,6 +117,7 @@ void caml_main(char **argv)
                 caml_init_max_percent_free);
   init_static();
   caml_init_signals();
+  caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = "";
