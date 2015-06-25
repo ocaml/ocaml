@@ -190,7 +190,7 @@ intnat caml_major_collection_slice(intnat howmuch)
 
   if (budget > 0) {
     caml_trigger_stw_gc();
-    caml_handle_gc_interrupt(0);
+    caml_handle_gc_interrupt();
   }
 
 

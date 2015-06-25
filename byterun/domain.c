@@ -387,7 +387,7 @@ void caml_urge_major_slice (void)
 static void stw_phase(void);
 static void check_rpc(void);
 
-void caml_handle_gc_interrupt(int required_words) {
+void caml_handle_gc_interrupt() {
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
@@ -400,7 +400,7 @@ void caml_handle_gc_interrupt(int required_words) {
     }
   }
 
-  if (((uintnat)caml_domain_state->young_ptr - Bhsize_wosize(required_words) <
+  if (((uintnat)caml_domain_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
        domain_self->minor_heap_area) ||
       caml_force_major_slice) {
     /* out of minor heap or collection forced */

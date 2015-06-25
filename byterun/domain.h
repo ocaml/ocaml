@@ -31,7 +31,7 @@ struct domain {
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);
 
-void caml_handle_gc_interrupt(int required_words);
+void caml_handle_gc_interrupt(void);
 
 void caml_trigger_stw_gc(void);
 

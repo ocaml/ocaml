@@ -64,9 +64,9 @@ extern char caml_system__code_begin, caml_system__code_end;
    Only generated assembly code can call [caml_garbage_collection],
    via the caml_call_gc assembly stubs.  */
 
-void caml_garbage_collection(void)
+void caml_garbage_collection()
 {
-  caml_handle_gc_interrupt(0);
+  caml_handle_gc_interrupt();
   caml_process_pending_signals();
 }
 

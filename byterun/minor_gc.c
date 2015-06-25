@@ -484,7 +484,7 @@ CAMLexport void caml_minor_collection (void)
 CAMLexport value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
-  caml_handle_gc_interrupt(0);
+  caml_handle_gc_interrupt();
   CAMLreturn (extra_root);
 }
 
