@@ -250,14 +250,14 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
    In particular, we do not need to use [caml_modify] when setting
    an array element with such a value.
 */
-value caml_raw_backtrace_slot_of_code(code_t pc)
+value caml_val_raw_backtrace_slot(backtrace_slot pc)
 {
   return Val_long ((uintnat)pc >> 1);
 }
 
-code_t caml_raw_backtrace_slot_code(value v)
+backtrace_slot caml_raw_backtrace_slot_val(value v)
 {
-  return ((code_t)(Long_val(v) << 1));
+  return ((backtrace_slot)(Long_val(v) << 1));
 }
 
 /* returns the next frame pointer (or NULL if none is available);
@@ -318,7 +318,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       code_t p = caml_next_frame_pointer(&sp, &trsp);
       Assert(p != NULL);
-      Field(trace, trace_pos) = caml_raw_backtrace_slot_of_code(p);
+      Field(trace, trace_pos) = caml_val_raw_backtrace_slot(p);
     }
   }
 
@@ -431,8 +431,9 @@ static struct ev_info *event_for_location(code_t pc)
 
 /* Extract location information for the given PC */
 
-void caml_extract_location_info(code_t pc, /*out*/ struct caml_loc_info * li)
+void caml_extract_location_info(backtrace_slot slot, /*out*/ struct caml_loc_info * li)
 {
+  code_t pc = slot;
   struct ev_info *event = event_for_location(pc);
   li->loc_is_raise = caml_is_instruction(*pc, RAISE) ||
     caml_is_instruction(*pc, RERAISE);

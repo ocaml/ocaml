@@ -28,7 +28,7 @@ struct ext_table caml_debug_info;
 
 CAMLexport int caml_backtrace_active = 0;
 CAMLexport int caml_backtrace_pos = 0;
-CAMLexport code_t * caml_backtrace_buffer = NULL;
+CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
 CAMLexport value caml_backtrace_last_exn = Val_unit;
 
 /* Start or stop the backtrace machinery */
@@ -127,11 +127,13 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
      if the finalizer raises then catches an exception).  We choose to ignore
      any such finalizer backtraces and return the original one. */
 
-  if (caml_backtrace_buffer == NULL || caml_backtrace_pos == 0) {
+  if (!caml_backtrace_active ||
+      caml_backtrace_buffer == NULL ||
+      caml_backtrace_pos == 0) {
     res = caml_alloc(0, 0);
   }
   else {
-    code_t saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
+    backtrace_slot saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
     int saved_caml_backtrace_pos;
     intnat i;
 
@@ -142,11 +144,11 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
     }
 
     memcpy(saved_caml_backtrace_buffer, caml_backtrace_buffer,
-           saved_caml_backtrace_pos * sizeof(code_t));
+           saved_caml_backtrace_pos * sizeof(backtrace_slot));
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Store_field(res, i, caml_raw_backtrace_slot_of_code(saved_caml_backtrace_buffer[i]));
+      Store_field(res, i, caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]));
     }
   }
 
@@ -164,7 +166,7 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot)
   if (!caml_debug_info_available())
     caml_failwith("No debug information available");
 
-  caml_extract_location_info(caml_raw_backtrace_slot_code(backtrace_slot), &li);
+  caml_extract_location_info(caml_raw_backtrace_slot_val(backtrace_slot), &li);
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
