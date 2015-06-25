@@ -442,7 +442,7 @@ module Conv(P:Param1) = struct
         Some (Fsymbol (sym, ())), Value_symbol sym
       else
         begin match select_closure.from with
-        | From_set_of_closures set_of_closures ->
+        | Set_of_closures_same_unit set_of_closures ->
           let set_of_closures, fun_approx =
             conv_set_of_closures env set_of_closures
           in
@@ -453,11 +453,9 @@ module Conv(P:Param1) = struct
             }
           in
           Fselect_closure (select_closure, ()), approx
-        | From_closure (Not_relative var) ->
+        | Closure_same_unit (var, relative_to) ->
           ...
-        | From_closure (Relative (var, relative_to)) ->
-          ...
-        | From_another_unit symbol ->
+        | Different_unit symbol ->
           ...
         end
 

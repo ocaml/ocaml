@@ -298,6 +298,8 @@ let close_const (const : Lambda.structured_constant) : _ Flambda.t =
     Misc.fatal_error "Const_block should have been eliminated \
         before closure conversion"
 
+and close_
+
 let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   match lam with
   | Lvar id ->
@@ -325,15 +327,23 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       in
       fresh_variable t ~name
     in
-    let decl =
-      Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-        ~params ~body
+    (* CR mshinwell: some of this is now very similar to the let rec case
+       below *)
+    let set_of_closures_var = fresh_variable t ~name:"set_of_closures" in
+    let set_of_closures =
+      let decl =
+        Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
+          ~params ~body
+      in
+      close_functions t env (Function_decls.create [decl])
     in
-    let decls = Function_decls.create [decl] in
-    Fselect_closure ({
-        from = From_set_of_closures (fst (close_functions t env decls));
+    let select_closure =
+      { from = Set_of_closures_same_unit set_of_closures_var;
         closure_id = Closure_id.wrap closure_bound_var;
-      },
+      }
+    in
+    Flet (Immutable, set_of_closures_var, set_of_closures,
+      Fselect_closure select_closure,
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
@@ -384,7 +394,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fselect_closure ({
-                  from = From_closure (Not_relative set_of_closures_var);
+                  from = From_set_of_closures_same_unit set_of_closures_var;
                   closure_id = Closure_id.wrap closure_bound_var;
                 },
                 nid ()),

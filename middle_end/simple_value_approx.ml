@@ -346,3 +346,34 @@ let freshen_and_check_closure_id
       Closure_id.print closure_id
       print_value_set_of_closures value_set_of_closures
       Printflambda.function_declarations value_set_of_closures.function_decls)
+
+type checked_approx_for_set_of_closures =
+  | Wrong
+  | Unresolved
+  | Ok of value_set_of_closures
+
+let check_approx_for_set_of_closures t var_or_symbol
+      : checked_approx_for_set_of_closures =
+  match descr with
+  | Value_unresolved _symbol ->
+    (* CR mshinwell: is it possible to check that this value really does
+       come from another compilation unit? *)
+    Unresolved
+  | Value_set_of_closures value_set_of_closures -> Ok value_set_of_closures
+  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
+  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
+  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+    Wrong
+
+type checked_approx_for_closure =
+  | Wrong
+  | Ok of value_closure
+
+let check_approx_for_closure t var : checked_approx_for_closure =
+  match descr with
+  | Value_closure value_closure -> Ok value_closure
+  | Value_unresolved _ | Value_set_of_closures _
+  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
+  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
+  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+    Wrong

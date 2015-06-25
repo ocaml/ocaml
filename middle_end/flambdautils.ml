@@ -246,7 +246,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
   Variable.Set.fold (fun var acc ->
       let expr : _ Flambda.t =
         Fvar_within_closure
-          ({ closure = Fvar (clos_id, Expr_id.create ());
+          ({ closure = clos_id;
              closure_id = fun_id;
              var = Var_within_closure.wrap var;
            },

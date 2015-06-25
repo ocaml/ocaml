@@ -102,8 +102,9 @@ type 'a t =
   | Fconst of const * 'a
   | Fapply of 'a apply * 'a
   | Fset_of_closures of 'a set_of_closures * 'a
-  | Fselect_closure of 'a select_closure * 'a
-  | Fvar_within_closure of 'a var_within_closure * 'a
+  | Fproject_closure of project_closure * 'a
+  | Fproject_var of project_var * 'a
+  | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
   | Flet of let_kind * Variable.t * 'a t * 'a t * 'a
   | Fletrec of (Variable.t * 'a t) list * 'a t * 'a
   | Fprim of Lambda.primitive * 'a t list * Debuginfo.t * 'a
@@ -192,49 +193,22 @@ and 'a function_declaration = {
   dbg : Debuginfo.t;
 }
 
-and 'a select_closure = {
-  from : 'a select_closure_from;
+and project_closure = {
+  (** [set_of_closures] must yield a set of closures rather than a closure. *)
+  set_of_closures : Variable.t;
   closure_id : Closure_id.t;
 }
 
-(* This type is split up to avoid "assert false" in inline_and_simplify.ml. *)
-and 'a select_closure_from =
-  (* Selection of a closure from a set of closures immediately manifest and
-     available in the expression. *)
-  | Manifest of 'a set_of_closures
-  (* Selection of a closure via another entity, such as a symbol or a
-     variable (see below). *)
-  | Indirect of select_closure_indirect
-
-and select_closure_indirect =
-  (* Selection of a closure via a variable in the current compilation unit
-     (see below). *)
-  | From_closure_current_unit of select_closure_current_unit
-  (* Selection of a closure from some entity in a different compilation unit,
-     referenced by a symbol. *)
-  | From_another_unit of Symbol.t
-
-and select_closure_relative =
-  (* [Not_relative] selects a closure from a variable bound either to a set of
-     closures or another closure.  The approximation of the variable may be
-     [Value_set_of_closures] or [Value_closure]. *)
-  | Not_relative of Variable.t
-(* Or:
-
-  | Not_relative_from_set_of_closures of Variable.t
-  | Not_relative_from_closure of Variable.t
-  | Relative_from_closure of Variable.t
-
-*)
-  (* [Relative] selects one closure from another within the same runtime
-     closure block.  This avoids keeping a pointer to the start of the set
-     of closures live.  The approximation of the variable will always be
-     [Value_closure] (not [Value_set_of_closures]). *)
-  | Relative of Variable.t * Closure_id.t
-
-and 'a var_within_closure = {
+and move_within_set_of_closures = {
   (** [closure] must yield a closure rather than a set of closures. *)
-  closure : 'a t;
+  closure : Variable.t;
+  start_from : Closure_id.t;
+  move_to : Closure_id.t;
+}
+
+and project_var = {
+  (** [closure] must yield a closure rather than a set of closures. *)
+  closure : Variable.t;
   closure_id : Closure_id.t;
   var : Var_within_closure.t;
 }
