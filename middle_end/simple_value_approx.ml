@@ -350,16 +350,25 @@ let freshen_and_check_closure_id
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved
-  | Ok of value_set_of_closures
+  | Ok of Variable.t * value_set_of_closures
 
 let check_approx_for_set_of_closures t var_or_symbol
       : checked_approx_for_set_of_closures =
-  match descr with
+  match t.descr with
   | Value_unresolved _symbol ->
     (* CR mshinwell: is it possible to check that this value really does
        come from another compilation unit? *)
     Unresolved
-  | Value_set_of_closures value_set_of_closures -> Ok value_set_of_closures
+  | Value_set_of_closures value_set_of_closures ->
+    (* [Fproject_closure] only takes [Variable.t] values, so [t.var] must
+       always be [Some]; the set of closures always has a name. *)
+    begin match t.var with
+    | Some var -> Ok (var, value_set_of_closures)
+    | None ->
+      Misc.fatal_errorf "[Value_set_of_closures] approximation with no \
+          associated [Variable.t]: %a"
+        print t
+    end
   | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
   | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
@@ -370,7 +379,7 @@ type checked_approx_for_closure =
   | Ok of value_closure
 
 let check_approx_for_closure t var : checked_approx_for_closure =
-  match descr with
+  match t.descr with
   | Value_closure value_closure -> Ok value_closure
   | Value_unresolved _ | Value_set_of_closures _
   | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _

@@ -98,7 +98,7 @@ and descr =
   | Value_float of float
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
-  | Value_project_closure of value_closure
+  | Value_closure of value_closure
   | Value_string of value_string
   | Value_float_array of int (* size *)
   | Value_unknown
@@ -107,7 +107,7 @@ and descr =
   | Value_symbol of Symbol.t
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
-and value_project_closure = {
+and value_closure = {
   set_of_closures : t;
   closure_id : Closure_id.t;
 }
@@ -191,10 +191,12 @@ val freshen_and_check_closure_id
   -> Closure_id.t
   -> Closure_id.t
 
+(* In the [Ok] case, there may not be a variable associated with the set of
+   closures; it might be out of scope. *)
 type checked_approx_for_set_of_closures =
   | Wrong
   | Unresolved
-  | Ok of value_set_of_closures
+  | Ok of Variable.t option * value_set_of_closures
 
 val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
 
