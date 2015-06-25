@@ -125,10 +125,9 @@
 #undef DOMAIN_STATE
 #define DOMAIN_STATE(field_num, c_type, name)    \
   .macro cmp_caml_##name reg:req ;               \
-	movq	%r15, %r11 ;                     \
-	andq	$MINOR_HEAP_PTR_MASK, %r11 ;     \
-        movq	(8 * field_num)(%r11), %r11 ;    \
-	cmpq    %r11, \reg ;                     \
+	movq	%r15, %rax ;                     \
+	andq	$MINOR_HEAP_PTR_MASK, %rax ;     \
+	cmpq	(8 * field_num)(%rax), \reg ;    \
   .endm
 #include "../byterun/domain_state.tbl"
 #undef DOMAIN_STATE
@@ -158,7 +157,7 @@
 #define TEST_TL_VAR(value, var) \
         test_##var value
 
-/* Compare against a value in the current domain block.  Clobbers %r11. */
+/* Compare against a value in the current domain block.  Clobbers %rax. */
 #define CMP_TL_VAR(var, reg) \
         cmp_##var reg
 
