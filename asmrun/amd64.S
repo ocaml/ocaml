@@ -370,6 +370,7 @@ LBL(caml_alloc1):
         jb      LBL(100)
         ret
 LBL(100):
+        addq    $16, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
@@ -387,6 +388,7 @@ LBL(caml_alloc2):
         jb      LBL(101)
         ret
 LBL(101):
+        addq    $24, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8); */
@@ -404,6 +406,7 @@ LBL(caml_alloc3):
         jb      LBL(102)
         ret
 LBL(102):
+        addq    $32, %r15
         RECORD_STACK_FRAME(0)
         ENTER_FUNCTION
 /*        subq    $8, %rsp; CFI_ADJUST (8) */
@@ -423,6 +426,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
+        addq    %rax, %r15
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
         /* Do we need 16-byte alignment here ? */

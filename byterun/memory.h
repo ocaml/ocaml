@@ -85,7 +85,7 @@ color_t caml_allocation_color (void *hp);
   if (Caml_check_gc_interrupt(caml_domain_state->young_ptr)){               \
     caml_domain_state->young_ptr += Bhsize_wosize (wosize);                 \
     Setup_for_gc;                                                           \
-    caml_handle_gc_interrupt (wosize);                                      \
+    caml_handle_gc_interrupt ();                                            \
     Restore_after_gc;                                                       \
     caml_domain_state->young_ptr -= Bhsize_wosize (wosize);                 \
   }                                                                         \
