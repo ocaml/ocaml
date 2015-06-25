@@ -843,27 +843,29 @@ and simplify_move_within_set_of_closures env r
     | Some flam ->
       flam, ret r ...
     | None ->
-      match set_of_closures_var with
-      | Some set_of_closures_var ->
-        (* A variable bound to the set of closures is in scope, meaning we
-           can rewrite the [Fmove_within_set_of_closures] to a
-           [Fproject_closure]. *)
-        Fproject_closure ({ set_of_closures; closure_id = move_to; }, annot),
+      let start_from = freshen move_within_set_of_closures.start_from in
+      if Closure_id.equal start_from move_to then
+        (* Moving from one closure to itself is a no-op.  We can return an
+           [Fvar] since we already have a variable bound to the closure. *)
+        Fvar (move_within_set_of_closures.start_from, annot),
           ret r ...
-      | None ->
-        (* The set of closures is not available in scope. *)
-        let start_from = freshen move_within_set_of_closures.start_from in
-        let flam =
-          if Closure_id.equal start_from move_to then
-            (* Moving from one closure to itself is a no-op.  We can return an
-               [Fvar] since we already have a variable bound to the closure. *)
-            Fvar (move_within_set_of_closures.closure, annot)
-          else
+      else
+        match set_of_closures_var with
+        | Some set_of_closures_var ->
+          (* A variable bound to the set of closures is in scope, meaning we
+             can rewrite the [Fmove_within_set_of_closures] to a
+             [Fproject_closure]. *)
+          Fproject_closure ({ set_of_closures; closure_id = move_to; }, annot),
+            ret r ...
+        | None ->
+          (* The set of closures is not available in scope, and we have no
+             other information by which to simplify the move. *)
+          let flam =
             Fmove_within_set_of_closures (
               { move_within_set_of_closures with start_from; move_to; },
               annot)
-        in
-        flam, ret r ...
+          in
+          flam, ret r ...
 
 (* Transform an flambda function application based on information provided
    by an approximation of the function being applied.
