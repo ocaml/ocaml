@@ -94,56 +94,42 @@
 
 #define CAML_CONFIG_H_NO_TYPEDEFS
 #include "../byterun/config.h"
-#define MINOR_HEAP_PTR_MASK (0xffffffffffffffff << Minor_heap_align_bits)
+
+#define GET_DOMAIN_STATE(reg) \
+	movq	%r15, reg ; \
+	andq    $(0xffffffffffffffff << Minor_heap_align_bits), reg
 
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
 
 #define DOMAIN_STATE(field_num, c_type, name)            \
   .macro load_caml_##name dest_reg:req ;                 \
-	movq	%r15, \dest_reg ;                        \
-	andq	$MINOR_HEAP_PTR_MASK, \dest_reg ;        \
+	GET_DOMAIN_STATE(\dest_reg) ;                    \
 	movq    (8 * field_num)(\dest_reg), \dest_reg ;  \
-  .endm
-#include "../byterun/domain_state.tbl"
-#undef DOMAIN_STATE
-#define DOMAIN_STATE(field_num, c_type, name)      \
+  .endm ; \
   .macro store_caml_##name src_reg:req ;           \
-	movq	%r15, %r11 ;                       \
-	andq	$MINOR_HEAP_PTR_MASK, %r11 ;       \
+	GET_DOMAIN_STATE(%r11) ;                   \
 	movq    \src_reg, (8 * field_num)(%r11) ;  \
-  .endm
-#include "../byterun/domain_state.tbl"
-#undef DOMAIN_STATE
-#define DOMAIN_STATE(field_num, c_type, name)    \
+  .endm ; \
   .macro test_caml_##name value:req ;            \
-	movq	%r15, %r11 ;                     \
-	andq	$MINOR_HEAP_PTR_MASK, %r11 ;     \
+	GET_DOMAIN_STATE(%r11) ;                 \
 	testq   \value, (8 * field_num)(%r11) ;  \
-  .endm
-#include "../byterun/domain_state.tbl"
-#undef DOMAIN_STATE
-#define DOMAIN_STATE(field_num, c_type, name)    \
+  .endm ; \
   .macro cmp_caml_##name reg:req ;               \
-	movq	%r15, %rax ;                     \
-	andq	$MINOR_HEAP_PTR_MASK, %rax ;     \
+	GET_DOMAIN_STATE(%rax) ;                 \
 	cmpq	(8 * field_num)(%rax), \reg ;    \
-  .endm
-#include "../byterun/domain_state.tbl"
-#undef DOMAIN_STATE
-#define DOMAIN_STATE(field_num, c_type, name)    \
+  .endm ; \
   .macro push_caml_##name ;                      \
 	load_caml_##name %r11 ;                  \
         pushq   %r11 ;                           \
-  .endm
-#include "../byterun/domain_state.tbl"
-#undef DOMAIN_STATE
-#define DOMAIN_STATE(field_num, c_type, name)    \
+  .endm ; \
   .macro pop_caml_##name ;                       \
         popq    %r13 ;                           \
         store_caml_##name %r13 ;                 \
   .endm
 #include "../byterun/domain_state.tbl"
+#undef DOMAIN_STATE
+
 
 /* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
@@ -170,44 +156,6 @@
 #define POP_TL_VAR(var) \
         pop_##var
 
-#if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
-
-/* Position-independent operations on global variables. */
-
-/* Store [srcreg] in global [dstlabel].  Clobbers %r11. */
-#define STORE_VAR(srcreg,dstlabel) \
-        movq    GREL(dstlabel)(%rip), %r11 ; \
-        movq    srcreg, (%r11)
-
-#define STORE_VAR32(srcreg,dstlabel) \
-        movq    GREL(dstlabel)(%rip), %r11 ; \
-        movl    srcreg, (%r11)
-
-/* Load global [srclabel] in register [dstreg].  Clobbers %r11. */
-#define LOAD_VAR(srclabel,dstreg) \
-        movq    GREL(srclabel)(%rip), %r11 ; \
-        movq    (%r11), dstreg
-
-/* Compare global [label] with register [reg].  Clobbers %rax. */
-#define CMP_VAR(label,reg) \
-        movq    GREL(label)(%rip), %rax ; \
-        cmpq    (%rax), reg
-
-/* Test 32-bit global [label] against mask [imm].  Clobbers %r11. */
-#define TESTL_VAR(imm,label) \
-        movq    GREL(label)(%rip), %r11 ; \
-        testl   imm, (%r11)
-
-/* Push global [label] on stack.  Clobbers %r11. */
-#define PUSH_VAR(srclabel) \
-        movq    GREL(srclabel)(%rip), %r11 ; \
-        pushq   (%r11); CFI_ADJUST (8)
-
-/* Pop global [label] off stack.  Clobbers %r11. */
-#define POP_VAR(dstlabel) \
-        movq    GREL(dstlabel)(%rip), %r11 ; \
-        popq    (%r11);  CFI_ADJUST (-8)
-
 /* Record lowest stack address and return address.  Clobbers %rax. */
 #define RECORD_STACK_FRAME(OFFSET) \
         pushq   %r11 ; CFI_ADJUST(8); \
@@ -218,40 +166,10 @@
         popq    %r11; CFI_ADJUST(-8)
 
 /* Load address of global [label] in register [dst]. */
+#if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 #define LEA_VAR(label,dst) \
         movq    GREL(label)(%rip), dst
-
 #else
-
-/* Non-PIC operations on global variables.  Slightly faster. */
-
-#define STORE_VAR(srcreg,dstlabel) \
-        movq    srcreg, G(dstlabel)(%rip)
-
-#define STORE_VAR32(srcreg,dstlabel) \
-        movl    srcreg, G(dstlabel)(%rip)
-
-#define LOAD_VAR(srclabel,dstreg) \
-        movq    G(srclabel)(%rip), dstreg
-
-#define CMP_VAR(label,reg) \
-        cmpq    G(label)(%rip), %r15
-
-#define TESTL_VAR(imm,label) \
-        testl   imm, G(label)(%rip)
-
-#define PUSH_VAR(srclabel) \
-        pushq   G(srclabel)(%rip) ; CFI_ADJUST(8)
-
-#define POP_VAR(dstlabel) \
-        popq    G(dstlabel)(%rip); CFI_ADJUST(-8)
-
-#define RECORD_STACK_FRAME(OFFSET) \
-        movq    OFFSET(%rsp), %rax ; \
-        STORE_TL_VAR(%rax,caml_last_return_address) ; \
-        leaq    8+OFFSET(%rsp), %rax ; \
-        STORE_TL_VAR(%rax,caml_bottom_of_stack)
-
 #define LEA_VAR(label,dst) \
         leaq    G(label)(%rip), dst
 #endif
