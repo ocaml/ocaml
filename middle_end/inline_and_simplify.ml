@@ -786,15 +786,18 @@ and transform_set_of_closures_expression original_env original_r
   in
   set_of_closures, ret r (A.value_set_of_closures closure)
 
-(* If the function is recursive and we're referring to another closure
-   from the same set, we can find that closure directly through the
-   variable associated with the closure ID. *)
+(* Determine whether a given closure ID corresponds directly to a variable
+   (bound to a closure) in the given environment.  This happens when the body
+   of a [let rec]-bound function refers to another in the same set of closures.
+   If we succeed in this process, we can change [Fproject_closure]
+   expressions into [Fvar] expressions, thus sharing closure projections. *)
 and reference_recursive_function_directly env closure_id annot =
   let closure_id = Closure_id.unwrap closure_id in
   if E.present env closure_id then Some (Fvar (closure_id, annot))
   else None
 
-(* Simplify an expression that projects a closure from a set of closures. *)
+(* Simplify an expression that takes a set of closures and projects an
+   individual closure from it. *)
 and simplify_project_closure env r ~(project_closure : Flambda.project_closure)
       ~annot : _ Flambda.project_closure * R.t =
   let set_of_closures_approx = E.find env project_closure.set_of_closures in
@@ -819,6 +822,9 @@ and simplify_project_closure env r ~(project_closure : Flambda.project_closure)
     in
     flam, ret r ...
 
+(* Simplify an expression that, given one closure within some set of
+   closures, returns another closure (possibly the same one) within the
+   same set. *)
 and simplify_move_within_set_of_closures env r
       ~(move_within_set_of_closures : Flambda.move_within_set_of_closures)
       ~annot : _ Flambda.move_within_set_of_closures * R.t =
