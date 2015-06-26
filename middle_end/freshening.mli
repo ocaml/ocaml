@@ -76,7 +76,7 @@ val rewrite_recursive_calls_with_symbols
   -> make_closure_symbol:(Closure_id.t -> Symbol.t)
   -> Expr_id.t Flambda.function_declarations
 
-module Ids_and_bound_vars_of_closures : sig
+module Project_var : sig
   (** A table used for freshening of identifiers in [Fselect_closure]
       ("ids of closures") and Fvar_within_closure ("bound vars of closures")
       constructions.
@@ -115,4 +115,4 @@ val apply_function_decls_and_free_vars
   -> 'a Variable.Map.t
   -> 'b Flambda.function_declarations
   -> 'a Variable.Map.t * 'b Flambda.function_declarations * t
-    * Ids_and_bound_vars_of_closures.t
+    * Project_var.t

@@ -118,7 +118,7 @@ and value_set_of_closures = {
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
   (* Any freshening that has been applied to [function_decls]. *)
-  freshening : Freshening.Ids_and_bound_vars_of_closures.t;
+  freshening : Freshening.Project_var.t;
 }
 
 (** Smart constructors *)

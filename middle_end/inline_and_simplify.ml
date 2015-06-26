@@ -177,7 +177,7 @@ and simplify_project_var env r ~(project_var : Flambda.project_var)
   let approx = R.approx r in
   match A.descr approx with
   | Value_closure { value_set_of_closures; closure_id } ->
-    let module I = Freshening.Ids_and_bound_vars_of_closures in
+    let module I = Freshening.Project_var in
     let env_var =
       I.apply_var_within_closure value_set_of_closures.freshening
         project_var.var
@@ -678,7 +678,7 @@ and simplify_set_of_closures original_env original_r
      concerning variable escaping their scope. *)
   let env = E.local env in
   let module I =
-    Freshening.Ids_and_bound_vars_of_closures
+    Freshening.Project_var
   in
   let fv, ffuns, sb, freshening =
     Freshening.apply_function_decls_and_free_vars (E.freshening env) fv ffuns

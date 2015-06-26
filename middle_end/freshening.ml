@@ -135,7 +135,7 @@ let rewrite_recursive_calls_with_symbols t
     in
     { function_declarations with funs }
 
-module Ids_and_bound_vars_of_closures = struct
+module Project_var = struct
   type t =
     { vars_within_closure : Var_within_closure.t Var_within_closure.Map.t;
       closure_id : Closure_id.t Closure_id.Map.t }
@@ -231,7 +231,7 @@ module Ids_and_bound_vars_of_closures = struct
 end
 
 let apply_function_decls_and_free_vars t fv func_decls =
-  let module I = Ids_and_bound_vars_of_closures in
+  let module I = Project_var in
   let fv, t, of_closures = I.subst_free_vars fv t in
   let func_decls, t, of_closures =
     I.func_decls_subst of_closures t func_decls

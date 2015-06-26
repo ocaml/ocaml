@@ -55,7 +55,7 @@ and value_set_of_closures = {
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
   (* Any freshening that has been applied to [function_decls]. *)
-  freshening : Freshening.Ids_and_bound_vars_of_closures.t;
+  freshening : Freshening.Project_var.t;
 }
 
 let descr t = t.descr
@@ -333,7 +333,7 @@ and meet a1 a2 =
 let freshen_and_check_closure_id
       (value_set_of_closures : value_set_of_closures) closure_id =
   let closure_id =
-    Freshening.Ids_and_bound_vars_of_closures.apply_closure_id
+    Freshening.Project_var.apply_closure_id
       value_set_of_closures.freshening closure_id
   in
   try
