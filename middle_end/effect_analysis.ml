@@ -89,19 +89,12 @@ let no_effects_prim (prim : Lambda.primitive) =
 
 let rec no_effects (flam : _ Flambda.t) =
   match flam with
-  | Fvar _ | Fsymbol _ | Fconst _ -> true
+  | Fvar _ | Fsymbol _ | Fconst _ | Fset_of_closures _ | Fproject_closure _
+  | Fproject_var _ | Fmove_within_set_of_closures _ -> true
   | Flet (_, _, def, body, _) -> no_effects def && no_effects body
   | Fletrec (defs, body, _) ->
     no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
-  | Fprim (p, args, _, _) ->
-    no_effects_prim p && List.for_all no_effects args
-  | Fset_of_closures ({ free_vars }, _) ->
-    Variable.Map.for_all (fun _id def -> no_effects def) free_vars
-  | Fselect_closure ({ from = From_closure _; _}, _) -> true
-  | Fselect_closure ({ from = From_set_of_closures set_of_closures; _}, _) ->
-    Variable.Map.for_all (fun _id def -> no_effects def)
-      set_of_closures.free_vars
-  | Fvar_within_closure ({ closure }, _) -> no_effects closure
+  | Fprim (p, args, _, _) -> no_effects_prim p && List.for_all no_effects args
   | Fifthenelse (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot
   | Fswitch (lam, sw, _) ->

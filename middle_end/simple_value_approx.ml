@@ -44,17 +44,15 @@ and descr =
   | Value_unresolved of Symbol.t (* No description was found for this symbol *)
 
 and value_closure = {
-  value_set_of_closures : value_set_of_closures;
+  set_of_closures : t;
   closure_id : Closure_id.t;
-  set_of_closures_var : Variable.t option;
 }
 
 and value_set_of_closures = {
   function_decls : Expr_id.t Flambda.function_declarations;
-  bound_var : t Var_within_closure.Map.t;
+  bound_vars : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
-  (* Any freshening that has been applied to [function_decls]. *)
   freshening : Freshening.Project_var.t;
 }
 
@@ -113,8 +111,31 @@ let value_int i = approx (Value_int i)
 let value_constptr i = approx (Value_constptr i)
 let value_float f = approx (Value_float f)
 let value_boxed_int bi i = approx (Value_boxed_int (bi,i))
-let value_closure c = approx (Value_closure c)
-let value_set_of_closures c = approx (Value_set_of_closures c)
+
+let value_closure ?closure_var ?set_of_closures_var value_set_of_closures
+      closure_id =
+  let approx_set_of_closures =
+    { descr = Value_set_of_closures value_set_of_closures;
+      var = set_of_closures_var;
+      symbol = None;
+    }
+  in
+  let value_closure =
+    { set_of_closures = approx_set_of_closures;
+      closure_id;
+    }
+  in
+  { descr = Value_closure value_closure;
+    var = closure_var;
+    symbol = None;
+  }
+
+let value_set_of_closures ?set_of_closures_var value_set_of_closures =
+  { descr = Value_set_of_closures value_set_of_closures;
+    var = set_of_closures_var;
+    symbol = None;
+  }
+
 let value_block (t,b) = approx (Value_block (t,b))
 let value_extern ex = approx (Value_extern ex)
 let value_symbol sym = { (approx (Value_symbol sym)) with symbol = Some sym }
@@ -370,22 +391,13 @@ let check_approx_for_set_of_closures t var_or_symbol
         print t
     end
   | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
-  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
+  | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
 
 type checked_approx_for_closure =
   | Wrong
-  | Ok of value_closure
-
-let check_approx_for_closure t var : checked_approx_for_closure =
-  match t.descr with
-  | Value_closure value_closure -> Ok value_closure
-  | Value_unresolved _ | Value_set_of_closures _
-  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
-  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
-  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
-    Wrong
+  | Ok of value_closure * Variable.t option * value_set_of_closures
 
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
@@ -395,20 +407,37 @@ type checked_approx_for_closure_allowing_unresolved =
 let check_approx_for_closure_allowing_unresolved t var
       : checked_approx_for_closure_allowing_unresolved =
   match t.descr with
-  | Value_closure value_closure -> Ok value_closure
-  | Value_unresolved _ -> Unresolved
+  | Value_closure value_closure ->
+    (* CR mshinwell: not exactly sure yet what to allow here *)
+    begin match value_closure.set_of_closures.descr with
+    | Value_set_of_closures value_set_of_closures ->
+      Ok (value_closure, value_closure.set_of_closures.var,
+        value_set_of_closures)
+    | Value_unresolved _
+    | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
+    | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
+    | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+      Wrong
+    end
+  | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _
   | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
-  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
+  | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
 
+let check_approx_for_closure t var : checked_approx_for_closure =
+  match check_approx_for_closure_allowing_unresolved t var with
+  | Ok (value_closure, set_of_closures_var, value_set_of_closures) ->
+    Ok (value_closure, set_of_closures_var, value_set_of_closures)
+  | Wrong | Unresolved _ -> Wrong
+
 let approx_for_bound_var value_set_of_closures var =
   try
-    Var_within_closure.Map.find var value_set_of_closures.bound_var
+    Var_within_closure.Map.find var value_set_of_closures.bound_vars
   with
   | Not_found ->
-    Misc.fatal_errorf "The closure %a@ %a does not bind the variable %a@."
-      Closure_id.print closure_id
-      Printflambda.flambda closure
+    Misc.fatal_errorf "The set-of-closures approximation %a@ does not \
+        bind the variable %a@."
+      print_value_set_of_closures value_set_of_closures
       Var_within_closure.print var

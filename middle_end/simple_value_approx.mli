@@ -196,7 +196,7 @@ val get_field : int -> t list -> t
 (** Find the approximation for a bound variable in a set-of-closures
     approximation.  A fatal error is produced if the variable is not bound in
     the given approximation. *)
-val approx_for_bound_var : value_set_of_closures -> Variable.t -> t
+val approx_for_bound_var : value_set_of_closures -> Var_within_closure.t -> t
 
 (** Given a set-of-closures approximation and a closure ID, apply any
     freshening specified by the approximation to the closure ID, and return
