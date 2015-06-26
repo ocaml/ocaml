@@ -216,13 +216,13 @@ type checked_approx_for_set_of_closures =
 
 val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
 
-type 'a checked_approx_for_closure
+type checked_approx_for_closure =
   | Wrong
   | Ok of value_closure * Variable.t option * value_set_of_closures
 
 val check_approx_for_closure : t -> checked_approx_for_closure
 
-type 'a checked_approx_for_closure_allowing_unresolved =
+type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
   | Ok of value_closure * Variable.t option * value_set_of_closures

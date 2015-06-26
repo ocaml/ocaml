@@ -387,7 +387,7 @@ let check_approx_for_closure t var : checked_approx_for_closure =
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
 
-type 'a checked_approx_for_closure_allowing_unresolved =
+type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
   | Ok of value_closure * Variable.t option * value_set_of_closures
