@@ -42,8 +42,9 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
   | Flet(_,_,_,_,data)
   | Fletrec(_,_,data)
   | Fset_of_closures(_,data)
-  | Fselect_closure(_,data)
-  | Fvar_within_closure(_,data)
+  | Fproject_closure(_,data)
+  | Fproject_var (_, data)
+  | Fmove_within_set_of_closures (_, data)
   | Fapply(_,data)
   | Fswitch(_,_,data)
   | Fstringswitch(_,_,_,data)
@@ -67,8 +68,9 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Flet (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
   | Fletrec _ -> "letrec"
   | Fset_of_closures _ -> "set_of_closures"
-  | Fselect_closure _ -> "closure"
-  | Fvar_within_closure _ -> "var_within_closure"
+  | Fproject_closure _ -> "project_closure"
+  | Fproject_var _ -> "project_var"
+  | Fmove_within_set_of_closures _ -> "move_within_set_of_closures"
   | Fapply _ -> "apply"
   | Fswitch _ -> "switch"
   | Fstringswitch _ -> "stringswitch"
@@ -114,14 +116,19 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
     same_set_of_closures c1 c2
   | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
-  | Fselect_closure (f1, _), Fselect_closure (f2, _) ->
-    same_select_closure f1 f2
-  | Fselect_closure _, _ | _, Fselect_closure _ -> false
-  | Fvar_within_closure (v1, _), Fvar_within_closure (v2, _) ->
-      same v1.closure v2.closure &&
-      Closure_id.equal v1.closure_id v2.closure_id &&
-      Var_within_closure.equal v1.var v2.var
-  | Fvar_within_closure _, _ | _, Fvar_within_closure _ -> false
+  | Fproject_closure (f1, _), Fproject_closure (f2, _) ->
+    same_project_closure f1 f2
+  | Fproject_closure _, _ | _, Fproject_closure _ -> false
+  | Fproject_var (v1, _), Fproject_var (v2, _) ->
+    Variable.equal v1.closure v2.closure
+      && Closure_id.equal v1.closure_id v2.closure_id
+      && Var_within_closure.equal v1.var v2.var
+  | Fproject_var _, _ | _, Fproject_var _ -> false
+  | Fmove_within_set_of_closures (m1, _),
+    Fmove_within_set_of_closures (m2, _) ->
+    same_move_within_set_of_closures m1 m2
+  | Fmove_within_set_of_closures _, _ | _, Fmove_within_set_of_closures _ ->
+    false
   | Flet (k1, v1, a1, b1, _), Flet (k2, v2, a2, b2, _) ->
       k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2
   | Flet _, _ | _, Flet _ -> false
@@ -178,33 +185,19 @@ and sameclosure (c1 : _ Flambda.function_declaration)
 and same_set_of_closures (c1 : _ Flambda.set_of_closures)
       (c2 : _ Flambda.set_of_closures) =
   Variable.Map.equal sameclosure c1.function_decls.funs c2.function_decls.funs &&
-  Variable.Map.equal same c1.free_vars c2.free_vars &&
+  Variable.Map.equal Variable.equal c1.free_vars c2.free_vars &&
   Variable.Map.equal Variable.equal c1.specialised_args c2.specialised_args
 
-and same_select_closure (s1 : _ Flambda.select_closure)
-      (s2 : _ Flambda.select_closure) =
-  Closure_id.equal s1.closure_id s2.closure_id
-    && begin match s1.from, s2.from with
-      | From_set_of_closures s1, From_set_of_closures s2 ->
-        same_set_of_closures s1 s2
-      | From_closure_or_another_unit s1, From_closure_or_another_unit s2 ->
-        begin match s1, s2 with
-        | From_closure_current_unit s1, From_closure_current_unit s2 ->
-          begin match s1, s2 with
-          | Not_relative v1, Not_relative v2 -> Variable.equal v1 v2
-          | Relative (v1, r1), Relative (v2, r2) ->
-            Variable.equal v1 v2 && Closure_id.equal r1 r2
-          | Not_relative _, Relative _
-          | Relative _, Not_relative _ -> false
-          end
-        | From_another_unit sym1, From_another_unit sym2 ->
-          Symbol.equal sym1 sym2
-        | From_closure_current_unit _, From_another_unit _
-        | From_another_unit _, From_closure_current_unit _ -> false
-        end
-      | From_set_of_closures _, From_closure_or_another_unit _
-      | From_closure_or_another_unit _, From_set_of_closures _ -> false
-    end
+and same_project_closure (s1 : Flambda.project_closure)
+      (s2 : Flambda.project_closure) =
+  Variable.equal s1.set_of_closures s2.set_of_closures
+    && Closure_id.equal s1.closure_id s2.closure_id
+
+and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
+      (m2 : Flambda.move_within_set_of_closures) =
+  Variable.equal m1.closure m2.closure
+    && Closure_id.equal m1.start_from m2.start_from
+    && Closure_id.equal m1.move_to m2.move_to
 
 and samebinding (v1, c1) (v2, c2) =
   Variable.equal v1 v2 && same c1 c2
@@ -245,7 +238,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : _ Flambda.t =
-        Fvar_within_closure
+        Fproject_var
           ({ closure = clos_id;
              closure_id = fun_id;
              var = Var_within_closure.wrap var;
@@ -276,22 +269,35 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
     }
   in
   let free_vars =
+    (* CR mshinwell: can be simplified now *)
     Variable.Map.fold (fun id id' fv' ->
-        Variable.Map.add id' (Flambda.Fvar(id,Expr_id.create ())) fv')
+        Variable.Map.add id' id fv')
       (Variable.Map.filter (fun id _ -> not (Variable.Set.mem id param_set)) sb)
       Variable.Map.empty
   in
   let compilation_unit = Compilation_unit.get_current_exn () in
-  Fselect_closure ({
-      from = From_set_of_closures ({
-          function_decls = {
-            set_of_closures_id = Set_of_closures_id.create compilation_unit;
-            funs = Variable.Map.singleton id function_declaration;
-            compilation_unit;
-          };
-          free_vars;
-          specialised_args = Variable.Map.empty;
-        });
-      closure_id = Closure_id.wrap id;
-    },
-    Expr_id.create ())
+  let set_of_closures_var =
+    Variable.create "set_of_closures"
+      ~current_compilation_unit:compilation_unit
+  in
+  let set_of_closures =
+    { Flambda.
+      function_decls = {
+        set_of_closures_id = Set_of_closures_id.create compilation_unit;
+        funs = Variable.Map.singleton id function_declaration;
+        compilation_unit;
+      };
+      free_vars;
+      specialised_args = Variable.Map.empty;
+    }
+  in
+  let project_closure : Expr_id.t Flambda.t =
+    Fproject_closure ({
+        set_of_closures = set_of_closures_var;
+        closure_id = Closure_id.wrap id;
+      },
+      Expr_id.create ())
+  in
+  Flet (Immutable, set_of_closures_var,
+    Fset_of_closures (set_of_closures, Expr_id.create ()),
+    project_closure, Expr_id.create ())
