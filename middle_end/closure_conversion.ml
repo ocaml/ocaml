@@ -335,13 +335,13 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       in
       close_functions t env (Function_decls.create [decl])
     in
-    let project_closure =
+    let project_closure : Flambda.project_closure =
       { set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap closure_bound_var;
       }
     in
     Flet (Immutable, set_of_closures_var, set_of_closures,
-      Fproject_closure (project_closure, nid ~name:"project_closure")
+      Fproject_closure (project_closure, nid ~name:"project_closure" ()),
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
@@ -399,8 +399,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
               body, nid ())) : _ Flambda.t))
           (close t env body) function_declarations
       in
-      Flet (Immutable, set_of_closures_var,
-        Fset_of_closures (fst set_of_closures, snd set_of_closures),
+      Flet (Immutable, set_of_closures_var, set_of_closures,
         body, nid ~name:"closure_letrec" ())
     | None ->
       (* If the condition above is not satisfied, we build an [Fletrec]
@@ -498,8 +497,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
 (* Perform closure conversion on a set of function declarations, returning a
    set of closures.  (The set will often only contain a single function;
    the only case where it cannot is for "let rec".) *)
-and close_functions t external_env function_declarations
-      : _ Flambda.set_of_closures * Expr_id.t =
+and close_functions t external_env function_declarations : _ Flambda.t =
   let closure_env_without_parameters =
     Function_decls.closure_env_without_parameters function_declarations
       ~create_var:(create_var t)
@@ -569,17 +567,15 @@ and close_functions t external_env function_declarations
   let set_of_closures : _ Flambda.set_of_closures =
     { function_decls = fun_decls;
       free_vars =
-        IdentSet.fold
-          (fun id map ->
-             let internal_var = Env.find_var closure_env_without_parameters id in
-             let external_var = Env.find_var external_env id in
-             Variable.Map.add internal_var
-               (Flambda.Fvar (external_var, nid ())) map)
+        IdentSet.fold (fun id map ->
+            let internal_var = Env.find_var closure_env_without_parameters id in
+            let external_var = Env.find_var external_env id in
+            Variable.Map.add internal_var external_var map)
           all_free_idents Variable.Map.empty;
       specialised_args = Variable.Map.empty;
     }
   in
-  set_of_closures, nid ()
+  Fset_of_closures (set_of_closures, nid ~name:"set_of_closures" ())
 
 and close_list t sb l = List.map (close t sb) l
 
@@ -593,13 +589,17 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
         ~body
     in
-    Fselect_closure ({
-        from = From_set_of_closures (fst (close_functions t env [decl]));
+    let set_of_closures_var = fresh_variable t ~name:"set_of_closures_var" in
+    let set_of_closures = close_functions t env [decl] in
+    let project_closure : Flambda.project_closure =
+      { set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap closure_bound_var;
-      },
-      nid ~name:"function" ())
-  | lam ->
-    close t env lam
+      }
+    in
+    Flet (Immutable, set_of_closures_var, set_of_closures,
+      Fproject_closure (project_closure, nid ~name:"project_closure" ()),
+      nid ~name:"close_let_bound_expression" ())
+  | lam -> close t env lam
 
 let lambda_to_flambda ~backend ~(exported_fields:int) lam =
   let module Backend = (val backend : Backend_intf.S) in
