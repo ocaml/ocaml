@@ -37,7 +37,6 @@ let should_inline_function_known_to_be_recursive
         func.params approxs
 
 let inline_non_recursive
-    ~inline_by_copying_function_body
     ~env ~r ~clos ~ funct ~fun_id
     ~(func : 'a Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
@@ -45,12 +44,12 @@ let inline_non_recursive
     ~no_transformation
     ~probably_a_functor
     ~args
-    ~loop =
+    ~simplify =
   let body, r_inlined =
     (* We first try to inline that function preventing further inlining below *)
-    inline_by_copying_function_body ~env
+    Inlining_transforms.inline_by_copying_function_body ~env
       ~r:(R.set_inlining_threshold (R.clear_benefit r) Inlining_cost.Never_inline)
-      ~clos ~lfunc:funct ~fun_id ~func ~args
+      ~clos ~lfunc:funct ~fun_id ~func ~args ~simplify
   in
   let unconditionally_inline =
     func.stub
@@ -93,14 +92,14 @@ let inline_non_recursive
         ~where:Inline_by_copying_function_body
     in
     let env = E.inlining_level_up env in
-    loop env r body
+    simplify env r body
   end else begin
     (* The function is not sufficiently good by itself, but may become if
        we allow inlining below *)
     let body, r_inlined =
-      inline_by_copying_function_body ~env
+      Inlining_transforms.inline_by_copying_function_body ~env
         ~r:(R.clear_benefit r)
-        ~clos ~lfunc:funct ~fun_id ~func ~args
+        ~clos ~lfunc:funct ~fun_id ~func ~args ~simplify
     in
     let keep_inlined_version =
       let wsb =
@@ -132,16 +131,14 @@ let inline_non_recursive
     end
   end
 
-let inlining_decision_for_call_site ~env ~r
+let for_call_site ~env ~r
       ~(clos : _ Flambda.function_declarations)
       ~(funct : _ Flambda.t)
       ~fun_id
       ~(func : 'a Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
       ~args_with_approxs ~dbg ~eid
-      ~inline_by_copying_function_body
-      ~inline_by_copying_function_declaration
-      ~loop =
+      ~simplify =
   let record_decision =
     let closure_stack =
       E.inlining_stats_closure_stack (E.note_entering_closure env
@@ -257,13 +254,12 @@ let inlining_decision_for_call_site ~env ~r
         || (not recursive && E.inlining_level env <= max_level)
       then
         inline_non_recursive
-          ~inline_by_copying_function_body
           ~env ~r ~clos ~funct ~fun_id ~func
           ~record_decision
           ~direct_apply
           ~no_transformation
           ~probably_a_functor
-          ~args ~loop
+          ~args ~simplify
       else if E.inlining_level env > max_level then begin
         record_decision (Can_inline_but_tried_nothing (Level_exceeded true));
         no_transformation ()
@@ -278,8 +274,9 @@ let inlining_decision_for_call_site ~env ~r
             else begin
               let env = E.inside_unrolled_function env in
               let body, r_inlined =
-                inline_by_copying_function_body ~env ~r:(R.clear_benefit r)
-                  ~clos ~lfunc:funct ~fun_id ~func ~args
+                Inlining_transforms.inline_by_copying_function_body ~env
+                  ~r:(R.clear_benefit r) ~clos ~lfunc:funct ~fun_id ~func
+                  ~args ~simplify
               in
               tried_unrolling := true;
               let wsb =
@@ -320,10 +317,10 @@ let inlining_decision_for_call_site ~env ~r
             in
 *)
             let copied_function_declaration =
-              inline_by_copying_function_declaration ~env
+              Inlining_transforms.inline_by_copying_function_declaration ~env
                 ~r:(R.clear_benefit r) ~funct ~clos ~fun_id ~func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
-                ~specialised_args:closure.specialised_args ~dbg
+                ~specialised_args:closure.specialised_args ~dbg ~simplify
             in
             match copied_function_declaration with
             | Some (expr, r_inlined) ->

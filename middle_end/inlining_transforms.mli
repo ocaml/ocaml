@@ -59,8 +59,13 @@
        f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
 *)
 val inline_by_copying_function_body
-   : ...
-  -> ...
+   : env:Inlining_env.t
+  -> r:Inlining_result.t
+  -> clos: _ Flambda.function_declarations
+  -> func: _ Flambda.function_declaration
+  -> args:_ Flambda.t list
+  -> simplify:Inlining_decision_intf.simplify
+  -> _ Flambda.t * Inlining_result.t
 
 (* Inlining of recursive function(s) yields a copy of the functions'
    definitions (not just their bodies, unlike the non-recursive case) and
@@ -70,5 +75,10 @@ val inline_by_copying_function_body
    non-recursive] is not sufficient.
 *)
 val inline_by_copying_function_declaration
-   : ...
-  -> ...
+   : env:Inlining_env.t
+  -> r:Inlining_result.t
+  -> clos: _ Flambda.function_declarations
+  -> func: _ Flambda.function_declaration
+  -> args:_ Flambda.t list
+  -> simplify:Inlining_decision_intf.simplify
+  -> _ Flambda.t * Inlining_result.t

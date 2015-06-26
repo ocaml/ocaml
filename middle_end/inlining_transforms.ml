@@ -18,7 +18,8 @@ module R = Inlining_result
 
 let inline_by_copying_function_body ~env ~r
       ~(clos : _ Flambda.function_declarations) ~lfunc ~fun_id
-      ~(func : _ Flambda.function_declaration) ~args =
+      ~(func : _ Flambda.function_declaration) ~args
+      ~simplify =
   let r = R.map_benefit r B.remove_call in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_body" in
@@ -61,14 +62,15 @@ let inline_by_copying_function_body ~env ~r
     E.note_entering_closure env ~closure_id:fun_id
       ~where:Inline_by_copying_function_body
   in
-  loop (E.activate_freshening env) r
+  simplify (E.activate_freshening env) r
     (Flambda.Flet (Immutable, clos_id, lfunc, expr, Expr_id.create ()))
 
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(clos : _ Flambda.function_declarations)
     ~closure_id
     ~(func : _ Flambda.function_declaration)
-    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg =
+    ~args_with_approxs ~unchanging_params ~specialised_args ~dbg
+    ~simplify =
   let args, approxs = args_with_approxs in
   let env = E.inlining_level_up env in
   let clos_id = new_var "inline_by_copying_function_declaration" in
@@ -124,4 +126,4 @@ let inline_by_copying_function_declaration ~env ~r ~funct
       E.note_entering_closure env ~closure_id
         ~where:Inline_by_copying_function_declaration
     in
-    Some (loop (E.activate_freshening env) r expr)
+    Some (simplify (E.activate_freshening env) r expr)

@@ -45,7 +45,7 @@ module R = Inlining_result
        [ret r approx]
    * replace the returned expression by a contant or a direct variable
      acces (when possible):
-       [check_var_and_constant_result env r expr approx]
+       [simplify_using_approx_and_env env r expr approx]
  *)
 
 let ret = R.set_approx
@@ -54,19 +54,19 @@ let new_var name =
   Variable.create name
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
 
-let check_constant_result r lam approx =
+let simplify_using_approx r lam approx =
   let lam, approx = A.simplify approx lam in
   lam, R.set_approx r approx
 
-let check_var_and_constant_result env r original_lam approx =
+let simplify_using_approx_and_env env r original_lam approx =
   let lam, approx =
     A.simplify_using_env approx ~is_present_in_env:(E.present env) original_lam
   in
-  let r = ret r approx in
-  let r = match lam with
+  let r =
+    let r = ret r approx in
+    match lam with
     | Fvar (var, _) ->
-      R.map_benefit (R.use_var r var)
-        (B.remove_code original_lam)
+      R.map_benefit (R.use_var r var) (B.remove_code original_lam)
     | Fconst _ ->
       R.map_benefit r (B.remove_code original_lam)
     | _ -> r
@@ -281,7 +281,7 @@ and simplify_project_var env r ~(project_var : Flambda.project_var)
       if closure == project_var.closure then expr
       else Fproject_var ({ closure; closure_id; var }, annot)
     in
-    check_var_and_constant_result env r expr approx
+    simplify_using_approx_and_env env r expr approx
   | Unresolved symbol ->
     (* This value comes from a symbol for which we couldn't find any
        approximation, telling us that names within the closure couldn't
@@ -310,11 +310,11 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
   match tree with
   | Fsymbol (sym, _annot) ->
     let module Backend = (val (E.backend env) : Backend_intf.S) in
-    check_constant_result r tree (Backend.import_symbol sym)
+    simplify_using_approx r tree (Backend.import_symbol sym)
   | Fvar (id, annot) ->
     let id = Freshening.apply_variable (E.freshening env) id in
     let tree : _ Flambda.t = Fvar (id, annot) in
-    check_var_and_constant_result env r tree (E.find id env)
+    simplify_using_approx_and_env env r tree (E.find id env)
   | Fconst (cst, _) -> tree, ret r (A.const cst)
   | Fapply (apply, annot) ->
     simplify_apply env r ~apply ~annot
@@ -413,7 +413,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         A.get_field i [Backend.import_global id]
     in
-    check_constant_result r expr approx
+    simplify_using_approx r expr approx
   | Fprim (Psetglobalfield (ex, i), [arg], dbg, annot) as expr ->
     let arg', r = loop env r arg in
     let expr : _ Flambda.t =
@@ -429,7 +429,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       else Fprim (Pfield i, [arg'], dbg, annot)
     in
     let approx = A.get_field i [R.approx r] in
-    check_var_and_constant_result env r expr approx
+    simplify_using_approx_and_env env r expr approx
   | Fprim ((Psetfield _ | Parraysetu _ | Parraysets _) as p,
           block :: args, dbg, annot) ->
     let block, r = loop env r block in
@@ -672,7 +672,7 @@ and loop_list env r l = match l with
    The rewriting occur in a clean environment without any of the variables
    defined outside reachable.  This helps increase robustness against accidental,
    potentially unsound simplification of variable accesses by
-   [check_var_and_constant_result].
+   [simplify_using_approx_and_env].
 
    The rewriting occurs in an environment filled with:
    * The approximation of the free variables
@@ -909,10 +909,9 @@ and simplify_application env r ~(apply : _ Flambda.apply) ~annot =
 
 and direct_apply env r clos funct closure_id func closure
       args_with_approxs dbg eid =
-  Inlining_decision.inlining_decision_for_call_site ~env ~r ~clos ~funct
+  Inlining_decision.for_call_site ~env ~r ~clos ~funct
     ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg ~eid
-    ~inline_by_copying_function_body ~inline_by_copying_function_declaration
-    ~loop
+    ~simplify:loop
 
 and partial_apply funct fun_id (func : _ Flambda.function_declaration)
       args dbg : _ Flambda.t =

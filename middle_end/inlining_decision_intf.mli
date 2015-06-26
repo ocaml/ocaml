@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: name of this source file could now be improved *)
+
 type 'a by_copying_function_body =
      env:Inlining_env.t
   -> r:Inlining_result.t
@@ -35,7 +37,7 @@ type 'a by_copying_function_declaration =
   -> dbg:Debuginfo.t
   -> (Expr_id.t Flambda.t * Inlining_result.t) option
 
-type loop =
+type simplify =
      Inlining_env.t
   -> Inlining_result.t
   -> Expr_id.t Flambda.t

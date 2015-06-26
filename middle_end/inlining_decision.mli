@@ -17,7 +17,7 @@
    [inline_by_copying_function_declaration]. *)
 (* CR mshinwell: improve some of the label names to avoid confusion, e.g.
    [clos] vs. [closure]; [func] vs. [funct]. *)
-val inlining_decision_for_call_site
+val inlining_decision
    : env:Inlining_env.t
   -> r:Inlining_result.t
   -> clos:'a Flambda.function_declarations
@@ -29,11 +29,7 @@ val inlining_decision_for_call_site
       ((Expr_id.t Flambda.t list) * (Simple_value_approx.t list))
   -> dbg:Debuginfo.t
   -> eid:Expr_id.t
-  -> inline_by_copying_function_body:
-      'a Inlining_decision_intf.by_copying_function_body
-  -> inline_by_copying_function_declaration:
-      'a Inlining_decision_intf.by_copying_function_declaration
-  -> loop:Inlining_decision_intf.loop
+  -> simplify:Inlining_decision_intf.simplify
   -> Expr_id.t Flambda.t * Inlining_result.t
 
 (* When a function declaration is encountered in [Flambdainline], the body
