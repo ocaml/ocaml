@@ -298,8 +298,6 @@ let close_const (const : Lambda.structured_constant) : _ Flambda.t =
     Misc.fatal_error "Const_block should have been eliminated \
         before closure conversion"
 
-and close_
-
 let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   match lam with
   | Lvar id ->
@@ -393,8 +391,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
                an [Fselect_closure] expression, which projects from the set of
                closures. *)
             ((Flet (Immutable, let_bound_var,
-              Fselect_closure ({
-                  from = From_set_of_closures_same_unit set_of_closures_var;
+              Fproject_closure ({
+                  set_of_closures = set_of_closures_var;
                   closure_id = Closure_id.wrap closure_bound_var;
                 },
                 nid ()),
