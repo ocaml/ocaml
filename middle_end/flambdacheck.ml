@@ -19,24 +19,31 @@ exception Counter_example_id of Variable.t
 
 let every_used_identifier_is_bound flam =
   let test var env =
-    if not (Variable.Set.mem var env)
-    then raise (Counter_example_id var) in
+    if not (Variable.Set.mem var env) then raise (Counter_example_id var)
+  in
   let check env (flam : _ Flambda.t) =
     match flam with
-    | Fassign(id,_,_)
-    | Fvar(id,_) -> test id env
-    | Fset_of_closures({specialised_args},_) ->
-        Variable.Map.iter (fun _ id -> test id env) specialised_args
-
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _ | Flet _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
-    | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
-      -> ()
+    (* The non-trivial cases here are all the various types of expressions
+       that can contain a free [Variable.t]. *)
+    | Fassign (var, _, _) | Fvar (var, _) -> test var env
+    | Fset_of_closures
+        ({ function_decls = _; free_vars; specialised_args }, _) ->
+      Variable.Map.iter (fun _ var -> test var env) free_vars;
+      Variable.Map.iter (fun _ var -> test var env) specialised_args
+    | Fproject_closure (project_closure, _) ->
+      test project_closure.set_of_closures env
+    | Fmove_within_set_of_closures (move_within_set_of_closures, _) ->
+      test move_within_set_of_closures.closure env
+    | Fproject_var (project_var, _) ->
+      test project_var.closure env
+    | Fsymbol _ | Fconst _ | Fapply _ | Flet _ | Fletrec _ | Fprim _
+    | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
+    | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fwhile _ | Ffor _ | Fsend _
+    | Funreachable _ -> ()
   in
   let rec loop env (flam : _ Flambda.t) =
     match flam with
+    (* Expressions that can bind [Variable.t]s: *)
     | Flet(_,id,def,body,_) ->
         loop env def;
         loop (Variable.Set.add id env) body
@@ -45,9 +52,8 @@ let every_used_identifier_is_bound flam =
           List.fold_left (fun env (id,_) -> Variable.Set.add id env) env defs in
         List.iter (fun (_,def) -> loop env def) defs;
         loop env body
-    | Fset_of_closures ({function_decls;free_vars},_) as exp ->
+    | Fset_of_closures ({function_decls;free_vars = _},_) as exp ->
         check env exp;
-        Variable.Map.iter (fun _ v -> loop env v) free_vars;
         Variable.Map.iter (fun _ { Flambda. free_variables; body } ->
             loop free_variables body)
           function_decls.funs
@@ -61,20 +67,17 @@ let every_used_identifier_is_bound flam =
     | Ftrywith(body, id, handler,_) ->
         loop env body;
         loop (Variable.Set.add id env) handler
-
-    | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
-    | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Fsend _ | Funreachable _
-      as exp ->
-        check env exp;
-        Flambdaiter.apply_on_subexpressions (loop env) exp
+    (* Expressions that cannot bind [Variable.t]s, but may have free
+       occurrences of them: *)
+    | Fassign _ | Fvar _ | Fsymbol _ | Fconst _ | Fapply _
+    | Fproject_closure _ | Fmove_within_set_of_closures _ | Fproject_var _
+    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fifthenelse _
+    | Fsequence _ | Fwhile _ | Fsend _ | Funreachable _ as exp ->
+      check env exp;
+      Flambdaiter.apply_on_subexpressions (loop env) exp
   in
-  let env = Variable.Set.empty in
   try
-    loop env flam;
+    loop Variable.Set.empty flam;
     No_counter_example
   with Counter_example_id var ->
     Counter_example var
@@ -130,8 +133,8 @@ let no_identifier_bound_multiple_times flam =
         add_and_check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
+    | Fproject_var _ | Fmove_within_set_of_closures _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
@@ -168,8 +171,8 @@ let every_bound_variable_is_from_current_compilation_unit flam =
         check id
 
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
+    | Fproject_var _ | Fmove_within_set_of_closures _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
@@ -195,15 +198,14 @@ let no_assign_on_variable_of_kind_Immutable flam =
     | Flet(Mutable,id,def,body,_) ->
         loop env def;
         loop (Variable.Set.add id env) body
-    | Fset_of_closures ({ Flambda. function_decls;free_vars},_) ->
-        Variable.Map.iter (fun _ v -> loop env v) free_vars;
+    | Fset_of_closures ({ Flambda. function_decls;free_vars = _},_) ->
         let env = Variable.Set.empty in
         Variable.Map.iter (fun _ { Flambda. body } -> loop env body)
           function_decls.funs
     | Flet (Immutable, _, _, _, _)
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _ | Fletrec _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
+    | Fproject_var _ | Fmove_within_set_of_closures _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
@@ -281,24 +283,17 @@ let used_closure_id flam =
   let used = ref Closure_id.Set.empty in
   let f (flam : _ Flambda.t) =
     match flam with
-    | Fselect_closure ({from; closure_id;},_) ->
+    | Fproject_closure ({closure_id;}, _) ->
       used := Closure_id.Set.add closure_id !used;
-      begin match from with
-      | From_set_of_closures _
-      | From_closure (Not_relative _) -> ()
-      | From_closure (Relative (_, relative_to_id)) ->
-        used := Closure_id.Set.add relative_to_id !used
-      end
-    | Fvar_within_closure ({closure_id},_) ->
-        used := Closure_id.Set.add closure_id !used
-
-    | Fassign _ | Fvar _ | Fset_of_closures _
-    | Fsymbol _ | Fconst _ | Fapply _
-    | Flet _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
-    | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
-      -> ()
+    | Fmove_within_set_of_closures ({ closure = _; start_from; move_to }, _) ->
+      used := Closure_id.Set.add start_from !used;
+      used := Closure_id.Set.add move_to !used
+    | Fproject_var ({ closure = _; closure_id; var = _ }, _) ->
+      used := Closure_id.Set.add closure_id !used
+    | Fassign _ | Fvar _ | Fset_of_closures _ | Fsymbol _ | Fconst _
+    | Fapply _ | Flet _ | Fletrec _ | Fprim _ | Fswitch _ | Fstringswitch _
+    | Fstaticraise _ | Fstaticcatch _ | Ftrywith _ | Fifthenelse _
+    | Fsequence _ | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ -> ()
   in
   Flambdaiter.iter f flam;
   !used
@@ -307,8 +302,8 @@ let used_var_within_closure flam =
   let used = ref Var_within_closure.Set.empty in
   let f (flam : _ Flambda.t) =
     match flam with
-    | Fvar_within_closure ({var},_) ->
-        used := Var_within_closure.Set.add var !used
+    | Fproject_var ({ closure = _; closure_id = _; var },_) ->
+      used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
   Flambdaiter.iter f flam;

@@ -18,7 +18,7 @@ val function_declarations
   -> _ Flambda.function_declarations
   -> unit
 
-val select_closure
+val project_closure
    : Format.formatter
-  -> _ Flambda.select_closure
+  -> Flambda.project_closure
   -> unit

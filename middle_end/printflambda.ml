@@ -28,11 +28,15 @@ let rec lam ppf (flam : _ Flambda.t) =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let direct = match kind with Indirect -> "" | Direct _ -> "*" in
       fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
-  | Fselect_closure (select_closure, _) ->
-    print_select_closure ppf select_closure
-  | Fvar_within_closure({closure;closure_id;var},_) ->
-      fprintf ppf "@[<2>(var@ %a@ %a@ %a)@]"
-        Var_within_closure.print var Closure_id.print closure_id lam closure
+  | Fproject_closure (project_closure, _) ->
+    print_project_closure ppf project_closure
+  | Fproject_var({closure;closure_id;var},_) ->
+    fprintf ppf "@[<2>(project_var@ %a@ %a@ %a)@]"
+      Var_within_closure.print var
+      Closure_id.print closure_id
+      Variable.print closure
+  | Fmove_within_set_of_closures (move_within_set_of_closures, _) ->
+    print_move_within_set_of_closures ppf move_within_set_of_closures
   | Fset_of_closures (set_of_closures, _) ->
     print_set_of_closures ppf set_of_closures
   | Flet(_str, id, arg, body,_) ->
@@ -154,9 +158,9 @@ and print_set_of_closures ppf (set_of_closures : _ Flambda.set_of_closures) =
       Variable.Map.iter (fun var (f : _ Flambda.function_declaration) ->
           fprintf ppf "@ (fun %a@[<2>%a@]@ @[<2>%a@])"
             Variable.print var idents f.params lam f.body) in
-    let lams ppf =
+    let vars ppf =
       Variable.Map.iter (fun id v -> fprintf ppf "@ %a = %a"
-                      Variable.print id lam v) in
+                      Variable.print id Variable.print v) in
     let spec ppf spec_args =
       if not (Variable.Map.is_empty spec_args)
       then begin
@@ -166,8 +170,20 @@ and print_set_of_closures ppf (set_of_closures : _ Flambda.set_of_closures) =
           spec_args
       end
     in
-    fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs lams
-      free_vars spec specialised_args
+    fprintf ppf "@[<2>(set_of_closures%a %a%a)@]" funs function_decls.funs
+      vars free_vars spec specialised_args
+
+and print_project_closure ppf (project_closure : Flambda.project_closure) =
+  fprintf ppf "@[<2>(project_closure@ %a@ %a)@]"
+    Closure_id.print project_closure.closure_id
+    Variable.print project_closure.set_of_closures
+
+and print_move_within_set_of_closures ppf
+      (move_within_set_of_closures : Flambda.move_within_set_of_closures) =
+  fprintf ppf "@[<2>(move_within_set_of_closures@ %a - %a@ %a)@]"
+    Closure_id.print move_within_set_of_closures.move_to
+    Closure_id.print move_within_set_of_closures.start_from
+    Variable.print move_within_set_of_closures.closure
 
 and sequence ppf (ulam : _ Flambda.t) =
   match ulam with
@@ -194,19 +210,6 @@ and const ppf (c : Flambda.const) =
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl
 
-and print_select_closure ppf (select_closure : _ Flambda.select_closure) =
-  match select_closure with
-  | {from = From_set_of_closures set_of_closures;closure_id} ->
-      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]" Closure_id.print closure_id
-        print_set_of_closures set_of_closures
-  | {from = From_closure (Relative (var, relative_to)); closure_id} ->
-      fprintf ppf "@[<2>(select_closure_relative@ %a - %a@ %a)@]"
-        Closure_id.print closure_id Closure_id.print relative_to
-        Variable.print var
-  | {from = From_closure (Not_relative var); closure_id} ->
-      fprintf ppf "@[<2>(select_closure@ %a@ %a)@]"
-        Closure_id.print closure_id Variable.print var
-
 let function_declarations ppf (fd : _ Flambda.function_declarations) =
   let idents ppf =
     List.iter (fprintf ppf "@ %a" Variable.print) in
@@ -219,4 +222,4 @@ let function_declarations ppf (fd : _ Flambda.function_declarations) =
 let flambda ppf flam =
   fprintf ppf "%a@." lam flam
 
-let select_closure = print_select_closure
+let project_closure = print_project_closure
