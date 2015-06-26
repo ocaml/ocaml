@@ -650,6 +650,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     Instruct(SETGLOBAL):
+      accu = caml_promote(caml_domain_self(), accu);
       caml_modify_field(caml_read_root(caml_global_data), *pc, accu);
       accu = Val_unit;
       pc++;

@@ -495,8 +495,10 @@ let set_float_field base n newval =
   Cop(Cstore Double_u, [float_field_address base n; newval])
 
 let init_field base n newval =
-  Cop(Cextcall("caml_initialize_field", typ_void, false, Debuginfo.none),
-      [base; Cconst_int n; newval])
+  let promoted = Cop (Cextcall("caml_obj_promote_to", typ_addr,
+                               false, Debuginfo.none),
+                      [newval; base]) in
+  set_addr_field base n promoted
 
 let header ptr =
   Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
