@@ -387,6 +387,22 @@ let check_approx_for_closure t var : checked_approx_for_closure =
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
 
+type 'a checked_approx_for_closure_allowing_unresolved =
+  | Wrong
+  | Unresolved of Symbol.t
+  | Ok of value_closure * Variable.t option * value_set_of_closures
+
+let check_approx_for_closure_allowing_unresolved t var
+      : checked_approx_for_closure_allowing_unresolved =
+  match t.descr with
+  | Value_closure value_closure -> Ok value_closure
+  | Value_unresolved _ -> Unresolved
+  | Value_set_of_closures _
+  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
+  | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
+  | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
+    Wrong
+
 let approx_for_bound_var value_set_of_closures var =
   try
     Var_within_closure.Map.find var value_set_of_closures.bound_var
