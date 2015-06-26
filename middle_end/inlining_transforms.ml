@@ -11,6 +11,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module A = Simple_value_approx
+module B = Inlining_cost.Benefit
+module E = Inlining_env
+module R = Inlining_result
+
 let inline_by_copying_function_body ~env ~r
       ~(clos : _ Flambda.function_declarations) ~lfunc ~fun_id
       ~(func : _ Flambda.function_declaration) ~args =
@@ -78,46 +83,45 @@ let inline_by_copying_function_declaration ~env ~r ~funct
       ~params:func.params ~args ~approximations_of_args:approxs
       ~unchanging_params
   in
-  if Variable.Set.equal specialised_args (Variable.Map.keys spec_args)
-  then
+  if Variable.Set.equal specialised_args (Variable.Map.keys spec_args) then
     (* If the function already has the right set of specialised arguments,
        then there is nothing to do to improve it here. *)
     None
   else
-  (* First we generate a copy of the function application, including the
-     function declaration (s), but with variables (not yet bound) in place of
-     the arguments. *)
-  let duplicated_application : _ Flambda.t =
-    let set_of_closures : _ Flambda.set_of_closures =
-      { function_decls = clos;
-        free_vars = fv;
-        specialised_args = spec_args;
-      };
-    in
-    let set_of_closures_var = fresh_variable t ~name:"dup_set_of_closures" in
-    let select_closure : Flambda.select_closure =
-      { from = Set_of_closures_same_unit set_of_closures_var;
-        closure_id;
-      }
-    in
-    Fapply (
+    (* First we generate a copy of the function application, including the
+       function declaration (s), but with variables (not yet bound) in place of
+       the arguments. *)
+    let duplicated_application : _ Flambda.t =
+      let set_of_closures : _ Flambda.set_of_closures =
+        { function_decls = clos;
+          free_vars = fv;
+          specialised_args = spec_args;
+        };
+      in
+      let set_of_closures_var = fresh_variable t ~name:"dup_set_of_closures" in
+      let project_closure : Flambda.project_closure =
+        { closure = set_of_closures_var;
+          closure_id;
+        }
+      in
+      Fapply (
 
-        args = List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
-        kind = Direct closure_id;
-        dbg;
-      }, Expr_id.create ())
-  in
-  (* Now we bind the variables that will hold the arguments from the original
-     application, together with the set-of-closures identifier. *)
-  let expr : _ Flambda.t =
-    Flet (Immutable, clos_id, funct,
-      List.fold_left (fun expr (id, arg) ->
-          Flambda.Flet (Immutable, id, arg, expr, Expr_id.create ()))
-        duplicated_application args_decl,
-      Expr_id.create ())
-  in
-  let env =
-    E.note_entering_closure env ~closure_id
-      ~where:Inline_by_copying_function_declaration
-  in
-  Some (loop (E.activate_freshening env) r expr)
+          args = List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) args;
+          kind = Direct closure_id;
+          dbg;
+        }, Expr_id.create ())
+    in
+    (* Now we bind the variables that will hold the arguments from the original
+       application, together with the set-of-closures identifier. *)
+    let expr : _ Flambda.t =
+      Flet (Immutable, clos_id, funct,
+        List.fold_left (fun expr (id, arg) ->
+            Flambda.Flet (Immutable, id, arg, expr, Expr_id.create ()))
+          duplicated_application args_decl,
+        Expr_id.create ())
+    in
+    let env =
+      E.note_entering_closure env ~closure_id
+        ~where:Inline_by_copying_function_declaration
+    in
+    Some (loop (E.activate_freshening env) r expr)

@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* Source code transformations that are used during inlining. *)
+
 (* Inline a function by substituting its body (which may be subject to further
    transformation) at a call site.  The function's declaration is not copied.
 
