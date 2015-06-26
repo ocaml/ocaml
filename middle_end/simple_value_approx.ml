@@ -386,3 +386,13 @@ let check_approx_for_closure t var : checked_approx_for_closure =
   | Value_float _ | A.Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
+
+let approx_for_bound_var value_set_of_closures var =
+  try
+    Var_within_closure.Map.find var value_set_of_closures.bound_var
+  with
+  | Not_found ->
+    Misc.fatal_errorf "The closure %a@ %a does not bind the variable %a@."
+      Closure_id.print closure_id
+      Printflambda.flambda closure
+      Var_within_closure.print var

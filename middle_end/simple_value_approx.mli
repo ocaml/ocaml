@@ -114,7 +114,7 @@ and value_closure = {
 
 and value_set_of_closures = {
   function_decls : Expr_id.t Flambda.function_declarations;
-  bound_var : t Var_within_closure.Map.t;
+  bound_vars : t Var_within_closure.Map.t;
   unchanging_params : Variable.Set.t;
   specialised_args : Variable.Set.t;
   (* Any freshening that has been applied to [function_decls]. *)
@@ -193,10 +193,15 @@ val simplify_using_env
 
 val get_field : int -> t list -> t
 
-(* Given a set-of-closures approximation and a closure ID, apply any
-   freshening specified by the approximation to the closure ID, and return
-   the resulting ID.  Causes a fatal error if the resulting closure ID does
-   not correspond to any function declaration in the approximation. *)
+(** Find the approximation for a bound variable in a set-of-closures
+    approximation.  A fatal error is produced if the variable is not bound in
+    the given approximation. *)
+val approx_for_bound_var : value_set_of_closures -> Variable.t -> t
+
+(** Given a set-of-closures approximation and a closure ID, apply any
+    freshening specified by the approximation to the closure ID, and return
+    the resulting ID.  Causes a fatal error if the resulting closure ID does
+    not correspond to any function declaration in the approximation. *)
 val freshen_and_check_closure_id
    : value_set_of_closures
   -> Closure_id.t
@@ -211,8 +216,17 @@ type checked_approx_for_set_of_closures =
 
 val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
 
-type checked_approx_for_closure =
+type 'a checked_approx_for_closure_allowing_unresolved =
   | Wrong
-  | Ok of value_closure
+  | Ok of value_closure * Variable.t option * value_set_of_closures
 
 val check_approx_for_closure : t -> checked_approx_for_closure
+
+type 'a checked_approx_for_closure_allowing_unresolved =
+  | Wrong
+  | Unresolved of Symbol.t
+  | Ok of value_closure * Variable.t option * value_set_of_closures
+
+val check_approx_for_closure_allowing_unresolved
+   : t
+  -> checked_approx_for_closure

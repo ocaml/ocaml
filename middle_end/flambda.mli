@@ -103,8 +103,8 @@ type 'a t =
   | Fapply of 'a apply * 'a
   | Fset_of_closures of 'a set_of_closures * 'a
   | Fproject_closure of project_closure * 'a
-  | Fproject_var of project_var * 'a
   | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
+  | Fproject_var of project_var * 'a
   | Flet of let_kind * Variable.t * 'a t * 'a t * 'a
   | Fletrec of (Variable.t * 'a t) list * 'a t * 'a
   | Fprim of Lambda.primitive * 'a t list * Debuginfo.t * 'a
