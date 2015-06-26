@@ -229,4 +229,4 @@ type checked_approx_for_closure_allowing_unresolved =
 
 val check_approx_for_closure_allowing_unresolved
    : t
-  -> checked_approx_for_closure
+  -> checked_approx_for_closure_allowing_unresolved

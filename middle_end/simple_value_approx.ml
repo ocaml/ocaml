@@ -370,41 +370,31 @@ let freshen_and_check_closure_id
 
 type checked_approx_for_set_of_closures =
   | Wrong
-  | Unresolved
-  | Ok of Variable.t * value_set_of_closures
+  | Unresolved of Symbol.t
+  | Ok of Variable.t option * value_set_of_closures
 
-let check_approx_for_set_of_closures t var_or_symbol
-      : checked_approx_for_set_of_closures =
+let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
   match t.descr with
-  | Value_unresolved _symbol ->
+  | Value_unresolved symbol ->
     (* CR mshinwell: is it possible to check that this value really does
        come from another compilation unit? *)
-    Unresolved
+    Unresolved symbol
   | Value_set_of_closures value_set_of_closures ->
-    (* [Fproject_closure] only takes [Variable.t] values, so [t.var] must
-       always be [Some]; the set of closures always has a name. *)
-    begin match t.var with
-    | Some var -> Ok (var, value_set_of_closures)
-    | None ->
-      Misc.fatal_errorf "[Value_set_of_closures] approximation with no \
-          associated [Variable.t]: %a"
-        print t
-    end
+    (* Note that [var] might be [None]; we might be reaching the set of
+       closures via approximations only, with the variable originally bound
+       to the set now out of scope. *)
+    Ok (t.var, value_set_of_closures)
   | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
   | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
-
-type checked_approx_for_closure =
-  | Wrong
-  | Ok of value_closure * Variable.t option * value_set_of_closures
 
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
   | Unresolved of Symbol.t
   | Ok of value_closure * Variable.t option * value_set_of_closures
 
-let check_approx_for_closure_allowing_unresolved t var
+let check_approx_for_closure_allowing_unresolved t
       : checked_approx_for_closure_allowing_unresolved =
   match t.descr with
   | Value_closure value_closure ->
@@ -420,14 +410,17 @@ let check_approx_for_closure_allowing_unresolved t var
       Wrong
     end
   | Value_unresolved symbol -> Unresolved symbol
-  | Value_set_of_closures _
-  | Value_closure _ | Value_block _ | Value_int _ | Value_constptr _
+  | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_constptr _
   | Value_float _ | Value_boxed_int _ | Value_unknown | Value_bottom
   | Value_extern _ | Value_string _ | Value_float_array _ | Value_symbol _ ->
     Wrong
 
-let check_approx_for_closure t var : checked_approx_for_closure =
-  match check_approx_for_closure_allowing_unresolved t var with
+type checked_approx_for_closure =
+  | Wrong
+  | Ok of value_closure * Variable.t option * value_set_of_closures
+
+let check_approx_for_closure t : checked_approx_for_closure =
+  match check_approx_for_closure_allowing_unresolved t with
   | Ok (value_closure, set_of_closures_var, value_set_of_closures) ->
     Ok (value_closure, set_of_closures_var, value_set_of_closures)
   | Wrong | Unresolved _ -> Wrong
