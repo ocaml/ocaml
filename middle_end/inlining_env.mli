@@ -27,9 +27,11 @@ val inlining_level_up : t -> t
    used by the inlining heuristics to decide wether to continue.
    Unconditionnaly inlined does not take this into account. *)
 
-val find : Variable.t -> t -> Simple_value_approx.t
 (* Recover informations about the potential values of a variable.
    Fails if no information was present in the environment *)
+val find : Variable.t -> t -> Simple_value_approx.t
+
+val find_opt : t -> Variable.t -> Simple_value_approx.t option
 
 val present : t -> Variable.t -> bool
 

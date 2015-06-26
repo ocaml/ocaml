@@ -55,9 +55,11 @@ let inlining_level_up env = { env with inlining_level = env.inlining_level + 1 }
 
 let find id env =
   try Variable.Map.find id env.env_approx
-  with Not_found ->
-    Misc.fatal_error
-      (Format.asprintf "unbound variable %a@." Variable.print id)
+  with Not_found -> Misc.fatal_errorf "Unbound variable %a@." Variable.print id
+
+let find_opt t id =
+  try Some (Variable.Map.find id t.env_approx)
+  with Not_found -> None
 
 let present env var = Variable.Map.mem var env.env_approx
 

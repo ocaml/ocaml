@@ -3,7 +3,7 @@
 (*                                OCaml                                   *)
 (*                                                                        *)
 (*                       Pierre Chambart, OCamlPro                        *)
-(*                  Mark Shinwell, Jane Street Europe                     *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2015 Institut National de Recherche en Informatique et     *)
 (*   en Automatique.  All rights reserved.  This file is distributed      *)
@@ -91,7 +91,7 @@ type t = {
   symbol : Symbol.t option;
 }
 
-and descr =
+and descr = private
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_constptr of int
@@ -130,8 +130,19 @@ val value_float_array : int -> t
 val value_string : int -> string option -> t
 val value_boxed_int : 'i boxed_int -> 'i -> t
 val value_constptr : int -> t
-val value_closure : value_closure -> t
-val value_set_of_closures : value_set_of_closures -> t
+
+val value_closure
+   : ?closure_var:Variable.t
+  -> ?set_of_closures_var:Variable.t
+  -> value_set_of_closures
+  -> Closure_id.t
+  -> t
+
+val value_set_of_closures
+   : ?set_of_closures_var:Variable.t
+  -> value_set_of_closures
+  -> t
+
 val value_block : Tag.t * t array -> t
 val value_extern : Export_id.t -> t
 val value_symbol : Symbol.t -> t
@@ -195,7 +206,7 @@ val freshen_and_check_closure_id
    closures; it might be out of scope. *)
 type checked_approx_for_set_of_closures =
   | Wrong
-  | Unresolved
+  | Unresolved of Symbol.t
   | Ok of Variable.t option * value_set_of_closures
 
 val check_approx_for_set_of_closures : t -> checked_approx_for_set_of_closures
