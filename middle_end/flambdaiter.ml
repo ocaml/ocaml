@@ -63,8 +63,8 @@ let iter_toplevel f t = iter_general ~toplevel:true f t
 (* CR mshinwell: should clarify why this doesn't go under
    [Fselect_closure (From_set_of_closures ...)].  Even if the set of
    closures must be in some Flambda tree, it might not actually be in the
-   subexpression passed to [iter_on_closures]. *)
-let iter_on_closures f t =
+   subexpression passed to [iter_on_sets_of_closures]. *)
+let iter_on_sets_of_closures f t =
   let aux (flam : _ Flambda.t) =
     match flam with
     | Fset_of_closures (clos, data) -> f clos data

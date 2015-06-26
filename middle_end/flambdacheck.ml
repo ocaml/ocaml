@@ -99,7 +99,7 @@ let function_free_variables_are_bound_in_the_closure_and_parameters flam =
       function_decls.funs
   in
   try
-    Flambdaiter.iter_on_closures f flam;
+    Flambdaiter.iter_on_sets_of_closures f flam;
     No_counter_example
   with Counter_example_varset set ->
     Counter_example set
@@ -231,7 +231,7 @@ let declared_var_within_closure flam =
         let var = Var_within_closure.wrap id in
         add_and_check var) free_vars
   in
-  Flambdaiter.iter_on_closures f flam;
+  Flambdaiter.iter_on_sets_of_closures f flam;
   !bound, !bound_multiple_times
 
 let no_var_within_closure_is_bound_multiple_times flam =
@@ -248,7 +248,7 @@ let every_declared_closure_is_from_current_compilation_unit flam =
     then raise (Counter_example_cu compilation_unit)
   in
   try
-    Flambdaiter.iter_on_closures f flam;
+    Flambdaiter.iter_on_sets_of_closures f flam;
     No_counter_example
   with Counter_example_cu cu ->
     Counter_example cu
