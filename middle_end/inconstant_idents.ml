@@ -191,19 +191,16 @@ module NotConstants(P:Param) = struct
       List.iter (mark_loop ~toplevel curr) args
 *)
 
-    | Fselect_closure ({ from; closure_id; }, _) ->
+    | Fproject_closure ({ set_of_closures; closure_id; }, _) ->
       if Closure_id.in_compilation_unit compilation_unit closure_id then
-        match from with
-        | From_set_of_closures set_of_closures ->
-          mark_loop_set_of_closures ~toplevel curr set_of_closures
-        | From_closure (Not_relative var)
-        | From_closure (Relative (var, _)) ->
-          (* As for the [Fvar] case, above. *)
-          register_implication ~in_nc:(Var var) ~implies_in_nc:curr
+        register_implication ~in_nc:(Var set_of_closures) ~implies_in_nc:curr
       else
         mark_curr curr
-
-    | Fvar_within_closure ({closure = f1; _},_)
+    | Fmove_within_set_of_closures
+        ({ closure; start_from = _; move_to = _ }, _) ->
+      register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
+    | Fproject_var ({ closure; closure_id = _; var = _ }, _) ->
+      register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
     | Fprim(Lambda.Pfield _, [f1], _, _) ->
       if for_clambda
       then mark_curr curr;
@@ -311,7 +308,8 @@ module NotConstants(P:Param) = struct
     | Funreachable _ ->
       mark_curr curr
 
-  and mark_loop_set_of_closures ~toplevel curr
+  (* CR mshinwell: [toplevel] is now unused, is that correct? *)
+  and mark_loop_set_of_closures ~toplevel:_ curr
         { Flambda. function_decls; free_vars; specialised_args } =
     (* If a function in the set of closures is specialised, do not consider
        it constant. *)
@@ -325,9 +323,8 @@ module NotConstants(P:Param) = struct
     register_implication ~in_nc:(Closure function_decls.set_of_closures_id)
       ~implies_in_nc:curr;
     (* a closure is constant if its free variables are constants. *)
-    Variable.Map.iter (fun inner_id lam ->
-        mark_loop ~toplevel
-          [Closure function_decls.set_of_closures_id; Var inner_id] lam)
+    Variable.Map.iter (fun inner_id var ->
+        register_implication ~in_nc:(Var var) ~implies_in_nc:[Var inner_id])
       free_vars;
     Variable.Map.iter (fun fun_id (ffunc : _ Flambda.function_declaration) ->
         (* for each function f in a closure c 'c in NC => f' *)
