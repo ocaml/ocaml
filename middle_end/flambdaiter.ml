@@ -15,67 +15,48 @@ let iter_general ~toplevel f t =
   let rec aux (t : _ Flambda.t) =
     f t;
     match t with
-    | Fsymbol _
-    | Fvar _
-    | Fconst _ -> ()
-
-    | Fassign (_,f1,_)
-    | Fvar_within_closure({closure = f1},_) ->
-      aux f1
-
-    | Fselect_closure ({ from = From_set_of_closures set_of_closures; _ }, d) ->
-      aux (Flambda.Fset_of_closures (set_of_closures, d))
-    | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Not_relative var)); _ }, d)
-    | Fselect_closure ({ from = From_closure_or_another_unit (From_closure_current_unit (Relative (var, _))); _ }, d) ->
-      aux (Flambda.Fvar (var, d))
-    | Fselect_closure ({ from = From_closure_or_another_unit (From_another_unit symbol); _ }, d) ->
-      aux (Flambda.Fsymbol (symbol, d))
-    | Flet ( _, _, f1, f2,_)
-    | Ftrywith (f1,_,f2,_)
-    | Fsequence (f1,f2,_)
-    | Fwhile (f1,f2,_)
-    | Fstaticcatch (_,_,f1,f2,_) ->
-      aux f1; aux f2;
-
-    | Ffor (_,f1,f2,_,f3,_)
-    | Fifthenelse (f1,f2,f3,_) ->
-      aux f1;aux f2;aux f3
-
-    | Fstaticraise (_,l,_)
-    | Fprim (_,l,_,_) ->
-      iter_list l
-
-    | Fapply ({func = f1; args = fl},_) ->
-      iter_list (f1::fl)
-
-    | Fset_of_closures ({function_decls = funcs; free_vars = fv},_) ->
-      Variable.Map.iter (fun _ v -> aux v) fv;
+    | Fsymbol _ | Fvar _ | Fconst _ -> ()
+    | Fassign (_, f1, _)
+    | Fproject_var ({ closure = f1; closure_id = _; var = _ }, _) -> aux f1
+    | Fapply ({ func = f1; args = fl }, _) -> iter_list (f1::fl)
+    | Fset_of_closures
+        ({ function_decls; free_vars = _; specialised_args = _ }, _) ->
       if not toplevel then begin
-        Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
-            aux ffun.body)
-          funcs.funs
+        Variable.Map.iter
+          (fun _ (function_decl : _ Flambda.function_declaration) ->
+            aux decl.body)
+          function_decls.funs
       end
-
-    | Fletrec (defs, body,_) ->
-      List.iter (fun (_,l) -> aux l) defs;
+    | Fproject_closure _ | Fmove_within_set_of_closures _ -> ()
+    | Flet ( _, _, f1, f2, _)
+    | Ftrywith (f1, _, f2, _)
+    | Fsequence (f1, f2, _)
+    | Fwhile (f1, f2, _)
+    | Fstaticcatch (_, _, f1, f2, _) -> aux f1; aux f2
+    | Ffor (_, f1, f2, _, f3, _)
+    | Fifthenelse (f1, f2, f3, _) -> aux f1; aux f2; aux f3
+    | Fstaticraise (_, l, _)
+    | Fprim (_, l, _, _) -> iter_list l
+    | Fletrec (defs, body, _) ->
+      List.iter (fun (_, l) -> aux l) defs;
       aux body
-    | Fswitch (arg,sw,_) ->
+    | Fswitch (arg,
+        { numconsts = _; consts; numblocks = _; blocks; failaction } , _) ->
       aux arg;
-      List.iter (fun (_,l) -> aux l) sw.consts;
-      List.iter (fun (_,l) -> aux l) sw.blocks;
+      iter_list_second consts;
+      iter_list_second blocks;
       Misc.may aux sw.failaction
-    | Fstringswitch (arg,sw,def,_) ->
+    | Fstringswitch (arg, sw, def, _) ->
       aux arg;
-      List.iter (fun (_,l) -> aux l) sw;
+      iter_list_second sw;
       Misc.may aux def
-
-    | Fsend (_,f1,f2,fl,_,_) ->
-      iter_list (f1::f2::fl)
+    | Fsend (_, f1, f2, fl, _, _) -> iter_list (f1::f2::fl)
     | Funreachable _ -> ()
-
   and iter_list l = List.iter aux l in
+  and iter_list_second l = List.iter (fun (_, l) -> aux l) l in
   aux t
 
+(* CR mshinwell: [toplevel] is a bad name in this context. *)
 let iter f t = iter_general ~toplevel:false f t
 let iter_toplevel f t = iter_general ~toplevel:true f t
 
@@ -86,8 +67,7 @@ let iter_toplevel f t = iter_general ~toplevel:true f t
 let iter_on_closures f t =
   let aux (flam : _ Flambda.t) =
     match flam with
-    | Fset_of_closures (clos,data) ->
-        f clos data
+    | Fset_of_closures (clos, data) -> f clos data
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
     | Fvar_within_closure _ | Flet _ | Fletrec _

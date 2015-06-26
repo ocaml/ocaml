@@ -131,7 +131,7 @@ and 'a apply = {
 
 and 'a set_of_closures = {
   function_decls : 'a function_declarations;
-  free_vars : 'a t Variable.Map.t;
+  free_vars : Variable.t Variable.Map.t;
   (** Parameters known to always alias some variable in the scope of the set
       of closures declaration. For instance, supposing all call sites of f
       are represented in this example,
@@ -141,15 +141,15 @@ and 'a set_of_closures = {
          f x y 1;
          f x y 1]
       the specialised arguments of f can (but does not necessarily) contain
-      the assotiation [a] -> [x], but cannot contain [b] -> [y] because [f]
-      is not in the scope of [y]. If f where the recursive function,
-      [let rec f a b c = f a 1 2 in], [a] -> [x] whould still be a valid
+      the association [a] -> [x], but cannot contain [b] -> [y] because [f]
+      is not in the scope of [y]. If f were the recursive function
+      [let rec f a b c = f a 1 2 in], [a] -> [x] would still be a valid
       specialised argument because all recursive calls maintain the invariant.
 
-      This information is used for optimisation purpose, if such a binding is
+      This information is used for optimisation purposes, if such a binding is
       known, it is possible to specialise the body of the function according
-      to its parameter. This is usualy introduced when specialising a recusive
-      function, for instance.
+      to its parameter. This is usually introduced when specialising a
+      recursive function, for instance.
         [let rec map f = function
            | [] -> []
            | h :: t -> f h :: map f t
@@ -164,11 +164,13 @@ and 'a set_of_closures = {
              | [] -> []
              | h :: t -> f h :: map f t in
            map succ l]
-      with map having [f] -> [succ] in his [specialised_args] field.
+      with map having [f] -> [succ] in its [specialised_args] field.
 
-      Note that it is usualy not correct to erase this information if the
+      Note that it is usually not correct to erase this information if the
       argument is used.
   *)
+  (* CR mshinwell for pchambart: expand upon the last sentence of the previous
+     comment *)
   specialised_args : Variable.t Variable.Map.t;
 }
 
