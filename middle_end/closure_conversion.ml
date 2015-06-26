@@ -335,13 +335,13 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       in
       close_functions t env (Function_decls.create [decl])
     in
-    let select_closure =
-      { from = Set_of_closures_same_unit set_of_closures_var;
+    let project_closure =
+      { set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap closure_bound_var;
       }
     in
     Flet (Immutable, set_of_closures_var, set_of_closures,
-      Fselect_closure select_closure,
+      Fproject_closure (project_closure, nid ~name:"project_closure")
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
