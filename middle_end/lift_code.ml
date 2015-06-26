@@ -28,35 +28,6 @@ let lift_lets tree =
   in
   Flambdaiter.map aux tree
 
-let lift_set_of_closures tree =
-  let aux (expr : _ Flambda.t) : _ Flambda.t =
-    match expr with
-    | Fselect_closure (
-        { from = From_set_of_closures set; closure_id; } as select_closure, d) ->
-      let decl =
-        Flambdautils.find_declaration closure_id set.function_decls
-      in
-      if not decl.stub then
-        expr
-      else
-        (* If the function is a stub, we create an intermediate let to permit
-           its elimination. *)
-        let set_of_closures_var =
-          Variable.create "set_of_closures"
-            ~current_compilation_unit:(Compilation_unit.get_current_exn ())
-        in
-        (* CR mshinwell: treatment of the user data may be dubious here *)
-        Flet (Immutable,
-          set_of_closures_var,
-          Fset_of_closures (set, d),
-          Fselect_closure ({ select_closure with
-              from = From_closure (Not_relative set_of_closures_var);
-            }, Expr_id.create ()),
-          Expr_id.create ())
-    | e -> e
-  in
-  Flambdaiter.map aux tree
-
 let lifting_helper exprs ~create_body ~name =
   let exprs, lets =
     List.fold_right (fun (flam : _ Flambda.t) (exprs, lets) ->

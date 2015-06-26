@@ -23,9 +23,6 @@ type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 *)
 val lift_lets : lifter
 
-(* CR mshinwell: add comment *)
-val lift_set_of_closures : lifter
-
 (* Transform a [Pmakeblock] operation, that allocates and fills a new block,
    to a sequence of [let]s.  The aim is to then eliminate the allocation of
    the block, so long as it does not escape.  For example,

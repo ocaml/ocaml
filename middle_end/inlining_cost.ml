@@ -66,17 +66,12 @@ let lambda_smaller' lam ~than:threshold =
     | Fapply ({ func = fn; args; kind = direct }, _) ->
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost; lambda_size fn; lambda_list_size args
-    | Fset_of_closures ({ function_decls = ffuns; free_vars = fv }, _) ->
-      Variable.Map.iter (fun _ -> lambda_size) fv;
+    | Fset_of_closures ({ function_decls = ffuns }, _) ->
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
-    | Fselect_closure ({ from = From_set_of_closures set_of_closures; _}, d) ->
-      incr size; lambda_size (Flambda.Fset_of_closures (set_of_closures, d))
-    | Fselect_closure ({ from = From_closure _; }, _) ->
+    | Fproject_closure _ | Fproject_var _ | Fmove_within_set_of_closures _ ->
       incr size
-    | Fvar_within_closure ({ closure }, _) ->
-      incr size; lambda_size closure
     | Flet (_, _, lam, body, _) ->
       lambda_size lam; lambda_size body
     | Fletrec (bindings, body, _) ->
@@ -183,7 +178,9 @@ module Benefit = struct
         b := remove_alloc !b
         (* CR pchambart: should we consider that boxed integer and float
            operations are allocations ? *)
-      | Fprim _ | Fselect_closure _ | Fvar_within_closure _ | Fassign _ ->
+        (* CR mshinwell for pchambart: check closure cases carefully *)
+      | Fprim _ | Fproject_closure _ | Fproject_var _
+      | Fmove_within_set_of_closures _ | Fassign _ ->
         b := remove_prim !b
       | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Ftrywith _
       | Fifthenelse _ | Fwhile _ | Ffor _ ->
