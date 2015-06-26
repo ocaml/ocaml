@@ -35,18 +35,12 @@ val map_toplevel
   -> 'a Flambda.t
   -> 'a Flambda.t
 
-val free_variables : 'a Flambda.t -> Variable.Set.t
-
 val fold_subexpressions
    : ('acc -> Variable.Set.t -> 'a Flambda.t -> 'acc * 'a Flambda.t)
   -> 'acc
   -> 'a Flambda.t
   -> 'acc * 'a Flambda.t
 
-val expression_free_variables : 'a Flambda.t -> Variable.Set.t
-
-val subexpression_bound_variables
-   : 'a Flambda.t
-  -> (Variable.Set.t * 'a Flambda.t) list
+val free_variables : 'a Flambda.t -> Variable.Set.t
 
 val map_data : ('a -> 'b) -> 'a Flambda.t -> 'b Flambda.t

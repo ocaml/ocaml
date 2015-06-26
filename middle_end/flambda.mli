@@ -186,6 +186,8 @@ and 'a function_declaration = {
   (** All variables free in the *body* of the function.  For example, a
       variable that is bound as one of the function's parameters will still
       be included in this set.  This field is present as an optimization. *)
+  (* CR mshinwell: inconsistent naming free_variables/free_vars here and
+     above *)
   free_variables : Variable.Set.t;
   (** A stub function is a generated function used to prepare arguments or
       return values to allow indirect calls to functions with a special calling
