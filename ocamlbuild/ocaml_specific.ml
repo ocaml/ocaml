@@ -737,11 +737,12 @@ flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "no_alias_deps";] (A "-no-alias-deps");;
 flag ["ocaml"; "compile"; "strict_formats";] (A "-strict-formats");;
 flag ["ocaml"; "native"; "compile"; "opaque";] (A "-opaque");;
-flag ["ocaml"; "native"; "compile"; "no_float_const_prop";] (A "-no-float-const-prop");
-flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");
+flag ["ocaml"; "native"; "compile"; "no_float_const_prop";] (A "-no-float-const-prop");;
+flag ["ocaml"; "compile"; "keep_locs";] (A "-keep-locs");;
 flag ["ocaml"; "absname"; "compile"] (A "-absname");;
 flag ["ocaml"; "absname"; "infer_interface"] (A "-absname");;
-flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");
+flag ["ocaml"; "byte"; "compile"; "compat_32";] (A "-compat-32");;
+flag ["ocaml";"compile";"native";"asm"] & S [A "-S"];;
 
 
 (* threads, with or without findlib *)
