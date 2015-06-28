@@ -17,7 +17,7 @@ include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -w +33..39+48 -warn-error A -bin-annot \
+COMPFLAGS=-strict-sequence -w +33..39+48+50 -warn-error A -bin-annot \
           -safe-string $(INCLUDES)
 LINKFLAGS=
 
@@ -43,7 +43,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/consistbl.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
-  parsing/ast_helper.cmo \
+  parsing/docstrings.cmo parsing/ast_helper.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \

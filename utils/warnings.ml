@@ -67,7 +67,8 @@ type t =
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string                   (* 49 *)
-  | Expect_tailcall                         (* 50 *)
+  | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -126,10 +127,11 @@ let number = function
   | Attribute_payload _ -> 47
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
-  | Expect_tailcall -> 50
+  | Bad_docstring _ -> 50
+  | Expect_tailcall -> 51
 ;;
 
-let last_warning_number = 50
+let last_warning_number = 51
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -242,7 +244,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -390,6 +392,9 @@ let message = function
         (String.concat ", " sl)
   | No_cmi_file s ->
       "no cmi file was found in path for module " ^ s
+  | Bad_docstring unattached ->
+      if unattached then "unattached documentation comment (ignored)"
+      else "ambiguous documentation comment"
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
 ;;
@@ -475,8 +480,9 @@ let descriptions =
    46, "Illegal environment variable.";
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
-   49, "Absent cmi file when looking up module alias.";
-   50, "Warning on non-tail calls if @tailcall present";
+   49, "Missing cmi file when looking up module alias.";
+   50, "Unexpected documentation comment.";
+   51, "Warning on non-tail calls if @tailcall present";
   ]
 ;;
 

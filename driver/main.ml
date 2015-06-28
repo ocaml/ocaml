@@ -89,6 +89,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _impl = impl
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _keep_docs = set keep_docs
   let _keep_locs = set keep_locs
   let _labels = unset classic
   let _linkall = set link_everything
