@@ -24,10 +24,9 @@ let rec lam ppf (flam : _ Flambda.t) =
   | Fconst (cst,_) ->
       const ppf cst
   | Fapply({func; args; kind},_) ->
-      let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      let direct = match kind with Indirect -> "" | Direct _ -> "*" in
-      fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func lams args
+    let direct = match kind with Indirect -> "" | Direct _ -> "*" in
+    fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func
+      Variable.print_list args
   | Fproject_closure (project_closure, _) ->
     print_project_closure ppf project_closure
   | Fproject_var({closure;closure_id;var},_) ->
@@ -64,10 +63,9 @@ let rec lam ppf (flam : _ Flambda.t) =
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Fprim(prim, largs, _,_) ->
-      let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
+  | Fprim(prim, args, _,_) ->
+      fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
+        Variable.print_list args
   | Fswitch(larg, sw,_) ->
       let switch ppf (sw : _ Flambda.switch) =
         let spc = ref false in

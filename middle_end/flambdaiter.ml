@@ -21,7 +21,8 @@ let apply_on_subexpressions f (flam : _ Flambda.t) =
   | Funreachable _
   | Fproject_closure _
   | Fmove_within_set_of_closures _
-  | Fproject_var _ -> ()
+  | Fproject_var _
+  | Fprim _ -> ()
 
   | Fassign (_,f1,_) ->
     f f1
@@ -37,12 +38,11 @@ let apply_on_subexpressions f (flam : _ Flambda.t) =
   | Fifthenelse (f1,f2,f3,_) ->
     f f1;f f2;f f3
 
-  | Fstaticraise (_,l,_)
-  | Fprim (_,l,_,_) ->
+  | Fstaticraise (_,l,_) ->
     List.iter f l
 
-  | Fapply ({func;args},_) ->
-    List.iter f (func::args)
+  | Fapply ({func;_},_) ->
+    f func
   | Fset_of_closures ({function_decls;free_vars = _; specialised_args = _},_) ->
     Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
         f ffun.body)
@@ -70,7 +70,8 @@ let subexpressions (flam : _ Flambda.t) =
   | Funreachable _
   | Fproject_closure _
   | Fmove_within_set_of_closures _
-  | Fproject_var _ -> []
+  | Fproject_var _
+  | Fprim _ -> []
 
   | Fassign (_,f1,_) -> [f1]
 
@@ -85,11 +86,10 @@ let subexpressions (flam : _ Flambda.t) =
   | Fifthenelse (f1,f2,f3,_) ->
       [f1; f2; f3]
 
-  | Fstaticraise (_,l,_)
-  | Fprim (_,l,_,_) -> l
+  | Fstaticraise (_,l,_) -> l
 
-  | Fapply ({func;args},_) ->
-      (func::args)
+  | Fapply ({func;_},_) ->
+      [func]
 
   | Fset_of_closures ({function_decls;free_vars = _; specialised_args = _},_) ->
       Variable.Map.fold (fun _ (f : _ Flambda.function_declaration) l ->
@@ -120,7 +120,8 @@ let iter_general ~toplevel f t =
     | Fconst _
     | Fproject_closure _
     | Fmove_within_set_of_closures _
-    | Fproject_var _ -> ()
+    | Fproject_var _
+    | Fprim _ -> ()
 
     | Fassign (_,f1,_) ->
       aux f1
@@ -136,12 +137,11 @@ let iter_general ~toplevel f t =
     | Fifthenelse (f1,f2,f3,_) ->
       aux f1;aux f2;aux f3
 
-    | Fstaticraise (_,l,_)
-    | Fprim (_,l,_,_) ->
+    | Fstaticraise (_,l,_) ->
       iter_list l
 
-    | Fapply ({func = f1; args = fl},_) ->
-      iter_list (f1::fl)
+    | Fapply ({func = f1; _},_) ->
+      aux f1
 
     | Fset_of_closures ({function_decls = funcs; free_vars = _; specialised_args = _},_) ->
       if not toplevel then begin
@@ -197,10 +197,11 @@ let map_general ~toplevel f tree =
       | Fconst _
       | Fproject_closure _
       | Fproject_var _
-      | Fmove_within_set_of_closures _ -> tree
+      | Fmove_within_set_of_closures _
+      | Fprim _ -> tree
       | Fapply ({ func; args; kind; dbg }, annot) ->
           Fapply ({ func = aux func;
-                    args = List.map aux args;
+                    args;
                     kind; dbg }, annot)
       | Fset_of_closures ({ function_decls; free_vars;
                     specialised_args },annot) ->
@@ -224,9 +225,6 @@ let map_general ~toplevel f tree =
           let defs = List.map (fun (id,lam) -> id,aux lam) defs in
           let body = aux body in
           Fletrec (defs, body, annot)
-      | Fprim(p, args, dbg, annot) ->
-          let args = List.map aux args in
-          Fprim (p, args, dbg, annot)
       | Fstaticraise(i, args, annot) ->
           let args = List.map aux args in
           Fstaticraise (i, args, annot)
@@ -378,11 +376,6 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
 
   | Fapply ({ func; args; kind; dbg }, d) ->
       let acc, func = f acc Variable.Set.empty func in
-      let acc, args =
-        List.fold_right
-          (fun args (acc, l) ->
-             let acc, args = f acc Variable.Set.empty args in
-             acc, args :: l) args (acc,[]) in
       acc, Fapply ({ func; args; kind; dbg }, d)
 
   | Fsend (kind, e1, e2, args, dbg, d) ->
@@ -411,14 +404,6 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
       let acc, ifnot = f acc Variable.Set.empty ifnot in
       acc, Fifthenelse(cond,ifso,ifnot,d)
 
-  | Fprim (p,args,dbg,d) ->
-      let acc, args =
-        List.fold_right
-          (fun arg (acc, l) ->
-             let acc, arg = f acc Variable.Set.empty arg in
-             acc, arg :: l) args (acc,[]) in
-      acc, Fprim (p,args,dbg,d)
-
   | Fassign (v,flam,d) ->
       let acc, flam = f acc Variable.Set.empty flam in
       acc, Fassign (v,flam,d)
@@ -429,7 +414,8 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
     | Funreachable _
     | Fproject_closure _
     | Fproject_var _
-    | Fmove_within_set_of_closures _) as e ->
+    | Fmove_within_set_of_closures _
+    | Fprim _ ) as e ->
       acc, e
 
 let free_variables tree =
@@ -479,7 +465,7 @@ let map_data (type t1) (type t2) (f:t1 -> t2)
         Fletrec( defs, mapper body, f v)
     | Fapply ({ func; args; kind; dbg }, v) ->
         Fapply ({ func = mapper func;
-                  args = list_mapper args;
+                  args;
                   kind; dbg }, f v)
     | Fset_of_closures ({ function_decls; free_vars;
                   specialised_args }, v) ->
@@ -511,7 +497,7 @@ let map_data (type t1) (type t2) (f:t1 -> t2)
     | Fsend(kind, met, obj, args, dbg, v) ->
         Fsend(kind, mapper met, mapper obj, list_mapper args, dbg, f v)
     | Fprim(prim, args, dbg, v) ->
-        Fprim(prim, list_mapper args, dbg, f v)
+        Fprim(prim, args, dbg, f v)
     | Fstaticraise (i, args, v) ->
         Fstaticraise (i, list_mapper args, f v)
     | Fstaticcatch (i, vars, body, handler, v) ->

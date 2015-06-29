@@ -75,3 +75,6 @@ let output_full c t =
   Compilation_unit.output c t.compilation_unit;
   Printf.fprintf c ".";
   Ident.output c t.ident
+
+let print_list ppf ts =
+  List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts

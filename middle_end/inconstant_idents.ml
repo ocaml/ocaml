@@ -126,25 +126,24 @@ module NotConstants(P:Param) = struct
   *)
   let rec mark_loop ~toplevel (curr:dep list) (flam : _ Flambda.t) =
     match flam with
-    | Flet(str, id, lam, body, _) ->
-      if str = Flambda.Mutable then mark_curr [Var id];
-      mark_loop ~toplevel [Var id] lam;
-      (* adds 'id in NC => curr in NC'
+    | Flet(str, var, lam, body, _) ->
+      if str = Flambda.Mutable then mark_curr [Var var];
+      mark_loop ~toplevel [Var var] lam;
+      (* adds 'var in NC => curr in NC'
          This is not really necessary, but compiling this correctly is
          trickier than eliminating that earlier. *)
-      register_implication ~in_nc:(Var id) ~implies_in_nc:curr;
+      mark_var var curr;
       mark_loop ~toplevel curr body
 
     | Fletrec(defs, body, _) ->
-      List.iter (fun (id,def) ->
-          mark_loop ~toplevel [Var id] def;
-          (* adds 'id in NC => curr in NC' same remark as let case *)
-          register_implication ~in_nc:(Var id) ~implies_in_nc:curr) defs;
+      List.iter (fun (var, def) ->
+          mark_loop ~toplevel [Var var] def;
+          (* adds 'var in NC => curr in NC' same remark as let case *)
+          mark_var var curr)
+        defs;
       mark_loop ~toplevel curr body
 
-    | Fvar (id,_) ->
-      (* adds 'id in NC => curr in NC' *)
-      register_implication ~in_nc:(Var id) ~implies_in_nc:curr
+    | Fvar (var, _) -> mark_var var curr
 
     | Fset_of_closures (set_of_closures, _) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures
@@ -183,7 +182,7 @@ module NotConstants(P:Param) = struct
     *)
 
     | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg, _) ->
-      List.iter (mark_loop ~toplevel curr) args
+      mark_vars args curr
 
 (*  (* If global mutables are allowed: *)
     | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
@@ -193,7 +192,7 @@ module NotConstants(P:Param) = struct
 
     | Fproject_closure ({ set_of_closures; closure_id; }, _) ->
       if Closure_id.in_compilation_unit compilation_unit closure_id then
-        register_implication ~in_nc:(Var set_of_closures) ~implies_in_nc:curr
+        mark_var set_of_closures curr
       else
         mark_curr curr
     | Fmove_within_set_of_closures
@@ -202,10 +201,8 @@ module NotConstants(P:Param) = struct
     | Fproject_var ({ closure; closure_id = _; var = _ }, _) ->
       register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
     | Fprim(Lambda.Pfield _, [f1], _, _) ->
-      if for_clambda
-      then mark_curr curr;
-      mark_loop ~toplevel curr f1
-
+      if for_clambda then mark_curr curr;
+      mark_var f1 curr
     | Fprim(Lambda.Pgetglobalfield(id,i), [], _, _) ->
       (* adds 'global i in NC => curr in NC' *)
       if for_clambda
@@ -228,7 +225,7 @@ module NotConstants(P:Param) = struct
     | Fprim(Lambda.Psetglobalfield (_,i), [f], _, _) ->
       mark_curr curr;
       (* adds 'f in NC => global i in NC' *)
-      mark_loop ~toplevel [Global i] f
+      register_implication ~in_nc:(Var f) ~implies_in_nc:[Global i]
 
     (* Not constant cases: we mark directly 'curr in NC' and mark
        bound variables as in NC also *)
@@ -276,15 +273,18 @@ module NotConstants(P:Param) = struct
       mark_loop ~toplevel [] f2;
       mark_loop ~toplevel [] f3
 
-    | Fstaticraise (_,l,_)
-    | Fprim (_,l,_,_) ->
+    | Fstaticraise (_,l,_) ->
       mark_curr curr;
       List.iter (mark_loop ~toplevel []) l
 
-    | Fapply ({func = f1; args = fl; _ },_) ->
+    | Fprim (_, args, _, _) ->
       mark_curr curr;
-      mark_loop ~toplevel [] f1;
-      List.iter (mark_loop ~toplevel []) fl
+      mark_vars args curr
+
+    | Fapply ({func; args; _ },_) ->
+      mark_curr curr;
+      mark_vars args curr;
+      mark_loop ~toplevel [] func
 
     | Fswitch (arg,sw,_) ->
       mark_curr curr;
@@ -307,6 +307,14 @@ module NotConstants(P:Param) = struct
 
     | Funreachable _ ->
       mark_curr curr
+
+  and mark_var var curr =
+    (* adds 'id in NC => curr in NC' *)
+    register_implication ~in_nc:(Var var) ~implies_in_nc:curr
+
+  and mark_vars vars curr =
+    (* adds 'id in NC => curr in NC' *)
+    List.iter (fun var -> mark_var var curr) vars
 
   (* CR mshinwell: [toplevel] is now unused, is that correct? *)
   and mark_loop_set_of_closures ~toplevel:_ curr

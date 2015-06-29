@@ -157,23 +157,18 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
   in
   (* If the called closure is in the current set of closures, record the
      relation (callee, callee_arg) <- (caller, caller_arg) *)
-  let check_argument ~caller ~callee ~callee_pos arg =
+  let check_argument ~caller ~callee ~callee_pos caller_arg =
     match find_callee_arg ~callee ~callee_pos with
     | None -> () (* not a recursive call *)
     | Some callee_arg ->
-        match (arg : _ Flambda.t) with
-        | Fvar(caller_arg,_) ->
-            begin
-              match Variable.Map.find caller decls.funs with
-              | exception Not_found ->
-                  assert false
-              | { params } ->
-                  if List.mem caller_arg params then
-                    link ~caller ~caller_arg ~callee ~callee_arg
-                  else
-                    mark ~callee ~callee_arg
-            end
-        | _ -> mark ~callee ~callee_arg
+      match Variable.Map.find caller decls.funs with
+      | exception Not_found ->
+        assert false
+      | { params } ->
+        if List.mem caller_arg params then
+          link ~caller ~caller_arg ~callee ~callee_arg
+        else
+          mark ~callee ~callee_arg
   in
   let test_escape var =
     if Variable.Map.mem var decls.funs
@@ -188,20 +183,19 @@ let unchanging_params_in_recursion (decls : _ Flambda.function_declarations) =
     match expr with
     | Fvar (var,_) -> test_escape var
     | Fapply ({ func = Fvar(callee,_); args }, _) ->
-        let num_args = List.length args in
-        for callee_pos = num_args to (arity ~callee) - 1 do
-          match find_callee_arg ~callee ~callee_pos with
-          | None -> ()
-          | Some callee_arg -> mark ~callee ~callee_arg
-          (* if a function is partially aplied, consider all missing
-             arguments as not kept*)
-        done;
-        List.iteri (fun callee_pos arg ->
-            check_argument ~caller ~callee ~callee_pos arg)
-          args;
-        List.iter (loop ~caller) args
+      let num_args = List.length args in
+      for callee_pos = num_args to (arity ~callee) - 1 do
+        match find_callee_arg ~callee ~callee_pos with
+        | None -> ()
+        | Some callee_arg -> mark ~callee ~callee_arg
+        (* if a function is partially aplied, consider all missing
+           arguments as not kept*)
+      done;
+      List.iteri (fun callee_pos arg ->
+          check_argument ~caller ~callee ~callee_pos arg)
+        args
     | e ->
-        Flambdaiter.apply_on_subexpressions (loop ~caller) e
+      Flambdaiter.apply_on_subexpressions (loop ~caller) e
   in
   Variable.Map.iter (fun caller (decl : _ Flambda.function_declaration) ->
       loop ~caller decl.body)
@@ -265,15 +259,11 @@ let unused_arguments (decls : _ Flambda.function_declarations) : Variable.Set.t 
     | Fvar (var,_) -> used_variable var
     | Fapply ({ func; args; kind = Direct callee }, _) ->
         List.iteri (fun callee_pos arg ->
-            match arg with
-            | Flambda.Fvar (var, _) -> begin
-                match find_callee_arg ~callee ~callee_pos with
-                | Used -> used_variable var
-                | Argument param ->
-                    if not (Variable.equal var param) then
-                      used_variable var
-              end
-            | _ -> loop arg)
+            match find_callee_arg ~callee ~callee_pos with
+            | Used -> used_variable arg
+            | Argument param ->
+                if not (Variable.equal arg param) then
+                  used_variable arg)
           args;
         loop func
     | e ->

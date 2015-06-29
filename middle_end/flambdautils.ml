@@ -111,7 +111,7 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fapply(a1, _), Fapply(a2, _) ->
       a1.kind = a2.kind &&
       same a1.func a2.func &&
-      Misc.samelist same a1.args a2.args
+      Misc.samelist Variable.equal a1.args a2.args
   | Fapply _, _ | _, Fapply _ -> false
   | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
     same_set_of_closures c1 c2
@@ -136,7 +136,7 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
       Misc.samelist samebinding bl1 bl2 && same a1 a2
   | Fletrec _, _ | _, Fletrec _ -> false
   | Fprim (p1, al1, _, _), Fprim (p2, al2, _, _) ->
-      p1 = p2 && Misc.samelist same al1 al2
+      p1 = p2 && Misc.samelist Variable.equal al1 al2
   | Fprim _, _ | _, Fprim _ -> false
   | Fswitch (a1, s1, _), Fswitch (a2, s2, _) ->
       same a1 a2 && sameswitch s1 s2
