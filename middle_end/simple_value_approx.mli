@@ -222,9 +222,9 @@ val simplify_using_env
   -> Expr_id.t Flambda.t * t
 
 (** Given the approximation of a value, expected to correspond to a block
-    (in the [Pmakeblock] sense of the word), and a field number then return
+    (in the [Pmakeblock] sense of the word), and a field index then return
     an appropriate approximation for that field of the block. *)
-val get_field : t -> int -> t
+val get_field : t -> field_index:int -> t
 
 (** Find the approximation for a bound variable in a set-of-closures
     approximation.  A fatal error is produced if the variable is not bound in

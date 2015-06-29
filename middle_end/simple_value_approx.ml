@@ -242,7 +242,7 @@ let is_certainly_immutable t =
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
-let get_field t i =
+let get_field t ~field_index:i =
   match t.descr with
   | Value_block (_tag, fields) ->
     if i >= 0 && i < Array.length fields

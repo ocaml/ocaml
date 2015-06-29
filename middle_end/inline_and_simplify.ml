@@ -383,7 +383,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       then R.find_global r ~field_index:i
       else
         let module Backend = (val (E.backend env) : Backend_intf.S) in
-        A.get_field (Backend.import_global id) i
+        A.get_field (Backend.import_global id) ~field_index:i
     in
     simplify_using_approx r expr approx
   | Fprim (Psetglobalfield (ex, i), [arg], dbg, annot) as expr ->
@@ -400,7 +400,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       if arg == arg' then expr
       else Fprim (Pfield i, [arg'], dbg, annot)
     in
-    let approx = A.get_field (R.approx r) i in
+    let approx = A.get_field (R.approx r) ~field_index:i in
     simplify_using_approx_and_env env r expr approx
   | Fprim ((Psetfield _ | Parraysetu _ | Parraysets _) as p,
           block :: args, dbg, annot) ->
