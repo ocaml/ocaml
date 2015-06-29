@@ -50,6 +50,7 @@ let data_at_toplevel_node (expr : _ Flambda.t) =
   | Fstringswitch(_,_,_,data)
   | Fsend(_,_,_,_,_,data)
   | Fprim(_,_,_,data)
+  | Fseq_prim(_,_,_,data)
   | Fstaticraise (_,_,data)
   | Fstaticcatch (_,_,_,_,data)
   | Ftrywith(_,_,_,data)
@@ -76,6 +77,7 @@ let description_of_toplevel_node (expr : _ Flambda.t) =
   | Fstringswitch _ -> "stringswitch"
   | Fsend _ -> "send"
   | Fprim _ -> "prim"
+  | Fseq_prim _ -> "seq_prim"
   | Fstaticraise  _ -> "staticraise"
   | Fstaticcatch  _ -> "catch"
   | Ftrywith _ -> "trywith"

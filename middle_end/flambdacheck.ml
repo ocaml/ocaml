@@ -401,6 +401,9 @@ let no_access_to_global_module_identifiers flam =
   with Counter_example_prim p ->
     Counter_example p
 
+(* CR mshinwell: checks for other disallowed primitives?
+   (for example, Fprim with Psequand/Psequor) *)
+
 let test result fmt printer =
   match result with
   | No_counter_example -> ()
