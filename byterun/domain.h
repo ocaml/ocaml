@@ -26,7 +26,8 @@ struct domain {
   int* mark_stack_count;
 };
 
-#define Caml_check_gc_interrupt(p) ((uintnat)(p) < caml_domain_state->young_limit)
+#define Caml_check_gc_interrupt() \
+  ((uintnat)caml_domain_state->young_ptr < caml_domain_state->young_limit)
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);

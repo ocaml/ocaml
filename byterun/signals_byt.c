@@ -31,22 +31,6 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-CAMLexport int volatile caml_something_to_do = 0;
-CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
-
-void caml_process_event(void)
-{
-  void (*async_action)(void);
-
-  caml_check_urgent_gc(Val_unit);
-  caml_process_pending_signals();
-  async_action = caml_async_action_hook;
-  if (async_action != NULL) {
-    caml_async_action_hook = NULL;
-    (*async_action)();
-  }
-}
-
 static void handle_signal(int signal_number)
 {
   int saved_errno;
