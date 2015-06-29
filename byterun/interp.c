@@ -867,7 +867,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (caml_something_to_do) {
+      if (Caml_check_gc_interrupt()) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -939,13 +939,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (caml_something_to_do) goto process_signal;
+      if (Caml_check_gc_interrupt()) goto process_signal;
       Next;
 
     process_signal:
-      caml_something_to_do = 0;
       Setup_for_event;
-      caml_process_event();
+      caml_handle_gc_interrupt();
       Restore_after_event;
       Next;
 
