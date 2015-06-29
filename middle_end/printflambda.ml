@@ -66,6 +66,8 @@ let rec lam ppf (flam : _ Flambda.t) =
   | Fprim(prim, args, _,_) ->
       fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
         Variable.print_list args
+  | Fseq_prim(prim, args, _,_) ->
+      fprintf ppf "@[<2>(%a%a)@]" Printlambda.seq_primitive prim lams args
   | Fswitch(larg, sw,_) ->
       let switch ppf (sw : _ Flambda.switch) =
         let spc = ref false in

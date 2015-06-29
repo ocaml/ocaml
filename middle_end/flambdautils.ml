@@ -140,6 +140,9 @@ let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   | Fprim (p1, al1, _, _), Fprim (p2, al2, _, _) ->
       p1 = p2 && Misc.samelist Variable.equal al1 al2
   | Fprim _, _ | _, Fprim _ -> false
+  | Fseq_prim (p1, al1, _, _), Fseq_prim (p2, al2, _, _) ->
+      p1 = p2 && Misc.samelist same al1 al2
+  | Fseq_prim _, _ | _, Fseq_prim _ -> false
   | Fswitch (a1, s1, _), Fswitch (a2, s2, _) ->
       same a1 a2 && sameswitch s1 s2
   | Fswitch _, _ | _, Fswitch _ -> false
