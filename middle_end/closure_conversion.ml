@@ -429,7 +429,9 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lprim (Prevapply loc, [arg; funct]) ->
     close t env (Lambda.Lapply (funct, [arg], loc))
   | Lprim (Praise kind, [Levent (arg, event)]) ->
-    Fprim (Praise kind, [close t env arg], Debuginfo.from_raise event, nid ())
+    let arg_var = fresh_variable t ~name:"raise_arg" in
+    Flet (Immutable, arg_var, close t env arg,
+      Fprim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ()))
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
     (* Access to globals of the current module uses a distinguished primitive
@@ -441,14 +443,26 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     let exported : Lambda.exported =
       if i < t.exported_fields then Exported else Not_exported
     in
-    Fprim (Psetglobalfield (exported, i), [close t env lam], Debuginfo.none,
-      nid ~name:"setglobalfield" ())
+    let arg_var = fresh_variable t ~name:"raise_arg" in
+    Flet (Immutable, arg_var, close t env lam,
+      Fprim (Psetglobalfield (exported, i), [arg_var], Debuginfo.none,
+        nid ~name:"setglobalfield" ()))
   | Lprim (Pgetglobal id, []) when not (Ident.is_predef_exn id) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
     Fsymbol (symbol, nid ~name:"external_global" ())
   | Lprim (p, args) ->
-    Fprim (p, close_list t env args, Debuginfo.none, nid ~name:"prim" ())
+    (* One of the important consequences of the ANF-like representation
+       here is that we obtain names corresponding to the components of
+       blocks being made (with [Pmakeblock]).  This information can be used
+       by the simplification pass to increase the likelihood of eliminating
+       the allocation, since some field accesses can be tracked back to known
+       field values. *)
+    Lift_code.lifting_helper
+      ~evaluate_right_to_left:(close_list t env args)
+      ~name:"prim_arg"
+      ~create_body:(fun args ->
+        Fprim (p, args, Debuginfo.none, nid ~name:"prim" ()))
   | Lswitch (arg, sw) ->
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Ext_types.IntSet.zero_to_n in

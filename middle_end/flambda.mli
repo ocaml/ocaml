@@ -88,6 +88,10 @@ type call_kind =
 
 type const =
   (* Note: no structured constants *)
+  (* CR mshinwell for pchambart: We should clarify exactly what
+     "structured constant" means in this comment.  (For example, a float
+     array has structure, and may be constant, and is in this list, which
+     might confuse.) *)
   | Fconst_base of Asttypes.constant
   | Fconst_pointer of int
   | Fconst_float_array of string list
@@ -96,6 +100,7 @@ type const =
 
 (* The value of type ['a] may be used for annotation of an flambda expression
    by some optimization pass. *)
+(* CR-someday mshinwell: convert more of these to ANF-like forms *)
 type 'a t =
   | Fsymbol of Symbol.t * 'a
   | Fvar of Variable.t * 'a
@@ -107,7 +112,10 @@ type 'a t =
   | Fproject_var of project_var * 'a
   | Flet of let_kind * Variable.t * 'a t * 'a t * 'a
   | Fletrec of (Variable.t * 'a t) list * 'a t * 'a
-  | Fprim of Lambda.primitive * 'a t list * Debuginfo.t * 'a
+  | Fprim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
+  (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
+     (and translate to that earlier) so that middle- and back-end code for
+     these can be reduced. *)
   | Fswitch of 'a t * 'a switch * 'a
   (* Restrictions on [Lambda.Lstringswitch] also apply here *)
   | Fstringswitch of 'a t * (string * 'a t) list * 'a t option * 'a
@@ -118,6 +126,8 @@ type 'a t =
   | Fsequence of 'a t * 'a t * 'a
   | Fwhile of 'a t * 'a t * 'a
   | Ffor of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
+  (* CR-someday mshinwell: consider eliminating assignment from Flambda
+     onwards *)
   | Fassign of Variable.t * 'a t * 'a
   | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
   | Funreachable of 'a  (** Represents code proved unreachable. *)

@@ -27,7 +27,6 @@ let middle_end ppf ~sourcefile ~prefixname ~backend ~exported_fields lam =
     |> Eliminate_const_block.run
     |> Lift_strings.run
     |> Closure_conversion.lambda_to_flambda ~backend ~exported_fields
-    |> Lift_code.lift_block_construction_to_variables
   in
   dump_and_check "flambdagen" flam;
   let rec loop rounds flam =

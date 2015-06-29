@@ -58,13 +58,3 @@ let lifting_helper ~evaluate_right_to_left:exprs ~create_body ~name =
   List.fold_left (fun body (v, expr) ->
       Flambda.Flet (Immutable, v, expr, body, Expr_id.create ()))
     (create_body exprs) lets
-
-let lift_block_construction_to_variables tree =
-  let aux (expr : _ Flambda.t) : _ Flambda.t =
-    match expr with
-    | Fprim (Pmakeblock _ as primitive, args, dbg, id) ->
-      lifting_helper ~evaluate_right_to_left:args ~name:"block_field"
-        ~create_body:(fun args -> Fprim (primitive, args, dbg, id))
-    | expr -> expr
-  in
-  Flambdaiter.map aux tree
