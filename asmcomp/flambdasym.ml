@@ -61,7 +61,7 @@ let list_used_variable_withing_closure expr =
   let used = ref Var_within_closure.Set.empty in
   let aux (expr : _ Flambda.t) =
     match expr with
-    | Fvar_within_closure({ var },_) ->
+    | Fproject_var({ var },_) ->
       used := Var_within_closure.Set.add var !used
     | _ -> ()
   in
@@ -413,7 +413,7 @@ module Conv(P:Param1) = struct
         let args_approx = Variable.Map.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
-    | Fselect_closure (select_closure, _) ->
+    | Fproject_closure (project_closure, _) ->
       let compute_approx ~closure_id ~fun_approx : ET.approx =
         match get_descr fun_approx with
         | Some (Value_set_of_closures value_set_of_closures)
@@ -441,25 +441,25 @@ module Conv(P:Param1) = struct
         let sym = Compilenv.closure_symbol closure_id in
         Some (Fsymbol (sym, ())), Value_symbol sym
       else
-        begin match select_closure.from with
+        begin match project_closure.from with
         | Set_of_closures_same_unit set_of_closures ->
           let set_of_closures, fun_approx =
             conv_set_of_closures env set_of_closures
           in
           let approx = transform ~closure_id ~fun_approx in
-          let select_closure : _ Flambda.select_closure =
+          let project_closure : _ Flambda.project_closure =
             { from = From_set_of_closures set_of_closures;
               closure_id;
             }
           in
-          Fselect_closure (select_closure, ()), approx
+          Fproject_closure (project_closure, ()), approx
         | Closure_same_unit (var, relative_to) ->
           ...
         | Different_unit symbol ->
           ...
         end
 
-    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
+    | Fproject_var({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         let approx : ET.approx =
           match get_descr fun_approx with
@@ -483,11 +483,11 @@ module Conv(P:Param1) = struct
                 Printflambda.flambda expr
                 Printflambda.flambda ulam;
               assert false in
-        Fvar_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
+        Fproject_var({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
 
     (* | Fapply({func = *)
-    (*             Fselect_closure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
+    (*             Fproject_closure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
     (*                                                  free_vars = fv; *)
     (*                                                  specialised_args }, _); *)
     (*                         closure_id = off; *)
@@ -512,7 +512,7 @@ module Conv(P:Param1) = struct
     (*     in *)
 
     (*     Fapply({func = *)
-    (*               Fselect_closure ({closure = uffuns; *)
+    (*               Fproject_closure ({closure = uffuns; *)
     (*                           closure_id = off; *)
     (*                           relative_to = rel}, ()); *)
     (*             arg = uargs; *)

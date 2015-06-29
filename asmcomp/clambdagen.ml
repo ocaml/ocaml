@@ -39,10 +39,10 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
   let set_fv = ref Var_within_closure.Set.empty in
   let aux (expr : _ Flambda.t) =
     match expr with
-    | Fvar_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
+    | Fproject_var({var = env_var; closure_id = env_fun_id}, _) ->
         set_fun := Closure_id.Set.add env_fun_id !set_fun;
         set_fv := Var_within_closure.Set.add env_var !set_fv;
-    | Fselect_closure({closure_id = id; relative_to = rel}, _) ->
+    | Fproject_closure({closure_id = id; relative_to = rel}, _) ->
         let set = match rel with
           | None -> !set_fun
           | Some rel -> Closure_id.Set.add rel !set_fun in
@@ -306,7 +306,7 @@ module Conv(P:Param2) = struct
     | Fset_of_closures({ function_decls = funct; free_vars = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
-    | Fselect_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
+    | Fproject_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
         let ulam = conv env lam in
         let offset = get_fun_offset id in
         let relative_offset = match rel with
@@ -319,7 +319,7 @@ module Conv(P:Param2) = struct
            that a closure is not offseted (Cmmgen.expr_size) *)
         else Uoffset(ulam, relative_offset)
 
-    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) ->
+    | Fproject_var({closure = lam;var = env_var;closure_id = env_fun_id}, _) ->
         let ulam = conv env lam in
         let fun_offset = get_fun_offset env_fun_id in
         let var_offset = get_fv_offset env_var in

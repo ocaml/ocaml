@@ -391,7 +391,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
             let closure_bound_var = Function_decl.closure_bound_var decl in
             let let_bound_var = Env.find_var env let_rec_ident in
             (* Inside the body of the [let], each function is referred to by
-               an [Fselect_closure] expression, which projects from the set of
+               an [Fproject_closure] expression, which projects from the set of
                closures. *)
             ((Flet (Immutable, let_bound_var,
               Fproject_closure ({

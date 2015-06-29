@@ -177,7 +177,7 @@ let for_call_site ~env ~r
      apply construction. *)
   let direct_apply =
     match funct with
-    | Fselect_closure ({ from = From_set_of_closures _ }, _) -> true
+    | Fproject_closure ({ from = From_set_of_closures _ }, _) -> true
     | _ -> false
   in
   let inlining_threshold = R.inlining_threshold r in

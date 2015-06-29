@@ -24,8 +24,8 @@ let directly_used_variables tree =
     | Fprim(Poffsetref _, [Fvar _], _, _) -> ()
     | Fprim(Psetfield(_, _), [Fvar _; e], _, _) -> loop e
     | Fset_of_closures _ | Flet _ | Fassign _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _ | Fletrec _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
+    | Fproject_var _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
@@ -103,8 +103,8 @@ let eliminate_ref lam =
          | Some (var,_) -> Fassign(var, e, d2))
     | Fset_of_closures _ | Flet _
     | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fselect_closure _
-    | Fvar_within_closure _ | Fletrec _
+    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
+    | Fproject_var _ | Fletrec _
     | Fprim _ | Fswitch _ | Fstringswitch _
     | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _

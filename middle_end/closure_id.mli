@@ -13,6 +13,6 @@
 
 (** An identifier, unique across the whole program (not just one compilation
     unit), that identifies a closure within a particular set of closures
-    (viz. [Fselect_closure]). *)
+    (viz. [Fproject_closure]). *)
 
 include Closure_element_intf.S

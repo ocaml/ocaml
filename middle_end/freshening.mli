@@ -76,10 +76,12 @@ val rewrite_recursive_calls_with_symbols
   -> make_closure_symbol:(Closure_id.t -> Symbol.t)
   -> Expr_id.t Flambda.function_declarations
 
+(* CR mshinwell for mshinwell: maybe inaccurate module name, it freshens
+   closure IDs as well.  Check use points though *)
 module Project_var : sig
-  (** A table used for freshening of identifiers in [Fselect_closure]
-      ("ids of closures") and Fvar_within_closure ("bound vars of closures")
-      constructions.
+  (** A table used for freshening of identifiers in [Fproject_closure] and
+      [Fmove_within_set_of_closures] ("ids of closures"); and [Fproject_var]
+      ("bound vars of closures") expressions.
 
       This information is propagated bottom up and populated when inlining a
       function containing a closure declaration.
@@ -87,8 +89,8 @@ module Project_var : sig
       For instance,
         [let f x =
            let g y = ... x ... in
-           ... g.x ...           (Fvar_within_closure x)
-           ... g 1 ...           (Fapply (Fselect_closure g ...))
+           ... g.x ...           (Fproject_var x)
+           ... g 1 ...           (Fapply (Fproject_closure g ...))
            ]
 
       If f is inlined, g is renamed. The approximation of g will carry this

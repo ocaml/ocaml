@@ -21,7 +21,7 @@
 
     The usual case of a function declared on its own will produce a
     [Fset_of_closures] containing a single closure.  The closure itself may
-    be accessed using [Fselect_closure] and specifies which variables (by name, not
+    be accessed using [Fproject_closure] and specifies which variables (by name, not
     by any numeric offset) are free in the corresponding function definition.
     Occurrences of these free variables in the body appear as the usual
     [Fvar] expressions.
@@ -29,7 +29,7 @@
     For the case of multiple functions defined together, possibly mutually
     recursive, a [Fset_of_closures] value will be generated containing
     one closure per function.  Each closure may be accessed again using
-    [Fselect_closure], specifying which function's closure is desired.
+    [Fproject_closure], specifying which function's closure is desired.
 
     As an example, the flambda representation of:
 
@@ -40,26 +40,26 @@
     the same name in the source text):
 
       {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet(f, Fselect_closure { closure = closure; closure_id = id_f },
-              Flet(g, Fselect_closure { closure = closure; closure_id = id_g },
+              Flet(f, Fproject_closure { closure = closure; closure_id = id_f },
+              Flet(g, Fproject_closure { closure = closure; closure_id = id_g },
               ...)))]}
 
-    One can also use [Fselect_closure] to move between closures in the same set of
+    One can also use [Fproject_closure] to move between closures in the same set of
     closures.  For example for [f] and [g] as above, represented together as a
-    set of closures, we might apply [Fselect_closure] to extract the closure for [g],
-    and later decide to use [Fselect_closure] again on this value (not on the set of
+    set of closures, we might apply [Fproject_closure] to extract the closure for [g],
+    and later decide to use [Fproject_closure] again on this value (not on the set of
     closures) to access the closure for [f].  This is used when inlining
     mutually-recursive functions as a means of avoiding having to keep around
     a value corresponding to the whole set of closures.  For example,
     continuing from the example above:
 
-      {[ Fselect_closure { closure = Fvar g; closure_id = id_f;
+      {[ Fproject_closure { closure = Fvar g; closure_id = id_f;
                     relative_to = Some id_g } ]}
 
     After closure conversion an inlining pass is performed.  This may
-    introduce [Fvar_within_closure] expressions to represent accesses (from
+    introduce [Fproject_var] expressions to represent accesses (from
     the body of inlined functions) to variables bound by closures.  Some of
-    these [Fvar_within_closure] expressions may survive in the tree after
+    these [Fproject_var] expressions may survive in the tree after
     inlining has finished.
 
     Other features of this intermediate language are:
