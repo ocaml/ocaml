@@ -246,7 +246,7 @@ let tupled_function_call_stub t original_params tuplified_version
   let call : _ Flambda.t =
     Fapply ({
         func = Fvar (tuplified_version, nid ());
-        args = List.map (fun p' -> Flambda.Fvar (p', nid ())) params;
+        args = params;
         kind = Direct (Closure_id.wrap tuplified_version);
         dbg = Debuginfo.none;
       },
@@ -345,13 +345,18 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
-    Fapply ({
-        func = close t env funct;
-        args = close_list t env args;
-        kind = Indirect;
-        dbg = Debuginfo.none;
-      },
-      nid ~name:"apply" ())
+    (* Enforce right-to-left evaluation order. *)
+    Lift_code.lifting_helper
+      ~evaluate_right_to_left:(close_list t env args)
+      ~name:"apply_arg"
+      ~create_body:(fun args ->
+        Fapply ({
+            func = close t env funct;
+            args;
+            kind = Indirect;
+            dbg = Debuginfo.none;
+          },
+          nid ~name:"apply" ()))
   | Lletrec (defs, body) ->
     let env =
       List.fold_right (fun (id,  _) env ->

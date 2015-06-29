@@ -28,7 +28,7 @@ let lift_lets tree =
   in
   Flambdaiter.map aux tree
 
-let lifting_helper exprs ~create_body ~name =
+let lifting_helper ~evaluate_right_to_left:exprs ~create_body ~name =
   let exprs, lets =
     List.fold_right (fun (flam : _ Flambda.t) (exprs, lets) ->
         match flam with
@@ -63,18 +63,8 @@ let lift_block_construction_to_variables tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
     | Fprim (Pmakeblock _ as primitive, args, dbg, id) ->
-      lifting_helper args ~name:"block_field" ~create_body:(fun args ->
-        Fprim (primitive, args, dbg, id))
-    | expr -> expr
-  in
-  Flambdaiter.map aux tree
-
-let lift_apply_construction_to_variables tree =
-  let aux (expr : _ Flambda.t) : _ Flambda.t =
-    match expr with
-    | Fapply (apply, id) ->
-      lifting_helper apply.args ~name:"apply_arg" ~create_body:(fun args ->
-        Fapply ({ apply with args; }, id))
+      lifting_helper ~evaluate_right_to_left:args ~name:"block_field"
+        ~create_body:(fun args -> Fprim (primitive, args, dbg, id))
     | expr -> expr
   in
   Flambdaiter.map aux tree

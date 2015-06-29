@@ -40,6 +40,8 @@ val lift_lets : lifter
 *)
 val lift_block_construction_to_variables : lifter
 
-(* Enforce right-to-left evaluation of function arguments by lifting the
-   expressions computing the arguments into [let]s. *)
-val lift_apply_construction_to_variables : lifter
+val lifting_helper
+   : evaluate_right_to_left:Expr_id.t Flambda.t list
+  -> create_body:(Expr_id.t Flambda.t list -> Expr_id.t Flambda.t)
+  -> name:string
+  -> Expr_id.t Flambda.t

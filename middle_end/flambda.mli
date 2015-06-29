@@ -124,7 +124,7 @@ type 'a t =
 
 and 'a apply = {
   func : 'a t;
-  args : 'a t list;
+  args : Variable.t list;
   kind : call_kind;
   dbg : Debuginfo.t;
 }

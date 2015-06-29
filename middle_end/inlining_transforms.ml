@@ -60,7 +60,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
            Expr_id.create ())
       in
       f ~acc ~var ~expr)
-    (variables_bound_by_the_closure fun_id clos) init
+    (Flambdautils.variables_bound_by_the_closure fun_id clos) init
 
 let inline_by_copying_function_body ~env ~r
       ~(clos : _ Flambda.function_declarations) ~lfunc ~fun_id
@@ -79,10 +79,8 @@ let inline_by_copying_function_body ~env ~r
   (* Around the function's body, bind the parameters to the arguments
      that we saw at the call site. *)
   let bindings_for_params_around_body =
-    List.fold_left2 (fun body id arg ->
-        Flambda.Flet (Immutable, id, arg, body,
-          Expr_id.create ~name:"inline arg" ()))
-      body subst_params args
+    Flambdautils.bind ~body ~bindings:(List.combine subst_params args)
+      ~name:"inline_arg"
   in
   (* 2. Now add bindings for variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_around_body =
@@ -114,13 +112,13 @@ let inline_by_copying_function_body ~env ~r
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(function_decls : _ Flambda.function_declarations)
     ~closure_id
-    ~(func : _ Flambda.function_declaration)
+    ~(function_decl : _ Flambda.function_declaration)
     ~args_with_approxs ~unchanging_params ~specialised_args ~dbg
     ~simplify =
   let args, approxs = args_with_approxs in
   let more_specialised_args, args, args_decl =
     which_function_parameters_can_we_specialize
-      ~params:func.params ~args ~approximations_of_args:approxs
+      ~params:function_decl.params ~args ~approximations_of_args:approxs
       ~unchanging_params
   in
   if Variable.Set.equal specialised_args
@@ -147,41 +145,40 @@ let inline_by_copying_function_declaration ~env ~r ~funct
               (from_closure, expr)::for_lets)
       in
       let set_of_closures : _ Flambda.set_of_closures =
+        (* This is the new set of closures, with more precise specialisation
+           information than the one being copied. *)
         { function_decls;
           free_vars;
           specialised_args = more_specialised_args;
-        };
+        }
       in
-      List.fold_left (fun expr (free_var, free_var_def) ->
-          Flambda.Flet (Immutable, free_var, free_var_def, expr,
-            Expr_id.create ()))
-        (Fset_of_closures (set_of_closures, Expr_id.create ()))
-        free_vars_for_lets
+      Flambdautils.bind ~bindings:free_vars_for_lets
+        ~body:(Fset_of_closures (set_of_closures, Expr_id.create ()))
+        ~name:"free_var"
     in
-    (* Ggenerate a copy of the function application, including the function
+    (* Generate a copy of the function application, including the function
        declaration(s), but with variables (not yet bound) in place of the
-       arguments. *)
+       arguments.  The new set of closures is bound to a fresh variable. *)
     let duplicated_application : _ Flambda.t =
-      let set_of_closures_var = fresh_variable t ~name:"dup_set_of_closures" in
+      let set_of_closures_var = new_var "dup_set_of_closures" in
       let project_closure : Flambda.project_closure =
         { set_of_closures = set_of_closures_var;
           closure_id;
         }
       in
-      let func = Fproject_closure (project_closure, Expr_id.create ()) in
-      let args = List.map (fun id -> Flambda.Fvar (id, Expr_id.create ())) in
+      let func : _ Flambda.t =
+        Fproject_closure (project_closure, Expr_id.create ())
+      in
       Flet (Immutable, set_of_closures_var, set_of_closures,
         Fapply ({ func; args; kind = Direct closure_id; dbg; },
           Expr_id.create ()),
         Expr_id.create ())
     in
-    (* Now we bind the variables that will hold the arguments from the original
-       application, together with the set-of-closures identifier. *)
+    (* Now bind the variables that will hold the arguments from the original
+       application. *)
     let expr : _ Flambda.t =
       Flet (Immutable, clos_id, funct,
-        List.fold_left (fun expr (id, arg) ->
-            Flambda.Flet (Immutable, id, arg, expr, Expr_id.create ()))
-          duplicated_application args_decl,
+        Flambdautils.bind ~body:duplicated_application ~bindings:args_decl,
         Expr_id.create ())
     in
     let env =

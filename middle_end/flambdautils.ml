@@ -287,3 +287,8 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   Flet (Immutable, set_of_closures_var,
     Fset_of_closures (set_of_closures, Expr_id.create ()),
     project_closure, Expr_id.create ())
+
+let bind ?name ~bindings ~body =
+  List.fold_left (fun expr (var, var_def) ->
+      Flambda.Flet (Immutable, var, var_def, expr, Expr_id.create ?name ()))
+    body bindings

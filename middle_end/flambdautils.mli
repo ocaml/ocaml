@@ -56,16 +56,6 @@ val description_of_toplevel_node : 'a Flambda.t -> string
 type sharing_key
 val make_key : 'a Flambda.t -> sharing_key option
 
-(* Fold over the variables bound by a given closure, at the same time
-   creating [Fvar_within_closure] expressions to access them. *)
-val fold_over_exprs_for_variables_bound_by_closure
-   : fun_id:Closure_id.t
-  -> clos_id:Variable.t
-  -> clos:'a Flambda.function_declarations
-  -> init:'b
-  -> f:(acc:'b -> var:Variable.t -> expr:Expr_id.t Flambda.t -> 'b)
-  -> 'b
-
 (* Given an expression, freshen all variables within it, and form a function
    whose body is the resulting expression.  The variables specified by
    [params] will become the parameters of the function; the closure will be
@@ -81,3 +71,12 @@ val toplevel_substitution
    : Variable.t Variable.Map.t
   -> 'a Flambda.t
   -> 'a Flambda.t
+
+(** [bind ?name [var1, expr1; ...; varN, exprN] body] binds using
+    [Immutable] [Flet] expressions the given [(var, expr)] pairs around the
+    body.  The optional name is used for creating [Expr_id.t] values. *)
+val bind
+   : ?name:string
+  -> bindings:(Variable.t * Expr_id.t Flambda.t) list
+  -> body:Expr_id.t Flambda.t
+  -> Expr_id.t Flambda.t
