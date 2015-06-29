@@ -234,20 +234,6 @@ let toplevel_substitution sb tree =
   in
   Flambdaiter.map_toplevel aux tree
 
-let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
-      ~init ~f =
-  Variable.Set.fold (fun var acc ->
-      let expr : _ Flambda.t =
-        Fproject_var
-          ({ closure = clos_id;
-             closure_id = fun_id;
-             var = Var_within_closure.wrap var;
-           },
-           Expr_id.create ())
-      in
-      f ~acc ~var ~expr)
-    (variables_bound_by_the_closure fun_id clos) init
-
 let make_closure_declaration ~id ~body ~params : _ Flambda.t =
   let free_variables = Flambdaiter.free_variables body in
   let param_set = Variable.Set.of_list params in

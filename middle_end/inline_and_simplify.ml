@@ -73,34 +73,6 @@ let simplify_using_approx_and_env env r original_lam approx =
   in
   lam, r
 
-let which_function_parameters_can_we_specialize ~params ~args
-      ~approximations_of_args ~unchanging_params =
-  assert (List.length params = List.length args);
-  assert (List.length args = List.length approximations_of_args);
-  List.fold_right2 (fun (id, arg) approx (spec_args, args, args_decl) ->
-      let new_id, args_decl =
-        (* If the argument expression is not a variable, we declare a new one.
-           This is needed for adding arguments to specialised_args which
-           requires a variable *)
-        match (arg : _ Flambda.t) with
-        | Fvar (var, _) -> var, args_decl
-        | _ ->
-          let new_id = Variable.freshen id in
-          let args_decl = (new_id, arg) :: args_decl in
-          new_id, args_decl
-      in
-      let spec_args =
-        if Simple_value_approx.useful approx
-          && Variable.Set.mem id unchanging_params
-        then
-          Variable.Map.add id new_id spec_args
-        else
-          spec_args
-      in
-      spec_args, new_id :: args, args_decl)
-    (List.combine params args) approximations_of_args
-    (Variable.Map.empty, [], [])
-
 (* This adds only the minimal set of approximations to the closures.
    It is not strictly necessary to have this restriction, but it helps
    to catch potential substitution bugs. *)

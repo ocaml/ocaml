@@ -567,9 +567,11 @@ and close_functions t external_env function_declarations : _ Flambda.t =
   let set_of_closures : _ Flambda.set_of_closures =
     { function_decls = fun_decls;
       free_vars =
-        IdentSet.fold (fun id map ->
-            let internal_var = Env.find_var closure_env_without_parameters id in
-            let external_var = Env.find_var external_env id in
+        IdentSet.fold (fun var map ->
+            let internal_var =
+              Env.find_var closure_env_without_parameters var
+            in
+            let external_var = Env.find_var external_env var in
             Variable.Map.add internal_var external_var map)
           all_free_idents Variable.Map.empty;
       specialised_args = Variable.Map.empty;

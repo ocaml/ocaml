@@ -318,7 +318,7 @@ let for_call_site ~env ~r
 *)
             let copied_function_declaration =
               Inlining_transforms.inline_by_copying_function_declaration ~env
-                ~r:(R.clear_benefit r) ~funct ~clos ~fun_id ~func
+                ~r:(R.clear_benefit r) ~funct ~clos ~closure_id:fun_id ~func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
                 ~specialised_args:closure.specialised_args ~dbg ~simplify
             in

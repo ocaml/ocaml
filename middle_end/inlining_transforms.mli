@@ -75,10 +75,15 @@ val inline_by_copying_function_body
    non-recursive] is not sufficient.
 *)
 val inline_by_copying_function_declaration
-   : env:Inlining_env.t
+     env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos: _ Flambda.function_declarations
-  -> func: _ Flambda.function_declaration
-  -> args:_ Flambda.t list
-  -> simplify:Inlining_decision_intf.simplify
-  -> _ Flambda.t * Inlining_result.t
+  -> funct:Expr_id.t Flambda.t
+  -> clos:'a Flambda.function_declarations
+  -> closure_id:Closure_id.t
+  -> func:'a Flambda.function_declaration
+  -> args_with_approxs:
+      (Expr_id.t Flambda.t list) * (Simple_value_approx.t list)
+  -> unchanging_params:Variable.Set.t
+  -> specialised_args:Variable.Set.t
+  -> dbg:Debuginfo.t
+  -> (Expr_id.t Flambda.t * Inlining_result.t) option
