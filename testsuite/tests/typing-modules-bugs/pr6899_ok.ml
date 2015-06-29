@@ -1,11 +1,6 @@
-module Option : sig
-  type 'a t = 'a option
-  val is_some : 'a t -> bool
-end = struct
-  type 'a t = 'a option
-  let is_some = function
-    | None -> false
-    | Some _ -> true
-end
+type 'a t = 'a option
+let is_some = function
+  | None -> false
+  | Some _ -> true
 
-let test ?x () = Option.is_some x
+let should_accept ?x () = is_some x
