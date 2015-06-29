@@ -28,11 +28,12 @@ let lift_lets tree =
   in
   Flambdaiter.map aux tree
 
-let lifting_helper ~evaluate_right_to_left:exprs ~create_body ~name =
-  let exprs, lets =
-    List.fold_right (fun (flam : _ Flambda.t) (exprs, lets) ->
+let lifting_helper exprs ~evaluation_order ~create_body ~name =
+  let vars, lets =
+    (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)
+    List.fold_right (fun (flam : _ Flambda.t) (vars, lets) ->
         match flam with
-        | Fvar (_v, _) as e ->
+        | Fvar (v, _) ->
           (* Assumes that [v] is an immutable variable, otherwise this may
              change the evaluation order. *)
           (* XCR mshinwell for pchambart: Please justify why [v] is always
@@ -44,17 +45,24 @@ let lifting_helper ~evaluate_right_to_left:exprs ~create_body ~name =
              We could either remove the optimisation in Simplif in case of native code
              and add an assert requiring that no mutable variables here (in the Let case)
              or get rid of this one that will be done in the end by the first inlining
-             pass. *)
-          e::exprs, lets
+             pass.
+             mshinwell: as a note, we need to check what to do for the other
+             cases in which we now use this function (see Closure_conversion)
+          *)
+          v::vars, lets
         | expr ->
           let v =
             Variable.create name ~current_compilation_unit:
                 (Compilation_unit.get_current_exn ())
           in
-          ((Fvar (v, Expr_id.create ())) : _ Flambda.t)::exprs,
-            (v, expr)::lets)
+          v::vars, (v, expr)::lets)
       exprs ([], [])
+  in
+  let lets =
+    match evaluation_order with
+    | `Right_to_left -> lets
+    | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
       Flambda.Flet (Immutable, v, expr, body, Expr_id.create ()))
-    (create_body exprs) lets
+    (create_body vars) lets

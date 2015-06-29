@@ -41,6 +41,9 @@ let apply_on_subexpressions f (flam : _ Flambda.t) =
   | Fstaticraise (_,l,_) ->
     List.iter f l
 
+  | Fseq_prim (_, args, _, _) ->
+    List.iter f args
+
   | Fapply ({func;_},_) ->
     f func
   | Fset_of_closures ({function_decls;free_vars = _; specialised_args = _},_) ->
@@ -90,6 +93,7 @@ let subexpressions (flam : _ Flambda.t) =
 
   | Fapply ({func;_},_) ->
       [func]
+  | Fseq_prim (_, args, _, _) -> args
 
   | Fset_of_closures ({function_decls;free_vars = _; specialised_args = _},_) ->
       Variable.Map.fold (fun _ (f : _ Flambda.function_declaration) l ->
@@ -142,6 +146,8 @@ let iter_general ~toplevel f t =
 
     | Fapply ({func = f1; _},_) ->
       aux f1
+    | Fseq_prim (_, args, _, _) ->
+      iter_list args
 
     | Fset_of_closures ({function_decls = funcs; free_vars = _; specialised_args = _},_) ->
       if not toplevel then begin
@@ -181,7 +187,7 @@ let iter_on_sets_of_closures f t =
     | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
     | Fmove_within_set_of_closures _
     | Fproject_var _ | Flet _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
+    | Fprim _ | Fseq_prim _ | Fswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fstringswitch _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       -> ()
@@ -199,6 +205,8 @@ let map_general ~toplevel f tree =
       | Fproject_var _
       | Fmove_within_set_of_closures _
       | Fprim _ -> tree
+      | Fseq_prim (prim, args, dbg, annot) ->
+        Fseq_prim (prim, List.map aux args, dbg, annot)
       | Fapply ({ func; args; kind; dbg }, annot) ->
           Fapply ({ func = aux func;
                     args;
@@ -378,6 +386,15 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
       let acc, func = f acc Variable.Set.empty func in
       acc, Fapply ({ func; args; kind; dbg }, d)
 
+  | Fseq_prim (prim, args, dbg, annot) ->
+    let acc, args =
+      List.fold_right (fun arg (acc, args) ->
+          let acc, arg = f acc Variable.Set.empty arg in
+          acc, arg::args)
+        args (acc, [])
+    in
+    acc, Fseq_prim (prim, args, dbg, annot)
+
   | Fsend (kind, e1, e2, args, dbg, d) ->
       let acc, args =
         List.fold_right
@@ -418,6 +435,7 @@ let fold_subexpressions (type acc) f (acc : acc) (flam : _ Flambda.t)
     | Fprim _ ) as e ->
       acc, e
 
+(* CR mshinwell: double-check this is correct *)
 let free_variables tree =
   let free = ref Variable.Set.empty in
   let bound = ref Variable.Set.empty in
@@ -447,6 +465,10 @@ let free_variables tree =
         List.iter (fun (id,_) -> bound := Variable.Set.add id !bound) l
     | Fstaticcatch (_,ids,_,_,_) ->
         List.iter (fun id -> bound := Variable.Set.add id !bound) ids
+    | Fprim (_, args, _, _)
+    | Fapply ({ func = _; args; kind = _; dbg = _}, _) ->
+      List.iter add args
+    (* CR mshinwell: make match exhaustive *)
     | _ -> ()
   in
   iter_toplevel aux tree;
@@ -498,6 +520,8 @@ let map_data (type t1) (type t2) (f:t1 -> t2)
         Fsend(kind, mapper met, mapper obj, list_mapper args, dbg, f v)
     | Fprim(prim, args, dbg, v) ->
         Fprim(prim, args, dbg, f v)
+    | Fseq_prim(prim, args, dbg, v) ->
+        Fseq_prim(prim, list_mapper args, dbg, f v)
     | Fstaticraise (i, args, v) ->
         Fstaticraise (i, list_mapper args, f v)
     | Fstaticcatch (i, vars, body, handler, v) ->

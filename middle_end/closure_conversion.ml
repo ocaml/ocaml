@@ -255,8 +255,7 @@ let tupled_function_call_stub t original_params tuplified_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : _ Flambda.t =
-          Fprim (Pfield pos, [Flambda.Fvar (tuple_param, nid ())],
-            Debuginfo.none, nid ())
+          Fprim (Pfield pos, [tuple_param], Debuginfo.none, nid ())
         in
         pos + 1, Flambda.Flet (Immutable, param, lam, body, nid ()))
       (0, call) params
@@ -345,9 +344,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
     (* CR-someday mshinwell: the location should probably not be lost. *)
-    (* Enforce right-to-left evaluation order. *)
-    Lift_code.lifting_helper
-      ~evaluate_right_to_left:(close_list t env args)
+    Lift_code.lifting_helper (close_list t env args)
+      ~evaluation_order:`Right_to_left
       ~name:"apply_arg"
       ~create_body:(fun args ->
         Fapply ({
@@ -424,6 +422,15 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lsend (kind, met, obj, args, _) ->
     Fsend (kind, close t env met, close t env obj,
       close_list t env args, Debuginfo.none, nid ())
+  | Lprim ((Psequand | Psequor) as prim, args) ->
+    let prim =
+      match prim with
+      | Psequand -> Psequ_and
+      | Psequor -> Psequ_or
+      | _ -> assert false
+    in
+    Fseq_prim (prim, close_list t env args, Debuginfo.none,
+      nid ~name:"seq_prim" ())
   | Lprim (Pidentity, [arg]) -> close t env arg
   | Lprim (Pdirapply loc, [funct; arg])
   | Lprim (Prevapply loc, [arg; funct]) ->
@@ -431,7 +438,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = fresh_variable t ~name:"raise_arg" in
     Flet (Immutable, arg_var, close t env arg,
-      Fprim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ()))
+      Fprim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ()),
+      nid ())
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
     (* Access to globals of the current module uses a distinguished primitive
@@ -446,7 +454,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     let arg_var = fresh_variable t ~name:"raise_arg" in
     Flet (Immutable, arg_var, close t env lam,
       Fprim (Psetglobalfield (exported, i), [arg_var], Debuginfo.none,
-        nid ~name:"setglobalfield" ()))
+        nid ~name:"setglobalfield" ()),
+      nid ())
   | Lprim (Pgetglobal id, []) when not (Ident.is_predef_exn id) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
@@ -458,8 +467,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
        field values. *)
-    Lift_code.lifting_helper
-      ~evaluate_right_to_left:(close_list t env args)
+    Lift_code.lifting_helper (close_list t env args)
+      ~evaluation_order:`Right_to_left
       ~name:"prim_arg"
       ~create_body:(fun args ->
         Fprim (p, args, Debuginfo.none, nid ~name:"prim" ()))

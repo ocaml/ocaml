@@ -94,7 +94,7 @@ let rec no_effects (flam : _ Flambda.t) =
   | Flet (_, _, def, body, _) -> no_effects def && no_effects body
   | Fletrec (defs, body, _) ->
     no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
-  | Fprim (p, args, _, _) -> no_effects_prim p && List.for_all no_effects args
+  | Fprim (p, _, _, _) -> no_effects_prim p
   | Fifthenelse (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot
   | Fswitch (lam, sw, _) ->
@@ -129,8 +129,15 @@ let sequence (l1 : _ Flambda.t) (l2 : _ Flambda.t) annot : _ Flambda.t =
        these Fconst_pointer | Fconst_base ... sequences arise. *)
     match l2 with
     | Fconst ((Fconst_pointer 0 | Fconst_base (Asttypes.Const_int 0)), _) ->
-      Flambda.Fprim (Pignore, [l1], Debuginfo.none, annot)
+      let l1_var =
+        Variable.create "sequence"
+          ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      in
+      (* CR mshinwell: duplicating [annot]... *)
+      Flambda.Flet (Immutable, l1_var, l1,
+        Fprim (Pignore, [l1_var], Debuginfo.none, annot),
+        annot)
     | _ ->
       match l1 with
-      | Fprim (Pignore, [arg], _, _) -> Fsequence (arg, l2, annot)
+      | Fprim (Pignore, [_arg], _, _) -> l2
       | _ -> Fsequence (l1, l2, annot)

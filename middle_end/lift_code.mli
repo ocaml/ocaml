@@ -23,25 +23,14 @@ type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 *)
 val lift_lets : lifter
 
-(* Transform a [Pmakeblock] operation, that allocates and fills a new block,
-   to a sequence of [let]s.  The aim is to then eliminate the allocation of
-   the block, so long as it does not escape.  For example,
-
-     Pmakeblock [expr_0; ...; expr_n]
-
-   is transformed to:
-
-     let x_0 = expr_0 in
-     ...
-     let x_n = expr_n in
-     Pmakeblock [x_0; ...; x_n]
-
-   A more general solution would be to convert completely to ANF.
-*)
-val lift_block_construction_to_variables : lifter
-
+(* CR mshinwell: Rename to [bind]?  Also see Flambdautils.bind. *)
+(* [create_body] always receives the variables corresponding to [evaluate]
+   in the same order.  However [evaluation_order] specifies in which order
+   the (possibly complex) expressions bound to those variables are
+   evaluated. *)
 val lifting_helper
-   : evaluate_right_to_left:Expr_id.t Flambda.t list
-  -> create_body:(Expr_id.t Flambda.t list -> Expr_id.t Flambda.t)
+   : Expr_id.t Flambda.t list
+  -> evaluation_order:[ `Left_to_right | `Right_to_left ]
+  -> create_body:(Variable.t list -> Expr_id.t Flambda.t)
   -> name:string
   -> Expr_id.t Flambda.t

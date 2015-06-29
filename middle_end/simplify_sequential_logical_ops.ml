@@ -14,7 +14,7 @@
 module Simplify_sequential_logical_operator (G : sig
   val canonical_absorbing_element : int
   val is_absorbing_element : int -> bool
-  val primitive : Lambda.primitive
+  val primitive : Lambda.seq_primitive
 end) = struct
   module A = Simple_value_approx
   module C = Inlining_cost
@@ -59,9 +59,8 @@ end) = struct
         | true, true -> completely_eliminated ()
         | true, false (* we must run [arg1]: it might short-circuit [arg2] *)
         | false, false ->
-          Fprim (G.primitive, [arg1; arg2], dbg, annot),
-            A.value_constptr G.canonical_absorbing_element,
-              B.zero
+          Fseq_prim (G.primitive, [arg1; arg2], dbg, annot),
+            A.value_constptr G.canonical_absorbing_element, B.zero
         | false, true ->
           Fsequence (arg1,
               Fconst (Fconst_pointer G.canonical_absorbing_element,
@@ -70,20 +69,20 @@ end) = struct
               B.remove_branch (B.remove_code arg2 B.zero)
         end
       | _ ->
-        Fprim (G.primitive, [arg1; arg2], dbg, annot),
-          A.value_unknown, B.zero
+        Fseq_prim (G.primitive, [arg1; arg2], dbg, annot), A.value_unknown,
+          B.zero
 end
 
 module Simplify_and = Simplify_sequential_logical_operator (struct
   let canonical_absorbing_element = 0
   let is_absorbing_element n = (n = 0)
-  let primitive = Lambda.Psequand
+  let primitive = Lambda.Psequ_and
 end)
 let sequential_and = Simplify_and.sequential_op
 
 module Simplify_or = Simplify_sequential_logical_operator (struct
   let canonical_absorbing_element = 1
   let is_absorbing_element n = (n <> 0)
-  let primitive = Lambda.Psequor
+  let primitive = Lambda.Psequ_or
 end)
 let sequential_or = Simplify_or.sequential_op

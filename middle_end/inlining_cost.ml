@@ -63,9 +63,9 @@ let lambda_smaller' lam ~than:threshold =
     | Fconst (Fconst_base ( Const_string _ ), _) ->
       assert false
       (* should be moved out by a previous pass: see [List_string] *)
-    | Fapply ({ func = fn; args; kind = direct }, _) ->
+    | Fapply ({ func = fn; args = _; kind = direct }, _) ->
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
-      size := !size + call_cost; lambda_size fn; lambda_list_size args
+      size := !size + call_cost; lambda_size fn
     | Fset_of_closures ({ function_decls = ffuns }, _) ->
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)
@@ -78,8 +78,7 @@ let lambda_smaller' lam ~than:threshold =
       List.iter (fun (_, lam) -> lambda_size lam) bindings;
       lambda_size body
     | Fprim (prim, args, _, _) ->
-      size := !size + prim_size prim args;
-      lambda_list_size args
+      size := !size + prim_size prim args
     | Fswitch (lam, sw, _) ->
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
       aux sw.consts; aux sw.blocks;

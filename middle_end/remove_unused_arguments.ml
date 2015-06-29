@@ -47,7 +47,7 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   let renamed = rename_var var in
   let args' = List.map (fun var -> var, rename_var var) fun_decl.params in
   let args =
-    List.map (fun (_, var) -> Flambda.Fvar(var, nid ()))
+    List.map (fun (_, var) -> var)
       (List.filter (fun (var, _) -> not (Variable.Set.mem var unused)) args')
   in
   let kind = Flambda.Direct (Closure_id.wrap renamed) in

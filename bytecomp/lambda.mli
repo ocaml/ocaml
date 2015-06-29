@@ -132,6 +132,11 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
 
+(* CR-someday mshinwell: Throughout the compiler, use this type. *)
+and seq_primitive =
+  (* Boolean operations *)
+  | Psequ_and | Psequ_or
+
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
