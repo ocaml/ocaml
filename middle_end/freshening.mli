@@ -17,7 +17,8 @@
 type t
 type subst = t
 
-(** The empty, inactive freshening. *)
+(** The freshening that does nothing.  This is the unique inactive
+    freshening. *)
 val empty : t
 
 (** Activate the freshening.  Without activation, operations to request
@@ -99,6 +100,7 @@ module Project_var : sig
    *)
   type t
 
+  (* The freshening that does nothing. *)
   val empty : t
 
   (** Freshen a closure ID based on the given renaming.  The same ID is
@@ -112,6 +114,7 @@ module Project_var : sig
     -> Var_within_closure.t
 end
 
+(* CR mshinwell for mshinwell: add comment *)
 val apply_function_decls_and_free_vars
    : t
   -> 'a Variable.Map.t

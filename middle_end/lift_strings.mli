@@ -22,5 +22,4 @@
 
     The [Eliminate_const_block] pass must be run before this one.
 *)
-
 val run : Lambda.lambda -> Lambda.lambda

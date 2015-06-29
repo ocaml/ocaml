@@ -11,8 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Flambda passes expect just one notion of block construction to be used,
-   [Pmakeblock], to avoid having to handle [Const_block] throughout as
-   well.  This pass expands [Const_block] to [Pmakeblock]. *)
-
+(** Middle-end passes expect just one notion of block construction to be used,
+    [Pmakeblock], to avoid having to handle [Const_block] throughout as
+    well.  This pass expands [Const_block] to [Pmakeblock].  There is no
+    ultimate loss of information about the fact the block is constant; this
+    will be deduced by the middle end. *)
 val run : Lambda.lambda -> Lambda.lambda
