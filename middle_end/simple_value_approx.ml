@@ -242,34 +242,34 @@ let is_certainly_immutable t =
   | Value_unresolved _ | Value_unknown | Value_bottom -> false
   | Value_extern _ | Value_symbol _ -> assert false
 
-let get_field i = function
-  | [] | _ :: _ :: _ -> assert false
-  | [{descr}] ->
-    match descr with
-    | Value_block (_tag, fields) ->
-      if i >= 0 && i < Array.length fields
-      then fields.(i)
-      else value_unknown
-    | Value_bottom
-    | Value_int _ | Value_constptr _ ->
-        (* Something seriously wrong is happening: either the user is doing something
-           exceptionnaly unsafe, or it is an unreachable branch:
-           We consider this is unreachable and mark the result as it *)
-        value_bottom
-    | Value_float_array _ ->
-        (* float_arrays are immutable *)
-        value_unknown
-    | Value_string _ | Value_float _ | Value_boxed_int _  (* The user is doing something unsafe *)
-    | Value_set_of_closures _ | Value_closure _
-    (* This is used by CamlinternalMod... *)
-    | Value_symbol _ | Value_extern _
-      (* Should have been resolved *)
-    | Value_unknown ->
-        value_unknown
-    | Value_unresolved sym ->
-        (* We don't know anything, but we must remember that it comes
-           from another compilation unit in case it contained a closure *)
-      value_unresolved sym
+let get_field t i =
+  match t.descr with
+  | Value_block (_tag, fields) ->
+    if i >= 0 && i < Array.length fields
+    then fields.(i)
+    else value_unknown
+  | Value_bottom
+  | Value_int _ | Value_constptr _ ->
+    (* Something seriously wrong is happening: either the user is doing
+       something exceptionally unsafe, or it is an unreachable branch.
+       We consider this as unreachable and mark the result accordingly. *)
+    value_bottom
+  | Value_float_array _ ->
+    (* CR mshinwell: comment needs improvement *)
+    (* float_arrays are immutable *)
+    value_unknown
+  | Value_string _ | Value_float _ | Value_boxed_int _
+    (* The user is doing something unsafe. *)
+  | Value_set_of_closures _ | Value_closure _
+    (* This is used by [CamlinternalMod]. *)
+  | Value_symbol _ | Value_extern _
+    (* These should have been resolved. *)
+  | Value_unknown ->
+    value_unknown
+  | Value_unresolved sym ->
+    (* We don't know anything, but we must remember that it comes
+       from another compilation unit in case it contains a closure. *)
+    value_unresolved sym
 
 let descrs approxs = List.map (fun v -> v.descr) approxs
 
