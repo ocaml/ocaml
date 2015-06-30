@@ -4,12 +4,17 @@ FILES=allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
-SRC=../../release
 HEVEA=hevea
 HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
 HTML=-fix -exec xxdate.exe -O
 TEXT=-fix -exec xxdate.exe -text -w 79
+
+ifeq ($(wildcard ../release/),)
+	SRC = ../../release
+else
+	SRC = ../release
+endif
 
 SRC2=../$(SRC)
 OCAMLDOC=$(SRC2)/byterun/ocamlrun $(SRC2)/ocamldoc/ocamldoc -hide Pervasives
@@ -33,7 +38,7 @@ manual: files
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
 labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
-	cd library; make Tk.tex
+	cd library; $(MAKE) Tk.tex RELEASEDIR=$(SRC2)
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex labltk.tex
 
@@ -91,17 +96,17 @@ text: files
 	         ../manual.inf -e macros.tex ../manual.tex
 
 files: $(FILES)
-	cd refman; $(MAKE) all
-	cd library; $(MAKE) all
-	cd cmds; $(MAKE) all
-	cd tutorials; $(MAKE) all
+	cd refman; $(MAKE) all RELEASEDIR=$(SRC2)
+	cd library; $(MAKE) all RELEASEDIR=$(SRC2)
+	cd cmds; $(MAKE) all RELEASEDIR=$(SRC2)
+	cd tutorials; $(MAKE) all RELEASEDIR=$(SRC2)
 
 all:
-	$(MAKE) manual pdfmanual
-	$(MAKE) manual pdfmanual
-	$(MAKE) index
-	$(MAKE) manual pdfmanual
-	$(MAKE) html text info
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
+	$(MAKE) index RELEASEDIR=$(SRC2)
+	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC2)
+	$(MAKE) html text info RELEASEDIR=$(SRC2)
 
 clean:
 	rm -f $(FILES)
