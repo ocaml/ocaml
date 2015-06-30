@@ -979,14 +979,8 @@ middle_end/printflambda.cmx : middle_end/variable.cmx \
     bytecomp/lambda.cmx middle_end/flambda.cmi utils/ext_types.cmx \
     middle_end/closure_id.cmx parsing/asttypes.cmi \
     middle_end/printflambda.cmi
-middle_end/ref_to_variables.cmo : middle_end/variable.cmi \
-    middle_end/flambdaiter.cmi middle_end/flambda.cmi middle_end/expr_id.cmi \
-    middle_end/compilation_unit.cmi parsing/asttypes.cmi \
-    middle_end/ref_to_variables.cmi
-middle_end/ref_to_variables.cmx : middle_end/variable.cmx \
-    middle_end/flambdaiter.cmx middle_end/flambda.cmi middle_end/expr_id.cmx \
-    middle_end/compilation_unit.cmx parsing/asttypes.cmi \
-    middle_end/ref_to_variables.cmi
+middle_end/ref_to_variables.cmo : middle_end/ref_to_variables.cmi
+middle_end/ref_to_variables.cmx : middle_end/ref_to_variables.cmi
 middle_end/remove_unused_arguments.cmo : middle_end/variable.cmi \
     middle_end/invariant_params.cmi middle_end/flambdaiter.cmi \
     middle_end/flambda.cmi middle_end/find_recursive_functions.cmi \

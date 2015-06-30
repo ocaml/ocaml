@@ -11,6 +11,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell for pchambart: I don't understand the
+   directly_used_variables function well enough to adapt it to the new
+   types.  This function needs a comment, and it may need an exhaustive
+   match on primitives.
+*)
+(*
+
 let rename_var var =
   Variable.rename var
     ~current_compilation_unit:(Compilation_unit.get_current_exn ())
@@ -112,3 +119,7 @@ let eliminate_ref lam =
         exp
   in
   Flambdaiter.map aux lam
+
+*)
+
+let eliminate_ref flam = flam
