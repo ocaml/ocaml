@@ -196,6 +196,12 @@ val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.t * t
     passed to this function replaces it within the approximation. *)
 val augment_with_variable : t -> Variable.t -> t
 
+(** Like [augment_with_variable], but for symbol information. *)
+val augment_with_symbol : t -> Symbol.t -> t
+
+(** Replace the description within an approximation. *)
+val replace_description : t -> descr -> t
+
 (* CR mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
 val meet : t -> t -> t

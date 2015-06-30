@@ -105,6 +105,8 @@ and print ppf { descr } = print_descr ppf descr
 let approx descr = { descr; var = None; symbol = None }
 
 let augment_with_variable t var = { t with var = Some var }
+let augment_with_symbol t symbol = { t with symbol = Some symbol }
+let replace_description t descr = { t with descr }
 
 let value_unknown = approx Value_unknown
 let value_int i = approx (Value_int i)

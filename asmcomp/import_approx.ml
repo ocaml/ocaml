@@ -61,7 +61,7 @@ let rec import_ex ex =
         bound_vars;
         unchanging_params = unchanging_params;
         specialised_args = Variable.Set.empty;
-        freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
+        freshening = Freshening.Project_var.empty;
       }
     in
     A.value_set_of_closures value_set_of_closures
@@ -80,7 +80,7 @@ let import_symbol sym =
       let global = Symbol.compilation_unit sym in
       (Compilenv.approx_for_global global).ex_symbol_id in
     match import_ex (Symbol.Map.find sym symbol_id_map) with
-    | approx -> { approx with symbol = Some sym }
+    | approx -> A.augment_with_symbol approx sym
     | exception Not_found ->
       if not (Symbol.Tbl.mem reexported_missing_symbols sym)
       then begin
@@ -111,4 +111,4 @@ let import_global id =
     (Ident.Map.find id (Compilenv.approx_for_global unit).ex_globals)
 
 let really_import_approx (approx : Simple_value_approx.t) =
-  { approx with descr = really_import approx.descr }
+  A.replace_description approx (really_import approx.descr)
