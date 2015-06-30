@@ -1365,44 +1365,10 @@ to implement dynamic types.
 
 \section{Syntax for Bigarray access}\label{s:bigarray-access}
 
-(Introduced in Objective Caml 3.00)
+(Introduced in Objective Caml 3.00, deprecated in 4.03)
 
-\begin{syntax}
-expr:
-          ...
-        | expr '.{' expr { ',' expr } '}'
-        | expr '.{' expr { ',' expr } '}' '<-' expr
-\end{syntax}
-
-This extension provides syntactic sugar for getting and setting
-elements in the arrays provided by the
-"Bigarray"[\moduleref{Bigarray}] library.
-
-The short expressions are translated into calls to functions of the
-"Bigarray" module as described in the following table.
-
-\begin{tableau}{|l|l|}{expression}{translation}
-\entree{@expr_0'.{'expr_1'}'@}
-       {"Bigarray.Array1.get "@expr_0 expr_1@}
-\entree{@expr_0'.{'expr_1'}' '<-'expr@}
-       {"Bigarray.Array1.set "@expr_0 expr_1 expr@}
-\entree{@expr_0'.{'expr_1',' expr_2'}'@}
-       {"Bigarray.Array2.get "@expr_0 expr_1 expr_2@}
-\entree{@expr_0'.{'expr_1',' expr_2'}' '<-'expr@}
-       {"Bigarray.Array2.set "@expr_0 expr_1 expr_2 expr@}
-\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}'@}
-       {"Bigarray.Array3.get "@expr_0 expr_1 expr_2 expr_3@}
-\entree{@expr_0'.{'expr_1',' expr_2',' expr_3'}' '<-'expr@}
-       {"Bigarray.Array3.set "@expr_0 expr_1 expr_2 expr_3 expr@}
-\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}'@}
-       {"Bigarray.Genarray.get "@ expr_0 '[|' expr_1',' \ldots ','
-        expr_n '|]'@}
-\entree{@expr_0'.{'expr_1',' \ldots',' expr_n'}' '<-'expr@}
-       {"Bigarray.Genarray.set "@ expr_0 '[|' expr_1',' \ldots ','
-        expr_n '|]' expr@}
-\end{tableau}
-
-The last two entries are valid for any $n > 3$.
+This extension has been superseded by the customizable index operators extension~\ref{s:index-operators}.
+Some source compatibility problems are documented in~\ref{s:bigarray-indexop-compatibility}.
 
 \section{Attributes}\label{s:attributes}
 
@@ -1882,3 +1848,153 @@ types).
 
 As a side-effect of this generativity, one is allowed to unpack
 first-class modules in the body of generative functors.
+
+\section{Customizable index operators} \label{s:index-operators}
+
+( Introduced in OCaml 4.03 )
+
+\begin{syntax}
+expr:
+          ...
+        | expr '.(' expr ')'
+        | expr '.(' expr ')' '<-' expr
+        | expr '.[' expr ']'
+        | expr '.[' expr ']' '<-' expr
+        | expr '.{' expr '}'
+        | expr '.{' expr '}' '<-' expr
+;
+operator:
+          ...
+        | '.' '(' ')'
+        | '.' '(' ')' '<-'
+        | '.' '[' ']'
+        | '.' '[' ']' '<-'
+        | '.' '{' '}'
+        | '.' '{' '}' '<-'
+\end{syntax}
+
+
+This extension provides syntactic sugar for getting and setting elements for custom array-like types.
+The quintessential examples of array-like type are the standard array, string, bytes and bigarray types. For these types, elements can
+be accessed and assigned with the well-know syntax
+\begin{center}\begin{tabular}{lll}  \hline
+                & acces                 & assignment                        \\ \hline
+array           & @expr_a".("expr_i")"@ & @expr_a".("expr_i")" "<-" expr_v@ \\
+string or bytes & @expr_s".["expr_i"]"@ & @expr_s".["expr_i"]" "<-" expr_v@ \\
+bigarray & @expr_s".{"expr_i"}"@ & @expr_s".{"expr_i"}" "<-" expr_v@ \\ \hline
+\end{tabular}\end{center}
+This extension generalizes this standard syntax by associating these access and assignment operations to three new families of index operators:
+\begin{center}\begin{tabular}{lll}  \hline
+              & acces & assignment \\ \hline
+array-like    & ".()" & ".()<-"    \\
+string-like   & ".[]" & ".[]<-"    \\
+bigarray-like & ".{}" & ".{}<-"    \\ \hline
+\end{tabular}\end{center}
+The concrete syntaxes "array.(index)",\dots, "bigarray.{index}<-value"  are then redefined as syntactic sugar for these new operators
+\begin{center}\begin{tabular}{lll} \hline
+              & concrete syntax                   & translation                            \\ \hline
+array-like    & @expr_a'.('expr_i')'@             & @'(' '.()' ')' expr_a expr_i@          \\
+              & @expr_a'.('expr_i')' '<-' expr_v@ & @'(' '.()<-' ')' expr_a expr_i expr_v@ \\ \hline
+string-like   & @expr_s'.['expr_i']'@             & @'(' '.[]' ')' expr_s expr_i@          \\
+              & @expr_s'.['expr_i']' '<-' expr_v@ & @'(' '.[]<-' ')' expr_s expr_i expr_v@ \\ \hline
+bigarray-like & @expr_s'.{'expr_i^*'}'@             & @'(' '.{}' ')' expr_s expr_i^*@          \\
+              & @expr_s'.{'expr_i^*'}' '<-' expr_v@ & @'(' '.{}<-' ')' expr_s expr_i^* expr_v@ \\ \hline
+\end{tabular}\end{center}
+%
+Note that the syntactic sugar for the "( .{} )" bigarray operator family presents some particularities to support multidimensional arrays. These particularities are detailed in subsection~\ref{s:m-index-operators}.
+
+This new syntactic sugar is used in the Pervasives module[\moduleref{Pervasives}] to redefine the standard syntax for the array and string types. Similarly, the "Bigarray"[\moduleref{Bigarray}] library uses the "( .{} )" operator family.
+
+Customized access and assignment operators can be defined for arbitrary types by overriding the corresponding operators. For instance, we can define python-like dictionary
+\begin{verbatim}
+module Dict = struct
+include Hashtbl
+let ( .[] ) tabl index = find tabl index
+let ( .[]<- ) tabl index value = add tabl index value
+end
+let dict =
+  let open Dict in
+  let dict = create 10 in
+  let () =
+    dict.["one"] <- 1;
+    dict.["two"] <- 2 in
+  dict
+let () =
+  let open Dict in
+  assert( dict.["one"] = 1 )
+\end{verbatim}
+
+\subsection{Multidimensional index operators}\label{s:m-index-operators}
+
+\begin{syntax}
+expr:
+          ...
+        | expr '.{' expr { ',' expr } '}'
+        | expr '.{' expr { ',' expr } '}' '<-' expr
+;
+operator:
+          ...
+        | '.' '{' ',' '}'
+        | '.' '{' ',' ',' '}'
+        | '.' '{' ',' '..' ',' '}'
+        | '.' '{' ',' '}' '<-'
+        | '.' '{' ',' ',' '}' '<-'
+        | '.' '{' ',' '..' ',' '}' '<-'
+
+
+\end{syntax}
+
+In addition to the two regular "( .{} )" and "( .{}<- )" index operators, the "( .{} )" operator family includes $6$ specific index operators. These operators are designed to lighten access and assignment for multidimensional array of dimension $2$, $3$ and $n>3$:
+%
+\begin{center}\begin{tabular}{lll} \hline
+                & acces     & assignment  \\ \hline
+dimension $1$   & ".{}"     & ".{}<-"     \\
+dimension $2$   & ".{,}"    & ".{,}<-"    \\
+dimension $3$   & ".{,,}"   & ".{,,}<-"   \\
+dimension $n>3$ & ".{,..,}" & ".{,..,}<-" \\ \hline
+\end{tabular}\end{center}
+%
+The concrete syntaxes @expr_a'.{'expr_1,..,expr_n'}'@ and @expr_a'.{'expr_1,..,expr_n'}<-expr_v'@ are translated to the corresponding $n$-dimensional operators in function of the number $n$ of comma-separated expressions inside the braces:
+%
+\begin{center}\begin{tabular}{lll} \hline
+dimension       &  concrete syntax                           & translation                                              \\ \hline
+dimension $1$   & @expr_a'.{'expr_i'}'@                      & @'(.{})' expr_a expr_i@                                  \\
+                & @expr_a'.{'expr_i'}' '<-' expr_v@          & @'(.{}<-)' expr_a expr_i expr_v@                         \\ \hline
+dimension $2$   & @expr_a'.{'i_1,i_2'}'@                     & @'(.{,})'   expr_a i_1 i_2@                              \\
+                & @expr_a'.{'i_1,i_2} '<-' expr_v@           & @'(.{,}<-)' expr_a i_1 i_2 expr_v@                       \\ \hline
+dimension $3$   & @expr_a'.{'i_1,i_2,i_3'}'@                 & @'(.{,,})'   expr_a i_1 i_2 i_3@                         \\
+                & @expr_a'.{'i_1,i_2,i_3'}' '<-' expr_v@     & @'(.{,,}<-)' expr_a i_1 i_2 i_3 expr_v@                  \\ \hline
+dimension $n>3$ & @expr_a'.{'i_1,\ldots,i_n'}'@              &   @'(.{,..,})'  expr_a '[|'i_1';'\ldots';'i_n'|]'@       \\
+                & @expr_a'.{'i_1,\ldots,i_n'}' '<-' expr_v@  & @'(.{,..,}<-)' expr_a '[|'i_1';'\ldots';'i_n'|]' expr_v@ \\ \hline
+\end{tabular}\end{center}
+%
+Note that for multidimensional array of dimension $n > 3$, all the index arguments are packed into a single array which is then passed as an argument to the "( .{,..,} )" or "( .{,..,}<- )"  operators.
+
+These multidimensional index operators can also be redefined to be used with custom types. For instance, we can implement an unified "'a tensor" type
+for vectors and matrices and define separated access operators for vectors and matrices using "( .{} )" and "( .{,} )":
+\begin{verbatim}
+type 'a tensor = { dim: int; array: float array } constraint 'a = [< `Vector | `Matrix ]
+let  ( .{} ) ( v: [`Vector] tensor ) i = v.array.(i)
+let  ( .{,} ) ( mat: [`Matrix] tensor ) i j = mat.array.( i*mat.dim + j )
+...
+let x = v.{i} (* vector access *)
+let m = mat.{i,j} (* matrix access *)
+\end{verbatim}
+Another example, the "Bigarray"[\moduleref{Bigarray}] library defines these operators as
+%
+\begin{tableau}{ll}{operator}{function}
+\entree{ "( .{} )"       } {"Array1.get"}
+\entree{ "( .{}<- )"     } {"Array1.set"}
+\entree{ "( .{,} )"      } {"Array2.get"}
+\entree{ "( .{,}<- )"    } {"Array2.set"}
+\entree{ "( .{,,} )"     } {"Array3.get"}
+\entree{ "( .{,,}<- )"   } {"Array3.set"}
+\entree{ "( .{,..,} )"   } {"Genarray.get"}
+\entree{ "( .{,..,}<- )" } {"Genarray.set"}
+\end{tableau}
+%
+With these definitions, it is then possible to use the short syntax @bigarray'.{'index'}'@ with bigarray values by opening the "Bigarray" module in scope.
+
+\subsection{Backward compatibility warning for the "Bigarray" library} \label{s:bigarray-indexop-compatibility}
+
+One of the reasons behind the existence of the 6 special @"( .{"\ldots"} )"@ operators is to preserve backward compatibility with the "Bigarray" library special syntax. However, this extension \emph{does break} partially source compatibility with the bigarray syntax extension: before Ocaml 4.03, it was possible to use the @bigarray'.{'index'}'@ syntax without opening the "Bigarray" module. This usage is no longer possible since the @"(.{"\ldots"})"@ index operators are now defined inside the "Bigarray" module. This problem can be fixed by opening the "Bigarray" module (or by bringing in scope the index operators defined in the "Bigarray" module).
