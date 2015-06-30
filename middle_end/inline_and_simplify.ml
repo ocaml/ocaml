@@ -105,7 +105,7 @@ and reference_recursive_function_directly env closure_id annot =
   let closure_id = Closure_id.unwrap closure_id in
   match E.find_opt env closure_id with
   | None -> None
-  | Some approx -> Some (Fvar (closure_id, annot), approx)
+  | Some approx -> Some (Flambda.Fvar (closure_id, annot), approx)
 
 (* Simplify an expression that takes a set of closures and projects an
    individual closure from it. *)
