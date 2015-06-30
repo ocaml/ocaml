@@ -13,7 +13,6 @@
 
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
-module D = Inlining_decision
 module E = Inlining_env
 module R = Inlining_result
 
@@ -150,7 +149,7 @@ let simplify_move_within_set_of_closures env r
     Misc.fatal_errorf "Wrong approximation when moving within set of \
         closures: %a"
       Printflambda.move_within_set_of_closures move_within_set_of_closures
-  | Ok (value_closure, set_of_closures_var, value_set_of_closures) ->
+  | Ok (_value_closure, set_of_closures_var, value_set_of_closures) ->
     let freshen =
       A.freshen_and_check_closure_id value_set_of_closures
     in
@@ -240,7 +239,7 @@ let rec simplify_project_var env r ~(project_var : Flambda.project_var)
   let approx = R.approx r in
   let closure = project_var.closure in
   match A.check_approx_for_closure_allowing_unresolved approx with
-  | Ok (value_closure, set_of_closures_var, value_set_of_closures) ->
+  | Ok (_value_closure, _set_of_closures_var, value_set_of_closures) ->
     let module F = Freshening.Project_var in
     let freshening = value_set_of_closures.freshening in
     let var = F.apply_var_within_closure freshening project_var.var in
@@ -366,7 +365,7 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
     let body, r = loop body_env r body in
     let r = List.fold_left (fun r (id, _) -> R.exit_scope r id) r defs in
     Fletrec (defs, body, annot), r
-  | Fprim (Pgetglobal id, [], _dbg, _annot) as expr ->
+  | Fprim (Pgetglobal id, [], _dbg, _annot) ->
     let approx =
       if Ident.is_predef_exn id
       then A.value_unknown
@@ -374,8 +373,8 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         Backend.import_global id
     in
-    expr, ret r approx
-  | Fprim (Pgetglobalfield (id, i), [], _dbg, _annot) as expr ->
+    tree, ret r approx
+  | Fprim (Pgetglobalfield (id, i), [], _dbg, _annot) ->
     let approx =
       if id = Compilation_unit.get_current_id_exn ()
       then R.find_global r ~field_index:i
@@ -383,30 +382,29 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
         let module Backend = (val (E.backend env) : Backend_intf.S) in
         A.get_field (Backend.import_global id) ~field_index:i
     in
-    simplify_using_approx r expr approx
-  | Fprim (Psetglobalfield (ex, i), [arg], dbg, annot) as expr ->
+    simplify_using_approx r tree approx
+  | Fprim (Psetglobalfield (_, i), [arg], _, _) ->
     let approx = E.find arg env in
     let r = R.add_global r ~field_index:i ~approx in
-    expr, ret r A.value_unknown
-  | Fprim (Pfield i, [arg], dbg, annot) as expr ->
+    tree, ret r A.value_unknown
+  | Fprim (Pfield i, [arg], _, _) as expr ->
     let approx = A.get_field (E.find arg env) ~field_index:i in
     simplify_using_approx_and_env env r expr approx
-  | Fprim ((Psetfield _ | Parraysetu _ | Parraysets _) as p,
-          block :: args, dbg, annot) as expr ->
+  | Fprim ((Psetfield _ | Parraysetu _ | Parraysets _), block::_, dbg, _) ->
     let block_approx = E.find block env in
     if A.is_certainly_immutable block_approx then begin
       Location.prerr_warning (Debuginfo.to_location dbg)
         Warnings.Assignment_on_non_mutable_value
     end;
-    expr, ret r A.value_unknown
+    tree, ret r A.value_unknown
   | Fprim ((Psequand | Psequor), _, _, _) ->
     Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
         expressions; use Fseq_prim instead"
-  | Fprim (p, args, dbg, annot) as expr ->
+  | Fprim (p, args, dbg, _) ->
     let approxs = E.find_list env args in
     let expr, approx, benefit =
       let module Backend = (val (E.backend env) : Backend_intf.S) in
-      Simplify_primitives.primitive p (args, approxs) expr dbg
+      Simplify_primitives.primitive p (args, approxs) tree dbg
         ~size_int:Backend.size_int ~big_endian:Backend.big_endian
     in
     let r = R.map_benefit r (B.(+) benefit) in
@@ -420,7 +418,6 @@ and loop_direct env r (tree : 'a Flambda.t) : 'a Flambda.t * R.t =
       match prim with
       | Psequ_and -> Simplify_sequential_logical_ops.sequential_and
       | Psequ_or -> Simplify_sequential_logical_ops.sequential_or
-      | _ -> assert false
     in
     let expr, approx, simplification_benefit =
       simplifier ~arg1 ~arg1_approx ~arg2 ~arg2_approx ~dbg ~annot
@@ -758,7 +755,8 @@ and simplify_set_of_closures original_env r
     in
     let body, r =
       E.enter_closure closure_env ~closure_id:(Closure_id.wrap fid)
-        ~inline_inside:(D.should_inline_inside_declaration function_decl)
+        ~inline_inside:
+          (Inlining_decision.should_inline_inside_declaration function_decl)
         ~where:Transform_set_of_closures_expression
         ~f:(fun body_env -> loop body_env r function_decl.body)
     in
@@ -820,16 +818,17 @@ and simplify_set_of_closures original_env r
 *)
 and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
       : _ Flambda.t * R.t =
-  let { func; args; kind = _; dbg } = apply in
+  let { Flambda. func; args; kind = _; dbg } = apply in
   let func, r = loop env r func in
   let func_approx = R.approx r in
-  let args, args_approxs, r = loop_list env r args in
+  let args_approxs = List.map (fun arg -> E.find arg env) args in
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({ func; args; kind = Indirect; dbg }, eid),
+    Fapply ({ func; args; kind = Indirect; dbg }, annot),
       ret r A.value_unknown
   in
-  match func_approx.descr with
-  | Value_closure { closure_id; value_set_of_closures } ->
+  match A.check_approx_for_closure func_approx with
+  | Ok (value_closure, _set_of_closures_var, value_set_of_closures) ->
+    let closure_id = value_closure.closure_id in
     let clos = value_set_of_closures.function_decls in
     let func_decl =
       try Flambdautils.find_declaration closure_id clos with
@@ -841,32 +840,32 @@ and simplify_apply env r ~(apply : _ Flambda.apply) ~annot
     let nargs = List.length args in
     let arity = Flambdautils.function_arity func_decl in
     if nargs = arity then
-      direct_apply env r clos func closure_id func_decl value_set_of_closures
-        (args, args_approxs) dbg eid
+      full_apply env r clos func closure_id func_decl value_set_of_closures
+        (args, args_approxs) dbg annot
     else if nargs > arity then
       let h_args, q_args = Misc.split_at arity args in
       let h_approxs, _q_approxs = Misc.split_at arity args_approxs in
       let expr, r =
-        direct_apply env r clos func closure_id func_decl value_set_of_closures
+        full_apply env r clos func closure_id func_decl value_set_of_closures
           (h_args, h_approxs) dbg (Expr_id.create ())
       in
       loop env r (Flambda.Fapply ({ func = expr; args = q_args;
-                           kind = Indirect; dbg }, eid))
+                           kind = Indirect; dbg }, annot))
     else if nargs > 0 && nargs < arity then
       let partial_fun = partial_apply func closure_id func_decl args dbg in
       loop env r partial_fun
     else
       no_transformation ()
-  | _ -> no_transformation ()
+  | Wrong -> no_transformation ()
 
-and direct_apply env r clos funct closure_id func closure
+and full_apply env r clos lhs_of_application closure_id func closure
       args_with_approxs dbg eid =
-  D.for_call_site ~env ~r ~clos ~funct
+  Inlining_decision.for_call_site ~env ~r ~clos ~lhs_of_application
     ~fun_id:closure_id ~func ~closure ~args_with_approxs ~dbg ~eid
     ~simplify:loop
 
 and partial_apply funct fun_id (func : _ Flambda.function_declaration)
-      args dbg : _ Flambda.t =
+      (args : Variable.t list) dbg : _ Flambda.t =
   let arity = Flambdautils.function_arity func in
   let remaining_args = arity - (List.length args) in
   assert (remaining_args > 0);
@@ -875,15 +874,12 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
   in
   let applied_args, remaining_args = Misc.map2_head
       (fun arg id' -> id', arg) args param_sb in
-  let call_args =
-    List.map (fun id' -> Flambda.Fvar (id', Expr_id.create ())) param_sb
-  in
   let funct_id = new_var "partial_called_fun" in
   let new_fun_id = new_var "partial_fun" in
   let expr : _ Flambda.t =
     Fapply ({
       func = Fvar (funct_id, Expr_id.create ());
-      args = call_args;
+      args = param_sb;
       kind = Direct fun_id;
       dbg;
     }, Expr_id.create ())
@@ -893,7 +889,8 @@ and partial_apply funct fun_id (func : _ Flambda.function_declaration)
       ~body:expr ~params:remaining_args
   in
   let with_args = List.fold_right (fun (id', arg) expr ->
-      Flambda.Flet (Immutable, id', arg, expr, Expr_id.create ()))
+      Flambda.Flet (Immutable, id', Fvar (arg, Expr_id.create ()),
+        expr, Expr_id.create ()))
     applied_args closures
   in
   Flet (Immutable, funct_id, funct, with_args, Expr_id.create ())
