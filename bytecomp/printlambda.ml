@@ -254,6 +254,10 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
 
+let seq_primitive ppf = function
+  | Psequ_and -> fprintf ppf "&&"
+  | Psequ_or -> fprintf ppf "||"
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id

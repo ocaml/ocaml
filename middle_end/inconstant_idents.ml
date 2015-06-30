@@ -49,9 +49,9 @@
 
 module Int = Ext_types.Int
 
-type constant_result = {
-  not_constant_id : Variable.Set.t;
-  not_constant_closure : Set_of_closures_id.Set.t;
+type result = {
+  id : Variable.Set.t;
+  closure : Set_of_closures_id.Set.t;
 }
 
 module type Param = sig
@@ -63,8 +63,6 @@ module type Param = sig
 end
 
 module NotConstants(P:Param) = struct
-
-
   let for_clambda = P.for_clambda
   let compilation_unit = P.compilation_unit
 
@@ -281,6 +279,10 @@ module NotConstants(P:Param) = struct
       mark_curr curr;
       mark_vars args curr
 
+    | Fseq_prim (_, args, _, _) ->
+      mark_curr curr;
+      List.iter (mark_loop ~toplevel []) args
+
     | Fapply ({func; args; _ },_) ->
       mark_curr curr;
       mark_vars args curr;
@@ -374,13 +376,12 @@ module NotConstants(P:Param) = struct
   let res =
     mark_loop ~toplevel:P.toplevel [] P.expr;
     propagate ();
-    { not_constant_id = !variables;
-      not_constant_closure = !closures; }
+    { id = !variables;
+      closure = !closures; }
 
 end
 
-let not_constants (type a) ~for_clambda ~compilation_unit
-    (expr:a Flambda.t) =
+let inconstants (type a) ~for_clambda ~compilation_unit (expr : a Flambda.t) =
   let module P = struct
     type t = a
     let expr = expr

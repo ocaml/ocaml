@@ -30,7 +30,7 @@ let no_effects_prim (prim : Lambda.primitive) =
                ( "caml_format_float" | "caml_format_int" |
                  "caml_int32_format" | "caml_nativeint_format" |
                  "caml_int64_format" ) }
-  | Psequand | Psequor | Pnot
+  | Pnot
   | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
@@ -86,6 +86,13 @@ let no_effects_prim (prim : Lambda.primitive) =
   | Pbigstring_load_64 false
   | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ -> false
+  | Psequand | Psequor ->
+    Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
+        expressions; use Fseq_prim instead"
+
+let no_effects_seq_prim (prim : Lambda.seq_primitive) =
+  match prim with
+  | Psequ_and | Psequ_or -> true
 
 let rec no_effects (flam : _ Flambda.t) =
   match flam with
@@ -94,7 +101,9 @@ let rec no_effects (flam : _ Flambda.t) =
   | Flet (_, _, def, body, _) -> no_effects def && no_effects body
   | Fletrec (defs, body, _) ->
     no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
-  | Fprim (p, _, _, _) -> no_effects_prim p
+  | Fprim (prim, _, _, _) -> no_effects_prim prim
+  | Fseq_prim (prim, args, _, _) ->
+    no_effects_seq_prim prim && List.for_all no_effects args
   | Fifthenelse (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot
   | Fswitch (lam, sw, _) ->

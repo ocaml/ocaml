@@ -423,7 +423,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     Fsend (kind, close t env met, close t env obj,
       close_list t env args, Debuginfo.none, nid ())
   | Lprim ((Psequand | Psequor) as prim, args) ->
-    let prim =
+    let prim : Lambda.seq_primitive =
       match prim with
       | Psequand -> Psequ_and
       | Psequor -> Psequ_or

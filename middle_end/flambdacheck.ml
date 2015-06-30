@@ -22,6 +22,7 @@ let every_used_identifier_is_bound flam =
     if not (Variable.Set.mem var env) then raise (Counter_example_id var)
   in
   let check env (flam : _ Flambda.t) =
+    (* CR mshinwell: check this function carefully *)
     match flam with
     (* The non-trivial cases here are all the various types of expressions
        that can contain a free [Variable.t]. *)
@@ -36,7 +37,10 @@ let every_used_identifier_is_bound flam =
       test move_within_set_of_closures.closure env
     | Fproject_var (project_var, _) ->
       test project_var.closure env
-    | Fsymbol _ | Fconst _ | Fapply _ | Flet _ | Fletrec _ | Fprim _
+    | Fapply ({ func = _; args; kind = _; dbg = _ }, _)
+    | Fprim (_, args, _, _) ->
+      List.iter (fun var -> test var env) args
+    | Fsymbol _ | Fconst _ | Flet _ | Fletrec _ | Fseq_prim _
     | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
     | Ftrywith _ | Fifthenelse _ | Fsequence _ | Fwhile _ | Ffor _ | Fsend _
     | Funreachable _ -> ()
@@ -71,8 +75,9 @@ let every_used_identifier_is_bound flam =
        occurrences of them: *)
     | Fassign _ | Fvar _ | Fsymbol _ | Fconst _ | Fapply _
     | Fproject_closure _ | Fmove_within_set_of_closures _ | Fproject_var _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fifthenelse _
-    | Fsequence _ | Fwhile _ | Fsend _ | Funreachable _ as exp ->
+    | Fprim _ | Fseq_prim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
+    | Fifthenelse _ | Fsequence _ | Fwhile _ | Fsend _
+    | Funreachable _ as exp ->
       check env exp;
       Flambdaiter.apply_on_subexpressions (loop env) exp
   in
@@ -135,7 +140,7 @@ let no_identifier_bound_multiple_times flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
     | Fproject_var _ | Fmove_within_set_of_closures _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
+    | Fprim _ | Fseq_prim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
       -> ()
@@ -173,7 +178,7 @@ let every_bound_variable_is_from_current_compilation_unit flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
     | Fproject_var _ | Fmove_within_set_of_closures _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
+    | Fprim _ | Fseq_prim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
     | Fifthenelse _ | Fsequence _
     | Fwhile _ | Fsend _ | Funreachable _
       -> ()
@@ -206,8 +211,8 @@ let no_assign_on_variable_of_kind_Immutable flam =
     | Fassign _ | Fvar _
     | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
     | Fproject_var _ | Fmove_within_set_of_closures _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _
-    | Ftrywith _ | Fifthenelse _ | Fsequence _
+    | Fprim _ | Fseq_prim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
+    | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
     | Fwhile _ | Ffor _ | Fsend _ | Funreachable _
       as exp ->
         check env exp;
@@ -291,9 +296,10 @@ let used_closure_id flam =
     | Fproject_var ({ closure = _; closure_id; var = _ }, _) ->
       used := Closure_id.Set.add closure_id !used
     | Fassign _ | Fvar _ | Fset_of_closures _ | Fsymbol _ | Fconst _
-    | Fapply _ | Flet _ | Fletrec _ | Fprim _ | Fswitch _ | Fstringswitch _
-    | Fstaticraise _ | Fstaticcatch _ | Ftrywith _ | Fifthenelse _
-    | Fsequence _ | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ -> ()
+    | Fapply _ | Flet _ | Fletrec _ | Fprim _ | Fseq_prim _ | Fswitch _
+    | Fstringswitch _ | Fstaticraise _ | Fstaticcatch _ | Ftrywith _
+    | Fifthenelse _ | Fsequence _ | Fwhile _ | Ffor _ | Fsend _
+    | Funreachable _ -> ()
   in
   Flambdaiter.iter f flam;
   !used

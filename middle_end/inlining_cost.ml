@@ -44,7 +44,15 @@ let prim_size (prim : Lambda.primitive) args =
   | Pbigarrayset (_, ndims, _, _) -> 4 + ndims * 6
   | Pgetglobalfield _ -> 2
   | Psetglobalfield _ -> 2
+  | Psequand | Psequor ->
+    Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
+        expressions; use Fseq_prim instead"
+  (* CR mshinwell: This match must be made exhaustive. *)
   | _ -> 2 (* arithmetic and comparisons *)
+
+let seq_prim_size (prim : Lambda.seq_primitive) =
+  match prim with
+  | Psequ_and | Psequ_or -> 2
 
 (* Simple approximation of the space cost of an Flambda expression. *)
 
@@ -79,6 +87,9 @@ let lambda_smaller' lam ~than:threshold =
       lambda_size body
     | Fprim (prim, args, _, _) ->
       size := !size + prim_size prim args
+    | Fseq_prim (prim, args, _, _) ->
+      size := !size + seq_prim_size prim;
+      List.iter lambda_size args
     | Fswitch (lam, sw, _) ->
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
       aux sw.consts; aux sw.blocks;
@@ -178,7 +189,7 @@ module Benefit = struct
         (* CR pchambart: should we consider that boxed integer and float
            operations are allocations ? *)
         (* CR mshinwell for pchambart: check closure cases carefully *)
-      | Fprim _ | Fproject_closure _ | Fproject_var _
+      | Fprim _ | Fseq_prim _ | Fproject_closure _ | Fproject_var _
       | Fmove_within_set_of_closures _ | Fassign _ ->
         b := remove_prim !b
       | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Ftrywith _

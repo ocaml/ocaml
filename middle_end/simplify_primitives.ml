@@ -27,9 +27,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       let eid = Flambdautils.data_at_toplevel_node expr in
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->
-          S.const_ptr_expr arg 0 eid
+        S.const_ptr_expr (Flambda.Fvar (arg, Expr_id.create ())) 0 eid
       | _ ->
-          S.const_ptr_expr expr 0 eid
+        S.const_ptr_expr expr 0 eid
     end
   | _ ->
     let eid = Flambdautils.data_at_toplevel_node expr in

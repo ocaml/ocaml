@@ -15,7 +15,7 @@
     information. *)
 val primitive
    : Lambda.primitive
-  -> (Expr_id.t Flambda.t list * (Simple_value_approx.t list))
+  -> (Variable.t list * (Simple_value_approx.t list))
   -> Expr_id.t Flambda.t
   -> Debuginfo.t
   -> size_int:int

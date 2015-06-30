@@ -11,10 +11,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* CR mshinwell: remove prefixes *)
-type inconstant_result = {
-  inconstant_id : Variable.Set.t;
-  inconstant_closure : Set_of_closures_id.Set.t;
+type result = {
+  id : Variable.Set.t;
+  closure : Set_of_closures_id.Set.t;
 }
 
 (** [inconstants] with [for_clambda = true] finds those variables and
@@ -28,4 +27,4 @@ val inconstants
    : for_clambda:bool
   -> compilation_unit:Compilation_unit.t
   -> _ Flambda.t
-  -> constant_result
+  -> result
