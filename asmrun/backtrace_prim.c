@@ -28,11 +28,7 @@
 /* In order to prevent the GC from walking through the debug information
    (which have no headers), we transform frame_descr pointers into
    31/63 bits ocaml integers by shifting them by 1 to the right. We do
-   not lose information as descr pointers are aligned.
-
-   In particular, we do not need to use [caml_modify] when setting
-   an array element with such a value.
-*/
+   not lose information as descr pointers are aligned.  */
 value caml_val_raw_backtrace_slot(backtrace_slot pc)
 {
   return Val_long((uintnat)pc>>1);
@@ -43,9 +39,8 @@ backtrace_slot caml_raw_backtrace_slot_val(value v)
   return ((backtrace_slot)(Long_val(v)<<1));
 }
 
-/* returns the next frame descriptor (or NULL if none is available),
+/* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
-
 frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
 {
   frame_descr * d;
@@ -90,7 +85,6 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
    preserved the global, statically bounded buffer of the old
    implementation -- before the more flexible
    [caml_get_current_callstack] was implemented. */
-
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
 {
   if (exn != caml_backtrace_last_exn) {
@@ -126,8 +120,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
    (hopefully less often). Instead of using a bounded buffer as
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
-
-CAMLprim value caml_get_current_callstack(value max_frames_value) {
+CAMLprim value caml_get_current_callstack(value max_frames_value)
+{
   CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
 
@@ -170,7 +164,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
       frame_descr * descr = caml_next_frame_descriptor(&pc, &sp);
       Assert(descr != NULL);
-      Field(trace, trace_pos) = caml_val_raw_backtrace_slot((backtrace_slot) descr);
+      Store_field(trace, trace_pos, caml_val_raw_backtrace_slot((backtrace_slot) descr));
     }
   }
 
@@ -178,7 +172,6 @@ CAMLprim value caml_get_current_callstack(value max_frames_value) {
 }
 
 /* Extract location information for the given frame descriptor */
-
 void caml_extract_location_info(backtrace_slot slot, /*out*/ struct caml_loc_info * li)
 {
   uintnat infoptr;
