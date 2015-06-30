@@ -407,12 +407,12 @@ module Conv(P:Param1) = struct
         let args_approx = Variable.Map.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
-    | Fselect_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) as expr ->
+    | Fproject_closure({ set_of_closures = lam; closure_id = id }, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         if is_local_function_constant id
         then
-          (* Only function declared in the current module may need
-             rewritting to a symbol. For external function it should
+          (* Only functions declared in the current module may need
+             rewriting to a symbol. For external functions it should
              already have been done at the original declaration. *)
           let sym = Compilenv.closure_symbol id in
           Fsymbol (sym,()),
@@ -428,7 +428,7 @@ module Conv(P:Param1) = struct
                             (Compilenv.current_unit ())
                             id) ->
                 (* If some cmx files are missing, the value could be unknown.
-                   Notice that this is valid only for something comming from
+                   Notice that this is valid only for something coming from
                    another compilation unit, otherwise this is a bug. *)
                 Value_unknown
             | Some _ -> assert false
@@ -466,40 +466,6 @@ module Conv(P:Param1) = struct
               assert false in
         Fvar_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
-
-    (* | Fapply({func = *)
-    (*             Fselect_closure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
-    (*                                                  free_vars = fv; *)
-    (*                                                  specialised_args }, _); *)
-    (*                         closure_id = off; *)
-    (*                         relative_to = (None as rel)}, _); *)
-    (*           arg = args; *)
-    (*           kind = Direct direc; *)
-    (*           dbg = dbg}, _) -> *)
-    (*     assert (Closure_id.equal off direc); *)
-    (*     let uargs, args_approx = conv_list_approx env args in *)
-    (*     let func = *)
-    (*       try find_declaration off ffuns *)
-    (*       with Not_found -> assert false in *)
-    (*     assert(List.length uargs = List.length func.params); *)
-    (*     let args_approx = *)
-    (*       List.fold_right2 Variable.Map.add func.params args_approx Variable.Map.empty *)
-    (*       |> Variable.Map.filter (fun var _ -> Variable.Map.mem var specialised_args) in *)
-    (*     let uffuns, fun_approx = conv_closure env ffuns args_approx specialised_args fv in *)
-    (*     let approx = match get_descr fun_approx with *)
-    (*       | Some(Value_closure { fun_id; closure = { results } }) -> *)
-    (*           Closure_id.Map.find fun_id results *)
-    (*       | _ -> Value_unknown *)
-    (*     in *)
-
-    (*     Fapply({func = *)
-    (*               Fselect_closure ({closure = uffuns; *)
-    (*                           closure_id = off; *)
-    (*                           relative_to = rel}, ()); *)
-    (*             arg = uargs; *)
-    (*             kind = Direct direc; *)
-    (*             dbg = dbg}, ()), *)
-    (*     approx *)
 
     | Fapply({func = funct; args; kind = direct; dbg = dbg}, _) ->
         let ufunct, fun_approx = conv_approx env funct in
@@ -821,12 +787,12 @@ module type Param2 = sig
 end
 
 module Prepare(P:Param2) = struct
-  (*** Preparing export informations: Replacing every symbol by its
-       canonical representant ***)
+  (*** Preparing export information: Replacing every symbol by its
+       canonical representative ***)
 
   let canonical_symbol s = canonical_symbol s P.infos
 
-  (* Replace all symbols occurences by their representative *)
+  (* Replace all symbols' occurrences by their representative *)
   let expr, constants =
     let use_canonical_symbols (flam : _ Flambda.t) : _ Flambda.t =
       match flam with
@@ -851,7 +817,7 @@ module Prepare(P:Param2) = struct
     Symbol.Map.iter (fun _ -> Flambdaiter.iter_on_sets_of_closures aux) constants;
     !ex_functions
 
-  (* Preparing export informations *)
+  (* Preparing export information *)
 
   let canonical_approx (approx : ET.approx) : ET.approx =
     match approx with
