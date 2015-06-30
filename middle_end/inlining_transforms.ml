@@ -177,8 +177,9 @@ let inline_by_copying_function_declaration ~env ~r ~funct
     (* Now bind the variables that will hold the arguments from the original
        application. *)
     let expr : _ Flambda.t =
-      Flet (Immutable, clos_id, funct,
-        Flambdautils.bind ~body:duplicated_application ~bindings:args_decl,
+      Flet (Immutable, closure, funct,
+        Flambdautils.bind ~body:duplicated_application ~bindings:args_decl
+          ~name:"dup_apply_arg",
         Expr_id.create ())
     in
     let env =

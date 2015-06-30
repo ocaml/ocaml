@@ -417,7 +417,7 @@ module Conv(P:Param1) = struct
       let compute_approx ~closure_id ~fun_approx : ET.approx =
         match get_descr fun_approx with
         | Some (Value_set_of_closures value_set_of_closures)
-        | Some (Value_closure { value_set_of_closures; })
+        | Some (Value_closure { value_set_of_closures; }) ->
           let ex =
             new_descr (Value_closure { closure_id; value_set_of_closures })
           in

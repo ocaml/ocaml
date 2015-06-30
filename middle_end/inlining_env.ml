@@ -65,15 +65,17 @@ let present env var = Variable.Map.mem var env.env_approx
 
 let activate_freshening t = { t with freshening = Freshening.activate t.freshening }
 
-let add_approx id (approx : Simple_value_approx.t) env =
+let add_approx var (approx : Simple_value_approx.t) env =
   let approx =
+    (* The semantics of this [match] are what preserve the property
+       described at the top of simple_value_approx.mli, namely that when a
+       [var] is present on an approximation (amongst many possible [var]s),
+       it is the one with the outermost scope. *)
     match approx.var with
-    | Some var when present env var ->
-      approx
-    | _ ->
-      { approx with var = Some id }
+    | Some var when present env var -> approx
+    | _ -> Simple_value_approx.augment_with_variable approx var
   in
-  { env with env_approx = Variable.Map.add id approx env.env_approx }
+  { env with env_approx = Variable.Map.add var approx env.env_approx }
 
 let clear_approx id env =
   let env_approx =

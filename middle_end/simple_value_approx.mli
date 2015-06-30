@@ -191,6 +191,11 @@ val make_const_bool : bool -> 'a -> 'a Flambda.t * t
 val make_const_float : float -> 'a -> 'a Flambda.t * t
 val make_const_boxed_int : 'i boxed_int -> 'i -> 'a -> 'a Flambda.t * t
 
+(** Augment an approximation with a given variable (see comment above).
+    If the approximation was already augmented with a variable, the one
+    passed to this function replaces it within the approximation. *)
+val augment_with_variable : t -> Variable.t -> t
+
 (* CR mshinwell for pchambart: Add comment describing semantics.  (Maybe
    we should move the comment from the .ml file into here.) *)
 val meet : t -> t -> t

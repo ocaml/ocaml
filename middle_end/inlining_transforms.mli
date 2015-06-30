@@ -11,79 +11,83 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Source code transformations that are used during inlining. *)
+(** Source code transformations used during inlining. *)
 
-(* Inline a function by substituting its body (which may be subject to further
-   transformation) at a call site.  The function's declaration is not copied.
-
-   This transformation is used when:
-   - inlining a call to a non-recursive function;
-   - inlining a call, within a recursive or mutually-recursive function, to
-     the same or another function being defined simultaneously ("unrolling").
-     The maximum depth of unrolling is bounded (see [E.unrolling_allowed]).
-
-   In both cases, the body of the function is copied, within a sequence of
-   [let]s that bind the function parameters, the variables "bound by the
-   closure" (see flambda.mli), and any function identifiers introduced by the
-   set of closures.  These stages are delimited below by comments.
-
-   As an example, suppose we are inlining the following function:
-
-    let f x = x + y
-    ...
-    let p = f, f in
-    (fst p) 42
-
-   The call site [ (fst p) 42] will be transformed to:
-
-     let clos_id = fst p in  (* must eventually yield a closure *)
-     let y = <access to [y] in [clos_id]> in
-     let x' = 42 in
-     let x = x' in
-     x + y
-
-   When unrolling a recursive function we rename the arguments to the
-   recursive call in order to avoid clashes with existing bindings.  For
-   example, suppose we are inlining the following call to [f], which lies
-   within its own declaration:
-
-     let rec f x y =
-       f (fst x) (y + snd x)
-
-   This will be transformed to:
-
-     let rec f x y =
-       let clos_id = f in  (* not used this time, since [f] has no free vars *)
-       let x' = fst x in
-       let y' = y + snd x in
-       f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
+(** Inline a function by substituting its body (which may be subject to further
+    transformation) at a call site.  The function's declaration is not copied.
+ 
+    This transformation is used when:
+    - inlining a call to a non-recursive function;
+    - inlining a call, within a recursive or mutually-recursive function, to
+      the same or another function being defined simultaneously ("unrolling").
+      The maximum depth of unrolling is bounded (see [E.unrolling_allowed]).
+ 
+    In both cases, the body of the function is copied, within a sequence of
+    [let]s that bind the function parameters, the variables "bound by the
+    closure" (see flambda.mli), and any function identifiers introduced by the
+    set of closures.  These stages are delimited below by comments.
+ 
+    As an example, suppose we are inlining the following function:
+ 
+     let f x = x + y
+     ...
+     let p = f, f in
+     (fst p) 42
+ 
+    The call site [ (fst p) 42] will be transformed to:
+ 
+      let clos_id = fst p in  (* must eventually yield a closure *)
+      let y = <access to [y] in [clos_id]> in
+      let x' = 42 in
+      let x = x' in
+      x + y
+ 
+    When unrolling a recursive function we rename the arguments to the
+    recursive call in order to avoid clashes with existing bindings.  For
+    example, suppose we are inlining the following call to [f], which lies
+    within its own declaration:
+ 
+      let rec f x y =
+        f (fst x) (y + snd x)
+ 
+    This will be transformed to:
+ 
+      let rec f x y =
+        let clos_id = f in (* not used this time, since [f] has no free vars *)
+        let x' = fst x in
+        let y' = y + snd x in
+        f (fst x') (y' + snd x')  (* body of [f] with parameters freshened *)
 *)
+(* CR mshinwell: fix argument names *)
 val inline_by_copying_function_body
    : env:Inlining_env.t
   -> r:Inlining_result.t
   -> clos: _ Flambda.function_declarations
-  -> func: _ Flambda.function_declaration
-  -> args:_ Flambda.t list
+  -> lfunc:Expr_id.t Flambda.t
+  -> fun_id:Closure_id.t
+  -> func:Expr_id.t Flambda.function_declaration
+  -> args:Expr_id.t Flambda.t list
   -> simplify:Inlining_decision_intf.simplify
-  -> _ Flambda.t * Inlining_result.t
+  -> Expr_id.t Flambda.t * Inlining_result.t
 
-(* Inlining of recursive function(s) yields a copy of the functions'
-   definitions (not just their bodies, unlike the non-recursive case) and
-   a direct application of the new body.
-   Note: the function really does need to be recursive (but possibly only via
-   some mutual recursion) to end up in here; a simultaneous binding [that is
-   non-recursive] is not sufficient.
+(** Inlining of recursive function(s) yields a copy of the functions'
+    definitions (not just their bodies, unlike the non-recursive case) and
+    a direct application of the new body.
+    Note: the function really does need to be recursive (but possibly only via
+    some mutual recursion) to end up in here; a simultaneous binding [that is
+    non-recursive] is not sufficient.
 *)
 val inline_by_copying_function_declaration
-     env:Inlining_env.t
+   : env:Inlining_env.t
   -> r:Inlining_result.t
   -> funct:Expr_id.t Flambda.t
-  -> clos:'a Flambda.function_declarations
+  -> function_decls:Expr_id.t Flambda.function_declarations
   -> closure_id:Closure_id.t
-  -> func:'a Flambda.function_declaration
+  -> function_decl:_ Flambda.function_declaration
   -> args_with_approxs:
       (Expr_id.t Flambda.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t
+  -> simplify:Inlining_decision_intf.simplify
   -> (Expr_id.t Flambda.t * Inlining_result.t) option

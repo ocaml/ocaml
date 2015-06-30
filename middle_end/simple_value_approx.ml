@@ -102,9 +102,9 @@ let rec print_descr ppf = function
 
 and print ppf { descr } = print_descr ppf descr
 
-(** Smart constructors *)
-
 let approx descr = { descr; var = None; symbol = None }
+
+let augment_with_variable t var = { t with var = Some var }
 
 let value_unknown = approx Value_unknown
 let value_int i = approx (Value_int i)
