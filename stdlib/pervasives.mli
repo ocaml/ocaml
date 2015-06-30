@@ -1091,6 +1091,15 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in 'last in, first out' order:
    the function most recently added with [at_exit] is called first. *)
 
+(** {6 Misc} *)
+
+val enable_runtime_warnings: bool -> unit
+(** Control whether the OCaml runtime system can emit warnings
+    on stderr.  Currently, the only supported warning is triggered
+    when a channel created by [open_*] functions is finalized without
+    being closed. *)
+
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
