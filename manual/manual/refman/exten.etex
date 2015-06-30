@@ -1583,7 +1583,7 @@ Some attributes are understood by the type-checker:
 
 \begin{verbatim}
 module X = struct
-  [@@warning "+9"]  (* locally enable warning 9 in this structure *)
+  [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
   ...
 end
 
