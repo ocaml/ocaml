@@ -23,6 +23,7 @@ val set_used_variables : t -> Variable.Set.t -> t
 val used_variables : t -> Variable.Set.t
 
 val exit_scope : t -> Variable.t -> t
+val exit_scope_set : t -> Variable.Set.t -> t
 
 val use_staticfail : t -> Static_exception.t -> t
 val used_staticfail : t -> Static_exception.Set.t

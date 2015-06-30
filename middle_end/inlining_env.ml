@@ -130,4 +130,12 @@ let note_entering_closure t ~closure_id ~where =
       Inlining_stats.Closure_stack.note_entering_closure
         t.inlining_stats_closure_stack ~closure_id ~where;
   }
+
+let enter_closure t ~closure_id ~inline_inside ~where ~f =
+  let t =
+    if inline_inside then t
+    else set_never_inline t
+  in
+  f (note_entering_closure t ~closure_id ~where)
+
 let inlining_stats_closure_stack t = t.inlining_stats_closure_stack

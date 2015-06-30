@@ -85,6 +85,18 @@ val note_entering_closure
   -> where:Inlining_stats_types.where_entering_closure
   -> t
 
+(** Update a given environment to record that the inliner is about to
+    descend into [closure_id] and pass the resulting environment to [f].
+    If [inline_inside] is [false] then the environment passed to [f] will be
+    marked as [never_inline] (see above). *)
+val enter_closure
+   : t
+  -> closure_id:Closure_id.t
+  -> inline_inside:bool
+  -> where:Inlining_stats_types.where_entering_closure
+  -> f:(t -> 'a)
+  -> 'a
+
 val inlining_stats_closure_stack
    : t
   -> Inlining_stats.Closure_stack.t

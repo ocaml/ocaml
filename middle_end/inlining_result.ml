@@ -47,6 +47,9 @@ let used_variables t = t.used_variables
 let exit_scope t var =
   { t with used_variables = Variable.Set.remove var t.used_variables }
 
+let exit_scope_set t vars =
+  Variable.Set.fold (fun var t -> exit_scope t var) vars t
+
 let use_staticfail t i =
   { t with used_staticfail = Static_exception.Set.add i t.used_staticfail }
 
