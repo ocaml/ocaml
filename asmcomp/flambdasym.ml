@@ -28,7 +28,7 @@ module ET = Flambdaexport_types
 
 let all_closures expr =
   let closures = ref Set_of_closures_id.Set.empty in
-  Flambdaiter.iter_on_closures (fun cl _ ->
+  Flambdaiter.iter_on_sets_of_closures (fun cl _ ->
       closures := Set_of_closures_id.Set.add
         cl.function_decls.set_of_closures_id !closures)
     expr;
@@ -37,7 +37,7 @@ let all_closures expr =
 let constant_closures constant_result expr =
   Set_of_closures_id.Set.diff
     (all_closures expr)
-    (constant_result.Inconstant_idents.not_constant_closure)
+    (constant_result.Inconstant_idents.closure)
 
 let functions expr =
   let cf_map = ref Closure_id.Map.empty in
@@ -54,10 +54,10 @@ let functions expr =
         (Invariant_params.unchanging_params_in_recursion function_decls)
         !argument_kept
   in
-  Flambdaiter.iter_on_closures aux expr;
+  Flambdaiter.iter_on_sets_of_closures aux expr;
   !fun_id_map, !cf_map, !argument_kept
 
-let list_used_variable_withing_closure expr =
+let list_used_variable_within_closure expr =
   let used = ref Var_within_closure.Set.empty in
   let aux (expr : _ Flambda.t) =
     match expr with
@@ -71,7 +71,7 @@ let list_used_variable_withing_closure expr =
 module type Param1 = sig
   type t
   val expr : t Flambda.t
-  val not_constants : Inconstant_idents.constant_result
+  val inconstants : Inconstant_idents.result
   val constant_closures : Set_of_closures_id.Set.t
 end
 
@@ -117,7 +117,7 @@ module Conv(P:Param1) = struct
   let ex_closures () =
     (Compilenv.approx_env ()).ET.ex_functions_off
 
-  let used_variable_withing_closure = list_used_variable_withing_closure P.expr
+  let used_variable_within_closure = list_used_variable_within_closure P.expr
 
   type ('a,'b) declaration_position =
     | Local of 'a
@@ -152,8 +152,8 @@ module Conv(P:Param1) = struct
             Misc.fatal_error (Format.asprintf "missing closure %a"
                            Closure_id.print fun_id)
 
-  let not_constants = P.not_constants
-  let is_constant id = not (Variable.Set.mem id not_constants.Inconstant_idents.not_constant_id)
+  let inconstants = P.inconstants
+  let is_constant id = not (Variable.Set.mem id inconstants.Inconstant_idents.id)
 
   type env =
     { sb : unit Flambda.t Variable.Map.t; (* substitution *)
@@ -223,9 +223,6 @@ module Conv(P:Param1) = struct
 
   let get_descr (approx : ET.approx) =
     match approx with
-    (* CR mshinwell: This seems strange.  Why have a special case for
-       "Value_unknown" when the caller needs to check if either of the
-       other two cases here returned "Value_unknown"? *)
     | Value_unknown -> None
     | Value_id ex ->
         (try Some (Export_id.Map.find ex !(infos.ex_table)) with
@@ -254,29 +251,29 @@ module Conv(P:Param1) = struct
   let unit_approx () : ET.approx = Value_id (new_descr (Value_constptr 0))
 
   let rec conv env expr = fst (conv_approx env expr)
-
-  and conv_var (env : env) (id : Variable.t) : unit Flambda.t * ET.approx =
-    (* If the variable reference a constant, it is replaced by the
-       constant label *)
-    try
-      let lbl = Variable.Map.find id env.cm in
-      Fsymbol(lbl, ()), Value_symbol lbl
-    with Not_found ->
-
-      (* If the variable is a recursive access to the function
-         currently being defined: it is replaced by an offset in the
-         closure. If the variable is bound by the closure, it is
-         replace by a field access inside the closure *)
-      try
-        let lam = Variable.Map.find id env.sb in
-        lam, get_approx id env
-      with Not_found ->
-        Fvar (id, ()), get_approx id env
-
   and conv_approx (env : env) (flam : _ Flambda.t)
         : unit Flambda.t * ET.approx =
     match flam with
-    | Fvar (var, _) -> conv_var env var
+    | Fvar (id,_) ->
+        begin
+          (* If the variable reference a constant, it is replaced by the
+             constant label *)
+          try
+            let lbl = Variable.Map.find id env.cm in
+            Fsymbol(lbl, ()), Value_symbol lbl
+          with Not_found ->
+
+            (* If the variable is a recursive access to the function
+               currently being defined: it is replaced by an offset in the
+               closure. If the variable is bound by the closure, it is
+               replace by a field access inside the closure *)
+            try
+              let lam = Variable.Map.find id env.sb in
+              lam, get_approx id env
+            with Not_found ->
+              Fvar (id, ()), get_approx id env
+        end
+
     | Fsymbol (sym,_) ->
         Fsymbol (sym,()),
         Value_symbol sym
@@ -404,62 +401,46 @@ module Conv(P:Param1) = struct
          | _ -> Fletrec(not_consts, body, ())),
         approx
 
-    | Fset_of_closures set_of_closures ->
-      conv_set_of_closures env set_of_closures
-
     | Fset_of_closures ({ function_decls = funct;
                   free_vars = fv;
                   specialised_args = spec_arg }, _) ->
         let args_approx = Variable.Map.map (fun id -> get_approx id env) spec_arg in
         conv_closure env funct args_approx spec_arg fv
 
-    | Fproject_closure (project_closure, _) ->
-      let compute_approx ~closure_id ~fun_approx : ET.approx =
-        match get_descr fun_approx with
-        | Some (Value_set_of_closures value_set_of_closures)
-        | Some (Value_closure { value_set_of_closures; }) ->
-          let ex =
-            new_descr (Value_closure { closure_id; value_set_of_closures })
+    | Fselect_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) as expr ->
+        let ulam, fun_approx = conv_approx env lam in
+        if is_local_function_constant id
+        then
+          (* Only function declared in the current module may need
+             rewritting to a symbol. For external function it should
+             already have been done at the original declaration. *)
+          let sym = Compilenv.closure_symbol id in
+          Fsymbol (sym,()),
+          Value_symbol sym
+        else
+          let approx : ET.approx =
+            match get_descr fun_approx with
+            | Some (Value_set_of_closures set_of_closures)
+            | Some (Value_closure { set_of_closures }) ->
+                let ex = new_descr (Value_closure { fun_id = id; set_of_closures }) in
+                Value_id ex
+            | _ when not (Closure_id.in_compilation_unit
+                            (Compilenv.current_unit ())
+                            id) ->
+                (* If some cmx files are missing, the value could be unknown.
+                   Notice that this is valid only for something comming from
+                   another compilation unit, otherwise this is a bug. *)
+                Value_unknown
+            | Some _ -> assert false
+            | _ ->
+                Format.printf "Unknown closure in offset %a@."
+                  Printflambda.flambda expr;
+                assert false
           in
-          Value_id ex
-        | Some Value_unknown | None
-            when not (Closure_id.in_compilation_unit
-              (Compilenv.current_unit ()) closure_id) ->
-          (* If some .cmx files are missing, the value's approximation
-             could be unknown.  However it is a bug if this happens for
-             a value from the current compilation unit. *)
-          Value_unknown
-        | _ ->
-          Misc.fatal_error "Unknown closure or bad approximation in \
-            set of closures %a@."
-            Printflambda.flambda expr
-      in
-      if is_local_function_constant closure_id then
-        (* Only functions declared in the current module may need rewriting
-           to a symbol. For external functions it should already have been
-           done at the original declaration. *)
-        let sym = Compilenv.closure_symbol closure_id in
-        Some (Fsymbol (sym, ())), Value_symbol sym
-      else
-        begin match project_closure.from with
-        | Set_of_closures_same_unit set_of_closures ->
-          let set_of_closures, fun_approx =
-            conv_set_of_closures env set_of_closures
-          in
-          let approx = transform ~closure_id ~fun_approx in
-          let project_closure : _ Flambda.project_closure =
-            { from = From_set_of_closures set_of_closures;
-              closure_id;
-            }
-          in
-          Fproject_closure (project_closure, ()), approx
-        | Closure_same_unit (var, relative_to) ->
-          assert false (* XXX *)
-        | Different_unit symbol ->
-          assert false (* XXX *)
-        end
+          Fselect_closure({ set_of_closures = ulam; closure_id = id; relative_to = rel },()),
+          approx
 
-    | Fproject_var({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
+    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->
         let ulam, fun_approx = conv_approx env lam in
         let approx : ET.approx =
           match get_descr fun_approx with
@@ -483,11 +464,11 @@ module Conv(P:Param1) = struct
                 Printflambda.flambda expr
                 Printflambda.flambda ulam;
               assert false in
-        Fproject_var({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
+        Fvar_within_closure({closure = ulam;var = env_var;closure_id = env_fun_id}, ()),
         approx
 
     (* | Fapply({func = *)
-    (*             Fproject_closure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
+    (*             Fselect_closure ({closure = Fset_of_closures ({ function_decls = ffuns; *)
     (*                                                  free_vars = fv; *)
     (*                                                  specialised_args }, _); *)
     (*                         closure_id = off; *)
@@ -512,7 +493,7 @@ module Conv(P:Param1) = struct
     (*     in *)
 
     (*     Fapply({func = *)
-    (*               Fproject_closure ({closure = uffuns; *)
+    (*               Fselect_closure ({closure = uffuns; *)
     (*                           closure_id = off; *)
     (*                           relative_to = rel}, ()); *)
     (*             arg = uargs; *)
@@ -682,7 +663,7 @@ module Conv(P:Param1) = struct
     let kept_fv id =
       let cv = Var_within_closure.wrap id in
       not (is_constant id)
-      || (Var_within_closure.Set.mem cv used_variable_withing_closure) in
+      || (Var_within_closure.Set.mem cv used_variable_within_closure) in
 
     let used_fv_approx = Variable.Map.filter (fun id _ -> kept_fv id) fv_ulam_approx in
     let used_fv =
@@ -866,8 +847,8 @@ module Prepare(P:Param2) = struct
     let aux ({ function_decls } : _ Flambda.set_of_closures) _ =
       ex_functions := Set_of_closures_id.Map.add function_decls.set_of_closures_id function_decls !ex_functions
     in
-    Flambdaiter.iter_on_closures aux expr;
-    Symbol.Map.iter (fun _ -> Flambdaiter.iter_on_closures aux) constants;
+    Flambdaiter.iter_on_sets_of_closures aux expr;
+    Symbol.Map.iter (fun _ -> Flambdaiter.iter_on_sets_of_closures aux) constants;
     !ex_functions
 
   (* Preparing export informations *)
@@ -951,12 +932,12 @@ module Prepare(P:Param2) = struct
 end
 
 let convert (type a) ~compilation_unit (expr:a Flambda.t) =
-  let not_constants = Inconstant_idents.not_constants ~compilation_unit ~for_clambda:true expr in
-  let constant_closures = constant_closures not_constants expr in
+  let inconstants = Inconstant_idents.inconstants ~compilation_unit ~for_clambda:true expr in
+  let constant_closures = constant_closures inconstants expr in
   let module P1 = struct
     type t = a
     let expr = expr
-    let not_constants = not_constants
+    let inconstants = inconstants
     let constant_closures = constant_closures
   end in
   let module C = Conv(P1) in
