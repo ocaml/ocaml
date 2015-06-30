@@ -42,13 +42,13 @@ let rec import_ex ex =
           bound_vars;
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
-          freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
+          freshening = Freshening.Project_var.empty;
         }
       in
       A.value_closure value_set_of_closures fun_id
     end
   | Value_set_of_closures { set_of_closures_id; bound_vars } ->
-    let bound_vars = Var_within_closure.Map.map import_approx bound_var in
+    let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     let unchanging_params =
       try
         Set_of_closures_id.Map.find set_of_closures_id
@@ -61,7 +61,7 @@ let rec import_ex ex =
         bound_vars;
         unchanging_params = unchanging_params;
         specialised_args = Variable.Set.empty;
-        freshening = Freshening.Ids_and_bound_varss_of_closures.empty;
+        freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
       }
     in
     A.value_set_of_closures value_set_of_closures

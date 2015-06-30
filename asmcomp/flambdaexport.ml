@@ -113,7 +113,7 @@ let print_approx ppf (export : ET.exported) =
       | A.Nativeint -> Format.fprintf ppf "%ni" i
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
-  and print_set_of_closures ppf { ET. set_of_closures_id; bound_var } =
+  and print_set_of_closures ppf { ET. set_of_closures_id; bound_vars } =
     if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
     then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
@@ -121,13 +121,13 @@ let print_approx ppf (export : ET.exported) =
         := Set_of_closures_id.Set.add set_of_closures_id !printed_set_of_closures;
       fprintf ppf "{%a: %a}"
         Set_of_closures_id.print set_of_closures_id
-        print_binding bound_var
+        print_binding bound_vars
     end
-  and print_binding ppf bound_var =
+  and print_binding ppf bound_vars =
     Var_within_closure.Map.iter (fun clos_id approx ->
         fprintf ppf "%a -> %a,@ "
           Var_within_closure.print clos_id
-          print_approx approx) bound_var
+          print_approx approx) bound_vars
   in
   let print_approxs id approx =
     fprintf ppf "%a -> %a;@ " Ident.print id print_approx approx
@@ -217,9 +217,9 @@ let import_approx_for_pack units pack (approx : ET.approx) : ET.approx =
 let import_set_of_closures units pack
       (set_of_closures : ET.value_set_of_closures) : ET.value_set_of_closures =
   { set_of_closures_id = set_of_closures.set_of_closures_id;
-    bound_var =
+    bound_vars =
       Var_within_closure.Map.map (import_approx_for_pack units pack)
-        set_of_closures.bound_var;
+        set_of_closures.bound_vars;
     results =
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results }
