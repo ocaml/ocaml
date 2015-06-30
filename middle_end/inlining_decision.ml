@@ -31,19 +31,19 @@ let should_inline_function_known_to_be_recursive
   assert (List.length func.params = List.length approxs);
   (not (E.inside_set_of_closures_declaration clos.set_of_closures_id env))
     && (not (Variable.Set.is_empty closure.unchanging_params))
-    && Var_within_closure.Map.is_empty closure.bound_var (* closed *)
+    && Var_within_closure.Map.is_empty closure.bound_vars (* closed *)
     && List.exists2 (fun id approx ->
           A.useful approx && Variable.Set.mem id unchanging_params)
         func.params approxs
 
 let inline_non_recursive
-    ~env ~r ~clos ~ funct ~fun_id
+    ~env ~r ~clos ~funct ~fun_id
     ~(func : 'a Flambda.function_declaration)
     ~(record_decision : Inlining_stats_types.Decision.t -> unit)
     ~direct_apply
     ~no_transformation
     ~probably_a_functor
-    ~args
+    ~(args : Variable.t list)
     ~simplify =
   let body, r_inlined =
     (* We first try to inline that function preventing further inlining below *)
@@ -133,7 +133,7 @@ let inline_non_recursive
 
 let for_call_site ~env ~r
       ~(clos : _ Flambda.function_declarations)
-      ~(funct : _ Flambda.t)
+      ~(lhs_of_application : _ Flambda.t)
       ~fun_id
       ~(func : 'a Flambda.function_declaration)
       ~(closure : Simple_value_approx.value_set_of_closures)
@@ -148,7 +148,7 @@ let for_call_site ~env ~r
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({func = funct; args; kind = Direct fun_id; dbg}, eid),
+    Fapply ({func = lhs_of_application; args; kind = Direct fun_id; dbg}, eid),
     R.set_approx r A.value_unknown
   in
   let max_level = 3 in
@@ -176,8 +176,8 @@ let for_call_site ~env ~r
      This is true if the function is directly an argument of the
      apply construction. *)
   let direct_apply =
-    match funct with
-    | Fproject_closure ({ from = From_set_of_closures _ }, _) -> true
+    match lhs_of_application with
+    | Fproject_closure _ | Fmove_within_set_of_closures _ -> true
     | _ -> false
   in
   let inlining_threshold = R.inlining_threshold r in
@@ -254,7 +254,7 @@ let for_call_site ~env ~r
         || (not recursive && E.inlining_level env <= max_level)
       then
         inline_non_recursive
-          ~env ~r ~clos ~funct ~fun_id ~func
+          ~env ~r ~clos ~funct:lhs_of_application ~fun_id ~func
           ~record_decision
           ~direct_apply
           ~no_transformation
@@ -275,7 +275,7 @@ let for_call_site ~env ~r
               let env = E.inside_unrolled_function env in
               let body, r_inlined =
                 Inlining_transforms.inline_by_copying_function_body ~env
-                  ~r:(R.clear_benefit r) ~clos ~lfunc:funct ~fun_id ~func
+                  ~r:(R.clear_benefit r) ~clos ~lfunc:lhs_of_application ~fun_id ~func
                   ~args ~simplify
               in
               tried_unrolling := true;
@@ -318,7 +318,8 @@ let for_call_site ~env ~r
 *)
             let copied_function_declaration =
               Inlining_transforms.inline_by_copying_function_declaration ~env
-                ~r:(R.clear_benefit r) ~funct ~clos ~closure_id:fun_id ~func
+                ~r:(R.clear_benefit r) ~funct:lhs_of_application
+                ~function_decls:clos ~closure_id:fun_id ~function_decl:func
                 ~args_with_approxs:(args, approxs) ~unchanging_params
                 ~specialised_args:closure.specialised_args ~dbg ~simplify
             in

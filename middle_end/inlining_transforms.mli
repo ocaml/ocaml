@@ -66,7 +66,7 @@ val inline_by_copying_function_body
   -> lfunc:Expr_id.t Flambda.t
   -> fun_id:Closure_id.t
   -> func:Expr_id.t Flambda.function_declaration
-  -> args:Expr_id.t Flambda.t list
+  -> args:Variable.t list
   -> simplify:Inlining_decision_intf.simplify
   -> Expr_id.t Flambda.t * Inlining_result.t
 
@@ -84,8 +84,7 @@ val inline_by_copying_function_declaration
   -> function_decls:Expr_id.t Flambda.function_declarations
   -> closure_id:Closure_id.t
   -> function_decl:_ Flambda.function_declaration
-  -> args_with_approxs:
-      (Expr_id.t Flambda.t list) * (Simple_value_approx.t list)
+  -> args_with_approxs: (Variable.t list) * (Simple_value_approx.t list)
   -> unchanging_params:Variable.Set.t
   -> specialised_args:Variable.Set.t
   -> dbg:Debuginfo.t

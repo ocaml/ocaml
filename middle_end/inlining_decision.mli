@@ -17,16 +17,15 @@
    [inline_by_copying_function_declaration]. *)
 (* CR mshinwell: improve some of the label names to avoid confusion, e.g.
    [clos] vs. [closure]; [func] vs. [funct]. *)
-val inlining_decision
+val for_call_site
    : env:Inlining_env.t
   -> r:Inlining_result.t
-  -> clos:'a Flambda.function_declarations
-  -> funct:Expr_id.t Flambda.t
+  -> clos:Expr_id.t Flambda.function_declarations
+  -> lhs_of_application:Expr_id.t Flambda.t
   -> fun_id:Closure_id.t
-  -> func:'a Flambda.function_declaration
+  -> func:Expr_id.t Flambda.function_declaration
   -> closure:Simple_value_approx.value_set_of_closures
-  -> args_with_approxs:
-      ((Expr_id.t Flambda.t list) * (Simple_value_approx.t list))
+  -> args_with_approxs:(Variable.t list) * (Simple_value_approx.t list)
   -> dbg:Debuginfo.t
   -> eid:Expr_id.t
   -> simplify:Inlining_decision_intf.simplify
