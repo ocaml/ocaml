@@ -454,9 +454,9 @@ module Conv(P:Param1) = struct
           in
           Fproject_closure (project_closure, ()), approx
         | Closure_same_unit (var, relative_to) ->
-          ...
+          assert false (* XXX *)
         | Different_unit symbol ->
-          ...
+          assert false (* XXX *)
         end
 
     | Fproject_var({closure = lam;var = env_var;closure_id = env_fun_id}, _) as expr ->

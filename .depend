@@ -661,10 +661,11 @@ middle_end/inlining_decision_intf.cmi : middle_end/variable.cmi \
     middle_end/simple_value_approx.cmi middle_end/inlining_result.cmi \
     middle_end/inlining_env.cmi middle_end/flambda.cmi middle_end/expr_id.cmi \
     bytecomp/debuginfo.cmi middle_end/closure_id.cmi
-middle_end/inlining_decision.cmi : middle_end/simple_value_approx.cmi \
-    middle_end/inlining_result.cmi middle_end/inlining_env.cmi \
-    middle_end/inlining_decision_intf.cmi middle_end/flambda.cmi \
-    middle_end/expr_id.cmi bytecomp/debuginfo.cmi middle_end/closure_id.cmi
+middle_end/inlining_decision.cmi : middle_end/variable.cmi \
+    middle_end/simple_value_approx.cmi middle_end/inlining_result.cmi \
+    middle_end/inlining_env.cmi middle_end/inlining_decision_intf.cmi \
+    middle_end/flambda.cmi middle_end/expr_id.cmi bytecomp/debuginfo.cmi \
+    middle_end/closure_id.cmi
 middle_end/inlining_env.cmi : middle_end/variable.cmi \
     middle_end/simple_value_approx.cmi middle_end/set_of_closures_id.cmi \
     middle_end/inlining_stats_types.cmi middle_end/inlining_stats.cmi \
@@ -1326,8 +1327,24 @@ asmcomp/flambdaexport_types.cmx : middle_end/variable.cmx \
     middle_end/set_of_closures_id.cmx typing/ident.cmx middle_end/flambda.cmi \
     middle_end/export_id.cmx middle_end/compilation_unit.cmx \
     middle_end/closure_id.cmx
-asmcomp/flambdasym.cmo : asmcomp/flambdasym.cmi
-asmcomp/flambdasym.cmx : asmcomp/flambdasym.cmi
+asmcomp/flambdasym.cmo : middle_end/variable.cmi \
+    middle_end/var_within_closure.cmi middle_end/tag.cmi \
+    middle_end/symbol.cmi middle_end/set_of_closures_id.cmi \
+    middle_end/printflambda.cmi utils/misc.cmi bytecomp/lambda.cmi \
+    middle_end/invariant_params.cmi middle_end/inconstant_idents.cmi \
+    typing/ident.cmi middle_end/flambdautils.cmi middle_end/flambdaiter.cmi \
+    asmcomp/flambdaexport_types.cmo asmcomp/flambdaexport.cmi \
+    middle_end/flambda.cmi middle_end/export_id.cmi asmcomp/compilenv.cmi \
+    middle_end/closure_id.cmi parsing/asttypes.cmi asmcomp/flambdasym.cmi
+asmcomp/flambdasym.cmx : middle_end/variable.cmx \
+    middle_end/var_within_closure.cmx middle_end/tag.cmx \
+    middle_end/symbol.cmx middle_end/set_of_closures_id.cmx \
+    middle_end/printflambda.cmx utils/misc.cmx bytecomp/lambda.cmx \
+    middle_end/invariant_params.cmx middle_end/inconstant_idents.cmx \
+    typing/ident.cmx middle_end/flambdautils.cmx middle_end/flambdaiter.cmx \
+    asmcomp/flambdaexport_types.cmx asmcomp/flambdaexport.cmx \
+    middle_end/flambda.cmi middle_end/export_id.cmx asmcomp/compilenv.cmx \
+    middle_end/closure_id.cmx parsing/asttypes.cmi asmcomp/flambdasym.cmi
 asmcomp/import_approx.cmo : utils/warnings.cmi middle_end/variable.cmi \
     middle_end/var_within_closure.cmi middle_end/symbol.cmi \
     middle_end/simple_value_approx.cmi middle_end/set_of_closures_id.cmi \
