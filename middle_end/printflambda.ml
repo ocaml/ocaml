@@ -29,11 +29,8 @@ let rec lam ppf (flam : _ Flambda.t) =
       Variable.print_list args
   | Fproject_closure (project_closure, _) ->
     print_project_closure ppf project_closure
-  | Fproject_var({closure;closure_id;var},_) ->
-    fprintf ppf "@[<2>(project_var@ %a@ %a@ %a)@]"
-      Var_within_closure.print var
-      Closure_id.print closure_id
-      Variable.print closure
+  | Fproject_var (project_var, _) ->
+    print_project_var ppf project_var
   | Fmove_within_set_of_closures (move_within_set_of_closures, _) ->
     print_move_within_set_of_closures ppf move_within_set_of_closures
   | Fset_of_closures (set_of_closures, _) ->
@@ -187,6 +184,12 @@ and print_move_within_set_of_closures ppf
     Closure_id.print move_within_set_of_closures.start_from
     Variable.print move_within_set_of_closures.closure
 
+and print_project_var ppf (project_var : Flambda.project_var) =
+  fprintf ppf "@[<2>(project_var@ %a@ %a@ %a)@]"
+    Var_within_closure.print project_var.var
+    Closure_id.print project_var.closure_id
+    Variable.print project_var.closure
+
 and sequence ppf (ulam : _ Flambda.t) =
   match ulam with
   | Fsequence(l1, l2,_) ->
@@ -225,3 +228,5 @@ let flambda ppf flam =
   fprintf ppf "%a@." lam flam
 
 let project_closure = print_project_closure
+let move_within_set_of_closures = print_move_within_set_of_closures
+let project_var = print_project_var

@@ -29,7 +29,10 @@ val inlining_level_up : t -> t
 
 (* Recover informations about the potential values of a variable.
    Fails if no information was present in the environment *)
+(* CR mshinwell: [t] should be first *)
 val find : Variable.t -> t -> Simple_value_approx.t
+
+val find_list : t -> Variable.t list -> Simple_value_approx.t list
 
 val find_opt : t -> Variable.t -> Simple_value_approx.t option
 

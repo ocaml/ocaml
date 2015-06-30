@@ -22,3 +22,13 @@ val project_closure
    : Format.formatter
   -> Flambda.project_closure
   -> unit
+
+val move_within_set_of_closures
+   : Format.formatter
+  -> Flambda.move_within_set_of_closures
+  -> unit
+
+val project_var
+   : Format.formatter
+  -> Flambda.project_var
+  -> unit

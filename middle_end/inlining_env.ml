@@ -57,6 +57,9 @@ let find id env =
   try Variable.Map.find id env.env_approx
   with Not_found -> Misc.fatal_errorf "Unbound variable %a@." Variable.print id
 
+let find_list t vars =
+  List.map (fun var -> find var t) vars
+
 let find_opt t id =
   try Some (Variable.Map.find id t.env_approx)
   with Not_found -> None
