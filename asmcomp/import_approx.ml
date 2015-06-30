@@ -18,46 +18,53 @@ let reexported_missing_symbols = Symbol.Tbl.create 0
 let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.unit ex));
   let ex_info = Compilenv.approx_env () in
-  try match Flambdaexport.find_description ex ex_info with
-    | Value_int i -> A.value_int i
-    | Value_constptr i -> A.value_constptr i
-    | Value_float f -> A.value_float f
-    | Value_float_array size -> A.value_float_array size
-    | Flambdaexport_types.Value_boxed_int (t,i) -> A.value_boxed_int t i
-    | Value_string { size; contents } -> A.value_string size contents
-    | Value_mutable_block _ -> A.value_unknown
-    | Value_block (tag, fields) ->
-      A.value_block (tag, Array.map import_approx fields)
-    | Value_closure { fun_id; set_of_closures = { set_of_closures_id; bound_var } } ->
-      let bound_var = Var_within_closure.Map.map import_approx bound_var in
-      let unchanging_params =
-        try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments with
-        | Not_found -> assert false
-      in
-      A.value_closure
-        { closure_id = fun_id;
-          set_of_closures_var = None;
-          value_set_of_closures =
-            { function_decls = Compilenv.imported_closure set_of_closures_id;
-              bound_var;
-              unchanging_params = unchanging_params;
-              specialised_args = Variable.Set.empty;
-              freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
-            } }
-    | Value_set_of_closures { set_of_closures_id; bound_var } ->
-      let bound_var = Var_within_closure.Map.map import_approx bound_var in
-      let unchanging_params =
-        try Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments with
-        | Not_found -> assert false
-      in
-      A.value_set_of_closures
+  match Flambdaexport.find_description ex ex_info with
+  | exception Not_found -> A.value_unknown
+  | Value_int i -> A.value_int i
+  | Value_constptr i -> A.value_constptr i
+  | Value_float f -> A.value_float f
+  | Value_float_array size -> A.value_float_array size
+  | Flambdaexport_types.Value_boxed_int (t,i) -> A.value_boxed_int t i
+  | Value_string { size; contents } -> A.value_string size contents
+  | Value_mutable_block _ -> A.value_unknown
+  | Value_block (tag, fields) ->
+    A.value_block (tag, Array.map import_approx fields)
+  | Value_closure { fun_id; set_of_closures = { set_of_closures_id; bound_vars } } ->
+    let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
+    begin match
+      Set_of_closures_id.Map.find set_of_closures_id ex_info.ex_kept_arguments
+    with
+    | exception Not_found ->
+      Misc.fatal_error "Set of closures ID not found in ex_kept_arguments"
+    | unchanging_params ->
+      let value_set_of_closures : A.value_set_of_closures =
         { function_decls = Compilenv.imported_closure set_of_closures_id;
-          bound_var;
+          bound_vars;
           unchanging_params = unchanging_params;
           specialised_args = Variable.Set.empty;
-          freshening = Freshening.Ids_and_bound_vars_of_closures.empty; }
-  with Not_found ->
-    A.value_unknown
+          freshening = Freshening.Ids_and_bound_vars_of_closures.empty;
+        }
+      in
+      A.value_closure value_set_of_closures fun_id
+    end
+  | Value_set_of_closures { set_of_closures_id; bound_vars } ->
+    let bound_vars = Var_within_closure.Map.map import_approx bound_var in
+    let unchanging_params =
+      try
+        Set_of_closures_id.Map.find set_of_closures_id
+          ex_info.ex_kept_arguments
+      with
+      | Not_found -> assert false
+    in
+    let value_set_of_closures : A.value_set_of_closures =
+      { function_decls = Compilenv.imported_closure set_of_closures_id;
+        bound_vars;
+        unchanging_params = unchanging_params;
+        specialised_args = Variable.Set.empty;
+        freshening = Freshening.Ids_and_bound_varss_of_closures.empty;
+      }
+    in
+    A.value_set_of_closures value_set_of_closures
 
 and import_approx (ap : Flambdaexport_types.approx) =
   match ap with

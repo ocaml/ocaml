@@ -12,6 +12,7 @@
 (**************************************************************************)
 
 type value_string = Simple_value_approx.value_string = {
+  (* CR mshinwell: add variant type *)
   contents : string option; (* None if unknown or mutable *)
   size : int;
 }
@@ -28,6 +29,7 @@ type descr =
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
 
+(* CR mshinwell: rename fun_id -> closure_id, kill "ex_" prefixes *)
 and value_closure = {
   fun_id : Closure_id.t;
   set_of_closures : value_set_of_closures;
@@ -35,7 +37,7 @@ and value_closure = {
 
 and value_set_of_closures = {
   set_of_closures_id : Set_of_closures_id.t;
-  bound_var : approx Var_within_closure.Map.t;
+  bound_vars : approx Var_within_closure.Map.t;
   results : approx Closure_id.Map.t;
 }
 
