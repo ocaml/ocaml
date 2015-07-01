@@ -1365,7 +1365,7 @@ let explanation unif t3 t4 ppf =
           (match p with Pdot(Pident id, "ref", pos) 
            when Ident.same id ident_pervasive -> true | _ -> false) ->
       fprintf ppf
-        "@,@[You probably forgot a `!' operator somewhere.@]"
+        "@,@[You probably forgot a `!' or a `ref' somewhere.@]"
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _

@@ -219,7 +219,7 @@ let message_for_application_error_easytype expected provided =
     add t3;
     add "\n";
     in
-  print_row "" "Types expected for the arguments:" "Types of the arguments provided:";
+  print_row "" "Types of the expected arguments:" "Types of the provided arguments:";
   add (String.make (col0_width+1) '-');
   add "|";
   add (String.make (coli_width+2) '-');
