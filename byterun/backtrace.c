@@ -143,7 +143,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
     for (i = 0; i < saved_caml_backtrace_pos; i++) {
-      Store_field(res, i, caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]));
+      Field(res, i) = caml_val_raw_backtrace_slot(saved_caml_backtrace_buffer[i]);
     }
   }
 
