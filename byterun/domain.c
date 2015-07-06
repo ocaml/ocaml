@@ -433,7 +433,9 @@ static void stw_phase () {
   /* First, make sure all domains are accounted for. */
   for (i = 0; i < Max_domains; i++) {
     dom_internal* d = &all_domains[i];
-    while (!atomic_load_acq(&domain_accounted_for[i])) {
+    SPIN_WAIT {
+      if (atomic_load_acq(&domain_accounted_for[i]))
+        break;
       /* not accounted for yet */
       int mine = (d == domain_self) || domain_is_locked(d);
       if (!mine && try_lock_domain(d)) {
@@ -449,7 +451,6 @@ static void stw_phase () {
         /* locked by some other thread,
            but not yet accounted for, need to wait */
         check_rpc();
-        cpu_relax();
       }
     }
   }
@@ -497,10 +498,11 @@ static void stw_phase () {
     atomic_store_rel(&heaps_marked, 0);
   } else {
     /* we didn't mark the last heap, so wait */
-    while (atomic_load_acq(&heaps_marked)) {
+    SPIN_WAIT {
+      if (atomic_load_acq(&heaps_marked) == 0)
+        break;
       Assert(atomic_load_acq(&heaps_marked) <= Max_domains);
       check_rpc();
-      cpu_relax();
     }
     caml_gc_log("GC cycle completed");
   }
@@ -524,8 +526,8 @@ static void handle_rpc(dom_internal* target)
   if (atomic_load_acq(&target->rpc_request) != RPC_IDLE) {
 
     /* wait until we know what the request is */
-    while (atomic_load_acq(&target->rpc_request) == RPC_REQUEST_INITIALISING) {
-      cpu_relax();
+    SPIN_WAIT {
+      if (atomic_load_acq(&target->rpc_request) != RPC_REQUEST_INITIALISING) break;
     }
 
     Assert(atomic_load_acq(&target->rpc_request) == RPC_REQUEST_SENT);
@@ -587,14 +589,13 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   /* Wait until we can send an RPC to the target.
      Need to keep handling incoming RPCs while waiting.
      The target may have deactivated, so try taking it over */
-  while (1) {
+  SPIN_WAIT {
     if (atomic_load_acq(&target->rpc_request) == RPC_IDLE &&
         atomic_cas(&target->rpc_request, RPC_IDLE, RPC_REQUEST_INITIALISING)) {
       break;
     }
     attempt_rpc_takeover(target);
     check_rpc();
-    cpu_relax();
   }
 
   /* Initialise and send the request */
@@ -605,10 +606,10 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   interrupt_domain(target);
 
   /* Wait for a response */
-  while (atomic_load_acq(&completed) == 0) {
+  SPIN_WAIT {
+    if (atomic_load_acq(&completed)) break;
     attempt_rpc_takeover(target);
     check_rpc(); /* must keep handling RPCs while waiting for this one */
-    cpu_relax();
   }
 }
 
