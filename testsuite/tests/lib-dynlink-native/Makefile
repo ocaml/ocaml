@@ -108,7 +108,7 @@ factorial.$(O): factorial.c caml
 
 caml:
 	@mkdir -p caml || :
-	@cp $(TOPDIR)/byterun/*.h caml/
+	@cp $(TOPDIR)/byterun/*.h $(TOPDIR)/byterun/*.tbl caml/
 
 .PHONY: promote
 promote:
