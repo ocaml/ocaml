@@ -79,7 +79,7 @@ static uintnat default_slice_budget() {
 static void mark_stack_push(value v) {
   Assert(Is_block(v));
   if (caml_mark_stack_count >= MARK_STACK_SIZE)
-    caml_failwith("mark stack overflow");
+    caml_fatal_error("mark stack overflow");
   caml_mark_stack[caml_mark_stack_count++] = v;
 }
 
