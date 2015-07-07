@@ -87,11 +87,6 @@ type call_kind =
   | Direct of Closure_id.t
 
 type const =
-  (* Note: no structured constants *)
-  (* CR mshinwell for pchambart: We should clarify exactly what
-     "structured constant" means in this comment.  (For example, a float
-     array has structure, and may be constant, and is in this list, which
-     might confuse.) *)
   | Fconst_base of Asttypes.constant
   | Fconst_pointer of int
   | Fconst_float_array of string list
@@ -100,19 +95,12 @@ type const =
 
 (* The value of type ['a] may be used for annotation of an flambda expression
    by some optimization pass. *)
-(* CR-someday mshinwell: convert more of these to ANF-like forms *)
 type 'a t =
-  | Fsymbol of Symbol.t * 'a
   | Fvar of Variable.t * 'a
-  | Fconst of const * 'a
   | Fapply of 'a apply * 'a
-  | Fset_of_closures of 'a set_of_closures * 'a
-  | Fproject_closure of project_closure * 'a
-  | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
   | Fproject_var of project_var * 'a
-  | Flet of let_kind * Variable.t * 'a t * 'a t * 'a
-  | Fletrec of (Variable.t * 'a t) list * 'a t * 'a
-  | Fprim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
+  | Flet of let_kind * Variable.t * 'a named * 'a t * 'a
+  | Fletrec of (Variable.t * 'a named) list * 'a t * 'a
   | Fseq_prim of Lambda.seq_primitive * 'a t list * Debuginfo.t * 'a
   (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
      (and translate to that earlier) so that middle- and back-end code for
@@ -132,6 +120,18 @@ type 'a t =
   | Fassign of Variable.t * 'a t * 'a
   | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
   | Funreachable of 'a  (** Represents code proved unreachable. *)
+
+(** Values of type ['a named] will always be [let]-bound to a [Variable.t].
+    Important consequence: all expressions that we might deem constant (and
+    thus assign to a symbol) have an associated variable. *)
+and 'a named =
+  | Fsymbol of Symbol.t * 'a
+  | Fconst of const * 'a
+  | Fset_of_closures of 'a set_of_closures * 'a
+  | Fproject_closure of project_closure * 'a
+  | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
+  | Fprim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
+  | Fexpr of 'a t
 
 and 'a apply = {
   func : 'a t;

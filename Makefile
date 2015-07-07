@@ -137,6 +137,7 @@ MIDDLE_END=\
   middle_end/static_exception.cmo \
   middle_end/export_id.cmo \
   middle_end/symbol.cmo \
+  middle_end/closure_conversion.cmo \
   middle_end/flambdaiter.cmo \
   middle_end/flambdautils.cmo \
   middle_end/find_recursive_functions.cmo \
@@ -145,7 +146,6 @@ MIDDLE_END=\
   middle_end/printflambda.cmo \
   middle_end/flambdacheck.cmo \
   middle_end/inconstant_idents.cmo \
-  middle_end/closure_conversion.cmo \
   middle_end/effect_analysis.cmo \
   middle_end/simple_value_approx.cmo \
   middle_end/inlining_cost.cmo \

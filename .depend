@@ -1342,16 +1342,16 @@ asmcomp/flambdasym.cmx : middle_end/variable.cmx \
 asmcomp/import_approx.cmo : utils/warnings.cmi middle_end/variable.cmi \
     middle_end/var_within_closure.cmi middle_end/symbol.cmi \
     middle_end/simple_value_approx.cmi middle_end/set_of_closures_id.cmi \
-    parsing/location.cmi typing/ident.cmi middle_end/freshening.cmi \
-    asmcomp/flambdaexport_types.cmo asmcomp/flambdaexport.cmi \
-    middle_end/export_id.cmi asmcomp/compilenv.cmi \
+    utils/misc.cmi parsing/location.cmi typing/ident.cmi \
+    middle_end/freshening.cmi asmcomp/flambdaexport_types.cmo \
+    asmcomp/flambdaexport.cmi middle_end/export_id.cmi asmcomp/compilenv.cmi \
     middle_end/compilation_unit.cmi asmcomp/import_approx.cmi
 asmcomp/import_approx.cmx : utils/warnings.cmx middle_end/variable.cmx \
     middle_end/var_within_closure.cmx middle_end/symbol.cmx \
     middle_end/simple_value_approx.cmx middle_end/set_of_closures_id.cmx \
-    parsing/location.cmx typing/ident.cmx middle_end/freshening.cmx \
-    asmcomp/flambdaexport_types.cmx asmcomp/flambdaexport.cmx \
-    middle_end/export_id.cmx asmcomp/compilenv.cmx \
+    utils/misc.cmx parsing/location.cmx typing/ident.cmx \
+    middle_end/freshening.cmx asmcomp/flambdaexport_types.cmx \
+    asmcomp/flambdaexport.cmx middle_end/export_id.cmx asmcomp/compilenv.cmx \
     middle_end/compilation_unit.cmx asmcomp/import_approx.cmi
 asmcomp/interf.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
     asmcomp/interf.cmi
