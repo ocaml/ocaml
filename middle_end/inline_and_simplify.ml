@@ -768,7 +768,7 @@ and simplify_set_of_closures original_env r
       Variable.Set.union used_params
         (Variable.Set.of_list (List.filter is_used_var function_decl.params))
     in
-    let free_variables = Flambdaiter.free_variables body in
+    let free_variables = Free_variables.calculate body in
     Variable.Map.add fid { function_decl with body; free_variables } funs,
       used_params, R.exit_scope_set r function_decl.free_variables
   in

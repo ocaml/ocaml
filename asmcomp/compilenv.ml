@@ -477,7 +477,7 @@ let imported_closure =
           (fun ff ->
              let body = Flambdaiter.map_toplevel f ff.body in
              let body = Flambdaiter.map_data(fun () -> Expr_id.create ()) body in
-             let free_variables = Flambdaiter.free_variables body in
+             let free_variables = Free_variables.calculate body in
              { ff with body; free_variables })
           clos.funs } in
   let aux fun_id =

@@ -110,6 +110,7 @@ let apply_variable t var =
    try Variable.Map.find var t.sb_var with
    | Not_found -> var
 
+(*
 let rewrite_recursive_calls_with_symbols t
       (function_declarations : _ Flambda.function_declarations)
       ~make_closure_symbol =
@@ -134,6 +135,7 @@ let rewrite_recursive_calls_with_symbols t
         function_declarations.funs
     in
     { function_declarations with funs }
+*)
 
 module Project_var = struct
   type t =

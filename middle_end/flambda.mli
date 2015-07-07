@@ -93,8 +93,8 @@ type const =
   | Fconst_immstring of string
   | Fconst_float of float
 
-(* The value of type ['a] may be used for annotation of an flambda expression
-   by some optimization pass. *)
+(** The value of type ['a] may be used for annotation of an flambda expression
+    by some optimization pass. *)
 type 'a t =
   | Fvar of Variable.t * 'a
   | Fapply of 'a apply * 'a
@@ -112,7 +112,6 @@ type 'a t =
   | Fstaticcatch of Static_exception.t * Variable.t list * 'a t * 'a t * 'a
   | Ftrywith of 'a t * Variable.t * 'a t * 'a
   | Fifthenelse of 'a t * 'a t * 'a t * 'a
-  | Fsequence of 'a t * 'a t * 'a
   | Fwhile of 'a t * 'a t * 'a
   | Ffor of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
   (* CR-someday mshinwell: consider eliminating assignment from Flambda
@@ -122,8 +121,16 @@ type 'a t =
   | Funreachable of 'a  (** Represents code proved unreachable. *)
 
 (** Values of type ['a named] will always be [let]-bound to a [Variable.t].
-    Important consequence: all expressions that we might deem constant (and
-    thus assign to a symbol) have an associated variable. *)
+
+    This has an important consequence: all expressions that we might deem
+    constant (and thus assign to a symbol) have an associated variable.
+
+    (The split between ['a t] and ['a named] is very similar to the split in
+    the language used in Kennedy's "Compiling with Continuations, Continued".
+    The main difference, apart from the fact that we do not work in CPS style
+    for control flow constructs, is the presence of [Fexpr].  This could be
+    removed in the future to provide a more rigorous ANF-like representation.)
+*)
 and 'a named =
   | Fsymbol of Symbol.t * 'a
   | Fconst of const * 'a

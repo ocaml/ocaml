@@ -240,7 +240,7 @@ let toplevel_substitution sb tree =
   Flambdaiter.map_toplevel aux tree
 
 let make_closure_declaration ~id ~body ~params : _ Flambda.t =
-  let free_variables = Flambdaiter.free_variables body in
+  let free_variables = Free_variables.calculate body in
   let param_set = Variable.Set.of_list params in
   if not (Variable.Set.subset param_set free_variables) then begin
     Misc.fatal_error "Flambdautils.make_closure_declaration"
