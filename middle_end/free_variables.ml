@@ -59,9 +59,6 @@ let calculate tree =
       aux e1;
       aux e2;
       aux e3
-    | Fsequence (e1, e2, _) ->
-      aux e1;
-      aux e2
     | Fwhile (e1, e2, _) ->
       aux e1;
       aux e2

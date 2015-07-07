@@ -268,7 +268,7 @@ let tupled_function_call_stub t original_params tuplified_version
   }
 
 (* Propagate an [Lev_after] debugging event into an adjacent Flambda node. *)
-let rec add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
+let add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
       : _ Flambda.t =
   match ev.lev_kind with
   | Lev_after _ ->
@@ -281,8 +281,10 @@ let rec add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
 *)
     | Fsend (kind, flam1, flam2, args, _dinfo, v) ->
       Fsend (kind, flam1, flam2, args, Debuginfo.from_call ev, v)
+(*
     | Fsequence (flam1, flam2, v) ->
       Fsequence (flam1, add_debug_info ev flam2, v)
+*)
     | _ -> flam
     end
   | _ -> flam
@@ -516,7 +518,10 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     Fifthenelse (close t env arg, close t env ifso, close t env ifnot,
       nid ~name:"if" ())
   | Lsequence (lam1, lam2) ->
-    Fsequence (close t env lam1, close t env lam2, nid ~name:"seq" ())
+    let var = fresh_variable ~name:"sequence" in
+    let lam1 = Flambda.Fexpr (close t env lam1) in
+    let lam2 = close t env lam2 in
+    Flet (Immutable, var, lam1, lam2, nid ~name:"sequence" ())
   | Lwhile (cond, body) -> Fwhile (close t env cond, close t env body, nid ())
   | Lfor (id, lo, hi, dir, body) ->
     let var = create_var id in
