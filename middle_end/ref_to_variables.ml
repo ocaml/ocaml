@@ -26,16 +26,16 @@ let directly_used_variables tree =
   let set = ref Variable.Set.empty in
   let rec loop (flam : _ Flambda.t) =
     match flam with
-    | Fvar (v, _) -> set := Variable.Set.add v !set
-    | Fprim(Pfield _, [Fvar _], _, _)
-    | Fprim(Poffsetref _, [Fvar _], _, _) -> ()
-    | Fprim(Psetfield(_, _), [Fvar _; e], _, _) -> loop e
-    | Fset_of_closures _ | Flet _ | Fassign _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
-    | Fproject_var _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstringswitch _ | Fstaticraise _
-    | Fstaticcatch _ | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
+    | Var (v, _) -> set := Variable.Set.add v !set
+    | Prim(Pfield _, [Var _], _, _)
+    | Prim(Poffsetref _, [Var _], _, _) -> ()
+    | Prim(Psetfield(_, _), [Var _; e], _, _) -> loop e
+    | Set_of_closures _ | Let _ | Assign _
+    | Symbol _ | Const _ | Apply _ | Project_closure _
+    | Project_var _ | Let_rec _
+    | Prim _ | Switch _ | String_switch _ | Static_raise _
+    | Static_catch _ | Try_with _ | If_then_else _ | Fsequence _
+    | While _ | For _ | Send _ | Unreachable _ as exp ->
       Flambdaiter.apply_on_subexpressions loop exp
   in
   loop tree;
@@ -45,8 +45,8 @@ let variables_containing_ref lam =
   let map = ref Variable.Map.empty in
   let aux (flam : _ Flambda.t) =
     match flam with
-    | Flet(Immutable, v,
-           Fprim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
+    | Let(Immutable, v,
+           Prim(Pmakeblock(0, Asttypes.Mutable), l, _, _), _, _) ->
         map := Variable.Map.add v (List.length l) !map
     | _ -> ()
   in
@@ -75,8 +75,8 @@ let eliminate_ref lam =
 
   let aux (flam : _ Flambda.t) : _ Flambda.t =
     match flam with
-    | Flet(Immutable, v,
-           Fprim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
+    | Let(Immutable, v,
+           Prim(Pmakeblock(0, Asttypes.Mutable), inits, _, _), body, _)
       when convertible_variable v ->
         let _, expr =
           List.fold_left (fun (field,body) init ->
@@ -84,38 +84,38 @@ let eliminate_ref lam =
               | None -> assert false
               | Some (var, _) ->
                 field+1,
-                  ((Flet(Mutable, var, init, body, Expr_id.create ()))
+                  ((Let(Mutable, var, init, body, Expr_id.create ()))
                     : _ Flambda.t))
             (0,body) inits in
         expr
-    | Fprim(Pfield field, [Fvar (v,d)], _, _)
+    | Prim(Pfield field, [Var (v,d)], _, _)
       when convertible_variable v ->
         (match get_variable v field with
-        | None -> Funreachable d
-        | Some (var,_) -> Fvar (var,d))
-    | Fprim(Poffsetref delta, [Fvar (v,d1)], dbg, d2)
+        | None -> Unreachable d
+        | Some (var,_) -> Var (var,d))
+    | Prim(Poffsetref delta, [Var (v,d1)], dbg, d2)
       when convertible_variable v ->
         (match get_variable v 0 with
-        | None -> Funreachable d1
+        | None -> Unreachable d1
         | Some (var,size) ->
             if size = 1
             then
-              Fassign(var, Fprim(Poffsetint delta, [Flambda.Fvar (var,d1)], dbg, d2),
+              Assign(var, Prim(Poffsetint delta, [Flambda.Var (var,d1)], dbg, d2),
                       Expr_id.create ())
-            else Funreachable d1)
-    | Fprim(Psetfield(field, _), [Fvar (v,d1); e], _, d2)
+            else Unreachable d1)
+    | Prim(Psetfield(field, _), [Var (v,d1); e], _, d2)
       when convertible_variable v ->
         (match get_variable v field with
-         | None -> Funreachable d1
-         | Some (var,_) -> Fassign(var, e, d2))
-    | Fset_of_closures _ | Flet _
-    | Fassign _ | Fvar _
-    | Fsymbol _ | Fconst _ | Fapply _ | Fproject_closure _
-    | Fproject_var _ | Fletrec _
-    | Fprim _ | Fswitch _ | Fstringswitch _
-    | Fstaticraise _ | Fstaticcatch _
-    | Ftrywith _ | Fifthenelse _ | Fsequence _
-    | Fwhile _ | Ffor _ | Fsend _ | Funreachable _ as exp ->
+         | None -> Unreachable d1
+         | Some (var,_) -> Assign(var, e, d2))
+    | Set_of_closures _ | Let _
+    | Assign _ | Var _
+    | Symbol _ | Const _ | Apply _ | Project_closure _
+    | Project_var _ | Let_rec _
+    | Prim _ | Switch _ | String_switch _
+    | Static_raise _ | Static_catch _
+    | Try_with _ | If_then_else _ | Fsequence _
+    | While _ | For _ | Send _ | Unreachable _ as exp ->
         exp
   in
   Flambdaiter.map aux lam

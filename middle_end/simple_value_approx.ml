@@ -148,16 +148,16 @@ let value_string size contents = approx (Value_string {size; contents })
 let value_float_array size = approx (Value_float_array size)
 
 let make_const_int n eid : _ Flambda.t * t =
-  Fconst(Fconst_base(Asttypes.Const_int n),eid), value_int n
+  Const(Const_base(Asttypes.Const_int n),eid), value_int n
 
 let make_const_ptr n eid : _ Flambda.t * t =
-  Fconst(Fconst_pointer n,eid), value_constptr n
+  Const(Const_pointer n,eid), value_constptr n
 
 let make_const_bool b eid : _ Flambda.t * t =
   make_const_ptr (if b then 1 else 0) eid
 
 let make_const_float f eid : _ Flambda.t * t =
-  Fconst(Fconst_float f,eid), value_float f
+  Const(Const_float f,eid), value_float f
 
 let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
       : _ Flambda.t * t =
@@ -167,11 +167,11 @@ let make_const_boxed_int (type bi) (t:bi boxed_int) (i:bi) eid
     | Int64 -> Const_int64 i
     | Nativeint -> Const_nativeint i
   in
-  Fconst (Fconst_base c, eid), value_boxed_int t i
+  Const (Const_base c, eid), value_boxed_int t i
 
 let const (flam : Flambda.const) =
   match flam with
-  | Fconst_base const ->
+  | Const_base const ->
     begin match const with
     | Const_int i -> value_int i
     | Const_char c -> value_int (Char.code c)
@@ -181,10 +181,10 @@ let const (flam : Flambda.const) =
     | Const_int64 i -> value_boxed_int Int64 i
     | Const_nativeint i -> value_boxed_int Nativeint i
     end
-  | Fconst_pointer i -> value_constptr i
-  | Fconst_float f -> value_float f
-  | Fconst_float_array a -> value_float_array (List.length a)
-  | Fconst_immstring s -> value_string (String.length s) (Some s)
+  | Const_pointer i -> value_constptr i
+  | Const_float f -> value_float f
+  | Const_float_array a -> value_float_array (List.length a)
+  | Const_immstring s -> value_string (String.length s) (Some s)
 
 let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
   if Effect_analysis.no_effects lam then
@@ -198,7 +198,7 @@ let simplify t (lam : _ Flambda.t) : _ Flambda.t * t =
     | Value_boxed_int (t, i) ->
       make_const_boxed_int t i (Flambdautils.data_at_toplevel_node lam)
     | Value_symbol sym ->
-      Fsymbol (sym, Flambdautils.data_at_toplevel_node lam), t
+      Symbol (sym, Flambdautils.data_at_toplevel_node lam), t
     | Value_string _ | Value_float_array _
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -210,10 +210,10 @@ let simplify_using_env t ~is_present_in_env lam =
   let res : _ Flambda.t =
     match t.var with
     | Some var when is_present_in_env var ->
-      Fvar (var, Flambdautils.data_at_toplevel_node lam)
+      Var (var, Flambdautils.data_at_toplevel_node lam)
     | _ ->
       match t.symbol with
-      | Some sym -> Fsymbol (sym, Flambdautils.data_at_toplevel_node lam)
+      | Some sym -> Symbol (sym, Flambdautils.data_at_toplevel_node lam)
       | None -> lam
   in
   simplify t res
@@ -302,7 +302,7 @@ let equal_boxed_int (type t1) (type t2)
    be created in each branch, leading to incompatible description.
    And we must never make the descrition for a function less
    precise that it used to be: its information are needed for
-   rewriting [Fproject_var] and [Fproject_closure] constructions
+   rewriting [Project_var] and [Project_closure] constructions
    in [Flambdainline.loop]
 *)
 let rec meet_descr d1 d2 = match d1, d2 with

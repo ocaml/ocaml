@@ -17,28 +17,28 @@ module Int = Ext_types.Int
 
 let rec lam ppf (flam : _ Flambda.t) =
   match flam with
-  | Fsymbol (symbol,_) ->
+  | Symbol (symbol,_) ->
       Symbol.print ppf symbol
-  | Fvar (id,_) ->
+  | Var (id,_) ->
       Variable.print ppf id
-  | Fconst (cst,_) ->
+  | Const (cst,_) ->
       const ppf cst
-  | Fapply({func; args; kind},_) ->
+  | Apply({func; args; kind},_) ->
     let direct = match kind with Indirect -> "" | Direct _ -> "*" in
     fprintf ppf "@[<2>(apply%s@ %a%a)@]" direct lam func
       Variable.print_list args
-  | Fproject_closure (project_closure, _) ->
+  | Project_closure (project_closure, _) ->
     print_project_closure ppf project_closure
-  | Fproject_var (project_var, _) ->
+  | Project_var (project_var, _) ->
     print_project_var ppf project_var
-  | Fmove_within_set_of_closures (move_within_set_of_closures, _) ->
+  | Move_within_set_of_closures (move_within_set_of_closures, _) ->
     print_move_within_set_of_closures ppf move_within_set_of_closures
-  | Fset_of_closures (set_of_closures, _) ->
+  | Set_of_closures (set_of_closures, _) ->
     print_set_of_closures ppf set_of_closures
-  | Flet(_str, id, arg, body,_) ->
+  | Let(_str, id, arg, body,_) ->
       let rec letbody (ul : _ Flambda.t) =
         match ul with
-        | Flet(str, id, arg, body,_) ->
+        | Let(str, id, arg, body,_) ->
             let str = match str with
               | Mutable -> "*"
               | Immutable -> ""
@@ -50,7 +50,7 @@ let rec lam ppf (flam : _ Flambda.t) =
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Variable.print id lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
-  | Fletrec(id_arg_list, body,_) ->
+  | Let_rec(id_arg_list, body,_) ->
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
@@ -60,14 +60,14 @@ let rec lam ppf (flam : _ Flambda.t) =
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Fprim(prim, args, _,_) ->
+  | Prim(prim, args, _,_) ->
       fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim
         Variable.print_list args
   | Fseq_prim(prim, args, _,_) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" Printlambda.seq_primitive prim lams args
-  | Fswitch(larg, sw,_) ->
+  | Switch(larg, sw,_) ->
       let switch ppf (sw : _ Flambda.switch) =
         let spc = ref false in
         List.iter
@@ -92,7 +92,7 @@ let rec lam ppf (flam : _ Flambda.t) =
         (Int.Set.cardinal sw.numconsts)
         (Int.Set.cardinal sw.numblocks)
         lam larg switch sw
-  | Fstringswitch(arg, cases, default, _) ->
+  | String_switch(arg, cases, default, _) ->
       let switch ppf cases =
         let spc = ref false in
         List.iter
@@ -108,11 +108,11 @@ let rec lam ppf (flam : _ Flambda.t) =
         end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
-  | Fstaticraise (i, ls,_)  ->
+  | Static_raise (i, ls,_)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(exit@ %a%a)@]" Static_exception.print i lams ls;
-  | Fstaticcatch(i, vars, lbody, lhandler,_) ->
+  | Static_catch(i, vars, lbody, lhandler,_) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%a%a)@ %a)@]"
         lam lbody Static_exception.print i
         (fun ppf vars -> match vars with
@@ -123,29 +123,29 @@ let rec lam ppf (flam : _ Flambda.t) =
                  vars)
         vars
         lam lhandler
-  | Ftrywith(lbody, param, lhandler,_) ->
+  | Try_with(lbody, param, lhandler,_) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Variable.print param lam lhandler
-  | Fifthenelse(lcond, lif, lelse,_) ->
+  | If_then_else(lcond, lif, lelse,_) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Fsequence(l1, l2,_) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2
-  | Fwhile(lcond, lbody,_) ->
+  | While(lcond, lbody,_) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
-  | Ffor(param, lo, hi, dir, body,_) ->
+  | For(param, lo, hi, dir, body,_) ->
       fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
         Variable.print param lam lo
         (match dir with Asttypes.Upto -> "to" | Asttypes.Downto -> "downto")
         lam hi lam body
-  | Fassign(id, expr,_) ->
+  | Assign(id, expr,_) ->
       fprintf ppf "@[<2>(assign@ %a@ %a)@]" Variable.print id lam expr
-  | Fsend (k, met, obj, largs, _,_) ->
+  | Send (k, met, obj, largs, _,_) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       let kind =
         if k = Lambda.Self then "self" else if k = Lambda.Cached then "cache" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Funreachable _ ->
+  | Unreachable _ ->
       fprintf ppf "unreachable"
 
 and print_set_of_closures ppf (set_of_closures : _ Flambda.set_of_closures) =
@@ -198,19 +198,19 @@ and sequence ppf (ulam : _ Flambda.t) =
 
 and const ppf (c : Flambda.const) =
   match c with
-  | Fconst_base(Const_int n) -> fprintf ppf "%i" n
-  | Fconst_base(Const_char c) -> fprintf ppf "%C" c
-  | Fconst_base(Const_string (s,_)) -> fprintf ppf "%S" s
-  | Fconst_immstring s -> fprintf ppf "#%S" s
-  | Fconst_base(Const_float f) -> fprintf ppf "%s" f
-  | Fconst_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Fconst_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Fconst_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Fconst_pointer n -> fprintf ppf "%ia" n
-  | Fconst_float f -> fprintf ppf "%f" f
-  | Fconst_float_array [] ->
+  | Const_base(Const_int n) -> fprintf ppf "%i" n
+  | Const_base(Const_char c) -> fprintf ppf "%C" c
+  | Const_base(Const_string (s,_)) -> fprintf ppf "%S" s
+  | Const_immstring s -> fprintf ppf "#%S" s
+  | Const_base(Const_float f) -> fprintf ppf "%s" f
+  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
+  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
+  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
+  | Const_pointer n -> fprintf ppf "%ia" n
+  | Const_float f -> fprintf ppf "%f" f
+  | Const_float_array [] ->
       fprintf ppf "[| |]"
-  | Fconst_float_array (f1 :: fl) ->
+  | Const_float_array (f1 :: fl) ->
       let floats ppf fl =
         List.iter (fun f -> fprintf ppf "@ %s" f) fl in
       fprintf ppf "@[<1>[|@[%s%a@]|]@]" f1 floats fl

@@ -87,7 +87,7 @@ let no_effects_prim (prim : Lambda.primitive) =
   | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ -> false
   | Psequand | Psequor ->
-    Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
+    Misc.fatal_error "Psequand and Psequor are not allowed in Prim \
         expressions; use Fseq_prim instead"
 
 let no_effects_seq_prim (prim : Lambda.seq_primitive) =
@@ -96,57 +96,57 @@ let no_effects_seq_prim (prim : Lambda.seq_primitive) =
 
 let rec no_effects (flam : _ Flambda.t) =
   match flam with
-  | Fvar _ | Fsymbol _ | Fconst _ | Fset_of_closures _ | Fproject_closure _
-  | Fproject_var _ | Fmove_within_set_of_closures _ -> true
-  | Flet (_, _, def, body, _) -> no_effects def && no_effects body
-  | Fletrec (defs, body, _) ->
+  | Var _ | Symbol _ | Const _ | Set_of_closures _ | Project_closure _
+  | Project_var _ | Move_within_set_of_closures _ -> true
+  | Let (_, _, def, body, _) -> no_effects def && no_effects body
+  | Let_rec (defs, body, _) ->
     no_effects body && List.for_all (fun (_, def) -> no_effects def) defs
-  | Fprim (prim, _, _, _) -> no_effects_prim prim
+  | Prim (prim, _, _, _) -> no_effects_prim prim
   | Fseq_prim (prim, args, _, _) ->
     no_effects_seq_prim prim && List.for_all no_effects args
-  | Fifthenelse (cond, ifso, ifnot, _) ->
+  | If_then_else (cond, ifso, ifnot, _) ->
     no_effects cond && no_effects ifso && no_effects ifnot
-  | Fswitch (lam, sw, _) ->
+  | Switch (lam, sw, _) ->
     let aux (_, lam) = no_effects lam in
     no_effects lam
       && List.for_all aux sw.blocks
       && List.for_all aux sw.consts
       && Misc.may_default no_effects sw.failaction true
-  | Fstringswitch (lam, sw, def, _) ->
+  | String_switch (lam, sw, def, _) ->
     no_effects lam
       && List.for_all (fun (_, lam) -> no_effects lam) sw
       && Misc.may_default no_effects def true
-  | Fstaticcatch (_, _, body, _, _)
-  | Ftrywith (body, _, _, _) ->
-    (* If there is a [raise] in [body], the whole [Ftrywith] may have an
+  | Static_catch (_, _, body, _, _)
+  | Try_with (body, _, _, _) ->
+    (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)
     no_effects body
   | Fsequence (l1, l2, _) -> no_effects l1 && no_effects l2
   (* CR mshinwell for pchambart: Is there something subtle here about the
-     compilation of [Fwhile] and [Ffor] which means that even a
+     compilation of [While] and [For] which means that even a
      non-side-effecting loop body does not imply that the loop itself has
      no effects? *)
-  | Fwhile _ | Ffor _ | Fapply _ | Fsend _ | Fassign _
-  | Fstaticraise _ -> false
-  | Funreachable _ -> true
+  | While _ | For _ | Apply _ | Send _ | Assign _
+  | Static_raise _ -> false
+  | Unreachable _ -> true
 
 let sequence (l1 : _ Flambda.t) (l2 : _ Flambda.t) annot : _ Flambda.t =
   if no_effects l1 then
     l2
   else
     (* CR mshinwell for pchambart: Please add a comment explaining how
-       these Fconst_pointer | Fconst_base ... sequences arise. *)
+       these Const_pointer | Const_base ... sequences arise. *)
     match l2 with
-    | Fconst ((Fconst_pointer 0 | Fconst_base (Asttypes.Const_int 0)), _) ->
+    | Const ((Const_pointer 0 | Const_base (Asttypes.Const_int 0)), _) ->
       let l1_var =
         Variable.create "sequence"
           ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       in
       (* CR mshinwell: duplicating [annot]... *)
-      Flambda.Flet (Immutable, l1_var, l1,
-        Fprim (Pignore, [l1_var], Debuginfo.none, annot),
+      Flambda.Let (Immutable, l1_var, l1,
+        Prim (Pignore, [l1_var], Debuginfo.none, annot),
         annot)
     | _ ->
       match l1 with
-      | Fprim (Pignore, [_arg], _, _) -> l2
+      | Prim (Pignore, [_arg], _, _) -> l2
       | _ -> Fsequence (l1, l2, annot)

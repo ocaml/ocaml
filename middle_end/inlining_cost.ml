@@ -45,7 +45,7 @@ let prim_size (prim : Lambda.primitive) args =
   | Pgetglobalfield _ -> 2
   | Psetglobalfield _ -> 2
   | Psequand | Psequor ->
-    Misc.fatal_error "Psequand and Psequor are not allowed in Fprim \
+    Misc.fatal_error "Psequand and Psequor are not allowed in Prim \
         expressions; use Fseq_prim instead"
   (* CR mshinwell: This match must be made exhaustive. *)
   | _ -> 2 (* arithmetic and comparisons *)
@@ -61,68 +61,68 @@ let lambda_smaller' lam ~than:threshold =
   let rec lambda_size (lam : _ Flambda.t) =
     if !size > threshold then raise Exit;
     match lam with
-    | Fvar _ -> ()
-    | Fsymbol _ -> ()
-    | Fconst (
-        (Fconst_base (Const_int _ | Const_char _ | Const_float _ |
+    | Var _ -> ()
+    | Symbol _ -> ()
+    | Const (
+        (Const_base (Const_int _ | Const_char _ | Const_float _ |
                      Const_int32 _ | Const_int64 _ | Const_nativeint _)
-        | Fconst_pointer _ | Fconst_float _
-        | Fconst_float_array _ | Fconst_immstring _), _) -> incr size
-    | Fconst (Fconst_base ( Const_string _ ), _) ->
+        | Const_pointer _ | Const_float _
+        | Const_float_array _ | Const_immstring _), _) -> incr size
+    | Const (Const_base ( Const_string _ ), _) ->
       assert false
       (* should be moved out by a previous pass: see [List_string] *)
-    | Fapply ({ func = fn; args = _; kind = direct }, _) ->
+    | Apply ({ func = fn; args = _; kind = direct }, _) ->
       let call_cost = match direct with Indirect -> 6 | Direct _ -> 4 in
       size := !size + call_cost; lambda_size fn
-    | Fset_of_closures ({ function_decls = ffuns }, _) ->
+    | Set_of_closures ({ function_decls = ffuns }, _) ->
       Variable.Map.iter (fun _ (ffun : _ Flambda.function_declaration) ->
           lambda_size ffun.body)
         ffuns.funs
-    | Fproject_closure _ | Fproject_var _ | Fmove_within_set_of_closures _ ->
+    | Project_closure _ | Project_var _ | Move_within_set_of_closures _ ->
       incr size
-    | Flet (_, _, lam, body, _) ->
+    | Let (_, _, lam, body, _) ->
       lambda_size lam; lambda_size body
-    | Fletrec (bindings, body, _) ->
+    | Let_rec (bindings, body, _) ->
       List.iter (fun (_, lam) -> lambda_size lam) bindings;
       lambda_size body
-    | Fprim (prim, args, _, _) ->
+    | Prim (prim, args, _, _) ->
       size := !size + prim_size prim args
     | Fseq_prim (prim, args, _, _) ->
       size := !size + seq_prim_size prim;
       List.iter lambda_size args
-    | Fswitch (lam, sw, _) ->
+    | Switch (lam, sw, _) ->
       let aux = function _::_::_ -> size := !size + 5 | _ -> () in
       aux sw.consts; aux sw.blocks;
       lambda_size lam;
       List.iter (fun (_, lam) -> lambda_size lam) sw.consts;
       List.iter (fun (_, lam) -> lambda_size lam) sw.blocks
-    | Fstringswitch (lam, sw, def, _) ->
+    | String_switch (lam, sw, def, _) ->
       lambda_size lam;
       List.iter (fun (_, lam) ->
           size := !size + 2;
           lambda_size lam)
         sw;
       Misc.may lambda_size def
-    | Fstaticraise (_, args, _) -> lambda_list_size args
-    | Fstaticcatch (_, _, body, handler, _) ->
+    | Static_raise (_, args, _) -> lambda_list_size args
+    | Static_catch (_, _, body, handler, _) ->
       incr size; lambda_size body; lambda_size handler
-    | Ftrywith (body, _, handler, _) ->
+    | Try_with (body, _, handler, _) ->
       size := !size + 8; lambda_size body; lambda_size handler
-    | Fifthenelse (cond, ifso, ifnot, _) ->
+    | If_then_else (cond, ifso, ifnot, _) ->
       size := !size + 2;
       lambda_size cond; lambda_size ifso; lambda_size ifnot
     | Fsequence (lam1, lam2, _) ->
       lambda_size lam1; lambda_size lam2
-    | Fwhile (cond, body, _) ->
+    | While (cond, body, _) ->
       size := !size + 2; lambda_size cond; lambda_size body
-    | Ffor (_, low, high, _, body, _) ->
+    | For (_, low, high, _, body, _) ->
       size := !size + 4; lambda_size low; lambda_size high; lambda_size body
-    | Fassign (_, lam, _) ->
+    | Assign (_, lam, _) ->
       incr size;  lambda_size lam
-    | Fsend (_, met, obj, args, _, _) ->
+    | Send (_, met, obj, args, _, _) ->
       size := !size + 8;
       lambda_size met; lambda_size obj; lambda_list_size args
-    | Funreachable _ -> ()
+    | Unreachable _ -> ()
   and lambda_list_size l = List.iter lambda_size l in
   try
     lambda_size lam;
@@ -183,22 +183,22 @@ module Benefit = struct
     let b = ref b in
     let f (flam : _ Flambda.t) =
       match flam with
-      | Fset_of_closures _
-      | Fprim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _, _) ->
+      | Set_of_closures _
+      | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _, _) ->
         b := remove_alloc !b
         (* CR pchambart: should we consider that boxed integer and float
            operations are allocations ? *)
         (* CR mshinwell for pchambart: check closure cases carefully *)
-      | Fprim _ | Fseq_prim _ | Fproject_closure _ | Fproject_var _
-      | Fmove_within_set_of_closures _ | Fassign _ ->
+      | Prim _ | Fseq_prim _ | Project_closure _ | Project_var _
+      | Move_within_set_of_closures _ | Assign _ ->
         b := remove_prim !b
-      | Fswitch _ | Fstringswitch _ | Fstaticraise _ | Ftrywith _
-      | Fifthenelse _ | Fwhile _ | Ffor _ ->
+      | Switch _ | String_switch _ | Static_raise _ | Try_with _
+      | If_then_else _ | While _ | For _ ->
         b := remove_branch !b
-      | Fapply _ | Fsend _ ->
+      | Apply _ | Send _ ->
         b := remove_call !b
-      | Flet _ | Fletrec _ | Funreachable _ | Fsequence _ | Fsymbol _
-      | Fvar _ | Fconst _ | Fstaticcatch _ -> ()
+      | Let _ | Let_rec _ | Unreachable _ | Fsequence _ | Symbol _
+      | Var _ | Const _ | Static_catch _ -> ()
     in
     Flambdaiter.iter_toplevel f lam;
     !b

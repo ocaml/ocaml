@@ -13,7 +13,7 @@
 
 (** An identifier, unique across the whole program, that identifies a
     particular variable within a particular closure.  Only
-    [Fproject_var], and not [Fvar], nodes are tagged with these
+    [Project_var], and not [Var], nodes are tagged with these
     identifiers. *)
 
 include Closure_element_intf.S

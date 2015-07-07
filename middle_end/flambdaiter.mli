@@ -13,7 +13,7 @@
 
 (** Apply the given functions to the immediate subexpressions of the given
     Flambda expression.  For avoidance of doubt, if a subexpression is
-    [Fexpr], it is passed to the function taking [_ Flambda.named], rather
+    [Expr], it is passed to the function taking [_ Flambda.named], rather
     than being followed and passed to the function taking [_ Flambda.t]. *)
 val apply_on_subexpressions
    : ('a Flambda.t -> unit)
@@ -29,7 +29,7 @@ val iter
 
 (** [iter_toplevel f t] applies [f] on every toplevel subexpression of [t].
     In particular, it never applies [f] to the body of a function (which
-    will always be contained within an [Fset_of_closures] expression). *)
+    will always be contained within an [Set_of_closures] expression). *)
 val iter_toplevel
    : ('a Flambda.t -> unit)
   -> ('a Flambda.named -> unit)

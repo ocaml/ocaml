@@ -12,7 +12,7 @@
 (**************************************************************************)
 
 (** An identifier, unique across the whole program, that identifies a set
-    of a closures (viz. [Fset_of_closures]). *)
+    of a closures (viz. [Set_of_closures]). *)
 
 include Ext_types.Identifiable
 

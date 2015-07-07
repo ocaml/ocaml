@@ -66,7 +66,7 @@ val apply_variable : t -> Variable.t -> Variable.t
 val apply_static_exception : t -> Static_exception.t -> Static_exception.t
 
 (** Replace recursive accesses to the closures in the set through
-    [Fsymbol] by the corresponding [Fvar]. This is used to recover
+    [Symbol] by the corresponding [Var]. This is used to recover
     the recursive call when importing code from another compilation unit.
 
     If the renaming is inactive, this is the identity.
@@ -82,8 +82,8 @@ val rewrite_recursive_calls_with_symbols
 (* CR mshinwell for mshinwell: maybe inaccurate module name, it freshens
    closure IDs as well.  Check use points though *)
 module Project_var : sig
-  (** A table used for freshening of identifiers in [Fproject_closure] and
-      [Fmove_within_set_of_closures] ("ids of closures"); and [Fproject_var]
+  (** A table used for freshening of identifiers in [Project_closure] and
+      [Move_within_set_of_closures] ("ids of closures"); and [Project_var]
       ("bound vars of closures") expressions.
 
       This information is propagated bottom up and populated when inlining a
@@ -92,8 +92,8 @@ module Project_var : sig
       For instance,
         [let f x =
            let g y = ... x ... in
-           ... g.x ...           (Fproject_var x)
-           ... g 1 ...           (Fapply (Fproject_closure g ...))
+           ... g.x ...           (Project_var x)
+           ... g 1 ...           (Apply (Project_closure g ...))
            ]
 
       If f is inlined, g is renamed. The approximation of g will carry this

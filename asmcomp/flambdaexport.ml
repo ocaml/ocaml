@@ -246,8 +246,8 @@ let import_descr_for_pack units pack (descr : ET.descr) : ET.descr =
 
 let import_code_for_pack units pack expr =
   Flambdaiter.map (function
-      | Fsymbol (sym, ()) ->
-        Fsymbol (import_symbol_for_pack units pack sym, ())
+      | Symbol (sym, ()) ->
+        Symbol (import_symbol_for_pack units pack sym, ())
       | e -> e)
     expr
 

@@ -19,11 +19,11 @@ type lifter = Expr_id.t Flambda.t -> Expr_id.t Flambda.t
 let lift_lets tree =
   let rec aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fsequence(Flet(str, v, def, body, d1), seq, dseq) ->
-        Flet(str, v, def, Fsequence( aux body, seq, dseq), d1)
-    | Flet(str1, v1, Flet(str2, v2, def2, body2, d2), body1, d1) ->
-        Flet(str2, v2, def2, aux (
-          Flambda.Flet(str1, v1, body2, body1, d1)), d2)
+    | Fsequence(Let(str, v, def, body, d1), seq, dseq) ->
+        Let(str, v, def, Fsequence( aux body, seq, dseq), d1)
+    | Let(str1, v1, Let(str2, v2, def2, body2, d2), body1, d1) ->
+        Let(str2, v2, def2, aux (
+          Flambda.Let(str1, v1, body2, body1, d1)), d2)
     | e -> e
   in
   Flambdaiter.map aux tree
@@ -33,7 +33,7 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     (* [vars] corresponds elementwise to [exprs]; the order is unchanged. *)
     List.fold_right (fun (flam : _ Flambda.t) (vars, lets) ->
         match flam with
-        | Fvar (v, _) ->
+        | Var (v, _) ->
           (* Assumes that [v] is an immutable variable, otherwise this may
              change the evaluation order. *)
           (* XCR mshinwell for pchambart: Please justify why [v] is always
@@ -64,5 +64,5 @@ let lifting_helper exprs ~evaluation_order ~create_body ~name =
     | `Left_to_right -> List.rev lets
   in
   List.fold_left (fun body (v, expr) ->
-      Flambda.Flet (Immutable, v, expr, body, Expr_id.create ()))
+      Flambda.Let (Immutable, v, expr, body, Expr_id.create ()))
     (create_body vars) lets

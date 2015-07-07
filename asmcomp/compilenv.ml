@@ -466,8 +466,8 @@ let imported_closure =
     let sym_map = orig_var_map clos in
 
     let f = function
-      | Fsymbol (sym, ()) as e ->
-          (try Fvar(Symbol.Map.find sym sym_map,()) with
+      | Symbol (sym, ()) as e ->
+          (try Var(Symbol.Map.find sym sym_map,()) with
            | Not_found -> e)
       | e -> e in
 

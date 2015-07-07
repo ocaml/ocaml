@@ -244,7 +244,7 @@ let tupled_function_call_stub t original_params tuplified_version
   in
   let params = List.map (fun p -> rename_var t p) original_params in
   let call : _ Flambda.t =
-    Fapply ({
+    Apply ({
         func = tuplified_version;
         args = params;
         (* CR mshinwell for mshinwell: investigate if there is some
@@ -257,9 +257,9 @@ let tupled_function_call_stub t original_params tuplified_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : _ Flambda.named =
-          Fprim (Pfield pos, [tuple_param], Debuginfo.none, nid ())
+          Prim (Pfield pos, [tuple_param], Debuginfo.none, nid ())
         in
-        pos + 1, Flambda.Flet (Immutable, param, lam, body, nid ()))
+        pos + 1, Flambda.Let (Immutable, param, lam, body, nid ()))
       (0, call) params
   in
   { stub = true;  (* force the function to be inlined *)
@@ -275,14 +275,14 @@ let add_debug_info (ev : Lambda.lambda_event) (flam : _ Flambda.t)
   match ev.lev_kind with
   | Lev_after _ ->
     begin match flam with
-    | Fapply (ap, v) ->
-      Fapply ({ ap with dbg = Debuginfo.from_call ev}, v)
+    | Apply (ap, v) ->
+      Apply ({ ap with dbg = Debuginfo.from_call ev}, v)
 (* XXX resurrect this
-    | Fprim (p, args, _dinfo, v) ->
-      Fprim (p, args, Debuginfo.from_call ev, v)
+    | Prim (p, args, _dinfo, v) ->
+      Prim (p, args, Debuginfo.from_call ev, v)
 *)
-    | Fsend (kind, flam1, flam2, args, _dinfo, v) ->
-      Fsend (kind, flam1, flam2, args, Debuginfo.from_call ev, v)
+    | Send (kind, flam1, flam2, args, _dinfo, v) ->
+      Send (kind, flam1, flam2, args, Debuginfo.from_call ev, v)
 (*
     | Fsequence (flam1, flam2, v) ->
       Fsequence (flam1, add_debug_info ev flam2, v)
@@ -295,10 +295,10 @@ let close_const (const : Lambda.structured_constant) : _ Flambda.named =
    (* CR-soon mshinwell: consider changing [name] arguments to be uniform
      with the constructor names *)
    match const with
-  | Const_base c -> Fconst (Fconst_base c, nid ~name:"cst" ())
-  | Const_pointer c -> Fconst (Fconst_pointer c, nid ~name:"cstptr" ())
-  | Const_immstring c -> Fconst (Fconst_immstring c, nid ~name:"immstring" ())
-  | Const_float_array c -> Fconst (Fconst_float_array c, nid ~name:"float" ())
+  | Const_base c -> Const (Const_base c, nid ~name:"cst" ())
+  | Const_pointer c -> Const (Const_pointer c, nid ~name:"cstptr" ())
+  | Const_immstring c -> Const (Const_immstring c, nid ~name:"immstring" ())
+  | Const_float_array c -> Const (Const_float_array c, nid ~name:"float" ())
   | Const_block _ ->
     Misc.fatal_error "Const_block should have been eliminated \
         before closure conversion"
@@ -307,13 +307,13 @@ let name_expr (named : _ Flambda.named) : _ Flambda.t =
   let var = fresh_variable ~name:"named" in
   let nid1 = nid ~name:"named" () in
   let nid2 = nid ~name:"named" () in
-  Flet (Immutable, var, named, Fvar (var, nid1), nid2)
+  Let (Immutable, var, named, Var (var, nid1), nid2)
 
 let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
   match lam with
   | Lvar id ->
     let var = Env.find_var env id in
-    Fvar (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
+    Var (var, nid ~name:(Format.asprintf "var_%a" Variable.print var) ())
   | Lconst cst -> name_expr (close_const cst)
   | Llet (let_kind, id, lam, body) ->
     let let_kind : Flambda.let_kind =
@@ -324,7 +324,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     let var = create_var id in
     let lam = close_let_bound_expression t var env lam in
     let body = close t (Env.add_var env id var) body in
-    Flet (let_kind, var, lam, body, nid ~name:"let" ())
+    Let (let_kind, var, lam, body, nid ~name:"let" ())
   | Lfunction (kind, params, body) ->
     let closure_bound_var =
       let name =
@@ -351,8 +351,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
         closure_id = Closure_id.wrap closure_bound_var;
       }
     in
-    Flet (Immutable, set_of_closures_var, set_of_closures,
-      name_expr (Fproject_closure (project_closure,
+    Let (Immutable, set_of_closures_var, set_of_closures,
+      name_expr (Project_closure (project_closure,
         nid ~name:"project_closure" ())),
       nid ~name:"function" ())
   | Lapply (funct, args, _loc) ->
@@ -363,8 +363,8 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       ~create_body:(fun args ->
         let func = close t env funct in
         let func_var = fresh_variable ~name:"apply_funct" in
-        Flet (Immutable, func_var, Fexpr funct,
-          Fapply ({
+        Let (Immutable, func_var, Expr funct,
+          Apply ({
               func_var;
               args;
               kind = Indirect;
@@ -395,7 +395,7 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     | Some function_declarations ->
       (* When all the bindings are (syntactically) functions, we can
          eliminate the [let rec] construction, instead producing a normal
-         [Flet] that binds a set of closures containing all of the functions.
+         [Let] that binds a set of closures containing all of the functions.
       *)
       let set_of_closures_var = fresh_variable ~name:"set_of_closures" in
       let set_of_closures =
@@ -407,10 +407,10 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
             let closure_bound_var = Function_decl.closure_bound_var decl in
             let let_bound_var = Env.find_var env let_rec_ident in
             (* Inside the body of the [let], each function is referred to by
-               an [Fproject_closure] expression, which projects from the set of
+               an [Project_closure] expression, which projects from the set of
                closures. *)
-            ((Flet (Immutable, let_bound_var,
-              Fproject_closure ({
+            ((Let (Immutable, let_bound_var,
+              Project_closure ({
                   set_of_closures = set_of_closures_var;
                   closure_id = Closure_id.wrap closure_bound_var;
                 },
@@ -418,10 +418,10 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
               body, nid ())) : _ Flambda.t))
           (close t env body) function_declarations
       in
-      Flet (Immutable, set_of_closures_var, set_of_closures,
+      Let (Immutable, set_of_closures_var, set_of_closures,
         body, nid ~name:"closure_letrec" ())
     | None ->
-      (* If the condition above is not satisfied, we build an [Fletrec]
+      (* If the condition above is not satisfied, we build an [Let_rec]
          expression; any functions bound by it will have their own
          individual closures. *)
       let defs =
@@ -433,21 +433,21 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
             var, expr)
           defs
       in
-      Fletrec (defs, close t env body, nid ~name:"letrec" ())
+      Let_rec (defs, close t env body, nid ~name:"letrec" ())
     end
   | Lsend (kind, met, obj, args, _) ->
-    Fsend (kind, close t env met, close t env obj,
+    Send (kind, close t env met, close t env obj,
       close_list t env args, Debuginfo.none, nid ())
   | Lprim (Psequor, [arg1; arg2]) ->
     let const_true = fresh_variable ~name:"const_true" in
     let name = "Psequand" in
-    Flet (Immutable, const_true, Fconst (Fconst_base (Const_int 1)),
-      Fifthenelse (arg1, const_true, arg2, nid ~name ()), nid ~name ())
+    Let (Immutable, const_true, Const (Const_base (Const_int 1)),
+      If_then_else (arg1, const_true, arg2, nid ~name ()), nid ~name ())
   | Lprim (Psequand, [arg1; arg2]) ->
     let const_false = fresh_variable ~name:"const_true" in
     let name = "Psequor" in
-    Flet (Immutable, const_false, Fconst (Fconst_base (Const_int 0)),
-      Fifthenelse (arg1, arg2, const_false, nid ~name ()), nid ~name ())
+    Let (Immutable, const_false, Const (Const_base (Const_int 0)),
+      If_then_else (arg1, arg2, const_false, nid ~name ()), nid ~name ())
   | Lprim (Psequand | Psequor, _) ->
     Misc.fatal_error "Psequand / Psequor must have exactly two arguments"
   | Lprim (Pidentity, [arg]) -> close t env arg
@@ -456,15 +456,15 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
     close t env (Lambda.Lapply (funct, [arg], loc))
   | Lprim (Praise kind, [Levent (arg, event)]) ->
     let arg_var = fresh_variable ~name:"raise_arg" in
-    Flet (Immutable, arg_var, Fexpr (close t env arg),
+    Let (Immutable, arg_var, Expr (close t env arg),
       name_expr
-        (Fprim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ())),
+        (Prim (Praise kind, [arg_var], Debuginfo.from_raise event, nid ())),
       nid ())
   | Lprim (Pfield i, [Lprim (Pgetglobal id, [])])
       when Ident.same id t.current_unit_id ->
     (* Access to globals of the current module uses a distinguished primitive
        in Flambda. *)
-    name_expr (Fprim (Pgetglobalfield (id, i), [], Debuginfo.none,
+    name_expr (Prim (Pgetglobalfield (id, i), [], Debuginfo.none,
       nid ~name:"getglobalfield" ()))
   | Lprim (Psetfield (i, _), [Lprim (Pgetglobal id, []); lam]) ->
     assert (Ident.same id t.current_unit_id);
@@ -472,14 +472,14 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       if i < t.exported_fields then Exported else Not_exported
     in
     let arg_var = fresh_variable ~name:"raise_arg" in
-    Flet (Immutable, arg_var, Fexpr (close t env lam),
-      name_expr (Fprim (Psetglobalfield (exported, i), [arg_var],
+    Let (Immutable, arg_var, Expr (close t env lam),
+      name_expr (Prim (Psetglobalfield (exported, i), [arg_var],
         Debuginfo.none, nid ~name:"setglobalfield" ())),
       nid ())
   | Lprim (Pgetglobal id, []) when not (Ident.is_predef_exn id) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
-    name_expr (Fsymbol (symbol, nid ~name:"external_global" ()))
+    name_expr (Symbol (symbol, nid ~name:"external_global" ()))
   | Lprim (p, args) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
@@ -491,11 +491,11 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       ~evaluation_order:`Right_to_left
       ~name:"prim_arg"
       ~create_body:(fun args ->
-        name_expr (Fprim (p, args, Debuginfo.none, nid ~name:"prim" ())))
+        name_expr (Prim (p, args, Debuginfo.none, nid ~name:"prim" ())))
   | Lswitch (arg, sw) ->
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Ext_types.IntSet.zero_to_n in
-    Fswitch (close t env arg,
+    Switch (close t env arg,
       { numconsts = zero_to_n (sw.sw_numconsts - 1);
         consts = List.map aux sw.sw_consts;
         numblocks = zero_to_n (sw.sw_numblocks - 1);
@@ -504,38 +504,38 @@ let rec close t env (lam : Lambda.lambda) : _ Flambda.t =
       },
       nid ~name:"switch" ())
   | Lstringswitch (arg, sw, def) ->
-    Fstringswitch (
+    String_switch (
       close t env arg,
       List.map (fun (s, e) -> s, close t env e) sw,
       Misc.may_map (close t env) def,
       nid ~name:"stringswitch" ())
   | Lstaticraise (i, args) ->
-    Fstaticraise (Env.find_static_exception env i, close_list t env args,
+    Static_raise (Env.find_static_exception env i, close_list t env args,
       nid ())
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
     let vars = List.map (create_var) ids in
-    Fstaticcatch (st_exn, vars, close t env body,
+    Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler, nid ())
   | Ltrywith (body, id, handler) ->
     let var = create_var id in
-    Ftrywith (close t env body, var, close t (Env.add_var env id var) handler,
+    Try_with (close t env body, var, close t (Env.add_var env id var) handler,
       nid ())
   | Lifthenelse (arg, ifso, ifnot) ->
-    Fifthenelse (close t env arg, close t env ifso, close t env ifnot,
+    If_then_else (close t env arg, close t env ifso, close t env ifnot,
       nid ~name:"if" ())
   | Lsequence (lam1, lam2) ->
     let var = fresh_variable ~name:"sequence" in
-    let lam1 = Flambda.Fexpr (close t env lam1) in
+    let lam1 = Flambda.Expr (close t env lam1) in
     let lam2 = close t env lam2 in
-    Flet (Immutable, var, lam1, lam2, nid ~name:"sequence" ())
-  | Lwhile (cond, body) -> Fwhile (close t env cond, close t env body, nid ())
+    Let (Immutable, var, lam1, lam2, nid ~name:"sequence" ())
+  | Lwhile (cond, body) -> While (close t env cond, close t env body, nid ())
   | Lfor (id, lo, hi, dir, body) ->
     let var = create_var id in
-    Ffor (var, close t env lo, close t env hi, dir,
+    For (var, close t env lo, close t env hi, dir,
       close t (Env.add_var env id var) body, nid ())
-  | Lassign (id, lam) -> Fassign (Env.find_var env id, close t env lam, nid ())
+  | Lassign (id, lam) -> Assign (Env.find_var env id, close t env lam, nid ())
   | Levent (lam, ev) -> add_debug_info ev (close t env lam)
   (* XCR mshinwell for pchambart: What is [Lifused] and why is this
      [assert false]?
@@ -628,7 +628,7 @@ and close_functions t external_env function_declarations : _ Flambda.named =
       specialised_args = Variable.Map.empty;
     }
   in
-  Fset_of_closures (set_of_closures, nid ~name:"set_of_closures" ())
+  Set_of_closures (set_of_closures, nid ~name:"set_of_closures" ())
 
 and close_list t sb l = List.map (close t sb) l
 
@@ -650,16 +650,16 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
         closure_id = Closure_id.wrap closure_bound_var;
       }
     in
-    Fexpr (Flet (Immutable, set_of_closures_var, set_of_closures,
-      name_expr (Fproject_closure (project_closure,
+    Expr (Let (Immutable, set_of_closures_var, set_of_closures,
+      name_expr (Project_closure (project_closure,
         nid ~name:"project_closure" ())),
       nid ~name:"close_let_bound_expression" ()))
   | lam ->
     match close t env lam with
     (* Remove unnecessary [let]s introduced by [name_expr], above. *)
-    | Flet (Immutable, var1, named, Fvar (var2, _), _)
+    | Let (Immutable, var1, named, Var (var2, _), _)
         when Variable.equal var1 var2 -> named
-    | flam -> Fexpr flam
+    | flam -> Expr flam
 
 let lambda_to_flambda ~backend ~(exported_fields:int) lam =
   let module Backend = (val backend : Backend_intf.S) in

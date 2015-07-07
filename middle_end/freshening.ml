@@ -127,8 +127,8 @@ let rewrite_recursive_calls_with_symbols t
         let body =
           Flambdaiter.map_toplevel
             (function
-              | Fsymbol (sym,_) when Symbol.Map.mem sym closure_symbols ->
-                Fvar(Symbol.Map.find sym closure_symbols,Expr_id.create ())
+              | Symbol (sym,_) when Symbol.Map.mem sym closure_symbols ->
+                Var(Symbol.Map.find sym closure_symbols,Expr_id.create ())
               | e -> e)
             ffun.body in
         { ffun with body })

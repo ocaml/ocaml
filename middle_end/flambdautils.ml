@@ -36,151 +36,151 @@ let variables_bound_by_the_closure cf
 
 let data_at_toplevel_node (expr : _ Flambda.t) =
   match expr with
-  | Fsymbol (_,data)
-  | Fvar (_,data)
-  | Fconst (_,data)
-  | Flet(_,_,_,_,data)
-  | Fletrec(_,_,data)
-  | Fset_of_closures(_,data)
-  | Fproject_closure(_,data)
-  | Fproject_var (_, data)
-  | Fmove_within_set_of_closures (_, data)
-  | Fapply(_,data)
-  | Fswitch(_,_,data)
-  | Fstringswitch(_,_,_,data)
-  | Fsend(_,_,_,_,_,data)
-  | Fprim(_,_,_,data)
+  | Symbol (_,data)
+  | Var (_,data)
+  | Const (_,data)
+  | Let(_,_,_,_,data)
+  | Let_rec(_,_,data)
+  | Set_of_closures(_,data)
+  | Project_closure(_,data)
+  | Project_var (_, data)
+  | Move_within_set_of_closures (_, data)
+  | Apply(_,data)
+  | Switch(_,_,data)
+  | String_switch(_,_,_,data)
+  | Send(_,_,_,_,_,data)
+  | Prim(_,_,_,data)
   | Fseq_prim(_,_,_,data)
-  | Fstaticraise (_,_,data)
-  | Fstaticcatch (_,_,_,_,data)
-  | Ftrywith(_,_,_,data)
-  | Fifthenelse(_,_,_,data)
+  | Static_raise (_,_,data)
+  | Static_catch (_,_,_,_,data)
+  | Try_with(_,_,_,data)
+  | If_then_else(_,_,_,data)
   | Fsequence(_,_,data)
-  | Fwhile(_,_,data)
-  | Ffor(_,_,_,_,_,data)
-  | Fassign(_,_,data)
-  | Funreachable data -> data
+  | While(_,_,data)
+  | For(_,_,_,_,_,data)
+  | Assign(_,_,data)
+  | Unreachable data -> data
 
 let description_of_toplevel_node (expr : _ Flambda.t) =
   match expr with
-  | Fsymbol (sym, _) -> Format.asprintf "%%%a" Symbol.print sym
-  | Fvar (id, _) -> Format.asprintf "var %a" Variable.print id
-  | Fconst _ -> "const"
-  | Flet (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
-  | Fletrec _ -> "letrec"
-  | Fset_of_closures _ -> "set_of_closures"
-  | Fproject_closure _ -> "project_closure"
-  | Fproject_var _ -> "project_var"
-  | Fmove_within_set_of_closures _ -> "move_within_set_of_closures"
-  | Fapply _ -> "apply"
-  | Fswitch _ -> "switch"
-  | Fstringswitch _ -> "stringswitch"
-  | Fsend _ -> "send"
-  | Fprim _ -> "prim"
+  | Symbol (sym, _) -> Format.asprintf "%%%a" Symbol.print sym
+  | Var (id, _) -> Format.asprintf "var %a" Variable.print id
+  | Const _ -> "const"
+  | Let (_, id, _, _, _) -> Format.asprintf "let %a" Variable.print id
+  | Let_rec _ -> "letrec"
+  | Set_of_closures _ -> "set_of_closures"
+  | Project_closure _ -> "project_closure"
+  | Project_var _ -> "project_var"
+  | Move_within_set_of_closures _ -> "move_within_set_of_closures"
+  | Apply _ -> "apply"
+  | Switch _ -> "switch"
+  | String_switch _ -> "stringswitch"
+  | Send _ -> "send"
+  | Prim _ -> "prim"
   | Fseq_prim _ -> "seq_prim"
-  | Fstaticraise  _ -> "staticraise"
-  | Fstaticcatch  _ -> "catch"
-  | Ftrywith _ -> "trywith"
-  | Fifthenelse _ -> "if"
+  | Static_raise  _ -> "staticraise"
+  | Static_catch  _ -> "catch"
+  | Try_with _ -> "trywith"
+  | If_then_else _ -> "if"
   | Fsequence _ -> "seq"
-  | Fwhile _ -> "while"
-  | Ffor _ -> "for"
-  | Fassign _ -> "assign"
-  | Funreachable _ -> "unreachable"
+  | While _ -> "while"
+  | For _ -> "for"
+  | Assign _ -> "assign"
+  | Unreachable _ -> "unreachable"
 
 let rec same (l1 : 'a Flambda.t) (l2 : 'a Flambda.t) =
   l1 == l2 || (* it is ok for string case: if they are physicaly the same,
                  it is the same original branch *)
   match (l1, l2) with
-  | Fsymbol(s1, _), Fsymbol(s2, _) -> Symbol.equal s1 s2
-  | Fsymbol _, _ | _, Fsymbol _ -> false
-  | Fvar(v1, _), Fvar(v2, _) -> Variable.equal v1 v2
-  | Fvar _, _ | _, Fvar _ -> false
-  | Fconst(c1, _), Fconst(c2, _) -> begin
+  | Symbol(s1, _), Symbol(s2, _) -> Symbol.equal s1 s2
+  | Symbol _, _ | _, Symbol _ -> false
+  | Var(v1, _), Var(v2, _) -> Variable.equal v1 v2
+  | Var _, _ | _, Var _ -> false
+  | Const(c1, _), Const(c2, _) -> begin
       match c1, c2 with
-      | Fconst_base (Const_string (s1,_)), Fconst_base (Const_string (s2,_)) ->
+      | Const_base (Const_string (s1,_)), Const_base (Const_string (s2,_)) ->
           s1 == s2 (* string constants can't be merged: they are mutable,
                       but if they are physicaly the same, it comes from a safe case *)
-      | Fconst_base (Const_string _), _ -> false
-      | Fconst_base (Const_int _ | Const_char _ | Const_float _ |
+      | Const_base (Const_string _), _ -> false
+      | Const_base (Const_int _ | Const_char _ | Const_float _ |
                      Const_int32 _ | Const_int64 _ | Const_nativeint _), _
-      | Fconst_pointer _, _
-      | Fconst_float _, _
-      | Fconst_float_array _, _
-      | Fconst_immstring _, _ -> c1 = c2
+      | Const_pointer _, _
+      | Const_float _, _
+      | Const_float_array _, _
+      | Const_immstring _, _ -> c1 = c2
     end
-  | Fconst _, _ | _, Fconst _ -> false
-  | Fapply(a1, _), Fapply(a2, _) ->
+  | Const _, _ | _, Const _ -> false
+  | Apply(a1, _), Apply(a2, _) ->
       a1.kind = a2.kind &&
       same a1.func a2.func &&
       Misc.samelist Variable.equal a1.args a2.args
-  | Fapply _, _ | _, Fapply _ -> false
-  | Fset_of_closures (c1, _), Fset_of_closures (c2, _) ->
+  | Apply _, _ | _, Apply _ -> false
+  | Set_of_closures (c1, _), Set_of_closures (c2, _) ->
     same_set_of_closures c1 c2
-  | Fset_of_closures _, _ | _, Fset_of_closures _ -> false
-  | Fproject_closure (f1, _), Fproject_closure (f2, _) ->
+  | Set_of_closures _, _ | _, Set_of_closures _ -> false
+  | Project_closure (f1, _), Project_closure (f2, _) ->
     same_project_closure f1 f2
-  | Fproject_closure _, _ | _, Fproject_closure _ -> false
-  | Fproject_var (v1, _), Fproject_var (v2, _) ->
+  | Project_closure _, _ | _, Project_closure _ -> false
+  | Project_var (v1, _), Project_var (v2, _) ->
     Variable.equal v1.closure v2.closure
       && Closure_id.equal v1.closure_id v2.closure_id
       && Var_within_closure.equal v1.var v2.var
-  | Fproject_var _, _ | _, Fproject_var _ -> false
-  | Fmove_within_set_of_closures (m1, _),
-    Fmove_within_set_of_closures (m2, _) ->
+  | Project_var _, _ | _, Project_var _ -> false
+  | Move_within_set_of_closures (m1, _),
+    Move_within_set_of_closures (m2, _) ->
     same_move_within_set_of_closures m1 m2
-  | Fmove_within_set_of_closures _, _ | _, Fmove_within_set_of_closures _ ->
+  | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
-  | Flet (k1, v1, a1, b1, _), Flet (k2, v2, a2, b2, _) ->
+  | Let (k1, v1, a1, b1, _), Let (k2, v2, a2, b2, _) ->
       k1 = k2 && Variable.equal v1 v2 && same a1 a2 && same b1 b2
-  | Flet _, _ | _, Flet _ -> false
-  | Fletrec (bl1, a1, _), Fletrec (bl2, a2, _) ->
+  | Let _, _ | _, Let _ -> false
+  | Let_rec (bl1, a1, _), Let_rec (bl2, a2, _) ->
       Misc.samelist samebinding bl1 bl2 && same a1 a2
-  | Fletrec _, _ | _, Fletrec _ -> false
-  | Fprim (p1, al1, _, _), Fprim (p2, al2, _, _) ->
+  | Let_rec _, _ | _, Let_rec _ -> false
+  | Prim (p1, al1, _, _), Prim (p2, al2, _, _) ->
       p1 = p2 && Misc.samelist Variable.equal al1 al2
-  | Fprim _, _ | _, Fprim _ -> false
+  | Prim _, _ | _, Prim _ -> false
   | Fseq_prim (p1, al1, _, _), Fseq_prim (p2, al2, _, _) ->
       p1 = p2 && Misc.samelist same al1 al2
   | Fseq_prim _, _ | _, Fseq_prim _ -> false
-  | Fswitch (a1, s1, _), Fswitch (a2, s2, _) ->
+  | Switch (a1, s1, _), Switch (a2, s2, _) ->
       same a1 a2 && sameswitch s1 s2
-  | Fswitch _, _ | _, Fswitch _ -> false
-  | Fstringswitch (a1, s1, d1, _), Fstringswitch (a2, s2, d2, _) ->
+  | Switch _, _ | _, Switch _ -> false
+  | String_switch (a1, s1, d1, _), String_switch (a2, s2, d2, _) ->
       same a1 a2 &&
       Misc.samelist (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2 &&
       Misc.sameoption same d1 d2
-  | Fstringswitch _, _ | _, Fstringswitch _ -> false
-  | Fstaticraise (e1, a1, _), Fstaticraise (e2, a2, _) ->
+  | String_switch _, _ | _, String_switch _ -> false
+  | Static_raise (e1, a1, _), Static_raise (e2, a2, _) ->
       Static_exception.equal e1 e2 && Misc.samelist same a1 a2
-  | Fstaticraise _, _ | _, Fstaticraise _ -> false
-  | Fstaticcatch (s1, v1, a1, b1, _), Fstaticcatch (s2, v2, a2, b2, _) ->
+  | Static_raise _, _ | _, Static_raise _ -> false
+  | Static_catch (s1, v1, a1, b1, _), Static_catch (s2, v2, a2, b2, _) ->
       Static_exception.equal s1 s2 && Misc.samelist Variable.equal v1 v2 &&
       same a1 a2 && same b1 b2
-  | Fstaticcatch _, _ | _, Fstaticcatch _ -> false
-  | Ftrywith (a1, v1, b1, _), Ftrywith (a2, v2, b2, _) ->
+  | Static_catch _, _ | _, Static_catch _ -> false
+  | Try_with (a1, v1, b1, _), Try_with (a2, v2, b2, _) ->
       same a1 a2 && Variable.equal v1 v2 && same b1 b2
-  | Ftrywith _, _ | _, Ftrywith _ -> false
-  | Fifthenelse (a1, b1, c1, _), Fifthenelse (a2, b2, c2, _) ->
+  | Try_with _, _ | _, Try_with _ -> false
+  | If_then_else (a1, b1, c1, _), If_then_else (a2, b2, c2, _) ->
       same a1 a2 && same b1 b2 && same c1 c2
-  | Fifthenelse _, _ | _, Fifthenelse _ -> false
+  | If_then_else _, _ | _, If_then_else _ -> false
   | Fsequence (a1, b1, _), Fsequence (a2, b2, _) ->
       same a1 a2 && same b1 b2
   | Fsequence _, _ | _, Fsequence _ -> false
-  | Fwhile (a1, b1, _), Fwhile (a2, b2, _) ->
+  | While (a1, b1, _), While (a2, b2, _) ->
       same a1 a2 && same b1 b2
-  | Fwhile _, _ | _, Fwhile _ -> false
-  | Ffor(v1, a1, b1, df1, c1, _), Ffor(v2, a2, b2, df2, c2, _) ->
+  | While _, _ | _, While _ -> false
+  | For(v1, a1, b1, df1, c1, _), For(v2, a2, b2, df2, c2, _) ->
       Variable.equal v1 v2 &&  same a1 a2 &&
       same b1 b2 && df1 = df2 && same c1 c2
-  | Ffor _, _ | _, Ffor _ -> false
-  | Fassign(v1, a1, _), Fassign(v2, a2, _) ->
+  | For _, _ | _, For _ -> false
+  | Assign(v1, a1, _), Assign(v2, a2, _) ->
       Variable.equal v1 v2 && same a1 a2
-  | Fassign _, _ | _, Fassign _ -> false
-  | Fsend(k1, a1, b1, cl1, _, _), Fsend(k2, a2, b2, cl2, _, _) ->
+  | Assign _, _ | _, Assign _ -> false
+  | Send(k1, a1, b1, cl1, _, _), Send(k2, a2, b2, cl2, _, _) ->
       k1 = k2 && same a1 a2 && same b1 b2 && Misc.samelist same cl1 cl2
-  | Fsend _, _ | _, Fsend _ -> false
-  | Funreachable _, Funreachable _ -> true
+  | Send _, _ | _, Send _ -> false
+  | Unreachable _, Unreachable _ -> true
 
 and sameclosure (c1 : _ Flambda.function_declaration)
       (c2 : _ Flambda.function_declaration) =
@@ -228,10 +228,10 @@ let toplevel_substitution sb tree =
   let sb v = try Variable.Map.find v sb with Not_found -> v in
   let aux (flam : _ Flambda.t) : _ Flambda.t =
     match flam with
-    | Fvar (id,e) -> Fvar (sb id,e)
-    | Fassign (id,e,d) -> Fassign (sb id,e,d)
-    | Fset_of_closures (cl,d) ->
-      Fset_of_closures ({cl with
+    | Var (id,e) -> Var (sb id,e)
+    | Assign (id,e,d) -> Assign (sb id,e,d)
+    | Set_of_closures (cl,d) ->
+      Set_of_closures ({cl with
                  specialised_args =
                    Variable.Map.map sb cl.specialised_args},
                 d)
@@ -283,17 +283,17 @@ let make_closure_declaration ~id ~body ~params : _ Flambda.t =
     }
   in
   let project_closure : Expr_id.t Flambda.t =
-    Fproject_closure ({
+    Project_closure ({
         set_of_closures = set_of_closures_var;
         closure_id = Closure_id.wrap id;
       },
       Expr_id.create ())
   in
-  Flet (Immutable, set_of_closures_var,
-    Fset_of_closures (set_of_closures, Expr_id.create ()),
+  Let (Immutable, set_of_closures_var,
+    Set_of_closures (set_of_closures, Expr_id.create ()),
     project_closure, Expr_id.create ())
 
 let bind ?name ~bindings ~body =
   List.fold_left (fun expr (var, var_def) ->
-      Flambda.Flet (Immutable, var, var_def, expr, Expr_id.create ?name ()))
+      Flambda.Let (Immutable, var, var_def, expr, Expr_id.create ?name ()))
     body bindings

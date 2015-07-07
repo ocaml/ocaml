@@ -41,7 +41,7 @@ let fold_over_exprs_for_variables_bound_by_closure ~fun_id ~clos_id ~clos
       ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : _ Flambda.t =
-        Fproject_var
+        Project_var
           ({ closure = clos_id;
              closure_id = fun_id;
              var = Var_within_closure.wrap var;
@@ -69,7 +69,7 @@ let inline_by_copying_function_body ~env ~r
      that we saw at the call site. *)
   let bindings_for_params_around_body =
     let args =
-      List.map (fun arg -> Flambda.Fvar (arg, Expr_id.create ())) args
+      List.map (fun arg -> Flambda.Var (arg, Expr_id.create ())) args
     in
     Flambdautils.bind ~body
       ~bindings:(List.combine subst_params args)
@@ -80,14 +80,14 @@ let inline_by_copying_function_body ~env ~r
     fold_over_exprs_for_variables_bound_by_closure ~fun_id
       ~clos_id:closure ~clos ~init:bindings_for_params_around_body
       ~f:(fun ~acc:body ~var ~expr ->
-        Flambda.Flet (Immutable, var, expr, body, Expr_id.create ()))
+        Flambda.Let (Immutable, var, expr, body, Expr_id.create ()))
   in
   (* 3. Finally add bindings for the function declaration identifiers being
      introduced by the whole set of closures. *)
   let expr =
     Variable.Map.fold (fun id _ expr ->
-        Flambda.Flet (Immutable, id,
-          Fmove_within_set_of_closures ({
+        Flambda.Let (Immutable, id,
+          Move_within_set_of_closures ({
               closure;
               start_from = fun_id;
               move_to = Closure_id.wrap id;
@@ -100,7 +100,7 @@ let inline_by_copying_function_body ~env ~r
       ~where:Inline_by_copying_function_body
   in
   simplify (E.activate_freshening env) r
-    (Flambda.Flet (Immutable, closure, lfunc, expr, Expr_id.create ()))
+    (Flambda.Let (Immutable, closure, lfunc, expr, Expr_id.create ()))
 
 let inline_by_copying_function_declaration ~env ~r ~funct
     ~(function_decls : _ Flambda.function_declarations)
@@ -127,7 +127,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
       (* The free variable map for the duplicated declaration(s) maps the
          "internal" names used within the function bodies to fresh names,
          which in turn are bound to projections from the set of closures being
-         copied.  We add these bindings using [Flet] around the new
+         copied.  We add these bindings using [Let] around the new
          set-of-closures declaration. *)
       let free_vars, free_vars_for_lets =
         fold_over_exprs_for_variables_bound_by_closure ~fun_id:closure_id
@@ -146,7 +146,7 @@ let inline_by_copying_function_declaration ~env ~r ~funct
         }
       in
       Flambdautils.bind ~bindings:free_vars_for_lets
-        ~body:(Fset_of_closures (set_of_closures, Expr_id.create ()))
+        ~body:(Set_of_closures (set_of_closures, Expr_id.create ()))
         ~name:"free_var"
     in
     (* Generate a copy of the function application, including the function
@@ -160,17 +160,17 @@ let inline_by_copying_function_declaration ~env ~r ~funct
         }
       in
       let func : _ Flambda.t =
-        Fproject_closure (project_closure, Expr_id.create ())
+        Project_closure (project_closure, Expr_id.create ())
       in
-      Flet (Immutable, set_of_closures_var, set_of_closures,
-        Fapply ({ func; args; kind = Direct closure_id; dbg; },
+      Let (Immutable, set_of_closures_var, set_of_closures,
+        Apply ({ func; args; kind = Direct closure_id; dbg; },
           Expr_id.create ()),
         Expr_id.create ())
     in
     (* Now bind the variables that will hold the arguments from the original
        application. *)
     let expr : _ Flambda.t =
-      Flet (Immutable, closure, funct,
+      Let (Immutable, closure, funct,
         Flambdautils.bind ~body:duplicated_application ~bindings:args_decl
           ~name:"dup_apply_arg",
         Expr_id.create ())

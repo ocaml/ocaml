@@ -73,7 +73,7 @@ val toplevel_substitution
   -> 'a Flambda.t
 
 (** [bind ?name [var1, expr1; ...; varN, exprN] body] binds using
-    [Immutable] [Flet] expressions the given [(var, expr)] pairs around the
+    [Immutable] [Let] expressions the given [(var, expr)] pairs around the
     body.  The optional name is used for creating [Expr_id.t] values. *)
 val bind
    : ?name:string

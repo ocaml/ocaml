@@ -25,9 +25,9 @@ let remove_params unused (fun_decl: _ Flambda.function_declaration) =
       Variable.Set.mem v fun_decl.free_variables) unused_params
   in
   let body = List.fold_left (fun body var ->
-      Flambda.Flet(Immutable,
+      Flambda.Let(Immutable,
            var,
-           Fconst(Fconst_pointer 0, nid ()),
+           Const(Const_pointer 0, nid ()),
            body,
            nid ()))
       fun_decl.body
@@ -53,8 +53,8 @@ let make_stub unused var (fun_decl : _ Flambda.function_declaration) =
   let kind = Flambda.Direct (Closure_id.wrap renamed) in
   let dbg = fun_decl.dbg in
   let body : _ Flambda.t =
-    Fapply(
-      { func = Fvar(renamed, nid ());
+    Apply(
+      { func = Var(renamed, nid ());
         args;
         kind;
         dbg },
@@ -134,13 +134,13 @@ let candidate_for_spliting_for_unused_arguments
 let separate_unused_arguments_in_closures tree =
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fset_of_closures (set_of_closures, eid) -> begin
+    | Set_of_closures (set_of_closures, eid) -> begin
         if candidate_for_spliting_for_unused_arguments
             set_of_closures.function_decls then
           match separate_unused_arguments set_of_closures with
           | None -> expr
           | Some set_of_closures ->
-              Fset_of_closures (set_of_closures, eid)
+              Set_of_closures (set_of_closures, eid)
         else
           expr
       end

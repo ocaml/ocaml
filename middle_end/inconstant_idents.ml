@@ -124,7 +124,7 @@ module NotConstants(P:Param) = struct
   *)
   let rec mark_loop ~toplevel (curr:dep list) (flam : _ Flambda.t) =
     match flam with
-    | Flet(str, var, lam, body, _) ->
+    | Let(str, var, lam, body, _) ->
       if str = Flambda.Mutable then mark_curr [Var var];
       mark_loop ~toplevel [Var var] lam;
       (* adds 'var in NC => curr in NC'
@@ -133,7 +133,7 @@ module NotConstants(P:Param) = struct
       mark_var var curr;
       mark_loop ~toplevel curr body
 
-    | Fletrec(defs, body, _) ->
+    | Let_rec(defs, body, _) ->
       List.iter (fun (var, def) ->
           mark_loop ~toplevel [Var var] def;
           (* adds 'var in NC => curr in NC' same remark as let case *)
@@ -141,17 +141,17 @@ module NotConstants(P:Param) = struct
         defs;
       mark_loop ~toplevel curr body
 
-    | Fvar (var, _) -> mark_var var curr
+    | Var (var, _) -> mark_var var curr
 
-    | Fset_of_closures (set_of_closures, _) ->
+    | Set_of_closures (set_of_closures, _) ->
       mark_loop_set_of_closures ~toplevel curr set_of_closures
 
-    | Fconst _ -> ()
+    | Const _ -> ()
 
     (* a symbol does not necessarilly points to a constant: toplevel
        modules are declared as symbols, but can constain not constant
        values *)
-    | Fsymbol(_sym,_) ->
+    | Symbol(_sym,_) ->
       (* for a later patch: *)
       (* if not (SymbolSet.mem sym *)
       (*           (Compilenv.approx_env ()).Flambdaexport.ex_constants) *)
@@ -165,7 +165,7 @@ module NotConstants(P:Param) = struct
       then mark_curr curr
 
     (* globals are symbols: handle like symbols *)
-    | Fprim(Lambda.Pgetglobal _id, [], _, _) ->
+    | Prim(Lambda.Pgetglobal _id, [], _, _) ->
       if not for_clambda
       then mark_curr curr
 
@@ -179,29 +179,29 @@ module NotConstants(P:Param) = struct
        when we are checking wether a variable can be statically allocated.
     *)
 
-    | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg, _) ->
+    | Prim(Lambda.Pmakeblock(_tag, Asttypes.Immutable), args, _dbg, _) ->
       mark_vars args curr
 
 (*  (* If global mutables are allowed: *)
-    | Fprim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
+    | Prim(Lambda.Pmakeblock(_tag, Asttypes.Mutable), args, _dbg, _)
       when for_clambda && toplevel ->
       List.iter (mark_loop ~toplevel curr) args
 *)
 
-    | Fproject_closure ({ set_of_closures; closure_id; }, _) ->
+    | Project_closure ({ set_of_closures; closure_id; }, _) ->
       if Closure_id.in_compilation_unit compilation_unit closure_id then
         mark_var set_of_closures curr
       else
         mark_curr curr
-    | Fmove_within_set_of_closures
+    | Move_within_set_of_closures
         ({ closure; start_from = _; move_to = _ }, _) ->
       register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
-    | Fproject_var ({ closure; closure_id = _; var = _ }, _) ->
+    | Project_var ({ closure; closure_id = _; var = _ }, _) ->
       register_implication ~in_nc:(Var closure) ~implies_in_nc:curr
-    | Fprim(Lambda.Pfield _, [f1], _, _) ->
+    | Prim(Lambda.Pfield _, [f1], _, _) ->
       if for_clambda then mark_curr curr;
       mark_var f1 curr
-    | Fprim(Lambda.Pgetglobalfield(id,i), [], _, _) ->
+    | Prim(Lambda.Pgetglobalfield(id,i), [], _, _) ->
       (* adds 'global i in NC => curr in NC' *)
       if for_clambda
       then mark_curr curr
@@ -220,7 +220,7 @@ module NotConstants(P:Param) = struct
       then register_implication ~in_nc:(Global i) ~implies_in_nc:curr
       else mark_curr curr
 
-    | Fprim(Lambda.Psetglobalfield (_,i), [f], _, _) ->
+    | Prim(Lambda.Psetglobalfield (_,i), [f], _, _) ->
       mark_curr curr;
       (* adds 'f in NC => global i in NC' *)
       register_implication ~in_nc:(Var f) ~implies_in_nc:[Global i]
@@ -228,19 +228,19 @@ module NotConstants(P:Param) = struct
     (* Not constant cases: we mark directly 'curr in NC' and mark
        bound variables as in NC also *)
 
-    | Fassign (id, f1, _) ->
+    | Assign (id, f1, _) ->
       (* the assigned is also not constant *)
       mark_curr [Var id];
       mark_curr curr;
       mark_loop ~toplevel [] f1
 
-    | Ftrywith (f1,id,f2,_) ->
+    | Try_with (f1,id,f2,_) ->
       mark_curr [Var id];
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
 
-    | Fstaticcatch (_,ids,f1,f2,_) ->
+    | Static_catch (_,ids,f1,f2,_) ->
       List.iter (fun id -> mark_curr [Var id]) ids;
       mark_curr curr;
       mark_loop ~toplevel [] f1;
@@ -248,7 +248,7 @@ module NotConstants(P:Param) = struct
       (* If recursive staticcatch is introduced: this becomes
          ~toplevel:false *)
 
-    | Ffor (id,f1,f2,_,body,_) ->
+    | For (id,f1,f2,_,body,_) ->
       mark_curr [Var id];
       mark_curr curr;
       mark_loop ~toplevel [] f1;
@@ -260,22 +260,22 @@ module NotConstants(P:Param) = struct
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2
 
-    | Fwhile (f1,body,_) ->
+    | While (f1,body,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel:false [] body
 
-    | Fifthenelse (f1,f2,f3,_) ->
+    | If_then_else (f1,f2,f3,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2;
       mark_loop ~toplevel [] f3
 
-    | Fstaticraise (_,l,_) ->
+    | Static_raise (_,l,_) ->
       mark_curr curr;
       List.iter (mark_loop ~toplevel []) l
 
-    | Fprim (_, args, _, _) ->
+    | Prim (_, args, _, _) ->
       mark_curr curr;
       mark_vars args curr
 
@@ -283,31 +283,31 @@ module NotConstants(P:Param) = struct
       mark_curr curr;
       List.iter (mark_loop ~toplevel []) args
 
-    | Fapply ({func; args; _ },_) ->
+    | Apply ({func; args; _ },_) ->
       mark_curr curr;
       mark_vars args curr;
       mark_loop ~toplevel [] func
 
-    | Fswitch (arg,sw,_) ->
+    | Switch (arg,sw,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] arg;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.consts;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw.blocks;
       Misc.may (fun l -> mark_loop ~toplevel [] l) sw.failaction
 
-    | Fstringswitch (arg,sw,def,_) ->
+    | String_switch (arg,sw,def,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] arg;
       List.iter (fun (_,l) -> mark_loop ~toplevel [] l) sw;
       Misc.may (fun l -> mark_loop ~toplevel [] l) def
 
-    | Fsend (_,f1,f2,fl,_,_) ->
+    | Send (_,f1,f2,fl,_,_) ->
       mark_curr curr;
       mark_loop ~toplevel [] f1;
       mark_loop ~toplevel [] f2;
       List.iter (mark_loop ~toplevel []) fl
 
-    | Funreachable _ ->
+    | Unreachable _ ->
       mark_curr curr
 
   and mark_var var curr =

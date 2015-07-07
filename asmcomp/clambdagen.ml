@@ -22,7 +22,7 @@ let list_closures expr constants =
   let closures = ref Closure_id.Map.empty in
   let aux (expr : _ Flambda.t) =
     match expr with
-    | Fset_of_closures ({ function_decls = functs; }, _) ->
+    | Set_of_closures ({ function_decls = functs; }, _) ->
         let add off_id _ map =
           Closure_id.Map.add
             (Closure_id.wrap off_id)
@@ -39,7 +39,7 @@ let reexported_offset extern_fun_offset_table extern_fv_offset_table expr consta
   let set_fv = ref Var_within_closure.Set.empty in
   let aux (expr : _ Flambda.t) =
     match expr with
-    | Fvar_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
+    | Var_within_closure({var = env_var; closure_id = env_fun_id}, _) ->
         set_fun := Closure_id.Set.add env_fun_id !set_fun;
         set_fv := Var_within_closure.Set.add env_var !set_fv;
     | Fselect_closure({closure_id = id; relative_to = rel}, _) ->
@@ -98,7 +98,7 @@ module Offsets(P:Param1) = struct
 
   let rec iter (flam : _ Flambda.t) =
     match flam with
-    | Fset_of_closures({function_decls = funct; free_vars = fv}, _) ->
+    | Set_of_closures({function_decls = funct; free_vars = fv}, _) ->
       iter_closure funct fv
     | _ -> ()
 
@@ -265,7 +265,7 @@ module Conv(P:Param2) = struct
   let rec conv ?(expected_symbol:Symbol.t option) (env : env)
         (flam : _ Flambda.t) : Clambda.ulambda =
     match flam with
-    | Fvar (var,_) ->
+    | Var (var,_) ->
         begin
           (* If the variable is a recursive access to the function
              currently being defined: it is replaced by an offset in the
@@ -280,7 +280,7 @@ module Conv(P:Param2) = struct
                    Variable.print var)
         end
 
-    | Fsymbol (sym,_) ->
+    | Symbol (sym,_) ->
         let lbl =
           Compilenv.canonical_symbol
             (Linkage_name.to_string (Symbol.label sym))
@@ -289,21 +289,21 @@ module Conv(P:Param2) = struct
                   (* Should delay the conversion a bit more *)
                   (lbl, None))
 
-    | Fconst (cst,_) ->
+    | Const (cst,_) ->
         Uconst (conv_const expected_symbol cst)
 
-    | Flet (_, var, lam, body, _) ->
+    | Let (_, var, lam, body, _) ->
         let id, env_body = add_unique_ident var env in
         Ulet(id, conv env lam, conv env_body body)
 
-    | Fletrec(defs, body, _) ->
+    | Let_rec(defs, body, _) ->
         let env, defs = List.fold_right (fun (var,def) (env, defs) ->
             let id, env = add_unique_ident var env in
             env, (id, def) :: defs) defs (env, []) in
         let udefs = List.map (fun (id,def) -> id, conv env def) defs in
         Uletrec(udefs, conv env body)
 
-    | Fset_of_closures({ function_decls = funct; free_vars = fv }, _) ->
+    | Set_of_closures({ function_decls = funct; free_vars = fv }, _) ->
         conv_closure env ~expected_symbol funct fv
 
     | Fselect_closure({ set_of_closures = lam; closure_id = id; relative_to = rel }, _) ->
@@ -319,24 +319,24 @@ module Conv(P:Param2) = struct
            that a closure is not offseted (Cmmgen.expr_size) *)
         else Uoffset(ulam, relative_offset)
 
-    | Fvar_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) ->
+    | Var_within_closure({closure = lam;var = env_var;closure_id = env_fun_id}, _) ->
         let ulam = conv env lam in
         let fun_offset = get_fun_offset env_fun_id in
         let var_offset = get_fv_offset env_var in
         let pos = var_offset - fun_offset in
         Uprim(Pfield pos, [ulam], Debuginfo.none)
 
-    | Fapply({ func = funct; args; kind = Direct direct_func; dbg = dbg }, _) ->
+    | Apply({ func = funct; args; kind = Direct direct_func; dbg = dbg }, _) ->
         conv_direct_apply (conv env funct) args direct_func dbg env
 
-    | Fapply({ func = funct; args; kind = Indirect; dbg = dbg }, _) ->
+    | Apply({ func = funct; args; kind = Indirect; dbg = dbg }, _) ->
         (* the closure parameter of the function is added by cmmgen, but
            it already appears in the list of parameters of the clambda
            function for generic calls. Notice that for direct calls it is
            added here. *)
         Ugeneric_apply(conv env funct, conv_list env args, dbg)
 
-    | Fswitch(arg, sw, d) ->
+    | Switch(arg, sw, d) ->
         let aux () : Clambda.ulambda =
           let const_index, const_actions =
             conv_switch env sw.consts sw.numconsts sw.failaction
@@ -350,54 +350,54 @@ module Conv(P:Param2) = struct
         in
         let rec simple_expr (flam : _ Flambda.t) =
           match flam with
-          | Fconst( Fconst_base (Asttypes.Const_string _), _ ) -> false
-          | Fvar _ | Fsymbol _ | Fconst _ -> true
-          | Fstaticraise (_,args,_) -> List.for_all simple_expr args
+          | Const( Const_base (Asttypes.Const_string _), _ ) -> false
+          | Var _ | Symbol _ | Const _ -> true
+          | Static_raise (_,args,_) -> List.for_all simple_expr args
           | _ -> false in
         (* Check that failaction is effectively copiable: i.e. it
            can't declare symbols. If it is not the case, share it
            through a staticraise/staticcatch *)
         begin match sw.failaction with
         | None -> aux ()
-        | Some (Fstaticraise (_,args,_))
+        | Some (Static_raise (_,args,_))
           when List.for_all simple_expr args -> aux ()
         | Some failaction ->
           let exn = Static_exception.create () in
           let sw =
             { sw with
-              failaction = Some (Flambda.Fstaticraise (exn, [], d));
+              failaction = Some (Flambda.Static_raise (exn, [], d));
             }
           in
           let expr : _ Flambda.t =
-            Fstaticcatch(exn, [], Fswitch(arg, sw, d), failaction, d)
+            Static_catch(exn, [], Switch(arg, sw, d), failaction, d)
           in
           conv env expr
         end
 
-    | Fstringswitch(arg, sw, def, _) ->
+    | String_switch(arg, sw, def, _) ->
         let arg = conv env arg in
         let sw = List.map (fun (s, e) -> s, conv env e) sw in
         let def = Misc.may_map (conv env) def in
         Ustringswitch(arg, sw, def)
 
-    | Fprim(Pgetglobal _, _, _, _) ->
+    | Prim(Pgetglobal _, _, _, _) ->
         assert false
 
-    | Fprim(Pgetglobalfield(id,i), l, dbg, _) ->
+    | Prim(Pgetglobalfield(id,i), l, dbg, _) ->
         assert(l = []);
         Uprim(Pfield i,
               [Clambda.Uprim(Pgetglobal (Ident.create_persistent
                                    (Compilenv.symbol_for_global id)), [], dbg)],
               dbg)
 
-    | Fprim(Psetglobalfield (_ex, i), [arg], dbg, _) ->
+    | Prim(Psetglobalfield (_ex, i), [arg], dbg, _) ->
         Uprim(Psetfield (i,false),
               [Clambda.Uprim(Pgetglobal (Ident.create_persistent
                                    (Compilenv.make_symbol None)), [], dbg);
                conv env arg],
               dbg)
 
-    | Fprim(Pmakeblock(tag, Asttypes.Immutable) as p, args, dbg, _) ->
+    | Prim(Pmakeblock(tag, Asttypes.Immutable) as p, args, dbg, _) ->
         let args = conv_list env args in
         begin match constant_list args with
         | None ->
@@ -409,7 +409,7 @@ module Conv(P:Param2) = struct
         end
 
 (*  (* If global mutables are allowed: *)
-    | Fprim(Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) when
+    | Prim(Pmakeblock(tag, Asttypes.Mutable) as p, args, dbg, _) when
         env.toplevel ->
         let args = conv_list env args in
         begin match constant_list args with
@@ -422,36 +422,36 @@ module Conv(P:Param2) = struct
         end
 *)
 
-    | Fprim(p, args, dbg, _) ->
+    | Prim(p, args, dbg, _) ->
         Uprim(p, conv_list env args, dbg)
-    | Fstaticraise (i, args, _) ->
+    | Static_raise (i, args, _) ->
         Ustaticfail (Static_exception.to_int i, conv_list env args)
-    | Fstaticcatch (i, vars, body, handler, _) ->
+    | Static_catch (i, vars, body, handler, _) ->
         let env_handler, ids =
           List.fold_right (fun var (env, ids) ->
               let id, env = add_unique_ident var env in
               env, id :: ids) vars (env, []) in
         Ucatch (Static_exception.to_int i, ids,
                 conv env body, conv env_handler handler)
-    | Ftrywith(body, var, handler, _) ->
+    | Try_with(body, var, handler, _) ->
         let id, env_handler = add_unique_ident var env in
         Utrywith(conv env body, id, conv env_handler handler)
-    | Fifthenelse(arg, ifso, ifnot, _) ->
+    | If_then_else(arg, ifso, ifnot, _) ->
         Uifthenelse(conv env arg, conv env ifso, conv env ifnot)
     | Fsequence(lam1, lam2, _) ->
         Usequence(conv env lam1, conv env lam2)
-    | Fwhile(cond, body, _) ->
+    | While(cond, body, _) ->
         Uwhile(conv env cond, conv env body)
-    | Ffor(var, lo, hi, dir, body, _) ->
+    | For(var, lo, hi, dir, body, _) ->
         let id, env_body = add_unique_ident var env in
         Ufor(id, conv env lo, conv env hi, dir, conv env_body body)
-    | Fassign(var, lam, _) ->
+    | Assign(var, lam, _) ->
         let id = try find_var var env with Not_found -> assert false in
         Uassign(id, conv env lam)
-    | Fsend(kind, met, obj, args, dbg, _) ->
+    | Send(kind, met, obj, args, dbg, _) ->
         Usend(kind, conv env met, conv env obj, conv_list env args, dbg)
 
-    | Funreachable _ ->
+    | Unreachable _ ->
         (* shoudl'nt be executable, maybe build something else *)
        Uunreachable
     (* Uprim(Praise, [Uconst (Uconst_pointer 0, None)], Debuginfo.none) *)
@@ -647,25 +647,25 @@ module Conv(P:Param2) = struct
       Uconst_ref (name, Some cst)
     in
     match cst with
-    | Fconst_pointer c -> Uconst_ptr c
-    | Fconst_base (Const_int c) -> Uconst_int c
-    | Fconst_base (Const_char c) -> Uconst_int (Char.code c)
-    | Fconst_float f ->
+    | Const_pointer c -> Uconst_ptr c
+    | Const_base (Const_int c) -> Uconst_int c
+    | Const_base (Const_char c) -> Uconst_int (Char.code c)
+    | Const_float f ->
         str ~shared:true (Uconst_float f)
-    | Fconst_base (Const_float x) ->
+    | Const_base (Const_float x) ->
         str ~shared:true (Uconst_float (float_of_string x))
-    | Fconst_base (Const_int32 x) ->
+    | Const_base (Const_int32 x) ->
         str ~shared:true (Uconst_int32 x)
-    | Fconst_base (Const_int64 x) ->
+    | Const_base (Const_int64 x) ->
         str ~shared:true (Uconst_int64 x)
-    | Fconst_base (Const_nativeint x) ->
+    | Const_base (Const_nativeint x) ->
         str ~shared:true (Uconst_nativeint x)
-    | Fconst_base (Const_string (s, _)) ->
+    | Const_base (Const_string (s, _)) ->
         str ~shared:false (Uconst_string s)
-    | Fconst_float_array c ->
+    | Const_float_array c ->
         (* constant float arrays are really immutable *)
         str ~shared:true (Uconst_float_array (List.map float_of_string c))
-    | Fconst_immstring c ->
+    | Const_immstring c ->
         str ~shared:true (Uconst_string c)
 
   and constant_list l =
@@ -702,7 +702,7 @@ module Conv(P:Param2) = struct
     let r = ref Symbol.Set.empty in
     Flambdaiter.iter
       (function
-        | Fsymbol (sym,_) ->
+        | Symbol (sym,_) ->
             if Symbol.Map.mem sym existing
             then r := Symbol.Set.add sym !r
         | _ -> ())

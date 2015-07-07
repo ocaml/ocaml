@@ -148,7 +148,7 @@ let for_call_site ~env ~r
   in
   let args, approxs = args_with_approxs in
   let no_transformation () : _ Flambda.t * R.t =
-    Fapply ({func = lhs_of_application; args; kind = Direct fun_id; dbg}, eid),
+    Apply ({func = lhs_of_application; args; kind = Direct fun_id; dbg}, eid),
     R.set_approx r A.value_unknown
   in
   let max_level = 3 in
@@ -177,7 +177,7 @@ let for_call_site ~env ~r
      apply construction. *)
   let direct_apply =
     match lhs_of_application with
-    | Fproject_closure _ | Fmove_within_set_of_closures _ -> true
+    | Project_closure _ | Move_within_set_of_closures _ -> true
     | _ -> false
   in
   let inlining_threshold = R.inlining_threshold r in

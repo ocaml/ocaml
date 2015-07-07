@@ -27,7 +27,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       let eid = Flambdautils.data_at_toplevel_node expr in
       match args, A.descrs approxs with
       | [arg], [(Value_int 0 | Value_constptr 0)] ->
-        S.const_ptr_expr (Flambda.Fvar (arg, Expr_id.create ())) 0 eid
+        S.const_ptr_expr (Flambda.Var (arg, Expr_id.create ())) 0 eid
       | _ ->
         S.const_ptr_expr expr 0 eid
     end
@@ -142,7 +142,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
       when x >= 0 && x < size && p = Lambda.Pstringrefs ->
-        Flambda.Fprim(Pstringrefu, args, dbg, eid),
+        Flambda.Prim(Pstringrefu, args, dbg, eid),
         A.value_unknown,
         (* we improved it, but there is no way to account for that: *)
         C.Benefit.zero

@@ -19,12 +19,12 @@ let remove_unused_closure_variables tree =
     let used_fun = ref Closure_id.Set.empty in
     let aux (expr : _ Flambda.t) =
       match expr with
-      | Fproject_closure ({ set_of_closures = _; closure_id }, _) ->
+      | Project_closure ({ set_of_closures = _; closure_id }, _) ->
         used_fun := Closure_id.Set.add closure_id !used_fun
-      | Fproject_var ({ closure_id; var }, _) ->
+      | Project_var ({ closure_id; var }, _) ->
         used := Var_within_closure.Set.add var !used;
         used_fun := Closure_id.Set.add closure_id !used_fun
-      | Fmove_within_set_of_closures
+      | Move_within_set_of_closures
           ({ closure = _; start_from; move_to }, _) ->
         used_fun := Closure_id.Set.add start_from !used_fun;
         used_fun := Closure_id.Set.add move_to !used_fun
@@ -35,7 +35,7 @@ let remove_unused_closure_variables tree =
   in
   let aux (expr : _ Flambda.t) : _ Flambda.t =
     match expr with
-    | Fset_of_closures ({ function_decls; free_vars; _ } as closure, eid) ->
+    | Set_of_closures ({ function_decls; free_vars; _ } as closure, eid) ->
       let all_free_vars =
         Variable.Map.fold (fun _ { Flambda. free_variables } acc ->
             Variable.Set.union free_variables acc)
@@ -56,7 +56,7 @@ let remove_unused_closure_variables tree =
           function_decls.funs
       in
       let function_decls = { function_decls with funs } in
-      Fset_of_closures ({ closure with free_vars; function_decls }, eid)
+      Set_of_closures ({ closure with free_vars; function_decls }, eid)
     | e -> e
   in
   Flambdaiter.map aux tree

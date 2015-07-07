@@ -16,20 +16,20 @@
 (** Intermediate language used to perform closure conversion and inlining.
 
     Closure conversion starts with [Lambda] code.  The conversion transforms
-    function declarations into "sets of closures" ([Fset_of_closures]
+    function declarations into "sets of closures" ([Set_of_closures]
     constructor) in the [Flambda] language.
 
     The usual case of a function declared on its own will produce a
-    [Fset_of_closures] containing a single closure.  The closure itself may
-    be accessed using [Fproject_closure] and specifies which variables (by name, not
+    [Set_of_closures] containing a single closure.  The closure itself may
+    be accessed using [Project_closure] and specifies which variables (by name, not
     by any numeric offset) are free in the corresponding function definition.
     Occurrences of these free variables in the body appear as the usual
-    [Fvar] expressions.
+    [Var] expressions.
 
     For the case of multiple functions defined together, possibly mutually
-    recursive, a [Fset_of_closures] value will be generated containing
+    recursive, a [Set_of_closures] value will be generated containing
     one closure per function.  Each closure may be accessed again using
-    [Fproject_closure], specifying which function's closure is desired.
+    [Project_closure], specifying which function's closure is desired.
 
     As an example, the flambda representation of:
 
@@ -39,27 +39,27 @@
     might be (for identifiers [f] and [g] corresponding to the variables of
     the same name in the source text):
 
-      {[Flet( closure, Fset_of_closures { id_f -> ...; id_g -> ... },
-              Flet(f, Fproject_closure { closure = closure; closure_id = id_f },
-              Flet(g, Fproject_closure { closure = closure; closure_id = id_g },
+      {[Let( closure, Set_of_closures { id_f -> ...; id_g -> ... },
+              Let(f, Project_closure { closure = closure; closure_id = id_f },
+              Let(g, Project_closure { closure = closure; closure_id = id_g },
               ...)))]}
 
-    One can also use [Fproject_closure] to move between closures in the same set of
+    One can also use [Project_closure] to move between closures in the same set of
     closures.  For example for [f] and [g] as above, represented together as a
-    set of closures, we might apply [Fproject_closure] to extract the closure for [g],
-    and later decide to use [Fproject_closure] again on this value (not on the set of
+    set of closures, we might apply [Project_closure] to extract the closure for [g],
+    and later decide to use [Project_closure] again on this value (not on the set of
     closures) to access the closure for [f].  This is used when inlining
     mutually-recursive functions as a means of avoiding having to keep around
     a value corresponding to the whole set of closures.  For example,
     continuing from the example above:
 
-      {[ Fproject_closure { closure = Fvar g; closure_id = id_f;
+      {[ Project_closure { closure = Var g; closure_id = id_f;
                     relative_to = Some id_g } ]}
 
     After closure conversion an inlining pass is performed.  This may
-    introduce [Fproject_var] expressions to represent accesses (from
+    introduce [Project_var] expressions to represent accesses (from
     the body of inlined functions) to variables bound by closures.  Some of
-    these [Fproject_var] expressions may survive in the tree after
+    these [Project_var] expressions may survive in the tree after
     inlining has finished.
 
     Other features of this intermediate language are:
@@ -75,7 +75,7 @@
 
     - "Structured constants" built from the constructors in type [const]
       are not explicitly represented.  Instead, they are converted into
-      expressions such as: [Fprim (Pmakeblock(...), ...)].
+      expressions such as: [Prim (Pmakeblock(...), ...)].
 *)
 
 type let_kind =
@@ -87,11 +87,11 @@ type call_kind =
   | Direct of Closure_id.t
 
 type const =
-  | Fconst_base of Asttypes.constant
-  | Fconst_pointer of int
-  | Fconst_float_array of string list
-  | Fconst_immstring of string
-  | Fconst_float of float
+  | Const_base of Asttypes.constant
+  | Const_pointer of int
+  | Const_float_array of string list
+  | Const_immstring of string
+  | Const_float of float
 
 type apply = {
   func : Variable.t;
@@ -123,28 +123,28 @@ type project_var = {
 (** The value of type ['a] may be used for annotation of an flambda expression
     by some optimization pass. *)
 type 'a t =
-  | Fvar of Variable.t * 'a
-  | Fapply of apply * 'a
-  | Fproject_var of project_var * 'a
+  | Var of Variable.t * 'a
+  | Apply of apply * 'a
+  | Project_var of project_var * 'a
   (* CR-someday mshinwell: consider eliminating assignment from Flambda
      onwards *)
-  | Fassign of Variable.t * 'a t * 'a
-  | Fsend of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
-  | Funreachable of 'a  (** Represents code proved unreachable. *)
-  | Flet of let_kind * Variable.t * 'a named * 'a t * 'a
-  | Fletrec of (Variable.t * 'a named) list * 'a t * 'a
-  | Fifthenelse of 'a t * 'a t * 'a t * 'a
+  | Assign of Variable.t * 'a t * 'a
+  | Send of Lambda.meth_kind * 'a t * 'a t * 'a t list * Debuginfo.t * 'a
+  | Unreachable of 'a  (** Represents code proved unreachable. *)
+  | Let of let_kind * Variable.t * 'a named * 'a t * 'a
+  | Let_rec of (Variable.t * 'a named) list * 'a t * 'a
+  | If_then_else of 'a t * 'a t * 'a t * 'a
   (* CR-someday mshinwell: try to produce a tighter definition of a "switch"
      (and translate to that earlier) so that middle- and back-end code for
      these can be reduced. *)
-  | Fswitch of 'a t * 'a switch * 'a
+  | Switch of 'a t * 'a switch * 'a
   (* Restrictions on [Lambda.Lstringswitch] also apply here *)
-  | Fstringswitch of 'a t * (string * 'a t) list * 'a t option * 'a
-  | Fstaticraise of Static_exception.t * 'a t list * 'a
-  | Fstaticcatch of Static_exception.t * Variable.t list * 'a t * 'a t * 'a
-  | Ftrywith of 'a t * Variable.t * 'a t * 'a
-  | Fwhile of 'a t * 'a t * 'a
-  | Ffor of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
+  | String_switch of 'a t * (string * 'a t) list * 'a t option * 'a
+  | Static_raise of Static_exception.t * 'a t list * 'a
+  | Static_catch of Static_exception.t * Variable.t list * 'a t * 'a t * 'a
+  | Try_with of 'a t * Variable.t * 'a t * 'a
+  | While of 'a t * 'a t * 'a
+  | For of Variable.t * 'a t * 'a t * Asttypes.direction_flag * 'a t * 'a
 
 (** Values of type ['a named] will always be [let]-bound to a [Variable.t].
 
@@ -154,17 +154,17 @@ type 'a t =
     (The split between ['a t] and ['a named] is very similar to the split in
     the language used in Kennedy's "Compiling with Continuations, Continued".
     The main difference, apart from the fact that we do not work in CPS style
-    for control flow constructs, is the presence of [Fexpr].  This could be
+    for control flow constructs, is the presence of [Expr].  This could be
     removed in the future to provide a more rigorous ANF-like representation.)
 *)
 and 'a named =
-  | Fsymbol of Symbol.t * 'a
-  | Fconst of const * 'a
-  | Fset_of_closures of 'a set_of_closures * 'a
-  | Fproject_closure of project_closure * 'a
-  | Fmove_within_set_of_closures of move_within_set_of_closures * 'a
-  | Fprim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
-  | Fexpr of 'a t
+  | Symbol of Symbol.t * 'a
+  | Const of const * 'a
+  | Set_of_closures of 'a set_of_closures * 'a
+  | Project_closure of project_closure * 'a
+  | Move_within_set_of_closures of move_within_set_of_closures * 'a
+  | Prim of Lambda.primitive * Variable.t list * Debuginfo.t * 'a
+  | Expr of 'a t
 
 and 'a set_of_closures = {
   function_decls : 'a function_declarations;
